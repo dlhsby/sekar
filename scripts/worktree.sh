@@ -16,7 +16,18 @@
 #            fixed port 8081 to this worktree's METRO_PORT, so each worktree
 #            reaches its own Metro correctly — but adb reverse is per-device,
 #            so two worktrees can't target the SAME physical device/emulator
-#            at once. Use a separate device/emulator per worktree.
+#            at once. To run N worktrees in parallel against N emulators:
+#              1. Start one emulator per worktree (`emulator -avd <name> &`,
+#                 or launch several from Android Studio's Device Manager).
+#              2. `adb devices` to see each emulator's serial (emulator-5554,
+#                 emulator-5556, ...).
+#              3. Per worktree: `./scripts/start-mobile.sh` (Metro, its own
+#                 METRO_PORT) in one terminal, then
+#                 `ANDROID_SERIAL=<serial> ./scripts/start-mobile.sh --android`
+#                 in another — ANDROID_SERIAL pins which emulator that
+#                 worktree installs to and adb-reverses (without it, `npm run
+#                 android` just grabs whatever `adb devices` lists first,
+#                 which every worktree would race for).
 #   cleanup  remove a worktree + delete its branch. Infers <name> from cwd if
 #            you're inside .claude/worktrees/<name>. Warns on uncommitted work
 #            or unpushed commits unless --force.
@@ -40,11 +51,9 @@ worktree.sh — parallel git worktrees for concurrent SEKAR dev work.
       Cut a new worktree from origin/<base> (default: main), copy env files,
       auto-pick free BE_PORT/WEB_PORT/METRO_PORT (or use the ones you pass),
       install deps in apps/be, apps/web, apps/mobile + root.
-      Metro caveat: `npm run android`/`android:all` adb-reverse the device's
-      fixed port 8081 to THIS worktree's METRO_PORT — correct per worktree,
-      but adb reverse is per-device, so two worktrees can't target the same
-      physical device/emulator at once. Use a separate device/emulator per
-      worktree.
+      Android: one emulator/device per worktree — `npm run android` picks
+      whatever `adb devices` lists first unless you export ANDROID_SERIAL=
+      <serial> to pin it, since adb-reverse mappings are per-device.
 
   ./scripts/worktree.sh cleanup [<name>] [--force|-f]   (aliases: remove, rm)
       Remove a worktree + delete its branch. <name> is inferred from your cwd
@@ -204,7 +213,7 @@ cmd_create() {
   echo -e "  Branch:        ${GREEN}$branch${NC} (from origin/$base)"
   echo -e "  Ports:         ${GREEN}BE_PORT=$be_port${NC} · ${GREEN}WEB_PORT=$web_port${NC} · ${GREEN}METRO_PORT=$metro_port${NC}"
   print_warning "Shared infra — this worktree talks to the SAME Postgres/MinIO/Redis as your main checkout. Don't run scripts/infra.sh here."
-  print_warning "'npm run android'/'android:all' adb-reverse device:8081 to THIS worktree's METRO_PORT ($metro_port) — correct per worktree, but adb reverse is per-device, so don't target the same physical device/emulator from two worktrees at once."
+  print_warning "For Android: this worktree needs its OWN emulator/device. Run 'adb devices' for its serial, then ANDROID_SERIAL=<serial> ./scripts/start-mobile.sh --android (adb-reverses device:8081 -> host:$metro_port for THAT device only)."
   echo -e "  Next:          ${GREEN}cd $dir && ./scripts/start.sh${NC}"
   echo -e "  Cleanup later: ${GREEN}./scripts/worktree.sh cleanup $slug${NC}"
 }
