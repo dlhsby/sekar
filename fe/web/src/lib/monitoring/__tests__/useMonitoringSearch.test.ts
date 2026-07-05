@@ -27,7 +27,7 @@ const rayons: RayonBoundary[] = [
   {
     id: 'r1',
     name: 'Rayon Pusat',
-    color: '#7FBC8C',
+    color: 'var(--color-nb-primary)',
     boundary_polygon: null,
     center_lat: -7.29,
     center_lng: 112.74,
