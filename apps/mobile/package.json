@@ -3,7 +3,7 @@
   "version": "0.1.2",
   "private": true,
   "scripts": {
-    "android": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && DEVICE=$(adb devices 2>&1 | sed -n '2p' | awk '{print $1}') && adb -s \"$DEVICE\" install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s \"$DEVICE\" reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s \"$DEVICE\" shell am start -n com.wahyutrip.sekar/.MainActivity",
+    "android": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && DEVICE=${ANDROID_SERIAL:-$(adb devices 2>&1 | sed -n '2p' | awk '{print $1}')} && adb -s \"$DEVICE\" install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s \"$DEVICE\" reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s \"$DEVICE\" shell am start -n com.wahyutrip.sekar/.MainActivity",
     "android:all": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && adb devices 2>&1 | grep -w device | grep -v 'List of' | awk '{print $1}' | xargs -I{} sh -c 'adb -s {} install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s {} reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s {} shell am start -n com.wahyutrip.sekar/.MainActivity'",
     "android:clean": "rm -rf android/.gradle android/app/.cxx android/app/build android/build node_modules/.cache && npm run android",
     "ios": "react-native run-ios",

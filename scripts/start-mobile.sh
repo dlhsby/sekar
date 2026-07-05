@@ -30,7 +30,11 @@ if [ "$MODE" = "android" ]; then
     print_info "adb-reversing device:8081 -> host:$METRO_PORT so the app reaches this worktree's Metro."
   fi
   print_warning "This doesn't start Metro — run ./scripts/start-mobile.sh (no --android) in another terminal first."
-  print_warning "adb reverse is per-device: targeting the SAME physical device/emulator from two worktrees at once will fight over its tcp:8081 mapping. Use a separate device/emulator per worktree."
+  if [ -n "${ANDROID_SERIAL:-}" ]; then
+    print_info "Targeting device: $ANDROID_SERIAL"
+  else
+    print_warning "No ANDROID_SERIAL set — 'npm run android' installs to whatever 'adb devices' lists first. With multiple emulators/devices running, export ANDROID_SERIAL=<serial> (see 'adb devices') before this command so each worktree targets its OWN device."
+  fi
   npm run android
 else
   free_port "$METRO_PORT" "metro"
