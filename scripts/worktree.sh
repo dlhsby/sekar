@@ -12,10 +12,11 @@
 #            BE_PORT/WEB_PORT/METRO_PORT (leaving DATABASE_*/AWS_*/REDIS_*
 #            pointed at the ONE shared Docker infra), then npm ci apps/be +
 #            apps/web + apps/mobile + root.
-#            NOTE: `npm run android`/`android:all` inside apps/mobile always
-#            adb-reverse tcp:8081 regardless of METRO_PORT — only run those
-#            from one worktree/checkout at a time. Plain Metro (`npm start`
-#            via ./scripts/start-mobile.sh) IS parallel-safe.
+#            NOTE: `npm run android`/`android:all` adb-reverse the device's
+#            fixed port 8081 to this worktree's METRO_PORT, so each worktree
+#            reaches its own Metro correctly — but adb reverse is per-device,
+#            so two worktrees can't target the SAME physical device/emulator
+#            at once. Use a separate device/emulator per worktree.
 #   cleanup  remove a worktree + delete its branch. Infers <name> from cwd if
 #            you're inside .claude/worktrees/<name>. Warns on uncommitted work
 #            or unpushed commits unless --force.
@@ -39,10 +40,11 @@ worktree.sh — parallel git worktrees for concurrent SEKAR dev work.
       Cut a new worktree from origin/<base> (default: main), copy env files,
       auto-pick free BE_PORT/WEB_PORT/METRO_PORT (or use the ones you pass),
       install deps in apps/be, apps/web, apps/mobile + root.
-      Metro caveat: `npm run android`/`android:all` always adb-reverse
-      tcp:8081, ignoring METRO_PORT — only run those from one
-      worktree/checkout at a time. Plain Metro (start-mobile.sh, no
-      --android) is parallel-safe.
+      Metro caveat: `npm run android`/`android:all` adb-reverse the device's
+      fixed port 8081 to THIS worktree's METRO_PORT — correct per worktree,
+      but adb reverse is per-device, so two worktrees can't target the same
+      physical device/emulator at once. Use a separate device/emulator per
+      worktree.
 
   ./scripts/worktree.sh cleanup [<name>] [--force|-f]   (aliases: remove, rm)
       Remove a worktree + delete its branch. <name> is inferred from your cwd
@@ -202,7 +204,7 @@ cmd_create() {
   echo -e "  Branch:        ${GREEN}$branch${NC} (from origin/$base)"
   echo -e "  Ports:         ${GREEN}BE_PORT=$be_port${NC} · ${GREEN}WEB_PORT=$web_port${NC} · ${GREEN}METRO_PORT=$metro_port${NC}"
   print_warning "Shared infra — this worktree talks to the SAME Postgres/MinIO/Redis as your main checkout. Don't run scripts/infra.sh here."
-  print_warning "'npm run android'/'android:all' always adb-reverse tcp:8081 regardless of METRO_PORT — only run those from one worktree/checkout at a time. Plain Metro (start-mobile.sh) is parallel-safe."
+  print_warning "'npm run android'/'android:all' adb-reverse device:8081 to THIS worktree's METRO_PORT ($metro_port) — correct per worktree, but adb reverse is per-device, so don't target the same physical device/emulator from two worktrees at once."
   echo -e "  Next:          ${GREEN}cd $dir && ./scripts/start.sh${NC}"
   echo -e "  Cleanup later: ${GREEN}./scripts/worktree.sh cleanup $slug${NC}"
 }
