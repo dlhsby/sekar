@@ -91,7 +91,7 @@ const boundaries: BoundariesResponse = {
     {
       id: 'r1',
       name: 'Rayon 1',
-      color: '#7FBC8C',
+      color: 'var(--color-nb-primary)',
       boundary_polygon: {
         type: 'Polygon',
         coordinates: [
