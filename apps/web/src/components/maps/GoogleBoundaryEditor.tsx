@@ -180,7 +180,18 @@ function BoundaryMap({
 
   const hasPin =
     pin != null && Number.isFinite(Number(pin.lat)) && Number.isFinite(Number(pin.lng));
-  const point = hasPin ? { lat: Number(pin!.lat), lng: Number(pin!.lng) } : null;
+  const pinLat = hasPin ? Number(pin!.lat) : null;
+  const pinLng = hasPin ? Number(pin!.lng) : null;
+  // Stable object identity unless the coordinate itself actually changes — the
+  // map's `center` prop below is bound to this value, and @react-google-maps/api
+  // re-centers the map whenever `center` receives a NEW reference. Without this
+  // memo, editing the boundary polygon (which re-renders this component with no
+  // pin change) would recreate `point` from scratch every render and keep
+  // snapping the map's focus back to the pin mid-edit.
+  const point = useMemo<LatLng | null>(
+    () => (pinLat != null && pinLng != null ? { lat: pinLat, lng: pinLng } : null),
+    [pinLat, pinLng]
+  );
 
   const area = useMemo(() => {
     if (drawing) return ringArea(draft);

@@ -13,7 +13,9 @@
     "columnName": "Name",
     "columnNameLatin": "Latin Name",
     "columnCategory": "Category",
-    "columnPruningCycle": "Pruning Cycle (days)"
+    "columnPruningCycle": "Pruning Cycle (days)",
+    "columnCreated": "Created",
+    "columnUpdated": "Updated"
   },
   "categoryLabels": {
     "tree": "Tree",

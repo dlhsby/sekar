@@ -13,7 +13,9 @@
     "columnName": "Nama",
     "columnNameLatin": "Nama Latin",
     "columnCategory": "Kategori",
-    "columnPruningCycle": "Siklus Pangkas (hari)"
+    "columnPruningCycle": "Siklus Pangkas (hari)",
+    "columnCreated": "Dibuat",
+    "columnUpdated": "Diperbarui"
   },
   "categoryLabels": {
     "tree": "Pohon",

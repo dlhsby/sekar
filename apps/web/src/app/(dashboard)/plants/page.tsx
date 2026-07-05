@@ -30,6 +30,7 @@ import {
 import { useAreas } from '@/lib/api/areas';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { formatDate } from '@/lib/utils/time';
 
 export default function PlantsPage() {
   const router = useRouter();
@@ -118,6 +119,28 @@ export default function PlantsPage() {
         meta: { label: t('plants:catalogTable.columnPruningCycle'), filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="text-nb-gray-600">{row.original.defaultPruningCycleDays ?? '—'}</span>
+        ),
+      },
+      {
+        id: 'createdAt',
+        accessorKey: 'createdAt',
+        header: t('plants:catalogTable.columnCreated'),
+        meta: { label: t('plants:catalogTable.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.createdAt)}
+          </span>
+        ),
+      },
+      {
+        id: 'updatedAt',
+        accessorKey: 'updatedAt',
+        header: t('plants:catalogTable.columnUpdated'),
+        meta: { label: t('plants:catalogTable.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updatedAt)}
+          </span>
         ),
       },
     ],
