@@ -39,6 +39,24 @@ if [ "$MODE" = "android" ]; then
     exit 1
   fi
 
+  # Non-interactive script invocations don't source ~/.bashrc/~/.zshrc, so
+  # `adb` may be missing from PATH here even though it works in your shell
+  # (e.g. platform-tools only added to PATH by an rc file). Resolve it
+  # explicitly and export the fix so both our own `adb` calls below AND the
+  # `adb` inside `npm run android`/`android:all` can find it.
+  if ! command_exists adb; then
+    for candidate in "${ANDROID_HOME:-}/platform-tools" "${ANDROID_SDK_ROOT:-}/platform-tools" "$HOME/Android/Sdk/platform-tools"; do
+      if [ -n "$candidate" ] && [ -x "$candidate/adb" ]; then
+        export PATH="$candidate:$PATH"
+        break
+      fi
+    done
+  fi
+  if ! command_exists adb; then
+    print_error "adb not found on PATH (checked \$ANDROID_HOME/platform-tools, \$ANDROID_SDK_ROOT/platform-tools, ~/Android/Sdk/platform-tools). Add platform-tools to PATH or set ANDROID_HOME/ANDROID_SDK_ROOT."
+    exit 1
+  fi
+
   RUN_ALL=false
   if [ -n "$DEVICE_FLAG" ]; then
     export ANDROID_SERIAL="$DEVICE_FLAG"

@@ -50,7 +50,7 @@ echo -e "  • Backend API:  ${GREEN}http://localhost:$BE_PORT${NC} (Swagger: ${
 echo -e "  • Web app:      ${GREEN}http://localhost:$WEB_PORT${NC}"
 echo -e "  • Adminer:      ${GREEN}http://localhost:8080${NC} (see infra/.env)"
 echo -e "  • Logs:         ${GREEN}logs/backend.log${NC} · ${GREEN}logs/web.log${NC}"
-echo -e "  • Ports:        ${GREEN}apps/be/.env.local${NC} (PORT) · ${GREEN}apps/web/.env.local${NC} (WEB_PORT)"
+echo -e "  • Ports:        ${GREEN}apps/be/.env.local${NC} (PORT) · ${GREEN}apps/web/.env.local${NC} (WEB_PORT) · ${GREEN}apps/mobile/.env.local${NC} (METRO_PORT=$METRO_PORT)"
 echo ""
 
 if [ "$NO_MOBILE" = true ]; then
@@ -66,5 +66,6 @@ cleanup() {
 }
 trap cleanup INT TERM EXIT
 
-print_info "Starting Metro bundler (Ctrl+C stops Metro + backend + web)..."
-cd "$ROOT/apps/mobile" && npm start
+free_port "$METRO_PORT" "metro"
+print_info "Starting Metro bundler on :$METRO_PORT (Ctrl+C stops Metro + backend + web)..."
+cd "$ROOT/apps/mobile" && npm start -- --port "$METRO_PORT"
