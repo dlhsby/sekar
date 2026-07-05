@@ -16,8 +16,15 @@ const mockUseAuth = jest.fn();
 jest.mock('@/lib/auth/hooks', () => ({ useAuth: () => mockUseAuth() }));
 
 const mockSnapshot = jest.fn();
+const mockAggregate = jest.fn(() => ({
+  data: undefined,
+  isLoading: false,
+  isFetching: false,
+  refetch: jest.fn(),
+}));
 jest.mock('@/lib/api/monitoring-v2', () => ({
   useMonitoringSnapshot: () => mockSnapshot(),
+  useMonitoringAggregate: () => mockAggregate(),
 }));
 
 const mockBoundaries = jest.fn();
@@ -116,14 +123,22 @@ describe('MonitoringPage', () => {
     expect(screen.getByTestId('map')).toHaveAttribute('data-count', '2');
   });
 
-  it('filters workers by search and narrows the map', () => {
+  it('selecting a search result opens the worker sheet and shows detail', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.change(screen.getByLabelText(/cari petugas/i), { target: { value: 'Andi' } });
-    expect(screen.getByTestId('map')).toHaveAttribute('data-count', '1');
+    fireEvent.click(screen.getByRole('button', { name: /^andi/i }));
+    expect(screen.getByRole('button', { name: /kembali ke daftar/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
   });
+
+  const switchToWorkersMode = () => {
+    fireEvent.click(screen.getByRole('button', { name: /lapisan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /semua petugas/i }));
+  };
 
   it('opens the worker sheet and shows detail when a worker is selected', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
+    switchToWorkersMode();
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('button', { name: /andi/i }));
     expect(screen.getByRole('button', { name: /kembali ke daftar/i })).toBeInTheDocument();
@@ -132,6 +147,7 @@ describe('MonitoringPage', () => {
 
   it('lists area staffing on the Area tab', () => {
     render(<MonitoringPage />, { wrapper: createWrapper() });
+    switchToWorkersMode();
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('tab', { name: /area/i }));
     const region = screen.getByText('Taman A');
