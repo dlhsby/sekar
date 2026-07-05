@@ -4,7 +4,8 @@
 # Usage: ./scripts/start-mobile.sh [--android]
 #   default    Metro bundler in the foreground (attach a device/emulator that
 #              already has the app installed)
-#   --android  build + install + launch on Android (starts its own Metro);
+#   --android  build + install + launch on Android (does NOT start Metro —
+#              run this script without --android in another terminal first);
 #              requires the Android SDK and a connected device/emulator
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,9 +27,10 @@ if [ "$MODE" = "android" ]; then
     exit 1
   fi
   if [ "$METRO_PORT" != "8081" ]; then
-    print_warning "METRO_PORT=$METRO_PORT, but 'npm run android' always adb-reverses tcp:8081 — only run --android from one worktree/checkout at a time."
+    print_info "adb-reversing device:8081 -> host:$METRO_PORT so the app reaches this worktree's Metro."
   fi
-  print_info "Building + installing on Android (this also starts Metro)..."
+  print_warning "This doesn't start Metro — run ./scripts/start-mobile.sh (no --android) in another terminal first."
+  print_warning "adb reverse is per-device: targeting the SAME physical device/emulator from two worktrees at once will fight over its tcp:8081 mapping. Use a separate device/emulator per worktree."
   npm run android
 else
   free_port "$METRO_PORT" "metro"
