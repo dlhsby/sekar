@@ -121,6 +121,7 @@ export default function SchedulesPage() {
   // rayons that happened to have areas loaded.
   const { data: rayonsData } = useRayons();
   const allRayons = useMemo(() => rayonsData ?? [], [rayonsData]);
+  const rayonById = useMemo(() => new Map(allRayons.map((r) => [r.id, r])), [allRayons]);
 
   // A korlap edits only rows in their own assigned areas — fetch those to gate
   // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
@@ -232,25 +233,19 @@ export default function SchedulesPage() {
   };
 
   const handleUpdateShiftForEdit = async (id: string, shiftId: string | null) => {
-    try {
-      await updateShift.mutateAsync({
-        id,
-        shift_definition_id: shiftId,
-      });
-    } catch (err) {
-      throw err;
-    }
+    await updateShift.mutateAsync({
+      id,
+      shift_definition_id: shiftId,
+    });
+    refetch();
   };
 
   const handleUpdateAreasForEdit = async (id: string, areaIds: string[]) => {
-    try {
-      await updateAreas.mutateAsync({
-        id,
-        area_ids: areaIds,
-      });
-    } catch (err) {
-      throw err;
-    }
+    await updateAreas.mutateAsync({
+      id,
+      area_ids: areaIds,
+    });
+    refetch();
   };
 
   const handleAddSchedule = async (input: { user_id: string; date: string; shift_definition_id?: string | null; area_ids?: string[] }) => {
@@ -303,40 +298,18 @@ export default function SchedulesPage() {
         },
       },
       {
-        id: 'role',
-        accessorFn: (row) => row.user?.role ?? '',
-        header: t('table.role'),
-        meta: { label: t('table.role'), filterVariant: 'text', defaultHidden: true },
-        cell: ({ row }) =>
-          row.original.user ? <RolePill role={row.original.user.role} /> : <span>—</span>,
-      },
-      {
-        id: 'status',
-        accessorKey: 'status',
-        header: t('table.status'),
-        meta: { label: t('table.status'), filterVariant: 'text' },
+        // The row's own `rayon_id` — NOT derived from its first area — so it
+        // still shows correctly even when the worker has zero areas assigned
+        // (e.g. right after clearing areas, or for a rayon manager row).
+        id: 'rayon',
+        accessorFn: (row) => rayonById.get(row.rayon_id ?? '')?.name ?? '',
+        header: t('table.rayon'),
+        meta: { label: t('table.rayon'), filterVariant: 'text' },
         cell: ({ row }) => (
-          <StatusPill tone={getStatusTone(row.original.status)} dot>
-            {formatStatus(row.original.status)}
-          </StatusPill>
+          <span className="text-nb-body-sm">
+            {rayonById.get(row.original.rayon_id ?? '')?.name ?? '—'}
+          </span>
         ),
-      },
-      {
-        id: 'shift',
-        accessorFn: (row) => {
-          const shift = row.shift_definition;
-          return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
-        },
-        header: t('table.shift'),
-        meta: { label: t('table.shift'), filterVariant: 'text' },
-        cell: ({ row }) => {
-          const shift = row.original.shift_definition;
-          return (
-            <span className="text-nb-body-sm">
-              {shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '—'}
-            </span>
-          );
-        },
       },
       {
         id: 'areas',
@@ -361,19 +334,40 @@ export default function SchedulesPage() {
         },
       },
       {
-        id: 'rayon',
+        id: 'shift',
         accessorFn: (row) => {
-          const area = areaById.get(row.schedule_areas[0]?.area_id ?? '');
-          return area?.rayon?.name ?? '';
+          const shift = row.shift_definition;
+          return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
         },
-        header: t('table.rayon'),
-        meta: { label: t('table.rayon'), filterVariant: 'text', defaultHidden: true },
+        header: t('table.shift'),
+        meta: { label: t('table.shift'), filterVariant: 'text' },
         cell: ({ row }) => {
-          const area = areaById.get(row.original.schedule_areas[0]?.area_id ?? '');
+          const shift = row.original.shift_definition;
           return (
-            <span className="text-nb-body-sm">{area?.rayon?.name ?? '—'}</span>
+            <span className="text-nb-body-sm">
+              {shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '—'}
+            </span>
           );
         },
+      },
+      {
+        id: 'status',
+        accessorKey: 'status',
+        header: t('table.status'),
+        meta: { label: t('table.status'), filterVariant: 'text' },
+        cell: ({ row }) => (
+          <StatusPill tone={getStatusTone(row.original.status)} dot>
+            {formatStatus(row.original.status)}
+          </StatusPill>
+        ),
+      },
+      {
+        id: 'role',
+        accessorFn: (row) => row.user?.role ?? '',
+        header: t('table.role'),
+        meta: { label: t('table.role'), filterVariant: 'text', defaultHidden: true },
+        cell: ({ row }) =>
+          row.original.user ? <RolePill role={row.original.user.role} /> : <span>—</span>,
       },
       {
         id: 'replacement',
@@ -387,7 +381,7 @@ export default function SchedulesPage() {
         ),
       },
     ],
-    [areaById, t],
+    [areaById, rayonById, t],
   );
 
   const rowActions = useCallback(
