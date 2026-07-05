@@ -1,9 +1,9 @@
 // Generate branded placeholder PNGs for the SEKAR mobile-app screenshots, so the
 // docs reference real images (no broken <img>) until real device captures land.
-// Re-run any time the manifest changes:  node fe/docs/scripts/gen-mobile-placeholders.mjs
+// Re-run any time the manifest changes:  node apps/docs/scripts/gen-mobile-placeholders.mjs
 //
 // To replace a placeholder with a real screenshot, just overwrite the PNG of the
-// same name (see capture-mobile.sh). Playwright resolved from fe/web.
+// same name (see capture-mobile.sh). Playwright resolved from apps/web.
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';

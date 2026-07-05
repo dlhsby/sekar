@@ -1,5 +1,5 @@
 {
-  "_comment": "Manifest of SEKAR mobile-app screenshots for the docs. Drives both the branded placeholder generator (gen-mobile-placeholders.mjs) and the device capture helper (capture-mobile.sh). 'file' is the PNG name under fe/docs/static/img/mobile/. 'reach' tells the operator how to navigate there before capturing.",
+  "_comment": "Manifest of SEKAR mobile-app screenshots for the docs. Drives both the branded placeholder generator (gen-mobile-placeholders.mjs) and the device capture helper (capture-mobile.sh). 'file' is the PNG name under apps/docs/static/img/mobile/. 'reach' tells the operator how to navigate there before capturing.",
   "screens": [
     { "file": "login",        "title": "Masuk (Login)",            "illustration": "onb-clockin",  "reach": "Layar awal aplikasi sebelum login" },
     { "file": "home",         "title": "Beranda",                  "illustration": "onb-monitor",  "reach": "Tab Beranda setelah login (satgas)" },

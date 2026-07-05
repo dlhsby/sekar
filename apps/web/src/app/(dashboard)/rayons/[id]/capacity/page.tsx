@@ -4,7 +4,7 @@
  * Weekly service-capacity grid for one rayon. Read: admin_data (own rayon,
  * server-enforced), kepala_rayon, top_management, admin_system, superadmin.
  * Write (PUT upsert): kepala_rayon, top_management, superadmin — matches
- * be/src/modules/service-capacity/service-capacity.controller.ts.
+ * apps/be/src/modules/service-capacity/service-capacity.controller.ts.
  */
 
 'use client';

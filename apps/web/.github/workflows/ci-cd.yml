@@ -29,22 +29,22 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: fe/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm ci
 
       - name: Run ESLint
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm run lint
 
       - name: Run TypeScript type check
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm run type-check
 
       - name: Check code formatting
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm run format:check
 
   # Job 2: Build Application
@@ -61,14 +61,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: fe/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm ci
 
       - name: Build Next.js application
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm run build
         env:
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
@@ -79,7 +79,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nextjs-build
-          path: fe/web/.next
+          path: apps/web/.next
           retention-days: 7
 
   # Job 3: E2E Tests
@@ -99,21 +99,21 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: fe/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm ci
 
       - name: Install Playwright browsers
-        working-directory: fe/web
+        working-directory: apps/web
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
-          path: fe/web/.next
+          path: apps/web/.next
 
       - name: Start PostgreSQL
         run: |
@@ -146,7 +146,7 @@ jobs:
         run: npm run seed
 
       - name: Start web app
-        working-directory: fe/web
+        working-directory: apps/web
         run: |
           npm start &
           npx wait-on http://localhost:3000 -t 60000
@@ -155,7 +155,7 @@ jobs:
           NEXT_PUBLIC_API_VERSION: v1
 
       - name: Run Playwright tests
-        working-directory: fe/web
+        working-directory: apps/web
         run: npx playwright test --project=${{ matrix.browser }}
 
       - name: Upload test results
@@ -163,7 +163,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report-${{ matrix.browser }}
-          path: fe/web/playwright-report
+          path: apps/web/playwright-report
           retention-days: 30
 
       - name: Upload test screenshots
@@ -171,7 +171,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-screenshots-${{ matrix.browser }}
-          path: fe/web/test-results
+          path: apps/web/test-results
           retention-days: 30
 
   # Job 4: Accessibility Audit
@@ -188,20 +188,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: fe/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm ci
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
-          path: fe/web/.next
+          path: apps/web/.next
 
       - name: Start application
-        working-directory: fe/web
+        working-directory: apps/web
         run: |
           npm start &
           npx wait-on http://localhost:3000 -t 60000
@@ -235,20 +235,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: fe/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
 
       - name: Install dependencies
-        working-directory: fe/web
+        working-directory: apps/web
         run: npm ci
 
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
           name: nextjs-build
-          path: fe/web/.next
+          path: apps/web/.next
 
       - name: Start application
-        working-directory: fe/web
+        working-directory: apps/web
         run: |
           npm start &
           npx wait-on http://localhost:3000 -t 60000
@@ -309,8 +309,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: fe/web
-          file: fe/web/Dockerfile
+          context: apps/web
+          file: apps/web/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

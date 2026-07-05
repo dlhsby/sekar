@@ -20,7 +20,7 @@ const nextConfig: NextConfig = {
   // Pin the Turbopack workspace root to this app dir. The repo has two
   // lockfiles (root tooling + this workspace), so Turbopack would otherwise
   // infer the repo root and resolve dev chunks from the wrong directory
-  // (ChunkLoadError). cwd is always fe/web for next dev/build (the scripts run
+  // (ChunkLoadError). cwd is always apps/web for next dev/build (the scripts run
   // here — the same assumption as the ./package.json read above).
   turbopack: {
     root: process.cwd(),

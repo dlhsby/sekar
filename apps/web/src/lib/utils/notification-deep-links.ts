@@ -5,7 +5,7 @@
  * shows the underlying entity. Mirrors the mobile FCM tap-routing
  * (RootNavigator / NotificationsScreen) and the mobile.md §B7 matrix.
  *
- * Backend `data` payload keys (verified in be/src triggers):
+ * Backend `data` payload keys (verified in apps/be/src triggers):
  *   task_id · activity_id · overtime_id · pruning_request_id ·
  *   worker_user_id · area_id · shift_definition_id
  */

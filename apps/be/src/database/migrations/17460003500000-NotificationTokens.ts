@@ -3,7 +3,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 /**
  * Phase 3 — backfill the `notification_tokens` table (May 1, 2026).
  *
- * The `NotificationToken` entity (be/src/modules/notifications/entities/
+ * The `NotificationToken` entity (apps/be/src/modules/notifications/entities/
  * notification-token.entity.ts) has been live since Phase 2B, but was always
  * relied on `synchronize=true` to auto-create in dev. Production migrations
  * never carried it. Without this table the seeder crashes on a fresh DB.

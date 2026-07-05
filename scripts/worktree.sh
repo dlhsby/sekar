@@ -2,15 +2,20 @@
 # SEKAR parallel git worktrees — spin up isolated checkouts for concurrent work
 # without colliding on dev-server ports or shared Docker infra.
 #
-# Usage: ./scripts/worktree.sh [create] <name> [--base <branch>] [--be-port N] [--web-port N]
+# Usage: ./scripts/worktree.sh [create] <name> [--base <branch>] [--be-port N] [--web-port N] [--metro-port N]
 #        ./scripts/worktree.sh cleanup|remove|rm [<name>] [--force|-f]
 #        ./scripts/worktree.sh list|ls
 #
 #   create   fetch <base> (default: main), add a worktree at
 #            .claude/worktrees/<slug> on a new `worktree-<slug>` branch, copy
-#            the main checkout's .env.local files, wire unique BE_PORT/WEB_PORT
-#            (leaving DATABASE_*/AWS_*/REDIS_* pointed at the ONE shared Docker
-#            infra), then npm ci apps/be + apps/web + apps/mobile + root.
+#            the main checkout's .env.local files, wire unique
+#            BE_PORT/WEB_PORT/METRO_PORT (leaving DATABASE_*/AWS_*/REDIS_*
+#            pointed at the ONE shared Docker infra), then npm ci apps/be +
+#            apps/web + apps/mobile + root.
+#            NOTE: `npm run android`/`android:all` inside apps/mobile always
+#            adb-reverse tcp:8081 regardless of METRO_PORT — only run those
+#            from one worktree/checkout at a time. Plain Metro (`npm start`
+#            via ./scripts/start-mobile.sh) IS parallel-safe.
 #   cleanup  remove a worktree + delete its branch. Infers <name> from cwd if
 #            you're inside .claude/worktrees/<name>. Warns on uncommitted work
 #            or unpushed commits unless --force.
@@ -30,10 +35,14 @@ usage() {
   cat <<'USAGE'
 worktree.sh — parallel git worktrees for concurrent SEKAR dev work.
 
-  ./scripts/worktree.sh create <name> [--base <branch>] [--be-port N] [--web-port N]
+  ./scripts/worktree.sh create <name> [--base <branch>] [--be-port N] [--web-port N] [--metro-port N]
       Cut a new worktree from origin/<base> (default: main), copy env files,
-      auto-pick free BE_PORT/WEB_PORT (or use the ones you pass), install deps
-      in apps/be, apps/web, apps/mobile + root.
+      auto-pick free BE_PORT/WEB_PORT/METRO_PORT (or use the ones you pass),
+      install deps in apps/be, apps/web, apps/mobile + root.
+      Metro caveat: `npm run android`/`android:all` always adb-reverse
+      tcp:8081, ignoring METRO_PORT — only run those from one
+      worktree/checkout at a time. Plain Metro (start-mobile.sh, no
+      --android) is parallel-safe.
 
   ./scripts/worktree.sh cleanup [<name>] [--force|-f]   (aliases: remove, rm)
       Remove a worktree + delete its branch. <name> is inferred from your cwd
@@ -66,17 +75,19 @@ port_in_use() {
   return 1
 }
 
-# Every port already wired to EITHER service (be PORT or web WEB_PORT), across
-# the main checkout and every worktree — BE_PORT and WEB_PORT share one pool
-# so the two can never collide with each other, not just within their own kind.
+# Every port already wired to ANY service (be PORT, web WEB_PORT, mobile
+# METRO_PORT), across the main checkout and every worktree — all three share
+# one pool so none of them can collide with each other.
 collect_used_ports() {
   local f
-  for f in "$ROOT/apps/be/.env.local" "$ROOT/apps/web/.env.local" "$WORKTREES_DIR"/*/apps/be/.env.local "$WORKTREES_DIR"/*/apps/web/.env.local; do
+  for f in "$ROOT/apps/be/.env.local" "$ROOT/apps/web/.env.local" "$ROOT/apps/mobile/.env.local" \
+           "$WORKTREES_DIR"/*/apps/be/.env.local "$WORKTREES_DIR"/*/apps/web/.env.local "$WORKTREES_DIR"/*/apps/mobile/.env.local; do
     [ -f "$f" ] || continue
     # env_file_value's tr -d '[:space:]' strips its own trailing newline, so
     # bare calls in a loop run on into one line — force one value per line.
     printf '%s\n' "$(env_file_value "$f" PORT)"
     printf '%s\n' "$(env_file_value "$f" WEB_PORT)"
+    printf '%s\n' "$(env_file_value "$f" METRO_PORT)"
   done
 }
 
@@ -91,12 +102,13 @@ pick_free_port() { # START [EXTRA_RESERVED_PORT...]
 }
 
 cmd_create() {
-  local name="" base="" be_port="" web_port=""
+  local name="" base="" be_port="" web_port="" metro_port=""
   while [ $# -gt 0 ]; do
     case "$1" in
       --base) base="$2"; shift 2 ;;
       --be-port) be_port="$2"; shift 2 ;;
       --web-port) web_port="$2"; shift 2 ;;
+      --metro-port) metro_port="$2"; shift 2 ;;
       -h|--help) usage; exit 0 ;;
       -*) print_error "Unknown flag: $1"; exit 1 ;;
       *) name="$1"; shift ;;
@@ -129,11 +141,12 @@ cmd_create() {
   print_info "Picking ports..."
   be_port="${be_port:-$(pick_free_port 3000)}"
   web_port="${web_port:-$(pick_free_port 3001 "$be_port")}"
-  if [ "$be_port" = "$web_port" ]; then
-    print_error "BE_PORT and WEB_PORT resolved to the same port ($be_port) — pass --be-port/--web-port explicitly"
+  metro_port="${metro_port:-$(pick_free_port 8081 "$be_port" "$web_port")}"
+  if [ "$be_port" = "$web_port" ] || [ "$be_port" = "$metro_port" ] || [ "$web_port" = "$metro_port" ]; then
+    print_error "BE_PORT/WEB_PORT/METRO_PORT resolved to overlapping ports (be=$be_port web=$web_port metro=$metro_port) — pass --be-port/--web-port/--metro-port explicitly"
     exit 1
   fi
-  print_success "BE_PORT=$be_port WEB_PORT=$web_port"
+  print_success "BE_PORT=$be_port WEB_PORT=$web_port METRO_PORT=$metro_port"
 
   print_info "Copying local env files..."
   for app in "${APPS[@]}"; do
@@ -166,10 +179,11 @@ cmd_create() {
     set_env_key "$web_env" NEXT_PUBLIC_WS_URL "ws://localhost:$be_port"
   fi
 
-  # Mobile: only rewrite API_BASE_URL if it already points at a local backend
-  # (leave staging/production URLs alone).
+  # Mobile: bind Metro's port + only rewrite API_BASE_URL if it already
+  # points at a local backend (leave staging/production URLs alone).
   local mobile_env="$dir/apps/mobile/.env.local"
   if [ -f "$mobile_env" ]; then
+    set_env_key "$mobile_env" METRO_PORT "$metro_port"
     local api_base; api_base="$(env_file_value "$mobile_env" API_BASE_URL)"
     if printf '%s' "$api_base" | grep -qE '^http://(10\.0\.2\.2|localhost|127\.0\.0\.1):[0-9]+$'; then
       local host; host="$(printf '%s' "$api_base" | sed -E 's#^http://([^:]+):.*#\1#')"
@@ -186,8 +200,9 @@ cmd_create() {
   echo ""
   print_success "Worktree ready: $dir"
   echo -e "  Branch:        ${GREEN}$branch${NC} (from origin/$base)"
-  echo -e "  Ports:         ${GREEN}BE_PORT=$be_port${NC} · ${GREEN}WEB_PORT=$web_port${NC}"
+  echo -e "  Ports:         ${GREEN}BE_PORT=$be_port${NC} · ${GREEN}WEB_PORT=$web_port${NC} · ${GREEN}METRO_PORT=$metro_port${NC}"
   print_warning "Shared infra — this worktree talks to the SAME Postgres/MinIO/Redis as your main checkout. Don't run scripts/infra.sh here."
+  print_warning "'npm run android'/'android:all' always adb-reverse tcp:8081 regardless of METRO_PORT — only run those from one worktree/checkout at a time. Plain Metro (start-mobile.sh) is parallel-safe."
   echo -e "  Next:          ${GREEN}cd $dir && ./scripts/start.sh${NC}"
   echo -e "  Cleanup later: ${GREEN}./scripts/worktree.sh cleanup $slug${NC}"
 }
@@ -258,7 +273,7 @@ cmd_cleanup() {
 
 cmd_list() {
   local base; base="$(default_base_branch)"
-  printf '%-20s %-24s %-24s %-8s %s\n' "NAME" "BRANCH" "PORTS" "STATUS" "AHEAD"
+  printf '%-20s %-24s %-32s %-8s %s\n' "NAME" "BRANCH" "PORTS" "STATUS" "AHEAD"
   if [ ! -d "$WORKTREES_DIR" ] || [ -z "$(ls -A "$WORKTREES_DIR" 2>/dev/null)" ]; then
     print_info "No worktrees under $WORKTREES_DIR"
     return 0
@@ -269,14 +284,15 @@ cmd_list() {
     local branch; branch="$(git -C "$d" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "no-branch")"
     local be_port; be_port="$(env_file_value "$d/apps/be/.env.local" PORT)"
     local web_port; web_port="$(env_file_value "$d/apps/web/.env.local" WEB_PORT)"
-    local ports="be:${be_port:-?} web:${web_port:-?}"
+    local metro_port; metro_port="$(env_file_value "$d/apps/mobile/.env.local" METRO_PORT)"
+    local ports="be:${be_port:-?} web:${web_port:-?} metro:${metro_port:-?}"
     local status="clean"
     [ -n "$(git -C "$d" status --short 2>/dev/null)" ] && status="dirty"
     local ahead="?"
     if git -C "$d" rev-parse --verify "origin/$base" >/dev/null 2>&1; then
       ahead="$(git -C "$d" rev-list --count "origin/$base..HEAD" 2>/dev/null || echo "?")"
     fi
-    printf '%-20s %-24s %-24s %-8s %s\n' "$name" "$branch" "$ports" "$status" "$ahead"
+    printf '%-20s %-24s %-32s %-8s %s\n' "$name" "$branch" "$ports" "$status" "$ahead"
   done
 }
 

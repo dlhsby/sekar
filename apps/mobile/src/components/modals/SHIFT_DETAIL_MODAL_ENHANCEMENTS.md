@@ -1,7 +1,7 @@
 # ShiftDetailModal Neo Brutalism Enhancements
 
 **Date:** February 8, 2026
-**Component:** `/fe/mobile/src/components/modals/ShiftDetailModal.tsx`
+**Component:** `/apps/mobile/src/components/modals/ShiftDetailModal.tsx`
 
 ## Summary
 
@@ -246,10 +246,10 @@ metricValue: {
 
 ## Files Modified
 
-1. `/fe/mobile/src/components/modals/ShiftDetailModal.tsx` - Complete component rewrite with enhancements
+1. `/apps/mobile/src/components/modals/ShiftDetailModal.tsx` - Complete component rewrite with enhancements
 
 ## Related Documentation
 
-- Design tokens: `/fe/mobile/specs/mobile/design-tokens.md`
-- Component specs: `/fe/mobile/specs/phases/phase-2-b-ui-ux-revamp/components.md`
-- Status tracking: `/fe/mobile/specs/phases/phase-2-b-ui-ux-revamp/STATUS.md`
+- Design tokens: `/apps/mobile/specs/mobile/design-tokens.md`
+- Component specs: `/apps/mobile/specs/phases/phase-2-b-ui-ux-revamp/components.md`
+- Status tracking: `/apps/mobile/specs/phases/phase-2-b-ui-ux-revamp/STATUS.md`

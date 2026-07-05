@@ -52,10 +52,12 @@ ensure_env_file() {
 }
 
 # Load per-project dev ports — each app's env file stays the source of truth:
-#   backend → apps/be/.env.local      PORT      (default 3000)
-#   web     → apps/web/.env.local  WEB_PORT  (default 3001)
-# WEB_PORT is exported because `next dev -p ${WEB_PORT:-3001}` reads the
-# shell, not .env.local. Real exported vars (e.g. from CI) win over the files.
+#   backend → apps/be/.env.local      PORT        (default 3000)
+#   web     → apps/web/.env.local     WEB_PORT    (default 3001)
+#   mobile  → apps/mobile/.env.local  METRO_PORT  (default 8081)
+# WEB_PORT/METRO_PORT are exported because `next dev`/`react-native start`
+# read the shell, not .env.local. Real exported vars (e.g. from CI) win over
+# the files.
 env_file_value() { # FILE KEY — last uncommented KEY= value, empty if absent
   [ -f "$1" ] || return 0
   grep -E "^$2=" "$1" | tail -1 | cut -d= -f2 | tr -d '[:space:]' | tr -d '"'
@@ -75,6 +77,11 @@ load_ports() {
     WEB_PORT="$(env_file_value "$ROOT/apps/web/.env.local" WEB_PORT)"
   fi
   export WEB_PORT="${WEB_PORT:-3001}"
+  # Metro precedence: $METRO_PORT → apps/mobile/.env.local METRO_PORT → 8081.
+  if [ -z "${METRO_PORT:-}" ]; then
+    METRO_PORT="$(env_file_value "$ROOT/apps/mobile/.env.local" METRO_PORT)"
+  fi
+  export METRO_PORT="${METRO_PORT:-8081}"
 }
 
 # free_port PORT [LABEL] — kill whatever is LISTENing on a TCP port so a fresh

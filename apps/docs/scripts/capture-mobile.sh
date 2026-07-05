@@ -6,7 +6,7 @@
 # Prereqs: an Android emulator or USB device running the SEKAR app, with `adb`
 # on PATH (`adb devices` must list one device).
 #
-# Usage:   bash fe/docs/scripts/capture-mobile.sh
+# Usage:   bash apps/docs/scripts/capture-mobile.sh
 # It walks each screen in mobile-screens.json: navigate the app to the screen it
 # names, then press Enter to capture (or `s` + Enter to skip / keep the placeholder).
 set -euo pipefail
@@ -44,4 +44,4 @@ PY
 done
 
 echo
-echo "Done. Review fe/docs/static/img/mobile/*.png, then rebuild the docs (npm run build)."
+echo "Done. Review apps/docs/static/img/mobile/*.png, then rebuild the docs (npm run build)."

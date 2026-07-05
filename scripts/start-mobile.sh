@@ -18,16 +18,21 @@ for arg in "$@"; do
   esac
 done
 
+load_ports
 cd "$ROOT/apps/mobile"
 if [ "$MODE" = "android" ]; then
   if [ -z "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] && [ ! -d "$HOME/Android/Sdk" ]; then
     print_error "Android SDK not found (set ANDROID_HOME). Falling back is not possible for --android."
     exit 1
   fi
+  if [ "$METRO_PORT" != "8081" ]; then
+    print_warning "METRO_PORT=$METRO_PORT, but 'npm run android' always adb-reverses tcp:8081 — only run --android from one worktree/checkout at a time."
+  fi
   print_info "Building + installing on Android (this also starts Metro)..."
   npm run android
 else
-  print_info "Starting Metro bundler (Ctrl+C to stop)..."
-  print_info "Tip: emulator API base is http://10.0.2.2:3000 — see apps/mobile/.env.local"
-  npm start
+  free_port "$METRO_PORT" "metro"
+  print_info "Starting Metro bundler on :$METRO_PORT (Ctrl+C to stop)..."
+  print_info "Tip: emulator API base is http://10.0.2.2:$BE_PORT — see apps/mobile/.env.local"
+  npm start -- --port "$METRO_PORT"
 fi

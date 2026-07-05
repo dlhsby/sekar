@@ -1,10 +1,10 @@
 // Capture real SEKAR web-dashboard screenshots for the docs site.
 //
-//   node fe/docs/scripts/capture-web.mjs [baseURL]
+//   node apps/docs/scripts/capture-web.mjs [baseURL]
 //
 // Logs into the live site as superadmin (sees every page) + a staff_kecamatan
-// pass, and writes PNGs to fe/docs/static/img/web/. Defaults to staging.
-// Playwright is resolved from fe/web (its workspace owns the dep + browser).
+// pass, and writes PNGs to apps/docs/static/img/web/. Defaults to staging.
+// Playwright is resolved from apps/web (its workspace owns the dep + browser).
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';

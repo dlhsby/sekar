@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fully automated mobile screenshot capture: boot a headless Linux emulator,
 # install the SEKAR x86_64 APK, drive it with Maestro (login + navigate), and
-# drop the real screenshots into fe/docs/static/img/mobile/.
+# drop the real screenshots into apps/docs/static/img/mobile/.
 #
 # Prereqs (see scripts/README.md "Automated mobile capture"):
 #   - A Linux Android SDK at $ANDROID_SDK_ROOT with an AVD named "$AVD"
@@ -9,7 +9,7 @@
 #   - Maestro on PATH (~/.maestro/bin).
 #   - KVM available (/dev/kvm) for acceleration.
 #
-#   bash fe/docs/scripts/capture-mobile-auto.sh
+#   bash apps/docs/scripts/capture-mobile-auto.sh
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -60,4 +60,4 @@ for png in "$SHOTS"/*.png; do
   fi
 done
 echo "▶ updated $N screenshots in $DOCS_IMG"
-echo "  Review them, then rebuild: cd fe/docs && npm run build"
+echo "  Review them, then rebuild: cd apps/docs && npm run build"

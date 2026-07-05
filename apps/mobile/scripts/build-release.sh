@@ -21,7 +21,7 @@ echo ""
 
 # Check if we're in the mobile directory
 if [ ! -f "package.json" ]; then
-    echo -e "${RED}❌ Error: Must be run from fe/mobile directory${NC}"
+    echo -e "${RED}❌ Error: Must be run from apps/mobile directory${NC}"
     exit 1
 fi
 

@@ -1,8 +1,8 @@
 # Maestro flow: log in as a field worker (satgas) and screenshot each screen for
 # the docs. Screenshots are written to ./shots/<name>.png (run from a work dir, or
-# via capture-mobile-auto.sh which maps them onto fe/docs/static/img/mobile/).
+# via capture-mobile-auto.sh which maps them onto apps/docs/static/img/mobile/).
 #
-#   maestro test fe/docs/scripts/maestro/capture.yaml
+#   maestro test apps/docs/scripts/maestro/capture.yaml
 #
 # Resilient by design: the welcome carousel, onboarding, and most navigation taps
 # are optional, so the run captures whatever it can reach rather than aborting.

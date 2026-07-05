@@ -22,7 +22,7 @@ export const DEFAULT_PASSWORD_HASH = '$2b$10$dPclKFdgVahMcFtXmJTzcum5UDpJNOFDubh
 /**
  * Password hash for the canonical `superadmin` account, standardized across
  * every seeder. Sourced from the single env var SEED_SUPERADMIN_PASSWORD
- * (set encrypted in be/.env.staging / the prod env). Local/dev leaves it
+ * (set encrypted in apps/be/.env.staging / the prod env). Local/dev leaves it
  * unset → falls back to the shared default so `npm run db:seed` works without
  * config. The superadmin is always seeded with `password_must_change = FALSE`
  * (no forced reset) — see the seeders. `requireEnv` makes an unset/short value

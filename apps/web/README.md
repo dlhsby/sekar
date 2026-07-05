@@ -7,7 +7,7 @@
 For the full one-command setup, see [`/README.md`](/README.md) (`./scripts/setup.sh` + `./scripts/start.sh`). To work on the web alone:
 
 ```bash
-cd fe/web
+cd apps/web
 npm install
 cp .env.local.example .env.local
 # Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY from https://console.cloud.google.com/google/maps-apis (blank = blank map)

@@ -4,8 +4,8 @@ import * as Sentry from '@sentry/nextjs';
  * Browser-side Sentry init (Next.js `instrumentation-client` entry).
  *
  * No-op when `NEXT_PUBLIC_SENTRY_DSN` is unset (default in local dev) so dev
- * workflows don't ship events. Mirrors the backend (`be/src/common/sentry`)
- * and mobile (`fe/mobile/src/services/crashReporting`) no-op-when-empty pattern.
+ * workflows don't ship events. Mirrors the backend (`apps/be/src/common/sentry`)
+ * and mobile (`apps/mobile/src/services/crashReporting`) no-op-when-empty pattern.
  */
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
 

@@ -27,7 +27,7 @@
  *  - `pruning_request` ancestry. The CSV predates the kecamatan workflow;
  *    backfilled activities have `pruning_request_id = NULL`.
  *
- * Run from `be/`:
+ * Run from `apps/be/`:
  *   npx tsx src/database/backfill/pruning-csv-importer.ts --dry-run
  *   npx tsx src/database/backfill/pruning-csv-importer.ts --apply --limit 100
  */

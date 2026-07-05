@@ -1,7 +1,7 @@
 /**
  * Export API client (Phase 4-5).
  *
- * Backend (`be/src/modules/export`):
+ * Backend (`apps/be/src/modules/export`):
  *   POST /export              → 200 file stream (≤5000 rows) | 202 { jobId } (async)
  *   GET  /export/jobs         → ExportJob[] (last 30 days)
  *   GET  /export/jobs/:jobId  → ExportJob + fresh 15-min downloadUrl

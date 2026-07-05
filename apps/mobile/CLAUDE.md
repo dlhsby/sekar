@@ -1,4 +1,4 @@
-# fe/mobile — Claude Code Guide
+# apps/mobile — Claude Code Guide
 
 **Last Updated:** April 25, 2026
 **Stack:** React Native 0.83.x, React 19.2.x, Redux Toolkit, FCM, Neo Brutalism 2.0 (WCAG 2.1 AA)
@@ -11,8 +11,8 @@
 From Phase 3 M1-R sub-phase **3-R2** onward (planned, not yet executed):
 
 - **Source of truth:** [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json)
-- **Generated consumer:** `fe/mobile/src/constants/generated/tokens.ts` (emitted by `scripts/build-tokens.ts`; **CI validates drift on every PR via `tokens-verify`**)
-- **Re-export wrapper:** `fe/mobile/src/constants/nbTokens.ts` becomes `export * from './generated/tokens'` plus platform helpers (`useNBPress`, `pressStyle`)
+- **Generated consumer:** `apps/mobile/src/constants/generated/tokens.ts` (emitted by `scripts/build-tokens.ts`; **CI validates drift on every PR via `tokens-verify`**)
+- **Re-export wrapper:** `apps/mobile/src/constants/nbTokens.ts` becomes `export * from './generated/tokens'` plus platform helpers (`useNBPress`, `pressStyle`)
 
 **To change a token:** edit `tokens.json` → `npm run tokens:build` → commit the regenerated TS. **Never edit `nbTokens.ts` or any inline hex literal in component files.** ESLint rule `no-inline-hex-colors` (added in 3-R1) blocks PRs with raw hex.
 
@@ -20,7 +20,7 @@ From Phase 3 M1-R sub-phase **3-R2** onward (planned, not yet executed):
 
 ## Canonical Type Scale (Phase 3 M1-R)
 
-Mobile catches up to web canonical in 3-R2. Use `<NBText variant="...">` from `fe/mobile/src/components/nb/NBText.tsx` (new in 3-R3); never set `fontSize`/`fontWeight`/`lineHeight` literals.
+Mobile catches up to web canonical in 3-R2. Use `<NBText variant="...">` from `apps/mobile/src/components/nb/NBText.tsx` (new in 3-R3); never set `fontSize`/`fontWeight`/`lineHeight` literals.
 
 | Variant | Family | Weight | Size / line-height |
 |---------|--------|--------|--------------------|
@@ -37,7 +37,7 @@ Mobile catches up to web canonical in 3-R2. Use `<NBText variant="...">` from `f
 
 ---
 
-## NB Primitives (`fe/mobile/src/components/nb/`)
+## NB Primitives (`apps/mobile/src/components/nb/`)
 
 Existing (Phase 2): `NBButton`, `NBCard`, `NBBadge`, `NBTextInput`, `NBPasswordInput`, `NBCardTextInput`, `NBSelect`, `NBDatePicker`, `NBSkeleton`, `NBTab`, `NBAlert`, `NBEmptyState`, `NBBackgroundPattern`.
 
@@ -52,7 +52,7 @@ Full prop reference: [`specs/mobile/component-library.md`](../../specs/mobile/co
 
 ## Brand Fonts
 
-`fe/mobile/assets/fonts/` (added in 3-R2): `.ttf` files for Space Grotesk (500/600/700/800), Inter (400/500/600/700), JetBrains Mono (400/500/600). All SIL OFL licensed. Linked at build via `react-native.config.js` `assets` array — re-run `npx react-native-asset` after adding files.
+`apps/mobile/assets/fonts/` (added in 3-R2): `.ttf` files for Space Grotesk (500/600/700/800), Inter (400/500/600/700), JetBrains Mono (400/500/600). All SIL OFL licensed. Linked at build via `react-native.config.js` `assets` array — re-run `npx react-native-asset` after adding files.
 
 ---
 

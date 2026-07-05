@@ -448,6 +448,6 @@ npm test -- websocketService.test.ts
 
 ## See Also
 
-- [Backend Events Gateway](../../../../../be/src/gateways/events.gateway.ts)
-- [Event DTOs](../../../../../be/src/gateways/dto/events.dto.ts)
+- [Backend Events Gateway](../../../../../apps/be/src/gateways/events.gateway.ts)
+- [Event DTOs](../../../../../apps/be/src/gateways/dto/events.dto.ts)
 - [Socket.IO Client Documentation](https://socket.io/docs/v4/client-api/)

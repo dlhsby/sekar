@@ -8,7 +8,7 @@
   Then add the downloaded file to the Xcode project (target SekarApp,
   "Copy items if needed"). Required for @react-native-firebase/messaging
   (push notifications) on iOS. Do NOT commit the real file — it is a secret
-  and is gitignored (see fe/mobile/.gitignore).
+  and is gitignored (see apps/mobile/.gitignore).
 -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
