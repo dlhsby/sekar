@@ -27,6 +27,7 @@ function makeRosterRepo() {
     findOne: jest.fn(),
     create: jest.fn((x) => ({ ...x })),
     save: jest.fn(async (x) => ({ id: x.id ?? `gen-${++counter}`, ...x })),
+    update: jest.fn().mockResolvedValue(undefined),
     softDelete: jest.fn(),
     createQueryBuilder: jest.fn(() => qb),
     qb,
@@ -197,10 +198,46 @@ describe('SchedulesService', () => {
       const originalSave = rosterRepo.save.mock.calls[0][0];
       expect(originalSave.status).toBe(ScheduleStatus.REPLACED);
       expect(originalSave.replacement_user_id).toBe('B');
+      // No existing cover row → created fresh via create()+save() (safe: no
+      // stale eager relations on a brand-new entity).
       const coverSave = rosterRepo.save.mock.calls[1][0];
       expect(coverSave.user_id).toBe('B');
       expect(coverSave.original_user_id).toBe('A');
       expect(coverSave.shift_definition_id).toBe('s1');
+    });
+
+    it('upserts an EXISTING covering row via update(), not save() (avoids the stale-eager-relation revert bug)', async () => {
+      const original = {
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        schedule_date: '2026-06-30',
+        rayon_id: 'r1',
+        shift_definition_id: 's1',
+        status: ScheduleStatus.PLANNED,
+        schedule_areas: [{ area_id: 'area1' }],
+      };
+      const existingCoverRow = {
+        id: 'cover1',
+        user_id: 'B',
+        status: ScheduleStatus.OFF,
+        // Stale eager relation from findByUserAndDate() — must be ignored.
+        shift_definition: { id: 'old-shift' },
+      };
+      rosterRepo.findOne
+        .mockResolvedValueOnce(original) // findOne(id)
+        .mockResolvedValueOnce(existingCoverRow) // findByUserAndDate(replacement)
+        .mockResolvedValueOnce({ ...original, status: ScheduleStatus.REPLACED }); // final refresh
+      userRepo.findOne.mockResolvedValue({ id: 'B', role: UserRole.SATGAS });
+
+      await service.replaceWorker('d1', 'B', undefined, ADMIN);
+
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'cover1',
+        expect.objectContaining({ shift_definition_id: 's1', original_user_id: 'A' }),
+      );
+      // The stale cover row was never passed to save() for the cover upsert.
+      expect(rosterRepo.save.mock.calls.some((c) => c[0]?.id === 'cover1')).toBe(false);
     });
 
     it('rejects replacing a worker with themselves', async () => {
@@ -288,12 +325,16 @@ describe('SchedulesService', () => {
   });
 
   describe('updateShift', () => {
-    it('clearing the shift flips a PLANNED row to OFF', async () => {
+    it('clearing the shift flips a PLANNED row to OFF, via update() not save()', async () => {
+      // `shift_definition` is an `eager: true` relation, so `row` below carries
+      // a stale relation object — save(row) would let TypeORM reconcile the FK
+      // from it and revert the clear. Must use a raw column update() instead.
       rosterRepo.findOne
         .mockResolvedValueOnce({
           id: 'd1',
           status: ScheduleStatus.PLANNED,
           shift_definition_id: 's1',
+          shift_definition: { id: 's1', name: 'Shift 1' },
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
@@ -302,9 +343,97 @@ describe('SchedulesService', () => {
 
       await service.updateShift('d1', null, ADMIN);
 
-      const saved = rosterRepo.save.mock.calls[0][0];
-      expect(saved.shift_definition_id).toBeNull();
-      expect(saved.status).toBe(ScheduleStatus.OFF);
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({ shift_definition_id: null, status: ScheduleStatus.OFF }),
+      );
+      expect(rosterRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('sets a new shift and flips an OFF row to PLANNED', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.OFF,
+          shift_definition_id: null,
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+        })
+        .mockResolvedValueOnce({ id: 'd1', status: ScheduleStatus.PLANNED });
+
+      await service.updateShift('d1', 's2', ADMIN);
+
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({ shift_definition_id: 's2', status: ScheduleStatus.PLANNED }),
+      );
+    });
+
+    it('leaves a LEAVE_SICK row status untouched when the shift changes', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.LEAVE_SICK,
+          shift_definition_id: 's1',
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+        })
+        .mockResolvedValueOnce({ id: 'd1', status: ScheduleStatus.LEAVE_SICK });
+
+      await service.updateShift('d1', null, ADMIN);
+
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({ status: ScheduleStatus.LEAVE_SICK }),
+      );
+    });
+  });
+
+  describe('updateAreas', () => {
+    it('replaces the areas via setAreas() and updates via update(), not save()', async () => {
+      // `schedule_areas` has `cascade: true`, so `row.schedule_areas` (loaded by
+      // findOne()) is a stale array once setAreas() has raw-deleted the old
+      // rows — save(row) would cascade-reinsert them. Must use update().
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.PLANNED,
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+          schedule_areas: [{ area_id: 'area1' }],
+        })
+        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [] });
+
+      await service.updateAreas('d1', [], ADMIN);
+
+      expect(areaRepo.delete).toHaveBeenCalledWith({ schedule_id: 'd1' });
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({ source: 'manual' }),
+      );
+      expect(rosterRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('inserts the new area rows when areas are added', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'd1',
+          status: ScheduleStatus.PLANNED,
+          schedule_date: '2026-06-30',
+          user_id: 'A',
+          user: { role: UserRole.SATGAS },
+          schedule_areas: [],
+        })
+        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [{ area_id: 'area2' }] });
+
+      await service.updateAreas('d1', ['area2'], ADMIN);
+
+      expect(areaRepo.save).toHaveBeenCalled();
+      const inserted = areaRepo.save.mock.calls[0][0];
+      expect(inserted).toEqual([expect.objectContaining({ schedule_id: 'd1', area_id: 'area2' })]);
     });
   });
 
@@ -369,6 +498,32 @@ describe('SchedulesService', () => {
 
       const createdAreaIds = areaRepo.create.mock.calls.map((c) => c[0].area_id);
       expect(createdAreaIds).toEqual(['a9']);
+    });
+
+    it('updates an EXISTING row via update(), not save() (same stale-eager-relation pitfall)', async () => {
+      rosterRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'existing-1',
+          status: ScheduleStatus.OFF,
+          shift_definition_id: null,
+          // Stale eager relation — would win over a manual FK set on save().
+          shift_definition: null,
+          schedule_areas: [],
+        })
+        .mockResolvedValue({ id: 'existing-1', schedule_areas: [] });
+
+      await service.overrideForDay(
+        'u1',
+        '2026-07-01',
+        { areaId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
+        'admin',
+      );
+
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'existing-1',
+        expect.objectContaining({ shift_definition_id: 's1', status: ScheduleStatus.PLANNED }),
+      );
+      expect(rosterRepo.save.mock.calls.some((c) => c[0]?.id === 'existing-1')).toBe(false);
     });
   });
 

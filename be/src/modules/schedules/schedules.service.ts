@@ -366,27 +366,47 @@ export class SchedulesService {
     // committed row that day (their own shift or on leave) they can't cover —
     // reject rather than silently overwriting it. An `off`/`replaced` row is
     // free to take over.
-    let coverRow = await this.findByUserAndDate(replacementUserId, original.schedule_date);
+    const coverRow = await this.findByUserAndDate(replacementUserId, original.schedule_date);
     if (coverRow && BUSY_STATUSES.includes(coverRow.status)) {
       throw new BadRequestException(
         'Replacement worker already has a schedule or is on leave today',
       );
     }
+    const coverStatus = original.shift_definition_id ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
+    let coverRowId: string;
     if (!coverRow) {
-      coverRow = this.rosterRepo.create({
-        user_id: replacementUserId,
-        schedule_date: original.schedule_date,
-        created_by: actorId,
+      // Brand-new entity — no eager/cascaded relations were ever loaded onto
+      // it, so a plain save() is safe here.
+      const saved = await this.rosterRepo.save(
+        this.rosterRepo.create({
+          user_id: replacementUserId,
+          schedule_date: original.schedule_date,
+          rayon_id: original.rayon_id,
+          shift_definition_id: original.shift_definition_id,
+          original_user_id: original.user_id,
+          status: coverStatus,
+          source: 'manual',
+          created_by: actorId,
+          updated_by: actorId,
+        }),
+      );
+      coverRowId = saved.id;
+    } else {
+      // Raw column UPDATE, not `save(coverRow)` — findByUserAndDate() eager/
+      // explicitly loads `shift_definition`/`rayon`/`schedule_areas`, so
+      // `coverRow` holds stale relation objects; saving the entity would let
+      // TypeORM reconcile those FKs from the stale objects and revert them.
+      coverRowId = coverRow.id;
+      await this.rosterRepo.update(coverRowId, {
+        rayon_id: original.rayon_id,
+        shift_definition_id: original.shift_definition_id,
+        original_user_id: original.user_id,
+        status: coverStatus,
+        source: 'manual',
+        updated_by: actorId,
       });
     }
-    coverRow.rayon_id = original.rayon_id;
-    coverRow.shift_definition_id = original.shift_definition_id;
-    coverRow.original_user_id = original.user_id;
-    coverRow.status = original.shift_definition_id ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
-    coverRow.source = 'manual';
-    coverRow.updated_by = actorId;
-    const savedCover = await this.rosterRepo.save(coverRow);
-    await this.setAreas(savedCover.id, areaIds, actorId);
+    await this.setAreas(coverRowId, areaIds, actorId);
 
     await this.audit(
       original,
@@ -405,9 +425,12 @@ export class SchedulesService {
     await this.assertCanEdit(actor, row);
     const before = (row.schedule_areas ?? []).map((dsa) => dsa.area_id);
     await this.setAreas(row.id, areaIds, actorId);
-    row.source = 'manual';
-    row.updated_by = actorId;
-    await this.rosterRepo.save(row);
+    // Raw column UPDATE, not `save(row)` — `schedule_areas` is a `cascade: true`
+    // relation and `row` still holds the now-stale in-memory array from
+    // `findOne()` above. Saving the full entity would cascade-reinsert those
+    // rows right after `setAreas()` just deleted them, silently reverting the
+    // change (the bug: areas appeared to save but reverted on refresh).
+    await this.rosterRepo.update(id, { source: 'manual', updated_by: actorId });
     await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: areaIds });
     return this.findOne(id);
   }
@@ -418,22 +441,30 @@ export class SchedulesService {
     const row = await this.findOne(id);
     await this.assertCanEdit(actor, row);
     const before = row.shift_definition_id;
-    row.shift_definition_id = shiftDefinitionId;
     // Re-derive status only for the default planned/off pair; leave/replaced stay.
-    if (row.status === ScheduleStatus.PLANNED || row.status === ScheduleStatus.OFF) {
-      row.status = shiftDefinitionId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
+    let status = row.status;
+    if (status === ScheduleStatus.PLANNED || status === ScheduleStatus.OFF) {
+      status = shiftDefinitionId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
     }
-    row.source = 'manual';
-    row.updated_by = actorId;
-    const saved = await this.rosterRepo.save(row);
+    // Raw column UPDATE, not `save(row)` — `shift_definition` is an `eager: true`
+    // relation, so `row.shift_definition` is still the OLD shift object from
+    // `findOne()`. TypeORM's entity save reconciles the FK column from that
+    // stale relation object, silently reverting `shift_definition_id` back to
+    // the old value (the bug: clearing the shift never actually persisted).
+    await this.rosterRepo.update(id, {
+      shift_definition_id: shiftDefinitionId,
+      status,
+      source: 'manual',
+      updated_by: actorId,
+    });
     await this.audit(
-      saved,
+      row,
       'update_shift',
       actorId,
       { shift_definition_id: before },
       { shift_definition_id: shiftDefinitionId },
     );
-    return this.findOne(saved.id);
+    return this.findOne(id);
   }
 
   /**
@@ -467,13 +498,19 @@ export class SchedulesService {
         }),
       );
     } else if (params.shiftDefinitionId !== undefined) {
-      row.shift_definition_id = params.shiftDefinitionId;
-      if (row.status === ScheduleStatus.PLANNED || row.status === ScheduleStatus.OFF) {
-        row.status = params.shiftDefinitionId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
+      // Raw column UPDATE, not `save(row)` — same stale-eager-relation pitfall
+      // as updateShift() above (`shift_definition` would otherwise win over our
+      // manually-set FK column on save).
+      let status = row.status;
+      if (status === ScheduleStatus.PLANNED || status === ScheduleStatus.OFF) {
+        status = params.shiftDefinitionId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
       }
-      row.source = 'manual';
-      row.updated_by = actorId;
-      await this.rosterRepo.save(row);
+      await this.rosterRepo.update(row.id, {
+        shift_definition_id: params.shiftDefinitionId,
+        status,
+        source: 'manual',
+        updated_by: actorId,
+      });
     }
     await this.setAreas(row.id, [params.areaId], actorId);
     return row.id;
