@@ -29,6 +29,9 @@
     "tableHeaderCreated": "Created",
     "tableHeaderUpdated": "Updated",
     "rowActionView": "View",
+    "rowActionDelete": "Delete",
+    "deleteConfirmTitle": "Delete Task",
+    "deleteConfirmDescription": "This action cannot be undone. The task will be permanently deleted.",
     "loading": "Loading…"
   },
   "new": {

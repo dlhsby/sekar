@@ -231,3 +231,91 @@ export function useConvertPruningRequestToTask(id: string) {
     },
   });
 }
+
+/**
+ * DTO for updating a pruning request (admin use).
+ * Only editable fields: address, notes, tree details, contact information.
+ */
+export interface UpdatePruningRequestPayload {
+  address?: string;
+  notes?: string;
+  treeCount?: number;
+  treeHeightEstimate?: string;
+  treeDiameterEstimate?: string;
+  requesterName?: string;
+  requesterPhone?: string;
+  rtLeaderName?: string;
+  rtLeaderPhone?: string;
+}
+
+/**
+ * Update editable fields on a pruning request (admin_data / kepala_rayon / admin_system / superadmin).
+ * Cannot modify status, GPS, photos, or workflow timestamps.
+ */
+export function useUpdatePruningRequest(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: UpdatePruningRequestPayload): Promise<PruningRequest> => {
+      const response = await apiClient.patch<PruningRequest>(
+        `/pruning-requests/${id}`,
+        payload,
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.detail(id) });
+      qc.invalidateQueries({ queryKey: keys.lists() });
+    },
+  });
+}
+
+/**
+ * Cancel a pruning request (admin_data / kepala_rayon / admin_system / superadmin).
+ * Sets status to 'cancelled'. Optional reason for audit trail.
+ */
+export function useCancelPruningRequest(id: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (reason?: string): Promise<PruningRequest> => {
+      const response = await apiClient.post<PruningRequest>(
+        `/pruning-requests/${id}/cancel`,
+        reason ? { reason } : {},
+      );
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.detail(id) });
+      qc.invalidateQueries({ queryKey: keys.lists() });
+    },
+  });
+}
+
+/**
+ * Create a pruning request (admin use).
+ * For admin-side creation: address, tree details, and contacts.
+ * GPS coordinates and photos are optional for admin-created records — the form
+ * exposes lat/lng inputs so an admin can supply a real fix; only when left
+ * blank does this fall back to an approximate Surabaya-center coordinate
+ * (not a real GPS location — downstream consumers of `lat`/`lng` on
+ * admin-created records should not treat it as field-verified).
+ */
+export function useCreatePruningRequestAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<SubmitPruningRequestPayload>): Promise<PruningRequest> => {
+      // Admin-created records may omit photos; provide empty array if not supplied
+      const body = {
+        ...payload,
+        photo_keys: payload.photo_keys ?? [],
+        lat: payload.lat ?? -7.254883, // Surabaya center — fallback only, see doc comment above
+        lng: payload.lng ?? 112.748899,
+      };
+      const response = await apiClient.post<PruningRequest>('/pruning-requests', body);
+      return response.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: keys.lists() });
+      qc.invalidateQueries({ queryKey: ['pruning-requests', 'mine'] });
+    },
+  });
+}

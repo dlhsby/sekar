@@ -30,6 +30,8 @@
     "upload": "Upload",
     "loading": "Loading...",
     "saving": "Saving...",
+    "creating": "Creating...",
+    "updating": "Updating...",
     "open": "Open menu",
     "yes": "Yes",
     "no": "No",

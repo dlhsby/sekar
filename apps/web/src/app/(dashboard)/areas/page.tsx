@@ -83,14 +83,14 @@ export default function AreasPage() {
         id: 'rayon',
         accessorFn: (a) => a.rayon?.name ?? '',
         header: t('admin:areas.columnRayon'),
-        meta: { label: t('admin:areas.columnRayon'), filterVariant: 'text' },
+        meta: { label: t('admin:areas.columnRayon'), filterVariant: 'enum' },
         cell: ({ row }) => <span>{row.original.rayon?.name ?? '—'}</span>,
       },
       {
         id: 'area_type',
         accessorFn: (a) => a.areaType?.name ?? '',
         header: t('admin:areas.columnType'),
-        meta: { label: t('admin:areas.columnType'), filterVariant: 'text' },
+        meta: { label: t('admin:areas.columnType'), filterVariant: 'enum' },
         cell: ({ row }) =>
           row.original.areaType ? (
             <Badge
@@ -170,7 +170,7 @@ export default function AreasPage() {
         id: 'is_active',
         accessorFn: (a) => (a.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')),
         header: t('admin:areas.columnStatus'),
-        meta: { label: t('admin:areas.columnStatus'), filterVariant: 'text' },
+        meta: { label: t('admin:areas.columnStatus'), filterVariant: 'enum' },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>

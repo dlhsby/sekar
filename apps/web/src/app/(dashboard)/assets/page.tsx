@@ -7,6 +7,7 @@ import { Plus, QrCode, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
   Card,
+  ConfirmDialog,
   DataTable,
   FormSelect,
   PageHeader,
@@ -14,6 +15,7 @@ import {
   Tabs,
   TabItem,
   DetailModal,
+  useToast,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -23,6 +25,7 @@ import { useUsers } from '@/lib/api/users';
 import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { getErrorMessage } from '@/lib/api/client';
 import type { Asset } from '@/lib/api/assets';
 
 const ASSET_MANAGER_ROLES = ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'];
@@ -47,6 +50,7 @@ function getStatusLabels(t: ReturnType<typeof useTranslation>['t']): Record<Asse
 
 export default function AssetsPage() {
   const { t } = useTranslation(['assets']);
+  const { toast } = useToast();
   const user = useUser();
   const isManager = user && ASSET_MANAGER_ROLES.includes(user.role);
 
@@ -58,9 +62,11 @@ export default function AssetsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [assetToDelete, setAssetToDelete] = useState<Asset | null>(null);
   const view = useViewModal<Asset>();
 
-  const { mutate: deleteAsset } = useDeleteAsset();
+  const { mutate: deleteAsset, isPending: isDeleting } = useDeleteAsset();
 
   const { data: assetsData, isLoading: assetsLoading } = useAssets({
     status: statusFilter,
@@ -103,6 +109,24 @@ export default function AssetsPage() {
     [categories, t]
   );
 
+  const handleDeleteConfirm = async () => {
+    if (!assetToDelete) return;
+    try {
+      await deleteAsset(assetToDelete.id);
+      toast({
+        level: 'success',
+        title: t('detail.deleteSuccess'),
+      });
+      setDeleteConfirmOpen(false);
+      setAssetToDelete(null);
+    } catch (error) {
+      toast({
+        level: 'danger',
+        title: getErrorMessage(error),
+      });
+    }
+  };
+
   const columns: ColumnDef<Asset>[] = useMemo(
     () => [
       {
@@ -143,7 +167,14 @@ export default function AssetsPage() {
         accessorKey: 'status',
         header: t('list.columns.status'),
         enableSorting: false,
-        meta: { label: t('list.columns.status') },
+        meta: {
+          label: t('list.columns.status'),
+          filterVariant: 'enum',
+          filterOptions: (Object.keys(statusLabels) as AssetStatus[]).map((s) => ({
+            value: s,
+            label: statusLabels[s],
+          })),
+        },
         cell: ({ row }) => (
           <StatusPill tone={STATUS_TONE_MAP[row.original.status]}>
             {statusLabels[row.original.status]}
@@ -236,10 +267,13 @@ export default function AssetsPage() {
         icon: Trash2,
         variant: 'danger',
         hidden: !isManager,
-        onClick: () => deleteAsset(asset.id),
+        onClick: () => {
+          setAssetToDelete(asset);
+          setDeleteConfirmOpen(true);
+        },
       },
     ],
-    [isManager, deleteAsset, view, t]
+    [isManager, view, t]
   );
 
   return (
@@ -338,6 +372,17 @@ export default function AssetsPage() {
       </Card>
 
       <AssetFormModal open={formOpen} onOpenChange={setFormOpen} asset={editingAsset} />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        onOpenChange={setDeleteConfirmOpen}
+        title={t('detail.deleteConfirm')}
+        description={assetToDelete ? t('list.columns.code') + ': ' + assetToDelete.asset_code : undefined}
+        confirmLabel={t('list.actions.delete')}
+        cancelLabel={t('form.cancel')}
+        loading={isDeleting}
+        onConfirm={handleDeleteConfirm}
+      />
 
       <DetailModal
         open={view.open}

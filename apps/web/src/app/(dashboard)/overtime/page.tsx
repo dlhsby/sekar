@@ -7,7 +7,7 @@
 
 import { useAuth } from '@/lib/auth/hooks';
 import { intlLocale } from '@/lib/i18n/date-locale';
-import { useOvertimes, useApproveOvertime, useRejectOvertime } from '@/lib/api/overtime';
+import { useOvertimes, useApproveOvertime, useRejectOvertime, useDeleteOvertime } from '@/lib/api/overtime';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -20,6 +20,7 @@ import {
   StatusPill,
   Tabs,
   DetailModal,
+  ConfirmDialog,
   type TabItem,
   Field,
   DateRangePicker,
@@ -28,12 +29,14 @@ import {
 import type { ColumnDef } from '@/components/ui/data-table';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2, Plus } from 'lucide-react';
 import type { Overtime, OvertimeStatus } from '@/types/models';
 import { MONITORING_ROLES, OVERTIME_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getOvertimeStatusLabels } from '@/lib/constants/overtime';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { OvertimeFormModal } from '@/components/overtime/OvertimeFormModal';
+import { toast } from 'sonner';
 
 /**
  * Type guard for overtime status filter values
@@ -53,11 +56,20 @@ export default function OvertimePage() {
   const [page, setPage] = useState(1);
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingOvertime, setEditingOvertime] = useState<Overtime | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; overtime: Overtime | null }>({
+    isOpen: false,
+    overtime: null,
+  });
   const view = useViewModal<Overtime>();
   const limit = 20;
 
   const approveMutation = useApproveOvertime();
   const rejectMutation = useRejectOvertime();
+  const deleteMutation = useDeleteOvertime();
+
+  const isAdmin = user ? hasRole(user.role, ['top_management', 'admin_system', 'superadmin']) : false;
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, MONITORING_ROLES)) {
@@ -84,7 +96,17 @@ export default function OvertimePage() {
     await rejectMutation.mutateAsync({ id, reason: rejectReason });
     setRejectingId(null);
     setRejectReason('');
-  }, [rejectReason, rejectMutation]);
+  }, [rejectReason, rejectMutation, setRejectingId, setRejectReason]);
+
+  const handleDelete = useCallback(async (id: string) => {
+    try {
+      await deleteMutation.mutateAsync(id);
+      toast.success(t('overtime:form.successDeleted'));
+      setDeleteModal({ isOpen: false, overtime: null });
+    } catch {
+      toast.error(t('overtime:form.deleteErrorMessage'));
+    }
+  }, [deleteMutation, t, setDeleteModal]);
 
   const rowActions = useCallback(
     (row: Overtime): DataTableRowAction<Overtime>[] => [
@@ -94,6 +116,16 @@ export default function OvertimePage() {
         icon: Eye,
         onClick: () => {
           view.openWith(row);
+        },
+      },
+      {
+        key: 'edit',
+        label: t('common:actions.edit'),
+        icon: Pencil,
+        hidden: !isAdmin,
+        onClick: () => {
+          setEditingOvertime(row);
+          setFormOpen(true);
         },
       },
       {
@@ -111,8 +143,16 @@ export default function OvertimePage() {
         hidden: !canApprove || row.status !== 'pending',
         onClick: () => setRejectingId(row.id),
       },
+      {
+        key: 'delete',
+        label: t('common:actions.delete'),
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !isAdmin,
+        onClick: () => setDeleteModal({ isOpen: true, overtime: row }),
+      },
     ],
-    [canApprove, approveMutation.isPending, handleApprove, view, t]
+    [canApprove, approveMutation.isPending, isAdmin, handleApprove, view, t, setEditingOvertime, setFormOpen, setRejectingId, setDeleteModal]
   );
 
   if (authLoading || !user) {
@@ -167,8 +207,7 @@ export default function OvertimePage() {
       id: 'date',
       header: t('overtime:list.table.columns.date'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('overtime:list.table.columns.date') },
+      meta: { label: t('overtime:list.table.columns.date'), filterVariant: 'date' },
       cell: ({ row }) => <div className="text-sm">{formatDateTime(row.original.start_datetime).date}</div>,
     },
     {
@@ -214,10 +253,17 @@ export default function OvertimePage() {
     },
     {
       id: 'status',
+      accessorFn: (r) => r.status,
       header: t('overtime:list.table.columns.status'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('overtime:list.table.columns.status') },
+      meta: {
+        label: t('overtime:list.table.columns.status'),
+        filterVariant: 'enum',
+        filterOptions: (Object.keys(overtimeLabels) as OvertimeStatus[]).map((s) => ({
+          value: s,
+          label: overtimeLabels[s],
+        })),
+      },
       cell: ({ row }) => (
         <StatusPill tone={statusTone[row.original.status]} dot>
           {overtimeLabels[row.original.status]}
@@ -354,6 +400,19 @@ export default function OvertimePage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
+            actions={
+              isAdmin ? (
+                <Button
+                  onClick={() => {
+                    setEditingOvertime(null);
+                    setFormOpen(true);
+                  }}
+                  leftIcon={<Plus className="h-5 w-5" />}
+                >
+                  {t('overtime:form.createButtonLabel')}
+                </Button>
+              ) : undefined
+            }
             emptyTitle={t('overtime:list.empty.noRequests')}
           />
 
@@ -414,6 +473,35 @@ export default function OvertimePage() {
           { label: t('overtime:detail.fields.notes'), value: view.item.notes },
           { label: t('overtime:list.table.columns.createdAt'), value: formatDate(view.item.created_at) },
         ] : []}
+      />
+
+      <OvertimeFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        overtime={editingOvertime}
+        onSuccess={() => {
+          setPage(1);
+        }}
+      />
+
+      <ConfirmDialog
+        open={deleteModal.isOpen}
+        onOpenChange={(open) =>
+          setDeleteModal({ isOpen: open, overtime: open ? deleteModal.overtime : null })
+        }
+        title={t('overtime:form.deleteTitle')}
+        description={t('overtime:form.deleteDescription', {
+          name: deleteModal.overtime?.user?.full_name || '—',
+        })}
+        confirmLabel={t('common:actions.delete')}
+        cancelLabel={t('common:actions.cancel')}
+        variant="destructive"
+        loading={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteModal.overtime) {
+            handleDelete(deleteModal.overtime.id);
+          }
+        }}
       />
     </div>
   );

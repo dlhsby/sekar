@@ -85,3 +85,55 @@ export function useRejectOvertime() {
     },
   });
 }
+
+/**
+ * Create Overtime (admin only)
+ */
+export function useCreateOvertime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const response = await apiClient.post<Overtime>('/overtime', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.lists() });
+    },
+  });
+}
+
+/**
+ * Update Overtime (admin only)
+ */
+export function useUpdateOvertime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await apiClient.patch<Overtime>(`/overtime/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.details() });
+    },
+  });
+}
+
+/**
+ * Delete Overtime (admin only)
+ */
+export function useDeleteOvertime() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/overtime/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: overtimeKeys.details() });
+    },
+  });
+}

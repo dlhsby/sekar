@@ -69,5 +69,29 @@
       "rejectButton": "Reject Activity"
     }
   },
-  "notFound": "Activity not found"
+  "notFound": "Activity not found",
+  "createTitle": "Create New Activity",
+  "editTitle": "Edit Activity",
+  "detailTitle": "Activity Details",
+  "createButton": "Create New",
+  "successCreated": "Activity created successfully",
+  "successUpdated": "Activity updated successfully",
+  "successDeleted": "Activity deleted successfully",
+  "createErrorMessage": "Failed to create activity",
+  "updateErrorMessage": "Failed to update activity",
+  "deleteTitle": "Delete Activity",
+  "deleteConfirmation": "Are you sure you want to delete this activity?",
+  "form": {
+    "basicInfoTitle": "Activity Information",
+    "activityType": "Activity Type",
+    "activityTypePlaceholder": "Select activity type",
+    "activityTypeSearch": "Search activity types...",
+    "description": "Description",
+    "descriptionPlaceholder": "Description of work performed (5-500 characters)",
+    "photoUrls": "Photo URLs",
+    "photo": "Photo {{count}}",
+    "photoPlaceholder": "Enter S3 photo URL (https://...)",
+    "submitNew": "Create Activity",
+    "submit": "Save Changes"
+  }
 }

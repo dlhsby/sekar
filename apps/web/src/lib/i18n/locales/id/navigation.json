@@ -5,7 +5,7 @@
     "areas": "Area", "rayons": "Rayon", "plants": "Tanaman", "seeds": "Bibit", "assets": "Aset",
     "assetsNew": "Aset Baru", "assetsQr": "Generator QR", "assetsMaintenance": "Perawatan Aset",
     "reports": "Laporan", "reportsBuilder": "Buat Laporan", "reportsSchedules": "Jadwal Laporan",
-    "pruningRequests": "Permohonan Pemangkasan", "pruningSubmit": "Kirim Permintaan", "pruningMy": "Permintaan Saya",
+    "pruningRequests": "Permohonan Perantingan", "pruningSubmit": "Kirim Permintaan", "pruningMy": "Permintaan Saya",
     "settings": "Pengaturan", "profile": "Profil Saya", "notifications": "Notifikasi",
     "export": "Ekspor Data", "import": "Impor Data", "importCsv": "Impor CSV",
     "analytics": "Analitik", "analyticsAreas": "Analitik Area", "analyticsWorkers": "Analitik Pekerja"

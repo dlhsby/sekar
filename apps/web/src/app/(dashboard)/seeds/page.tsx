@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Search, Eye } from 'lucide-react';
+import { Search, Eye, Pencil, Plus } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import { useSeeds } from '@/lib/api/seeds';
@@ -24,6 +24,7 @@ import {
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
+import { SeedFormModal } from '@/components/seeds/SeedFormModal';
 import { PlantSeedRow } from '@/lib/api/seeds';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
@@ -36,6 +37,13 @@ const ALLOWED_ROLES = [
   'superadmin',
 ];
 
+const EDIT_ALLOWED_ROLES = [
+  'admin_data',
+  'kepala_rayon',
+  'top_management',
+  'superadmin',
+];
+
 const LOW_STOCK_THRESHOLD = 10;
 
 export default function SeedsListPage() {
@@ -45,15 +53,18 @@ export default function SeedsListPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const view = useViewModal<PlantSeedRow>();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingSeed, setEditingSeed] = useState<PlantSeedRow | null>(null);
   const limit = 20;
 
-  const { data: seedsData, isLoading: seedsLoading } = useSeeds({
+  const { data: seedsData, isLoading: seedsLoading, refetch } = useSeeds({
     search,
     page,
     limit,
   });
 
   const allowed = !!user && ALLOWED_ROLES.includes(user.role);
+  const canEdit = !!user && EDIT_ALLOWED_ROLES.includes(user.role);
 
   const rowActions = useCallback(
     (row: PlantSeedRow): DataTableRowAction<PlantSeedRow>[] => [
@@ -65,8 +76,18 @@ export default function SeedsListPage() {
           view.openWith(row);
         },
       },
+      {
+        key: 'edit',
+        label: t('common:actions.edit'),
+        icon: Pencil,
+        hidden: !canEdit,
+        onClick: () => {
+          setEditingSeed(row);
+          setFormOpen(true);
+        },
+      },
     ],
-    [view, t]
+    [view, canEdit, t]
   );
 
   useEffect(() => {
@@ -104,8 +125,7 @@ export default function SeedsListPage() {
       id: 'nameId',
       header: t('seeds:listTable.columnName'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('seeds:listTable.columnName') },
+      meta: { label: t('seeds:listTable.columnName'), filterVariant: 'text' },
       cell: ({ row }) => (
         <span className="font-semibold text-nb-black">{row.original.nameId}</span>
       ),
@@ -114,8 +134,7 @@ export default function SeedsListPage() {
       id: 'unit',
       header: t('seeds:listTable.columnUnit'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('seeds:listTable.columnUnit') },
+      meta: { label: t('seeds:listTable.columnUnit'), filterVariant: 'text' },
       cell: ({ row }) => {
         return <span className="text-nb-body-sm">{t(`seeds:units.${row.original.unit}`) || row.original.unit}</span>;
       },
@@ -124,8 +143,7 @@ export default function SeedsListPage() {
       id: 'stockQty',
       header: t('seeds:listTable.columnStock'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('seeds:listTable.columnStock') },
+      meta: { label: t('seeds:listTable.columnStock'), filterVariant: 'number' },
       cell: ({ row }) => {
         const isLowStock = row.original.stockQty < LOW_STOCK_THRESHOLD;
         return (
@@ -172,18 +190,31 @@ export default function SeedsListPage() {
 
       <Card>
         <CardContent className="p-4">
-          <div className="mb-4">
-            <FormInput
-              label={t('seeds:list.searchLabel')}
-              type="text"
-              placeholder={t('seeds:list.searchPlaceholder')}
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              leftIcon={<Search className="w-5 h-5" />}
-            />
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div className="flex-1">
+              <FormInput
+                label={t('seeds:list.searchLabel')}
+                type="text"
+                placeholder={t('seeds:list.searchPlaceholder')}
+                value={search}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+                leftIcon={<Search className="w-5 h-5" />}
+              />
+            </div>
+            {canEdit && (
+              <Button
+                onClick={() => {
+                  setEditingSeed(null);
+                  setFormOpen(true);
+                }}
+                leftIcon={<Plus className="h-5 w-5" />}
+              >
+                {t('seeds:list.createButton')}
+              </Button>
+            )}
           </div>
 
           <DataTable
@@ -250,6 +281,13 @@ export default function SeedsListPage() {
           { label: t('seeds:listModal.labelCreatedAt'), value: formatDate(view.item.createdAt) },
           { label: t('seeds:listModal.labelUpdatedAt'), value: formatDate(view.item.updatedAt) },
         ] : []}
+      />
+
+      <SeedFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        seed={editingSeed}
+        onSuccess={() => refetch()}
       />
     </div>
   );

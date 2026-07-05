@@ -3,27 +3,40 @@
 /**
  * Plants Catalog Page — plant species master data on the standardized DataTable
  * (toolbar search, per-column filter, sort, column-toggle, client pagination).
+ * Create/edit/delete via PlantFormModal + ConfirmDialog pattern.
  */
 
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Badge,
+  Button,
   Combobox,
+  ConfirmDialog,
   DataTable,
   PageHeader,
   type ColumnDef,
+  type DataTableRowAction,
 } from '@/components/ui';
-import { useSpeciesCatalog, type PlantSpeciesRow } from '@/lib/api/plants';
+import { PlantFormModal } from '@/components/plants/PlantFormModal';
+import {
+  useSpeciesCatalog,
+  useDeletePlantSpecies,
+  type PlantSpeciesRow,
+} from '@/lib/api/plants';
 import { useAreas } from '@/lib/api/areas';
+import { getErrorMessage } from '@/lib/api/client';
+import { useViewModal } from '@/lib/hooks/use-view-modal';
 
 export default function PlantsPage() {
   const router = useRouter();
   const { t } = useTranslation(['plants', 'common']);
 
   // Fetch the whole catalog once; the DataTable handles search/sort/filter/paging.
-  const { data: catalogData, isLoading } = useSpeciesCatalog(1, '', 1000);
+  const { data: catalogData, isLoading, refetch } = useSpeciesCatalog(1, '', 1000);
   const species = useMemo(() => catalogData?.data ?? [], [catalogData]);
 
   const { data: areasResponse } = useAreas({ limit: 1000 });
@@ -31,6 +44,20 @@ export default function PlantsPage() {
     () => (areasResponse?.data ?? []).map((area) => ({ value: area.id, label: area.name })),
     [areasResponse]
   );
+
+  // Form modal state
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingPlant, setEditingPlant] = useState<PlantSpeciesRow | null>(null);
+
+  // View/detail modal
+  const view = useViewModal<PlantSpeciesRow>();
+
+  // Delete dialog
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; plant: PlantSpeciesRow | null }>({
+    isOpen: false,
+    plant: null,
+  });
+  const deleteMutation = useDeletePlantSpecies();
 
   const columns = useMemo<ColumnDef<PlantSpeciesRow>[]>(
     () => [
@@ -67,7 +94,16 @@ export default function PlantsPage() {
         accessorKey: 'category',
         header: t('plants:catalogTable.columnCategory'),
         enableSorting: true,
-        meta: { label: t('plants:catalogTable.columnCategory'), filterVariant: 'text' },
+        meta: {
+          label: t('plants:catalogTable.columnCategory'),
+          filterVariant: 'enum' as const,
+          enumOptions: [
+            { value: 'tree', label: t('plants:categoryLabels.tree') },
+            { value: 'shrub', label: t('plants:categoryLabels.shrub') },
+            { value: 'groundcover', label: t('plants:categoryLabels.groundcover') },
+            { value: 'flower', label: t('plants:categoryLabels.flower') },
+          ],
+        },
         cell: ({ row }) => (
           <Badge variant="outline" size="sm">
             {t(`plants:categoryLabels.${row.original.category}`) || row.original.category}
@@ -86,6 +122,56 @@ export default function PlantsPage() {
       },
     ],
     [t]
+  );
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!deleteDialog.plant) return;
+    try {
+      await deleteMutation.mutateAsync(deleteDialog.plant.id);
+      toast.success(
+        t('plants:successDeleted', { name: deleteDialog.plant.nameId })
+      );
+      refetch();
+      setDeleteDialog({ isOpen: false, plant: null });
+    } catch (err) {
+      const message = getErrorMessage(err);
+      // Check for 409 conflict (referenced by other entities)
+      if (message.includes('409') || message.includes('Conflict')) {
+        toast.error(t('plants:deleteErrorConflict'));
+      } else {
+        toast.error(t('plants:deleteErrorMessage'));
+      }
+    }
+  }, [deleteDialog.plant, deleteMutation, refetch, t]);
+
+  const rowActions = useCallback(
+    (plant: PlantSpeciesRow): DataTableRowAction<PlantSpeciesRow>[] => [
+      {
+        key: 'view',
+        label: t('plants:actionView'),
+        icon: Eye,
+        onClick: () => {
+          view.openWith(plant);
+        },
+      },
+      {
+        key: 'edit',
+        label: t('plants:actionEdit'),
+        icon: Pencil,
+        onClick: () => {
+          setEditingPlant(plant);
+          setFormOpen(true);
+        },
+      },
+      {
+        key: 'delete',
+        label: t('plants:actionDelete'),
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => setDeleteDialog({ isOpen: true, plant }),
+      },
+    ],
+    [t, view]
   );
 
   return (
@@ -112,8 +198,52 @@ export default function PlantsPage() {
         loading={isLoading}
         getRowId={(r) => r.id}
         searchPlaceholder={t('plants:catalog.searchPlaceholder')}
+        rowActions={rowActions}
+        actions={
+          <Button onClick={() => {
+            setEditingPlant(null);
+            setFormOpen(true);
+          }} leftIcon={<Plus className="h-5 w-5" />}>
+            {t('plants:buttonAdd')}
+          </Button>
+        }
         emptyTitle={t('plants:catalog.emptyTitle')}
         emptyDescription={t('plants:catalog.emptyDescription')}
+        emptyAction={
+          <Button onClick={() => {
+            setEditingPlant(null);
+            setFormOpen(true);
+          }} leftIcon={<Plus className="h-5 w-5" />}>
+            {t('plants:buttonAddFirst')}
+          </Button>
+        }
+      />
+
+      <PlantFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        plant={editingPlant}
+        onSuccess={() => refetch()}
+      />
+
+      {view.item && (
+        <PlantFormModal
+          open={view.open}
+          onOpenChange={view.onOpenChange}
+          plant={view.item}
+          readOnly
+        />
+      )}
+
+      <ConfirmDialog
+        open={deleteDialog.isOpen}
+        onOpenChange={(isOpen) => setDeleteDialog({ ...deleteDialog, isOpen })}
+        title={t('plants:deleteConfirmTitle')}
+        description={t('plants:deleteConfirmDescription', { name: deleteDialog.plant?.nameId })}
+        confirmLabel={t('common:delete')}
+        variant="destructive"
+        onConfirm={handleDeleteConfirm}
+        loading={deleteMutation.isPending}
       />
     </div>
   );

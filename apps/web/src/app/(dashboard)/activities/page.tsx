@@ -27,9 +27,11 @@ import {
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
+import { ActivityFormModal } from '@/components/activities/ActivityFormModal';
+import { DeleteActivityModal } from '@/components/activities/DeleteActivityModal';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Eye } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2, Plus } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
@@ -62,7 +64,15 @@ export default function ActivitiesPage() {
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const view = useViewModal<Activity>();
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; activity: Activity | null }>({
+    isOpen: false,
+    activity: null,
+  });
   const limit = 20;
+  const isAdmin =
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
 
   const approveMutation = useApproveActivity();
   const rejectMutation = useRejectActivity();
@@ -127,6 +137,16 @@ export default function ActivitiesPage() {
         },
       },
       {
+        key: 'edit',
+        label: t('common:actions.edit'),
+        icon: Pencil,
+        hidden: !isAdmin,
+        onClick: () => {
+          setEditingActivity(row);
+          setFormOpen(true);
+        },
+      },
+      {
         key: 'approve',
         label: t('common:actions.approve'),
         icon: Check,
@@ -142,8 +162,16 @@ export default function ActivitiesPage() {
         onClick: () => setRejectingId(row.id),
         hidden: row.status !== 'pending' || !canApprove,
       },
+      {
+        key: 'delete',
+        label: t('common:actions.delete'),
+        icon: Trash2,
+        variant: 'danger',
+        hidden: !isAdmin,
+        onClick: () => setDeleteModal({ isOpen: true, activity: row }),
+      },
     ],
-    [canApprove, approveMutation.isPending, handleApprove, view, t]
+    [canApprove, approveMutation.isPending, handleApprove, view, isAdmin, t]
   );
 
   if (authLoading || !user) {
@@ -393,6 +421,19 @@ export default function ActivitiesPage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
+            actions={
+              isAdmin ? (
+                <Button
+                  onClick={() => {
+                    setEditingActivity(null);
+                    setFormOpen(true);
+                  }}
+                  leftIcon={<Plus className="h-5 w-5" />}
+                >
+                  {t('activities:createButton')}
+                </Button>
+              ) : undefined
+            }
             emptyTitle={t('activities:list.empty.noActivities')}
           />
 
@@ -459,6 +500,25 @@ export default function ActivitiesPage() {
           ] as DetailModalRow[]}
         />
       )}
+
+      <ActivityFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        activity={editingActivity}
+        onSuccess={() => {
+          setFilters((prev) => ({ ...prev, page: 1 }));
+        }}
+      />
+
+      <DeleteActivityModal
+        activity={deleteModal.activity}
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, activity: null })}
+        onSuccess={() => {
+          setDeleteModal({ isOpen: false, activity: null });
+          setFilters((prev) => ({ ...prev, page: 1 }));
+        }}
+      />
     </div>
   );
 }
