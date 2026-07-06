@@ -1,6 +1,6 @@
 {
   "kpi": {
-    "activeOfficers": "Petugas aktif",
+    "activeOfficers": "Hadir",
     "tasks": "Tugas",
     "incomingRequests": "Perantingan masuk",
     "pendingOvertimes": "Lembur menunggu"
@@ -9,11 +9,11 @@
     "title": "Status petugas",
     "loading": "Memuat status…",
     "unavailable": "Status tidak tersedia.",
-    "presence": "{{count}} hadir · {{rayons}} rayon",
+    "presence": "{{count}} terpantau · {{rayons}} rayon",
     "active": "Aktif",
-    "idle": "Menganggur",
+    "idle": "Tidak aktif",
     "missing": "Tidak terdeteksi",
-    "offline": "Offline (belum clock-in)",
+    "offline": "Offline",
     "outsideArea": "Di luar area",
     "todaySchedule": "Jadwal hari ini",
     "scheduled": "dijadwalkan",
@@ -42,6 +42,6 @@
   },
   "greeting": "Halo",
   "user": "Pengguna",
-  "statusMeta": "{{count}} hadir · {{rayons}} rayon",
-  "ariaStatus": "{{active}} dari {{total}} petugas aktif"
+  "statusMeta": "{{hadir}}/{{scheduled}} hadir · {{rayons}} rayon",
+  "ariaStatus": "{{hadir}} dari {{scheduled}} hadir"
 }

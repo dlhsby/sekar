@@ -1,8 +1,15 @@
 {
   "page": {
-    "backLabel": "Back",
-    "modeSummary": "Summary",
-    "modeAllWorkers": "All Officers"
+    "backLabel": "Back"
+  },
+  "aggregate": {
+    "scheduledLabel": "Scheduled",
+    "clockedInLabel": "Present",
+    "notClockedInLabel": "Absent"
+  },
+  "surabaya": {
+    "title": "Surabaya",
+    "tapHint": "Tap to view rayons"
   },
   "screen": {
     "title": "Monitoring",
@@ -173,7 +180,7 @@
       "area": "Area",
       "role": "Role",
       "user": "Search User",
-      "mapLayers": "Map View",
+      "mapLayers": "Settings",
       "staffing": "Staffing"
     },
     "placeholders": {

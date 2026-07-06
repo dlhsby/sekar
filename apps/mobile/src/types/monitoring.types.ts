@@ -84,6 +84,8 @@ export interface LiveUser {
   battery_level: number | null;
   last_update: string;
   is_within_area: boolean;
+  /** True if on the current shift roster; false = ad-hoc / off-schedule. */
+  is_scheduled?: boolean;
   outside_boundary: boolean;
   shift_id: string;
   shift_name: string;
@@ -328,6 +330,13 @@ export interface AggregateStatusCounts {
   offline: number;
 }
 
+/** Roster attendance trio for a node (or the whole scope), for today. */
+export interface AggregateRosterCounts {
+  scheduled: number;
+  clocked_in: number;
+  not_clocked_in: number;
+}
+
 export interface AggregateNode {
   id: string;
   name: string;
@@ -340,6 +349,7 @@ export interface AggregateNode {
   online_count: number;
   required: number;
   is_understaffed: boolean;
+  roster: AggregateRosterCounts;
   area_count?: number;
   rayon_id?: string | null;
 }
@@ -349,6 +359,7 @@ export interface MonitoringAggregateResponse {
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;
+  roster_totals: AggregateRosterCounts;
   generated_at: string;
 }
 

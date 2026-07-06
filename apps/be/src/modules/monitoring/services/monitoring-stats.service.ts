@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, IsNull, Not, In } from 'typeorm';
+import { Repository, Between, IsNull, Not, In, type FindOptionsWhere } from 'typeorm';
 import { Area } from '../../areas/entities/area.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
@@ -19,7 +19,12 @@ import {
   AggregateResponseDto,
   AggregateNodeDto,
   AggregateStatusCountsDto,
+  AggregateRosterCountsDto,
+  PresenceBreakdownDto,
 } from '../dto/aggregate.dto';
+import { Schedule, ScheduleStatus } from '../../schedules/entities/schedule.entity';
+import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
+import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import {
   AreaStatsDto,
   UserStatusDto,
@@ -59,6 +64,10 @@ export class MonitoringStatsService {
     private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
+    @InjectRepository(Schedule)
+    private readonly scheduleRepository: Repository<Schedule>,
+    @InjectRepository(ScheduleArea)
+    private readonly scheduleAreaRepository: Repository<ScheduleArea>,
     private readonly dayTypeService: DayTypeService,
     // Optional: short-TTL response cache. Absent in unit specs; present at runtime.
     @Optional()
@@ -306,25 +315,54 @@ export class MonitoringStatsService {
   ): Promise<AggregateResponseDto> {
     const currentShift = await this.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
+    const today = TimezoneUtil.jakartaDateString();
 
     if (scope === 'rayon') {
       if (!rayonId) throw new NotFoundException('rayon id is required for rayon scope');
-      const nodes = await this.buildAreaNodes(rayonId, currentShift?.id, currentDayType);
+      const clockedInSet = await this.clockedInUserSet({ rayonId });
+      const nodes = await this.buildAreaNodes(
+        rayonId,
+        currentShift?.id,
+        currentDayType,
+        today,
+        clockedInSet,
+      );
       return {
         scope,
         scope_id: rayonId,
         nodes,
         totals: this.sumStatusCounts(nodes),
+        // Scope-wide (not Σ nodes): a rayon's rostered workers assigned to
+        // several areas must not be double-counted.
+        roster_totals: await this.rosterTotalsForScope(
+          'rayon',
+          rayonId,
+          today,
+          currentShift?.id,
+          clockedInSet,
+        ),
+        presence_totals: this.sumPresence(nodes),
         generated_at: new Date(),
       };
     }
 
-    const nodes = await this.buildRayonNodes(currentShift?.id, currentDayType);
+    const clockedInSet = await this.clockedInUserSet({});
+    const nodes = await this.buildRayonNodes(currentShift?.id, currentDayType, today, clockedInSet);
     return {
       scope,
       scope_id: null,
       nodes,
       totals: this.sumStatusCounts(nodes),
+      // Scope-wide so the Surabaya summary matches the snapshot's roster count,
+      // including rostered workers not assigned to any rayon (Σ nodes would miss).
+      roster_totals: await this.rosterTotalsForScope(
+        'city',
+        undefined,
+        today,
+        currentShift?.id,
+        clockedInSet,
+      ),
+      presence_totals: this.sumPresence(nodes),
       generated_at: new Date(),
     };
   }
@@ -333,6 +371,8 @@ export class MonitoringStatsService {
   private async buildRayonNodes(
     shiftDefinitionId: string | undefined,
     dayType: DayType,
+    today: string,
+    clockedInSet: Set<string>,
   ): Promise<AggregateNodeDto[]> {
     const rayons = await this.rayonRepository.find();
 
@@ -345,7 +385,7 @@ export class MonitoringStatsService {
       if (a.rayon_id) areaCountByRayon.set(a.rayon_id, (areaCountByRayon.get(a.rayon_id) ?? 0) + 1);
     }
 
-    const [statusRows, roleRows, requiredMap] = await Promise.all([
+    const [statusRows, roleRows, requiredMap, scheduledByRayon] = await Promise.all([
       this.trackingRepository
         .createQueryBuilder('uts')
         .innerJoin('uts.area', 'area')
@@ -368,10 +408,13 @@ export class MonitoringStatsService {
         .addGroupBy('user.role')
         .getRawMany(),
       this.requiredCountByGroup('rayon', shiftDefinitionId, dayType),
+      this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
     ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
+    const scheduledIds = this.flattenUserSets(scheduledByRayon);
+    const presenceByRayon = await this.presenceByGroup('rayon', scheduledIds, {});
 
     return rayons.map((rayon) =>
       this.assembleNode({
@@ -383,6 +426,8 @@ export class MonitoringStatsService {
         counts_by_status: statusByGroup.get(rayon.id),
         counts_by_role: roleByGroup.get(rayon.id),
         required: requiredMap.get(rayon.id) ?? 0,
+        roster: this.rosterCountsFor(scheduledByRayon.get(rayon.id), clockedInSet),
+        presence: presenceByRayon.get(rayon.id) ?? this.emptyPresence(),
         area_count: areaCountByRayon.get(rayon.id) ?? 0,
       }),
     );
@@ -393,6 +438,8 @@ export class MonitoringStatsService {
     rayonId: string,
     shiftDefinitionId: string | undefined,
     dayType: DayType,
+    today: string,
+    clockedInSet: Set<string>,
   ): Promise<AggregateNodeDto[]> {
     const areas = await this.areaRepository.find({
       where: { rayon_id: rayonId, is_active: true },
@@ -404,7 +451,7 @@ export class MonitoringStatsService {
     if (areas.length === 0) return [];
 
     const areaIds = areas.map((a) => a.id);
-    const [statusRows, roleRows, requiredMap] = await Promise.all([
+    const [statusRows, roleRows, requiredMap, scheduledByArea] = await Promise.all([
       this.trackingRepository
         .createQueryBuilder('uts')
         .select('uts.area_id', 'group_id')
@@ -432,10 +479,13 @@ export class MonitoringStatsService {
         .addGroupBy('user.role')
         .getRawMany(),
       this.requiredCountByGroup('area', shiftDefinitionId, dayType, areaIds),
+      this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { areaIds }),
     ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
+    const scheduledIds = this.flattenUserSets(scheduledByArea);
+    const presenceByArea = await this.presenceByGroup('area', scheduledIds, { areaIds });
 
     return areas.map((area) =>
       this.assembleNode({
@@ -447,6 +497,8 @@ export class MonitoringStatsService {
         counts_by_status: statusByGroup.get(area.id),
         counts_by_role: roleByGroup.get(area.id),
         required: requiredMap.get(area.id) ?? 0,
+        roster: this.rosterCountsFor(scheduledByArea.get(area.id), clockedInSet),
+        presence: presenceByArea.get(area.id) ?? this.emptyPresence(),
         rayon_id: rayonId,
       }),
     );
@@ -511,6 +563,8 @@ export class MonitoringStatsService {
     counts_by_status?: AggregateStatusCountsDto;
     counts_by_role?: Record<string, number>;
     required: number;
+    roster: AggregateRosterCountsDto;
+    presence: PresenceBreakdownDto;
     area_count?: number;
     rayon_id?: string | null;
   }): AggregateNodeDto {
@@ -529,6 +583,8 @@ export class MonitoringStatsService {
       online_count: online,
       required: input.required,
       is_understaffed: online < input.required,
+      roster: input.roster,
+      presence: input.presence,
       ...(input.type === 'rayon' ? { area_count: input.area_count ?? 0 } : {}),
       ...(input.type === 'area' ? { rayon_id: input.rayon_id ?? null } : {}),
     };
@@ -536,6 +592,195 @@ export class MonitoringStatsService {
 
   private emptyStatusCounts(): AggregateStatusCountsDto {
     return { active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 };
+  }
+
+  private emptyRosterCounts(): AggregateRosterCountsDto {
+    return { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+  }
+
+  private emptyPresence(): PresenceBreakdownDto {
+    return { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } };
+  }
+
+  /**
+   * Distinct user ids rostered for the CURRENT shift today (planned/present).
+   * Used to flag which live workers are "scheduled" (vs ad-hoc / off-schedule).
+   */
+  async scheduledUserIdsForCurrentShift(
+    shiftDefinitionId: string | undefined,
+  ): Promise<Set<string>> {
+    if (!shiftDefinitionId) return new Set();
+    const today = TimezoneUtil.jakartaDateString();
+    const rows = await this.scheduleRepository
+      .createQueryBuilder('s')
+      .select('DISTINCT s.user_id', 'user_id')
+      .where('s.schedule_date = :today', { today })
+      .andWhere('s.status IN (:...statuses)', {
+        statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
+      })
+      .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('s.deleted_at IS NULL')
+      .getRawMany();
+    return new Set(rows.map((r) => r.user_id));
+  }
+
+  /**
+   * Activity×location breakdown of HADIR workers (scheduled + clocked-in),
+   * grouped by rayon or area. Restricting to `scheduledUserIds` excludes ad-hoc
+   * clock-ins from the counts. active→aktif/dalam, outside_area→aktif/luar,
+   * inactive|missing→tidak_aktif (dalam/luar by is_within_area).
+   */
+  private async presenceByGroup(
+    groupBy: 'rayon' | 'area',
+    scheduledUserIds: string[],
+    opts: { areaIds?: string[] },
+  ): Promise<Map<string, PresenceBreakdownDto>> {
+    const map = new Map<string, PresenceBreakdownDto>();
+    if (scheduledUserIds.length === 0) return map;
+
+    const qb = this.trackingRepository.createQueryBuilder('uts');
+    if (groupBy === 'rayon') {
+      qb.innerJoin('uts.area', 'area').select('area.rayon_id', 'group_id');
+    } else {
+      qb.select('uts.area_id', 'group_id');
+    }
+    qb.addSelect('uts.status', 'status')
+      .addSelect('uts.is_within_area', 'within')
+      .addSelect('COUNT(*)', 'count')
+      .where('uts.shift_id IS NOT NULL')
+      .andWhere('uts.user_id IN (:...ids)', { ids: scheduledUserIds });
+    if (groupBy === 'area' && opts.areaIds && opts.areaIds.length > 0) {
+      qb.andWhere('uts.area_id IN (:...areaIds)', { areaIds: opts.areaIds });
+    }
+    qb.groupBy('group_id').addGroupBy('uts.status').addGroupBy('uts.is_within_area');
+
+    const rows = await qb.getRawMany();
+    for (const r of rows) {
+      if (!r.group_id) continue;
+      const bucket = map.get(r.group_id) ?? this.emptyPresence();
+      const n = parseInt(r.count, 10) || 0;
+      const within = r.within === true || r.within === 'true' || r.within === 't';
+      switch (r.status as TrackingStatus) {
+        case TrackingStatus.ACTIVE:
+          bucket.aktif.dalam += n;
+          break;
+        case TrackingStatus.OUTSIDE_AREA:
+          bucket.aktif.luar += n;
+          break;
+        case TrackingStatus.INACTIVE:
+        case TrackingStatus.MISSING:
+          if (within) bucket.tidak_aktif.dalam += n;
+          else bucket.tidak_aktif.luar += n;
+          break;
+        default:
+          break; // OFFLINE can't have an active shift → skip
+      }
+      map.set(r.group_id, bucket);
+    }
+    return map;
+  }
+
+  private sumPresence(nodes: AggregateNodeDto[]): PresenceBreakdownDto {
+    return nodes.reduce((acc, n) => {
+      acc.aktif.dalam += n.presence.aktif.dalam;
+      acc.aktif.luar += n.presence.aktif.luar;
+      acc.tidak_aktif.dalam += n.presence.tidak_aktif.dalam;
+      acc.tidak_aktif.luar += n.presence.tidak_aktif.luar;
+      return acc;
+    }, this.emptyPresence());
+  }
+
+  /**
+   * Distinct rostered (planned/present) user ids for today, grouped by rayon or
+   * area. Area grouping goes through the schedule_areas join (a worker can be
+   * assigned to several areas in a day).
+   */
+  private async scheduledUserSetsByGroup(
+    groupBy: 'rayon' | 'area',
+    today: string,
+    shiftDefinitionId: string | undefined,
+    opts: { areaIds?: string[] },
+  ): Promise<Map<string, Set<string>>> {
+    const map = new Map<string, Set<string>>();
+    // Kehadiran is scoped to the CURRENT shift: a worker rostered for another
+    // shift isn't "expected" now. No active shift → nobody is expected.
+    if (!shiftDefinitionId) return map;
+    const statuses = [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT];
+
+    if (groupBy === 'rayon') {
+      const rows = await this.scheduleRepository
+        .createQueryBuilder('s')
+        .select('s.rayon_id', 'group_id')
+        .addSelect('s.user_id', 'user_id')
+        .where('s.schedule_date = :today', { today })
+        .andWhere('s.status IN (:...statuses)', { statuses })
+        .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+        .andWhere('s.rayon_id IS NOT NULL')
+        .andWhere('s.deleted_at IS NULL')
+        .getRawMany();
+      for (const r of rows) this.addToSetMap(map, r.group_id, r.user_id);
+      return map;
+    }
+
+    const areaIds = opts.areaIds ?? [];
+    if (areaIds.length === 0) return map;
+    const rows = await this.scheduleAreaRepository
+      .createQueryBuilder('sa')
+      .innerJoin('sa.schedule', 's')
+      .select('sa.area_id', 'group_id')
+      .addSelect('s.user_id', 'user_id')
+      .where('s.schedule_date = :today', { today })
+      .andWhere('s.status IN (:...statuses)', { statuses })
+      .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('sa.area_id IN (:...areaIds)', { areaIds })
+      .andWhere('s.deleted_at IS NULL')
+      .getRawMany();
+    for (const r of rows) this.addToSetMap(map, r.group_id, r.user_id);
+    return map;
+  }
+
+  /** Distinct user ids that have clocked in (active shift), optionally scoped. */
+  private async clockedInUserSet(opts: {
+    rayonId?: string;
+    areaIds?: string[];
+  }): Promise<Set<string>> {
+    const where: FindOptionsWhere<UserTrackingStatus> = { shift_id: Not(IsNull()) };
+    if (opts.rayonId) where.rayon_id = opts.rayonId;
+    else if (opts.areaIds && opts.areaIds.length > 0) where.area_id = In(opts.areaIds);
+    const rows = await this.trackingRepository.find({
+      where,
+      select: ['user_id'],
+    });
+    return new Set(rows.map((r) => r.user_id));
+  }
+
+  /** Union of all user ids across a group→userSet map. */
+  private flattenUserSets(map: Map<string, Set<string>>): string[] {
+    const all = new Set<string>();
+    for (const set of map.values()) for (const u of set) all.add(u);
+    return [...all];
+  }
+
+  private addToSetMap(map: Map<string, Set<string>>, groupId: string, userId: string): void {
+    if (!groupId || !userId) return;
+    const set = map.get(groupId) ?? new Set<string>();
+    set.add(userId);
+    map.set(groupId, set);
+  }
+
+  /** Build a node's roster trio from its scheduled set and the clocked-in set. */
+  private rosterCountsFor(
+    scheduled: Set<string> | undefined,
+    clockedIn: Set<string>,
+  ): AggregateRosterCountsDto {
+    if (!scheduled || scheduled.size === 0) return this.emptyRosterCounts();
+    let clocked = 0;
+    for (const u of scheduled) if (clockedIn.has(u)) clocked += 1;
+    return {
+      scheduled: scheduled.size,
+      clocked_in: clocked,
+      not_clocked_in: Math.max(0, scheduled.size - clocked),
+    };
   }
 
   private sumStatusCounts(nodes: AggregateNodeDto[]): AggregateStatusCountsDto {
@@ -547,6 +792,35 @@ export class MonitoringStatsService {
       acc.offline += n.counts_by_status.offline;
       return acc;
     }, this.emptyStatusCounts());
+  }
+
+  /**
+   * Scope-wide roster trio (distinct users), independent of the per-node
+   * breakdown so it matches the snapshot's expected/present/absent — including
+   * rostered workers with no rayon (city) and never double-counting a worker
+   * assigned to several areas in a rayon.
+   */
+  private async rosterTotalsForScope(
+    scope: 'city' | 'rayon',
+    rayonId: string | undefined,
+    today: string,
+    shiftDefinitionId: string | undefined,
+    clockedInSet: Set<string>,
+  ): Promise<AggregateRosterCountsDto> {
+    if (!shiftDefinitionId) return this.emptyRosterCounts();
+    const qb = this.scheduleRepository
+      .createQueryBuilder('s')
+      .select('DISTINCT s.user_id', 'user_id')
+      .where('s.schedule_date = :today', { today })
+      .andWhere('s.status IN (:...statuses)', {
+        statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
+      })
+      .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('s.deleted_at IS NULL');
+    if (scope === 'rayon') qb.andWhere('s.rayon_id = :rayonId', { rayonId });
+    const rows = await qb.getRawMany();
+    const scheduled = new Set(rows.map((r) => r.user_id));
+    return this.rosterCountsFor(scheduled, clockedInSet);
   }
 
   private toNum(v: unknown): number | null {

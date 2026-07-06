@@ -119,6 +119,8 @@
     "en": "English"
   },
   "ui": {
+    "withinArea": "dalam",
+    "outsideArea": "luar",
     "combobox": {
       "placeholder": "Pilih…",
       "searchPlaceholder": "Cari…",

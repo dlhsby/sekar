@@ -243,7 +243,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
     });
 
-    it('should show error when no assigned area', async () => {
+    it('lets an ad-hoc worker with no assigned area still reach the clock-in form', async () => {
       const store = createMockStore({
         auth: {
           user: mockUser,
@@ -257,8 +257,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       const { getByText } = renderScreen(store);
 
+      // Not blocked — the clock-in form (and its submit button) renders.
       await waitFor(() => {
-        expect(getByText('Anda belum ditugaskan ke area manapun')).toBeTruthy();
+        expect(getByText('Clock In')).toBeTruthy();
       });
     });
   });

@@ -61,8 +61,8 @@ describe('StatusSummaryBar', () => {
   beforeEach(() => jest.clearAllMocks());
 
   describe('rendering', () => {
-    it('renders the three activity labels (aktif / idle / missing)', () => {
-      const { getByText } = render(
+    it('renders the two activity labels (aktif / tidak aktif)', () => {
+      const { getByText, queryByText } = render(
         <StatusSummaryBar
           liveUsers={defaultUsers}
           activeActivity={null}
@@ -71,7 +71,8 @@ describe('StatusSummaryBar', () => {
       );
       expect(getByText('Aktif')).toBeTruthy();
       expect(getByText('Tidak aktif')).toBeTruthy();
-      expect(getByText('Tidak terdeteksi')).toBeTruthy();
+      // Missing/offline now fold into "Tidak aktif" — no separate chip.
+      expect(queryByText('Tidak terdeteksi')).toBeNull();
     });
 
     it('does not render an offline chip', () => {
@@ -95,8 +96,7 @@ describe('StatusSummaryBar', () => {
         />,
       );
       expect(getByText('5')).toBeTruthy(); // aktif total
-      expect(getByText('3')).toBeTruthy(); // idle total
-      expect(getByText('1')).toBeTruthy(); // missing total
+      expect(getByText('4')).toBeTruthy(); // tidak aktif total (3 idle + 1 missing)
     });
 
     it('renders the dalam · luar split for aktif and idle', () => {
@@ -132,7 +132,7 @@ describe('StatusSummaryBar', () => {
           onActivityChange={onActivityChange}
         />,
       );
-      expect(getAllByText('0')).toHaveLength(3);
+      expect(getAllByText('0')).toHaveLength(2);
     });
 
     it('exposes a stable testID per activity chip', () => {
@@ -145,7 +145,6 @@ describe('StatusSummaryBar', () => {
       );
       expect(getByTestId('activity-chip-aktif')).toBeTruthy();
       expect(getByTestId('activity-chip-idle')).toBeTruthy();
-      expect(getByTestId('activity-chip-missing')).toBeTruthy();
     });
   });
 
@@ -179,12 +178,12 @@ describe('StatusSummaryBar', () => {
       const { getByTestId } = render(
         <StatusSummaryBar
           liveUsers={defaultUsers}
-          activeActivity={'idle'}
+          activeActivity={'aktif'}
           onActivityChange={onActivityChange}
         />,
       );
-      fireEvent.press(getByTestId('activity-chip-missing'));
-      expect(onActivityChange).toHaveBeenCalledWith('missing');
+      fireEvent.press(getByTestId('activity-chip-idle'));
+      expect(onActivityChange).toHaveBeenCalledWith('idle');
     });
   });
 
@@ -198,8 +197,8 @@ describe('StatusSummaryBar', () => {
         />,
       );
       expect(getByLabelText('Filter Aktif: 5, 3 dalam, 2 luar')).toBeTruthy();
-      expect(getByLabelText('Filter Tidak aktif: 3, 1 dalam, 2 luar')).toBeTruthy();
-      expect(getByLabelText('Filter Tidak terdeteksi: 1')).toBeTruthy();
+      // Tidak aktif = 3 idle + 1 missing = 4; only idle contributes dalam/luar.
+      expect(getByLabelText('Filter Tidak aktif: 4, 1 dalam, 2 luar')).toBeTruthy();
     });
 
     it('marks the active chip as selected', () => {

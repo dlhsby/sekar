@@ -93,7 +93,6 @@ describe('MonitoringStatusSheet', () => {
     const { getByTestId } = renderSheet();
     expect(getByTestId('activity-chip-aktif')).toBeTruthy();
     expect(getByTestId('activity-chip-idle')).toBeTruthy();
-    expect(getByTestId('activity-chip-missing')).toBeTruthy();
   });
 
   it('renders the Operasional card with total + area coverage', () => {

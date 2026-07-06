@@ -1,10 +1,10 @@
 /**
  * AggregateBubbleLayer
- * Renders one summary "bubble" per aggregate node (a rayon at city scope, or an
- * area at rayon scope) for the monitoring map's "Ringkasan" mode. Each bubble
- * shows the online worker count, tinted danger when understaffed; tapping drills
- * one level deeper. This is the light default view that avoids drawing hundreds
- * of individual worker markers at the city zoom.
+ * Renders one drill-down node marker per node at the current scope: the single
+ * Surabaya summary (top level), one per rayon (city scope) or one per area
+ * (rayon scope). Each shows the attendance ratio `hadir/terjadwal` colored by
+ * staffing health; tapping drills one level deeper. Mirrors the web
+ * NodeMarkerLayer.
  *
  * tracksViewChanges is disabled after first paint so the native marker bitmap is
  * stable (no per-pan redraw jank — mirrors UserMarker).
@@ -13,22 +13,36 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
+import { useTranslation } from 'react-i18next';
 import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
-import type { AggregateNode } from '../../types/models.types';
+import { healthColor, rosterHealth } from './markerSpec';
+
+/** A drill-down node marker: a rayon, an area, or the whole-city Surabaya node. */
+export interface NodeMarker {
+  id: string;
+  name: string;
+  variant: 'rayon' | 'area' | 'surabaya';
+  lat: number;
+  lng: number;
+  scheduled: number;
+  clocked_in: number;
+  not_clocked_in: number;
+}
 
 interface AggregateBubbleLayerProps {
-  nodes: AggregateNode[];
-  onDrill: (node: AggregateNode) => void;
+  nodes: NodeMarker[];
+  onDrill: (node: NodeMarker) => void;
 }
 
 function Bubble({
   node,
   onDrill,
 }: {
-  node: AggregateNode;
-  onDrill: (node: AggregateNode) => void;
+  node: NodeMarker;
+  onDrill: (node: NodeMarker) => void;
 }): React.JSX.Element | null {
+  const { t } = useTranslation();
   // Let the first frame render the label, then freeze the bitmap.
   const [tracks, setTracks] = useState(true);
   useEffect(() => {
@@ -36,26 +50,29 @@ function Bubble({
     return () => clearTimeout(id);
   }, []);
 
-  if (typeof node.center_lat !== 'number' || typeof node.center_lng !== 'number') {
+  if (typeof node.lat !== 'number' || typeof node.lng !== 'number') {
     return null;
   }
 
+  const color = healthColor(rosterHealth(node.scheduled, node.clocked_in));
+  const isSurabaya = node.variant === 'surabaya';
+
   return (
     <Marker
-      coordinate={{ latitude: node.center_lat, longitude: node.center_lng }}
+      coordinate={{ latitude: node.lat, longitude: node.lng }}
       onPress={() => onDrill(node)}
       tracksViewChanges={tracks}
       anchor={{ x: 0.5, y: 0.5 }}
-      testID={`aggregate-bubble-${node.id}`}
+      testID={`node-marker-${node.id}`}
     >
-      <View
-        style={[
-          styles.bubble,
-          { backgroundColor: node.is_understaffed ? nbColors.dangerDark : nbColors.statusActive },
-        ]}
-      >
-        <NBText variant="body-sm" style={styles.count}>
-          {String(node.online_count)}
+      <View style={[styles.bubble, isSurabaya && styles.bubbleSurabaya, { borderColor: color }]}>
+        {isSurabaya && (
+          <NBText variant="caption" style={styles.surabayaLabel}>
+            {t('monitoring:surabaya.title').toUpperCase()}
+          </NBText>
+        )}
+        <NBText variant="body-sm" style={[styles.ratio, { color }]}>
+          {node.clocked_in}/{node.scheduled}
         </NBText>
       </View>
     </Marker>
@@ -69,7 +86,7 @@ export function AggregateBubbleLayer({
   return (
     <>
       {nodes.map(node => (
-        <Bubble key={`aggregate-${node.id}`} node={node} onDrill={onDrill} />
+        <Bubble key={`node-${node.id}`} node={node} onDrill={onDrill} />
       ))}
     </>
   );
@@ -77,18 +94,26 @@ export function AggregateBubbleLayer({
 
 const styles = StyleSheet.create({
   bubble: {
-    minWidth: 34,
-    height: 34,
-    paddingHorizontal: 6,
+    minWidth: 44,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     borderRadius: nbRadius.lg,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
+    borderWidth: nbBorders.widthThick,
+    backgroundColor: nbColors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    ...nbShadows.xs,
+    ...nbShadows.sm,
   },
-  count: {
-    color: nbColors.white,
-    fontWeight: '700',
+  bubbleSurabaya: {
+    minWidth: 96,
+    paddingVertical: 6,
+  },
+  surabayaLabel: {
+    color: nbColors.black,
+    fontWeight: '800',
+    letterSpacing: 1,
+  },
+  ratio: {
+    fontWeight: '800',
   },
 });

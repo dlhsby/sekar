@@ -23,7 +23,6 @@ import {
 import { useClockInOut } from '../../hooks';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
-import i18n from '../../i18n/config';
 import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
@@ -84,28 +83,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     }
   }, [navigation, goBack, isClockIn]);
 
-  // No assigned area — block only for area-scoped roles (satgas/linmas/korlap).
-  // Rayon-scoped roles (admin_data/kepala_rayon) can clock in without a specific area.
+  // No hard block for a missing area: ad-hoc / patrol workers with no assigned
+  // area may still clock in (GPS is recorded, geofencing stays soft, and the
+  // shift is created with area_id = null). The form surfaces "no area" inline;
+  // rayon-scoped roles show a "no specific area" note instead.
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const isRayonScoped = userRole === 'admin_data' || userRole === 'kepala_rayon';
-  if (!assignedArea && !isRayonScoped) {
-    return (
-      <NBBackgroundPattern
-        pattern="dots"
-        backgroundColor={nbColors.bgCanvas}
-        patternColor={nbColors.primary}
-        opacity={0.06}
-      >
-        <View style={styles.container}>
-          <View style={styles.centerContent}>
-            <NBText variant="h2" color="black" style={styles.errorText}>{t('attendance:clockInOut.noAreaAssigned')}</NBText>
-            <NBText variant="body" color="gray600">{t('attendance:clockInOut.contactSupervisor')}</NBText>
-            <NBButton title={t('attendance:detail.button.back')} onPress={goBack} variant="primary" fullWidth />
-          </View>
-        </View>
-      </NBBackgroundPattern>
-    );
-  }
 
   // Loading GPS
   if (location.loading && !location.latitude) {

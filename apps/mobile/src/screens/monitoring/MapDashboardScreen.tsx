@@ -37,17 +37,17 @@ import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 import {
   toggleLayer,
   fetchAggregate,
-  setMode,
   initMonitoringView,
+  enterCity,
   drillTo,
   drillBack,
 } from '../../store/slices/monitoringV2Slice';
 import type {
   MonitoringV2VisibleLayers,
   MonitoringScope,
-  MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
-import type { AggregateNode } from '../../types/models.types';
+import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
+import { SurabayaSummaryCard } from '../../components/monitoring/SurabayaSummaryCard';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
@@ -77,10 +77,11 @@ export function MapDashboardScreen(): React.JSX.Element {
     useSelector((state: RootState) => state.monitoring);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const visibleLayers = useSelector((state: RootState) => state.monitoringV2.visibleLayers);
-  const mode = useSelector((state: RootState) => state.monitoringV2.mode);
   const view = useSelector((state: RootState) => state.monitoringV2.view);
   const floor = useSelector((state: RootState) => state.monitoringV2.floor);
   const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
+  const scope = view.scope;
+  const showWorkers = scope === 'area';
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -112,49 +113,47 @@ export function MapDashboardScreen(): React.JSX.Element {
     useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries);
 
 
-  // Initialise the aggregate-first drill view + floor from the viewer's role.
+  // Initialise the unified drill view + floor from the viewer's role.
   useEffect(() => {
     if (!currentUser) return;
     const role = currentUser.role;
-    let payload: { view: typeof view; floor: MonitoringScope; mode: MonitoringMode };
+    let payload: { view: typeof view; floor: MonitoringScope };
     if (role === 'korlap' && currentUser.area_id) {
       payload = {
         view: { scope: 'area', id: currentUser.area_id, rayonId: currentUser.rayon_id ?? null, name: null },
         floor: 'area',
-        mode: 'workers',
       };
     } else if ((role === 'kepala_rayon' || role === 'admin_data') && currentUser.rayon_id) {
       payload = {
         view: { scope: 'rayon', id: currentUser.rayon_id, rayonId: currentUser.rayon_id, name: null },
         floor: 'rayon',
-        mode: 'aggregate',
       };
     } else {
-      payload = { view: { scope: 'city', id: null, rayonId: null, name: null }, floor: 'city', mode: 'aggregate' };
+      payload = { view: { scope: 'surabaya', id: null, rayonId: null, name: null }, floor: 'surabaya' };
     }
     dispatch(initMonitoringView(payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
-  // Aggregate ("Ringkasan") fetch — only when showing bubbles for city/rayon.
+  // Aggregate fetch — city rollup feeds Surabaya (roster totals) + the rayon
+  // nodes; rayon rollup feeds the area nodes. No fetch at area scope (workers).
   useEffect(() => {
-    if (mode === 'aggregate' && (view.scope === 'city' || view.scope === 'rayon')) {
-      void dispatch(
-        fetchAggregate({ scope: view.scope, id: view.scope === 'rayon' ? view.id ?? undefined : undefined }),
-      );
+    if (scope === 'surabaya' || scope === 'city') {
+      void dispatch(fetchAggregate({ scope: 'city' }));
+    } else if (scope === 'rayon') {
+      void dispatch(fetchAggregate({ scope: 'rayon', id: view.id ?? undefined }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, view.scope, view.id]);
+  }, [scope, view.id]);
 
-  // Always fetch workers for the current scope (even in Ringkasan) so search can
-  // find people in any mode; the map only *renders* worker markers in the
-  // "Semua Petugas" view (MapLayerContent gates on mode).
+  // Always fetch workers for the current scope so search can find people at any
+  // level; the map only *renders* worker markers at area scope.
   useEffect(() => {
     void fetchLiveUsersWithFilters(
-      view.scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
+      scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, view.scope, view.id, filters]);
+  }, [scope, view.id, filters]);
 
   // Focus effect: refresh all data and remount boundary overlays
   useFocusEffect(
@@ -269,18 +268,64 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
-  // Aggregate-first drill handlers
-  const aggregateNodes = useMemo<AggregateNode[]>(() => aggregate?.nodes ?? [], [aggregate]);
+  // Unified drill handlers.
+  const rosterTotals = aggregate?.roster_totals ?? { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+  const nodeMarkers = useMemo<NodeMarker[]>(() => {
+    if (scope === 'surabaya') {
+      return [
+        {
+          id: 'surabaya',
+          name: 'Surabaya',
+          variant: 'surabaya',
+          lat: SURABAYA_CITY_REGION.latitude,
+          lng: SURABAYA_CITY_REGION.longitude,
+          scheduled: rosterTotals.scheduled,
+          clocked_in: rosterTotals.clocked_in,
+          not_clocked_in: rosterTotals.not_clocked_in,
+        },
+      ];
+    }
+    if (scope === 'area') return [];
+    return (aggregate?.nodes ?? [])
+      .filter(n => typeof n.center_lat === 'number' && typeof n.center_lng === 'number')
+      .map(n => ({
+        id: n.id,
+        name: n.name,
+        variant: n.type,
+        lat: n.center_lat as number,
+        lng: n.center_lng as number,
+        scheduled: n.roster?.scheduled ?? 0,
+        clocked_in: n.roster?.clocked_in ?? 0,
+        not_clocked_in: n.roster?.not_clocked_in ?? 0,
+      }));
+  }, [scope, aggregate, rosterTotals.scheduled, rosterTotals.clocked_in, rosterTotals.not_clocked_in]);
+
+  const animateTo = useCallback((lat: number, lng: number, delta: number) => {
+    mapRef.current?.animateToRegion(
+      { latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta },
+      350,
+    );
+  }, []);
+
   const handleDrillNode = useCallback(
-    (node: AggregateNode) => {
-      dispatch(drillTo({ id: node.id, type: node.type, name: node.name, rayonId: node.rayon_id ?? null }));
+    (node: NodeMarker) => {
+      if (node.variant === 'surabaya') {
+        dispatch(enterCity());
+        return;
+      }
+      if (node.variant === 'rayon') {
+        dispatch(drillTo({ id: node.id, type: 'rayon', name: node.name, rayonId: node.id }));
+        animateTo(node.lat, node.lng, 0.08);
+      } else {
+        dispatch(drillTo({ id: node.id, type: 'area', name: node.name, rayonId: view.rayonId }));
+        animateTo(node.lat, node.lng, 0.02);
+      }
     },
-    [dispatch],
+    [dispatch, animateTo, view.rayonId],
   );
-  const handleSetMode = useCallback((m: MonitoringMode) => dispatch(setMode(m)), [dispatch]);
+  const handleEnterCity = useCallback(() => dispatch(enterCity()), [dispatch]);
   const handleDrillBack = useCallback(() => dispatch(drillBack()), [dispatch]);
-  const canToggleMode = view.scope !== 'area';
-  const canDrillBack = view.scope !== floor;
+  const canDrillBack = scope !== floor;
 
   if (isLoading && (!liveUsers || liveUsers.length === 0)) {
     return (
@@ -360,8 +405,8 @@ export function MapDashboardScreen(): React.JSX.Element {
                 useClustering={useClustering}
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
-                mode={mode}
-                aggregateNodes={aggregateNodes}
+                showWorkers={showWorkers}
+                nodeMarkers={nodeMarkers}
                 onDrillNode={handleDrillNode}
                 onRayonPress={handleRayonPress}
                 onAreaPress={handleAreaPress}
@@ -376,7 +421,7 @@ export function MapDashboardScreen(): React.JSX.Element {
             <MonitoringSearchBar onPress={() => setSearchModalVisible(true)} />
           </View>
 
-          {/* Drill breadcrumb + Ringkasan / Semua Petugas toggle */}
+          {/* Drill breadcrumb (back) */}
           <View style={styles.drillBar} pointerEvents="box-none">
             {canDrillBack && (
               <TouchableOpacity
@@ -391,31 +436,14 @@ export function MapDashboardScreen(): React.JSX.Element {
                 </NBText>
               </TouchableOpacity>
             )}
-            {canToggleMode && (
-              <View style={styles.modeToggle}>
-                <TouchableOpacity
-                  style={[styles.modeBtn, mode === 'aggregate' && styles.modeBtnActive]}
-                  onPress={() => handleSetMode('aggregate')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('monitoring:page.modeSummary')}
-                >
-                  <NBText variant="caption" style={mode === 'aggregate' ? styles.modeTextActive : undefined}>
-                    {t('monitoring:page.modeSummary')}
-                  </NBText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modeBtn, mode === 'workers' && styles.modeBtnActive]}
-                  onPress={() => handleSetMode('workers')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('monitoring:page.modeAllWorkers')}
-                >
-                  <NBText variant="caption" style={mode === 'workers' ? styles.modeTextActive : undefined}>
-                    {t('monitoring:page.modeAllWorkers')}
-                  </NBText>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
+
+          {/* Surabaya summary card (top level only) */}
+          {scope === 'surabaya' && (
+            <View style={styles.surabayaCardWrap} pointerEvents="box-none">
+              <SurabayaSummaryCard roster={rosterTotals} onDrill={handleEnterCity} />
+            </View>
+          )}
 
           {/* Empty-boundaries warning */}
           {!isLoading && !boundaries && (
@@ -538,27 +566,11 @@ const styles = StyleSheet.create({
     color: nbColors.black,
     flexShrink: 1,
   },
-  modeToggle: {
-    flexDirection: 'row',
-    marginLeft: 'auto',
-    padding: 2,
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.base,
-    ...nbShadows.xs,
-  },
-  modeBtn: {
-    paddingVertical: nbSpacing.xs,
-    paddingHorizontal: nbSpacing.sm,
-    borderRadius: nbRadius.sm,
-  },
-  modeBtnActive: {
-    backgroundColor: nbColors.primary,
-  },
-  modeTextActive: {
-    color: nbColors.black,
-    fontWeight: '700',
+  surabayaCardWrap: {
+    position: 'absolute',
+    top: 104,
+    left: nbSpacing.sm,
+    right: nbSpacing.sm,
   },
   emptyAreaCallout: {
     position: 'absolute',

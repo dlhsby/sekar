@@ -131,14 +131,13 @@ describe('MonitoringPage', () => {
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
   });
 
-  const switchToWorkersMode = () => {
-    fireEvent.click(screen.getByRole('button', { name: /lapisan/i }));
-    fireEvent.click(screen.getByRole('button', { name: /semua petugas/i }));
-  };
+  // A korlap floors at area scope, so the unified drill-down lands directly on
+  // the worker view (no mode toggle) — the individual worker list renders.
+  const korlapUser = { id: 'k1', full_name: 'Korlap', role: 'korlap', area_id: 'a1', rayon_id: 'r1' };
 
   it('opens the worker sheet and shows detail when a worker is selected', () => {
+    mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
     render(<MonitoringPage />, { wrapper: createWrapper() });
-    switchToWorkersMode();
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('button', { name: /andi/i }));
     expect(screen.getByRole('button', { name: /kembali ke daftar/i })).toBeInTheDocument();
@@ -146,8 +145,8 @@ describe('MonitoringPage', () => {
   });
 
   it('lists area staffing on the Area tab', () => {
+    mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
     render(<MonitoringPage />, { wrapper: createWrapper() });
-    switchToWorkersMode();
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('tab', { name: /area/i }));
     const region = screen.getByText('Taman A');

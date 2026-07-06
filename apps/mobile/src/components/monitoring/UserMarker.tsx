@@ -14,7 +14,8 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
-import { getActivityColor, getRoleIcon } from '../../utils/mapUtils';
+import { getRoleIcon } from '../../utils/mapUtils';
+import { workerActivityColor } from './markerSpec';
 import { userAxes } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserRole } from '../../types/models.types';
@@ -87,9 +88,12 @@ export const UserMarker = React.memo(function UserMarker({
   dimmed = false,
 }: UserMarkerProps): React.JSX.Element {
   const isCluster = (clusterCount ?? 0) > 1;
-  // Two-axis (CP6): fill = activity color; a ring marks luar_area.
+  // Presence model: fill = 2-activity color (aktif green / tidak-aktif amber);
+  // a ring marks luar_area. Ad-hoc (off-schedule) workers render gray + hollow
+  // so they read as "not counted".
   const { activity, location } = userAxes(user);
-  const markerColor = getActivityColor(activity);
+  const isAdHoc = user.is_scheduled === false;
+  const markerColor = isAdHoc ? nbColors.gray500 : workerActivityColor(activity);
   const isOutside = location === 'luar_area';
   const roleIcon = getRoleIcon(user.role);
   const label = isCluster ? null : getMarkerLabel(user, labelMode);
@@ -139,11 +143,17 @@ export const UserMarker = React.memo(function UserMarker({
             {/* Ring marks luar_area; transparent (but same size) otherwise so the
                 cached bitmap dimensions stay stable on Android. */}
             <View style={[styles.markerRing, isOutside && styles.markerRingOutside]}>
-              <View style={[styles.marker, { backgroundColor: markerColor }]}>
+              <View
+                style={[
+                  styles.marker,
+                  { backgroundColor: isAdHoc ? nbColors.white : markerColor },
+                  isAdHoc && { borderColor: markerColor },
+                ]}
+              >
                 <MaterialCommunityIcons
                   name={roleIcon}
                   size={16}
-                  color={nbColors.white}
+                  color={isAdHoc ? markerColor : nbColors.white}
                 />
               </View>
             </View>

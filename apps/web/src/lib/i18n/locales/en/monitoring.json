@@ -20,17 +20,20 @@
     "closePanelLabel": "Close filter",
     "listLabel": "Officer List",
     "closeListLabel": "Close list",
-    "backLabel": "Back",
-    "modeSummary": "Summary",
-    "modeAllWorkers": "All Officers"
+    "backLabel": "Back"
   },
   "aggregate": {
-    "onlineOfRequired": "{{online}}/{{required}} on duty",
-    "understaffed": "Understaffed"
+    "understaffed": "Understaffed",
+    "scheduledLabel": "Scheduled",
+    "clockedInLabel": "Present",
+    "notClockedInLabel": "Absent"
+  },
+  "surabaya": {
+    "title": "Surabaya",
+    "tapHint": "Tap to view rayons"
   },
   "layers": {
-    "title": "Layers",
-    "viewMode": "View",
+    "title": "Settings",
     "overlays": "Map Layers",
     "rayonBorder": "Rayon Border",
     "rayonFill": "Rayon Color",
@@ -50,11 +53,13 @@
   },
   "status": {
     "active": "Active",
-    "inactive": "Idle",
+    "inactive": "Inactive",
     "outside_area": "Outside",
     "missing": "Missing",
     "offline": "Offline",
-    "notDetected": "Not detected"
+    "notDetected": "Not detected",
+    "absent": "Absent",
+    "adhoc": "Off-schedule"
   },
   "filters": {
     "label": "Search Officers",

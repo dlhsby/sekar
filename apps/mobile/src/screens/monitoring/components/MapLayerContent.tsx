@@ -12,12 +12,9 @@ import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOver
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
-import { AggregateBubbleLayer } from '../../../components/monitoring/AggregateBubbleLayer';
-import type { LiveUser, AggregateNode } from '../../../types/models.types';
-import type {
-  MonitoringV2VisibleLayers,
-  MonitoringMode,
-} from '../../../store/slices/monitoringV2Slice';
+import { AggregateBubbleLayer, type NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
+import type { LiveUser } from '../../../types/models.types';
+import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
 
 interface MapLayerContentProps {
   mapReady: boolean;
@@ -30,10 +27,10 @@ interface MapLayerContentProps {
   useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
-  /** Aggregate-first flow: 'aggregate' → summary bubbles, 'workers' → worker markers. */
-  mode: MonitoringMode;
-  aggregateNodes: AggregateNode[];
-  onDrillNode: (node: AggregateNode) => void;
+  /** Unified drill-down: false → node markers (Surabaya/rayon/area), true → workers. */
+  showWorkers: boolean;
+  nodeMarkers: NodeMarker[];
+  onDrillNode: (node: NodeMarker) => void;
   onRayonPress: (rayon: any) => void;
   onAreaPress: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
@@ -51,8 +48,8 @@ export function MapLayerContent({
   useClustering,
   currentRegion,
   boundaryKey,
-  mode,
-  aggregateNodes,
+  showWorkers,
+  nodeMarkers,
   onDrillNode,
   onRayonPress,
   onAreaPress,
@@ -87,13 +84,13 @@ export function MapLayerContent({
         <PlantOverlayLayer visible={visibleLayers.plants} />
       )}
 
-      {/* Aggregate "Ringkasan" bubbles — one per rayon/area, drill on tap. */}
-      {mapReady && mode === 'aggregate' && (
-        <AggregateBubbleLayer nodes={aggregateNodes} onDrill={onDrillNode} />
+      {/* Drill-down node markers (Surabaya / rayon / area) — drill on tap. */}
+      {mapReady && !showWorkers && (
+        <AggregateBubbleLayer nodes={nodeMarkers} onDrill={onDrillNode} />
       )}
 
-      {/* Worker markers only in "Semua Petugas" / area-scope mode. */}
-      {mode === 'workers' &&
+      {/* Worker markers only at area scope. */}
+      {showWorkers &&
         (featureFlags.clusterMarkersV2 ? (
         <ClusteredUserMarkers
           workers={visibleUsers}

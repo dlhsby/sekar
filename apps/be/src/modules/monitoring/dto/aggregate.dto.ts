@@ -22,6 +22,48 @@ export class AggregateStatusCountsDto {
 }
 
 /**
+ * Roster attendance trio for an aggregate node (or the whole response).
+ * Mirrors the snapshot's expected/present/absent so `not_clocked_in` is always
+ * `scheduled - clocked_in` clamped at 0 (a person can't be absent and present).
+ * - `scheduled`      — distinct workers rostered today (status planned/present)
+ * - `clocked_in`     — of those, how many have an active shift (clocked in)
+ * - `not_clocked_in` — scheduled workers who have not clocked in
+ */
+export class AggregateRosterCountsDto {
+  @ApiProperty({ example: 30 })
+  scheduled: number;
+
+  @ApiProperty({ example: 24 })
+  clocked_in: number;
+
+  @ApiProperty({ example: 6 })
+  not_clocked_in: number;
+}
+
+/** Dalam/luar (inside/outside area) split for one activity bucket. */
+export class PresenceLocationCountsDto {
+  @ApiProperty({ example: 4 })
+  dalam: number;
+
+  @ApiProperty({ example: 1 })
+  luar: number;
+}
+
+/**
+ * Presence breakdown of the HADIR (scheduled + clocked-in) workers only —
+ * ad-hoc/unscheduled clock-ins are excluded. `aktif` = fresh GPS ping;
+ * `tidak_aktif` = offline or last ping older than the idle threshold. Each is
+ * split dalam/luar area.
+ */
+export class PresenceBreakdownDto {
+  @ApiProperty({ type: PresenceLocationCountsDto })
+  aktif: PresenceLocationCountsDto;
+
+  @ApiProperty({ type: PresenceLocationCountsDto })
+  tidak_aktif: PresenceLocationCountsDto;
+}
+
+/**
  * One aggregate node — a rayon (city scope) or an area (rayon scope).
  * Carries only a center point + counts, never individual worker coordinates,
  * so the map can render lightweight summary bubbles that drill down on tap.
@@ -63,6 +105,18 @@ export class AggregateNodeDto {
   @ApiProperty({ example: true })
   is_understaffed: boolean;
 
+  @ApiProperty({
+    type: AggregateRosterCountsDto,
+    description: 'Roster attendance trio (scheduled / clocked-in=hadir / not clocked-in) for today',
+  })
+  roster: AggregateRosterCountsDto;
+
+  @ApiProperty({
+    type: PresenceBreakdownDto,
+    description: 'Activity×location breakdown of the hadir (scheduled+clocked-in) workers',
+  })
+  presence: PresenceBreakdownDto;
+
   @ApiPropertyOptional({ description: 'Number of areas (rayon nodes only)', example: 15 })
   area_count?: number;
 
@@ -86,6 +140,18 @@ export class AggregateResponseDto {
 
   @ApiProperty({ type: AggregateStatusCountsDto })
   totals: AggregateStatusCountsDto;
+
+  @ApiProperty({
+    type: AggregateRosterCountsDto,
+    description: 'Roster attendance trio for the whole scope (distinct workers)',
+  })
+  roster_totals: AggregateRosterCountsDto;
+
+  @ApiProperty({
+    type: PresenceBreakdownDto,
+    description: 'Activity×location breakdown of hadir workers across the whole scope',
+  })
+  presence_totals: PresenceBreakdownDto;
 
   @ApiProperty({ example: '2026-07-04T10:30:00Z' })
   generated_at: Date;

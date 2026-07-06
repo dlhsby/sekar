@@ -25,6 +25,8 @@ export interface SnapshotWorker {
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
+  /** True if on the current shift's roster; false = ad-hoc / off-schedule. */
+  is_scheduled?: boolean;
 }
 
 export interface SnapshotAreaSummary {
@@ -72,6 +74,25 @@ export interface AggregateStatusCounts {
   offline: number;
 }
 
+/** Roster attendance trio for a node (or the whole scope), for today. */
+export interface AggregateRosterCounts {
+  scheduled: number;
+  clocked_in: number;
+  not_clocked_in: number;
+}
+
+/** Dalam/luar (inside/outside area) split for one activity bucket. */
+export interface PresenceLocationCounts {
+  dalam: number;
+  luar: number;
+}
+
+/** Activity×location breakdown of the hadir (scheduled+clocked-in) workers. */
+export interface PresenceBreakdown {
+  aktif: PresenceLocationCounts;
+  tidak_aktif: PresenceLocationCounts;
+}
+
 export interface AggregateNode {
   id: string;
   name: string;
@@ -84,6 +105,8 @@ export interface AggregateNode {
   online_count: number;
   required: number;
   is_understaffed: boolean;
+  roster: AggregateRosterCounts;
+  presence: PresenceBreakdown;
   area_count?: number;
   rayon_id?: string | null;
 }
@@ -93,6 +116,8 @@ export interface AggregateResponse {
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;
+  roster_totals: AggregateRosterCounts;
+  presence_totals: PresenceBreakdown;
   generated_at: string;
 }
 

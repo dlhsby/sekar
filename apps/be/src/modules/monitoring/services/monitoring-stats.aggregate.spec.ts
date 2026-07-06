@@ -15,6 +15,8 @@ import {
   DayType,
 } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
+import { Schedule } from '../../schedules/entities/schedule.entity';
+import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
 
 /**
  * Focused unit tests for MonitoringStatsService.getAggregate — the lightweight
@@ -39,13 +41,19 @@ describe('MonitoringStatsService.getAggregate', () => {
     return qb;
   };
 
-  const trackingRepo: any = { createQueryBuilder: jest.fn() };
+  const trackingRepo: any = { createQueryBuilder: jest.fn(), find: jest.fn() };
   const staffRepo: any = { createQueryBuilder: jest.fn() };
   const areaRepo: any = { find: jest.fn(), count: jest.fn() };
   const rayonRepo: any = { find: jest.fn() };
+  const scheduleRepo: any = { createQueryBuilder: jest.fn() };
+  const scheduleAreaRepo: any = { createQueryBuilder: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // Default: no roster + nobody clocked in (tests override per-case).
+    trackingRepo.find.mockResolvedValue([]);
+    scheduleRepo.createQueryBuilder.mockReturnValue(makeQb([[]]));
+    scheduleAreaRepo.createQueryBuilder.mockReturnValue(makeQb([[]]));
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringStatsService,
@@ -58,6 +66,8 @@ describe('MonitoringStatsService.getAggregate', () => {
         { provide: getRepositoryToken(ShiftDefinition), useValue: {} },
         { provide: getRepositoryToken(AreaStaffRequirement), useValue: staffRepo },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepo },
+        { provide: getRepositoryToken(Schedule), useValue: scheduleRepo },
+        { provide: getRepositoryToken(ScheduleArea), useValue: scheduleAreaRepo },
         {
           provide: DayTypeService,
           useValue: {
@@ -85,7 +95,7 @@ describe('MonitoringStatsService.getAggregate', () => {
       { id: 'area-2', rayon_id: 'rayon-1' },
       { id: 'area-3', rayon_id: 'rayon-2' },
     ]);
-    // 1st QB call (status), 2nd (role): trackingRepo.createQueryBuilder used twice.
+    // trackingRepo.createQueryBuilder: 1st status, 2nd role, 3rd presence.
     trackingRepo.createQueryBuilder
       .mockReturnValueOnce(
         makeQb([
@@ -104,8 +114,35 @@ describe('MonitoringStatsService.getAggregate', () => {
             { group_id: 'rayon-2', role: 'satgas', count: '2' },
           ],
         ]),
+      )
+      .mockReturnValueOnce(
+        // presence (scheduled+clocked-in workers by status × within-area)
+        makeQb([
+          [
+            { group_id: 'rayon-1', status: 'active', within: true, count: '2' },
+            { group_id: 'rayon-1', status: 'outside_area', within: false, count: '1' },
+            { group_id: 'rayon-1', status: 'inactive', within: true, count: '1' },
+          ],
+        ]),
       );
     staffRepo.createQueryBuilder.mockReturnValue(makeQb([[{ group_id: 'rayon-1', total: '8' }]]));
+    // Roster grouped: rayon-1 has u1,u2,u3; rayon-2 has u4. Then the scope-wide
+    // distinct-user query for roster_totals (u1..u4). u1,u2 clocked in.
+    scheduleRepo.createQueryBuilder
+      .mockReturnValueOnce(
+        makeQb([
+          [
+            { group_id: 'rayon-1', user_id: 'u1' },
+            { group_id: 'rayon-1', user_id: 'u2' },
+            { group_id: 'rayon-1', user_id: 'u3' },
+            { group_id: 'rayon-2', user_id: 'u4' },
+          ],
+        ]),
+      )
+      .mockReturnValueOnce(
+        makeQb([[{ user_id: 'u1' }, { user_id: 'u2' }, { user_id: 'u3' }, { user_id: 'u4' }]]),
+      );
+    trackingRepo.find.mockResolvedValue([{ user_id: 'u1' }, { user_id: 'u2' }]);
 
     const res = await service.getAggregate('city');
 
@@ -125,14 +162,33 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(r1.is_understaffed).toBe(true); // 5 online < 8 required
     expect(r1.area_count).toBe(2);
 
+    // Roster trio: 3 scheduled, 2 clocked in (u1,u2), 1 not clocked in.
+    expect(r1.roster).toEqual({ scheduled: 3, clocked_in: 2, not_clocked_in: 1 });
+    // Presence breakdown of the hadir workers (active→aktif/dalam,
+    // outside_area→aktif/luar, inactive→tidak_aktif/dalam).
+    expect(r1.presence).toEqual({
+      aktif: { dalam: 2, luar: 1 },
+      tidak_aktif: { dalam: 1, luar: 0 },
+    });
+
     const r2 = res.nodes.find((n) => n.id === 'rayon-2')!;
     expect(r2.required).toBe(0); // no requirement row → 0
     expect(r2.is_understaffed).toBe(false); // 2 online >= 0 required
     expect(r2.center_lat).toBeNull();
+    // u4 scheduled, nobody from rayon-2 clocked in.
+    expect(r2.roster).toEqual({ scheduled: 1, clocked_in: 0, not_clocked_in: 1 });
 
     // Totals sum across rayons.
     expect(res.totals.active).toBe(7);
     expect(res.totals.missing).toBe(1);
+    // Roster totals are scope-wide distinct (u1..u4), not Σ nodes — so a
+    // rayon-less rostered worker would still be counted here.
+    expect(res.roster_totals).toEqual({ scheduled: 4, clocked_in: 2, not_clocked_in: 2 });
+    // Presence totals sum across nodes (only rayon-1 has hadir workers).
+    expect(res.presence_totals).toEqual({
+      aktif: { dalam: 2, luar: 1 },
+      tidak_aktif: { dalam: 1, luar: 0 },
+    });
   });
 
   it('rayon scope: builds one node per area in the rayon', async () => {
@@ -141,8 +197,27 @@ describe('MonitoringStatsService.getAggregate', () => {
     ]);
     trackingRepo.createQueryBuilder
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', status: 'inactive', count: '3' }]]))
-      .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', role: 'satgas', count: '3' }]]));
+      .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', role: 'satgas', count: '3' }]]))
+      .mockReturnValueOnce(
+        // presence: u1 clocked in & inactive & inside → tidak_aktif/dalam
+        makeQb([[{ group_id: 'area-1', status: 'inactive', within: true, count: '1' }]]),
+      );
     staffRepo.createQueryBuilder.mockReturnValue(makeQb([[{ group_id: 'area-1', total: '2' }]]));
+    // Roster grouped by area: area-1 has u1,u2,u3 scheduled; only u1 clocked in.
+    scheduleAreaRepo.createQueryBuilder.mockReturnValue(
+      makeQb([
+        [
+          { group_id: 'area-1', user_id: 'u1' },
+          { group_id: 'area-1', user_id: 'u2' },
+          { group_id: 'area-1', user_id: 'u3' },
+        ],
+      ]),
+    );
+    // Scope-wide (rayon) distinct roster for roster_totals: u1,u2,u3.
+    scheduleRepo.createQueryBuilder.mockReturnValue(
+      makeQb([[{ user_id: 'u1' }, { user_id: 'u2' }, { user_id: 'u3' }]]),
+    );
+    trackingRepo.find.mockResolvedValue([{ user_id: 'u1' }]);
 
     const res = await service.getAggregate('rayon', 'rayon-1');
 
@@ -156,6 +231,15 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(a1.online_count).toBe(3); // inactive counts as online
     expect(a1.is_understaffed).toBe(false); // 3 online >= 2 required
     expect(a1.center_lat).toBe(-7.29);
+    // 3 scheduled, 1 clocked in (u1), 2 not clocked in.
+    expect(a1.roster).toEqual({ scheduled: 3, clocked_in: 1, not_clocked_in: 2 });
+    // u1 is inactive & inside → tidak_aktif/dalam.
+    expect(a1.presence).toEqual({
+      aktif: { dalam: 0, luar: 0 },
+      tidak_aktif: { dalam: 1, luar: 0 },
+    });
+    // Scope-wide totals match the single area here.
+    expect(res.roster_totals).toEqual({ scheduled: 3, clocked_in: 1, not_clocked_in: 2 });
   });
 
   it('rayon scope without id throws NotFound', async () => {
@@ -168,6 +252,11 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(res.scope).toBe('rayon');
     expect(res.nodes).toEqual([]);
     expect(res.totals).toEqual({ active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 });
+    expect(res.roster_totals).toEqual({ scheduled: 0, clocked_in: 0, not_clocked_in: 0 });
+    expect(res.presence_totals).toEqual({
+      aktif: { dalam: 0, luar: 0 },
+      tidak_aktif: { dalam: 0, luar: 0 },
+    });
     // No tracking/staff queries issued when there are no areas.
     expect(trackingRepo.createQueryBuilder).not.toHaveBeenCalled();
   });
