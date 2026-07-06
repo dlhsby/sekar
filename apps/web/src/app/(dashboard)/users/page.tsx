@@ -142,7 +142,11 @@ export default function UsersPage() {
         // raw enum ("top_management"), so typing the visible text matches.
         accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
         header: t('admin:users.columnRole'),
-        meta: { label: t('admin:users.columnRole'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:users.columnRole'),
+          filterVariant: 'enum',
+          filterOptions: Object.values(ROLE_LABELS).map((label) => ({ value: label, label })),
+        },
         cell: ({ row }) => <RolePill role={row.original.role} />,
       },
       {
@@ -200,7 +204,14 @@ export default function UsersPage() {
         id: 'password_must_change',
         accessorFn: (u) => (u.password_must_change ? t('admin:users.statusYes') : t('admin:users.statusNo')),
         header: t('admin:users.columnPasswordMustChange'),
-        meta: { label: t('admin:users.columnPasswordMustChange'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:users.columnPasswordMustChange'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:users.statusYes'), label: t('admin:users.statusYes') },
+            { value: t('admin:users.statusNo'), label: t('admin:users.statusNo') },
+          ],
+        },
         cell: ({ row }) =>
           row.original.password_must_change ? (
             <StatusPill tone="warn" dot>
@@ -214,7 +225,14 @@ export default function UsersPage() {
         id: 'status',
         accessorFn: (u) => (u.is_active ? t('admin:users.statusActive') : t('admin:users.statusInactive')),
         header: t('admin:users.columnStatus'),
-        meta: { label: t('admin:users.columnStatus'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:users.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:users.statusActive'), label: t('admin:users.statusActive') },
+            { value: t('admin:users.statusInactive'), label: t('admin:users.statusInactive') },
+          ],
+        },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>

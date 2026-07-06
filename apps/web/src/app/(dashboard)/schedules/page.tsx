@@ -52,6 +52,20 @@ import { useUserAreas } from '@/lib/api/user-areas';
 import { canEditTargetRole, isGlobalRosterEditor } from '@/lib/schedule-permissions';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
+/** Full known value set, so the status column filter can list every status
+ *  (incl. ones with zero matching rows on the selected date) instead of only
+ *  the ones that happen to appear in today's roster. */
+const SCHEDULE_STATUSES: Schedule['status'][] = [
+  'planned',
+  'present',
+  'absent',
+  'leave_sick',
+  'leave_annual',
+  'leave_permit',
+  'replaced',
+  'off',
+];
+
 /**
  * Map status to tone for StatusPill
  */
@@ -354,7 +368,11 @@ export default function SchedulesPage() {
         id: 'status',
         accessorKey: 'status',
         header: t('table.status'),
-        meta: { label: t('table.status'), filterVariant: 'enum' },
+        meta: {
+          label: t('table.status'),
+          filterVariant: 'enum',
+          filterOptions: SCHEDULE_STATUSES.map((s) => ({ value: formatStatus(s), label: formatStatus(s) })),
+        },
         cell: ({ row }) => (
           <StatusPill tone={getStatusTone(row.original.status)} dot>
             {formatStatus(row.original.status)}
@@ -381,7 +399,7 @@ export default function SchedulesPage() {
         ),
       },
     ],
-    [areaById, rayonById, t],
+    [areaById, rayonById, t, formatStatus],
   );
 
   const rowActions = useCallback(

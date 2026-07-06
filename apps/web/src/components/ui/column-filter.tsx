@@ -149,10 +149,14 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
   const facets = column.getFacetedUniqueValues() as Map<unknown, number> | undefined;
   const options = React.useMemo(() => {
     if (staticOptions) {
+      // The full value set is known up front, so an absent facet entry means
+      // zero matching rows — show "(0)", don't hide the count like the
+      // derived-from-data branch below (there, "no entry" means "haven't
+      // seen this value at all", which is a different, unknown quantity).
       return staticOptions.map((o) => ({
         value: o.value,
         label: o.label,
-        count: facets?.get(o.value),
+        count: facets?.get(o.value) ?? 0,
       }));
     }
     const entries = facets ? Array.from(facets.entries()) : [];

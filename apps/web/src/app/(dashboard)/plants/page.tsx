@@ -98,7 +98,7 @@ export default function PlantsPage() {
         meta: {
           label: t('plants:catalogTable.columnCategory'),
           filterVariant: 'enum' as const,
-          enumOptions: [
+          filterOptions: [
             { value: 'tree', label: t('plants:categoryLabels.tree') },
             { value: 'shrub', label: t('plants:categoryLabels.shrub') },
             { value: 'groundcover', label: t('plants:categoryLabels.groundcover') },
