@@ -193,6 +193,9 @@ export interface AreaFilters {
   area_type_id?: string;
   page?: number;
   limit?: number;
+  /** Also return deactivated areas — admin grid + name-resolution maps that
+   *  must still resolve a since-deactivated area's name. */
+  include_inactive?: boolean;
 }
 
 /**

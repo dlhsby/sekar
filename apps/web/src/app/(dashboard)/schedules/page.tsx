@@ -126,7 +126,10 @@ export default function SchedulesPage() {
     [schedules],
   );
 
-  const { data: areasData } = useAreas({ limit: 1000 });
+  // include_inactive: a schedule's assigned area may have since been
+  // deactivated — keep resolving its name (and offering it as a filter
+  // option) rather than silently showing "—" for that assignment.
+  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
   const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
@@ -485,24 +488,27 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
+      {/* No `title` — the dashboard top bar's breadcrumb already shows the
+          page name, so a second "Jadwal" H1 here was pure duplication. The
+          date picker rides in `actions` (right-aligned, same row as the
+          count) rather than its own row, ahead of the DataTable's toolbar. */}
       <PageHeader
-        title={t('page.title')}
         description={schedules.length ? t('page.totalCount', { count: schedules.length }) : undefined}
+        actions={
+          <div className="flex items-center gap-3">
+            <label htmlFor="date-picker" className="text-nb-body font-medium">
+              {t('page.dateLabel')}
+            </label>
+            <input
+              id="date-picker"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+            />
+          </div>
+        }
       />
-
-      {/* Date Picker */}
-      <div className="flex items-center gap-3">
-        <label htmlFor="date-picker" className="text-nb-body font-medium">
-          {t('page.dateLabel')}
-        </label>
-        <input
-          id="date-picker"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-        />
-      </div>
 
       {/* Data Table — refresh/filter/columns live in the table's own toolbar row;
           "Tambah Jadwal" (and "Buat Jadwal Hari Ini" when applicable) are passed

@@ -73,7 +73,10 @@ export default function UsersPage() {
 
   // Full area master data so the multi-value Area filter can list every area
   // (a user can be assigned several) and resolve assigned_area_ids → names.
-  const { data: areasData } = useAreas({ limit: 1000 });
+  // include_inactive: a user's assigned area may have since been deactivated —
+  // keep resolving its name (and offering it as a filter option) rather than
+  // silently showing "—" for that assignment.
+  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   const areaNameById = useMemo(() => new Map(allAreas.map((a) => [a.id, a.name])), [allAreas]);
   const areaFilterOptions = useMemo(

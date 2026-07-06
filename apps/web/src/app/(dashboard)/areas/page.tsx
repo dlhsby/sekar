@@ -37,7 +37,13 @@ export default function AreasPage() {
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
 
-  const { data: areasData, isLoading, error, refetch } = useAreas({ limit: 1000 });
+  // include_inactive: the admin grid must show deactivated areas too (and
+  // let them be reactivated) — otherwise deactivating one makes it vanish
+  // from the grid entirely, with no way back short of the API directly.
+  const { data: areasData, isLoading, error, refetch } = useAreas({
+    limit: 1000,
+    include_inactive: true,
+  });
   const areas = useMemo(() => areasData?.data ?? [], [areasData]);
 
   // Full master-data lists so the enum column filters can list every possible
@@ -149,12 +155,19 @@ export default function AreasPage() {
       },
       {
         id: 'boundary_polygon',
-        accessorFn: (a) => (a.boundary_polygon ? t('admin:areas.boundaryYes') : '—'),
+        accessorFn: (a) => (a.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo')),
         header: t('admin:areas.columnBoundary'),
-        meta: { label: t('admin:areas.columnBoundary'), filterVariant: 'text' },
+        meta: {
+          label: t('admin:areas.columnBoundary'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:areas.boundaryYes'), label: t('admin:areas.boundaryYes') },
+            { value: t('admin:areas.boundaryNo'), label: t('admin:areas.boundaryNo') },
+          ],
+        },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
-            {row.original.boundary_polygon ? t('admin:areas.boundaryYes') : '—'}
+            {row.original.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo')}
           </span>
         ),
       },

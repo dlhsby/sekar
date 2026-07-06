@@ -53,6 +53,7 @@
     "selectedCount": "{{count}} dipilih",
     "enumSearchPlaceholder": "Cari opsi...",
     "enumNoOptions": "Tidak ada opsi yang cocok",
+    "enumShowingCount": "Menampilkan {{shown}} dari {{total}} — gulir untuk memuat lainnya",
     "selectAll": "Pilih Semua",
     "clearAll": "Hapus Semua",
     "numberPlaceholder": "Semua",

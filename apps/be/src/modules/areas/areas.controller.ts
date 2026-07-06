@@ -115,6 +115,14 @@ export class AreasController {
     required: false,
     description: 'Items per page (default 20, max 100)',
   })
+  @ApiQuery({
+    name: 'include_inactive',
+    required: false,
+    description:
+      'When true, also return deactivated areas — for the admin management grid, ' +
+      'so a deactivated area stays visible/reactivatable. Defaults to false everywhere ' +
+      'else (monitoring, worker-facing pickers), which keeps deactivated areas out of live ops.',
+  })
   @ApiResponse({
     status: 200,
     description:
@@ -130,13 +138,21 @@ export class AreasController {
     @Query('area_type') areaType?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('include_inactive') includeInactive?: string,
   ): Promise<Area[] | PaginatedResponseDto<Area>> {
+    const includeInactiveBool = includeInactive === 'true';
     if (page !== undefined || limit !== undefined) {
       const pageNum = Math.max(1, parseInt(page ?? '1', 10) || 1);
       const limitNum = Math.min(100, Math.max(1, parseInt(limit ?? '20', 10) || 20));
-      return this.areasService.findAllPaginated(user, areaType, pageNum, limitNum);
+      return this.areasService.findAllPaginated(
+        user,
+        areaType,
+        pageNum,
+        limitNum,
+        includeInactiveBool,
+      );
     }
-    return this.areasService.findAll(user, areaType);
+    return this.areasService.findAll(user, areaType, includeInactiveBool);
   }
 
   /**
