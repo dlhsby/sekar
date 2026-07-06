@@ -12,7 +12,7 @@
 | Fact | Updated value |
 |------|---------------|
 | Screens (current) | **21** (8 field + 9 monitoring + 4 shared); Phase 4 adds **7 NEW** screens → **28 total at Phase 4 finish** |
-| FCM | **Live** in `be/.env` (`FCM_ENABLED=true`); mobile token reg + foreground/background already wired (May 16-17 commits) |
+| FCM | **Live** in `apps/be/.env` (`FCM_ENABLED=true`); mobile token reg + foreground/background already wired (May 16-17 commits) |
 | ConnectivityBanner | Still does **not** exist — confirmed for Gap 1 → 4-2 |
 | Deep linking | Not configured — 4-8 E3 |
 | Sentry | Not integrated — 4-1 B4 |
@@ -41,7 +41,7 @@
 
 | Hi-Fi ID | Name | Current file | Action | Notes |
 |----------|------|--------------|--------|-------|
-| AS-1 | Login · idle | `fe/mobile/src/screens/auth/LoginScreen.tsx` | ✅ Done (2026-05-25) | Hi-fi layout (Selamat datang hero + Identifier + Password + Masuk button + Lupa sandi link); back button (`testID=login-back`) → carousel when `canGoBack` |
+| AS-1 | Login · idle | `apps/mobile/src/screens/auth/LoginScreen.tsx` | ✅ Done (2026-05-25) | Hi-fi layout (Selamat datang hero + Identifier + Password + Masuk button + Lupa sandi link); back button (`testID=login-back`) → carousel when `canGoBack` |
 | AS-2 | Login · field error | LoginScreen | ✅ Done (2026-05-25) | Inline per-field validation states |
 | AS-3 | Login · auth-fail toast | LoginScreen | ✅ Done (2026-05-25) | NBToast instead of native `Alert` |
 | AS-4 | Lupa sandi · contact admin | `screens/auth/ForgotPasswordScreen.tsx` | ✅ Done (2026-05-25) | Informational, no API call. tel:/wa.me deep-links per [ADR-041](../../architecture/decisions/ADR-041-forgot-password-contact-admin.md) |
@@ -61,14 +61,14 @@
 
 | Hi-Fi ID | Name | Current file | Action |
 |----------|------|--------------|--------|
-| (anchor) | Home dispatcher (role-aware) | `fe/mobile/src/screens/home/HomeScreen.tsx` | ✅ Done (Checkpoint 1c) — switches on `auth.user.role` |
-| HOME-1 | Home · Satgas/Linmas | `fe/mobile/src/screens/home/FieldHomeScreen.tsx` | ✅ Done (Checkpoint 2b; polished 6, 7) — absensi hero (**collapsible**, whole-card tap → toggle; "Detail shift →" link) + **"Ringkasan hari ini" tiles directly under hero**. Inline Tugas list removed; the **Tugas tile opens `TodayTasksModal`** (like Aktivitas/Jam kerja). |
-| HOME-2 | Home · Korlap/Kepala Rayon | `fe/mobile/src/screens/home/CoordinatorHomeScreen.tsx` | ✅ Done (Checkpoint 3; polished 6) — team-status hero (**role-tinted `RoleAvatar` grid**) + 5-status KPI grid + derived out-of-area/missing alerts |
-| HOME-3 | Home · Admin Data | `fe/mobile/src/screens/home/AdminDataHomeScreen.tsx` | ✅ Done (Checkpoint 4) — perantingan-queue hero + disposition breakdown + "berjalan" list (overtime-approvals dropped: admin_data isn't an approver) |
-| (no hi-fi) | Home · Top Mgmt / Admin Sys / Superadmin | `fe/mobile/src/screens/home/ExecHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): city-overview hero + personnel KPI grid + per-rayon roll-up. Added a Beranda tab to these roles. |
-| (no hi-fi) | Home · Staff Kecamatan | `fe/mobile/src/screens/home/KecamatanHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): "my requests" hero + status breakdown + recent list. Added a Beranda tab. |
+| (anchor) | Home dispatcher (role-aware) | `apps/mobile/src/screens/home/HomeScreen.tsx` | ✅ Done (Checkpoint 1c) — switches on `auth.user.role` |
+| HOME-1 | Home · Satgas/Linmas | `apps/mobile/src/screens/home/FieldHomeScreen.tsx` | ✅ Done (Checkpoint 2b; polished 6, 7) — absensi hero (**collapsible**, whole-card tap → toggle; "Detail shift →" link) + **"Ringkasan hari ini" tiles directly under hero**. Inline Tugas list removed; the **Tugas tile opens `TodayTasksModal`** (like Aktivitas/Jam kerja). |
+| HOME-2 | Home · Korlap/Kepala Rayon | `apps/mobile/src/screens/home/CoordinatorHomeScreen.tsx` | ✅ Done (Checkpoint 3; polished 6) — team-status hero (**role-tinted `RoleAvatar` grid**) + 5-status KPI grid + derived out-of-area/missing alerts |
+| HOME-3 | Home · Admin Data | `apps/mobile/src/screens/home/AdminDataHomeScreen.tsx` | ✅ Done (Checkpoint 4) — perantingan-queue hero + disposition breakdown + "berjalan" list (overtime-approvals dropped: admin_data isn't an approver) |
+| (no hi-fi) | Home · Top Mgmt / Admin Sys / Superadmin | `apps/mobile/src/screens/home/ExecHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): city-overview hero + personnel KPI grid + per-rayon roll-up. Added a Beranda tab to these roles. |
+| (no hi-fi) | Home · Staff Kecamatan | `apps/mobile/src/screens/home/KecamatanHomeScreen.tsx` | ✅ Done (Checkpoint 5) — NET-NEW (no hi-fi): "my requests" hero + status breakdown + recent list. Added a Beranda tab. |
 | (chrome) | Shared masthead + bottom tab bar | `components/navigation/FieldHomeHeader.tsx`, `navigation/MainNavigator.tsx` | ✅ Done (Checkpoints 1a/1b; polished 6; nav refactor 2026-05-31) — masthead uses shared **`RoleAvatar`** (tap opens Profile via `useNavigation().navigate('Profile')`), smaller role/name fonts, status chip left of the bell. **Profile removed from tab bar:** `MainNavigator` is now a NativeStack wrapping inner `TabNavigator`; Profile/Settings/EditProfile/ShiftHistory are stack screens that slide from the left over the full viewport. `NB_HEADER_STYLE` const shared by both the tab `headerStyle` and the `withProfileHeader` HOC wrapper — single source of truth for 76 px NB header chrome. |
-| (primitive) | `RoleAvatar` (v2.1 avatar) | `fe/mobile/src/components/common/RoleAvatar.tsx` | ✅ Done (Checkpoint 6) — role-accent tint + black initials, renders `profile_picture_url` when set; used by masthead + team grid |
+| (primitive) | `RoleAvatar` (v2.1 avatar) | `apps/mobile/src/components/common/RoleAvatar.tsx` | ✅ Done (Checkpoint 6) — role-accent tint + black initials, renders `profile_picture_url` when set; used by masthead + team grid |
 | (sheets) | Home Ringkasan bottom sheets | `components/modals/Today{Activities,WorkHours,Tasks}Modal.tsx`, `components/common/ShiftCard.tsx` | ✅ Done (Checkpoint 7) — all three on `NBModal` + `NBText`/tokens; `TodayTasksModal` new; `ShiftCard` Text→NBText |
 | ABS-1 | Clock-in · GPS + selfie | existing absensi screen | ✅ Done (2026-05-27) — time hero (live clock + date), always-visible GPS status row + NBBadge (DI AREA/LUAR AREA), NBAlert for inside/outside area state |
 | ABS-2 | Clock-in · Di luar area | existing | ✅ Done (2026-05-27) — cardOutside tint + NBAlert warning (visual-only; soft geofencing kept) |
@@ -77,33 +77,33 @@
 | MON-2 | Personnel sheet | `UserDetailSheet.tsx` | ✅ Done (2026-05-26); **M3 2026-06-06** — rebuilt on `NBModal` w/ tile-driven sub-sheets (Lokasi/Jam kerja/Tugas/Aktivitas); presence pill keyed on the activity axis + a "Luar area" pill when outside (CP6b) |
 | MON-3 | Tools FAB · expanded | `MapDashboardScreen` inline toolbox | ✅ Done (2026-05-26); **M3 2026-06-06** — wrench filter switched status→**Lokasi** (Dalam/Luar area, client-side); activity filtering moved to the peek chips (CP6c) |
 | MON-4 | Area/Rayon detail modal | `components/modals/BoundaryDetailModal.tsx` | ✅ Done (M3 2026-06-06, CP7) — rebuilt raw `@gorhom/bottom-sheet` → `NBModal` on the `UserDetailSheet` language: hero (icon chip · name · sub-line · `StatusPill`), `HomeStatTile` KPI row, tokenised staffing rows (area: per-role delta pills + Reassign; rayon: area-list pills), **plant status + heritage in a nested "Tanaman" sub-sheet** |
-| TUG-1 | Tugas list · filtered tabs | `fe/mobile/src/screens/taskActivity/TasksActivityScreen.tsx` | ✅ Revamped (2026-05-29) — **standardized list card**: `TaskCard`/`ActivityCard`/`OvertimeCard` rebuilt as thin wrappers over the new shared `components/common/ListItemCard` (dotted `StatusPill` + created date + title + description + meta chips + creator). Same card applied to `TodayTasksModal`/`TodayActivitiesModal`; `ShiftCard`/`ShiftHistoryScreen` headers aligned (pill+title, time grid kept). `taskPill` extended to 8 statuses; new `activityPill`/`overtimePill`. `TasksTab` states: error→illo-offline+retry, filtered-empty→illo-search (`isFiltered`). Prior token-shim pass 2026-05-26 |
-| TUG-2 | Tugas detail | `fe/mobile/src/screens/field/TaskDetailScreen.tsx` | ✅ Done (2026-05-26) — 20× gray bracket-notation → flat; all nbBorders.base/nbBorderRadius shims migrated |
-| TUG-3 | Selesaikan tugas | `fe/mobile/src/screens/field/TaskCompleteScreen.tsx` | ✅ Done (2026-05-26) — 📸 emoji → MaterialCommunityIcons camera; tokens were already clean |
-| AKT-1 | Submit aktivitas | `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` | ✅ Done (2026-05-27) — emoji section headers → MaterialCommunityIcons; all Phase 2 token shims removed; supporting files: ActivityCard, ActivitiesTab, ActivityDetailScreen, TaskCard, TasksTab, PlantStatusChip, SortModal, TaskCreateScreen |
-| AKT-2 | Aktivitas list | `fe/mobile/src/screens/taskActivity/tabs/ActivitiesTab.tsx` | ✅ Done (2026-05-27) — raw Text → NBText; nbTypography/nbBorderRadius shims removed |
+| TUG-1 | Tugas list · filtered tabs | `apps/mobile/src/screens/taskActivity/TasksActivityScreen.tsx` | ✅ Revamped (2026-05-29) — **standardized list card**: `TaskCard`/`ActivityCard`/`OvertimeCard` rebuilt as thin wrappers over the new shared `components/common/ListItemCard` (dotted `StatusPill` + created date + title + description + meta chips + creator). Same card applied to `TodayTasksModal`/`TodayActivitiesModal`; `ShiftCard`/`ShiftHistoryScreen` headers aligned (pill+title, time grid kept). `taskPill` extended to 8 statuses; new `activityPill`/`overtimePill`. `TasksTab` states: error→illo-offline+retry, filtered-empty→illo-search (`isFiltered`). Prior token-shim pass 2026-05-26 |
+| TUG-2 | Tugas detail | `apps/mobile/src/screens/field/TaskDetailScreen.tsx` | ✅ Done (2026-05-26) — 20× gray bracket-notation → flat; all nbBorders.base/nbBorderRadius shims migrated |
+| TUG-3 | Selesaikan tugas | `apps/mobile/src/screens/field/TaskCompleteScreen.tsx` | ✅ Done (2026-05-26) — 📸 emoji → MaterialCommunityIcons camera; tokens were already clean |
+| AKT-1 | Submit aktivitas | `apps/mobile/src/screens/field/ActivitySubmissionScreen.tsx` | ✅ Done (2026-05-27) — emoji section headers → MaterialCommunityIcons; all Phase 2 token shims removed; supporting files: ActivityCard, ActivitiesTab, ActivityDetailScreen, TaskCard, TasksTab, PlantStatusChip, SortModal, TaskCreateScreen |
+| AKT-2 | Aktivitas list | `apps/mobile/src/screens/taskActivity/tabs/ActivitiesTab.tsx` | ✅ Done (2026-05-27) — raw Text → NBText; nbTypography/nbBorderRadius shims removed |
 | LBR-1 | Lembur list | OvertimeListScreen | ✅ Done (2026-05-27) — monthly summary card (JAM LEMBUR · BULAN INI, X dari Y ACC pill); OvertimeCard: raw Text→NBText, nbTypography→variants, emoji chips→MaterialCommunityIcons |
 | LBR-2 | Ajukan lembur | OvertimeSubmitScreen | ✅ Done (2026-05-27) — State A: date hero card (TANGGAL · Indonesian date, primary tint); State B: DURASI tinted card (amber bg, display-xl elapsed timer) |
 | LBR-3 | Detail lembur · disetujui | OvertimeDetailScreen | ✅ Done (2026-05-27) — status header with `#XXXXXXXX` ID code + badge; 2-tile info grid (TANGGAL/JAM, statusIdleBg tint); RIWAYAT PENGAJUAN timeline (Diajukan→Disetujui/Ditolak→Akan dijalankan); Phase 2 shims removed (nbBorderRadius→nbRadius, nbBorders.base→widthBase, gray[50]→gray50) |
-| PRT-1 | Submit · Kecamatan | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | ✅ CP5 done (2026-06-08) — flat-token sweep (`widthBase`, `nbRadius`); kept the Apr-27/28 Phase 3 form (no structural change). Smoke suite expanded 3→7 (GPS capture, photo add/remove, validation gate, happy-path submit). **PRT sweep CP1–CP5 complete** |
+| PRT-1 | Submit · Kecamatan | `apps/mobile/src/screens/pruningRequests/SubmitScreen.tsx` | ✅ CP5 done (2026-06-08) — flat-token sweep (`widthBase`, `nbRadius`); kept the Apr-27/28 Phase 3 form (no structural change). Smoke suite expanded 3→7 (GPS capture, photo add/remove, validation gate, happy-path submit). **PRT sweep CP1–CP5 complete** |
 | PRT-2 | Review queue · Admin Data | ReviewQueueScreen (pruning-requests list, admin filter) | ✅ CP3 done (2026-06-08) — `NBPageHeader` + flat-token sweep; rows via CP1 `PerantinganRequestCard` with a derived SLA-urgency pill (`utils/sla.ts`, open statuses only, `<6h` neutral/`<24h` warn/`≥24h` bad, label `SLA Nj`) hung off the card `extraTag`. Shared `PruningRequestFilterModal` swept in CP2. New `sla.test` + ReviewQueue SLA assertion |
 | PRT-3 | Detail permohonan | RequestDetailScreen | ✅ CP4 done (2026-06-08) — already on the `ActivityDetailScreen` detail-card language (NBCard/sectionTitle, all NBText); CP4 = flat-token sweep (`widthBase/widthThin`, `nbRadius`) + dead-style removal. No redesign (kept sibling-consistency with Aktivitas/Lembur detail screens); all admin/submitter wiring + WA hex exemption intact |
 | PRT-4 | Pengajuan saya · Kecamatan | PerantinganListScreen (live `Perantingan` tab) | ✅ CP2 done (2026-06-08) — full v2.1 sweep: `NBPageHeader` + `NBFabBar` + `NBText`, flat tokens; rows via the CP1 `PerantinganRequestCard`. Shared `PruningRequestFilterModal` swept alongside. New test suites (12 + 14 cases). CP1 (2026-06-08): card rebuilt on `ListItemCard` + `pruningPill`; dead `MyRequestsScreen` deleted |
 | PRF-1 | Profile · Satgas | ProfileScreen | ✅ Done (2026-05-28) — compact identity strip (`ProfileHeader` = RoleAvatar 52px + `ROLE · RAYON` mono line + `@username · sejak <year>`), `ProfileStatsRow` (3 HomeStatTiles, field/monitoring, `—` fallback), grouped `ProfileMenu` (Akun/Aplikasi chip-rows + logout danger row), `AssignedAreaCard` relaid out; dead Field/MonitoringStatsCard removed; ChangePassword/About modals kept outside ScrollView |
 | PRF-2 | Pengaturan | SettingsScreen | ✅ Done (2026-05-28) — hi-fi sections (Notifikasi/Lokasi & data/Offline sync/Tentang), custom NB toggle, live offline-sync card via `useProfileSync`, duplicate title removed, shims gone |
 | PRF-3 | Edit profil | EditProfileScreen | ✅ Done (2026-05-28) — RoleAvatar 88px + edit badge, "Tidak bisa diubah" locked mono card, sticky Save footer, NBToast feedback, back→Profile |
-| NOTIF-1 | Inbox · 3 baru | `fe/mobile/src/screens/common/NotificationsScreen.tsx` | ✅ Done (2026-05-24, M3d) — `FlatList` inbox (pull-to-refresh, mark-all-read, row tap → optimistic read + deep-link to TaskDetail/PruningDetail), `NBEmptyState`; `components/navigation/NotificationBell.tsx` (unread badge, caps 99+) in every authenticated header; registered as a hidden tab (`tabBarButton: () => null`) |
+| NOTIF-1 | Inbox · 3 baru | `apps/mobile/src/screens/common/NotificationsScreen.tsx` | ✅ Done (2026-05-24, M3d) — `FlatList` inbox (pull-to-refresh, mark-all-read, row tap → optimistic read + deep-link to TaskDetail/PruningDetail), `NBEmptyState`; `components/navigation/NotificationBell.tsx` (unread badge, caps 99+) in every authenticated header; registered as a hidden tab (`tabBarButton: () => null`) |
 
 ### Navigation routing changes
 
-Update `fe/mobile/src/navigation/AppNavigator.tsx` (or equivalent) with three pre-main routes (carousel / forgot-password / change-password / onboarding) gated by AsyncStorage flags + `password_must_change` server flag. NotificationsScreen reachable via header bell icon (badge with unread count) on every authenticated screen.
+Update `apps/mobile/src/navigation/AppNavigator.tsx` (or equivalent) with three pre-main routes (carousel / forgot-password / change-password / onboarding) gated by AsyncStorage flags + `password_must_change` server flag. NotificationsScreen reachable via header bell icon (badge with unread count) on every authenticated screen.
 
 ### Brand assets in mobile
 
-- `fe/mobile/src/assets/brand/sekar-mark.svg` — header logo (22 × 22 px standard)
-- ✅ `fe/mobile/src/components/nb/illustrations/index.tsx` — 6 inline SVG illustrations (`illo-reports/shifts/offline/location/search/personnel`, react-native-svg, token colors) wired via `NBEmptyState`'s `illustration` prop (2026-05-28). Used in ShiftHistory (shifts/offline/search), OvertimeList (reports/search), Tasks/Activities tabs (reports); personnel/location available for monitoring screens.
-- `fe/mobile/src/assets/onboarding/onb-*.svg` — 3 scenes (OB-1/2/3)
-- ✅ iOS `Images.xcassets/AppIcon` + Android `mipmap-*/ic_launcher*` (+ adaptive `mipmap-anydpi-v26`) — SEKAR app icon (2026-05-28): tilted white NB-box lockup + pinwheel, transparent background (no field); generated by `fe/mobile/scripts/generate-app-icon.mjs` (sharp). Standard lockup = `SekarLogoBox`.
+- `apps/mobile/src/assets/brand/sekar-mark.svg` — header logo (22 × 22 px standard)
+- ✅ `apps/mobile/src/components/nb/illustrations/index.tsx` — 6 inline SVG illustrations (`illo-reports/shifts/offline/location/search/personnel`, react-native-svg, token colors) wired via `NBEmptyState`'s `illustration` prop (2026-05-28). Used in ShiftHistory (shifts/offline/search), OvertimeList (reports/search), Tasks/Activities tabs (reports); personnel/location available for monitoring screens.
+- `apps/mobile/src/assets/onboarding/onb-*.svg` — 3 scenes (OB-1/2/3)
+- ✅ iOS `Images.xcassets/AppIcon` + Android `mipmap-*/ic_launcher*` (+ adaptive `mipmap-anydpi-v26`) — SEKAR app icon (2026-05-28): tilted white NB-box lockup + pinwheel, transparent background (no field); generated by `apps/mobile/scripts/generate-app-icon.mjs` (sharp). Standard lockup = `SekarLogoBox`.
 - ✅ iOS `LaunchScreen.storyboard` (pinwheel `UIImageView` above the SEKAR label, `SekarPinwheel.imageset`) — shows the box-lockup on white (2026-05-28).
 - ✅ Android `res/drawable/bootsplash.xml` — two layers: sage canvas + centered `splash_icon` (200dp). **No text in native stages** — `windowSplashScreenBrandingImage` removed (Android stretches it to full screen width at uncontrollable position; can't match window-bg layout). SEKAR wordmark + tagline appear in WL-1 (`SplashSlide.tsx`). Both OS splash and window-bg stages are now visually identical (2026-05-29).
 - `react-native-bootsplash` config update for new splash
@@ -132,7 +132,7 @@ Update `fe/mobile/src/navigation/AppNavigator.tsx` (or equivalent) with three pr
 
 ### A1. ConnectivityStatus Enum
 
-**File:** `fe/mobile/src/services/sync/connectivityStatus.ts`
+**File:** `apps/mobile/src/services/sync/connectivityStatus.ts`
 
 ```typescript
 export enum ConnectivityStatus {
@@ -149,7 +149,7 @@ Detection logic:
 
 ### A2. SyncManager Expansion
 
-**File:** `fe/mobile/src/services/sync/syncManager.ts`
+**File:** `apps/mobile/src/services/sync/syncManager.ts`
 
 New queue item types to add:
 
@@ -162,7 +162,7 @@ New queue item types to add:
 
 ### A3. Heartbeat Polling
 
-**File:** `fe/mobile/src/services/sync/syncManager.ts`
+**File:** `apps/mobile/src/services/sync/syncManager.ts`
 
 ```
 When status = NO_INTERNET:
@@ -178,7 +178,7 @@ When status = SERVER_UNREACHABLE:
 
 ### A4. Connectivity Banner
 
-**File:** `fe/mobile/src/components/common/ConnectivityBanner.tsx`
+**File:** `apps/mobile/src/components/common/ConnectivityBanner.tsx`
 
 | Status | Color | Icon | Text |
 |--------|-------|------|------|
@@ -258,7 +258,7 @@ Goal: every screen has an explicit verdict for what it does when the user is `NO
 
 ### A5b. Offline error screen — visual spec
 
-**File:** `fe/mobile/src/components/common/OfflineScreen.tsx`
+**File:** `apps/mobile/src/components/common/OfflineScreen.tsx`
 
 ```
 ┌────────────────────────────────────┐
@@ -302,7 +302,7 @@ const timestamp = new Date().toISOString(); // UTC — converted on display
 
 ### Redux Slices
 
-**`notificationsSlice`** — `fe/mobile/src/store/slices/notificationsSlice.ts`
+**`notificationsSlice`** — `apps/mobile/src/store/slices/notificationsSlice.ts`
 
 | State Field | Type | Description |
 |-------------|------|-------------|
@@ -311,7 +311,7 @@ const timestamp = new Date().toISOString(); // UTC — converted on display
 | `activeFilter` | `'all' \| 'unread' \| 'tasks' \| 'shifts'` | Currently selected filter tab |
 | `status` | `'idle' \| 'loading' \| 'succeeded' \| 'failed'` | Fetch state |
 
-**`connectivitySlice`** — `fe/mobile/src/store/slices/connectivitySlice.ts`
+**`connectivitySlice`** — `apps/mobile/src/store/slices/connectivitySlice.ts`
 
 | State Field | Type | Description |
 |-------------|------|-------------|
@@ -320,13 +320,13 @@ const timestamp = new Date().toISOString(); // UTC — converted on display
 
 ### New Services
 
-**`NotificationService`** — `fe/mobile/src/services/notifications/notificationService.ts`
+**`NotificationService`** — `apps/mobile/src/services/notifications/notificationService.ts`
 
 - FCM token registration on login, deregistration on logout
 - Token refresh subscription via `messaging().onTokenRefresh()`
 - Preference sync: `GET /users/:id/notification-preferences` and `PATCH /users/:id/notification-preferences`
 
-**`ConnectivityService`** — `fe/mobile/src/services/sync/connectivityService.ts`
+**`ConnectivityService`** — `apps/mobile/src/services/sync/connectivityService.ts`
 
 - Heartbeat polling (`GET /health` every 30s when `SERVER_UNREACHABLE`)
 - NetInfo change subscription for `NO_INTERNET` detection
@@ -367,7 +367,7 @@ NotificationsScreen
 
 ### B1. Token Registration
 
-**File:** `fe/mobile/src/services/fcm/fcmService.ts`
+**File:** `apps/mobile/src/services/fcm/fcmService.ts`
 
 ```
 On login success:
@@ -383,7 +383,7 @@ On logout:
 
 ### B2. Foreground Handling
 
-**File:** `fe/mobile/src/services/fcm/fcmService.ts`
+**File:** `apps/mobile/src/services/fcm/fcmService.ts`
 
 ```
 messaging().onMessage(remoteMessage => {
@@ -395,7 +395,7 @@ messaging().onMessage(remoteMessage => {
 
 ### B3. Background Handling
 
-**File:** `fe/mobile/src/services/fcm/fcmService.ts`
+**File:** `apps/mobile/src/services/fcm/fcmService.ts`
 
 ```
 messaging().setBackgroundMessageHandler(async remoteMessage => {
@@ -406,7 +406,7 @@ messaging().setBackgroundMessageHandler(async remoteMessage => {
 
 ### B4. NotificationsScreen (22nd Screen)
 
-**File:** `fe/mobile/src/screens/notifications/NotificationsScreen.tsx`
+**File:** `apps/mobile/src/screens/notifications/NotificationsScreen.tsx`
 
 | Section | Description |
 |---------|-------------|
@@ -420,7 +420,7 @@ Navigation: Bottom tab icon with unread badge count
 
 ### B5. Notification Preferences
 
-**File:** `fe/mobile/src/screens/settings/NotificationSettingsScreen.tsx`
+**File:** `apps/mobile/src/screens/settings/NotificationSettingsScreen.tsx`
 
 - List of toggles per notification type
 - Fetch: `GET /users/:id/notification-preferences`
@@ -430,7 +430,7 @@ Navigation: Bottom tab icon with unread badge count
 
 **Goal:** Every authenticated screen has a bell icon in the app header with an unread-count badge. Tapping it opens the inbox (NOTIF-1). When a push notification arrives — whether the app is foreground, background, or quit — the same notification record drives both the OS-tray notification AND the in-app bell badge, so the two surfaces never disagree.
 
-**File:** `fe/mobile/src/components/common/NotificationBell.tsx`
+**File:** `apps/mobile/src/components/common/NotificationBell.tsx`
 
 Visual spec (token-compliant, per `design/project/hifi-shared.css`):
 
@@ -473,7 +473,7 @@ Visual spec (token-compliant, per `design/project/hifi-shared.css`):
 
 ### B7. Deep-link routing matrix (push notification → screen)
 
-Every backend notification carries `data.type` + `data.entity_id`. The same routing table drives (a) tap-on-toast, (b) tap-on-bell-row, (c) tap-on-system-tray notification — guaranteeing one consistent destination per type. Source of truth: `fe/mobile/src/services/notifications/deepLinkRouter.ts`.
+Every backend notification carries `data.type` + `data.entity_id`. The same routing table drives (a) tap-on-toast, (b) tap-on-bell-row, (c) tap-on-system-tray notification — guaranteeing one consistent destination per type. Source of truth: `apps/mobile/src/services/notifications/deepLinkRouter.ts`.
 
 | Notification type | Title (Indonesian) | Deep-link target | Required role |
 |-------------------|-------------------|------------------|---------------|
@@ -496,7 +496,7 @@ If the user lacks the required role (data integrity should prevent this, but def
 
 The web sidebar already plans a bell icon (see [`web.md`](./web.md#ui-ux-revamp)). Detailed spec:
 
-- `fe/web/src/components/nb/NotificationBell.tsx` — bell with badge in top-right of the main canvas, NOT in the sidebar (sidebar collapses at narrow widths; the bell must stay visible).
+- `apps/web/src/components/nb/NotificationBell.tsx` — bell with badge in top-right of the main canvas, NOT in the sidebar (sidebar collapses at narrow widths; the bell must stay visible).
 - Click → opens `NotificationPanel` popover (last 5 unread + "Lihat Semua" link to `/dashboard/notifications`).
 - Same deep-link router on web — clicking a row navigates to the entity's web route (e.g., `task_assigned` → `/dashboard/tasks/{id}`).
 - Web push (via existing Phase 3 PWA push subscription) follows the same suppression rule: when the web tab is foreground, no service-worker notification surfaces; the NBToast + badge handles it.
@@ -507,7 +507,7 @@ The web sidebar already plans a bell icon (see [`web.md`](./web.md#ui-ux-revamp)
 
 ### C1. ReassignWorkerModal Verification
 
-**File:** `fe/mobile/src/components/modals/ReassignWorkerModal.tsx` (exists as untracked)
+**File:** `apps/mobile/src/components/modals/ReassignWorkerModal.tsx` (exists as untracked)
 
 Verify and complete:
 - [ ] Worker selection (from UserDetailSheet)
@@ -526,7 +526,7 @@ Add `reassignment` queue type (see A2 above).
 
 ### C3. Reassignment History
 
-**File:** `fe/mobile/src/components/monitoring/UserDetailSheet.tsx`
+**File:** `apps/mobile/src/components/monitoring/UserDetailSheet.tsx`
 
 Add "Riwayat Penugasan" section at bottom:
 - Fetch from `GET /audit-logs?entity_type=user_tracking_status&entity_id={userId}`
@@ -547,10 +547,10 @@ When a worker is flagged as 'missing' (no location update within threshold):
 
 | Component | File | Reason |
 |-----------|------|--------|
-| `UserMarker` | `fe/mobile/src/components/monitoring/UserMarker.tsx` | Re-renders on every map gesture |
-| `LocationTrail` | `fe/mobile/src/components/monitoring/LocationTrail.tsx` | Polyline with many points |
-| `StaffingSummarySection` | `fe/mobile/src/components/monitoring/StaffingSummarySection.tsx` | Expensive staffing calculations |
-| `LocationStatusCard` | `fe/mobile/src/components/home/LocationStatusCard.tsx` | GPS updates every second |
+| `UserMarker` | `apps/mobile/src/components/monitoring/UserMarker.tsx` | Re-renders on every map gesture |
+| `LocationTrail` | `apps/mobile/src/components/monitoring/LocationTrail.tsx` | Polyline with many points |
+| `StaffingSummarySection` | `apps/mobile/src/components/monitoring/StaffingSummarySection.tsx` | Expensive staffing calculations |
+| `LocationStatusCard` | `apps/mobile/src/components/home/LocationStatusCard.tsx` | GPS updates every second |
 
 ### D2. FlatList Optimization
 
@@ -585,7 +585,7 @@ Screens to audit: TasksScreen, ActivitiesScreen, OvertimeScreen, NotificationsSc
 
 ### E1. ProGuard/R8 Configuration
 
-**File:** `fe/mobile/android/app/proguard-rules.pro`
+**File:** `apps/mobile/android/app/proguard-rules.pro`
 
 ```
 # React Native
@@ -604,7 +604,7 @@ Screens to audit: TasksScreen, ActivitiesScreen, OvertimeScreen, NotificationsSc
 -renamesourcefileattribute SourceFile
 ```
 
-**File:** `fe/mobile/android/app/build.gradle`
+**File:** `apps/mobile/android/app/build.gradle`
 
 ```groovy
 buildTypes {
@@ -618,7 +618,7 @@ buildTypes {
 
 ### E2. Crash Reporting (Sentry)
 
-**File:** `fe/mobile/src/services/crashReporting.ts`
+**File:** `apps/mobile/src/services/crashReporting.ts`
 
 ```typescript
 import * as Sentry from '@sentry/react-native';
@@ -643,7 +643,7 @@ export function setUserContext(user: User) {
 
 ### E3. Deep Linking
 
-**File:** `fe/mobile/android/app/src/main/AndroidManifest.xml`
+**File:** `apps/mobile/android/app/src/main/AndroidManifest.xml`
 
 ```xml
 <intent-filter android:autoVerify="true">
@@ -665,7 +665,7 @@ export function setUserContext(user: User) {
 | `sekar://notifications` | NotificationsScreen |
 | `sekar://monitoring` | MapDashboardScreen |
 
-**File:** `fe/mobile/src/navigation/linking.ts`
+**File:** `apps/mobile/src/navigation/linking.ts`
 
 ```typescript
 export const linking = {
@@ -695,7 +695,7 @@ export const linking = {
 
 ### F1. Screen Transitions
 
-**File:** `fe/mobile/src/navigation/`
+**File:** `apps/mobile/src/navigation/`
 
 ```typescript
 const screenOptions = {

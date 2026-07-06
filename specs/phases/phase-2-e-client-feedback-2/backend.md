@@ -27,7 +27,7 @@
 | `MONITORING_RAYON` | `[KEPALA_RAYON, ADMIN_DATA, ...MONITORING_CITY]` — admin_data already has monitoring access |
 | `OvertimeService` | Creates overtime with `start_datetime`/`end_datetime` (timestamptz), `activity_type_id`, `description`, `photo_urls` — submission-based, no clock-in/out flow |
 | `OvertimeStatus` enum | Only `PENDING`, `APPROVED`, `REJECTED` — no `IN_PROGRESS` status |
-| `S3Service` | Exists at `be/src/shared/services/s3.service.ts`; selfie upload uses base64 decode, not multipart |
+| `S3Service` | Exists at `apps/be/src/shared/services/s3.service.ts`; selfie upload uses base64 decode, not multipart |
 | `TasksService` | Has `requestRevision()` with `revision_reason` field, no full audit trail |
 | `EventsGateway` | Room-based WebSocket; admin_data already joins rayon rooms (Phase 2D); korlap joins single area room via `user.area_id` |
 
@@ -63,7 +63,7 @@ These constants already exist and are NOT being changed from Phase 2C/2D unless 
 
 ### A1. LoginDto Update
 
-**File:** `be/src/modules/auth/dto/login.dto.ts`
+**File:** `apps/be/src/modules/auth/dto/login.dto.ts`
 
 ```typescript
 export class LoginDto {
@@ -83,7 +83,7 @@ export class LoginDto {
 
 ### A2. AuthService Login Logic
 
-**File:** `be/src/modules/auth/auth.service.ts`
+**File:** `apps/be/src/modules/auth/auth.service.ts`
 
 ```typescript
 async login(dto: LoginDto): Promise<{ access_token: string; user: UserResponseDto }> {
@@ -125,7 +125,7 @@ async login(dto: LoginDto): Promise<{ access_token: string; user: UserResponseDt
 
 ### B1. User Entity Updates
 
-**File:** `be/src/modules/users/entities/user.entity.ts`
+**File:** `apps/be/src/modules/users/entities/user.entity.ts`
 
 Add columns:
 ```typescript
@@ -141,7 +141,7 @@ user_areas: UserArea[];
 
 ### B2. CreateUserDto / UpdateUserDto
 
-**File:** `be/src/modules/users/dto/create-user.dto.ts`
+**File:** `apps/be/src/modules/users/dto/create-user.dto.ts`
 
 ```typescript
 @ApiPropertyOptional()
@@ -153,7 +153,7 @@ phone_number?: string;
 
 ### B3. Profile Picture Upload Endpoint
 
-**File:** `be/src/modules/users/users.controller.ts`
+**File:** `apps/be/src/modules/users/users.controller.ts`
 
 ```typescript
 @Post(':id/profile-picture')
@@ -179,7 +179,7 @@ async uploadProfilePicture(
 
 ### B4. Role Groups Update
 
-**File:** `be/src/modules/users/constants/role-groups.ts`
+**File:** `apps/be/src/modules/users/constants/role-groups.ts`
 
 ```typescript
 // Phase 2E changes ONLY (other constants remain unchanged from Phase 2C/2D):
@@ -203,13 +203,13 @@ export const OVERTIME_SUBMITTERS = [UserRole.SATGAS, UserRole.LINMAS, UserRole.K
 
 ### C1. UserArea Entity
 
-**File:** `be/src/modules/user-areas/entities/user-area.entity.ts`
+**File:** `apps/be/src/modules/user-areas/entities/user-area.entity.ts`
 
 See [database.md](./database.md) for full entity definition.
 
 ### C2. UserAreasService
 
-**File:** `be/src/modules/user-areas/user-areas.service.ts`
+**File:** `apps/be/src/modules/user-areas/user-areas.service.ts`
 
 ```typescript
 @Injectable()
@@ -236,7 +236,7 @@ export class UserAreasService {
 
 ### C3. UserAreasController
 
-**File:** `be/src/modules/user-areas/user-areas.controller.ts`
+**File:** `apps/be/src/modules/user-areas/user-areas.controller.ts`
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
@@ -251,7 +251,7 @@ export class UserAreasService {
 
 ### D1. Shift Entity Update
 
-**File:** `be/src/modules/shifts/entities/shift.entity.ts`
+**File:** `apps/be/src/modules/shifts/entities/shift.entity.ts`
 
 ```typescript
 @Column({ name: 'is_overtime', type: 'boolean', default: false })
@@ -260,7 +260,7 @@ is_overtime: boolean;
 
 ### D2. ShiftsService Changes
 
-**File:** `be/src/modules/shifts/shifts.service.ts`
+**File:** `apps/be/src/modules/shifts/shifts.service.ts`
 
 #### Optional Selfie
 ```typescript
@@ -323,7 +323,7 @@ async clockInOvertime(dto: OvertimeClockInDto, user: User): Promise<Shift> {
 
 ### D3. ClockInDto Update
 
-**File:** `be/src/modules/shifts/dto/clock-in.dto.ts`
+**File:** `apps/be/src/modules/shifts/dto/clock-in.dto.ts`
 
 ```typescript
 @ApiPropertyOptional({ description: 'Base64 encoded selfie photo (optional)' })
@@ -358,7 +358,7 @@ The existing `Overtime` entity has these fields that the redesign must account f
 
 ### E1. OvertimeService Changes
 
-**File:** `be/src/modules/overtime/overtime.service.ts`
+**File:** `apps/be/src/modules/overtime/overtime.service.ts`
 
 ```typescript
 @Injectable()
@@ -423,7 +423,7 @@ export class EndOvertimeDto {
 
 ### F1. StatusCalculatorService Multi-Area
 
-**File:** `be/src/modules/monitoring/services/status-calculator.service.ts`
+**File:** `apps/be/src/modules/monitoring/services/status-calculator.service.ts`
 
 ```typescript
 async calculateStatus(user: User, shift: Shift | null): Promise<TrackingStatus> {
@@ -461,7 +461,7 @@ private async getEffectiveBoundaries(user: User): Promise<BoundaryInfo[]> {
 
 ### F2. MonitoringController Scope Changes
 
-**File:** `be/src/modules/monitoring/monitoring.controller.ts`
+**File:** `apps/be/src/modules/monitoring/monitoring.controller.ts`
 
 ```typescript
 // Update scope enforcement for admin_data
@@ -483,7 +483,7 @@ private applyScopeFilters(user: User, filters: LiveUsersFilterDto): LiveUsersFil
 
 ### F3. UserTrackingStatus Entity Update
 
-**File:** `be/src/modules/monitoring/entities/user-tracking-status.entity.ts`
+**File:** `apps/be/src/modules/monitoring/entities/user-tracking-status.entity.ts`
 
 ```typescript
 @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
@@ -496,7 +496,7 @@ rayon: Rayon;
 
 ### F4. WebSocket Room Changes
 
-**File:** `be/src/gateways/events.gateway.ts`
+**File:** `apps/be/src/gateways/events.gateway.ts`
 
 ```typescript
 // On connection, join appropriate rooms
@@ -530,7 +530,7 @@ See [database.md](./database.md) for entity definition.
 
 ### G2. AuditLogService
 
-**File:** `be/src/modules/audit/audit.service.ts`
+**File:** `apps/be/src/modules/audit/audit.service.ts`
 
 ```typescript
 @Injectable()

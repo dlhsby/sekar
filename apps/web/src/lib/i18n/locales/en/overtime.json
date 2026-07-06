@@ -1,0 +1,106 @@
+{
+  "list": {
+    "title": "Overtime Management",
+    "description": "Manage overtime requests",
+    "totalCount": "{{count}} overtime requests",
+    "tabs": {
+      "all": "All",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "filters": {
+      "dateRange": "Date Range"
+    },
+    "table": {
+      "title": "Overtime List",
+      "columns": {
+        "id": "ID",
+        "date": "Date",
+        "user": "User",
+        "area": "Area",
+        "time": "Time",
+        "activityType": "Activity Type",
+        "status": "Status",
+        "createdAt": "Created"
+      }
+    },
+    "pagination": {
+      "page": "Page {{page}} of {{totalPages}}",
+      "previous": "Previous",
+      "next": "Next",
+      "total": "total"
+    },
+    "empty": {
+      "noRequests": "No overtime requests"
+    },
+    "actions": {
+      "rejectDialog": "Rejection Reason",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Enter rejection reason...",
+      "rejectButton": "Reject Overtime",
+      "viewModal": "Overtime Details"
+    },
+    "filterStatusAria": "Filter overtime status"
+  },
+  "detail": {
+    "title": "Overtime Details",
+    "breadcrumb": "Overtime",
+    "backButton": "Back to Overtime List",
+    "sections": {
+      "information": "Information",
+      "approval": "Approval",
+      "rejection": "Rejection",
+      "description": "Description",
+      "photos": "Photos"
+    },
+    "fields": {
+      "user": "User",
+      "date": "Date",
+      "time": "Time",
+      "area": "Area",
+      "activityType": "Activity Type",
+      "status": "Status",
+      "notes": "Notes",
+      "processedBy": "Processed By",
+      "processDate": "Process Date",
+      "rejectionReason": "Rejection Reason"
+    },
+    "actions": {
+      "rejectDialog": "Rejection Reason",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Enter rejection reason...",
+      "rejectButton": "Reject Overtime"
+    }
+  },
+  "form": {
+    "createTitle": "Create New Overtime",
+    "editTitle": "Edit Overtime",
+    "createButtonLabel": "Create New",
+    "user": "User",
+    "userPlaceholder": "Select user...",
+    "userSearchPlaceholder": "Search user...",
+    "startDatetime": "Start Time",
+    "startDatetimePlaceholder": "dd/MM/yyyy HH:mm",
+    "endDatetime": "End Time",
+    "endDatetimePlaceholder": "dd/MM/yyyy HH:mm",
+    "activityType": "Activity Type",
+    "activityTypePlaceholder": "Select activity type...",
+    "activityTypeSearchPlaceholder": "Search activity type...",
+    "description": "Description",
+    "descriptionPlaceholder": "Enter activity description...",
+    "gpsLat": "GPS Latitude",
+    "gpsLatPlaceholder": "Optional, e.g.: -7.250445",
+    "gpsLng": "GPS Longitude",
+    "gpsLngPlaceholder": "Optional, e.g.: 112.768845",
+    "successCreated": "Overtime created successfully",
+    "successUpdated": "Overtime updated successfully",
+    "successDeleted": "Overtime deleted successfully",
+    "createErrorMessage": "Failed to create overtime",
+    "updateErrorMessage": "Failed to update overtime",
+    "deleteErrorMessage": "Failed to delete overtime",
+    "deleteTitle": "Delete Overtime",
+    "deleteDescription": "Are you sure you want to delete the overtime for {{name}}? This action cannot be undone."
+  },
+  "notFound": "Overtime not found"
+}

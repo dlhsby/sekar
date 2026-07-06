@@ -101,7 +101,7 @@ DLH Surabaya
 **Worker Activities:**
 - Penyiraman (Watering)
 - Penanaman (Planting)
-- Pemangkasan (Pruning)
+- Perantingan (Pruning)
 - Pembersihan (Cleaning) - shared with Linmas
 - Pemupukan (Fertilizing)
 - Perawatan Tanaman (Plant Care)
@@ -601,7 +601,7 @@ npm install zustand                # State management
 ### Infrastructure & DevOps
 - [x] Firebase FCM configured and sending notifications (Android ready, service account in place)
 - [ ] Redis/ElastiCache running for Bull Queue
-- [x] FCM credentials stored securely (service account in be/config, in .gitignore)
+- [x] FCM credentials stored securely (service account in apps/be/config, in .gitignore)
 - [ ] CloudWatch alarms configured for Phase 2 metrics
 - [ ] CI/CD pipeline builds and deploys web dashboard
 - [ ] Staging environment fully functional

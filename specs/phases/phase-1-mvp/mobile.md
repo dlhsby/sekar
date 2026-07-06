@@ -441,7 +441,7 @@ interface QueueItem {
 1. Fresh login → Navigate to Shift History → Pull to refresh
 Expected: ✅ Works
 
-# Expiry test (in be/.env, change JWT_EXPIRATION=2m)
+# Expiry test (in apps/be/.env, change JWT_EXPIRATION=2m)
 1. Login → Wait 3 minutes → Pull to refresh
 Expected: ✅ Auto-refresh triggers, data loads
 

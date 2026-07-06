@@ -969,7 +969,7 @@ sizes:
 ### Button Component Example
 
 ```tsx
-// fe/web/src/components/nb/NBButton.tsx
+// apps/web/src/components/nb/NBButton.tsx
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
@@ -1005,7 +1005,7 @@ const buttonVariants = cva(
 ### Design Tokens (nbTokens.ts)
 
 ```typescript
-// fe/mobile/src/constants/nbTokens.ts
+// apps/mobile/src/constants/nbTokens.ts
 export const nbColors = {
   primary: '#7FBC8C',
   primaryHover: '#6BA87A',
@@ -1239,7 +1239,7 @@ focus-ring:
 ### Mobile Constants (`monitoringTokens`)
 
 ```typescript
-// In fe/mobile/src/constants/nbTokens.ts
+// In apps/mobile/src/constants/nbTokens.ts
 export const monitoringTokens = {
   status: {
     active: { color: '#15803D', bg: '#DCFCE7', label: 'Aktif' },
@@ -1356,8 +1356,8 @@ const statusBadgeVariant = {
 **Last Updated:** 2026-06-20
 **Status:** Phase 2+ Design System - PRIMARY REFERENCE (v2.1.1, Phase 4 rebrand re-baseline)
 **Implementation:**
-- Mobile: `fe/mobile/src/constants/generated/tokens.ts` (generated) + `fe/mobile/src/constants/nbTokens.ts` (re-export) + `fe/mobile/src/components/nb/`
-- Web: `fe/web/src/app/generated/tokens.css` (generated) + `fe/web/src/app/globals.css` (@import) + `fe/web/src/components/ui/` + `fe/web/src/components/nb/`
+- Mobile: `apps/mobile/src/constants/generated/tokens.ts` (generated) + `apps/mobile/src/constants/nbTokens.ts` (re-export) + `apps/mobile/src/components/nb/`
+- Web: `apps/web/src/app/generated/tokens.css` (generated) + `apps/web/src/app/globals.css` (@import) + `apps/web/src/components/ui/` + `apps/web/src/components/nb/`
 
 ---
 

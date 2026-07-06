@@ -127,7 +127,7 @@ This document defines the comprehensive testing strategy for SEKAR (Sistem Evalu
 ### Backend Structure
 
 ```
-be/src/
+apps/be/src/
 ├── modules/
 │   ├── auth/
 │   │   ├── auth.service.ts
@@ -155,7 +155,7 @@ be/src/
 ### Mobile Structure
 
 ```
-fe/mobile/
+apps/mobile/
 ├── src/
 │   ├── components/
 │   │   ├── WorkerClockIn/
@@ -465,7 +465,7 @@ npm test -- -u
 - name: Upload coverage
   uses: codecov/codecov-action@v3
   with:
-    files: ./be/coverage/lcov.info
+    files: ./apps/be/coverage/lcov.info
     flags: backend
 ```
 

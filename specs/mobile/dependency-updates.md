@@ -61,7 +61,7 @@ Time:        44.157s
 
 Before production deployment:
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm run android:clean
 npm run android
 ```

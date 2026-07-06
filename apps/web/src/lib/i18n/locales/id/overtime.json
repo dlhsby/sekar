@@ -1,0 +1,106 @@
+{
+  "list": {
+    "title": "Manajemen Lembur",
+    "description": "Kelola permintaan lembur",
+    "totalCount": "{{count}} permintaan lembur",
+    "tabs": {
+      "all": "Semua",
+      "pending": "Menunggu",
+      "approved": "Disetujui",
+      "rejected": "Ditolak"
+    },
+    "filters": {
+      "dateRange": "Rentang Tanggal"
+    },
+    "table": {
+      "title": "Daftar Lembur",
+      "columns": {
+        "id": "ID",
+        "date": "Tanggal",
+        "user": "Pengguna",
+        "area": "Area",
+        "time": "Waktu",
+        "activityType": "Tipe Aktivitas",
+        "status": "Status",
+        "createdAt": "Dibuat"
+      }
+    },
+    "pagination": {
+      "page": "Halaman {{page}} dari {{totalPages}}",
+      "previous": "Sebelumnya",
+      "next": "Selanjutnya",
+      "total": "total"
+    },
+    "empty": {
+      "noRequests": "Tidak ada permintaan lembur"
+    },
+    "actions": {
+      "rejectDialog": "Alasan Penolakan",
+      "reasonLabel": "Alasan",
+      "reasonPlaceholder": "Masukkan alasan penolakan...",
+      "rejectButton": "Tolak Lembur",
+      "viewModal": "Detail Lembur"
+    },
+    "filterStatusAria": "Filter status lembur"
+  },
+  "detail": {
+    "title": "Detail Lembur",
+    "breadcrumb": "Lembur",
+    "backButton": "Kembali ke Daftar Lembur",
+    "sections": {
+      "information": "Informasi",
+      "approval": "Persetujuan",
+      "rejection": "Penolakan",
+      "description": "Deskripsi",
+      "photos": "Foto"
+    },
+    "fields": {
+      "user": "Pengguna",
+      "date": "Tanggal",
+      "time": "Waktu",
+      "area": "Area",
+      "activityType": "Tipe Aktivitas",
+      "status": "Status",
+      "notes": "Catatan",
+      "processedBy": "Diproses Oleh",
+      "processDate": "Tanggal Proses",
+      "rejectionReason": "Alasan Penolakan"
+    },
+    "actions": {
+      "rejectDialog": "Alasan Penolakan",
+      "reasonLabel": "Alasan",
+      "reasonPlaceholder": "Masukkan alasan penolakan...",
+      "rejectButton": "Tolak Lembur"
+    }
+  },
+  "form": {
+    "createTitle": "Buat Lembur Baru",
+    "editTitle": "Edit Lembur",
+    "createButtonLabel": "Buat Baru",
+    "user": "Pengguna",
+    "userPlaceholder": "Pilih pengguna...",
+    "userSearchPlaceholder": "Cari pengguna...",
+    "startDatetime": "Waktu Mulai",
+    "startDatetimePlaceholder": "dd/MM/yyyy HH:mm",
+    "endDatetime": "Waktu Selesai",
+    "endDatetimePlaceholder": "dd/MM/yyyy HH:mm",
+    "activityType": "Tipe Aktivitas",
+    "activityTypePlaceholder": "Pilih tipe aktivitas...",
+    "activityTypeSearchPlaceholder": "Cari tipe aktivitas...",
+    "description": "Deskripsi",
+    "descriptionPlaceholder": "Masukkan deskripsi aktivitas...",
+    "gpsLat": "Latitude GPS",
+    "gpsLatPlaceholder": "Opsional, contoh: -7.250445",
+    "gpsLng": "Longitude GPS",
+    "gpsLngPlaceholder": "Opsional, contoh: 112.768845",
+    "successCreated": "Lembur berhasil dibuat",
+    "successUpdated": "Lembur berhasil diperbarui",
+    "successDeleted": "Lembur berhasil dihapus",
+    "createErrorMessage": "Gagal membuat lembur",
+    "updateErrorMessage": "Gagal memperbarui lembur",
+    "deleteErrorMessage": "Gagal menghapus lembur",
+    "deleteTitle": "Hapus Lembur",
+    "deleteDescription": "Anda yakin ingin menghapus lembur untuk {{name}}? Tindakan ini tidak dapat dibatalkan."
+  },
+  "notFound": "Lembur tidak ditemukan"
+}

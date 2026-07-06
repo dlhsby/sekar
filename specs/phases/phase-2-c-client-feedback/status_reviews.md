@@ -88,7 +88,7 @@ All 3,264 mobile tests pass. Zero TypeScript errors in source files.
 ## Backend Spec Compliance Review (Feb 14, 2026 — 10:05 PM) ✅
 
 **Status:** Complete — Production Ready
-**Scope:** Systematic module-by-module review of `be/src/` against Phase 2C specs (10 focus areas, 19 modules)
+**Scope:** Systematic module-by-module review of `apps/be/src/` against Phase 2C specs (10 focus areas, 19 modules)
 **Method:** backend-code-reviewer agent, 34 tool invocations across all focus areas
 **Test Suite:** 919 tests passing / 54 suites ✅
 
@@ -242,7 +242,7 @@ Conducted a thorough post-implementation review of the entire Phase 1-2C codebas
 
 | # | File | Issue | Fix |
 |---|------|-------|-----|
-| C1 | `be/src/modules/overtime/CLAUDE.md` | Documents old nested `overtime_aktivitas` table | Complete rewrite for flat structure |
+| C1 | `apps/be/src/modules/overtime/CLAUDE.md` | Documents old nested `overtime_aktivitas` table | Complete rewrite for flat structure |
 | C2 | `syncManager.ts` | Comment mentions "reports" | → "activities" |
 | C3 | `sync/README.md` | Code example uses `counts.report` | → `counts.activity` |
 
@@ -345,35 +345,35 @@ npx tsc --noEmit (mobile)
 #### Grep Verification
 ```bash
 # Backend
-grep -r "role: 'Worker'" be/src/  # → 0 results ✅
-grep -r "WorkerLocationEvent" be/src/  # → 0 results ✅
-grep -r "OvertimeAktivitas" be/src/modules/overtime/ --exclude-dir=migrations  # → 0 results ✅
-grep -r "active-workers" be/src/  # → 0 results ✅
+grep -r "role: 'Worker'" apps/be/src/  # → 0 results ✅
+grep -r "WorkerLocationEvent" apps/be/src/  # → 0 results ✅
+grep -r "OvertimeAktivitas" apps/be/src/modules/overtime/ --exclude-dir=migrations  # → 0 results ✅
+grep -r "active-workers" apps/be/src/  # → 0 results ✅
 
 # Mobile
-grep -r "type: 'report'" fe/mobile/src/  # → 0 results ✅
-grep -r "/api/reports" fe/mobile/src/  # → 0 results ✅
+grep -r "type: 'report'" apps/mobile/src/  # → 0 results ✅
+grep -r "/api/reports" apps/mobile/src/  # → 0 results ✅
 ```
 
 ### Files Modified
 
 **Backend (11 files):**
-- `be/src/gateways/dto/events.dto.ts` — Event class renames, EventType enum
-- `be/src/gateways/events.gateway.ts` — Method renames, imports
-- `be/src/gateways/events.gateway.spec.ts` — Test updates
-- `be/src/modules/supervisor/dto/active-users-response.dto.ts` — Renamed file + classes
-- `be/src/modules/supervisor/supervisor.controller.ts` — Route + method rename
-- `be/src/modules/supervisor/supervisor.service.ts` — Method renames
-- `be/src/modules/overtime/CLAUDE.md` — Complete rewrite
+- `apps/be/src/gateways/dto/events.dto.ts` — Event class renames, EventType enum
+- `apps/be/src/gateways/events.gateway.ts` — Method renames, imports
+- `apps/be/src/gateways/events.gateway.spec.ts` — Test updates
+- `apps/be/src/modules/supervisor/dto/active-users-response.dto.ts` — Renamed file + classes
+- `apps/be/src/modules/supervisor/supervisor.controller.ts` — Route + method rename
+- `apps/be/src/modules/supervisor/supervisor.service.ts` — Method renames
+- `apps/be/src/modules/overtime/CLAUDE.md` — Complete rewrite
 
 **Mobile (6 files):**
-- `fe/mobile/src/services/sync/__tests__/offlineQueue.test.ts`
-- `fe/mobile/src/__tests__/integration/offlineSync.test.ts`
-- `fe/mobile/src/__tests__/integration/shiftWorkflow.test.ts`
-- `fe/mobile/src/services/sync/syncManager.ts`
-- `fe/mobile/src/services/sync/README.md`
-- `fe/mobile/src/services/api/supervisorApi.ts`
-- `fe/mobile/src/services/api/__tests__/supervisorApi.test.ts`
+- `apps/mobile/src/services/sync/__tests__/offlineQueue.test.ts`
+- `apps/mobile/src/__tests__/integration/offlineSync.test.ts`
+- `apps/mobile/src/__tests__/integration/shiftWorkflow.test.ts`
+- `apps/mobile/src/services/sync/syncManager.ts`
+- `apps/mobile/src/services/sync/README.md`
+- `apps/mobile/src/services/api/supervisorApi.ts`
+- `apps/mobile/src/services/api/__tests__/supervisorApi.test.ts`
 
 **Documentation (2 files):**
 - `specs/phases/phase-2-c-client-feedback/STATUS.md`

@@ -73,9 +73,9 @@ A checkpoint audit of `tokens.json` against the canonical [`design/project/hifi-
 
 ## Purpose
 
-A single source of truth for every design token used by **both** `fe/web` and `fe/mobile`. Enforces visual parity ("the SEKAR feel") while leaving room for platform-native primitives where parity would hurt UX.
+A single source of truth for every design token used by **both** `apps/web` and `apps/mobile`. Enforces visual parity ("the SEKAR feel") while leaving room for platform-native primitives where parity would hurt UX.
 
-This document supersedes the ad-hoc copies in `fe/web/src/app/globals.css` and `fe/mobile/src/constants/nbTokens.ts` — those files become **generated artifacts** of `specs/ui-ux/tokens.json` from Phase 3 onward.
+This document supersedes the ad-hoc copies in `apps/web/src/app/globals.css` and `apps/mobile/src/constants/nbTokens.ts` — those files become **generated artifacts** of `specs/ui-ux/tokens.json` from Phase 3 onward.
 
 ---
 
@@ -157,7 +157,7 @@ specs/ui-ux/
   └────────┬─────────┘     └────────┬─────────┘       └──────────────────┘
            │                        │
            ▼                        ▼
-  fe/web/src/app/           fe/mobile/src/constants/
+  apps/web/src/app/           apps/mobile/src/constants/
   generated/tokens.css      generated/tokens.ts
            │                        │
            ▼                        ▼
@@ -369,7 +369,7 @@ Sub-token values (`1–2px`) are allowed **only** for optical nudges (chevron/la
 | `font.mono` | `'JetBrains Mono', ui-monospace, SFMono-Regular, monospace` |
 
 Bundling rules:
-- **Mobile:** `.ttf` files in `fe/mobile/assets/fonts/`; `npx react-native-asset` links them at build time.
+- **Mobile:** `.ttf` files in `apps/mobile/assets/fonts/`; `npx react-native-asset` links them at build time.
 - **Web:** Loaded via `next/font/google` with `display: swap`. Subsets: `latin` + `latin-ext`.
 
 **Type scale (semantic):**
@@ -477,7 +477,7 @@ For every shared component family, which platform owns the reference, where they
 
 Web is installable as a PWA starting Phase 3 M1-R sub-phase 3-R4.
 
-### Manifest (`fe/web/public/manifest.webmanifest`)
+### Manifest (`apps/web/public/manifest.webmanifest`)
 
 ```json
 {

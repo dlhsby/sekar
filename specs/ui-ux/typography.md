@@ -710,6 +710,6 @@ When adding new text content:
 **Last Updated:** 2026-03-06
 **Status:** Active - Updated for Neo Brutalism 2.0 + Phase 2D Monitoring
 **Implementation:**
-- Mobile: `fe/mobile/src/constants/nbTokens.ts`
-- Web: `fe/web/src/app/globals.css`
+- Mobile: `apps/mobile/src/constants/nbTokens.ts`
+- Web: `apps/web/src/app/globals.css`
 **Related:** [neo-brutalism.md](./neo-brutalism.md) - Primary design system reference

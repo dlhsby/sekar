@@ -23,8 +23,14 @@ infra/localstack/
 # Root-level npm workspaces (Phase 3 onward — see ADR-036)
 /node_modules/
 
+# Local scratch data (PII, raw exports) — never commit; removed 2026-07-05
+/data/
+
 # Per-session scratch prompts / planning notes — not part of the repo
 prompts/
+
+# Parallel dev worktrees (scripts/worktree.sh) — local checkouts, not shared state
+.claude/worktrees/
 
 
 # WSL/Windows alternate-data-stream junk (sit next to downloaded creds)

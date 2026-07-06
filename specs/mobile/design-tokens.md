@@ -1,13 +1,13 @@
 # Mobile Design Tokens Reference
 
-> **Mobile-platform lens on canonical tokens (Phase 3 M1-R +).** This document shows how Layer-1 tokens from `specs/ui-ux/tokens.json` surface inside React Native. Any value MUST match the canonical source. To change a token: edit `tokens.json`, run `npm run tokens:build`, commit the regenerated `fe/mobile/src/constants/generated/tokens.ts`. Never hand-edit `nbTokens.ts` or this document — CI (`npm run tokens:verify`) will reject drift.
+> **Mobile-platform lens on canonical tokens (Phase 3 M1-R +).** This document shows how Layer-1 tokens from `specs/ui-ux/tokens.json` surface inside React Native. Any value MUST match the canonical source. To change a token: edit `tokens.json`, run `npm run tokens:build`, commit the regenerated `apps/mobile/src/constants/generated/tokens.ts`. Never hand-edit `nbTokens.ts` or this document — CI (`npm run tokens:verify`) will reject drift.
 
 **Last Updated:** 2026-06-20
 **Version:** Neo Brutalism 2.1.1 (Phase 4 rebrand re-baseline v2.1.1, May 25 reconciliation to design/; generated from Phase 3 M1-R sub-phase 3-R2 pipeline)
 **Single source of truth:** [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json) (validated by [`tokens.schema.json`](../ui-ux/tokens.schema.json))
 **Canonical registry:** [`specs/ui-ux/design-tokens.md`](../ui-ux/design-tokens.md)
-**Generated consumer:** `fe/mobile/src/constants/generated/tokens.ts` (emitted by `scripts/build-tokens.ts` — never hand-edit)
-**Re-exported by:** `fe/mobile/src/constants/nbTokens.ts` — becomes a thin `export * from './generated/tokens'` from Phase 3 M1-R sub-phase 3-R2 onward
+**Generated consumer:** `apps/mobile/src/constants/generated/tokens.ts` (emitted by `scripts/build-tokens.ts` — never hand-edit)
+**Re-exported by:** `apps/mobile/src/constants/nbTokens.ts` — becomes a thin `export * from './generated/tokens'` from Phase 3 M1-R sub-phase 3-R2 onward
 **Related ADRs:** [ADR-036](../architecture/decisions/ADR-036-design-tokens-single-source.md) (single source), [ADR-037](../architecture/decisions/ADR-037-web-pwa.md) (PWA), [ADR-030](../architecture/decisions/ADR-030-area-aggregate-plant-inventory.md) (plant tokens)
 
 > **What this file is now.** A **mobile-platform lens** on the generated token shape — shows how each Layer-1 token from `tokens.json` surfaces inside React Native (hex literal, `shadowOffset/elevation` pair, font-asset filename, etc.). Values below MUST match `tokens.json` at all times; drift is caught by CI (`npm run tokens:verify`).
@@ -23,7 +23,7 @@
 Mobile emits each `shadow.*` token as a **React Native style object** (iOS `shadowOffset` + `shadowOpacity` + `shadowRadius` AND Android `elevation`). The generator enforces `shadowRadius: 0` (NB hard-edge identity) regardless of developer intent.
 
 ```ts
-// Generator output (fe/mobile/src/constants/generated/tokens.ts):
+// Generator output (apps/mobile/src/constants/generated/tokens.ts):
 export const shadows = {
   xs:     { shadowColor: '#1C1917', shadowOffset: { width: 2,  height: 2  }, shadowOpacity: 1, shadowRadius: 0, elevation: 2  },
   sm:     { shadowColor: '#1C1917', shadowOffset: { width: 4,  height: 4  }, shadowOpacity: 1, shadowRadius: 0, elevation: 4  },
@@ -42,7 +42,7 @@ Android `elevation` defaults to `max(offsetX, offsetY)` per token; override only
 Drop-in hook used by every interactive NB primitive:
 
 ```ts
-// fe/mobile/src/hooks/useNBPress.ts (generated helper — shipped with 3-0)
+// apps/mobile/src/hooks/useNBPress.ts (generated helper — shipped with 3-0)
 export function useNBPress() {
   const offset = useSharedValue(0);
   const onPressIn  = () => (offset.value = withTiming(2, { duration: 100 })); // motion.press
@@ -80,7 +80,7 @@ export const fontFamilies = {
 } as const;
 ```
 
-TTF files live in `fe/mobile/assets/fonts/`. Linking: `npx react-native-asset`. Android: autolinking adds entries to `android/app/src/main/assets/fonts/`. iOS: Xcode `Info.plist` `UIAppFonts` array — `react-native-asset` maintains it.
+TTF files live in `apps/mobile/assets/fonts/`. Linking: `npx react-native-asset`. Android: autolinking adds entries to `android/app/src/main/assets/fonts/`. iOS: Xcode `Info.plist` `UIAppFonts` array — `react-native-asset` maintains it.
 
 ### Touch target
 
@@ -101,12 +101,12 @@ Not a token — tokens cannot express React context. Every screen wraps `SafeAre
 ## How to change a token
 
 1. Edit [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json).
-2. Run `npm run tokens:build` from repo root → regenerates `fe/mobile/src/constants/generated/tokens.ts`.
+2. Run `npm run tokens:build` from repo root → regenerates `apps/mobile/src/constants/generated/tokens.ts`.
 3. Run `npm run tokens:verify` (no-op if step 2 was clean).
 4. Commit the generated file alongside your change.
 5. CI will fail if any step is skipped.
 
-Never hand-edit `fe/mobile/src/constants/generated/tokens.ts`. Never hand-edit hex literals in components — ESLint rule `no-inline-hex-colors` rejects them at review.
+Never hand-edit `apps/mobile/src/constants/generated/tokens.ts`. Never hand-edit hex literals in components — ESLint rule `no-inline-hex-colors` rejects them at review.
 
 ---
 
@@ -197,7 +197,7 @@ The sections below enumerate the **emitted** token shape for mobile-side lookup.
 | statusMissing | Red | #DC2626 | Missing worker markers, critical |
 | statusOffline | Gray | #6B7280 | Offline indicators (list only, not map) |
 
-These colors are defined in `fe/mobile/src/styles/monitoringColors.ts` and used by:
+These colors are defined in `apps/mobile/src/styles/monitoringColors.ts` and used by:
 - Map markers (MapDashboardScreen)
 - Status chips and badges (UserDetailSheet)
 - Summary bar counts (MonitoringSummaryBar)

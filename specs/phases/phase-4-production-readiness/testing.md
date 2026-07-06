@@ -23,7 +23,7 @@
 | `08-notifications-inbox.yaml` | Trigger FCM (task assigned) → bell badge increments → tap → NotificationsScreen → mark-read → deep-link to TaskDetail | NOTIF-1 |
 | Additional flows 09-15 | clock-in/out, activity submit, task complete, overtime request, perantingan submit (kecamatan) | (existing screens) |
 
-Flows live under `fe/mobile/.maestro/flows/`. CI runs on push to `main` + `workflow_dispatch` (not every PR — per existing ADR-017 strategy).
+Flows live under `apps/mobile/.maestro/flows/`. CI runs on push to `main` + `workflow_dispatch` (not every PR — per existing ADR-017 strategy).
 
 ### Playwright (web) — new revamp coverage
 
@@ -36,12 +36,12 @@ Flows live under `fe/mobile/.maestro/flows/`. CI runs on push to `main` + `workf
 
 ### Visual regression (4-0 acceptance gate)
 
-Add **storybook-driven snapshot test** in `fe/mobile/__tests__/visual/` + `fe/web/e2e/visual/` for the NB primitives (Button / Card / Pill / Toast / Input / KPI tile) — fails if token re-baseline drifts unexpectedly. Run on push to `main`.
+Add **storybook-driven snapshot test** in `apps/mobile/__tests__/visual/` + `apps/web/e2e/visual/` for the NB primitives (Button / Card / Pill / Toast / Input / KPI tile) — fails if token re-baseline drifts unexpectedly. Run on push to `main`.
 
 ### Accessibility automation
 
 - Mobile: `react-native-accessibility-engine` (or Maestro `assertVisible` with role+label patterns) — assert hit-target ≥ 44 × 44 px on every screen.
-- Web: Playwright `@axe-core/playwright` — fail on AA violations on every revamped page. ✅ **Shipped Jun 11** as `fe/web/e2e/14-a11y.spec.ts` (15 pages, serious/critical gate, maps canvas excluded; runs in `web-e2e.yml`).
+- Web: Playwright `@axe-core/playwright` — fail on AA violations on every revamped page. ✅ **Shipped Jun 11** as `apps/web/e2e/14-a11y.spec.ts` (15 pages, serious/critical gate, maps canvas excluded; runs in `web-e2e.yml`).
 
 ---
 
@@ -96,10 +96,10 @@ Phase 4 introduces comprehensive E2E testing via Maestro (mobile) and expanded P
 
 ### A2. Maestro Configuration
 
-**Directory:** `fe/mobile/.maestro/`
+**Directory:** `apps/mobile/.maestro/`
 
 ```
-fe/mobile/.maestro/
+apps/mobile/.maestro/
 ├── config.yaml
 ├── flows/
 │   ├── 01-login.yaml
@@ -143,7 +143,7 @@ fe/mobile/.maestro/
 
 ### A4. Example Flow
 
-**File:** `fe/mobile/.maestro/flows/01-login.yaml`
+**File:** `apps/mobile/.maestro/flows/01-login.yaml`
 
 ```yaml
 appId: com.sekar
@@ -196,7 +196,7 @@ appId: com.sekar
 ### B3. Test Data
 
 ```typescript
-// fe/web/e2e/helpers/test-data.ts
+// apps/web/e2e/helpers/test-data.ts
 export const TEST_USERS = {
   admin: { identifier: 'admin', password: 'Password123!' },
   superadmin: { identifier: 'superadmin', password: 'Password123!' },
@@ -208,7 +208,7 @@ export const TEST_USERS = {
 
 ### B4. Accessibility Test Example
 
-**File:** `fe/web/e2e/a11y.spec.ts`
+**File:** `apps/web/e2e/a11y.spec.ts`
 
 ```typescript
 import { test, expect } from '@playwright/test';
@@ -285,8 +285,8 @@ test('CORS rejects unauthorized origin', async ({ request }) => {
 |----------|---------|--------|----------|----------|
 | `backend.yml` | Push to main, PRs | ubuntu-latest | postgres | ~3 min |
 | `web.yml` | Push to main, PRs | ubuntu-latest | - | ~2 min |
-| `web-e2e.yml` | Push to main, PRs (fe/web/) | ubuntu-latest | postgres, redis | ~5 min |
-| `mobile-e2e.yml` | Push to main, PRs (fe/mobile/) | ubuntu-latest | postgres, redis | ~8 min |
+| `web-e2e.yml` | Push to main, PRs (apps/web/) | ubuntu-latest | postgres, redis | ~5 min |
+| `mobile-e2e.yml` | Push to main, PRs (apps/mobile/) | ubuntu-latest | postgres, redis | ~8 min |
 
 ### D2. Maestro CI Configuration Details
 

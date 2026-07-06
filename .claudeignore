@@ -2,19 +2,19 @@
 **/node_modules/
 
 # Build outputs
-be/dist/
-fe/web/.next/
-fe/mobile/android/build/
-fe/mobile/android/app/build/
-fe/mobile/ios/build/
-fe/mobile/ios/DerivedData/
+apps/be/dist/
+apps/web/.next/
+apps/mobile/android/build/
+apps/mobile/android/app/build/
+apps/mobile/ios/build/
+apps/mobile/ios/DerivedData/
 
 # Coverage / generated
-be/coverage/
-fe/web/coverage/
-fe/mobile/coverage/
-fe/mobile/ios/link-assets-manifest.json
-fe/mobile/android/link-assets-manifest.json
+apps/be/coverage/
+apps/web/coverage/
+apps/mobile/coverage/
+apps/mobile/ios/link-assets-manifest.json
+apps/mobile/android/link-assets-manifest.json
 
 # Locks & binaries
 *.lock

@@ -312,24 +312,24 @@
 
 ```bash
 # After each component change
-cd fe/web && npm test && npm run lint
-cd fe/mobile && npm test && npm run lint
+cd apps/web && npm test && npm run lint
+cd apps/mobile && npm test && npm run lint
 
 # Quick build check
-cd fe/web && npm run build
-cd fe/mobile && npm run android -- --variant=release
+cd apps/web && npm run build
+cd apps/mobile && npm run android -- --variant=release
 ```
 
 ### Milestone Verification
 
 ```bash
 # M1: Tokens Complete
-cd fe/web && npm test && npm run build
-cd fe/mobile && npm test
+cd apps/web && npm test && npm run build
+cd apps/mobile && npm test
 
 # M2-M4: Components + Pages
-cd fe/web && npm test && npm run test:e2e
-cd fe/mobile && npm test
+cd apps/web && npm test && npm run test:e2e
+cd apps/mobile && npm test
 
 # M5: Audit Pass
 # Run accessibility audit tools
@@ -342,7 +342,7 @@ npx axe-core-cli http://localhost:3001
 
 | Checkpoint | Branch/Tag | Restore Command |
 |------------|------------|-----------------|
-| Before Phase 2B | `main` | `git checkout main -- fe/` |
+| Before Phase 2B | `main` | `git checkout main -- apps/` |
 | After Tokens | `ux-revamp-tokens` | Create tag after M1 |
 | After Components | `ux-revamp-components` | Create tag after M2 |
 | After Pages | `ux-revamp-pages` | Create tag after M4 |
@@ -358,5 +358,5 @@ git tag -a ux-revamp-m4-pages -m "Phase 2B: Pages complete"
 ### Restoring from Checkpoint
 ```bash
 # Restore to specific milestone
-git checkout ux-revamp-m1-tokens -- fe/
+git checkout ux-revamp-m1-tokens -- apps/
 ```

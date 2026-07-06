@@ -40,7 +40,7 @@
 ### B1. Generate Release Keystore (One-Time)
 
 ```bash
-cd fe/mobile/android/app
+cd apps/mobile/android/app
 
 keytool -genkeypair -v -storetype PKCS12 \
   -keystore sekar-release.keystore \
@@ -62,7 +62,7 @@ You will be prompted for:
 ### B2. Configure gradle.properties
 
 ```bash
-cd fe/mobile/android
+cd apps/mobile/android
 cp gradle.properties.example gradle.properties
 ```
 
@@ -116,7 +116,7 @@ SEKAR_RELEASE_KEY_PASSWORD=your_actual_password
 ### C1. Debug APK (Development)
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # Uses .env.local by default (Android emulator → http://10.0.2.2:3000).
 # Build + install + start Metro on a connected device:
@@ -132,7 +132,7 @@ cd android && ./gradlew assembleDebug
 ```bash
 # Production target is on-prem (.env.production); point ENVFILE at the file you want.
 # Ensure gradle.properties has signing config (Section B2) — else it falls back to debug signing.
-cd fe/mobile/android
+cd apps/mobile/android
 
 ENVFILE=.env.production ./gradlew clean assembleRelease
 
@@ -142,7 +142,7 @@ ENVFILE=.env.production ./gradlew clean assembleRelease
 ### C3. Release AAB (for Google Play Store)
 
 ```bash
-cd fe/mobile/android
+cd apps/mobile/android
 
 ENVFILE=.env.production ./gradlew clean bundleRelease
 
@@ -157,7 +157,7 @@ Builds the app against the deployed AWS staging API (`https://api.sekar.wahyutri
 over TLS via Caddy auto-HTTPS). This is the build to hand to UAT testers.
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # One-time: create the runtime file from the committed template, then add any keys
 # (e.g. GOOGLE_MAPS_API_KEY for the supervisor map — leave blank to skip the map).
@@ -238,7 +238,7 @@ otomatis mengganti versi lama tanpa menghapus data.
 
 ### D4. Version Management for APK Distribution
 
-Update version in `fe/mobile/android/app/build.gradle` before each release:
+Update version in `apps/mobile/android/app/build.gradle` before each release:
 
 ```groovy
 defaultConfig {
@@ -377,9 +377,9 @@ adb install -r ~/sekar-release/*/apk/release/app-release.apk
 ### F2. Required secrets (already configured — see `encrypted-secrets.md`)
 | Scope | Secret | Purpose |
 |-------|--------|---------|
-| `staging` env | `MOBILE_DOTENV_PRIVATE_KEY` | decrypts `fe/mobile/.env.staging` (API URL, Maps key, …) |
+| `staging` env | `MOBILE_DOTENV_PRIVATE_KEY` | decrypts `apps/mobile/.env.staging` (API URL, Maps key, …) |
 | `staging` env | `GOOGLE_SERVICES_JSON_STAGING` | base64 of the staging `google-services.json` |
-| `staging` env | `APP_RELEASE_PUBLISH_TOKEN` | authorizes the auto-publish `POST /app-releases` (F6); = encrypted value in `be/.env.staging` |
+| `staging` env | `APP_RELEASE_PUBLISH_TOKEN` | authorizes the auto-publish `POST /app-releases` (F6); = encrypted value in `apps/be/.env.staging` |
 | repo | `ANDROID_KEYSTORE_BASE64` | base64 of the release keystore (`base64 -w0 sekar-release.keystore`) |
 | repo | `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | signing credentials |
 
@@ -402,7 +402,7 @@ adb install -r ~/sekar-release/*/apk/release/app-release.apk
 native compile on top).
 
 ### F4. Versioning
-Bump `fe/mobile/package.json` `version` and Android `versionCode` (`android/app/build.gradle`)
+Bump `apps/mobile/package.json` `version` and Android `versionCode` (`android/app/build.gradle`)
 before cutting a release. The workflow stamps the artifact name with the version + a build code.
 
 > **The in-app update checker compares `versionCode`** (the monotonic Android integer), so it
@@ -422,7 +422,7 @@ web download links **dynamic + versioned** — no redeploy needed:
 The download link is stable (`GET /api/v1/app-releases/latest/download?platform=android` →
 302 to a fresh presigned S3 URL), so it never goes stale. The step needs the `sekar-gha-deploy`
 OIDC role to have `s3:PutObject` on `sekar-media-staging/app-releases/*` (already granted) and skips
-gracefully if `APP_RELEASE_PUBLISH_TOKEN` isn't configured. Backend module: `be/src/modules/app-releases`.
+gracefully if `APP_RELEASE_PUBLISH_TOKEN` isn't configured. Backend module: `apps/be/src/modules/app-releases`.
 
 ### F5. Adding Google Play Upload to CI/CD
 
@@ -434,7 +434,7 @@ To auto-upload to Google Play, add this step to the production job:
         with:
           serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
           packageName: com.wahyutrip.sekar
-          releaseFiles: fe/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          releaseFiles: apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
           track: internal
           status: completed
 ```
@@ -547,17 +547,17 @@ keytool -list -v -keystore sekar-release.keystore -alias sekar-key | grep SHA1
 
 ```bash
 # Build debug APK
-cd fe/mobile/android && ./gradlew assembleDebug
+cd apps/mobile/android && ./gradlew assembleDebug
 
 # Build release APK (signed) — pick the target env; clean is required when switching
-cd fe/mobile/android && ENVFILE=.env.staging    ./gradlew clean assembleRelease   # UAT
-cd fe/mobile/android && ENVFILE=.env.production  ./gradlew clean assembleRelease   # prod
+cd apps/mobile/android && ENVFILE=.env.staging    ./gradlew clean assembleRelease   # UAT
+cd apps/mobile/android && ENVFILE=.env.production  ./gradlew clean assembleRelease   # prod
 
 # Build AAB for Play Store
-cd fe/mobile/android && ENVFILE=.env.production ./gradlew clean bundleRelease
+cd apps/mobile/android && ENVFILE=.env.production ./gradlew clean bundleRelease
 
 # Clean build
-cd fe/mobile/android && ./gradlew clean
+cd apps/mobile/android && ./gradlew clean
 
 # Install APK on device
 adb install -r android/app/build/outputs/apk/release/app-release.apk

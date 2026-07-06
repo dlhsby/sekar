@@ -744,7 +744,7 @@ npm run build              # Build for production
 ### 11.2 Mobile Commands
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm start                  # Start Metro bundler
 npm run android            # Run on Android emulator/device
 npm run ios                # Run on iOS simulator (macOS only)
@@ -843,7 +843,7 @@ This appendix consolidates all configurable parameters and business rules for th
 | Code | Indonesian | English |
 |------|------------|---------|
 | CLEANING | Pembersihan | General cleaning |
-| PRUNING | Pemangkasan | Tree/plant pruning |
+| PRUNING | Perantingan | Tree/plant pruning |
 | WATERING | Penyiraman | Plant watering |
 | FERTILIZING | Pemupukan | Fertilizer application |
 | REPAIR | Perbaikan | Infrastructure repairs |

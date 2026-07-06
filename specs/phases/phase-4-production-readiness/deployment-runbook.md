@@ -16,7 +16,7 @@ Run this list within the 24 h preceding any production deploy. Block the deploy 
 - [ ] **Tag** — `git tag -a vX.Y.Z -m "..."` matches the release notes. The tag SHA is what gets deployed.
 - [ ] **DB backup** — `pg_dump` against production captured to the off-host snapshot bucket. Confirm size and timestamp.
 - [ ] **Migration dry-run** — `npm run migration:show` against a staging clone of production data lists exactly the migrations expected. No surprises.
-- [ ] **Env vars** — staging + production secrets contain every key added since the last deploy. Diff `be/.env.example` against the live secret store.
+- [ ] **Env vars** — staging + production secrets contain every key added since the last deploy. Diff `apps/be/.env.example` against the live secret store.
   - Phase 4 additions: `SENTRY_DSN`, `SENTRY_RELEASE`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `BULLMQ_PREFIX`, `BULLMQ_FCM_RETRY_ATTEMPTS`, `BULLMQ_FCM_RETRY_BACKOFF_MS`, `AUTH_LOGIN_THROTTLE_LIMIT`, `AUTH_LOGIN_THROTTLE_TTL`.
 - [ ] **Sentry release** — `SENTRY_RELEASE` set to the new git SHA *before* the deploy starts. Otherwise the first 5 min of errors land on the previous release.
 - [ ] **Infra health** — Redis reachable from the API host (`redis-cli -u $REDIS_URL ping` → `PONG`). PostgreSQL accepting connections. S3 bucket reachable.
@@ -53,7 +53,7 @@ If all green, mark deploy complete in the release ticket. Otherwise §5.
 ## 3. Mobile release (Android first; iOS deferred to Phase 5)
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 # 1. Bump version
 npm version patch    # or minor/major per change scope
 # 2. Build
@@ -69,7 +69,7 @@ cd android
    - Pull-to-refresh works on the monitoring map.
    - Push notification delivered when a task is assigned in the admin web.
 4. **Promote** internal → closed beta → production after a 24 h soak in closed beta with no new crash-free-session-rate regression in Sentry.
-5. **Web push manifest** — `fe/web/public/manifest.json` `theme_color` must match v2.1 primary `#7FBC8C`. Verified by Lighthouse PWA audit ≥90.
+5. **Web push manifest** — `apps/web/public/manifest.json` `theme_color` must match v2.1 primary `#7FBC8C`. Verified by Lighthouse PWA audit ≥90.
 
 iOS path is identical structurally (EAS Build or Xcode) — out of scope for M1.
 
@@ -78,7 +78,7 @@ iOS path is identical structurally (EAS Build or Xcode) — out of scope for M1.
 ## 4. Web deploy (Next.js)
 
 ```bash
-cd fe/web
+cd apps/web
 npm ci
 npm run build
 npm run start &   # smoke

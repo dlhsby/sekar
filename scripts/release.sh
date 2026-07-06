@@ -49,11 +49,11 @@ case "$COMPONENT" in
   server)
     TAG="sekar-v$VERSION"
     echo "▸ Server release $TAG (backend + web)"
-    bump_pkg be
-    bump_pkg fe/web
-    FILES=(be/package.json fe/web/package.json)
-    [ -f be/package-lock.json ] && FILES+=(be/package-lock.json)
-    [ -f fe/web/package-lock.json ] && FILES+=(fe/web/package-lock.json)
+    bump_pkg apps/be
+    bump_pkg apps/web
+    FILES=(apps/be/package.json apps/web/package.json)
+    [ -f apps/be/package-lock.json ] && FILES+=(apps/be/package-lock.json)
+    [ -f apps/web/package-lock.json ] && FILES+=(apps/web/package-lock.json)
     COMMIT_MSG="chore(release): server v$VERSION"
     ;;
   mobile)
@@ -61,15 +61,15 @@ case "$COMPONENT" in
     echo "$VERSION_CODE" | grep -qE '^[0-9]+$' || die "versionCode must be an integer (got '$VERSION_CODE')"
     TAG="mobile-v$VERSION"
     echo "▸ Mobile release $TAG (versionCode $VERSION_CODE)"
-    bump_pkg fe/mobile
+    bump_pkg apps/mobile
     # Android versionName + versionCode
-    sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION\"/" fe/mobile/android/app/build.gradle
-    sed -i "s/versionCode [0-9]\+/versionCode $VERSION_CODE/" fe/mobile/android/app/build.gradle
+    sed -i "s/versionName \"[^\"]*\"/versionName \"$VERSION\"/" apps/mobile/android/app/build.gradle
+    sed -i "s/versionCode [0-9]\+/versionCode $VERSION_CODE/" apps/mobile/android/app/build.gradle
     # iOS marketing version + build number
-    sed -i "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/g" fe/mobile/ios/SekarApp.xcodeproj/project.pbxproj
-    sed -i "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = $VERSION_CODE;/g" fe/mobile/ios/SekarApp.xcodeproj/project.pbxproj
+    sed -i "s/MARKETING_VERSION = [^;]*;/MARKETING_VERSION = $VERSION;/g" apps/mobile/ios/SekarApp.xcodeproj/project.pbxproj
+    sed -i "s/CURRENT_PROJECT_VERSION = [0-9]\+;/CURRENT_PROJECT_VERSION = $VERSION_CODE;/g" apps/mobile/ios/SekarApp.xcodeproj/project.pbxproj
     echo "  set android versionName=$VERSION versionCode=$VERSION_CODE + iOS MARKETING_VERSION/CURRENT_PROJECT_VERSION"
-    FILES=(fe/mobile/package.json fe/mobile/android/app/build.gradle fe/mobile/ios/SekarApp.xcodeproj/project.pbxproj)
+    FILES=(apps/mobile/package.json apps/mobile/android/app/build.gradle apps/mobile/ios/SekarApp.xcodeproj/project.pbxproj)
     COMMIT_MSG="chore(release): mobile v$VERSION (versionCode $VERSION_CODE)"
     ;;
   *)

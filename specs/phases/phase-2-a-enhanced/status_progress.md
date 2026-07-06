@@ -186,8 +186,8 @@
 | Backend CI/CD Pipeline | ✅ Complete | `.github/workflows/backend-ci-cd.yml` (464 lines) |
 | Mobile CI/CD Pipeline | ✅ Complete | `.github/workflows/mobile-ci-cd.yml` (318 lines) |
 | **Web CI/CD Pipeline** | **✅ Complete** | **`.github/workflows/web-ci-cd.yml` (433 lines)** |
-| Backend Dockerfile | ✅ Complete | `be/Dockerfile` (70 lines, multi-stage) |
-| Web Dockerfile | ✅ Complete | `fe/web/Dockerfile` (67 lines, multi-stage) |
+| Backend Dockerfile | ✅ Complete | `apps/be/Dockerfile` (70 lines, multi-stage) |
+| Web Dockerfile | ✅ Complete | `apps/web/Dockerfile` (67 lines, multi-stage) |
 | Infrastructure Setup | ✅ Complete | `infra/docker-compose.yml` (PostgreSQL, Adminer, LocalStack) |
 | ECR Integration | ✅ Complete | AWS ECR push/pull in CI/CD |
 | EC2 Deployment | ✅ Complete | Zero-downtime deployment with health checks |

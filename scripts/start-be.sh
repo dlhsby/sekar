@@ -10,4 +10,4 @@ free_port "$BE_PORT" "backend"
 ensure_infra
 print_info "Starting backend on :$BE_PORT (start:dev, foreground — Ctrl+C to stop)..."
 print_info "Swagger: http://localhost:$BE_PORT/api/v1/docs"
-cd "$ROOT/be" && npm run start:dev
+cd "$ROOT/apps/be" && npm run start:dev

@@ -23,7 +23,9 @@ Thumbs.db
 db/
 
 # Frontend (not containerized)
-fe/
+apps/web/
+apps/mobile/
+apps/docs/
 
 # Development logs
 SESSION_SUMMARY.md

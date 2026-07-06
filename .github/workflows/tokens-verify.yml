@@ -15,8 +15,8 @@ on:
       - 'scripts/build-tokens.ts'
       - 'scripts/build-tokens.test.ts'
       - 'tools/eslint-plugin-sekar-design/**'
-      - 'fe/web/src/app/generated/**'
-      - 'fe/mobile/src/constants/generated/**'
+      - 'apps/web/src/app/generated/**'
+      - 'apps/mobile/src/constants/generated/**'
       - 'package.json'
       - '.github/workflows/tokens-verify.yml'
   push:
@@ -26,8 +26,8 @@ on:
       - 'specs/ui-ux/tokens.schema.json'
       - 'scripts/build-tokens.ts'
       - 'tools/eslint-plugin-sekar-design/**'
-      - 'fe/web/src/app/generated/**'
-      - 'fe/mobile/src/constants/generated/**'
+      - 'apps/web/src/app/generated/**'
+      - 'apps/mobile/src/constants/generated/**'
 
 jobs:
   verify:

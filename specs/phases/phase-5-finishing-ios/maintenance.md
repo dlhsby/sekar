@@ -61,9 +61,9 @@
 ```bash
 # Production server
 /app/sekar/                    # Application root
-/app/sekar/be/                 # Backend source
-/app/sekar/be/dist/            # Compiled backend
-/app/sekar/be/.env             # Environment variables (NEVER commit)
+/app/sekar/apps/be/                 # Backend source
+/app/sekar/apps/be/dist/            # Compiled backend
+/app/sekar/apps/be/.env             # Environment variables (NEVER commit)
 /var/log/sekar/                # Application logs
 /var/backups/sekar/            # Database backups
 ```
@@ -469,7 +469,7 @@ git revert HEAD --no-edit
 git push origin main
 
 # 3. Or checkout specific commit
-git checkout <commit-hash> -- be/
+git checkout <commit-hash> -- apps/be/
 
 # 4. Rebuild and restart
 cd be && npm ci --production && npm run build
@@ -647,7 +647,7 @@ aws s3api get-bucket-policy --bucket sekar-media-prod
 | Rotate JWT secret | Quarterly | Update JWT_SECRET, restart app |
 | Update SSL certificates | Before expiry | Auto-renewed via Let's Encrypt |
 | Review IAM permissions | Monthly | AWS Console → IAM |
-| Dependency audit | Monthly | `npm audit` in be/ |
+| Dependency audit | Monthly | `npm audit` in apps/be/ |
 | Review open ports | Monthly | `nmap localhost` |
 
 ### G2. Incident Response
@@ -666,7 +666,7 @@ aws s3api get-bucket-policy --bucket sekar-media-prod
 openssl rand -base64 64
 
 # 2. Update .env on server
-nano /app/sekar/be/.env  # Update JWT_SECRET
+nano /app/sekar/apps/be/.env  # Update JWT_SECRET
 
 # 3. Restart application (all active sessions will be invalidated)
 pm2 restart sekar-api

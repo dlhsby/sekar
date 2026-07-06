@@ -1,0 +1,249 @@
+{
+  "id": "ID",
+  "actions": {
+    "save": "Simpan",
+    "cancel": "Batal",
+    "delete": "Hapus",
+    "removeLabel": "Hapus {{label}}",
+    "edit": "Ubah",
+    "add": "Tambah",
+    "create": "Buat",
+    "update": "Perbarui",
+    "submit": "Kirim",
+    "confirm": "Konfirmasi",
+    "close": "Tutup",
+    "back": "Kembali",
+    "next": "Lanjut",
+    "search": "Cari",
+    "filter": "Filter",
+    "reset": "Atur Ulang",
+    "clear": "Bersihkan",
+    "refresh": "Muat Ulang",
+    "retry": "Coba Lagi",
+    "view": "Lihat",
+    "detail": "Detail",
+    "approve": "Setujui",
+    "reject": "Tolak",
+    "export": "Ekspor",
+    "import": "Impor",
+    "download": "Unduh",
+    "upload": "Unggah",
+    "loading": "Memuat...",
+    "saving": "Menyimpan...",
+    "creating": "Membuat...",
+    "updating": "Memperbarui...",
+    "open": "Buka menu",
+    "yes": "Ya",
+    "no": "Tidak",
+    "clearFilters": "Hapus Filter",
+    "removeSelection": "Hapus pilihan",
+    "showColumns": "Tampilkan kolom",
+    "columns": "Kolom",
+    "clearAllFilters": "Hapus semua filter kolom",
+    "filterPerColumn": "Filter per kolom",
+    "activeFilters": "{{count}} filter aktif",
+    "profile": "Profil",
+    "downloadApp": "Unduh Aplikasi",
+    "settings": "Pengaturan",
+    "logout": "Keluar",
+    "confirmLogout": "Konfirmasi Keluar",
+    "confirmLogoutMessage": "Apakah Anda yakin ingin keluar dari aplikasi?",
+    "capacity": "Kapasitas",
+    "menuLabel": "Aksi",
+    "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom",
+    "openMapLink": "Buka di Google Maps"
+  },
+  "entities": {
+    "user": "Pengguna",
+    "area": "Area",
+    "rayon": "Rayon",
+    "task": "Tugas",
+    "activity": "Aktivitas",
+    "schedule": "Jadwal",
+    "shift": "Shift",
+    "overtime": "Lembur",
+    "report": "Laporan",
+    "attendance": "Kehadiran",
+    "monitoring": "Pemantauan",
+    "pruningRequest": "Permohonan Pangkas",
+    "plant": "Tanaman",
+    "seed": "Bibit",
+    "setting": "Pengaturan"
+  },
+  "empty": {
+    "noData": {
+      "title": "Belum Ada Data",
+      "description": "Data akan muncul di sini setelah Anda menambahkannya."
+    },
+    "noResults": {
+      "title": "Tidak Ditemukan",
+      "description": "Tidak ada hasil yang cocok dengan pencarian Anda."
+    },
+    "offline": {
+      "title": "Tidak Ada Koneksi",
+      "description": "Periksa koneksi internet Anda dan coba lagi."
+    },
+    "error": {
+      "title": "Terjadi Kesalahan",
+      "description": "Terjadi kesalahan saat memuat data. Silakan coba lagi."
+    },
+    "loadError": "Gagal memuat data.",
+    "maintenance": {
+      "title": "Dalam Perbaikan",
+      "description": "Fitur ini sedang dalam perbaikan. Silakan coba lagi nanti."
+    },
+    "noPermission": {
+      "title": "Tidak Memiliki Akses",
+      "description": "Anda tidak memiliki izin untuk mengakses halaman ini.",
+      "short": "Akses ditolak"
+    },
+    "emptyFolder": {
+      "title": "Folder Kosong",
+      "description": "Folder ini belum memiliki konten."
+    },
+    "allDone": {
+      "title": "Semua Selesai",
+      "description": "Tidak ada tugas yang perlu dikerjakan."
+    },
+    "search": {
+      "title": "Mulai Pencarian",
+      "description": "Ketik kata kunci untuk mencari data."
+    },
+    "noHistory": "Tidak ada riwayat",
+    "noBoundary": "Belum ada boundary polygon",
+    "noAreas": "Belum ada area"
+  },
+  "language": {
+    "label": "Bahasa",
+    "id": "Bahasa Indonesia",
+    "en": "English"
+  },
+  "ui": {
+    "combobox": {
+      "placeholder": "Pilih…",
+      "searchPlaceholder": "Cari…",
+      "noResults": "Tidak ditemukan",
+      "clearSelection": "Hapus pilihan"
+    },
+    "timePicker": {
+      "selectTime": "Pilih jam",
+      "now": "Sekarang"
+    },
+    "multiCombobox": {
+      "selected": "{{count}} dipilih",
+      "removeItem": "Hapus {{label}}"
+    }
+  },
+  "app": {
+    "install": {
+      "loading": "Memuat versi terbaru…",
+      "error": "Gagal memuat info rilis. Coba muat ulang halaman."
+    }
+  },
+  "stats": {
+    "noData": "Statistik tidak tersedia",
+    "totalArea": "Total Area"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "monitoring": "Monitoring",
+    "work": "Pekerjaan",
+    "tasks": "Tugas",
+    "activities": "Aktivitas",
+    "overtime": "Lembur",
+    "schedules": "Jadwal",
+    "pruningRequests": "Permohonan Perantingan",
+    "usersAccess": "Pengguna & Hak Akses",
+    "users": "Pengguna",
+    "masterData": "Data Master",
+    "areas": "Area",
+    "rayons": "Rayon",
+    "plants": "Tanaman",
+    "seeds": "Bibit",
+    "assets": "Aset",
+    "reports": "Laporan",
+    "reportsList": "Daftar Laporan",
+    "reportsBuilder": "Buat Laporan",
+    "reportsSchedules": "Jadwal Laporan",
+    "analytics": "Analitik",
+    "analyticsSummary": "Ringkasan",
+    "workerPerformance": "Kinerja Pekerja",
+    "areaComparison": "Perbandingan Area",
+    "operations": "Operasional",
+    "exportData": "Ekspor Data",
+    "importData": "Impor Data",
+    "settings": "Pengaturan",
+    "submitRequest": "Kirim Permintaan",
+    "myRequests": "Permintaan Saya",
+    "guide": "Panduan",
+    "districtNav": "Navigasi kecamatan",
+    "mainNav": "Navigasi utama",
+    "breadcrumbAria": "Navigasi breadcrumb"
+  },
+  "pagination": {
+    "previous": "Sebelumnya",
+    "next": "Selanjutnya",
+    "pageOf": "Halaman {{page}} dari {{total}}",
+    "showing": "Menampilkan {{from}}–{{to}} dari {{total}}",
+    "perPage": "{{count}} / hlm"
+  },
+  "pickers": {
+    "selectTime": "Pilih waktu",
+    "selectDate": "Pilih tanggal",
+    "selectDateTime": "Pilih tanggal & waktu",
+    "prevDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya",
+    "today": "Hari ini",
+    "now": "Sekarang"
+  },
+  "time": {
+    "relativeJustNow": "Baru saja",
+    "relativeMinutesAgo": "{{count}} menit lalu",
+    "relativeHoursAgo": "{{count}} jam lalu",
+    "relativeDaysAgo": "{{count}} hari lalu",
+    "hoursShort": "j",
+    "minutesShort": "m"
+  },
+  "table": {
+    "filter": "Filter",
+    "activeFilters": "{{count}} filter aktif"
+  },
+  "errors2": {
+    "unknown": "kesalahan tidak diketahui",
+    "userNotFound": "Pengguna tidak ditemukan"
+  },
+  "a11y": {
+    "skipToMain": "Lewati ke konten utama",
+    "loadingDashboard": "Memuat konten dashboard",
+    "pageLoading": "Progres pemuatan halaman",
+    "openNav": "Buka menu navigasi",
+    "toggleSidebar": "Alihkan sidebar",
+    "userMenu": "Menu pengguna",
+    "monitoringPanel": "Panel monitoring"
+  },
+  "appError": {
+    "title": "Terjadi Kesalahan",
+    "authMessage": "Terjadi kesalahan saat memproses autentikasi. Silakan coba lagi atau keluar dan masuk kembali.",
+    "checkingAuth": "Memeriksa autentikasi..."
+  },
+  "offline": {
+    "title": "Anda Sedang Offline",
+    "body": "Tidak dapat memuat halaman ini karena koneksi internet tidak tersedia. Periksa koneksi Anda dan coba lagi.",
+    "cachedNote": "Data yang sudah dimuat sebelumnya masih dapat diakses melalui menu navigasi."
+  },
+  "pwa": {
+    "installTitle": "Pasang Aplikasi",
+    "installApp": "Pasang aplikasi SEKAR",
+    "install": "Pasang",
+    "installBenefit": "— Akses lebih cepat tanpa browser",
+    "downloadAppTitle": "Unduh Aplikasi SEKAR",
+    "downloadAndroid": "Unduh Aplikasi Android",
+    "gpsHint": "Untuk pengalaman lebih baik dengan GPS, kamera, dan notifikasi push",
+    "whatsappChat": "Chat WhatsApp"
+  },
+  "errors": {
+    "noPermission": {
+      "short": "Akses ditolak"
+    }
+  }
+}

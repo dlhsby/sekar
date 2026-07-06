@@ -1,5 +1,11 @@
 # Phase 3: Plants Management, Monitoring Rebuild & Public Intake — Status
 
+> **Monitoring Revamp (post-UAT, branch `f/monitoring-revamp`) — in progress.** Addresses staging/UAT map slowness at scale (many areas + many concurrent online workers) with an **aggregate-first drill-down** (town → rayon → area → workers) plus an opt-in clustered all-workers view, incremental WebSocket updates on web, and native Google Maps controls.
+> - **Backend (done, tested):** `GET /monitoring/aggregate?scope=city\|rayon` (grouped status/role counts + centers, no worker coords, role-scoped); `GET /monitoring/boundaries?level=rayon\|area` + Douglas–Peucker polygon simplification (`apps/be/src/common/utils/geojson-simplify.util.ts`); short-TTL response cache w/ in-flight dedup on snapshot + aggregate (`MonitoringCacheService.getOrCompute`). 324 monitoring specs green.
+> - **Web (done, tested):** progressive-disclosure map (`SimpleMonitoringMap` + `AggregateBubbleLayer` + supercluster `WorkerClusterLayer`), `[Ringkasan]/[Semua Petugas]` toggle + drill/back, WebSocket incremental patches (`lib/monitoring/useMonitoringSocket` + pure `patch-reducers`) replacing the 30 s full-remount poll, native gestures/zoom/My-Location. 273 web monitoring tests green; tsc/lint/i18n clean.
+> - **Mobile (done, tested):** native Google controls enabled (My-Location, live dot, native zoom, compass; redundant custom locate/zoom FAB removed); aggregate-first bubble UI + drill on react-native-maps (`AggregateBubbleLayer`, `monitoringV2Slice` mode/view/floor/aggregate + `Ringkasan/Semua Petugas` toggle + back breadcrumb); `getMonitoringAggregate` + `?level=` plumbed. 343 mobile monitoring tests green.
+> - Contract: `specs/api/contracts.md` (aggregate + boundary `level`). No Mapbox anywhere (fully Google Maps).
+
 **Status:** ✅ **Closed (2026-06-11)** — see [status_reviews.md § "Phase 3 Sign-Off Review (2026-05-23)"](./status_reviews.md). All 17 ADR conformance items implemented; 5 CRITICAL + 12 HIGH audit findings remediated; the 9 items deferred on 2026-05-23 were shipped/closed on 2026-06-11 (close-out table below).
 **Last audit:** 2026-05-23 — see [GAP-AUDIT-2026-05-23.md](./GAP-AUDIT-2026-05-23.md). Audit reconciled headline %, corrected two stale "not started" claims (3-14 k6 harness exists; 3-10 web admin pages exist), and surfaced 5 CRITICAL + 12 HIGH findings. **All findings closed or deferred** in Waves 1–7.
 
@@ -62,7 +68,7 @@ Verification: `npx jest activities.service.spec|plant-due-date.service.spec|keca
 | H7 token-compliance sweep | ✅ Closed | 8 mobile hex + 11 web hex literals replaced; brand colors (WhatsApp `#25D366`) kept with `eslint-disable-next-line` + rationale |
 | H8 mobile pruning-screens test timeouts | ✅ Closed | per-file `jest.setTimeout(60000)` |
 | H6 web monitoring/plants/pruning API tests | ✅ Closed | 3 new spec files / 30 tests (monitoring-v2, plants, pruning-requests) |
-| H11 CSV backfill (3-13) | ✅ Closed | `be/src/database/backfill/pruning-csv-importer.ts` — idempotent on `reference_code`, dry-run default, 12-test helper suite; **executed locally 2026-06-11** (4,979 rows, photo-less — runbook below); production run = manual cutover step |
+| H11 CSV backfill (3-13) | ✅ Closed | `apps/be/src/database/backfill/pruning-csv-importer.ts` — idempotent on `reference_code`, dry-run default, 12-test helper suite; **executed locally 2026-06-11** (4,979 rows, photo-less — runbook below); production run = manual cutover step |
 | M1 GET `/pruning-requests/:id` defence-in-depth | ✅ Closed | `@Roles(...)` decorator added |
 | M4 cross-replica staffing debouncer | ✅ Closed | Redis-backed `SET NX EX` leader election in `StaffingDebouncerService`; single-replica / no-Redis path unchanged |
 | M6 single-query `onLocationPing` | ✅ Closed | `user` + `area` eager-loaded with safe column-select; broadcast helpers consume cache (3 reads → 1) |
@@ -82,7 +88,7 @@ Verification: `npx jest activities.service.spec|plant-due-date.service.spec|keca
 | `(kecamatan)/pruning-requests` web submit form | 3-10 | ✅ Shipped earlier in Phase 4-R (web submit + my-requests live). |
 | Overdue alerts dashboard + FCM push | 3-8 | ✅ Shipped — `NotificationType.AREA_PLANT_OVERDUE` (+ enum migration `17480700000000`), `GET /monitoring/plant-status/summary`, 08:00 WIB `plant-overdue-digest` cron (Redis SET-NX dedup per user/day, top_management all rayons + kepala_rayon own), dashboard "Tanaman Terlambat Dipangkas" widget, monitoring-map "Tanaman" overlay toggle, prefs toggles + deep-link on both clients. |
 | Visreg baselines + CI | 3-R3 | ✅ Closed (minimal scope per plan) — `e2e/15-visreg.spec.ts`: login + dashboard at 375/768/1280, masked dynamic regions, 6 committed chromium-linux baselines; runs inside the existing web e2e job. Full NB-primitive snapshot infra remains out of scope. |
-| `clusterMarkersV2` flag flip | 3-5 | ✅ Closed as device-gated — flag stays `false` (`fe/mobile/src/utils/featureFlags.ts`); flip lives on the Phase-4 device field-test checklist (k6 500-worker + low-end Android FPS). Orphaned web `components/monitoring/ClusterLayer.tsx` (superseded by the Jun-10 monitoring rebuild) deleted. |
+| `clusterMarkersV2` flag flip | 3-5 | ✅ Closed as device-gated — flag stays `false` (`apps/mobile/src/utils/featureFlags.ts`); flip lives on the Phase-4 device field-test checklist (k6 500-worker + low-end Android FPS). Orphaned web `components/monitoring/ClusterLayer.tsx` (superseded by the Jun-10 monitoring rebuild) deleted. |
 | CSV backfill execution (3-13) | 3-13 | ✅ Executed locally, photo-less — see runbook below. Production run remains a manual cutover step. |
 
 **3-13 backfill runbook (local execution 2026-06-11, photo-less per decision):**
@@ -120,7 +126,7 @@ Use this as the **post-redesign acceptance gate** before tagging the slice "ship
 | Backfill — legacy assigned tasks get a synthesized creator → assignee hop | Migration `17460006000000-BackfillTaskDelegations.ts`, idempotent via `NOT EXISTS` | ✅ verified — 37 legacy tasks now have history |
 | Kecamatan booking by week, not date | `pruning_requests.expected_year` + `expected_iso_week` columns; mobile `WeekPicker` + `WeekPickerModal`; admin `assign-to-task` auto-picks first day of preferred week when `scheduledDate` omitted | ✅ verified |
 | `/assign-to-task` → task lands in `assigned` (not `pending`) so the satgas can accept | `pruning-requests.service.ts` sets `status: TaskStatus.ASSIGNED` + `assigned_at` and inserts a `task_delegations` row + sends a `task_assigned` notification | ✅ verified — full e2e green (submit → review → convert → accept → start → complete) |
-| `password_hash` sweep — global `ClassSerializerInterceptor` honours `@Exclude` | `be/src/main.ts` registers the interceptor with the global `Reflector`; verified on `auth/me`, `tasks/:id`, `users`, and the new `tasks/:id/delegations` | ✅ verified |
+| `password_hash` sweep — global `ClassSerializerInterceptor` honours `@Exclude` | `apps/be/src/main.ts` registers the interceptor with the global `Reflector`; verified on `auth/me`, `tasks/:id`, `users`, and the new `tasks/:id/delegations` | ✅ verified |
 | Hardening from the e2e — capacity QB hydration + dotenv preload + env-driven login throttle | `service-capacity.service.ts` switched to entity-aware `createQueryBuilder(Entity, alias)`; `main.ts` imports `'dotenv/config'` first; `auth.controller.ts` reads `AUTH_LOGIN_THROTTLE_LIMIT/TTL`; `.env.example` family synced (1000/min dev, 5/min staging+prod) | ✅ verified |
 
 ### What you should manually QA
@@ -131,7 +137,7 @@ Use this as the **post-redesign acceptance gate** before tagging the slice "ship
 ./scripts/infra.sh start
 cd be && npm run migration:run && npm run db:seed && npm run start:dev
 # new env knob — local dev sets 1000/min so smoke tests don't 429
-grep AUTH_LOGIN_THROTTLE_LIMIT be/.env  # → 1000
+grep AUTH_LOGIN_THROTTLE_LIMIT apps/be/.env  # → 1000
 ```
 
 **1. Activity tagging (mobile)** 🔍
@@ -206,7 +212,7 @@ After seed, expect:
 | `GET /api/v1/plant-species?q=akasia` | Returns AKASIA + AKASIA_MANGIUM | ✅ verified |
 | `GET /api/v1/monitoring/snapshot` | Worker + plant + area aggregates; no 500 | 🔍 manual smoke after seed |
 
-### Mobile — perantingan 5-stage walkthrough (`cd fe/mobile && npm run android`)
+### Mobile — perantingan 5-stage walkthrough (`cd apps/mobile && npm run android`)
 
 1. **Stage 1 — Submit (`staff_kec_pusat`)**
    - Open Perantingan tab → tap "+ Buat Permohonan" → SubmitScreen.
@@ -229,7 +235,7 @@ After seed, expect:
    - Verify `MonitoringStatusSheet` peek/middle/full snap points work and the new `MonitoringSearchBar` filters the worker list. 🔍 manual
    - Verify the 4 status stat cards render via the new `MonitoringStatCard` and pull colors from `nbColors.statusActive/Idle/Outside/Missing`. ✅ verified
 
-### Web — monitoring page (`cd fe/web && npm run dev` → http://localhost:3001/monitoring)
+### Web — monitoring page (`cd apps/web && npm run dev` → http://localhost:3001/monitoring)
 
 | Step | Expected | Status |
 |------|----------|--------|
@@ -246,7 +252,7 @@ This route exists as a placeholder shell only. Full web submit form is **deferre
 
 ### Phase 4 backlog uncovered by this review
 
-- Web admin (dashboard) pruning-requests pages — `fe/web/src/app/(dashboard)/pruning-requests/{page,[id]/page,[id]/disposition/page}` are **not implemented**; admin disposition is mobile-only. Spec call-out exists in `web.md` but page files were never created.
+- Web admin (dashboard) pruning-requests pages — `apps/web/src/app/(dashboard)/pruning-requests/{page,[id]/page,[id]/disposition/page}` are **not implemented**; admin disposition is mobile-only. Spec call-out exists in `web.md` but page files were never created.
 - `AssignToTaskSheet` on mobile reads empty Redux state for areas + users (Apr 27 defensive patch returns `[]`). Real `areasSlice` + `usersSlice` ship in Phase 4 polish; admin currently must enter area_id + assignee manually.
 
 ---
@@ -279,17 +285,17 @@ This checkpoint covers all work from sub-phase 3-R1 through 3-5 (M1-R foundation
 | Area | Entry point | Key things to check |
 |------|-------------|---------------------|
 | **Token pipeline** | `scripts/build-tokens.ts`, `specs/ui-ux/tokens.json` | Generator produces identical output; `tokens:verify` CI job gates PRs |
-| **NB 2.0 shadows + colors** | `fe/mobile/src/constants/nbTokens.ts`, `fe/mobile/src/constants/generated/tokens.ts` | Opaque hard-edge shadows (`shadowOpacity:1, shadowRadius:0, elevation:0`); `nbColors.gray` backward-compat shim |
-| **NBModal / NBToast / NBText** | `fe/mobile/src/components/nb/` | Sheet vs. fullscreen modal variants; title uppercased; toast NB chrome; NBText 10 variants |
-| **Web PWA shell** | `fe/web/src/app/layout.tsx`, `fe/web/next.config.ts`, `fe/web/src/app/(kecamatan)/layout.tsx` | Manifest, service worker, `ResponsiveShell` at 375/768/1280 px; `staff_kecamatan` minimal layout |
-| **Redis + Socket.IO adapter** | `be/src/common/services/redis.service.ts`, `be/src/gateways/events.gateway.ts` | Graceful fallback (no Redis = in-process); `@Optional()` injection |
-| **Status pipeline** | `be/src/modules/monitoring/services/` (projector, debouncer, sweeper) | Redis Stream consumer group; debounce prevents broadcast thrash; cron sweep marks stale |
-| **Snapshot endpoint** | `be/src/modules/monitoring/monitoring.controller.ts:197` | Scope enforcement (rayon/city gate); response shape for web + mobile consumers |
-| **Web monitoring page** | `fe/web/src/app/(dashboard)/monitoring/page.tsx` | `status:v2` WS patch wiring; `ClusterLayer`; `WorkerListVirtual`; `HierarchyFilterPanel`; `AreaDetailDrawer` |
-| **Mobile cluster markers** | `fe/mobile/src/components/monitoring/ClusteredUserMarkers.tsx`, `ClusterMarker.tsx` | `featureFlags.clusterMarkersV2=false` (off by default); ESLint ban on `tracksViewChanges={true}` |
-| **Mobile monitoringV2Slice** | `fe/mobile/src/store/slices/monitoringV2Slice.ts` | `visibleLayers`, `clusterZoomThreshold`, `snapshot` shape |
-| **Mobile toggle sheet + area overlay** | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx`, `AreaStatusOverlay.tsx` | Layer toggle dispatches; `useFocusEffect` boundary fetch |
-| **Test suite health** | Run `cd fe/mobile && npm test` | 159 suites, 3,836 total, 3,829 passing, 7 skipped — should be zero failures |
+| **NB 2.0 shadows + colors** | `apps/mobile/src/constants/nbTokens.ts`, `apps/mobile/src/constants/generated/tokens.ts` | Opaque hard-edge shadows (`shadowOpacity:1, shadowRadius:0, elevation:0`); `nbColors.gray` backward-compat shim |
+| **NBModal / NBToast / NBText** | `apps/mobile/src/components/nb/` | Sheet vs. fullscreen modal variants; title uppercased; toast NB chrome; NBText 10 variants |
+| **Web PWA shell** | `apps/web/src/app/layout.tsx`, `apps/web/next.config.ts`, `apps/web/src/app/(kecamatan)/layout.tsx` | Manifest, service worker, `ResponsiveShell` at 375/768/1280 px; `staff_kecamatan` minimal layout |
+| **Redis + Socket.IO adapter** | `apps/be/src/common/services/redis.service.ts`, `apps/be/src/gateways/events.gateway.ts` | Graceful fallback (no Redis = in-process); `@Optional()` injection |
+| **Status pipeline** | `apps/be/src/modules/monitoring/services/` (projector, debouncer, sweeper) | Redis Stream consumer group; debounce prevents broadcast thrash; cron sweep marks stale |
+| **Snapshot endpoint** | `apps/be/src/modules/monitoring/monitoring.controller.ts:197` | Scope enforcement (rayon/city gate); response shape for web + mobile consumers |
+| **Web monitoring page** | `apps/web/src/app/(dashboard)/monitoring/page.tsx` | `status:v2` WS patch wiring; `ClusterLayer`; `WorkerListVirtual`; `HierarchyFilterPanel`; `AreaDetailDrawer` |
+| **Mobile cluster markers** | `apps/mobile/src/components/monitoring/ClusteredUserMarkers.tsx`, `ClusterMarker.tsx` | `featureFlags.clusterMarkersV2=false` (off by default); ESLint ban on `tracksViewChanges={true}` |
+| **Mobile monitoringV2Slice** | `apps/mobile/src/store/slices/monitoringV2Slice.ts` | `visibleLayers`, `clusterZoomThreshold`, `snapshot` shape |
+| **Mobile toggle sheet + area overlay** | `apps/mobile/src/components/monitoring/MonitoringToggleSheet.tsx`, `AreaStatusOverlay.tsx` | Layer toggle dispatches; `useFocusEffect` boundary fetch |
+| **Test suite health** | Run `cd apps/mobile && npm test` | 159 suites, 3,836 total, 3,829 passing, 7 skipped — should be zero failures |
 
 ### Known deferred items (not blocking M2 review)
 
@@ -492,12 +498,12 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | Author `scripts/build-tokens.ts` (JSON → CSS + TS emitter) | ✅ | Hand-rolled per ADR-036 (no Style Dictionary). Reads `tokens.json`, validates against schema with `ajv`, deterministic output (sorted keys, LF, trailing newline). |
-| Wire `npm run tokens:build` and `npm run tokens:verify` | ✅ | New root `package.json` with `npm workspaces` (be, fe/web, fe/mobile, tools/eslint-plugin-sekar-design). |
+| Wire `npm run tokens:build` and `npm run tokens:verify` | ✅ | New root `package.json` with `npm workspaces` (be, apps/web, apps/mobile, tools/eslint-plugin-sekar-design). |
 | CI: schema validate + generator drift check | ✅ | `.github/workflows/tokens-verify.yml` runs `tokens:verify` + `test:tokens` on PR; verified locally that tampering exits 1. |
 | ESLint: `no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility` | ✅ | Local plugin at `tools/eslint-plugin-sekar-design/`. Web config wired with all 3 rules at `error` level. |
-| Mobile RN custom rule: ban `shadowRadius: > 0` | ✅ | `rn-no-shadow-radius` rule live in `fe/mobile/eslint.config.js` at `error`. |
+| Mobile RN custom rule: ban `shadowRadius: > 0` | ✅ | `rn-no-shadow-radius` rule live in `apps/mobile/eslint.config.js` at `error`. |
 | Generator snapshot test fixture | ✅ | `scripts/build-tokens.test.ts` (12 generator assertions) + 4 ESLint `RuleTester` test files (28 rule assertions). 40 unit tests pass. |
-| Commit `generated/` artifacts seed | ✅ | `fe/web/src/app/generated/tokens.css` and `fe/mobile/src/constants/generated/tokens.ts` are real output (consumer cutover deferred to 3-R2). |
+| Commit `generated/` artifacts seed | ✅ | `apps/web/src/app/generated/tokens.css` and `apps/mobile/src/constants/generated/tokens.ts` are real output (consumer cutover deferred to 3-R2). |
 | Schema fix (deferred discovery) | ✅ | `tokens.schema.json` `typeMap` now allows `_note` documentation strings (caught by ajv during first run). |
 | Transitional file allowlist for inline-hex rule | ✅ | 12 web files + 17 mobile files exempted via per-file ESLint overrides; explicitly tagged "remove in 3-R5". Existing `npm run lint` in both workspaces stays green. |
 
@@ -510,9 +516,9 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 - `package.json` (new — root, workspaces declared)
 - `scripts/build-tokens.ts`, `scripts/build-tokens.test.ts`, `scripts/tsconfig.json`, `scripts/jest.config.cjs`
 - `tools/eslint-plugin-sekar-design/{package.json, index.js, rules/*.js, rules/*.test.ts}` (4 rules + 4 test files)
-- `fe/web/eslint.config.mjs`, `fe/mobile/eslint.config.js` (plugin wired)
-- `fe/web/src/app/generated/tokens.css` (new)
-- `fe/mobile/src/constants/generated/tokens.ts` (new)
+- `apps/web/eslint.config.mjs`, `apps/mobile/eslint.config.js` (plugin wired)
+- `apps/web/src/app/generated/tokens.css` (new)
+- `apps/mobile/src/constants/generated/tokens.ts` (new)
 - `.github/workflows/tokens-verify.yml` (new)
 - `specs/ui-ux/tokens.schema.json` (typeMap accepts `_note` strings)
 
@@ -525,11 +531,11 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Strip Layer-1 from `nbTokens.ts`; re-export from generated; keep helpers | ✅ | `fe/mobile/src/constants/nbTokens.ts` — selective re-exports + augmented `nbColors` with nested `gray` backward-compat shim |
-| Rewrite `globals.css` to `@import './generated/tokens.css'`; keep utilities | ✅ | `fe/web/src/app/globals.css` — `@theme inline {}` with `var()` refs; aliases `--color-nb-background` + `--color-nb-sidebar` added |
-| Bundle OFL fonts on mobile (Space Grotesk, Inter, JetBrains Mono) + license files | ✅ | `fe/mobile/assets/fonts/` — Inter variable TTF (opsz,wght), SpaceGrotesk variable TTF (wght), JetBrainsMono-Regular/Medium/SemiBold static TTFs |
-| Configure `react-native.config.js` with assets path | ✅ | `fe/mobile/react-native.config.js` — `assets: ['./assets/fonts']` for `npx react-native-asset` |
-| Load fonts on web via `next/font/google` (display: swap, latin+latin-ext) | ✅ | `fe/web/src/app/layout.tsx` — Inter (`--font-body`), Space_Grotesk (`--font-display`), JetBrains_Mono (`--font-mono`) |
+| Strip Layer-1 from `nbTokens.ts`; re-export from generated; keep helpers | ✅ | `apps/mobile/src/constants/nbTokens.ts` — selective re-exports + augmented `nbColors` with nested `gray` backward-compat shim |
+| Rewrite `globals.css` to `@import './generated/tokens.css'`; keep utilities | ✅ | `apps/web/src/app/globals.css` — `@theme inline {}` with `var()` refs; aliases `--color-nb-background` + `--color-nb-sidebar` added |
+| Bundle OFL fonts on mobile (Space Grotesk, Inter, JetBrains Mono) + license files | ✅ | `apps/mobile/assets/fonts/` — Inter variable TTF (opsz,wght), SpaceGrotesk variable TTF (wght), JetBrainsMono-Regular/Medium/SemiBold static TTFs |
+| Configure `react-native.config.js` with assets path | ✅ | `apps/mobile/react-native.config.js` — `assets: ['./assets/fonts']` for `npx react-native-asset` |
+| Load fonts on web via `next/font/google` (display: swap, latin+latin-ext) | ✅ | `apps/web/src/app/layout.tsx` — Inter (`--font-body`), Space_Grotesk (`--font-display`), JetBrains_Mono (`--font-mono`) |
 | Drift fixes: primary.hover #6BA87A, primary.active #5A9468, secondary #8B7355, secondary.hover #725E45, success #7FBC8C, info #69D2E7 | ✅ | baked into `tokens.json` → regenerated in `generated/tokens.css` + `generated/tokens.ts` |
 | Drift fixes: type h1=28/1.2, h2=22/1.3, h3=18/1.35 | ✅ | type scale in `tokens.json` → both platforms converge via generated output |
 | Drift fixes: shadows opaque #1C1917, zero blur/radius | ✅ | NB stamp: `shadowOpacity: 1`, `shadowRadius: 0`, `elevation: 0`; 13 nbTokens unit tests lock the invariant |
@@ -537,7 +543,7 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | `specs/ui-ux/CHANGELOG.md` v2.1.1 entry | ✅ | v2.1.1 shipped 2026-04-25 — drift fixes, font bundling, CSS var approach documented |
 | Deprecation banners on `specs/mobile/design-tokens.md` + `color-palette-standardization.md` | ✅ | Both files redirect to `tokens.json` + `design-tokens.md` as canonical source |
 
-**Acceptance criteria:** `git grep -nE '#[0-9a-fA-F]{6}' fe/{mobile,web}/src | grep -v generated` returns zero/allowlist-only; Space Grotesk renders on `<NBText variant="h1">`; web body uses Inter.
+**Acceptance criteria:** `git grep -nE '#[0-9a-fA-F]{6}' apps/{mobile,web}/src | grep -v generated` returns zero/allowlist-only; Space Grotesk renders on `<NBText variant="h1">`; web body uses Inter.
 
 ---
 
@@ -545,11 +551,11 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Migrate web primitives (Button/Card/Badge/Input/Textarea/Select/Dialog/...) to `shadow-nb-*` + `.nb-focus-ring` | ✅ | `fe/web/src/components/ui/*` — already on `shadow-nb-*` from Phase 2; `LocationTimeline.tsx` stray `shadow-sm` → `shadow-nb-xs` fixed |
+| Migrate web primitives (Button/Card/Badge/Input/Textarea/Select/Dialog/...) to `shadow-nb-*` + `.nb-focus-ring` | ✅ | `apps/web/src/components/ui/*` — already on `shadow-nb-*` from Phase 2; `LocationTimeline.tsx` stray `shadow-sm` → `shadow-nb-xs` fixed |
 | Migrate mobile primitives to generated shadow helper | ✅ | Phase 2 NB components import `nbShadows` from `nbTokens` which re-exports generated; Phase 3 opaque values flow automatically. Backward-compat `nbBorders.base/thin/thick/extra` aliases added to fix broken border widths. |
-| Build `NBModal.tsx` (`@gorhom/bottom-sheet` + RN `<Modal>`) | ✅ | `fe/mobile/src/components/nb/NBModal.tsx` — sheet (BottomSheet, NB title bar, grabber, close btn) + fullscreen (RN Modal, back btn, uppercase title, sticky footer) |
-| Build `NBToast.tsx` (`react-native-toast-message` wrapper) | ✅ | `fe/mobile/src/components/nb/NBToast.tsx` — `NBToast.show()` static API, 4 levels, NB chrome (2px border, hard shadow, uppercase title, `MaterialCommunityIcons`), `NBToastProvider` |
-| Build `NBText.tsx` typography component | ✅ | `fe/mobile/src/components/nb/NBText.tsx` — 10 variants (`display-xl` … `mono-sm`), `rnFontFamily()` extracts font name from CSS stack, `NBHeading1/2/3` conveniences |
+| Build `NBModal.tsx` (`@gorhom/bottom-sheet` + RN `<Modal>`) | ✅ | `apps/mobile/src/components/nb/NBModal.tsx` — sheet (BottomSheet, NB title bar, grabber, close btn) + fullscreen (RN Modal, back btn, uppercase title, sticky footer) |
+| Build `NBToast.tsx` (`react-native-toast-message` wrapper) | ✅ | `apps/mobile/src/components/nb/NBToast.tsx` — `NBToast.show()` static API, 4 levels, NB chrome (2px border, hard shadow, uppercase title, `MaterialCommunityIcons`), `NBToastProvider` |
+| Build `NBText.tsx` typography component | ✅ | `apps/mobile/src/components/nb/NBText.tsx` — 10 variants (`display-xl` … `mono-sm`), `rnFontFamily()` extracts font name from CSS stack, `NBHeading1/2/3` conveniences |
 | Visual regression web: Playwright `toHaveScreenshot` 375/768/1280 px | ⏳ DEFERRED | Deferred to Phase 4 per user-confirmed unit-only test scope for Phase 3 |
 | Visual regression mobile: Jest snapshots over every NB primitive | ⏳ DEFERRED | Deferred to Phase 4 per unit-only scope |
 | Add CI jobs `web-visreg` + `mobile-snapshots` | ⏳ DEFERRED | Deferred to Phase 4 |
@@ -565,9 +571,9 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| PWA manifest (`fe/web/public/manifest.webmanifest`) | ✅ | bg #F5F0EB, theme #1A4D2E, 2 shortcuts (Monitoring + Tugas), display: standalone |
+| PWA manifest (`apps/web/public/manifest.webmanifest`) | ✅ | bg #F5F0EB, theme #1A4D2E, 2 shortcuts (Monitoring + Tugas), display: standalone |
 | Icon set (192/512/512-maskable SVG + `icon.tsx` / `apple-icon.tsx` ImageResponse) | ✅ | SEKAR "S" glyph on #1A4D2E background; maskable safe-zone inset; `apple-icon.tsx` 180×180 |
-| Service worker (`fe/web/src/sw/sw.ts` → `public/sw.js`) | ✅ | Shell precache, SWR 30s for `/monitoring/snapshot`, network-first 2s for pruning-requests, network-only for auth/mutations, 5 MB asset limit |
+| Service worker (`apps/web/src/sw/sw.ts` → `public/sw.js`) | ✅ | Shell precache, SWR 30s for `/monitoring/snapshot`, network-first 2s for pruning-requests, network-only for auth/mutations, 5 MB asset limit |
 | Build `InstallBanner` | ✅ | `beforeinstallprompt` capture, 14-day localStorage suppression (`sekar_install_dismissed`), standalone mode check, NB accentYellow callout |
 | Build `OfflineBanner` | ✅ | `navigator.onLine` listener, `role="status"`, shows last-sync time from `sekar_last_sync` |
 | Build `UpdateToast` | ✅ | Monitors `registration.waiting`, Sonner toast with "Muat ulang" → `SKIP_WAITING` message |
@@ -576,30 +582,30 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | `/install-help` page (iOS Safari fallback) | ✅ | Static 3-step walkthrough; linked from `InstallBanner` on iOS UA |
 | `/offline` fallback page | ✅ | Precached by SW; shown on navigation miss |
 | Build `ResponsiveShell` | ✅ | Desktop (256px sidebar), tablet (64px icon rail), mobile (<768px ☰ drawer); `data-mobile="true"` on root |
-| Scaffold `(kecamatan)` layout | ✅ | Minimal top-bar shell at `fe/web/src/app/(kecamatan)/layout.tsx`; populated by 3-10 |
-| Register manifest + theme-color + viewport-fit + safe-area in root layout | ✅ | `fe/web/src/app/layout.tsx` — themeColor `#1A4D2E`, apple-touch-icon, `OfflineBanner` + `UpdateToast` |
+| Scaffold `(kecamatan)` layout | ✅ | Minimal top-bar shell at `apps/web/src/app/(kecamatan)/layout.tsx`; populated by 3-10 |
+| Register manifest + theme-color + viewport-fit + safe-area in root layout | ✅ | `apps/web/src/app/layout.tsx` — themeColor `#1A4D2E`, apple-touch-icon, `OfflineBanner` + `UpdateToast` |
 | `next.config.ts`: SW headers + `NEXT_PUBLIC_FEATURE_PWA` flag | ✅ | `Service-Worker-Allowed: /` + `Cache-Control: no-store` headers for `/sw.js`; SW registration feature-flagged in `providers.tsx` |
-| `sw:build` script | ✅ | `fe/web/package.json` — `npx esbuild src/sw/sw.ts --bundle --outfile=public/sw.js --platform=browser --target=chrome90` |
+| `sw:build` script | ✅ | `apps/web/package.json` — `npx esbuild src/sw/sw.ts --bundle --outfile=public/sw.js --platform=browser --target=chrome90` |
 
 **Acceptance criteria:** Lighthouse PWA ≥ 90 on `/monitoring`; install prompt on Android Chrome; iOS `/install-help` renders; offline shell renders at `navigator.onLine = false`; mobile-web at 375 px renders sample dashboard via `ResponsiveShell`; satgas mobile-web login shows install-push banner.
 **Related ADRs:** [ADR-037](../../architecture/decisions/ADR-037-web-pwa.md).
 
 **Files added:**
-- `fe/web/public/manifest.webmanifest`
-- `fe/web/public/icons/icon.svg`, `icon-maskable.svg`
-- `fe/web/src/sw/sw.ts`, `fe/web/public/sw.js`
-- `fe/web/src/components/pwa/InstallBanner.tsx`, `OfflineBanner.tsx`, `UpdateToast.tsx`, `MobileInstallPush.tsx`
-- `fe/web/src/hooks/usePushSubscription.ts`
-- `fe/web/src/components/layout/ResponsiveShell.tsx`
-- `fe/web/src/app/(kecamatan)/layout.tsx`
-- `fe/web/src/app/install-help/page.tsx`, `offline/page.tsx`
-- `fe/web/src/app/icon.tsx`, `apple-icon.tsx`
+- `apps/web/public/manifest.webmanifest`
+- `apps/web/public/icons/icon.svg`, `icon-maskable.svg`
+- `apps/web/src/sw/sw.ts`, `apps/web/public/sw.js`
+- `apps/web/src/components/pwa/InstallBanner.tsx`, `OfflineBanner.tsx`, `UpdateToast.tsx`, `MobileInstallPush.tsx`
+- `apps/web/src/hooks/usePushSubscription.ts`
+- `apps/web/src/components/layout/ResponsiveShell.tsx`
+- `apps/web/src/app/(kecamatan)/layout.tsx`
+- `apps/web/src/app/install-help/page.tsx`, `offline/page.tsx`
+- `apps/web/src/app/icon.tsx`, `apple-icon.tsx`
 
 **Files modified:**
-- `fe/web/src/app/layout.tsx` — manifest, theme-color, apple-touch-icon, `OfflineBanner` + `UpdateToast` in body
-- `fe/web/src/app/providers.tsx` — SW registration in `useEffect` (feature-flagged)
-- `fe/web/next.config.ts` — SW response headers
-- `fe/web/package.json` — `sw:build` script
+- `apps/web/src/app/layout.tsx` — manifest, theme-color, apple-touch-icon, `OfflineBanner` + `UpdateToast` in body
+- `apps/web/src/app/providers.tsx` — SW registration in `useEffect` (feature-flagged)
+- `apps/web/next.config.ts` — SW response headers
+- `apps/web/package.json` — `sw:build` script
 
 **Completed:** 2026-04-25.
 
@@ -618,13 +624,13 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Migrate role-aware shells (mobile WorkerTabs/KorlapTabs/etc.; web 9-role Sidebar) | ✅ | tokens-only pass done |
 | Update visual regression snapshots for every swept screen | ⏳ DEFERRED | Visual regression deferred to Phase 4 per unit-only scope |
 | Create `scripts/hex-allowlist.txt` for documented exceptions | ✅ | `scripts/hex-allowlist.txt` — 18 entries covering Google Maps layer specs, status palette, ImageResponse SVG, Next.js metadata |
-| Update `fe/mobile/eslint.config.js` transitional allowlist → permanent | ✅ | Reduced from ~30 entries to 7 permanent exceptions with rationale comments |
-| Update `fe/web/eslint.config.mjs` transitional allowlist → permanent | ✅ | Updated with inline comments per category |
+| Update `apps/mobile/eslint.config.js` transitional allowlist → permanent | ✅ | Reduced from ~30 entries to 7 permanent exceptions with rationale comments |
+| Update `apps/web/eslint.config.mjs` transitional allowlist → permanent | ✅ | Updated with inline comments per category |
 | Update root `CLAUDE.md` Phase 3 section to reflect full-sweep completion | ✅ | M1-R marked complete in header |
 
 **Acceptance criteria (adjusted):**
-- ✅ `grep -rE "'#[0-9a-fA-F]{3,8}'" fe/mobile/src` returns zero hits outside `generated/` + permanent allowlist (7 entries, all documented)
-- ✅ `grep -rE "#[0-9a-fA-F]{3,8}" fe/web/src` — all hits are in the permanent allowlist (monitoring palette, Google Maps specs, ImageResponse, metadata)
+- ✅ `grep -rE "'#[0-9a-fA-F]{3,8}'" apps/mobile/src` returns zero hits outside `generated/` + permanent allowlist (7 entries, all documented)
+- ✅ `grep -rE "#[0-9a-fA-F]{3,8}" apps/web/src` — all hits are in the permanent allowlist (monitoring palette, Google Maps specs, ImageResponse, metadata)
 - ✅ `scripts/hex-allowlist.txt` created with full rationale for every entry
 - ✅ ESLint zero violations on all swept files (both platforms)
 - ⏳ Visual regression deferred to Phase 4 per unit-only scope
@@ -666,10 +672,10 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | Write `17460000000000-Phase3Schema.ts` migration | ✅ | 8 new tables (plant_species, area_plants, notable_plants, pruning_requests, activity_plant_items, service_capacity, plant_seeds, seed_transactions) + 5 altered (activities +6 cols, tasks +5 cols, users.role enum +`staff_kecamatan`, user_tracking_status +2 indexes). Plus `17460001000000-Phase3BackfillIndexes.ts` for 3 `CREATE INDEX CONCURRENTLY` on `location_logs`. Both applied to prod Apr 27. |
-| Add `staff_kecamatan` to `UserRole` enum | ✅ | `be/src/modules/users/enums/role.enum.ts` — DB enum extended via migration; verified live in prod `enum_range(NULL::user_role)`. |
-| Add `PRUNING_REQUEST_REVIEWERS = [admin_data]` group | ✅ | `be/src/modules/users/constants/role-groups.ts` (per ADR-032). |
+| Add `staff_kecamatan` to `UserRole` enum | ✅ | `apps/be/src/modules/users/enums/role.enum.ts` — DB enum extended via migration; verified live in prod `enum_range(NULL::user_role)`. |
+| Add `PRUNING_REQUEST_REVIEWERS = [admin_data]` group | ✅ | `apps/be/src/modules/users/constants/role-groups.ts` (per ADR-032). |
 | Add new `monitoring_configs` rows seed | ✅ | 4 Phase 3 keys: `plants_forecast`, `service_capacity_defaults`, `pruning_request_workflow`, `seed_inventory`. Idempotent (`ON CONFLICT (key) DO NOTHING`). |
-| Seed `plant_species` (128 rows) | ✅ | `be/src/database/seeds/seed-phase3.ts` — 128 species (final dedupe). Idempotent on `name_id`. Note: original spec called for 131; CSV dedupe yielded 128. |
+| Seed `plant_species` (128 rows) | ✅ | `apps/be/src/database/seeds/seed-phase3.ts` — 128 species (final dedupe). Idempotent on `name_id`. Note: original spec called for 131; CSV dedupe yielded 128. |
 | Sweep every `@Roles(...)` decorator | ✅ | All controllers reviewed Apr 26 during 3-3/3-4 work; `staff_kecamatan` only granted access to its own pruning-submit + my-requests routes (post 3-9/3-10). |
 | Add `@Unique` decorators on Phase 3 entities | ✅ | Added Apr 27: `AreaPlant['areaId','speciesId']`, `PlantSeed['nameId']`, `ServiceCapacity['rayonId','year','isoWeek','serviceType']` — fixes auto-sync drift in dev. Migration patched (`874b13e`) to include `uq_plant_seeds_name_id`. |
 | Confirm CSV acronym meanings with client | ✅ | Resolved Apr 25 (commit `5a64fd6` — "client answers to all 5 open questions"). GT/PT/PS/PK/PD documented in spec. |
@@ -682,16 +688,16 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | Install Redis 7 service in docker-compose | ✅ | `infra/docker-compose.yml` — redis:7-alpine, AOF, 256 MB allkeys-lru, health-check |
-| `RedisService` with connection pool + health check | ✅ | `be/src/common/services/redis.service.ts` — graceful fallback to in-process pub/sub; 13 tests |
-| Socket.IO Redis adapter wiring | ✅ | `be/src/gateways/events.gateway.ts` — `createAdapter(@socket.io/redis-adapter)`; `@Optional()` so dev works without Redis |
-| `StatusProjectorService` reading Redis Streams | ✅ | `be/src/modules/monitoring/services/status-projector.service.ts` — consumer group `monitoring-projector`; 6 tests |
-| `StaffingDebouncerService` | ✅ | `be/src/modules/monitoring/services/staffing-debouncer.service.ts` — `STAFFING_DEBOUNCE_SECONDS=30`; 9 tests |
-| `StaleStatusSweeperService` `@Cron('*/5 * * * *')` | ✅ | `be/src/modules/monitoring/services/stale-status-sweeper.service.ts` — 6 tests |
-| Rewrite `onLocationPing` (eager-load once, queue to stream) | ✅ | `be/src/modules/locations/location.service.ts` — scope-enforcement fix; single eager load |
+| `RedisService` with connection pool + health check | ✅ | `apps/be/src/common/services/redis.service.ts` — graceful fallback to in-process pub/sub; 13 tests |
+| Socket.IO Redis adapter wiring | ✅ | `apps/be/src/gateways/events.gateway.ts` — `createAdapter(@socket.io/redis-adapter)`; `@Optional()` so dev works without Redis |
+| `StatusProjectorService` reading Redis Streams | ✅ | `apps/be/src/modules/monitoring/services/status-projector.service.ts` — consumer group `monitoring-projector`; 6 tests |
+| `StaffingDebouncerService` | ✅ | `apps/be/src/modules/monitoring/services/staffing-debouncer.service.ts` — `STAFFING_DEBOUNCE_SECONDS=30`; 9 tests |
+| `StaleStatusSweeperService` `@Cron('*/5 * * * *')` | ✅ | `apps/be/src/modules/monitoring/services/stale-status-sweeper.service.ts` — 6 tests |
+| Rewrite `onLocationPing` (eager-load once, queue to stream) | ✅ | `apps/be/src/modules/locations/location.service.ts` — scope-enforcement fix; single eager load |
 | Fix batch-ingest iteration (location.service.ts:92-103) | ✅ | Off-by-one corrected; iteration now consistent with stream queueing |
 | `location_logs` composite indexes (3) | ✅ | In `17460001000000-Phase3BackfillIndexes.ts` via `CREATE INDEX CONCURRENTLY` |
 | `user_tracking_status` indexes (2) | ✅ | In `17460000000000-Phase3Schema.ts` — `idx_user_tracking_area_updated`, `idx_user_tracking_within_area` |
-| `GET /monitoring/snapshot` unified endpoint | ✅ | `be/src/modules/monitoring/monitoring.controller.ts:197` — scope-gated; city scope requires city-level role |
+| `GET /monitoring/snapshot` unified endpoint | ✅ | `apps/be/src/modules/monitoring/monitoring.controller.ts:197` — scope-gated; city scope requires city-level role |
 | Unit tests ≥ 85 % per new service | ✅ | All new services have dedicated spec files; backend overall 94.51 % stmts |
 
 ---
@@ -700,14 +706,14 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterLayer` (supercluster) | ✅ | `fe/web/src/components/monitoring/ClusterLayer.tsx` — supercluster integration, zoom-threshold switch |
-| Incremental WS patch handling in React Query | ✅ | `fe/web/src/app/(dashboard)/monitoring/page.tsx` — `status:v2` socket event patches `queryClient` cache directly; 1 dedicated test |
-| `WorkerListVirtual` (TanStack virtual) | ✅ | `fe/web/src/components/monitoring/WorkerListVirtual.tsx` — `@tanstack/react-virtual` row virtualizer |
-| `HierarchyFilterPanel` | ✅ | `fe/web/src/components/monitoring/HierarchyFilterPanel.tsx` — rayon/area/shift multi-select |
+| `ClusterLayer` (supercluster) | ✅ | `apps/web/src/components/monitoring/ClusterLayer.tsx` — supercluster integration, zoom-threshold switch |
+| Incremental WS patch handling in React Query | ✅ | `apps/web/src/app/(dashboard)/monitoring/page.tsx` — `status:v2` socket event patches `queryClient` cache directly; 1 dedicated test |
+| `WorkerListVirtual` (TanStack virtual) | ✅ | `apps/web/src/components/monitoring/WorkerListVirtual.tsx` — `@tanstack/react-virtual` row virtualizer |
+| `HierarchyFilterPanel` | ✅ | `apps/web/src/components/monitoring/HierarchyFilterPanel.tsx` — rayon/area/shift multi-select |
 | `PlantOverlayLayer` (web) | ⏳ deferred | Out of M2 scope. Per the deployment guide and ADR-030, full plant overlay (per-area inventory + notable trees) is delivered in **3-7/3-8** (plants management sub-phases). Web has no stub yet — mobile has the stub from 3-5. |
 | `AreaStatusOverlay` (web) | ⏳ deferred | Mobile-only by design; not in the web component list. Web shows area health via `AreaDetailDrawer` instead. |
-| `AreaDetailDrawer` | ✅ | `fe/web/src/components/monitoring/AreaDetailDrawer.tsx` — slide-in drawer with area stats |
-| Role-aware sidebar covers 9 roles | ✅ | `fe/web/src/lib/navigation.ts` — `staff_kecamatan` minimal nav added (ADR-033); `(kecamatan)` layout shell |
+| `AreaDetailDrawer` | ✅ | `apps/web/src/components/monitoring/AreaDetailDrawer.tsx` — slide-in drawer with area stats |
+| Role-aware sidebar covers 9 roles | ✅ | `apps/web/src/lib/navigation.ts` — `staff_kecamatan` minimal nav added (ADR-033); `(kecamatan)` layout shell |
 
 **Tests:** 10 new tests in `MonitoringPage.test.tsx` covering snapshot load, virtualized list rendering, `status:v2` cache patch, `staff_kecamatan` redirect.
 
@@ -717,14 +723,14 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterMarker` parallel component | ✅ | `fe/mobile/src/components/monitoring/ClusterMarker.tsx` — `tracksViewChanges={false}`, `zoomBucket` key for bitmap reuse; 11 tests |
-| `ClusteredUserMarkers` zoom-based switch | ✅ | `fe/mobile/src/components/monitoring/ClusteredUserMarkers.tsx` — O(n²) distance-group; switches at `clusterZoomThreshold`; `LabelMode` enum key from Apr 24 bugfix preserved; 9 tests |
-| `featureFlags.clusterMarkersV2` A/B flag | ✅ | `fe/mobile/src/utils/featureFlags.ts:13` — `clusterMarkersV2: false` (off by default); `MapDashboardScreen` reads flag at line 481 |
-| ESLint rule forbidding `tracksViewChanges={true}` | ✅ | `fe/mobile/eslint.config.js:90-102` — custom inline rule; errors in `components/monitoring/` scope |
-| `MonitoringToggleSheet` overlay controls | ✅ | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` — dispatches `monitoringV2Slice.toggleLayer`; 10 tests |
-| `AreaStatusOverlay` area fills | ✅ | `fe/mobile/src/components/monitoring/AreaStatusOverlay.tsx` — `useFocusEffect` boundary fetch; mocked in MapDashboard test |
-| `PlantOverlayLayer` | ✅ stub | `fe/mobile/src/components/monitoring/PlantOverlayLayer.tsx` — stub; full impl deferred to plant sub-phases |
-| `monitoringV2Slice` Redux slice | ✅ | `fe/mobile/src/store/slices/monitoringV2Slice.ts` — `visibleLayers`, `clusterZoomThreshold`, `snapshot`; 31 tests |
+| `ClusterMarker` parallel component | ✅ | `apps/mobile/src/components/monitoring/ClusterMarker.tsx` — `tracksViewChanges={false}`, `zoomBucket` key for bitmap reuse; 11 tests |
+| `ClusteredUserMarkers` zoom-based switch | ✅ | `apps/mobile/src/components/monitoring/ClusteredUserMarkers.tsx` — O(n²) distance-group; switches at `clusterZoomThreshold`; `LabelMode` enum key from Apr 24 bugfix preserved; 9 tests |
+| `featureFlags.clusterMarkersV2` A/B flag | ✅ | `apps/mobile/src/utils/featureFlags.ts:13` — `clusterMarkersV2: false` (off by default); `MapDashboardScreen` reads flag at line 481 |
+| ESLint rule forbidding `tracksViewChanges={true}` | ✅ | `apps/mobile/eslint.config.js:90-102` — custom inline rule; errors in `components/monitoring/` scope |
+| `MonitoringToggleSheet` overlay controls | ✅ | `apps/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` — dispatches `monitoringV2Slice.toggleLayer`; 10 tests |
+| `AreaStatusOverlay` area fills | ✅ | `apps/mobile/src/components/monitoring/AreaStatusOverlay.tsx` — `useFocusEffect` boundary fetch; mocked in MapDashboard test |
+| `PlantOverlayLayer` | ✅ stub | `apps/mobile/src/components/monitoring/PlantOverlayLayer.tsx` — stub; full impl deferred to plant sub-phases |
+| `monitoringV2Slice` Redux slice | ✅ | `apps/mobile/src/store/slices/monitoringV2Slice.ts` — `visibleLayers`, `clusterZoomThreshold`, `snapshot`; 31 tests |
 | Preserve `LocationTrail` mount guard | ✅ | `requestAnimationFrame` guard from Apr 24 bugfix untouched; `LocationTrail.test.tsx` all green |
 | Mobile test suite green after M1-R + M2 | ✅ | All 159 suites / 3,836 tests pass (3,829 passing, 7 skipped) — Apr 26 test-fix session resolved 7 failing suites |
 
@@ -737,9 +743,9 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Trail crash fix — Fabric `addViewAt` | ✅ | `BoundaryOverlay` + `AreaStatusOverlay` gated with `!showTrail`; prevents 150+ concurrent MapView children |
 | FAB repositioned to bottom-right | ✅ | `fabColumn` style: `bottom: PEEK_HEIGHT + spacing.md`; removed `top:0/bottom:0/justifyContent:'center'` |
 | `StatusSummaryBar` relocated to peek sheet | ✅ | Removed from top bar; now rendered inside `MonitoringStatusSheet` peek state |
-| `MonitoringStatCard` reusable stat card | ✅ new | `fe/mobile/src/components/monitoring/MonitoringStatCard.tsx` — accent left-border, icon, h3 value, caption label |
-| `MonitoringStatusSheet` peek bottom sheet | ✅ new | `fe/mobile/src/components/monitoring/MonitoringStatusSheet.tsx` — 3 snap points (88dp / 50% / 90%); `BottomSheetFlatList` worker list; stale GPS detection (10 min); area coverage + last-updated summary |
-| `MonitoringSearchBar` floating search | ✅ new | `fe/mobile/src/components/monitoring/MonitoringSearchBar.tsx` — pill bar overlaying map top-left; filters `visibleUsers` + sheet list in real-time |
+| `MonitoringStatCard` reusable stat card | ✅ new | `apps/mobile/src/components/monitoring/MonitoringStatCard.tsx` — accent left-border, icon, h3 value, caption label |
+| `MonitoringStatusSheet` peek bottom sheet | ✅ new | `apps/mobile/src/components/monitoring/MonitoringStatusSheet.tsx` — 3 snap points (88dp / 50% / 90%); `BottomSheetFlatList` worker list; stale GPS detection (10 min); area coverage + last-updated summary |
+| `MonitoringSearchBar` floating search | ✅ new | `apps/mobile/src/components/monitoring/MonitoringSearchBar.tsx` — pill bar overlaying map top-left; filters `visibleUsers` + sheet list in real-time |
 | `BoundaryOverlay` marker tap precision | ✅ | Added `zIndex={20}` + `anchor={{x:0.5,y:0.5}}` to area markers; `zIndex={10}` + `anchor` to rayon markers; worker markers already at `zIndex={200}` |
 | `mapPadding` updated | ✅ | `{{ top: 60, right: 64, bottom: PEEK_HEIGHT, left: 0 }}` to prevent map controls obscured by sheet |
 
@@ -750,12 +756,12 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | Task entity additions (`task_type`, `custom_fields`, `parent_task_id`, `target_plant_count`, `completed_plant_count`) | ✅ | landed in 3-2 schema migration |
-| `TaskTypeRegistry` with per-type Zod schemas | ✅ | `be/src/modules/tasks/registry/` |
+| `TaskTypeRegistry` with per-type Zod schemas | ✅ | `apps/be/src/modules/tasks/registry/` |
 | `POST /tasks/:id/partial-complete` | ✅ | `tasks.controller.ts` — spawns child via `parent_task_id` when remaining > 0 |
 | `POST /tasks/:id/resume` | ✅ | `tasks.controller.ts` |
 | `GET /tasks/:id/lineage` | ✅ | parent chain + children |
-| Mobile `PartialCompleteSheet` + tasksSlice thunks (`partialCompleteTask`, `resumeTask`, `fetchTaskLineage`) | ✅ | `fe/mobile/src/components/tasks/PartialCompleteSheet.tsx`, `tasksSlice.ts:51,84,103` |
-| `TaskDetailScreen` "Selesai Sebagian" CTA + lineage breadcrumb | ✅ | `fe/mobile/src/screens/field/TaskDetailScreen.tsx` |
+| Mobile `PartialCompleteSheet` + tasksSlice thunks (`partialCompleteTask`, `resumeTask`, `fetchTaskLineage`) | ✅ | `apps/mobile/src/components/tasks/PartialCompleteSheet.tsx`, `tasksSlice.ts:51,84,103` |
+| `TaskDetailScreen` "Selesai Sebagian" CTA + lineage breadcrumb | ✅ | `apps/mobile/src/screens/field/TaskDetailScreen.tsx` |
 | Activity entity additions (`custom_fields`, `reference_code`, `pruning_request_id`, photos) | ✅ | landed in 3-2 schema |
 | `activity_plant_items` entity + CRUD | ✅ | `ActivityPlantItemsService` already in plants module |
 
@@ -767,11 +773,11 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Backend `PlantsController` + `PlantsService` (list/search species, list area-plants, list/create notable-plants) | ✅ | `be/src/modules/plants/plants.controller.ts` — 5 endpoints; 41 tests at 100/97 % coverage |
-| Mobile `PruningTaskForm` component | ✅ | `fe/mobile/src/components/tasks/PruningTaskForm.tsx` — 3 required pickers (caseType GT/PT/PS/PD/PK, pruningAction PM/PB/PC, source TIW/TS/CC/PW/Wk) per ADR-031 |
-| Mobile `SpeciesAutocomplete` (debounced 300 ms multi/single select over 128 species) | ✅ | `fe/mobile/src/components/tasks/SpeciesAutocomplete.tsx` |
-| Mobile `plantsSlice` Redux state + thunks | ✅ | `fe/mobile/src/store/slices/plantsSlice.ts` — fetchSpecies, searchSpecies, fetchAreaPlants, fetchNotablePlants, createNotablePlant |
-| Mobile `plantsApi.ts` API client | ✅ | `fe/mobile/src/services/api/plantsApi.ts` |
+| Backend `PlantsController` + `PlantsService` (list/search species, list area-plants, list/create notable-plants) | ✅ | `apps/be/src/modules/plants/plants.controller.ts` — 5 endpoints; 41 tests at 100/97 % coverage |
+| Mobile `PruningTaskForm` component | ✅ | `apps/mobile/src/components/tasks/PruningTaskForm.tsx` — 3 required pickers (caseType GT/PT/PS/PD/PK, pruningAction PM/PB/PC, source TIW/TS/CC/PW/Wk) per ADR-031 |
+| Mobile `SpeciesAutocomplete` (debounced 300 ms multi/single select over 128 species) | ✅ | `apps/mobile/src/components/tasks/SpeciesAutocomplete.tsx` |
+| Mobile `plantsSlice` Redux state + thunks | ✅ | `apps/mobile/src/store/slices/plantsSlice.ts` — fetchSpecies, searchSpecies, fetchAreaPlants, fetchNotablePlants, createNotablePlant |
+| Mobile `plantsApi.ts` API client | ✅ | `apps/mobile/src/services/api/plantsApi.ts` |
 | "Lanjutkan Besok" CTA wired to `/tasks/:id/resume` | ✅ | landed via 3-6 PartialCompleteSheet "Lanjutkan Besok" toggle |
 | Web dynamic task form by `task_type` | ⏳ DEFERRED | web work deferred until after demo iteration |
 | Offline queue scaffold (`activity.submit`, `activity.partial`) | 🟡 | partial via syncManager; full polish deferred to Phase 4 |
@@ -784,11 +790,11 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `PlantDueDateService` (species × area_type lookup) | ✅ | `be/src/modules/plants/services/plant-due-date.service.ts` — pure functions, deterministic, 100 % coverage |
+| `PlantDueDateService` (species × area_type lookup) | ✅ | `apps/be/src/modules/plants/services/plant-due-date.service.ts` — pure functions, deterministic, 100 % coverage |
 | Manual override column (`override_cycle_days`) | ✅ | already in 3-2 schema; precedence override > species default |
-| `AreaPlantStatusService` aggregation | ✅ | `be/src/modules/monitoring/services/area-plant-status.service.ts` |
+| `AreaPlantStatusService` aggregation | ✅ | `apps/be/src/modules/monitoring/services/area-plant-status.service.ts` |
 | `GET /monitoring/area/:id/plant-status` endpoint | ✅ | `monitoring.controller.ts` |
-| Mobile `PlantStatusChip` on TaskCard for pruning tasks | ✅ | `fe/mobile/src/screens/taskActivity/components/PlantStatusChip.tsx` |
+| Mobile `PlantStatusChip` on TaskCard for pruning tasks | ✅ | `apps/mobile/src/screens/taskActivity/components/PlantStatusChip.tsx` |
 | `PlantDueDateRecalculator` daily cron | ⏳ DEFERRED | no scheduler infra yet — deferred to Phase 4 |
 | WS event `area:plant-status-changed` | ⏳ DEFERRED | client polls on focus instead |
 | FCM digest `area_plant_overdue` to top_management | ⏳ DEFERRED | needs digest scheduler |
@@ -803,7 +809,7 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | `pruning_requests` entity + migration | ✅ | landed in 3-2 schema |
-| `PruningRequestsService.create` + `findMine` + `findById` | ✅ | `be/src/modules/pruning-requests/pruning-requests.service.ts` — 55 tests, 99.35 % stmts / 93.1 % branches |
+| `PruningRequestsService.create` + `findMine` + `findById` | ✅ | `apps/be/src/modules/pruning-requests/pruning-requests.service.ts` — 55 tests, 99.35 % stmts / 93.1 % branches |
 | `POST /pruning-requests` (staff_kecamatan) | ✅ | reference code `PR-{ts}-{uuid}` |
 | `GET /pruning-requests?mine=true` | ✅ | paginated, ordered DESC |
 | `GET /pruning-requests/:id` (owner + rayon-scoped admin_data + kepala_rayon + top_management) | ✅ | rayon scoping enforced per ADR-032 |
@@ -819,14 +825,14 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| Mobile `KecamatanNavigator` (no bottom tabs, role-gated) | ✅ | `fe/mobile/src/navigation/KecamatanNavigator.tsx`; `RootNavigator.tsx` branches on `user.role === 'staff_kecamatan'` |
-| Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | `fe/mobile/src/screens/pruningRequests/SubmitScreen.tsx`; draft persisted in slice. Apr 27: NBButton variant + children compat fix |
+| Mobile `KecamatanNavigator` (no bottom tabs, role-gated) | ✅ | `apps/mobile/src/navigation/KecamatanNavigator.tsx`; `RootNavigator.tsx` branches on `user.role === 'staff_kecamatan'` |
+| Mobile `SubmitScreen` (5-step wizard: address+GPS, photos, detail, preview, success) | ✅ | `apps/mobile/src/screens/pruningRequests/SubmitScreen.tsx`; draft persisted in slice. Apr 27: NBButton variant + children compat fix |
 | Mobile `MyRequestsScreen` + `RequestDetailScreen` | ✅ | status chips (pending/approved/rejected/assigned), pull-to-refresh, photo gallery |
 | Mobile `pruningRequestsSlice` + `pruningRequestsApi` | ✅ | submitRequest, fetchMine, fetchById, fetchAdminPruningRequests, reviewPruningRequest, convertPruningRequestToTask |
 | Offline queue: `pruning_request.submit` action | ✅ | `syncManager.ts` — FIFO; retry deferred to Phase 4 |
-| `useNetworkStatus` hook | ✅ | `fe/mobile/src/hooks/useNetworkStatus.ts` |
-| Mobile `ReviewQueueScreen` (admin_data) | ✅ | `fe/mobile/src/screens/pruningRequests/ReviewQueueScreen.tsx` — tabs (pending/approved), rayon-scoped list |
-| Mobile `AssignToTaskSheet` (capacity chip) | 🟡 | `fe/mobile/src/components/admin/AssignToTaskSheet.tsx` — renders, capacity chip works; areas/users selectors empty until Phase 4 (no `areasSlice`/`usersSlice` yet). Apr 27 defensive patch keeps it from crashing |
+| `useNetworkStatus` hook | ✅ | `apps/mobile/src/hooks/useNetworkStatus.ts` |
+| Mobile `ReviewQueueScreen` (admin_data) | ✅ | `apps/mobile/src/screens/pruningRequests/ReviewQueueScreen.tsx` — tabs (pending/approved), rayon-scoped list |
+| Mobile `AssignToTaskSheet` (capacity chip) | 🟡 | `apps/mobile/src/components/admin/AssignToTaskSheet.tsx` — renders, capacity chip works; areas/users selectors empty until Phase 4 (no `areasSlice`/`usersSlice` yet). Apr 27 defensive patch keeps it from crashing |
 | Top-management read-only filter | ✅ | role list on admin endpoints includes `top_management` |
 | Web `/pruning-requests/` queue + `[id]/` detail | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
 | Web `(kecamatan)/` layout for staff_kecamatan submit on web | 🟡 | layout shell ✅ from 3-R4; submit form deferred. Apr 27: placeholder pages added at `(kecamatan)/pruning-requests/{,my}/page.tsx` to avoid 404s |
@@ -839,12 +845,12 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `CapacityService` (`bookAtomic`, `upsertCapacity`, `findCalendar`) | ✅ | `be/src/modules/service-capacity/service-capacity.service.ts` — `pessimistic_write` lock; throws `ConflictException` when over capacity. 24 tests, 98.9 % stmts |
+| `CapacityService` (`bookAtomic`, `upsertCapacity`, `findCalendar`) | ✅ | `apps/be/src/modules/service-capacity/service-capacity.service.ts` — `pessimistic_write` lock; throws `ConflictException` when over capacity. 24 tests, 98.9 % stmts |
 | `GET /rayons/:id/capacity?from=&to=&serviceType=` | ✅ | rayon × ISO-week × serviceType grain; admin-only |
 | `PUT /rayons/:id/capacity` (upsert) | ✅ | overrides default 5 units/day per rayon |
 | `POST /rayons/:id/capacity/book` (manual book) | ✅ | rare — assign-to-task uses service directly |
 | Implicit booking on `/pruning-requests/:id/assign-to-task` | ✅ | atomic — if capacity exceeded, conversion rolls back |
-| Mobile `serviceCapacitySlice` + `serviceCapacityApi` | ✅ | `fe/mobile/src/store/slices/serviceCapacitySlice.ts` — `fetchCapacity`, `calendarByRayon` cache |
+| Mobile `serviceCapacitySlice` + `serviceCapacityApi` | ✅ | `apps/mobile/src/store/slices/serviceCapacitySlice.ts` — `fetchCapacity`, `calendarByRayon` cache |
 | Web capacity calendar page | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
 
 ---
@@ -854,8 +860,8 @@ All work code-reviewed same-day (12 findings: 4 critical + 6 medium + 2 low) and
 | Task | Status | Notes |
 |------|--------|-------|
 | `plant_seeds` + `seed_transactions` entities | ✅ | landed in 3-2 schema |
-| Backend CRUD (`GET /plant-seeds`, `POST`, `GET /:id`, `POST /:id/transactions`, `GET /:id/transactions`) | ✅ | `be/src/modules/plant-seeds/` — `pessimistic_write` lock on `recordTransaction`; throws on insufficient stock for distribution. 29 tests, 100 % stmts |
-| Mobile `plantSeedsSlice` + `plantSeedsApi` | ✅ | `fe/mobile/src/store/slices/plantSeedsSlice.ts` — full thunk surface |
+| Backend CRUD (`GET /plant-seeds`, `POST`, `GET /:id`, `POST /:id/transactions`, `GET /:id/transactions`) | ✅ | `apps/be/src/modules/plant-seeds/` — `pessimistic_write` lock on `recordTransaction`; throws on insufficient stock for distribution. 29 tests, 100 % stmts |
+| Mobile `plantSeedsSlice` + `plantSeedsApi` | ✅ | `apps/mobile/src/store/slices/plantSeedsSlice.ts` — full thunk surface |
 | Mobile inventory screens (`InventoryScreen`, `SeedDetailScreen`, `AddTransactionScreen`) | ⏳ DEFERRED → Phase 4 polish | `screens/plantSeeds/` directory does not exist; deleted in Wave 4 due to NB-primitive prop drift; deferred to Phase 4 polish where they can be rebuilt against the now-extended NBButton API |
 | Web seeds pages + ledger view | ⏳ DEFERRED → web bucket | tracked in "Open Items by Bucket" |
 
@@ -969,28 +975,28 @@ End-to-end review checklist for the pruning workflow redesign + monitoring v2 + 
 
 **Last Updated:** 2026-05-13 — **notification stack end-to-end review + close-out**: two parallel reviewer agents swept the FCM + push notification pipeline (backend + mobile). Real bugs found and fixed:
 
-Backend — `be/src/modules/notifications/notifications.service.ts`:
+Backend — `apps/be/src/modules/notifications/notifications.service.ts`:
 - `tokenRepository.update(...)` deactivation call on Firebase-rejected tokens now has a proper `.catch()` so a DB-side failure surfaces instead of being lost to an unhandled rejection.
 - Permanent-failure error code set extended to include `messaging/mismatched-sender-id` (token issued by a different Firebase project — will never succeed). Transient codes like `internal-error` continue NOT to trigger deactivation.
 
-Backend — `be/src/modules/tasks/tasks.service.ts`:
+Backend — `apps/be/src/modules/tasks/tasks.service.ts`:
 - `cascadePruningRequestStatus` now guards against null `submitted_by` before invoking `sendToUser` (defensive — submitted_by is NOT NULL by schema, but a future soft-delete cascade could orphan the row).
 - New private helper `notifyTaskLifecycleParty(task, actorId, event, extra?)` wired into `acceptTask` / `declineTask` / `verifyTask` / `requestRevision`. Routing: accepted/declined → creator (so they know to act on a decline or stop chasing), verified/revision_needed → assignee (positive feedback or rework signal). Best-effort; never blocks task lifecycle on FCM dispatch. Closes the ADR-038 ask for per-hop notification on assign that had only partial coverage.
 
-Backend — `be/src/modules/pruning-requests/pruning-requests.service.ts`:
+Backend — `apps/be/src/modules/pruning-requests/pruning-requests.service.ts`:
 - Reschedule cascade now also pushes to the submitter ("Jadwal Permohonan Diubah · ref dijadwalkan ulang ke YYYY-MM-DD"). Previously only the assignee got the push, leaving the warga to discover the new date by polling MyRequestsScreen.
 
-Mobile — `fe/mobile/src/hooks/useProfileLogout.ts`:
+Mobile — `apps/mobile/src/hooks/useProfileLogout.ts`:
 - Logout now calls `fcmService.unregisterToken()` BEFORE clearing the auth token, so the device_tokens row is properly deactivated on the backend. Without this, the row stayed `is_active=true` after logout and a future user on the same device could briefly receive notifications routed to the previous account.
 - Notifications slice now gets `resetState` dispatched on logout for consistency with the other slices.
 
-Mobile — `fe/mobile/App.tsx`:
+Mobile — `apps/mobile/App.tsx`:
 - AppState foreground re-register gained an idempotency guard via `lastRegisteredTokenRef`. Previously every background→active transition POSTed `/devices` regardless of whether the token had changed. Now we only POST when the token is new.
 
-Mobile — `fe/mobile/src/navigation/RootNavigator.tsx`:
+Mobile — `apps/mobile/src/navigation/RootNavigator.tsx`:
 - Deep-linking from push notifications now wired. Exported `navigationRef` from `createNavigationContainerRef`; the auth-ready effect subscribes to `onNotificationOpened` (background-then-tap) AND awaits `getInitialNotification` (cold-start-tap). Both route to `TaskDetail` when `data.task_id` is present, falling back to `PruningDetail` for `data.pruning_request_id`. Task wins when both are present.
 
-Mobile — `fe/mobile/src/services/notifications/fcmService.ts`:
+Mobile — `apps/mobile/src/services/notifications/fcmService.ts`:
 - Notifee Android channel renamed `SEKAR Notifications` → `Notifikasi SEKAR` to match the project's Indonesian UI convention.
 
 Tests: backend tasks + pruning-requests + notifications **189/189 ✓** (no new specs added in this pass — the reviewer noted spec coverage of `notifyRayonAdmins` + cascade notifier is a gap to address). Mobile RootNavigator + fcmService + useProfileLogout **54/54 ✓**.

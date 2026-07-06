@@ -163,11 +163,11 @@ This document provides a comprehensive analysis of dependencies between SEKAR de
 
 | Dependency | Source | Type | Notes |
 |------------|--------|------|-------|
-| All web components | `fe/web/src/components/` | Hard | Components to update |
-| All mobile components | `fe/mobile/src/components/nb/` | Hard | Components to update |
+| All web components | `apps/web/src/components/` | Hard | Components to update |
+| All mobile components | `apps/mobile/src/components/nb/` | Hard | Components to update |
 | Design token files | CSS/TypeScript | Hard | Token sources to update |
-| All web pages | `fe/web/src/app/` | Hard | Pages to update |
-| All mobile screens | `fe/mobile/src/screens/` | Hard | Screens to update |
+| All web pages | `apps/web/src/app/` | Hard | Pages to update |
+| All mobile screens | `apps/mobile/src/screens/` | Hard | Screens to update |
 
 **Provides to Phase 3:**
 

@@ -23,7 +23,7 @@ A natural instinct was to introduce a new `admin_rayon` role. The client rejecte
 
 Current state (evidence):
 
-- **`admin_data` is rayon-scoped**: `users.rayon_id` already binds `admin_data` users to a single rayon; `MONITORING_RAYON` permission group (`be/src/modules/users/constants/role-groups.ts`) grants rayon-level monitoring visibility.
+- **`admin_data` is rayon-scoped**: `users.rayon_id` already binds `admin_data` users to a single rayon; `MONITORING_RAYON` permission group (`apps/be/src/modules/users/constants/role-groups.ts`) grants rayon-level monitoring visibility.
 - **`admin_data` has no approval authority today**: ADR-009 explicitly excludes `admin_data` from `OVERTIME_APPROVERS` and similar decision groups. It is a data-entry role.
 - **`kepala_rayon` is executive**, not operational. Filtering the daily inbox of kecamatan requests does not match its remit.
 - **`top_management` is city-wide**, not rayon-scoped. It should see the pipeline but not triage every request.
@@ -36,13 +36,13 @@ Grant `admin_data` **disposition authority over `pruning_requests` only**, scope
 
 ### Implementation
 
-**New permission constant** (`be/src/modules/users/constants/role-groups.ts`):
+**New permission constant** (`apps/be/src/modules/users/constants/role-groups.ts`):
 
 ```ts
 export const PRUNING_REQUEST_REVIEWERS = ['admin_data', 'top_management'] as const;
 ```
 
-**New guard** (`be/src/modules/pruning-requests/guards/rayon-scope.guard.ts`):
+**New guard** (`apps/be/src/modules/pruning-requests/guards/rayon-scope.guard.ts`):
 
 ```ts
 // Enforces: acting_user.rayon_id === pruning_request.rayon_id

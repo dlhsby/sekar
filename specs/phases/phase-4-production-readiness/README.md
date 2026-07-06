@@ -13,7 +13,7 @@
 
 Two things changed since the March-12 Phase 4 spec was written:
 
-1. **Phase 3 actually shipped a lot of what Phase 4 had planned.** FCM is live (`FCM_ENABLED=true` in `be/.env`); the Socket.IO Redis adapter is wired (`be/src/gateways/events.gateway.ts:93`); the web is an installable PWA (`fe/web/src/app/offline/page.tsx`, `install-help/page.tsx`); generated tokens pipeline is running; monitoring v2 with Redis Streams + supercluster is in production. The old README's "FCM_ENABLED=false → set to true" claim is stale and has been removed.
+1. **Phase 3 actually shipped a lot of what Phase 4 had planned.** FCM is live (`FCM_ENABLED=true` in `apps/be/.env`); the Socket.IO Redis adapter is wired (`apps/be/src/gateways/events.gateway.ts:93`); the web is an installable PWA (`apps/web/src/app/offline/page.tsx`, `install-help/page.tsx`); generated tokens pipeline is running; monitoring v2 with Redis Streams + supercluster is in production. The old README's "FCM_ENABLED=false → set to true" claim is stale and has been removed.
 
 2. **The user iterated a complete SEKAR rebrand on Claude Design.** A 224 KB handoff bundle is now vendored at `design/` (see `design/README.md` for the bundle's own instructions). It contains a **locked Design System v2.1** (`design/project/design-system.html`), full mobile hi-fi (`design/project/hifi-mobile.html` — **39 screens across 12 sections**), full web hi-fi (`design/project/hifi-web.html` — **11 frames across 13 routes**), brand identity (`design/project/illustrations.html` — pinwheel mark, app icons, splash, 6 empty states, onboarding scenes, brand iconography, map markers, 5 patterns), and 4 chat transcripts (`design/chats/`) where the design intent lives.
 
@@ -34,11 +34,11 @@ Two things changed since the March-12 Phase 4 spec was written:
 
 | Item | Old Phase 4 status | **Current reality (May 22, 2026)** |
 |------|---------------------|-----------------------------------|
-| FCM activation | Wire 8 triggers, flip `FCM_ENABLED=true` | ✅ **Live** — `FCM_ENABLED=true` in `be/.env`, 8 triggers wired, May 16-17 commits `fix(fcm)` + `fba6d5b review(notifications)` polished the stack. Remaining: retry queue + preferences (Sub-Phase 4-3). |
-| Socket.IO Redis adapter | Add `@socket.io/redis-adapter` | ✅ **Live** — `be/src/gateways/events.gateway.ts:93` calls `createAdapter(pub, sub)`. Redis 7 instance in Docker Compose. |
-| Redis 7 infrastructure | Adopt, configure | ✅ **Live** — `ioredis` + `@socket.io/redis-adapter` in `be/package.json`. Used by monitoring projector + WebSocket adapter. |
-| Web PWA (manifest, service worker, install prompt, offline shell, push subscription) | Implement | ✅ **Shipped in Phase 3 sub-phase 3-R4** — see `fe/web/src/app/offline/page.tsx`, `install-help/page.tsx`. Phase 4 → polish only (Lighthouse audit, OG/SEO, bundle analysis). |
-| Design-token generator pipeline | Build | ✅ **Live** — Phase 3 sub-phase 3-R1; root `npm run tokens:build` regenerates `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts`. |
+| FCM activation | Wire 8 triggers, flip `FCM_ENABLED=true` | ✅ **Live** — `FCM_ENABLED=true` in `apps/be/.env`, 8 triggers wired, May 16-17 commits `fix(fcm)` + `fba6d5b review(notifications)` polished the stack. Remaining: retry queue + preferences (Sub-Phase 4-3). |
+| Socket.IO Redis adapter | Add `@socket.io/redis-adapter` | ✅ **Live** — `apps/be/src/gateways/events.gateway.ts:93` calls `createAdapter(pub, sub)`. Redis 7 instance in Docker Compose. |
+| Redis 7 infrastructure | Adopt, configure | ✅ **Live** — `ioredis` + `@socket.io/redis-adapter` in `apps/be/package.json`. Used by monitoring projector + WebSocket adapter. |
+| Web PWA (manifest, service worker, install prompt, offline shell, push subscription) | Implement | ✅ **Shipped in Phase 3 sub-phase 3-R4** — see `apps/web/src/app/offline/page.tsx`, `install-help/page.tsx`. Phase 4 → polish only (Lighthouse audit, OG/SEO, bundle analysis). |
+| Design-token generator pipeline | Build | ✅ **Live** — Phase 3 sub-phase 3-R1; root `npm run tokens:build` regenerates `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts`. |
 | NB primitives migration | Rebuild NBModal/NBToast/NBText | ✅ **Shipped in Phase 3 sub-phase 3-R3**. |
 | Mobile responsive at 375/768/1280 | Implement | ✅ **Shipped in Phase 3 sub-phase 3-R4 + 3-R5**. |
 | Brand-font bundling (Space Grotesk + Inter + JetBrains Mono) | Bundle | ✅ **Shipped in Phase 3 sub-phase 3-R2**. |
@@ -143,14 +143,14 @@ The original 19 user/additional requirements remain. Four new requirements drive
 | A1. Vendor design bundle to repo | Already done (May 22); confirm `design/` carries 39 mobile + 11 web hi-fi + illustrations + chats | `design/` |
 | A2. Regenerate `specs/ui-ux/tokens.json` from `design/project/hifi-shared.css` | Script-assisted port — sage primary, warm stone canvas, status palette, role accents, hard-edge shadow scale, radius scale, brand-yellow as accent only | `specs/ui-ux/tokens.json` |
 | A3. Update `specs/ui-ux/design-tokens.md` v2.1 note | Document the diff (yellow→green primary, role accents added, status palette codified, shadow scale, radius scale, spacing scale unchanged) | `specs/ui-ux/design-tokens.md` |
-| A4. Run `npm run tokens:build` | Regenerates `fe/web/src/app/generated/tokens.css` + `fe/mobile/src/constants/generated/tokens.ts` | (generated) |
+| A4. Run `npm run tokens:build` | Regenerates `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts` | (generated) |
 | A5. Visual diff snapshot | Story-driven screenshot diff of key NB primitives (Button, Card, Pill, Toast, Input) — record before/after for stakeholder sign-off | `design/regression-snapshots/` |
-| B1. Extract pinwheel logo to SVG assets | `fe/mobile/src/assets/brand/sekar-mark.svg` + `fe/web/public/brand/sekar-mark.svg` (from `design/project/illustrations.html` `#sekar-mark`) | brand assets |
+| B1. Extract pinwheel logo to SVG assets | `apps/mobile/src/assets/brand/sekar-mark.svg` + `apps/web/public/brand/sekar-mark.svg` (from `design/project/illustrations.html` `#sekar-mark`) | brand assets |
 | B2. Replace app icon (iOS + Android) | iOS Images.xcassets/AppIcon, Android `mipmap-*/ic_launcher` + adaptive `ic_launcher_foreground/background` | mobile native assets |
 | B3. Replace splash screen (light/dark/green variants) | iOS `LaunchScreen.storyboard`, Android `splash_*.xml` + `AndroidManifest.xml` themes | mobile native assets |
-| B4. Ship empty-state SVG illustrations | 6 illustrations (illo-reports, illo-shifts, illo-offline, illo-location, illo-search, illo-personnel) to `fe/mobile/src/assets/empty/` + `fe/web/public/empty/`; wire through existing `NBEmptyState` | shared assets |
+| B4. Ship empty-state SVG illustrations | 6 illustrations (illo-reports, illo-shifts, illo-offline, illo-location, illo-search, illo-personnel) to `apps/mobile/src/assets/empty/` + `apps/web/public/empty/`; wire through existing `NBEmptyState` | shared assets |
 | B5. Ship onboarding scene SVGs | 3 scenes (onb-clockin, onb-photo, onb-monitor) for OB-1…OB-3 | mobile assets |
-| B6. PWA manifest theme/icon update | `fe/web/public/manifest.webmanifest` — `theme_color: #7FBC8C`, maskable icon = pinwheel | web PWA |
+| B6. PWA manifest theme/icon update | `apps/web/public/manifest.webmanifest` — `theme_color: #7FBC8C`, maskable icon = pinwheel | web PWA |
 | C1. Token-compliance ESLint sweep | Re-run `eslint-plugin-sekar-design` repo-wide; expect 50-150 violations (literal hex / borderWidth / padding consumed direct) — fix all | repo-wide |
 
 **Deliverables:** `tokens.json` v2.1, regenerated tokens.css + tokens.ts, brand assets shipped, ESLint clean, ADR-040 written.
@@ -195,12 +195,12 @@ Authoritative source: `design/project/hifi-mobile.html` (39 screens) + `design/p
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| B1. Structured logging | `@nestjs/common Logger` JSON format in production | `be/src/main.ts`, `be/src/common/interceptors/logging.interceptor.ts` |
-| B2. Request tracing middleware | X-Request-ID generation + propagation | New: `be/src/common/middleware/request-id.middleware.ts` |
-| B3. Sentry backend | Error capture, transaction tracing, source maps | `be/src/main.ts`, `be/src/common/filters/` |
-| B4. Sentry mobile | Crash reporting, breadcrumbs, navigation tracing (release tag = SEKAR v1.0 rebrand) | `fe/mobile/src/App.tsx`, `fe/mobile/android/app/build.gradle` |
-| B5. Slow query interceptor | Log queries >500ms with plan | New: `be/src/common/interceptors/slow-query.interceptor.ts` |
-| C1. Health module | `GET /health` (light, no auth, no DB), `GET /health/full` (DB+Redis check, admin-only) | New: `be/src/modules/health/` |
+| B1. Structured logging | `@nestjs/common Logger` JSON format in production | `apps/be/src/main.ts`, `apps/be/src/common/interceptors/logging.interceptor.ts` |
+| B2. Request tracing middleware | X-Request-ID generation + propagation | New: `apps/be/src/common/middleware/request-id.middleware.ts` |
+| B3. Sentry backend | Error capture, transaction tracing, source maps | `apps/be/src/main.ts`, `apps/be/src/common/filters/` |
+| B4. Sentry mobile | Crash reporting, breadcrumbs, navigation tracing (release tag = SEKAR v1.0 rebrand) | `apps/mobile/src/App.tsx`, `apps/mobile/android/app/build.gradle` |
+| B5. Slow query interceptor | Log queries >500ms with plan | New: `apps/be/src/common/interceptors/slow-query.interceptor.ts` |
+| C1. Health module | `GET /health` (light, no auth, no DB), `GET /health/full` (DB+Redis check, admin-only) | New: `apps/be/src/modules/health/` |
 
 ### 4-3: Push Notification — **renamed & extended (3-5 d)**
 
@@ -210,18 +210,18 @@ Authoritative source: `design/project/hifi-mobile.html` (39 screens) + `design/p
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| A1. Retry queue (BullMQ on existing Redis, per ADR-043) | Failed FCM sends queued for retry with exponential backoff | New: `be/src/modules/notifications/queue/fcm-retry.queue.ts` |
-| A2. Notification preferences entity + CRUD | Per-user opt-out by type | New: `be/src/modules/notifications/entities/notification-preference.entity.ts` |
-| A3. Shift reminder cron | @Cron 15 min before shift start → FCM | New: `be/src/modules/notifications/cron/shift-reminder.cron.ts` |
-| A4. Stale status cleanup cron | Remove stale `user_tracking_status` entries | New: `be/src/modules/monitoring/cron/stale-status.cron.ts` |
-| A5. Backend writes every push to `notifications` table | Single source of truth — `sendToUser()` always persists the notification record before / alongside the FCM dispatch, so the in-app inbox is authoritative even if FCM fails | `be/src/modules/notifications/notifications.service.ts` |
-| A6. `GET /notifications/unread-count` endpoint | Lightweight count used by mobile + web on foreground / cross-tab sync | `be/src/modules/notifications/notifications.controller.ts` |
-| B1. Mobile NotificationsScreen (NOTIF-1) | List, filter, mark-read, deep-link on tap | New: `fe/mobile/src/screens/notifications/NotificationsScreen.tsx` |
-| B2. **Mobile NotificationBell** (header bell + badge) | Visible on every authenticated screen; Instagram-style badge; FCM foreground handler increments count + shows NBToast | New: `fe/mobile/src/components/common/NotificationBell.tsx` |
-| B3. **Mobile deep-link router** | `deepLinkRouter.ts` — single source of truth for `notification.type → screen` mapping; used by FCM tap, bell row tap, in-app toast tap | New: `fe/mobile/src/services/notifications/deepLinkRouter.ts` |
-| B4. FCM foreground-suppression | Configure FCM SDK to suppress OS-tray notification when app is foreground (mobile + web) — single visual surface | `fe/mobile/src/services/fcm/fcmService.ts`, `fe/web/public/firebase-messaging-sw.js` |
-| C1. Web notification bell + page | Hi-fi popover (last 5 unread) + full page; same deep-link router | New: `fe/web/src/components/nb/NotificationBell.tsx`, `fe/web/src/app/(dashboard)/notifications/page.tsx`, `fe/web/src/services/notifications/deepLinkRouter.ts` |
-| C2. Web cross-tab sync | `BroadcastChannel('notifications')` so mark-read on one tab updates other open tabs | `fe/web/src/hooks/useNotifications.ts` |
+| A1. Retry queue (BullMQ on existing Redis, per ADR-043) | Failed FCM sends queued for retry with exponential backoff | New: `apps/be/src/modules/notifications/queue/fcm-retry.queue.ts` |
+| A2. Notification preferences entity + CRUD | Per-user opt-out by type | New: `apps/be/src/modules/notifications/entities/notification-preference.entity.ts` |
+| A3. Shift reminder cron | @Cron 15 min before shift start → FCM | New: `apps/be/src/modules/notifications/cron/shift-reminder.cron.ts` |
+| A4. Stale status cleanup cron | Remove stale `user_tracking_status` entries | New: `apps/be/src/modules/monitoring/cron/stale-status.cron.ts` |
+| A5. Backend writes every push to `notifications` table | Single source of truth — `sendToUser()` always persists the notification record before / alongside the FCM dispatch, so the in-app inbox is authoritative even if FCM fails | `apps/be/src/modules/notifications/notifications.service.ts` |
+| A6. `GET /notifications/unread-count` endpoint | Lightweight count used by mobile + web on foreground / cross-tab sync | `apps/be/src/modules/notifications/notifications.controller.ts` |
+| B1. Mobile NotificationsScreen (NOTIF-1) | List, filter, mark-read, deep-link on tap | New: `apps/mobile/src/screens/notifications/NotificationsScreen.tsx` |
+| B2. **Mobile NotificationBell** (header bell + badge) | Visible on every authenticated screen; Instagram-style badge; FCM foreground handler increments count + shows NBToast | New: `apps/mobile/src/components/common/NotificationBell.tsx` |
+| B3. **Mobile deep-link router** | `deepLinkRouter.ts` — single source of truth for `notification.type → screen` mapping; used by FCM tap, bell row tap, in-app toast tap | New: `apps/mobile/src/services/notifications/deepLinkRouter.ts` |
+| B4. FCM foreground-suppression | Configure FCM SDK to suppress OS-tray notification when app is foreground (mobile + web) — single visual surface | `apps/mobile/src/services/fcm/fcmService.ts`, `apps/web/public/firebase-messaging-sw.js` |
+| C1. Web notification bell + page | Hi-fi popover (last 5 unread) + full page; same deep-link router | New: `apps/web/src/components/nb/NotificationBell.tsx`, `apps/web/src/app/(dashboard)/notifications/page.tsx`, `apps/web/src/services/notifications/deepLinkRouter.ts` |
+| C2. Web cross-tab sync | `BroadcastChannel('notifications')` so mark-read on one tab updates other open tabs | `apps/web/src/hooks/useNotifications.ts` |
 
 ### 4-8: Mobile & Web Production Hardening — **trimmed to 3-4 d (non-UI only)**
 
@@ -231,12 +231,12 @@ Authoritative source: `design/project/hifi-mobile.html` (39 screens) + `design/p
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| E1. ProGuard rules | Custom rules for RN 0.83 release builds (preserve Reanimated, Geolocation, FCM, Sentry) | `fe/mobile/android/app/proguard-rules.pro` |
+| E1. ProGuard rules | Custom rules for RN 0.83 release builds (preserve Reanimated, Geolocation, FCM, Sentry) | `apps/mobile/android/app/proguard-rules.pro` |
 | E2. Sentry mobile init | Already in 4-1 B4 (cross-listed for completeness) | — |
-| E3. Deep linking | Android App Links + iOS Universal Links — handle FCM payload deep-routing into specific screens (task-detail, activity-detail, perantingan-detail) | `fe/mobile/android/app/src/main/AndroidManifest.xml`, `fe/mobile/ios/sekar/Info.plist`, `fe/mobile/src/navigation/linking.ts` |
-| F1. Web SEO | Per-page `<head>` (title, description, OG), structured data on public landing | `fe/web/src/app/(public)/layout.tsx` |
+| E3. Deep linking | Android App Links + iOS Universal Links — handle FCM payload deep-routing into specific screens (task-detail, activity-detail, perantingan-detail) | `apps/mobile/android/app/src/main/AndroidManifest.xml`, `apps/mobile/ios/sekar/Info.plist`, `apps/mobile/src/navigation/linking.ts` |
+| F1. Web SEO | Per-page `<head>` (title, description, OG), structured data on public landing | `apps/web/src/app/(public)/layout.tsx` |
 | F2. Web Lighthouse audit (PWA already shipped) | Target ≥90 Performance / ≥95 Accessibility / ≥95 Best Practices / ≥90 SEO; remediate findings | (audit output) |
-| F3. Bundle analysis | `@next/bundle-analyzer` web, Metro analyzer mobile; identify >100 kB dependencies; lazy-load Google Maps + heavy modules | `fe/web/next.config.ts`, `fe/mobile/metro.config.js` |
+| F3. Bundle analysis | `@next/bundle-analyzer` web, Metro analyzer mobile; identify >100 kB dependencies; lazy-load Google Maps + heavy modules | `apps/web/next.config.ts`, `apps/mobile/metro.config.js` |
 
 ---
 
@@ -277,8 +277,8 @@ The detailed task breakdown for each sub-phase lives in domain files:
 |----------|-------------|
 | `design/` (vendored) | Frozen handoff bundle from Claude Design — chats, hi-fi, illustrations |
 | `specs/ui-ux/tokens.json` (regenerated) | v2.1 — sage primary, warm stone canvas, hard shadows |
-| `fe/mobile/src/assets/brand/`, `fe/mobile/src/assets/empty/` | Pinwheel logo, splash, 6 empty-state illustrations, 3 onboarding scenes |
-| `fe/web/public/brand/`, `fe/web/public/empty/` | Web counterparts |
+| `apps/mobile/src/assets/brand/`, `apps/mobile/src/assets/empty/` | Pinwheel logo, splash, 6 empty-state illustrations, 3 onboarding scenes |
+| `apps/web/public/brand/`, `apps/web/public/empty/` | Web counterparts |
 | Mobile screens **NEW** | `WelcomeCarouselScreen` (WL-1…5), `ForgotPasswordScreen` (AS-4), `ChangePasswordScreen` (AS-5), `OnboardingWelcomeScreen` (OB-1), `OnboardingPermissionsScreen` (OB-2 — replaces modal), `OnboardingAreaPreviewScreen` (OB-3), `NotificationsScreen` (NOTIF-1) |
 | Web pages **NEW** | `(auth)/forgot-password/page.tsx` (informational), `(dashboard)/notifications/page.tsx`, `(dashboard)/import/page.tsx`, `(dashboard)/export/page.tsx` |
 | Backend modules **NEW** | `export/`, `health/` |
@@ -288,7 +288,7 @@ The detailed task breakdown for each sub-phase lives in domain files:
 | Backend flag **NEW** | `users.password_must_change` (boolean, default false) — drives AS-5 forced change flow |
 | Cron jobs **NEW** | Shift reminder, stale status, location retention, soft-delete cleanup, daily summary |
 | Infrastructure **NEW** | BullMQ (on existing Redis 7 — no new infra), Sentry (backend + mobile), structured logging |
-| `fe/mobile/.maestro/` | Maestro E2E flows (15+) |
+| `apps/mobile/.maestro/` | Maestro E2E flows (15+) |
 | ADRs **NEW** | ADR-040 (Design System v2.1), ADR-041 (Forgot-password contact-admin), ADR-042 (Onboarding flow), ADR-043 (Production gap-closure decisions) |
 
 ## 9. What gets changed

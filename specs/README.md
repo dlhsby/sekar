@@ -167,16 +167,16 @@ Phase 1-2B: Three roles (Worker, Supervisor, Admin). Phase 2C: Eight roles — s
 - **Completion Status:** [`COMPLETION_STATUS.md`](./COMPLETION_STATUS.md) - Single source of truth for project status
 
 ### End-User Documentation
-- **User Manual (Panduan):** [`../fe/docs/`](../fe/docs) — public, no-login Bahasa-Indonesia
+- **User Manual (Panduan):** [`../apps/docs/`](../apps/docs) — public, no-login Bahasa-Indonesia
   user manual (Docusaurus). Live at `https://docs.sekar.wahyutrip.com`. This is for **app users**
   (field workers, admins), distinct from these developer specs. Content is plain markdown under
-  `fe/docs/docs/`; edits ship on the next staging release (merge `main → staging`), like the
-  app. See [`fe/docs/README.md`](../fe/docs/README.md).
+  `apps/docs/docs/`; edits ship on the next staging release (merge `main → staging`), like the
+  app. See [`apps/docs/README.md`](../apps/docs/README.md).
 
 ### Component READMEs
-- **Backend README:** [`/be/README.md`](/be/README.md) - Backend-specific setup
-- **Mobile README:** [`/fe/mobile/README.md`](/fe/mobile/README.md) - Mobile-specific setup
-- **Web README:** [`/fe/web/README.md`](/fe/web/README.md) - Web-specific setup
+- **Backend README:** [`/apps/be/README.md`](/apps/be/README.md) - Backend-specific setup
+- **Mobile README:** [`/apps/mobile/README.md`](/apps/mobile/README.md) - Mobile-specific setup
+- **Web README:** [`/apps/web/README.md`](/apps/web/README.md) - Web-specific setup
 - **Infra README:** [`/infra/README.md`](/infra/README.md) - Infrastructure setup
 
 ### Deployment & Setup Guides

@@ -4,7 +4,7 @@
 **Status:** ✅ Complete (Phase 2B); superseded for token **values** by Phase 3-0 generated tokens (ADR-036)
 **Related:** Phase 2B UI/UX Revamp - Worker Screen Redesign
 
-> **⚠️ Deprecated as source of truth (Phase 3 M1-R sub-phase 3-R2).** Individual hex values below are historical. The canonical source of truth is [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json); mobile consumes [`fe/mobile/src/constants/generated/tokens.ts`](../../fe/mobile/src/constants/generated/tokens.ts) (emitted by `scripts/build-tokens.ts`). Notable post-Phase-3 reconciliations applied during 3-R2 token-value migration:
+> **⚠️ Deprecated as source of truth (Phase 3 M1-R sub-phase 3-R2).** Individual hex values below are historical. The canonical source of truth is [`specs/ui-ux/tokens.json`](../ui-ux/tokens.json); mobile consumes [`apps/mobile/src/constants/generated/tokens.ts`](../../apps/mobile/src/constants/generated/tokens.ts) (emitted by `scripts/build-tokens.ts`). Notable post-Phase-3 reconciliations applied during 3-R2 token-value migration:
 >
 > - `color.primary.hover = #6BA87A` (was `#5A9B6F` mobile / `#5A9468` web — both drifted)
 > - `color.primary.active = #5A9468` (newly explicit; was conflated with hover on web)
@@ -31,7 +31,7 @@ All mobile components now use the **standardized color palette** from `nbTokens.
 
 ## Color Palette Location
 
-**File:** `/fe/mobile/src/constants/nbTokens.ts`
+**File:** `/apps/mobile/src/constants/nbTokens.ts`
 
 All colors are exported from the `nbColors` object.
 

@@ -1,0 +1,84 @@
+{
+  "catalog": {
+    "title": "Tanaman",
+    "description": "Katalog spesies tanaman dan pengelolaan per area",
+    "comboboxPlaceholder": "Ke area…",
+    "comboboxAriaLabel": "Ke area",
+    "searchPlaceholder": "Cari nama atau nama Latin…",
+    "emptyTitle": "Belum ada spesies",
+    "emptyDescription": "Katalog tanaman masih kosong."
+  },
+  "catalogTable": {
+    "columnId": "ID",
+    "columnName": "Nama",
+    "columnNameLatin": "Nama Latin",
+    "columnCategory": "Kategori",
+    "columnPruningCycle": "Siklus Pangkas (hari)",
+    "columnCreated": "Dibuat",
+    "columnUpdated": "Diperbarui"
+  },
+  "categoryLabels": {
+    "tree": "Pohon",
+    "shrub": "Semak",
+    "groundcover": "Penutup Tanah",
+    "flower": "Bunga"
+  },
+  "areaDetail": {
+    "notFound": "Area tidak ditemukan",
+    "backButtonLabel": "Kembali"
+  },
+  "areaDetailSummary": {
+    "totalSpecies": "Total Jenis",
+    "totalPlants": "Total Tanaman",
+    "dueSoon": "Jatuh Tempo"
+  },
+  "areaDetailTable": {
+    "columnSpecies": "Spesies",
+    "columnQuantity": "Jumlah",
+    "columnStatus": "Status",
+    "columnLastPruned": "Terakhir Dipangkas",
+    "columnNextPruning": "Pangkas Berikutnya",
+    "notRecorded": "Belum dicatat",
+    "emptyTitle": "Belum ada data tanaman"
+  },
+  "notablePlants": {
+    "sectionTitle": "Tanaman Istimewa",
+    "heritageLabel": "Warisan"
+  },
+  "statusBadge": {
+    "ok": "Terawat",
+    "due_soon": "Segera",
+    "overdue": "Terlambat",
+    "unknown": "Belum Ada Data"
+  },
+  "form": {
+    "basicInfoTitle": "Informasi Dasar",
+    "nameId": "Nama Indonesia",
+    "nameIdPlaceholder": "Mis. Trembesi",
+    "nameLatin": "Nama Latin",
+    "nameLatinPlaceholder": "Mis. Samanea saman",
+    "category": "Kategori",
+    "defaultPruningCycleDays": "Siklus Pangkas Default (hari)",
+    "defaultPruningCycleDaysPlaceholder": "Mis. 365",
+    "pruningCycleMin": "Siklus pangkas harus minimal 1 hari",
+    "notes": "Catatan",
+    "notesPlaceholder": "Catatan tambahan atau ciri-ciri",
+    "submitNew": "Tambah Spesies",
+    "submit": "Simpan Perubahan"
+  },
+  "buttonAdd": "Buat Baru",
+  "buttonAddFirst": "Buat Spesies Pertama",
+  "actionView": "Lihat",
+  "actionEdit": "Ubah",
+  "actionDelete": "Hapus",
+  "detailTitle": "Detail Spesies",
+  "successCreated": "Spesies \"{{name}}\" berhasil dibuat.",
+  "successUpdated": "Spesies \"{{name}}\" berhasil diperbarui.",
+  "successDeleted": "Spesies \"{{name}}\" berhasil dihapus.",
+  "createErrorMessage": "Gagal membuat spesies. Periksa input Anda.",
+  "updateErrorMessage": "Gagal memperbarui spesies. Periksa input Anda.",
+  "deleteErrorMessage": "Gagal menghapus spesies.",
+  "deleteErrorConflict": "Spesies tidak dapat dihapus karena masih digunakan oleh area atau tanaman istimewa.",
+  "deleteConfirmTitle": "Hapus Spesies?",
+  "deleteConfirmDescription": "Apakah Anda yakin ingin menghapus \"{{name}}\"? Tindakan ini tidak dapat dibatalkan."
+}

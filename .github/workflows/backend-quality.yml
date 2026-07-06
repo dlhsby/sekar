@@ -1,7 +1,7 @@
 name: Backend Quality Gate
 
 # Lint + type-check + unit tests for the NestJS backend. **Reusable** — invoked by
-# `pr-gate.yml` (the single required merge check) when `be/**` changes on a PR, and re-run
+# `pr-gate.yml` (the single required merge check) when `apps/be/**` changes on a PR, and re-run
 # as the `quality-be` job inside `deploy-staging.yml` on a release.
 on:
   workflow_call: {}
@@ -13,14 +13,14 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: be
+        working-directory: apps/be
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: npm
-          cache-dependency-path: be/package-lock.json
+          cache-dependency-path: apps/be/package-lock.json
       - name: Install deps
         run: npm ci
       - name: ESLint

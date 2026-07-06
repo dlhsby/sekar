@@ -4,7 +4,7 @@ Comprehensive list of all environment variables used across all deployment phase
 
 **Secrets model:** All deploy files (`.env.staging`, `.env.production`, repo-root `.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `deployment-guide.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
 
-**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `dlhsby` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
+**Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `dlhsby` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `apps/be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
 
 ## File naming convention (standardised Phase 5)
 
@@ -18,12 +18,12 @@ All three application workspaces use the same scheme:
 | `.env.keys` | dotenvx private decryption keys | No — gitignored **CRITICAL** |
 | `.env.local.example` / `.env.staging.example` / `.env.production.example` | Templates with safe defaults | **Yes** |
 
-**Special:** Backend production env lives at **repo-root `./.env.production`** (not `be/.env.production`); drives `docker-compose.prod.yml`. All other workspace-specific production envs (`be/.env.production`, `fe/web/.env.production`, `fe/mobile/.env.production`) exist for workspace parity but are baked into container images (backend staging) or built at deploy time (web, mobile).
+**Special:** Backend production env lives at **repo-root `./.env.production`** (not `apps/be/.env.production`); drives `docker-compose.prod.yml`. All other workspace-specific production envs (`apps/be/.env.production`, `apps/web/.env.production`, `apps/mobile/.env.production`) exist for workspace parity but are baked into container images (backend staging) or built at deploy time (web, mobile).
 
-- **Backend** (`be/`): `be/src/config/load-env.ts` loads `.env.local` (dev) or `.env.<NODE_ENV>` (staging/production/test) and decrypts via dotenvx.
-- **Web** (`fe/web/`): `npm run build:staging|production` runs `dotenvx run -f .env.<env> -- next …` (decrypts at build).
-- **Mobile** (`fe/mobile/`): `scripts/decrypt-env.js` decrypts to a temp `.env.runtime` at build time; `babel.config.js` points `react-native-dotenv` at it.
-- **Infra** (`infra/`): keeps plain `.env` (Docker-Compose convention, plaintext). `scripts/setup.sh` reconciles `be/.env.local`'s `DATABASE_PORT` to `infra/.env`'s `POSTGRES_PORT`.
+- **Backend** (`apps/be/`): `apps/be/src/config/load-env.ts` loads `.env.local` (dev) or `.env.<NODE_ENV>` (staging/production/test) and decrypts via dotenvx.
+- **Web** (`apps/web/`): `npm run build:staging|production` runs `dotenvx run -f .env.<env> -- next …` (decrypts at build).
+- **Mobile** (`apps/mobile/`): `scripts/decrypt-env.js` decrypts to a temp `.env.runtime` at build time; `babel.config.js` points `react-native-dotenv` at it.
+- **Infra** (`infra/`): keeps plain `.env` (Docker-Compose convention, plaintext). `scripts/setup.sh` reconciles `apps/be/.env.local`'s `DATABASE_PORT` to `infra/.env`'s `POSTGRES_PORT`.
 
 ---
 
@@ -593,7 +593,7 @@ These appear in multiple `.env.*` files (dev/staging/production) but may differ 
 .env.keys  # Private decryption keys — CRITICAL never commit
 
 # Unencrypted build artifacts
-fe/mobile/.env.runtime
+apps/mobile/.env.runtime
 
 # Secrets
 *.key

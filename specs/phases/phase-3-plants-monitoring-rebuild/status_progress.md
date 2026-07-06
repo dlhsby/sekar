@@ -47,10 +47,10 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | Task | Status | Notes |
 |------|--------|-------|
 | `scripts/build-tokens.ts` emitter (~310 lines hand-rolled, deterministic) | ✅ | Validates `tokens.json` against schema with `ajv`; emits sorted, LF-only output. `--verify` mode diffs against on-disk and exits 1 on drift. |
-| Wire `npm run tokens:build` + `tokens:verify` | ✅ | New root `package.json` with `npm workspaces` (`be`, `fe/web`, `fe/mobile`, `tools/eslint-plugin-sekar-design`). |
+| Wire `npm run tokens:build` + `tokens:verify` | ✅ | New root `package.json` with `npm workspaces` (`be`, `apps/web`, `apps/mobile`, `tools/eslint-plugin-sekar-design`). |
 | CI schema validation + generator drift check | ✅ | `.github/workflows/tokens-verify.yml` runs both `tokens:verify` and `test:tokens` on PRs touching tokens, schema, generator, plugin, or `generated/`. |
 | ESLint rules (`no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`) | ✅ | Local plugin `tools/eslint-plugin-sekar-design/` (CommonJS for direct ESLint loading). Web config wires all 3; mobile wires `no-inline-hex-colors`. |
-| Mobile RN custom rule banning `shadowRadius > 0` | ✅ | `rn-no-shadow-radius` rule live in `fe/mobile/eslint.config.js` at `error`. |
+| Mobile RN custom rule banning `shadowRadius > 0` | ✅ | `rn-no-shadow-radius` rule live in `apps/mobile/eslint.config.js` at `error`. |
 | Generator + rule unit tests (40 tests passing) | ✅ | `scripts/build-tokens.test.ts` (12) + 4 `RuleTester` test files (28). Run via `npm run test:tokens` (Jest + ts-jest at root). |
 | Seed `generated/` artifacts | ✅ | Generator is fully functional: `generated/tokens.css` (web) and `generated/tokens.ts` (mobile) contain real token output. Consumer wiring (`@import` in `globals.css`, re-export in `nbTokens.ts`) deferred to 3-R2 by design — separates "plumbing live" from "consumer cutover". |
 | Schema fix (deferred discovery) | ✅ | First `tokens:verify` run caught a real schema bug: `typeMap.additionalProperties` rejected the `_note` documentation string in `tokens.json`. Schema now accepts `{ typeEntry } ∪ { string }` for inline notes. |
@@ -66,13 +66,13 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 - `package.json` (root, workspaces)
 - `scripts/build-tokens.ts`, `scripts/build-tokens.test.ts`, `scripts/tsconfig.json`, `scripts/jest.config.cjs`
 - `tools/eslint-plugin-sekar-design/{package.json, index.js, rules/*.js, rules/*.test.ts}` (4 rules + 4 test files)
-- `fe/web/src/app/generated/tokens.css`
-- `fe/mobile/src/constants/generated/tokens.ts`
+- `apps/web/src/app/generated/tokens.css`
+- `apps/mobile/src/constants/generated/tokens.ts`
 - `.github/workflows/tokens-verify.yml`
 
 **Modified files:**
-- `fe/web/eslint.config.mjs` — registers plugin + 3 rules + transitional allowlist
-- `fe/mobile/eslint.config.js` — registers plugin + 2 rules + ignores `src/constants/generated/**` + transitional allowlist
+- `apps/web/eslint.config.mjs` — registers plugin + 3 rules + transitional allowlist
+- `apps/mobile/eslint.config.js` — registers plugin + 2 rules + ignores `src/constants/generated/**` + transitional allowlist
 - `specs/ui-ux/tokens.schema.json` — `typeMap` accepts `_note` strings
 
 **Deferred to 3-R2:**
@@ -98,32 +98,32 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | Strip Layer-1 from `nbTokens.ts`, re-export from generated | ✅ | Selective re-exports (not `export *` — avoids naming conflicts). Augmented `nbColors` adds nested `gray` wrapper (`gray['200']` etc.) for 351 Phase 2 call sites. `nbBorderRadius` / `nbAnimation` alias exports added. |
 | Rewrite `globals.css` → `@import './generated/tokens.css'` | ✅ | `@theme inline {}` approach: all hex eliminated from source; Tailwind utilities point to `var()` refs. Aliases added: `--color-nb-background: var(--color-bg-canvas)`, `--color-nb-sidebar: var(--color-nb-sidebar-bg)`. |
 | Bundle OFL fonts (Space Grotesk, Inter, JetBrains Mono) on mobile | ✅ | Variable fonts for Inter (`Inter.ttf`, opsz+wght axes) and Space Grotesk (`SpaceGrotesk.ttf`, wght axis). Static weight TTFs for JetBrains Mono (Regular/Medium/SemiBold). All OFL license files included. |
-| `react-native.config.js` font linking | ✅ | `fe/mobile/react-native.config.js` — `assets: ['./assets/fonts']` for `npx react-native-asset`. |
-| Web `next/font/google` loaders in root layout | ✅ | `fe/web/src/app/layout.tsx` — Inter (`--font-body`), Space_Grotesk (`--font-display`), JetBrains_Mono (`--font-mono`); `display: 'swap'`, `latin+latin-ext` subsets. |
+| `react-native.config.js` font linking | ✅ | `apps/mobile/react-native.config.js` — `assets: ['./assets/fonts']` for `npx react-native-asset`. |
+| Web `next/font/google` loaders in root layout | ✅ | `apps/web/src/app/layout.tsx` — Inter (`--font-body`), Space_Grotesk (`--font-display`), JetBrains_Mono (`--font-mono`); `display: 'swap'`, `latin+latin-ext` subsets. |
 | Drift fixes: primary.hover, secondary, success, info, type h1/h2/h3, opaque shadows, focus ring | ✅ | All baked into `tokens.json` → regenerated on both platforms. Hard-edge shadows locked by 13 nbTokens unit tests (`shadowOpacity: 1`, `shadowRadius: 0`). Web focus ring → `3px solid var(--color-nb-primary)`. |
 | Append CHANGELOG v2.1.1 entry | ✅ | `specs/ui-ux/CHANGELOG.md` — v2.1.1 shipped 2026-04-25: drift fixes, font bundling, `@theme inline` approach, CSS var naming. |
 | Deprecation banners on `specs/mobile/design-tokens.md` + `color-palette-standardization.md` | ✅ | Both files redirect to `tokens.json` + `design-tokens.md` as canonical; banner added at top of each. |
 
 **Acceptance criteria — all verified locally:**
-- ✅ `git grep -nE '#[0-9a-fA-F]{6}' fe/mobile/src fe/web/src | grep -v '/generated/'` — returns only allowlist-controlled files (no new hex leaks)
+- ✅ `git grep -nE '#[0-9a-fA-F]{6}' apps/mobile/src apps/web/src | grep -v '/generated/'` — returns only allowlist-controlled files (no new hex leaks)
 - ✅ 13/13 nbTokens unit tests pass (Phase 3 canonical shadow values + backward-compat gray shape)
 - ✅ `npm run tokens:verify` — `tokens-verify: OK (no drift)` (generator output matches on-disk generated files)
 - ✅ 40/40 token pipeline tests pass (unchanged from 3-R1)
 
 **New files:**
-- `fe/mobile/react-native.config.js`
-- `fe/mobile/assets/fonts/Inter.ttf` (variable, 876 KB)
-- `fe/mobile/assets/fonts/SpaceGrotesk.ttf` (variable, 136 KB)
-- `fe/mobile/assets/fonts/JetBrainsMono-Regular.ttf`, `-Medium.ttf`, `-SemiBold.ttf` (~270 KB each)
-- `fe/mobile/assets/fonts/OFL-Inter.txt`, `OFL-SpaceGrotesk.txt`, `OFL-JetBrainsMono.txt`
+- `apps/mobile/react-native.config.js`
+- `apps/mobile/assets/fonts/Inter.ttf` (variable, 876 KB)
+- `apps/mobile/assets/fonts/SpaceGrotesk.ttf` (variable, 136 KB)
+- `apps/mobile/assets/fonts/JetBrainsMono-Regular.ttf`, `-Medium.ttf`, `-SemiBold.ttf` (~270 KB each)
+- `apps/mobile/assets/fonts/OFL-Inter.txt`, `OFL-SpaceGrotesk.txt`, `OFL-JetBrainsMono.txt`
 
 **Modified files:**
-- `fe/mobile/src/constants/nbTokens.ts` — complete rewrite; Layer-1 hex removed; generated consumer with backward-compat shims
-- `fe/mobile/src/constants/__tests__/nbTokens.test.ts` — updated to Phase 3 canonical values (opaque shadows, `widthThin`/`widthBase` naming, nested gray shape)
-- `fe/web/src/app/globals.css` — complete rewrite; `@import` + `@theme inline` + hard-edge shadows + updated focus ring
-- `fe/web/src/app/layout.tsx` — three `next/font/google` loaders, CSS variable names updated
-- `fe/mobile/src/components/common/CountdownTimer.tsx` — inline comment hex codes removed (acceptance check)
-- `fe/mobile/src/screens/auth/LoginScreen.tsx` — inline comment hex codes removed (acceptance check)
+- `apps/mobile/src/constants/nbTokens.ts` — complete rewrite; Layer-1 hex removed; generated consumer with backward-compat shims
+- `apps/mobile/src/constants/__tests__/nbTokens.test.ts` — updated to Phase 3 canonical values (opaque shadows, `widthThin`/`widthBase` naming, nested gray shape)
+- `apps/web/src/app/globals.css` — complete rewrite; `@import` + `@theme inline` + hard-edge shadows + updated focus ring
+- `apps/web/src/app/layout.tsx` — three `next/font/google` loaders, CSS variable names updated
+- `apps/mobile/src/components/common/CountdownTimer.tsx` — inline comment hex codes removed (acceptance check)
+- `apps/mobile/src/screens/auth/LoginScreen.tsx` — inline comment hex codes removed (acceptance check)
 - `specs/ui-ux/CHANGELOG.md` — v2.1.1 section filled in
 - `specs/mobile/design-tokens.md` — deprecation banner added
 - `specs/mobile/color-palette-standardization.md` — deprecation banner added
@@ -143,9 +143,9 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 |------|--------|-------|
 | Migrate web primitives to `shadow-nb-*` + `.nb-focus-ring` | ✅ | Web components already on `shadow-nb-*` from Phase 2. `LocationTimeline.tsx` stray `shadow-sm` fixed → `shadow-nb-xs`. |
 | Migrate mobile primitives to generated shadow helper | ✅ | Backward-compat `nbBorders.base/thin/thick/extra` aliases added to `nbTokens.ts` — critical gap from 3-R2 that broke borders across NBButton, NBCard, NBTab, screens. Also added `nbColors.background` alias for `bgCanvas`. |
-| Build `NBModal.tsx` (`@gorhom/bottom-sheet` + RN `<Modal>`) | ✅ | `fe/mobile/src/components/nb/NBModal.tsx` — 2 variants: sheet (BottomSheet, NB title bar, grabber, snapPoints) + fullscreen (RN Modal, slide animation, back button). |
-| Build `NBToast.tsx` (`react-native-toast-message` wrapper) | ✅ | `fe/mobile/src/components/nb/NBToast.tsx` — `react-native-toast-message@^2.3.3` installed. `NBToast.show({level, title, body, durationMs, action})` static API. Custom `nbToastConfig` renderer with NB chrome. |
-| Build `NBText.tsx` typography component | ✅ | `fe/mobile/src/components/nb/NBText.tsx` — 10 variants. `rnFontFamily()` strips CSS stack to RN-compatible name. `NBHeading1/2/3` convenience exports. |
+| Build `NBModal.tsx` (`@gorhom/bottom-sheet` + RN `<Modal>`) | ✅ | `apps/mobile/src/components/nb/NBModal.tsx` — 2 variants: sheet (BottomSheet, NB title bar, grabber, snapPoints) + fullscreen (RN Modal, slide animation, back button). |
+| Build `NBToast.tsx` (`react-native-toast-message` wrapper) | ✅ | `apps/mobile/src/components/nb/NBToast.tsx` — `react-native-toast-message@^2.3.3` installed. `NBToast.show({level, title, body, durationMs, action})` static API. Custom `nbToastConfig` renderer with NB chrome. |
+| Build `NBText.tsx` typography component | ✅ | `apps/mobile/src/components/nb/NBText.tsx` — 10 variants. `rnFontFamily()` strips CSS stack to RN-compatible name. `NBHeading1/2/3` convenience exports. |
 | Web Playwright `toHaveScreenshot` baseline | ⏳ DEFERRED | Phase 4 (unit-only scope for Phase 3). |
 | Mobile Jest snapshots over every primitive | ⏳ DEFERRED | Phase 4. |
 | CI jobs `web-visreg` + `mobile-snapshots` | ⏳ DEFERRED | Phase 4. |
@@ -156,25 +156,25 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 - ✅ NBText, NBModal, NBToast each consumed by ≥1 canary screen: LoginScreen (NBText h1/body-sm + NBToast replaces Alert), ProfileScreen (NBModal "About" sheet)
 - ✅ 478/478 unit tests pass (nb/__tests__ + constants/__tests__ + LoginScreen)
 - ✅ `npm run tokens:verify` — OK (no drift)
-- ✅ `git grep -nE '#[0-9a-fA-F]{6}' fe/mobile/src fe/web/src | grep -v '/generated/'` — allowlist-only
+- ✅ `git grep -nE '#[0-9a-fA-F]{6}' apps/mobile/src apps/web/src | grep -v '/generated/'` — allowlist-only
 
 **New files:**
-- `fe/mobile/src/components/nb/NBText.tsx`
-- `fe/mobile/src/components/nb/NBModal.tsx`
-- `fe/mobile/src/components/nb/NBToast.tsx`
-- `fe/mobile/src/components/nb/__tests__/NBText.test.tsx` (17 tests)
-- `fe/mobile/src/components/nb/__tests__/NBModal.test.tsx` (12 tests)
-- `fe/mobile/src/components/nb/__tests__/NBToast.test.tsx` (11 tests)
+- `apps/mobile/src/components/nb/NBText.tsx`
+- `apps/mobile/src/components/nb/NBModal.tsx`
+- `apps/mobile/src/components/nb/NBToast.tsx`
+- `apps/mobile/src/components/nb/__tests__/NBText.test.tsx` (17 tests)
+- `apps/mobile/src/components/nb/__tests__/NBModal.test.tsx` (12 tests)
+- `apps/mobile/src/components/nb/__tests__/NBToast.test.tsx` (11 tests)
 
 **Modified files:**
-- `fe/mobile/src/components/nb/index.ts` — exports for NBText/NBModal/NBToast
-- `fe/mobile/src/constants/nbTokens.ts` — backward-compat `nbBorders` override (base/thin/thick/extra aliases) + `nbColors.background` alias
-- `fe/mobile/src/constants/__tests__/nbTokens.test.ts` — 15 tests (added 2 for new compat shims)
-- `fe/mobile/src/screens/auth/LoginScreen.tsx` — NBText + NBToast canary (Alert → NBToast)
-- `fe/mobile/src/screens/auth/__tests__/LoginScreen.test.tsx` — mocks updated for NBToast
-- `fe/mobile/src/screens/common/ProfileScreen.tsx` — NBModal canary (About sheet)
-- `fe/mobile/jest.config.js` — `react-native-toast-message` added to transformIgnorePatterns
-- `fe/web/src/components/monitoring/LocationTimeline.tsx` — shadow-sm → shadow-nb-xs
+- `apps/mobile/src/components/nb/index.ts` — exports for NBText/NBModal/NBToast
+- `apps/mobile/src/constants/nbTokens.ts` — backward-compat `nbBorders` override (base/thin/thick/extra aliases) + `nbColors.background` alias
+- `apps/mobile/src/constants/__tests__/nbTokens.test.ts` — 15 tests (added 2 for new compat shims)
+- `apps/mobile/src/screens/auth/LoginScreen.tsx` — NBText + NBToast canary (Alert → NBToast)
+- `apps/mobile/src/screens/auth/__tests__/LoginScreen.test.tsx` — mocks updated for NBToast
+- `apps/mobile/src/screens/common/ProfileScreen.tsx` — NBModal canary (About sheet)
+- `apps/mobile/jest.config.js` — `react-native-toast-message` added to transformIgnorePatterns
+- `apps/web/src/components/monitoring/LocationTimeline.tsx` — shadow-sm → shadow-nb-xs
 - `specs/ui-ux/design-tokens.md` — parity matrix updated
 
 **Engineering notes:**
@@ -192,7 +192,7 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | Task | Status | Notes |
 |------|--------|-------|
 | `manifest.webmanifest` + icon set (192/512/512-maskable SVG + ImageResponse) | ✅ | display: standalone, bg #F5F0EB, theme #1A4D2E, 2 shortcuts |
-| Service worker (`fe/web/src/sw/sw.ts` → `public/sw.js`) | ✅ | Shell precache, SWR 30s for snapshot, network-first 2s for pruning-requests, network-only for mutations |
+| Service worker (`apps/web/src/sw/sw.ts` → `public/sw.js`) | ✅ | Shell precache, SWR 30s for snapshot, network-first 2s for pruning-requests, network-only for mutations |
 | `InstallBanner`, `OfflineBanner`, `UpdateToast` | ✅ | NB chrome; 14-day dismiss; Sonner toast with SKIP_WAITING |
 | `MobileInstallPush` (role-gated <768px login banner) | ✅ | satgas/linmas/korlap → Play Store / App Store links; session-dismissed |
 | `usePushSubscription` hook | ✅ | Admin roles → VAPID subscribe → `POST /api/push/register` |
@@ -202,7 +202,7 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | `(kecamatan)` layout scaffold | ✅ | Minimal top-bar shell; populated by 3-10 |
 | Manifest registration + theme-color + viewport-fit + safe-area | ✅ | `app/layout.tsx` — themeColor + apple-touch-icon; `OfflineBanner` + `UpdateToast` |
 | `next.config.ts`: SW headers + `NEXT_PUBLIC_FEATURE_PWA` flag | ✅ | `Service-Worker-Allowed: /`, `Cache-Control: no-store`; SW registration feature-flagged |
-| `sw:build` esbuild script | ✅ | `fe/web/package.json` — chrome90 target, 5.7 kB output |
+| `sw:build` esbuild script | ✅ | `apps/web/package.json` — chrome90 target, 5.7 kB output |
 
 **Acceptance criteria:** Lighthouse PWA ≥ 90 on `/monitoring` (manual); install prompt on Android Chrome; iOS `/install-help` renders; offline shell renders; ResponsiveShell at 375/768/1280 px; satgas login shows install banner.
 
@@ -211,21 +211,21 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 - TypeScript: 0 errors on 3-R4 files
 
 **New files (10):**
-- `fe/web/public/manifest.webmanifest`
-- `fe/web/public/icons/icon.svg`, `icon-maskable.svg`
-- `fe/web/src/sw/sw.ts`, `fe/web/public/sw.js`
-- `fe/web/src/components/pwa/InstallBanner.tsx`, `OfflineBanner.tsx`, `UpdateToast.tsx`, `MobileInstallPush.tsx`
-- `fe/web/src/hooks/usePushSubscription.ts`
-- `fe/web/src/components/layout/ResponsiveShell.tsx`
-- `fe/web/src/app/(kecamatan)/layout.tsx`
-- `fe/web/src/app/install-help/page.tsx`, `offline/page.tsx`
-- `fe/web/src/app/icon.tsx`, `apple-icon.tsx`
+- `apps/web/public/manifest.webmanifest`
+- `apps/web/public/icons/icon.svg`, `icon-maskable.svg`
+- `apps/web/src/sw/sw.ts`, `apps/web/public/sw.js`
+- `apps/web/src/components/pwa/InstallBanner.tsx`, `OfflineBanner.tsx`, `UpdateToast.tsx`, `MobileInstallPush.tsx`
+- `apps/web/src/hooks/usePushSubscription.ts`
+- `apps/web/src/components/layout/ResponsiveShell.tsx`
+- `apps/web/src/app/(kecamatan)/layout.tsx`
+- `apps/web/src/app/install-help/page.tsx`, `offline/page.tsx`
+- `apps/web/src/app/icon.tsx`, `apple-icon.tsx`
 
 **Modified files (4):**
-- `fe/web/src/app/layout.tsx`
-- `fe/web/src/app/providers.tsx`
-- `fe/web/next.config.ts`
-- `fe/web/package.json`
+- `apps/web/src/app/layout.tsx`
+- `apps/web/src/app/providers.tsx`
+- `apps/web/next.config.ts`
+- `apps/web/package.json`
 
 **Engineering notes:**
 - Hand-rolled service worker (no Workbox) per ADR-037 §Decision lock — esbuild compiles to single `public/sw.js` (chrome90 target).
@@ -251,8 +251,8 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 | Monitoring components (mobile: LocationTrail, BoundaryOverlay partial; web: StaffingSummaryCard, MonitoringMap, etc.) | ⏳ DEFERRED | Status palette `#9333EA` etc. have no NB token; will be resolved when status tokens are added in 3-3/3-4 |
 | Update visual regression snapshots | ⏳ DEFERRED | Phase 4 per unit-only scope |
 | Create `scripts/hex-allowlist.txt` | ✅ | 18 entries; covers Google Maps specs, monitoring palette, ImageResponse SVG, Next.js metadata, legacy theme |
-| `fe/mobile/eslint.config.js` transitional → permanent allowlist | ✅ | Reduced from ~30 → 7 entries with rationale |
-| `fe/web/eslint.config.mjs` transitional → permanent allowlist | ✅ | Updated with inline category comments |
+| `apps/mobile/eslint.config.js` transitional → permanent allowlist | ✅ | Reduced from ~30 → 7 entries with rationale |
+| `apps/web/eslint.config.mjs` transitional → permanent allowlist | ✅ | Updated with inline category comments |
 | Update `StaffingSummarySection.test.tsx` assertions for new token value | ✅ | `#D97706` → `#E3A018` in test mock + assertions; 27/27 pass |
 
 **Acceptance criteria:**
@@ -263,15 +263,15 @@ This document mirrors the Phase 2D `status_progress.md` pattern: a sub-phase-by-
 - ⏳ Visual regression deferred to Phase 4
 
 **Modified files:**
-- `fe/mobile/src/components/monitoring/StaffingSummarySection.tsx` — `#D97706` → `nbColors.warning` (×2)
-- `fe/mobile/src/components/monitoring/BoundaryOverlay.tsx` — `#D97706` → `nbColors.warning`
-- `fe/mobile/src/screens/overtime/OvertimeSubmitScreen.tsx` — added `withAlpha` import; `#FFF5F5` → `withAlpha(nbColors.danger, 0.05)`
-- `fe/mobile/src/screens/taskActivity/TaskCreateScreen.tsx` — `#FEF2F2` → `withAlpha(nbColors.danger, 0.06)`
-- `fe/mobile/src/screens/field/ActivitySubmissionScreen.tsx` — `#FEF2F2` → `withAlpha(nbColors.danger, 0.06)`
-- `fe/mobile/src/components/monitoring/__tests__/StaffingSummarySection.test.tsx` — mock + assertions updated for new token value
-- `fe/mobile/eslint.config.js` — transitional allowlist → permanent (30 → 7 entries)
-- `fe/web/src/components/pwa/InstallBanner.tsx` — CSS var corrected (`--color-bg-accent-yellow`, no fallback)
-- `fe/web/eslint.config.mjs` — transitional → permanent allowlist with category annotations
+- `apps/mobile/src/components/monitoring/StaffingSummarySection.tsx` — `#D97706` → `nbColors.warning` (×2)
+- `apps/mobile/src/components/monitoring/BoundaryOverlay.tsx` — `#D97706` → `nbColors.warning`
+- `apps/mobile/src/screens/overtime/OvertimeSubmitScreen.tsx` — added `withAlpha` import; `#FFF5F5` → `withAlpha(nbColors.danger, 0.05)`
+- `apps/mobile/src/screens/taskActivity/TaskCreateScreen.tsx` — `#FEF2F2` → `withAlpha(nbColors.danger, 0.06)`
+- `apps/mobile/src/screens/field/ActivitySubmissionScreen.tsx` — `#FEF2F2` → `withAlpha(nbColors.danger, 0.06)`
+- `apps/mobile/src/components/monitoring/__tests__/StaffingSummarySection.test.tsx` — mock + assertions updated for new token value
+- `apps/mobile/eslint.config.js` — transitional allowlist → permanent (30 → 7 entries)
+- `apps/web/src/components/pwa/InstallBanner.tsx` — CSS var corrected (`--color-bg-accent-yellow`, no fallback)
+- `apps/web/eslint.config.mjs` — transitional → permanent allowlist with category annotations
 
 **New files:**
 - `scripts/hex-allowlist.txt` — 18-entry permanent exception registry
@@ -311,7 +311,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | Write ADRs 029–035 | ✅ Complete | Apr 24 (7 ADRs, `specs/architecture/decisions/`) |
 | Write ADRs 036, 037 | ✅ Complete | Apr 25 (tokens single-source + web PWA) |
 | Sync `specs/README.md`, `specs/phases/README.md`, `DEPENDENCY_MATRIX.md`, `COMPLETION_STATUS.md` | ✅ Complete | Apr 24 (top-level specs agent pass) |
-| Sync root + module-level CLAUDE.md files | ✅ Complete | Apr 24–25 (root, be/, fe/web/, be/src/modules/activities/, be/src/database/migrations/) |
+| Sync root + module-level CLAUDE.md files | ✅ Complete | Apr 24–25 (root, apps/be/, apps/web/, apps/be/src/modules/activities/, apps/be/src/database/migrations/) |
 | Reconcile `tokens.json` type scale with `design-tokens.html` prototype | ✅ Complete | Apr 25 (h1 32→28, h2 24→22, h3 20→18, caption weight 600→500) |
 | Obsolete content sweep (drifted shadows, `#FDFD96` as canvas, `primaryDark` drift) | ✅ Complete | Apr 25 (6 files surgically updated) |
 | Break Phase 3 into M1–M5 milestones | ✅ Complete | Apr 25 (README §Milestone Plan) |
@@ -343,7 +343,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `RedisService` (lazyConnect, streamAdd/readGroup/ack/ping) | ✅ | `be/src/common/services/redis.service.ts`; `CommonModule` `@Global()` |
+| `RedisService` (lazyConnect, streamAdd/readGroup/ack/ping) | ✅ | `apps/be/src/common/services/redis.service.ts`; `CommonModule` `@Global()` |
 | Socket.IO Redis adapter (`@socket.io/redis-adapter`) | ✅ | `events.gateway.ts` + `@Optional()` fallback to in-memory |
 | Redis Streams location→status pipeline (producer in `LocationService`) | ✅ | `XADD location:pings` on each ping |
 | `StatusProjectorService` EVERY_SECOND cron consumer | ✅ | Reads up to 100 msgs/tick; delegates to `StatusCalculatorService` |
@@ -353,11 +353,11 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | Tests for RedisService, Projector, Debouncer, Sweeper | ✅ | All 4 spec files present |
 | Eager-load rewrite in projector (single SELECT replaces 6+ queries) | ❌ | Delegates to unmodified `StatusCalculatorService`; pool pressure moved async not eliminated. Track for 3-14 window. |
 | `status:v2` WS event emitted from projector on status transition | ❌ | Not emitted; Phase 2D `StatusCalculatorService` still owns event emission. **Gap-1** |
-| `StaffingDebouncerService.setEmitter()` wired to `EventsGateway` | ✅ | Wired at `be/src/gateways/events.gateway.ts:99` — `this.staffingDebouncer.setEmitter(...)` callback emits to room. **Gap-2 closed.** |
+| `StaffingDebouncerService.setEmitter()` wired to `EventsGateway` | ✅ | Wired at `apps/be/src/gateways/events.gateway.ts:99` — `this.staffingDebouncer.setEmitter(...)` callback emits to room. **Gap-2 closed.** |
 | `cluster:update` WS delta event | ❌ | Not implemented. **Gap-3** |
 | `GET /monitoring/snapshot` `includes` query param | ⚠️ | Endpoint exists; `includes` param absent; plant/overdue fields stubbed (3-8 scope) |
-| Health check extended for Redis + stream lag | ❌ | `be/src/modules/health/` has no Redis check. **Gap-5** |
-| `PHASE3_FEATURES_ENABLED` env flag in `be/.env.example` | ❌ | Not added. **Gap-6** |
+| Health check extended for Redis + stream lag | ❌ | `apps/be/src/modules/health/` has no Redis check. **Gap-5** |
+| `PHASE3_FEATURES_ENABLED` env flag in `apps/be/.env.example` | ❌ | Not added. **Gap-6** |
 
 ---
 
@@ -368,16 +368,16 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `ClusterLayer` (supercluster, dominant-status, WCAG aria-labels) | ✅ | `fe/web/src/components/monitoring/ClusterLayer.tsx` |
+| `ClusterLayer` (supercluster, dominant-status, WCAG aria-labels) | ✅ | `apps/web/src/components/monitoring/ClusterLayer.tsx` |
 | Incremental WS `status:v2` patch handler | ✅ | Monitoring page uses socket + `applyPatch` on `status:v2` event |
-| `WorkerListVirtual` (`@tanstack/react-virtual`, 72px rows, ARIA listbox) | ✅ | `fe/web/src/components/monitoring/WorkerListVirtual.tsx` |
-| `HierarchyFilterPanel` (scope selector: city / rayon / area) | ✅ | `fe/web/src/components/monitoring/HierarchyFilterPanel.tsx` |
-| `AreaDetailDrawer` (slide-in area detail panel) | ✅ | `fe/web/src/components/monitoring/AreaDetailDrawer.tsx` |
-| `useMonitoringSnapshot` hook (refetchInterval 30s, staleTime 10s) | ✅ | `fe/web/src/lib/api/monitoring-v2.ts` |
+| `WorkerListVirtual` (`@tanstack/react-virtual`, 72px rows, ARIA listbox) | ✅ | `apps/web/src/components/monitoring/WorkerListVirtual.tsx` |
+| `HierarchyFilterPanel` (scope selector: city / rayon / area) | ✅ | `apps/web/src/components/monitoring/HierarchyFilterPanel.tsx` |
+| `AreaDetailDrawer` (slide-in area detail panel) | ✅ | `apps/web/src/components/monitoring/AreaDetailDrawer.tsx` |
+| `useMonitoringSnapshot` hook (refetchInterval 30s, staleTime 10s) | ✅ | `apps/web/src/lib/api/monitoring-v2.ts` |
 | `staff_kecamatan` in `types/models.ts`, `roles.ts`, `navigation.ts` | ✅ | Role gating in monitoring page confirmed |
 | `PlantOverlayLayer` | ⏳ | Deferred to sub-phase 3-8 |
 | `monitoring/config` page — new Phase 3 debounce/sweep fields | ⚠️ | Page exists but new fields not added |
-| Unit tests for ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, hook | ⚠️ | 3/5 covered: `WorkerListVirtual.test.tsx`, `HierarchyFilterPanel.test.tsx`, monitoring API hook (`fe/web/src/lib/api/__tests__/monitoring*.test.ts*`). Plus `MonitoringPage.test.tsx` + `monitoring/__tests__/page.test.tsx` exercise the integration. **Still missing:** `ClusterLayer.test.tsx`, `AreaDetailDrawer.test.tsx`. **Gap-8 narrowed** (Apr 27). |
+| Unit tests for ClusterLayer, WorkerListVirtual, HierarchyFilterPanel, AreaDetailDrawer, hook | ⚠️ | 3/5 covered: `WorkerListVirtual.test.tsx`, `HierarchyFilterPanel.test.tsx`, monitoring API hook (`apps/web/src/lib/api/__tests__/monitoring*.test.ts*`). Plus `MonitoringPage.test.tsx` + `monitoring/__tests__/page.test.tsx` exercise the integration. **Still missing:** `ClusterLayer.test.tsx`, `AreaDetailDrawer.test.tsx`. **Gap-8 narrowed** (Apr 27). |
 | ClusterLayer integrated with existing `MonitoringMap` Google Maps component | ❌ | Known limitation — `lngLatToPixel` not exposed; cluster pins not on map yet. Deferred. |
 
 ---
@@ -389,13 +389,13 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 
 | Task | Status | Notes |
 |------|--------|-------|
-| `monitoringV2Slice.ts` (all 5 state fields, `fetchSnapshot`, `applyPatch`, `toggleLayer`) | ✅ | `fe/mobile/src/store/slices/monitoringV2Slice.ts` |
-| `ClusterMarker.tsx` (`tracksViewChanges={false}`, `zoomBucket` key contract, Apr 24 fixes preserved) | ✅ | `fe/mobile/src/components/monitoring/ClusterMarker.tsx` |
+| `monitoringV2Slice.ts` (all 5 state fields, `fetchSnapshot`, `applyPatch`, `toggleLayer`) | ✅ | `apps/mobile/src/store/slices/monitoringV2Slice.ts` |
+| `ClusterMarker.tsx` (`tracksViewChanges={false}`, `zoomBucket` key contract, Apr 24 fixes preserved) | ✅ | `apps/mobile/src/components/monitoring/ClusterMarker.tsx` |
 | `ClusteredUserMarkers.tsx` zoom-based switcher (cluster/individual) | ✅ | O(n²) distance grouping, no `supercluster` dep on mobile |
-| Feature flag `featureFlags.clusterMarkersV2 = false` | ✅ | `fe/mobile/src/utils/featureFlags.ts` |
-| ESLint rule banning `tracksViewChanges={true}` in `components/monitoring/` | ✅ | `fe/mobile/eslint.config.js` — `no-restricted-syntax` |
-| `MonitoringToggleSheet.tsx` (NB bottom-sheet, layer toggles) | ✅ | `fe/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` |
-| `AreaStatusOverlay.tsx` (`useFocusEffect` reload on tab return) | ✅ | `fe/mobile/src/components/monitoring/AreaStatusOverlay.tsx` |
+| Feature flag `featureFlags.clusterMarkersV2 = false` | ✅ | `apps/mobile/src/utils/featureFlags.ts` |
+| ESLint rule banning `tracksViewChanges={true}` in `components/monitoring/` | ✅ | `apps/mobile/eslint.config.js` — `no-restricted-syntax` |
+| `MonitoringToggleSheet.tsx` (NB bottom-sheet, layer toggles) | ✅ | `apps/mobile/src/components/monitoring/MonitoringToggleSheet.tsx` |
+| `AreaStatusOverlay.tsx` (`useFocusEffect` reload on tab return) | ✅ | `apps/mobile/src/components/monitoring/AreaStatusOverlay.tsx` |
 | `PlantOverlayLayer.tsx` stub | ✅ | Explicit stub with TODO; full impl in 3-8 |
 | `MapDashboardScreen.tsx` updated to wire v2 components | ✅ | Verified Apr 27 — `ClusteredUserMarkers` (lines 18, 480-481, gated by `featureFlags.clusterMarkersV2`), `MonitoringToggleSheet` (lines 19, 611), `AreaStatusOverlay` (lines 20, 468) all imported and rendered. **Gap-11 closed.** |
 | `plants` Redux slice (`speciesCatalog`, `areaPlantsByArea`, etc.) | ⏳ deferred | Correctly belongs to sub-phase 3-8 where plant data exists. **Gap-7 → out-of-scope by design (not blocking M2).** |
@@ -410,7 +410,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 | Task | Status | Notes |
 |------|--------|-------|
 | `Task` entity: `task_type`, `custom_fields`, `parent_task_id`, `target_plant_count`, `completed_plant_count` | ✅ | landed in 3-2 schema |
-| `TaskTypeRegistry` service + Zod schemas | ✅ | `be/src/modules/tasks/registry/` |
+| `TaskTypeRegistry` service + Zod schemas | ✅ | `apps/be/src/modules/tasks/registry/` |
 | `POST /tasks/:id/partial-complete` | ✅ | spawns child via `parent_task_id` when remaining > 0 |
 | `POST /tasks/:id/resume` | ✅ | explicit resume of child |
 | `GET /tasks/:id/lineage` | ✅ | parent chain + children |
@@ -427,7 +427,7 @@ Two mobile bugs found during user's manual M1-R review; fixed same session. No s
 |------|--------|-------|
 | Backend `PlantsController` + `PlantsService` | ✅ | 5 endpoints (list/search species, area-plants, list/create notable-plants); 41 tests; controller 100 % / service 97.87 % |
 | Mobile `PruningTaskForm` component | ✅ | 3 required pickers per ADR-031: caseType (GT/PT/PS/PD/PK), pruningAction (PM/PB/PC), source (TIW/TS/CC/PW/Wk) |
-| Mobile `SpeciesAutocomplete` (debounced 300 ms multi/single over 128 species) | ✅ | `fe/mobile/src/components/tasks/SpeciesAutocomplete.tsx` |
+| Mobile `SpeciesAutocomplete` (debounced 300 ms multi/single over 128 species) | ✅ | `apps/mobile/src/components/tasks/SpeciesAutocomplete.tsx` |
 | Mobile `plantsSlice` + `plantsApi` | ✅ | 5 thunks; 21 slice tests |
 | "Lanjutkan Besok" CTA | ✅ | landed via 3-6 PartialCompleteSheet toggle |
 | Web dynamic form per `task_type` at `/tasks/new` | ⏳ DEFERRED | web work deferred until after demo iteration |

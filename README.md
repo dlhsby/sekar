@@ -46,14 +46,14 @@ Full details: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) · [`depl
 
 | Path | Component | Stack |
 |------|-----------|-------|
-| **`be/`** | Backend API | NestJS 11 · TypeScript · PostgreSQL · TypeORM · JWT · WebSocket · Redis · S3 |
-| **`fe/web/`** | Web dashboard (supervisors/admins) | Next.js 16 · React 19 · Tailwind 4 · Google Maps · Playwright |
-| **`fe/mobile/`** | Mobile app (field workers) | React Native 0.83 · React 19 · Redux Toolkit · FCM · Neo Brutalism (WCAG 2.1 AA) |
+| **`apps/be/`** | Backend API | NestJS 11 · TypeScript · PostgreSQL · TypeORM · JWT · WebSocket · Redis · S3 |
+| **`apps/web/`** | Web dashboard (supervisors/admins) | Next.js 16 · React 19 · Tailwind 4 · Google Maps · Playwright |
+| **`apps/mobile/`** | Mobile app (field workers) | React Native 0.83 · React 19 · Redux Toolkit · FCM · Neo Brutalism (WCAG 2.1 AA) |
 | **`infra/`** | Local Docker infra | PostgreSQL · MinIO (S3) · Redis · Adminer |
 | **`specs/`** | All documentation | Architecture, ADRs, API contracts, deployment, UI/UX |
 | **`scripts/`** | Dev + release scripts | `setup` · `start` · `stop` · `release` |
 
-Each workspace (`/`, `be/`, `fe/web/`, `fe/mobile/`) is **fully independent** — `npm install` in one
+Each workspace (`/`, `apps/be/`, `apps/web/`, `apps/mobile/`) is **fully independent** — `npm install` in one
 never touches another. The repo root holds only cross-workspace tooling (design-token pipeline +
 ESLint plugin).
 
@@ -84,18 +84,18 @@ Then open:
 | Adminer (DB UI) | http://localhost:8080 |
 
 **Log in** with any seeded user — all passwords are `Password123!` (e.g. `admin`, `satgas1`; phone
-login works too, e.g. `081200000006`). Full list: [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md).
+login works too, e.g. `081200000006`). Full list: [`apps/be/src/database/seeds/README.md`](apps/be/src/database/seeds/README.md).
 
 **Two values you must fill** — `setup.sh` creates the files; edit these **before `start.sh`** (or
 restart the affected service after). Everything else defaults to local infra:
 
 | Workspace | Variable | Where to get it |
 |-----------|----------|-----------------|
-| `fe/web/.env.local` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | <https://console.cloud.google.com/google/maps-apis> (the map is blank without it) |
-| `fe/mobile/.env.local` | `API_BASE_URL` | `http://10.0.2.2:3000` (Android emulator) or `http://<YOUR_LAN_IP>:3000` (physical device) |
+| `apps/web/.env.local` | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | <https://console.cloud.google.com/google/maps-apis> (the map is blank without it) |
+| `apps/mobile/.env.local` | `API_BASE_URL` | `http://10.0.2.2:3000` (Android emulator) or `http://<YOUR_LAN_IP>:3000` (physical device) |
 
 Single services: `./scripts/start-be.sh` · `start-web.sh` · `start-mobile.sh [--android]`. Ports are
-per-workspace — `be/.env.local` `PORT` (3000), `fe/web/.env.local` `WEB_PORT` (3001) — change them if
+per-workspace — `apps/be/.env.local` `PORT` (3000), `apps/web/.env.local` `WEB_PORT` (3001) — change them if
 they collide. More detail (infra, MinIO, WSL2 device networking, troubleshooting):
 [`specs/deployment/local-development.md`](specs/deployment/local-development.md).
 
@@ -110,7 +110,7 @@ they collide. More detail (infra, MinIO, WSL2 device networking, troubleshooting
 - **Code is English; Indonesian only for UI labels / user messages** (ADR-010).
 - **i18n every UI string (MANDATORY):** web + mobile are bilingual (**Indonesian default + English**)
   via `react-i18next`. Whenever you touch the UI, localize with `t('<ns>:<key>')` and add the key to
-  BOTH `id`/`en` JSON (web `fe/web/src/lib/i18n/locales`, mobile `fe/mobile/src/i18n/locales`). The API
+  BOTH `id`/`en` JSON (web `apps/web/src/lib/i18n/locales`, mobile `apps/mobile/src/i18n/locales`). The API
   stays **English-canonical**; frontends localize by error `code`. Canonical terms:
   [`specs/ui-ux/GLOSSARY.md`](specs/ui-ux/GLOSSARY.md). Verify with `npm run i18n:check`. Full rules in
   [`CLAUDE.md`](CLAUDE.md) §Internationalization.
@@ -127,8 +127,8 @@ blocks PRs). Verify with `npm run tokens:verify`.
 **Tests** (TDD; ≥ 80% backend coverage):
 ```bash
 cd be       && npm run test:cov     # Jest unit/integration + coverage gate
-cd fe/web   && npm test             # Jest unit;  npm run test:e2e → Playwright
-cd fe/mobile && npm test            # Jest unit
+cd apps/web   && npm test             # Jest unit;  npm run test:e2e → Playwright
+cd apps/mobile && npm test            # Jest unit
 npm run test:tokens                 # (root) design-token generator + lint rules
 ```
 
@@ -203,7 +203,7 @@ Current status, metrics, and history live in **[`specs/COMPLETION_STATUS.md`](sp
 | Obtaining keys (Firebase/Maps/S3) | [`specs/deployment/credentials-setup.md`](specs/deployment/credentials-setup.md) |
 | Encrypted secrets (dotenvx) | [`specs/deployment/encrypted-secrets.md`](specs/deployment/encrypted-secrets.md) |
 | Design tokens (source of truth) | [`specs/ui-ux/design-tokens.md`](specs/ui-ux/design-tokens.md) · [`tokens.json`](specs/ui-ux/tokens.json) |
-| Database seeding | [`be/src/database/seeds/README.md`](be/src/database/seeds/README.md) |
+| Database seeding | [`apps/be/src/database/seeds/README.md`](apps/be/src/database/seeds/README.md) |
 
 ---
 

@@ -571,7 +571,7 @@ const handleClockOut = async () => {
 │ └─────────────────────────────────────────────────────────┘│
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐│
-│ │ 🟡 NORMAL          Pemangkasan Pohon                   ││
+│ │ 🟡 NORMAL          Perantingan Pohon                   ││
 │ │ Deadline: 14:00                      [Kerjakan]        ││
 │ └─────────────────────────────────────────────────────────┘│
 │                                                             │
@@ -710,7 +710,7 @@ const ReportSubmissionScreen: React.FC = () => {
   const { data: activityTypes } = useActivityTypes();
   const userRole = useSelector((state) => state.auth.user?.role);
 
-  // Worker sees: Penyiraman, Penanaman, Pemangkasan, Pembersihan, Pemupukan, Perawatan Tanaman
+  // Worker sees: Penyiraman, Penanaman, Perantingan, Pembersihan, Pemupukan, Perawatan Tanaman
   // Linmas sees: Patroli Keamanan, Laporan Insiden, Pemantauan Pengunjung, Pengecekan Fasilitas
   // Both see: Pembersihan (shared)
 
@@ -1717,7 +1717,7 @@ Navigates to relevant screen
 **Testing:**
 - Backend: All notification endpoints verified (see `/tmp/notification-test-results.md`)
 - Mobile: FCM service mocked, ready for integration testing on physical device
-- See `fe/mobile/src/services/notifications/README.md` for detailed FCM usage
+- See `apps/mobile/src/services/notifications/README.md` for detailed FCM usage
 
 ---
 

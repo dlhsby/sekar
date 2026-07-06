@@ -52,29 +52,36 @@ ensure_env_file() {
 }
 
 # Load per-project dev ports — each app's env file stays the source of truth:
-#   backend → be/.env.local      PORT      (default 3000)
-#   web     → fe/web/.env.local  WEB_PORT  (default 3001)
-# WEB_PORT is exported because `next dev -p ${WEB_PORT:-3001}` reads the
-# shell, not .env.local. Real exported vars (e.g. from CI) win over the files.
+#   backend → apps/be/.env.local      PORT        (default 3000)
+#   web     → apps/web/.env.local     WEB_PORT    (default 3001)
+#   mobile  → apps/mobile/.env.local  METRO_PORT  (default 8081)
+# WEB_PORT/METRO_PORT are exported because `next dev`/`react-native start`
+# read the shell, not .env.local. Real exported vars (e.g. from CI) win over
+# the files.
 env_file_value() { # FILE KEY — last uncommented KEY= value, empty if absent
   [ -f "$1" ] || return 0
   grep -E "^$2=" "$1" | tail -1 | cut -d= -f2 | tr -d '[:space:]' | tr -d '"'
 }
 
 load_ports() {
-  # Backend precedence: $BE_PORT → $PORT → be/.env.local PORT → 3000. PORT is
+  # Backend precedence: $BE_PORT → $PORT → apps/be/.env.local PORT → 3000. PORT is
   # re-exported to match so the Nest process (which reads PORT, and where a
-  # real env var beats be/.env.local) always binds the port we wait on.
+  # real env var beats apps/be/.env.local) always binds the port we wait on.
   if [ -z "${BE_PORT:-}" ]; then
-    BE_PORT="${PORT:-$(env_file_value "$ROOT/be/.env.local" PORT)}"
+    BE_PORT="${PORT:-$(env_file_value "$ROOT/apps/be/.env.local" PORT)}"
   fi
   export BE_PORT="${BE_PORT:-3000}"
   export PORT="$BE_PORT"
-  # Web precedence: $WEB_PORT → fe/web/.env.local WEB_PORT → 3001.
+  # Web precedence: $WEB_PORT → apps/web/.env.local WEB_PORT → 3001.
   if [ -z "${WEB_PORT:-}" ]; then
-    WEB_PORT="$(env_file_value "$ROOT/fe/web/.env.local" WEB_PORT)"
+    WEB_PORT="$(env_file_value "$ROOT/apps/web/.env.local" WEB_PORT)"
   fi
   export WEB_PORT="${WEB_PORT:-3001}"
+  # Metro precedence: $METRO_PORT → apps/mobile/.env.local METRO_PORT → 8081.
+  if [ -z "${METRO_PORT:-}" ]; then
+    METRO_PORT="$(env_file_value "$ROOT/apps/mobile/.env.local" METRO_PORT)"
+  fi
+  export METRO_PORT="${METRO_PORT:-8081}"
 }
 
 # free_port PORT [LABEL] — kill whatever is LISTENing on a TCP port so a fresh
@@ -108,30 +115,30 @@ set_env_key() {
 
 # Keep backend ports aligned with the infra host ports. infra/.env may pin
 # non-default ports (e.g. Postgres 15432 / MinIO 19000 to dodge clashes with
-# other projects on 5432 / 9000); without this a fresh be/.env.local (defaults
+# other projects on 5432 / 9000); without this a fresh apps/be/.env.local (defaults
 # 5432 / 9000) silently targets the wrong services and boot/migrations fail.
 sync_backend_infra_ports() {
-  local infra_env="$ROOT/infra/.env" be_env="$ROOT/be/.env.local"
+  local infra_env="$ROOT/infra/.env" be_env="$ROOT/apps/be/.env.local"
   [ -f "$infra_env" ] && [ -f "$be_env" ] || return 0
   # Postgres → DATABASE_PORT
   local pg_port; pg_port="$(env_file_value "$infra_env" POSTGRES_PORT)"
   if [ -n "$pg_port" ] && [ "$(env_file_value "$be_env" DATABASE_PORT)" != "$pg_port" ]; then
     set_env_key "$be_env" DATABASE_PORT "$pg_port"
-    print_success "Synced be/.env.local DATABASE_PORT → $pg_port (from infra/.env)"
+    print_success "Synced apps/be/.env.local DATABASE_PORT → $pg_port (from infra/.env)"
   fi
   # MinIO → AWS_ENDPOINT_URL host port (only when a custom endpoint is configured)
   local minio_port cur_ep; minio_port="$(env_file_value "$infra_env" MINIO_PORT)"
   cur_ep="$(env_file_value "$be_env" AWS_ENDPOINT_URL)"
   if [ -n "$minio_port" ] && [ -n "$cur_ep" ] && ! printf '%s' "$cur_ep" | grep -q ":$minio_port\$"; then
     set_env_key "$be_env" AWS_ENDPOINT_URL "http://localhost:$minio_port"
-    print_success "Synced be/.env.local AWS_ENDPOINT_URL → http://localhost:$minio_port (from infra/.env)"
+    print_success "Synced apps/be/.env.local AWS_ENDPOINT_URL → http://localhost:$minio_port (from infra/.env)"
   fi
   # Redis → REDIS_URL host port
   local redis_port cur_redis; redis_port="$(env_file_value "$infra_env" REDIS_PORT)"
   cur_redis="$(env_file_value "$be_env" REDIS_URL)"
   if [ -n "$redis_port" ] && [ -n "$cur_redis" ] && ! printf '%s' "$cur_redis" | grep -q ":$redis_port\$"; then
     set_env_key "$be_env" REDIS_URL "redis://localhost:$redis_port"
-    print_success "Synced be/.env.local REDIS_URL → redis://localhost:$redis_port (from infra/.env)"
+    print_success "Synced apps/be/.env.local REDIS_URL → redis://localhost:$redis_port (from infra/.env)"
   fi
 }
 

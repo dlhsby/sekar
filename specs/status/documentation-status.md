@@ -99,15 +99,15 @@
 - ✅ specs/business-rules.md - Consolidated business rules
 
 **Backend Documentation:**
-- ✅ be/README.md - Backend setup guide
+- ✅ apps/be/README.md - Backend setup guide
 - ✅ specs/api/contracts.md - All 35 endpoints (single source of truth)
-- ✅ be/TESTING_ERROR_CODES.md - Error handling guide
-- ✅ be/DATABASE_HARDENING_SUMMARY.md - Security improvements
+- ✅ apps/be/TESTING_ERROR_CODES.md - Error handling guide
+- ✅ apps/be/DATABASE_HARDENING_SUMMARY.md - Security improvements
 
 **Mobile Documentation:**
-- ✅ fe/mobile/README.md - Mobile setup guide
-- ✅ fe/mobile/CHANGELOG_API_ERROR_CODES.md - API integration
-- ✅ fe/mobile/TESTING_GUIDE_DAY6_7.md - Testing guide
+- ✅ apps/mobile/README.md - Mobile setup guide
+- ✅ apps/mobile/CHANGELOG_API_ERROR_CODES.md - API integration
+- ✅ apps/mobile/TESTING_GUIDE_DAY6_7.md - Testing guide
 
 **Database Documentation:**
 - ✅ db/README.md - PostgreSQL setup

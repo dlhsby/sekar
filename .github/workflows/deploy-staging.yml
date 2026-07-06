@@ -13,9 +13,9 @@ name: Deploy staging (AWS)
 #   EC2_INSTANCE_ID   i-08edccdc966c0985e
 #   RDS_INSTANCE_ID   dlhsby
 # Required Environment Secret (staging environment):
-#   WEB_DOTENV_PRIVATE_KEY   dotenvx private key that decrypts fe/web/.env.staging at build
+#   WEB_DOTENV_PRIVATE_KEY   dotenvx private key that decrypts apps/web/.env.staging at build
 #                            time (NEXT_PUBLIC_* incl. the Google Maps key).
-# Backend staging config lives in the encrypted be/.env.staging baked into the image; the
+# Backend staging config lives in the encrypted apps/be/.env.staging baked into the image; the
 # box decrypts it at runtime with DOTENV_PRIVATE_KEY_STAGING fetched from SSM
 # (/sekar/staging/DOTENV_PRIVATE_KEY). See specs/deployment/encrypted-secrets.md.
 
@@ -82,7 +82,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./be
-          file: ./be/Dockerfile
+          file: ./apps/be/Dockerfile
           platforms: linux/amd64
           push: true
           build-args: |
@@ -97,12 +97,12 @@ jobs:
       - name: Build & push web
         uses: docker/build-push-action@v6
         with:
-          context: ./fe/web
-          file: ./fe/web/Dockerfile
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
           platforms: linux/amd64
           push: true
           # NEXT_PUBLIC_* (incl. the Google Maps key) are decrypted from the committed
-          # encrypted fe/web/.env.staging by dotenvx during `next build`. The private key is passed
+          # encrypted apps/web/.env.staging by dotenvx during `next build`. The private key is passed
           # as a BuildKit secret — mounted only for the build RUN, never in an image layer.
           build-args: |
             DOTENV_ENV=staging
@@ -119,8 +119,8 @@ jobs:
       - name: Build & push docs
         uses: docker/build-push-action@v6
         with:
-          context: ./fe/docs
-          file: ./fe/docs/Dockerfile
+          context: ./apps/docs
+          file: ./apps/docs/Dockerfile
           platforms: linux/amd64
           push: true
           # Static site — no secrets. Site identity is baked at build time.

@@ -55,7 +55,7 @@
 
 | Current | New | Reason |
 |---------|-----|--------|
-| `fe/mobile/src/screens/worker/` | `fe/mobile/src/screens/field/` | Generic, not worker-specific |
+| `apps/mobile/src/screens/worker/` | `apps/mobile/src/screens/field/` | Generic, not worker-specific |
 | `WorkerHomeScreen.tsx` | `HomeScreen.tsx` | Role-agnostic |
 | `WorkerNavigator.tsx` | `FieldNavigator.tsx` | Role-agnostic |
 | `WorkerHomeHeader.tsx` | `FieldHomeHeader.tsx` | Role-agnostic |
@@ -75,10 +75,10 @@ Other screens (`ClockInOutScreen`, `TaskDetailScreen`, etc.) keep their names �
 
 ### Phase 2C: Unified navigator with role-based tab config
 
-**File to modify:** `fe/mobile/src/navigation/RootNavigator.tsx`
+**File to modify:** `apps/mobile/src/navigation/RootNavigator.tsx`
 
 ```typescript
-// File: fe/mobile/src/navigation/MainNavigator.tsx
+// File: apps/mobile/src/navigation/MainNavigator.tsx
 // Icons from MaterialCommunityIcons
 const TAB_CONFIGS: Record<string, TabConfig[]> = {
   satgas: [
@@ -126,7 +126,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 ### 1. OvertimeListScreen
 
-**Path:** `fe/mobile/src/screens/overtime/OvertimeListScreen.tsx`
+**Path:** `apps/mobile/src/screens/overtime/OvertimeListScreen.tsx`
 **Access:** satgas, linmas (submitters) + korlap (approver)
 
 **Features:**
@@ -137,7 +137,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 ### 2. OvertimeSubmitScreen (Simplified — flat)
 
-**Path:** `fe/mobile/src/screens/overtime/OvertimeSubmitScreen.tsx`
+**Path:** `apps/mobile/src/screens/overtime/OvertimeSubmitScreen.tsx`
 **Access:** satgas, linmas
 
 **Flow (simplified — 1 overtime = 1 activity):**
@@ -159,12 +159,12 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 ### 3. OvertimeApprovalScreen
 
-**Path:** `fe/mobile/src/screens/overtime/OvertimeApprovalScreen.tsx`
+**Path:** `apps/mobile/src/screens/overtime/OvertimeApprovalScreen.tsx`
 **Access:** korlap only
 
 ### 4. OvertimeDetailScreen
 
-**Path:** `fe/mobile/src/screens/overtime/OvertimeDetailScreen.tsx`
+**Path:** `apps/mobile/src/screens/overtime/OvertimeDetailScreen.tsx`
 **Access:** Owner + korlap + admin_system + superadmin
 
 **Features:**
@@ -174,7 +174,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 ### 5. TaskCreateScreen
 
-**Path:** `fe/mobile/src/screens/taskActivity/TaskCreateScreen.tsx` (moved from `screens/tasks/`)
+**Path:** `apps/mobile/src/screens/taskActivity/TaskCreateScreen.tsx` (moved from `screens/tasks/`)
 **Access:** korlap, kepala_rayon, top_management, admin_system, superadmin
 **Phase 2C change:** Assignee (`assignedTo`) is now **mandatory** — form validation blocks submit if no assignee selected, preventing `pending` tasks with no owner.
 
@@ -214,7 +214,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 - Draft stores: photos, description, activityTypeId, timestamp (NOT GPS — re-acquired on restore)
 - Draft expires after 24 hours
 
-**Key Hook: `useActivityForm`** (`fe/mobile/src/hooks/useActivityForm.ts`):
+**Key Hook: `useActivityForm`** (`apps/mobile/src/hooks/useActivityForm.ts`):
 - Extracted from screen for separation of concerns
 - Manages: form state, validation, GPS, activity types, draft persistence, submission
 - `resetForm()`: Clears in-memory state only (NOT AsyncStorage)
@@ -223,7 +223,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 ### 3. TasksReportsScreen → TasksActivityScreen (Phase 2C UX Overhaul)
 
-**Module:** `fe/mobile/src/screens/taskActivity/` (refactored Feb 22, 2026)
+**Module:** `apps/mobile/src/screens/taskActivity/` (refactored Feb 22, 2026)
 
 **Architecture:**
 - `TasksActivityScreen.tsx` — slim orchestrator (~250 lines): manages pagination state, filter/sort state, FABs, modals
@@ -237,7 +237,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 #### Task Filters (TaskFilterModal)
 
-**TaskFilterModal (`fe/mobile/src/components/modals/TaskFilterModal.tsx`):**
+**TaskFilterModal (`apps/mobile/src/components/modals/TaskFilterModal.tsx`):**
 - Bottom sheet modal (`animationType="slide"`, `transparent={true}`, `maxHeight: '85%'`)
 - "Terapkan" and "Reset" action buttons
 
@@ -258,7 +258,7 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 
 #### Activity Filters (ActivityFilterModal)
 
-**ActivityFilterModal (`fe/mobile/src/components/modals/ActivityFilterModal.tsx`):**
+**ActivityFilterModal (`apps/mobile/src/components/modals/ActivityFilterModal.tsx`):**
 - Same bottom sheet pattern as TaskFilterModal
 
 **Filter Fields (7 fields):**
@@ -297,18 +297,18 @@ const TAB_CONFIGS: Record<string, TabConfig[]> = {
 | `top_management`, `admin_system`, `superadmin` | + Buat Tugas | None |
 
 **Implementation Files (Phase 2C UX Overhaul):**
-- Module: `fe/mobile/src/screens/taskActivity/` (refactored from `screens/field/TasksActivityScreen.tsx` + `screens/tasks/`)
+- Module: `apps/mobile/src/screens/taskActivity/` (refactored from `screens/field/TasksActivityScreen.tsx` + `screens/tasks/`)
   - `TasksActivityScreen.tsx` — slim orchestrator: tabs, FABs, sort/filter modals, pagination state
   - `TaskCreateScreen.tsx` — task creation (assignee now mandatory)
   - `tabs/TasksTab.tsx` — infinite scroll FlatList for tasks
   - `tabs/ActivitiesTab.tsx` — infinite scroll FlatList for activities
   - `components/TaskCard.tsx`, `components/ActivityCard.tsx` — card components
-- Task filter modal: `fe/mobile/src/components/modals/TaskFilterModal.tsx`
+- Task filter modal: `apps/mobile/src/components/modals/TaskFilterModal.tsx`
   - Fields: Status, Tanggal Dibuat (new), Deadline, Rayon (role-gated), Area, Petugas (new), Penugasan (renamed from Tipe)
-- Activity filter modal: `fe/mobile/src/components/modals/ActivityFilterModal.tsx`
+- Activity filter modal: `apps/mobile/src/components/modals/ActivityFilterModal.tsx`
   - Fields: Status, Rentang Tanggal, Rayon (new), Area, Petugas (new), Penugasan (new), Tipe Aktivitas
-- Date picker: `fe/mobile/src/components/nb/NBDatePicker.tsx` (pure JS, no native dependency)
-- Role constants: `fe/mobile/src/constants/roles.ts`
+- Date picker: `apps/mobile/src/components/nb/NBDatePicker.tsx` (pure JS, no native dependency)
+- Role constants: `apps/mobile/src/constants/roles.ts`
 
 **Pagination (server-side, Phase 2C):**
 - Tasks: `GET /tasks/my-tasks?page=N&limit=10&sort_by=X&sort_dir=Y` — `getMyTasks()` returns `TasksListResponse`
@@ -655,7 +655,7 @@ export type RootStackParamList = {
 
 ### New: overtimeApi
 
-**File:** `fe/mobile/src/services/api/overtimeApi.ts`
+**File:** `apps/mobile/src/services/api/overtimeApi.ts`
 
 ```typescript
 submitOvertime(dto: CreateOvertimeDto)     // POST /overtime (flat DTO)
@@ -706,7 +706,7 @@ rejectOvertime(id: string, reason: string) // PATCH /overtime/:id/reject
 
 All new screens MUST adhere to Neo Brutalism 2.0 design system.
 
-**Token file:** `fe/mobile/src/constants/nbTokens.ts`
+**Token file:** `apps/mobile/src/constants/nbTokens.ts`
 
 ---
 
@@ -783,8 +783,8 @@ All new screens MUST adhere to Neo Brutalism 2.0 design system.
 
 ## Header System Standard (Phase 2C — Feb 18, 2026)
 
-**Component:** `fe/mobile/src/components/navigation/FieldHomeHeader.tsx`
-**Navigator:** `fe/mobile/src/navigation/MainNavigator.tsx`
+**Component:** `apps/mobile/src/components/navigation/FieldHomeHeader.tsx`
+**Navigator:** `apps/mobile/src/navigation/MainNavigator.tsx`
 
 ### Architecture: 3-Column Unified Header
 

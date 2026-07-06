@@ -663,7 +663,7 @@ All status colors, marker dimensions, polygon styles, and role borders are defin
 
 ### J2. Mobile — TypeScript Constants
 
-Add to `fe/mobile/src/constants/nbTokens.ts`:
+Add to `apps/mobile/src/constants/nbTokens.ts`:
 
 ```typescript
 export const monitoringTokens = {

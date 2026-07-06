@@ -12,12 +12,12 @@
 
 | Fact | Actual Value | File |
 |------|-------------|------|
-| `activities` table | Phase 2C canonical work-record entity | `be/src/modules/activities/entities/activity.entity.ts` |
-| `tasks` table | 8 statuses (ADR-009 debt — deferred to Phase 4); no `task_type`, no `parent_task_id`, no partial-completion columns | `be/src/modules/tasks/entities/task.entity.ts` |
-| `user_tracking_status` | Indexed on PK + `(status)`, `(area_id)`, `(shift_id)` — missing composite on `(area_id, updated_at DESC)` | `be/src/modules/monitoring/entities/user-tracking-status.entity.ts` |
-| `location_logs` | Range-partitioned by `logged_at` month (ADR-006); no composite indexes beyond PK | `be/src/modules/location/entities/location-log.entity.ts` |
-| `users.role` enum | 8 values (ADR-009) | `be/src/modules/users/enums/role.enum.ts` |
-| Migration count | 8 existing; Phase 3 adds 1 primary + optional follow-up | `be/src/database/migrations/` |
+| `activities` table | Phase 2C canonical work-record entity | `apps/be/src/modules/activities/entities/activity.entity.ts` |
+| `tasks` table | 8 statuses (ADR-009 debt — deferred to Phase 4); no `task_type`, no `parent_task_id`, no partial-completion columns | `apps/be/src/modules/tasks/entities/task.entity.ts` |
+| `user_tracking_status` | Indexed on PK + `(status)`, `(area_id)`, `(shift_id)` — missing composite on `(area_id, updated_at DESC)` | `apps/be/src/modules/monitoring/entities/user-tracking-status.entity.ts` |
+| `location_logs` | Range-partitioned by `logged_at` month (ADR-006); no composite indexes beyond PK | `apps/be/src/modules/location/entities/location-log.entity.ts` |
+| `users.role` enum | 8 values (ADR-009) | `apps/be/src/modules/users/enums/role.enum.ts` |
+| Migration count | 8 existing; Phase 3 adds 1 primary + optional follow-up | `apps/be/src/database/migrations/` |
 
 ---
 

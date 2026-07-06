@@ -49,7 +49,7 @@ cd be && npm run start:dev
 cd be && npm run seed
 
 # Start mobile app
-cd fe/mobile && npm start
+cd apps/mobile && npm start
 ```
 
 ---
@@ -596,7 +596,7 @@ curl http://localhost:3000/api/health
 open http://localhost:3000/api/docs
 
 # 5-6. Start mobile app
-cd fe/mobile && npm start
+cd apps/mobile && npm start
 # Then press 'a' for Android
 ```
 
@@ -662,7 +662,7 @@ npm run seed
 
 ```bash
 # Run all tests
-cd fe/mobile
+cd apps/mobile
 npm test
 
 # Run with coverage

@@ -14,14 +14,14 @@
 
 | Credential | Service | Where to Get | File / Env Var | Workspace | Required | Dev | Staging | Prod |
 |---|---|---|---|---|---|---|---|---|
-| **FCM Service Account** | Firebase | Firebase Console → Project Settings → Service Accounts | `be/config/firebase-service-account.json` | Backend | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
+| **FCM Service Account** | Firebase | Firebase Console → Project Settings → Service Accounts | `apps/be/config/firebase-service-account.json` | Backend | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
 | **FCM Inline Env Vars** | Firebase | Firebase Console → Service Account JSON (parse) | `FCM_PROJECT_ID`, `FCM_CLIENT_EMAIL`, `FCM_PRIVATE_KEY` | Backend | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
-| **Android `google-services.json`** | Firebase | Firebase Console → Add Android app | `fe/mobile/android/app/google-services.json` | Mobile | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
-| **iOS `GoogleService-Info.plist`** | Firebase | Firebase Console → Add iOS app | `fe/mobile/ios/GoogleService-Info.plist` | Mobile | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
+| **Android `google-services.json`** | Firebase | Firebase Console → Add Android app | `apps/mobile/android/app/google-services.json` | Mobile | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
+| **iOS `GoogleService-Info.plist`** | Firebase | Firebase Console → Add iOS app | `apps/mobile/ios/GoogleService-Info.plist` | Mobile | Opt* | MinIO | AWS S3 + FCM (enabled) | MinIO + FCM (enabled) |
 | **APNs Key / Certificate** | Apple Developer | Apple Developer Portal | Firebase Console upload (production) | Mobile | Prod iOS | N/A | N/A | Required |
-| **Google Maps API Key** | Google Cloud | Google Cloud Console → Maps SDK | `fe/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile | Yes | Yes | Yes | Yes |
-| **Maps Key SHA-1 Restriction** | Google Cloud | `cd fe/mobile/android && ./gradlew signingReport` | Google Cloud Console API key restrictions | Mobile | Prod | Optional | Yes | Yes |
-| **Google Maps API Key** | Google Maps | https://console.cloud.google.com/google/maps-apis | `fe/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web | Yes | Yes | Yes | Yes |
+| **Google Maps API Key** | Google Cloud | Google Cloud Console → Maps SDK | `apps/mobile/.env.local` `GOOGLE_MAPS_API_KEY` | Mobile | Yes | Yes | Yes | Yes |
+| **Maps Key SHA-1 Restriction** | Google Cloud | `cd apps/mobile/android && ./gradlew signingReport` | Google Cloud Console API key restrictions | Mobile | Prod | Optional | Yes | Yes |
+| **Google Maps API Key** | Google Maps | https://console.cloud.google.com/google/maps-apis | `apps/web/.env.local` `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Web | Yes | Yes | Yes | Yes |
 | **AWS Access Key ID** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_ACCESS_KEY_ID` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
 | **AWS Secret Access Key** | AWS IAM | AWS Console → IAM → Users → `sekar-s3-user` → Security credentials | `.env.staging` / `.env.production` `AWS_SECRET_ACCESS_KEY` | Backend | Staging only (Prod uses MinIO) | MinIO | Yes (staging) | N/A (MinIO) |
 | **S3 Bucket Name** | AWS S3 | AWS Console → S3 → Bucket name | `.env.local` / `.env.staging` / `.env.production` `AWS_S3_BUCKET` | Backend | All environments | `sekar-media-dev` | `sekar-media-staging` (real AWS) | N/A (MinIO, configured in docker-compose.prod.yml) |
@@ -44,7 +44,7 @@ Firebase enables Android and iOS push notifications via Firebase Cloud Messaging
 >   (production env), each the base64 of that project's `google-services.json`. iOS
 >   `GoogleService-Info.plist` exists per project but is **not yet CI-wired** (iOS isn't built in CI).
 > - **Backend FCM sender** authenticates with a key from each project's `firebase-adminsdk-fbsvc@…`
->   service account (`FCM_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY` in the encrypted `be/.env.staging` and
+>   service account (`FCM_PROJECT_ID/CLIENT_EMAIL/PRIVATE_KEY` in the encrypted `apps/be/.env.staging` and
 >   repo-root `.env.production`). The org policy **`iam.disableServiceAccountKeyCreation`** blocks
 >   creating *new* SA keys, so reuse the existing key; relax the policy only if you must rotate.
 > - ⚠️ A pre-migration **`GoogleService-Info.plist` (old project `sekar-dev`)** was committed in
@@ -79,14 +79,14 @@ The service account grants the backend permission to send FCM messages via the F
 
 ```bash
 # Place the JSON file in the backend config directory
-cp ~/Downloads/SEKAR-Production-XXXXXXXX.json be/config/firebase-service-account.json
+cp ~/Downloads/SEKAR-Production-XXXXXXXX.json apps/be/config/firebase-service-account.json
 
 # Verify the file is gitignored
-cat be/.gitignore | grep firebase-service-account.json
+cat apps/be/.gitignore | grep firebase-service-account.json
 # Output: config/firebase-service-account.json
 ```
 
-**Set environment variable in `be/.env.local`:**
+**Set environment variable in `apps/be/.env.local`:**
 
 ```bash
 FCM_ENABLED=true
@@ -122,7 +122,7 @@ When all three inline vars are set, they take precedence over the JSON file. The
 
 1. Click **Add app** → Select the **Android** icon
 2. Fill in the registration form:
-   - **Android package name:** `com.wahyutrip.sekar` (must match `fe/mobile/android/app/build.gradle` `applicationId`)
+   - **Android package name:** `com.wahyutrip.sekar` (must match `apps/mobile/android/app/build.gradle` `applicationId`)
    - **App nickname:** SEKAR Mobile Android
    - **Debug signing certificate SHA-1:** (optional for development; required for production — see Section 1.3.2 below)
 3. Click **Register app**
@@ -132,10 +132,10 @@ When all three inline vars are set, they take precedence over the JSON file. The
 
 ```bash
 # Place the JSON in the Android app module
-cp ~/Downloads/google-services.json fe/mobile/android/app/google-services.json
+cp ~/Downloads/google-services.json apps/mobile/android/app/google-services.json
 
 # Verify gitignored
-cat fe/mobile/.gitignore | grep google-services.json
+cat apps/mobile/.gitignore | grep google-services.json
 # Output: android/app/google-services.json
 ```
 
@@ -143,8 +143,8 @@ cat fe/mobile/.gitignore | grep google-services.json
 
 The repo already has Firebase Gradle plugin configured:
 
-- `fe/mobile/android/build.gradle` includes: `classpath 'com.google.gms:google-services:4.3.15'`
-- `fe/mobile/android/app/build.gradle` includes: `apply plugin: 'com.google.gms.google-services'` (uncommented when `google-services.json` is present)
+- `apps/mobile/android/build.gradle` includes: `classpath 'com.google.gms:google-services:4.3.15'`
+- `apps/mobile/android/app/build.gradle` includes: `apply plugin: 'com.google.gms.google-services'` (uncommented when `google-services.json` is present)
 
 **No further Gradle changes needed.** The FCM SDKs (`@react-native-firebase/app` and `@react-native-firebase/messaging`) are installed via npm and auto-linked by the Metro build system.
 
@@ -155,7 +155,7 @@ For production APK releases, the Maps key (Section 2) must be restricted to the 
 **Get the release SHA-1:**
 
 ```bash
-cd fe/mobile/android
+cd apps/mobile/android
 ./gradlew signingReport
 ```
 
@@ -195,10 +195,10 @@ ABCDEF1234567890ABCDEF1234567890ABCDEF12
 
 ```bash
 # Place the plist in the iOS project
-cp ~/Downloads/GoogleService-Info.plist fe/mobile/ios/GoogleService-Info.plist
+cp ~/Downloads/GoogleService-Info.plist apps/mobile/ios/GoogleService-Info.plist
 
 # Or, if you prefer to keep it in version control as a template:
-cp ~/Downloads/GoogleService-Info.plist fe/mobile/ios/GoogleService-Info.plist.example
+cp ~/Downloads/GoogleService-Info.plist apps/mobile/ios/GoogleService-Info.plist.example
 # Then gitignore the real file and document that devs must add it manually
 ```
 
@@ -210,7 +210,7 @@ ios/GoogleService-Info.plist
 !ios/GoogleService-Info.plist.example
 ```
 
-**In Xcode (fe/mobile/ios/sekar.xcworkspace):**
+**In Xcode (apps/mobile/ios/sekar.xcworkspace):**
 
 1. Open the workspace in Xcode
 2. In the project navigator, right-click and select **Add Files to "sekar"**
@@ -236,7 +236,7 @@ For production iOS deployments, you must upload an APNs key (or certificate) to 
 ### 1.5 Mobile App: Install Firebase Packages
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # Install Firebase packages
 npm install @react-native-firebase/app@^18.0.0
@@ -249,7 +249,7 @@ npm install @notifee/react-native@^7.8.0
 **For iOS (macOS only):**
 
 ```bash
-cd fe/mobile/ios
+cd apps/mobile/ios
 pod install
 cd ..
 ```
@@ -257,21 +257,21 @@ cd ..
 **Verify the installation:**
 
 ```bash
-grep -E "firebase|notifee" fe/mobile/package.json
+grep -E "firebase|notifee" apps/mobile/package.json
 ```
 
 ### 1.6 Backend: Notification Service Configuration
 
 The backend already has Firebase Admin SDK integration. Verify the setup:
 
-**File:** `be/src/modules/notifications/notifications.service.ts`
+**File:** `apps/be/src/modules/notifications/notifications.service.ts`
 
-- Should import and use `getMessaging()` from `be/src/config/firebase.config.ts`
+- Should import and use `getMessaging()` from `apps/be/src/config/firebase.config.ts`
 - Sends FCM messages via the HTTP v1 API
 
 **Environment Variables:**
 
-`be/.env.local` (or `.env.staging`/`.env.production`):
+`apps/be/.env.local` (or `.env.staging`/`.env.production`):
 
 ```bash
 FCM_ENABLED=true
@@ -287,7 +287,7 @@ FIREBASE_SERVICE_ACCOUNT_PATH=./config/firebase-service-account.json
 **Android (Physical Device):**
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 npm run android
 
 # Verify token registration in logcat
@@ -297,7 +297,7 @@ adb logcat | grep "FCM\|Token"
 **iOS (Physical Device, macOS only):**
 
 ```bash
-cd fe/mobile/ios
+cd apps/mobile/ios
 open sekar.xcworkspace
 
 # In Xcode: Select device (not simulator) → Run (⌘R)
@@ -357,7 +357,7 @@ For development, restriction is optional. But it's recommended to prevent unauth
 3. Under **Application restrictions:**
    - Select **Android apps**
    - Add package name: `com.wahyutrip.sekar`
-   - (Optional) Add debug certificate SHA-1 from `cd fe/mobile/android && ./gradlew signingReport`
+   - (Optional) Add debug certificate SHA-1 from `cd apps/mobile/android && ./gradlew signingReport`
 
 ### 2.4 Production: Restrict by Release SHA-1
 
@@ -366,7 +366,7 @@ For production, the API key must be restricted to the **release** signing certif
 **Get the release SHA-1:**
 
 ```bash
-cd fe/mobile/android
+cd apps/mobile/android
 ./gradlew signingReport
 ```
 
@@ -390,7 +390,7 @@ The Google Maps **SDK** key is injected into `AndroidManifest.xml` at build time
 <meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}"/>
 ```
 
-and `fe/mobile/android/app/build.gradle` resolves it from the gitignored gradle property
+and `apps/mobile/android/app/build.gradle` resolves it from the gitignored gradle property
 `SEKAR_MAPS_API_KEY` (mirroring how the release keystore props are supplied):
 
 ```groovy
@@ -406,7 +406,7 @@ SEKAR_MAPS_API_KEY=AIzaSy...your-key...
 …or per-invocation: `./gradlew assembleRelease -PSEKAR_MAPS_API_KEY=AIzaSy...` / env `ORG_GRADLE_PROJECT_SEKAR_MAPS_API_KEY=...`.
 
 > **Two different keys:** the native **SDK** key above (manifest, for `react-native-maps` rendering) is distinct from
-> `GOOGLE_MAPS_API_KEY` in `fe/mobile/.env.local` (loaded by `react-native-dotenv` for JS-side calls). Both can be the
+> `GOOGLE_MAPS_API_KEY` in `apps/mobile/.env.local` (loaded by `react-native-dotenv` for JS-side calls). Both can be the
 > same restricted key, but they are wired through different mechanisms.
 
 ### 2.6 SECURITY NOTE: Previously-committed key rotated
@@ -444,7 +444,7 @@ The same key is shared with the backend (`GOOGLE_MAPS_API_KEY`, used for `seed:g
 
 ### 3.2 Configure Web App
 
-**File:** `fe/web/.env.local`
+**File:** `apps/web/.env.local`
 
 ```bash
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...your-key...
@@ -456,7 +456,7 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...your-key...
 
 ```bash
 # Start the web dashboard
-cd fe/web
+cd apps/web
 npm run dev
 
 # Visit http://localhost:3001
@@ -665,12 +665,12 @@ aws s3 ls s3://sekar-media-staging --recursive
 | FCM | Firebase | Optional | Set `FCM_ENABLED=false` to skip; Firebase services disabled locally |
 | Google Maps | Google Cloud | Required | Use dev API key (unrestricted OK locally) |
 | Google Maps | Google Maps | Required | Use dev token |
-| AWS S3 | MinIO (local) | Required | Uses `be/.env.local` with MinIO endpoint; no real AWS keys needed |
+| AWS S3 | MinIO (local) | Required | Uses `apps/be/.env.local` with MinIO endpoint; no real AWS keys needed |
 | APNs | Apple | N/A | Not needed for dev (simulator push doesn't work) |
 
 **Sample `.env.local` files (plaintext, NOT encrypted):**
 
-`be/.env.local`:
+`apps/be/.env.local`:
 ```bash
 FCM_ENABLED=false
 AWS_ENDPOINT_URL=http://localhost:9000
@@ -680,13 +680,13 @@ AWS_SECRET_ACCESS_KEY=minioadmin
 AWS_S3_BUCKET=sekar-media-dev
 ```
 
-`fe/mobile/.env.local`:
+`apps/mobile/.env.local`:
 ```bash
 GOOGLE_MAPS_API_KEY=AIzaSy...dev-key...
 API_BASE_URL=http://10.0.2.2:3000
 ```
 
-`fe/web/.env.local`:
+`apps/web/.env.local`:
 ```bash
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIzaSy...dev-key...
 NEXT_PUBLIC_API_URL=http://localhost:3000
@@ -750,7 +750,7 @@ can fetch it without embedding a static password. Never commit the value to git.
 | AWS S3 | MinIO (self-hosted) | Required | Uses MinIO in `docker-compose.prod.yml`; NOT real AWS (per project convention) |
 | APNs | Apple | Required | Uploaded to Firebase; required for iOS push in production |
 
-**Sample `.env.production` (encrypted; repo-root, NOT `be/`, decrypted at runtime via dotenvx):**
+**Sample `.env.production` (encrypted; repo-root, NOT `apps/be/`, decrypted at runtime via dotenvx):**
 ```bash
 FCM_ENABLED=true
 FCM_PROJECT_ID=sekar-production-xxx
@@ -787,7 +787,7 @@ For local development, the project uses **MinIO** — a self-hosted, S3-compatib
 # Default credentials: minioadmin / minioadmin
 
 # Configure backend for MinIO
-# be/.env.local:
+# apps/be/.env.local:
 AWS_ENDPOINT_URL=http://localhost:9000
 AWS_S3_FORCE_PATH_STYLE=true
 AWS_ACCESS_KEY_ID=minioadmin
@@ -803,8 +803,8 @@ AWS_S3_BUCKET=sekar-media-dev
 
 ```bash
 # Verify .gitignore covers all sensitive files:
-cat be/.gitignore | grep -E "^config/firebase|^\.env"
-cat fe/mobile/.gitignore | grep -E "^android/app/google|^ios/GoogleService|^\.env"
+cat apps/be/.gitignore | grep -E "^config/firebase|^\.env"
+cat apps/mobile/.gitignore | grep -E "^android/app/google|^ios/GoogleService|^\.env"
 ```
 
 ### Use IAM Policies with Least Privilege
@@ -874,13 +874,13 @@ aws s3api put-bucket-logging \
 
 ### "Cannot find service account file"
 
-**Cause:** `be/config/firebase-service-account.json` is missing.
+**Cause:** `apps/be/config/firebase-service-account.json` is missing.
 
 **Solution:**
 
 1. Download service account JSON from Firebase Console
-2. Place in `be/config/firebase-service-account.json`
-3. Verify it's gitignored: `cat be/.gitignore | grep firebase`
+2. Place in `apps/be/config/firebase-service-account.json`
+3. Verify it's gitignored: `cat apps/be/.gitignore | grep firebase`
 4. Restart backend
 
 ### "AWS Access Key Id ... does not exist"
@@ -889,7 +889,7 @@ aws s3api put-bucket-logging \
 
 **Solution:**
 
-1. Verify the key ID: `cat be/.env | grep AWS_ACCESS_KEY_ID`
+1. Verify the key ID: `cat apps/be/.env | grep AWS_ACCESS_KEY_ID`
 2. Go to AWS Console → IAM → Users → sekar-s3-user → Security credentials
 3. Create a new access key if needed
 4. Update `.env` and restart backend
@@ -926,8 +926,8 @@ aws s3api put-bucket-logging \
 
 **Solution:**
 
-1. Verify `fe/mobile/android/app/google-services.json` exists
-2. Verify `fe/mobile/ios/GoogleService-Info.plist` exists (iOS)
+1. Verify `apps/mobile/android/app/google-services.json` exists
+2. Verify `apps/mobile/ios/GoogleService-Info.plist` exists (iOS)
 3. Verify files are gitignored and NOT committed
 4. Rebuild: `npm run android` or `npm run ios`
 

@@ -99,18 +99,18 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| A1. ReportingModule scaffold | Module, service, controller | New: `be/src/modules/reporting/` |
-| A2. report_templates table + entity | 6 built-in templates | New: `be/src/modules/reporting/entities/report-template.entity.ts` |
-| A3. generated_reports table + entity | Archive with S3 storage | New: `be/src/modules/reporting/entities/generated-report.entity.ts` |
-| A4. report_schedules table + entity | Cron-based scheduled reports | New: `be/src/modules/reporting/entities/report-schedule.entity.ts` |
-| A5. Puppeteer PDF generator (ADR-024) | Handlebars templates -> PDF | New: `be/src/modules/reporting/generators/pdf.generator.ts` |
-| A6. 6 report type implementations | Daily ops, weekly perf, monthly summary, worker, area, overtime | `be/src/modules/reporting/reports/` |
-| A7. Report scheduler cron | Daily 06:00 WIB, weekly Mon 07:00, monthly 1st 08:00 | New: `be/src/modules/reporting/cron/report-scheduler.cron.ts` |
-| B1. Mobile ReportsScreen | List + download reports | New: `fe/mobile/src/screens/reports/ReportsScreen.tsx` |
-| B2. Mobile ReportDetailScreen | View report with charts | New: `fe/mobile/src/screens/reports/ReportDetailScreen.tsx` |
-| C1. Web reports dashboard page | /dashboard/reports | New: `fe/web/src/app/(dashboard)/reports/page.tsx` |
-| C2. Web report builder page | /dashboard/reports/builder | New: `fe/web/src/app/(dashboard)/reports/builder/page.tsx` |
-| C3. Web report schedules page | /dashboard/reports/schedules | New: `fe/web/src/app/(dashboard)/reports/schedules/page.tsx` |
+| A1. ReportingModule scaffold | Module, service, controller | New: `apps/be/src/modules/reporting/` |
+| A2. report_templates table + entity | 6 built-in templates | New: `apps/be/src/modules/reporting/entities/report-template.entity.ts` |
+| A3. generated_reports table + entity | Archive with S3 storage | New: `apps/be/src/modules/reporting/entities/generated-report.entity.ts` |
+| A4. report_schedules table + entity | Cron-based scheduled reports | New: `apps/be/src/modules/reporting/entities/report-schedule.entity.ts` |
+| A5. Puppeteer PDF generator (ADR-024) | Handlebars templates -> PDF | New: `apps/be/src/modules/reporting/generators/pdf.generator.ts` |
+| A6. 6 report type implementations | Daily ops, weekly perf, monthly summary, worker, area, overtime | `apps/be/src/modules/reporting/reports/` |
+| A7. Report scheduler cron | Daily 06:00 WIB, weekly Mon 07:00, monthly 1st 08:00 | New: `apps/be/src/modules/reporting/cron/report-scheduler.cron.ts` |
+| B1. Mobile ReportsScreen | List + download reports | New: `apps/mobile/src/screens/reports/ReportsScreen.tsx` |
+| B2. Mobile ReportDetailScreen | View report with charts | New: `apps/mobile/src/screens/reports/ReportDetailScreen.tsx` |
+| C1. Web reports dashboard page | /dashboard/reports | New: `apps/web/src/app/(dashboard)/reports/page.tsx` |
+| C2. Web report builder page | /dashboard/reports/builder | New: `apps/web/src/app/(dashboard)/reports/builder/page.tsx` |
+| C3. Web report schedules page | /dashboard/reports/schedules | New: `apps/web/src/app/(dashboard)/reports/schedules/page.tsx` |
 | D1. Unit + integration tests | >80% coverage for reporting module | Test files |
 
 **Deliverables:** ADR-024 written, ReportingModule with 6 report types, PDF generation, scheduled reports, 2 mobile screens, 3 web pages
@@ -123,17 +123,17 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| A1. AnalyticsModule scaffold | Module, service, controller | New: `be/src/modules/analytics/` |
+| A1. AnalyticsModule scaffold | Module, service, controller | New: `apps/be/src/modules/analytics/` |
 | A2. Materialized views (ADR-025) | 3 views: worker_performance_daily, area_metrics_daily, operational_metrics_daily | Migration |
-| A3. Worker analytics endpoints | 8 worker KPIs with filters | `be/src/modules/analytics/analytics.controller.ts` |
-| A4. Area analytics endpoints | 5 area KPIs with filters | `be/src/modules/analytics/analytics.controller.ts` |
-| A5. Operational analytics endpoints | 6 operational KPIs | `be/src/modules/analytics/analytics.controller.ts` |
-| A6. Analytics refresh cron | Refresh materialized views daily at 05:00 WIB | New: `be/src/modules/analytics/cron/analytics-refresh.cron.ts` |
-| B1. Mobile WorkerAnalyticsScreen | Personal performance metrics | New: `fe/mobile/src/screens/analytics/WorkerAnalyticsScreen.tsx` |
-| B2. Mobile TeamAnalyticsScreen | Supervisor team overview | New: `fe/mobile/src/screens/analytics/TeamAnalyticsScreen.tsx` |
-| C1. Web analytics dashboard page | /dashboard/analytics | New: `fe/web/src/app/(dashboard)/analytics/page.tsx` |
-| C2. Web worker analytics page | /dashboard/analytics/workers | New: `fe/web/src/app/(dashboard)/analytics/workers/page.tsx` |
-| C3. Web area analytics page | /dashboard/analytics/areas | New: `fe/web/src/app/(dashboard)/analytics/areas/page.tsx` |
+| A3. Worker analytics endpoints | 8 worker KPIs with filters | `apps/be/src/modules/analytics/analytics.controller.ts` |
+| A4. Area analytics endpoints | 5 area KPIs with filters | `apps/be/src/modules/analytics/analytics.controller.ts` |
+| A5. Operational analytics endpoints | 6 operational KPIs | `apps/be/src/modules/analytics/analytics.controller.ts` |
+| A6. Analytics refresh cron | Refresh materialized views daily at 05:00 WIB | New: `apps/be/src/modules/analytics/cron/analytics-refresh.cron.ts` |
+| B1. Mobile WorkerAnalyticsScreen | Personal performance metrics | New: `apps/mobile/src/screens/analytics/WorkerAnalyticsScreen.tsx` |
+| B2. Mobile TeamAnalyticsScreen | Supervisor team overview | New: `apps/mobile/src/screens/analytics/TeamAnalyticsScreen.tsx` |
+| C1. Web analytics dashboard page | /dashboard/analytics | New: `apps/web/src/app/(dashboard)/analytics/page.tsx` |
+| C2. Web worker analytics page | /dashboard/analytics/workers | New: `apps/web/src/app/(dashboard)/analytics/workers/page.tsx` |
+| C3. Web area analytics page | /dashboard/analytics/areas | New: `apps/web/src/app/(dashboard)/analytics/areas/page.tsx` |
 | D1. Unit + integration tests | >80% coverage | Test files |
 
 **Deliverables:** ADR-025 written, AnalyticsModule with 19 KPIs, 3 materialized views, 2 mobile screens, 3 web pages
@@ -146,23 +146,23 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| A1. AssetsModule scaffold | Module, service, controller | New: `be/src/modules/assets/` |
+| A1. AssetsModule scaffold | Module, service, controller | New: `apps/be/src/modules/assets/` |
 | A2. assets + asset_categories tables | 6 park-specific categories | New migration |
 | A3. asset_assignments table | Checkout/return tracking | New migration |
 | A4. asset_maintenances table | Maintenance scheduling | New migration |
-| A5. QR code service (ADR-026) | Generate + decode QR codes | New: `be/src/modules/assets/services/qr-code.service.ts` |
-| A6. Assets CRUD endpoints | Scoped to rayon/area | `be/src/modules/assets/assets.controller.ts` |
-| A7. Assignment/return endpoints | Checkout/return workflow | `be/src/modules/assets/assets.controller.ts` |
-| A8. Maintenance endpoints | Schedule + complete maintenance | `be/src/modules/assets/assets.controller.ts` |
-| B1. Mobile AssetListScreen | Browse assets in assigned area | New: `fe/mobile/src/screens/assets/AssetListScreen.tsx` |
-| B2. Mobile AssetDetailScreen | View asset + history | New: `fe/mobile/src/screens/assets/AssetDetailScreen.tsx` |
-| B3. Mobile QRScannerScreen | Scan QR to view/checkout asset | New: `fe/mobile/src/screens/assets/QRScannerScreen.tsx` |
-| B4. Mobile AssetCheckoutScreen | Checkout workflow | New: `fe/mobile/src/screens/assets/AssetCheckoutScreen.tsx` |
-| C1. Web assets list page | /dashboard/assets | New: `fe/web/src/app/(dashboard)/assets/page.tsx` |
-| C2. Web asset detail page | /dashboard/assets/[id] | New: `fe/web/src/app/(dashboard)/assets/[id]/page.tsx` |
-| C3. Web asset form page | /dashboard/assets/new | New: `fe/web/src/app/(dashboard)/assets/new/page.tsx` |
-| C4. Web QR generator page | /dashboard/assets/qr | New: `fe/web/src/app/(dashboard)/assets/qr/page.tsx` |
-| C5. Web maintenance calendar | /dashboard/assets/maintenance | New: `fe/web/src/app/(dashboard)/assets/maintenance/page.tsx` |
+| A5. QR code service (ADR-026) | Generate + decode QR codes | New: `apps/be/src/modules/assets/services/qr-code.service.ts` |
+| A6. Assets CRUD endpoints | Scoped to rayon/area | `apps/be/src/modules/assets/assets.controller.ts` |
+| A7. Assignment/return endpoints | Checkout/return workflow | `apps/be/src/modules/assets/assets.controller.ts` |
+| A8. Maintenance endpoints | Schedule + complete maintenance | `apps/be/src/modules/assets/assets.controller.ts` |
+| B1. Mobile AssetListScreen | Browse assets in assigned area | New: `apps/mobile/src/screens/assets/AssetListScreen.tsx` |
+| B2. Mobile AssetDetailScreen | View asset + history | New: `apps/mobile/src/screens/assets/AssetDetailScreen.tsx` |
+| B3. Mobile QRScannerScreen | Scan QR to view/checkout asset | New: `apps/mobile/src/screens/assets/QRScannerScreen.tsx` |
+| B4. Mobile AssetCheckoutScreen | Checkout workflow | New: `apps/mobile/src/screens/assets/AssetCheckoutScreen.tsx` |
+| C1. Web assets list page | /dashboard/assets | New: `apps/web/src/app/(dashboard)/assets/page.tsx` |
+| C2. Web asset detail page | /dashboard/assets/[id] | New: `apps/web/src/app/(dashboard)/assets/[id]/page.tsx` |
+| C3. Web asset form page | /dashboard/assets/new | New: `apps/web/src/app/(dashboard)/assets/new/page.tsx` |
+| C4. Web QR generator page | /dashboard/assets/qr | New: `apps/web/src/app/(dashboard)/assets/qr/page.tsx` |
+| C5. Web maintenance calendar | /dashboard/assets/maintenance | New: `apps/web/src/app/(dashboard)/assets/maintenance/page.tsx` |
 | D1. Unit + integration tests | >80% coverage | Test files |
 
 **Deliverables:** ADR-026 written, AssetsModule, QR code service, 4 mobile screens, 5 web pages
@@ -175,12 +175,12 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| A1. Xcode project setup | Bundle ID, signing, capabilities | `fe/mobile/ios/` |
-| A2. CocoaPods configuration | iOS dependencies | `fe/mobile/ios/Podfile` |
-| A3. Apple Sign-In integration (ADR-027) | @invertase/react-native-apple-authentication | `fe/mobile/src/services/auth/appleAuth.ts` |
-| A4. Backend Apple token verification | POST /auth/apple endpoint | `be/src/modules/auth/strategies/apple.strategy.ts` |
-| A5. Biometric authentication | Face ID / Touch ID | New: `fe/mobile/src/services/auth/biometricAuth.ts` |
-| A6. APNs configuration | Push notification certificates | `fe/mobile/ios/` |
+| A1. Xcode project setup | Bundle ID, signing, capabilities | `apps/mobile/ios/` |
+| A2. CocoaPods configuration | iOS dependencies | `apps/mobile/ios/Podfile` |
+| A3. Apple Sign-In integration (ADR-027) | @invertase/react-native-apple-authentication | `apps/mobile/src/services/auth/appleAuth.ts` |
+| A4. Backend Apple token verification | POST /auth/apple endpoint | `apps/be/src/modules/auth/strategies/apple.strategy.ts` |
+| A5. Biometric authentication | Face ID / Touch ID | New: `apps/mobile/src/services/auth/biometricAuth.ts` |
+| A6. APNs configuration | Push notification certificates | `apps/mobile/ios/` |
 | A7. Platform parity checklist | Verify all Android features on iOS | Test matrix |
 | A8. TestFlight setup | Internal + external testing | Xcode / App Store Connect |
 | A9. App Store submission preparation | Screenshots, descriptions, privacy policy | App Store Connect |
@@ -220,7 +220,7 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 | A1. Web user guide | 14 sections by role | `specs/phases/phase-5-finishing-ios/user-guide-web.md` |
 | A2. Mobile user guide | 9 sections by role | `specs/phases/phase-5-finishing-ios/user-guide-mobile.md` |
 | A3. Maintenance documentation | 10 sections for system admin | `specs/phases/phase-5-finishing-ios/maintenance.md` |
-| A4. API documentation update | Swagger annotations for new endpoints | `be/src/modules/*/` |
+| A4. API documentation update | Swagger annotations for new endpoints | `apps/be/src/modules/*/` |
 | A5. Architecture diagrams update | C4 diagrams with Phase 5 additions | `specs/architecture/` |
 
 **Deliverables:** Web user guide, mobile user guide, maintenance manual, updated API docs
@@ -251,13 +251,13 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Task | Scope | Key Files |
 |------|-------|-----------|
-| A1. Maestro flows for reporting | Generate report, view report, download | `fe/mobile/.maestro/flows/` |
-| A2. Maestro flows for analytics | View worker analytics, team analytics | `fe/mobile/.maestro/flows/` |
-| A3. Maestro flows for assets | Scan QR, checkout, return, maintenance | `fe/mobile/.maestro/flows/` |
-| A4. Maestro flows for iOS | Apple Sign-In, biometrics | `fe/mobile/.maestro/flows/` |
-| B1. Playwright specs for reporting | Report builder, schedules, archive | `fe/web/e2e/` |
-| B2. Playwright specs for analytics | Dashboard, worker, area analytics | `fe/web/e2e/` |
-| B3. Playwright specs for assets | CRUD, QR generator, maintenance calendar | `fe/web/e2e/` |
+| A1. Maestro flows for reporting | Generate report, view report, download | `apps/mobile/.maestro/flows/` |
+| A2. Maestro flows for analytics | View worker analytics, team analytics | `apps/mobile/.maestro/flows/` |
+| A3. Maestro flows for assets | Scan QR, checkout, return, maintenance | `apps/mobile/.maestro/flows/` |
+| A4. Maestro flows for iOS | Apple Sign-In, biometrics | `apps/mobile/.maestro/flows/` |
+| B1. Playwright specs for reporting | Report builder, schedules, archive | `apps/web/e2e/` |
+| B2. Playwright specs for analytics | Dashboard, worker, area analytics | `apps/web/e2e/` |
+| B3. Playwright specs for assets | CRUD, QR generator, maintenance calendar | `apps/web/e2e/` |
 | C1. Performance testing | Report generation <30s, analytics <2s | Performance tests |
 | C2. iOS device testing matrix | iPhone 14 Pro, iPhone SE, iPad | Device tests |
 
@@ -286,19 +286,19 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Addition | Description |
 |----------|-------------|
-| `be/src/modules/reporting/` | Report generation (PDF, CSV, Excel), templates, scheduling |
-| `be/src/modules/analytics/` | KPI calculations, materialized view management |
-| `be/src/modules/assets/` | Asset CRUD, QR codes, assignments, maintenance |
-| `be/src/modules/auth/strategies/apple.strategy.ts` | Apple Sign-In token verification |
-| `fe/mobile/src/screens/reports/` | 2 new screens (list + detail) |
-| `fe/mobile/src/screens/analytics/` | 2 new screens (worker + team) |
-| `fe/mobile/src/screens/assets/` | 4 new screens (list, detail, QR scanner, checkout) |
-| `fe/mobile/src/services/auth/appleAuth.ts` | Apple Sign-In service |
-| `fe/mobile/src/services/auth/biometricAuth.ts` | Face ID / Touch ID service |
-| `fe/web/src/app/(dashboard)/reports/` | 3 new pages (dashboard, builder, schedules) |
-| `fe/web/src/app/(dashboard)/analytics/` | 3 new pages (dashboard, workers, areas) |
-| `fe/web/src/app/(dashboard)/assets/` | 5 new pages (list, detail, form, QR, maintenance) |
-| `fe/mobile/ios/` | Complete iOS build configuration |
+| `apps/be/src/modules/reporting/` | Report generation (PDF, CSV, Excel), templates, scheduling |
+| `apps/be/src/modules/analytics/` | KPI calculations, materialized view management |
+| `apps/be/src/modules/assets/` | Asset CRUD, QR codes, assignments, maintenance |
+| `apps/be/src/modules/auth/strategies/apple.strategy.ts` | Apple Sign-In token verification |
+| `apps/mobile/src/screens/reports/` | 2 new screens (list + detail) |
+| `apps/mobile/src/screens/analytics/` | 2 new screens (worker + team) |
+| `apps/mobile/src/screens/assets/` | 4 new screens (list, detail, QR scanner, checkout) |
+| `apps/mobile/src/services/auth/appleAuth.ts` | Apple Sign-In service |
+| `apps/mobile/src/services/auth/biometricAuth.ts` | Face ID / Touch ID service |
+| `apps/web/src/app/(dashboard)/reports/` | 3 new pages (dashboard, builder, schedules) |
+| `apps/web/src/app/(dashboard)/analytics/` | 3 new pages (dashboard, workers, areas) |
+| `apps/web/src/app/(dashboard)/assets/` | 5 new pages (list, detail, form, QR, maintenance) |
+| `apps/mobile/ios/` | Complete iOS build configuration |
 | `infra/docker-compose.staging.yml` | Staging environment |
 | 3 materialized views | worker_performance_daily, area_metrics_daily, operational_metrics_daily |
 | 7-9 new database tables | report_templates, generated_reports, report_schedules, assets, asset_categories, asset_assignments, asset_maintenances |
@@ -307,12 +307,12 @@ Week 9:     5-7 (Evaluation) <── All ────────────┘
 
 | Current Code | Change |
 |-------------|--------|
-| `be/src/modules/export/` (Phase 4) | Extended with Puppeteer PDF generator |
+| `apps/be/src/modules/export/` (Phase 4) | Extended with Puppeteer PDF generator |
 | `@nestjs/schedule` cron jobs (Phase 4) | +3 cron jobs (report scheduler, analytics refresh, maintenance reminders) |
-| `fe/mobile/src/navigation/` | +8-10 new screen routes (reports, analytics, assets) |
-| `fe/mobile/src/store/slices/` | +3 Redux slices (reports, analytics, assets) |
-| `fe/web/src/app/(dashboard)/` layout | +11 new navigation items |
-| `be/src/modules/auth/` | +Apple Sign-In strategy |
+| `apps/mobile/src/navigation/` | +8-10 new screen routes (reports, analytics, assets) |
+| `apps/mobile/src/store/slices/` | +3 Redux slices (reports, analytics, assets) |
+| `apps/web/src/app/(dashboard)/` layout | +11 new navigation items |
+| `apps/be/src/modules/auth/` | +Apple Sign-In strategy |
 | `.github/workflows/` | +iOS CI/CD pipeline, staging deployment |
 | `infra/docker-compose.yml` | Staging environment variant |
 

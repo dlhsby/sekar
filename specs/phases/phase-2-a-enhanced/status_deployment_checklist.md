@@ -50,10 +50,10 @@ cd be && npm run start:dev
 cd be && npm run seed:phase2
 
 # Start mobile app
-cd fe/mobile && npm start
+cd apps/mobile && npm start
 
 # Start web dashboard
-cd fe/web && npm run dev
+cd apps/web && npm run dev
 ```
 
 ---
@@ -89,7 +89,7 @@ npm run test:e2e
 ### Mobile Tests
 
 ```bash
-cd fe/mobile
+cd apps/mobile
 
 # 1. Run all tests
 npm test
@@ -111,7 +111,7 @@ cd ios && pod install && cd .. && npm run ios
 ### Web Tests
 
 ```bash
-cd fe/web
+cd apps/web
 
 # 1. Install dependencies
 npm install

@@ -37,8 +37,8 @@ free_port "$BE_PORT" "backend"
 free_port "$WEB_PORT" "web"
 ensure_infra
 
-start_bg backend "$ROOT/be" npm run start:dev
-start_bg web "$ROOT/fe/web" npm run dev
+start_bg backend "$ROOT/apps/be" npm run start:dev
+start_bg web "$ROOT/apps/web" npm run dev
 
 print_info "Waiting for services (backend :$BE_PORT · web :$WEB_PORT)..."
 wait_for_http "http://localhost:$BE_PORT/api/v1/health/live" 120 "Backend API" || true
@@ -50,7 +50,7 @@ echo -e "  • Backend API:  ${GREEN}http://localhost:$BE_PORT${NC} (Swagger: ${
 echo -e "  • Web app:      ${GREEN}http://localhost:$WEB_PORT${NC}"
 echo -e "  • Adminer:      ${GREEN}http://localhost:8080${NC} (see infra/.env)"
 echo -e "  • Logs:         ${GREEN}logs/backend.log${NC} · ${GREEN}logs/web.log${NC}"
-echo -e "  • Ports:        ${GREEN}be/.env.local${NC} (PORT) · ${GREEN}fe/web/.env.local${NC} (WEB_PORT)"
+echo -e "  • Ports:        ${GREEN}apps/be/.env.local${NC} (PORT) · ${GREEN}apps/web/.env.local${NC} (WEB_PORT) · ${GREEN}apps/mobile/.env.local${NC} (METRO_PORT=$METRO_PORT)"
 echo ""
 
 if [ "$NO_MOBILE" = true ]; then
@@ -61,10 +61,11 @@ fi
 cleanup() {
   echo ""
   print_info "Shutting down backend + web..."
-  stop_pid backend "nest start --watch|be/dist/src/main"
+  stop_pid backend "nest start --watch|apps/be/dist/src/main"
   stop_pid web "next dev|next-server"
 }
 trap cleanup INT TERM EXIT
 
-print_info "Starting Metro bundler (Ctrl+C stops Metro + backend + web)..."
-cd "$ROOT/fe/mobile" && npm start
+free_port "$METRO_PORT" "metro"
+print_info "Starting Metro bundler on :$METRO_PORT (Ctrl+C stops Metro + backend + web)..."
+cd "$ROOT/apps/mobile" && npm start -- --port "$METRO_PORT"
