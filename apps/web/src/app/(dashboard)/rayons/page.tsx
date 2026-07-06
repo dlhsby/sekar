@@ -108,7 +108,8 @@ export default function RayonsPage() {
         accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
         header: t('admin:areas.columnCoordinates'),
         enableSorting: false,
-        meta: { label: t('admin:areas.columnCoordinates'), filterVariant: 'text' },
+        enableColumnFilter: false,
+        meta: { label: t('admin:areas.columnCoordinates') },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),
@@ -126,28 +127,6 @@ export default function RayonsPage() {
         ),
       },
       {
-        id: 'created_at',
-        accessorKey: 'created_at',
-        header: t('admin:rayons.columnCreated'),
-        meta: { label: t('admin:rayons.columnCreated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.created_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'updated_at',
-        accessorKey: 'updated_at',
-        header: t('admin:rayons.columnUpdated'),
-        meta: { label: t('admin:rayons.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.updated_at)}
-          </span>
-        ),
-      },
-      {
         id: 'created_by',
         accessorFn: (r) => actorName(r.created_by),
         header: t('admin:rayons.columnCreatedBy'),
@@ -159,6 +138,17 @@ export default function RayonsPage() {
         ),
       },
       {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: t('admin:rayons.columnCreated'),
+        meta: { label: t('admin:rayons.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
         id: 'updated_by',
         accessorFn: (r) => actorName(r.updated_by),
         header: t('admin:rayons.columnUpdatedBy'),
@@ -166,6 +156,17 @@ export default function RayonsPage() {
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: t('admin:rayons.columnUpdated'),
+        meta: { label: t('admin:rayons.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
           </span>
         ),
       },

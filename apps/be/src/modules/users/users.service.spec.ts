@@ -362,7 +362,7 @@ describe('UsersService', () => {
       });
     });
 
-    it('attaches assigned_area_count (permanent areas) to each user', async () => {
+    it('attaches assigned_area_count + assigned_area_ids (permanent areas) to each user', async () => {
       const users = [
         { ...mockUser, id: 'u1' },
         { ...mockUser, id: 'u2' },
@@ -379,7 +379,9 @@ describe('UsersService', () => {
 
       expect(mockUserAreasService.getPermanentAreaIdsForUsers).toHaveBeenCalledWith(['u1', 'u2']);
       expect(result.data[0].assigned_area_count).toBe(3);
+      expect(result.data[0].assigned_area_ids).toEqual(['a1', 'a2', 'a3']);
       expect(result.data[1].assigned_area_count).toBe(0);
+      expect(result.data[1].assigned_area_ids).toEqual([]);
     });
 
     it('should return paginated users with custom page and limit', async () => {

@@ -145,6 +145,7 @@ export {
   numberRangeFilterFn,
   dateRangeFilterFn,
   enumFilterFn,
+  enumArrayFilterFn,
   type FilterVariant,
 } from './column-filter';
 

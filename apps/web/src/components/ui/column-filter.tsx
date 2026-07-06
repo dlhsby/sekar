@@ -80,6 +80,22 @@ export const enumFilterFn: FilterFn<unknown> = (row, columnId, value) => {
   return selected.includes(String(row.getValue(columnId)));
 };
 
+/**
+ * Multi-select for a MULTI-VALUE cell (e.g. a user's or schedule's several
+ * assigned areas) — matches when ANY of the row's own values is in the
+ * selected set, not an exact match against one joined value. The accessorFn
+ * for a column using this must return the raw array (not a joined display
+ * string), since `getFacetedUniqueValues()` also counts each array element
+ * separately for the checklist's per-option counts.
+ */
+export const enumArrayFilterFn: FilterFn<unknown> = (row, columnId, value) => {
+  const selected = value as string[] | undefined;
+  if (!selected || selected.length === 0) return true;
+  const rowValues = row.getValue(columnId);
+  if (!Array.isArray(rowValues) || rowValues.length === 0) return false;
+  return selected.some((s) => rowValues.includes(s));
+};
+
 /** Map a column's declared variant to its filterFn. */
 export function filterFnForVariant<TData>(variant: FilterVariant): FilterFnOption<TData> {
   if (variant === 'date') return dateRangeFilterFn as FilterFn<TData>;
