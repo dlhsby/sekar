@@ -23,6 +23,8 @@ import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { AreaFormModal } from '@/components/areas/AreaFormModal';
 import { useAreas, useDeactivateArea, useActivateArea } from '@/lib/api/areas';
 import { useUsers } from '@/lib/api/users';
+import { useRayons } from '@/lib/api/rayons';
+import { useAreaTypes } from '@/lib/api/area-types';
 import { useAuth } from '@/lib/auth/hooks';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatArea } from '@/lib/utils/geo';
@@ -37,6 +39,20 @@ export default function AreasPage() {
 
   const { data: areasData, isLoading, error, refetch } = useAreas({ limit: 1000 });
   const areas = useMemo(() => areasData?.data ?? [], [areasData]);
+
+  // Full master-data lists so the enum column filters can list every possible
+  // value (incl. ones with zero matching areas) instead of only values that
+  // happen to appear in the currently loaded rows.
+  const { data: allRayons } = useRayons();
+  const rayonFilterOptions = useMemo(
+    () => (allRayons ?? []).map((r) => ({ value: r.name, label: r.name })),
+    [allRayons]
+  );
+  const { data: allAreaTypes } = useAreaTypes();
+  const areaTypeFilterOptions = useMemo(
+    () => (allAreaTypes ?? []).map((t) => ({ value: t.name, label: t.name })),
+    [allAreaTypes]
+  );
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
   const { data: usersData } = useUsers({ limit: 1000 });
@@ -83,14 +99,22 @@ export default function AreasPage() {
         id: 'rayon',
         accessorFn: (a) => a.rayon?.name ?? '',
         header: t('admin:areas.columnRayon'),
-        meta: { label: t('admin:areas.columnRayon'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:areas.columnRayon'),
+          filterVariant: 'enum',
+          filterOptions: rayonFilterOptions,
+        },
         cell: ({ row }) => <span>{row.original.rayon?.name ?? '—'}</span>,
       },
       {
         id: 'area_type',
         accessorFn: (a) => a.areaType?.name ?? '',
         header: t('admin:areas.columnType'),
-        meta: { label: t('admin:areas.columnType'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:areas.columnType'),
+          filterVariant: 'enum',
+          filterOptions: areaTypeFilterOptions,
+        },
         cell: ({ row }) =>
           row.original.areaType ? (
             <Badge
@@ -227,7 +251,7 @@ export default function AreasPage() {
         ),
       },
     ],
-    [actorName]
+    [actorName, rayonFilterOptions, areaTypeFilterOptions]
   );
 
   const rowActions = useCallback(
