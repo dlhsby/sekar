@@ -162,5 +162,15 @@
       "status": "Status",
       "createdAt": "Dibuat"
     }
+  },
+  "reporting": {
+    "page": {
+      "title": "Laporan",
+      "description": "Kumpulan laporan dalam format spreadsheet Google Sheets"
+    },
+    "selectLabel": "Laporan",
+    "options": {
+      "rekapPerantingan": "Rekap Laporan Perantingan"
+    }
   }
 }
