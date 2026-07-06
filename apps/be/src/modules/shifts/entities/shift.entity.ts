@@ -197,21 +197,21 @@ export class Shift {
     description: 'Timestamp when record was created',
     example: '2026-01-09T08:00:00.000Z',
   })
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
   @ApiProperty({
     description: 'Timestamp when record was last updated',
     example: '2026-01-09T16:00:00.000Z',
   })
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;
 
   /**
    * Soft delete timestamp for data retention
    * CHECK constraints (clock_out_time > clock_in_time) are implemented in database migration
    */
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamptz' })
   deleted_at?: Date;
 
   // Actor audit — stamped by AuditSubscriber from the request's acting user.

@@ -86,23 +86,19 @@ else
     print_warning "Non-interactive shell — skipping destructive db:seed (pass --yes to force)"
   fi
   if [ "$DO_SEED" = true ]; then
-    # On a truly fresh DB some tables (e.g. notifications) are created by
-    # TypeORM synchronize at first boot, not by migrations — boot the backend
-    # once so the schema is complete before seeding.
-    load_ports
-    BOOTED_FOR_SEED=false
-    if ! curl -sf -o /dev/null --max-time 2 "http://localhost:$BE_PORT/api/v1/health/live"; then
-      print_info "Booting backend once so synchronize completes the schema..."
-      start_bg backend "$ROOT/apps/be" npm run start:dev
-      wait_for_http "http://localhost:$BE_PORT/api/v1/health/live" 120 "Backend (schema sync)"
-      BOOTED_FOR_SEED=true
-    fi
+    # db:seed runs its own standalone DataSource and only self-triggers
+    # TypeORM synchronize when the schema is completely empty (a truly fresh
+    # DB) — see schemaIsEmpty() in database/seeds/lib/context.ts. Since
+    # migrations (just run above) create every table including `notifications`
+    # (CreateNotifications17490100000000), there is no gap left for a backend
+    # boot to fill. Booting the backend here instead ran full TypeORM
+    # `synchronize` against the already migration-managed schema, which tries
+    # to "fix" long-standing entity/column drift (e.g. varchar→enum) and fails
+    # outright on any column referenced by a materialized view (can't DROP a
+    # column CASCADE-free) — see the Phase5AnalyticsViews migration.
     print_info "Seeding database (destructive)..."
     ( cd "$ROOT/apps/be" && npm run db:seed )
     print_success "Database seeded"
-    if [ "$BOOTED_FOR_SEED" = true ]; then
-      stop_pid backend "nest start --watch"
-    fi
   fi
 fi
 
