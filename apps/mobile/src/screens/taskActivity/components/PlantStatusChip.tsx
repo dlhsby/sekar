@@ -17,8 +17,12 @@ export function PlantStatusChip({ areaId, taskTitle }: PlantStatusChipProps): Re
   const [statusEmoji, setStatusEmoji] = useState<string>('');
   const [loading, setLoading] = useState(false);
 
-  // Check if this is likely a pruning task by title keywords
-  const isPruningTask = taskTitle.toLowerCase().includes('prun') || taskTitle.toLowerCase().includes('pemangkas');
+  // Check if this is likely a pruning task by title keywords. Matches both the
+  // current term ("perantingan"/"ranting") and the older one ("pemangkasan")
+  // still present in historical task titles.
+  const lowerTitle = taskTitle.toLowerCase();
+  const isPruningTask =
+    lowerTitle.includes('prun') || lowerTitle.includes('ranting') || lowerTitle.includes('pemangkas');
 
   useEffect(() => {
     if (!areaId || !isPruningTask) {
