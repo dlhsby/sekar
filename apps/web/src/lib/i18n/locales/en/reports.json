@@ -162,5 +162,15 @@
       "status": "Status",
       "createdAt": "Created"
     }
+  },
+  "reporting": {
+    "page": {
+      "title": "Reporting",
+      "description": "Collection of reports in Google Sheets spreadsheet format"
+    },
+    "selectLabel": "Report",
+    "options": {
+      "rekapPerantingan": "Pruning Recap Report"
+    }
   }
 }

@@ -34,6 +34,7 @@ import idNavigation from './locales/id/navigation.json';
 import idComponents from './locales/id/components.json';
 import idLocation from './locales/id/location.json';
 import idWelcome from './locales/id/welcome.json';
+import idDatabase from './locales/id/database.json';
 
 import enCommon from './locales/en/common.json';
 import enAuth from './locales/en/auth.json';
@@ -66,6 +67,7 @@ import enNavigation from './locales/en/navigation.json';
 import enComponents from './locales/en/components.json';
 import enLocation from './locales/en/location.json';
 import enWelcome from './locales/en/welcome.json';
+import enDatabase from './locales/en/database.json';
 
 export const resources = {
   id: {
@@ -100,6 +102,7 @@ export const resources = {
     components: idComponents,
     location: idLocation,
     welcome: idWelcome,
+    database: idDatabase,
   },
   en: {
     common: enCommon,
@@ -133,6 +136,7 @@ export const resources = {
     components: enComponents,
     location: enLocation,
     welcome: enWelcome,
+    database: enDatabase,
   },
 } as const;
 
@@ -168,6 +172,7 @@ export const NAMESPACES = [
   'components',
   'location',
   'welcome',
+  'database',
 ] as const;
 
 export const SUPPORTED_LANGUAGES = ['id', 'en'] as const;

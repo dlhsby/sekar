@@ -51,7 +51,9 @@
     "capacity": "Kapasitas",
     "menuLabel": "Aksi",
     "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom",
-    "openMapLink": "Buka di Google Maps"
+    "openMapLink": "Buka di Google Maps",
+    "fullscreen": "Layar Penuh",
+    "exitFullscreen": "Keluar Layar Penuh"
   },
   "entities": {
     "user": "Pengguna",
@@ -161,10 +163,12 @@
     "plants": "Tanaman",
     "seeds": "Bibit",
     "assets": "Aset",
+    "database": "Data Base",
     "reports": "Laporan",
     "reportsList": "Daftar Laporan",
     "reportsBuilder": "Buat Laporan",
     "reportsSchedules": "Jadwal Laporan",
+    "reportsReporting": "Laporan",
     "analytics": "Analitik",
     "analyticsSummary": "Ringkasan",
     "workerPerformance": "Kinerja Pekerja",

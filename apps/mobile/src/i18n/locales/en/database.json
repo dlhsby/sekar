@@ -1,0 +1,17 @@
+{
+  "page": {
+    "title": "Data Base",
+    "description": "Collection of master-data Google Sheets spreadsheets"
+  },
+  "tabs": {
+    "simontana": "SIMONTANA",
+    "simonsinis": "SIMONSINIS",
+    "rekapPengadaan": "Procurement Recap",
+    "dataKendaraanRayon": "Rayon Vehicle Data",
+    "dataInventoryTaman": "Park Inventory Data",
+    "databaseBuMaria": "Bu Maria's Database",
+    "dataPersonilSatgasAsb": "Satgas & ASB 2026 Personnel Data",
+    "dataPerawatanTanaman": "Maintenance, Plant Count & Environmental Quality Data",
+    "dataRutePenyiraman": "Watering Route Data"
+  }
+}

@@ -4,7 +4,6 @@ import {
   UsersIcon,
   MapPinIcon,
   BuildingOfficeIcon,
-  CalendarIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
   BriefcaseIcon,
@@ -12,22 +11,15 @@ import {
   ClockIcon,
   InboxArrowDownIcon,
   ListBulletIcon,
-  ArrowUpTrayIcon,
-  ArrowDownTrayIcon,
-  CircleStackIcon,
   SparklesIcon,
-  ArchiveBoxIcon,
   Square2StackIcon,
-  ChartBarIcon,
   BookOpenIcon,
   Cog6ToothIcon,
   CalendarDaysIcon,
+  TableCellsIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
-
-/** Roles allowed to export data (kepala_rayon is scoped server-side). */
-const EXPORT_NAV_ROLES = [...ADMIN_ROLES, 'kepala_rayon'];
 
 /**
  * Navigation Item Interface
@@ -162,109 +154,135 @@ export const navigationItems: NavItem[] = [
         icon: SparklesIcon,
         roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
       },
+      // ARCHIVED 2026-07-07 — hidden from the sidebar per request, page still
+      // lives at /seeds. Uncomment to restore.
+      // {
+      //   id: 'seeds',
+      //   label: 'common:nav.seeds',
+      //   href: '/seeds',
+      //   icon: ArchiveBoxIcon,
+      //   roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+      // },
+      // ARCHIVED 2026-07-07 — hidden from the sidebar per request, page still
+      // lives at /assets. Uncomment to restore.
+      // {
+      //   id: 'assets',
+      //   label: 'common:nav.assets',
+      //   href: '/assets',
+      //   icon: Square2StackIcon,
+      //   roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+      // },
       {
-        id: 'seeds',
-        label: 'common:nav.seeds',
-        href: '/seeds',
-        icon: ArchiveBoxIcon,
-        roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
-      },
-      {
-        id: 'assets',
-        label: 'common:nav.assets',
-        href: '/assets',
-        icon: Square2StackIcon,
-        roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+        id: 'database',
+        label: 'common:nav.database',
+        href: '/database',
+        icon: TableCellsIcon,
+        roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
       },
     ],
   },
 
-  // ── Laporan: reporting (Phase 5-1) ──────────────────────────────────────
+  // ── Laporan: reporting (Phase 5-1). Old Daftar/Buat/Jadwal Laporan children
+  // ARCHIVED 2026-07-07 — hidden from the sidebar per request, pages still
+  // live at /reports, /reports/builder, /reports/schedules. Uncomment to
+  // restore. The group now only surfaces the general "Reporting" embed page.
   {
     id: 'reports',
     label: 'common:nav.reports',
-    href: '/reports',
+    href: '#',
     icon: Square2StackIcon,
     roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
     children: [
+      // {
+      //   id: 'reports-list',
+      //   label: 'common:nav.reportsList',
+      //   href: '/reports',
+      //   icon: Square2StackIcon,
+      //   roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      // },
+      // {
+      //   id: 'reports-builder',
+      //   label: 'common:nav.reportsBuilder',
+      //   href: '/reports/builder',
+      //   icon: Square2StackIcon,
+      //   roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      // },
+      // {
+      //   id: 'reports-schedules',
+      //   label: 'common:nav.reportsSchedules',
+      //   href: '/reports/schedules',
+      //   icon: CalendarIcon,
+      //   roles: [...ADMIN_ROLES],
+      // },
       {
-        id: 'reports-list',
-        label: 'common:nav.reportsList',
-        href: '/reports',
-        icon: Square2StackIcon,
-        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
-      },
-      {
-        id: 'reports-builder',
-        label: 'common:nav.reportsBuilder',
-        href: '/reports/builder',
-        icon: Square2StackIcon,
-        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
-      },
-      {
-        id: 'reports-schedules',
-        label: 'common:nav.reportsSchedules',
-        href: '/reports/schedules',
-        icon: CalendarIcon,
-        roles: [...ADMIN_ROLES],
-      },
-    ],
-  },
-  // ── Analitik: analytics dashboards (Phase 5-2) ─────────────────────────
-  {
-    id: 'analytics',
-    label: 'common:nav.analytics',
-    href: '/analytics',
-    icon: ChartBarIcon,
-    roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
-    children: [
-      {
-        id: 'analytics-overview',
-        label: 'common:nav.analyticsSummary',
-        href: '/analytics',
-        icon: ChartBarIcon,
-        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
-      },
-      {
-        id: 'analytics-workers',
-        label: 'common:nav.workerPerformance',
-        href: '/analytics/workers',
-        icon: ChartBarIcon,
-        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
-      },
-      {
-        id: 'analytics-areas',
-        label: 'common:nav.areaComparison',
-        href: '/analytics/areas',
-        icon: ChartBarIcon,
+        id: 'reports-reporting',
+        label: 'common:nav.reportsReporting',
+        href: '/reports/reporting',
+        icon: DocumentTextIcon,
         roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
       },
     ],
   },
-  // ── Operasional: data export / import (Phase 4-5) ──────────────────────
-  {
-    id: 'operations',
-    label: 'common:nav.operations',
-    href: '#',
-    icon: CircleStackIcon,
-    roles: [...EXPORT_NAV_ROLES],
-    children: [
-      {
-        id: 'export',
-        label: 'common:nav.exportData',
-        href: '/export',
-        icon: ArrowDownTrayIcon,
-        roles: [...EXPORT_NAV_ROLES],
-      },
-      {
-        id: 'import',
-        label: 'common:nav.importData',
-        href: '/import',
-        icon: ArrowUpTrayIcon,
-        roles: [...ADMIN_ROLES],
-      },
-    ],
-  },
+  // ── Analitik: analytics dashboards (Phase 5-2)
+  // ARCHIVED 2026-07-07 — hidden from the sidebar per request, pages still
+  // live at /analytics, /analytics/workers, /analytics/areas. Uncomment to
+  // restore.
+  // {
+  //   id: 'analytics',
+  //   label: 'common:nav.analytics',
+  //   href: '/analytics',
+  //   icon: ChartBarIcon,
+  //   roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //   children: [
+  //     {
+  //       id: 'analytics-overview',
+  //       label: 'common:nav.analyticsSummary',
+  //       href: '/analytics',
+  //       icon: ChartBarIcon,
+  //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //     },
+  //     {
+  //       id: 'analytics-workers',
+  //       label: 'common:nav.workerPerformance',
+  //       href: '/analytics/workers',
+  //       icon: ChartBarIcon,
+  //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //     },
+  //     {
+  //       id: 'analytics-areas',
+  //       label: 'common:nav.areaComparison',
+  //       href: '/analytics/areas',
+  //       icon: ChartBarIcon,
+  //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //     },
+  //   ],
+  // },
+  // ── Operasional: data export / import (Phase 4-5)
+  // ARCHIVED 2026-07-07 — hidden from the sidebar per request, pages still
+  // live at /export, /import. Uncomment to restore.
+  // {
+  //   id: 'operations',
+  //   label: 'common:nav.operations',
+  //   href: '#',
+  //   icon: CircleStackIcon,
+  //   roles: [...EXPORT_NAV_ROLES],
+  //   children: [
+  //     {
+  //       id: 'export',
+  //       label: 'common:nav.exportData',
+  //       href: '/export',
+  //       icon: ArrowDownTrayIcon,
+  //       roles: [...EXPORT_NAV_ROLES],
+  //     },
+  //     {
+  //       id: 'import',
+  //       label: 'common:nav.importData',
+  //       href: '/import',
+  //       icon: ArrowUpTrayIcon,
+  //       roles: [...ADMIN_ROLES],
+  //     },
+  //   ],
+  // },
 
   // ── Pengaturan: app settings (change password, notification prefs, theme).
   // Also reachable from the avatar dropdown; surfaced in the sidebar per the
@@ -358,6 +376,8 @@ const ROUTE_TITLES: Record<string, string> = {
   '/reports': 'Laporan',
   '/reports/builder': 'Buat Laporan',
   '/reports/schedules': 'Jadwal Laporan',
+  '/reports/reporting': 'Laporan',
+  '/database': 'Data Base',
   '/pruning-requests': 'Permohonan Perantingan',
   '/pruning-submit': 'Kirim Permintaan',
   '/pruning-submit/my': 'Permintaan Saya',
@@ -402,9 +422,11 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/plants': ['Data Master', 'Tanaman'],
   '/seeds': ['Data Master', 'Bibit'],
   '/assets': ['Data Master', 'Aset'],
+  '/database': ['Data Master', 'Data Base'],
   '/reports': ['Laporan'],
   '/reports/builder': ['Laporan', 'Buat Laporan'],
   '/reports/schedules': ['Laporan', 'Jadwal Laporan'],
+  '/reports/reporting': ['Laporan', 'Laporan'],
   '/pruning-submit': ['Kecamatan', 'Kirim Permintaan'],
   '/pruning-submit/my': ['Kecamatan', 'Permintaan Saya'],
   '/settings': ['Akun', 'Pengaturan'],

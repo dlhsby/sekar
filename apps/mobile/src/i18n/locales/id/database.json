@@ -1,0 +1,17 @@
+{
+  "page": {
+    "title": "Data Base",
+    "description": "Kumpulan spreadsheet Google Sheets data master"
+  },
+  "tabs": {
+    "simontana": "SIMONTANA",
+    "simonsinis": "SIMONSINIS",
+    "rekapPengadaan": "Rekap Pengadaan",
+    "dataKendaraanRayon": "Data Kendaraan Rayon",
+    "dataInventoryTaman": "Data Inventory Taman",
+    "databaseBuMaria": "Database Bu Maria",
+    "dataPersonilSatgasAsb": "Data Personil Satgas dan ASB 2026",
+    "dataPerawatanTanaman": "Data Perawatan, Jumlah Tanaman, dan Kualitas Lingkungan",
+    "dataRutePenyiraman": "Data Rute Penyiraman"
+  }
+}
