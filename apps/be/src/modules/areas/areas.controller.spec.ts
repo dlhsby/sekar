@@ -127,7 +127,7 @@ describe('AreasController', () => {
       const result = await controller.findAll(mockRequester);
 
       expect(result).toEqual([mockArea]);
-      expect(service.findAll).toHaveBeenCalledWith(mockRequester, undefined);
+      expect(service.findAll).toHaveBeenCalledWith(mockRequester, undefined, false);
       expect(service.findAll).toHaveBeenCalledTimes(1);
     });
 
@@ -137,7 +137,15 @@ describe('AreasController', () => {
       const result = await controller.findAll(mockRequester, 'park');
 
       expect(result).toEqual([mockArea]);
-      expect(service.findAll).toHaveBeenCalledWith(mockRequester, 'park');
+      expect(service.findAll).toHaveBeenCalledWith(mockRequester, 'park', false);
+    });
+
+    it('should pass includeInactive=true when include_inactive=true', async () => {
+      mockAreasService.findAll.mockResolvedValue([mockArea]);
+
+      await controller.findAll(mockRequester, undefined, undefined, undefined, 'true');
+
+      expect(service.findAll).toHaveBeenCalledWith(mockRequester, undefined, true);
     });
   });
 

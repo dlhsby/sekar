@@ -53,6 +53,7 @@
     "selectedCount": "{{count}} selected",
     "enumSearchPlaceholder": "Search options...",
     "enumNoOptions": "No matching options",
+    "enumShowingCount": "Showing {{shown}} of {{total}} — scroll to load more",
     "selectAll": "Select All",
     "clearAll": "Clear All",
     "numberPlaceholder": "All",

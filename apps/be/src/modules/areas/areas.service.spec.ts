@@ -151,8 +151,7 @@ describe('AreasService', () => {
       const result = await service.findAll(cityUser);
 
       expect(result).toEqual([mockArea]);
-      expect(qb.where).toHaveBeenCalledWith('area.is_active = :isActive', { isActive: true });
-      expect(qb.andWhere).not.toHaveBeenCalled();
+      expect(qb.andWhere).toHaveBeenCalledWith('area.is_active = :isActive', { isActive: true });
     });
 
     it('should filter areas by area type code', async () => {
@@ -163,6 +162,17 @@ describe('AreasService', () => {
 
       expect(result).toEqual([mockArea]);
       expect(qb.andWhere).toHaveBeenCalledWith('areaType.code = :areaType', { areaType: 'park' });
+    });
+
+    it('should include deactivated areas when includeInactive is true', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(cityUser, undefined, true);
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('area.is_active = :isActive', {
+        isActive: true,
+      });
     });
 
     it('should scope by rayon_id for rayon-scoped roles', async () => {
@@ -196,9 +206,17 @@ describe('AreasService', () => {
 
       expect(result).toEqual(mockArea);
       expect(repository.findOne).toHaveBeenCalledWith({
-        where: { id: 'c3d4e5f6-a7b8-9012-cdef-123456789012', is_active: true },
+        where: { id: 'c3d4e5f6-a7b8-9012-cdef-123456789012' },
         relations: ['rayon'],
       });
+    });
+
+    it('should return an inactive area (not filtered — direct ID lookup, not a browse query)', async () => {
+      mockRepository.findOne.mockResolvedValue({ ...mockArea, is_active: false });
+
+      const result = await service.findOne('c3d4e5f6-a7b8-9012-cdef-123456789012');
+
+      expect(result.is_active).toBe(false);
     });
 
     it('should throw NotFoundException if area not found', async () => {

@@ -185,6 +185,30 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
     ? options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()))
     : options;
 
+  // Render only a window of the filtered list — a full render of a
+  // hundreds-long option list (e.g. Area) is unnecessary DOM weight for what
+  // the user actually looks at. Grows on scroll-near-bottom; resets to the
+  // initial page whenever the search narrows the list.
+  const PAGE_SIZE = 10;
+  const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE);
+  // Reset the window when the search narrows the list — adjusted during
+  // render (React's documented pattern for this) rather than an effect, so
+  // it takes effect in the same commit instead of one render later.
+  const [prevSearch, setPrevSearch] = React.useState(search);
+  if (search !== prevSearch) {
+    setPrevSearch(search);
+    setVisibleCount(PAGE_SIZE);
+  }
+  const visibleOptions = filteredOptions.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredOptions.length;
+  const onListScroll = (e: React.UIEvent<HTMLDivElement>): void => {
+    if (!hasMore) return;
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 32) {
+      setVisibleCount((c) => Math.min(c + PAGE_SIZE * 2, filteredOptions.length));
+    }
+  };
+
   const toggle = (value: string): void => {
     const next = selected.includes(value)
       ? selected.filter((v) => v !== value)
@@ -234,13 +258,13 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
             {t('components:columnFilter.clearAll')}
           </button>
         </div>
-        <div className="max-h-48 space-y-0.5 overflow-y-auto">
+        <div className="max-h-48 space-y-0.5 overflow-y-auto" onScroll={onListScroll}>
           {filteredOptions.length === 0 ? (
             <p className="px-1 py-2 text-nb-body-sm text-nb-gray-400">
               {t('components:columnFilter.enumNoOptions')}
             </p>
           ) : (
-            filteredOptions.map((o) => (
+            visibleOptions.map((o) => (
               <Checkbox
                 key={o.value}
                 checked={selected.includes(o.value)}
@@ -258,6 +282,14 @@ function EnumColumnFilter<TData>({ column, label }: ColumnFilterProps<TData>): R
             ))
           )}
         </div>
+        {hasMore && (
+          <p className="mt-1 px-1 text-nb-caption text-nb-gray-400">
+            {t('components:columnFilter.enumShowingCount', {
+              shown: visibleOptions.length,
+              total: filteredOptions.length,
+            })}
+          </p>
+        )}
       </PopoverContent>
     </Popover>
   );
