@@ -67,7 +67,7 @@ jobs:
       - name: Build & push backend (:version)
         uses: docker/build-push-action@v6
         with:
-          context: ./be
+          context: ./apps/be
           file: ./apps/be/Dockerfile
           platforms: linux/amd64
           push: true
