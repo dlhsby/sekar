@@ -36,7 +36,7 @@ import type { ColumnDef } from '@/components/ui/data-table';
 import { TaskKanban } from '@/components/tasks/TaskKanban';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react';
+import { Plus, Eye, Trash2 } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
@@ -57,9 +57,11 @@ export default function TasksPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<ActiveTab>('all');
   const [view, setView] = useState<ViewMode>('kanban');
+  // Kanban has no per-column filters, so it still needs its own Status/Priority
+  // dropdowns to scope the board — shown only in Kanban view. Table view uses
+  // the DataTable's own Status/Priority enum column filters instead.
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
-  const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; task: Task | null }>({
     isOpen: false,
@@ -67,9 +69,6 @@ export default function TasksPage() {
   });
   const viewModal = useViewModal<Task>();
   const deleteTask = useDeleteTask();
-  // The board groups client-side across all lanes, so it needs a wider window
-  // than the paginated table.
-  const limit = view === 'kanban' ? 100 : 20;
 
   const rowActions = useCallback(
     (task: Task): DataTableRowAction<Task>[] => [
@@ -98,12 +97,19 @@ export default function TasksPage() {
     }
   }, [user, authLoading, router]);
 
-  const filters = {
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    priority: priorityFilter !== 'all' ? priorityFilter : undefined,
-    page: view === 'kanban' ? 1 : page,
-    limit,
-  };
+  // Kanban groups client-side across all lanes and has no per-column filters,
+  // so it pre-filters server-side via the Status/Priority dropdowns. Table
+  // view fetches everything (like every other master-data grid) and filters
+  // client-side via the DataTable's own Status/Priority enum columns.
+  const filters =
+    view === 'kanban'
+      ? {
+          status: statusFilter !== 'all' ? statusFilter : undefined,
+          priority: priorityFilter !== 'all' ? priorityFilter : undefined,
+          page: 1,
+          limit: 100,
+        }
+      : { limit: 1000 };
 
   const allTasksQuery = useTasks(activeTab === 'all' ? filters : undefined);
   const taggedTasksQuery = useTaggedTasks(activeTab === 'tagged' ? filters : undefined);
@@ -127,7 +133,6 @@ export default function TasksPage() {
   if (!hasRole(user.role, TASK_MANAGER_ROLES)) return null;
 
   const tasks = activeQuery.data?.data || [];
-  const pagination = activeQuery.data?.meta;
   const isLoading = activeQuery.isLoading;
 
   // Build tabs and filter options from i18n
@@ -196,10 +201,14 @@ export default function TasksPage() {
     },
     {
       id: 'priority',
+      accessorFn: (row) => getTaskPriorityLabel(row.priority, t),
       header: t('tasks:list.tableHeaderPriority'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('tasks:list.tableHeaderPriority') },
+      meta: {
+        label: t('tasks:list.tableHeaderPriority'),
+        filterVariant: 'enum',
+        filterOptions: priorityOptions.slice(1),
+      },
       cell: ({ row }) => (
         <StatusPill tone={TASK_PRIORITY_TONES[row.original.priority]}>
           {getTaskPriorityLabel(row.original.priority, t)}
@@ -208,10 +217,14 @@ export default function TasksPage() {
     },
     {
       id: 'status',
+      accessorFn: (row) => getTaskStatusLabel(row.status, t),
       header: t('tasks:list.tableHeaderStatus'),
       enableSorting: false,
-      enableColumnFilter: false,
-      meta: { label: t('tasks:list.tableHeaderStatus') },
+      meta: {
+        label: t('tasks:list.tableHeaderStatus'),
+        filterVariant: 'enum',
+        filterOptions: statusOptions.slice(1),
+      },
       cell: ({ row }) => (
         <StatusPill tone={TASK_STATUS_TONES[row.original.status]} dot>
           {getTaskStatusLabel(row.original.status, t)}
@@ -256,11 +269,6 @@ export default function TasksPage() {
     },
   ];
 
-  const handleScopeChange = (tab: ActiveTab) => {
-    setActiveTab(tab);
-    setPage(1);
-  };
-
   const hasFilters = statusFilter !== 'all' || priorityFilter !== 'all';
 
   return (
@@ -282,57 +290,49 @@ export default function TasksPage() {
         <Tabs<ActiveTab>
           tabs={scopeTabs}
           value={activeTab}
-          onValueChange={handleScopeChange}
+          onValueChange={setActiveTab}
           aria-label={t('tasks:list.scopeLabel')}
         />
         <Tabs<ViewMode>
           tabs={viewTabs}
           value={view}
-          onValueChange={(v) => {
-            setView(v);
-            setPage(1); // avoid landing on an out-of-range page after the toggle
-          }}
+          onValueChange={setView}
           size="sm"
           aria-label={t('tasks:list.viewLabel')}
         />
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
-            <FormSelect
-              label={t('tasks:list.filterStatus')}
-              value={statusFilter}
-              onChange={(value) => {
-                setStatusFilter(value as TaskStatus | 'all');
-                setPage(1);
-              }}
-              options={statusOptions}
-            />
-            <FormSelect
-              label={t('tasks:list.filterPriority')}
-              value={priorityFilter}
-              onChange={(value) => {
-                setPriorityFilter(value as TaskPriority | 'all');
-                setPage(1);
-              }}
-              options={priorityOptions}
-            />
-            {hasFilters && (
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setStatusFilter('all');
-                  setPriorityFilter('all');
-                  setPage(1);
-                }}
-              >
-                {t('tasks:list.resetFilter')}
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {view === 'kanban' && (
+        <Card>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_1fr_auto] md:items-end">
+              <FormSelect
+                label={t('tasks:list.filterStatus')}
+                value={statusFilter}
+                onChange={(value) => setStatusFilter(value as TaskStatus | 'all')}
+                options={statusOptions}
+              />
+              <FormSelect
+                label={t('tasks:list.filterPriority')}
+                value={priorityFilter}
+                onChange={(value) => setPriorityFilter(value as TaskPriority | 'all')}
+                options={priorityOptions}
+              />
+              {hasFilters && (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setPriorityFilter('all');
+                  }}
+                >
+                  {t('tasks:list.resetFilter')}
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {view === 'kanban' ? (
         <TaskKanban tasks={tasks} loading={isLoading} />
@@ -343,38 +343,10 @@ export default function TasksPage() {
               columns={columns}
               data={tasks}
               loading={isLoading}
-              enablePagination={false}
               getRowId={(r) => r.id}
               rowActions={rowActions}
               emptyTitle={t("tasks:list.emptyTitle")}
             />
-            {pagination && pagination.totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between border-t-2 border-nb-black pt-4">
-                <div className="font-mono text-[11px] text-nb-gray-600">
-                  {t('tasks:list.paginationInfo', { page: pagination.page, total: pagination.totalPages, count: pagination.total })}
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={pagination.page === 1}
-                    leftIcon={<ChevronLeft className="size-4" />}
-                  >
-                    {t('tasks:list.paginationPrevious')}
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
-                    disabled={pagination.page === pagination.totalPages}
-                    rightIcon={<ChevronRight className="size-4" />}
-                  >
-                    {t('tasks:list.paginationNext')}
-                  </Button>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}

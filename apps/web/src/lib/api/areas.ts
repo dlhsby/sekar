@@ -36,6 +36,7 @@ async function fetchAreasPage(
   if (filters.search) params.append('search', filters.search);
   if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
   if (filters.area_type_id) params.append('area_type_id', filters.area_type_id);
+  if (filters.include_inactive) params.append('include_inactive', 'true');
   // Only send page/limit for explicit pagination — omitting them makes the
   // backend return the FULL array (it caps `limit` at 100 when paginating).
   if (page) {

@@ -39,6 +39,8 @@ export interface User extends Record<string, unknown> {
   user_areas?: Array<{ id: string; area_id: string; area: Area }>;
   /** Count of permanent area assignments (from the users-list query) — grid Area column. */
   assigned_area_count?: number;
+  /** IDs of permanent area assignments (from the users-list query) — grid Area column filter. */
+  assigned_area_ids?: string[];
   password_must_change?: boolean;
   is_active?: boolean;
   created_at: string;
@@ -191,6 +193,9 @@ export interface AreaFilters {
   area_type_id?: string;
   page?: number;
   limit?: number;
+  /** Also return deactivated areas — admin grid + name-resolution maps that
+   *  must still resolve a since-deactivated area's name. */
+  include_inactive?: boolean;
 }
 
 /**

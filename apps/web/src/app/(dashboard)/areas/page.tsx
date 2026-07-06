@@ -23,6 +23,8 @@ import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
 import { AreaFormModal } from '@/components/areas/AreaFormModal';
 import { useAreas, useDeactivateArea, useActivateArea } from '@/lib/api/areas';
 import { useUsers } from '@/lib/api/users';
+import { useRayons } from '@/lib/api/rayons';
+import { useAreaTypes } from '@/lib/api/area-types';
 import { useAuth } from '@/lib/auth/hooks';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatArea } from '@/lib/utils/geo';
@@ -35,8 +37,28 @@ export default function AreasPage() {
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
 
-  const { data: areasData, isLoading, error, refetch } = useAreas({ limit: 1000 });
+  // include_inactive: the admin grid must show deactivated areas too (and
+  // let them be reactivated) — otherwise deactivating one makes it vanish
+  // from the grid entirely, with no way back short of the API directly.
+  const { data: areasData, isLoading, error, refetch } = useAreas({
+    limit: 1000,
+    include_inactive: true,
+  });
   const areas = useMemo(() => areasData?.data ?? [], [areasData]);
+
+  // Full master-data lists so the enum column filters can list every possible
+  // value (incl. ones with zero matching areas) instead of only values that
+  // happen to appear in the currently loaded rows.
+  const { data: allRayons } = useRayons();
+  const rayonFilterOptions = useMemo(
+    () => (allRayons ?? []).map((r) => ({ value: r.name, label: r.name })),
+    [allRayons]
+  );
+  const { data: allAreaTypes } = useAreaTypes();
+  const areaTypeFilterOptions = useMemo(
+    () => (allAreaTypes ?? []).map((t) => ({ value: t.name, label: t.name })),
+    [allAreaTypes]
+  );
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
   const { data: usersData } = useUsers({ limit: 1000 });
@@ -83,14 +105,22 @@ export default function AreasPage() {
         id: 'rayon',
         accessorFn: (a) => a.rayon?.name ?? '',
         header: t('admin:areas.columnRayon'),
-        meta: { label: t('admin:areas.columnRayon'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:areas.columnRayon'),
+          filterVariant: 'enum',
+          filterOptions: rayonFilterOptions,
+        },
         cell: ({ row }) => <span>{row.original.rayon?.name ?? '—'}</span>,
       },
       {
         id: 'area_type',
         accessorFn: (a) => a.areaType?.name ?? '',
         header: t('admin:areas.columnType'),
-        meta: { label: t('admin:areas.columnType'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:areas.columnType'),
+          filterVariant: 'enum',
+          filterOptions: areaTypeFilterOptions,
+        },
         cell: ({ row }) =>
           row.original.areaType ? (
             <Badge
@@ -110,7 +140,8 @@ export default function AreasPage() {
             ? `${Number(a.gps_lat).toFixed(6)}, ${Number(a.gps_lng).toFixed(6)}`
             : '',
         header: t('admin:areas.columnCoordinates'),
-        meta: { label: t('admin:areas.columnCoordinates'), filterVariant: 'text' },
+        enableColumnFilter: false,
+        meta: { label: t('admin:areas.columnCoordinates') },
         cell: ({ row }) =>
           row.original.gps_lat && row.original.gps_lng ? (
             <CoordinateLink
@@ -124,12 +155,19 @@ export default function AreasPage() {
       },
       {
         id: 'boundary_polygon',
-        accessorFn: (a) => (a.boundary_polygon ? t('admin:areas.boundaryYes') : '—'),
+        accessorFn: (a) => (a.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo')),
         header: t('admin:areas.columnBoundary'),
-        meta: { label: t('admin:areas.columnBoundary'), filterVariant: 'text' },
+        meta: {
+          label: t('admin:areas.columnBoundary'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:areas.boundaryYes'), label: t('admin:areas.boundaryYes') },
+            { value: t('admin:areas.boundaryNo'), label: t('admin:areas.boundaryNo') },
+          ],
+        },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
-            {row.original.boundary_polygon ? t('admin:areas.boundaryYes') : '—'}
+            {row.original.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo')}
           </span>
         ),
       },
@@ -170,7 +208,14 @@ export default function AreasPage() {
         id: 'is_active',
         accessorFn: (a) => (a.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')),
         header: t('admin:areas.columnStatus'),
-        meta: { label: t('admin:areas.columnStatus'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:areas.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:areas.statusActive'), label: t('admin:areas.statusActive') },
+            { value: t('admin:areas.statusInactive'), label: t('admin:areas.statusInactive') },
+          ],
+        },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
@@ -183,28 +228,6 @@ export default function AreasPage() {
           ),
       },
       {
-        id: 'created_at',
-        accessorKey: 'created_at',
-        header: t('admin:areas.columnCreated'),
-        meta: { label: t('admin:areas.columnCreated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.created_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'updated_at',
-        accessorKey: 'updated_at',
-        header: t('admin:areas.columnUpdated'),
-        meta: { label: t('admin:areas.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.updated_at)}
-          </span>
-        ),
-      },
-      {
         id: 'created_by',
         accessorFn: (a) => actorName(a.created_by),
         header: t('admin:areas.columnCreatedBy'),
@@ -212,6 +235,17 @@ export default function AreasPage() {
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: t('admin:areas.columnCreated'),
+        meta: { label: t('admin:areas.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
           </span>
         ),
       },
@@ -226,8 +260,19 @@ export default function AreasPage() {
           </span>
         ),
       },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: t('admin:areas.columnUpdated'),
+        meta: { label: t('admin:areas.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
+          </span>
+        ),
+      },
     ],
-    [actorName]
+    [actorName, rayonFilterOptions, areaTypeFilterOptions]
   );
 
   const rowActions = useCallback(

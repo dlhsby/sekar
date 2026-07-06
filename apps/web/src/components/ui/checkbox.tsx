@@ -37,7 +37,7 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
           className
         )}
       >
-        <span className="relative inline-flex h-5 w-5">
+        <span className="relative inline-flex h-5 w-5 shrink-0">
           <input
             ref={innerRef}
             id={inputId}
@@ -68,7 +68,9 @@ const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             className="pointer-events-none absolute inset-0 m-auto h-0.5 w-2.5 bg-nb-black opacity-0 peer-indeterminate:opacity-100"
           />
         </span>
-        {label != null && <span className="text-nb-body-sm text-nb-black">{label}</span>}
+        {label != null && (
+          <span className="min-w-0 flex-1 text-nb-body-sm text-nb-black">{label}</span>
+        )}
       </label>
     );
   }

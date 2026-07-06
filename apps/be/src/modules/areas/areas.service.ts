@@ -65,15 +65,18 @@ export class AreasService {
    *
    * @param requester - The authenticated user issuing the request
    * @param areaType - Optional filter by area type code
+   * @param includeInactive - When true, also return deactivated areas (admin
+   *   management grid). Every other consumer (monitoring, worker-facing
+   *   pickers) defaults to false so a deactivated area stays out of live ops.
    * @returns Array of areas with areaType loaded
    */
-  async findAll(requester: User, areaType?: string): Promise<Area[]> {
+  async findAll(requester: User, areaType?: string, includeInactive = false): Promise<Area[]> {
     this.logger.log(
       `Fetching areas for ${requester.username} (${requester.role})` +
         (areaType ? ` filtered by type: ${areaType}` : ''),
     );
 
-    const query = this.buildFindAllQuery(requester, areaType);
+    const query = this.buildFindAllQuery(requester, areaType, includeInactive);
     if (!query) return [];
     return query.getMany();
   }
@@ -87,8 +90,9 @@ export class AreasService {
     areaType: string | undefined,
     page: number = 1,
     limit: number = 20,
+    includeInactive = false,
   ): Promise<PaginatedResponseDto<Area>> {
-    const query = this.buildFindAllQuery(requester, areaType);
+    const query = this.buildFindAllQuery(requester, areaType, includeInactive);
     if (!query) return new PaginatedResponseDto<Area>([], 0, page, limit);
 
     const [data, total] = await query
@@ -102,13 +106,16 @@ export class AreasService {
    * Shared findAll query builder. Returns null for rayon-scoped users with
    * no rayon_id — they must see nothing (defensive cross-rayon guard).
    */
-  private buildFindAllQuery(requester: User, areaType?: string) {
+  private buildFindAllQuery(requester: User, areaType?: string, includeInactive = false) {
     const query = this.areaRepository
       .createQueryBuilder('area')
       .leftJoinAndSelect('area.areaType', 'areaType')
       .leftJoinAndSelect('area.rayon', 'rayon')
-      .where('area.is_active = :isActive', { isActive: true })
       .orderBy('area.id', 'ASC');
+
+    if (!includeInactive) {
+      query.andWhere('area.is_active = :isActive', { isActive: true });
+    }
 
     if (areaType) {
       query.andWhere('areaType.code = :areaType', { areaType });
@@ -135,8 +142,12 @@ export class AreasService {
   async findOne(id: string): Promise<Area> {
     this.logger.log(`Fetching area with ID: ${id}`);
 
+    // No is_active filter: this is a direct by-ID lookup (detail view, edit,
+    // deactivate/activate, delete, boundary read/write) — the caller already
+    // knows the ID, so "hide inactive from browsing" doesn't apply. Filtering
+    // it here made activate() 404 on the very area it's meant to reactivate.
     const area = await this.areaRepository.findOne({
-      where: { id, is_active: true },
+      where: { id },
       relations: ['rayon'],
     });
 

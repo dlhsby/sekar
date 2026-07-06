@@ -6,6 +6,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import type { FilterFn } from '@tanstack/react-table';
 import { Plus, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +24,7 @@ import {
   PageHeader,
   RoleAvatar,
   StatusPill,
+  enumArrayFilterFn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -51,6 +53,20 @@ import { useUsers } from '@/lib/api/users';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { canEditTargetRole, isGlobalRosterEditor } from '@/lib/schedule-permissions';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
+
+/** Full known value set, so the status column filter can list every status
+ *  (incl. ones with zero matching rows on the selected date) instead of only
+ *  the ones that happen to appear in today's roster. */
+const SCHEDULE_STATUSES: Schedule['status'][] = [
+  'planned',
+  'present',
+  'absent',
+  'leave_sick',
+  'leave_annual',
+  'leave_permit',
+  'replaced',
+  'off',
+];
 
 /**
  * Map status to tone for StatusPill
@@ -110,7 +126,10 @@ export default function SchedulesPage() {
     [schedules],
   );
 
-  const { data: areasData } = useAreas({ limit: 1000 });
+  // include_inactive: a schedule's assigned area may have since been
+  // deactivated — keep resolving its name (and offering it as a filter
+  // option) rather than silently showing "—" for that assignment.
+  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
   const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
@@ -122,6 +141,14 @@ export default function SchedulesPage() {
   const { data: rayonsData } = useRayons();
   const allRayons = useMemo(() => rayonsData ?? [], [rayonsData]);
   const rayonById = useMemo(() => new Map(allRayons.map((r) => [r.id, r])), [allRayons]);
+  const rayonFilterOptions = useMemo(
+    () => allRayons.map((r) => ({ value: r.name, label: r.name })),
+    [allRayons],
+  );
+  const areaFilterOptions = useMemo(
+    () => allAreas.map((a) => ({ value: a.name, label: a.name })),
+    [allAreas],
+  );
 
   // A korlap edits only rows in their own assigned areas — fetch those to gate
   // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
@@ -153,6 +180,10 @@ export default function SchedulesPage() {
   );
 
   const { data: shifts = [] } = useShiftDefinitions();
+  const shiftFilterOptions = useMemo(
+    () => shifts.map((s) => ({ value: `${s.name} (${s.start_time}-${s.end_time})`, label: s.name })),
+    [shifts],
+  );
   const { data: usersData } = useUsers({ limit: 1000 });
   const allUsers = useMemo(() => usersData?.data ?? [], [usersData]);
 
@@ -304,7 +335,11 @@ export default function SchedulesPage() {
         id: 'rayon',
         accessorFn: (row) => rayonById.get(row.rayon_id ?? '')?.name ?? '',
         header: t('table.rayon'),
-        meta: { label: t('table.rayon'), filterVariant: 'text' },
+        meta: {
+          label: t('table.rayon'),
+          filterVariant: 'enum',
+          filterOptions: rayonFilterOptions,
+        },
         cell: ({ row }) => (
           <span className="text-nb-body-sm">
             {rayonById.get(row.original.rayon_id ?? '')?.name ?? '—'}
@@ -313,9 +348,14 @@ export default function SchedulesPage() {
       },
       {
         id: 'areas',
-        accessorFn: (row) => getAreaNames(row, areaById).join(', '),
+        accessorFn: (row) => getAreaNames(row, areaById),
         header: t('table.area'),
-        meta: { label: t('table.area'), filterVariant: 'text' },
+        filterFn: enumArrayFilterFn as FilterFn<Schedule>,
+        meta: {
+          label: t('table.area'),
+          filterVariant: 'enum',
+          filterOptions: areaFilterOptions,
+        },
         cell: ({ row }) => {
           const roster = row.original;
           const count = roster.schedule_areas.length;
@@ -340,7 +380,11 @@ export default function SchedulesPage() {
           return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
         },
         header: t('table.shift'),
-        meta: { label: t('table.shift'), filterVariant: 'text' },
+        meta: {
+          label: t('table.shift'),
+          filterVariant: 'enum',
+          filterOptions: shiftFilterOptions,
+        },
         cell: ({ row }) => {
           const shift = row.original.shift_definition;
           return (
@@ -354,7 +398,11 @@ export default function SchedulesPage() {
         id: 'status',
         accessorKey: 'status',
         header: t('table.status'),
-        meta: { label: t('table.status'), filterVariant: 'enum' },
+        meta: {
+          label: t('table.status'),
+          filterVariant: 'enum',
+          filterOptions: SCHEDULE_STATUSES.map((s) => ({ value: formatStatus(s), label: formatStatus(s) })),
+        },
         cell: ({ row }) => (
           <StatusPill tone={getStatusTone(row.original.status)} dot>
             {formatStatus(row.original.status)}
@@ -381,7 +429,7 @@ export default function SchedulesPage() {
         ),
       },
     ],
-    [areaById, rayonById, t],
+    [areaById, rayonById, t, formatStatus, rayonFilterOptions, areaFilterOptions, shiftFilterOptions],
   );
 
   const rowActions = useCallback(
@@ -440,24 +488,27 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
+      {/* No `title` — the dashboard top bar's breadcrumb already shows the
+          page name, so a second "Jadwal" H1 here was pure duplication. The
+          date picker rides in `actions` (right-aligned, same row as the
+          count) rather than its own row, ahead of the DataTable's toolbar. */}
       <PageHeader
-        title={t('page.title')}
         description={schedules.length ? t('page.totalCount', { count: schedules.length }) : undefined}
+        actions={
+          <div className="flex items-center gap-3">
+            <label htmlFor="date-picker" className="text-nb-body font-medium">
+              {t('page.dateLabel')}
+            </label>
+            <input
+              id="date-picker"
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
+            />
+          </div>
+        }
       />
-
-      {/* Date Picker */}
-      <div className="flex items-center gap-3">
-        <label htmlFor="date-picker" className="text-nb-body font-medium">
-          {t('page.dateLabel')}
-        </label>
-        <input
-          id="date-picker"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          className="rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body"
-        />
-      </div>
 
       {/* Data Table — refresh/filter/columns live in the table's own toolbar row;
           "Tambah Jadwal" (and "Buat Jadwal Hari Ini" when applicable) are passed

@@ -7,6 +7,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import type { FilterFn } from '@tanstack/react-table';
 import { useTranslation } from 'react-i18next';
 import { Plus, Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
 import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
@@ -18,6 +19,7 @@ import {
   PageHeader,
   RoleAvatar,
   StatusPill,
+  enumArrayFilterFn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -33,6 +35,7 @@ import {
 } from '@/lib/api/users';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
+import { useAreas } from '@/lib/api/areas';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
@@ -59,6 +62,27 @@ export default function UsersPage() {
   // a map, mirroring how shift names are resolved above.
   const { data: rayons = [] } = useRayons();
   const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
+  const rayonFilterOptions = useMemo(
+    () => rayons.map((r) => ({ value: r.name, label: r.name })),
+    [rayons]
+  );
+  const shiftFilterOptions = useMemo(
+    () => shifts.map((s) => ({ value: s.name, label: s.name })),
+    [shifts]
+  );
+
+  // Full area master data so the multi-value Area filter can list every area
+  // (a user can be assigned several) and resolve assigned_area_ids → names.
+  // include_inactive: a user's assigned area may have since been deactivated —
+  // keep resolving its name (and offering it as a filter option) rather than
+  // silently showing "—" for that assignment.
+  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
+  const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
+  const areaNameById = useMemo(() => new Map(allAreas.map((a) => [a.id, a.name])), [allAreas]);
+  const areaFilterOptions = useMemo(
+    () => allAreas.map((a) => ({ value: a.name, label: a.name })),
+    [allAreas]
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -142,7 +166,11 @@ export default function UsersPage() {
         // raw enum ("top_management"), so typing the visible text matches.
         accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
         header: t('admin:users.columnRole'),
-        meta: { label: t('admin:users.columnRole'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:users.columnRole'),
+          filterVariant: 'enum',
+          filterOptions: Object.values(ROLE_LABELS).map((label) => ({ value: label, label })),
+        },
         cell: ({ row }) => <RolePill role={row.original.role} />,
       },
       {
@@ -158,7 +186,11 @@ export default function UsersPage() {
         id: 'rayon',
         accessorFn: (u) => (u.rayon_id ? (rayonNameById.get(u.rayon_id) ?? '') : ''),
         header: t('admin:users.columnRayon'),
-        meta: { label: t('admin:users.columnRayon'), filterVariant: 'text' },
+        meta: {
+          label: t('admin:users.columnRayon'),
+          filterVariant: 'enum',
+          filterOptions: rayonFilterOptions,
+        },
         cell: ({ row }) => {
           const id = row.original.rayon_id;
           return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
@@ -166,9 +198,14 @@ export default function UsersPage() {
       },
       {
         id: 'areas',
-        accessorFn: (u) => u.assigned_area_count ?? 0,
+        accessorFn: (u) => (u.assigned_area_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
         header: 'Area',
-        meta: { label: 'Area' },
+        filterFn: enumArrayFilterFn as FilterFn<User>,
+        meta: {
+          label: 'Area',
+          filterVariant: 'enum',
+          filterOptions: areaFilterOptions,
+        },
         cell: ({ row }) => {
           const u = row.original;
           const count = u.assigned_area_count ?? 0;
@@ -190,7 +227,11 @@ export default function UsersPage() {
         id: 'shift',
         accessorFn: (u) => (u.shift_definition_id ? shiftNameById.get(u.shift_definition_id) ?? '' : ''),
         header: t('admin:users.columnShift'),
-        meta: { label: t('admin:users.columnShift'), filterVariant: 'text' },
+        meta: {
+          label: t('admin:users.columnShift'),
+          filterVariant: 'enum',
+          filterOptions: shiftFilterOptions,
+        },
         cell: ({ row }) => {
           const id = row.original.shift_definition_id;
           return <span className="text-nb-body-sm">{id ? shiftNameById.get(id) ?? '—' : '—'}</span>;
@@ -200,7 +241,14 @@ export default function UsersPage() {
         id: 'password_must_change',
         accessorFn: (u) => (u.password_must_change ? t('admin:users.statusYes') : t('admin:users.statusNo')),
         header: t('admin:users.columnPasswordMustChange'),
-        meta: { label: t('admin:users.columnPasswordMustChange'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:users.columnPasswordMustChange'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:users.statusYes'), label: t('admin:users.statusYes') },
+            { value: t('admin:users.statusNo'), label: t('admin:users.statusNo') },
+          ],
+        },
         cell: ({ row }) =>
           row.original.password_must_change ? (
             <StatusPill tone="warn" dot>
@@ -214,7 +262,14 @@ export default function UsersPage() {
         id: 'status',
         accessorFn: (u) => (u.is_active ? t('admin:users.statusActive') : t('admin:users.statusInactive')),
         header: t('admin:users.columnStatus'),
-        meta: { label: t('admin:users.columnStatus'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:users.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:users.statusActive'), label: t('admin:users.statusActive') },
+            { value: t('admin:users.statusInactive'), label: t('admin:users.statusInactive') },
+          ],
+        },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
@@ -227,28 +282,6 @@ export default function UsersPage() {
           ),
       },
       {
-        id: 'created_at',
-        accessorKey: 'created_at',
-        header: t('admin:users.columnCreated'),
-        meta: { label: t('admin:users.columnCreated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.created_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'updated_at',
-        accessorKey: 'updated_at',
-        header: t('admin:users.columnUpdated'),
-        meta: { label: t('admin:users.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.updated_at)}
-          </span>
-        ),
-      },
-      {
         id: 'created_by',
         accessorFn: (u) => actorName(u.created_by),
         header: t('admin:users.columnCreatedBy'),
@@ -256,6 +289,17 @@ export default function UsersPage() {
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: t('admin:users.columnCreated'),
+        meta: { label: t('admin:users.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
           </span>
         ),
       },
@@ -270,8 +314,28 @@ export default function UsersPage() {
           </span>
         ),
       },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: t('admin:users.columnUpdated'),
+        meta: { label: t('admin:users.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
+          </span>
+        ),
+      },
     ],
-    [actorName, shiftNameById, rayonNameById, t]
+    [
+      actorName,
+      shiftNameById,
+      rayonNameById,
+      t,
+      rayonFilterOptions,
+      shiftFilterOptions,
+      areaNameById,
+      areaFilterOptions,
+    ]
   );
 
   const rowActions = useCallback(
