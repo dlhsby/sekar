@@ -8,8 +8,11 @@
 #
 #   create   fetch <base> (default: main), add a worktree at
 #            .claude/worktrees/<slug> on a new `worktree-<slug>` branch, copy
-#            the main checkout's .env.local files, wire unique
-#            BE_PORT/WEB_PORT/METRO_PORT (leaving DATABASE_*/AWS_*/REDIS_*
+#            the main checkout's .env.local files + other gitignored local dev
+#            files (google-services.json, GoogleService-Info.plist,
+#            firebase-service-account.json, secrets/sheets-sa.json, seed
+#            roster CSVs, .env.keys — see EXTRA_LOCAL_FILES below), wire
+#            unique BE_PORT/WEB_PORT/METRO_PORT (leaving DATABASE_*/AWS_*/REDIS_*
 #            pointed at the ONE shared Docker infra), then npm ci apps/be +
 #            apps/web + apps/mobile + root.
 #            NOTE: `npm run android`/`android:all` adb-reverse the device's
@@ -43,14 +46,31 @@ source "$SCRIPT_DIR/lib/common.sh"
 WORKTREES_DIR="$ROOT/.claude/worktrees"
 APPS=(be web mobile)
 
+# Gitignored per-dev local files (Firebase configs, dotenvx private keys, seed
+# roster CSVs with real PII) that a worktree needs alongside .env.local to
+# actually build/run — copied from the main checkout if present there.
+EXTRA_LOCAL_FILES=(
+  "apps/mobile/android/app/google-services.json"
+  "apps/mobile/ios/GoogleService-Info.plist"
+  "apps/be/config/firebase-service-account.json"
+  "apps/be/secrets/sheets-sa.json"
+  "apps/be/src/database/seeds/data/users.csv"
+  "apps/be/src/database/seeds/data/users-with-ids.csv"
+  "apps/be/.env.keys"
+  "apps/web/.env.keys"
+  "apps/mobile/.env.keys"
+)
+
 usage() {
   cat <<'USAGE'
 worktree.sh — parallel git worktrees for concurrent SEKAR dev work.
 
   ./scripts/worktree.sh create <name> [--base <branch>] [--be-port N] [--web-port N] [--metro-port N]
-      Cut a new worktree from origin/<base> (default: main), copy env files,
-      auto-pick free BE_PORT/WEB_PORT/METRO_PORT (or use the ones you pass),
-      install deps in apps/be, apps/web, apps/mobile + root.
+      Cut a new worktree from origin/<base> (default: main), copy env files +
+      other gitignored local dev files (Firebase configs, dotenvx .env.keys,
+      seed roster CSVs — see EXTRA_LOCAL_FILES in this script), auto-pick free
+      BE_PORT/WEB_PORT/METRO_PORT (or use the ones you pass), install deps in
+      apps/be, apps/web, apps/mobile + root.
       Android: one emulator/device per worktree — `npm run android` picks
       whatever `adb devices` lists first unless you export ANDROID_SERIAL=
       <serial> to pin it, since adb-reverse mappings are per-device.
@@ -168,6 +188,17 @@ cmd_create() {
       print_success "apps/$app/.env.local copied"
     else
       print_warning "apps/$app/.env.local not found in main checkout — skipping"
+    fi
+  done
+
+  print_info "Copying other gitignored local dev files (Firebase configs, dotenvx keys, seed CSVs)..."
+  for f in "${EXTRA_LOCAL_FILES[@]}"; do
+    local src="$ROOT/$f"
+    local dst="$dir/$f"
+    if [ -f "$src" ]; then
+      mkdir -p "$(dirname "$dst")"
+      cp "$src" "$dst"
+      print_success "$f copied"
     fi
   done
 
