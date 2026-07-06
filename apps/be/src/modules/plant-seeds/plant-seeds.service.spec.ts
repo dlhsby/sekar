@@ -51,7 +51,7 @@ describe('PlantSeedsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     createQueryBuilder: jest.fn(),
-  };
+  } as any;
 
   const mockTransactionRepository = {
     find: jest.fn(),
@@ -217,6 +217,156 @@ describe('PlantSeedsService', () => {
       });
 
       expect(result.stockQty).toBe(0);
+    });
+  });
+
+  describe('updateSeed', () => {
+    it('should update seed with new nameId', async () => {
+      const updatedSeed = { ...mockSeed, nameId: 'Updated Name' };
+      mockSeedRepository.findOne.mockResolvedValueOnce(mockSeed);
+      mockSeedRepository.findOne.mockResolvedValueOnce(null);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        nameId: 'Updated Name',
+      });
+
+      expect(result.nameId).toBe('Updated Name');
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update seed with new unit', async () => {
+      const updatedSeed = { ...mockSeed, unit: 'piece' as const };
+      mockSeedRepository.findOne.mockResolvedValue(mockSeed);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        unit: 'piece',
+      });
+
+      expect(result.unit).toBe('piece');
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update seed with new speciesId', async () => {
+      const newSpeciesId = 'species-22222222-2222-2222-2222-222222222222';
+      const updatedSeed = { ...mockSeed, speciesId: newSpeciesId };
+      mockSeedRepository.findOne.mockResolvedValue(mockSeed);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        speciesId: newSpeciesId,
+      });
+
+      expect(result.speciesId).toBe(newSpeciesId);
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should clear speciesId if set to null', async () => {
+      const updatedSeed = { ...mockSeed, speciesId: null };
+      mockSeedRepository.findOne.mockResolvedValue(mockSeed);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        speciesId: null,
+      });
+
+      expect(result.speciesId).toBeNull();
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update multiple fields at once', async () => {
+      const updatedSeed = {
+        ...mockSeed,
+        nameId: 'New Name',
+        unit: 'packet' as const,
+        speciesId: 'species-22222222-2222-2222-2222-222222222222',
+      };
+      mockSeedRepository.findOne.mockResolvedValueOnce(mockSeed);
+      mockSeedRepository.findOne.mockResolvedValueOnce(null);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        nameId: 'New Name',
+        unit: 'packet',
+        speciesId: 'species-22222222-2222-2222-2222-222222222222',
+      });
+
+      expect(result.nameId).toBe('New Name');
+      expect(result.unit).toBe('packet');
+      expect(result.speciesId).toBe('species-22222222-2222-2222-2222-222222222222');
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if seed not found', async () => {
+      mockSeedRepository.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.updateSeed(mockSeedId, {
+          nameId: 'New Name',
+        }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ConflictException if new nameId already exists', async () => {
+      const existingSeed = {
+        ...mockSeed,
+        id: 'seed-22222222-2222-2222-2222-222222222222',
+        nameId: 'Existing Name',
+      };
+      mockSeedRepository.findOne
+        .mockResolvedValueOnce(mockSeed)
+        .mockResolvedValueOnce(existingSeed);
+
+      await expect(
+        service.updateSeed(mockSeedId, {
+          nameId: 'Existing Name',
+        }),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should allow updating to same nameId without conflict', async () => {
+      const updatedSeed = mockSeed;
+      mockSeedRepository.findOne.mockResolvedValueOnce(mockSeed);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        nameId: mockSeed.nameId,
+      });
+
+      expect(result).toEqual(mockSeed);
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should not check nameId uniqueness if nameId not provided', async () => {
+      const updatedSeed = { ...mockSeed, unit: 'packet' as const };
+      mockSeedRepository.findOne.mockResolvedValue(mockSeed);
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      await service.updateSeed(mockSeedId, {
+        unit: 'packet',
+      });
+
+      // findOne should only be called once (for finding the seed)
+      expect(mockSeedRepository.findOne).toHaveBeenCalledTimes(1);
+      expect(mockSeedRepository.save).toHaveBeenCalled();
+    });
+
+    it('should only update provided fields', async () => {
+      mockSeedRepository.findOne.mockResolvedValue(mockSeed);
+      mockSeedRepository.save.mockResolvedValue(mockSeed);
+
+      const updatedSeed = { ...mockSeed };
+      updatedSeed.unit = 'packet';
+      mockSeedRepository.save.mockResolvedValue(updatedSeed);
+
+      const result = await service.updateSeed(mockSeedId, {
+        unit: 'packet',
+      });
+
+      // Verify that other fields remain unchanged
+      expect(result.nameId).toBe(mockSeed.nameId);
+      expect(result.speciesId).toBe(mockSeed.speciesId);
     });
   });
 

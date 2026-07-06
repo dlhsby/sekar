@@ -64,21 +64,19 @@ export interface UserFormSubmit extends Omit<UserFormData, 'rayon_id' | 'shift_d
 }
 
 interface UserFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: User;
   onSubmit: (data: UserFormSubmit) => Promise<void>;
-  onCancel: () => void;
-  loading?: boolean;
-  submitText?: string;
   /** Read-only "Lihat" mode — all fields disabled, no submit (just Tutup). */
   readOnly?: boolean;
 }
 
 export function UserForm({
+  formId,
   initialData,
   onSubmit,
-  onCancel,
-  loading = false,
-  submitText,
   readOnly = false,
 }: UserFormProps) {
   const { t } = useTranslation();
@@ -103,7 +101,7 @@ export function UserForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
     defaultValues: {
@@ -230,11 +228,10 @@ export function UserForm({
     }
   }, [shifts, isEditMode, readOnly, scope.shift, setValue]);
 
-  const busy = isSubmitting || loading;
-  const fieldsDisabled = busy || readOnly;
+  const fieldsDisabled = readOnly;
 
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       {/* Nama Lengkap first so "Sarankan" can derive a username from it. */}
       <FormInput
         label={t('admin:users.form.fullName')}
@@ -263,7 +260,7 @@ export function UserForm({
               variant="secondary"
               onClick={handleSuggestUsername}
               loading={suggesting}
-              disabled={busy || !fullNameValue}
+              disabled={!fullNameValue}
               className="mb-[2px] whitespace-nowrap"
             >
               {t('admin:users.form.usernameSuggestButton')}
@@ -368,28 +365,8 @@ export function UserForm({
         </div>
       )}
 
-      <div className="flex gap-3 pt-4">
-        {readOnly ? (
-          <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
-            {t('admin:shared.close')}
-          </Button>
-        ) : (
-          <>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onCancel}
-              disabled={busy}
-              className="flex-1"
-            >
-              {t('admin:shared.cancel')}
-            </Button>
-            <Button type="submit" loading={busy} disabled={busy} className="flex-1">
-              {submitText || t('admin:users.form.submitEdit')}
-            </Button>
-          </>
-        )}
-      </div>
+      {/* Submit/Cancel live in the modal's DialogFooter (formId links them to
+          this form); only the password info hint stays here. */}
     </form>
   );
 }

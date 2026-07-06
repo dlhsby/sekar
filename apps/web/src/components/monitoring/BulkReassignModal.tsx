@@ -13,6 +13,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogDescription,
   DialogFooter,
@@ -154,7 +155,7 @@ export function BulkReassignModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="px-4 pb-2 space-y-4">
+        <DialogBody className="space-y-4">
           {/* Source area selector */}
           <div className="space-y-1.5">
             <label htmlFor="bulk-source-area" className="text-sm font-bold text-nb-black">
@@ -307,7 +308,7 @@ export function BulkReassignModal({
               />
             )}
           </Field>
-        </div>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="outline" size="sm" onClick={handleClose} disabled={isSubmitting}>

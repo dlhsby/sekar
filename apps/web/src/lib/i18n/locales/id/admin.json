@@ -4,11 +4,6 @@
     "description": "Kelola akun dan peran pengguna sistem",
     "totalCount": "{{count}} pengguna terdaftar",
     "searchPlaceholder": "Cari nama atau username…",
-    "selectAll": "Pilih semua",
-    "selectRow": "Pilih {{name}}",
-    "bulkResetSelected": "Reset Sandi",
-    "bulkResetConfirm": "Reset sandi untuk {{count}} pengguna?",
-    "bulkResetTitle": "Reset Sandi Massal",
     "bulkCredentialsTitle": "Kredensial yang Dibuat",
     "credentialsHint": "Sandi sementara ini ditampilkan hanya sekali saja. Distribusikan kepada pengguna dan pastikan mereka mengganti sandi saat login pertama kali.",
     "tempPassword": "Sandi Sementara",
@@ -353,8 +348,6 @@
     }
   },
   "messages": {
-    "bulkResetSuccess": "{{count}} sandi berhasil direset.",
-    "bulkResetPartial": "{{count}} pengguna gagal direset.",
     "userCreatedSuccess": "Pengguna \"{{name}}\" berhasil dibuat.",
     "userUpdatedSuccess": "Pengguna \"{{name}}\" berhasil diperbarui.",
     "userDeletedSuccess": "Pengguna \"{{name}}\" berhasil dihapus.",

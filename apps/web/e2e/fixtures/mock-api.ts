@@ -140,7 +140,7 @@ export const mockData = {
   tasks: paginated([
     {
       id: '650e8400-0000-0000-0000-000000000001',
-      title: 'Pemangkasan Taman Bungkul',
+      title: 'Perantingan Taman Bungkul',
       description: 'Pangkas dahan kering',
       status: 'assigned',
       priority: 'high',
@@ -271,7 +271,7 @@ export const mockData = {
       id: 'n1',
       user_id: mockUsers.admin.id,
       title: 'Tugas baru ditugaskan',
-      body: 'Pemangkasan Taman Bungkul',
+      body: 'Perantingan Taman Bungkul',
       type: 'task_assigned',
       data: { task_id: '650e8400-0000-0000-0000-000000000001' },
       is_read: false,

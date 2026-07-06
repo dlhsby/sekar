@@ -48,7 +48,19 @@
   "columnFilter": {
     "placeholder": "Filter…",
     "filterLabel": "Filter {{label}}",
-    "clearLabel": "Hapus filter {{label}}"
+    "clearLabel": "Hapus filter {{label}}",
+    "enumPlaceholder": "Semua",
+    "selectedCount": "{{count}} dipilih",
+    "enumSearchPlaceholder": "Cari opsi...",
+    "enumNoOptions": "Tidak ada opsi yang cocok",
+    "selectAll": "Pilih Semua",
+    "clearAll": "Hapus Semua",
+    "numberPlaceholder": "Semua",
+    "numberMinPlaceholder": "Min",
+    "numberMaxPlaceholder": "Max",
+    "datePlaceholder": "Semua",
+    "dateRangeStartPlaceholder": "Tanggal Mulai",
+    "dateRangeEndPlaceholder": "Tanggal Akhir"
   },
   "updateToast": {
     "title": "Versi baru tersedia",

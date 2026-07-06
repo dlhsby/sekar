@@ -22,5 +22,14 @@
   "checking": "Memeriksa ketersediaan…",
   "available": "Tersedia",
   "taken": "Sudah dipakai",
-  "formatInvalid": "Format tidak valid"
+  "formatInvalid": "Format tidak valid",
+  "activityTypeRequired": "Tipe aktivitas wajib dipilih",
+  "descriptionMin": "Deskripsi minimal 5 karakter",
+  "descriptionMax": "Deskripsi maksimal 500 karakter",
+  "photoMin": "Minimal 1 foto diperlukan",
+  "photoMax": "Maksimal 3 foto diperbolehkan",
+  "userRequired": "Pengguna wajib dipilih",
+  "startDatetimeRequired": "Waktu mulai wajib diisi",
+  "endDatetimeRequired": "Waktu selesai wajib diisi",
+  "descriptionRequired": "Deskripsi wajib diisi"
 }

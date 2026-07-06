@@ -13,7 +13,9 @@
     "columnName": "Name",
     "columnNameLatin": "Latin Name",
     "columnCategory": "Category",
-    "columnPruningCycle": "Pruning Cycle (days)"
+    "columnPruningCycle": "Pruning Cycle (days)",
+    "columnCreated": "Created",
+    "columnUpdated": "Updated"
   },
   "categoryLabels": {
     "tree": "Tree",
@@ -48,5 +50,35 @@
     "due_soon": "Due Soon",
     "overdue": "Overdue",
     "unknown": "No Data"
-  }
+  },
+  "form": {
+    "basicInfoTitle": "Basic Information",
+    "nameId": "Indonesian Name",
+    "nameIdPlaceholder": "E.g. Trembesi",
+    "nameLatin": "Latin Name",
+    "nameLatinPlaceholder": "E.g. Samanea saman",
+    "category": "Category",
+    "defaultPruningCycleDays": "Default Pruning Cycle (days)",
+    "defaultPruningCycleDaysPlaceholder": "E.g. 365",
+    "pruningCycleMin": "Pruning cycle must be at least 1 day",
+    "notes": "Notes",
+    "notesPlaceholder": "Additional notes or characteristics",
+    "submitNew": "Add Species",
+    "submit": "Save Changes"
+  },
+  "buttonAdd": "Create New",
+  "buttonAddFirst": "Create First Species",
+  "actionView": "View",
+  "actionEdit": "Edit",
+  "actionDelete": "Delete",
+  "detailTitle": "Species Details",
+  "successCreated": "Species \"{{name}}\" created successfully.",
+  "successUpdated": "Species \"{{name}}\" updated successfully.",
+  "successDeleted": "Species \"{{name}}\" deleted successfully.",
+  "createErrorMessage": "Failed to create species. Check your input.",
+  "updateErrorMessage": "Failed to update species. Check your input.",
+  "deleteErrorMessage": "Failed to delete species.",
+  "deleteErrorConflict": "Species cannot be deleted because it is still in use by areas or notable plants.",
+  "deleteConfirmTitle": "Delete Species?",
+  "deleteConfirmDescription": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone."
 }

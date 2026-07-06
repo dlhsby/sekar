@@ -1,6 +1,8 @@
 /**
  * Unit tests: RayonForm — boundary polygon (optional) + center pin on the
- * unified Google Maps editor (mocked).
+ * unified Google Maps editor (mocked). Submit/Cancel live in the modal's
+ * DialogFooter (outside this form), so tests submit via a sibling button
+ * wired to the same `formId`, matching how RayonFormModal renders it.
  */
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -53,9 +55,25 @@ jest.mock('@/components/maps/GoogleBoundaryEditor', () => ({
   ),
 }));
 
+const FORM_ID = 'rayon-form-test';
+
+/** Mirrors RayonFormModal: a submit button outside the form, wired via `form`. */
+function ExternalSubmitButton() {
+  return (
+    <button type="submit" form={FORM_ID}>
+      Buat Rayon
+    </button>
+  );
+}
+
 describe('RayonForm', () => {
   it('renders name, color, description and the boundary editor', () => {
-    render(<RayonForm mode="create" onSubmit={jest.fn().mockResolvedValue(undefined)} />);
+    render(
+      <>
+        <RayonForm formId={FORM_ID} mode="create" onSubmit={jest.fn().mockResolvedValue(undefined)} />
+        <ExternalSubmitButton />
+      </>
+    );
     expect(screen.getByLabelText(/nama rayon/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/kode warna/i)).toBeInTheDocument();
     expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
@@ -65,7 +83,12 @@ describe('RayonForm', () => {
   it('submits with only a pin (boundary optional) — boundary_polygon is null', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(<RayonForm mode="create" onSubmit={onSubmit} />);
+    render(
+      <>
+        <RayonForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
+        <ExternalSubmitButton />
+      </>
+    );
 
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
     await user.click(screen.getByTestId('place-pin')); // at least one geometry required
@@ -75,20 +98,35 @@ describe('RayonForm', () => {
     expect(onSubmit.mock.calls[0][0]).toMatchObject({ name: 'Rayon Baru', boundary_polygon: null });
   });
 
-  it('blocks save when neither boundary nor pin is set', async () => {
+  it('reports geometry validity via onValidityChange as the pin/boundary change', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const onValidityChange = jest.fn();
     const user = userEvent.setup();
-    render(<RayonForm mode="create" onSubmit={onSubmit} />);
+    render(
+      <RayonForm
+        formId={FORM_ID}
+        mode="create"
+        onSubmit={onSubmit}
+        onValidityChange={onValidityChange}
+      />
+    );
 
-    await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
-    expect(screen.getByRole('button', { name: /buat rayon/i })).toBeDisabled();
-    expect(onSubmit).not.toHaveBeenCalled();
+    await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
+
+    await user.click(screen.getByTestId('place-pin'));
+
+    await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
   });
 
   it('includes the drawn boundary_polygon on submit', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
-    render(<RayonForm mode="create" onSubmit={onSubmit} />);
+    render(
+      <>
+        <RayonForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
+        <ExternalSubmitButton />
+      </>
+    );
 
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
     await user.click(screen.getByTestId('draw-polygon'));

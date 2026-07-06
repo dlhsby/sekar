@@ -4,7 +4,8 @@
     "description": "Manage seed inventory and transactions",
     "searchLabel": "Search seeds",
     "searchPlaceholder": "Search seeds by name…",
-    "emptyTitle": "No seeds available"
+    "emptyTitle": "No seeds available",
+    "createButton": "Create New"
   },
   "listTable": {
     "columnId": "ID",
@@ -81,5 +82,23 @@
   },
   "stockIndicator": {
     "lowStockLabel": "Low"
+  },
+  "form": {
+    "createTitle": "Create New Seed",
+    "editTitle": "Edit Seed",
+    "nameLabel": "Seed Name",
+    "namePlaceholder": "Seed SKU name",
+    "speciesLabel": "Plant Species (Optional)",
+    "speciesPlaceholder": "Select species",
+    "speciesSearchPlaceholder": "Search species…",
+    "unitLabel": "Unit",
+    "unitPlaceholder": "Select unit",
+    "initialStockLabel": "Initial Stock (Optional)",
+    "initialStockPlaceholder": "Initial stock quantity",
+    "submitButton": "Save Seed",
+    "successCreated": "Seed \"{{name}}\" created successfully",
+    "successUpdated": "Seed \"{{name}}\" updated successfully",
+    "createErrorMessage": "Failed to create seed",
+    "updateErrorMessage": "Failed to update seed"
   }
 }

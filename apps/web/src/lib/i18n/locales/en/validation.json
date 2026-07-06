@@ -22,5 +22,14 @@
   "checking": "Checking availability…",
   "available": "Available",
   "taken": "Already taken",
-  "formatInvalid": "Invalid format"
+  "formatInvalid": "Invalid format",
+  "activityTypeRequired": "Activity type is required",
+  "descriptionMin": "Description must be at least 5 characters",
+  "descriptionMax": "Description must be at most 500 characters",
+  "photoMin": "At least 1 photo is required",
+  "photoMax": "At most 3 photos are allowed",
+  "userRequired": "User is required",
+  "startDatetimeRequired": "Start time is required",
+  "endDatetimeRequired": "End time is required",
+  "descriptionRequired": "Description is required"
 }

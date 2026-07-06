@@ -9,7 +9,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 const dialogContentVariants = cva(
-  'fixed left-[50%] top-[50%] z-50 flex max-h-[90dvh] w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-y-auto border-2 border-nb-black rounded-nb-md bg-nb-white shadow-nb-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
+  'fixed left-[50%] top-[50%] z-50 flex max-h-[90dvh] w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden border-2 border-nb-black rounded-nb-md bg-nb-white shadow-nb-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',
   {
     variants: {
       size: {
@@ -82,12 +82,14 @@ const DialogContent = React.forwardRef<
 });
 DialogContent.displayName = DialogPrimitive.Content.displayName;
 
-// Sticky-within-scroll: header pins to the top and footer to the bottom while
-// the body scrolls between them (the content region overflows in DialogContent).
+// Fixed header/footer, scrolling body: DialogContent itself no longer scrolls
+// (overflow-hidden), so the header — and the close (X) button rendered next to
+// it in DialogContent — stay genuinely fixed in place. Only DialogBody, the
+// flex-1 middle section, scrolls when its content overflows the dialog height.
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'sticky top-0 z-10 flex shrink-0 flex-col space-y-1.5 border-b-2 border-nb-black bg-nb-white p-4',
+      'z-10 flex shrink-0 flex-col space-y-1.5 border-b-2 border-nb-black bg-nb-white p-4',
       className
     )}
     {...props}
@@ -96,14 +98,14 @@ const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivEleme
 DialogHeader.displayName = 'DialogHeader';
 
 const DialogBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn('flex-1 p-4', className)} {...props} />
+  <div className={cn('min-h-0 flex-1 overflow-y-auto p-4', className)} {...props} />
 );
 DialogBody.displayName = 'DialogBody';
 
 const DialogFooter = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      'sticky bottom-0 z-10 flex shrink-0 flex-col-reverse gap-2 border-t-2 border-nb-black bg-nb-white p-4 sm:flex-row sm:justify-end',
+      'z-10 flex shrink-0 flex-col-reverse gap-2 border-t-2 border-nb-black bg-nb-white p-4 sm:flex-row sm:justify-end',
       className
     )}
     {...props}

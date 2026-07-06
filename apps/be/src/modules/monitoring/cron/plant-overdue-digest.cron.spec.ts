@@ -89,7 +89,7 @@ describe('PlantOverdueDigestCron', () => {
     expect(tmCall).toBeDefined();
     expect(tmCall![0]).toMatchObject({
       type: NotificationType.AREA_PLANT_OVERDUE,
-      title: 'Tanaman melewati jadwal pemangkasan',
+      title: 'Tanaman melewati jadwal perantingan',
     });
     expect(tmCall![0].data.rayons).toHaveLength(1); // only rayon A is overdue
   });

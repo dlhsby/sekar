@@ -13,6 +13,7 @@ import {
   useTasks,
   useTaggedTasks,
   useMyTasks,
+  useDeleteTask,
   type TaskStatus,
   type TaskPriority,
   type Task,
@@ -27,6 +28,7 @@ import {
   StatusPill,
   Tabs,
   DetailModal,
+  ConfirmDialog,
   type TabItem,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -34,7 +36,7 @@ import type { ColumnDef } from '@/components/ui/data-table';
 import { TaskKanban } from '@/components/tasks/TaskKanban';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Eye, Trash2 } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
@@ -59,7 +61,12 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<TaskPriority | 'all'>('all');
   const [page, setPage] = useState(1);
   const [formOpen, setFormOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; task: Task | null }>({
+    isOpen: false,
+    task: null,
+  });
   const viewModal = useViewModal<Task>();
+  const deleteTask = useDeleteTask();
   // The board groups client-side across all lanes, so it needs a wider window
   // than the paginated table.
   const limit = view === 'kanban' ? 100 : 20;
@@ -73,6 +80,13 @@ export default function TasksPage() {
         onClick: () => {
           viewModal.openWith(task);
         },
+      },
+      {
+        key: 'delete',
+        label: t('tasks:list.rowActionDelete'),
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => setDeleteDialog({ isOpen: true, task }),
       },
     ],
     [viewModal, t]
@@ -389,6 +403,21 @@ export default function TasksPage() {
           { label: t('tasks:list.tableHeaderCreated'), value: formatDate(viewModal.item.created_at) },
           { label: t('tasks:list.tableHeaderUpdated'), value: formatDate(viewModal.item.updated_at) },
         ] : []}
+      />
+
+      <ConfirmDialog
+        open={deleteDialog.isOpen}
+        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, isOpen: open })}
+        title={t('tasks:list.deleteConfirmTitle')}
+        description={t('tasks:list.deleteConfirmDescription')}
+        confirmLabel={t('tasks:list.rowActionDelete')}
+        loading={deleteTask.isPending}
+        onConfirm={async () => {
+          if (deleteDialog.task) {
+            await deleteTask.mutateAsync(deleteDialog.task.id);
+            setDeleteDialog({ isOpen: false, task: null });
+          }
+        }}
       />
     </div>
   );

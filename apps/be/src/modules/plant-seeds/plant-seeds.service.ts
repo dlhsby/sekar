@@ -9,6 +9,7 @@ import { Repository, DataSource } from 'typeorm';
 import { PlantSeed } from './entities/plant-seed.entity';
 import { SeedTransaction } from './entities/seed-transaction.entity';
 import { CreateSeedDto } from './dto/create-seed.dto';
+import { UpdateSeedDto } from './dto/update-seed.dto';
 import { RecordTransactionDto } from './dto/record-transaction.dto';
 import { ListSeedsQueryDto } from './dto/list-seeds-query.dto';
 import { ListTransactionsQueryDto } from './dto/list-transactions-query.dto';
@@ -70,6 +71,36 @@ export class PlantSeedsService {
       unit: dto.unit,
       stockQty: dto.stockQty || 0,
     });
+
+    return this.seedRepository.save(seed);
+  }
+
+  async updateSeed(id: string, dto: UpdateSeedDto): Promise<PlantSeed> {
+    const seed = await this.seedRepository.findOne({ where: { id } });
+    if (!seed) {
+      throw new NotFoundException('Seed not found');
+    }
+
+    // Check for nameId uniqueness if it's being updated
+    if (dto.nameId && dto.nameId !== seed.nameId) {
+      const existing = await this.seedRepository.findOne({
+        where: { nameId: dto.nameId },
+      });
+      if (existing) {
+        throw new ConflictException('Seed with this name already exists');
+      }
+    }
+
+    // Update only provided fields
+    if (dto.nameId !== undefined) {
+      seed.nameId = dto.nameId;
+    }
+    if (dto.speciesId !== undefined) {
+      seed.speciesId = dto.speciesId;
+    }
+    if (dto.unit !== undefined) {
+      seed.unit = dto.unit;
+    }
 
     return this.seedRepository.save(seed);
   }

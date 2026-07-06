@@ -239,7 +239,7 @@ describe('Navigation Utilities', () => {
       expect(getBreadcrumbTrail('/tasks')).toEqual(['Pekerjaan', 'Tugas']);
       expect(getBreadcrumbTrail('/overtime')).toEqual(['Pekerjaan', 'Lembur']);
       expect(getBreadcrumbTrail('/users')).toEqual(['Pengguna & Hak Akses', 'Pengguna']);
-      expect(getBreadcrumbTrail('/pruning-requests')).toEqual(['Pekerjaan', 'Permohonan Pemangkasan']);
+      expect(getBreadcrumbTrail('/pruning-requests')).toEqual(['Pekerjaan', 'Permohonan Perantingan']);
     });
 
     it('returns a single-segment trail for top-level routes', () => {

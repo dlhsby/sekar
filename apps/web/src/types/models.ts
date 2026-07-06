@@ -364,6 +364,25 @@ export interface ActivityFilters {
 }
 
 /**
+ * Create Activity DTO
+ */
+export interface CreateActivityDto {
+  activity_type_id: string;
+  description: string;
+  photo_urls: string[];
+  gps_lat?: number;
+  gps_lng?: number;
+}
+
+/**
+ * Update Activity DTO
+ */
+export interface UpdateActivityDto {
+  description?: string;
+  photo_urls?: string[];
+}
+
+/**
  * Overtime Status
  */
 export type OvertimeStatus = 'pending' | 'approved' | 'rejected';

@@ -96,6 +96,11 @@ function setupDefaultApiMocks() {
     mutateAsync: jest.fn(),
     isPending: false,
   });
+  // The delete row action's ConfirmDialog calls useDeleteTask even when closed.
+  (tasksApi.useDeleteTask as jest.Mock).mockReturnValue({
+    mutateAsync: jest.fn(),
+    isPending: false,
+  });
 }
 
 describe('TasksPage', () => {

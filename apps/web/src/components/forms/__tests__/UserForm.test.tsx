@@ -1,6 +1,8 @@
 /**
- * Unit Tests: UserForm
- * Tests user creation and editing form with validation
+ * Unit Tests: UserForm — User creation/editing form with role-gated field assignments.
+ * Submit/Cancel live in the modal's DialogFooter (outside this form), so tests
+ * submit via a sibling button wired to the same `formId`, matching how
+ * UserFormModal renders it.
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
@@ -27,6 +29,17 @@ jest.mock('@/lib/api/user-areas', () => ({
   useUserAreas: jest.fn(() => ({ data: undefined })),
 }));
 
+const FORM_ID = 'user-form-test';
+
+/** Mirrors UserFormModal: a submit button outside the form, wired via `form`. */
+function ExternalSubmitButton() {
+  return (
+    <button type="submit" form={FORM_ID}>
+      Simpan
+    </button>
+  );
+}
+
 describe('UserForm', () => {
   const mockRayons = [
     { id: 'rayon-1', name: 'Rayon Utara', code: 'RU' },
@@ -34,10 +47,8 @@ describe('UserForm', () => {
   ];
 
   const defaultProps = {
+    formId: FORM_ID,
     onSubmit: jest.fn(),
-    onCancel: jest.fn(),
-    loading: false,
-    submitText: 'Simpan',
   };
 
   const createWrapper = () => {
@@ -69,13 +80,18 @@ describe('UserForm', () => {
 
   describe('Form Rendering', () => {
     it('should render all form fields in create mode', () => {
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       expect(screen.getByLabelText(/nama lengkap/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/nomor hp/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/role/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /batal/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /simpan/i })).toBeInTheDocument();
     });
 
@@ -126,7 +142,13 @@ describe('UserForm', () => {
   describe('Validation', () => {
     it.skip('should display error for empty name', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
@@ -137,7 +159,13 @@ describe('UserForm', () => {
 
     it.skip('should display error for short name', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'A');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -149,7 +177,13 @@ describe('UserForm', () => {
 
     it.skip('should display error for invalid email format', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -161,7 +195,13 @@ describe('UserForm', () => {
 
     it.skip('should display error for short password', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.type(screen.getByLabelText(/password/i), '12345');
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -173,7 +213,13 @@ describe('UserForm', () => {
 
     it('should not display username error for valid username', async () => {
       const user = userEvent.setup();
-      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.type(screen.getByLabelText(/username/i), 'validuser');
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Valid User');
@@ -266,7 +312,13 @@ describe('UserForm', () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} />, { wrapper: createWrapper() });
+      render(
+        <>
+          <UserForm {...defaultProps} onSubmit={onSubmit} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'New User');
       await user.type(screen.getByLabelText(/email/i), 'new@example.com');
@@ -300,9 +352,13 @@ describe('UserForm', () => {
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <>
+          <UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.clear(screen.getByLabelText(/nama lengkap/i));
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Updated User');
@@ -339,9 +395,13 @@ describe('UserForm', () => {
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <>
+          <UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
@@ -373,9 +433,13 @@ describe('UserForm', () => {
         updated_at: '2026-01-01',
       };
 
-      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
-        wrapper: createWrapper(),
-      });
+      render(
+        <>
+          <UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
 
@@ -426,52 +490,13 @@ describe('UserForm', () => {
   });
 
   describe('Loading States', () => {
-    it('should disable all fields when loading', () => {
-      render(<UserForm {...defaultProps} loading={true} />, { wrapper: createWrapper() });
+    it('should disable all fields in read-only mode', () => {
+      render(<UserForm {...defaultProps} readOnly={true} />, { wrapper: createWrapper() });
 
       expect(screen.getByLabelText(/nama lengkap/i)).toBeDisabled();
       expect(screen.getByLabelText(/username/i)).toBeDisabled();
       expect(screen.getByLabelText(/nomor hp/i)).toBeDisabled();
       expect(screen.getByLabelText(/role/i)).toBeDisabled();
-      expect(screen.getByRole('button', { name: /simpan/i })).toBeDisabled();
-      expect(screen.getByRole('button', { name: /batal/i })).toBeDisabled();
-    });
-
-    it('should show loading indicator on submit button when loading', () => {
-      render(<UserForm {...defaultProps} loading={true} />, { wrapper: createWrapper() });
-
-      const submitButton = screen.getByRole('button', { name: /simpan/i });
-      expect(submitButton).toBeDisabled();
-    });
-
-    it('should disable fields during form submission', async () => {
-      const onSubmit = jest.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
-      const user = userEvent.setup();
-
-      // Edit mode with a complete fixture so validation passes (phone + role are
-      // required now) and the form actually enters the submitting state.
-      const initialData: User = {
-        id: '1',
-        username: 'testuser',
-        full_name: 'Test User',
-        phone_number: '081200000000',
-        role: 'satgas',
-        created_at: '2026-01-01',
-        updated_at: '2026-01-01',
-      };
-
-      render(<UserForm {...defaultProps} initialData={initialData} onSubmit={onSubmit} />, {
-        wrapper: createWrapper(),
-      });
-
-      await user.clear(screen.getByLabelText(/nama lengkap/i));
-      await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User 2');
-
-      await user.click(screen.getByRole('button', { name: /simpan/i }));
-
-      // Fields should be disabled during submission
-      expect(screen.getByLabelText(/nama lengkap/i)).toBeDisabled();
-      expect(screen.getByLabelText(/username/i)).toBeDisabled();
     });
 
     it('should show placeholder when rayons are loading', () => {
@@ -499,50 +524,12 @@ describe('UserForm', () => {
   });
 
   describe('Cancel Button', () => {
-    it('should call onCancel when cancel button is clicked', async () => {
-      const onCancel = jest.fn();
-      const user = userEvent.setup();
+    it('should render form without internal cancel button (handled by modal)', () => {
+      render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
-      render(<UserForm {...defaultProps} onCancel={onCancel} />, { wrapper: createWrapper() });
-
-      await user.click(screen.getByRole('button', { name: /batal/i }));
-
-      expect(onCancel).toHaveBeenCalled();
-    });
-
-    it.skip('should not call onCancel when form is submitting', async () => {
-      const onCancel = jest.fn();
-      const onSubmit = jest.fn(() => new Promise<void>((resolve) => setTimeout(resolve, 1000)));
-      const user = userEvent.setup();
-
-      render(<UserForm {...defaultProps} onSubmit={onSubmit} onCancel={onCancel} />, {
-        wrapper: createWrapper(),
-      });
-
-      await user.type(screen.getByLabelText(/nama lengkap/i), 'Test');
-      await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'Password123!');
-
-      await user.click(screen.getByRole('button', { name: /simpan/i }));
-
-      // Cancel button should be disabled
-      expect(screen.getByRole('button', { name: /batal/i })).toBeDisabled();
+      // The cancel button is now in the modal's DialogFooter, not in the form
+      expect(screen.queryByRole('button', { name: /batal/i })).not.toBeInTheDocument();
     });
   });
 
-  describe('Custom Submit Button Text', () => {
-    it('should display custom submit button text', () => {
-      render(<UserForm {...defaultProps} submitText="Buat User Baru" />, {
-        wrapper: createWrapper(),
-      });
-
-      expect(screen.getByRole('button', { name: /buat user baru/i })).toBeInTheDocument();
-    });
-
-    it('should use default text if not provided', () => {
-      render(<UserForm onSubmit={jest.fn()} onCancel={jest.fn()} />, { wrapper: createWrapper() });
-
-      expect(screen.getByRole('button', { name: /simpan/i })).toBeInTheDocument();
-    });
-  });
 });

@@ -24,11 +24,11 @@
     "errorLoading": "Gagal memuat data permohonan. Coba lagi nanti.",
     "tableHeaderPlantType": "Tipe Tanaman",
     "rowActionView": "Lihat",
-    "detailModalTitle": "Detail Permohonan Pemangkasan"
+    "detailModalTitle": "Detail Permohonan Perantingan"
   },
   "submit": {
     "titleMain": "Kirim Permintaan",
-    "description": "Ajukan permintaan pemangkasan pohon untuk wilayah Anda.",
+    "description": "Ajukan permintaan perantingan pohon untuk wilayah Anda.",
     "addressLabel": "Alamat",
     "addressPlaceholder": "Contoh: Jalan Darmo No. 123, Surabaya",
     "useMyLocationButton": "Gunakan Lokasi Saya",
@@ -123,7 +123,7 @@
       "assignedTo": "Ditugaskan Ke",
       "assignedToPlaceholder": "— Pilih petugas —",
       "caseType": "Tipe Kasus",
-      "pruningAction": "Aksi Pemangkasan",
+      "pruningAction": "Aksi Perantingan",
       "scheduledDate": "Tanggal Pasti (opsional)",
       "error": "Gagal mengonversi ke tugas. Periksa kapasitas minggu dan coba lagi.",
       "submit": "Buat Tugas"
@@ -133,12 +133,12 @@
       "PT": "Pemeliharaan Teratur",
       "PS": "Pemeliharaan Khusus",
       "PD": "Pembersihan Dahan",
-      "PK": "Pemangkasan Khusus"
+      "PK": "Perantingan Khusus"
     },
     "pruningActions": {
-      "PM": "Pemangkasan Moderat",
-      "PB": "Pemangkasan Berat",
-      "PC": "Pemangkasan Cabang"
+      "PM": "Perantingan Moderat",
+      "PB": "Perantingan Berat",
+      "PC": "Perantingan Cabang"
     },
     "relatedTask": "Lihat tugas terkait",
     "photoLabel": "Perbesar foto {{index}}",
@@ -150,37 +150,75 @@
   },
   "myRequests": {
     "pageTitle": "Permintaan Saya",
-    "description": "Riwayat permintaan pemangkasan yang Anda ajukan.",
+    "description": "Riwayat permintaan perantingan yang Anda ajukan.",
     "errorTitle": "Gagal memuat",
     "errorDescription": "Tidak dapat memuat riwayat permintaan. Coba lagi nanti.",
     "emptyTitle": "Belum ada permintaan",
-    "emptyDescription": "Anda belum mengirim permintaan pemangkasan.",
+    "emptyDescription": "Anda belum mengirim permintaan perantingan.",
     "emptyAction": "Kirim permintaan pertama"
   },
   "columns": {
     "referenceCode": "Kode Referensi",
     "kecamatan": "Kecamatan",
+    "rayon": "Rayon",
     "dateRange": "Minggu / Tanggal",
     "status": "Status",
     "createdAt": "Dibuat",
     "updatedAt": "Diperbarui"
   },
   "page": {
-    "description": "Tinjau dan kelola permohonan pemangkasan dari kecamatan.",
-    "filterLabel": "Filter Status",
-    "totalLabel": "Total",
-    "requests": "permohonan",
-    "loadError": "Gagal memuat data permohonan. Coba lagi nanti.",
-    "emptyTitle": "Belum ada permohonan untuk filter ini.",
-    "detailTitle": "Detail Permohonan Pemangkasan",
+    "description": "Tinjau dan kelola permohonan perantingan dari kecamatan.",
+    "searchPlaceholder": "Cari kode referensi, kecamatan, atau alamat...",
+    "buttonCreate": "Buat Baru",
+    "buttonCreateFirst": "Buat Permohonan Pertama",
+    "emptyTitle": "Belum ada permohonan.",
+    "emptyDescription": "Mulai dengan membuat permohonan perantingan baru."
+  },
+  "form": {
+    "createTitle": "Buat Permohonan Perantingan",
+    "editTitle": "Edit Permohonan Perantingan",
+    "detailTitle": "Detail Permohonan Perantingan",
+    "locationSection": "Lokasi",
+    "addressLabel": "Alamat",
+    "addressPlaceholder": "Jalan Darmo No. 123, Surabaya",
+    "addressMinError": "Alamat minimal 5 karakter.",
+    "addressMaxError": "Alamat maksimal 500 karakter.",
+    "gpsLatLabel": "Latitude GPS",
+    "gpsLngLabel": "Longitude GPS",
+    "gpsPlaceholder": "Opsional",
+    "gpsHelperText": "Kosongkan untuk menggunakan estimasi pusat area, bukan lokasi GPS asli.",
+    "treeSection": "Detail Pohon",
+    "treeCountLabel": "Jumlah Pohon",
+    "treeHeightLabel": "Tinggi (estimasi)",
+    "treeHeightPlaceholder": "5-7 meter",
+    "treeDiameterLabel": "Diameter (estimasi)",
+    "treeDiameterPlaceholder": "30-50 cm",
+    "contactSection": "Kontak",
+    "requesterLabel": "Pengaju",
+    "requesterNameLabel": "Nama Pengaju",
+    "requesterPhoneLabel": "No. HP Pengaju",
+    "requesterPhonePlaceholder": "081234567890",
+    "rtLeaderLabel": "Ketua RT",
+    "rtLeaderNameLabel": "Nama Ketua RT",
+    "rtLeaderPhoneLabel": "No. HP Ketua RT",
+    "notesLabel": "Catatan",
+    "notesPlaceholder": "Contoh: Pohon menutupi jalan, mohon diprioritaskan.",
+    "notesMaxError": "Catatan maksimal 1000 karakter.",
+    "submitButton": "Buat Permohonan",
+    "updateButton": "Perbarui",
+    "successCreated": "Permohonan perantingan berhasil dibuat.",
+    "successUpdated": "Permohonan {{code}} berhasil diperbarui.",
+    "createErrorMessage": "Gagal membuat permohonan. Coba lagi.",
+    "updateErrorMessage": "Gagal memperbarui permohonan. Coba lagi."
+  },
+  "cancel": {
+    "title": "Batalkan Permohonan Perantingan",
+    "actionLabel": "Batalkan",
+    "buttonCancel": "Batalkan",
+    "confirmation": "Anda yakin ingin membatalkan permohonan {{code}}? Tindakan ini tidak dapat dibatalkan.",
     "referenceCode": "Kode Referensi",
+    "address": "Alamat",
     "kecamatan": "Kecamatan",
-    "status": "Status",
-    "plantSpecies": "Tipe Tanaman",
-    "quantity": "Kuantitas",
-    "unit": "Unit",
-    "location": "Lokasi",
-    "notes": "Catatan",
-    "createdAt": "Dibuat"
+    "successCancelled": "Permohonan {{code}} berhasil dibatalkan."
   }
 }

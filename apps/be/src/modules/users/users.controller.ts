@@ -32,7 +32,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
-import { BulkResetPasswordDto } from './dto/bulk-reset-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -473,42 +472,6 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found.' })
   resetPassword(@Param('id', ParseUUIDPipe) id: string, @GetUser() actor: User) {
     return this.usersService.resetPassword(id, actor);
-  }
-
-  /**
-   * Bulk admin password reset.
-   * Reset many users at once to fresh one-time temp passwords (forced change on
-   * next login) and return the plaintext passwords once, so admins can unblock a
-   * whole selection/rayon of workers in one action.
-   *
-   * @route POST /api/users/bulk-reset-password
-   */
-  @Post('bulk-reset-password')
-  @Roles(...USER_MANAGERS)
-  @ApiOperation({
-    summary: 'Reset passwords for many users',
-    description:
-      'Generate a one-time temporary password for each user id and force a change on next login. Returns the plaintext passwords once, plus any ids that failed.',
-  })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'Users reset; temp passwords returned once.',
-    schema: {
-      example: {
-        results: [
-          {
-            id: '…',
-            username: 'satgas_pusat_1',
-            phone_number: '081234567890',
-            temp_password: 'X7k9m-Qp2rT',
-          },
-        ],
-        failed: [],
-      },
-    },
-  })
-  bulkResetPassword(@Body() dto: BulkResetPasswordDto, @GetUser() actor: User) {
-    return this.usersService.bulkResetPassword(dto.user_ids, actor);
   }
 
   /**

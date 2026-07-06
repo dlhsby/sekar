@@ -177,7 +177,7 @@ describe('AssignToTaskSheet', () => {
 
       // May 11, 2026 — Area + Jumlah Unit fields removed. Pruning happens
       // outside managed areas; capacity is per-permohonan (units=1).
-      // May 11, 2026 (late+1): Tipe Kasus + Aksi Pemangkasan removed.
+      // May 11, 2026 (late+1): Tipe Kasus + Aksi Perantingan removed.
       // Two-step assignee picker adds 'Jabatan' label.
       expect(screen.getByText('Jabatan')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();
@@ -243,7 +243,7 @@ describe('AssignToTaskSheet', () => {
 
       // Verify all field labels are present (May 11, 2026 — Area + Jumlah
       // Unit removed; pruning has no managed area and capacity is per-permohonan).
-      // May 11, 2026 (late+1): Tipe Kasus + Aksi Pemangkasan removed.
+      // May 11, 2026 (late+1): Tipe Kasus + Aksi Perantingan removed.
       // Two-step assignee picker adds 'Jabatan' label.
       expect(screen.getByText('Jabatan')).toBeTruthy();
       expect(screen.getByText('Ditugaskan Ke')).toBeTruthy();

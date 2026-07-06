@@ -6,6 +6,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
+import { makeCrudHooks } from './crud-hooks';
 
 // ---------------------------------------------------------------------------
 // Types — mirror the backend entities (apps/be/src/modules/plants/entities/* and
@@ -47,6 +48,16 @@ export interface NotablePlantRow {
   } | null;
 }
 
+export type CreatePlantSpeciesDto = {
+  nameId: string;
+  nameLatin?: string | null;
+  category?: 'tree' | 'shrub' | 'groundcover' | 'flower';
+  defaultPruningCycleDays?: number | null;
+  notes?: string | null;
+};
+
+export type UpdatePlantSpeciesDto = Partial<CreatePlantSpeciesDto>;
+
 export type PruningRequestStatus =
   | 'submitted'
   | 'under_review'
@@ -84,6 +95,10 @@ export interface PruningRequestListResponse {
 // ---------------------------------------------------------------------------
 
 export const plantsKeys = {
+  all: ['plants'] as const,
+  speciesLists: () => [...plantsKeys.all, 'species-list'] as const,
+  speciesDetails: () => [...plantsKeys.all, 'species-detail'] as const,
+  speciesDetail: (id: string) => [...plantsKeys.speciesDetails(), id] as const,
   areaPlants: (areaId: string) => ['areaPlants', areaId] as const,
   notablePlants: (areaId: string) => ['notablePlants', areaId] as const,
   pruningByRayon: (rayonId: string) => ['pruningByRayon', rayonId] as const,
@@ -100,6 +115,8 @@ export interface PlantSpeciesRow {
   nameLatin: string | null;
   category: 'tree' | 'shrub' | 'groundcover' | 'flower';
   defaultPruningCycleDays: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface SpeciesCatalogResult {
@@ -258,3 +275,31 @@ export function usePruningByRayon(
     staleTime: 30_000,
   });
 }
+
+// ---------------------------------------------------------------------------
+// Plant Species CRUD Hooks
+// ---------------------------------------------------------------------------
+
+const plantSpeciesCrudHooks = makeCrudHooks<PlantSpeciesRow, CreatePlantSpeciesDto, UpdatePlantSpeciesDto>(
+  {
+    resource: 'plant-species',
+    listKey: plantsKeys.speciesLists(),
+    detailKeyFn: (id) => plantsKeys.speciesDetail(id),
+  }
+);
+
+/**
+ * Hook to create a new plant species
+ */
+export const useCreatePlantSpecies = plantSpeciesCrudHooks.useCreate;
+
+/**
+ * Hook to update an existing plant species
+ */
+export const useUpdatePlantSpecies = plantSpeciesCrudHooks.useUpdate;
+
+/**
+ * Hook to delete a plant species (soft delete)
+ * Note: Will return a 409 conflict if the species is referenced by area plants or notable plants.
+ */
+export const useDeletePlantSpecies = plantSpeciesCrudHooks.useDelete;

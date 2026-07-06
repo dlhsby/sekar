@@ -571,7 +571,7 @@ const handleClockOut = async () => {
 │ └─────────────────────────────────────────────────────────┘│
 │                                                             │
 │ ┌─────────────────────────────────────────────────────────┐│
-│ │ 🟡 NORMAL          Pemangkasan Pohon                   ││
+│ │ 🟡 NORMAL          Perantingan Pohon                   ││
 │ │ Deadline: 14:00                      [Kerjakan]        ││
 │ └─────────────────────────────────────────────────────────┘│
 │                                                             │
@@ -710,7 +710,7 @@ const ReportSubmissionScreen: React.FC = () => {
   const { data: activityTypes } = useActivityTypes();
   const userRole = useSelector((state) => state.auth.user?.role);
 
-  // Worker sees: Penyiraman, Penanaman, Pemangkasan, Pembersihan, Pemupukan, Perawatan Tanaman
+  // Worker sees: Penyiraman, Penanaman, Perantingan, Pembersihan, Pemupukan, Perawatan Tanaman
   // Linmas sees: Patroli Keamanan, Laporan Insiden, Pemantauan Pengunjung, Pengecekan Fasilitas
   // Both see: Pembersihan (shared)
 

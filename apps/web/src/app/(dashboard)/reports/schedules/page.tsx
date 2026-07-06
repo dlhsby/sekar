@@ -22,6 +22,7 @@ import {
   PageHeader,
   Dialog,
   DialogContent,
+  DialogBody,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -373,7 +374,7 @@ export default function SchedulesPage() {
             )}
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          <DialogBody className="space-y-4">
             <FormInput
               label={t('schedules.createDialog.nameLabel')}
               value={formState.name}
@@ -413,7 +414,7 @@ export default function SchedulesPage() {
               onChange={(e) => setFormState((s) => ({ ...s, timezone: e.target.value }))}
               placeholder={t('schedules.createDialog.timezonePlaceholder')}
             />
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button

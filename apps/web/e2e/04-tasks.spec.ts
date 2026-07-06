@@ -8,7 +8,7 @@ test.describe('TSK-1 tasks kanban/table', () => {
     await expect(page.getByRole('region', { name: /sedang dikerjakan/i })).toBeVisible();
     await expect(page.getByRole('region', { name: /^selesai$/i })).toBeVisible();
     // A task card is present.
-    await expect(page.getByText('Pemangkasan Taman Bungkul').first()).toBeVisible();
+    await expect(page.getByText('Perantingan Taman Bungkul').first()).toBeVisible();
   });
 
   test('toggles to the table view', async ({ page }) => {

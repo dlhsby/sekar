@@ -354,7 +354,7 @@ export default function SchedulesPage() {
         id: 'status',
         accessorKey: 'status',
         header: t('table.status'),
-        meta: { label: t('table.status'), filterVariant: 'text' },
+        meta: { label: t('table.status'), filterVariant: 'enum' },
         cell: ({ row }) => (
           <StatusPill tone={getStatusTone(row.original.status)} dot>
             {formatStatus(row.original.status)}
@@ -441,6 +441,7 @@ export default function SchedulesPage() {
   return (
     <div className="space-y-5">
       <PageHeader
+        title={t('page.title')}
         description={schedules.length ? t('page.totalCount', { count: schedules.length }) : undefined}
       />
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
 import { PlantSeedsService } from './plant-seeds.service';
 import { PlantSeed } from './entities/plant-seed.entity';
@@ -9,6 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreateSeedDto } from './dto/create-seed.dto';
+import { UpdateSeedDto } from './dto/update-seed.dto';
 import { RecordTransactionDto } from './dto/record-transaction.dto';
 import { ListSeedsQueryDto } from './dto/list-seeds-query.dto';
 import { ListTransactionsQueryDto } from './dto/list-transactions-query.dto';
@@ -45,6 +46,19 @@ export class PlantSeedsController {
   @ApiResponse({ status: 409, description: 'Conflict - Seed already exists' })
   async createSeed(@Body() dto: CreateSeedDto): Promise<PlantSeed> {
     return this.service.createSeed(dto);
+  }
+
+  @Patch(':id')
+  @Roles(UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
+  @ApiOperation({ summary: 'Update seed master record metadata' })
+  @ApiParam({ name: 'id', description: 'Seed ID' })
+  @ApiResponse({ status: 200, description: 'Seed updated', type: PlantSeed })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Seed not found' })
+  @ApiResponse({ status: 409, description: 'Conflict - Seed name already exists' })
+  async updateSeed(@Param('id') id: string, @Body() dto: UpdateSeedDto): Promise<PlantSeed> {
+    return this.service.updateSeed(id, dto);
   }
 
   @Get(':id')

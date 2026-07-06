@@ -4,7 +4,8 @@
     "description": "Kelola inventaris bibit dan transaksi",
     "searchLabel": "Cari bibit",
     "searchPlaceholder": "Cari bibit berdasarkan nama…",
-    "emptyTitle": "Tidak ada bibit tersedia"
+    "emptyTitle": "Tidak ada bibit tersedia",
+    "createButton": "Buat Baru"
   },
   "listTable": {
     "columnId": "ID",
@@ -81,5 +82,23 @@
   },
   "stockIndicator": {
     "lowStockLabel": "Rendah"
+  },
+  "form": {
+    "createTitle": "Buat Bibit Baru",
+    "editTitle": "Edit Bibit",
+    "nameLabel": "Nama Bibit",
+    "namePlaceholder": "Nama SKU bibit",
+    "speciesLabel": "Spesies Tanaman (Opsional)",
+    "speciesPlaceholder": "Pilih spesies",
+    "speciesSearchPlaceholder": "Cari spesies…",
+    "unitLabel": "Satuan",
+    "unitPlaceholder": "Pilih satuan",
+    "initialStockLabel": "Stok Awal (Opsional)",
+    "initialStockPlaceholder": "Jumlah stok awal",
+    "submitButton": "Simpan Bibit",
+    "successCreated": "Bibit \"{{name}}\" berhasil dibuat",
+    "successUpdated": "Bibit \"{{name}}\" berhasil diperbarui",
+    "createErrorMessage": "Gagal membuat bibit",
+    "updateErrorMessage": "Gagal memperbarui bibit"
   }
 }

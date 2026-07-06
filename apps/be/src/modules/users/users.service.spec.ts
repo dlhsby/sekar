@@ -744,48 +744,6 @@ describe('UsersService', () => {
     });
   });
 
-  describe('bulkResetPassword', () => {
-    it('resets each user, forces change, and returns temp passwords + identities', async () => {
-      const u1 = { ...mockUser, id: 'u1', username: 'satgas1', phone_number: '081200000001' };
-      const u2 = { ...mockUser, id: 'u2', username: 'satgas2', phone_number: null };
-      mockUserRepository.findOne.mockImplementation(async ({ where }: { where: { id: string } }) =>
-        where.id === 'u1' ? { ...u1 } : where.id === 'u2' ? { ...u2 } : null,
-      );
-      mockUserRepository.save.mockImplementation(async (u) => u as User);
-
-      const result = await service.bulkResetPassword(['u1', 'u2'], {
-        ...mockUser,
-        id: 'admin',
-      } as User);
-
-      expect(result.results).toHaveLength(2);
-      expect(result.failed).toHaveLength(0);
-      expect(result.results[0]).toMatchObject({
-        id: 'u1',
-        username: 'satgas1',
-        phone_number: '081200000001',
-      });
-      expect(result.results[0].temp_password).toEqual(expect.any(String));
-      expect(result.results[1]).toMatchObject({ id: 'u2', phone_number: null });
-      expect(mockUserRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({ password_must_change: true }),
-      );
-    });
-
-    it('collects invalid ids into `failed` without aborting the rest', async () => {
-      mockUserRepository.findOne.mockImplementation(async ({ where }: { where: { id: string } }) =>
-        where.id === 'ok' ? { ...mockUser, id: 'ok' } : null,
-      );
-      mockUserRepository.save.mockImplementation(async (u) => u as User);
-
-      const result = await service.bulkResetPassword(['ok', 'missing', 'ok'], undefined);
-
-      // Duplicate 'ok' is de-duped; 'missing' fails but 'ok' still succeeds.
-      expect(result.results.map((r) => r.id)).toEqual(['ok']);
-      expect(result.failed).toEqual([{ id: 'missing', reason: expect.any(String) }]);
-    });
-  });
-
   describe('updateOwnProfile', () => {
     it('should update user full_name only', async () => {
       jest.clearAllMocks();

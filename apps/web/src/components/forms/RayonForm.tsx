@@ -5,13 +5,12 @@
  * Reusable form for creating and editing rayons
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { FormInput, Input, Textarea, Button } from '@/components/ui';
-import { FormActions } from '@/components/forms/FormActions';
+import { FormInput, Input, Textarea } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
@@ -45,23 +44,26 @@ type RayonFormData = {
 };
 
 export interface RayonFormProps {
+  /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
+   *  this form in the DOM) still submits it via the HTML `form` attribute. */
+  formId: string;
   initialData?: Rayon;
   onSubmit: (data: CreateRayonDto | UpdateRayonDto) => Promise<void>;
-  isLoading?: boolean;
   mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
   readOnly?: boolean;
-  /** Close handler for the "Tutup" button in read-only mode. */
-  onCancel?: () => void;
+  /** Reports whether the boundary/pin geometry required to submit is present —
+   *  the modal uses this to disable its (now external) submit button. */
+  onValidityChange?: (valid: boolean) => void;
 }
 
 export function RayonForm({
+  formId,
   initialData,
   onSubmit,
-  isLoading = false,
   mode,
   readOnly = false,
-  onCancel,
+  onValidityChange,
 }: RayonFormProps) {
   const { t } = useTranslation();
 
@@ -134,6 +136,9 @@ export function RayonForm({
   const boundaryValue = watch('boundary_polygon');
   // Require at least one of {boundary, location pin} to save.
   const hasGeometry = (centerLat != null && centerLng != null) || !!boundaryValue;
+  useEffect(() => {
+    onValidityChange?.(hasGeometry);
+  }, [hasGeometry, onValidityChange]);
 
   const handlePinChange = ({ lat, lng }: { lat: number; lng: number }) => {
     setValue('center_lat', Number(lat.toFixed(7)), { shouldValidate: true });
@@ -171,7 +176,7 @@ export function RayonForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('admin:rayons.form.basicInfoTitle')}</h3>
@@ -311,34 +316,12 @@ export function RayonForm({
         </div>
       </div>
 
-      {/* Footer */}
-      {readOnly ? (
-        <div className="flex gap-3 pt-4">
-          <Button type="button" variant="secondary" onClick={onCancel} className="w-full">
-            {t('admin:shared.close')}
-          </Button>
-        </div>
-      ) : (
-        <>
-          <FormActions
-            submitLabel={
-              isLoading
-                ? mode === 'create'
-                  ? t('admin:shared.creating')
-                  : t('admin:shared.updating')
-                : mode === 'create'
-                  ? t('admin:rayons.form.submitNew')
-                  : t('admin:rayons.form.submit')
-            }
-            loading={isLoading}
-            disabled={!hasGeometry}
-          />
-          {!hasGeometry && (
-            <p className="text-nb-body-sm text-nb-danger">
-              {t('admin:rayons.form.geometryRequired')}
-            </p>
-          )}
-        </>
+      {/* Submit/Cancel live in the modal's DialogFooter (formId links them to
+          this form); only the geometry hint stays here, next to the map. */}
+      {!readOnly && !hasGeometry && (
+        <p className="text-nb-body-sm text-nb-danger">
+          {t('admin:rayons.form.geometryRequired')}
+        </p>
       )}
     </form>
   );

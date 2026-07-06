@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Overtime, OvertimeStatus } from './entities/overtime.entity';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { UpdateOvertimeDto } from './dto/update-overtime.dto';
 import { StartOvertimeDto } from './dto/start-overtime.dto';
 import { EndOvertimeDto } from './dto/end-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
@@ -468,5 +469,87 @@ export class OvertimeService {
       throw new NotFoundException('Overtime not found');
     }
     return overtime;
+  }
+
+  async update(overtimeId: string, dto: UpdateOvertimeDto): Promise<Overtime> {
+    const overtime = await this.findOneOrFail(overtimeId);
+
+    // Validate dates if provided
+    if (dto.start_datetime || dto.end_datetime) {
+      const startDt = dto.start_datetime ? new Date(dto.start_datetime) : overtime.start_datetime;
+      const endDt = dto.end_datetime ? new Date(dto.end_datetime) : overtime.end_datetime;
+
+      if (endDt && endDt <= startDt) {
+        throw new BadRequestException('end_datetime must be after start_datetime');
+      }
+
+      // Update dates
+      if (dto.start_datetime) {
+        overtime.start_datetime = startDt;
+      }
+      if (dto.end_datetime) {
+        overtime.end_datetime = endDt;
+      }
+    }
+
+    // Validate activity type if provided
+    if (dto.activity_type_id && overtime.activity_type_id !== dto.activity_type_id) {
+      const actType = await this.activityTypeRepo.findOne({
+        where: { id: dto.activity_type_id, is_active: true },
+      });
+      if (!actType) {
+        throw new BadRequestException(`Activity type ${dto.activity_type_id} not found`);
+      }
+      overtime.activity_type_id = dto.activity_type_id;
+    }
+
+    // Update optional fields
+    if (dto.description !== undefined) {
+      overtime.description = dto.description;
+    }
+    if (dto.photo_urls !== undefined) {
+      overtime.photo_urls = dto.photo_urls;
+    }
+    if (dto.gps_lat !== undefined) {
+      overtime.gps_lat = dto.gps_lat;
+    }
+    if (dto.gps_lng !== undefined) {
+      overtime.gps_lng = dto.gps_lng;
+    }
+
+    const saved = await this.overtimeRepo.save(overtime);
+    this.logger.log(`Overtime ${overtimeId} updated`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'overtime',
+        entity_id: overtimeId,
+        action: 'update',
+        actor_id: 'system',
+        new_value: {
+          start_datetime: saved.start_datetime,
+          end_datetime: saved.end_datetime,
+          activity_type_id: saved.activity_type_id,
+        },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
+
+    return saved;
+  }
+
+  async remove(overtimeId: string): Promise<void> {
+    const overtime = await this.findOneOrFail(overtimeId);
+    await this.overtimeRepo.remove(overtime);
+    this.logger.log(`Overtime ${overtimeId} deleted`);
+
+    this.auditLogService
+      .log({
+        entity_type: 'overtime',
+        entity_id: overtimeId,
+        action: 'delete',
+        actor_id: 'system',
+        old_value: { id: overtimeId, status: overtime.status },
+      })
+      .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
   }
 }

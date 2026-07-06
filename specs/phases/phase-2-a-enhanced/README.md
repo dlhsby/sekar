@@ -101,7 +101,7 @@ DLH Surabaya
 **Worker Activities:**
 - Penyiraman (Watering)
 - Penanaman (Planting)
-- Pemangkasan (Pruning)
+- Perantingan (Pruning)
 - Pembersihan (Cleaning) - shared with Linmas
 - Pemupukan (Fertilizing)
 - Perawatan Tanaman (Plant Care)

@@ -87,6 +87,12 @@ beforeEach(() => {
     isLoading: false,
     isError: false,
   });
+  // The page mounts the (closed) PruningRequestFormModal + CancelPruningRequestModal,
+  // which call these hooks even when closed.
+  const defaultMutation = { mutateAsync: jest.fn(), isPending: false, isError: false, error: null };
+  (pruningApi.useCreatePruningRequestAdmin as jest.Mock).mockReturnValue(defaultMutation);
+  (pruningApi.useUpdatePruningRequest as jest.Mock).mockReturnValue(defaultMutation);
+  (pruningApi.useCancelPruningRequest as jest.Mock).mockReturnValue(defaultMutation);
 });
 
 describe('PruningRequestsPage (admin list)', () => {

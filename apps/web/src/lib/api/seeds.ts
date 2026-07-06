@@ -126,6 +126,57 @@ export function useSeedTransactions(
 }
 
 // ---------------------------------------------------------------------------
+// Mutations — Create/Update Seed
+// ---------------------------------------------------------------------------
+
+export interface CreateSeedInput {
+  nameId: string;
+  speciesId?: string | null;
+  unit: 'gram' | 'piece' | 'packet';
+  stockQty?: number;
+}
+
+export interface UpdateSeedInput {
+  nameId?: string;
+  speciesId?: string | null;
+  unit?: 'gram' | 'piece' | 'packet';
+}
+
+export function useCreateSeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateSeedInput): Promise<PlantSeedRow> => {
+      const { data: response } = await apiClient.post('/plant-seeds', data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seedsKeys.all });
+    },
+  });
+}
+
+export function useUpdateSeed() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateSeedInput;
+    }): Promise<PlantSeedRow> => {
+      const { data: response } = await apiClient.patch(`/plant-seeds/${id}`, data);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: seedsKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Mutations — Record Transaction
 // ---------------------------------------------------------------------------
 

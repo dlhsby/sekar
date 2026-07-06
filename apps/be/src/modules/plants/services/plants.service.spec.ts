@@ -1,13 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PlantsService } from './plants.service';
 import { PlantSpecies } from '../entities/plant-species.entity';
 import { AreaPlant } from '../entities/area-plant.entity';
 import { NotablePlant } from '../entities/notable-plant.entity';
 import { Area } from '../../areas/entities/area.entity';
 import { CreateNotablePlantDto } from '../dto/create-notable-plant.dto';
+import { CreatePlantSpeciesDto } from '../dto/create-plant-species.dto';
+import { UpdatePlantSpeciesDto } from '../dto/update-plant-species.dto';
 import { User, UserRole } from '../../users/entities/user.entity';
 
 describe('PlantsService', () => {
@@ -27,6 +29,7 @@ describe('PlantsService', () => {
     notes: 'Rain tree, deciduous',
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
+    deletedAt: null,
   };
 
   const mockArea = {
@@ -89,12 +92,16 @@ describe('PlantsService', () => {
     findAndCount: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    softRemove: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
 
   const mockAreaPlantRepository = {
     find: jest.fn(),
     findOne: jest.fn(),
+    count: jest.fn(),
   };
 
   const mockNotablePlantRepository = {
@@ -102,6 +109,7 @@ describe('PlantsService', () => {
     findOne: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
+    count: jest.fn(),
   };
 
   const mockAreaRepository = {
@@ -154,17 +162,18 @@ describe('PlantsService', () => {
   });
 
   describe('listSpecies', () => {
-    it('should return paginated list of species ordered by name', async () => {
+    it('should return paginated list of species ordered by name (excluding deleted)', async () => {
       mockSpeciesRepository.findAndCount.mockResolvedValue([[mockSpecies], 1]);
 
       const result = await service.listSpecies(20, 0);
 
       expect(result).toEqual({ data: [mockSpecies], total: 1 });
-      expect(mockSpeciesRepository.findAndCount).toHaveBeenCalledWith({
-        order: { nameId: 'ASC' },
-        take: 20,
-        skip: 0,
-      });
+      expect(mockSpeciesRepository.findAndCount).toHaveBeenCalled();
+      const callArgs = mockSpeciesRepository.findAndCount.mock.calls[0][0];
+      expect(callArgs.where).toBeDefined();
+      expect(callArgs.order).toEqual({ nameId: 'ASC' });
+      expect(callArgs.take).toEqual(20);
+      expect(callArgs.skip).toEqual(0);
     });
 
     it('should default limit to 20 and offset to 0', async () => {
@@ -172,11 +181,10 @@ describe('PlantsService', () => {
 
       await service.listSpecies();
 
-      expect(mockSpeciesRepository.findAndCount).toHaveBeenCalledWith({
-        order: { nameId: 'ASC' },
-        take: 20,
-        skip: 0,
-      });
+      expect(mockSpeciesRepository.findAndCount).toHaveBeenCalled();
+      const callArgs = mockSpeciesRepository.findAndCount.mock.calls[0][0];
+      expect(callArgs.take).toEqual(20);
+      expect(callArgs.skip).toEqual(0);
     });
 
     it('should cap limit to 50', async () => {
@@ -184,11 +192,9 @@ describe('PlantsService', () => {
 
       await service.listSpecies(100, 0);
 
-      expect(mockSpeciesRepository.findAndCount).toHaveBeenCalledWith({
-        order: { nameId: 'ASC' },
-        take: 50,
-        skip: 0,
-      });
+      expect(mockSpeciesRepository.findAndCount).toHaveBeenCalled();
+      const callArgs = mockSpeciesRepository.findAndCount.mock.calls[0][0];
+      expect(callArgs.take).toEqual(50);
     });
   });
 
@@ -196,6 +202,7 @@ describe('PlantsService', () => {
     it('should search by name_id case-insensitively using ILIKE', async () => {
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([mockSpecies]),
@@ -207,7 +214,8 @@ describe('PlantsService', () => {
 
       expect(result).toEqual([mockSpecies]);
       expect(mockSpeciesRepository.createQueryBuilder).toHaveBeenCalledWith('species');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('species.deleted_at IS NULL');
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
         'species.name_id ILIKE :q OR species.name_latin ILIKE :q',
         { q: '%trembesi%' },
       );
@@ -218,6 +226,7 @@ describe('PlantsService', () => {
     it('should return all species if query is empty', async () => {
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([mockSpecies]),
@@ -228,12 +237,14 @@ describe('PlantsService', () => {
       const result = await service.searchSpecies('', 20);
 
       expect(result).toEqual([mockSpecies]);
-      expect(mockQueryBuilder.where).not.toHaveBeenCalled();
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('species.deleted_at IS NULL');
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
     });
 
     it('should cap limit to 50', async () => {
       const mockQueryBuilder = {
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
@@ -363,6 +374,228 @@ describe('PlantsService', () => {
 
       expect(result.label).toBeNull();
       expect(result.notes).toBeNull();
+    });
+  });
+
+  describe('createSpecies', () => {
+    const createDto: CreatePlantSpeciesDto = {
+      nameId: 'Pohon Baru',
+      nameLatin: 'Arbor novus',
+      category: 'tree',
+      defaultPruningCycleDays: 365,
+      notes: 'A new species',
+    };
+
+    it('should create a plant species with all fields', async () => {
+      const createdSpecies = {
+        ...mockSpecies,
+        id: '33333333-3333-3333-3333-333333333301',
+        nameId: 'Pohon Baru',
+        deletedAt: null,
+      };
+      mockSpeciesRepository.findOne.mockResolvedValue(null); // no duplicate
+      mockSpeciesRepository.create.mockReturnValue(createdSpecies);
+      mockSpeciesRepository.save.mockResolvedValue(createdSpecies);
+
+      const result = await service.createSpecies(createDto);
+
+      expect(result).toEqual(createdSpecies);
+      expect(mockSpeciesRepository.findOne).toHaveBeenCalledWith({
+        where: { nameId: 'Pohon Baru', deletedAt: expect.anything() },
+      });
+      expect(mockSpeciesRepository.create).toHaveBeenCalledWith({
+        nameId: 'Pohon Baru',
+        nameLatin: 'Arbor novus',
+        category: 'tree',
+        defaultPruningCycleDays: 365,
+        notes: 'A new species',
+      });
+      expect(mockSpeciesRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException if nameId already exists', async () => {
+      mockSpeciesRepository.findOne.mockResolvedValue(mockSpecies); // duplicate exists
+
+      await expect(service.createSpecies(createDto)).rejects.toThrow(BadRequestException);
+      await expect(service.createSpecies(createDto)).rejects.toThrow(
+        'Plant species with name "Pohon Baru" already exists',
+      );
+    });
+
+    it('should handle optional fields', async () => {
+      const minimalDto: CreatePlantSpeciesDto = { nameId: 'Minimal' };
+      const created = {
+        ...mockSpecies,
+        nameId: 'Minimal',
+        nameLatin: null,
+        category: 'tree' as const,
+        defaultPruningCycleDays: null,
+        notes: null,
+        deletedAt: null,
+      };
+      mockSpeciesRepository.findOne.mockResolvedValue(null);
+      mockSpeciesRepository.create.mockReturnValue(created);
+      mockSpeciesRepository.save.mockResolvedValue(created);
+
+      const result = await service.createSpecies(minimalDto);
+
+      expect(result.nameId).toEqual('Minimal');
+      expect(mockSpeciesRepository.create).toHaveBeenCalledWith({
+        nameId: 'Minimal',
+        nameLatin: null,
+        category: 'tree',
+        defaultPruningCycleDays: null,
+        notes: null,
+      });
+    });
+  });
+
+  describe('updateSpecies', () => {
+    const updateDto: UpdatePlantSpeciesDto = {
+      nameLatin: 'Updated latin name',
+      defaultPruningCycleDays: 180,
+    };
+
+    it('should update plant species with valid inputs', async () => {
+      const updated = {
+        ...mockSpecies,
+        nameLatin: 'Updated latin name',
+        defaultPruningCycleDays: 180,
+        deletedAt: null,
+      };
+      mockSpeciesRepository.findOne.mockResolvedValue({
+        ...mockSpecies,
+        deletedAt: null,
+      });
+      mockSpeciesRepository.save.mockResolvedValue(updated);
+
+      const result = await service.updateSpecies(mockSpecies.id, updateDto);
+
+      expect(result).toEqual(updated);
+      expect(mockSpeciesRepository.findOne).toHaveBeenCalledWith({
+        where: { id: mockSpecies.id, deletedAt: expect.anything() },
+      });
+      expect(mockSpeciesRepository.save).toHaveBeenCalled();
+    });
+
+    it('should throw NotFoundException if species does not exist', async () => {
+      mockSpeciesRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateSpecies('non-existent-id', updateDto)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should check for duplicate nameId when updating', async () => {
+      const dupNameDto: UpdatePlantSpeciesDto = { nameId: 'Existing Name' };
+      const existing = { ...mockSpecies, deletedAt: null };
+      mockSpeciesRepository.findOne
+        .mockResolvedValueOnce(existing) // first call: find the species to update
+        .mockResolvedValueOnce(mockSpecies); // second call: find duplicate
+
+      await expect(service.updateSpecies(mockSpecies.id, dupNameDto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('should allow nameId update if not a duplicate', async () => {
+      const species = { ...mockSpecies, deletedAt: null };
+      const updated = { ...species, nameId: 'New Name' };
+      mockSpeciesRepository.findOne
+        .mockResolvedValueOnce(species) // find species to update
+        .mockResolvedValueOnce(null); // no duplicate
+      mockSpeciesRepository.save.mockResolvedValue(updated);
+
+      const result = await service.updateSpecies(mockSpecies.id, { nameId: 'New Name' });
+
+      expect(result.nameId).toEqual('New Name');
+      expect(mockSpeciesRepository.save).toHaveBeenCalled();
+    });
+
+    it('should update multiple fields independently', async () => {
+      const species = { ...mockSpecies, deletedAt: null };
+      const updated = {
+        ...species,
+        nameLatin: 'New Latin',
+        category: 'shrub',
+        notes: 'Updated notes',
+      };
+      mockSpeciesRepository.findOne.mockResolvedValue(species);
+      mockSpeciesRepository.save.mockResolvedValue(updated);
+
+      await service.updateSpecies(mockSpecies.id, {
+        nameLatin: 'New Latin',
+        category: 'shrub',
+        notes: 'Updated notes',
+      });
+
+      expect(mockSpeciesRepository.save).toHaveBeenCalled();
+    });
+  });
+
+  describe('deleteSpecies', () => {
+    it('should soft delete a plant species with no references', async () => {
+      const species = { ...mockSpecies, deletedAt: null };
+      mockSpeciesRepository.findOne.mockResolvedValue(species);
+      mockAreaPlantRepository.count.mockResolvedValue(0);
+      mockNotablePlantRepository.count.mockResolvedValue(0);
+      mockSpeciesRepository.softRemove.mockResolvedValue(species);
+
+      await service.deleteSpecies(mockSpecies.id);
+
+      expect(mockSpeciesRepository.softRemove).toHaveBeenCalledWith(species);
+      expect(mockAreaPlantRepository.count).toHaveBeenCalledWith({
+        where: { speciesId: mockSpecies.id },
+      });
+      expect(mockNotablePlantRepository.count).toHaveBeenCalledWith({
+        where: { speciesId: mockSpecies.id },
+      });
+    });
+
+    it('should throw NotFoundException if species does not exist', async () => {
+      mockSpeciesRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.deleteSpecies('non-existent-id')).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ConflictException if species is referenced by area_plants', async () => {
+      const species = { ...mockSpecies, deletedAt: null };
+      mockSpeciesRepository.findOne.mockResolvedValue(species);
+      mockAreaPlantRepository.count.mockResolvedValue(5); // 5 references
+
+      await expect(service.deleteSpecies(mockSpecies.id)).rejects.toThrow(ConflictException);
+      await expect(service.deleteSpecies(mockSpecies.id)).rejects.toThrow(
+        'Cannot delete plant species: it is referenced by 5 area inventory record(s)',
+      );
+    });
+
+    it('should throw ConflictException if species is referenced by notable_plants', async () => {
+      const species = { ...mockSpecies, deletedAt: null };
+      mockSpeciesRepository.findOne.mockResolvedValue(species);
+      mockAreaPlantRepository.count.mockResolvedValue(0);
+      mockNotablePlantRepository.count.mockResolvedValue(2); // 2 references
+
+      await expect(service.deleteSpecies(mockSpecies.id)).rejects.toThrow(ConflictException);
+      await expect(service.deleteSpecies(mockSpecies.id)).rejects.toThrow(
+        'Cannot delete plant species: it is referenced by 2 notable plant record(s)',
+      );
+    });
+
+    it('should prioritize the area_plants error when both are referenced', async () => {
+      // Both referential-integrity checks run concurrently (Promise.all) rather than
+      // sequentially — area_plants and notable_plants counts are independent queries
+      // with no data dependency, so both always run; area_plants takes priority for
+      // which error message is thrown when both are non-zero.
+      const species = { ...mockSpecies, deletedAt: null };
+      mockSpeciesRepository.findOne.mockResolvedValue(species);
+      mockAreaPlantRepository.count.mockResolvedValue(3);
+      mockNotablePlantRepository.count.mockResolvedValue(2);
+
+      await expect(service.deleteSpecies(mockSpecies.id)).rejects.toThrow(ConflictException);
+      await expect(service.deleteSpecies(mockSpecies.id)).rejects.toThrow(
+        'Cannot delete plant species: it is referenced by 3 area inventory record(s)',
+      );
+      expect(mockNotablePlantRepository.count).toHaveBeenCalled();
     });
   });
 });

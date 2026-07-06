@@ -29,6 +29,9 @@
     "tableHeaderCreated": "Dibuat",
     "tableHeaderUpdated": "Diperbarui",
     "rowActionView": "Lihat",
+    "rowActionDelete": "Hapus",
+    "deleteConfirmTitle": "Hapus Tugas",
+    "deleteConfirmDescription": "Tindakan ini tidak dapat dibatalkan. Tugas akan dihapus secara permanen.",
     "loading": "Memuat…"
   },
   "new": {

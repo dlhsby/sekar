@@ -9,6 +9,7 @@ import {
   Card,
   Dialog,
   DialogContent,
+  DialogBody,
   DialogDescription,
   DialogFooter,
   DialogHeader,
@@ -278,7 +279,7 @@ export default function AssetDetailPage() {
             <DialogTitle>{t('detail.checkoutTitle')}</DialogTitle>
             <DialogDescription>{t('detail.checkoutDescription')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div>
               <Label>{t('detail.conditionLabel')}</Label>
               <FormSelect
@@ -292,7 +293,7 @@ export default function AssetDetailPage() {
               <Label>{t('detail.notesLabel')}</Label>
               <Textarea placeholder={t('detail.notesPlaceholder')} value={checkoutNotes} onChange={(e) => setCheckoutNotes(e.target.value)} />
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCheckoutOpen(false)}>
               {t('form.cancel')}
@@ -310,7 +311,7 @@ export default function AssetDetailPage() {
             <DialogTitle>{t('detail.returnTitle')}</DialogTitle>
             <DialogDescription>{t('detail.returnDescription')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div>
               <Label>{t('detail.conditionLabel')}</Label>
               <FormSelect
@@ -324,7 +325,7 @@ export default function AssetDetailPage() {
               <Label>{t('detail.notesLabel')}</Label>
               <Textarea placeholder={t('detail.notesPlaceholder')} value={returnNotes} onChange={(e) => setReturnNotes(e.target.value)} />
             </div>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setReturnOpen(false)}>
               {t('form.cancel')}
@@ -342,7 +343,7 @@ export default function AssetDetailPage() {
             <DialogTitle>{t('detail.maintenanceTitle')}</DialogTitle>
             <DialogDescription>{t('detail.maintenanceDescription')}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <FormSelect
               label={t('detail.maintenanceTypeLabel')}
               options={Object.entries({ routine: t('detail.maintenanceType.routine'), repair: t('detail.maintenanceType.repair'), inspection: t('detail.maintenanceType.inspection'), replacement: t('detail.maintenanceType.replacement') }).map(([k, v]) => ({ value: k, label: v }))}
@@ -358,7 +359,7 @@ export default function AssetDetailPage() {
                 />
               )}
             </Field>
-          </div>
+          </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={() => setMaintenanceOpen(false)}>
               {t('form.cancel')}

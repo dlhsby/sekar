@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   SkeletonTable,
   EmptyState,
@@ -180,6 +181,7 @@ export default function WorkerAnalyticsPage() {
             </DialogTitle>
           </DialogHeader>
 
+          <DialogBody>
           {isWorkerLoading ? (
             <div className="py-8 text-center text-nb-gray-600">{t('common:actions.loading')}</div>
           ) : workerDetail ? (
@@ -255,6 +257,7 @@ export default function WorkerAnalyticsPage() {
           ) : (
             <EmptyState variant="error" title={t('workers.detail.error')} />
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

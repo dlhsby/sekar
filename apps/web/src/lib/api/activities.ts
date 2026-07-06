@@ -49,6 +49,48 @@ export function useActivity(id: string) {
 }
 
 /**
+ * Create Activity (admin only)
+ */
+export function useCreateActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { activity_type_id: string; description: string; photo_urls: string[] }) => {
+      const response = await apiClient.post<Activity>('/activities', data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.details() });
+    },
+  });
+}
+
+/**
+ * Update Activity (admin only)
+ */
+export function useUpdateActivity() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { description?: string; photo_urls?: string[] };
+    }) => {
+      const response = await apiClient.patch<Activity>(`/activities/${id}`, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: activitiesKeys.details() });
+    },
+  });
+}
+
+/**
  * Delete Activity
  */
 export function useDeleteActivity() {

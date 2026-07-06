@@ -2,28 +2,21 @@
  * Pruning Requests dashboard list page (Phase 3 — admin disposition)
  *
  * Lets admin / admin_data / kepala_rayon / top_management triage kecamatan
- * pruning requests from the desktop instead of the mobile app. Mirrors the
- * mobile ReviewQueueScreen but with a paginated table + status filter.
+ * pruning requests from the desktop. Full DataTable with toolbar (search, column
+ * filters, column toggle, refresh) + row actions (View, Edit, Cancel).
  */
 
 'use client';
 
-import type { DetailModalRow } from '@/components/ui';
-import { intlLocale } from '@/lib/i18n/date-locale';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect } from 'react';
+import { Eye, Pencil, Trash2, Plus } from 'lucide-react';
 import {
   Button,
-  Card,
-  CardContent,
-  CardHeader,
   DataTable,
-  FormSelect,
   PageHeader,
   StatusPill,
-  DetailModal,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -35,7 +28,6 @@ import type { UserRole } from '@/types/models';
 import { useTranslation } from 'react-i18next';
 import {
   getPruningRequestStatusLabel,
-  PRUNING_REQUEST_STATUS_BADGES,
   PRUNING_REQUEST_STATUS_TONES,
   PRUNING_REQUEST_ADMIN_ROLES,
 } from '@/lib/constants/pruning-requests';
@@ -45,26 +37,32 @@ import {
   type PruningRequestStatus,
 } from '@/lib/api/pruning-requests';
 
+const PRUNING_REQUEST_STATUSES: PruningRequestStatus[] = [
+  'submitted',
+  'under_review',
+  'approved',
+  'rejected',
+  'assigned',
+  'in_progress',
+  'done',
+  'cancelled',
+];
+import { PruningRequestFormModal } from '@/components/pruning-requests/PruningRequestFormModal';
+import { CancelPruningRequestModal } from '@/components/pruning-requests/CancelPruningRequestModal';
+
 export default function PruningRequestsPage() {
   const { t } = useTranslation();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [statusFilter, setStatusFilter] = useState<PruningRequestStatus | 'all'>('all');
   const [page, setPage] = useState(1);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingRequest, setEditingRequest] = useState<PruningRequest | null>(null);
+  const [cancelModal, setCancelModal] = useState<{ isOpen: boolean; request: PruningRequest | null }>({
+    isOpen: false,
+    request: null,
+  });
   const view = useViewModal<PruningRequest>();
   const limit = 20;
-
-  const statusFilterOptions = useMemo<Array<{ label: string; value: PruningRequestStatus | 'all' }>>(() => [
-    { label: t('pruning:list.statuses.all'), value: 'all' },
-    { label: t('pruning:list.statuses.submitted'), value: 'submitted' },
-    { label: t('pruning:list.statuses.under_review'), value: 'under_review' },
-    { label: t('pruning:list.statuses.approved'), value: 'approved' },
-    { label: t('pruning:list.statuses.rejected'), value: 'rejected' },
-    { label: t('pruning:list.statuses.assigned'), value: 'assigned' },
-    { label: t('pruning:list.statuses.in_progress'), value: 'in_progress' },
-    { label: t('pruning:list.statuses.done'), value: 'done' },
-    { label: t('pruning:list.statuses.cancelled'), value: 'cancelled' },
-  ], [t]);
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, [...PRUNING_REQUEST_ADMIN_ROLES] as UserRole[])) {
@@ -73,11 +71,11 @@ export default function PruningRequestsPage() {
   }, [user, authLoading, router]);
 
   const filters = {
-    status: statusFilter !== 'all' ? statusFilter : undefined,
     page,
     limit,
   };
-  const { data, isLoading, isError } = usePruningRequests(filters);
+  const { data, isLoading, isError, refetch } = usePruningRequests(filters);
+  const requests = useMemo(() => data?.data ?? [], [data]);
 
   const columns = useMemo<ColumnDef<PruningRequest>[]>(
     () => [
@@ -93,18 +91,17 @@ export default function PruningRequestsPage() {
       },
       {
         id: 'referenceCode',
+        accessorKey: 'referenceCode',
         header: t('pruning:columns.referenceCode'),
         enableSorting: false,
-        enableColumnFilter: false,
-        meta: { label: t('pruning:columns.referenceCode') },
-        cell: ({ row }) => <span className="font-mono text-sm">{row.original.referenceCode}</span>,
+        meta: { label: t('pruning:columns.referenceCode'), filterVariant: 'text' },
+        cell: ({ row }) => <span className="font-mono text-sm font-semibold">{row.original.referenceCode}</span>,
       },
       {
         id: 'submitter',
         header: t('pruning:columns.kecamatan'),
         enableSorting: false,
-        enableColumnFilter: false,
-        meta: { label: t('pruning:columns.kecamatan') },
+        meta: { label: t('pruning:columns.kecamatan'), filterVariant: 'text' },
         cell: ({ row }) => (
           <div className="text-sm">
             <div className="font-semibold">{row.original.kecamatanName ?? '-'}</div>
@@ -113,11 +110,23 @@ export default function PruningRequestsPage() {
         ),
       },
       {
-        id: 'rayon',
-        header: 'Rayon',
+        id: 'address',
+        accessorKey: 'address',
+        header: t('pruning:form.addressLabel'),
         enableSorting: false,
-        enableColumnFilter: false,
-        meta: { label: 'Rayon' },
+        meta: { label: t('pruning:form.addressLabel'), filterVariant: 'text', defaultHidden: true },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600 max-w-xs truncate">
+            {row.original.address ?? '-'}
+          </span>
+        ),
+      },
+      {
+        id: 'rayon',
+        accessorFn: (r) => r.rayon?.name ?? '',
+        header: t('pruning:columns.rayon'),
+        enableSorting: false,
+        meta: { label: t('pruning:columns.rayon'), filterVariant: 'text' },
         cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
       },
       {
@@ -129,7 +138,7 @@ export default function PruningRequestsPage() {
         cell: ({ row }) => (
           <div className="text-sm">
             {row.original.expectedDate ? (
-              <>{new Date(row.original.expectedDate).toLocaleDateString(intlLocale())}</>
+              formatDate(row.original.expectedDate)
             ) : row.original.expectedYear && row.original.expectedIsoWeek ? (
               <>
                 W{row.original.expectedIsoWeek}/{row.original.expectedYear}
@@ -142,10 +151,17 @@ export default function PruningRequestsPage() {
       },
       {
         id: 'status',
+        accessorKey: 'status',
         header: t('pruning:columns.status'),
         enableSorting: false,
-        enableColumnFilter: false,
-        meta: { label: t('pruning:columns.status') },
+        meta: {
+          label: t('pruning:columns.status'),
+          filterVariant: 'enum',
+          filterOptions: PRUNING_REQUEST_STATUSES.map((s) => ({
+            value: s,
+            label: getPruningRequestStatusLabel(s, t),
+          })),
+        },
         cell: ({ row }) => (
           <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[row.original.status]} dot>
             {getPruningRequestStatusLabel(row.original.status, t)}
@@ -153,7 +169,7 @@ export default function PruningRequestsPage() {
         ),
       },
       {
-        id: 'created_at',
+        id: 'createdAt',
         accessorKey: 'createdAt',
         header: t('pruning:columns.createdAt'),
         enableSorting: false,
@@ -165,7 +181,7 @@ export default function PruningRequestsPage() {
         ),
       },
       {
-        id: 'updated_at',
+        id: 'updatedAt',
         accessorKey: 'updatedAt',
         header: t('pruning:columns.updatedAt'),
         enableSorting: false,
@@ -181,118 +197,129 @@ export default function PruningRequestsPage() {
   );
 
   const rowActions = useCallback(
-    (row: PruningRequest): DataTableRowAction<PruningRequest>[] => [
+    (r: PruningRequest): DataTableRowAction<PruningRequest>[] => [
       {
         key: 'view',
         label: t('common:actions.view'),
         icon: Eye,
         onClick: () => {
-          view.openWith(row);
+          view.openWith(r);
         },
+      },
+      {
+        key: 'edit',
+        label: t('common:actions.edit'),
+        icon: Pencil,
+        onClick: () => {
+          setEditingRequest(r);
+          setFormOpen(true);
+        },
+      },
+      {
+        key: 'cancel',
+        label: t('pruning:cancel.actionLabel'),
+        icon: Trash2,
+        variant: 'danger',
+        onClick: () => setCancelModal({ isOpen: true, request: r }),
       },
     ],
     [view, t]
   );
 
-  const handleStatusChange = (val: string) => {
-    setStatusFilter(val as PruningRequestStatus | 'all');
-    setPage(1);
-  };
-
   const totalPages = data?.meta?.totalPages ?? 1;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader description={t('pruning:page.description')} />
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div className="md:w-64">
-              <FormSelect
-                label={t('pruning:page.filterLabel')}
-                value={statusFilter}
-                onChange={handleStatusChange}
-                options={statusFilterOptions}
-              />
-            </div>
-            {data?.meta && (
-              <div className="text-sm text-nb-gray-600">
-                {t('pruning:page.totalLabel')}: <span className="font-semibold">{data.meta.total}</span> {t('pruning:page.requests')}
-              </div>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent>
-          {isError ? (
-            <div className="py-10 text-center text-nb-danger">
-              {t('pruning:page.loadError')}
-            </div>
-          ) : (
-            <DataTable<PruningRequest, unknown>
-              columns={columns}
-              data={data?.data ?? []}
-              loading={isLoading}
-              enablePagination={false}
-              getRowId={(r) => r.id}
-              rowActions={rowActions}
-              emptyTitle={t('pruning:page.emptyTitle')}
-            />
-          )}
+      <DataTable
+        columns={columns}
+        data={requests}
+        loading={isLoading}
+        error={!!isError}
+        onRetry={() => refetch()}
+        onRefresh={() => refetch()}
+        getRowId={(r) => r.id}
+        enablePagination={false}
+        searchPlaceholder={t('pruning:page.searchPlaceholder')}
+        rowActions={rowActions}
+        actions={
+          <Button
+            onClick={() => {
+              setEditingRequest(null);
+              setFormOpen(true);
+            }}
+            leftIcon={<Plus className="h-5 w-5" />}
+          >
+            {t('pruning:page.buttonCreate')}
+          </Button>
+        }
+        emptyTitle={t('pruning:page.emptyTitle')}
+        emptyDescription={t('pruning:page.emptyDescription')}
+        emptyAction={
+          <Button
+            onClick={() => {
+              setEditingRequest(null);
+              setFormOpen(true);
+            }}
+            leftIcon={<Plus className="h-5 w-5" />}
+          >
+            {t('pruning:page.buttonCreateFirst')}
+          </Button>
+        }
+      />
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1 || isLoading}
-                leftIcon={<ChevronLeft className="w-4 h-4" />}
-              >
-                {t('common:pagination.previous')}
-              </Button>
-              <span className="text-sm text-nb-gray-600">
-                {t('common:pagination.pageOf', { page, total: totalPages })}
-              </span>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages || isLoading}
-                rightIcon={<ChevronRight className="w-4 h-4" />}
-              >
-                {t('common:pagination.next')}
-              </Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {view.item && (
-        <DetailModal
-          open={view.open}
-          onOpenChange={view.onOpenChange}
-          title={t('pruning:page.detailTitle')}
-          rows={[
-            { label: t('pruning:page.referenceCode'), value: view.item.referenceCode },
-            { label: t('pruning:page.kecamatan'), value: view.item.submitter },
-            {
-              label: t('pruning:page.status'),
-              value: (
-                <StatusPill tone={PRUNING_REQUEST_STATUS_TONES[view.item.status]}>
-                  {getPruningRequestStatusLabel(view.item.status, t)}
-                </StatusPill>
-              ),
-            },
-            { label: t('pruning:page.plantSpecies'), value: view.item.plantSpeciesName },
-            { label: t('pruning:page.quantity'), value: view.item.quantity },
-            { label: t('pruning:page.unit'), value: view.item.unit },
-            { label: t('pruning:page.location'), value: view.item.location },
-            { label: t('pruning:page.notes'), value: view.item.notes },
-            { label: t('pruning:page.createdAt'), value: formatDate(view.item.createdAt) },
-          ] as DetailModalRow[]}
-        />
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1 || isLoading}
+          >
+            {t('common:pagination.previous')}
+          </Button>
+          <span className="text-sm text-nb-gray-600 min-w-24 text-center">
+            {t('common:pagination.pageOf', { page, total: totalPages })}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages || isLoading}
+          >
+            {t('common:pagination.next')}
+          </Button>
+        </div>
       )}
+
+      {/* Form Modal */}
+      <PruningRequestFormModal
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        request={editingRequest}
+        onSuccess={() => refetch()}
+      />
+
+      {/* Detail Modal (read-only) */}
+      <PruningRequestFormModal
+        open={view.open}
+        onOpenChange={view.onOpenChange}
+        request={view.item}
+        readOnly
+      />
+
+      {/* Cancel Confirmation Dialog */}
+      <CancelPruningRequestModal
+        request={cancelModal.request}
+        isOpen={cancelModal.isOpen}
+        onClose={() => setCancelModal({ isOpen: false, request: null })}
+        onSuccess={() => {
+          setCancelModal({ isOpen: false, request: null });
+          refetch();
+        }}
+      />
     </div>
   );
 }

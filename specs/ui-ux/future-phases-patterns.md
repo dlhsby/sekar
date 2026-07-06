@@ -37,7 +37,7 @@ Task cards display assigned work items with status, location, and priority indic
 ┌────────────────────────────────────────┐
 │ [!] Prioritas Tinggi              [⋮] │  ← Priority badge + menu
 ├────────────────────────────────────────┤
-│ Pemangkasan Rumput Area B              │  ← Task title (xl)
+│ Perantingan Rumput Area B              │  ← Task title (xl)
 │                                        │
 │ 📍 Taman Bungkul - Zona B              │  ← Location (sm, secondary)
 │ ⏱ Deadline: 15 Jan 2026, 16:00 WIB    │  ← Due date (sm, secondary)
@@ -244,7 +244,7 @@ Push notification designs for Firebase Cloud Messaging.
 {
   notification: {
     title: 'Tugas Baru Diterima',
-    body: 'Pemangkasan rumput di Taman Bungkul',
+    body: 'Perantingan rumput di Taman Bungkul',
     sound: 'default',
     badge: '1',
     icon: 'ic_notification',

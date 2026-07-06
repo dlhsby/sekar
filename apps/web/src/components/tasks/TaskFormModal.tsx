@@ -1,9 +1,8 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useId } from 'react';
 import {
-  Button,
   DateTimePicker,
   Dialog,
   DialogBody,
@@ -16,6 +15,7 @@ import {
   FormSelect,
   Textarea,
 } from '@/components/ui';
+import { FormActions } from '@/components/forms/FormActions';
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
@@ -39,6 +39,7 @@ interface TaskFormModalProps {
  */
 export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const { user } = useAuth();
   const createMutation = useCreateTask();
   const { data: usersData } = useUsers({ limit: 1000 });
@@ -111,8 +112,8 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
         <DialogHeader>
           <DialogTitle>{t('tasks:modal.title')}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
-          <DialogBody>
+        <DialogBody>
+          <form id={formId} onSubmit={handleSubmit}>
             <div className="mx-auto max-w-3xl space-y-6">
               {assignableRoles.length > 0 ? (
                 <p className="text-nb-caption text-nb-gray-500">
@@ -188,16 +189,16 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 )}
               </Field>
             </div>
-          </DialogBody>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t('tasks:modal.cancelButton')}
-            </Button>
-            <Button type="submit" loading={createMutation.isPending}>
-              {t('tasks:modal.submitButton')}
-            </Button>
-          </DialogFooter>
-        </form>
+          </form>
+        </DialogBody>
+        <DialogFooter>
+          <FormActions
+            formId={formId}
+            submitLabel={t('tasks:modal.submitButton')}
+            loading={createMutation.isPending}
+            onCancel={() => onOpenChange(false)}
+          />
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

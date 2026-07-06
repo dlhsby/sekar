@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { formatDate } from '@/lib/utils/time';
 import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
@@ -117,10 +118,32 @@ export default function RayonsPage() {
         accessorKey: 'description',
         header: t('admin:shared.description'),
         enableSorting: true,
-        meta: { label: t('admin:shared.description'), defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:shared.description'), filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {row.original.description ?? '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: t('admin:rayons.columnCreated'),
+        meta: { label: t('admin:rayons.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: t('admin:rayons.columnUpdated'),
+        meta: { label: t('admin:rayons.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
           </span>
         ),
       },

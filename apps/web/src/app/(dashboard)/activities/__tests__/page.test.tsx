@@ -156,6 +156,9 @@ const mockAreasData = {
 const mockMutate = jest.fn();
 const mockApproveMutation = { mutateAsync: mockMutate, isPending: false };
 const mockRejectMutation = { mutateAsync: mockMutate, isPending: false };
+const mockCreateActivityMutation = { mutateAsync: mockMutate, isPending: false, isError: false, error: null };
+const mockUpdateActivityMutation = { mutateAsync: mockMutate, isPending: false, isError: false, error: null };
+const mockDeleteActivityMutation = { mutateAsync: mockMutate, isPending: false, isError: false, error: null };
 
 // ─── Wrapper ──────────────────────────────────────────────────────────────────
 
@@ -186,6 +189,9 @@ describe('ActivitiesPage', () => {
     });
 
     (activitiesApi.useApproveActivity as jest.Mock).mockReturnValue(mockApproveMutation);
+    (activitiesApi.useCreateActivity as jest.Mock).mockReturnValue(mockCreateActivityMutation);
+    (activitiesApi.useUpdateActivity as jest.Mock).mockReturnValue(mockUpdateActivityMutation);
+    (activitiesApi.useDeleteActivity as jest.Mock).mockReturnValue(mockDeleteActivityMutation);
     (activitiesApi.useRejectActivity as jest.Mock).mockReturnValue(mockRejectMutation);
 
     (activityTypesApi.useActivityTypes as jest.Mock).mockReturnValue({

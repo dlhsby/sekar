@@ -125,6 +125,11 @@ function setupDefaultMocks() {
   });
   (overtimeApi.useApproveOvertime as jest.Mock).mockReturnValue(defaultMutation);
   (overtimeApi.useRejectOvertime as jest.Mock).mockReturnValue(defaultMutation);
+  // The page mounts the (closed) OvertimeFormModal + delete ConfirmDialog, which
+  // call these hooks even when closed.
+  (overtimeApi.useCreateOvertime as jest.Mock).mockReturnValue(defaultMutation);
+  (overtimeApi.useUpdateOvertime as jest.Mock).mockReturnValue(defaultMutation);
+  (overtimeApi.useDeleteOvertime as jest.Mock).mockReturnValue(defaultMutation);
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────

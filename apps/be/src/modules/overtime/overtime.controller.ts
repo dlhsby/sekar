@@ -1,7 +1,18 @@
-import { Controller, Get, Post, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { OvertimeService } from './overtime.service';
 import { CreateOvertimeDto } from './dto/create-overtime.dto';
+import { UpdateOvertimeDto } from './dto/update-overtime.dto';
 import { StartOvertimeDto } from './dto/start-overtime.dto';
 import { EndOvertimeDto } from './dto/end-overtime.dto';
 import { RejectOvertimeDto } from './dto/reject-overtime.dto';
@@ -161,5 +172,33 @@ export class OvertimeController {
     @GetUser() user: User,
   ): Promise<Overtime> {
     return this.overtimeService.reject(id, user.id, rejectDto);
+  }
+
+  @Patch(':id')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Update overtime (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Overtime updated successfully',
+    type: Overtime,
+  })
+  @ApiResponse({ status: 404, description: 'Overtime not found' })
+  async update(
+    @Param('id') id: string,
+    @Body() updateOvertimeDto: UpdateOvertimeDto,
+  ): Promise<Overtime> {
+    return this.overtimeService.update(id, updateOvertimeDto);
+  }
+
+  @Delete(':id')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Delete overtime (Admin only)' })
+  @ApiResponse({
+    status: 200,
+    description: 'Overtime deleted successfully',
+  })
+  @ApiResponse({ status: 404, description: 'Overtime not found' })
+  async remove(@Param('id') id: string): Promise<void> {
+    return this.overtimeService.remove(id);
   }
 }

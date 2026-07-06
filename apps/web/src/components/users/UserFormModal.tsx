@@ -1,9 +1,11 @@
 'use client';
 
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
+import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
 import { UserForm } from '@/components/forms/UserForm';
+import { FormActions } from '@/components/forms/FormActions';
 import { useCreateUser, useUpdateUser } from '@/lib/api/users';
 import { getErrorMessage } from '@/lib/api/client';
 import type { CreateUserDto, UpdateUserDto, User, CreatedUser } from '@/types/models';
@@ -36,6 +38,7 @@ export function UserFormModal({
   readOnly = false,
 }: UserFormModalProps) {
   const { t } = useTranslation();
+  const formId = useId();
   const isEdit = !!user;
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
@@ -90,14 +93,32 @@ export function UserFormModal({
           {/* Remount the form per target so edit/create reset cleanly. */}
           <UserForm
             key={`${user?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
+            formId={formId}
             initialData={user ?? undefined}
             onSubmit={handleSubmit}
-            onCancel={() => onOpenChange(false)}
-            loading={mutation.isPending}
-            submitText={isEdit ? t('admin:users.form.submitEdit') : t('admin:users.form.submitCreate')}
             readOnly={readOnly}
           />
         </DialogBody>
+        <DialogFooter>
+          {readOnly ? (
+            <FormActions readOnly onCancel={() => onOpenChange(false)} />
+          ) : (
+            <FormActions
+              formId={formId}
+              submitLabel={
+                mutation.isPending
+                  ? isEdit
+                    ? t('admin:shared.updating')
+                    : t('admin:shared.creating')
+                  : isEdit
+                    ? t('admin:users.form.submitEdit')
+                    : t('admin:users.form.submitCreate')
+              }
+              loading={mutation.isPending}
+              onCancel={() => onOpenChange(false)}
+            />
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

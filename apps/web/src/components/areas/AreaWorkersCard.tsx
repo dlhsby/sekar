@@ -23,6 +23,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogFooter,
   FormSelect,
@@ -162,7 +163,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
           <DialogHeader>
             <DialogTitle id="assign-worker-title">{t('admin:areas.assignWorkerTitle')}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <DialogBody className="space-y-4">
             <FormSelect
               label={t('admin:areas.workerLabel')}
               value={selectedUserId}
@@ -180,7 +181,7 @@ export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
                 </span>
               }
             />
-          </div>
+          </DialogBody>
           <DialogFooter className="flex gap-3 sm:gap-3">
             <Button
               variant="secondary"

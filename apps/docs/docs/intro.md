@@ -19,7 +19,7 @@ SEKAR membantu tim lapangan dan supervisor untuk:
 - **Laporan Kerja**: Dokumentasi aktivitas dengan foto dan video
 - **Manajemen Tugas**: Pembuatan dan tracking tugas dari supervisor ke pekerja
 - **Analitik & Laporan**: Dashboard untuk kepala rayon dan manajemen
-- **Manajemen Tanaman & Pemangkasan**: Katalog tanaman, pemeliharaan, dan permohonan pemangkasan
+- **Manajemen Tanaman & Perantingan**: Katalog tanaman, pemeliharaan, dan permohonan perantingan
 
 ## Siapa Pengguna SEKAR?
 
@@ -38,7 +38,7 @@ Sistem SEKAR dirancang untuk berbagai peran:
 - **Superadmin** — Akses penuh ke semua fitur
 
 ### Untuk Stakeholder Luar
-- **Staff Kecamatan** — Mengajukan permohonan pemangkasan pohon
+- **Staff Kecamatan** — Mengajukan permohonan perantingan pohon
 
 ## Panduan Navigasi Manual Ini
 
@@ -54,7 +54,7 @@ Klik bagian di bawah ini sesuai dengan peran Anda untuk panduan lengkap.
 - **[Untuk Kepala Rayon](./kepala-rayon/laporan.md)** — Laporan dan analitik rayon
 - **[Untuk Admin](./admin/kelola-pengguna.md)** — Manajemen pengguna dan data master
 - **[Operasional](./operasional/ekspor-impor.md)** — Ekspor dan impor data
-- **[Untuk Staff Kecamatan](./kecamatan/permohonan-pemangkasan.md)** — Permohonan pemangkasan
+- **[Untuk Staff Kecamatan](./kecamatan/permohonan-pemangkasan.md)** — Permohonan perantingan
 - **[FAQ & Bantuan](./faq.md)** — Pertanyaan umum dan troubleshooting
 
 ## Persyaratan & Setup

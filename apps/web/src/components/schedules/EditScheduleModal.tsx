@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -10,11 +10,11 @@ import {
   DialogTitle,
   DialogBody,
   DialogFooter,
-  Button,
   FormCombobox,
   FormSelect,
   FormMultiCombobox,
 } from '@/components/ui';
+import { FormActions } from '@/components/forms/FormActions';
 import { getErrorMessage } from '@/lib/api/client';
 import type { Schedule } from '@/lib/api/schedules';
 
@@ -46,6 +46,7 @@ export function EditScheduleModal({
   error,
 }: EditScheduleModalProps) {
   const { t } = useTranslation(['schedules', 'common']);
+  const formId = useId();
 
   const [selectedRayonId, setSelectedRayonId] = useState<string>('');
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
@@ -112,73 +113,72 @@ export function EditScheduleModal({
         </DialogHeader>
 
         <DialogBody>
-          <div className="space-y-4">
-            <FormCombobox
-              label={t('modals.edit.workerLabel')}
-              value={roster?.user_id ?? ''}
-              onChange={() => {}}
-              disabled
-              helperText={t('modals.edit.workerLocked')}
-              options={
-                roster
-                  ? [{ value: roster.user_id, label: `${roster.user.full_name} (${roster.user.username})` }]
-                  : []
-              }
-            />
+          <form id={formId} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+            <div className="space-y-4">
+              <FormCombobox
+                label={t('modals.edit.workerLabel')}
+                value={roster?.user_id ?? ''}
+                onChange={() => {}}
+                disabled
+                helperText={t('modals.edit.workerLocked')}
+                options={
+                  roster
+                    ? [{ value: roster.user_id, label: `${roster.user.full_name} (${roster.user.username})` }]
+                    : []
+                }
+              />
 
-            <FormCombobox
-              label={t('modals.edit.rayonLabel')}
-              value={selectedRayonId}
-              onChange={handleRayonChange}
-              options={allRayons.map((r) => ({
-                value: r.id,
-                label: r.name,
-              }))}
-            />
+              <FormCombobox
+                label={t('modals.edit.rayonLabel')}
+                value={selectedRayonId}
+                onChange={handleRayonChange}
+                options={allRayons.map((r) => ({
+                  value: r.id,
+                  label: r.name,
+                }))}
+              />
 
-            <FormSelect
-              label={t('modals.edit.shiftLabel')}
-              value={selectedShiftId ?? 'none'}
-              onChange={(value) => setSelectedShiftId(value === 'none' ? null : value)}
-              options={[
-                { value: 'none', label: t('modals.add.shiftOptional') },
-                ...shifts.map((shift) => ({
-                  value: shift.id,
-                  label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
-                })),
-              ]}
-            />
+              <FormSelect
+                label={t('modals.edit.shiftLabel')}
+                value={selectedShiftId ?? 'none'}
+                onChange={(value) => setSelectedShiftId(value === 'none' ? null : value)}
+                options={[
+                  { value: 'none', label: t('modals.add.shiftOptional') },
+                  ...shifts.map((shift) => ({
+                    value: shift.id,
+                    label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
+                  })),
+                ]}
+              />
 
-            <FormMultiCombobox
-              label={t('modals.edit.areaLabel')}
-              options={filteredAreas.map((a) => ({ value: a.id, label: a.name }))}
-              values={selectedAreaIds}
-              onChange={setSelectedAreaIds}
-              placeholder={t('modals.areas.placeholder')}
-              searchPlaceholder={t('modals.areas.searchPlaceholder')}
-              emptyText={t('modals.areas.emptyText')}
-              hideSelectedChips
-            />
+              <FormMultiCombobox
+                label={t('modals.edit.areaLabel')}
+                options={filteredAreas.map((a) => ({ value: a.id, label: a.name }))}
+                values={selectedAreaIds}
+                onChange={setSelectedAreaIds}
+                placeholder={t('modals.areas.placeholder')}
+                searchPlaceholder={t('modals.areas.searchPlaceholder')}
+                emptyText={t('modals.areas.emptyText')}
+                hideSelectedChips
+              />
 
-            {error && (
-              <div className="rounded-nb-base border-2 border-nb-danger bg-nb-danger-light/20 p-3 text-sm text-nb-danger">
-                {error}
-              </div>
-            )}
-          </div>
+              {error && (
+                <div className="rounded-nb-base border-2 border-nb-danger bg-nb-danger-light/20 p-3 text-sm text-nb-danger">
+                  {error}
+                </div>
+              )}
+            </div>
+          </form>
         </DialogBody>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t('common:actions.cancel')}
-          </Button>
-          <Button
-            onClick={handleSubmit}
+          <FormActions
+            formId={formId}
+            submitLabel={t('modals.edit.submit')}
             loading={loading}
             disabled={!isShiftChanged && !isAreasChanged}
-          >
-            {t('modals.edit.submit')}
-          </Button>
+            onCancel={onClose}
+          />
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -69,5 +69,29 @@
       "rejectButton": "Tolak Aktivitas"
     }
   },
-  "notFound": "Aktivitas tidak ditemukan"
+  "notFound": "Aktivitas tidak ditemukan",
+  "createTitle": "Buat Aktivitas Baru",
+  "editTitle": "Edit Aktivitas",
+  "detailTitle": "Detail Aktivitas",
+  "createButton": "Buat Baru",
+  "successCreated": "Aktivitas berhasil dibuat",
+  "successUpdated": "Aktivitas berhasil diperbarui",
+  "successDeleted": "Aktivitas berhasil dihapus",
+  "createErrorMessage": "Gagal membuat aktivitas",
+  "updateErrorMessage": "Gagal memperbarui aktivitas",
+  "deleteTitle": "Hapus Aktivitas",
+  "deleteConfirmation": "Apakah Anda yakin ingin menghapus aktivitas ini?",
+  "form": {
+    "basicInfoTitle": "Informasi Aktivitas",
+    "activityType": "Tipe Aktivitas",
+    "activityTypePlaceholder": "Pilih tipe aktivitas",
+    "activityTypeSearch": "Cari tipe aktivitas...",
+    "description": "Deskripsi",
+    "descriptionPlaceholder": "Deskripsi pekerjaan yang dilakukan (5-500 karakter)",
+    "photoUrls": "URL Foto",
+    "photo": "Foto {{count}}",
+    "photoPlaceholder": "Masukkan URL foto S3 (https://...)",
+    "submitNew": "Buat Aktivitas",
+    "submit": "Simpan Perubahan"
+  }
 }
