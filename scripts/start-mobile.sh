@@ -63,7 +63,9 @@ if [ "$MODE" = "android" ]; then
   elif [ "$ALL_FLAG" = true ]; then
     RUN_ALL=true
   elif [ -z "${ANDROID_SERIAL:-}" ]; then
-    mapfile -t DEVICES < <(adb devices 2>/dev/null | tail -n +2 | awk '$2=="device"{print $1}')
+    # tr -d '\r' guards against WSL setups where `adb` wraps a Windows adb.exe
+    # (CRLF output), which would otherwise make $2=="device" never match.
+    mapfile -t DEVICES < <(adb devices 2>/dev/null | tr -d '\r' | tail -n +2 | awk '$2=="device"{print $1}')
     if [ "${#DEVICES[@]}" -eq 0 ]; then
       print_error "No connected devices/emulators found (adb devices). Start one and retry."
       exit 1

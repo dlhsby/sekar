@@ -51,7 +51,9 @@
     "capacity": "Capacity",
     "menuLabel": "Actions",
     "sortTooltip": "Click to sort · Shift+click for multiple columns",
-    "openMapLink": "Open in Google Maps"
+    "openMapLink": "Open in Google Maps",
+    "fullscreen": "Fullscreen",
+    "exitFullscreen": "Exit Fullscreen"
   },
   "entities": {
     "user": "User",
@@ -161,10 +163,12 @@
     "plants": "Plants",
     "seeds": "Seeds",
     "assets": "Assets",
+    "database": "Data Base",
     "reports": "Reports",
     "reportsList": "Report List",
     "reportsBuilder": "Report Builder",
     "reportsSchedules": "Report Schedules",
+    "reportsReporting": "Reporting",
     "analytics": "Analytics",
     "analyticsSummary": "Summary",
     "workerPerformance": "Worker Performance",

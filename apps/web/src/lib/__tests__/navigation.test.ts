@@ -15,11 +15,12 @@ describe('Navigation Utilities', () => {
   describe('navigationItems', () => {
     it('should contain all expected navigation items', () => {
       // Top-level entries: dashboard, monitoring, work(group), access(group),
-      // data(group), reports(group), analytics(group), operations(group),
-      // settings + 2 staff_kecamatan items + the external 'docs' (Panduan) link
-      // = 12. Pengguna lives in its own 'Pengguna & Hak Akses' group; Pengaturan
-      // is on the sidebar.
-      expect(navigationItems).toHaveLength(12);
+      // data(group), reports(group), settings + 2 staff_kecamatan items + the
+      // external 'docs' (Panduan) link = 10. Analitik and Operasional are
+      // archived (commented out in navigation.ts, hidden from the sidebar).
+      // Pengguna lives in its own 'Pengguna & Hak Akses' group; Pengaturan is
+      // on the sidebar.
+      expect(navigationItems).toHaveLength(10);
 
       const navIds = navigationItems.map((item) => item.id);
       expect(navIds).toContain('dashboard');
@@ -28,11 +29,12 @@ describe('Navigation Utilities', () => {
       expect(navIds).toContain('access');
       expect(navIds).toContain('data');
       expect(navIds).toContain('reports');
-      expect(navIds).toContain('analytics');
-      expect(navIds).toContain('operations');
       expect(navIds).toContain('settings');
       // External public docs link, visible to every role.
       expect(navIds).toContain('docs');
+      // Archived groups no longer appear in the sidebar.
+      expect(navIds).not.toContain('analytics');
+      expect(navIds).not.toContain('operations');
       // pruning-requests is not top-level (nested under 'work').
       expect(navIds).not.toContain('pruning-requests');
 
@@ -51,15 +53,20 @@ describe('Navigation Utilities', () => {
       const accessItem = navigationItems.find((item) => item.id === 'access');
       expect(accessItem?.children?.map((c) => c.id)).toEqual(['users']);
 
-      // 'Data Master' group: areas / rayons + Phase-3 plants/seeds + Phase-5 assets.
+      // 'Data Master' group: areas / rayons / plants + the 'Data Base' embed
+      // page. Seeds and assets are archived (commented out) per request.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
         'areas',
         'rayons',
         'plants',
-        'seeds',
-        'assets',
+        'database',
       ]);
+
+      // 'Laporan' group: only the general Reporting embed page remains — the
+      // old Daftar/Buat/Jadwal Laporan children are archived per request.
+      const reportsItem = navigationItems.find((item) => item.id === 'reports');
+      expect(reportsItem?.children?.map((c) => c.id)).toEqual(['reports-reporting']);
     });
 
     it('should have correct structure for each navigation item', () => {
@@ -94,6 +101,7 @@ describe('Navigation Utilities', () => {
 
       // superadmin sees all admin groups; the 2 staff_kecamatan-only items stay
       // hidden. The external 'docs' link (roles ['*']) is appended for everyone.
+      // Analitik/Operasional are archived (commented out), so they don't appear.
       expect(filtered.map((i) => i.id)).toEqual([
         'dashboard',
         'monitoring',
@@ -101,8 +109,6 @@ describe('Navigation Utilities', () => {
         'access',
         'data',
         'reports',
-        'analytics',
-        'operations',
         'settings',
         'docs',
       ]);
@@ -344,9 +350,13 @@ describe('Navigation Utilities', () => {
     it('should handle reports path', () => {
       const breadcrumbs = getBreadcrumbPath('/reports');
 
+      // The 'reports' nav item's href is now '#' (pure group — its only visible
+      // child lives at /reports/reporting), so no nav item's href
+      // matches '/reports' anymore and the lookup falls back to the
+      // capitalized segment.
       expect(breadcrumbs).toHaveLength(1);
       expect(breadcrumbs[0]).toEqual({
-        label: 'common:nav.reports',
+        label: 'Reports',
         href: '/reports',
       });
     });

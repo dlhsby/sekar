@@ -5,6 +5,7 @@
     "areas": "Areas", "rayons": "Rayons", "plants": "Plants", "seeds": "Seeds", "assets": "Assets",
     "assetsNew": "New Asset", "assetsQr": "QR Generator", "assetsMaintenance": "Asset Maintenance",
     "reports": "Reports", "reportsBuilder": "Report Builder", "reportsSchedules": "Report Schedules",
+    "reportsReporting": "Reporting", "database": "Data Base",
     "pruningRequests": "Pruning Requests", "pruningSubmit": "Submit Request", "pruningMy": "My Requests",
     "settings": "Settings", "profile": "My Profile", "notifications": "Notifications",
     "export": "Export Data", "import": "Import Data", "importCsv": "Import CSV",
