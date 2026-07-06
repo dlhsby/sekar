@@ -181,6 +181,13 @@ describe('TasksPage', () => {
       );
       expect(tasksApi.useTasks as jest.Mock).toHaveBeenCalledWith(undefined);
     });
+
+    it('switches to a full, unfiltered fetch (limit 1000, no status/priority/page) in table view — filtering there is client-side via the DataTable columns', async () => {
+      const user = userEvent.setup();
+      render(<TasksPage />, { wrapper: createWrapper() });
+      await user.click(screen.getByRole('tab', { name: 'Tabel' }));
+      expect(tasksApi.useTasks as jest.Mock).toHaveBeenLastCalledWith({ limit: 1000 });
+    });
   });
 
   describe('Kanban view (default)', () => {
@@ -244,6 +251,23 @@ describe('TasksPage', () => {
       expect(await screen.findByRole('dialog')).toBeInTheDocument();
       expect(screen.getByText('Detail Tugas')).toBeInTheDocument();
       expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('hides the Kanban-only Status/Priority filter dropdowns — Table view filters via its own Status/Priority columns instead', async () => {
+      render(<TasksPage />, { wrapper: createWrapper() });
+      expect(screen.getByText('Filter Status')).toBeInTheDocument();
+      await switchToTable();
+      expect(screen.queryByText('Filter Status')).not.toBeInTheDocument();
+      expect(screen.queryByText('Filter Prioritas')).not.toBeInTheDocument();
+    });
+
+    it('enables the per-column filter toggle on Status and Priority', async () => {
+      const user = userEvent.setup();
+      render(<TasksPage />, { wrapper: createWrapper() });
+      await switchToTable();
+      await user.click(screen.getByTitle(/filter/i));
+      expect(screen.getByRole('button', { name: /filter status/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /filter prioritas/i })).toBeInTheDocument();
     });
   });
 
