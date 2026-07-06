@@ -274,15 +274,19 @@ export class UsersService {
   }
 
   /**
-   * Attach `assigned_area_count` (number of permanent area assignments) to each
-   * user for the management grid's Area column — one batched query per page, no
-   * N+1. The full area list is loaded lazily via GET /users/:id/areas.
+   * Attach `assigned_area_count` + `assigned_area_ids` (permanent area
+   * assignments) to each user for the management grid's Area column — one
+   * batched query per page, no N+1. Full area detail (name, boundary, etc.)
+   * is still loaded lazily via GET /users/:id/areas; this is IDs only, so the
+   * grid can filter by area.
    */
   private async withAreaCounts(users: User[]): Promise<User[]> {
     if (!users.length) return users;
     const byUser = await this.userAreasService.getPermanentAreaIdsForUsers(users.map((u) => u.id));
     for (const user of users) {
-      user.assigned_area_count = byUser.get(user.id)?.length ?? 0;
+      const areaIds = byUser.get(user.id) ?? [];
+      user.assigned_area_count = areaIds.length;
+      user.assigned_area_ids = areaIds;
     }
     return users;
   }

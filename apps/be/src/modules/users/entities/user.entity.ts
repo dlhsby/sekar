@@ -143,6 +143,17 @@ export class User {
   @ApiProperty({ description: 'Count of permanent area assignments', required: false })
   assigned_area_count?: number;
 
+  // Not persisted — populated alongside assigned_area_count with the actual
+  // area IDs, so the management grid can filter by area without an N+1
+  // per-user fetch (GET /users/:id/areas remains the source of truth for
+  // full area detail — this is IDs only, for filtering).
+  @ApiProperty({
+    description: 'IDs of permanent area assignments',
+    required: false,
+    type: [String],
+  })
+  assigned_area_ids?: string[];
+
   @DeleteDateColumn()
   deleted_at?: Date;
 

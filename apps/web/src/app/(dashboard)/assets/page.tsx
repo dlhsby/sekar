@@ -190,30 +190,6 @@ export default function AssetsPage() {
         cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
       },
       {
-        id: 'created_at',
-        accessorKey: 'created_at',
-        header: t('list.columns.createdAt'),
-        enableSorting: false,
-        meta: { label: t('list.columns.createdAt'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.created_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'updated_at',
-        accessorKey: 'updated_at',
-        header: t('list.columns.updatedAt'),
-        enableSorting: false,
-        meta: { label: t('list.columns.updatedAt'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.updated_at)}
-          </span>
-        ),
-      },
-      {
         id: 'created_by',
         accessorFn: (a) => actorName(a.created_by),
         header: t('list.columns.createdBy'),
@@ -226,6 +202,18 @@ export default function AssetsPage() {
         ),
       },
       {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: t('list.columns.createdAt'),
+        enableSorting: false,
+        meta: { label: t('list.columns.createdAt'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
         id: 'updated_by',
         accessorFn: (a) => actorName(a.updated_by),
         header: t('list.columns.updatedBy'),
@@ -234,6 +222,18 @@ export default function AssetsPage() {
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: t('list.columns.updatedAt'),
+        enableSorting: false,
+        meta: { label: t('list.columns.updatedAt'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
           </span>
         ),
       },

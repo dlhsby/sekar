@@ -134,7 +134,8 @@ export default function AreasPage() {
             ? `${Number(a.gps_lat).toFixed(6)}, ${Number(a.gps_lng).toFixed(6)}`
             : '',
         header: t('admin:areas.columnCoordinates'),
-        meta: { label: t('admin:areas.columnCoordinates'), filterVariant: 'text' },
+        enableColumnFilter: false,
+        meta: { label: t('admin:areas.columnCoordinates') },
         cell: ({ row }) =>
           row.original.gps_lat && row.original.gps_lng ? (
             <CoordinateLink
@@ -194,7 +195,14 @@ export default function AreasPage() {
         id: 'is_active',
         accessorFn: (a) => (a.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')),
         header: t('admin:areas.columnStatus'),
-        meta: { label: t('admin:areas.columnStatus'), filterVariant: 'enum' },
+        meta: {
+          label: t('admin:areas.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:areas.statusActive'), label: t('admin:areas.statusActive') },
+            { value: t('admin:areas.statusInactive'), label: t('admin:areas.statusInactive') },
+          ],
+        },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
@@ -205,28 +213,6 @@ export default function AreasPage() {
               {t('admin:areas.statusInactive')}
             </StatusPill>
           ),
-      },
-      {
-        id: 'created_at',
-        accessorKey: 'created_at',
-        header: t('admin:areas.columnCreated'),
-        meta: { label: t('admin:areas.columnCreated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.created_at)}
-          </span>
-        ),
-      },
-      {
-        id: 'updated_at',
-        accessorKey: 'updated_at',
-        header: t('admin:areas.columnUpdated'),
-        meta: { label: t('admin:areas.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {formatDate(row.original.updated_at)}
-          </span>
-        ),
       },
       {
         id: 'created_by',
@@ -240,6 +226,17 @@ export default function AreasPage() {
         ),
       },
       {
+        id: 'created_at',
+        accessorKey: 'created_at',
+        header: t('admin:areas.columnCreated'),
+        meta: { label: t('admin:areas.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.created_at)}
+          </span>
+        ),
+      },
+      {
         id: 'updated_by',
         accessorFn: (a) => actorName(a.updated_by),
         header: t('admin:areas.columnUpdatedBy'),
@@ -247,6 +244,17 @@ export default function AreasPage() {
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
+          </span>
+        ),
+      },
+      {
+        id: 'updated_at',
+        accessorKey: 'updated_at',
+        header: t('admin:areas.columnUpdated'),
+        meta: { label: t('admin:areas.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">
+            {formatDate(row.original.updated_at)}
           </span>
         ),
       },

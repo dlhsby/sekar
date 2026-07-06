@@ -6,6 +6,7 @@
 'use client';
 
 import { useCallback, useMemo, useState } from 'react';
+import type { FilterFn } from '@tanstack/react-table';
 import { Plus, Calendar, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +24,7 @@ import {
   PageHeader,
   RoleAvatar,
   StatusPill,
+  enumArrayFilterFn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -136,6 +138,14 @@ export default function SchedulesPage() {
   const { data: rayonsData } = useRayons();
   const allRayons = useMemo(() => rayonsData ?? [], [rayonsData]);
   const rayonById = useMemo(() => new Map(allRayons.map((r) => [r.id, r])), [allRayons]);
+  const rayonFilterOptions = useMemo(
+    () => allRayons.map((r) => ({ value: r.name, label: r.name })),
+    [allRayons],
+  );
+  const areaFilterOptions = useMemo(
+    () => allAreas.map((a) => ({ value: a.name, label: a.name })),
+    [allAreas],
+  );
 
   // A korlap edits only rows in their own assigned areas — fetch those to gate
   // the per-row actions (mirrors the backend hierarchy; backend is the real gate).
@@ -167,6 +177,10 @@ export default function SchedulesPage() {
   );
 
   const { data: shifts = [] } = useShiftDefinitions();
+  const shiftFilterOptions = useMemo(
+    () => shifts.map((s) => ({ value: `${s.name} (${s.start_time}-${s.end_time})`, label: s.name })),
+    [shifts],
+  );
   const { data: usersData } = useUsers({ limit: 1000 });
   const allUsers = useMemo(() => usersData?.data ?? [], [usersData]);
 
@@ -318,7 +332,11 @@ export default function SchedulesPage() {
         id: 'rayon',
         accessorFn: (row) => rayonById.get(row.rayon_id ?? '')?.name ?? '',
         header: t('table.rayon'),
-        meta: { label: t('table.rayon'), filterVariant: 'text' },
+        meta: {
+          label: t('table.rayon'),
+          filterVariant: 'enum',
+          filterOptions: rayonFilterOptions,
+        },
         cell: ({ row }) => (
           <span className="text-nb-body-sm">
             {rayonById.get(row.original.rayon_id ?? '')?.name ?? '—'}
@@ -327,9 +345,14 @@ export default function SchedulesPage() {
       },
       {
         id: 'areas',
-        accessorFn: (row) => getAreaNames(row, areaById).join(', '),
+        accessorFn: (row) => getAreaNames(row, areaById),
         header: t('table.area'),
-        meta: { label: t('table.area'), filterVariant: 'text' },
+        filterFn: enumArrayFilterFn as FilterFn<Schedule>,
+        meta: {
+          label: t('table.area'),
+          filterVariant: 'enum',
+          filterOptions: areaFilterOptions,
+        },
         cell: ({ row }) => {
           const roster = row.original;
           const count = roster.schedule_areas.length;
@@ -354,7 +377,11 @@ export default function SchedulesPage() {
           return shift ? `${shift.name} (${shift.start_time}-${shift.end_time})` : '';
         },
         header: t('table.shift'),
-        meta: { label: t('table.shift'), filterVariant: 'text' },
+        meta: {
+          label: t('table.shift'),
+          filterVariant: 'enum',
+          filterOptions: shiftFilterOptions,
+        },
         cell: ({ row }) => {
           const shift = row.original.shift_definition;
           return (
@@ -399,7 +426,7 @@ export default function SchedulesPage() {
         ),
       },
     ],
-    [areaById, rayonById, t, formatStatus],
+    [areaById, rayonById, t, formatStatus, rayonFilterOptions, areaFilterOptions, shiftFilterOptions],
   );
 
   const rowActions = useCallback(
