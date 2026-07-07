@@ -390,7 +390,7 @@ describe('BoundaryOverlay', () => {
           rayons={[rayon]}
           {...defaultProps}
           showRayonBubbles
-          rosterById={{ 'rayon-1': { clockedIn: 4, scheduled: 6 } }}
+          rosterById={{ 'rayon-1': { activeInside: 4, scheduled: 6 } }}
         />,
       );
 
@@ -405,7 +405,7 @@ describe('BoundaryOverlay', () => {
           rayons={[buildRayon([area])]}
           {...defaultProps}
           showAreaBubbles
-          rosterById={{ 'area-1': { clockedIn: 2, scheduled: 3 } }}
+          rosterById={{ 'area-1': { activeInside: 2, scheduled: 3 } }}
         />,
       );
 
