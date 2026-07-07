@@ -95,7 +95,7 @@ export function workerPinIcon(
     `<circle cx="20" cy="20" r="14" fill="${fill}" stroke="${border}" stroke-width="${opts.selected ? 3 : 2}"${dash}/>` +
     `<g transform="translate(20 20) scale(0.8) translate(-12 -12)" fill="none" stroke="${glyphColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
     `</svg>`;
-  const size = opts.selected ? 52 : 40;
+  const size = opts.selected ? 62 : 48;
   const h = Math.round(size * 1.2);
   return {
     url: svgUrl(svg),
@@ -118,13 +118,13 @@ export function nodeRatioIcon(
   const ratio = `${clockedIn}/${scheduled}`;
 
   if (variant === 'surabaya') {
-    const w = 128;
-    const h = 60;
+    const w = 152;
+    const h = 72;
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-      `<rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="14" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-      `<text x="${w / 2}" y="24" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="14" font-weight="800" fill="${BLACK}" letter-spacing="1">SURABAYA</text>` +
-      `<text x="${w / 2}" y="46" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="800" fill="${color}">${ratio}</text>` +
+      `<rect x="3" y="3" width="${w - 6}" height="${h - 6}" rx="16" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
+      `<text x="${w / 2}" y="30" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="17" font-weight="800" fill="${BLACK}" letter-spacing="1">SURABAYA</text>` +
+      `<text x="${w / 2}" y="56" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="800" fill="${color}">${ratio}</text>` +
       `</svg>`;
     return {
       url: svgUrl(svg),
@@ -134,12 +134,12 @@ export function nodeRatioIcon(
   }
 
   // rayon + area — one consistent rounded ratio bubble (matches mobile).
-  const w = 60;
-  const h = 34;
+  const w = 76;
+  const h = 44;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
-    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="10" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-    `<text x="${w / 2}" y="${h / 2 + 5}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="15" font-weight="800" fill="${color}">${ratio}</text>` +
+    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="12" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
+    `<text x="${w / 2}" y="${h / 2 + 6}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="18" font-weight="800" fill="${color}">${ratio}</text>` +
     `</svg>`;
   return {
     url: svgUrl(svg),
@@ -173,15 +173,16 @@ const NODE_DETAIL: Record<'rayon' | 'area', { color: string; glyph: string }> = 
  */
 export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
   const { color, glyph } = NODE_DETAIL[variant];
-  const s = 34;
+  const s = 48;
+  const c = s / 2;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
-    `<circle cx="17" cy="17" r="14" fill="${color}" stroke="${WHITE}" stroke-width="2"/>` +
-    `<g transform="translate(17 17) scale(0.66) translate(-12 -12)" fill="none" stroke="${WHITE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
+    `<circle cx="${c}" cy="${c}" r="20" fill="${color}" stroke="${WHITE}" stroke-width="3"/>` +
+    `<g transform="translate(${c} ${c}) scale(0.92) translate(-12 -12)" fill="none" stroke="${WHITE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
     `</svg>`;
   return {
     url: svgUrl(svg),
     scaledSize: new google.maps.Size(s, s),
-    anchor: new google.maps.Point(s / 2, s / 2),
+    anchor: new google.maps.Point(c, c),
   };
 }

@@ -309,7 +309,11 @@ function MonitoringMapInner({
   // Area centre pins only clutter the node view (node markers already carry
   // counts); keep them for the drilled worker view or when the plant overlay is
   // on — and only when the areaPins layer is enabled.
-  const showAreaPins = layers.areaPins && (showWorkers || !!overdueByArea);
+  // Area centre pins are now only the plant-overdue overlay — the drill markers
+  // (node bubbles above / the current-node pin) carry the area context, so we no
+  // longer scatter a dot on every area. At area scope, restrict even the overdue
+  // pins to the SELECTED area so siblings don't reappear.
+  const showAreaPins = layers.areaPins && !!overdueByArea;
   // Scope-gate boundary polygons: rayon outlines from the city view down, area
   // outlines only once inside a rayon. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
@@ -318,9 +322,36 @@ function MonitoringMapInner({
   // polygon (mirrors mobile — never all of a rayon's areas at once).
   const showAreaBorders = scope === 'area';
   const visibleAreaPaths = useMemo(
-    () => (areaId ? areaPaths.filter((a) => a.id === areaId) : areaPaths),
-    [areaPaths, areaId]
+    () => (scope === 'area' && areaId ? areaPaths.filter((a) => a.id === areaId) : areaPaths),
+    [areaPaths, scope, areaId]
   );
+  const visibleAreaPins = useMemo(
+    () => (scope === 'area' && areaId ? areaPins.filter((a) => a.id === areaId) : areaPins),
+    [areaPins, scope, areaId]
+  );
+
+  // At area scope, frame the SELECTED area's boundary once it loads — a reliable
+  // "focus in" that beats a fixed zoom (areas vary in size). Runs once per area.
+  const fittedAreaRef = useRef<string | null>(null);
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || scope !== 'area' || !areaId) {
+      fittedAreaRef.current = null;
+      return;
+    }
+    if (fittedAreaRef.current === areaId) return;
+    const b = new google.maps.LatLngBounds();
+    let has = false;
+    visibleAreaPaths.forEach((a) =>
+      a.paths.forEach((p) => {
+        b.extend(p);
+        has = true;
+      })
+    );
+    if (!has) return;
+    map.fitBounds(b, 80);
+    fittedAreaRef.current = areaId;
+  }, [scope, areaId, visibleAreaPaths]);
 
   const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
     const map = mapRef.current;
@@ -384,7 +415,7 @@ function MonitoringMapInner({
 
         {/* Area centre markers */}
         {showAreaPins &&
-          areaPins.map((area) => {
+          visibleAreaPins.map((area) => {
           const overdue = overdueByArea?.[area.id] ?? 0;
           const danger = overdue > 0 || area.understaffed;
           return (
@@ -434,7 +465,7 @@ function MonitoringMapInner({
             position={{ lat: currentNode.lat, lng: currentNode.lng }}
             onClick={() => onNodeDetail?.(currentNode)}
             icon={nodeDetailIcon(currentNode.variant)}
-            zIndex={6}
+            zIndex={50}
             title={currentNode.name}
           />
         )}
