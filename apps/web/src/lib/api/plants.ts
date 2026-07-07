@@ -115,6 +115,7 @@ export interface PlantSpeciesRow {
   nameLatin: string | null;
   category: 'tree' | 'shrub' | 'groundcover' | 'flower';
   defaultPruningCycleDays: number | null;
+  notes: string | null;
   createdAt: string;
   updatedAt: string;
 }
