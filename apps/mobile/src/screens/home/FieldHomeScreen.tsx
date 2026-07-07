@@ -26,10 +26,11 @@ import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/s
 import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
 import { calculateDuration, isToday } from '../../utils/dateUtils';
-import { summarizeAttendance } from '../../utils/attendance';
+import { deriveAttendanceStatus } from '../../utils/attendance';
 import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission, useCollapsible } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
+import { useTodayRoster } from '../../hooks/useTodayRoster';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
 /**
@@ -95,6 +96,10 @@ export function FieldHomeScreen(): React.JSX.Element {
   // Home-screen location (drives the in-area pill + the map modal).
   const { location: homeLocation, refresh: refreshLocation, hasActiveShift } = useHomeLocation();
 
+  // Today's roster — the "am I scheduled?" signal (shared with the clock-in
+  // screen so both agree on lateness / area semantics).
+  const { rosterShift, hasScheduleToday } = useTodayRoster();
+
   // Defensive Array.isArray guards: stale HMR/hydration snapshots have crashed
   // this tree before when a list briefly hydrated as a non-array.
   const todayActivitiesCount = useMemo(() => {
@@ -107,10 +112,12 @@ export function FieldHomeScreen(): React.JSX.Element {
     return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
-  // Today's attendance summary for the hero (shared util — see utils/attendance).
+  // Today's attendance status for the hero (roster-gated — see utils/attendance).
+  // Lateness is judged only against today's roster shift; an unscheduled worker
+  // (patrol / ad-hoc) reads as "no schedule", never late.
   const attendance = useMemo(
-    () => summarizeAttendance(todayShifts, currentShift),
-    [todayShifts, currentShift],
+    () => deriveAttendanceStatus(todayShifts, currentShift, rosterShift),
+    [todayShifts, currentShift, rosterShift],
   );
 
   // "Tugas hari ini" — all statuses, scoped to today (deadline, created_at,
@@ -277,11 +284,19 @@ export function FieldHomeScreen(): React.JSX.Element {
     return <LoadingSpinner />;
   }
 
-  // In-area pill tone/label for the active-shift hero.
+  // In-area pill tone/label for the active-shift hero. A worker with no assigned
+  // area has no boundary to be inside/outside of — show a neutral "no area".
+  const hasArea = !!(currentShift?.area || assignedArea);
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
-  const areaTone: StatusTone = locUnknown ? 'neutral' : homeLocation.isWithinArea ? 'ok' : 'bad';
-  const areaLabel = locUnknown ? t('home:field.hero.location.loading') : homeLocation.isWithinArea ? t('home:field.hero.location.inArea') : t('home:field.hero.location.outArea');
-  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? t('home:field.hero.location.unknownArea');
+  const areaTone: StatusTone = !hasArea ? 'neutral' : locUnknown ? 'neutral' : homeLocation.isWithinArea ? 'ok' : 'bad';
+  const areaLabel = !hasArea
+    ? t('home:field.hero.location.noArea')
+    : locUnknown
+      ? t('home:field.hero.location.loading')
+      : homeLocation.isWithinArea
+        ? t('home:field.hero.location.inArea')
+        : t('home:field.hero.location.outArea');
+  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? t('home:field.hero.location.noArea');
 
   return (
     <NBBackgroundPattern
@@ -366,6 +381,7 @@ export function FieldHomeScreen(): React.JSX.Element {
                 lastClockOut={attendance.lastClockOut}
                 isLate={attendance.isLate}
                 isEarlyLeave={attendance.isEarlyLeave}
+                neutral={!hasScheduleToday}
               />
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
@@ -373,11 +389,15 @@ export function FieldHomeScreen(): React.JSX.Element {
                   <InfoTableRow
                     label={t('home:field.hero.labels.status')}
                     value={
-                      <NBBadge
-                        text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
-                        color={attendance.isLate ? 'danger' : 'success'}
-                        size="sm"
-                      />
+                      hasScheduleToday ? (
+                        <NBBadge
+                          text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
+                          color={attendance.isLate ? 'danger' : 'success'}
+                          size="sm"
+                        />
+                      ) : (
+                        <NBBadge text={t('home:field.hero.status.noSchedule')} color="gray" size="sm" />
+                      )
                     }
                   />
                   <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />

@@ -269,7 +269,6 @@ export function UserDetailSheet({
         visible={visible}
         onClose={onClose}
         type="sheet"
-        floating
         testID="user-detail-sheet"
       >
         {user ? (

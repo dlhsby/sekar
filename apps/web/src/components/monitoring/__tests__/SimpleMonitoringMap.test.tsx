@@ -75,6 +75,7 @@ beforeAll(() => {
         extend = jest.fn();
       },
       Size: class {},
+      Point: class {},
       ControlPosition: { RIGHT_BOTTOM: 3 },
     },
   };
@@ -139,64 +140,67 @@ const boundaries: BoundariesResponse = {
 
 // Far apart so supercluster keeps them as separate leaves at the test zoom.
 const workers: SimpleWorker[] = [
-  { user_id: 'w1', full_name: 'Budi', lat: -7.1, lng: 112.6, status: 'active' },
-  { user_id: 'w2', full_name: 'Sari', lat: -7.45, lng: 112.95, status: 'missing' },
+  { user_id: 'w1', full_name: 'Budi', lat: -7.1, lng: 112.6, status: 'active', role: 'satgas', is_within_area: true, is_scheduled: true },
+  { user_id: 'w2', full_name: 'Sari', lat: -7.45, lng: 112.95, status: 'missing', role: 'linmas', is_within_area: false, is_scheduled: false },
 ];
 
-const aggregateNodes = [
+const nodeMarkers = [
   {
     id: 'r1',
     name: 'Rayon 1',
-    type: 'rayon' as const,
-    center_lat: -7.29,
-    center_lng: 112.75,
-    counts_by_status: { active: 4, inactive: 0, outside_area: 0, missing: 1, offline: 0 },
-    counts_by_role: { satgas: 4 },
-    worker_count: 5,
-    online_count: 4,
-    required: 6,
-    is_understaffed: true,
-    area_count: 2,
+    variant: 'rayon' as const,
+    lat: -7.29,
+    lng: 112.75,
+    scheduled: 6,
+    clocked_in: 4,
+    not_clocked_in: 2,
   },
 ];
 
 describe('SimpleMonitoringMap', () => {
-  it('renders rayon + area boundary polygons', () => {
-    render(<SimpleMonitoringMap mode="aggregate" workers={[]} boundaries={boundaries} />);
+  it('renders rayon + area boundary polygons once drilled into a rayon', () => {
+    // Area outlines only draw at rayon/area scope; rayon outlines from city down.
+    render(<SimpleMonitoringMap showWorkers={false} scope="rayon" workers={[]} boundaries={boundaries} />);
     // 1 rayon polygon + 1 area polygon
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 
-  it('aggregate mode renders one bubble per node and no area pins', () => {
+  it('hides area boundaries at the top (Surabaya) scope', () => {
+    render(<SimpleMonitoringMap showWorkers={false} scope="surabaya" workers={[]} boundaries={boundaries} />);
+    // Neither rayon nor area outlines at the Surabaya summary level.
+    expect(screen.queryAllByTestId('polygon')).toHaveLength(0);
+  });
+
+  it('node view renders one marker per node and no area pins', () => {
     render(
       <SimpleMonitoringMap
-        mode="aggregate"
-        aggregateNodes={aggregateNodes}
+        showWorkers={false}
+        nodeMarkers={nodeMarkers}
         workers={[]}
         boundaries={boundaries}
       />
     );
-    // Only the aggregate bubble marker (no area centre pins in aggregate mode).
+    // Only the node marker (no area centre pins in the node view).
     expect(screen.getAllByTestId('marker')).toHaveLength(1);
   });
 
-  it('drills when an aggregate bubble is clicked', () => {
+  it('drills when a node marker is clicked', () => {
     const onDrillNode = jest.fn();
     render(
       <SimpleMonitoringMap
-        mode="aggregate"
-        aggregateNodes={aggregateNodes}
+        showWorkers={false}
+        nodeMarkers={nodeMarkers}
         onDrillNode={onDrillNode}
         workers={[]}
         boundaries={boundaries}
       />
     );
     fireEvent.click(screen.getByTestId('marker'));
-    expect(onDrillNode).toHaveBeenCalledWith(aggregateNodes[0]);
+    expect(onDrillNode).toHaveBeenCalledWith(nodeMarkers[0]);
   });
 
-  it('worker mode renders area pin + clustered worker markers', () => {
-    render(<SimpleMonitoringMap mode="workers" workers={workers} boundaries={boundaries} />);
+  it('worker view renders area pin + clustered worker markers', () => {
+    render(<SimpleMonitoringMap showWorkers workers={workers} boundaries={boundaries} />);
     // 1 area pin + 2 (unclustered, far-apart) workers.
     expect(screen.getAllByTestId('marker')).toHaveLength(3);
   });
@@ -205,7 +209,7 @@ describe('SimpleMonitoringMap', () => {
     const onSelect = jest.fn();
     render(
       <SimpleMonitoringMap
-        mode="workers"
+        showWorkers
         workers={workers}
         boundaries={boundaries}
         onSelect={onSelect}
@@ -219,7 +223,7 @@ describe('SimpleMonitoringMap', () => {
   it('pans to the selected worker', () => {
     render(
       <SimpleMonitoringMap
-        mode="workers"
+        showWorkers
         workers={workers}
         boundaries={boundaries}
         selectedId="w1"
@@ -229,7 +233,7 @@ describe('SimpleMonitoringMap', () => {
   });
 
   it('registers a native My-Location control (stacked with zoom, no overlap)', () => {
-    render(<SimpleMonitoringMap mode="aggregate" workers={[]} boundaries={null} />);
+    render(<SimpleMonitoringMap showWorkers={false} workers={[]} boundaries={null} />);
     // createLocateControl pushes the button into the RIGHT_BOTTOM control stack.
     expect(controlStack).toHaveLength(1);
     expect(controlStack[0].getAttribute('aria-label')).toMatch(/fokus ke lokasi saya/i);
@@ -238,13 +242,12 @@ describe('SimpleMonitoringMap', () => {
   it('hides worker markers when the petugas layer is off', () => {
     render(
       <SimpleMonitoringMap
-        mode="workers"
+        showWorkers
         workers={workers}
         boundaries={boundaries}
         layers={{
-          rayonBorder: true,
-          rayonFill: true,
-          areaBorder: true,
+          rayon: true,
+          area: true,
           areaPins: false,
           petugas: false,
           overdue: false,

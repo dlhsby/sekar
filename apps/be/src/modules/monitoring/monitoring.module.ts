@@ -18,6 +18,8 @@ import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-s
 import { SpecialDayOverride } from '../special-day-overrides/entities/special-day-override.entity';
 import { MonitoringConfig } from './entities/monitoring-config.entity';
 import { UserTrackingStatus } from './entities/user-tracking-status.entity';
+import { Schedule } from '../schedules/entities/schedule.entity';
+import { ScheduleArea } from '../schedules/entities/schedule-area.entity';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { StatusCalculatorService } from './services/status-calculator.service';
@@ -55,6 +57,8 @@ import { SharedModule } from '../../shared/shared.module';
       MonitoringConfig,
       UserTrackingStatus,
       AreaPlant,
+      Schedule,
+      ScheduleArea,
     ]),
     forwardRef(() => EventsModule),
     UserAreasModule,

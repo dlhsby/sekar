@@ -43,8 +43,9 @@ interface StatusSummaryBarProps {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-// Three activity chips (CP6). Offline (not clocked in) isn't shown on the map.
-const DISPLAYED_ACTIVITIES: PresenceActivity[] = ['aktif', 'idle', 'missing'];
+// Presence model: two chips only — Aktif and Tidak aktif (idle/missing/offline
+// folded together). 'idle' is the display bucket for all non-aktif workers.
+const DISPLAYED_ACTIVITIES: PresenceActivity[] = ['aktif', 'idle'];
 
 const ACTIVITY_BG: Record<string, string> = {
   aktif: nbColors.statusActiveBg,
@@ -67,9 +68,7 @@ export function StatusSummaryBar({
   activeActivity,
   onActivityChange,
 }: StatusSummaryBarProps): React.JSX.Element {
-  const { t } = useTranslation();
-
-  // Tally the 3 activity buckets + their dalam/luar split, from the live roster.
+  // Tally the activity buckets + their dalam/luar split, from the live roster.
   const buckets = useMemo(() => {
     const acc: Record<PresenceActivity, ActivityBucket> = {
       aktif: { total: 0, dalam: 0, luar: 0 },
@@ -78,8 +77,13 @@ export function StatusSummaryBar({
       offline: { total: 0, dalam: 0, luar: 0 },
     };
     for (const u of liveUsers) {
+      // Ad-hoc / off-schedule workers are shown on the map but not counted here.
+      if (u.is_scheduled === false) { continue; }
       const { activity, location } = userAxes(u);
-      const b = acc[activity];
+      // Offline = no active shift (not on the map); the rest fold into aktif or
+      // the single "tidak aktif" (idle) bucket (idle + missing).
+      if (activity === 'offline') { continue; }
+      const b = acc[activity === 'aktif' ? 'aktif' : 'idle'];
       b.total += 1;
       if (location === 'dalam_area') { b.dalam += 1; }
       else if (location === 'luar_area') { b.luar += 1; }

@@ -22,6 +22,8 @@ import {
   DayType,
 } from '../area-staff-requirements/entities/area-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
+import { Schedule } from '../schedules/entities/schedule.entity';
+import { ScheduleArea } from '../schedules/entities/schedule-area.entity';
 
 describe('MonitoringService', () => {
   let service: MonitoringService;
@@ -302,6 +304,20 @@ describe('MonitoringService', () => {
           },
         },
         {
+          provide: getRepositoryToken(Schedule),
+          useValue: {
+            find: jest.fn(),
+            createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+          },
+        },
+        {
+          provide: getRepositoryToken(ScheduleArea),
+          useValue: {
+            find: jest.fn(),
+            createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+          },
+        },
+        {
           provide: StatusCalculatorService,
           useValue: {
             calculateAxes: jest.fn().mockReturnValue({ activity: 'aktif', location: 'dalam_area' }),
@@ -322,6 +338,12 @@ describe('MonitoringService', () => {
     }).compile();
 
     service = module.get<MonitoringService>(MonitoringService);
+    // Ad-hoc flagging on getLiveUsers/getSnapshot calls these; default to a
+    // no-op so tests that don't care about scheduling don't need to stub them
+    // (individual tests override getCurrentShiftDefinition where it matters).
+    jest
+      .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+      .mockResolvedValue(new Set<string>());
     userRepository = module.get(getRepositoryToken(User));
     areaRepository = module.get(getRepositoryToken(Area));
     shiftRepository = module.get(getRepositoryToken(Shift));
@@ -599,6 +621,11 @@ describe('MonitoringService', () => {
   });
 
   describe('getLiveUsers', () => {
+    beforeEach(() => {
+      // getLiveUsers now resolves the current shift to flag ad-hoc workers.
+      jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(null);
+    });
+
     const mockTrackingRecord = {
       user_id: 'user-1',
       user: mockUser,

@@ -33,10 +33,9 @@ export interface MonitoringV2VisibleLayers {
   areas: boolean;
 }
 
-export type MonitoringScope = 'city' | 'rayon' | 'area';
-export type MonitoringMode = 'aggregate' | 'workers';
+export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'area';
 
-/** Current drill position on the map (town → rayon → area). */
+/** Current drill position on the map (Surabaya → rayon → area). */
 export interface MonitoringView {
   scope: MonitoringScope;
   id: string | null;
@@ -52,8 +51,7 @@ export interface MonitoringV2State {
   clusterZoomThreshold: number;
   loading: boolean;
   error: string | null;
-  // Aggregate-first drill-down state.
-  mode: MonitoringMode;
+  // Unified drill-down state (Surabaya → rayon → area → workers).
   view: MonitoringView;
   /** The scope the user's role can never drill above. */
   floor: MonitoringScope;
@@ -93,9 +91,8 @@ const initialState: MonitoringV2State = {
   clusterZoomThreshold: 0.05,
   loading: false,
   error: null,
-  mode: 'aggregate',
-  view: { scope: 'city', id: null, rayonId: null, name: null },
-  floor: 'city',
+  view: { scope: 'surabaya', id: null, rayonId: null, name: null },
+  floor: 'surabaya',
   aggregate: null,
   aggregateLoading: false,
 };
@@ -224,27 +221,26 @@ const monitoringV2Slice = createSlice({
       state.clusterZoomThreshold = action.payload;
     },
 
-    /** Set the aggregate/workers rendering mode. */
-    setMode(state, action: PayloadAction<MonitoringMode>) {
-      state.mode = action.payload;
-    },
-
     /**
-     * Initialise the drill view + floor + mode from the viewer's role.
-     * korlap → area (workers); kepala_rayon/admin_data → rayon (aggregate);
-     * city roles → city (aggregate).
+     * Initialise the drill view + floor from the viewer's role.
+     * korlap → area; kepala_rayon/admin_data → rayon; city roles → surabaya.
      */
     initMonitoringView(
       state,
-      action: PayloadAction<{ view: MonitoringView; floor: MonitoringScope; mode: MonitoringMode }>,
+      action: PayloadAction<{ view: MonitoringView; floor: MonitoringScope }>,
     ) {
       state.view = action.payload.view;
       state.floor = action.payload.floor;
-      state.mode = action.payload.mode;
       state.selectedUserId = null;
     },
 
-    /** Drill one level deeper from a tapped aggregate bubble. */
+    /** Surabaya → the rayon list (city scope). */
+    enterCity(state) {
+      state.view = { scope: 'city', id: null, rayonId: null, name: null };
+      state.selectedUserId = null;
+    },
+
+    /** Drill one level deeper from a tapped rayon/area node. */
     drillTo(
       state,
       action: PayloadAction<{ id: string; type: 'rayon' | 'area'; name: string; rayonId: string | null }>,
@@ -259,7 +255,6 @@ const monitoringV2Slice = createSlice({
           rayonId: n.rayonId ?? state.view.rayonId,
           name: n.name,
         };
-        state.mode = 'workers';
       }
       state.selectedUserId = null;
     },
@@ -274,10 +269,10 @@ const monitoringV2Slice = createSlice({
           rayonId: state.view.rayonId,
           name: null,
         };
-        state.mode = 'aggregate';
       } else if (state.view.scope === 'rayon') {
         state.view = { scope: 'city', id: null, rayonId: null, name: null };
-        state.mode = 'aggregate';
+      } else if (state.view.scope === 'city') {
+        state.view = { scope: 'surabaya', id: null, rayonId: null, name: null };
       }
       state.selectedUserId = null;
     },
@@ -320,8 +315,8 @@ export const {
   setSelectedUser,
   setSelectedArea,
   setClusterZoomThreshold,
-  setMode,
   initMonitoringView,
+  enterCity,
   drillTo,
   drillBack,
 } = monitoringV2Slice.actions;

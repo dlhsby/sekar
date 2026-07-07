@@ -20,7 +20,7 @@ describe('MonitoringStatusBar', () => {
     render(<MonitoringStatusBar totals={totals} />);
 
     expect(screen.getByText('Aktif')).toBeInTheDocument();
-    expect(screen.getByText('Idle')).toBeInTheDocument();
+    expect(screen.getByText('Tidak aktif')).toBeInTheDocument();
     expect(screen.getByText('Tidak terdeteksi')).toBeInTheDocument();
   });
 

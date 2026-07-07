@@ -39,6 +39,8 @@ export interface SnapshotWorker {
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
+  /** True if this worker is on the current shift's roster (not ad-hoc). */
+  is_scheduled: boolean;
 }
 
 export interface SnapshotAreaSummary {
@@ -105,7 +107,15 @@ export class MonitoringService {
   // ---- Delegated to MonitoringUserService ----
 
   async getLiveUsers(filters?: LiveUsersFilterDto): Promise<LiveUsersResponseDto> {
-    return this.userService.getLiveUsers(filters);
+    const result = await this.userService.getLiveUsers(filters);
+    // Flag ad-hoc / off-schedule workers (clocked in but not on the current
+    // shift's roster) so the map can style them distinctly.
+    const currentShift = await this.statsService.getCurrentShiftDefinition();
+    const scheduledIds = await this.statsService.scheduledUserIdsForCurrentShift(currentShift?.id);
+    for (const u of result.users ?? []) {
+      u.is_scheduled = scheduledIds.has(u.id);
+    }
+    return result;
   }
 
   async getLocationHistory(
@@ -152,6 +162,10 @@ export class MonitoringService {
     const result = await this.userService.getLiveUsers(filters);
     const currentShift = await this.statsService.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
+    // Ad-hoc detection: workers NOT on the current shift's roster (e.g. patrol
+    // workers clocked in without a schedule) are flagged so the map can style
+    // them distinctly and the counts can exclude them.
+    const scheduledIds = await this.statsService.scheduledUserIdsForCurrentShift(currentShift?.id);
 
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
     const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => ({
@@ -168,6 +182,7 @@ export class MonitoringService {
       last_update: u.last_update.toISOString(),
       is_within_area: u.is_within_area,
       battery_level: u.battery_level,
+      is_scheduled: scheduledIds.has(u.id),
     }));
 
     // Build area_summaries from distinct areas present in workers

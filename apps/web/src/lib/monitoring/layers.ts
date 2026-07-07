@@ -9,12 +9,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 export interface MonitoringLayers {
-  /** Rayon boundary outline. */
-  rayonBorder: boolean;
-  /** Rayon fill tinted with its configured color. */
-  rayonFill: boolean;
-  /** Area boundary outline. */
-  areaBorder: boolean;
+  /** Rayon boundary — outline + tinted fill (one toggle). */
+  rayon: boolean;
+  /** Area boundary — outline + tinted fill (one toggle). */
+  area: boolean;
   /** Area centre pins (drilled/worker view). */
   areaPins: boolean;
   /** Worker pins / clusters ("Semua Petugas" mode). */
@@ -24,21 +22,20 @@ export interface MonitoringLayers {
 }
 
 export const DEFAULT_LAYERS: MonitoringLayers = {
-  rayonBorder: true,
-  rayonFill: true,
-  areaBorder: true,
+  rayon: true,
+  area: true,
   areaPins: true,
   petugas: true,
   overdue: false,
 };
 
-const STORAGE_KEY = 'monitoring.layers.v2';
+// v3: rayonBorder+rayonFill collapsed into `rayon`, areaBorder into `area`.
+const STORAGE_KEY = 'monitoring.layers.v3';
 
 /** Layer toggles rendered by the Layers panel (order matters). */
 export const LAYER_TOGGLES: { key: keyof MonitoringLayers; labelKey: string }[] = [
-  { key: 'rayonBorder', labelKey: 'monitoring:layers.rayonBorder' },
-  { key: 'rayonFill', labelKey: 'monitoring:layers.rayonFill' },
-  { key: 'areaBorder', labelKey: 'monitoring:layers.areaBorder' },
+  { key: 'rayon', labelKey: 'monitoring:layers.rayon' },
+  { key: 'area', labelKey: 'monitoring:layers.area' },
   { key: 'areaPins', labelKey: 'monitoring:layers.areaPins' },
   { key: 'petugas', labelKey: 'monitoring:layers.petugas' },
   { key: 'overdue', labelKey: 'monitoring:layers.overdue' },

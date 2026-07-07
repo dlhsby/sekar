@@ -9,26 +9,40 @@ jest.mock('@/lib/auth/hooks', () => ({
   useUser: () => ({ id: 'u1', full_name: 'Pak Hadi', role: 'superadmin' }),
 }));
 
-const snapshot = {
+// Current-shift aggregate: 10 scheduled, 8 hadir (7 aktif + 1 tidak-aktif),
+// 2 tidak hadir — for one rayon (Pusat).
+const aggregate = {
   data: {
-    data: {
-      workers: [],
-      area_summaries: [
-        { area_id: 'a1', area_name: 'Bungkul', rayon_id: 'r1', rayon_name: 'Pusat', active_count: 8, required_count: 10, is_understaffed: true },
-      ],
-      total_active: 8,
-      total_inactive: 2,
-      total_outside_area: 1,
-      total_missing: 0,
-      total_offline: 1,
-      generated_at: new Date().toISOString(),
-    },
+    scope: 'city',
+    scope_id: null,
+    nodes: [
+      {
+        id: 'r1',
+        name: 'Pusat',
+        type: 'rayon',
+        center_lat: -7.3,
+        center_lng: 112.7,
+        counts_by_status: { active: 6, inactive: 1, outside_area: 1, missing: 0, offline: 0 },
+        counts_by_role: {},
+        worker_count: 8,
+        online_count: 8,
+        required: 10,
+        is_understaffed: true,
+        roster: { scheduled: 10, clocked_in: 8, not_clocked_in: 2 },
+        presence: { aktif: { dalam: 6, luar: 1 }, tidak_aktif: { dalam: 1, luar: 0 } },
+        area_count: 1,
+      },
+    ],
+    totals: { active: 6, inactive: 1, outside_area: 1, missing: 0, offline: 0 },
+    roster_totals: { scheduled: 10, clocked_in: 8, not_clocked_in: 2 },
+    presence_totals: { aktif: { dalam: 6, luar: 1 }, tidak_aktif: { dalam: 1, luar: 0 } },
+    generated_at: new Date().toISOString(),
   },
   isLoading: false,
 };
 
 jest.mock('@/lib/api/monitoring-v2', () => ({
-  useMonitoringSnapshot: () => snapshot,
+  useMonitoringAggregate: () => aggregate,
 }));
 jest.mock('@/lib/api/tasks', () => ({ useTasks: () => ({ data: { meta: { total: 128 } } }) }));
 jest.mock('@/lib/api/pruning-requests', () => ({
@@ -83,15 +97,13 @@ describe('DashboardPage', () => {
 
   it('renders real KPI values from the data hooks', () => {
     render(<DashboardPage />);
-    // Aktif folds outside-area into the activity axis (active 8 + outside 1 = 9);
-    // presence excludes offline (9 + idle 2 + missing 0 = 11).
-    expect(screen.getByText('9 / 11')).toBeInTheDocument(); // petugas aktif / hadir
+    expect(screen.getByText('8 / 10')).toBeInTheDocument(); // Hadir / scheduled (current shift)
     expect(screen.getByText('128')).toBeInTheDocument(); // tugas
     expect(screen.getByText('14')).toBeInTheDocument(); // perantingan
     expect(screen.getByText('5')).toBeInTheDocument(); // lembur
   });
 
-  it('renders the per-rayon breakdown from area summaries', () => {
+  it('renders the per-rayon hadir/scheduled breakdown from aggregate nodes', () => {
     render(<DashboardPage />);
     expect(screen.getByText('Pusat')).toBeInTheDocument();
     expect(screen.getByText('8/10')).toBeInTheDocument();

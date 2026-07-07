@@ -7,13 +7,15 @@
 import i18n from '@/lib/i18n/config';
 import type { TrackingStatus } from '@/lib/api/monitoring';
 
-// Spec-compliant WCAG 2.1 AA colors
+// Canonical tracking-status colors (specs/ui-ux/tokens.json → status.*), kept in
+// sync with mobile's nbColors.status* so map markers read identically on both
+// platforms. Used for Google map marker fills (which can't read CSS vars).
 export const STATUS_COLORS: Record<TrackingStatus, string> = {
   active: '#15803D',
-  inactive: '#D97706',
+  inactive: '#92400E',
   outside_area: '#9333EA',
-  missing: '#DC2626',
-  offline: '#6B7280',
+  missing: '#B91C1C',
+  offline: '#4B5563',
 };
 
 export const STATUS_BG_COLORS: Record<TrackingStatus, string> = {

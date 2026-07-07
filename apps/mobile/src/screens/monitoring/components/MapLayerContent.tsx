@@ -4,7 +4,7 @@
  * Consolidated from MapDashboardScreen lines 620–715.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { featureFlags } from '../../../utils/featureFlags';
 import { ClusteredUserMarkers } from '../../../components/monitoring/ClusteredUserMarkers';
@@ -12,12 +12,8 @@ import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOver
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
-import { AggregateBubbleLayer } from '../../../components/monitoring/AggregateBubbleLayer';
-import type { LiveUser, AggregateNode } from '../../../types/models.types';
-import type {
-  MonitoringV2VisibleLayers,
-  MonitoringMode,
-} from '../../../store/slices/monitoringV2Slice';
+import type { LiveUser } from '../../../types/models.types';
+import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
 
 interface MapLayerContentProps {
   mapReady: boolean;
@@ -30,12 +26,22 @@ interface MapLayerContentProps {
   useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
-  /** Aggregate-first flow: 'aggregate' → summary bubbles, 'workers' → worker markers. */
-  mode: MonitoringMode;
-  aggregateNodes: AggregateNode[];
-  onDrillNode: (node: AggregateNode) => void;
-  onRayonPress: (rayon: any) => void;
-  onAreaPress: (area: any) => void;
+  /** Current drill scope — gates which boundary layers + markers show. */
+  scope: 'surabaya' | 'city' | 'rayon' | 'area';
+  /** The rayon being viewed (rayon/area scope) — scopes markers to it. */
+  rayonId: string | null;
+  /** The selected area (area scope) — only its boundary is drawn, on demand. */
+  areaId: string | null;
+  /** Attendance ratio per rayon/area id, shown on the geographic markers. */
+  rosterById: Record<string, { clockedIn: number; scheduled: number }>;
+  /** Unified drill-down: true → worker markers (area scope). */
+  showWorkers: boolean;
+  /** Bubble taps — drill into the child level (city→rayon, rayon→area). */
+  onRayonDrill: (rayon: any) => void;
+  onAreaDrill: (area: any) => void;
+  /** Marker taps — open the current node's detail sheet. */
+  onRayonDetail: (rayon: any) => void;
+  onAreaDetail: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
   onClusterPress: (center: { latitude: number; longitude: number }) => void;
 }
@@ -51,33 +57,82 @@ export function MapLayerContent({
   useClustering,
   currentRegion,
   boundaryKey,
-  mode,
-  aggregateNodes,
-  onDrillNode,
-  onRayonPress,
-  onAreaPress,
+  scope,
+  rayonId,
+  areaId,
+  rosterById,
+  showWorkers,
+  onRayonDrill,
+  onAreaDrill,
+  onRayonDetail,
+  onAreaDetail,
   onMarkerPress,
   onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
   const { t } = useTranslation();
+
+  // Scope the boundary set to the drill level. City → all rayons; rayon → the
+  // current rayon (its areas are markers, not polygons, so nothing heavy draws);
+  // area → the current rayon but ONLY the selected area's polygon (drawn on
+  // demand when its marker is tapped) — this keeps the map cheap.
+  const scopedRayons = useMemo(() => {
+    const all = boundaries?.rayons ?? [];
+    if (scope === 'area') {
+      return all
+        .filter((r: any) => r.id === rayonId)
+        .map((r: any) => ({ ...r, areas: (r.areas ?? []).filter((a: any) => a.id === areaId) }));
+    }
+    if (scope === 'rayon') {
+      return all.filter((r: any) => r.id === rayonId);
+    }
+    return all;
+  }, [boundaries, scope, rayonId, areaId]);
+
+  // Rayon outline follows its toggle from the city view down. Area outlines draw
+  // ONLY at area scope (the one selected area) — never all-at-once at rayon scope.
+  const showRayonBoundaries = visibleLayers.rayons && scope !== 'surabaya';
+  const showAreaBoundaries = visibleLayers.areas && scope === 'area';
+
+  // Bubbles vs markers are separated by scope (gated independently of the
+  // boundary toggles):
+  //   • city  → rayon BUBBLES (ratio, drill into a rayon)
+  //   • rayon → the selected rayon MARKER (detail) + its area BUBBLES (drill)
+  //   • area  → the selected area MARKER (detail) + worker markers
+  const showRayonBubbles = scope === 'city';
+  const showAreaBubbles = scope === 'rayon';
+  const showRayonMarker = scope === 'rayon';
+  const showAreaMarker = scope === 'area';
+  const showBoundaryLayer =
+    showRayonBoundaries || showAreaBoundaries ||
+    showRayonBubbles || showAreaBubbles || showRayonMarker || showAreaMarker;
+
   return (
     <>
-      {/* Boundary overlays */}
-      {mapReady && boundaries && (visibleLayers.rayons || visibleLayers.areas) && (
+      {/* Boundary overlay — polygons (toggle-gated) + geographic drill markers
+          (scope-gated). Keyed by scope so a drill-out fully remounts the layer
+          and no stale markers linger. */}
+      {mapReady && scopedRayons.length > 0 && showBoundaryLayer && (
         <BoundaryOverlay
-          key={boundaryKey}
-          rayons={boundaries.rayons}
-          onRayonPress={onRayonPress}
-          onAreaPress={onAreaPress}
-          showRayons={visibleLayers.rayons}
-          showAreas={visibleLayers.areas}
+          key={`boundary-${scope}-${boundaryKey}`}
+          rayons={scopedRayons}
+          onRayonBubblePress={onRayonDrill}
+          onAreaBubblePress={onAreaDrill}
+          onRayonMarkerPress={onRayonDetail}
+          onAreaMarkerPress={onAreaDetail}
+          showRayons={showRayonBoundaries}
+          showAreas={showAreaBoundaries}
+          showRayonBubbles={showRayonBubbles}
+          showAreaBubbles={showAreaBubbles}
+          showRayonMarker={showRayonMarker}
+          showAreaMarker={showAreaMarker}
+          rosterById={rosterById}
         />
       )}
 
-      {/* Phase 3: Area status overlay (plant health tints) */}
-      {mapReady && boundaries && visibleLayers.areas && (
+      {/* Phase 3: Area status overlay (plant health tints) — inside a rayon only */}
+      {mapReady && showAreaBoundaries && scopedRayons.length > 0 && (
         <AreaStatusOverlay
-          rayons={boundaries.rayons}
+          rayons={scopedRayons}
           boundaryKey={boundaryKey}
         />
       )}
@@ -87,13 +142,8 @@ export function MapLayerContent({
         <PlantOverlayLayer visible={visibleLayers.plants} />
       )}
 
-      {/* Aggregate "Ringkasan" bubbles — one per rayon/area, drill on tap. */}
-      {mapReady && mode === 'aggregate' && (
-        <AggregateBubbleLayer nodes={aggregateNodes} onDrill={onDrillNode} />
-      )}
-
-      {/* Worker markers only in "Semua Petugas" / area-scope mode. */}
-      {mode === 'workers' &&
+      {/* Worker markers only at area scope. */}
+      {showWorkers &&
         (featureFlags.clusterMarkersV2 ? (
         <ClusteredUserMarkers
           workers={visibleUsers}

@@ -1,6 +1,6 @@
 {
   "kpi": {
-    "activeOfficers": "Active Officers",
+    "activeOfficers": "Present",
     "tasks": "Tasks",
     "incomingRequests": "Incoming Requests",
     "pendingOvertimes": "Pending Overtimes"
@@ -9,11 +9,11 @@
     "title": "Officer Status",
     "loading": "Loading status…",
     "unavailable": "Status unavailable.",
-    "presence": "{{count}} present · {{rayons}} rayons",
+    "presence": "{{count}} monitored · {{rayons}} rayons",
     "active": "Active",
-    "idle": "Idle",
+    "idle": "Inactive",
     "missing": "Not detected",
-    "offline": "Offline (not clocked in)",
+    "offline": "Offline",
     "outsideArea": "Outside Area",
     "todaySchedule": "Today's Schedule",
     "scheduled": "scheduled",
@@ -42,6 +42,6 @@
   },
   "greeting": "Hello",
   "user": "User",
-  "statusMeta": "{{count}} present · {{rayons}} rayons",
-  "ariaStatus": "{{active}} of {{total}} active officers"
+  "statusMeta": "{{hadir}}/{{scheduled}} hadir · {{rayons}} rayons",
+  "ariaStatus": "{{hadir}} of {{scheduled}} present"
 }

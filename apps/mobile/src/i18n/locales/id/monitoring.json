@@ -1,8 +1,15 @@
 {
   "page": {
-    "backLabel": "Kembali",
-    "modeSummary": "Ringkasan",
-    "modeAllWorkers": "Semua Petugas"
+    "backLabel": "Kembali"
+  },
+  "aggregate": {
+    "scheduledLabel": "Terjadwal",
+    "clockedInLabel": "Hadir",
+    "notClockedInLabel": "Belum Hadir"
+  },
+  "surabaya": {
+    "title": "Surabaya",
+    "tapHint": "Ketuk untuk lihat rayon"
   },
   "screen": {
     "title": "Pemantauan",
@@ -45,7 +52,9 @@
     "zoomIn": "Perbesar",
     "zoomOut": "Perkecil",
     "filterSection": "Filter",
-    "filter": "Filter monitoring"
+    "filter": "Filter monitoring",
+    "myLocation": "Lokasi saya",
+    "layersSection": "Tampilan"
   },
   "markerPreview": {
     "typeOfficer": "Petugas",
@@ -173,7 +182,7 @@
       "area": "Area",
       "role": "Jabatan",
       "user": "Cari Pengguna",
-      "mapLayers": "Tampilan Peta",
+      "mapLayers": "Pengaturan",
       "staffing": "Kepegawaian"
     },
     "placeholders": {
