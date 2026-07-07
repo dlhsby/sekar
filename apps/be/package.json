@@ -1,6 +1,6 @@
 {
   "name": "sekar-backend",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "SEKAR Backend API - Worker tracking and task management system",
   "author": "DLH Surabaya",
   "private": true,
