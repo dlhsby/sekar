@@ -213,9 +213,25 @@ describe('SimpleMonitoringMap', () => {
     expect(onDrillNode).toHaveBeenCalledWith(nodeMarkers[0]);
   });
 
-  it('worker view renders area pin + clustered worker markers', () => {
+  it('worker view renders just the workers (no scattered area pins)', () => {
     render(<SimpleMonitoringMap showWorkers workers={workers} boundaries={boundaries} />);
-    // 1 area pin + 2 (unclustered, far-apart) workers.
+    // Area centre pins are now the overdue-plant overlay only, so without
+    // overdueByArea the worker view shows just the 2 (far-apart) worker markers.
+    expect(screen.getAllByTestId('marker')).toHaveLength(2);
+  });
+
+  it('shows the selected area pin when the overdue overlay is active', () => {
+    render(
+      <SimpleMonitoringMap
+        showWorkers
+        scope="area"
+        areaId="a1"
+        workers={workers}
+        boundaries={boundaries}
+        overdueByArea={{ a1: 3 }}
+      />
+    );
+    // 2 workers + 1 overdue area pin (scoped to the selected area a1).
     expect(screen.getAllByTestId('marker')).toHaveLength(3);
   });
 
