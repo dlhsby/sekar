@@ -147,3 +147,41 @@ export function nodeRatioIcon(
     anchor: new google.maps.Point(w / 2, h / 2),
   };
 }
+
+/* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays */
+// The CURRENT-node icon markers (mirrors mobile's rayon office / area pin). These
+// are the detail-openers for the node you're inside — icon only, no ratio (the
+// ratio lives on the child bubbles). Distinct from the drill bubbles above.
+const NODE_DETAIL: Record<'rayon' | 'area', { color: string; glyph: string }> = {
+  rayon: {
+    color: '#2563EB',
+    glyph:
+      '<path d="M3 21h18"/><path d="M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16"/>' +
+      '<path d="M14 21V9h4a1 1 0 0 1 1 1v11"/><path d="M8 7h2M8 11h2M8 15h2"/>',
+  },
+  area: {
+    color: '#D97706',
+    glyph: '<path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
+  },
+};
+/* eslint-enable sekar-design/no-inline-hex-colors */
+
+/**
+ * The current node's geographic pin (selected rayon at rayon scope, selected area
+ * at area scope). A colored circle with a white glyph; clicking it opens the
+ * node's detail — it does NOT drill, so it carries no ratio.
+ */
+export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
+  const { color, glyph } = NODE_DETAIL[variant];
+  const s = 34;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
+    `<circle cx="17" cy="17" r="14" fill="${color}" stroke="${WHITE}" stroke-width="2"/>` +
+    `<g transform="translate(17 17) scale(0.66) translate(-12 -12)" fill="none" stroke="${WHITE}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
+    `</svg>`;
+  return {
+    url: svgUrl(svg),
+    scaledSize: new google.maps.Size(s, s),
+    anchor: new google.maps.Point(s / 2, s / 2),
+  };
+}
