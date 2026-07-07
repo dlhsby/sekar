@@ -1,23 +1,18 @@
 'use client';
 
 /**
- * MonitoringLayersPanel — the "Lapisan" (layers) control popover, opened from
- * the Layers button. Toggles which overlays the map draws and hosts the
- * Ringkasan / Semua Petugas view-mode switch. State is owned by the page
- * (persisted via useMonitoringLayers).
+ * MonitoringLayersPanel — the "Pengaturan" (settings) control popover, opened
+ * from the settings button. Toggles which overlays the map draws. State is owned
+ * by the page (persisted via useMonitoringLayers).
  */
 import { useTranslation } from 'react-i18next';
-import { X, LayoutGrid, Users } from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { LAYER_TOGGLES, type MonitoringLayers } from '@/lib/monitoring/layers';
 
 export interface MonitoringLayersPanelProps {
   layers: MonitoringLayers;
   onToggleLayer: (key: keyof MonitoringLayers) => void;
-  mode: 'aggregate' | 'workers';
-  onModeChange: (mode: 'aggregate' | 'workers') => void;
-  /** Mode switch is only meaningful above the area scope. */
-  showModeToggle: boolean;
   onClose: () => void;
 }
 
@@ -43,9 +38,6 @@ function Switch({ on }: { on: boolean }) {
 export function MonitoringLayersPanel({
   layers,
   onToggleLayer,
-  mode,
-  onModeChange,
-  showModeToggle,
   onClose,
 }: MonitoringLayersPanelProps) {
   const { t } = useTranslation();
@@ -63,40 +55,6 @@ export function MonitoringLayersPanel({
           <X className="h-4 w-4" />
         </button>
       </div>
-
-      {showModeToggle && (
-        <div className="mb-3">
-          <span className="mb-1.5 block text-xs font-bold uppercase text-nb-gray-500">
-            {t('monitoring:layers.viewMode')}
-          </span>
-          <div className="flex rounded-nb-base border-2 border-nb-black p-0.5">
-            <button
-              type="button"
-              onClick={() => onModeChange('aggregate')}
-              aria-pressed={mode === 'aggregate'}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-1 rounded-nb-sm py-1.5 text-sm font-bold transition-colors',
-                mode === 'aggregate' ? 'bg-nb-primary text-nb-black' : 'text-nb-gray-600 hover:bg-nb-gray-50'
-              )}
-            >
-              <LayoutGrid className="h-4 w-4" />
-              {t('monitoring:page.modeSummary')}
-            </button>
-            <button
-              type="button"
-              onClick={() => onModeChange('workers')}
-              aria-pressed={mode === 'workers'}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-1 rounded-nb-sm py-1.5 text-sm font-bold transition-colors',
-                mode === 'workers' ? 'bg-nb-primary text-nb-black' : 'text-nb-gray-600 hover:bg-nb-gray-50'
-              )}
-            >
-              <Users className="h-4 w-4" />
-              {t('monitoring:page.modeAllWorkers')}
-            </button>
-          </div>
-        </div>
-      )}
 
       <span className="mb-1.5 block text-xs font-bold uppercase text-nb-gray-500">
         {t('monitoring:layers.overlays')}

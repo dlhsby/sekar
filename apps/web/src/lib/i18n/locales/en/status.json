@@ -20,7 +20,7 @@
   },
   "tracking": {
     "active": "Active",
-    "inactive": "Idle",
+    "inactive": "Inactive",
     "outside_area": "Outside Area",
     "missing": "Not Detected",
     "offline": "Offline"

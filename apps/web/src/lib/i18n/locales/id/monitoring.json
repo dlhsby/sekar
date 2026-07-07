@@ -20,24 +20,26 @@
     "closePanelLabel": "Tutup filter",
     "listLabel": "Daftar Petugas",
     "closeListLabel": "Tutup daftar",
-    "backLabel": "Kembali",
-    "modeSummary": "Ringkasan",
-    "modeAllWorkers": "Semua Petugas"
+    "backLabel": "Kembali"
   },
   "aggregate": {
-    "onlineOfRequired": "{{online}}/{{required}} bertugas",
-    "understaffed": "Kekurangan personel"
+    "understaffed": "Kekurangan personel",
+    "scheduledLabel": "Terjadwal",
+    "clockedInLabel": "Hadir",
+    "notClockedInLabel": "Belum Hadir"
+  },
+  "surabaya": {
+    "title": "Surabaya",
+    "tapHint": "Ketuk untuk lihat rayon"
   },
   "layers": {
-    "title": "Lapisan",
-    "viewMode": "Tampilan",
+    "title": "Pengaturan",
     "overlays": "Lapisan Peta",
-    "rayonBorder": "Batas Rayon",
-    "rayonFill": "Warna Rayon",
-    "areaBorder": "Batas Area",
     "areaPins": "Titik Area",
     "petugas": "Petugas",
-    "overdue": "Tanaman Terlambat"
+    "overdue": "Tanaman Terlambat",
+    "rayon": "Batas Rayon",
+    "area": "Batas Area"
   },
   "search": {
     "personnelLabel": "Petugas",
@@ -50,11 +52,13 @@
   },
   "status": {
     "active": "Aktif",
-    "inactive": "Idle",
+    "inactive": "Tidak aktif",
     "outside_area": "Luar",
     "missing": "Hilang",
     "offline": "Offline",
-    "notDetected": "Tidak terdeteksi"
+    "notDetected": "Tidak terdeteksi",
+    "absent": "Tidak hadir",
+    "adhoc": "Luar jadwal"
   },
   "filters": {
     "label": "Cari Petugas",

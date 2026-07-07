@@ -1,25 +1,22 @@
 'use client';
 
 /**
- * AggregateNodeList — the side-panel list for the "Ringkasan" view. Shows one
- * row per aggregate node (rayon or area) with online/required staffing and a
- * status breakdown; clicking a row drills into it, mirroring a map bubble tap.
+ * AggregateNodeList — the side-panel list for the drill-down view. Shows one
+ * row per node (rayon or area) with today's attendance trio
+ * (Terjadwal / Hadir / Belum Hadir); clicking a row drills into it, mirroring a
+ * map node tap.
  */
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, AlertTriangle } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
-import { STATUS_DOT_CLASSES } from '@/lib/constants/monitoring';
 import type { AggregateNode } from '@/lib/api/monitoring-v2';
-import type { TrackingStatus } from '@/lib/api/monitoring-types';
 
 export interface AggregateNodeListProps {
   nodes: AggregateNode[];
   onDrill: (node: AggregateNode) => void;
   className?: string;
 }
-
-const STATUS_ORDER: TrackingStatus[] = ['active', 'inactive', 'outside_area', 'missing'];
 
 export function AggregateNodeList({ nodes, onDrill, className }: AggregateNodeListProps) {
   const { t } = useTranslation();
@@ -62,27 +59,24 @@ export function AggregateNodeList({ nodes, onDrill, className }: AggregateNodeLi
                     />
                   )}
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-xs text-nb-gray-600">
-                  <span className="font-mono tabular-nums text-nb-black">
-                    {t('monitoring:aggregate.onlineOfRequired', {
-                      online: node.online_count,
-                      required: node.required,
-                    })}
+                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-nb-gray-600">
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-nb-black">
+                      {node.roster.scheduled}
+                    </span>
+                    {t('monitoring:aggregate.scheduledLabel')}
                   </span>
-                  <span className="flex items-center gap-1">
-                    {STATUS_ORDER.map((s) => {
-                      const count = node.counts_by_status[s];
-                      if (!count) return null;
-                      return (
-                        <span key={s} className="flex items-center gap-0.5">
-                          <span
-                            className={cn('h-2 w-2 rounded-full', STATUS_DOT_CLASSES[s])}
-                            aria-hidden="true"
-                          />
-                          <span className="font-mono tabular-nums">{count}</span>
-                        </span>
-                      );
-                    })}
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-nb-success-dark">
+                      {node.roster.clocked_in}
+                    </span>
+                    {t('monitoring:aggregate.clockedInLabel')}
+                  </span>
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-nb-danger-dark">
+                      {node.roster.not_clocked_in}
+                    </span>
+                    {t('monitoring:aggregate.notClockedInLabel')}
                   </span>
                 </div>
               </div>

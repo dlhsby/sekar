@@ -30,11 +30,18 @@ export function useLiveUsersFiltering(
   visibleLayers: MonitoringV2VisibleLayers,
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
   boundaries: any,
+  scope: 'surabaya' | 'city' | 'rayon' | 'area',
+  areaId: string | null,
 ): UseLiveUsersFilteringReturn {
   const visibleUsers = React.useMemo(() => {
     if (!visibleLayers.workers) { return []; }
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
+    // Worker pins only render at area scope — scope them to the SELECTED area so
+    // the map shows exactly the people working / scheduled in that area.
+    if (scope === 'area' && areaId) {
+      users = users.filter(u => u.area_id === areaId);
+    }
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);
     }
@@ -43,7 +50,7 @@ export function useLiveUsersFiltering(
       users = users.filter(u => locs.includes(userAxes(u).location));
     }
     return users;
-  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers]);
+  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, areaId]);
 
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }

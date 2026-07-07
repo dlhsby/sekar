@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import {
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { ROLE_LABELS } from '@/lib/constants/roles';
-import { useMonitoringSnapshot } from '@/lib/api/monitoring-v2';
+import { useMonitoringAggregate } from '@/lib/api/monitoring-v2';
 import { useTasks } from '@/lib/api/tasks';
 import { usePruningRequests } from '@/lib/api/pruning-requests';
 import { useOvertimes } from '@/lib/api/overtime';
@@ -26,16 +26,15 @@ import { cn } from '@/lib/utils/cn';
 
 const ADMIN_ROLES = new Set(['admin_system', 'superadmin', 'top_management']);
 
-// Presence model mirrors the mobile monitoring map (StatusSummaryBar): the
-// three activity states shown on the map are Aktif / Idle / Tidak terdeteksi.
-// "Di luar area" is a location overlay (not a top-level status) and Offline
-// (not clocked-in) is excluded from the map total — both surfaced separately.
-type ActivityKey = 'aktif' | 'idle' | 'tidak_terdeteksi';
+// Presence model (current shift): HADIR = scheduled + clocked in, split into
+// Aktif (fresh ping) / Tidak aktif (offline or stale), each with a dalam/luar
+// sub-count; plus TIDAK HADIR = scheduled but not clocked in. Ad-hoc /
+// unscheduled clock-ins are excluded from all counts by the backend.
+type DonutKey = 'aktif' | 'tidak_aktif';
 
-const ACTIVITY_META: { key: ActivityKey; label: string; color: string }[] = [
-  { key: 'aktif', label: '', color: 'var(--color-status-active)' },
-  { key: 'idle', label: '', color: 'var(--color-status-idle)' },
-  { key: 'tidak_terdeteksi', label: '', color: 'var(--color-status-missing)' },
+const DONUT_META: { key: DonutKey; labelKey: string; color: string }[] = [
+  { key: 'aktif', labelKey: 'active', color: 'var(--color-status-active)' },
+  { key: 'tidak_aktif', labelKey: 'idle', color: 'var(--color-status-idle)' },
 ];
 
 const NUM = '—';
@@ -46,7 +45,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const isAdmin = !!user && ADMIN_ROLES.has(user.role);
 
-  const snapshot = useMonitoringSnapshot('city');
+  const aggregate = useMonitoringAggregate('city');
   const tasks = useTasks();
   const pruning = usePruningRequests({ status: 'submitted' });
   const overtime = useOvertimes({ status: 'pending' });
@@ -64,56 +63,60 @@ export default function DashboardPage() {
   );
 
   const counts = useMemo(() => {
-    const d = snapshot.data?.data;
+    const d = aggregate.data;
     if (!d) return null;
-    // Workers clocked-in and pinging — incl. those currently outside their
-    // boundary — count as "Aktif" (mobile folds outside-area into the activity
-    // axis); the outside subset is surfaced on its own line.
-    const aktif = (d.total_active ?? 0) + (d.total_outside_area ?? 0);
-    const idle = d.total_inactive ?? 0;
-    const tidak_terdeteksi = d.total_missing ?? 0;
-    return {
-      aktif,
-      idle,
-      tidak_terdeteksi,
-      offline: d.total_offline ?? 0,
-      di_luar_area: d.total_outside_area ?? 0,
-      // Map total excludes offline (not clocked-in), matching mobile.
-      presensi: aktif + idle + tidak_terdeteksi,
-      // Roster-derived "expected vs actual" for today (ADR-013).
-      expected: d.expected_count ?? 0,
-      hadir: d.present_count ?? 0,
-      tidak_hadir: d.absent_count ?? 0,
-      cuti: d.on_leave_count ?? 0,
+    const p = d.presence_totals;
+    const aktif = {
+      total: p.aktif.dalam + p.aktif.luar,
+      inside: p.aktif.dalam,
+      outside: p.aktif.luar,
     };
-  }, [snapshot.data]);
+    const tidak_aktif = {
+      total: p.tidak_aktif.dalam + p.tidak_aktif.luar,
+      inside: p.tidak_aktif.dalam,
+      outside: p.tidak_aktif.luar,
+    };
+    return {
+      scheduled: d.roster_totals.scheduled,
+      hadir: d.roster_totals.clocked_in,
+      tidak_hadir: d.roster_totals.not_clocked_in,
+      aktif,
+      tidak_aktif,
+    };
+  }, [aggregate.data]);
 
-  // Per-rayon active/required, aggregated from area summaries.
-  const perRayon = useMemo(() => {
-    const summaries = snapshot.data?.data.area_summaries ?? [];
-    const map = new Map<string, { active: number; required: number }>();
-    for (const s of summaries) {
-      if (!s.rayon_name) continue;
-      const row = map.get(s.rayon_name) ?? { active: 0, required: 0 };
-      row.active += s.active_count ?? 0;
-      row.required += s.required_count ?? 0;
-      map.set(s.rayon_name, row);
-    }
-    return Array.from(map.entries()).map(([name, v]) => ({ name, ...v }));
-  }, [snapshot.data]);
+  // Count per donut segment (Aktif / Tidak aktif of the hadir workers).
+  const donutCount = useCallback(
+    (key: DonutKey): number => {
+      if (!counts) return 0;
+      return key === 'aktif' ? counts.aktif.total : counts.tidak_aktif.total;
+    },
+    [counts]
+  );
 
-  // Conic-gradient string for the status donut.
+  // Per-rayon hadir/scheduled, from the aggregate's rayon nodes.
+  const perRayon = useMemo(
+    () =>
+      (aggregate.data?.nodes ?? []).map((n) => ({
+        name: n.name,
+        hadir: n.roster.clocked_in,
+        scheduled: n.roster.scheduled,
+      })),
+    [aggregate.data]
+  );
+
+  // Conic-gradient donut: Aktif vs Tidak aktif split of the hadir workers.
   const donutGradient = useMemo(() => {
-    if (!counts || counts.presensi === 0) return 'var(--color-nb-gray-200)';
+    if (!counts || counts.hadir === 0) return 'var(--color-nb-gray-200)';
     let acc = 0;
-    const segments = ACTIVITY_META.map(({ key, color }) => {
-      const start = (acc / counts.presensi) * 100;
-      acc += counts[key];
-      const end = (acc / counts.presensi) * 100;
+    const segments = DONUT_META.map(({ key, color }) => {
+      const start = (acc / counts.hadir) * 100;
+      acc += donutCount(key);
+      const end = (acc / counts.hadir) * 100;
       return `${color} ${start}% ${end}%`;
     });
     return `conic-gradient(${segments.join(', ')})`;
-  }, [counts]);
+  }, [counts, donutCount]);
 
   const recent = (notifications.data ?? []).slice(0, 5);
 
@@ -129,7 +132,7 @@ export default function DashboardPage() {
         <KpiTile
           tone="white"
           label={t('home:kpi.activeOfficers')}
-          value={counts ? `${counts.aktif} / ${counts.presensi}` : NUM}
+          value={counts ? `${counts.hadir} / ${counts.scheduled}` : NUM}
         />
         <KpiTile
           tone="white"
@@ -152,92 +155,78 @@ export default function DashboardPage() {
         {/* Status breakdown */}
         <SectionCard
           title={t('home:statusSection.title')}
-          meta={counts ? t('home:statusMeta', { count: counts.presensi, rayons: perRayon.length }) : undefined}
+          meta={
+            counts
+              ? t('home:statusMeta', {
+                  hadir: counts.hadir,
+                  scheduled: counts.scheduled,
+                  rayons: perRayon.length,
+                })
+              : undefined
+          }
         >
           {!counts ? (
             <p className="py-6 text-center text-nb-body-sm text-nb-gray-600">
-              {snapshot.isLoading ? t('home:statusSection.loading') : t('home:statusSection.unavailable')}
+              {aggregate.isLoading ? t('home:statusSection.loading') : t('home:statusSection.unavailable')}
             </p>
           ) : (
             <>
               <div className="flex flex-wrap items-center gap-6">
+                {/* Donut: Aktif vs Tidak aktif of the hadir workers; center = hadir. */}
                 <div
                   className="relative size-32 shrink-0 rounded-full border-2 border-nb-black"
                   style={{ background: donutGradient }}
                   role="img"
-                  aria-label={t('home:ariaStatus', { active: counts.aktif, total: counts.presensi })}
+                  aria-label={t('home:ariaStatus', { hadir: counts.hadir, scheduled: counts.scheduled })}
                 >
                   <div className="absolute inset-[18%] flex flex-col items-center justify-center rounded-full border-2 border-nb-black bg-nb-white">
                     <span className="font-heading text-2xl font-extrabold leading-none text-nb-black">
-                      {counts.aktif}
+                      {counts.hadir}
                     </span>
-                    <span className="font-mono text-[10px] uppercase text-nb-gray-600">{t('home:statusSection.active')}</span>
+                    <span className="font-mono text-[10px] uppercase text-nb-gray-600">
+                      {t('home:statusSection.present')}
+                    </span>
                   </div>
                 </div>
                 <ul className="flex-1 space-y-1.5">
-                  {ACTIVITY_META.map(({ key, color }) => {
-                    const v = counts[key];
-                    const pct = counts.presensi ? Math.round((v / counts.presensi) * 100) : 0;
-                    const labelKey = key === 'aktif' ? 'active' : key === 'idle' ? 'idle' : 'missing';
-                    const label = t(`home:statusSection.${labelKey}`);
+                  {/* HADIR breakdown: Aktif / Tidak aktif, each dalam·luar. */}
+                  {DONUT_META.map(({ key, labelKey, color }) => {
+                    const split = key === 'aktif' ? counts.aktif : counts.tidak_aktif;
+                    const pct = counts.hadir ? Math.round((split.total / counts.hadir) * 100) : 0;
                     return (
                       <li key={key} className="flex items-center gap-2 text-nb-body-sm">
                         <span
-                          className="size-3 shrink-0 rounded-sm border border-nb-black"
+                          className="mt-1 size-3 shrink-0 self-start rounded-sm border border-nb-black"
                           style={{ background: color }}
                         />
-                        <span className="flex-1 text-nb-gray-700">{label}</span>
-                        <span className="font-mono text-[12px] font-bold text-nb-black">
-                          {v} · {pct}%
+                        <span className="flex-1">
+                          <span className="text-nb-gray-700">{t(`home:statusSection.${labelKey}`)}</span>
+                          {split.total > 0 && (
+                            <span className="block font-mono text-[10px] text-nb-gray-500">
+                              {split.inside} {t('common:ui.withinArea')} · {split.outside}{' '}
+                              {t('common:ui.outsideArea')}
+                            </span>
+                          )}
+                        </span>
+                        <span className="self-start font-mono text-[12px] font-bold text-nb-black">
+                          {split.total} · {pct}%
                         </span>
                       </li>
                     );
                   })}
-                  {/* Location overlay + not-clocked-in — shown apart from the
-                      three activity states, mirroring the mobile map. */}
+                  {/* Tidak Hadir — scheduled for this shift but not clocked in. */}
                   <li className="flex items-center gap-2 border-t border-nb-gray-200 pt-1.5 text-nb-body-sm">
                     <span
                       className="size-3 shrink-0 rounded-sm border border-nb-black"
-                      style={{ background: 'var(--color-status-outside)' }}
+                      style={{ background: 'var(--color-status-missing)' }}
                     />
-                    <span className="flex-1 text-nb-gray-700">{t('home:statusSection.outsideArea')}</span>
-                    <span className="font-mono text-[12px] font-bold text-nb-black">
-                      {counts.di_luar_area}
-                    </span>
-                  </li>
-                  <li className="flex items-center gap-2 text-nb-body-sm">
-                    <span
-                      className="size-3 shrink-0 rounded-sm border border-nb-black"
-                      style={{ background: 'var(--color-status-offline)' }}
-                    />
-                    <span className="flex-1 text-nb-gray-500">{t('home:statusSection.offline')}</span>
-                    <span className="font-mono text-[12px] font-bold text-nb-gray-500">
-                      {counts.offline}
+                    <span className="flex-1 text-nb-gray-700">{t('home:statusSection.absent')}</span>
+                    <span className="font-mono text-[12px] font-bold text-nb-danger-dark">
+                      {counts.tidak_hadir}
                     </span>
                   </li>
                 </ul>
               </div>
-
-              {counts.expected > 0 && (
-                <div className="mt-5 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-3">
-                  <p className="mb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
-                    {t('home:statusSection.todaySchedule')} · {counts.expected} {t('home:statusSection.scheduled')}
-                  </p>
-                  <div className="flex flex-wrap gap-4 text-nb-body-sm">
-                    <span className="text-nb-gray-700">
-                      {t('home:statusSection.present')}{' '}
-                      <strong className="font-mono text-nb-success-dark">{counts.hadir}</strong>
-                    </span>
-                    <span className="text-nb-gray-700">
-                      {t('home:statusSection.absent')}{' '}
-                      <strong className="font-mono text-nb-danger-dark">{counts.tidak_hadir}</strong>
-                    </span>
-                    <span className="text-nb-gray-700">
-                      {t('home:statusSection.onLeave')} <strong className="font-mono text-nb-warning">{counts.cuti}</strong>
-                    </span>
-                  </div>
-                </div>
-              )}
 
               {perRayon.length > 0 && (
                 <>
@@ -246,7 +235,7 @@ export default function DashboardPage() {
                   </p>
                   <div className="space-y-1.5">
                     {perRayon.map((r) => {
-                      const ratio = r.required ? r.active / r.required : 0;
+                      const ratio = r.scheduled ? r.hadir / r.scheduled : 0;
                       const barColor =
                         ratio >= 0.75
                           ? 'var(--color-status-active)'
@@ -263,7 +252,7 @@ export default function DashboardPage() {
                             />
                           </div>
                           <span className="w-12 shrink-0 text-right font-mono text-[11px] font-bold text-nb-black">
-                            {r.active}/{r.required}
+                            {r.hadir}/{r.scheduled}
                           </span>
                         </div>
                       );

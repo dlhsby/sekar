@@ -84,7 +84,7 @@
     }
   },
   "clockInOut": {
-    "noAreaAssigned": "You have not been assigned to any area",
+    "noAreaAssigned": "No area assigned — you can still clock in",
     "contactSupervisor": "Contact your supervisor for area assignment",
     "gettingLocation": "Getting your location...",
     "attendanceInfo": "Attendance Information",
@@ -117,7 +117,10 @@
     "startShiftOutOfArea": "Start shift — You are out of area, attendance will be recorded",
     "endShiftNow": "End current shift",
     "shiftTimeLabel": "Shift Time:",
-    "clockInColonLabel": "Clock In:"
+    "clockInColonLabel": "Clock In:",
+    "noScheduleChip": "No schedule",
+    "noScheduleToday": "No schedule today",
+    "noAreaChip": "No area"
   },
   "gpsSection": {
     "capturingLocation": "Getting your location...",
@@ -128,7 +131,8 @@
     "gpsLabel": "GPS:",
     "accuracyLabel": "Accuracy:",
     "lowAccuracyWarning": "GPS accuracy is low. Move to an open area for better results.",
-    "updateGpsButton": "Update GPS"
+    "updateGpsButton": "Update GPS",
+    "noArea": "No assigned area — attendance is still recorded."
   },
   "shifts": {
     "today": "Attendance Today",

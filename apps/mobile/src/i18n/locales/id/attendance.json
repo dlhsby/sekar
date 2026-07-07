@@ -84,7 +84,7 @@
     }
   },
   "clockInOut": {
-    "noAreaAssigned": "Anda belum ditugaskan ke area manapun",
+    "noAreaAssigned": "Tanpa area penugasan — Anda tetap dapat clock in",
     "contactSupervisor": "Hubungi supervisor untuk penugasan area",
     "gettingLocation": "Mendapatkan lokasi Anda...",
     "attendanceInfo": "Informasi Kehadiran",
@@ -117,7 +117,10 @@
     "startShiftOutOfArea": "Mulai shift kerja — Anda di luar area, absen tetap dicatat",
     "endShiftNow": "Akhiri shift kerja saat ini",
     "shiftTimeLabel": "Waktu Shift:",
-    "clockInColonLabel": "Clock In:"
+    "clockInColonLabel": "Clock In:",
+    "noScheduleChip": "Tanpa jadwal",
+    "noScheduleToday": "Belum ada jadwal hari ini",
+    "noAreaChip": "Tanpa area"
   },
   "gpsSection": {
     "capturingLocation": "Mendapatkan lokasi...",
@@ -128,7 +131,8 @@
     "gpsLabel": "GPS:",
     "accuracyLabel": "Akurasi:",
     "lowAccuracyWarning": "GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.",
-    "updateGpsButton": "Perbarui GPS"
+    "updateGpsButton": "Perbarui GPS",
+    "noArea": "Tidak ada area penugasan — kehadiran tetap dicatat."
   },
   "shifts": {
     "today": "Kehadiran Hari Ini",

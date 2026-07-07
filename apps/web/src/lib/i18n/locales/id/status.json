@@ -7,7 +7,7 @@
   "completed": "Selesai",
   "cancelled": "Dibatalkan",
   "active": "Aktif",
-  "inactive": "Tidak Aktif",
+  "inactive": "Tidak aktif",
   "draft": "Draf",
   "submitted": "Terkirim",
   "verified": "Terverifikasi",
@@ -20,7 +20,7 @@
   },
   "tracking": {
     "active": "Aktif",
-    "inactive": "Idle",
+    "inactive": "Tidak aktif",
     "outside_area": "Di Luar Area",
     "missing": "Tidak Terdeteksi",
     "offline": "Offline"

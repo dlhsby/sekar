@@ -37,17 +37,15 @@ import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 import {
   toggleLayer,
   fetchAggregate,
-  setMode,
   initMonitoringView,
+  enterCity,
   drillTo,
   drillBack,
 } from '../../store/slices/monitoringV2Slice';
 import type {
   MonitoringV2VisibleLayers,
   MonitoringScope,
-  MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
-import type { AggregateNode } from '../../types/models.types';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
@@ -77,10 +75,11 @@ export function MapDashboardScreen(): React.JSX.Element {
     useSelector((state: RootState) => state.monitoring);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const visibleLayers = useSelector((state: RootState) => state.monitoringV2.visibleLayers);
-  const mode = useSelector((state: RootState) => state.monitoringV2.mode);
   const view = useSelector((state: RootState) => state.monitoringV2.view);
   const floor = useSelector((state: RootState) => state.monitoringV2.floor);
   const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
+  const scope = view.scope;
+  const showWorkers = scope === 'area';
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -106,55 +105,58 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   // Zoom + My-Location are native Google controls now; only heading reset +
   // cluster tap remain custom.
-  const { resetHeading, handleClusterPress } = useMapOperations(mapRef, currentRegion);
+  const { resetHeading, handleClusterPress, handleMyLocation, handleZoomIn, handleZoomOut } =
+    useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
-    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries);
+    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, scope === 'area' ? view.id : null);
 
 
-  // Initialise the aggregate-first drill view + floor from the viewer's role.
+  // Initialise the unified drill view + floor from the viewer's role.
   useEffect(() => {
     if (!currentUser) return;
     const role = currentUser.role;
-    let payload: { view: typeof view; floor: MonitoringScope; mode: MonitoringMode };
+    let payload: { view: typeof view; floor: MonitoringScope };
     if (role === 'korlap' && currentUser.area_id) {
       payload = {
         view: { scope: 'area', id: currentUser.area_id, rayonId: currentUser.rayon_id ?? null, name: null },
         floor: 'area',
-        mode: 'workers',
       };
     } else if ((role === 'kepala_rayon' || role === 'admin_data') && currentUser.rayon_id) {
       payload = {
         view: { scope: 'rayon', id: currentUser.rayon_id, rayonId: currentUser.rayon_id, name: null },
         floor: 'rayon',
-        mode: 'aggregate',
       };
     } else {
-      payload = { view: { scope: 'city', id: null, rayonId: null, name: null }, floor: 'city', mode: 'aggregate' };
+      payload = { view: { scope: 'surabaya', id: null, rayonId: null, name: null }, floor: 'surabaya' };
     }
     dispatch(initMonitoringView(payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
-  // Aggregate ("Ringkasan") fetch — only when showing bubbles for city/rayon.
+  // Aggregate fetch — city rollup feeds Surabaya (roster totals) + the rayon
+  // nodes; rayon rollup feeds the area nodes. No fetch at area scope (workers).
   useEffect(() => {
-    if (mode === 'aggregate' && (view.scope === 'city' || view.scope === 'rayon')) {
-      void dispatch(
-        fetchAggregate({ scope: view.scope, id: view.scope === 'rayon' ? view.id ?? undefined : undefined }),
-      );
+    if (scope === 'surabaya' || scope === 'city') {
+      void dispatch(fetchAggregate({ scope: 'city' }));
+    } else if (scope === 'rayon') {
+      void dispatch(fetchAggregate({ scope: 'rayon', id: view.id ?? undefined }));
+    } else if (scope === 'area' && view.rayonId) {
+      // Keep the parent rayon's area rollup loaded so the selected area's ratio
+      // shows (covers area-floored roles that never visited the rayon view).
+      void dispatch(fetchAggregate({ scope: 'rayon', id: view.rayonId }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, view.scope, view.id]);
+  }, [scope, view.id, view.rayonId]);
 
-  // Always fetch workers for the current scope (even in Ringkasan) so search can
-  // find people in any mode; the map only *renders* worker markers in the
-  // "Semua Petugas" view (MapLayerContent gates on mode).
+  // Always fetch workers for the current scope so search can find people at any
+  // level; the map only *renders* worker markers at area scope.
   useEffect(() => {
     void fetchLiveUsersWithFilters(
-      view.scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
+      scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, view.scope, view.id, filters]);
+  }, [scope, view.id, filters]);
 
   // Focus effect: refresh all data and remount boundary overlays
   useFocusEffect(
@@ -163,9 +165,27 @@ export function MapDashboardScreen(): React.JSX.Element {
     }, [handleRefresh]),
   );
 
-  // Marker press → show preview; "Lihat detail" opens detail sheet
+  // Gently zoom + recenter on a tapped marker (rayon / area / worker) so its
+  // detail hint is framed. Never zooms out — clamps the target to the current
+  // zoom, then tightens it a bit (~45%).
+  const focusOn = useCallback(
+    (lat: number, lng: number) => {
+      const cur = currentRegion.latitudeDelta;
+      const delta = Math.min(cur, Math.max(cur * 0.55, 0.004));
+      mapRef.current?.animateToRegion(
+        { latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta },
+        350,
+      );
+    },
+    [currentRegion.latitudeDelta],
+  );
+
+  // Marker press → zoom/focus + show preview; "Lihat detail" opens detail sheet.
+  // Tapping a worker shows a hint card; tapping the hint opens the detail sheet
+  // (day summary + trail / call / task).
   const handleMarkerPress = useCallback(
     (user: LiveUser) => {
+      focusOn(user.latitude, user.longitude);
       showMarkerPreview(
         { latitude: user.latitude, longitude: user.longitude },
         {
@@ -182,9 +202,10 @@ export function MapDashboardScreen(): React.JSX.Element {
           dispatch(fetchUserDaySummary(user.id));
           setMarkerPreview(null);
         },
+        false, // focusOn already drives the camera — don't double-animate
       );
     },
-    [dispatch, showMarkerPreview, setMarkerPreview, t],
+    [dispatch, showMarkerPreview, setMarkerPreview, t, focusOn],
   );
 
   const handleCloseSheet = useCallback(() => {
@@ -202,6 +223,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Boundary press handlers
   const handleRayonPress = useCallback(
     (rayon: RayonBoundary) => {
+      focusOn(Number(rayon.center_lat), Number(rayon.center_lng));
       showMarkerPreview(
         { latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) },
         { title: rayon.name, typeText: t('monitoring:entityTypes.rayon'), accent: nbColors.requestUnderReview, icon: 'office-building' },
@@ -212,13 +234,15 @@ export function MapDashboardScreen(): React.JSX.Element {
           setBoundaryDetailVisible(true);
           setMarkerPreview(null);
         },
+        false, // focusOn already drives the camera
       );
     },
-    [showMarkerPreview, setMarkerPreview, t],
+    [showMarkerPreview, setMarkerPreview, t, focusOn],
   );
 
   const handleAreaPress = useCallback(
     (area: AreaBoundary) => {
+      focusOn(Number(area.center_lat), Number(area.center_lng));
       showMarkerPreview(
         { latitude: Number(area.center_lat), longitude: Number(area.center_lng) },
         { title: area.name, typeText: t('monitoring:entityTypes.area'), accent: nbColors.warning, icon: 'map-marker' },
@@ -229,9 +253,10 @@ export function MapDashboardScreen(): React.JSX.Element {
           setBoundaryDetailVisible(true);
           setMarkerPreview(null);
         },
+        false, // focusOn already drives the camera
       );
     },
-    [showMarkerPreview, setMarkerPreview, t],
+    [showMarkerPreview, setMarkerPreview, t, focusOn],
   );
 
   // Search result handler
@@ -269,18 +294,72 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
-  // Aggregate-first drill handlers
-  const aggregateNodes = useMemo<AggregateNode[]>(() => aggregate?.nodes ?? [], [aggregate]);
-  const handleDrillNode = useCallback(
-    (node: AggregateNode) => {
-      dispatch(drillTo({ id: node.id, type: node.type, name: node.name, rayonId: node.rayon_id ?? null }));
-    },
-    [dispatch],
+  // Unified drill handlers.
+  const rosterTotals = aggregate?.roster_totals ?? { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+
+  // Per-node attendance ratio (hadir/terjadwal) keyed by rayon/area id — fed to
+  // the geographic markers so each carries its count.
+  const rosterById = useMemo<Record<string, { clockedIn: number; scheduled: number }>>(() => {
+    const map: Record<string, { clockedIn: number; scheduled: number }> = {};
+    for (const n of aggregate?.nodes ?? []) {
+      map[n.id] = { clockedIn: n.roster?.clocked_in ?? 0, scheduled: n.roster?.scheduled ?? 0 };
+    }
+    return map;
+  }, [aggregate]);
+
+  const animateTo = useCallback((lat: number, lng: number, delta: number) => {
+    mapRef.current?.animateToRegion(
+      { latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta },
+      350,
+    );
+  }, []);
+
+  // Tapping the fixed Surabaya bubble drills into the rayon list (city scope).
+  const handleEnterCity = useCallback(() => dispatch(enterCity()), [dispatch]);
+
+  // Bubble taps DRILL into the child level and zoom IN (never out). The current
+  // node's own detail lives on its icon marker (handleRayonPress/handleAreaPress),
+  // shown once you're at that scope — so a bubble tap is purely navigation.
+  // Clamp so a drill-in only ever tightens the zoom (point 5: "do not zoom out").
+  // If the user manually zoomed tighter than the target, keep their zoom.
+  const zoomInTo = useCallback(
+    (lat: number, lng: number, target: number) =>
+      animateTo(lat, lng, Math.min(currentRegion.latitudeDelta, target)),
+    [animateTo, currentRegion.latitudeDelta],
   );
-  const handleSetMode = useCallback((m: MonitoringMode) => dispatch(setMode(m)), [dispatch]);
-  const handleDrillBack = useCallback(() => dispatch(drillBack()), [dispatch]);
-  const canToggleMode = view.scope !== 'area';
-  const canDrillBack = view.scope !== floor;
+  const handleRayonBubblePress = useCallback(
+    (rayon: RayonBoundary) => {
+      dispatch(drillTo({ id: rayon.id, type: 'rayon', name: rayon.name, rayonId: rayon.id }));
+      zoomInTo(Number(rayon.center_lat), Number(rayon.center_lng), 0.08);
+    },
+    [dispatch, zoomInTo],
+  );
+  const handleAreaBubblePress = useCallback(
+    (area: AreaBoundary) => {
+      dispatch(drillTo({ id: area.id, type: 'area', name: area.name, rayonId: view.rayonId }));
+      zoomInTo(Number(area.center_lat), Number(area.center_lng), 0.02);
+    },
+    [dispatch, zoomInTo, view.rayonId],
+  );
+  const handleDrillBack = useCallback(() => {
+    const from = scope;
+    dispatch(drillBack());
+    // Zoom the camera back out to match the level we're returning to.
+    if (from === 'rayon' || from === 'city') {
+      // → city / Surabaya: show the whole city again (and the Surabaya bubble).
+      animateTo(
+        SURABAYA_CITY_REGION.latitude,
+        SURABAYA_CITY_REGION.longitude,
+        SURABAYA_CITY_REGION.latitudeDelta,
+      );
+    } else if (from === 'area' && view.rayonId) {
+      const rayon = boundaries?.rayons?.find((r: RayonBoundary) => r.id === view.rayonId);
+      if (rayon) {
+        animateTo(Number(rayon.center_lat), Number(rayon.center_lng), 0.08);
+      }
+    }
+  }, [scope, view.rayonId, boundaries, dispatch, animateTo]);
+  const canDrillBack = scope !== floor;
 
   if (isLoading && (!liveUsers || liveUsers.length === 0)) {
     return (
@@ -333,11 +412,11 @@ export function MapDashboardScreen(): React.JSX.Element {
               userInterfaceStyle="light"
               style={styles.map}
               initialRegion={SURABAYA_CITY_REGION}
-              // Native Google Maps controls + UX (per revamp): live location dot +
-              // My-Location button, native zoom buttons (Android), and the compass.
+              // Live location dot + compass stay native; zoom + my-location are the
+              // wrench-overlay tools (so the FAB set is the single control surface).
               showsUserLocation={true}
-              showsMyLocationButton={true}
-              zoomControlEnabled={true}
+              showsMyLocationButton={false}
+              zoomControlEnabled={false}
               showsCompass={true}
               toolbarEnabled={false}
               onMapReady={() => {
@@ -360,11 +439,15 @@ export function MapDashboardScreen(): React.JSX.Element {
                 useClustering={useClustering}
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
-                mode={mode}
-                aggregateNodes={aggregateNodes}
-                onDrillNode={handleDrillNode}
-                onRayonPress={handleRayonPress}
-                onAreaPress={handleAreaPress}
+                scope={scope}
+                rayonId={view.rayonId ?? view.id}
+                areaId={scope === 'area' ? view.id : null}
+                rosterById={rosterById}
+                showWorkers={showWorkers}
+                onRayonDrill={handleRayonBubblePress}
+                onAreaDrill={handleAreaBubblePress}
+                onRayonDetail={handleRayonPress}
+                onAreaDetail={handleAreaPress}
                 onMarkerPress={handleMarkerPress}
                 onClusterPress={handleClusterPress}
               />
@@ -376,7 +459,7 @@ export function MapDashboardScreen(): React.JSX.Element {
             <MonitoringSearchBar onPress={() => setSearchModalVisible(true)} />
           </View>
 
-          {/* Drill breadcrumb + Ringkasan / Semua Petugas toggle */}
+          {/* Drill breadcrumb (back) */}
           <View style={styles.drillBar} pointerEvents="box-none">
             {canDrillBack && (
               <TouchableOpacity
@@ -391,30 +474,6 @@ export function MapDashboardScreen(): React.JSX.Element {
                 </NBText>
               </TouchableOpacity>
             )}
-            {canToggleMode && (
-              <View style={styles.modeToggle}>
-                <TouchableOpacity
-                  style={[styles.modeBtn, mode === 'aggregate' && styles.modeBtnActive]}
-                  onPress={() => handleSetMode('aggregate')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('monitoring:page.modeSummary')}
-                >
-                  <NBText variant="caption" style={mode === 'aggregate' ? styles.modeTextActive : undefined}>
-                    {t('monitoring:page.modeSummary')}
-                  </NBText>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.modeBtn, mode === 'workers' && styles.modeBtnActive]}
-                  onPress={() => handleSetMode('workers')}
-                  accessibilityRole="button"
-                  accessibilityLabel={t('monitoring:page.modeAllWorkers')}
-                >
-                  <NBText variant="caption" style={mode === 'workers' ? styles.modeTextActive : undefined}>
-                    {t('monitoring:page.modeAllWorkers')}
-                  </NBText>
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
 
           {/* Empty-boundaries warning */}
@@ -425,6 +484,30 @@ export function MapDashboardScreen(): React.JSX.Element {
             </View>
           )}
 
+          {/* Fixed Surabaya summary bubble — pinned to the screen centre at the
+              top level so it stays put while the map pans. Tap to drill into the
+              rayons. */}
+          {scope === 'surabaya' && (
+            <View style={styles.surabayaBubbleWrap} pointerEvents="box-none">
+              <TouchableOpacity
+                style={styles.surabayaBubble}
+                onPress={handleEnterCity}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`${t('monitoring:surabaya.title')} — ${t('monitoring:surabaya.tapHint')}`}
+                testID="surabaya-bubble"
+              >
+                <NBText variant="mono-sm" uppercase style={styles.surabayaBubbleLabel}>
+                  {t('monitoring:surabaya.title')}
+                </NBText>
+                <NBText variant="h2" color="black">
+                  {rosterTotals.clocked_in}/{rosterTotals.scheduled}
+                </NBText>
+                <NBText variant="caption" color="gray600">{t('monitoring:surabaya.tapHint')}</NBText>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* FAB column — MON-3 refactored with tools overlay */}
           <FABColumn
             toolsExpanded={toolsExpanded}
@@ -432,6 +515,11 @@ export function MapDashboardScreen(): React.JSX.Element {
             onOpenStatus={() => setStatusSheetVisible(true)}
             handleRefresh={() => handleRefresh(setBoundaryKey)}
             resetHeading={resetHeading}
+            onZoomIn={handleZoomIn}
+            onZoomOut={handleZoomOut}
+            onMyLocation={handleMyLocation}
+            visibleLayers={visibleLayers}
+            onToggleLayer={handleToggleLayer}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />
@@ -470,10 +558,8 @@ export function MapDashboardScreen(): React.JSX.Element {
           filterModalVisible={filterModalVisible}
           setFilterModalVisible={setFilterModalVisible}
           filters={filters}
-          visibleLayers={visibleLayers}
           users={liveUsers ?? []}
           onApplyFilters={handleApplyFilters}
-          onToggleLayer={handleToggleLayer}
           searchModalVisible={searchModalVisible}
           setSearchModalVisible={setSearchModalVisible}
           liveUsers={liveUsers}
@@ -495,6 +581,32 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  // Screen-fixed Surabaya bubble: full-bleed catcher centred over the map so the
+  // bubble stays pinned to the screen centre while the map pans underneath.
+  surabayaBubbleWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  surabayaBubble: {
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: nbSpacing.lg,
+    paddingVertical: nbSpacing.sm,
+    borderRadius: nbRadius.lg,
+    borderWidth: nbBorders.widthThick,
+    borderColor: nbColors.black,
+    backgroundColor: nbColors.white,
+    ...nbShadows.md,
+  },
+  surabayaBubbleLabel: {
+    letterSpacing: 1,
+    color: nbColors.black,
   },
   centerContainer: {
     flex: 1,
@@ -537,28 +649,6 @@ const styles = StyleSheet.create({
   backChipText: {
     color: nbColors.black,
     flexShrink: 1,
-  },
-  modeToggle: {
-    flexDirection: 'row',
-    marginLeft: 'auto',
-    padding: 2,
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.base,
-    ...nbShadows.xs,
-  },
-  modeBtn: {
-    paddingVertical: nbSpacing.xs,
-    paddingHorizontal: nbSpacing.sm,
-    borderRadius: nbRadius.sm,
-  },
-  modeBtnActive: {
-    backgroundColor: nbColors.primary,
-  },
-  modeTextActive: {
-    color: nbColors.black,
-    fontWeight: '700',
   },
   emptyAreaCallout: {
     position: 'absolute',

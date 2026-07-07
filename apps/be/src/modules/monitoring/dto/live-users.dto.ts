@@ -62,6 +62,12 @@ export class LiveUserDto {
   @ApiProperty({ example: true })
   is_within_area: boolean;
 
+  @ApiProperty({
+    example: true,
+    description: 'True if on the current shift roster; false = ad-hoc / off-schedule',
+  })
+  is_scheduled: boolean;
+
   @ApiProperty({ example: false, description: 'Whether user clocked in outside area boundary' })
   outside_boundary: boolean;
 

@@ -216,6 +216,7 @@ describe('MonitoringController', () => {
         battery_level: 85,
         last_update: new Date(),
         is_within_area: true,
+        is_scheduled: true,
         outside_boundary: false,
         shift_id: 'shift-1',
         shift_definition_id: null,

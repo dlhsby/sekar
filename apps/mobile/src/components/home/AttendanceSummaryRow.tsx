@@ -18,6 +18,8 @@ export interface AttendanceSummaryRowProps {
   lastClockOut?: string;
   isLate: boolean;
   isEarlyLeave?: boolean;
+  /** No roster schedule today — don't colour the times as on-time/late. */
+  neutral?: boolean;
 }
 
 export function AttendanceSummaryRow({
@@ -25,17 +27,22 @@ export function AttendanceSummaryRow({
   lastClockOut,
   isLate,
   isEarlyLeave = false,
+  neutral = false,
 }: AttendanceSummaryRowProps): React.JSX.Element {
   const { t } = useTranslation();
   const masukColor: NBTextColor = firstClockIn
-    ? isLate
-      ? 'dangerDark'
-      : 'successDark'
+    ? neutral
+      ? 'black'
+      : isLate
+        ? 'dangerDark'
+        : 'successDark'
     : 'black';
   const keluarColor: NBTextColor = lastClockOut
-    ? isEarlyLeave
-      ? 'dangerDark'
-      : 'successDark'
+    ? neutral
+      ? 'black'
+      : isEarlyLeave
+        ? 'dangerDark'
+        : 'successDark'
     : 'gray600';
 
   return (
@@ -45,7 +52,7 @@ export function AttendanceSummaryRow({
         <NBText
           variant="h2"
           color={masukColor}
-          accessibilityLabel={firstClockIn ? t('home:components.attendanceSummary.a11y.clockIn', { time: formatTime(firstClockIn), status: isLate ? t('home:components.attendanceSummary.a11y.late') : t('home:components.attendanceSummary.a11y.onTime') }) : undefined}
+          accessibilityLabel={firstClockIn ? t('home:components.attendanceSummary.a11y.clockIn', { time: formatTime(firstClockIn), status: neutral ? t('home:components.attendanceSummary.a11y.noSchedule') : isLate ? t('home:components.attendanceSummary.a11y.late') : t('home:components.attendanceSummary.a11y.onTime') }) : undefined}
         >
           {formatTime(firstClockIn ?? '')}
         </NBText>

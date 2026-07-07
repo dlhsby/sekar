@@ -31,8 +31,6 @@ import type { LiveUser } from '../../types/models.types';
 import { getAreas, getAreasByRayonId, getRayons } from '../../services/api';
 import { getStaffingSummary } from '../../services/api/monitoringApi';
 import { StaffingSummarySection } from '../monitoring/StaffingSummarySection';
-import { LAYER_ROWS } from '../monitoring/monitoringLayers';
-import type { MonitoringV2VisibleLayers } from '../../store/slices/monitoringV2Slice';
 import type { MonitoringFilters } from '../../types/api.types';
 import type { PresenceLocation, StaffingSummaryItem, User } from '../../types/models.types';
 import type { Area, Rayon } from '../../types/models.types';
@@ -54,10 +52,6 @@ interface MonitoringFilterModalProps {
   currentUser: User;
   /** Live users that back the searchable "Cari Pengguna" select. */
   users?: LiveUser[];
-  /** Map layer visibility (merged "Lapisan Peta" section). Omit to hide it. */
-  visibleLayers?: MonitoringV2VisibleLayers;
-  /** Toggle a map layer (applied immediately, not on Terapkan). */
-  onToggleLayer?: (layer: keyof MonitoringV2VisibleLayers) => void;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -74,8 +68,6 @@ export function MonitoringFilterModal({
   currentFilters,
   currentUser,
   users = [],
-  visibleLayers,
-  onToggleLayer,
 }: MonitoringFilterModalProps): React.JSX.Element {
   const { t } = useTranslation();
   const [selectedLocations, setSelectedLocations] = useState<PresenceLocation[]>(
@@ -236,30 +228,6 @@ export function MonitoringFilterModal({
     return opts;
   }, [users]);
 
-  // "Tampilan Peta" multi-select: options are the 5 map layers; the selected
-  // set mirrors the currently-visible layers (its default), and changing the
-  // selection dispatches a toggle for each layer whose visibility flipped.
-  const layerOptions = useMemo(
-    () => LAYER_ROWS.map(r => ({ label: r.label, value: r.key as string })),
-    [],
-  );
-
-  const selectedLayers = useMemo(
-    () => (visibleLayers ? LAYER_ROWS.filter(r => visibleLayers[r.key]).map(r => r.key as string) : []),
-    [visibleLayers],
-  );
-
-  const handleLayersChange = useCallback(
-    (vals: string[]) => {
-      if (!visibleLayers || !onToggleLayer) { return; }
-      LAYER_ROWS.forEach(r => {
-        const nextVisible = vals.includes(r.key as string);
-        if (nextVisible !== visibleLayers[r.key]) { onToggleLayer(r.key); }
-      });
-    },
-    [visibleLayers, onToggleLayer],
-  );
-
   // Sheet variant ignores `headerRight`, so Reset lives in the footer alongside
   // Terapkan (a two-button row).
   const footerContent = (
@@ -285,7 +253,6 @@ export function MonitoringFilterModal({
       onClose={onClose}
       title={t('monitoring:filterModal.title')}
       type="sheet"
-      floating
       avoidKeyboard
       footer={footerContent}
     >
@@ -362,19 +329,8 @@ export function MonitoringFilterModal({
           />
         </FilterSection>
 
-        {/* Map layer visibility — merged from the old "Lapisan Peta" sheet, as a
-            multi-select. Selected = currently-visible layers (its default state);
-            changing the selection dispatches the diff immediately (Redux). */}
-        {visibleLayers && onToggleLayer && (
-          <FilterSection title={t('monitoring:filterModal.sections.mapLayers')}>
-            <NBSelect
-              options={layerOptions}
-              selectedValues={selectedLayers}
-              onValuesChange={handleLayersChange}
-              placeholder={t('monitoring:filterModal.placeholders.layers')}
-            />
-          </FilterSection>
-        )}
+        {/* Map layer visibility now lives in the wrench "Tampilan" section
+            (ToolsOverlay) — the filter modal is data filters only. */}
 
         {/* Staffing summary - always visible */}
         <FilterSection title={t('monitoring:filterModal.sections.staffing')}>

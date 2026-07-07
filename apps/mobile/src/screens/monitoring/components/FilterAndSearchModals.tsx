@@ -10,7 +10,6 @@ import { MonitoringSearchModal } from '../../../components/monitoring/Monitoring
 import { BoundaryDetailModal } from '../../../components/modals/BoundaryDetailModal';
 import type { LiveUser, RayonBoundary, AreaBoundary, User } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
 import type { SearchResult } from '../../../hooks/useMonitoringSearch';
 
 interface FilterAndSearchModalsProps {
@@ -18,10 +17,8 @@ interface FilterAndSearchModalsProps {
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
   filters: MonitoringFilters;
-  visibleLayers: MonitoringV2VisibleLayers;
   users: LiveUser[];
   onApplyFilters: (filters: MonitoringFilters) => void;
-  onToggleLayer: (layer: string | number | symbol) => void;
   searchModalVisible: boolean;
   setSearchModalVisible: (visible: boolean) => void;
   liveUsers: LiveUser[];
@@ -38,10 +35,8 @@ export function FilterAndSearchModals({
   filterModalVisible,
   setFilterModalVisible,
   filters,
-  visibleLayers,
   users,
   onApplyFilters,
-  onToggleLayer,
   searchModalVisible,
   setSearchModalVisible,
   liveUsers,
@@ -63,8 +58,6 @@ export function FilterAndSearchModals({
           currentFilters={filters}
           currentUser={currentUser}
           users={users}
-          visibleLayers={visibleLayers}
-          onToggleLayer={onToggleLayer}
         />
       )}
 

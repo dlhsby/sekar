@@ -10,8 +10,7 @@
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
 import Supercluster from 'supercluster';
-import { STATUS_COLORS } from '@/lib/constants/monitoring';
-import type { TrackingStatus } from '@/lib/api/monitoring-types';
+import { workerPinIcon, statusToActivity } from '@/lib/monitoring/markers';
 import type { SimpleWorker } from './SimpleMonitoringMap';
 
 /* eslint-disable sekar-design/no-inline-hex-colors -- Google overlay options, not rendered style tokens */
@@ -36,22 +35,14 @@ export interface WorkerClusterLayerProps {
   onClusterClick?: (lat: number, lng: number, expansionZoom: number) => void;
 }
 
-type WorkerProps = { workerId: string; status: string; full_name: string };
-
-function statusColor(status: string): string {
-  return STATUS_COLORS[status as TrackingStatus] ?? STATUS_COLORS.offline;
-}
-
-function workerSymbol(status: string, selected: boolean): google.maps.Symbol {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: selected ? 11 : 7,
-    fillColor: statusColor(status),
-    fillOpacity: 1,
-    strokeColor: selected ? BLACK : WHITE,
-    strokeWeight: 2,
-  };
-}
+type WorkerProps = {
+  workerId: string;
+  status: string;
+  role: string;
+  full_name: string;
+  within: boolean;
+  scheduled: boolean;
+};
 
 function clusterSymbol(pointCount: number): google.maps.Symbol {
   return {
@@ -80,7 +71,14 @@ export function WorkerClusterLayer({
         .filter((w) => Number.isFinite(w.lat) && Number.isFinite(w.lng))
         .map((w) => ({
           type: 'Feature' as const,
-          properties: { workerId: w.user_id, status: w.status, full_name: w.full_name },
+          properties: {
+            workerId: w.user_id,
+            status: w.status,
+            role: w.role,
+            full_name: w.full_name,
+            within: w.is_within_area,
+            scheduled: w.is_scheduled,
+          },
           geometry: { type: 'Point' as const, coordinates: [w.lng, w.lat] },
         }))
     );
@@ -129,7 +127,12 @@ export function WorkerClusterLayer({
           <Marker
             key={`worker-${leaf.workerId}`}
             position={{ lat, lng }}
-            icon={workerSymbol(leaf.status, selected)}
+            icon={workerPinIcon(leaf.role, {
+              activity: statusToActivity(leaf.status),
+              outside: !leaf.within,
+              adHoc: !leaf.scheduled,
+              selected,
+            })}
             onClick={() => onSelect?.(leaf.workerId)}
             zIndex={selected ? 10 : 4}
           />

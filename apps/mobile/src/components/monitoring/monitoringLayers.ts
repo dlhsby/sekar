@@ -1,10 +1,9 @@
 /**
- * Monitoring map layer definitions.
- *
- * The 5 toggleable map layers (Petugas / Tanaman / Jatuh Tempo / Batas Rayon /
- * Batas Area). Phase 4 M3 (CP2) inlined the toggles into the wrench filter
- * ("Tampilan Peta" multiselect) and retired the standalone MonitoringToggleSheet;
- * this constant is the surviving shared definition consumed by MonitoringFilterModal.
+ * Monitoring map layer definitions — the toggleable map layers surfaced in the
+ * wrench "Tampilan" section (ToolsOverlay). Each key must gate real rendering:
+ *   workers → useLiveUsersFiltering · plants → PlantOverlayLayer ·
+ *   rayons/areas → MapLayerContent boundary overlays.
+ * (`overdue` is intentionally omitted — it gates nothing on mobile.)
  */
 
 import i18n from '../../i18n/config';
@@ -19,7 +18,6 @@ export interface LayerRow {
 export const LAYER_ROWS: LayerRow[] = [
   { key: 'workers', label: i18n.t('monitoring:layers.workers'), icon: 'account-hard-hat' },
   { key: 'plants', label: i18n.t('monitoring:layers.plants'), icon: 'tree' },
-  { key: 'overdue', label: i18n.t('monitoring:layers.overdue'), icon: 'alert-circle' },
   { key: 'rayons', label: i18n.t('monitoring:layers.rayons'), icon: 'map-marker-radius' },
   { key: 'areas', label: i18n.t('monitoring:layers.areas'), icon: 'vector-polygon' },
 ];

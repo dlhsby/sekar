@@ -10,14 +10,17 @@ import { Alert } from 'react-native';
 import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
-import { getMyRoster } from '../services/api/schedulesApi';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
-import { isClockInLate } from '../utils/dateUtils';
+import { isToday } from '../utils/dateUtils';
+import { deriveAttendanceStatus } from '../utils/attendance';
+import { useTodayRoster } from './useTodayRoster';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
-import type { ShiftDefinition, Schedule } from '../types/models.types';
+
+/** Whether the worker has an area to be inside/outside of at all. */
+export type AreaState = 'within' | 'outside' | 'none';
 
 export interface LocationState {
   latitude: number | null;
@@ -38,7 +41,7 @@ export function useClockInOut() {
     () => ((assignedAreas?.length ?? 0) > 0 ? assignedAreas : assignedArea ? [assignedArea] : []),
     [assignedAreas, assignedArea],
   );
-  const { currentShift } = useAppSelector((state) => state.shift);
+  const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
   const { isOnline } = useAppSelector((state) => state.offline);
 
   const [location, setLocation] = useState<LocationState>({
@@ -53,61 +56,29 @@ export function useClockInOut() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isWithinBoundary, setIsWithinBoundary] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
-  // The worker's ASSIGNED shift (from their roster /schedules/my) — used only as
-  // the "your scheduled shift" hint while still clocking in.
-  const [assignedShiftDef, setAssignedShiftDef] = useState<ShiftDefinition | null>(null);
-  // Today's roster (from /schedules/my) — the single schedule concept (ADR-013)
-  const [dailyRoster, setDailyRoster] = useState<Schedule | null>(null);
 
   const isClockIn = !currentShift;
 
-  // Once clocked in, the shift the worker ACTUALLY clocked into is authoritative
-  // — lateness + the shift window are judged against it, so the clock-out screen
-  // agrees with the home hero and the attendance history (which also read the
-  // shift record's definition). Before clock-in, prefer daily roster shift, then fall back to assigned shift.
-  // Phase 3: prefer today's roster shift (full definition, incl. crosses_midnight).
-  const scheduledShift: ShiftDefinition | null = useMemo(() => {
-    if (currentShift?.shift_definition) {
-      return currentShift.shift_definition;
-    }
-    if (dailyRoster?.shift_definition) {
-      return dailyRoster.shift_definition;
-    }
-    return assignedShiftDef ?? null;
-  }, [currentShift?.shift_definition, dailyRoster?.shift_definition, assignedShiftDef]);
+  // Today's roster (from /schedules/my) — the single schedule concept (ADR-013).
+  // This is the ONLY source of "scheduled" truth: an unscheduled patrol/ad-hoc
+  // worker resolves to hasScheduleToday=false and never reads as late.
+  const { rosterShift, hasScheduleToday } = useTodayRoster();
 
-  // Late = clocked in (or, before clock-in, the current moment) after the
-  // scheduled start_time. False when no schedule or for overtime shifts.
-  const isLate = useMemo(() => {
-    if (!scheduledShift?.start_time || currentShift?.is_overtime) {
-      return false;
-    }
-    const reference = currentShift?.clock_in_time ?? new Date().toISOString();
-    return isClockInLate(reference, scheduledShift.start_time, scheduledShift.crosses_midnight);
-  }, [scheduledShift, currentShift]);
+  // Today's shifts (for the day's FIRST clock-in, so a clock-out+back-in later
+  // never re-triggers "late").
+  const todayShifts = useMemo(
+    () => (Array.isArray(shiftHistory) ? shiftHistory : []).filter((s) => isToday(s.clock_in_time)),
+    [shiftHistory],
+  );
 
-  // Fetch today's roster so the screen can show the scheduled shift window + a
-  // late indicator (in both clock-in and clock-out modes). The roster row
-  // carries the day's shift_definition (ADR-013 — the single schedule concept).
-  useEffect(() => {
-    let active = true;
-    getMyRoster()
-      .then((rosterRes) => {
-        if (!active) return;
-        if (rosterRes.data) {
-          setDailyRoster(rosterRes.data);
-        }
-        if (rosterRes.data?.shift_definition) {
-          setAssignedShiftDef(rosterRes.data.shift_definition);
-        }
-      })
-      .catch(() => {
-        /* non-blocking — schedule info is supplementary */
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+  // Lateness is judged only against the roster shift, off the first clock-in.
+  const attendance = useMemo(
+    () => deriveAttendanceStatus(todayShifts, currentShift, rosterShift),
+    [todayShifts, currentShift, rosterShift],
+  );
+  // The scheduled window shown on screen — roster only (null when unscheduled).
+  const scheduledShift = rosterShift;
+  const isLate = attendance.isLate;
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 
@@ -360,11 +331,17 @@ export function useClockInOut() {
     );
   }, [currentShift, location, selfie, dispatch]);
 
+  // Area state for the boundary badge: workers with no assigned area have no
+  // boundary to be inside/outside of — show a neutral "no area", not "in area".
+  const areaState: AreaState =
+    areasForGeofence.length === 0 ? 'none' : isWithinBoundary ? 'within' : 'outside';
+
   return {
     location,
     selfie,
     isSubmitting,
     isWithinBoundary,
+    areaState,
     timer,
     isClockIn,
     isOnline,
@@ -372,7 +349,7 @@ export function useClockInOut() {
     currentShift,
     scheduledShift,
     isLate,
-    dailyRoster,
+    hasScheduleToday,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,

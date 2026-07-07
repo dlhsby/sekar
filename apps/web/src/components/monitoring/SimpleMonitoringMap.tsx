@@ -14,9 +14,8 @@ import { useTranslation } from 'react-i18next';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
-import type { AggregateNode } from '@/lib/api/monitoring-v2';
 import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
-import { AggregateBubbleLayer } from './AggregateBubbleLayer';
+import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
 
 export interface SimpleWorker {
@@ -25,16 +24,21 @@ export interface SimpleWorker {
   lat: number;
   lng: number;
   status: string;
+  role: string;
+  is_within_area: boolean;
+  is_scheduled: boolean;
 }
 
 export interface SimpleMonitoringMapProps {
   /**
-   * `aggregate` → render summary bubbles from `aggregateNodes` (the light
-   * default "Ringkasan"). `workers` → cluster the individual worker pins.
+   * `true` (area scope) → cluster individual worker pins. `false` → draw the
+   * drill-down node markers (Surabaya / rayons / areas) from `nodeMarkers`.
    */
-  mode: 'aggregate' | 'workers';
-  aggregateNodes?: AggregateNode[];
-  onDrillNode?: (node: AggregateNode) => void;
+  showWorkers: boolean;
+  /** Current drill scope — gates which boundary layers draw. */
+  scope?: 'surabaya' | 'city' | 'rayon' | 'area';
+  nodeMarkers?: NodeMarker[];
+  onDrillNode?: (node: NodeMarker) => void;
   workers: SimpleWorker[];
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
@@ -137,8 +141,9 @@ function createLocateControl(map: google.maps.Map, onClick: () => void, ariaLabe
 }
 
 function MonitoringMapInner({
-  mode,
-  aggregateNodes,
+  showWorkers,
+  scope,
+  nodeMarkers,
   onDrillNode,
   workers,
   boundaries,
@@ -274,12 +279,17 @@ function MonitoringMapInner({
   }, [focusTarget]);
 
   const selectedWorker =
-    mode === 'workers' && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
+    showWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
   const hoverArea = hoverAreaId ? areaPins.find((a) => a.id === hoverAreaId) : null;
-  // Area centre pins only clutter the aggregate view (bubbles already carry
+  // Area centre pins only clutter the node view (node markers already carry
   // counts); keep them for the drilled worker view or when the plant overlay is
   // on — and only when the areaPins layer is enabled.
-  const showAreaPins = layers.areaPins && (mode === 'workers' || !!overdueByArea);
+  const showAreaPins = layers.areaPins && (showWorkers || !!overdueByArea);
+  // Scope-gate boundary polygons: rayon outlines from the city view down, area
+  // outlines only once inside a rayon. At the top (Surabaya) the map shows just
+  // the Surabaya node bubble.
+  const showRayonPolys = scope !== 'surabaya';
+  const showAreaBorders = scope === 'rayon' || scope === 'area';
 
   const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
     const map = mapRef.current;
@@ -298,8 +308,8 @@ function MonitoringMapInner({
         onIdle={handleIdle}
         options={MAP_OPTIONS}
       >
-        {/* Rayon boundaries — border and/or fill tinted with the rayon's color. */}
-        {(layers.rayonBorder || layers.rayonFill) &&
+        {/* Rayon boundaries — outline + tinted fill (one `rayon` toggle). */}
+        {layers.rayon && showRayonPolys &&
           rayonPolys.map((poly, i) => {
             const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
             const fill =
@@ -311,10 +321,10 @@ function MonitoringMapInner({
                 paths={poly.paths}
                 options={{
                   strokeColor: stroke,
-                  strokeWeight: layers.rayonBorder ? POLYGON_STYLES.rayon.strokeWidth : 0,
-                  strokeOpacity: layers.rayonBorder ? 0.9 : 0,
+                  strokeWeight: POLYGON_STYLES.rayon.strokeWidth,
+                  strokeOpacity: 0.9,
                   fillColor: fill,
-                  fillOpacity: layers.rayonFill ? RAYON_FILL_ALPHA : 0,
+                  fillOpacity: RAYON_FILL_ALPHA,
                   clickable: false,
                   zIndex: 1,
                 }}
@@ -322,8 +332,8 @@ function MonitoringMapInner({
             );
           })}
 
-        {/* Area boundaries */}
-        {layers.areaBorder &&
+        {/* Area boundaries — outline + fill (one `area` toggle); only inside a rayon. */}
+        {layers.area && showAreaBorders &&
           areaPaths.map((path, i) => (
             <Polygon
               key={`area-${i}`}
@@ -370,9 +380,9 @@ function MonitoringMapInner({
           );
         })}
 
-        {/* Aggregate bubbles (Ringkasan) or clustered worker pins (Semua Petugas). */}
-        {mode === 'aggregate' ? (
-          <AggregateBubbleLayer nodes={aggregateNodes ?? []} onDrill={onDrillNode} />
+        {/* Drill-down node markers (Surabaya / rayon / area) or clustered worker pins. */}
+        {!showWorkers ? (
+          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} />
         ) : layers.petugas ? (
           <WorkerClusterLayer
             workers={workers}

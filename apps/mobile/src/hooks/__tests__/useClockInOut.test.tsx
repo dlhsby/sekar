@@ -90,14 +90,16 @@ const wrapperFor = (currentShift: unknown) =>
     return <Provider store={makeStore(currentShift)}>{children}</Provider>;
   };
 
-describe('useClockInOut — scheduled-shift precedence', () => {
+describe('useClockInOut — roster-gated lateness', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    // The roster row carries the day's shift_definition (the scheduled-shift hint).
+    // The roster row carries the day's shift_definition — the ONLY source of
+    // scheduled truth. Lateness is judged against this, never the clocked-in
+    // shift or a time-of-day match.
     mockGetMyRoster.mockResolvedValue({ data: { shift_definition: ROSTER_SHIFT_DEF } } as never);
   });
 
-  it('judges lateness against the clocked-in shift, not the roster hint', async () => {
+  it('judges lateness against the roster shift, not the clocked-in shift', async () => {
     const currentShift = {
       id: 'shift-1',
       clock_in_time: CLOCK_IN_LOCAL_1311,
@@ -106,15 +108,16 @@ describe('useClockInOut — scheduled-shift precedence', () => {
     };
     const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(currentShift) });
 
-    // Roster fetch resolves on mount; wait for it so the (rejected) precedence
-    // would surface if assignedShiftDef were preferred.
-    await waitFor(() => expect(mockGetMyRoster).toHaveBeenCalled());
+    // The displayed schedule is the roster shift; wait for the fetch to resolve.
+    await waitFor(() => expect(result.current.scheduledShift).toEqual(ROSTER_SHIFT_DEF));
 
-    expect(result.current.scheduledShift).toEqual(CLOCKED_SHIFT_DEF);
-    expect(result.current.isLate).toBe(true); // 13:11 > 06:00 → late for Shift 1
+    // 13:11 is NOT late for Shift 3 (crosses midnight, 21:00 start) — even though
+    // it WOULD be late for the clocked-in Shift 1 (06:00). Roster wins.
+    expect(result.current.isLate).toBe(false);
+    expect(result.current.hasScheduleToday).toBe(true);
   });
 
-  it('falls back to the roster hint before clock-in (no active shift)', async () => {
+  it('uses the roster shift before clock-in (no active shift)', async () => {
     const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
     await waitFor(() => expect(result.current.scheduledShift).toEqual(ROSTER_SHIFT_DEF));
   });
@@ -128,6 +131,23 @@ describe('useClockInOut — scheduled-shift precedence', () => {
     };
     const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(currentShift) });
     await waitFor(() => expect(mockGetMyRoster).toHaveBeenCalled());
+    expect(result.current.isLate).toBe(false);
+  });
+
+  it('is never late and reports no schedule when unscheduled (patrol/ad-hoc)', async () => {
+    // No roster row today → an early-morning clock-in for a time-of-day night
+    // shift must NOT read as late.
+    mockGetMyRoster.mockResolvedValue({ data: null } as never);
+    const currentShift = {
+      id: 'shift-patrol',
+      clock_in_time: new Date(2026, 5, 23, 1, 12, 0).toISOString(),
+      is_overtime: false,
+      shift_definition: ROSTER_SHIFT_DEF, // baked from a time-of-day match
+    };
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(currentShift) });
+    await waitFor(() => expect(mockGetMyRoster).toHaveBeenCalled());
+    expect(result.current.hasScheduleToday).toBe(false);
+    expect(result.current.scheduledShift).toBeNull();
     expect(result.current.isLate).toBe(false);
   });
 });

@@ -35,6 +35,9 @@ export function useHomeLocation() {
   const { assignedArea } = useAppSelector((state) => state.auth);
   const { currentShift } = useAppSelector((state) => state.shift);
   const hasActiveShift = !!currentShift;
+  // During an active shift, check against the area actually clocked into; fall
+  // back to the standing assigned area. Null for unscheduled/ad-hoc workers.
+  const boundaryArea = currentShift?.area ?? assignedArea ?? null;
 
   const [location, setLocation] = useState<HomeLocationState>(INITIAL_STATE);
 
@@ -45,8 +48,8 @@ export function useHomeLocation() {
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
 
-        const withinArea = assignedArea
-          ? isWithinAreaBoundary(latitude, longitude, assignedArea)
+        const withinArea = boundaryArea
+          ? isWithinAreaBoundary(latitude, longitude, boundaryArea)
           : false;
 
         setLocation({
@@ -72,7 +75,7 @@ export function useHomeLocation() {
         maximumAge: 10000,
       },
     );
-  }, [assignedArea]);
+  }, [boundaryArea]);
 
   const refresh = useCallback(() => {
     fetchLocation();
@@ -95,8 +98,8 @@ export function useHomeLocation() {
     if (!hasActiveShift) return;
 
     const handleLocationUpdate = (ping: LocationPing) => {
-      const withinArea = assignedArea
-        ? isWithinAreaBoundary(ping.latitude, ping.longitude, assignedArea)
+      const withinArea = boundaryArea
+        ? isWithinAreaBoundary(ping.latitude, ping.longitude, boundaryArea)
         : false;
       setLocation({
         latitude: ping.latitude,
@@ -113,7 +116,7 @@ export function useHomeLocation() {
     return () => {
       locationTracker.off('locationUpdate', handleLocationUpdate);
     };
-  }, [hasActiveShift, assignedArea]);
+  }, [hasActiveShift, boundaryArea]);
 
   return { location, refresh, hasActiveShift };
 }

@@ -128,6 +128,9 @@ export class MonitoringUserService {
         activity: axes.activity,
         location: axes.location,
         is_within_area: uts.is_within_area,
+        // Overridden by the callers (getLiveUsers / getSnapshot) with the
+        // current-shift roster check; default false keeps the type satisfied.
+        is_scheduled: false,
         outside_boundary: uts.shift?.clock_in_outside_boundary || false,
         shift_id: uts.shift_id || '',
         shift_name: uts.shift_definition?.name || 'Active Shift',

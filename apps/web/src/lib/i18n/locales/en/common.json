@@ -121,6 +121,8 @@
     "en": "English"
   },
   "ui": {
+    "withinArea": "within",
+    "outsideArea": "outside",
     "combobox": {
       "placeholder": "Select…",
       "searchPlaceholder": "Search…",

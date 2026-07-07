@@ -83,7 +83,8 @@ jest.mock('../../../constants/nbTokens', () => ({
   nbTypography: {
     fontWeight: { bold: '700' },
   },
-  nbBorders: { base: 1 },
+  nbBorders: { base: 1, widthThin: 1, widthBase: 2, widthThick: 3 },
+  nbRadius: { sm: 4, base: 6, md: 8, lg: 12 },
   nbShadows: { sm: {}, md: {} },
   withAlpha: (hex: string, alpha: number) => `${hex}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`,
 }));
@@ -145,12 +146,16 @@ function buildRayon(
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('BoundaryOverlay', () => {
-  const onRayonPress = jest.fn();
-  const onAreaPress = jest.fn();
+  const onRayonMarkerPress = jest.fn();
+  const onAreaMarkerPress = jest.fn();
+  const onRayonBubblePress = jest.fn();
+  const onAreaBubblePress = jest.fn();
 
   const defaultProps = {
-    onRayonPress,
-    onAreaPress,
+    onRayonMarkerPress,
+    onAreaMarkerPress,
+    onRayonBubblePress,
+    onAreaBubblePress,
   };
 
   beforeEach(() => {
@@ -162,7 +167,7 @@ describe('BoundaryOverlay', () => {
   describe('empty rayons array', () => {
     it('renders nothing when rayons is empty', () => {
       const { queryAllByTestId } = render(
-        <BoundaryOverlay rayons={[]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[]} {...defaultProps} showRayonMarker showAreaMarker />,
       );
 
       expect(queryAllByTestId('polygon')).toHaveLength(0);
@@ -302,33 +307,29 @@ describe('BoundaryOverlay', () => {
     });
   });
 
-  // ── Area center markers ───────────────────────────────────────────────────────
+  // ── Area marker (current node → detail, area scope) ───────────────────────────
 
-  describe('area center markers', () => {
-    it('renders an area center marker for each area', () => {
-      const area1 = buildArea({ id: 'area-1' });
-      const area2 = buildArea({ id: 'area-2', center_lat: -7.300, center_lng: 112.750 });
-      const { getAllByTestId } = render(
-        <BoundaryOverlay rayons={[buildRayon([area1, area2])]} {...defaultProps} />,
-      );
-
-      // At minimum: 1 rayon marker + 2 area markers
-      const markers = getAllByTestId('marker');
-      expect(markers.length).toBeGreaterThanOrEqual(3);
-    });
-
-    it('renders the map-marker icon inside the area center marker', () => {
+  describe('area marker', () => {
+    it('renders the map-marker icon when showAreaMarker is set', () => {
       const { getByTestId } = render(
-        <BoundaryOverlay rayons={[buildRayon([buildArea()])]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[buildRayon([buildArea()])]} {...defaultProps} showAreaMarker />,
       );
 
       expect(getByTestId('icon-map-marker')).toBeTruthy();
     });
 
+    it('does not render the area marker when showAreaMarker is unset', () => {
+      const { queryByTestId } = render(
+        <BoundaryOverlay rayons={[buildRayon([buildArea()])]} {...defaultProps} />,
+      );
+
+      expect(queryByTestId('icon-map-marker')).toBeNull();
+    });
+
     it('applies dashed border style when area is understaffed', () => {
       const area = buildArea({ is_understaffed: true });
       const { toJSON } = render(
-        <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} showAreaMarker />,
       );
 
       // StyleSheet.create returns numeric IDs; inspect the JSON tree for the
@@ -340,7 +341,7 @@ describe('BoundaryOverlay', () => {
     it('does not apply dashed border when area is not understaffed', () => {
       const area = buildArea({ is_understaffed: false });
       const { toJSON } = render(
-        <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} showAreaMarker />,
       );
 
       const json = JSON.stringify(toJSON());
@@ -348,24 +349,12 @@ describe('BoundaryOverlay', () => {
     });
   });
 
-  // ── Rayon center markers ──────────────────────────────────────────────────────
+  // ── Rayon marker (current node → detail, rayon scope) ─────────────────────────
 
-  describe('rayon center markers', () => {
-    it('renders a center marker for each rayon', () => {
-      const rayon1 = buildRayon([], { id: 'rayon-1' });
-      const rayon2 = buildRayon([], { id: 'rayon-2' });
-      const { getAllByTestId } = render(
-        <BoundaryOverlay rayons={[rayon1, rayon2]} {...defaultProps} />,
-      );
-
-      const markers = getAllByTestId('marker');
-      // one per rayon (no area markers since areas=[])
-      expect(markers.length).toBeGreaterThanOrEqual(2);
-    });
-
-    it('renders the office-building icon inside the rayon center marker', () => {
+  describe('rayon marker', () => {
+    it('renders the office-building icon when showRayonMarker is set', () => {
       const { getByTestId } = render(
-        <BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} showRayonMarker />,
       );
 
       expect(getByTestId('icon-office-building')).toBeTruthy();
@@ -374,7 +363,7 @@ describe('BoundaryOverlay', () => {
     it('renders understaffed badge when understaffed_area_count > 0', () => {
       const rayon = buildRayon([], { understaffed_area_count: 2 });
       const { getByText } = render(
-        <BoundaryOverlay rayons={[rayon]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[rayon]} {...defaultProps} showRayonMarker />,
       );
 
       expect(getByText('2')).toBeTruthy();
@@ -383,7 +372,7 @@ describe('BoundaryOverlay', () => {
     it('does not render understaffed badge when understaffed_area_count is 0', () => {
       const rayon = buildRayon([], { understaffed_area_count: 0 });
       const { queryByText } = render(
-        <BoundaryOverlay rayons={[rayon]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[rayon]} {...defaultProps} showRayonMarker />,
       );
 
       // Badge text should not appear
@@ -391,75 +380,119 @@ describe('BoundaryOverlay', () => {
     });
   });
 
+  // ── Node bubbles (child aggregate → drill) ────────────────────────────────────
+
+  describe('node bubbles', () => {
+    it('renders a rayon bubble with the name and ratio when showRayonBubbles is set', () => {
+      const rayon = buildRayon([], { id: 'rayon-1', name: 'Rayon Selatan' });
+      const { getByText } = render(
+        <BoundaryOverlay
+          rayons={[rayon]}
+          {...defaultProps}
+          showRayonBubbles
+          rosterById={{ 'rayon-1': { clockedIn: 4, scheduled: 6 } }}
+        />,
+      );
+
+      expect(getByText('Rayon Selatan')).toBeTruthy();
+      expect(getByText('4/6')).toBeTruthy();
+    });
+
+    it('renders an area bubble with the name and ratio when showAreaBubbles is set', () => {
+      const area = buildArea({ id: 'area-1', name: 'Taman Bungkul' });
+      const { getByText } = render(
+        <BoundaryOverlay
+          rayons={[buildRayon([area])]}
+          {...defaultProps}
+          showAreaBubbles
+          rosterById={{ 'area-1': { clockedIn: 2, scheduled: 3 } }}
+        />,
+      );
+
+      expect(getByText('Taman Bungkul')).toBeTruthy();
+      expect(getByText('2/3')).toBeTruthy();
+    });
+
+    it('shows an em-dash ratio when the node has no roster entry', () => {
+      const rayon = buildRayon([], { id: 'rayon-1', name: 'Rayon Selatan' });
+      const { getByText } = render(
+        <BoundaryOverlay rayons={[rayon]} {...defaultProps} showRayonBubbles />,
+      );
+
+      expect(getByText('—')).toBeTruthy();
+    });
+
+    it('does not render a rayon office icon at bubble (city) scope', () => {
+      const { queryByTestId } = render(
+        <BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} showRayonBubbles />,
+      );
+
+      expect(queryByTestId('icon-office-building')).toBeNull();
+    });
+  });
+
   // ── Press callbacks ───────────────────────────────────────────────────────────
 
   describe('press callbacks', () => {
-    it('calls onRayonPress with the correct rayon when its marker is pressed', () => {
+    it('calls onRayonMarkerPress with the rayon when its marker is pressed', () => {
       const rayon = buildRayon([], { id: 'rayon-42', name: 'Rayon Utara' });
       const { getAllByTestId } = render(
-        <BoundaryOverlay rayons={[rayon]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[rayon]} {...defaultProps} showRayonMarker />,
       );
 
-      // The rayon center marker is the last marker rendered
       const markers = getAllByTestId('marker');
-      const rayonMarker = markers[markers.length - 1];
-      fireEvent(rayonMarker, 'onTouchEnd');
+      fireEvent(markers[markers.length - 1], 'onTouchEnd');
 
-      expect(onRayonPress).toHaveBeenCalledTimes(1);
-      expect(onRayonPress).toHaveBeenCalledWith(rayon);
+      expect(onRayonMarkerPress).toHaveBeenCalledTimes(1);
+      expect(onRayonMarkerPress).toHaveBeenCalledWith(rayon);
     });
 
-    it('calls onAreaPress with the correct area when its marker is pressed', () => {
+    it('calls onAreaMarkerPress with the area when its marker is pressed', () => {
       const area = buildArea({ id: 'area-99', name: 'Taman Ria' });
       const { getAllByTestId } = render(
-        <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} showAreaMarker />,
       );
 
-      // Area center marker precedes the rayon center marker in render order
-      const markers = getAllByTestId('marker');
-      const areaMarker = markers[0];
-      fireEvent(areaMarker, 'onTouchEnd');
+      fireEvent(getAllByTestId('marker')[0], 'onTouchEnd');
 
-      expect(onAreaPress).toHaveBeenCalledTimes(1);
-      expect(onAreaPress).toHaveBeenCalledWith(area);
+      expect(onAreaMarkerPress).toHaveBeenCalledTimes(1);
+      expect(onAreaMarkerPress).toHaveBeenCalledWith(area);
     });
 
-    it('calls onAreaPress for the correct area when multiple areas exist', () => {
-      const area1 = buildArea({ id: 'area-1', name: 'Taman A' });
-      const area2 = buildArea({ id: 'area-2', name: 'Taman B', center_lat: -7.300 });
-      const { getAllByTestId } = render(
-        <BoundaryOverlay rayons={[buildRayon([area1, area2])]} {...defaultProps} />,
-      );
-
-      const markers = getAllByTestId('marker');
-      // markers[0] = area1, markers[1] = area2, markers[2] = rayon
-      fireEvent(markers[1], 'onTouchEnd');
-
-      expect(onAreaPress).toHaveBeenCalledWith(area2);
-    });
-
-    it('calls onRayonPress for the correct rayon when multiple rayons exist', () => {
+    it('calls onRayonBubblePress when a rayon bubble is pressed', () => {
       const rayon1 = buildRayon([], { id: 'rayon-1', name: 'Rayon A' });
       const rayon2 = buildRayon([], { id: 'rayon-2', name: 'Rayon B' });
       const { getAllByTestId } = render(
-        <BoundaryOverlay rayons={[rayon1, rayon2]} {...defaultProps} />,
+        <BoundaryOverlay rayons={[rayon1, rayon2]} {...defaultProps} showRayonBubbles />,
       );
 
       const markers = getAllByTestId('marker');
-      // rayon markers are last in render order; rayon1=markers[0], rayon2=markers[1]
       fireEvent(markers[1], 'onTouchEnd');
 
-      expect(onRayonPress).toHaveBeenCalledWith(rayon2);
+      expect(onRayonBubblePress).toHaveBeenCalledWith(rayon2);
+      expect(onRayonMarkerPress).not.toHaveBeenCalled();
     });
 
-    it('does not call onRayonPress when no rayon marker is pressed', () => {
-      render(<BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} />);
-      expect(onRayonPress).not.toHaveBeenCalled();
+    it('calls onAreaBubblePress for the correct area when multiple areas exist', () => {
+      const area1 = buildArea({ id: 'area-1', name: 'Taman A' });
+      const area2 = buildArea({ id: 'area-2', name: 'Taman B', center_lat: -7.300 });
+      const { getAllByTestId } = render(
+        <BoundaryOverlay rayons={[buildRayon([area1, area2])]} {...defaultProps} showAreaBubbles />,
+      );
+
+      const markers = getAllByTestId('marker');
+      fireEvent(markers[1], 'onTouchEnd');
+
+      expect(onAreaBubblePress).toHaveBeenCalledWith(area2);
+      expect(onAreaMarkerPress).not.toHaveBeenCalled();
     });
 
-    it('does not call onAreaPress when no area marker is pressed', () => {
-      render(<BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} />);
-      expect(onAreaPress).not.toHaveBeenCalled();
+    it('does not fire any callback when nothing is pressed', () => {
+      render(<BoundaryOverlay rayons={[buildRayon()]} {...defaultProps} showRayonMarker showAreaMarker />);
+      expect(onRayonMarkerPress).not.toHaveBeenCalled();
+      expect(onAreaMarkerPress).not.toHaveBeenCalled();
+      expect(onRayonBubblePress).not.toHaveBeenCalled();
+      expect(onAreaBubblePress).not.toHaveBeenCalled();
     });
   });
 

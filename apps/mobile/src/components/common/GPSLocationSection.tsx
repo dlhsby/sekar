@@ -14,6 +14,8 @@ export interface GPSLocationSectionProps {
   onRefresh: () => void;
   error?: string | null;
   isWithinBoundary?: boolean;
+  /** Worker has no assigned area — show a neutral note, not within/outside. */
+  noArea?: boolean;
   areaName?: string;
 }
 
@@ -25,6 +27,7 @@ export function GPSLocationSection({
   onRefresh,
   error,
   isWithinBoundary,
+  noArea,
   areaName,
 }: GPSLocationSectionProps) {
   const { t } = useTranslation('attendance');
@@ -32,7 +35,11 @@ export function GPSLocationSection({
 
   const iconName = hasLocation ? 'crosshairs-gps' : 'crosshairs';
   const iconColor = hasLocation
-    ? (isWithinBoundary === false ? nbColors.statusOutside : nbColors.statusActive)
+    ? noArea
+      ? nbColors.gray500
+      : isWithinBoundary === false
+        ? nbColors.statusOutside
+        : nbColors.statusActive
     : nbColors.gray500;
 
   return (
@@ -66,8 +73,10 @@ export function GPSLocationSection({
         </View>
       </View>
 
-      {/* Area status alert — only when boundary check is provided */}
-      {hasLocation && isWithinBoundary !== undefined && (
+      {/* Area status alert — neutral note when unassigned, else within/outside */}
+      {hasLocation && noArea ? (
+        <NBAlert variant="info" message={t('gpsSection.noArea')} />
+      ) : hasLocation && isWithinBoundary !== undefined ? (
         <View>
           {isWithinBoundary ? (
             <NBAlert variant="success" message={t('gpsSection.withinBoundary')} />
@@ -75,7 +84,7 @@ export function GPSLocationSection({
             <NBAlert variant="warning" message={t('gpsSection.outsideBoundary')} />
           )}
         </View>
-      )}
+      ) : null}
 
       {/* Full coordinate detail */}
       {hasLocation && (
