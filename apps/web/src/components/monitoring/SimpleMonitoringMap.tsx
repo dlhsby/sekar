@@ -17,6 +17,16 @@ import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
+import { nodeDetailIcon } from '@/lib/monitoring/markers';
+
+/** The current node's own pin (selected rayon at rayon scope / area at area scope). */
+export interface CurrentNodeMarker {
+  variant: 'rayon' | 'area';
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+}
 
 export interface SimpleWorker {
   user_id: string;
@@ -39,6 +49,11 @@ export interface SimpleMonitoringMapProps {
   scope?: 'surabaya' | 'city' | 'rayon' | 'area';
   nodeMarkers?: NodeMarker[];
   onDrillNode?: (node: NodeMarker) => void;
+  /** The current node's own pin (rayon/area) — opens detail on click, no drill. */
+  currentNode?: CurrentNodeMarker | null;
+  onNodeDetail?: (node: CurrentNodeMarker) => void;
+  /** Selected area id — at area scope only its boundary is drawn (on demand). */
+  areaId?: string | null;
   workers: SimpleWorker[];
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
@@ -48,8 +63,9 @@ export interface SimpleMonitoringMapProps {
   overdueByArea?: Record<string, number> | null;
   /** Which overlays to draw (rayon border/fill, area border/pins, petugas). */
   layers?: MonitoringLayers;
-  /** Imperative focus target (from search / drill) — pan + zoom to this point. */
-  focusTarget?: { lat: number; lng: number; zoom?: number; key: number } | null;
+  /** Imperative focus target (from search / drill). `exact` sets the zoom
+   *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
+  focusTarget?: { lat: number; lng: number; zoom?: number; exact?: boolean; key: number } | null;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -145,6 +161,9 @@ function MonitoringMapInner({
   scope,
   nodeMarkers,
   onDrillNode,
+  currentNode,
+  onNodeDetail,
+  areaId,
   workers,
   boundaries,
   selectedId,
@@ -178,14 +197,14 @@ function MonitoringMapInner({
   // configured color so the map can tint the fill/border per rayon.
   const { rayonPolys, areaPaths, areaPins } = useMemo(() => {
     const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
-    const areaPaths: google.maps.LatLngLiteral[][] = [];
+    const areaPaths: { id: string; paths: google.maps.LatLngLiteral[] }[] = [];
     const areaPins: AreaPin[] = [];
     for (const rayon of boundaries?.rayons ?? []) {
       geometryToPaths(rayon.boundary_polygon).forEach((p) =>
         rayonPolys.push({ paths: p, color: rayon.color ?? null })
       );
       for (const area of rayon.areas) {
-        geometryToPaths(area.boundary_polygon).forEach((p) => areaPaths.push(p));
+        geometryToPaths(area.boundary_polygon).forEach((p) => areaPaths.push({ id: area.id, paths: p }));
         if (typeof area.center_lat === 'number' && typeof area.center_lng === 'number') {
           areaPins.push({
             id: area.id,
@@ -211,7 +230,7 @@ function MonitoringMapInner({
         has = true;
       };
       rayonPolys.forEach((poly) => poly.paths.forEach(extend));
-      areaPaths.forEach((path) => path.forEach(extend));
+      areaPaths.forEach((area) => area.paths.forEach(extend));
       areaPins.forEach((a) => extend({ lat: a.lat, lng: a.lng }));
       workers.forEach((w) => w.lat && w.lng && extend({ lat: w.lat, lng: w.lng }));
       if (has) {
@@ -275,7 +294,13 @@ function MonitoringMapInner({
     const map = mapRef.current;
     if (!map || !focusTarget) return;
     map.panTo({ lat: focusTarget.lat, lng: focusTarget.lng });
-    if (focusTarget.zoom) map.setZoom(Math.max(map.getZoom() ?? 12, focusTarget.zoom));
+    if (focusTarget.zoom) {
+      // `exact` sets the zoom absolutely (drill-back zoom-out); otherwise only
+      // tighten (drill-in / focus-on-marker never zooms further out).
+      map.setZoom(
+        focusTarget.exact ? focusTarget.zoom : Math.max(map.getZoom() ?? 12, focusTarget.zoom)
+      );
+    }
   }, [focusTarget]);
 
   const selectedWorker =
@@ -289,7 +314,13 @@ function MonitoringMapInner({
   // outlines only once inside a rayon. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
   const showRayonPolys = scope !== 'surabaya';
-  const showAreaBorders = scope === 'rayon' || scope === 'area';
+  // Area outlines are on-demand: only at area scope, and only the SELECTED area's
+  // polygon (mirrors mobile — never all of a rayon's areas at once).
+  const showAreaBorders = scope === 'area';
+  const visibleAreaPaths = useMemo(
+    () => (areaId ? areaPaths.filter((a) => a.id === areaId) : areaPaths),
+    [areaPaths, areaId]
+  );
 
   const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
     const map = mapRef.current;
@@ -332,12 +363,13 @@ function MonitoringMapInner({
             );
           })}
 
-        {/* Area boundaries — outline + fill (one `area` toggle); only inside a rayon. */}
+        {/* Area boundaries — outline + fill (one `area` toggle); only the
+            selected area at area scope (on-demand). */}
         {layers.area && showAreaBorders &&
-          areaPaths.map((path, i) => (
+          visibleAreaPaths.map((area, i) => (
             <Polygon
-              key={`area-${i}`}
-              paths={path}
+              key={`area-${area.id}-${i}`}
+              paths={area.paths}
               options={{
                 strokeColor: POLYGON_STYLES.area.stroke,
                 strokeWeight: POLYGON_STYLES.area.strokeWidth,
@@ -393,6 +425,19 @@ function MonitoringMapInner({
             onClusterClick={handleClusterZoom}
           />
         ) : null}
+
+        {/* Current-node pin (selected rayon at rayon scope / area at area scope):
+            an icon marker that opens the node's detail — never drills. */}
+        {currentNode && (
+          <Marker
+            key={`current-node-${currentNode.id}`}
+            position={{ lat: currentNode.lat, lng: currentNode.lng }}
+            onClick={() => onNodeDetail?.(currentNode)}
+            icon={nodeDetailIcon(currentNode.variant)}
+            zIndex={6}
+            title={currentNode.name}
+          />
+        )}
 
         {/* Info windows */}
         {hoverArea && (

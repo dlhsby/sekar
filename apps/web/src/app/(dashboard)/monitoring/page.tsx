@@ -42,7 +42,7 @@ import { SurabayaSummaryCard } from '@/components/monitoring/SurabayaSummaryCard
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import { usePlantStatusSummary } from '@/lib/api/plants';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
-import type { SimpleWorker } from '@/components/monitoring/SimpleMonitoringMap';
+import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { NodeMarker } from '@/components/monitoring/NodeMarkerLayer';
 import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
 import { MONITORING_ROLES, REASSIGN_ROLES, hasRole } from '@/lib/constants/roles';
@@ -62,7 +62,15 @@ interface MonitoringView {
   id?: string;
   rayonId?: string;
   name?: string;
+  /** Center of the drilled node — anchors the current-node pin + drill-back zoom. */
+  lat?: number;
+  lng?: number;
 }
+
+// Zoom levels per scope (drill-in tightens; drill-back uses these to zoom out).
+const ZOOM_RAYON = 13;
+const ZOOM_AREA = 15;
+const ZOOM_CITY = 11;
 
 const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
   active: 0,
@@ -147,6 +155,7 @@ export default function MonitoringPage() {
     lat: number;
     lng: number;
     zoom?: number;
+    exact?: boolean;
     key: number;
   } | null>(null);
 
@@ -213,18 +222,20 @@ export default function MonitoringPage() {
     if (id) setListOpen(true);
   };
 
-  const focusOn = (lat: number, lng: number, zoom?: number) =>
-    setFocusTarget((cur) => ({ lat, lng, zoom, key: cur ? cur.key + 1 : 1 }));
+  const focusOn = (lat: number, lng: number, zoom?: number, exact?: boolean) =>
+    setFocusTarget((cur) => ({ lat, lng, zoom, exact, key: cur ? cur.key + 1 : 1 }));
 
   // ---- Drill navigation (scope only; no modes) ----------------------------
   const drillToCity = () => {
     setView({ scope: 'city' });
     setSelectedId(null);
+    focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
   };
   const drillToRayon = (id: string, name: string, lat?: number | null, lng?: number | null) => {
-    setView({ scope: 'rayon', id, rayonId: id, name });
+    const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
+    setView({ scope: 'rayon', id, rayonId: id, name, ...coord });
     setSelectedId(null);
-    if (typeof lat === 'number' && typeof lng === 'number') focusOn(lat, lng, 13);
+    if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_RAYON);
   };
   const drillToArea = (
     id: string,
@@ -233,9 +244,10 @@ export default function MonitoringPage() {
     lat?: number | null,
     lng?: number | null
   ) => {
-    setView({ scope: 'area', id, rayonId, name });
+    const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
+    setView({ scope: 'area', id, rayonId, name, ...coord });
     setSelectedId(null);
-    if (typeof lat === 'number' && typeof lng === 'number') focusOn(lat, lng, 15);
+    if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_AREA);
   };
 
   // Map marker tapped.
@@ -273,17 +285,61 @@ export default function MonitoringPage() {
   };
 
   const canGoBack = scope !== roleView.floor;
+  // Drilling OUT zooms back out (exact zoom) to frame the parent level.
   const goBack = () => {
     setSelectedId(null);
     if (scope === 'area') {
       if (roleView.floor === 'area') return;
       setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
+      if (typeof view.lat === 'number' && typeof view.lng === 'number') {
+        focusOn(view.lat, view.lng, ZOOM_RAYON, true);
+      }
     } else if (scope === 'rayon') {
       if (roleView.floor === 'rayon') return;
       setView({ scope: 'city' });
+      focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
     } else if (scope === 'city') {
       setView({ scope: 'surabaya' });
+      focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
     }
+  };
+
+  // The current node's own pin (rayon at rayon scope / area at area scope) — the
+  // detail-opener. Coords come from the drill; fall back to the aggregate node /
+  // boundary centre so it also renders on role-landing + drill-back.
+  const currentNode = useMemo<CurrentNodeMarker | null>(() => {
+    if (scope === 'rayon' && view.id) {
+      let lat = view.lat;
+      let lng = view.lng;
+      const node = cityAgg.data?.nodes.find((n) => n.id === view.id);
+      if ((lat == null || lng == null) && node?.center_lat != null && node?.center_lng != null) {
+        lat = node.center_lat;
+        lng = node.center_lng;
+      }
+      if (lat != null && lng != null) {
+        return { variant: 'rayon', id: view.id, name: view.name ?? node?.name ?? '', lat, lng };
+      }
+    }
+    if (scope === 'area' && view.id) {
+      let lat = view.lat;
+      let lng = view.lng;
+      const area = boundaries?.rayons.flatMap((r) => r.areas).find((a) => a.id === view.id);
+      if ((lat == null || lng == null) && area?.center_lat != null && area?.center_lng != null) {
+        lat = area.center_lat;
+        lng = area.center_lng;
+      }
+      if (lat != null && lng != null) {
+        return { variant: 'area', id: view.id, name: view.name ?? area?.name ?? '', lat, lng };
+      }
+    }
+    return null;
+  }, [scope, view, cityAgg.data, boundaries]);
+
+  // Tapping the current-node pin focuses it a touch tighter and opens the list
+  // sheet (its children/detail) — mirrors mobile's marker → detail.
+  const onNodeDetail = (node: CurrentNodeMarker) => {
+    focusOn(node.lat, node.lng, node.variant === 'area' ? 16 : 14);
+    setListOpen(true);
   };
 
   // Rayons list (surabaya + city) or areas list (rayon), for the side panel.
@@ -455,6 +511,9 @@ export default function MonitoringPage() {
         scope={scope}
         nodeMarkers={nodeMarkers}
         onDrillNode={onDrillMarker}
+        currentNode={currentNode}
+        onNodeDetail={onNodeDetail}
+        areaId={scope === 'area' ? view.id ?? null : null}
         workers={mapWorkers}
         boundaries={boundaries ?? null}
         selectedId={selectedId}
