@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { MapFab } from '../../../components/monitoring/MapFab';
 import { ToolsOverlay } from './ToolsOverlay';
 import { nbSpacing } from '../../../constants/nbTokens';
+import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
 
 interface FABColumnProps {
   toolsExpanded: boolean;
@@ -18,6 +19,11 @@ interface FABColumnProps {
   onOpenStatus: () => void;
   handleRefresh: () => void;
   resetHeading: () => void;
+  onZoomIn: () => void;
+  onZoomOut: () => void;
+  onMyLocation: () => void;
+  visibleLayers: MonitoringV2VisibleLayers;
+  onToggleLayer: (key: keyof MonitoringV2VisibleLayers) => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -28,6 +34,11 @@ export function FABColumn({
   onOpenStatus,
   handleRefresh,
   resetHeading,
+  onZoomIn,
+  onZoomOut,
+  onMyLocation,
+  visibleLayers,
+  onToggleLayer,
   filterModalVisible,
   setFilterModalVisible,
 }: FABColumnProps): React.JSX.Element {
@@ -52,8 +63,8 @@ export function FABColumn({
           onPress={onOpenStatus}
           accessibilityLabel={t('monitoring:fab.status')}
         />
-        {/* Tools FAB — opens the map-tools overlay (compass, filter, layers).
-            Zoom + My-Location are now the native Google Maps controls. */}
+        {/* Tools FAB — opens the map-tools overlay (zoom, my-location, compass,
+            layer visibility, filter). */}
         <MapFab
           icon="wrench"
           onPress={() => setToolsExpanded(!toolsExpanded)}
@@ -69,7 +80,12 @@ export function FABColumn({
         {/* Tools overlay card — a left-anchored popover from the wrench FAB */}
         {toolsExpanded && (
           <ToolsOverlay
+            onZoomIn={onZoomIn}
+            onZoomOut={onZoomOut}
+            onMyLocation={onMyLocation}
             resetHeading={resetHeading}
+            visibleLayers={visibleLayers}
+            onToggleLayer={onToggleLayer}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />

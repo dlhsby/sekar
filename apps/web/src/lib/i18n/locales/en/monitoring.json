@@ -35,12 +35,11 @@
   "layers": {
     "title": "Settings",
     "overlays": "Map Layers",
-    "rayonBorder": "Rayon Border",
-    "rayonFill": "Rayon Color",
-    "areaBorder": "Area Border",
     "areaPins": "Area Pins",
     "petugas": "Officers",
-    "overdue": "Overdue Plants"
+    "overdue": "Overdue Plants",
+    "rayon": "Rayon Border",
+    "area": "Area Border"
   },
   "search": {
     "personnelLabel": "Officers",

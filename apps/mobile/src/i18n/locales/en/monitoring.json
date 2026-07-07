@@ -36,8 +36,8 @@
     "workers": "Workers",
     "plants": "Plants",
     "overdue": "Overdue",
-    "rayons": "Rayon Boundaries",
-    "areas": "Area Boundaries"
+    "rayons": "Rayon Border",
+    "areas": "Area Border"
   },
   "fab": {
     "status": "Status summary",
@@ -52,7 +52,9 @@
     "zoomIn": "Zoom in",
     "zoomOut": "Zoom out",
     "filterSection": "Filter",
-    "filter": "Monitoring filter"
+    "filter": "Monitoring filter",
+    "myLocation": "My location",
+    "layersSection": "Display"
   },
   "markerPreview": {
     "typeOfficer": "Officer",

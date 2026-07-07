@@ -5,6 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import { Dimensions } from 'react-native';
 import MapView from 'react-native-maps';
 import type { MarkerPreviewData } from '../../../components/monitoring/MarkerPreview';
 
@@ -20,6 +21,7 @@ interface UseMarkerPreviewReturn {
     card: MarkerPreviewData['card'],
     anchorOffset: number,
     onDetail: () => void,
+    animate?: boolean,
   ) => void;
   dismissPreview: () => void;
 }
@@ -37,18 +39,27 @@ export function useMarkerPreview(
       card: MarkerPreviewData['card'],
       anchorOffset: number,
       onDetail: () => void,
+      animate = true,
     ) => {
-      const { width, height } = mapLayout;
-      if (width <= 0 || height <= 0) { return; }
-      mapRef.current?.animateToRegion(
-        {
-          latitude: coordinate.latitude,
-          longitude: coordinate.longitude,
-          latitudeDelta: currentRegion.latitudeDelta,
-          longitudeDelta: currentRegion.longitudeDelta,
-        },
-        300,
-      );
+      // Fall back to the window size if the map hasn't reported its layout yet,
+      // so the hint card always appears (a 0-size guard used to silently no-op).
+      let { width, height } = mapLayout;
+      if (width <= 0 || height <= 0) {
+        const win = Dimensions.get('window');
+        width = win.width;
+        height = win.height;
+      }
+      if (animate) {
+        mapRef.current?.animateToRegion(
+          {
+            latitude: coordinate.latitude,
+            longitude: coordinate.longitude,
+            latitudeDelta: currentRegion.latitudeDelta,
+            longitudeDelta: currentRegion.longitudeDelta,
+          },
+          300,
+        );
+      }
       const x = MAP_PADDING.left + (width - MAP_PADDING.left - MAP_PADDING.right) / 2;
       const y = MAP_PADDING.top + (height - MAP_PADDING.top - MAP_PADDING.bottom) / 2;
       setMarkerPreview({ x, y, anchorOffset, card, onDetail });

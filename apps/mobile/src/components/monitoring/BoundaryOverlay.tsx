@@ -4,53 +4,165 @@
  * Layer order: rayon polygons -> area polygons -> area center markers -> rayon center markers.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker, Polygon, Circle } from 'react-native-maps';
+import type { LatLng, MapMarkerProps } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import {
   nbColors,
   nbBorders,
+  nbRadius,
   nbShadows,
   withAlpha,
 } from '../../constants/nbTokens';
 import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
 import { geometryToRings } from '../../utils/geoJsonUtils';
 import { buildRayonColorMap, rayonColor } from './rayonColors';
+import { healthColor, rosterHealth } from './markerSpec';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BoundaryOverlayProps {
   rayons: RayonBoundary[];
-  onRayonPress: (rayon: RayonBoundary) => void;
-  onAreaPress: (area: AreaBoundary) => void;
+  /** Detail (marker) taps — open the node's detail sheet/modal. */
+  onRayonMarkerPress: (rayon: RayonBoundary) => void;
+  onAreaMarkerPress: (area: AreaBoundary) => void;
+  /** Drill (bubble) taps — enter the child level + zoom in. */
+  onRayonBubblePress: (rayon: RayonBoundary) => void;
+  onAreaBubblePress: (area: AreaBoundary) => void;
   /**
    * Phase 3 sub-phase 3-5: layer-toggle gating. When `false`, the matching
-   * layer is skipped entirely so the MonitoringToggleSheet ("Tampilan Peta")
-   * actually changes what the user sees.
+   * boundary polygon layer is skipped entirely so the "Pengaturan" toggles
+   * actually change what the user sees.
    */
   showRayons?: boolean;
   showAreas?: boolean;
   /**
-   * Center pins (Layer 3/4). In the unified drill-down the AggregateBubbleLayer
-   * ratio bubbles ARE the node markers, so the boundary layer draws only the
-   * polygons and suppresses its own duplicate pins. Default true (legacy).
+   * Ratio **bubbles** — the drill-in targets for the CHILD level (rayon bubbles
+   * at city scope, area bubbles at rayon scope). Each carries `hadir/terjadwal`
+   * and drills deeper on tap. Distinct from the current-node icon markers below.
    */
-  showRayonMarkers?: boolean;
-  showAreaMarkers?: boolean;
+  showRayonBubbles?: boolean;
+  showAreaBubbles?: boolean;
+  /**
+   * Icon **markers** — the CURRENT node's geographic pin (selected rayon at
+   * rayon scope, selected area at area scope). Opens the detail sheet on tap.
+   */
+  showRayonMarker?: boolean;
+  showAreaMarker?: boolean;
+  /**
+   * Attendance ratio per rayon/area id (`hadir/terjadwal`), shown on the child
+   * bubbles so each drill target carries its count.
+   */
+  rosterById?: Record<string, { clockedIn: number; scheduled: number }>;
+}
+
+type MarkerRoster = { clockedIn: number; scheduled: number };
+
+// ─── Marker pin (current node → detail) ─────────────────────────────────────────
+//
+// The CURRENT node's geographic icon pin (rayon office / area pin). Tapping it
+// opens the node's detail sheet — it does NOT drill (you are already here), so
+// it carries no ratio; the ratio lives on the child bubbles instead.
+
+function MarkerPin({
+  coordinate,
+  onPress,
+  zIndex,
+  testID,
+  children,
+}: {
+  coordinate: LatLng;
+  onPress: MapMarkerProps['onPress'];
+  zIndex: number;
+  testID?: string;
+  children: React.ReactNode;
+}): React.JSX.Element {
+  return (
+    <Marker
+      coordinate={coordinate}
+      onPress={onPress}
+      tracksViewChanges={false}
+      zIndex={zIndex}
+      anchor={{ x: 0.5, y: 1 }}
+      testID={testID}
+    >
+      <View style={styles.markerStack}>{children}</View>
+    </Marker>
+  );
+}
+
+// ─── Node bubble (child aggregate → drill) ──────────────────────────────────────
+//
+// A ratio bubble for a CHILD node (a rayon at city scope, an area at rayon
+// scope). Shows the node name + `hadir/terjadwal`, health-colored, and drills
+// one level deeper on tap. Keeps tracksViewChanges on briefly whenever the ratio
+// changes so react-native-maps captures the count into the native bitmap once
+// the aggregate loads (a plain tracksViewChanges={false} freezes it before the
+// async count arrives).
+
+function NodeBubble({
+  coordinate,
+  roster,
+  label,
+  onPress,
+  zIndex,
+  testID,
+}: {
+  coordinate: LatLng;
+  roster?: MarkerRoster;
+  label: string;
+  onPress: MapMarkerProps['onPress'];
+  zIndex: number;
+  testID?: string;
+}): React.JSX.Element {
+  const [tracks, setTracks] = useState(true);
+  const clockedIn = roster?.clockedIn;
+  const scheduled = roster?.scheduled;
+  useEffect(() => {
+    setTracks(true);
+    const id = setTimeout(() => setTracks(false), 600);
+    return () => clearTimeout(id);
+  }, [clockedIn, scheduled]);
+  const color = roster ? healthColor(rosterHealth(roster.scheduled, roster.clockedIn)) : nbColors.black;
+  return (
+    <Marker
+      coordinate={coordinate}
+      onPress={onPress}
+      tracksViewChanges={tracks}
+      zIndex={zIndex}
+      anchor={{ x: 0.5, y: 0.5 }}
+      testID={testID}
+    >
+      <View style={[styles.bubble, { borderColor: color }]}>
+        <NBText variant="caption" numberOfLines={1} style={styles.bubbleLabel}>
+          {label}
+        </NBText>
+        <NBText variant="caption" style={[styles.bubbleRatio, { color }]}>
+          {roster ? `${roster.clockedIn}/${roster.scheduled}` : '—'}
+        </NBText>
+      </View>
+    </Marker>
+  );
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   rayons,
-  onRayonPress,
-  onAreaPress,
+  onRayonMarkerPress,
+  onAreaMarkerPress,
+  onRayonBubblePress,
+  onAreaBubblePress,
   showRayons = true,
   showAreas = true,
-  showRayonMarkers = true,
-  showAreaMarkers = true,
+  showRayonBubbles = false,
+  showAreaBubbles = false,
+  showRayonMarker = false,
+  showAreaMarker = false,
+  rosterById,
 }: BoundaryOverlayProps): React.JSX.Element {
   // Stable per-rayon colors (sorted-id → fixed palette), built once per rayon set.
   const rayonColors = useMemo(
@@ -113,47 +225,65 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
         }),
       )}
 
-      {/* Layer 3: Area center markers */}
-      {showAreas && showAreaMarkers && rayons.flatMap(rayon =>
+      {/* Layer 3a: Area BUBBLES — a rayon's areas as ratio drill targets (rayon
+          scope). Tap → drill into the area (its workers). */}
+      {showAreaBubbles && rayons.flatMap(rayon =>
         rayon.areas.map(area => (
-          <Marker
+          <NodeBubble
+            key={`area-bubble-${area.id}`}
+            coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
+            roster={rosterById?.[area.id]}
+            label={area.name}
+            onPress={(e) => { e?.stopPropagation?.(); onAreaBubblePress(area); }}
+            zIndex={20}
+          />
+        )),
+      )}
+
+      {/* Layer 3b: Area MARKER — the current (selected) area's icon pin (area
+          scope). Tap → open its detail modal. */}
+      {showAreaMarker && rayons.flatMap(rayon =>
+        rayon.areas.map(area => (
+          <MarkerPin
             key={`area-center-${area.id}`}
             coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
-            onPress={(e) => { e?.stopPropagation?.(); onAreaPress(area); }}
-            tracksViewChanges={false}
+            onPress={(e) => { e?.stopPropagation?.(); onAreaMarkerPress(area); }}
             zIndex={20}
-            anchor={{ x: 0.5, y: 0.5 }}
           >
             <View style={[
               styles.areaCenterMarker,
               area.is_understaffed && styles.areaCenterUnderstaffed,
             ]}>
-              <MaterialCommunityIcons
-                name="map-marker"
-                size={16}
-                color={nbColors.white}
-              />
+              <MaterialCommunityIcons name="map-marker" size={16} color={nbColors.white} />
             </View>
-          </Marker>
+          </MarkerPin>
         )),
       )}
 
-      {/* Layer 4: Rayon center markers */}
-      {showRayons && showRayonMarkers && rayons.map(rayon => (
-        <Marker
+      {/* Layer 4a: Rayon BUBBLES — the 7 rayons as ratio drill targets (city
+          scope). Tap → drill into the rayon (its areas). */}
+      {showRayonBubbles && rayons.map(rayon => (
+        <NodeBubble
+          key={`rayon-bubble-${rayon.id}`}
+          coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}
+          roster={rosterById?.[rayon.id]}
+          label={rayon.name}
+          onPress={(e) => { e?.stopPropagation?.(); onRayonBubblePress(rayon); }}
+          zIndex={10}
+        />
+      ))}
+
+      {/* Layer 4b: Rayon MARKER — the current (selected) rayon's office pin
+          (rayon scope). Tap → open its detail modal. */}
+      {showRayonMarker && rayons.map(rayon => (
+        <MarkerPin
           key={`rayon-center-${rayon.id}`}
           coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}
-          onPress={(e) => { e?.stopPropagation?.(); onRayonPress(rayon); }}
-          tracksViewChanges={false}
+          onPress={(e) => { e?.stopPropagation?.(); onRayonMarkerPress(rayon); }}
           zIndex={10}
-          anchor={{ x: 0.5, y: 0.5 }}
         >
           <View style={styles.rayonCenterMarker}>
-            <MaterialCommunityIcons
-              name="office-building"
-              size={18}
-              color={nbColors.white}
-            />
+            <MaterialCommunityIcons name="office-building" size={18} color={nbColors.white} />
             {rayon.understaffed_area_count > 0 && (
               <View style={styles.understaffedBadge}>
                 <NBText variant="caption" color="white" style={{ fontSize: 9, fontWeight: 'bold' }}>
@@ -162,7 +292,7 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
               </View>
             )}
           </View>
-        </Marker>
+        </MarkerPin>
       ))}
     </>
   );
@@ -171,6 +301,34 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
+  // Icon pin, anchored by the pin tip (y:1).
+  markerStack: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  // Child-node ratio bubble (drill target): compact named pill with a count.
+  bubble: {
+    alignItems: 'center',
+    minWidth: 40,
+    maxWidth: 96,
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: nbRadius.base,
+    borderWidth: nbBorders.widthBase,
+    backgroundColor: nbColors.white,
+    ...nbShadows.sm,
+  },
+  bubbleLabel: {
+    color: nbColors.black,
+    fontWeight: '700',
+    fontSize: 10,
+    lineHeight: 13,
+  },
+  bubbleRatio: {
+    fontWeight: '800',
+    fontSize: 11,
+    lineHeight: 14,
+  },
   areaCenterMarker: {
     width: 28,
     height: 28,

@@ -7,15 +7,14 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   View,
   Text,
-  Modal,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  SafeAreaView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import MapView, { Polyline, Marker, Callout, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { NBModal } from '../nb/NBModal';
 import { getUserLocationHistory } from '../../services/api/monitoringApi';
 import {
   nbColors,
@@ -164,41 +163,35 @@ export function OvertimeTrailModal({
   }, [coordinates]);
 
   return (
-    <Modal visible={visible} animationType="fade" onRequestClose={onClose}>
-      <SafeAreaView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.closeBtn}
-            accessibilityRole="button"
-            accessibilityLabel={t('overtime:trail.closeLabel')}
-          >
-            <MaterialCommunityIcons name="arrow-left" size={24} color={nbColors.black} />
-          </TouchableOpacity>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>{t('overtime:trail.title')}</Text>
-            <Text style={styles.headerSubtitle}>{userName}</Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => loadPoints(true)}
-            style={styles.refreshBtn}
-            disabled={isLoading || isRefreshing}
-            accessibilityRole="button"
-            accessibilityLabel={t('overtime:trail.refreshLabel')}
-          >
-            {isRefreshing ? (
-              <ActivityIndicator size="small" color={nbColors.primary} />
-            ) : (
-              <MaterialCommunityIcons
-                name="refresh"
-                size={22}
-                color={isLoading ? nbColors.gray400 : nbColors.primary}
-              />
-            )}
-          </TouchableOpacity>
-        </View>
-
+    <NBModal
+      visible={visible}
+      onClose={onClose}
+      type="sheet"
+      sheetHeight="92%"
+      enableContentPanningGesture={false}
+      noPadding
+      title={userName || t('overtime:trail.title')}
+      headerRight={
+        <TouchableOpacity
+          onPress={() => loadPoints(true)}
+          disabled={isLoading || isRefreshing}
+          accessibilityRole="button"
+          accessibilityLabel={t('overtime:trail.refreshLabel')}
+        >
+          {isRefreshing ? (
+            <ActivityIndicator size="small" color={nbColors.primary} />
+          ) : (
+            <MaterialCommunityIcons
+              name="refresh"
+              size={22}
+              color={isLoading ? nbColors.gray400 : nbColors.primary}
+            />
+          )}
+        </TouchableOpacity>
+      }
+      testID="overtime-trail-modal"
+    >
+      <View style={styles.body}>
         {/* Stats bar */}
         <View style={styles.statsBar}>
           <Text style={styles.statsText}>{points.length} {t('overtime:trail.locationPoints')}</Text>
@@ -352,12 +345,15 @@ export function OvertimeTrailModal({
             </View>
           )}
         </View>
-      </SafeAreaView>
-    </Modal>
+      </View>
+    </NBModal>
   );
 }
 
 const styles = StyleSheet.create({
+  body: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: nbColors.white,

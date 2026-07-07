@@ -14,14 +14,14 @@ describe('MonitoringLayersPanel', () => {
   it('renders a toggle for every layer', () => {
     render(<MonitoringLayersPanel {...base} />);
     expect(screen.getByRole('button', { name: /batas rayon/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /warna rayon/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /batas area/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^petugas$/i })).toBeInTheDocument();
   });
 
   it('toggles a layer on click', () => {
     render(<MonitoringLayersPanel {...base} />);
     fireEvent.click(screen.getByRole('button', { name: /batas area/i }));
-    expect(base.onToggleLayer).toHaveBeenCalledWith('areaBorder');
+    expect(base.onToggleLayer).toHaveBeenCalledWith('area');
   });
 
   it('no longer renders a view-mode switch', () => {

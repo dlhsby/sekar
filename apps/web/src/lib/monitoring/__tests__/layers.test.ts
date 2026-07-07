@@ -11,9 +11,9 @@ describe('useMonitoringLayers', () => {
 
   it('toggleLayer flips a layer and persists it', () => {
     const { result } = renderHook(() => useMonitoringLayers());
-    act(() => result.current.toggleLayer('rayonFill'));
-    expect(result.current.layers.rayonFill).toBe(false);
-    expect(JSON.parse(window.localStorage.getItem('monitoring.layers.v2')!).rayonFill).toBe(false);
+    act(() => result.current.toggleLayer('rayon'));
+    expect(result.current.layers.rayon).toBe(false);
+    expect(JSON.parse(window.localStorage.getItem('monitoring.layers.v3')!).rayon).toBe(false);
   });
 
   it('setLayer sets an explicit value', () => {
@@ -23,11 +23,11 @@ describe('useMonitoringLayers', () => {
   });
 
   it('hydrates from stored value on mount', () => {
-    window.localStorage.setItem('monitoring.layers.v2', JSON.stringify({ petugas: false }));
+    window.localStorage.setItem('monitoring.layers.v3', JSON.stringify({ petugas: false }));
     const { result } = renderHook(() => useMonitoringLayers());
     expect(result.current.layers.petugas).toBe(false);
     // Missing keys fall back to defaults.
-    expect(result.current.layers.rayonBorder).toBe(true);
+    expect(result.current.layers.rayon).toBe(true);
   });
 
   it('exposes a toggle for every layer key', () => {

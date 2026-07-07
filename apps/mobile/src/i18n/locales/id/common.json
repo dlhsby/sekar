@@ -208,7 +208,9 @@
     "openProfile": "Buka Profil",
     "defaultUser": "Pengguna",
     "elapsedTime": "Waktu berjalan: {{time}}",
-    "closeImagePreview": "Tutup pratinjau gambar"
+    "closeImagePreview": "Tutup pratinjau gambar",
+    "visible": "terlihat",
+    "hidden": "disembunyikan"
   },
   "errors": {
     "failedToLoadData": "Gagal memuat data. Silakan coba lagi."

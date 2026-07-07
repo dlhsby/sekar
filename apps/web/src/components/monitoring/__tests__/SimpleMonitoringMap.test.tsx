@@ -246,9 +246,8 @@ describe('SimpleMonitoringMap', () => {
         workers={workers}
         boundaries={boundaries}
         layers={{
-          rayonBorder: true,
-          rayonFill: true,
-          areaBorder: true,
+          rayon: true,
+          area: true,
           areaPins: false,
           petugas: false,
           overdue: false,

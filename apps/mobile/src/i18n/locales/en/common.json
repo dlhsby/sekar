@@ -208,7 +208,9 @@
     "openProfile": "Open Profile",
     "defaultUser": "User",
     "elapsedTime": "Elapsed time: {{time}}",
-    "closeImagePreview": "Close image preview"
+    "closeImagePreview": "Close image preview",
+    "visible": "visible",
+    "hidden": "hidden"
   },
   "errors": {
     "failedToLoadData": "Failed to load data. Please try again."

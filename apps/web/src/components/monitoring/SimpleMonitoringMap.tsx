@@ -308,8 +308,8 @@ function MonitoringMapInner({
         onIdle={handleIdle}
         options={MAP_OPTIONS}
       >
-        {/* Rayon boundaries — border and/or fill tinted with the rayon's color. */}
-        {(layers.rayonBorder || layers.rayonFill) && showRayonPolys &&
+        {/* Rayon boundaries — outline + tinted fill (one `rayon` toggle). */}
+        {layers.rayon && showRayonPolys &&
           rayonPolys.map((poly, i) => {
             const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
             const fill =
@@ -321,10 +321,10 @@ function MonitoringMapInner({
                 paths={poly.paths}
                 options={{
                   strokeColor: stroke,
-                  strokeWeight: layers.rayonBorder ? POLYGON_STYLES.rayon.strokeWidth : 0,
-                  strokeOpacity: layers.rayonBorder ? 0.9 : 0,
+                  strokeWeight: POLYGON_STYLES.rayon.strokeWidth,
+                  strokeOpacity: 0.9,
                   fillColor: fill,
-                  fillOpacity: layers.rayonFill ? RAYON_FILL_ALPHA : 0,
+                  fillOpacity: RAYON_FILL_ALPHA,
                   clickable: false,
                   zIndex: 1,
                 }}
@@ -332,8 +332,8 @@ function MonitoringMapInner({
             );
           })}
 
-        {/* Area boundaries — only once drilled into a rayon. */}
-        {layers.areaBorder && showAreaBorders &&
+        {/* Area boundaries — outline + fill (one `area` toggle); only inside a rayon. */}
+        {layers.area && showAreaBorders &&
           areaPaths.map((path, i) => (
             <Polygon
               key={`area-${i}`}

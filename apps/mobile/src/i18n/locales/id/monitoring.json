@@ -52,7 +52,9 @@
     "zoomIn": "Perbesar",
     "zoomOut": "Perkecil",
     "filterSection": "Filter",
-    "filter": "Filter monitoring"
+    "filter": "Filter monitoring",
+    "myLocation": "Lokasi saya",
+    "layersSection": "Tampilan"
   },
   "markerPreview": {
     "typeOfficer": "Petugas",

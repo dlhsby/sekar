@@ -35,12 +35,11 @@
   "layers": {
     "title": "Pengaturan",
     "overlays": "Lapisan Peta",
-    "rayonBorder": "Batas Rayon",
-    "rayonFill": "Warna Rayon",
-    "areaBorder": "Batas Area",
     "areaPins": "Titik Area",
     "petugas": "Petugas",
-    "overdue": "Tanaman Terlambat"
+    "overdue": "Tanaman Terlambat",
+    "rayon": "Batas Rayon",
+    "area": "Batas Area"
   },
   "search": {
     "personnelLabel": "Petugas",
