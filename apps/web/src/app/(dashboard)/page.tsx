@@ -243,15 +243,20 @@ export default function DashboardPage() {
                             ? 'var(--color-status-idle)'
                             : 'var(--color-status-missing)';
                       return (
-                        <div key={r.name} className="flex items-center gap-3 text-nb-body-sm">
-                          <span className="w-20 shrink-0 truncate text-nb-gray-700">{r.name}</span>
+                        <div key={r.name} className="flex items-center gap-2.5 text-nb-body-sm sm:gap-3">
+                          <span
+                            className="w-24 shrink-0 leading-tight break-words text-nb-gray-700 sm:w-32"
+                            title={r.name}
+                          >
+                            {r.name}
+                          </span>
                           <div className="h-3 flex-1 overflow-hidden rounded-full border border-nb-black bg-nb-gray-100">
                             <div
                               className="h-full"
                               style={{ width: `${Math.min(100, ratio * 100)}%`, background: barColor }}
                             />
                           </div>
-                          <span className="w-12 shrink-0 text-right font-mono text-[11px] font-bold text-nb-black">
+                          <span className="w-11 shrink-0 text-right font-mono text-[11px] font-bold text-nb-black tabular-nums">
                             {r.hadir}/{r.scheduled}
                           </span>
                         </div>
