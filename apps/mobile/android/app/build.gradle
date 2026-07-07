@@ -156,14 +156,14 @@ android {
     }
 }
 
-// Force all dependencies to use compatible play-services-location version
-// This prevents react-native-maps from pulling in newer incompatible versions
+// Pin play-services-location to the version react-native-maps 1.27 compiles
+// against (21.3.0). Forcing an older version (18.x) makes maps' native code load
+// a mismatched FusedLocationProviderClient at runtime →
+// IncompatibleClassChangeError. 21.3.0 is also fine for
+// react-native-geolocation-service. Base/basement/tasks resolve transitively.
 configurations.all {
     resolutionStrategy {
-        force 'com.google.android.gms:play-services-location:18.0.0'
-        force 'com.google.android.gms:play-services-base:18.0.1'
-        force 'com.google.android.gms:play-services-basement:18.0.0'
-        force 'com.google.android.gms:play-services-tasks:18.0.1'
+        force 'com.google.android.gms:play-services-location:21.3.0'
     }
 }
 
@@ -171,9 +171,8 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 
-    // Google Play Services Location - version 18.0.0 is compatible with
-    // react-native-geolocation-service (FusedLocationProviderClient is a class, not interface)
-    implementation("com.google.android.gms:play-services-location:18.0.0")
+    // Match react-native-maps' expected play-services-location (see the force above).
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")
