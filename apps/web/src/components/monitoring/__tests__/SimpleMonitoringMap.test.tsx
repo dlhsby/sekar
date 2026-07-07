@@ -158,10 +158,17 @@ const nodeMarkers = [
 ];
 
 describe('SimpleMonitoringMap', () => {
-  it('renders rayon + area boundary polygons', () => {
-    render(<SimpleMonitoringMap showWorkers={false} workers={[]} boundaries={boundaries} />);
+  it('renders rayon + area boundary polygons once drilled into a rayon', () => {
+    // Area outlines only draw at rayon/area scope; rayon outlines from city down.
+    render(<SimpleMonitoringMap showWorkers={false} scope="rayon" workers={[]} boundaries={boundaries} />);
     // 1 rayon polygon + 1 area polygon
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
+  });
+
+  it('hides area boundaries at the top (Surabaya) scope', () => {
+    render(<SimpleMonitoringMap showWorkers={false} scope="surabaya" workers={[]} boundaries={boundaries} />);
+    // Neither rayon nor area outlines at the Surabaya summary level.
+    expect(screen.queryAllByTestId('polygon')).toHaveLength(0);
   });
 
   it('node view renders one marker per node and no area pins', () => {

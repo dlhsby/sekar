@@ -20,7 +20,8 @@ import { setActivities } from '../../store/slices/activitiesSlice';
 import { setTasks } from '../../store/slices/tasksSlice';
 import { activitiesApi, tasksApi, shiftsApi } from '../../services/api';
 import { formatRelativeTime, formatTime, isToday, calculateDuration } from '../../utils/dateUtils';
-import { summarizeAttendance } from '../../utils/attendance';
+import { deriveAttendanceStatus } from '../../utils/attendance';
+import { useTodayRoster } from '../../hooks/useTodayRoster';
 import { ACTIVE_TASK_STATUSES } from '../../utils/taskStatus';
 import { useCollapsible } from '../../hooks';
 import type { Activity, Task, Shift } from '../../types/models.types';
@@ -205,11 +206,12 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
     return list.filter((s) => isToday(s.clock_in_time));
   }, [shiftHistory]);
 
-  // Today's attendance summary for the hero (first clock-in, last clock-out, late
-  // flag). todayShifts is clock_in DESC, so the earliest is the last element.
+  // Today's attendance status for the hero — lateness is roster-gated (judged
+  // only against today's roster shift; unscheduled reads as "no schedule").
+  const { rosterShift, hasScheduleToday } = useTodayRoster();
   const attendance = useMemo(
-    () => summarizeAttendance(todayShifts, currentShift),
-    [todayShifts, currentShift],
+    () => deriveAttendanceStatus(todayShifts, currentShift, rosterShift),
+    [todayShifts, currentShift, rosterShift],
   );
 
   const totalTodayDuration = useMemo(() => {
@@ -279,6 +281,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
                 lastClockOut={attendance.lastClockOut}
                 isLate={attendance.isLate}
                 isEarlyLeave={attendance.isEarlyLeave}
+                neutral={!hasScheduleToday}
               />
               {absensiExpanded && (
                 <>

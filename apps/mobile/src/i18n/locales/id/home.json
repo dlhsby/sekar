@@ -22,7 +22,8 @@
         "outArea": "Di luar area",
         "searching": "Mencari lokasi…",
         "unavailable": "Lokasi tidak tersedia",
-        "unknownArea": "Area tidak diketahui"
+        "unknownArea": "Area tidak diketahui",
+        "noArea": "Tanpa area"
       },
       "labels": {
         "clockInStart": "Mulai clock in",
@@ -33,7 +34,8 @@
       },
       "status": {
         "late": "Terlambat",
-        "onTime": "Tepat Waktu"
+        "onTime": "Tepat Waktu",
+        "noSchedule": "Tanpa jadwal"
       },
       "button": {
         "clockIn": "Clock In",
@@ -240,7 +242,8 @@
         "clockOut": "Keluar {{time}}{{earlyLeave}}",
         "earlyLeave": ", pulang cepat",
         "late": ", terlambat",
-        "onTime": ", tepat waktu"
+        "onTime": ", tepat waktu",
+        "noSchedule": ", tanpa jadwal"
       },
       "clockIn": "Masuk",
       "clockOut": "Keluar"

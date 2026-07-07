@@ -47,7 +47,6 @@ import type {
   MonitoringScope,
 } from '../../store/slices/monitoringV2Slice';
 import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
-import { SurabayaSummaryCard } from '../../components/monitoring/SurabayaSummaryCard';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
@@ -323,7 +322,6 @@ export function MapDashboardScreen(): React.JSX.Element {
     },
     [dispatch, animateTo, view.rayonId],
   );
-  const handleEnterCity = useCallback(() => dispatch(enterCity()), [dispatch]);
   const handleDrillBack = useCallback(() => dispatch(drillBack()), [dispatch]);
   const canDrillBack = scope !== floor;
 
@@ -405,6 +403,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 useClustering={useClustering}
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
+                scope={scope}
                 showWorkers={showWorkers}
                 nodeMarkers={nodeMarkers}
                 onDrillNode={handleDrillNode}
@@ -437,13 +436,6 @@ export function MapDashboardScreen(): React.JSX.Element {
               </TouchableOpacity>
             )}
           </View>
-
-          {/* Surabaya summary card (top level only) */}
-          {scope === 'surabaya' && (
-            <View style={styles.surabayaCardWrap} pointerEvents="box-none">
-              <SurabayaSummaryCard roster={rosterTotals} onDrill={handleEnterCity} />
-            </View>
-          )}
 
           {/* Empty-boundaries warning */}
           {!isLoading && !boundaries && (
@@ -565,12 +557,6 @@ const styles = StyleSheet.create({
   backChipText: {
     color: nbColors.black,
     flexShrink: 1,
-  },
-  surabayaCardWrap: {
-    position: 'absolute',
-    top: 104,
-    left: nbSpacing.sm,
-    right: nbSpacing.sm,
   },
   emptyAreaCallout: {
     position: 'absolute',

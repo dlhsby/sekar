@@ -115,7 +115,7 @@ describe('MonitoringPage', () => {
     expect(screen.getByLabelText(/cari petugas/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /segarkan/i })).toBeInTheDocument();
     expect(screen.getByText('Aktif')).toBeInTheDocument();
-    expect(screen.getByText('Hilang')).toBeInTheDocument();
+    expect(screen.getByText('Tidak hadir')).toBeInTheDocument();
   });
 
   it('passes all snapshot workers to the map by default', () => {

@@ -35,6 +35,8 @@ export interface SimpleMonitoringMapProps {
    * drill-down node markers (Surabaya / rayons / areas) from `nodeMarkers`.
    */
   showWorkers: boolean;
+  /** Current drill scope — gates which boundary layers draw. */
+  scope?: 'surabaya' | 'city' | 'rayon' | 'area';
   nodeMarkers?: NodeMarker[];
   onDrillNode?: (node: NodeMarker) => void;
   workers: SimpleWorker[];
@@ -140,6 +142,7 @@ function createLocateControl(map: google.maps.Map, onClick: () => void, ariaLabe
 
 function MonitoringMapInner({
   showWorkers,
+  scope,
   nodeMarkers,
   onDrillNode,
   workers,
@@ -282,6 +285,11 @@ function MonitoringMapInner({
   // counts); keep them for the drilled worker view or when the plant overlay is
   // on — and only when the areaPins layer is enabled.
   const showAreaPins = layers.areaPins && (showWorkers || !!overdueByArea);
+  // Scope-gate boundary polygons: rayon outlines from the city view down, area
+  // outlines only once inside a rayon. At the top (Surabaya) the map shows just
+  // the Surabaya node bubble.
+  const showRayonPolys = scope !== 'surabaya';
+  const showAreaBorders = scope === 'rayon' || scope === 'area';
 
   const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
     const map = mapRef.current;
@@ -301,7 +309,7 @@ function MonitoringMapInner({
         options={MAP_OPTIONS}
       >
         {/* Rayon boundaries — border and/or fill tinted with the rayon's color. */}
-        {(layers.rayonBorder || layers.rayonFill) &&
+        {(layers.rayonBorder || layers.rayonFill) && showRayonPolys &&
           rayonPolys.map((poly, i) => {
             const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
             const fill =
@@ -324,8 +332,8 @@ function MonitoringMapInner({
             );
           })}
 
-        {/* Area boundaries */}
-        {layers.areaBorder &&
+        {/* Area boundaries — only once drilled into a rayon. */}
+        {layers.areaBorder && showAreaBorders &&
           areaPaths.map((path, i) => (
             <Polygon
               key={`area-${i}`}

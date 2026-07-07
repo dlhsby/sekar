@@ -47,6 +47,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     selfie,
     isSubmitting,
     isWithinBoundary,
+    areaState,
     timer,
     isClockIn,
     isOnline,
@@ -54,6 +55,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     currentShift,
     scheduledShift,
     isLate,
+    hasScheduleToday,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
@@ -141,22 +143,29 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               </NBText>
             }
             headerRight={
-              scheduledShift ? (
+              hasScheduleToday ? (
                 <NBBadge
                   text={isLate ? t('attendance:list.statusChip.late') : t('attendance:list.statusChip.onTime')}
                   color={isLate ? 'danger' : 'success'}
                   size="sm"
                 />
-              ) : undefined
+              ) : (
+                <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
+              )
             }
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
               <InfoTableRow label={t('attendance:clockInOut.currentTime')} value={<DateTimeValue source={currentTime} />} />
-              {scheduledShift && (
+              {scheduledShift ? (
                 <InfoTableRow
                   label={t('attendance:clockInOut.scheduledShift')}
                   value={`${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`}
+                />
+              ) : (
+                <InfoTableRow
+                  label={t('attendance:clockInOut.scheduledShift')}
+                  value={t('attendance:clockInOut.noScheduleToday')}
                 />
               )}
               {assignedArea ? (
@@ -190,11 +199,13 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>{t('attendance:clockInOut.gpsLocation')}</NBText>
             }
             headerRight={location.latitude != null
-              ? <NBBadge
-                  text={isWithinBoundary ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
-                  color={isWithinBoundary ? 'success' : 'danger'}
-                  size="sm"
-                />
+              ? areaState === 'none'
+                ? <NBBadge text={t('attendance:clockInOut.noAreaChip')} color="gray" size="sm" />
+                : <NBBadge
+                    text={areaState === 'within' ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
+                    color={areaState === 'within' ? 'success' : 'danger'}
+                    size="sm"
+                  />
               : undefined
             }
             accessibilityLabel={t('attendance:clockInOut.gpsLocation')}
@@ -207,7 +218,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               isCapturing={location.loading}
               onRefresh={getCurrentLocation}
               error={location.error}
-              isWithinBoundary={isWithinBoundary}
+              isWithinBoundary={areaState === 'none' ? undefined : isWithinBoundary}
+              noArea={areaState === 'none'}
               areaName={assignedArea?.name}
             />
             {!isClockIn && currentShift && (

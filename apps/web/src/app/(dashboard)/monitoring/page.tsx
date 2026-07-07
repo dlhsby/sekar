@@ -452,6 +452,7 @@ export default function MonitoringPage() {
       {/* Map (base layer) */}
       <SimpleMonitoringMap
         showWorkers={showWorkers}
+        scope={scope}
         nodeMarkers={nodeMarkers}
         onDrillNode={onDrillMarker}
         workers={mapWorkers}

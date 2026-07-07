@@ -27,6 +27,8 @@ interface MapLayerContentProps {
   useClustering: boolean;
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
+  /** Current drill scope — gates which boundary layers show. */
+  scope: 'surabaya' | 'city' | 'rayon' | 'area';
   /** Unified drill-down: false → node markers (Surabaya/rayon/area), true → workers. */
   showWorkers: boolean;
   nodeMarkers: NodeMarker[];
@@ -48,6 +50,7 @@ export function MapLayerContent({
   useClustering,
   currentRegion,
   boundaryKey,
+  scope,
   showWorkers,
   nodeMarkers,
   onDrillNode,
@@ -57,22 +60,30 @@ export function MapLayerContent({
   onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
   const { t } = useTranslation();
+  // Scope-gate the boundary polygons: rayon outlines from the city view down,
+  // area outlines only once inside a rayon. At the top (Surabaya) the map shows
+  // just the Surabaya bubble. The ratio bubbles (AggregateBubbleLayer) are the
+  // node markers, so the boundary layer draws polygons only — no duplicate pins.
+  const showRayonBoundaries = visibleLayers.rayons && scope !== 'surabaya';
+  const showAreaBoundaries = visibleLayers.areas && (scope === 'rayon' || scope === 'area');
   return (
     <>
-      {/* Boundary overlays */}
-      {mapReady && boundaries && (visibleLayers.rayons || visibleLayers.areas) && (
+      {/* Boundary overlays (polygons only — bubbles are the drill affordance) */}
+      {mapReady && boundaries && (showRayonBoundaries || showAreaBoundaries) && (
         <BoundaryOverlay
           key={boundaryKey}
           rayons={boundaries.rayons}
           onRayonPress={onRayonPress}
           onAreaPress={onAreaPress}
-          showRayons={visibleLayers.rayons}
-          showAreas={visibleLayers.areas}
+          showRayons={showRayonBoundaries}
+          showAreas={showAreaBoundaries}
+          showRayonMarkers={false}
+          showAreaMarkers={false}
         />
       )}
 
-      {/* Phase 3: Area status overlay (plant health tints) */}
-      {mapReady && boundaries && visibleLayers.areas && (
+      {/* Phase 3: Area status overlay (plant health tints) — inside a rayon only */}
+      {mapReady && boundaries && showAreaBoundaries && (
         <AreaStatusOverlay
           rayons={boundaries.rayons}
           boundaryKey={boundaryKey}

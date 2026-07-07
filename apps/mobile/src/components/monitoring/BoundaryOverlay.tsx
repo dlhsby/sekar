@@ -32,6 +32,13 @@ interface BoundaryOverlayProps {
    */
   showRayons?: boolean;
   showAreas?: boolean;
+  /**
+   * Center pins (Layer 3/4). In the unified drill-down the AggregateBubbleLayer
+   * ratio bubbles ARE the node markers, so the boundary layer draws only the
+   * polygons and suppresses its own duplicate pins. Default true (legacy).
+   */
+  showRayonMarkers?: boolean;
+  showAreaMarkers?: boolean;
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -42,6 +49,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   onAreaPress,
   showRayons = true,
   showAreas = true,
+  showRayonMarkers = true,
+  showAreaMarkers = true,
 }: BoundaryOverlayProps): React.JSX.Element {
   // Stable per-rayon colors (sorted-id → fixed palette), built once per rayon set.
   const rayonColors = useMemo(
@@ -105,7 +114,7 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
       )}
 
       {/* Layer 3: Area center markers */}
-      {showAreas && rayons.flatMap(rayon =>
+      {showAreas && showAreaMarkers && rayons.flatMap(rayon =>
         rayon.areas.map(area => (
           <Marker
             key={`area-center-${area.id}`}
@@ -130,7 +139,7 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
       )}
 
       {/* Layer 4: Rayon center markers */}
-      {showRayons && rayons.map(rayon => (
+      {showRayons && showRayonMarkers && rayons.map(rayon => (
         <Marker
           key={`rayon-center-${rayon.id}`}
           coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}

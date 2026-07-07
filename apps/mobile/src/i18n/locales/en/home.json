@@ -22,7 +22,8 @@
         "outArea": "Out of area",
         "searching": "Getting location…",
         "unavailable": "Location unavailable",
-        "unknownArea": "Unknown area"
+        "unknownArea": "Unknown area",
+        "noArea": "No area"
       },
       "labels": {
         "clockInStart": "Clock in start",
@@ -33,7 +34,8 @@
       },
       "status": {
         "late": "Late",
-        "onTime": "On Time"
+        "onTime": "On Time",
+        "noSchedule": "No schedule"
       },
       "button": {
         "clockIn": "Clock In",
@@ -240,7 +242,8 @@
         "clockOut": "Clock Out {{time}}{{earlyLeave}}",
         "earlyLeave": ", Early Leave",
         "late": ", Late",
-        "onTime": ", On Time"
+        "onTime": ", On Time",
+        "noSchedule": ", no schedule"
       },
       "clockIn": "Clock In",
       "clockOut": "Clock Out"
