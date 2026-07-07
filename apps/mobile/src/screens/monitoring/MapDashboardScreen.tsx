@@ -297,12 +297,13 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Unified drill handlers.
   const rosterTotals = aggregate?.roster_totals ?? { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
 
-  // Per-node attendance ratio (hadir/terjadwal) keyed by rayon/area id — fed to
-  // the geographic markers so each carries its count.
-  const rosterById = useMemo<Record<string, { clockedIn: number; scheduled: number }>>(() => {
-    const map: Record<string, { clockedIn: number; scheduled: number }> = {};
+  // Per-node ratio (active-and-inside-area / terjadwal) keyed by rayon/area id —
+  // fed to the geographic markers so each carries its count. The numerator is the
+  // hadir workers who are BOTH active (fresh ping) and inside their area.
+  const rosterById = useMemo<Record<string, { activeInside: number; scheduled: number }>>(() => {
+    const map: Record<string, { activeInside: number; scheduled: number }> = {};
     for (const n of aggregate?.nodes ?? []) {
-      map[n.id] = { clockedIn: n.roster?.clocked_in ?? 0, scheduled: n.roster?.scheduled ?? 0 };
+      map[n.id] = { activeInside: n.presence?.aktif?.dalam ?? 0, scheduled: n.roster?.scheduled ?? 0 };
     }
     return map;
   }, [aggregate]);

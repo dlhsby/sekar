@@ -337,6 +337,18 @@ export interface AggregateRosterCounts {
   not_clocked_in: number;
 }
 
+/** Dalam/luar (inside/outside area) split for one activity bucket. */
+export interface PresenceLocationCounts {
+  dalam: number;
+  luar: number;
+}
+
+/** Activity×location breakdown of the hadir (scheduled+clocked-in) workers. */
+export interface PresenceBreakdown {
+  aktif: PresenceLocationCounts;
+  tidak_aktif: PresenceLocationCounts;
+}
+
 export interface AggregateNode {
   id: string;
   name: string;
@@ -350,6 +362,7 @@ export interface AggregateNode {
   required: number;
   is_understaffed: boolean;
   roster: AggregateRosterCounts;
+  presence: PresenceBreakdown;
   area_count?: number;
   rayon_id?: string | null;
 }
@@ -360,6 +373,7 @@ export interface MonitoringAggregateResponse {
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;
   roster_totals: AggregateRosterCounts;
+  presence_totals: PresenceBreakdown;
   generated_at: string;
 }
 

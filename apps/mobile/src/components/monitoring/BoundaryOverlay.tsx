@@ -53,13 +53,13 @@ interface BoundaryOverlayProps {
   showRayonMarker?: boolean;
   showAreaMarker?: boolean;
   /**
-   * Attendance ratio per rayon/area id (`hadir/terjadwal`), shown on the child
-   * bubbles so each drill target carries its count.
+   * Ratio per rayon/area id (`active-and-inside-area / terjadwal`), shown on the
+   * child bubbles so each drill target carries its count.
    */
-  rosterById?: Record<string, { clockedIn: number; scheduled: number }>;
+  rosterById?: Record<string, { activeInside: number; scheduled: number }>;
 }
 
-type MarkerRoster = { clockedIn: number; scheduled: number };
+type MarkerRoster = { activeInside: number; scheduled: number };
 
 // ─── Marker pin (current node → detail) ─────────────────────────────────────────
 //
@@ -119,14 +119,14 @@ function NodeBubble({
   testID?: string;
 }): React.JSX.Element {
   const [tracks, setTracks] = useState(true);
-  const clockedIn = roster?.clockedIn;
+  const activeInside = roster?.activeInside;
   const scheduled = roster?.scheduled;
   useEffect(() => {
     setTracks(true);
     const id = setTimeout(() => setTracks(false), 600);
     return () => clearTimeout(id);
-  }, [clockedIn, scheduled]);
-  const color = roster ? healthColor(rosterHealth(roster.scheduled, roster.clockedIn)) : nbColors.black;
+  }, [activeInside, scheduled]);
+  const color = roster ? healthColor(rosterHealth(roster.scheduled, roster.activeInside)) : nbColors.black;
   return (
     <Marker
       coordinate={coordinate}
@@ -141,7 +141,7 @@ function NodeBubble({
           {label}
         </NBText>
         <NBText variant="caption" style={[styles.bubbleRatio, { color }]}>
-          {roster ? `${roster.clockedIn}/${roster.scheduled}` : '—'}
+          {roster ? `${roster.activeInside}/${roster.scheduled}` : '—'}
         </NBText>
       </View>
     </Marker>

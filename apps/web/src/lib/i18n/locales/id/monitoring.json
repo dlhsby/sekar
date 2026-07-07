@@ -26,7 +26,8 @@
     "understaffed": "Kekurangan personel",
     "scheduledLabel": "Terjadwal",
     "clockedInLabel": "Hadir",
-    "notClockedInLabel": "Belum Hadir"
+    "notClockedInLabel": "Belum Hadir",
+    "activeInsideLabel": "Aktif di area"
   },
   "surabaya": {
     "title": "Surabaya",
