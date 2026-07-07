@@ -75,7 +75,7 @@ export function PlantForm({
       nameLatin: initialData?.nameLatin || '',
       category: initialData?.category || 'tree',
       defaultPruningCycleDays: initialData?.defaultPruningCycleDays || undefined,
-      notes: initialData ? (initialData as PlantSpeciesRow & { notes?: string | null }).notes || '' : '',
+      notes: initialData?.notes || '',
     },
   });
 

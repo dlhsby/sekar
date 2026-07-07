@@ -158,10 +158,24 @@ const nodeMarkers = [
 ];
 
 describe('SimpleMonitoringMap', () => {
-  it('renders rayon + area boundary polygons once drilled into a rayon', () => {
-    // Area outlines only draw at rayon/area scope; rayon outlines from city down.
+  it('draws only the rayon outline at rayon scope (area borders are on-demand)', () => {
+    // Area outlines are deferred to area scope; at rayon scope only the rayon
+    // outline draws + its area BUBBLES (the area polygons stay hidden).
     render(<SimpleMonitoringMap showWorkers={false} scope="rayon" workers={[]} boundaries={boundaries} />);
-    // 1 rayon polygon + 1 area polygon
+    expect(screen.getAllByTestId('polygon')).toHaveLength(1);
+  });
+
+  it('draws the rayon outline + only the SELECTED area polygon at area scope', () => {
+    render(
+      <SimpleMonitoringMap
+        showWorkers
+        scope="area"
+        areaId="a1"
+        workers={[]}
+        boundaries={boundaries}
+      />
+    );
+    // 1 rayon polygon + 1 selected-area polygon (a1).
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 
