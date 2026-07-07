@@ -21,6 +21,8 @@ export interface NodeMarker {
   scheduled: number;
   clocked_in: number;
   not_clocked_in: number;
+  /** Active (fresh ping) AND inside their area — the bubble's ratio numerator. */
+  active_inside: number;
 }
 
 export interface NodeMarkerLayerProps {
@@ -47,7 +49,7 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           onClick={() => onDrill?.(node)}
           onMouseOver={() => setHoverId(node.id)}
           onMouseOut={() => setHoverId((cur) => (cur === node.id ? null : cur))}
-          icon={nodeRatioIcon(node.variant, node.scheduled, node.clocked_in)}
+          icon={nodeRatioIcon(node.variant, node.scheduled, node.active_inside)}
           zIndex={node.variant === 'surabaya' ? 8 : 5}
         />
       ))}
@@ -61,6 +63,10 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           <div className="text-xs text-nb-black">
             <div className="font-bold">{hovered.name}</div>
             <div className="mt-1 flex flex-col gap-0.5">
+              <span>
+                {t('monitoring:aggregate.activeInsideLabel')}:{' '}
+                <span className="font-mono font-bold tabular-nums">{hovered.active_inside}</span>
+              </span>
               <span>
                 {t('monitoring:aggregate.scheduledLabel')}:{' '}
                 <span className="font-mono font-bold tabular-nums">{hovered.scheduled}</span>

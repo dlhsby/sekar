@@ -105,6 +105,7 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     scheduled: n.roster.scheduled,
     clocked_in: n.roster.clocked_in,
     not_clocked_in: n.roster.not_clocked_in,
+    active_inside: n.presence.aktif.dalam,
   };
 }
 
@@ -350,6 +351,7 @@ export default function MonitoringPage() {
   }, [scope, rayonAgg.data, cityAgg.data]);
 
   const cityRosterTotals = cityAgg.data?.roster_totals ?? EMPTY_ROSTER;
+  const cityActiveInside = cityAgg.data?.presence_totals?.aktif.dalam ?? 0;
 
   // Map markers for the current scope.
   const nodeMarkers = useMemo<NodeMarker[]>(() => {
@@ -364,12 +366,13 @@ export default function MonitoringPage() {
           scheduled: cityRosterTotals.scheduled,
           clocked_in: cityRosterTotals.clocked_in,
           not_clocked_in: cityRosterTotals.not_clocked_in,
+          active_inside: cityActiveInside,
         },
       ];
     }
     if (scope === 'area') return [];
     return listNodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
-  }, [scope, listNodes, cityRosterTotals]);
+  }, [scope, listNodes, cityRosterTotals, cityActiveInside]);
 
   const statusCounts = useMemo(() => {
     if (showWorkers) {

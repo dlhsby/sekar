@@ -33,7 +33,7 @@ interface MapLayerContentProps {
   /** The selected area (area scope) — only its boundary is drawn, on demand. */
   areaId: string | null;
   /** Attendance ratio per rayon/area id, shown on the geographic markers. */
-  rosterById: Record<string, { clockedIn: number; scheduled: number }>;
+  rosterById: Record<string, { activeInside: number; scheduled: number }>;
   /** Unified drill-down: true → worker markers (area scope). */
   showWorkers: boolean;
   /** Bubble taps — drill into the child level (city→rayon, rayon→area). */
