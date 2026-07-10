@@ -49,9 +49,9 @@ describe('Navigation Utilities', () => {
         'pruning-requests',
       ]);
 
-      // 'Pengguna & Hak Akses' group holds user accounts.
+      // 'Pengguna & Hak Akses' group holds user accounts + role management (ADR-044).
       const accessItem = navigationItems.find((item) => item.id === 'access');
-      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users']);
+      expect(accessItem?.children?.map((c) => c.id)).toEqual(['users', 'roles']);
 
       // 'Data Master' group: areas / rayons / plants + the 'Data Base' embed
       // page. Seeds and assets are archived (commented out) per request.
