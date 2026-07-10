@@ -52,7 +52,7 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 | [Import / Export](features/_archived/README.md) | 🅿️ | hidden | — |
 | [Seeds](features/_archived/README.md) | 🅿️ | hidden | present |
 
-**Backend-only (no UI):** `special-day-overrides`, `service-capacity` (planned, ADR-035),
+**Backend-only (API implemented, no UI):** `special-day-overrides`, `service-capacity` (ADR-035),
 `kecamatans` (read-only), `area-staff-requirements`, `audit`.
 **Deprecated:** `supervisor` module (superseded by `monitoring`; not removed — 21 refs).
 

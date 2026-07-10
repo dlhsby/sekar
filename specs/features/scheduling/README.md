@@ -3,12 +3,16 @@
 **Status:** ✅ Active · **Backend:** `shifts`, `shift-definitions`, `schedules`, `special-day-overrides`, `service-capacity` · **Key ADRs:** ADR-013 (multi-area), ADR-035 (service capacity)
 
 ## Overview
-Shift definitions and the materialized **daily roster** that assigns workers to shifts/areas per day. Special-day overrides adjust the roster for holidays; service-capacity (planned) models rayon × ISO-week × service-type throughput. **Under revamp** post-UAT.
+Shift definitions and the materialized **daily roster** that assigns workers to shifts/areas per day. A generation cron builds the roster; an edit policy governs allowed changes. Special-day overrides adjust the roster for holidays; service-capacity models rayon × ISO-week × service-type throughput. **Under revamp** post-UAT (a top UAT-feedback area).
 
 ## Key decisions
-- **Materialized daily roster** — schedules are generated per day from shift definitions for fast lookup and monitoring joins.
-- **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); **backend-only, no UI yet**.
-- `special-day-overrides` is **backend-only** (no UI).
+- **Materialized daily roster** — `daily-roster-generation.cron.ts` generates schedules per day from shift definitions for fast lookup and monitoring joins; `schedule-edit.policy.ts` gates edits.
+- **Multi-area** (ADR-013) — a korlap/worker can be rostered across multiple areas.
+- **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); **API implemented (`service-capacity` controller), no UI yet**.
+- `special-day-overrides` — **API implemented, no dedicated UI**.
+
+## Revamp notes (post-UAT)
+Scheduling is slated for rework based on UAT feedback. Capture the target design and decisions here (and any new ADR) when that work starts; log changes in the Changelog below.
 
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)
