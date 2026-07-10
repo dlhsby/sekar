@@ -14,6 +14,8 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'role_permissions',
   'roles',
   'permissions',
+  // Settings overrides (ADR-049) — operator config, cleared on full reseed.
+  'system_config',
   // Phase 3 (plants / pruning / seeds / capacity) — cleared first (deepest FKs).
   'seed_transactions',
   'plant_seeds',

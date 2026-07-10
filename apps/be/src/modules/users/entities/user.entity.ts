@@ -132,6 +132,11 @@ export class User {
   @Column({ name: 'preferred_language', type: 'varchar', length: 2, default: 'id' })
   preferred_language?: string;
 
+  // Personal theme preference ('light' | 'dark' | 'system'); null = follow system
+  // default (ADR-049). Edited via PATCH /me/preferences.
+  @Column({ name: 'preference_theme', type: 'varchar', length: 10, nullable: true })
+  preference_theme?: string;
+
   @CreateDateColumn()
   created_at: Date;
 

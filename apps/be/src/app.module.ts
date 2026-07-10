@@ -10,6 +10,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { RbacModule } from './modules/rbac/rbac.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
 import { AreaTypesModule } from './modules/area-types/area-types.module';
 import { AreasModule } from './modules/areas/areas.module';
@@ -120,6 +121,7 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     CommonModule, // Global shared infrastructure (Redis, etc.) — Phase 3
     SharedModule, // Shared services (S3, etc.)
     RbacModule, // Dynamic RBAC — global PermissionsGuard + RolePermissionsService (ADR-044)
+    SettingsModule, // System settings + personal preferences (ADR-049)
     AuthModule, // Must be first (provides guards)
     UsersModule,
     AreaTypesModule, // Needed by Areas
