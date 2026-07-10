@@ -4,14 +4,14 @@ describe('scripts/build-tokens', () => {
   const tokens = loadAndValidate();
 
   describe('schema validation', () => {
-    it('validates the canonical specs/ui-ux/tokens.json', () => {
+    it('validates the canonical specs/design-system/tokens.json', () => {
       expect(tokens._meta.version).toMatch(/^\d+\.\d+\.\d+$/);
     });
 
     it('rejects malformed input', () => {
       const ajv = require('ajv/dist/2020.js').default;
       const addFormats = require('ajv-formats').default;
-      const schema = require('../specs/ui-ux/tokens.schema.json');
+      const schema = require('../specs/design-system/tokens.schema.json');
       const v = new ajv({ allErrors: true, strict: false });
       addFormats(v);
       const validate = v.compile(schema);

@@ -1,17 +1,17 @@
 # Phase 3 M1-R sub-phase 3-R1 — design-token drift gate.
 #
-# Validates specs/ui-ux/tokens.json against tokens.schema.json, re-runs the generator,
+# Validates specs/design-system/tokens.json against tokens.schema.json, re-runs the generator,
 # and fails the build if the committed generated/ files drift. Also runs the
 # generator + ESLint rule unit tests.
 #
-# See: ADR-036, specs/ui-ux/design-tokens.md, scripts/build-tokens.ts.
+# See: ADR-036, specs/design-system/design-tokens.md, scripts/build-tokens.ts.
 name: tokens-verify
 
 on:
   pull_request:
     paths:
-      - 'specs/ui-ux/tokens.json'
-      - 'specs/ui-ux/tokens.schema.json'
+      - 'specs/design-system/tokens.json'
+      - 'specs/design-system/tokens.schema.json'
       - 'scripts/build-tokens.ts'
       - 'scripts/build-tokens.test.ts'
       - 'tools/eslint-plugin-sekar-design/**'
@@ -22,8 +22,8 @@ on:
   push:
     branches: [main]
     paths:
-      - 'specs/ui-ux/tokens.json'
-      - 'specs/ui-ux/tokens.schema.json'
+      - 'specs/design-system/tokens.json'
+      - 'specs/design-system/tokens.schema.json'
       - 'scripts/build-tokens.ts'
       - 'tools/eslint-plugin-sekar-design/**'
       - 'apps/web/src/app/generated/**'
