@@ -29,6 +29,8 @@ import {
   type TabItem,
 } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
+import { usePermissions } from '@/lib/auth/usePermissions';
+import { SystemSettingsTab } from '@/components/settings/SystemSettingsTab';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
@@ -41,17 +43,22 @@ import {
   type NotificationPreference,
 } from '@/lib/api/notification-preferences';
 
-type SettingsTab = 'umum' | 'keamanan' | 'notifikasi';
+type SettingsTab = 'umum' | 'keamanan' | 'notifikasi' | 'sistem';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
   const { user, loading, refreshUser } = useAuth();
+  const { can } = usePermissions();
   const [tab, setTab] = useState<SettingsTab>('umum');
+  const canViewSystem = can('settings:read');
 
   const tabs: TabItem<SettingsTab>[] = [
     { key: 'umum', label: t('settings:tabs.general') },
     { key: 'keamanan', label: t('settings:tabs.security') },
     { key: 'notifikasi', label: t('settings:tabs.notifications') },
+    ...(canViewSystem
+      ? [{ key: 'sistem' as const, label: t('settings:tabs.system') }]
+      : []),
   ];
 
   useEffect(() => {
@@ -82,6 +89,9 @@ export default function SettingsPage() {
       {tab === 'umum' && <GeneralTab user={user} />}
       {tab === 'keamanan' && <SecurityTab onChanged={refreshUser} />}
       {tab === 'notifikasi' && <NotificationsTab userId={user.id} />}
+      {tab === 'sistem' && canViewSystem && (
+        <SystemSettingsTab canManage={can('settings:manage')} />
+      )}
     </div>
   );
 }

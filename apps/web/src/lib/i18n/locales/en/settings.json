@@ -4,7 +4,29 @@
   "tabs": {
     "general": "General",
     "security": "Security",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "system": "System"
+  },
+  "system": {
+    "title": "System Settings",
+    "loading": "Loading settings…",
+    "loadError": "Failed to load system settings.",
+    "save": "Save",
+    "saved": "Settings saved",
+    "readOnly": "You can view system settings but cannot change them.",
+    "secretPlaceholder": "•••••• (stored encrypted)",
+    "source": {
+      "db": "override",
+      "env": "env",
+      "unset": "default"
+    },
+    "groups": {
+      "monitoring": "Monitoring",
+      "geofence": "Geofence",
+      "integrations": "Integrations",
+      "limits": "Limits",
+      "general": "General"
+    }
   },
   "general": {
     "identity": "Identity",

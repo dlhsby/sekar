@@ -4,7 +4,29 @@
   "tabs": {
     "general": "Umum",
     "security": "Keamanan",
-    "notifications": "Notifikasi"
+    "notifications": "Notifikasi",
+    "system": "Sistem"
+  },
+  "system": {
+    "title": "Pengaturan Sistem",
+    "loading": "Memuat pengaturan…",
+    "loadError": "Gagal memuat pengaturan sistem.",
+    "save": "Simpan",
+    "saved": "Pengaturan disimpan",
+    "readOnly": "Anda hanya dapat melihat pengaturan sistem, tidak dapat mengubahnya.",
+    "secretPlaceholder": "•••••• (tersimpan terenkripsi)",
+    "source": {
+      "db": "override",
+      "env": "env",
+      "unset": "default"
+    },
+    "groups": {
+      "monitoring": "Monitoring",
+      "geofence": "Geofence",
+      "integrations": "Integrasi",
+      "limits": "Batas",
+      "general": "Umum"
+    }
   },
   "general": {
     "identity": "Identitas",
