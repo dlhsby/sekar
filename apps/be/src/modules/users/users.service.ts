@@ -120,7 +120,15 @@ export class UsersService {
       entity_id: savedUser.id,
       action: 'create',
       actor_id: actor?.id ?? savedUser.id, // self-attributed for internal callers (e.g. CSV import w/o actor)
-      new_value: { username, full_name, role, rayon_id, shift_definition_id, area_ids: areaIds },
+      new_value: {
+        username,
+        full_name,
+        role,
+        rayon_id,
+        region_id,
+        shift_definition_id,
+        area_ids: areaIds,
+      },
     });
 
     return tempPassword ? Object.assign(savedUser, { temp_password: tempPassword }) : savedUser;
@@ -174,6 +182,7 @@ export class UsersService {
         'is_active',
         'area_id',
         'rayon_id',
+        'region_id',
         'created_at',
         'updated_at',
         'created_by',
@@ -236,6 +245,7 @@ export class UsersService {
           'user.is_active',
           'user.area_id',
           'user.rayon_id',
+          'user.region_id',
           'user.phone_number',
           'user.shift_definition_id',
           'user.profile_picture_url',
@@ -265,6 +275,7 @@ export class UsersService {
         'is_active',
         'area_id',
         'rayon_id',
+        'region_id',
         'phone_number',
         'shift_definition_id',
         'profile_picture_url',
@@ -317,6 +328,7 @@ export class UsersService {
         'is_active',
         'area_id',
         'rayon_id',
+        'region_id',
         'phone_number',
         'shift_definition_id',
         'profile_picture_url',

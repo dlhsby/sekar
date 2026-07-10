@@ -66,7 +66,7 @@ export class TeamsService {
   }
 
   private async assertTypeExists(id: string): Promise<void> {
-    const type = await this.typeRepo.findOne({ where: { id } });
-    if (!type) throw new BadRequestException('Team type not found');
+    const type = await this.typeRepo.findOne({ where: { id, is_active: true } });
+    if (!type) throw new BadRequestException('Team type not found or inactive');
   }
 }
