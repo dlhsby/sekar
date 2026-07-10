@@ -154,6 +154,13 @@ export const navigationItems: NavItem[] = [
         icon: BuildingOfficeIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
       },
+      {
+        id: 'regions',
+        label: 'common:nav.regions',
+        href: '/regions',
+        icon: MapPinIcon,
+        roles: [...ADMIN_ROLES, 'top_management'],
+      },
       // Phase 3-8/3-12 web pages (shipped with the phase-3 close-out)
       {
         id: 'plants',
@@ -378,6 +385,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/roles': 'Manajemen Peran',
   '/areas': 'Area',
   '/rayons': 'Rayon',
+  '/regions': 'Kawasan',
   '/assets': 'Aset',
   '/assets/new': 'Aset Baru',
   '/assets/qr': 'Generator QR',
@@ -429,6 +437,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/roles': ['Pengguna & Hak Akses', 'Manajemen Peran'],
   '/areas': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
+  '/regions': ['Data Master', 'Kawasan'],
   '/plants': ['Data Master', 'Tanaman'],
   '/seeds': ['Data Master', 'Bibit'],
   '/assets': ['Data Master', 'Aset'],

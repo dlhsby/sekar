@@ -389,5 +389,46 @@
       "successMessage": "Boundary successfully imported from KML.",
       "applyButton": "Apply"
     }
+  },
+  "regions": {
+    "pageTitle": "Regions",
+    "description": "Manage regions (the level between rayon and location)",
+    "searchPlaceholder": "Search region name…",
+    "columnName": "Name",
+    "columnRayon": "Rayon",
+    "columnStyle": "Style",
+    "buttonAdd": "Add Region",
+    "actionEdit": "Edit",
+    "detailTitle": "Region Detail",
+    "emptyTitle": "No regions yet",
+    "denied": "You don't have access to regions",
+    "deleteTitle": "Delete Region",
+    "deleteMessage": "Delete region \"{{name}}\"? Its locations are kept.",
+    "successCreated": "Region \"{{name}}\" created",
+    "successUpdated": "Region \"{{name}}\" updated",
+    "successDeleted": "Region deleted",
+    "form": {
+      "name": "Region Name",
+      "namePlaceholder": "e.g. Darmo Region",
+      "rayon": "Rayon",
+      "rayonPlaceholder": "Select rayon",
+      "description": "Description",
+      "boundaryTitle": "Boundary & Center Pin",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "geometryRequired": "A boundary or center pin is required",
+      "submit": "Save Changes",
+      "submitNew": "Create Region"
+    }
+  },
+  "mapStyle": {
+    "title": "Map Style",
+    "borderColor": "Border Color",
+    "borderOpacity": "Border Opacity",
+    "fillColor": "Fill Color",
+    "fillOpacity": "Fill Opacity",
+    "markerIcon": "Marker Icon",
+    "markerIconPlaceholder": "e.g. trees",
+    "markerColor": "Marker Color"
   }
 }

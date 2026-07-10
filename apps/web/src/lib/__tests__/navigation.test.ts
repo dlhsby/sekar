@@ -59,6 +59,7 @@ describe('Navigation Utilities', () => {
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
         'areas',
         'rayons',
+        'regions',
         'plants',
         'database',
       ]);

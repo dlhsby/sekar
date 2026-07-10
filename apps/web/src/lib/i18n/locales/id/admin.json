@@ -389,5 +389,46 @@
       "successMessage": "Batas berhasil diimpor dari KML.",
       "applyButton": "Terapkan"
     }
+  },
+  "regions": {
+    "pageTitle": "Kawasan",
+    "description": "Kelola kawasan (level antara rayon dan lokasi)",
+    "searchPlaceholder": "Cari nama kawasan…",
+    "columnName": "Nama",
+    "columnRayon": "Rayon",
+    "columnStyle": "Gaya",
+    "buttonAdd": "Tambah Kawasan",
+    "actionEdit": "Ubah",
+    "detailTitle": "Detail Kawasan",
+    "emptyTitle": "Belum ada kawasan",
+    "denied": "Anda tidak memiliki akses ke kawasan",
+    "deleteTitle": "Hapus Kawasan",
+    "deleteMessage": "Hapus kawasan \"{{name}}\"? Lokasi di dalamnya tidak ikut terhapus.",
+    "successCreated": "Kawasan \"{{name}}\" dibuat",
+    "successUpdated": "Kawasan \"{{name}}\" diperbarui",
+    "successDeleted": "Kawasan dihapus",
+    "form": {
+      "name": "Nama Kawasan",
+      "namePlaceholder": "mis. Kawasan Darmo",
+      "rayon": "Rayon",
+      "rayonPlaceholder": "Pilih rayon",
+      "description": "Deskripsi",
+      "boundaryTitle": "Batas & Titik Lokasi",
+      "latitude": "Lintang",
+      "longitude": "Bujur",
+      "geometryRequired": "Perlu batas wilayah atau titik lokasi",
+      "submit": "Simpan Perubahan",
+      "submitNew": "Buat Kawasan"
+    }
+  },
+  "mapStyle": {
+    "title": "Gaya Peta",
+    "borderColor": "Warna Batas",
+    "borderOpacity": "Opasitas Batas",
+    "fillColor": "Warna Isi",
+    "fillOpacity": "Opasitas Isi",
+    "markerIcon": "Ikon Penanda",
+    "markerIconPlaceholder": "mis. trees",
+    "markerColor": "Warna Penanda"
   }
 }
