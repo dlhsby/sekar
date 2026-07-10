@@ -16,7 +16,18 @@ describe('RegionsService', () => {
       softRemove: jest.fn().mockResolvedValue(undefined),
     };
     rayonRepo = { findOne: jest.fn().mockResolvedValue({ id: 'rayon-1' }) };
-    areaRepo = { find: jest.fn(), update: jest.fn().mockResolvedValue(undefined) };
+    const qb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
+    areaRepo = {
+      find: jest.fn(),
+      update: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn(() => qb),
+      _qb: qb,
+    };
     service = new RegionsService(regionRepo, rayonRepo, areaRepo);
   });
 
@@ -30,13 +41,13 @@ describe('RegionsService', () => {
   });
 
   describe('remove', () => {
-    it('detaches child areas (region_id → null) then soft-removes', async () => {
+    it('detaches child areas (explicit SET NULL) then soft-removes', async () => {
       regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1' });
       await service.remove('reg-1');
-      expect(areaRepo.update).toHaveBeenCalledWith(
-        { region_id: 'reg-1' },
-        { region_id: undefined },
-      );
+      // Explicit SET NULL via query builder — repo.update() would skip undefined.
+      expect(areaRepo._qb.set).toHaveBeenCalled();
+      expect(areaRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
+      expect(areaRepo._qb.execute).toHaveBeenCalled();
       expect(regionRepo.softRemove).toHaveBeenCalled();
     });
 

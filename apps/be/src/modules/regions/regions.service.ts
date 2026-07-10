@@ -62,8 +62,15 @@ export class RegionsService {
 
   async remove(id: string): Promise<void> {
     const region = await this.findOne(id);
-    // Detach child areas first — soft-delete does not fire the FK's ON DELETE SET NULL.
-    await this.areaRepo.update({ region_id: id }, { region_id: undefined });
+    // Detach child areas first — soft-delete does not fire the FK's ON DELETE
+    // SET NULL. Use an explicit SET NULL: repo.update() skips `undefined`, so
+    // `{ region_id: undefined }` would be a no-op and leave areas orphaned.
+    await this.areaRepo
+      .createQueryBuilder()
+      .update(Area)
+      .set({ region_id: () => 'NULL' })
+      .where('region_id = :id', { id })
+      .execute();
     await this.regionRepo.softRemove(region);
   }
 
