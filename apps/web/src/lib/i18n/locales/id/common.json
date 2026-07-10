@@ -186,7 +186,8 @@
     "guide": "Panduan",
     "districtNav": "Navigasi kecamatan",
     "mainNav": "Navigasi utama",
-    "breadcrumbAria": "Navigasi breadcrumb"
+    "breadcrumbAria": "Navigasi breadcrumb",
+    "teams": "Tim"
   },
   "pagination": {
     "previous": "Sebelumnya",

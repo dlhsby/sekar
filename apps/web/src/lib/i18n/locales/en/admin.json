@@ -439,5 +439,31 @@
     "markerIcon": "Marker Icon",
     "markerIconPlaceholder": "e.g. trees",
     "markerColor": "Marker Color"
+  },
+  "teams": {
+    "pageTitle": "Teams",
+    "description": "Manage teams (crews) and team types",
+    "searchPlaceholder": "Search team name…",
+    "columnName": "Name",
+    "columnType": "Type",
+    "columnMarker": "Marker",
+    "buttonAdd": "Add Team",
+    "actionEdit": "Edit",
+    "emptyTitle": "No teams yet",
+    "denied": "You don't have access to teams",
+    "deleteTitle": "Delete Team",
+    "deleteMessage": "Delete team \"{{name}}\"?",
+    "successCreated": "Team \"{{name}}\" created",
+    "successUpdated": "Team \"{{name}}\" updated",
+    "successDeleted": "Team deleted",
+    "form": {
+      "name": "Team Name",
+      "namePlaceholder": "e.g. Watering Team East 1",
+      "type": "Team Type",
+      "typePlaceholder": "Select type",
+      "markerIcon": "Marker Icon",
+      "markerIconPlaceholder": "e.g. droplets",
+      "markerColor": "Marker Color"
+    }
   }
 }

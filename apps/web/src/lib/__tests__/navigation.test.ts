@@ -60,6 +60,7 @@ describe('Navigation Utilities', () => {
         'areas',
         'rayons',
         'regions',
+        'teams',
         'plants',
         'database',
       ]);

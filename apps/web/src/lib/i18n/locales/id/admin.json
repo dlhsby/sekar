@@ -439,5 +439,31 @@
     "markerIcon": "Ikon Penanda",
     "markerIconPlaceholder": "mis. trees",
     "markerColor": "Warna Penanda"
+  },
+  "teams": {
+    "pageTitle": "Tim",
+    "description": "Kelola tim (regu) dan jenis tim",
+    "searchPlaceholder": "Cari nama tim…",
+    "columnName": "Nama",
+    "columnType": "Jenis",
+    "columnMarker": "Penanda",
+    "buttonAdd": "Tambah Tim",
+    "actionEdit": "Ubah",
+    "emptyTitle": "Belum ada tim",
+    "denied": "Anda tidak memiliki akses ke tim",
+    "deleteTitle": "Hapus Tim",
+    "deleteMessage": "Hapus tim \"{{name}}\"?",
+    "successCreated": "Tim \"{{name}}\" dibuat",
+    "successUpdated": "Tim \"{{name}}\" diperbarui",
+    "successDeleted": "Tim dihapus",
+    "form": {
+      "name": "Nama Tim",
+      "namePlaceholder": "mis. Tim Penyiraman Timur 1",
+      "type": "Jenis Tim",
+      "typePlaceholder": "Pilih jenis",
+      "markerIcon": "Ikon Penanda",
+      "markerIconPlaceholder": "mis. droplets",
+      "markerColor": "Warna Penanda"
+    }
   }
 }

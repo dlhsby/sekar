@@ -186,7 +186,8 @@
     "guide": "Guide",
     "districtNav": "District navigation",
     "mainNav": "Main navigation",
-    "breadcrumbAria": "Breadcrumb navigation"
+    "breadcrumbAria": "Breadcrumb navigation",
+    "teams": "Teams"
   },
   "pagination": {
     "previous": "Previous",
