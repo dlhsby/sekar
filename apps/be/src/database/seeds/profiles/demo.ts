@@ -2,6 +2,7 @@ import { runProfileCli, type SeedContext } from '../lib/context';
 import { truncateAll } from '../lib/truncate';
 import { seedPermissions } from '../entities/permission';
 import { seedRoles } from '../entities/role';
+import { seedTeams } from '../entities/team';
 import { seedAreaTypes } from '../entities/area-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
@@ -44,6 +45,7 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   // Reference data.
   await seedPermissions(ctx);
   await seedRoles(ctx);
+  await seedTeams(ctx);
   await seedAreaTypes(ctx);
   await seedRayons(ctx);
   await seedShiftDefinitions(ctx);

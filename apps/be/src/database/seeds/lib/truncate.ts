@@ -16,6 +16,9 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'permissions',
   // Settings overrides (ADR-049) — operator config, cleared on full reseed.
   'system_config',
+  // Teams (ADR-048) — teams before their type catalog.
+  'teams',
+  'team_types',
   // Phase 3 (plants / pruning / seeds / capacity) — cleared first (deepest FKs).
   'seed_transactions',
   'plant_seeds',

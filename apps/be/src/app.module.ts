@@ -22,6 +22,7 @@ import { SharedModule } from './shared/shared.module';
 // Phase 2 modules
 import { RayonsModule } from './modules/rayons/rayons.module';
 import { RegionsModule } from './modules/regions/regions.module';
+import { TeamsModule } from './modules/teams/teams.module';
 import { KecamatansModule } from './modules/kecamatans/kecamatans.module';
 import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-definitions.module';
 import { ActivityTypesModule } from './modules/activity-types/activity-types.module';
@@ -134,6 +135,7 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     // Phase 2 modules
     RayonsModule, // Geographic sectors
     RegionsModule, // Kawasan — level between rayon and area (ADR-045)
+    TeamsModule, // Teams (crews) + team-type catalog (ADR-048)
     KecamatansModule, // Surabaya kecamatans (FK to rayon)
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering
