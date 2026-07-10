@@ -60,8 +60,16 @@ export class UsersService {
    * @throws ConflictException if username already exists
    */
   async create(createUserDto: CreateUserDto, actor?: User): Promise<UserWithTempPassword> {
-    const { username, password, full_name, role, phone_number, rayon_id, shift_definition_id } =
-      createUserDto;
+    const {
+      username,
+      password,
+      full_name,
+      role,
+      phone_number,
+      rayon_id,
+      region_id,
+      shift_definition_id,
+    } = createUserDto;
     const areaIds = [...new Set(createUserDto.area_ids ?? [])];
 
     this.logger.log(`Creating new user: ${username}`);
@@ -89,6 +97,7 @@ export class UsersService {
       phone_number: phone_number || null,
       password_must_change: true,
       rayon_id: rayon_id ?? undefined,
+      region_id: region_id ?? undefined,
       shift_definition_id: shift_definition_id ?? undefined,
       // Primary area = first assigned area (legacy `users.area_id` fallback).
       area_id: areaIds[0] ?? undefined,

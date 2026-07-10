@@ -32,6 +32,7 @@ export interface User extends Record<string, unknown> {
   profile_picture_url?: string;
   rayon_id?: string;
   rayon?: Rayon;
+  region_id?: string;
   area_id?: string;
   area?: Area;
   shift_definition_id?: string;
@@ -112,6 +113,8 @@ export interface CreateUserDto {
   phone_number?: string;
   /** `null` explicitly clears the field (roles without a rayon scope). */
   rayon_id?: string | null;
+  /** Region (Kawasan) for region-scoped roles (korlap). `null` clears it. */
+  region_id?: string | null;
   /** Permanent area assignments (multi); first becomes the primary area. */
   area_ids?: string[];
   /** `null` explicitly clears the field (roles without a shift scope). */
@@ -133,6 +136,8 @@ export interface UpdateUserDto {
   phone_number?: string;
   /** `null` explicitly clears the field (roles without a rayon scope). */
   rayon_id?: string | null;
+  /** Region (Kawasan) for region-scoped roles (korlap). `null` clears it. */
+  region_id?: string | null;
   area_ids?: string[];
   /** `null` explicitly clears the field (roles without a shift scope). */
   shift_definition_id?: string | null;

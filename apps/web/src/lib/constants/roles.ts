@@ -159,24 +159,29 @@ export const hasRole = (userRole: UserRole, allowedRoles: UserRole[]): boolean =
  *  - rayon + area + shift: satgas / linmas (shift defaults to Shift 1)
  * An unset/unknown role shows nothing (fields appear once a role is picked).
  */
+/**
+ * Which scope inputs the user form shows, derived from the role's monitoring
+ * scope (ADR-044/045):
+ *  - district (kepala_rayon / admin_data): rayon
+ *  - region (korlap): rayon + region (cascade) + optional single location
+ *  - none/city (satgas / linmas / staff_kecamatan / management / admin / super):
+ *    nothing — satgas/linmas work area + shift come from schedules (Phase 4).
+ */
 export interface RoleAssignmentScope {
   rayon: boolean;
-  area: boolean;
-  shift: boolean;
+  region: boolean;
+  location: boolean;
 }
 export const roleAssignmentScope = (role: UserRole | '' | undefined): RoleAssignmentScope => {
   switch (role) {
-    case 'satgas':
-    case 'linmas':
-      return { rayon: true, area: true, shift: true };
     case 'korlap':
-      return { rayon: true, area: true, shift: false };
+      return { rayon: true, region: true, location: true };
     case 'kepala_rayon':
     case 'admin_data':
-    case 'staff_kecamatan':
-      return { rayon: true, area: false, shift: false };
+      return { rayon: true, region: false, location: false };
     default:
-      // superadmin / admin_system / top_management / unset → no scope fields
-      return { rayon: false, area: false, shift: false };
+      // satgas / linmas / staff_kecamatan / management / admin_system /
+      // superadmin / unset → no scope fields
+      return { rayon: false, region: false, location: false };
   }
 };

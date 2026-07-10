@@ -74,7 +74,14 @@
       "shiftHelper": "One shift per worker (applies to all their areas)",
       "passwordInfo": "A temporary password will be generated automatically and shown once after the user is created. The user must change it on first login.",
       "submitEdit": "Save",
-      "submitCreate": "Create User"
+      "submitCreate": "Create User",
+      "region": "Region",
+      "regionPlaceholder": "Select region",
+      "regionSelectRayon": "Select a rayon first",
+      "location": "Location (optional)",
+      "locationPlaceholder": "Select location",
+      "locationSelectRegion": "Select a region first",
+      "locationHelper": "Optional. A specific location within the region (for korlap)."
     },
     "areasTitle": "Assigned Areas",
     "noAreasAssigned": "No assigned areas yet.",

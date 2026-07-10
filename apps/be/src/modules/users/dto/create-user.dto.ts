@@ -125,6 +125,13 @@ export class CreateUserDto {
   rayon_id?: string;
 
   @ApiPropertyOptional({
+    description: 'Region (Kawasan) ID for region-scoped roles (korlap). ADR-045.',
+  })
+  @IsUUID()
+  @IsOptional()
+  region_id?: string;
+
+  @ApiPropertyOptional({
     description: 'Permanent area assignments (multi). The first becomes the primary area.',
     type: [String],
   })

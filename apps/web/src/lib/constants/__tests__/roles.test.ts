@@ -245,31 +245,31 @@ describe('Role Constants', () => {
     });
   });
 
-  describe('roleAssignmentScope', () => {
-    it('hides rayon/area/shift for system + management roles', () => {
+  describe('roleAssignmentScope (ADR-044/045 role-driven inputs)', () => {
+    it('hides all scope inputs for system + management roles', () => {
       for (const role of ['superadmin', 'admin_system', 'top_management'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: false, area: false, shift: false });
+        expect(roleAssignmentScope(role)).toEqual({ rayon: false, region: false, location: false });
       }
     });
 
-    it('shows rayon only for kepala_rayon, admin_data, staff_kecamatan', () => {
-      for (const role of ['kepala_rayon', 'admin_data', 'staff_kecamatan'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: true, area: false, shift: false });
+    it('shows rayon only for kepala_rayon + admin_data (district)', () => {
+      for (const role of ['kepala_rayon', 'admin_data'] as UserRole[]) {
+        expect(roleAssignmentScope(role)).toEqual({ rayon: true, region: false, location: false });
       }
     });
 
-    it('shows rayon + area for korlap', () => {
-      expect(roleAssignmentScope('korlap')).toEqual({ rayon: true, area: true, shift: false });
+    it('shows rayon + region + optional location for korlap (region)', () => {
+      expect(roleAssignmentScope('korlap')).toEqual({ rayon: true, region: true, location: true });
     });
 
-    it('shows rayon + area + shift for satgas and linmas', () => {
-      for (const role of ['satgas', 'linmas'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: true, area: true, shift: true });
+    it('hides all scope inputs for satgas/linmas (area+shift come from schedules)', () => {
+      for (const role of ['satgas', 'linmas', 'staff_kecamatan'] as UserRole[]) {
+        expect(roleAssignmentScope(role)).toEqual({ rayon: false, region: false, location: false });
       }
     });
 
     it('shows nothing for an unset role', () => {
-      expect(roleAssignmentScope('')).toEqual({ rayon: false, area: false, shift: false });
+      expect(roleAssignmentScope('')).toEqual({ rayon: false, region: false, location: false });
     });
   });
 

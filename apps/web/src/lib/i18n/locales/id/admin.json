@@ -74,7 +74,14 @@
       "shiftHelper": "Satu shift per pekerja (berlaku untuk semua areanya)",
       "passwordInfo": "Password sementara akan dibuat otomatis dan ditampilkan sekali setelah user dibuat. Pengguna wajib menggantinya saat login pertama.",
       "submitEdit": "Simpan",
-      "submitCreate": "Buat Pengguna"
+      "submitCreate": "Buat Pengguna",
+      "region": "Kawasan",
+      "regionPlaceholder": "Pilih kawasan",
+      "regionSelectRayon": "Pilih rayon dahulu",
+      "location": "Lokasi (opsional)",
+      "locationPlaceholder": "Pilih lokasi",
+      "locationSelectRegion": "Pilih kawasan dahulu",
+      "locationHelper": "Opsional. Lokasi spesifik dalam kawasan (untuk korlap)."
     },
     "areasTitle": "Area Ditugaskan",
     "noAreasAssigned": "Belum ada area yang ditugaskan.",

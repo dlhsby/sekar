@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormInput, FormCombobox, FormMultiCombobox, Button } from '@/components/ui';
+import { FormInput, FormCombobox, Button } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
-import { useShiftDefinitions } from '@/lib/api/shift-definitions';
+import { useRegions } from '@/lib/api/regions';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
 import { sortedRoleOptions, roleAssignmentScope } from '@/lib/constants/roles';
@@ -49,6 +49,7 @@ function createUserSchema(t: TFn) {
       { error: () => t('validation:roleRequired') },
     ),
     rayon_id: z.string().uuid().optional().or(z.literal('')),
+    region_id: z.string().uuid().optional().or(z.literal('')),
     shift_definition_id: z.string().uuid().optional().or(z.literal('')),
   });
 }
@@ -56,10 +57,13 @@ function createUserSchema(t: TFn) {
 /** Any UUID version — area ids are deterministic UUID v5. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export interface UserFormSubmit extends Omit<UserFormData, 'rayon_id' | 'shift_definition_id'> {
+export interface UserFormSubmit
+  extends Omit<UserFormData, 'rayon_id' | 'region_id' | 'shift_definition_id'> {
   area_ids: string[];
   /** `null` = explicitly clear on the server (create treats null as unset). */
   rayon_id: string | null;
+  region_id: string | null;
+  /** Shift moves to schedules (Phase 4) — always cleared from the user form now. */
   shift_definition_id: string | null;
 }
 
@@ -86,7 +90,6 @@ export function UserForm({
 
   const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
   const { data: areasData, isLoading: areasLoading } = useAreas({ limit: 1000 });
-  const { data: shifts = [] } = useShiftDefinitions();
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
   const [areaIds, setAreaIds] = useState<string[]>([]);
@@ -112,7 +115,8 @@ export function UserForm({
       // defaulted to Shift 1 once the definitions load — see effect below).
       role: (initialData?.role ?? '') as UserRole,
       rayon_id: initialData?.rayon_id || '',
-      shift_definition_id: initialData?.shift_definition_id || '',
+      region_id: initialData?.region_id || '',
+      shift_definition_id: '',
     },
   });
 
@@ -168,65 +172,47 @@ export function UserForm({
     const submitData: UserFormSubmit = {
       ...data,
       rayon_id: scope.rayon ? data.rayon_id || null : null,
-      shift_definition_id: scope.shift ? data.shift_definition_id || null : null,
-      area_ids: scope.area ? areaIds.filter((id) => UUID_RE.test(id)) : [],
+      region_id: scope.region ? data.region_id || null : null,
+      // Shift + satgas/linmas work area come from schedules now (Phase 4) —
+      // always cleared here; korlap keeps a single optional location.
+      shift_definition_id: null,
+      area_ids: scope.location ? areaIds.filter((id) => UUID_RE.test(id)).slice(0, 1) : [],
     };
     await onSubmit(submitData);
   };
 
   const roleOptions = sortedRoleOptions();
   const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
-  const shiftOptions = shifts.map((s) => ({
-    value: s.id,
-    label: `${s.name} (${s.start_time}-${s.end_time})`,
-  }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
-
-  // Area is cascaded from the selected rayon — only that rayon's areas are
-  // offered (empty until a rayon is picked).
   const selectedRayonId = watch('rayon_id') || '';
+  const selectedRegionId = watch('region_id') || '';
+
+  // Regions cascade from the selected rayon (korlap).
+  const { data: regions = [] } = useRegions(selectedRayonId || undefined);
+  const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
+
+  // The optional single location (korlap) is picked from the selected region's
+  // areas (ADR-045: location is chosen based on the region).
   const areaOptions = useMemo(
     () =>
       allAreas
-        .filter((a) => a.rayon_id === selectedRayonId)
+        .filter((a) => a.region_id === selectedRegionId)
         .map((a) => ({ value: a.id, label: a.name })),
-    [allAreas, selectedRayonId],
+    [allAreas, selectedRegionId],
   );
 
-  // When the rayon changes, drop any selected areas that no longer belong to it.
-  // Guard on `allAreas` being loaded — filtering against an empty list would
-  // wipe the edit-mode prefilled areas before the area list arrives.
-  useEffect(() => {
-    if (!allAreas.length) return;
-    setAreaIds((prev) =>
-      prev.filter((id) => allAreas.find((a) => a.id === id)?.rayon_id === selectedRayonId),
-    );
-  }, [selectedRayonId, allAreas]);
-
-  // Which assignment fields this role uses (rayon / area / shift).
+  // Which scope fields this role uses (rayon / region / location).
   const scope = roleAssignmentScope(selectedRole);
 
   // When the role changes so a field no longer applies, clear its value so we
-  // never submit a stale rayon/area/shift for e.g. a management role.
+  // never submit a stale rayon/region/location for e.g. a management role.
   useEffect(() => {
     if (!scope.rayon && watch('rayon_id')) setValue('rayon_id', '');
-    if (!scope.shift && watch('shift_definition_id')) setValue('shift_definition_id', '');
-    if (!scope.area) setAreaIds((prev) => (prev.length ? [] : prev));
+    if (!scope.region && watch('region_id')) setValue('region_id', '');
+    if (!scope.location) setAreaIds((prev) => (prev.length ? [] : prev));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRole]);
-
-  // Create-mode only: default the shift to "Shift 1" once definitions load, but
-  // only for roles that actually use a shift (satgas/linmas).
-  const shiftInitRef = useRef(false);
-  useEffect(() => {
-    if (isEditMode || readOnly || shiftInitRef.current || !shifts.length || !scope.shift) return;
-    const shift1 = shifts.find((s) => /shift\s*0*1\b/i.test(s.name)) ?? shifts[0];
-    if (shift1) {
-      setValue('shift_definition_id', shift1.id);
-      shiftInitRef.current = true;
-    }
-  }, [shifts, isEditMode, readOnly, scope.shift, setValue]);
 
   const fieldsDisabled = readOnly;
 
@@ -315,47 +301,54 @@ export function UserForm({
           label={t('admin:users.form.rayon')}
           options={rayonOptions}
           value={watch('rayon_id') || ''}
-          onChange={(value) => setValue('rayon_id', value)}
+          onChange={(value) => {
+            setValue('rayon_id', value);
+            // Region + location belong to a rayon — clear them when it changes.
+            setValue('region_id', '');
+            setAreaIds([]);
+          }}
           placeholder={rayonsLoading ? t('admin:shared.loading') : t('admin:users.form.rayonPlaceholder')}
           error={errors.rayon_id?.message}
           disabled={fieldsDisabled || rayonsLoading}
         />
       )}
 
-      {/* Areas multi-select — cascaded from the selected rayon; the worker's
-          permanent assigned areas that drive their roster. */}
-      {scope.area && (
-        <FormMultiCombobox
-          label={t('admin:users.form.areaAssignment')}
-          options={areaOptions}
-          values={areaIds}
-          onChange={setAreaIds}
+      {/* Region (Kawasan) — cascaded from the rayon (korlap). */}
+      {scope.region && (
+        <FormCombobox
+          label={t('admin:users.form.region')}
+          options={regionOptions}
+          value={watch('region_id') || ''}
+          onChange={(value) => {
+            setValue('region_id', value);
+            setAreaIds([]); // location belongs to a region — clear on change
+          }}
           placeholder={
             !selectedRayonId
-              ? t('admin:users.form.areaSelectRayon')
-              : areasLoading
-                ? t('admin:users.form.areaLoading')
-                : t('admin:users.form.areaAssignmentPlaceholder')
+              ? t('admin:users.form.regionSelectRayon')
+              : t('admin:users.form.regionPlaceholder')
           }
-          searchPlaceholder={t('admin:users.form.areaSearchPlaceholder')}
-          emptyText={
-            selectedRayonId ? t('admin:users.form.areaEmpty') : t('admin:users.form.areaSelectRayon')
-          }
-          helperText={t('admin:users.form.areaAssignmentHelper')}
-          disabled={fieldsDisabled || areasLoading || !selectedRayonId}
+          error={errors.region_id?.message}
+          disabled={fieldsDisabled || !selectedRayonId}
         />
       )}
 
-      {scope.shift && (
+      {/* Optional single location (korlap) — cascaded from the region (ADR-045). */}
+      {scope.location && (
         <FormCombobox
-          label={t('admin:users.form.shift')}
-          options={shiftOptions}
-          value={watch('shift_definition_id') || ''}
-          onChange={(value) => setValue('shift_definition_id', value)}
-          placeholder={t('admin:users.form.shiftPlaceholder')}
-          error={errors.shift_definition_id?.message}
-          helperText={t('admin:users.form.shiftHelper')}
-          disabled={fieldsDisabled}
+          label={t('admin:users.form.location')}
+          options={areaOptions}
+          value={areaIds[0] ?? ''}
+          onChange={(value) => setAreaIds(value ? [value] : [])}
+          placeholder={
+            !selectedRegionId
+              ? t('admin:users.form.locationSelectRegion')
+              : areasLoading
+                ? t('admin:users.form.areaLoading')
+                : t('admin:users.form.locationPlaceholder')
+          }
+          helperText={t('admin:users.form.locationHelper')}
+          disabled={fieldsDisabled || areasLoading || !selectedRegionId}
         />
       )}
 
