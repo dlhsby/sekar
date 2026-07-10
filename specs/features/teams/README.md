@@ -20,4 +20,5 @@ Crews (perawatan, penyiraman, penanaman, penyapuan, …) as first-class, typed e
 - [scheduling](../scheduling/README.md) · [monitoring](../monitoring/README.md) · [geography](../geography/README.md)
 
 ## Changelog
+- 2026-07-10 — Phase 3 landed: `teams` + `team_types` catalog (migration + seeds), `TeamsService` + CRUD API (`/teams` team:*, `/team-types` team:read/manage), web `/teams` page + `MapStyleFields`-style marker. Verified live. Membership (team schedules) is Phase 4.
 - 2026-07-10 — Spec created for UAT teams introduction (ADR-048). History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
