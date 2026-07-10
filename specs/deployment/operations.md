@@ -4,7 +4,7 @@
 **Audience:** DevOps engineers, on-call operators  
 **Scope:** Day-2 operations, incident response, monitoring, and recovery procedures
 
-**Current Reality (2026-06):** Staging = AWS (shared RDS + S3, instance role); Production = on-prem Docker Compose (local Postgres + MinIO, encrypted env via dotenvx). For full deployment guide, see `specs/deployment/deployment-guide.md`.
+**Current Reality (2026-06):** Staging = AWS (shared RDS + S3, instance role); Production = on-prem Docker Compose (local Postgres + MinIO, encrypted env via dotenvx). For full deployment guide, see `specs/deployment/README.md`.
 
 ---
 
@@ -686,7 +686,7 @@ npm run start:dev
 # Should log: "✅ Firebase Admin SDK initialized successfully"
 ```
 
-For full setup, see `specs/deployment/deployment-guide.md` §8.
+For full setup, see `specs/deployment/README.md` §8.
 
 ---
 
@@ -1013,7 +1013,7 @@ docker-compose -f docker-compose.prod.yml restart backend
 
 | Topic | Reference |
 |-------|-----------|
-| **Deployment from scratch** | [`specs/deployment/deployment-guide.md`](./deployment-guide.md) — authoritative start-to-finish guide (self-hosted or AWS) |
+| **Deployment from scratch** | [`specs/deployment/README.md`](./README.md) — authoritative start-to-finish guide (self-hosted or AWS) |
 | **Monitoring & metrics** | [`specs/deployment/monitoring.md`](./monitoring.md) — CloudWatch, dashboards, alarms |
 | **Local development** | [`specs/deployment/local-development.md`](./local-development.md) — Docker infra, MinIO, WSL2 device networking |
 | **AWS infrastructure** | [`specs/deployment/infrastructure.md`](./infrastructure.md) — EC2, RDS, S3, VPC, IAM, networking |

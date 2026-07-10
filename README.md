@@ -38,7 +38,7 @@ scripts/release.sh mobile 0.1.0 2   # mobile → tag mobile-v0.1.0 → signed AP
 | **Prod (on-prem)** | — | manual promotion of a `sekar-v*` tag |
 | **E2E** (`web-e2e`/`mobile-e2e`) | — | run manually when needed |
 
-Full details: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) · [`deployment-guide.md`](specs/deployment/deployment-guide.md).
+Full details: [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) · [`README.md`](specs/deployment/README.md).
 
 ---
 
@@ -148,7 +148,7 @@ committed**. Templates are `*.example`. Full model: [`specs/deployment/encrypted
 ## Deploying
 
 Two targets, same application images, detailed start-to-finish in the **authoritative guide,
-[`specs/deployment/deployment-guide.md`](specs/deployment/deployment-guide.md)**:
+[`specs/deployment/README.md`](specs/deployment/README.md)**:
 
 | | **Staging / UAT** | **Production** |
 |--|-------------------|----------------|
@@ -198,7 +198,7 @@ Current status, metrics, and history live in **[`specs/COMPLETION_STATUS.md`](sp
 | All specs (navigation hub) | [`specs/README.md`](specs/README.md) |
 | Architecture + ADRs | [`specs/architecture/`](specs/architecture/) · [`decisions/`](specs/architecture/decisions/) |
 | API contracts (~218 endpoints, 33 modules) | [`specs/api/contracts.md`](specs/api/contracts.md) · live: Swagger `/api/v1/docs` |
-| **Deploy from scratch** (local → staging → prod) | [`specs/deployment/deployment-guide.md`](specs/deployment/deployment-guide.md) |
+| **Deploy from scratch** (local → staging → prod) | [`specs/deployment/README.md`](specs/deployment/README.md) |
 | CI/CD + release strategy | [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) |
 | Obtaining keys (Firebase/Maps/S3) | [`specs/deployment/credentials-setup.md`](specs/deployment/credentials-setup.md) |
 | Encrypted secrets (dotenvx) | [`specs/deployment/encrypted-secrets.md`](specs/deployment/encrypted-secrets.md) |

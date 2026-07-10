@@ -19,7 +19,7 @@ npm run db:seed              # Fresh dev data (Phase 1 + 2 + 3)
 npm run start:dev            # http://localhost:3000/api/v1 · docs at /api/v1/docs
 ```
 
-For **staging/production deploys**, use the authoritative guide: [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md).
+For **staging/production deploys**, use the authoritative guide: [`/specs/deployment/README.md`](/specs/deployment/README.md).
 
 ## Environment
 
@@ -62,7 +62,7 @@ Test users (all `Password123!`): `admin` (superadmin), `satgas1`/`satgas2` (fiel
 
 - **Root guide (conventions, running all services):** [`/README.md`](/README.md)
 - **Full contributor guide:** [`/CLAUDE.md`](/CLAUDE.md)
-- **Deploy (start-to-finish, staging → prod, CI/CD, rollback):** [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)
+- **Deploy (start-to-finish, staging → prod, CI/CD, rollback):** [`/specs/deployment/README.md`](/specs/deployment/README.md)
 - **API contracts:** [`/specs/api/contracts.md`](/specs/api/contracts.md)
 - **Seeding reference data:** [`src/database/seeds/README.md`](src/database/seeds/README.md)
 - **All specs:** [`/specs/README.md`](/specs/README.md)

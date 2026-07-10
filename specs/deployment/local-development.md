@@ -976,7 +976,7 @@ Run the automated setup script (`setup-wsl-network.ps1`) after WSL2 restarts, or
 
 ## Related Documentation
 
-- **[deployment-guide.md](./deployment-guide.md)** — Production deployment (self-hosted Docker + AWS)
+- **[README.md](./README.md)** — Production deployment (self-hosted Docker + AWS)
 - **[environment-variables.md](./environment-variables.md)** — Complete env var reference for all workspaces
 - **[credentials-setup.md](./credentials-setup.md)** — Firebase, Google Maps, and other API credentials
 - **[ios-release-guide.md](./ios-release-guide.md)** — iOS app release checklist
@@ -1005,4 +1005,4 @@ For physical mobile device testing on WSL2, follow [WSL2 Network Setup](#wsl2-ne
 ---
 
 **Last Updated:** June 19, 2026  
-**Related:** [deployment-guide.md](./deployment-guide.md), [environment-variables.md](./environment-variables.md), [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices)
+**Related:** [README.md](./README.md), [environment-variables.md](./environment-variables.md), [WSL2 Network Setup](#wsl2-network-setup-physical-mobile-devices)

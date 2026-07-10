@@ -62,5 +62,5 @@ registry — these self-update on each mobile release.
 - **Design tokens & Neo Brutalism:** [`/specs/design-system/design-tokens.md`](/specs/design-system/design-tokens.md)
 - **E2E testing guide:** [`/specs/testing/web-testing.md`](/specs/testing/web-testing.md)
 - **Web specs:** [`/specs/platforms/web/`](/specs/platforms/web/)
-- **Deploy (CI/CD, staging, production):** [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)
+- **Deploy (CI/CD, staging, production):** [`/specs/deployment/README.md`](/specs/deployment/README.md)
 - **All specs:** [`/specs/README.md`](/specs/README.md)
