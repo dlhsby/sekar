@@ -43,6 +43,8 @@ Each workspace (`/`, `apps/{be,mobile,web}/`) is **fully independent** — `npm 
 
 Phase 3 additions (ADR-032/033): `staff_kecamatan` (external, non-clockable, submits pruning requests); `admin_data` gains narrow `pruning_requests` disposition scoped by `users.rayon_id` — **no `admin_rayon` role**.
 
+**UAT revamp (ADR-044, in progress):** roles become **data-driven** (`roles`/`permissions`/`role_permissions`) with per-role `monitoring_scope` (`city|district|region|location|none`) + map marker; operators can create custom roles. Role **codes stay lowercase & stable** (still in JWT + guards) — only **display labels** change: `top_management` → "Management", `admin_data` → "Admin Rayon" (label only; code unchanged, access equalized to `kepala_rayon`). Guards migrate `@Roles(...)` → `@RequirePermissions('resource:action')` (flat colon keys + wildcard) incrementally via a compat shim. **Only `satgas`+`linmas` are scheduled/understaffed**; other clock-in roles are monitorable but not counted. See `specs/features/access-control/README.md`.
+
 ## Terminology Convention (ADR-010)
 
 Code uses English; Indonesian only for UI labels / user-facing messages. `Activity`/`/activities` = Aktivitas · `Schedule`/`/schedules` = Jadwal · `Overtime`/`/overtime` = Lembur. **Dropped:** `WorkerAssignment`, `OvertimeAktivitas`, `Report` entity, `/aktivitas`, `/worker-schedules`.

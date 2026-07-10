@@ -19,7 +19,7 @@ to the API/DB/UI detail rather than repeating it. **Start here to understand a c
 ### By concern
 | Area | Where | What |
 |------|-------|------|
-| Architecture & decisions | [`architecture/`](architecture/) · [ADR index](architecture/decisions/README.md) | System design, tech stack, security, caching, 38 ADRs |
+| Architecture & decisions | [`architecture/`](architecture/) · [ADR index](architecture/decisions/README.md) | System design, tech stack, security, caching, 44 ADRs |
 | API | [`api/`](api/) | [`contracts.md`](api/contracts.md) (~246 handlers), auth, error codes (+ live Swagger `/api/v1/docs`) |
 | Database | [`database/`](database/) | Schema, ERD, migrations, seed data, hardening |
 | Design system | [`design-system/`](design-system/) | Neo Brutalism, tokens (SoT `tokens.json`), a11y, typography, i18n, [mockups](design-system/mockups/) |
@@ -45,8 +45,9 @@ to the API/DB/UI detail rather than repeating it. **Start here to understand a c
 - **Offline-first mobile** (ADR-002) with sync queue — field workers have poor coverage
 - **UUID PKs** (ADR-001) — offline record creation without ID conflicts
 - **Soft polygon geofencing** (ADR-005→010) — replaced the hard 100 m radius
-- **8-role RBAC** (ADR-009, +032/033) — satgas, linmas, korlap, admin_data, kepala_rayon,
-  top_management, admin_system, superadmin (+ external staff_kecamatan)
+- **Dynamic RBAC** (ADR-044, revamps ADR-009/032/033) — roles/permissions/scope/markers as data;
+  9 seeded roles (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system,
+  superadmin, staff_kecamatan) plus operator-created custom roles
 - **Event-sourced monitoring** (ADR-011→029) via Redis Streams
 
 ## Reading path (new developers)

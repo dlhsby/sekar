@@ -11,8 +11,16 @@ Shift definitions and the materialized **daily roster** that assigns workers to 
 - **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); web UI is the rayon capacity weekly grid (`rayons/[id]/capacity`).
 - `special-day-overrides` — **API implemented, no dedicated UI**.
 
-## Revamp notes (post-UAT)
-Scheduling is slated for rework based on UAT feedback. Capture the target design and decisions here (and any new ADR) when that work starts; log changes in the Changelog below.
+## Revamp notes (post-UAT) — target design (ADR-047, ADR-048)
+"Jadwal" names the whole process, not one entity. Design:
+- **Rule + occurrences** — a `ScheduleEvent` holds recurrence (`none | daily | every_n_days | weekly | specific_dates`), shift, and scope; a generator materializes per-day, per-member **occurrences** into the existing `schedules`/`schedule_areas` roster so monitoring reads are unchanged.
+- **Calendar UI** — day/week/month (Google-Calendar-style) for create/edit; datatable becomes secondary.
+- **Individual + team** — team events name a PIC + invited members (korlap/satgas/linmas), fanned out to member occurrences ([teams](../teams/README.md)).
+- **Static vs mobile scope** — `area_id` (static) or `region_id` (mobile, e.g. penyiraman).
+- **Only satgas/linmas** occurrences feed understaffing; korlap optional (never auto-materialized); management/kepala_rayon/admin_data need no schedule.
+- **Multiple shifts/day allowed** — a user may hold non-overlapping shifts (e.g. shift 1 + shift 2). The **overlap guard is time-based** (rejects true time-window overlaps, honors shift-3 midnight crossing), not one-per-day.
+- **Rolling horizon** — a daily cron materializes each active event today + N days forward (`schedule.materialization_days`, default 30); event create/edit materializes in-horizon immediately (no blind full-calendar generation). Edits offer this / this-and-future / series scopes.
+- **Occurrence link** — `schedules.schedule_event_id` (nullable FK): set = rule-generated, NULL = manual/ad-hoc.
 
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)
@@ -24,6 +32,9 @@ Scheduling is slated for rework based on UAT feedback. Capture the target design
 - [geography](../geography/README.md)
 - [attendance](../attendance/README.md)
 - [overtime](../overtime/README.md)
+- [teams](../teams/README.md)
+- [monitoring](../monitoring/README.md)
 
 ## Changelog
+- 2026-07-10 — Revamp target set: rule-based recurrence + occurrences, calendar UI, teams, static/mobile (ADR-047/048).
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

@@ -12,8 +12,16 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - **Aggregate-first drill-down** — bubbles show active-inside-area / scheduled ratios; markers standardized web + mobile.
 - ⚠️ The legacy `supervisor` module is **deprecated** — superseded by this feature; do not extend it.
 
-## Revamp notes (post-UAT)
-Monitoring is slated for rework based on UAT feedback. Record the target model and any new ADR here when that work starts; log changes in the Changelog below.
+## Revamp notes (post-UAT) — target model (ADR-046)
+- **Subject model** — *monitorable* (anyone clocked-in: satgas, linmas, korlap, kepala_rayon, admin_data) vs *scheduled/staffing-counted* (**only satgas + linmas**). Non-scheduled clock-ins surface only via daftar petugas / search.
+- **Supervisor visibility** (hierarchical, server-enforced) — management → all Surabaya; kepala_rayon/admin_data → their rayon; korlap → their region (+ optional location) incl. team members; satgas/linmas → none.
+- **Static vs mobile** — static geofenced to their area; mobile (e.g. penyiraman) geofenced to their region, same tolerance as areas ([ADR-045](../../architecture/decisions/ADR-045-four-level-location-hierarchy.md)). Drill visibility: rayon = all; region = mobile-of-region + static-in-its-areas; area = static-of-area.
+- **Drill** — **remove the Surabaya bubble**; draw all rayon boundaries on first load with per-rayon bubbles; no workers at top level. Drill: Rayon → Region → Area → workers.
+- **Bubble** = marker + active-count with status-tinted ring; **hover** = `total / active / by_shift{s1,s2,s3} / by_role / understaffed` at that scope. **Teams** render as one group bubble (member count + team name) that expands to members ([teams](../teams/README.md)).
+- **Understaffing** counts only satgas+linmas vs `AreaStaffRequirement`.
+- **Search** — server-backed, scope-filtered; matches worker name / area / team keyword; returns anyone clocked-in with a location fix in the last 24h (incl. non-scheduled). Status color rings unchanged.
+- **Perf** — keep event-sourced Redis streams (ADR-029) + in-place snapshot patching (no map remounts); server-computed bubble aggregates; rooms `monitoring:rayon|region|area:{id}`.
+- **Web first**, then mobile parity after client/PM design ack.
 
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)
@@ -25,6 +33,9 @@ Monitoring is slated for rework based on UAT feedback. Record the target model a
 - [geography](../geography/README.md)
 - [attendance](../attendance/README.md)
 - [notifications](../notifications/README.md)
+- [scheduling](../scheduling/README.md)
+- [teams](../teams/README.md)
 
 ## Changelog
+- 2026-07-10 — Revamp target set: subject model, static/mobile, drop Surabaya bubble, team bubbles, region tier, search (ADR-046).
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

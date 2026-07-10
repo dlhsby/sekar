@@ -22,7 +22,7 @@ duplicate these numbers. Build history: [`history/CHANGELOG.md`](history/CHANGEL
 - **Backend:** 34 modules · 35 controllers · ~246 route handlers · 528+ tests · >80% coverage
 - **Mobile:** 8 roles · 30+ screens · 4,200+ tests · WCAG 2.1 AA · offline-first
 - **Web:** 8-role dashboard · Next.js 16 · 1,700+ tests · realtime · a11y-audited
-- **Architecture:** 38 ADRs ([index](architecture/decisions/README.md)) · **i18n** id/en bilingual
+- **Architecture:** 44 ADRs ([index](architecture/decisions/README.md)) · **i18n** id/en bilingual
   (react-i18next), API English-canonical
 - **Quality:** zero `npm audit` vulnerabilities across workspaces
 
@@ -58,8 +58,18 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 
 ## Next
 
-Post-UAT: **monitoring** and **scheduling** revamps (UAT feedback); revisit the parked features
-above. Track work in the relevant feature spec's `## Changelog`.
+**Post-UAT foundational revamp** (specs authored 2026-07-10; ADR-044–049). Phased, one PR per phase,
+bottom-up, web before mobile:
+1. **Access control** — dynamic RBAC (roles/permissions/scope/markers), role-management page, Settings split (ADR-044/049) — 🚧 Planned
+2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — 🚧 Planned
+3. **Users & Teams** — role-driven scope inputs; teams CRUD (ADR-044/048) — 🚧 Planned
+4. **Scheduling** — calendar + rule-based recurrence + team schedules (ADR-047) — 🚧 Planned
+5. **Monitoring (web)** — subject model, drop Surabaya bubble, team bubbles, static/mobile, search (ADR-046) — 🚧 Planned
+6. **Mobile parity** — after web design ack.
+
+Then revisit the parked features above. Track work in each feature spec's `## Changelog`.
+
+**Deferred to implementation PRs (not Phase 0 gaps):** fleshing out `database/schema.md` / `database/erd.md` and `api/contracts.md` with the new tables/columns/endpoints (roles/permissions, regions, teams, schedule_events, settings, `users.region_id`, per-level styling) — these current-state detail docs are updated in the **same PR as the migration/code** per the specs-sync mandate. Several still describe today's korlap multi-area (`user_areas`) model and will be reconciled to the region + optional-location model as Phase 1–3 land.
 
 ## Links
 
