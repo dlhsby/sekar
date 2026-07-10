@@ -44,6 +44,7 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'shifts',
   'shift_definitions',
   'areas',
+  'regions',
   'area_types',
   'activity_types',
   'kecamatans',

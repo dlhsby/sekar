@@ -7,6 +7,7 @@ import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedAreas } from '../entities/area';
+import { seedRegions } from '../entities/region';
 import { seedSpecialDayOverrides } from '../entities/special-day';
 import { seedAreaStaffRequirements } from '../entities/area-staff-requirement';
 import { seedKecamatans } from '../entities/kecamatan';
@@ -48,6 +49,7 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await seedShiftDefinitions(ctx);
   await seedActivityTypes(ctx);
   await seedAreas(ctx);
+  await seedRegions(ctx);
   await seedSpecialDayOverrides(ctx);
   await seedAreaStaffRequirements(ctx);
   await seedKecamatans(ctx);

@@ -112,6 +112,36 @@ export class Area {
   @JoinColumn({ name: 'rayon_id' })
   rayon?: Rayon | null;
 
+  // Region (Kawasan) parent — ADR-045. Nullable; areas re-parented in the UI.
+  @ApiProperty({ description: 'Region (Kawasan) this area belongs to', required: false })
+  @Column({ type: 'uuid', nullable: true })
+  region_id?: string;
+
+  // ── Per-level map styling (ADR-045) ──────────────────────────────────────
+  @ApiProperty({ required: false, example: '#1C1917' })
+  @Column({ length: 9, nullable: true })
+  border_color?: string;
+
+  @ApiProperty({ required: false, example: '#7FBC8C' })
+  @Column({ length: 9, nullable: true })
+  fill_color?: string;
+
+  @ApiProperty({ required: false, example: 0.8 })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
+  border_opacity?: number;
+
+  @ApiProperty({ required: false, example: 0.25 })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
+  fill_opacity?: number;
+
+  @ApiProperty({ required: false, example: 'tree' })
+  @Column({ length: 50, nullable: true })
+  marker_icon?: string;
+
+  @ApiProperty({ required: false, example: '#7FBC8C' })
+  @Column({ length: 9, nullable: true })
+  marker_color?: string;
+
   @ApiProperty({
     description: 'GeoJSON polygon defining area boundary',
     example: {

@@ -75,6 +75,10 @@ export class User {
   @Column({ type: 'uuid', nullable: true })
   rayon_id?: string;
 
+  // Region (Kawasan) scope for korlap (ADR-045). Nullable; no FK (matches rayon_id).
+  @Column({ type: 'uuid', nullable: true })
+  region_id?: string;
+
   @ApiProperty({
     description: 'Area ID for Korlap role',
     required: false,

@@ -45,6 +45,7 @@ export class AreasService {
 
     // Validate that area_type_id exists
     await this.areaTypesService.findOne(createAreaDto.area_type_id);
+    await this.validateRegion(createAreaDto.region_id, createAreaDto.rayon_id);
 
     // Create the area
     const area = this.areaRepository.create(createAreaDto);
@@ -52,6 +53,22 @@ export class AreasService {
 
     this.logger.log(`Area created with ID: ${savedArea.id}`);
     return savedArea;
+  }
+
+  /**
+   * When an area is put into a region, the region must exist and belong to the
+   * same rayon as the area (ADR-045). `region_id` null/undefined clears it.
+   */
+  private async validateRegion(regionId?: string | null, areaRayonId?: string): Promise<void> {
+    if (!regionId) return;
+    const rows = (await this.areaRepository.manager.query(
+      `SELECT rayon_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
+      [regionId],
+    )) as Array<{ rayon_id: string }>;
+    if (!rows[0]) throw new BadRequestException('Region not found');
+    if (areaRayonId && rows[0].rayon_id !== areaRayonId) {
+      throw new BadRequestException("Region must belong to the area's rayon");
+    }
   }
 
   /**
@@ -173,6 +190,10 @@ export class AreasService {
     this.logger.log(`Updating area with ID: ${id}`);
 
     const area = await this.findOne(id);
+
+    if (updateAreaDto.region_id !== undefined) {
+      await this.validateRegion(updateAreaDto.region_id, updateAreaDto.rayon_id ?? area.rayon_id);
+    }
 
     // Drop the loaded `rayon` relation object before merging: keeping it would
     // let TypeORM prefer the stale relation over a changed `rayon_id` on save,

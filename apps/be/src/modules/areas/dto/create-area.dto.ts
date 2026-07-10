@@ -10,11 +10,13 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MapStyleDto } from '../../../common/dto/map-style.dto';
 
 /**
- * DTO for creating a new area
+ * DTO for creating a new area. Per-level styling fields (ADR-045) are inherited
+ * from MapStyleDto.
  */
-export class CreateAreaDto {
+export class CreateAreaDto extends MapStyleDto {
   @ApiProperty({
     description: 'Name of the area',
     example: 'Taman Bungkul',
@@ -41,6 +43,11 @@ export class CreateAreaDto {
   @IsOptional()
   @IsUUID()
   rayon_id?: string;
+
+  @ApiPropertyOptional({ description: 'Region (Kawasan) UUID this area belongs to' })
+  @IsOptional()
+  @IsUUID()
+  region_id?: string;
 
   @ApiProperty({
     description: 'GPS latitude of area center (must be between -90 and 90)',

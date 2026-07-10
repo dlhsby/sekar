@@ -1,13 +1,15 @@
 import { IsString, IsNotEmpty, MaxLength, IsOptional, IsNumber, Min, Max } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { MapStyleDto } from '../../../common/dto/map-style.dto';
 
 /**
  * Data Transfer Object for creating a new rayon.
  *
  * Validates incoming request data for rayon creation endpoint.
- * Name is required. Description/color/center coords are optional.
+ * Name is required. Description/color/center coords + per-level styling
+ * (ADR-045, inherited from MapStyleDto) are optional.
  */
-export class CreateRayonDto {
+export class CreateRayonDto extends MapStyleDto {
   /**
    * Display name for the rayon.
    *
