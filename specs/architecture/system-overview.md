@@ -87,7 +87,7 @@ Mobile architecture prioritizes offline operation:
 - File upload coordination
 - API rate limiting (Phase 2+)
 
-**Current Status:** Phases 1–5 shipped (33 modules, ~218 endpoints). See `specs/COMPLETION_STATUS.md` for current metrics.
+**Current Status:** shipped through UAT (34 backend modules, ~246 route handlers). See [`../COMPLETION_STATUS.md`](../COMPLETION_STATUS.md) for current metrics.
 
 ### 2. Mobile Application (React Native)
 
