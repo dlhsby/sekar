@@ -10,7 +10,8 @@
   },
   "empty": {
     "selectRole": "Pilih peran untuk melihat dan mengubah izin",
-    "noPermissions": "Belum ada izin"
+    "noPermissions": "Belum ada izin",
+    "loadError": "Gagal memuat data peran"
   },
   "superuser": "Peran ini memiliki semua izin (superuser) dan tidak dapat diubah izinnya.",
   "fields": {

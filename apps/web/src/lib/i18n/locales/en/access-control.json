@@ -10,7 +10,8 @@
   },
   "empty": {
     "selectRole": "Select a role to view and edit its permissions",
-    "noPermissions": "No permissions yet"
+    "noPermissions": "No permissions yet",
+    "loadError": "Failed to load role data"
   },
   "superuser": "This role has all permissions (superuser) and its permissions cannot be edited.",
   "fields": {

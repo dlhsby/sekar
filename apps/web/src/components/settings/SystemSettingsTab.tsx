@@ -8,6 +8,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import {
   useSystemSettings,
   useUpdateSetting,
+  useClearSetting,
   type SettingDescription,
 } from '@/lib/api/settings';
 
@@ -22,7 +23,22 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
   const { t } = useTranslation();
   const { data, isLoading, isError } = useSystemSettings();
   const updateSetting = useUpdateSetting();
+  const clearSetting = useClearSetting();
   const [staged, setStaged] = useState<Record<string, string>>({});
+
+  const revert = async (key: string) => {
+    try {
+      await clearSetting.mutateAsync(key);
+      setStaged((prev) => {
+        const next = { ...prev };
+        delete next[key];
+        return next;
+      });
+      toast.success(t('settings:system.reverted'));
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
 
   const groups = useMemo(() => {
     const map = new Map<string, SettingDescription[]>();
@@ -109,6 +125,16 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
                       <Badge variant={SOURCE_VARIANT[s.source]} size="sm">
                         {t(`settings:system.source.${s.source}`)}
                       </Badge>
+                      {canManage && s.source === 'db' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => revert(s.key)}
+                          loading={clearSetting.isPending}
+                        >
+                          {t('settings:system.revert')}
+                        </Button>
+                      )}
                     </div>
                     {s.help && <p className="text-nb-caption text-nb-gray-600">{s.help}</p>}
                     <p className="font-mono text-[11px] text-nb-gray-600">{s.key}</p>

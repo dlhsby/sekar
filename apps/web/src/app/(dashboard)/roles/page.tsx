@@ -33,8 +33,8 @@ import { cn } from '@/lib/utils/cn';
 export default function RolesPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
-  const { data: roles, isLoading } = useRoles();
-  const { data: catalog } = usePermissionCatalog();
+  const { data: roles, isLoading, isError: rolesError } = useRoles();
+  const { data: catalog, isError: catalogError } = usePermissionCatalog();
   const createRole = useCreateRole();
   const deleteRole = useDeleteRole();
 
@@ -133,7 +133,9 @@ export default function RolesPage() {
 
         {/* Editor */}
         <Card variant="outlined" className="p-5">
-          {selected && catalog ? (
+          {rolesError || catalogError ? (
+            <EmptyState variant="error" title={t('access-control:empty.loadError')} />
+          ) : selected && catalog ? (
             <RoleEditor
               key={selected.id}
               role={selected}

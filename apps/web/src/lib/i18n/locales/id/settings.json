@@ -13,6 +13,8 @@
     "loadError": "Gagal memuat pengaturan sistem.",
     "save": "Simpan",
     "saved": "Pengaturan disimpan",
+    "revert": "Kembalikan",
+    "reverted": "Dikembalikan ke nilai default",
     "readOnly": "Anda hanya dapat melihat pengaturan sistem, tidak dapat mengubahnya.",
     "secretPlaceholder": "•••••• (tersimpan terenkripsi)",
     "source": {
