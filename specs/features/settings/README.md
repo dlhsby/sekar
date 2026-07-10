@@ -22,4 +22,5 @@ A dedicated Settings surface split into **Personal preferences** (per-user: lang
 - [access-control](../access-control/README.md) · [system](../system/README.md) · [monitoring](../monitoring/README.md)
 
 ## Changelog
+- 2026-07-10 — Backend landed (Phase 1): `settings` module — `system_config` table + migration, catalog-driven `SystemConfigService` (DB→env→default, AES-GCM secrets, masking), `GET/PATCH/DELETE /settings` (`settings:read`/`settings:manage`) + `GET/PATCH /me/preferences` (+ `users.preference_theme`). Multi-instance Redis pub/sub coherence + boot preseed deferred (single-instance staging). `SETTINGS_ENCRYPTION_KEY` optional (required only to store secret overrides). Web Settings page pending.
 - 2026-07-10 — Spec created for UAT settings revamp (ADR-049). History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
