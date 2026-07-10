@@ -85,7 +85,7 @@ export class RolesService {
     return this.findOne(role.id);
   }
 
-  async remove(id: string, actorId?: string): Promise<void> {
+  async remove(id: string): Promise<void> {
     const role = await this.roleRepo.findOne({ where: { id } });
     if (!role) throw new NotFoundException('Role not found');
     if (role.is_system) {
@@ -98,8 +98,8 @@ export class RolesService {
     if ((inUse[0]?.count ?? 0) > 0) {
       throw new BadRequestException('Role is assigned to users and cannot be deleted');
     }
-    role.deleted_by = actorId;
-    await this.roleRepo.save(role);
+    // softRemove (not softDelete) so the AuditSubscriber stamps deleted_by from
+    // the request actor — matching the codebase convention (see rayons.service).
     await this.roleRepo.softRemove(role);
     await this.rolePermissions.invalidateRole(role.code);
   }

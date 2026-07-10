@@ -108,7 +108,7 @@ describe('RolesService', () => {
     it('soft-removes an unused custom role and invalidates cache', async () => {
       roleRepo.findOne.mockResolvedValue({ id: 'r1', code: 'custom', is_system: false });
       roleRepo.manager.query.mockResolvedValue([{ count: 0 }]);
-      await service.remove('r1', 'actor-1');
+      await service.remove('r1');
       expect(roleRepo.softRemove).toHaveBeenCalled();
       expect(rolePermissions.invalidateRole).toHaveBeenCalledWith('custom');
     });

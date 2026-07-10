@@ -81,7 +81,7 @@ export class RolesController {
   @ApiParam({ name: 'id', type: 'string' })
   @ApiResponse({ status: 204, description: 'Deleted' })
   @ApiResponse({ status: 400, description: 'System role or role in use' })
-  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User): Promise<void> {
-    return this.rolesService.remove(id, user.id);
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return this.rolesService.remove(id);
   }
 }
