@@ -14,11 +14,21 @@ import { FormInput, Input, Textarea } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
+import { MapStyleFields } from '@/components/forms/MapStyleFields';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
-import type { Rayon } from '@/types/models';
+import type { Rayon, MapStyleFieldsDto } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
+
+const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
+  'border_color',
+  'fill_color',
+  'border_opacity',
+  'fill_opacity',
+  'marker_icon',
+  'marker_color',
+];
 
 // Default value for the native color input (a data value, not a rendered style
 // token) — matches nb-primary so a new rayon starts on-brand. ADR-036 token rule
@@ -34,7 +44,7 @@ const toNullableNumber = (v: unknown): number | null => {
   return Number.isNaN(n) ? null : n;
 };
 
-type RayonFormData = {
+type RayonFormData = MapStyleFieldsDto & {
   name: string;
   color?: string | null;
   description?: string | null;
@@ -118,8 +128,16 @@ export function RayonForm({
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
       boundary_polygon: initialData?.boundary_polygon ?? null,
+      border_color: initialData?.border_color ?? undefined,
+      fill_color: initialData?.fill_color ?? undefined,
+      border_opacity: initialData?.border_opacity ?? undefined,
+      fill_opacity: initialData?.fill_opacity ?? undefined,
+      marker_icon: initialData?.marker_icon ?? undefined,
+      marker_color: initialData?.marker_color ?? undefined,
     },
   });
+
+  const style: MapStyleFieldsDto = Object.fromEntries(STYLE_KEYS.map((k) => [k, watch(k)]));
 
   const nameValue = watch('name');
   const nameStatus = useAvailabilityCheck({
@@ -170,6 +188,12 @@ export function RayonForm({
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
       boundary_polygon: data.boundary_polygon ?? null,
+      border_color: data.border_color || null,
+      fill_color: data.fill_color || null,
+      border_opacity: data.border_opacity ?? null,
+      fill_opacity: data.fill_opacity ?? null,
+      marker_icon: data.marker_icon || null,
+      marker_color: data.marker_color || null,
     };
 
     await onSubmit(submitData);
@@ -244,6 +268,16 @@ export function RayonForm({
           />
         </div>
       </div>
+
+      <MapStyleFields
+        value={style}
+        onChange={(patch) =>
+          Object.entries(patch).forEach(([k, v]) =>
+            setValue(k as keyof RayonFormData, v as never, { shouldValidate: false }),
+          )
+        }
+        disabled={readOnly}
+      />
 
       {/* Boundary + center pin on a single Google map */}
       <div className="space-y-4">

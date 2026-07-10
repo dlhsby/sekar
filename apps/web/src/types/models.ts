@@ -64,6 +64,13 @@ export interface Rayon {
   center_lng?: number | string | null;
   /** Official KMZ "Batas Wilayah Kerja Rayon" outline (Polygon or MultiPolygon). */
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+  // Per-level map styling (ADR-045).
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  marker_icon?: string | null;
+  marker_color?: string | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -176,12 +183,30 @@ export interface Area extends Record<string, unknown> {
   coverage_area?: number;
   address?: string | null;
   is_active?: boolean;
+  // Region (Kawasan) parent + per-level map styling (ADR-045).
+  region_id?: string | null;
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  marker_icon?: string | null;
+  marker_color?: string | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
   created_by?: string;
   updated_by?: string;
   deleted_by?: string;
+}
+
+/** Per-level map styling fields (ADR-045), shared by area/rayon DTOs. */
+export interface MapStyleFieldsDto {
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+  marker_icon?: string | null;
+  marker_color?: string | null;
 }
 
 /**
@@ -201,7 +226,7 @@ export interface AreaFilters {
 /**
  * Create Area DTO
  */
-export interface CreateAreaDto {
+export interface CreateAreaDto extends MapStyleFieldsDto {
   name: string;
   rayon_id: string;
   area_type_id: string;
@@ -210,12 +235,13 @@ export interface CreateAreaDto {
   radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
+  region_id?: string | null;
 }
 
 /**
  * Update Area DTO
  */
-export interface UpdateAreaDto {
+export interface UpdateAreaDto extends MapStyleFieldsDto {
   name?: string;
   rayon_id?: string;
   area_type_id?: string;
@@ -224,6 +250,7 @@ export interface UpdateAreaDto {
   radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
+  region_id?: string | null;
 }
 
 /**

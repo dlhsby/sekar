@@ -13,10 +13,21 @@ import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
+import { MapStyleFields } from '@/components/forms/MapStyleFields';
 import { useRayons } from '@/lib/api/rayons';
+import { useRegions } from '@/lib/api/regions';
 import { useAreaTypes } from '@/lib/api/area-types';
 import { calculatePolygonCenter, isValidPolygon, isBoundaryGeometry, formatCoordinates } from '@/lib/utils/geo';
-import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
+import type { Area, CreateAreaDto, UpdateAreaDto, MapStyleFieldsDto } from '@/types/models';
+
+const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
+  'border_color',
+  'fill_color',
+  'border_opacity',
+  'fill_opacity',
+  'marker_icon',
+  'marker_color',
+];
 
 interface LatLng {
   lat: number;
@@ -35,10 +46,11 @@ function boundaryCentroid(geom: BoundaryGeometry): LatLng {
   return { lat, lng };
 }
 
-type AreaFormData = {
+type AreaFormData = MapStyleFieldsDto & {
   name: string;
   rayon_id: string;
   area_type_id: string;
+  region_id?: string | null;
   address?: string | null;
   boundary_polygon?: BoundaryGeometry | null;
 };
@@ -115,10 +127,22 @@ export function AreaForm({
       name: initialData?.name || '',
       rayon_id: initialData?.rayon_id || '',
       area_type_id: initialData?.area_type_id || '',
+      region_id: initialData?.region_id || '',
       address: initialData?.address || '',
       boundary_polygon: initialData?.boundary_polygon,
+      border_color: initialData?.border_color ?? undefined,
+      fill_color: initialData?.fill_color ?? undefined,
+      border_opacity: initialData?.border_opacity ?? undefined,
+      fill_opacity: initialData?.fill_opacity ?? undefined,
+      marker_icon: initialData?.marker_icon ?? undefined,
+      marker_color: initialData?.marker_color ?? undefined,
     },
   });
+
+  // Regions cascade from the selected rayon (optional; ADR-045).
+  const selectedRayon = watch('rayon_id');
+  const { data: regions = [] } = useRegions(selectedRayon || undefined);
+  const style: MapStyleFieldsDto = Object.fromEntries(STYLE_KEYS.map((k) => [k, watch(k)]));
 
   // Seed geometry for the map editor. Bumping `editorKey` remounts the editor so
   // an imported boundary (which the editor only reads on mount) is shown + framed.
@@ -167,10 +191,17 @@ export function AreaForm({
       name: data.name,
       rayon_id: data.rayon_id,
       area_type_id: data.area_type_id,
+      region_id: data.region_id || null,
       address: data.address || undefined,
       boundary_polygon: data.boundary_polygon ?? undefined,
       gps_lng: finalCenter.lng,
       gps_lat: finalCenter.lat,
+      border_color: data.border_color || null,
+      fill_color: data.fill_color || null,
+      border_opacity: data.border_opacity ?? null,
+      fill_opacity: data.fill_opacity ?? null,
+      marker_icon: data.marker_icon || null,
+      marker_color: data.marker_color || null,
     };
 
     await onSubmit(submitData);
@@ -195,13 +226,26 @@ export function AreaForm({
           label={t('admin:areas.form.rayon')}
           options={(rayonsData ?? []).map((rayon) => ({ value: rayon.id, label: rayon.name }))}
           value={watch('rayon_id') || ''}
-          onChange={(value) => setValue('rayon_id', value, { shouldValidate: true })}
+          onChange={(value) => {
+            setValue('rayon_id', value, { shouldValidate: true });
+            // Region belongs to a rayon — clear it when the rayon changes.
+            setValue('region_id', '', { shouldValidate: false });
+          }}
           placeholder={loadingRayons ? t('admin:shared.loading') : t('admin:areas.form.rayonPlaceholder')}
           searchPlaceholder={t('admin:areas.form.rayonSearchPlaceholder')}
           error={errors.rayon_id?.message}
           required
           clearable={false}
           disabled={loadingRayons || readOnly}
+        />
+
+        <FormCombobox
+          label={t('admin:areas.form.region')}
+          options={regions.map((r) => ({ value: r.id, label: r.name }))}
+          value={watch('region_id') || ''}
+          onChange={(value) => setValue('region_id', value, { shouldValidate: false })}
+          placeholder={t('admin:areas.form.regionPlaceholder')}
+          disabled={!selectedRayon || readOnly}
         />
 
         <FormCombobox
@@ -231,6 +275,16 @@ export function AreaForm({
           />
         </div>
       </div>
+
+      <MapStyleFields
+        value={style}
+        onChange={(patch) =>
+          Object.entries(patch).forEach(([k, v]) =>
+            setValue(k as keyof AreaFormData, v as never, { shouldValidate: false }),
+          )
+        }
+        disabled={readOnly}
+      />
 
       {/* Boundary + location pin on a single Google map (two separate settings) */}
       <div className="space-y-4">

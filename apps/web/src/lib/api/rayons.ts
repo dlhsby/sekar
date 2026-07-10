@@ -5,7 +5,14 @@
 
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { apiClient } from './client';
-import { Rayon, RayonStats, Area, AreaFilters, PaginatedResponse } from '@/types/models';
+import {
+  Rayon,
+  RayonStats,
+  Area,
+  AreaFilters,
+  PaginatedResponse,
+  MapStyleFieldsDto,
+} from '@/types/models';
 import { makeCrudHooks } from './crud-hooks';
 
 /**
@@ -123,7 +130,7 @@ export function useRayonsWithStats() {
 /**
  * DTO for creating a rayon
  */
-export interface CreateRayonDto {
+export interface CreateRayonDto extends MapStyleFieldsDto {
   name: string;
   color?: string | null;
   description?: string | null;
@@ -134,7 +141,7 @@ export interface CreateRayonDto {
 /**
  * DTO for updating a rayon
  */
-export interface UpdateRayonDto {
+export interface UpdateRayonDto extends MapStyleFieldsDto {
   name?: string;
   color?: string | null;
   description?: string | null;

@@ -163,7 +163,9 @@
       "boundaryDescription": "Dua pengaturan terpisah: gambar batas area, lalu tentukan titik lokasi — mis. lokasi kantor, pintu masuk, atau titik hasil pencarian yang dipakai untuk menggeser peta. Titik lokasi terisi otomatis dari pusat batas hanya jika belum diatur; menggambar ulang batas tidak mengubah titik yang sudah ada. Seret pin, cari alamat, atau tekan tombol lokasi untuk menyesuaikan. (Klik peta hanya menambah titik saat menggambar batas.)",
       "coordinatesTitle": "Koordinat Pusat:",
       "mapUnavailable": "Peta tidak tersedia — batas area tidak dapat digambar tanpa Google Maps.",
-      "geometryRequired": "Tentukan minimal salah satu: gambar batas area atau tempatkan titik lokasi."
+      "geometryRequired": "Tentukan minimal salah satu: gambar batas area atau tempatkan titik lokasi.",
+      "region": "Kawasan",
+      "regionPlaceholder": "Pilih kawasan (opsional)"
     },
     "workersTitle": "Pekerja di Area",
     "createSchedule": "Buat Jadwal",

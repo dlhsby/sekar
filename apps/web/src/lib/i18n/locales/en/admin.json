@@ -163,7 +163,9 @@
       "boundaryDescription": "Two separate settings: draw the area boundary, then set a location pin — e.g., office location, entrance, or search result point used to pan the map. The location pin is auto-filled from the boundary centroid only if not yet set; redrawing the boundary does not change an existing pin. Drag the pin, search for an address, or press the locate button to adjust. (Map click only adds points when drawing the boundary.)",
       "coordinatesTitle": "Center Coordinates:",
       "mapUnavailable": "Map is not available — area boundary cannot be drawn without Google Maps.",
-      "geometryRequired": "Set at least one: draw the area boundary or place a location pin."
+      "geometryRequired": "Set at least one: draw the area boundary or place a location pin.",
+      "region": "Region",
+      "regionPlaceholder": "Select region (optional)"
     },
     "workersTitle": "Workers in Area",
     "createSchedule": "Create Schedule",
