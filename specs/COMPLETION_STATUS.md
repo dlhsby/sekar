@@ -61,7 +61,7 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 **Post-UAT foundational revamp** (specs authored 2026-07-10; ADR-044–049). Phased, one PR per phase,
 bottom-up, web before mobile:
 1. **Access control** — dynamic RBAC (roles/permissions/scope/markers), role-management page, Settings split (ADR-044/049) — 🟡 **In review** (branch `docs/uat-revamp-specs`): backend (rbac + settings modules, migrations, seeds, roles/permissions/settings API) + web (role-management page, system-settings tab, `usePermissions`) landed & tested; existing `@Roles` endpoints untouched (compat migration is a later task). Not yet merged/deployed.
-2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — 🚧 Planned
+2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — 🟡 **In review** (branch): backend (regions module + migration, styling on rayons/regions/areas, `areas.region_id`, `users.region_id`) + web (`/regions` page, `MapStyleFields`, area→region select) landed & verified live. City styling + monitoring region-tier drill deferred to Phase 5. Not merged/deployed.
 3. **Users & Teams** — role-driven scope inputs; teams CRUD (ADR-044/048) — 🚧 Planned
 4. **Scheduling** — calendar + rule-based recurrence + team schedules (ADR-047) — 🚧 Planned
 5. **Monitoring (web)** — subject model, drop Surabaya bubble, team bubbles, static/mobile, search (ADR-046) — 🚧 Planned
