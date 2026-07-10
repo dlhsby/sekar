@@ -2567,6 +2567,68 @@ INSERT INTO monitoring_configs (key, value, description) VALUES
 
 ---
 
+## UAT Revamp — Dynamic RBAC + Settings (ADR-044 / ADR-049, Phase 1 implemented)
+
+Additive tables + columns; existing tables and role-string checks unchanged.
+
+**roles** — data-driven roles (ADR-044). `code` is immutable + referenced by `users.role` (still a string, not an FK) and the JWT; `is_system` locks the 9 seeds.
+```sql
+CREATE TABLE roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code VARCHAR(50) NOT NULL UNIQUE,
+  name VARCHAR(100) NOT NULL,
+  description TEXT,
+  is_system BOOLEAN NOT NULL DEFAULT FALSE,
+  monitoring_scope VARCHAR(20) NOT NULL DEFAULT 'none',
+  marker_icon VARCHAR(50),
+  marker_color VARCHAR(9),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  deleted_at TIMESTAMPTZ,
+  created_by UUID, updated_by UUID, deleted_by UUID,
+  CONSTRAINT chk_roles_monitoring_scope CHECK (monitoring_scope IN ('city','district','region','location','none')),
+  CONSTRAINT chk_roles_marker_color CHECK (marker_color IS NULL OR marker_color ~ '^#[0-9A-Fa-f]{6}$')
+);
+```
+
+**permissions** — flat `resource:action` keys (grouping is code-side catalog, not a column). Includes wildcard rows (`*:*`, `resource:*`).
+```sql
+CREATE TABLE permissions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key VARCHAR(100) NOT NULL UNIQUE,
+  description VARCHAR(255),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+**role_permissions** — M:N join.
+```sql
+CREATE TABLE role_permissions (
+  role_id UUID NOT NULL REFERENCES roles(id) ON DELETE CASCADE,
+  permission_id UUID NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
+  PRIMARY KEY (role_id, permission_id)
+);
+```
+
+**system_config** — operator overrides for catalog keys (ADR-049); resolution is DB → env → code default. `value` is AES-GCM ciphertext when `is_secret`.
+```sql
+CREATE TABLE system_config (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  key VARCHAR(100) NOT NULL UNIQUE,
+  value TEXT,
+  is_secret BOOLEAN NOT NULL DEFAULT FALSE,
+  value_type VARCHAR(10) NOT NULL DEFAULT 'string',
+  config_group VARCHAR(40) NOT NULL,
+  updated_by UUID,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+```
+
+**ALTER users** — personal theme preference (ADR-049): `preference_theme VARCHAR(10)` (CHECK in `light|dark|system`). `users.region_id` (ADR-045) is deferred to the Phase-2 geography migration (needs the `regions` table).
+
+---
+
 **Related Documents:**
 - [ERD](./erd.md) - Entity relationship diagrams (Phase 2D + Phase 3)
 - [Migrations](./migrations.md) - Migration strategy
