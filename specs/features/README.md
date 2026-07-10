@@ -10,7 +10,7 @@ duplicate them). Keep each feature spec ≤ ~150 lines; put deep detail in the l
 |---------|--------|-------------------|-------|
 | [Auth & roles](auth/README.md) | ✅ | `auth`, `users` | Login, phone login, 8-role RBAC, password, onboarding |
 | [Users & profile](users/README.md) | ✅ | `users`, `user-areas` | User CRUD, profile, area assignment |
-| [Scheduling](scheduling/README.md) | ✅ | `shifts`, `shift-definitions`, `schedules`, `special-day-overrides`, `service-capacity` | Materialized daily roster; special-day & capacity are backend-only |
+| [Scheduling](scheduling/README.md) | ✅ | `shifts`, `shift-definitions`, `schedules`, `special-day-overrides`, `service-capacity` | Materialized daily roster; capacity has a rayon UI; special-day is backend-only |
 | [Attendance](attendance/README.md) | ✅ | `activities` (clock events) | Clock in/out with photo + GPS |
 | [Work items](work/README.md) | ✅ | `tasks`, `activities`, `activity-types` | Typed tasks + activity logging |
 | [Overtime](overtime/README.md) | ✅ | `overtime` | Submission + 3-level approval |

@@ -8,7 +8,7 @@ Shift definitions and the materialized **daily roster** that assigns workers to 
 ## Key decisions
 - **Materialized daily roster** — `daily-roster-generation.cron.ts` generates schedules per day from shift definitions for fast lookup and monitoring joins; `schedule-edit.policy.ts` gates edits.
 - **Multi-area** (ADR-013) — a korlap/worker can be rostered across multiple areas.
-- **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); **API implemented (`service-capacity` controller), no UI yet**.
+- **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); web UI is the rayon capacity weekly grid (`rayons/[id]/capacity`).
 - `special-day-overrides` — **API implemented, no dedicated UI**.
 
 ## Revamp notes (post-UAT)
@@ -17,7 +17,7 @@ Scheduling is slated for rework based on UAT feedback. Capture the target design
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)
 - **Database:** [`../../database/schema.md`](../../database/schema.md)
-- **Web:** Schedules page (roster grid) — [`../../platforms/web/pages.md`](../../platforms/web/pages.md)
+- **Web:** Schedules page (roster grid); rayon capacity weekly grid (`rayons/[id]/capacity`) — [`../../platforms/web/pages.md`](../../platforms/web/pages.md)
 - **Mobile:** My Schedule, Shift History — [`../../platforms/mobile/screens.md`](../../platforms/mobile/screens.md)
 
 ## Related features

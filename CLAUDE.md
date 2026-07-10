@@ -1,11 +1,14 @@
 # CLAUDE.md
 
-Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is the single source of truth** for status; use `git log` for commit history.
+Guidance for Claude Code. Docs are **product/feature-organized** — nav hub `specs/README.md`; status SoT `specs/COMPLETION_STATUS.md`; history `git log` + `specs/history/CHANGELOG.md`.
 
-## Communication
-- Be brief and concise; no unnecessary elaboration.
-- Use `specs/` as the reference for all technical detail. Update existing docs instead of creating new ones.
-- After changes, keep `specs/COMPLETION_STATUS.md` and the relevant `specs/features/<feature>/README.md` (its `## Changelog` tail) updated.
+## Working here
+- Be brief. Use `specs/` for technical detail; **update existing docs, never create parallel ones**.
+- **Keep specs in sync (MANDATE).** Any feature work must update, in the same PR:
+  - `specs/features/<feature>/README.md` — its `## Changelog` tail (1 line, newest-first) + any changed decisions/links. A revamp fills the "Revamp notes" placeholder.
+  - `specs/COMPLETION_STATUS.md` — only if status/metrics/live-URLs change.
+  - New cross-cutting decision → add an ADR under `specs/architecture/decisions/` + a row in its `README.md` index. Parking/removing/promoting a feature → update `specs/features/_archived/`.
+- **Dev flow:** feature branch → PR → `main` (PR-gated CI). Release = merge `main` → `staging` + approve. Commit `<type>: <desc>` (feat/fix/refactor/docs/test/chore/perf/ci). Branch first if on `main`.
 
 ## Project Overview
 
@@ -21,26 +24,13 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 ./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 # Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
-# Ports per project: apps/be/.env.local PORT (default 3000) · apps/web/.env.local WEB_PORT (default 3001)
-
-# Manual per-workspace flow
-npm install                 # root tooling (token pipeline + eslint plugin), once per checkout
-
-./scripts/infra.sh start    # PostgreSQL, Adminer(8080), MinIO S3(9000)+console(9001), Redis; `stop`/`down`/`status` too
-
-# Backend (apps/be/)
-npm install && cp .env.local.example .env.local
-npm run migration:run && npm run db:seed   # db:seed is destructive (wipes first; fresh DB needs one backend boot first)
-npm run start:dev          # http://localhost:${BE_PORT:-3000}  | API docs /api/v1/docs
-
-# Mobile (apps/mobile/) — cp .env.local.example .env.local; set API_BASE_URL=http://10.0.2.2:<BE_PORT> (emulator) or http://<IP>:<BE_PORT> (device)
-npm run android            # android:all for all devices | ios (macOS only)
-
-# Web (apps/web/) — cp .env.local.example .env.local (Google Maps API key)
-npm run dev                # http://localhost:${WEB_PORT:-3001}
+# Ports: apps/be/.env.local PORT (default 3000) · apps/web/.env.local WEB_PORT (default 3001)
+# infra only: ./scripts/infra.sh start  (Postgres · Adminer:8080 · MinIO:9000/9001 · Redis)
+# mobile: cd apps/mobile && npm run android  (set API_BASE_URL=http://10.0.2.2:<BE_PORT> emu / http://<IP>:<BE_PORT> device)
 ```
 
-Each workspace (`/`, `apps/be/`, `apps/mobile/`, `apps/web/`) is **fully independent** — `npm install` in one never touches another. Token pipeline (from root): `npm run tokens:build` / `tokens:verify` / `test:tokens` — never hand-edit generated token files.
+Manual per-workspace setup, WSL2 device networking, ports: **`specs/deployment/local-development.md`**.
+Each workspace (`/`, `apps/{be,mobile,web}/`) is **fully independent** — `npm install` in one never touches another. Token pipeline (root): `npm run tokens:build`/`tokens:verify`/`test:tokens` — never hand-edit generated token files.
 
 **Tests:** `npm test` (each workspace), `npm run test:cov` (backend, >80% required), `npm run test:e2e` (web).
 **Test users:** `12345678` for all seeded accounts — e.g. `satgas1/12345678`, `admin_system_1/12345678`. Phone login also works (e.g. `081200000006/12345678`). **Exception:** the `superadmin` account uses `SEED_SUPERADMIN_PASSWORD` (falls back to `12345678` locally when unset) and is seeded with **no forced password reset**.

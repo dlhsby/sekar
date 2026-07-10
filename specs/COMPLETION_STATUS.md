@@ -52,8 +52,8 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 | [Import / Export](features/_archived/README.md) | 🅿️ | hidden | — |
 | [Seeds](features/_archived/README.md) | 🅿️ | hidden | present |
 
-**Backend-only (API implemented, no UI):** `special-day-overrides`, `service-capacity` (ADR-035),
-`kecamatans` (read-only), `area-staff-requirements`, `audit`.
+**Backend-only (API implemented, no UI):** `special-day-overrides`, `kecamatans` (read-only),
+`area-staff-requirements`, `audit`. (`service-capacity` has a web UI: rayon capacity grid.)
 **Deprecated:** `supervisor` module (superseded by `monitoring`; not removed — 21 refs).
 
 ## Next
