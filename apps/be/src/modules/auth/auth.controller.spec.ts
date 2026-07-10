@@ -6,6 +6,7 @@ import { LoginDto } from './dto/login.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { UserAreasService } from '../user-areas/user-areas.service';
+import { RolePermissionsService } from '../rbac/services/role-permissions.service';
 
 describe('AuthController', () => {
   let module: TestingModule;
@@ -39,6 +40,10 @@ describe('AuthController', () => {
     findOne: jest.fn(),
   };
 
+  const mockRolePermissionsService = {
+    getRolePermissionKeys: jest.fn().mockResolvedValue([]),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [AuthController],
@@ -54,6 +59,10 @@ describe('AuthController', () => {
         {
           provide: UserAreasService,
           useValue: mockUserAreasService,
+        },
+        {
+          provide: RolePermissionsService,
+          useValue: mockRolePermissionsService,
         },
       ],
     }).compile();

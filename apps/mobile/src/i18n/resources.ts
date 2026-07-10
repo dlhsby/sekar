@@ -4,6 +4,7 @@
  * Add a namespace on BOTH platforms + here (parity guardrail enforces).
  */
 import idCommon from './locales/id/common.json';
+import idAccessControl from './locales/id/access-control.json';
 import idAuth from './locales/id/auth.json';
 import idErrors from './locales/id/errors.json';
 import idValidation from './locales/id/validation.json';
@@ -37,6 +38,7 @@ import idWelcome from './locales/id/welcome.json';
 import idDatabase from './locales/id/database.json';
 
 import enCommon from './locales/en/common.json';
+import enAccessControl from './locales/en/access-control.json';
 import enAuth from './locales/en/auth.json';
 import enErrors from './locales/en/errors.json';
 import enValidation from './locales/en/validation.json';
@@ -72,6 +74,7 @@ import enDatabase from './locales/en/database.json';
 export const resources = {
   id: {
     common: idCommon,
+    'access-control': idAccessControl,
     auth: idAuth,
     errors: idErrors,
     validation: idValidation,
@@ -106,6 +109,7 @@ export const resources = {
   },
   en: {
     common: enCommon,
+    'access-control': enAccessControl,
     auth: enAuth,
     errors: enErrors,
     validation: enValidation,
@@ -142,6 +146,7 @@ export const resources = {
 
 export const NAMESPACES = [
   'common',
+  'access-control',
   'auth',
   'errors',
   'validation',

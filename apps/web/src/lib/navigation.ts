@@ -17,6 +17,7 @@ import {
   Cog6ToothIcon,
   CalendarDaysIcon,
   TableCellsIcon,
+  ShieldCheckIcon,
 } from '@heroicons/react/24/outline';
 import { ComponentType } from 'react';
 import { ADMIN_ROLES, MONITORING_ROLES, TASK_MANAGER_ROLES } from '@/lib/constants/roles';
@@ -121,6 +122,13 @@ export const navigationItems: NavItem[] = [
         href: '/users',
         icon: UsersIcon,
         roles: [...ADMIN_ROLES, 'admin_data'],
+      },
+      {
+        id: 'roles',
+        label: 'common:nav.roles',
+        href: '/roles',
+        icon: ShieldCheckIcon,
+        roles: [...ADMIN_ROLES],
       },
     ],
   },
@@ -367,6 +375,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/overtime': 'Lembur',
   '/schedules': 'Jadwal',
   '/users': 'Pengguna',
+  '/roles': 'Manajemen Peran',
   '/areas': 'Area',
   '/rayons': 'Rayon',
   '/assets': 'Aset',
@@ -417,6 +426,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/schedules': ['Pekerjaan', 'Jadwal'],
   '/pruning-requests': ['Pekerjaan', 'Permohonan Perantingan'],
   '/users': ['Pengguna & Hak Akses', 'Pengguna'],
+  '/roles': ['Pengguna & Hak Akses', 'Manajemen Peran'],
   '/areas': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
   '/plants': ['Data Master', 'Tanaman'],

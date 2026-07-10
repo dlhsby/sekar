@@ -24,6 +24,7 @@ import { GetUser } from './decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { Area } from '../areas/entities/area.entity';
 import { UserAreasService } from '../user-areas/user-areas.service';
+import { RolePermissionsService } from '../rbac/services/role-permissions.service';
 
 /**
  * Authentication Controller
@@ -39,6 +40,7 @@ export class AuthController {
     @InjectRepository(Area)
     private readonly areaRepository: Repository<Area>,
     private readonly userAreasService: UserAreasService,
+    private readonly rolePermissions: RolePermissionsService,
   ) {}
 
   /**
@@ -301,6 +303,7 @@ export class AuthController {
       kecamatan_name: user.kecamatan_name || null,
       created_at: user.created_at,
       password_must_change: user.password_must_change ?? false,
+      permissions: await this.rolePermissions.getRolePermissionKeys(user.role),
     };
 
     // Include area info for field roles
