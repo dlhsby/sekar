@@ -162,6 +162,19 @@ export class RayonsService {
       );
     }
 
+    // Regions (Kawasan) reference the rayon via an FK (ADR-045). Soft-delete
+    // doesn't fire ON DELETE CASCADE, so block the delete while regions exist to
+    // avoid orphaning them (mirrors the areas guard above).
+    const referencingRegions = (await this.rayonRepository.manager.query(
+      `SELECT COUNT(*)::int AS count FROM regions WHERE rayon_id = $1 AND deleted_at IS NULL`,
+      [id],
+    )) as Array<{ count: number }>;
+    if ((referencingRegions[0]?.count ?? 0) > 0) {
+      throw new BadRequestException(
+        `Cannot delete rayon: ${referencingRegions[0].count} region(s) reference this rayon`,
+      );
+    }
+
     // softRemove (not softDelete) so the AuditSubscriber can stamp deleted_by.
     await this.rayonRepository.softRemove(rayon);
     this.logger.log(`Rayon soft deleted with ID: ${id}`);

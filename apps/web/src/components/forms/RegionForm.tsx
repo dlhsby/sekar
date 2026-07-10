@@ -69,13 +69,20 @@ export function RegionForm({
           .custom<GeoJSON.Polygon | GeoJSON.MultiPolygon>((v) => v == null || isBoundaryGeometry(v))
           .nullable()
           .optional(),
+        // Styling is validated backend-side (MapStyleDto); kept in the schema as
+        // passthrough so the resolver type matches RegionFormData (no cast).
+        border_color: z.string().nullable().optional(),
+        fill_color: z.string().nullable().optional(),
+        border_opacity: z.number().nullable().optional(),
+        fill_opacity: z.number().nullable().optional(),
+        marker_icon: z.string().nullable().optional(),
+        marker_color: z.string().nullable().optional(),
       }),
     [t],
   );
 
   const { register, handleSubmit, setValue, watch, formState } = useForm<RegionFormData>({
-    // Styling fields aren't in the zod schema (validated backend-side); cast keeps RHF happy.
-    resolver: zodResolver(schema) as never,
+    resolver: zodResolver(schema),
     defaultValues: {
       name: initialData?.name ?? '',
       rayon_id: initialData?.rayon_id ?? '',

@@ -36,6 +36,8 @@ describe('RayonsService', () => {
     save: jest.fn(),
     softDelete: jest.fn(),
     softRemove: jest.fn(),
+    // manager.query used by remove() to count referencing regions (ADR-045).
+    manager: { query: jest.fn().mockResolvedValue([{ count: 0 }]) },
   };
 
   const mockAreaRepository = {
@@ -262,6 +264,16 @@ describe('RayonsService', () => {
       await expect(service.remove(mockRayon.id)).rejects.toThrow(BadRequestException);
       await expect(service.remove(mockRayon.id)).rejects.toThrow(
         'Cannot delete rayon: 3 area(s) reference this rayon',
+      );
+    });
+
+    it('should throw BadRequestException if regions reference this rayon (ADR-045)', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.count.mockResolvedValue(0);
+      mockRayonRepository.manager.query.mockResolvedValueOnce([{ count: 2 }]);
+
+      await expect(service.remove(mockRayon.id)).rejects.toThrow(
+        'Cannot delete rayon: 2 region(s) reference this rayon',
       );
     });
   });
