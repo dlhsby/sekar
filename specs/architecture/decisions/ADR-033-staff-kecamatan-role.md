@@ -63,7 +63,7 @@ Introduce a ninth role, `staff_kecamatan`, designed as a strictly-external, narr
 - Extend `users.role` enum to include `staff_kecamatan` (migration; see `apps/be/src/modules/users/enums/role.enum.ts`).
 - Add `staff_kecamatan` to a new permission group `PRUNING_REQUEST_SUBMITTERS` used by the submit endpoint.
 - **Audit sweep**: every `@Roles(...)` decorator in the codebase must be reviewed for compatibility with the new role. A role-matrix test enumerates all endpoints × all roles and asserts expected allow/deny.
-- `AuthService` login flow: `staff_kecamatan` users skip clock-in bootstrapping on the mobile app; they land on a kecamatan-specific home screen (ADR-033 is silent on UX; covered in `specs/mobile/screens.md`).
+- `AuthService` login flow: `staff_kecamatan` users skip clock-in bootstrapping on the mobile app; they land on a kecamatan-specific home screen (ADR-033 is silent on UX; covered in `specs/platforms/mobile/screens.md`).
 
 ## Consequences
 

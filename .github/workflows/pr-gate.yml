@@ -38,13 +38,13 @@ jobs:
               - '.github/workflows/pr-gate.yml'
             web:
               - 'apps/web/**'
-              - 'specs/ui-ux/tokens.json'
+              - 'specs/design-system/tokens.json'
               - 'tools/eslint-plugin-sekar-design/**'
               - '.github/workflows/web-quality.yml'
               - '.github/workflows/pr-gate.yml'
             mobile:
               - 'apps/mobile/**'
-              - 'specs/ui-ux/tokens.json'
+              - 'specs/design-system/tokens.json'
               - 'scripts/build-tokens.ts'
               - 'tools/eslint-plugin-sekar-design/**'
               - '.github/workflows/mobile-quality.yml'

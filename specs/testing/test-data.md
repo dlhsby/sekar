@@ -949,7 +949,7 @@ When updating test data:
 
 ## Phase 2E: Planned Test Data (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/testing.md`](../phases/phase-2-e-client-feedback-2/testing.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### New Test Fixtures
 

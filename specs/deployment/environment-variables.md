@@ -2,7 +2,7 @@
 
 Comprehensive list of all environment variables used across all deployment phases of the SEKAR system.
 
-**Secrets model:** All deploy files (`.env.staging`, `.env.production`, repo-root `.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `deployment-guide.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
+**Secrets model:** All deploy files (`.env.staging`, `.env.production`, repo-root `.env.production`) are **committed ENCRYPTED via [dotenvx](https://dotenvx.com)** — secret values are `encrypted:…` ciphertext. The only real secret is the per-file private key in gitignored `.env.keys`; decryption keys are GitHub **Environment** secrets `BE_/WEB_/MOBILE_DOTENV_PRIVATE_KEY` (staging+production), or on AWS boxes via SSM `/sekar/staging/BE_DOTENV_PRIVATE_KEY`. **For procedures:** see `README.md` (from-scratch hub) and `encrypted-secrets.md` (dotenvx workflow). This doc is the **variable catalogue**.
 
 **Infrastructure:** **Dev** = local MinIO + Postgres. **Staging** = AWS (region `ap-southeast-3`, shared RDS `dlhsby` db `sekar_staging`, S3 `sekar-media-staging` via instance role). **Production** = on-prem Docker Compose with MinIO. **Backend production env = repo-root `.env.production`** (drives `docker-compose.prod.yml`), NOT `apps/be/.env.production`. FCM is **ENABLED** in staging+production (encrypted Firebase creds). Per-environment Google Maps keys (dev/staging/production) are encrypted in mobile env files.
 
@@ -676,7 +676,7 @@ validateEnv();
 
 ### Deployment Reference
 
-For complete deployment procedures (from-scratch setup, encryption/decryption, CI/CD, rollback): see **`deployment-guide.md`**.  
+For complete deployment procedures (from-scratch setup, encryption/decryption, CI/CD, rollback): see **`README.md`**.  
 For dotenvx workflow details (encrypt, decrypt, set, verify): see **`encrypted-secrets.md`**.
 
 ---
@@ -684,4 +684,4 @@ For dotenvx workflow details (encrypt, decrypt, set, verify): see **`encrypted-s
 **Document Owner:** DevOps / Platform Engineer
 **Last Updated:** 2026-06-19
 **Status:** Active - All Phases
-**Related Docs:** [`deployment-guide.md`](./deployment-guide.md), [`encrypted-secrets.md`](./encrypted-secrets.md), [`local-development.md`](./local-development.md)
+**Related Docs:** [`README.md`](./README.md), [`encrypted-secrets.md`](./encrypted-secrets.md), [`local-development.md`](./local-development.md)

@@ -7,7 +7,7 @@ Comprehensive monitoring, logging, and observability specifications for SEKAR pr
 - **STAGING-ONLY:** CloudWatch metrics/dashboards (AWS EC2 `t3.micro` sole tenant; shared RDS `dlhsby` — SEKAR cannot own RDS-level alarms)
 - **WIRED, DORMANT:** Sentry error tracking — SDK integrated across **backend** (`apps/be/src/common/sentry`), **web** (`apps/web/src/instrumentation*.ts` + `global-error.tsx`), and **mobile** (`apps/mobile/src/services/crashReporting`). All no-op until a DSN is configured (`SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_DSN_MOBILE`). Create a Sentry project and set those to go live.
 - **PLANNED/NOT LIVE:** dedicated dashboards, production monitoring specification (on-prem Docker logs only for now)
-- **Authoritative hub:** [`deployment-guide.md`](./deployment-guide.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
+- **Authoritative hub:** [`README.md`](./README.md) for infra layout; [`ci-cd.md`](./ci-cd.md) for pipeline.
 
 ## Overview
 
@@ -1077,4 +1077,4 @@ Once production is live, establish:
 **Document Owner:** DevOps Engineer
 **Last Updated:** 2026-06-19
 **Status:** Active (staging monitoring), TBD (production)
-**Related Docs:** [`deployment-guide.md`](./deployment-guide.md), [`ci-cd.md`](./ci-cd.md), [`infrastructure.md`](./infrastructure.md)
+**Related Docs:** [`README.md`](./README.md), [`ci-cd.md`](./ci-cd.md), [`infrastructure.md`](./infrastructure.md)

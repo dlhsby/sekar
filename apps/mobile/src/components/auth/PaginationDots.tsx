@@ -4,7 +4,7 @@
  * - `dots` (carousel footer): circle dots; the active one elongates into a sage bar.
  * - `bars`  (carousel header / onboarding): equal-width thin segments, active = sage.
  *
- * Mirrors the `.dots` / `.bars` primitives in design/project/hifi-mobile.html.
+ * Mirrors the `.dots` / `.bars` primitives in specs/design-system/mockups/project/hifi-mobile.html.
  */
 
 import React from 'react';

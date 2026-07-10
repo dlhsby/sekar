@@ -602,7 +602,7 @@ sequenceDiagram
 
 ## Phase 2E: Planned ERD Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### New Entities
 
@@ -698,7 +698,7 @@ stateDiagram-v2
 
 ## Phase 3: Planned ERD Changes (Plants Management + Monitoring Rebuild + Public Intake)
 
-> **Full specification:** See [`specs/phases/phase-3-plants-monitoring-rebuild/database.md`](../phases/phase-3-plants-monitoring-rebuild/database.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **Authored:** 2026-04-24
 
 ### New Entities

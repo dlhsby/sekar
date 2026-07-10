@@ -1,7 +1,7 @@
 /**
  * SEKAR design-token generator.
  *
- * Reads specs/ui-ux/tokens.json (validated against tokens.schema.json),
+ * Reads specs/design-system/tokens.json (validated against tokens.schema.json),
  * emits two byte-identical artifacts:
  *
  *   - apps/web/src/app/generated/tokens.css
@@ -23,14 +23,14 @@ import Ajv2020, { type ValidateFunction } from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 
 const REPO_ROOT = resolve(__dirname, '..');
-const TOKENS_PATH = join(REPO_ROOT, 'specs/ui-ux/tokens.json');
-const SCHEMA_PATH = join(REPO_ROOT, 'specs/ui-ux/tokens.schema.json');
+const TOKENS_PATH = join(REPO_ROOT, 'specs/design-system/tokens.json');
+const SCHEMA_PATH = join(REPO_ROOT, 'specs/design-system/tokens.schema.json');
 const WEB_OUT = join(REPO_ROOT, 'apps/web/src/app/generated/tokens.css');
 const MOBILE_OUT = join(REPO_ROOT, 'apps/mobile/src/constants/generated/tokens.ts');
 
 const BANNER_LINES = [
   'GENERATED FILE — DO NOT EDIT.',
-  'Source of truth: specs/ui-ux/tokens.json',
+  'Source of truth: specs/design-system/tokens.json',
   'Run `npm run tokens:build` from the repo root to regenerate.',
   'CI rejects drift via the `tokens-verify` job (ADR-036).',
 ];

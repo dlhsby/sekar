@@ -1,6 +1,6 @@
 /**
  * SekarPinwheel — the SEKAR brand mark (8-blade pinwheel + center hub).
- * Ported verbatim from the hi-fi splash SVG (design/project/hifi-mobile.html · WL-1).
+ * Ported verbatim from the hi-fi splash SVG (specs/design-system/mockups/project/hifi-mobile.html · WL-1).
  */
 
 import React from 'react';

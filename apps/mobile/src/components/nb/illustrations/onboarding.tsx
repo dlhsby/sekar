@@ -1,7 +1,7 @@
 /**
  * Onboarding scene illustrations — Phase 4 M0 / ADR-042 / Hifi OB-1-3
  *
- * Three branded Neo-Brutalist SVG scenes ported from design/project/illustrations.html:
+ * Three branded Neo-Brutalist SVG scenes ported from specs/design-system/mockups/project/illustrations.html:
  * - OnbClockIn: worker + map + GPS waves (280x220)
  * - OnbPhoto: report card + camera (280x220)
  * - OnbMonitor: big map plate with markers (280x220)

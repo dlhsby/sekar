@@ -6,7 +6,7 @@
 /**
  * SEKAR pinwheel brand mark — the canonical SVG source for generated icons
  * (favicon, apple-touch). 8 sage blades + yellow center hub on ink stroke,
- * ported from `design/project/illustrations.html#sekar-mark`.
+ * ported from `specs/design-system/mockups/project/illustrations.html#sekar-mark`.
  *
  * Colors are concrete hex (not design-token CSS vars) on purpose: these are
  * consumed by Satori / `next/og` (ImageResponse) and standalone raster pipelines

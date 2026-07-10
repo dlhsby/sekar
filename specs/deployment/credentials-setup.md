@@ -4,7 +4,7 @@
 
 **Last Updated:** June 19, 2026
 
-**Current Reality (2026-06):** Staging = AWS (shared RDS + S3); Production = on-prem Docker Compose with MinIO; Dev = local MinIO. Env model = dotenvx (encrypted .env files + per-file private key in .env.keys). For deployment from scratch, see `specs/deployment/deployment-guide.md`.
+**Current Reality (2026-06):** Staging = AWS (shared RDS + S3); Production = on-prem Docker Compose with MinIO; Dev = local MinIO. Env model = dotenvx (encrypted .env files + per-file private key in .env.keys). For deployment from scratch, see `specs/deployment/README.md`.
 
 **Status:** Comprehensive guide covering all credential types across dev / staging / production environments.
 
@@ -767,7 +767,7 @@ REDIS_URL=redis://sekar-redis:6379
 - `.env.production` is **committed encrypted** (dotenvx); only the private key is gitignored in `.env.keys`.
 - Production backend uses **MinIO inside `docker-compose.prod.yml`**, not real AWS S3. MinIO root credentials are injected via Docker Compose (not in `.env.production`).
 - See `specs/deployment/encrypted-secrets.md` for dotenvx setup and key management in GitHub Actions / AWS SSM.
-- See `specs/deployment/deployment-guide.md` for complete production deployment instructions.
+- See `specs/deployment/README.md` for complete production deployment instructions.
 
 ---
 
@@ -860,7 +860,7 @@ aws s3api put-bucket-logging \
 ## 8. Related Documentation
 
 - **Encrypted Secrets (dotenvx):** `specs/deployment/encrypted-secrets.md` (env encryption model, key management, GitHub Secrets, AWS SSM)
-- **Deployment Guide:** `specs/deployment/deployment-guide.md` (authoritative from-scratch guide; staging on AWS, production on-prem)
+- **Deployment Guide:** `specs/deployment/README.md` (authoritative from-scratch guide; staging on AWS, production on-prem)
 - **Local Development:** `specs/deployment/local-development.md` (Docker infra, MinIO dev S3, WSL2 device networking)
 - **AWS Infrastructure (Reference):** `specs/deployment/infrastructure.md` (VPC, RDS, S3, IAM, CloudFront — describes staging setup)
 - **Operations Runbook:** `specs/deployment/operations.md` (day-2 ops, incident response, migrations, rollback)

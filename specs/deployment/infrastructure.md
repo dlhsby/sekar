@@ -1,6 +1,6 @@
 # Infrastructure Specifications
 
-Deep-dive reference for AWS managed services and on-prem deployments. **For deployment procedures, see [`deployment-guide.md`](./deployment-guide.md) (authoritative).**
+Deep-dive reference for AWS managed services and on-prem deployments. **For deployment procedures, see [`README.md`](./README.md) (authoritative).**
 
 ## Current Topology (2026-06)
 
@@ -10,7 +10,7 @@ SEKAR runs on two targets: **(1) Staging/UAT** on AWS account **659828096624** (
 
 ## Reference: Larger Managed-Cloud Layout (Not Currently Provisioned)
 
-The following VPC, RDS, CloudFront, and ElastiCache sections describe a fuller managed-cloud scale-up pattern (matching [`deployment-guide.md` Appendix A](./deployment-guide.md)). This is **NOT** the current deployment but serves as reference for future evolution.
+The following VPC, RDS, CloudFront, and ElastiCache sections describe a fuller managed-cloud scale-up pattern (matching [`README.md` Appendix A](./README.md)). This is **NOT** the current deployment but serves as reference for future evolution.
 
 ---
 
@@ -423,7 +423,7 @@ AWS_S3_BUCKET=sekar-media-staging
 REDIS_URL=redis://<endpoint>:6379
 ```
 
-See [`deployment-guide.md`](./deployment-guide.md) for current staging/production deploy procedures (GitHub OIDC + SSM Run Command).
+See [`README.md`](./README.md) for current staging/production deploy procedures (GitHub OIDC + SSM Run Command).
 
 ---
 
@@ -814,7 +814,7 @@ terraform/
 **Document Owner:** DevOps Engineer
 **Last Updated:** 2026-06-19
 **Status:** Active
-**Related Docs:** [`deployment-guide.md`](./deployment-guide.md) (procedures), [`ci-cd.md`](./ci-cd.md), [`encrypted-secrets.md`](./encrypted-secrets.md), [`monitoring.md`](./monitoring.md)
+**Related Docs:** [`README.md`](./README.md) (procedures), [`ci-cd.md`](./ci-cd.md), [`encrypted-secrets.md`](./encrypted-secrets.md), [`monitoring.md`](./monitoring.md)
 
 ---
 

@@ -4,7 +4,7 @@
 #   (Day-to-day dev usually uses ./scripts/start.sh + infra/docker-compose.yml instead.)
 #
 # For PRODUCTION use docker-compose.prod.yml (full stack: +redis +minio +web +nginx).
-# See specs/deployment/deployment-guide.md.
+# See specs/deployment/README.md.
 services:
   # PostgreSQL Database
   postgres:

@@ -87,7 +87,7 @@ Mobile architecture prioritizes offline operation:
 - File upload coordination
 - API rate limiting (Phase 2+)
 
-**Current Status:** Phases 1–5 shipped (33 modules, ~218 endpoints). See `specs/COMPLETION_STATUS.md` for current metrics.
+**Current Status:** shipped through UAT (34 backend modules, ~246 route handlers). See [`../COMPLETION_STATUS.md`](../COMPLETION_STATUS.md) for current metrics.
 
 ### 2. Mobile Application (React Native)
 
@@ -439,7 +439,7 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 ## Phase 2E: Planned Architecture Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/`](../phases/phase-2-e-client-feedback-2/)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **ADRs:** [ADR-012](./decisions/ADR-012-phone-number-login.md), [ADR-013](./decisions/ADR-013-multi-area-assignment.md), [ADR-014](./decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](./decisions/ADR-015-audit-trail.md)
 
 ### Key Architectural Changes

@@ -10,7 +10,7 @@
  *    t()/i18n.t() with id/en keys (CLAUDE.md §Internationalization).
  *
  * See specs/architecture/decisions/ADR-036-design-tokens-single-source.md
- * and specs/ui-ux/design-tokens.md §Layer 2 emitter rules.
+ * and specs/design-system/design-tokens.md §Layer 2 emitter rules.
  */
 'use strict';
 

@@ -4941,7 +4941,7 @@ KMZ area import remains at `/api/v1/import/kmz/{upload,preview/:id,confirm}` (se
 
 ## Phase 2C: Planned Endpoint Changes (February 2026)
 
-> **Full specification:** See [`specs/phases/phase-2-c-client-feedback/backend.md`](../phases/phase-2-c-client-feedback/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### New Endpoints (+8)
 
@@ -5098,7 +5098,7 @@ socket.on('AREA_STAFFING_CHANGED', (payload) => {
 
 ### Phase 2E: Planned Endpoint Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 **New Endpoints (8):**
 
@@ -5129,7 +5129,7 @@ socket.on('AREA_STAFFING_CHANGED', (payload) => {
 
 ### Phase 3: Planned Endpoints (Plants Management + Monitoring Rebuild + Public Intake)
 
-> **Full specification:** See [`specs/phases/phase-3-plants-monitoring-rebuild/backend.md`](../phases/phase-3-plants-monitoring-rebuild/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **Authored:** 2026-04-24
 > **Status:** Not started — specs complete. ~35 new endpoints plus extensions to existing `activities` and `tasks` endpoints.
 
@@ -5246,7 +5246,7 @@ Web PWA admin roles subscribe to FCM web push on login via these endpoints. Nati
 - 5 new WebSocket events (Redis-backed via Socket.IO Redis adapter)
 - New role `staff_kecamatan` (ADR-033) and extended `admin_data` disposition authority (ADR-032)
 - 7 new ADRs referenced: 029 (monitoring v2 event sourcing), 030 (area-aggregate inventory), 031 (task typing + custom fields), 032 (admin_data extension), 033 (staff_kecamatan), 034 (pruning cycle prediction), 035 (service capacity)
-- See: specs/phases/phase-3-plants-monitoring-rebuild/
+- See: history/CHANGELOG.md
 
 **v2.2.0 - March 10, 2026 (Phase 2E Planned — Client Feedback II)**
 - Planned 8 new endpoints (profile picture, user areas, overtime clock-in/out, audit trail)
@@ -5254,7 +5254,7 @@ Web PWA admin roles subscribe to FCM web push on login via these endpoints. Nati
 - Breaking change: POST /auth/login request body changes from { username, password } to { identifier, password }
 - New tables documented: user_areas, audit_logs
 - Expanded CLOCKABLE_ROLES: +admin_data, +kepala_rayon
-- See: specs/phases/phase-2-e-client-feedback-2/
+- See: history/CHANGELOG.md
 
 **v2.1.0 - March 3, 2026 (Phase 2D Monitoring Enhancements)**
 - Added 9 new monitoring/boundary endpoints
@@ -5274,7 +5274,7 @@ Web PWA admin roles subscribe to FCM web push on login via these endpoints. Nati
 - Updated role names (7→8 roles)
 - Documented hierarchical task assignment
 - GPS boundary removal from clock-in
-- Full specification: specs/phases/phase-2-c-client-feedback/backend.md
+- Full specification: history/CHANGELOG.md
 
 **v1.3.0 - January 24, 2026**
 - Updated to Node.js v24.13.0 and NestJS 11.x

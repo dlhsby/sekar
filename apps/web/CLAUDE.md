@@ -6,7 +6,7 @@ SEKAR Web Dashboard is a Next.js 16.1.4 application with React 19 using the **Ne
 
 ## Phase 3 Planning (Apr 24, 2026)
 
-New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public Intake — see `specs/phases/phase-3-plants-monitoring-rebuild/`):
+New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public Intake — see history/CHANGELOG.md):
 - `/monitoring` v2 — supercluster layer, incremental WS patches, virtualized worker list, hierarchy filter panel, plant + overdue overlays, area detail drawer (ADR-029)
 - `/plants/` and `/plants/[areaId]/` — plant species catalog and per-area aggregate inventory (ADR-030)
 - `/tasks/new` — dynamic form per `task_type` with species multi-select + quantities (ADR-031)
@@ -15,7 +15,7 @@ New pages planned for Phase 3 (Plants Management + Monitoring Rebuild + Public I
 - `/seeds/*` — plant-seed inventory ledger
 - Sidebar updated to 9 roles: 8 existing + new `staff_kecamatan`
 
-Nothing is built yet. Start from `specs/phases/phase-3-plants-monitoring-rebuild/web.md` when implementing.
+Nothing is built yet. Start from history/CHANGELOG.md when implementing.
 
 ## Tech Stack
 
@@ -79,7 +79,7 @@ npm run test:e2e                  # Playwright E2E tests
 ### ⚠️ Tokens are generated — never hand-edit
 
 From Phase 3 M1-R sub-phase **3-R2** onward (planned):
-- **Source of truth:** [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json)
+- **Source of truth:** [`specs/design-system/tokens.json`](../../specs/design-system/tokens.json)
 - **Generated consumer:** `apps/web/src/app/generated/tokens.css` (emitted by `scripts/build-tokens.ts`; CI validates drift via `tokens-verify`)
 - **`@import` wrapper:** `apps/web/src/app/globals.css` becomes `@import './generated/tokens.css';` plus utility classes (`.nb-focus-ring`, `.shadow-nb-*` Tailwind utilities, etc.)
 - **Brand fonts:** `next/font/google` in `apps/web/src/app/layout.tsx` loads Space Grotesk, Inter, JetBrains Mono with `display: 'swap'` and CSS variables `--font-display|body|mono`

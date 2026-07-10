@@ -1,7 +1,7 @@
 /**
  * SceneLiveMap — WL-2 ("Pantau real-time") carousel illustration.
  * A mini monitoring map: faint grid, five status pins, and two floating stat
- * chips (Aktif / Off-area). Mirrors design/project/hifi-mobile.html · WL-2.
+ * chips (Aktif / Off-area). Mirrors specs/design-system/mockups/project/hifi-mobile.html · WL-2.
  */
 
 import React from 'react';

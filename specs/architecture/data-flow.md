@@ -1459,7 +1459,7 @@ Client: Wait until reset time
 
 ## Phase 2E: Planned Data Flow Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### New Flow: Phone Number Login
 

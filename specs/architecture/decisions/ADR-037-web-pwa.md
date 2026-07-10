@@ -27,7 +27,7 @@ Native apps are already covered by `apps/mobile`. The web channel doesn't need t
 
 **Web becomes an installable PWA starting Phase 3 M1-R sub-phase 3-R4.**
 
-- Ship `/manifest.webmanifest` with brand colors from [tokens.json](../../ui-ux/tokens.json): `background_color: "#F5F0EB"`, `theme_color: "#1A4D2E"`.
+- Ship `/manifest.webmanifest` with brand colors from [tokens.json](../../design-system/tokens.json): `background_color: "#F5F0EB"`, `theme_color: "#1A4D2E"`.
 - Ship a service worker (`public/sw.js`) with a shell precache + route-aware caching strategies:
 
   | Pattern | Strategy | Rationale |
@@ -81,8 +81,8 @@ Native apps are already covered by `apps/mobile`. The web channel doesn't need t
 
 ## References
 
-- [design-tokens.md §PWA Requirements](../../ui-ux/design-tokens.md) — manifest, icons, service worker, install banner, push notifications, offline shell
+- [design-tokens.md §PWA Requirements](../../design-system/design-tokens.md) — manifest, icons, service worker, install banner, push notifications, offline shell
 - [ADR-036](./ADR-036-design-tokens-single-source.md) — tokens consumed by the manifest and install banner
 - [ADR-029](./ADR-029-monitoring-v2-event-sourced-redis.md) — monitoring snapshot endpoint that benefits most from SWR caching
 - [ADR-019](./ADR-019-offline-connectivity-model.md) — offline connectivity model that mobile owns; web inherits the terminology but not the write queue
-- Phase 3: [README](../../phases/phase-3-plants-monitoring-rebuild/README.md) · [web](../../phases/phase-3-plants-monitoring-rebuild/web.md) · [ui-ux](../../phases/phase-3-plants-monitoring-rebuild/ui-ux.md)
+- Phase 3: [README](../../history/CHANGELOG.md) · [web](../../history/CHANGELOG.md) · [ui-ux](../../history/CHANGELOG.md)

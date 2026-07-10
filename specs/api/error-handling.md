@@ -830,12 +830,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
 | `OVERTIME_ACTIVITY_REQUIRED` | 400 | Activity submission required to end overtime | Missing mandatory activity on overtime clock-out |
 | `AUDIT_LOG_NOT_FOUND` | 404 | No audit history found for entity | Audit trail query with no results |
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ---
 
 **Document Owner:** Backend Developer
 **Last Updated:** 2026-06-20
 **Status:** Active
-**Error Codes:** 53 standardized (see `error-handling.md` §Standardized Error Codes); Phase 2E adds 9 more (phone login, profile picture, multi-area, overtime, audit trail) — see `specs/phases/phase-2-e-client-feedback-2/backend.md` for full Phase 2E specification
+**Error Codes:** 53 standardized (see `error-handling.md` §Standardized Error Codes); Phase 2E adds 9 more (phone login, profile picture, multi-area, overtime, audit trail) — see history/CHANGELOG.md for full Phase 2E specification
 **Related Docs:** [`contracts.md`](./contracts.md), [`authentication.md`](./authentication.md), [`../architecture/security.md`](../architecture/security.md)

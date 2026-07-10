@@ -61,7 +61,7 @@ Per-rayon admin contact data is stored in `rayons` table (existing fields `conta
 
 ## Implementation
 
-Phase 4 Sub-Phase 4-R (mobile + web AS-4 / AS-5 screens) + backend `password_must_change` column migration. See [`mobile.md § R1`](../../phases/phase-4-production-readiness/backend.md#r1-userspassword_must_change-boolean-column-drives-mobile-as-5--web-as-5-mirror) and the mobile screen matrix at [`mobile.md § Login & auth`](../../phases/phase-4-production-readiness/mobile.md#login--auth-5-screens--3-revamp--2-new).
+Phase 4 Sub-Phase 4-R (mobile + web AS-4 / AS-5 screens) + backend `password_must_change` column migration. See [`mobile.md § R1`](../../history/CHANGELOG.md) and the mobile screen matrix at [`mobile.md § Login & auth`](../../history/CHANGELOG.md).
 
 ## References
 

@@ -1,7 +1,7 @@
 /**
  * SceneChecklist — WL-3 ("Tugas terstruktur") carousel illustration.
  * A slightly-tilted patrol checklist card with two done items, two pending, and
- * a 2/4 progress bar. Mirrors design/project/hifi-mobile.html · WL-3.
+ * a 2/4 progress bar. Mirrors specs/design-system/mockups/project/hifi-mobile.html · WL-3.
  */
 
 import React from 'react';
