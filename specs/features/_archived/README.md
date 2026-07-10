@@ -16,7 +16,23 @@ code was deleted; mobile screens where present remain in the app.
 | **Import / Export** | `import`, `export` | `/import`, `/export` (nav hidden) | — | Admin-only power tool; direct-URL access retained (ADR-018) |
 | **Plant seeds** | `plant-seeds` | `/seeds` (nav hidden) | Seeds screen | Inventory flow deprioritized vs. plant catalog |
 
-**Nav source of truth:** the web sidebar config (`apps/web/src/**` navigation). The pages/routes
-still exist and resolve; only the sidebar entries are commented out.
+**Nav source of truth:** the web sidebar nav config (`apps/web/src/lib/navigation.ts` — entries are
+commented out, not deleted). The pages/routes still exist and resolve.
+
+## Pending decision (revamp · update · remove)
+
+Each parked feature needs an explicit call in a later product cycle. Status: **⏳ Not yet decided**
+for all. When decided, record the choice + date here and act on it.
+
+| Feature | Decision | Notes |
+|---------|----------|-------|
+| Asset management ("reports-management asset") | ⏳ TBD | User flagged as currently unusable; likely revamp or remove |
+| Analytics ("tanaman-analytics") | ⏳ TBD | User flagged as currently unusable; likely revamp or remove |
+| Reporting builder & schedules | ⏳ TBD | `/reports/reporting` stays live; builder/scheduler need UX rework |
+| Import / Export | ⏳ TBD | Works via direct URL; decide whether to re-surface for admins |
+| Plant seeds | ⏳ TBD | Deprioritized vs. plant catalog |
+
+> Promoting one back to active: move it into `specs/features/<name>/` with a full spec, re-enable its
+> `navigation.ts` entry, and log the change in that feature's `## Changelog`.
 
 See the build history in [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
