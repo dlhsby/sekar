@@ -69,6 +69,8 @@ bottom-up, web before mobile:
 
 Then revisit the parked features above. Track work in each feature spec's `## Changelog`.
 
+**Deferred RBAC follow-ups (ADR-044 §Follow-ups):** (1) migrate the ~182 existing `@Roles` endpoints to `@RequirePermissions` via the compat shim + role-endpoint-matrix test — a dedicated later pass (or per-module as Phases 2–5 touch each); until then, role-permission edits only affect the new RBAC/settings endpoints. (2) Management's default grants = all-except-`settings:manage` (per UAT) — retunable at runtime; revisit whether to narrow `role:*`/`permission:*`.
+
 **Deferred to implementation PRs (not Phase 0 gaps):** fleshing out `database/schema.md` / `database/erd.md` and `api/contracts.md` with the new tables/columns/endpoints (roles/permissions, regions, teams, schedule_events, settings, `users.region_id`, per-level styling) — these current-state detail docs are updated in the **same PR as the migration/code** per the specs-sync mandate. Several still describe today's korlap multi-area (`user_areas`) model and will be reconciled to the region + optional-location model as Phase 1–3 land.
 
 ## Links

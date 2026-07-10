@@ -122,6 +122,11 @@ A living test at `apps/be/src/modules/rbac/__tests__/role-endpoint-matrix.spec.t
 - A permission edit takes effect within the cache TTL; sensitive changes should force-invalidate.
 - Role-matrix integration test asserts expected allow/deny across all roles × endpoints before/after each endpoint migration.
 
+## Follow-ups (deferred — revisit in a later pass)
+
+1. **Endpoint migration `@Roles` → `@RequirePermissions`.** Phase 1 gates only the *new* RBAC/settings endpoints on permissions; the ~182 existing `@Roles(...)` endpoints are untouched (behavior-preserving). Migrating them via the `RolesCompatGuard` is a dedicated later pass, guarded by the `role-endpoint-matrix.spec.ts` proving access is unchanged before/after. Until then, editing a role's permissions in the UI only affects the new endpoints; legacy endpoints still honor their `@Roles` gates. Best done per-module as Phases 2–5 touch each area (or as one focused pass afterward).
+2. **Management (`top_management`) default grants.** Seeded with everything except `settings:manage` (matches the UAT "same as admin_system except system settings" wording), which means it *can* manage roles/permissions. This is a **seed default**, retunable at runtime via the role page (no deploy). Revisit whether Management should keep `role:*`/`permission:*`; if not, narrow `MANAGEMENT_PERMISSIONS` in `role-seeds.ts`.
+
 ## Alternatives Considered
 1. **Fixed enum + config layer** (scope/marker/curated toggles only, no custom roles). Rejected — client explicitly wants to create arbitrary roles.
 2. **FK `users.role_id` → roles.id.** Rejected for phase 1 — forces a `users` migration + JWT change; string code is sufficient and back-compatible.
