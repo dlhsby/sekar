@@ -1,4 +1,6 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
+import { seedPermissions } from '../entities/permission';
+import { seedRoles } from '../entities/role';
 import { seedAreaTypes } from '../entities/area-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
@@ -39,6 +41,10 @@ async function seedReference(ctx: SeedContext): Promise<void> {
   ctx.log('');
 
   // DO NOT truncate — this is idempotent reference data only.
+
+  // Dynamic RBAC (ADR-044) — idempotent; grants seeded only when a role has none.
+  await seedPermissions(ctx);
+  await seedRoles(ctx);
 
   // Reference data (all idempotent via ON CONFLICT DO NOTHING).
   await seedAreaTypes(ctx);

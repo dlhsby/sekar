@@ -1,5 +1,7 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
 import { truncateAll } from '../lib/truncate';
+import { seedPermissions } from '../entities/permission';
+import { seedRoles } from '../entities/role';
 import { seedAreaTypes } from '../entities/area-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
@@ -44,6 +46,8 @@ async function seedStaging(ctx: SeedContext): Promise<void> {
   await truncateAll(ctx);
 
   // Reference data (identical across demo/staging/production paths).
+  await seedPermissions(ctx);
+  await seedRoles(ctx);
   await seedAreaTypes(ctx);
   await seedRayons(ctx);
   await seedShiftDefinitions(ctx);

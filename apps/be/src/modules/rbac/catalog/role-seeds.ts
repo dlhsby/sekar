@@ -1,0 +1,167 @@
+import { MonitoringScope } from '../enums/monitoring-scope.enum';
+
+/**
+ * System-role seed definitions (ADR-044). Codes are immutable and match the
+ * legacy `UserRole` enum so `users.role` keeps referencing them; labels and
+ * permission sets are the editable, data-driven part. `permissions` may include
+ * wildcards (expanded at check time by the permission matcher). These are the
+ * DEFAULTS — operators refine them at runtime via the role-management page.
+ */
+export interface RoleSeed {
+  code: string;
+  name: string;
+  description: string;
+  monitoring_scope: MonitoringScope;
+  marker_icon: string;
+  marker_color: string;
+  /** Granted permission keys (may be wildcards). */
+  permissions: string[];
+}
+
+// Rayon-scoped base set shared by kepala_rayon and admin_data (equalized per UAT).
+const RAYON_ADMIN_PERMISSIONS: string[] = [
+  'monitoring:read',
+  'user:read',
+  'user:create',
+  'user:update',
+  'area:read',
+  'area:create',
+  'area:update',
+  'area:delete',
+  'region:read',
+  'rayon:read',
+  'schedule:read',
+  'schedule:create',
+  'schedule:update',
+  'schedule:delete',
+  'team:read',
+  'team:create',
+  'team:update',
+  'task:read',
+  'task:verify',
+  'task:assign',
+  'activity:read',
+  'activity:approve',
+  'activity:export',
+  'overtime:read',
+  'overtime:approve',
+  'pruning-request:read',
+  'pruning-request:review',
+  'pruning-request:convert',
+];
+
+// Management: same reach as admin_system EXCEPT changing system settings (UAT).
+// Expressed as broad per-resource wildcards; settings limited to read only.
+const MANAGEMENT_PERMISSIONS: string[] = [
+  'user:*',
+  'role:*',
+  'permission:*',
+  'city:*',
+  'rayon:*',
+  'region:*',
+  'area:*',
+  'schedule:*',
+  'team:*',
+  'monitoring:*',
+  'task:*',
+  'activity:*',
+  'overtime:*',
+  'pruning-request:*',
+  'audit:read',
+  'settings:read',
+];
+
+export const ROLE_SEEDS: RoleSeed[] = [
+  {
+    code: 'superadmin',
+    name: 'Superadmin',
+    description: 'Akses penuh ke seluruh sistem',
+    monitoring_scope: MonitoringScope.CITY,
+    marker_icon: 'star',
+    marker_color: '#1C1917',
+    permissions: ['*:*'],
+  },
+  {
+    code: 'admin_system',
+    name: 'Admin Sistem',
+    description: 'Administrasi sistem, master data, peran, dan pengaturan',
+    monitoring_scope: MonitoringScope.CITY,
+    marker_icon: 'key',
+    marker_color: '#0EA5E9',
+    permissions: ['*:*'],
+  },
+  {
+    code: 'top_management',
+    name: 'Management',
+    description: 'Melihat seluruh data lintas rayon; tidak mengubah pengaturan sistem',
+    monitoring_scope: MonitoringScope.CITY,
+    marker_icon: 'crown',
+    marker_color: '#9333EA',
+    permissions: MANAGEMENT_PERMISSIONS,
+  },
+  {
+    code: 'kepala_rayon',
+    name: 'Kepala Rayon',
+    description: 'Kelola pengguna & wilayah serta monitoring dalam rayonnya',
+    monitoring_scope: MonitoringScope.DISTRICT,
+    marker_icon: 'building',
+    marker_color: '#F59E0B',
+    permissions: RAYON_ADMIN_PERMISSIONS,
+  },
+  {
+    code: 'admin_data',
+    name: 'Admin Rayon',
+    description: 'Akses setara Kepala Rayon dalam rayonnya',
+    monitoring_scope: MonitoringScope.DISTRICT,
+    marker_icon: 'clipboard',
+    marker_color: '#F97316',
+    permissions: RAYON_ADMIN_PERMISSIONS,
+  },
+  {
+    code: 'korlap',
+    name: 'Korlap',
+    description: 'Koordinator lapangan; monitoring kawasannya, tanpa kelola data',
+    monitoring_scope: MonitoringScope.REGION,
+    marker_icon: 'briefcase',
+    marker_color: '#10B981',
+    permissions: [
+      'monitoring:read',
+      'schedule:read',
+      'schedule:create',
+      'schedule:update',
+      'team:read',
+      'task:read',
+      'task:assign',
+      'activity:read',
+      'activity:approve',
+      'overtime:submit',
+    ],
+  },
+  {
+    code: 'satgas',
+    name: 'Satgas',
+    description: 'Petugas lapangan; clock-in, aktivitas, tugas, lembur',
+    monitoring_scope: MonitoringScope.NONE,
+    marker_icon: 'shield',
+    marker_color: '#7FBC8C',
+    permissions: ['activity:create', 'task:read', 'overtime:submit', 'schedule:read'],
+  },
+  {
+    code: 'linmas',
+    name: 'Linmas',
+    description: 'Petugas keamanan; clock-in, aktivitas, tugas, lembur',
+    monitoring_scope: MonitoringScope.NONE,
+    marker_icon: 'shield',
+    marker_color: '#60A5FA',
+    permissions: ['activity:create', 'task:read', 'overtime:submit', 'schedule:read'],
+  },
+  {
+    code: 'staff_kecamatan',
+    name: 'Staff Kecamatan',
+    description: 'Eksternal; mengajukan permohonan pemangkasan',
+    monitoring_scope: MonitoringScope.NONE,
+    marker_icon: 'user',
+    marker_color: '#A3A3A3',
+    permissions: ['pruning-request:submit', 'pruning-request:read'],
+  },
+];

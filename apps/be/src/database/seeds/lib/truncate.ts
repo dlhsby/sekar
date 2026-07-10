@@ -10,6 +10,10 @@ import type { SeedContext } from './context';
  */
 export const TRUNCATE_ORDER: readonly string[] = [
   'audit_logs',
+  // Dynamic RBAC (ADR-044) — join first, then roles/permissions.
+  'role_permissions',
+  'roles',
+  'permissions',
   // Phase 3 (plants / pruning / seeds / capacity) — cleared first (deepest FKs).
   'seed_transactions',
   'plant_seeds',
