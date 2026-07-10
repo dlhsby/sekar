@@ -142,9 +142,11 @@ export async function seedPlantSpecies(ctx: SeedContext): Promise<void> {
   let inserted = 0;
   for (const species of PLANT_SPECIES) {
     const result = await ctx.qr.query(
+      // The unique index on name_id is partial (WHERE deleted_at IS NULL, added
+      // with plant_species.deleted_at) — the arbiter must repeat that predicate.
       `INSERT INTO plant_species (name_id, category)
        VALUES ($1, $2)
-       ON CONFLICT (name_id) DO NOTHING
+       ON CONFLICT (name_id) WHERE deleted_at IS NULL DO NOTHING
        RETURNING id`,
       [species.nameId, species.category],
     );
