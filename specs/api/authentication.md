@@ -1209,7 +1209,7 @@ export const AUTH_CONSTANTS = {
 
 ## Phase 2E: Planned Authentication Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/backend.md`](../phases/phase-2-e-client-feedback-2/backend.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **ADR:** [ADR-012: Phone Number Login](../architecture/decisions/ADR-012-phone-number-login.md)
 
 ### Dual-Identifier Login
@@ -1299,4 +1299,4 @@ The Phase 2D matrix listed admin_data as "No monitoring access." This is **incor
 - [contracts.md](./contracts.md) - API endpoint specifications
 - [error-handling.md](./error-handling.md) - Error handling patterns
 - [../architecture/security.md](../architecture/security.md) - Security architecture
-- [Phase 2E Backend](../phases/phase-2-e-client-feedback-2/backend.md) - Full Phase 2E backend specs
+- [Phase 2E Backend](../history/CHANGELOG.md) - Full Phase 2E backend specs

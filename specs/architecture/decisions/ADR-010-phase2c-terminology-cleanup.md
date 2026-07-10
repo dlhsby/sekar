@@ -128,11 +128,11 @@ The `report_type` enum (cleaning, planting, maintenance, inspection, task_comple
 ## Implementation
 
 See updated spec documents:
-- [database.md](../../phases/phase-2-c-client-feedback/database.md) — Full migration plan
-- [backend.md](../../phases/phase-2-c-client-feedback/backend.md) — Module/entity/route renames
-- [mobile.md](../../phases/phase-2-c-client-feedback/mobile.md) — Screen/type/API renames
-- [web.md](../../phases/phase-2-c-client-feedback/web.md) — Page/type/API renames
-- [testing.md](../../phases/phase-2-c-client-feedback/testing.md) — Updated test plan
+- [database.md](../../history/CHANGELOG.md) — Full migration plan
+- [backend.md](../../history/CHANGELOG.md) — Module/entity/route renames
+- [mobile.md](../../history/CHANGELOG.md) — Screen/type/API renames
+- [web.md](../../history/CHANGELOG.md) — Page/type/API renames
+- [testing.md](../../history/CHANGELOG.md) — Updated test plan
 
 **Related ADRs:**
 - [ADR-009: Role System Overhaul](./ADR-009-phase2c-role-system-overhaul.md) — Role changes (unchanged)

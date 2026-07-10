@@ -2656,7 +2656,7 @@ Add these to `apps/be/package.json`:
 
 ## Phase 2E Migration: Client Feedback II (Planned)
 
-> **Full SQL + Rollback:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md)
+> **Full SQL + Rollback:** See [build history](../history/CHANGELOG.md)
 
 ### Migration: Phase2EClientFeedback
 

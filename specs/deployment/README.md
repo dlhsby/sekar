@@ -34,20 +34,8 @@ links the focused guides below.
 | Seeder | `db:seed` (destructive) | `db:seed:staging:prod` | `db:seed:production:prod` |
 | Guide section | [`deployment-guide.md`](deployment-guide.md) §A | §D | §E |
 
-## Per-phase deployment records (historical / review)
-
-These document what each phase shipped and how it was deployed. The current,
-deduplicated procedures live in the guides above; these are kept for review.
-
-| Phase | Record | Canonical detail |
-|-------|--------|------------------|
-| 1 — MVP | [`phase-1-deployment.md`](phase-1-deployment.md) | AWS Free-Tier from-zero walkthrough |
-| 2 — Production hardening + 8-role system | [`phase-2-deployment.md`](phase-2-deployment.md) | GitHub-Secrets CI/CD, Phase 2C/2E |
-| 3 — Plants / Monitoring v2 / Pruning | [`phase-3-deployment.md`](phase-3-deployment.md) | Redis, smoke-test checklist |
-| 4 — Production Readiness | [`phase-4-deployment.md`](phase-4-deployment.md) | → `specs/phases/phase-4-production-readiness/` |
-| 5 — Finishing iOS + Assets/Reporting/Analytics | [`phase-5-deployment.md`](phase-5-deployment.md) | → `specs/phases/phase-5-finishing-ios/` |
-
-> **Note:** there is no Phase 6. An earlier roadmap labelled "Phase 6 — Web Dashboard" never shipped as a separate phase; the web dashboard shipped earlier. Phase-4/5 deployment records were reconciled to what actually shipped (earlier drafts described an abandoned "Asset Management" Phase 4 / "iOS + fraud detection" Phase 5).
+> Historical per-phase deployment records were retired in the product-docs restructure; the build
+> timeline lives in [`../history/CHANGELOG.md`](../history/CHANGELOG.md).
 
 ## Conventions
 

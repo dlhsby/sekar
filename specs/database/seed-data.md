@@ -1649,7 +1649,7 @@ npm run seed:tasks
 
 ## Phase 2E: Planned Seed Data (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md) (Seeder Updates section)
+> **Full specification:** See [build history](../history/CHANGELOG.md) (Seeder Updates section)
 
 ### New Phone Numbers
 

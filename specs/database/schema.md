@@ -2015,7 +2015,7 @@ Before deploying to production:
 
 ## Phase 2C: Schema Changes (Implemented)
 
-> **Full specification:** See [`specs/phases/phase-2-c-client-feedback/database.md`](../phases/phase-2-c-client-feedback/database.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### Role Enum Update (Implemented)
 ```sql
@@ -2093,7 +2093,7 @@ CREATE TABLE overtime_aktivitas (
 
 ## Phase 2D: Schema Changes (Real-Time Monitoring)
 
-> **Full specification:** See [`specs/phases/phase-2-d-monitoring/`](../phases/phase-2-d-monitoring/)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### user_tracking_status
 
@@ -2202,7 +2202,7 @@ users ─────1:N────► monitoring_configs (updated_by)
 
 ## Phase 2E: Schema Changes (Planned — Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/database.md`](../phases/phase-2-e-client-feedback-2/database.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **Related ADRs:** [ADR-012](../architecture/decisions/ADR-012-phone-number-login.md), [ADR-013](../architecture/decisions/ADR-013-multi-area-assignment.md), [ADR-014](../architecture/decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](../architecture/decisions/ADR-015-audit-trail.md)
 
 ### Altered Tables
@@ -2290,7 +2290,7 @@ CHECK (status IN ('in_progress', 'pending', 'approved', 'rejected'))
 
 ## Phase 3: Planned Schema Changes (Plants Management + Monitoring Rebuild + Public Intake)
 
-> **Full specification:** See [`specs/phases/phase-3-plants-monitoring-rebuild/database.md`](../phases/phase-3-plants-monitoring-rebuild/database.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **Authored:** 2026-04-24
 > **Status:** Not implemented — migrations will be `17460000*-Phase3*.ts`. All additive.
 
@@ -2571,6 +2571,6 @@ INSERT INTO monitoring_configs (key, value, description) VALUES
 - [ERD](./erd.md) - Entity relationship diagrams (Phase 2D + Phase 3)
 - [Migrations](./migrations.md) - Migration strategy
 - [Seed Data](./seed-data.md) - Test data specifications
-- [Phase 2C Database](../phases/phase-2-c-client-feedback/database.md) - Phase 2C migration details
-- [Phase 2E Database](../phases/phase-2-e-client-feedback-2/database.md) - Phase 2E migration details
-- [Phase 3 Database](../phases/phase-3-plants-monitoring-rebuild/database.md) - Phase 3 full spec
+- [Phase 2C Database](../history/CHANGELOG.md) - Phase 2C migration details
+- [Phase 2E Database](../history/CHANGELOG.md) - Phase 2E migration details
+- [Phase 3 Database](../history/CHANGELOG.md) - Phase 3 full spec

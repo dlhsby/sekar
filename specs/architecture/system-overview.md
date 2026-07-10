@@ -439,7 +439,7 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 ## Phase 2E: Planned Architecture Changes (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/`](../phases/phase-2-e-client-feedback-2/)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 > **ADRs:** [ADR-012](./decisions/ADR-012-phone-number-login.md), [ADR-013](./decisions/ADR-013-multi-area-assignment.md), [ADR-014](./decisions/ADR-014-overtime-clock-in-flow.md), [ADR-015](./decisions/ADR-015-audit-trail.md)
 
 ### Key Architectural Changes

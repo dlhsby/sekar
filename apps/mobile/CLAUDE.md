@@ -2,7 +2,7 @@
 
 **Last Updated:** April 25, 2026
 **Stack:** React Native 0.83.x, React 19.2.x, Redux Toolkit, FCM, Neo Brutalism 2.0 (WCAG 2.1 AA)
-**Design language:** Neo Brutalism 2.0 — see [`specs/ui-ux/design-tokens.md`](../../specs/ui-ux/design-tokens.md) (canonical) and [`specs/mobile/component-library.md`](../../specs/mobile/component-library.md).
+**Design language:** Neo Brutalism 2.0 — see [`specs/design-system/design-tokens.md`](../../specs/design-system/design-tokens.md) (canonical) and [`specs/platforms/mobile/component-library.md`](../../specs/platforms/mobile/component-library.md).
 
 ---
 
@@ -10,7 +10,7 @@
 
 From Phase 3 M1-R sub-phase **3-R2** onward (planned, not yet executed):
 
-- **Source of truth:** [`specs/ui-ux/tokens.json`](../../specs/ui-ux/tokens.json)
+- **Source of truth:** [`specs/design-system/tokens.json`](../../specs/design-system/tokens.json)
 - **Generated consumer:** `apps/mobile/src/constants/generated/tokens.ts` (emitted by `scripts/build-tokens.ts`; **CI validates drift on every PR via `tokens-verify`**)
 - **Re-export wrapper:** `apps/mobile/src/constants/nbTokens.ts` becomes `export * from './generated/tokens'` plus platform helpers (`useNBPress`, `pressStyle`)
 
@@ -42,11 +42,11 @@ Mobile catches up to web canonical in 3-R2. Use `<NBText variant="...">` from `a
 Existing (Phase 2): `NBButton`, `NBCard`, `NBBadge`, `NBTextInput`, `NBPasswordInput`, `NBCardTextInput`, `NBSelect`, `NBDatePicker`, `NBSkeleton`, `NBTab`, `NBAlert`, `NBEmptyState`, `NBBackgroundPattern`.
 
 **New in Phase 3 M1-R sub-phase 3-R3:**
-- **`NBModal`** — wraps `@gorhom/bottom-sheet` for sheet variants (≤50 % viewport) and RN `<Modal>` for fullscreen. See [neo-brutalism-modal-guidelines.md](../../specs/mobile/neo-brutalism-modal-guidelines.md).
+- **`NBModal`** — wraps `@gorhom/bottom-sheet` for sheet variants (≤50 % viewport) and RN `<Modal>` for fullscreen. See [neo-brutalism-modal-guidelines.md](../../specs/platforms/mobile/neo-brutalism-modal-guidelines.md).
 - **`NBToast`** — wraps `react-native-toast-message` with NB chrome (uppercase, hard-edge shadow, Lucide icon pair, bottom position).
 - **`NBText`** — semantic typography component with the variants above.
 
-Full prop reference: [`specs/mobile/component-library.md`](../../specs/mobile/component-library.md).
+Full prop reference: [`specs/platforms/mobile/component-library.md`](../../specs/platforms/mobile/component-library.md).
 
 ---
 
@@ -69,6 +69,6 @@ The app is bilingual: **Indonesian (`id`, default) + English (`en`)** via `react
 
 The native app, mobile web (<768 px), and desktop web all consume the same generated tokens. Differences are intentional Layer-3 patterns (bottom tabs vs. ☰ drawer vs. sidebar; bottom sheet vs. centered dialog; full-screen form vs. dialog). Never let token values diverge — that's drift.
 
-See [`specs/ui-ux/design-tokens.md §Component Parity Matrix`](../../specs/ui-ux/design-tokens.md) for the parity table.
+See [`specs/design-system/design-tokens.md §Component Parity Matrix`](../../specs/design-system/design-tokens.md) for the parity table.
 
 ---

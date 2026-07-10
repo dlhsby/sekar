@@ -126,9 +126,9 @@ No new entry-point endpoints are needed; the existing surface covers them once a
 
 ## References
 
-- [ADR-009](./ADR-009-eight-role-system.md) — role hierarchy that informs delegation directionality
-- [ADR-010](./ADR-010-activity-as-canonical-work-record.md) — activities are first-class; tasks are scaffolding
+- [ADR-009](./ADR-009-phase2c-role-system-overhaul.md) — role hierarchy that informs delegation directionality
+- [ADR-010](./ADR-010-phase2c-terminology-cleanup.md) — activities are first-class; tasks are scaffolding
 - [ADR-031](./ADR-031-task-typing-and-custom-fields.md) — `task_type='perantingan'` carries the pruning-specific custom_fields; this ADR is orthogonal
 - [ADR-032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) — kecamatan disposition; updated to point here for tagging + delegation
 - [ADR-035](./ADR-035-service-capacity-model.md) — service capacity; 2026-05-01 amendment switches kecamatan UX to weekly picker
-- Phase 3 plan: [`../../phases/phase-3-plants-monitoring-rebuild/PLAN-pruning-redesign.md`](../../phases/phase-3-plants-monitoring-rebuild/PLAN-pruning-redesign.md)
+- Phase 3 plan: [`../../phases/phase-3-plants-monitoring-rebuild/PLAN-pruning-redesign.md`](../../history/CHANGELOG.md)

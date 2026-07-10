@@ -68,7 +68,7 @@ Each ADR follows this structure:
 | [033](./ADR-033-staff-kecamatan-role.md) | New External Role `staff_kecamatan` for Public Pruning Intake | Accepted (extends ADR-009) | 2026-04-24 |
 | [034](./ADR-034-pruning-cycle-prediction.md) | Pruning Cycle Prediction: Species × Area_Type Lookup (No ML), with Manual Override | Accepted | 2026-04-24 |
 | [035](./ADR-035-service-capacity-model.md) | Generic `service_capacity` Model (Rayon × ISO-Week × Service_Type) | Accepted | 2026-04-24 |
-| [036](./ADR-036-design-tokens-single-source.md) | Design Tokens — Single Source of Truth at `specs/ui-ux/tokens.json` | Accepted | 2026-04-25 |
+| [036](./ADR-036-design-tokens-single-source.md) | Design Tokens — Single Source of Truth at `specs/design-system/tokens.json` | Accepted | 2026-04-25 |
 | [037](./ADR-037-web-pwa.md) | Web Becomes an Installable PWA (Service Worker + Offline Shell + Web Push) | Accepted | 2026-04-25 |
 | [040](./ADR-040-design-system-v2.1.md) | Design System v2.1 — sage-primary token re-baseline + pinwheel brand identity | Accepted (supersedes ADR-036 palette) | 2026-05-23 |
 | [041](./ADR-041-forgot-password-contact-admin.md) | Forgot-password = contact admin (no self-serve reset) | Accepted | 2026-05-24 |

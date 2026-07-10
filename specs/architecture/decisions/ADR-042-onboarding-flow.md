@@ -81,7 +81,7 @@ The previously-implemented `PermissionsModal.tsx` (Phase 3 Round 2 — Apr 27 st
 
 ## Implementation
 
-Phase 4 Sub-Phase 4-R. See [`mobile.md § Pre-login carousel`](../../phases/phase-4-production-readiness/mobile.md#ui-ux-revamp) and [`mobile.md § Onboarding & permissions`](../../phases/phase-4-production-readiness/mobile.md#ui-ux-revamp).
+Phase 4 Sub-Phase 4-R. See [`mobile.md § Pre-login carousel`](../../history/CHANGELOG.md) and [`mobile.md § Onboarding & permissions`](../../history/CHANGELOG.md).
 
 ## References
 

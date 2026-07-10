@@ -665,7 +665,7 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ## Phase 2E: Planned Test Scenarios (Client Feedback II)
 
-> **Full specification:** See [`specs/phases/phase-2-e-client-feedback-2/testing.md`](../phases/phase-2-e-client-feedback-2/testing.md)
+> **Full specification:** See [build history](../history/CHANGELOG.md)
 
 ### New Test Areas
 
@@ -697,9 +697,9 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 ## Phase 3 & 4 Implementation Status
 
-**Phase 3 (Plants Management + Monitoring Rebuild):** ✅ **Fully Closed (June 11, 2026)** — all 21 sub-phases shipped. Monitoring v2 on Redis Streams, plants catalog, typed tasks, pruning intake, service capacity, CSV backfill (4,979 rows executed locally), load testing baseline collected. See `specs/phases/phase-3-plants-monitoring-rebuild/STATUS.md` for close-out table.
+**Phase 3 (Plants Management + Monitoring Rebuild):** ✅ **Fully Closed (June 11, 2026)** — all 21 sub-phases shipped. Monitoring v2 on Redis Streams, plants catalog, typed tasks, pruning intake, service capacity, CSV backfill (4,979 rows executed locally), load testing baseline collected. See history/CHANGELOG.md for close-out table.
 
-**Phase 4 (Production Readiness & Rebrand):** ~98% code-side complete (Jun 20). All 13 sub-phases shipped except on-device Maestro run (pending device access) and iOS background location (deferred to Phase 5). FCM full, offline sync, JWT rotation, Sentry, BullMQ, k6 load test baseline, security audit closed, WCAG-AA a11y gate passing. See `specs/phases/phase-4-production-readiness/STATUS.md`.
+**Phase 4 (Production Readiness & Rebrand):** ~98% code-side complete (Jun 20). All 13 sub-phases shipped except on-device Maestro run (pending device access) and iOS background location (deferred to Phase 5). FCM full, offline sync, JWT rotation, Sentry, BullMQ, k6 load test baseline, security audit closed, WCAG-AA a11y gate passing. See history/CHANGELOG.md.
 
 ### Coverage Gates (Phases 1–5, All Inherited)
 

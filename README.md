@@ -112,7 +112,7 @@ they collide. More detail (infra, MinIO, WSL2 device networking, troubleshooting
   via `react-i18next`. Whenever you touch the UI, localize with `t('<ns>:<key>')` and add the key to
   BOTH `id`/`en` JSON (web `apps/web/src/lib/i18n/locales`, mobile `apps/mobile/src/i18n/locales`). The API
   stays **English-canonical**; frontends localize by error `code`. Canonical terms:
-  [`specs/ui-ux/GLOSSARY.md`](specs/ui-ux/GLOSSARY.md). Verify with `npm run i18n:check`. Full rules in
+  [`specs/design-system/GLOSSARY.md`](specs/design-system/GLOSSARY.md). Verify with `npm run i18n:check`. Full rules in
   [`CLAUDE.md`](CLAUDE.md) §Internationalization.
 - **Commits:** `<type>: <description>` — `feat`/`fix`/`refactor`/`docs`/`test`/`chore`/`perf`/`ci`.
 - Check the **ADRs** in [`specs/architecture/decisions/`](specs/architecture/decisions/) before major changes.
@@ -120,7 +120,7 @@ they collide. More detail (infra, MinIO, WSL2 device networking, troubleshooting
   `@UseGuards(JwtAuthGuard, RolesGuard)` + `@Roles(...)`.
 
 **Design tokens** are single-source-of-truth across mobile + web. Edit
-[`specs/ui-ux/tokens.json`](specs/ui-ux/tokens.json) → `npm run tokens:build` (from root) → commit the
+[`specs/design-system/tokens.json`](specs/design-system/tokens.json) → `npm run tokens:build` (from root) → commit the
 regenerated files. **Never** hand-edit `generated/tokens.*` or use inline hex literals (an ESLint rule
 blocks PRs). Verify with `npm run tokens:verify`.
 
@@ -202,7 +202,7 @@ Current status, metrics, and history live in **[`specs/COMPLETION_STATUS.md`](sp
 | CI/CD + release strategy | [`specs/deployment/ci-cd.md`](specs/deployment/ci-cd.md) |
 | Obtaining keys (Firebase/Maps/S3) | [`specs/deployment/credentials-setup.md`](specs/deployment/credentials-setup.md) |
 | Encrypted secrets (dotenvx) | [`specs/deployment/encrypted-secrets.md`](specs/deployment/encrypted-secrets.md) |
-| Design tokens (source of truth) | [`specs/ui-ux/design-tokens.md`](specs/ui-ux/design-tokens.md) · [`tokens.json`](specs/ui-ux/tokens.json) |
+| Design tokens (source of truth) | [`specs/design-system/design-tokens.md`](specs/design-system/design-tokens.md) · [`tokens.json`](specs/design-system/tokens.json) |
 | Database seeding | [`apps/be/src/database/seeds/README.md`](apps/be/src/database/seeds/README.md) |
 
 ---

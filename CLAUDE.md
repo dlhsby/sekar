@@ -5,7 +5,7 @@ Guidance for Claude Code in this repository. **`specs/COMPLETION_STATUS.md` is t
 ## Communication
 - Be brief and concise; no unnecessary elaboration.
 - Use `specs/` as the reference for all technical detail. Update existing docs instead of creating new ones.
-- After changes, keep `specs/COMPLETION_STATUS.md` and the relevant `specs/phases/phase-X/STATUS.md` updated.
+- After changes, keep `specs/COMPLETION_STATUS.md` and the relevant `specs/features/<feature>/README.md` (its `## Changelog` tail) updated.
 
 ## Project Overview
 
@@ -63,7 +63,7 @@ Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via 
 
 - **Never** hardcode a user-facing string (JSX text, `label`/`placeholder`/`title`/`aria-label`, toast/`Alert`/`NBToast` text, empty/error states, table headers, option labels, zod messages). Use `t('<namespace>:<key>')`.
 - Add the key to **both** `id` and `en` JSON with identical key sets — web: `apps/web/src/lib/i18n/locales/{id,en}/<ns>.json`; mobile: `apps/mobile/src/i18n/locales/{id,en}/<ns>.json`. `id` = the Indonesian copy, `en` = a natural English translation.
-- Reuse shared namespaces: `common` (actions/entities/empty), `status`, `roles`, `validation`, `errors`. **`errors` mirrors the backend `ApiErrorCode` enum** — the API stays **English-canonical**; frontends localize by error `code`. Canonical terms: `specs/ui-ux/GLOSSARY.md`.
+- Reuse shared namespaces: `common` (actions/entities/empty), `status`, `roles`, `validation`, `errors`. **`errors` mirrors the backend `ApiErrorCode` enum** — the API stays **English-canonical**; frontends localize by error `code`. Canonical terms: `specs/design-system/GLOSSARY.md`.
 - Components: `const { t } = useTranslation()`. Non-component modules/hooks: `import i18n from '<...>/i18n/config'` then `i18n.t(...)`. Zod schemas: build in-component via `useMemo(() => z.object(...), [t])`.
 - New namespace? Register it in **both** platforms' `resources.ts` (the parity guardrail requires the same namespace set on both).
 - **Verify before commit:** `npm run i18n:check` (root — enforces enum coverage + `id`/`en` parity), `npx tsc --noEmit`, and `npm run lint` (the ESLint rule `sekar-design/no-untranslated-literal` fails on any hardcoded user-facing string) in the changed workspace.
@@ -74,6 +74,7 @@ Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via 
 - Security: bcrypt (10 rounds), GPS validation (±100m), class-validator input validation, rate limiting (100 req/min global, 5 req/min login). Never commit secrets.
 - Testing: >80% coverage, Arrange-Act-Assert, mock external deps.
 - DB: dev TypeORM auto-sync; prod migrations; soft delete via `deleted_at`.
+- **Deprecated:** the `supervisor` module is superseded by `monitoring` — don't extend it; use `monitoring`. **Parked** (built, hidden from web nav, revisit later): assets, analytics, reporting builder/schedules, import/export, seeds — see `specs/features/_archived/`.
 
 ## Env file convention (dotenvx — see `specs/deployment/encrypted-secrets.md`)
 **`.env.local`** = local dev, plaintext + gitignored (no key needed). **`.env.staging`** / **`.env.production`** = deploys, committed **encrypted** with [dotenvx](https://dotenvx.com) (secrets are `encrypted:…` ciphertext). The one real secret is the per-file private key in **`.env.keys`** (gitignored, **never commit**; the pre-commit hook + `.gitignore` enforce this). Committed templates: `*.example`.
@@ -93,25 +94,20 @@ Web + mobile are bilingual: **Indonesian (`id`, default) + English (`en`)** via 
 
 ## Key Resources
 
+Full navigation is **[`specs/README.md`](specs/README.md)**; specs are organized by **feature**
+([`specs/features/`](specs/features/README.md)) and concern. The most-used entries:
+
 | Topic | Path |
 |-------|------|
-| Project status (source of truth) | `specs/COMPLETION_STATUS.md` |
-| Phase tracking | `specs/phases/phase-*/STATUS.md` |
-| API contracts (~218 endpoints, 33 modules) / errors | `specs/api/contracts.md` (live: Swagger `/api/v1/docs`) · `specs/api/error-handling.md` |
-| Architecture + ADRs | `specs/architecture/` · `specs/architecture/decisions/` |
-| Security + dependency audit | `specs/architecture/security.md` |
-| Design tokens (source of truth) | `specs/ui-ux/design-tokens.md` · `tokens.json` |
-| **i18n (bilingual id/en) + terminology glossary** | `specs/ui-ux/i18n.md` · `specs/ui-ux/GLOSSARY.md` · locales `apps/{web,mobile}/src/**/i18n/locales` · check: `npm run i18n:check` |
-| Web PWA | `specs/phases/phase-3-plants-monitoring-rebuild/web.md` §PWA |
-| **Deployment (authoritative, start-to-finish)** | `specs/deployment/deployment-guide.md` (self-hosted Docker + AWS appendix) |
-| iOS / Android release runbooks | `specs/deployment/ios-release-guide.md` · `android-release-guide.md` |
-| Run locally / infra / WSL2 device net | `specs/deployment/local-development.md` |
-| Obtaining keys (Firebase/Maps/S3) | `specs/deployment/credentials-setup.md` |
-| Day-2 operations / rollback / incidents | `specs/deployment/operations.md` |
-| Env var catalogue | `specs/deployment/environment-variables.md` |
-| **Encrypted secrets (dotenvx) — commit encrypted .env, decrypt at runtime** | `specs/deployment/encrypted-secrets.md` |
-| E2E testing | `specs/testing/web-testing.md` |
-| Full navigation | `specs/README.md` |
+| Project status (source of truth) | `specs/COMPLETION_STATUS.md` · history: `specs/history/CHANGELOG.md` |
+| Feature specs (product model) | `specs/features/` (auth, scheduling, monitoring, pruning, …) |
+| API contracts (~246 handlers, 34 modules) / errors | `specs/api/contracts.md` (live Swagger `/api/v1/docs`) · `specs/api/error-handling.md` |
+| Architecture + ADRs (index) | `specs/architecture/` · `specs/architecture/decisions/README.md` |
+| Design system + tokens (SoT) | `specs/design-system/` · `specs/design-system/design-tokens.md` · `tokens.json` |
+| **i18n (id/en) + glossary** | `specs/design-system/i18n.md` · `specs/design-system/GLOSSARY.md` · locales `apps/{web,mobile}/src/**/i18n/locales` · `npm run i18n:check` |
+| Web / mobile platform specs | `specs/platforms/web/` · `specs/platforms/mobile/` |
+| **Deployment (from scratch)** | `specs/deployment/README.md` (guide + infra, CI/CD, secrets, operations, releases) |
+| Testing | `specs/testing/` |
 
 ## Troubleshooting
 - Port 3000 in use: `lsof -ti:3000 | xargs kill -9`. Metro cache: `npm start -- --reset-cache`. Android build: `cd android && ./gradlew clean`.

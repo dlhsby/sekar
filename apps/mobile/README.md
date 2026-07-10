@@ -66,7 +66,7 @@ Full runbook: [`/specs/deployment/android-release-guide.md`](/specs/deployment/a
 
 ## Design & Docs
 
-**Design tokens** (generated, source of truth at `/specs/ui-ux/tokens.json`):
+**Design tokens** (generated, source of truth at `/specs/design-system/tokens.json`):
 ```bash
 npm run tokens:build     # From project root
 ```
@@ -75,8 +75,8 @@ Never edit `generated/tokens.ts` or use inline hex literals (ESLint blocks them)
 - **Root guide (conventions, all services, deploy):** [`/README.md`](/README.md)
 - **Full contributor guide:** [`/CLAUDE.md`](/CLAUDE.md)
 - **Mobile development & components:** [`CLAUDE.md`](CLAUDE.md)
-- **Design tokens & Neo Brutalism:** [`/specs/ui-ux/design-tokens.md`](/specs/ui-ux/design-tokens.md)
-- **Component library reference:** [`/specs/mobile/component-library.md`](/specs/mobile/component-library.md)
-- **Mobile specs:** [`/specs/mobile/`](/specs/mobile/)
+- **Design tokens & Neo Brutalism:** [`/specs/design-system/design-tokens.md`](/specs/design-system/design-tokens.md)
+- **Component library reference:** [`/specs/platforms/mobile/component-library.md`](/specs/platforms/mobile/component-library.md)
+- **Mobile specs:** [`/specs/platforms/mobile/`](/specs/platforms/mobile/)
 - **Deploy (CI/CD, releases, Play Store):** [`/specs/deployment/deployment-guide.md`](/specs/deployment/deployment-guide.md)
 - **All specs:** [`/specs/README.md`](/specs/README.md)
