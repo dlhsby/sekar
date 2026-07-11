@@ -22,6 +22,20 @@ import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.u
  */
 export class UpdateUserDto {
   @ApiPropertyOptional({
+    description: 'Username for login (alphanumeric with underscores/hyphens allowed)',
+    example: 'satgas4',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(ValidationConstants.USERNAME_MAX_LENGTH, {
+    message: `Username must not exceed ${ValidationConstants.USERNAME_MAX_LENGTH} characters`,
+  })
+  @Matches(/^[a-zA-Z0-9_-]+$/, {
+    message: 'Username can only contain letters, numbers, underscores, and hyphens',
+  })
+  username?: string;
+
+  @ApiPropertyOptional({
     description: "User's full name",
     example: 'Pekerja Satu Updated',
     maxLength: ValidationConstants.FULL_NAME_MAX_LENGTH,

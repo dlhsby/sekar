@@ -378,6 +378,10 @@ export class UsersService {
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number, id);
     }
+    // Username is editable on update; only re-check availability when it changes.
+    if (updateData.username && updateData.username !== user.username) {
+      await this.userValidation.assertUsernameAvailable(updateData.username);
+    }
 
     // Reassignment = editing the user's permanent areas. Past shifts/tracking
     // history are immutable; today/future use the new set.

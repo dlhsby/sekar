@@ -79,9 +79,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   satgas: 'Satgas',
   linmas: 'Linmas',
   korlap: 'Korlap',
-  admin_rayon: 'Admin Data',
+  admin_rayon: 'Admin Rayon',
   kepala_rayon: 'Kepala Rayon',
-  management: 'Top Management',
+  management: 'Management',
   admin_system: 'Admin Sistem',
   superadmin: 'Superadmin',
   staff_kecamatan: 'Staff Kecamatan',
@@ -122,12 +122,15 @@ export const ALL_ROLES: UserRole[] = [
  * {@link sortedRoleOptions}.
  */
 export const ROLE_HIERARCHY_ORDER: UserRole[] = [
+  'superadmin',
+  'admin_system',
   'management',
   'kepala_rayon',
   'admin_rayon',
   'korlap',
-  'satgas',
   'linmas',
+  'satgas',
+  'staff_kecamatan',
 ];
 
 /** Role dropdown options sorted by hierarchy first, then alphabetically. */
