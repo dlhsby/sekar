@@ -91,6 +91,9 @@ if [ "$LAN" = true ]; then
   export CORS_ORIGIN="http://localhost:$WEB_PORT,http://$LAN_IP:$WEB_PORT,http://localhost:19006"
   export SEKAR_LAN_PROXY=1
   export SEKAR_API_PORT="$BE_PORT"
+  # Next 16 blocks cross-origin dev resources (/_next/*) by default; without this
+  # the phone can't load the JS bundle and the page hangs on the loading gate.
+  export SEKAR_ALLOWED_DEV_ORIGINS="$LAN_IP"
   WEB_ARGS=(-- -H 0.0.0.0) # leave localhost-only; backend already binds 0.0.0.0
   print_info "LAN mode: serving http://$LAN_IP:$WEB_PORT (API proxied to :$BE_PORT — only the web port needs to reach your phone)"
 fi
