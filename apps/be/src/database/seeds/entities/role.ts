@@ -16,15 +16,18 @@ export async function seedRoles(ctx: SeedContext): Promise<void> {
 
   for (const r of ROLE_SEEDS) {
     await ctx.qr.query(
-      `INSERT INTO roles (code, name, description, is_system, monitoring_scope, marker_icon)
-       VALUES ($1, $2, $3, TRUE, $4, $5)
+      `INSERT INTO roles (code, name, description, is_system, monitoring_scope, marker_icon, marker_color)
+       VALUES ($1, $2, $3, TRUE, $4, $5, $6)
        ON CONFLICT (code) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
          is_system = TRUE,
          monitoring_scope = EXCLUDED.monitoring_scope,
-         marker_icon = EXCLUDED.marker_icon`,
-      [r.code, r.name, r.description, r.monitoring_scope, r.marker_icon],
+         marker_icon = EXCLUDED.marker_icon,
+         -- Backfill the accent colour once (existing rows are NULL) but never
+         -- clobber an operator's picked colour on re-seed.
+         marker_color = COALESCE(roles.marker_color, EXCLUDED.marker_color)`,
+      [r.code, r.name, r.description, r.monitoring_scope, r.marker_icon, r.marker_color],
     );
 
     const roleRows = (await ctx.qr.query(`SELECT id FROM roles WHERE code = $1`, [

@@ -12,6 +12,8 @@ export interface Role {
   monitoring_scope: MonitoringScope;
   marker_icon?: string;
   marker_image_url?: string | null;
+  /** Role accent colour (hex #RRGGBB) — tints the user pill/avatar. */
+  marker_color?: string | null;
   permissionKeys: string[];
   permissionCount: number;
   userCount: number;
@@ -42,6 +44,7 @@ export interface RolePayload {
   monitoring_scope?: MonitoringScope;
   marker_icon?: string;
   marker_image_url?: string | null;
+  marker_color?: string;
   permissionKeys?: string[];
 }
 

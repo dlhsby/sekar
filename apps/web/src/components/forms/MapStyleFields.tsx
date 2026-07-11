@@ -1,13 +1,12 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Input } from '@/components/ui';
 import type { MapStyle } from '@/lib/api/regions';
 import { MarkerImagePicker } from './MarkerImagePicker';
+import { ColorField } from './ColorField';
 
 // eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default values
 const DEFAULTS = { border: '#1C1917', fill: '#7FBC8C' };
-const HEX = /^#[0-9a-fA-F]{6}$/;
 
 interface MapStyleFieldsProps {
   value: MapStyle;
@@ -68,44 +67,6 @@ export function MapStyleFields({
             disabled={disabled}
           />
         </div>
-      </div>
-    </div>
-  );
-}
-
-function ColorField({
-  label,
-  value,
-  fallback,
-  onChange,
-  disabled,
-}: {
-  label: string;
-  value: string;
-  fallback: string;
-  onChange: (v: string) => void;
-  disabled?: boolean;
-}) {
-  const swatch = HEX.test(value) ? value : fallback;
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-nb-body-sm font-semibold text-nb-black">{label}</label>
-      <div className="flex items-center gap-2">
-        <input
-          type="color"
-          aria-label={label}
-          value={swatch}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          className="h-11 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm disabled:cursor-not-allowed disabled:opacity-60"
-        />
-        <Input
-          value={value}
-          placeholder={fallback}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-          className="font-mono"
-        />
       </div>
     </div>
   );

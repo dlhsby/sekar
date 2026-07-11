@@ -79,6 +79,13 @@ export default function UsersPage() {
     () => rolesCatalog.map((r) => ({ value: roleLabel(r.code), label: roleLabel(r.code) })),
     [rolesCatalog]
   );
+  // Data-driven role accent (ADR-044): resolve each role code → its marker_color
+  // so the pill + avatar tint follows the role-management colour (incl. custom
+  // roles). Falls back to the fixed per-role token when a colour isn't set.
+  const roleColorByCode = useMemo(
+    () => new Map(rolesCatalog.map((r) => [r.code, r.marker_color ?? undefined])),
+    [rolesCatalog]
+  );
 
   // Full area master data so the multi-value Area filter can list every area
   // (a user can be assigned several) and resolve assigned_area_ids → names.
@@ -151,7 +158,13 @@ export default function UsersPage() {
           const u = row.original;
           return (
             <div className="flex items-center gap-2.5">
-              <RoleAvatar name={u.full_name} role={u.role} src={u.profile_picture_url} size="sm" />
+              <RoleAvatar
+                name={u.full_name}
+                role={u.role}
+                color={roleColorByCode.get(u.role)}
+                src={u.profile_picture_url}
+                size="sm"
+              />
               <div className="min-w-0">
                 <p className="truncate font-bold text-nb-black">{u.full_name}</p>
                 <p className="truncate font-mono text-[11px] text-nb-gray-600">{u.username}</p>
@@ -180,7 +193,9 @@ export default function UsersPage() {
           filterVariant: 'enum',
           filterOptions: roleFilterOptions,
         },
-        cell: ({ row }) => <RolePill role={row.original.role} />,
+        cell: ({ row }) => (
+          <RolePill role={row.original.role} color={roleColorByCode.get(row.original.role)} />
+        ),
       },
       {
         id: 'phone_number',
@@ -345,6 +360,7 @@ export default function UsersPage() {
       regionNameById,
       regionFilterOptions,
       roleFilterOptions,
+      roleColorByCode,
       areaNameById,
       areaFilterOptions,
     ]

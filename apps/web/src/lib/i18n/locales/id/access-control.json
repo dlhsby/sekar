@@ -10,7 +10,8 @@
     "noResults": "Tidak ada peran yang cocok"
   },
   "validation": {
-    "nameRequired": "Nama peran wajib diisi"
+    "nameRequired": "Nama peran wajib diisi",
+    "colorInvalid": "Warna harus berupa kode heksadesimal seperti #7FBC8C"
   },
   "counts": {
     "permissions": "{{count}} izin",

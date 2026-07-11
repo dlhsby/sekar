@@ -15,9 +15,13 @@ import {
 } from '@/lib/api/roles';
 import { PermissionAccordion } from './PermissionAccordion';
 import { MarkerImagePicker } from '@/components/forms/MarkerImagePicker';
+import { ColorField, HEX_COLOR } from '@/components/forms/ColorField';
 import { roleMarkerDefault } from '@/lib/constants/markerDefaults';
 
 const SCOPES: MonitoringScope[] = ['city', 'district', 'region', 'location', 'none'];
+// Fallback accent for a role that has no colour yet (custom roles pre-pick).
+// eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
+const DEFAULT_ROLE_COLOR = '#7FBC8C';
 
 interface RoleEditorProps {
   role: Role;
@@ -51,6 +55,8 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(
     role.marker_image_url ?? null,
   );
+  const initialColor = role.marker_color ?? DEFAULT_ROLE_COLOR;
+  const [markerColor, setMarkerColor] = useState<string>(initialColor);
   const [checked, setChecked] = useState<Set<string>>(initialChecked);
 
   const initialMarker = role.marker_image_url ?? null;
@@ -61,6 +67,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     description !== (role.description ?? '') ||
     scope !== role.monitoring_scope ||
     (markerImageUrl ?? null) !== initialMarker ||
+    markerColor !== initialColor ||
     permsDirty;
 
   const resetChanges = () => {
@@ -68,6 +75,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     setDescription(role.description ?? '');
     setScope(role.monitoring_scope);
     setMarkerImageUrl(initialMarker);
+    setMarkerColor(initialColor);
     setChecked(new Set(initialChecked));
   };
 
@@ -90,10 +98,13 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
 
   const trimmedName = name.trim();
   const nameError = !trimmedName ? t('access-control:validation.nameRequired') : undefined;
+  const colorError = !HEX_COLOR.test(markerColor)
+    ? t('access-control:validation.colorInvalid')
+    : undefined;
 
   const handleSave = async () => {
-    if (nameError) {
-      toast.error(nameError);
+    if (nameError || colorError) {
+      toast.error(nameError ?? colorError);
       return;
     }
     try {
@@ -105,6 +116,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           monitoring_scope: scope,
           marker_icon: role.marker_icon ?? undefined,
           marker_image_url: markerImageUrl,
+          marker_color: markerColor,
           // Preserve the *:* superuser grant instead of materializing it.
           ...(isSuperuser ? {} : { permissionKeys: Array.from(checked) }),
         },
@@ -152,7 +164,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
             <Button
               onClick={handleSave}
               loading={updateRole.isPending}
-              disabled={!!nameError || !isDirty}
+              disabled={!!nameError || !!colorError || !isDirty}
             >
               {updateRole.isPending
                 ? t('access-control:actions.saving')
@@ -188,6 +200,13 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           value={markerImageUrl}
           onChange={setMarkerImageUrl}
           defaultUrl={roleMarkerDefault(role.code)}
+          disabled={!canManage}
+        />
+        <ColorField
+          label={t('access-control:fields.markerColor')}
+          value={markerColor}
+          fallback={DEFAULT_ROLE_COLOR}
+          onChange={setMarkerColor}
           disabled={!canManage}
         />
       </div>

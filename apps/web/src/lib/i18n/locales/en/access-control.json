@@ -10,7 +10,8 @@
     "noResults": "No roles match"
   },
   "validation": {
-    "nameRequired": "Role name is required"
+    "nameRequired": "Role name is required",
+    "colorInvalid": "Colour must be a hex code like #7FBC8C"
   },
   "counts": {
     "permissions": "{{count}} permissions",

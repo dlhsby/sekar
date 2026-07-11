@@ -4,6 +4,7 @@ import * as React from 'react';
 
 import { cn } from '@/lib/utils/cn';
 import type { UserRole } from '@/types/models';
+import { isHexColor, readableInk } from '@/lib/utils/color';
 
 /**
  * RoleAvatar — web mirror of mobile common/RoleAvatar.
@@ -44,15 +45,18 @@ function initials(name: string): string {
   return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
 }
 
-export interface RoleAvatarProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface RoleAvatarProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'color'> {
   name: string;
   role?: UserRole;
+  /** Data-driven role accent (role `marker_color`); overrides the fixed token. */
+  color?: string | null;
   src?: string | null;
   size?: 'sm' | 'md' | 'lg';
 }
 
 const RoleAvatar = React.forwardRef<HTMLDivElement, RoleAvatarProps>(
-  ({ name, role, src, size = 'md', className, ...props }, ref) => {
+  ({ name, role, color, src, size = 'md', className, style: styleProp, ...props }, ref) => {
+    const tinted = isHexColor(color);
     const style = (role && ROLE_STYLE[role]) || { bg: 'bg-accent-mint', text: 'text-black' };
 
     return (
@@ -60,10 +64,13 @@ const RoleAvatar = React.forwardRef<HTMLDivElement, RoleAvatarProps>(
         className={cn(
           'inline-flex shrink-0 items-center justify-center rounded-full border-2 border-nb-black font-heading font-bold',
           SIZE[size],
-          style.bg,
-          style.text,
+          !tinted && style.bg,
+          !tinted && style.text,
           className
         )}
+        style={
+          tinted ? { backgroundColor: color, color: readableInk(color), ...styleProp } : styleProp
+        }
         aria-hidden="true"
         ref={ref}
         {...props}

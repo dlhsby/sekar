@@ -52,6 +52,28 @@ describe('RolesService', () => {
       expect(created.code).toBe('pengawas_taman');
       expect(created.is_system).toBe(false);
     });
+
+    it('persists the accent colour when provided', async () => {
+      roleRepo.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        id: 'new-id',
+        code: 'pengawas_taman',
+        name: 'Pengawas Taman',
+        is_system: false,
+        monitoring_scope: 'none',
+        marker_color: '#123ABC',
+        permissions: [],
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      const view = await service.create(
+        { name: 'Pengawas Taman', marker_color: '#123ABC' },
+        'actor-1',
+      );
+
+      expect(roleRepo.create.mock.calls[0][0].marker_color).toBe('#123ABC');
+      expect(view.marker_color).toBe('#123ABC');
+    });
   });
 
   describe('resolvePermissions (via update)', () => {

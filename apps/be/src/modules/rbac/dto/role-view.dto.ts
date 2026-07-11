@@ -11,6 +11,7 @@ export class RoleView {
   @ApiProperty({ enum: MonitoringScope }) monitoring_scope: MonitoringScope;
   @ApiProperty({ nullable: true }) marker_icon?: string;
   @ApiProperty({ nullable: true }) marker_image_url?: string;
+  @ApiProperty({ nullable: true }) marker_color?: string;
   @ApiProperty({ type: [String] }) permissionKeys: string[];
   @ApiProperty() permissionCount: number;
   @ApiProperty() userCount: number;

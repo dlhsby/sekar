@@ -13,6 +13,9 @@ export interface RoleSeed {
   description: string;
   monitoring_scope: MonitoringScope;
   marker_icon: string;
+  /** Role accent colour (hex #RRGGBB) — the default pill/avatar tint. Mirrors the
+   *  `--color-role-*` design tokens so seeded roles match the existing UI exactly. */
+  marker_color: string;
   /** Granted permission keys (may be wildcards). */
   permissions: string[];
 }
@@ -79,6 +82,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Akses penuh ke seluruh sistem',
     monitoring_scope: MonitoringScope.CITY,
     marker_icon: 'star',
+    marker_color: '#1C1917',
     permissions: ['*:*'],
   },
   {
@@ -87,6 +91,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Administrasi sistem, master data, peran, dan pengaturan',
     monitoring_scope: MonitoringScope.CITY,
     marker_icon: 'key',
+    marker_color: '#57534E',
     permissions: ['*:*'],
   },
   {
@@ -95,6 +100,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Melihat seluruh data lintas rayon; tidak mengubah pengaturan sistem',
     monitoring_scope: MonitoringScope.CITY,
     marker_icon: 'crown',
+    marker_color: '#1A4D2E',
     permissions: MANAGEMENT_PERMISSIONS,
   },
   {
@@ -103,6 +109,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Kelola pengguna & wilayah serta monitoring dalam rayonnya',
     monitoring_scope: MonitoringScope.DISTRICT,
     marker_icon: 'building',
+    marker_color: '#F48572',
     permissions: RAYON_ADMIN_PERMISSIONS,
   },
   {
@@ -111,6 +118,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Akses setara Kepala Rayon dalam rayonnya',
     monitoring_scope: MonitoringScope.DISTRICT,
     marker_icon: 'clipboard',
+    marker_color: '#9333EA',
     permissions: RAYON_ADMIN_PERMISSIONS,
   },
   {
@@ -119,6 +127,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Koordinator lapangan; monitoring kawasannya, tanpa kelola data',
     monitoring_scope: MonitoringScope.REGION,
     marker_icon: 'briefcase',
+    marker_color: '#E3A018',
     permissions: [
       'monitoring:read',
       'schedule:read',
@@ -138,6 +147,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Petugas lapangan; clock-in, aktivitas, tugas, lembur',
     monitoring_scope: MonitoringScope.NONE,
     marker_icon: 'shield',
+    marker_color: '#7FBC8C',
     permissions: ['activity:create', 'task:read', 'overtime:submit', 'schedule:read'],
   },
   {
@@ -146,6 +156,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Petugas keamanan; clock-in, aktivitas, tugas, lembur',
     monitoring_scope: MonitoringScope.NONE,
     marker_icon: 'shield',
+    marker_color: '#2563EB',
     permissions: ['activity:create', 'task:read', 'overtime:submit', 'schedule:read'],
   },
   {
@@ -154,6 +165,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     description: 'Eksternal; mengajukan permohonan pemangkasan',
     monitoring_scope: MonitoringScope.NONE,
     marker_icon: 'user',
+    marker_color: '#FDFD96',
     permissions: ['pruning-request:submit', 'pruning-request:read'],
   },
 ];

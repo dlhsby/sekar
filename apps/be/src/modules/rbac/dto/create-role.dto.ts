@@ -43,6 +43,15 @@ export class CreateRoleDto {
   @MaxLength(600000)
   marker_image_url?: string;
 
+  @ApiPropertyOptional({
+    description: 'Role accent colour as a 6-digit hex (#RRGGBB) — drives the user pill/avatar tint',
+    example: '#7FBC8C',
+  })
+  @IsOptional()
+  @IsString()
+  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'marker_color must be a hex colour like #7FBC8C' })
+  marker_color?: string;
+
   @ApiPropertyOptional({ type: [String], example: ['monitoring:read', 'schedule:read'] })
   @IsOptional()
   @IsArray()

@@ -41,6 +41,11 @@ describe('role-seeds consistency', () => {
     expect(bad.map((r) => r.code)).toEqual([]);
   });
 
+  it('every seed role has a valid #RRGGBB accent colour', () => {
+    const bad = ROLE_SEEDS.filter((r) => !/^#[0-9A-Fa-f]{6}$/.test(r.marker_color));
+    expect(bad.map((r) => r.code)).toEqual([]);
+  });
+
   it('satgas and linmas have no monitoring access', () => {
     for (const code of ['satgas', 'linmas']) {
       const role = ROLE_SEEDS.find((r) => r.code === code)!;
