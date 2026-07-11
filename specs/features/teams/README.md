@@ -20,5 +20,6 @@ Crews (perawatan, penyiraman, penanaman, penyapuan, …) as first-class, typed e
 - [scheduling](../scheduling/README.md) · [monitoring](../monitoring/README.md) · [geography](../geography/README.md)
 
 ## Changelog
+- 2026-07-11 — Marker-as-image: `teams.marker_image_url` + `MarkerImagePicker` (preseeded gallery + custom upload) in the team form; marker section switched to one-input-per-row. Migration `17491800000000`.
 - 2026-07-10 — Phase 3 landed: `teams` + `team_types` catalog (migration + seeds), `TeamsService` + CRUD API (`/teams` team:*, `/team-types` team:read/manage), web `/teams` page + `MapStyleFields`-style marker. Verified live. Membership (team schedules) is Phase 4.
 - 2026-07-10 — Spec created for UAT teams introduction (ADR-048). History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

@@ -25,6 +25,7 @@ The organizational + spatial hierarchy. Being reworked (UAT) from 3 levels to **
 - [teams](../teams/README.md)
 
 ## Changelog
+- 2026-07-11 — Marker-as-image: `marker_image_url` on rayons/regions/areas via `MapStyleDto` + `MarkerImagePicker` (preseeded gallery + custom upload) in `MapStyleFields`. Migration `17491800000000`.
 - 2026-07-10 — Phase 2 landed: `regions` module (CRUD, `region:*`-gated) + migration; per-level styling (border/fill color+opacity, marker) on rayons/regions/areas; `areas.region_id` (re-parent, rayon-matched) + `users.region_id`; web `/regions` (Kawasan) page + `MapStyleFields` on rayon/area/region forms + area→region select. Verified live. City-level styling + monitoring region-tier drill deferred to Phase 5.
 - 2026-07-10 — 4-level hierarchy (Region/Kawasan) + per-level map styling planned (ADR-045).
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

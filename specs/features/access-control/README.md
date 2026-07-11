@@ -22,6 +22,7 @@ Data-driven RBAC: roles and permissions are database rows managed at runtime fro
 - [auth](../auth/README.md) · [users](../users/README.md) · [monitoring](../monitoring/README.md) · [settings](../settings/README.md)
 
 ## Changelog
+- 2026-07-11 — Review polish: role-list search, higher-contrast selected state, SYSTEM-badge tooltip, Role Name required + inline error, one-input-per-row. **Marker-as-image** (`marker_image_url` on roles/teams/rayons/regions/areas; migration `17491800000000`): shared `MarkerImagePicker` = preseeded gallery (`public/markers/*.svg`) + custom data-URI upload. Verified live.
 - 2026-07-11 — Role codes renamed per UAT: `top_management` → `management`, `admin_data` → `admin_rayon` (also usernames + display labels). Codebase-wide sweep + data migration `17491700000000` (relaxes `chk_users_role`, updates `users.role`/usernames, `roles.code`, `activity_types.applicable_roles`). Supersedes ADR-033's naming stance. Applied to demo + staging seeders.
 - 2026-07-10 — Backend landed (Phase 1): `rbac` module — Role/Permission/role_permissions tables + migration, permission catalog + wildcard matcher, `RolePermissionsService` (Redis), `@RequirePermissions`/`PermissionsGuard`, roles/permissions CRUD API, idempotent seeds (9 system roles). Existing `@Roles` endpoints untouched. Web role-management page + endpoint migration still pending.
 - 2026-07-10 — Spec created for UAT dynamic-RBAC revamp (ADR-044). History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
