@@ -88,7 +88,9 @@ if [ "$LAN" = true ]; then
   # separate backend-port firewall rule, no CORS.
   export NEXT_PUBLIC_API_URL="http://$LAN_IP:$WEB_PORT"
   export NEXT_PUBLIC_WS_URL="http://$LAN_IP:$WEB_PORT"
-  export CORS_ORIGIN="http://localhost:$WEB_PORT,http://$LAN_IP:$WEB_PORT,http://localhost:19006"
+  # NOTE: no CORS override needed — the browser only ever talks to the web origin
+  # (same-origin proxy above), so CORS never applies. CORS_ORIGIN stays purely
+  # env-driven (apps/be/.env.local) for anyone hitting the API cross-origin.
   export SEKAR_LAN_PROXY=1
   export SEKAR_API_PORT="$BE_PORT"
   # Next 16 blocks cross-origin dev resources (/_next/*) by default; without this

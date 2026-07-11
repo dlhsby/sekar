@@ -25,6 +25,29 @@ That's it! Services run at:
 - `satgas1/12345678`
 - `081200000006/12345678` (phone login)
 
+### Test the web from your phone (same Wi-Fi)
+
+```bash
+./scripts/start.sh --lan            # + Metro; or add --no-mobile for web-only
+./scripts/start.sh --lan 192.168.1.5   # force the advertised IP
+```
+
+`--lan` binds the web to `0.0.0.0`, auto-detects your LAN IP, and points the
+browser bundle at the **web origin** — the web dev server proxies `/api` +
+`/socket.io` to the backend (`next.config` rewrites, gated by `SEKAR_LAN_PROXY`).
+So the phone only needs the **web port** reachable, and because everything is
+same-origin there is **no CORS** to configure. It also sets
+`SEKAR_ALLOWED_DEV_ORIGINS` so Next 16 serves its dev bundle to the LAN host
+(otherwise the page hangs on the loading gate). Open `http://<LAN_IP>:3001` on
+the phone.
+
+- **WSL2:** your phone reaches the *Windows* host IP, not WSL. The script prints
+  a one-time `netsh portproxy` + firewall command (also saved to
+  `logs/windows-lan-setup.ps1`) — run it once in an elevated PowerShell.
+- **CORS** stays env-driven via `CORS_ORIGIN` (`apps/be/.env.local`); you only
+  add an origin there if a browser hits `http://<LAN_IP>:3000` directly (not the
+  `--lan` proxy path).
+
 ---
 
 ## Table of Contents
