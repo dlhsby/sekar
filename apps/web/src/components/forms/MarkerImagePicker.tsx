@@ -63,9 +63,13 @@ export function MarkerImagePicker({
     setOpen(false);
   };
 
+  // Tiles stay white so transparent marker images render true to color; the
+  // selected state is a primary ring, never a background fill (which would show
+  // through a transparent PNG and tint the icon).
   const cell =
     'flex size-12 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60';
-  const selectedCell = '-translate-y-0.5 bg-nb-primary shadow-nb-md';
+  const selectedCell =
+    '-translate-y-0.5 shadow-nb-md ring-2 ring-nb-primary ring-offset-2 ring-offset-nb-white';
 
   return (
     <div className="space-y-2">
