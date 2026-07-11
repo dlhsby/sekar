@@ -28,7 +28,9 @@
       "integrations": "Integrasi",
       "limits": "Batas",
       "general": "Umum"
-    }
+    },
+    "searchPlaceholder": "Cari pengaturan…",
+    "noResults": "Tidak ada pengaturan yang cocok"
   },
   "general": {
     "identity": "Identitas",

@@ -28,7 +28,9 @@
       "integrations": "Integrations",
       "limits": "Limits",
       "general": "General"
-    }
+    },
+    "searchPlaceholder": "Search settings…",
+    "noResults": "No settings match"
   },
   "general": {
     "identity": "Identity",

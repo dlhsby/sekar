@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
+import { Search } from 'lucide-react';
 import { Button, Badge, Input, SectionCard, Skeleton, EmptyState } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api/client';
 import {
@@ -25,6 +26,7 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
   const updateSetting = useUpdateSetting();
   const clearSetting = useClearSetting();
   const [staged, setStaged] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('');
 
   const revert = async (key: string) => {
     try {

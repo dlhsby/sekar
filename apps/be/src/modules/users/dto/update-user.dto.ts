@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsEnum,
   IsUUID,
   IsArray,
   MaxLength,
@@ -10,7 +9,6 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../entities/user.entity';
 import { ValidationConstants } from '../../../common/constants/auth.constants';
 import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.util';
 
@@ -58,16 +56,12 @@ export class UpdateUserDto {
   phone_number?: string;
 
   @ApiPropertyOptional({
-    description: 'User role',
+    description: 'Role code — must exist in the data-driven roles table (ADR-044).',
     example: 'korlap',
-    enum: UserRole,
   })
-  @IsEnum(UserRole, {
-    message:
-      'Role must be one of: satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin',
-  })
+  @IsString()
   @IsOptional()
-  role?: UserRole;
+  role?: string;
 
   @ApiPropertyOptional({
     description: 'Rayon ID (single). Optional for all roles.',

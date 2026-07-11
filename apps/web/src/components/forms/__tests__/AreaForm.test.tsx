@@ -161,8 +161,8 @@ describe('AreaForm', () => {
         wrapper: createWrapper(),
       });
 
-      // Open the Tipe Area combobox (second combobox trigger).
-      await user.click(screen.getAllByRole('combobox')[1]);
+      // Open the Tipe Area combobox — comboboxes are rayon[0], region[1], type[2].
+      await user.click(screen.getAllByRole('combobox')[2]);
       expect(await screen.findByText(/taman kota/i)).toBeInTheDocument();
       expect(screen.getByText(/jalur hijau/i)).toBeInTheDocument();
     });

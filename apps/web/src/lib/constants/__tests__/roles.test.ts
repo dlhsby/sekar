@@ -147,9 +147,9 @@ describe('Role Constants', () => {
       expect(ROLE_LABELS.satgas).toBe('Satgas');
       expect(ROLE_LABELS.linmas).toBe('Linmas');
       expect(ROLE_LABELS.korlap).toBe('Korlap');
-      expect(ROLE_LABELS.admin_rayon).toBe('Admin Data');
+      expect(ROLE_LABELS.admin_rayon).toBe('Admin Rayon');
       expect(ROLE_LABELS.kepala_rayon).toBe('Kepala Rayon');
-      expect(ROLE_LABELS.management).toBe('Top Management');
+      expect(ROLE_LABELS.management).toBe('Management');
       expect(ROLE_LABELS.admin_system).toBe('Admin Sistem');
       expect(ROLE_LABELS.superadmin).toBe('Superadmin');
     });

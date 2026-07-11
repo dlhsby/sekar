@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { UserValidationService } from './services/user-validation.service';
 import { User, UserRole } from './entities/user.entity';
+import { Role } from '../rbac/entities/role.entity';
 import { AuthService } from '../auth/auth.service';
 import { AuditLogService } from '../audit/audit.service';
 import { UserAreasService } from '../user-areas/user-areas.service';
@@ -89,6 +90,11 @@ describe('UsersService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
+        },
+        {
+          // Data-driven role validation (ADR-044): default to "role exists".
+          provide: getRepositoryToken(Role),
+          useValue: { exists: jest.fn().mockResolvedValue(true) },
         },
         {
           provide: AuthService,

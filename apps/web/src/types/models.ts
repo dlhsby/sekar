@@ -109,7 +109,8 @@ export interface CreateUserDto {
   full_name: string;
   /** Omit → backend auto-generates a one-time temp password (returned once). */
   password?: string;
-  role: UserRole;
+  /** Role code — any code from the data-driven roles catalog (ADR-044). */
+  role: string;
   phone_number?: string;
   /** `null` explicitly clears the field (roles without a rayon scope). */
   rayon_id?: string | null;
@@ -132,7 +133,7 @@ export interface CreatedUser extends User {
 export interface UpdateUserDto {
   username?: string;
   full_name?: string;
-  role?: UserRole;
+  role?: string;
   phone_number?: string;
   /** `null` explicitly clears the field (roles without a rayon scope). */
   rayon_id?: string | null;

@@ -1,7 +1,6 @@
 import {
   IsString,
   IsNotEmpty,
-  IsEnum,
   IsUUID,
   IsArray,
   MinLength,
@@ -11,7 +10,6 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../entities/user.entity';
 import { ValidationConstants } from '../../../common/constants/auth.constants';
 import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.util';
 
@@ -95,17 +93,13 @@ export class CreateUserDto {
    * @example 'satgas'
    */
   @ApiPropertyOptional({
-    description: 'User role (defaults to satgas)',
+    description:
+      'Role code — must exist in the data-driven roles table (ADR-044). Defaults to satgas.',
     example: 'satgas',
-    enum: UserRole,
-    default: UserRole.SATGAS,
   })
-  @IsEnum(UserRole, {
-    message:
-      'Role must be one of: satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin',
-  })
+  @IsString()
   @IsOptional()
-  role?: UserRole;
+  role?: string;
 
   @ApiPropertyOptional({
     description: 'Indonesian mobile for login. Normalized to 08xxxxxxxxxx (accepts +62/62 input).',

@@ -7,13 +7,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { FormInput, FormCombobox, Button } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
-import type { UserRole, User } from '@/types/models';
+import type { User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
 import { useRegions } from '@/lib/api/regions';
 import { useUserAreas } from '@/lib/api/user-areas';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
-import { sortedRoleOptions, roleAssignmentScope } from '@/lib/constants/roles';
+import { useRoles, type MonitoringScope } from '@/lib/api/roles';
+import { ROLE_HIERARCHY_ORDER } from '@/lib/constants/roles';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
@@ -34,20 +35,9 @@ function createUserSchema(t: TFn) {
       .string()
       .min(1, t('validation:phoneRequired'))
       .regex(INDO_MOBILE_REGEX, t('validation:invalidPhone')),
-    role: z.enum(
-      [
-        'satgas',
-        'linmas',
-        'korlap',
-        'admin_rayon',
-        'kepala_rayon',
-        'management',
-        'admin_system',
-        'superadmin',
-        'staff_kecamatan',
-      ],
-      { error: () => t('validation:roleRequired') },
-    ),
+    // Roles are data-driven (ADR-044) — any code present in the /roles catalog
+    // is valid; membership is enforced by the options list + the backend.
+    role: z.string().min(1, t('validation:roleRequired')),
     rayon_id: z.string().uuid().optional().or(z.literal('')),
     region_id: z.string().uuid().optional().or(z.literal('')),
     shift_definition_id: z.string().uuid().optional().or(z.literal('')),
@@ -56,6 +46,23 @@ function createUserSchema(t: TFn) {
 
 /** Any UUID version — area ids are deterministic UUID v5. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Which scope inputs a role uses, derived from its monitoring_scope (ADR-044). */
+function scopeFromMonitoring(ms: MonitoringScope | undefined): {
+  rayon: boolean;
+  region: boolean;
+  location: boolean;
+} {
+  switch (ms) {
+    case 'region':
+    case 'location':
+      return { rayon: true, region: true, location: true };
+    case 'district':
+      return { rayon: true, region: false, location: false };
+    default: // city | none | undefined → no scope inputs
+      return { rayon: false, region: false, location: false };
+  }
+}
 
 export interface UserFormSubmit
   extends Omit<UserFormData, 'rayon_id' | 'region_id' | 'shift_definition_id'> {
@@ -90,6 +97,20 @@ export function UserForm({
 
   const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
   const { data: areasData, isLoading: areasLoading } = useAreas({ limit: 1000 });
+  const { data: roles = [] } = useRoles();
+
+  // Dynamic, hierarchy-sorted role options (incl. custom roles) with DB labels.
+  const rolesByCode = useMemo(() => new Map(roles.map((r) => [r.code, r])), [roles]);
+  const roleOptions = useMemo(() => {
+    const rank = (code: string) => {
+      const i = ROLE_HIERARCHY_ORDER.indexOf(code as (typeof ROLE_HIERARCHY_ORDER)[number]);
+      return i === -1 ? ROLE_HIERARCHY_ORDER.length : i;
+    };
+    return [...roles]
+      .sort((a, b) => rank(a.code) - rank(b.code) || a.name.localeCompare(b.name))
+      .map((r) => ({ value: r.code, label: r.name }));
+  }, [roles]);
+  const scopeFor = (code: string) => scopeFromMonitoring(rolesByCode.get(code)?.monitoring_scope);
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
   const [areaIds, setAreaIds] = useState<string[]>([]);
@@ -113,7 +134,7 @@ export function UserForm({
       phone_number: initialData?.phone_number || '',
       // Unselected by default on create; comboboxes start empty (shift is
       // defaulted to Shift 1 once the definitions load — see effect below).
-      role: (initialData?.role ?? '') as UserRole,
+      role: initialData?.role ?? '',
       rayon_id: initialData?.rayon_id || '',
       region_id: initialData?.region_id || '',
       shift_definition_id: '',
@@ -168,7 +189,7 @@ export function UserForm({
     // the server (a PATCH that omits a field would keep the old value). On
     // create the backend maps null → unset. area_ids is filtered to valid
     // UUIDs so a blank/stale entry can't trip `@IsUUID(..., {each:true})`.
-    const scope = roleAssignmentScope(data.role);
+    const scope = scopeFor(data.role);
     const submitData: UserFormSubmit = {
       ...data,
       rayon_id: scope.rayon ? data.rayon_id || null : null,
@@ -181,7 +202,6 @@ export function UserForm({
     await onSubmit(submitData);
   };
 
-  const roleOptions = sortedRoleOptions();
   const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
@@ -202,8 +222,9 @@ export function UserForm({
     [allAreas, selectedRegionId],
   );
 
-  // Which scope fields this role uses (rayon / region / location).
-  const scope = roleAssignmentScope(selectedRole);
+  // Which scope fields this role uses (rayon / region / location) — from the
+  // selected role's monitoring_scope.
+  const scope = scopeFor(selectedRole);
 
   // When the role changes so a field no longer applies, clear its value so we
   // never submit a stale rayon/region/location for e.g. a management role.
@@ -288,7 +309,7 @@ export function UserForm({
         label={t('admin:users.form.role')}
         options={roleOptions}
         value={selectedRole || ''}
-        onChange={(value) => setValue('role', value as UserRole, { shouldValidate: true })}
+        onChange={(value) => setValue('role', value, { shouldValidate: true })}
         placeholder={t('admin:users.form.rolePlaceholder')}
         error={errors.role?.message}
         required

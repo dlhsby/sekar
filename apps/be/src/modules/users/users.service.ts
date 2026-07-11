@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
+import { Role } from '../rbac/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -37,6 +38,11 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    // Roles are data-driven (ADR-044) — validate assigned role codes against the
+    // `roles` table rather than a static enum. Repo is provided globally by the
+    // @Global rbac module.
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
     private readonly authService: AuthService,
     // Phase 4-7 (H2): uniqueness validation extracted from CRUD methods
     private readonly userValidation: UserValidationService,
@@ -45,6 +51,19 @@ export class UsersService {
     // Simplified assignment: rayon + permanent areas + one shift set in user mgmt
     private readonly userAreasService: UserAreasService,
   ) {}
+
+  /**
+   * Validate an assigned role code against the data-driven `roles` table
+   * (ADR-044) — replaces the static enum/CHECK constraint. Undefined is allowed
+   * (create falls back to the column default).
+   */
+  private async assertRoleValid(role?: string): Promise<void> {
+    if (!role) return;
+    const exists = await this.roleRepository.exists({ where: { code: role } });
+    if (!exists) {
+      throw new BadRequestException(`Unknown role: ${role}`);
+    }
+  }
 
   /** Fire-and-forget audit write — account changes must never fail on logging */
   private audit(params: Parameters<AuditLogService['log']>[0]): void {
@@ -74,6 +93,7 @@ export class UsersService {
 
     this.logger.log(`Creating new user: ${username}`);
 
+    await this.assertRoleValid(role);
     await this.userValidation.assertUsernameAvailable(username);
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number);
@@ -93,7 +113,7 @@ export class UsersService {
       username,
       password_hash,
       full_name,
-      role,
+      role: role as UserRole,
       phone_number: phone_number || null,
       password_must_change: true,
       rayon_id: rayon_id ?? undefined,
@@ -381,6 +401,9 @@ export class UsersService {
     // Username is editable on update; only re-check availability when it changes.
     if (updateData.username && updateData.username !== user.username) {
       await this.userValidation.assertUsernameAvailable(updateData.username);
+    }
+    if (updateData.role && updateData.role !== user.role) {
+      await this.assertRoleValid(updateData.role);
     }
 
     // Reassignment = editing the user's permanent areas. Past shifts/tracking
