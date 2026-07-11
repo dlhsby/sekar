@@ -85,7 +85,8 @@
     },
     "areasTitle": "Area Ditugaskan",
     "noAreasAssigned": "Belum ada area yang ditugaskan.",
-    "areaCount": "{{count}} Area"
+    "areaCount": "{{count}} Area",
+    "columnArea": "Area"
   },
   "areas": {
     "pageTitle": "Area",

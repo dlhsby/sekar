@@ -85,7 +85,8 @@
     },
     "areasTitle": "Assigned Areas",
     "noAreasAssigned": "No assigned areas yet.",
-    "areaCount": "{{count}} Areas"
+    "areaCount": "{{count}} Areas",
+    "columnArea": "Area"
   },
   "areas": {
     "pageTitle": "Areas",

@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Button, Badge, Input, SectionCard } from '@/components/ui';
+import { Button, Badge, Input, SectionCard, Skeleton, EmptyState } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api/client';
 import {
   useSystemSettings,
@@ -53,14 +53,18 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
   if (isLoading || !data) {
     return (
       <SectionCard title={t('settings:system.title')}>
-        <p className="py-4 text-nb-body-sm text-nb-gray-600">{t('settings:system.loading')}</p>
+        <div className="space-y-3 py-2">
+          <Skeleton variant="text" />
+          <Skeleton variant="text" />
+          <Skeleton variant="text" />
+        </div>
       </SectionCard>
     );
   }
   if (isError) {
     return (
       <SectionCard title={t('settings:system.title')}>
-        <p className="py-4 text-nb-body-sm text-nb-danger">{t('settings:system.loadError')}</p>
+        <EmptyState variant="error" title={t('settings:system.loadError')} />
       </SectionCard>
     );
   }

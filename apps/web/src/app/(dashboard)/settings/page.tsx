@@ -226,6 +226,7 @@ function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
           label={t('settings:security.currentPassword')}
           type="password"
           autoComplete="current-password"
+          required
           value={oldPassword}
           onChange={(e) => setOldPassword(e.target.value)}
         />
@@ -233,15 +234,17 @@ function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
           label={t('settings:security.newPassword')}
           type="password"
           autoComplete="new-password"
+          required
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           error={tooShort ? t('settings:security.minChars') : undefined}
-          helperText={t('settings:security.minChars')}
+          helperText={!tooShort ? t('settings:security.minChars') : undefined}
         />
         <FormInput
           label={t('settings:security.confirmNewPassword')}
           type="password"
           autoComplete="new-password"
+          required
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           error={mismatch ? t('settings:security.mismatch') : undefined}

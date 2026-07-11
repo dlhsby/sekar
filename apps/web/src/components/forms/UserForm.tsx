@@ -309,6 +309,7 @@ export function UserForm({
           }}
           placeholder={rayonsLoading ? t('admin:shared.loading') : t('admin:users.form.rayonPlaceholder')}
           error={errors.rayon_id?.message}
+          required
           disabled={fieldsDisabled || rayonsLoading}
         />
       )}
@@ -329,6 +330,7 @@ export function UserForm({
               : t('admin:users.form.regionPlaceholder')
           }
           error={errors.region_id?.message}
+          required
           disabled={fieldsDisabled || !selectedRayonId}
         />
       )}

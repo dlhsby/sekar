@@ -199,10 +199,10 @@ export default function UsersPage() {
       {
         id: 'areas',
         accessorFn: (u) => (u.assigned_area_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
-        header: 'Area',
+        header: t('admin:users.columnArea'),
         filterFn: enumArrayFilterFn as FilterFn<User>,
         meta: {
-          label: 'Area',
+          label: t('admin:users.columnArea'),
           filterVariant: 'enum',
           filterOptions: areaFilterOptions,
         },
