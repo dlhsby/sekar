@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Trash2 } from 'lucide-react';
+import { Trash2, RotateCcw } from 'lucide-react';
 import { Button, Badge, Textarea, FormInput, FormSelect } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api/client';
 import { hasPermission } from '@/lib/auth/permissions';
@@ -40,15 +40,36 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   // State is initialised from props directly; the page keys this component by
   // role.id so it remounts (and re-initialises) when the selection changes.
   // Wildcards are expanded to concrete checked keys via the matcher.
+  const initialChecked = useMemo(
+    () => new Set(allKeys.filter((k) => hasPermission(role.permissionKeys, k))),
+    [allKeys, role.permissionKeys],
+  );
+
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description ?? '');
   const [scope, setScope] = useState<MonitoringScope>(role.monitoring_scope);
   const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(
     role.marker_image_url ?? null,
   );
-  const [checked, setChecked] = useState<Set<string>>(
-    () => new Set(allKeys.filter((k) => hasPermission(role.permissionKeys, k))),
-  );
+  const [checked, setChecked] = useState<Set<string>>(initialChecked);
+
+  const initialMarker = role.marker_image_url ?? null;
+  const permsDirty =
+    checked.size !== initialChecked.size || [...checked].some((k) => !initialChecked.has(k));
+  const isDirty =
+    name !== role.name ||
+    description !== (role.description ?? '') ||
+    scope !== role.monitoring_scope ||
+    (markerImageUrl ?? null) !== initialMarker ||
+    permsDirty;
+
+  const resetChanges = () => {
+    setName(role.name);
+    setDescription(role.description ?? '');
+    setScope(role.monitoring_scope);
+    setMarkerImageUrl(initialMarker);
+    setChecked(new Set(initialChecked));
+  };
 
   const toggle = (key: string, on: boolean) =>
     setChecked((prev) => {
@@ -118,9 +139,20 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           )}
           {canManage && (
             <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<RotateCcw className="size-4" />}
+              onClick={resetChanges}
+              disabled={!isDirty || updateRole.isPending}
+            >
+              {t('access-control:actions.resetChanges')}
+            </Button>
+          )}
+          {canManage && (
+            <Button
               onClick={handleSave}
               loading={updateRole.isPending}
-              disabled={!!nameError}
+              disabled={!!nameError || !isDirty}
             >
               {updateRole.isPending
                 ? t('access-control:actions.saving')

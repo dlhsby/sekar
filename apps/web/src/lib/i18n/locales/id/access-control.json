@@ -47,7 +47,8 @@
     "saving": "Menyimpan…",
     "delete": "Hapus Peran",
     "create": "Buat",
-    "cancel": "Batal"
+    "cancel": "Batal",
+    "resetChanges": "Urungkan Perubahan"
   },
   "dialog": {
     "createTitle": "Tambah Peran Baru",

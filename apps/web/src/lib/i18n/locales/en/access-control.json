@@ -47,7 +47,8 @@
     "saving": "Saving…",
     "delete": "Delete Role",
     "create": "Create",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "resetChanges": "Undo Changes"
   },
   "dialog": {
     "createTitle": "Add New Role",
