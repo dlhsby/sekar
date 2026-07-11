@@ -5,7 +5,8 @@
     "general": "Umum",
     "security": "Keamanan",
     "notifications": "Notifikasi",
-    "system": "Sistem"
+    "system": "Sistem",
+    "personal": "Pribadi"
   },
   "system": {
     "title": "Pengaturan Sistem",
@@ -30,7 +31,8 @@
       "general": "Umum"
     },
     "searchPlaceholder": "Cari pengaturan…",
-    "noResults": "Tidak ada pengaturan yang cocok"
+    "noResults": "Tidak ada pengaturan yang cocok",
+    "unsaved": "Perubahan belum disimpan"
   },
   "general": {
     "identity": "Identitas",

@@ -3,8 +3,8 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Search } from 'lucide-react';
 import { Button, Badge, Input, SectionCard, Skeleton, EmptyState } from '@/components/ui';
+import { cn } from '@/lib/utils/cn';
 import { getErrorMessage } from '@/lib/api/client';
 import {
   useSystemSettings,
@@ -26,7 +26,7 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
   const updateSetting = useUpdateSetting();
   const clearSetting = useClearSetting();
   const [staged, setStaged] = useState<Record<string, string>>({});
-  const [search, setSearch] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
 
   const revert = async (key: string) => {
     try {
@@ -94,28 +94,57 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
     }
   };
 
+  const groupDirty = (items: SettingDescription[]) =>
+    items.some((s) => staged[s.key] !== undefined && staged[s.key] !== originalString(s));
+  const active = groups.find(([g]) => g === selectedGroup) ?? groups[0];
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {!canManage && (
         <p className="border-2 border-nb-info bg-nb-info-light px-4 py-3 text-nb-body-sm font-medium text-nb-black">
           {t('settings:system.readOnly')}
         </p>
       )}
-      {groups.map(([group, items]) => {
-        const dirty = items.some(
-          (s) => staged[s.key] !== undefined && staged[s.key] !== originalString(s),
-        );
-        return (
+      {/* Master/detail: group rail (left) + the selected group's settings (right). */}
+      <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
+        <nav className="flex flex-col gap-2" aria-label={t('settings:system.title')}>
+          {groups.map(([group, items]) => {
+            const isActive = active?.[0] === group;
+            return (
+              <button
+                key={group}
+                type="button"
+                aria-current={isActive}
+                onClick={() => setSelectedGroup(group)}
+                className={cn(
+                  'flex items-center justify-between gap-2 rounded-nb-base border-2 border-nb-black px-3 py-2.5 text-left text-nb-body-sm font-bold transition-transform hover:-translate-y-0.5',
+                  isActive ? '-translate-y-0.5 bg-nb-primary shadow-nb-md' : 'bg-nb-white shadow-nb-sm',
+                )}
+              >
+                <span className="min-w-0 truncate">
+                  {t(`settings:system.groups.${group}`, { defaultValue: group })}
+                </span>
+                {groupDirty(items) && (
+                  <span
+                    className="size-2 shrink-0 rounded-full bg-nb-warning"
+                    aria-label={t('settings:system.unsaved')}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {active && (
           <SectionCard
-            key={group}
-            title={t(`settings:system.groups.${group}`, { defaultValue: group })}
+            title={t(`settings:system.groups.${active[0]}`, { defaultValue: active[0] })}
             action={
               canManage ? (
                 <Button
                   size="sm"
-                  onClick={() => saveGroup(items)}
+                  onClick={() => saveGroup(active[1])}
                   loading={updateSetting.isPending}
-                  disabled={!dirty}
+                  disabled={!groupDirty(active[1])}
                 >
                   {t('settings:system.save')}
                 </Button>
@@ -123,7 +152,7 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
             }
           >
             <ul className="divide-y-2 divide-nb-gray-100">
-              {items.map((s) => (
+              {active[1].map((s) => (
                 <li key={s.key} className="flex flex-wrap items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -167,8 +196,8 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
               ))}
             </ul>
           </SectionCard>
-        );
-      })}
+        )}
+      </div>
     </div>
   );
 }

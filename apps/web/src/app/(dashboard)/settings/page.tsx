@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next';
 
 import {
   Button,
-  FormInput,
   LanguageSwitcher,
   SectionCard,
   StatusPill,
@@ -32,9 +31,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { SystemSettingsTab } from '@/components/settings/SystemSettingsTab';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
-import { authApi } from '@/lib/api/auth';
 import { getErrorMessage } from '@/lib/api/client';
-import { setAuthCookie } from '@/lib/utils/cookies';
 import { useThemeStore } from '@/stores/theme';
 import {
   getNotificationTypeLabel,
@@ -43,19 +40,19 @@ import {
   type NotificationPreference,
 } from '@/lib/api/notification-preferences';
 
-type SettingsTab = 'umum' | 'keamanan' | 'notifikasi' | 'sistem';
+type SettingsTab = 'personal' | 'sistem';
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const { user, loading, refreshUser } = useAuth();
+  const { user, loading } = useAuth();
   const { can } = usePermissions();
-  const [tab, setTab] = useState<SettingsTab>('umum');
+  const [tab, setTab] = useState<SettingsTab>('personal');
   const canViewSystem = can('settings:read');
 
+  // Two areas only (ADR-049): Personal (identity, appearance, language,
+  // notifications) and System settings. Password change lives in the profile.
   const tabs: TabItem<SettingsTab>[] = [
-    { key: 'umum', label: t('settings:tabs.general') },
-    { key: 'keamanan', label: t('settings:tabs.security') },
-    { key: 'notifikasi', label: t('settings:tabs.notifications') },
+    { key: 'personal', label: t('settings:tabs.personal') },
     ...(canViewSystem
       ? [{ key: 'sistem' as const, label: t('settings:tabs.system') }]
       : []),
@@ -86,9 +83,12 @@ export default function SettingsPage() {
         aria-label={t('settings:title')}
       />
 
-      {tab === 'umum' && <GeneralTab user={user} />}
-      {tab === 'keamanan' && <SecurityTab onChanged={refreshUser} />}
-      {tab === 'notifikasi' && <NotificationsTab userId={user.id} />}
+      {tab === 'personal' && (
+        <div className="space-y-5">
+          <GeneralTab user={user} />
+          <NotificationsTab userId={user.id} />
+        </div>
+      )}
       {tab === 'sistem' && canViewSystem && (
         <SystemSettingsTab canManage={can('settings:manage')} />
       )}
@@ -177,83 +177,6 @@ function GeneralTab({ user }: { user: { full_name: string; username: string; rol
         </div>
       </SectionCard>
     </div>
-  );
-}
-
-/* ── Keamanan ─────────────────────────────────────────────────────────────── */
-
-function SecurityTab({ onChanged }: { onChanged: () => Promise<void> }) {
-  const { t } = useTranslation();
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const tooShort = newPassword.length > 0 && newPassword.length < 8;
-  const mismatch = confirm.length > 0 && confirm !== newPassword;
-  const canSubmit =
-    !!oldPassword && newPassword.length >= 8 && confirm === newPassword && !submitting;
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSubmit) return;
-    setSubmitting(true);
-    try {
-      // POST /auth/change-password rotates the token pair; replace the cookies
-      // so the next request authenticates with the fresh access token.
-      const res = await authApi.changePassword({
-        old_password: oldPassword,
-        new_password: newPassword,
-      });
-      setAuthCookie('access_token', res.access_token, { maxAge: 7 * 24 * 60 * 60 });
-      setAuthCookie('refresh_token', res.refresh_token, { maxAge: 30 * 24 * 60 * 60 });
-      await onChanged();
-      setOldPassword('');
-      setNewPassword('');
-      setConfirm('');
-      toast.success(t('settings:security.passwordChanged'));
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <SectionCard title={t('settings:security.changePassword')} className="max-w-xl">
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <FormInput
-          label={t('settings:security.currentPassword')}
-          type="password"
-          autoComplete="current-password"
-          required
-          value={oldPassword}
-          onChange={(e) => setOldPassword(e.target.value)}
-        />
-        <FormInput
-          label={t('settings:security.newPassword')}
-          type="password"
-          autoComplete="new-password"
-          required
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          error={tooShort ? t('settings:security.minChars') : undefined}
-          helperText={!tooShort ? t('settings:security.minChars') : undefined}
-        />
-        <FormInput
-          label={t('settings:security.confirmNewPassword')}
-          type="password"
-          autoComplete="new-password"
-          required
-          value={confirm}
-          onChange={(e) => setConfirm(e.target.value)}
-          error={mismatch ? t('settings:security.mismatch') : undefined}
-        />
-        <Button type="submit" loading={submitting} disabled={!canSubmit}>
-          {t('settings:security.savePassword')}
-        </Button>
-      </form>
-    </SectionCard>
   );
 }
 

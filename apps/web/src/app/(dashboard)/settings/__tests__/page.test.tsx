@@ -106,49 +106,11 @@ describe('SettingsPage — Umum tab', () => {
   });
 });
 
-describe('SettingsPage — Keamanan tab', () => {
-  it('disables submit until valid and submits a change', async () => {
-    const user = userEvent.setup();
-    mockChangePassword.mockResolvedValue({ access_token: 'a', refresh_token: 'r', user: adminUser });
-    render(<SettingsPage />);
-
-    await user.click(screen.getByRole('tab', { name: /keamanan/i }));
-
-    const submit = screen.getByRole('button', { name: /simpan kata sandi/i });
-    expect(submit).toBeDisabled();
-
-    await user.type(screen.getByLabelText(/kata sandi saat ini/i), 'oldpass123');
-    await user.type(screen.getByLabelText(/^kata sandi baru$/i), 'newpass123');
-    await user.type(screen.getByLabelText(/konfirmasi kata sandi baru/i), 'newpass123');
-
-    await waitFor(() => expect(submit).toBeEnabled());
-    await user.click(submit);
-
-    await waitFor(() =>
-      expect(mockChangePassword).toHaveBeenCalledWith({
-        old_password: 'oldpass123',
-        new_password: 'newpass123',
-      }),
-    );
-  });
-
-  it('flags a confirmation mismatch', async () => {
-    const user = userEvent.setup();
-    render(<SettingsPage />);
-    await user.click(screen.getByRole('tab', { name: /keamanan/i }));
-
-    await user.type(screen.getByLabelText(/^kata sandi baru$/i), 'newpass123');
-    await user.type(screen.getByLabelText(/konfirmasi kata sandi baru/i), 'different1');
-
-    expect(await screen.findByText(/konfirmasi tidak cocok/i)).toBeInTheDocument();
-  });
-});
-
-describe('SettingsPage — Notifikasi tab', () => {
+describe('SettingsPage — Personal tab (notifications)', () => {
   it('lists configurable types with per-type switches and saves changes', async () => {
     const user = userEvent.setup();
     render(<SettingsPage />);
-    await user.click(screen.getByRole('tab', { name: /notifikasi/i }));
+    // Notifications now live on the default Personal tab (no tab switch needed).
 
     expect(screen.getByText(/tugas baru ditugaskan/i)).toBeInTheDocument();
     expect(screen.getByText(/lembur disetujui/i)).toBeInTheDocument();

@@ -5,7 +5,8 @@
     "general": "General",
     "security": "Security",
     "notifications": "Notifications",
-    "system": "System"
+    "system": "System",
+    "personal": "Personal"
   },
   "system": {
     "title": "System Settings",
@@ -30,7 +31,8 @@
       "general": "General"
     },
     "searchPlaceholder": "Search settings…",
-    "noResults": "No settings match"
+    "noResults": "No settings match",
+    "unsaved": "Unsaved changes"
   },
   "general": {
     "identity": "Identity",
