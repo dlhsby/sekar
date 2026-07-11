@@ -18,11 +18,6 @@ export class CreateTeamDto {
   @MaxLength(50)
   marker_icon?: string;
 
-  @ApiPropertyOptional({ example: '#69D2E7' })
-  @IsOptional()
-  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'marker_color must be a 6-digit hex color' })
-  marker_color?: string;
-
   @ApiPropertyOptional({
     description: 'Marker image: a preset path (/markers/*.svg) or a base64 data-URI',
     example: '/markers/pin-teal.svg',

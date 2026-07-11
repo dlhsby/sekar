@@ -15,6 +15,7 @@ import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
+import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
@@ -27,7 +28,7 @@ const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
   'border_opacity',
   'fill_opacity',
   'marker_icon',
-  'marker_color',
+  'marker_image_url',
 ];
 
 // Default value for the native color input (a data value, not a rendered style
@@ -133,7 +134,7 @@ export function RayonForm({
       border_opacity: initialData?.border_opacity ?? undefined,
       fill_opacity: initialData?.fill_opacity ?? undefined,
       marker_icon: initialData?.marker_icon ?? undefined,
-      marker_color: initialData?.marker_color ?? undefined,
+      marker_image_url: initialData?.marker_image_url ?? undefined,
     },
   });
 
@@ -193,7 +194,7 @@ export function RayonForm({
       border_opacity: data.border_opacity ?? null,
       fill_opacity: data.fill_opacity ?? null,
       marker_icon: data.marker_icon || null,
-      marker_color: data.marker_color || null,
+      marker_image_url: data.marker_image_url || null,
     };
 
     await onSubmit(submitData);
@@ -271,6 +272,7 @@ export function RayonForm({
 
       <MapStyleFields
         value={style}
+        markerDefaultUrl={entityMarkerDefault('rayon')}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
             setValue(k as keyof RayonFormData, v as never, { shouldValidate: false }),

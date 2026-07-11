@@ -9,6 +9,7 @@ import { FormInput, FormCombobox, Textarea } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
+import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useRayons } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
 import type { Region, CreateRegionDto, UpdateRegionDto, MapStyle } from '@/lib/api/regions';
@@ -25,7 +26,7 @@ const STYLE_KEYS: (keyof MapStyle)[] = [
   'border_opacity',
   'fill_opacity',
   'marker_icon',
-  'marker_color',
+  'marker_image_url',
 ];
 
 type RegionFormData = MapStyle & {
@@ -76,7 +77,7 @@ export function RegionForm({
         border_opacity: z.number().nullable().optional(),
         fill_opacity: z.number().nullable().optional(),
         marker_icon: z.string().nullable().optional(),
-        marker_color: z.string().nullable().optional(),
+        marker_image_url: z.string().nullable().optional(),
       }),
     [t],
   );
@@ -95,7 +96,7 @@ export function RegionForm({
       border_opacity: initialData?.border_opacity ?? undefined,
       fill_opacity: initialData?.fill_opacity ?? undefined,
       marker_icon: initialData?.marker_icon ?? undefined,
-      marker_color: initialData?.marker_color ?? undefined,
+      marker_image_url: initialData?.marker_image_url ?? undefined,
     },
   });
   const errors = formState.errors;
@@ -126,7 +127,7 @@ export function RegionForm({
       border_opacity: data.border_opacity ?? null,
       fill_opacity: data.fill_opacity ?? null,
       marker_icon: data.marker_icon || null,
-      marker_color: data.marker_color || null,
+      marker_image_url: data.marker_image_url || null,
     };
     await onSubmit(payload);
   };
@@ -163,6 +164,7 @@ export function RegionForm({
 
       <MapStyleFields
         value={style}
+        markerDefaultUrl={entityMarkerDefault('region')}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
             setValue(k as keyof RegionFormData, v as never, { shouldValidate: false }),

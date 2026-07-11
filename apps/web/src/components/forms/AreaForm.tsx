@@ -14,6 +14,7 @@ import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/componen
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
+import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
 import { useAreaTypes } from '@/lib/api/area-types';
@@ -26,7 +27,7 @@ const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
   'border_opacity',
   'fill_opacity',
   'marker_icon',
-  'marker_color',
+  'marker_image_url',
 ];
 
 interface LatLng {
@@ -135,7 +136,7 @@ export function AreaForm({
       border_opacity: initialData?.border_opacity ?? undefined,
       fill_opacity: initialData?.fill_opacity ?? undefined,
       marker_icon: initialData?.marker_icon ?? undefined,
-      marker_color: initialData?.marker_color ?? undefined,
+      marker_image_url: initialData?.marker_image_url ?? undefined,
     },
   });
 
@@ -201,7 +202,7 @@ export function AreaForm({
       border_opacity: data.border_opacity ?? null,
       fill_opacity: data.fill_opacity ?? null,
       marker_icon: data.marker_icon || null,
-      marker_color: data.marker_color || null,
+      marker_image_url: data.marker_image_url || null,
     };
 
     await onSubmit(submitData);
@@ -278,6 +279,7 @@ export function AreaForm({
 
       <MapStyleFields
         value={style}
+        markerDefaultUrl={entityMarkerDefault('area')}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
             setValue(k as keyof AreaFormData, v as never, { shouldValidate: false }),

@@ -71,7 +71,7 @@ export interface Rayon {
   border_opacity?: number | null;
   fill_opacity?: number | null;
   marker_icon?: string | null;
-  marker_color?: string | null;
+  marker_image_url?: string | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -195,7 +195,7 @@ export interface Area extends Record<string, unknown> {
   border_opacity?: number | null;
   fill_opacity?: number | null;
   marker_icon?: string | null;
-  marker_color?: string | null;
+  marker_image_url?: string | null;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */
@@ -211,7 +211,7 @@ export interface MapStyleFieldsDto {
   border_opacity?: number | null;
   fill_opacity?: number | null;
   marker_icon?: string | null;
-  marker_color?: string | null;
+  marker_image_url?: string | null;
 }
 
 /**

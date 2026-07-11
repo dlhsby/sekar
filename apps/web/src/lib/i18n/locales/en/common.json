@@ -263,6 +263,13 @@
     "preset": "Marker option {{n}}",
     "hint": "Pick a preset marker or upload an image (SVG/PNG, max 200KB).",
     "tooLarge": "Image must be 200KB or smaller",
-    "readError": "Failed to read image"
+    "readError": "Failed to read image",
+    "change": "Change",
+    "reset": "Reset to default",
+    "default": "Default",
+    "done": "Done",
+    "current": "Current marker",
+    "usingDefault": "Using system default",
+    "colorHint": "Pin/label color on the map — does not recolor the icon image."
   }
 }

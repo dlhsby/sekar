@@ -20,6 +20,7 @@ import {
 } from '@/components/ui';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
+import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useTeams, useDeleteTeam, type Team } from '@/lib/api/teams';
 import { TeamFormModal } from '@/components/teams/TeamFormModal';
 
@@ -52,18 +53,12 @@ export default function TeamsPage() {
         header: t('admin:teams.columnMarker'),
         enableSorting: false,
         cell: ({ row }) => {
-          const c = row.original.marker_color;
-          return c ? (
-            <span className="inline-flex items-center gap-2">
-              <span
-                className="h-4 w-4 rounded-full border-2 border-nb-black"
-                style={{ backgroundColor: c }}
-                title={c}
-              />
-              <span className="font-mono text-nb-body-sm text-nb-gray-600">{c}</span>
+          const src = row.original.marker_image_url ?? entityMarkerDefault('team');
+          return (
+            <span className="inline-flex size-9 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white">
+              {/* eslint-disable-next-line @next/next/no-img-element -- small marker thumbnail */}
+              <img src={src} alt="" className="size-6" />
             </span>
-          ) : (
-            <span className="text-nb-gray-500">—</span>
           );
         },
       },

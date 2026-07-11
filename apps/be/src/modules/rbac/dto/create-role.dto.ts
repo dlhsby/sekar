@@ -34,11 +34,6 @@ export class CreateRoleDto {
   @MaxLength(50)
   marker_icon?: string;
 
-  @ApiPropertyOptional({ example: '#7FBC8C' })
-  @IsOptional()
-  @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'marker_color must be a 6-digit hex color' })
-  marker_color?: string;
-
   @ApiPropertyOptional({
     description: 'Marker image: a preset path (/markers/*.svg) or a base64 data-URI',
     example: '/markers/pin-sage.svg',

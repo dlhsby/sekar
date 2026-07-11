@@ -11,7 +11,6 @@ export interface Role {
   is_system: boolean;
   monitoring_scope: MonitoringScope;
   marker_icon?: string;
-  marker_color?: string;
   marker_image_url?: string | null;
   permissionKeys: string[];
   permissionCount: number;
@@ -42,7 +41,6 @@ export interface RolePayload {
   description?: string;
   monitoring_scope?: MonitoringScope;
   marker_icon?: string;
-  marker_color?: string;
   marker_image_url?: string | null;
   permissionKeys?: string[];
 }

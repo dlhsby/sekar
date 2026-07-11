@@ -10,7 +10,6 @@ export class RoleView {
   @ApiProperty() is_system: boolean;
   @ApiProperty({ enum: MonitoringScope }) monitoring_scope: MonitoringScope;
   @ApiProperty({ nullable: true }) marker_icon?: string;
-  @ApiProperty({ nullable: true }) marker_color?: string;
   @ApiProperty({ nullable: true }) marker_image_url?: string;
   @ApiProperty({ type: [String] }) permissionKeys: string[];
   @ApiProperty() permissionCount: number;

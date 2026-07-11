@@ -22,9 +22,9 @@ export async function seedTeams(ctx: SeedContext): Promise<void> {
   if (!penyiraman || !perawatan) return;
 
   await ctx.qr.query(
-    `INSERT INTO teams (id, name, team_type_id, marker_icon, marker_color) VALUES
-       ('b2b2b2b2-0000-4000-8000-000000000001', 'Tim Penyiraman A', $1, 'droplets', '#69D2E7'),
-       ('b2b2b2b2-0000-4000-8000-000000000002', 'Tim Perawatan A', $2, 'trees', '#7FBC8C')
+    `INSERT INTO teams (id, name, team_type_id, marker_icon, marker_image_url) VALUES
+       ('b2b2b2b2-0000-4000-8000-000000000001', 'Tim Penyiraman A', $1, 'droplets', '/markers/pin-teal.svg'),
+       ('b2b2b2b2-0000-4000-8000-000000000002', 'Tim Perawatan A', $2, 'trees', '/markers/pin-sage.svg')
      ON CONFLICT (id) DO NOTHING`,
     [penyiraman, perawatan],
   );

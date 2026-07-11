@@ -4,14 +4,7 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Trash2 } from 'lucide-react';
-import {
-  Button,
-  Badge,
-  Input,
-  Textarea,
-  FormInput,
-  FormSelect,
-} from '@/components/ui';
+import { Button, Badge, Textarea, FormInput, FormSelect } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api/client';
 import { hasPermission } from '@/lib/auth/permissions';
 import {
@@ -22,9 +15,8 @@ import {
 } from '@/lib/api/roles';
 import { PermissionAccordion } from './PermissionAccordion';
 import { MarkerImagePicker } from '@/components/forms/MarkerImagePicker';
+import { roleMarkerDefault } from '@/lib/constants/markerDefaults';
 
-// eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
-const DEFAULT_MARKER_COLOR = '#7FBC8C';
 const SCOPES: MonitoringScope[] = ['city', 'district', 'region', 'location', 'none'];
 
 interface RoleEditorProps {
@@ -54,7 +46,6 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(
     role.marker_image_url ?? null,
   );
-  const [markerColor, setMarkerColor] = useState(role.marker_color ?? DEFAULT_MARKER_COLOR);
   const [checked, setChecked] = useState<Set<string>>(
     () => new Set(allKeys.filter((k) => hasPermission(role.permissionKeys, k))),
   );
@@ -92,7 +83,6 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           description: description.trim() || undefined,
           monitoring_scope: scope,
           marker_icon: role.marker_icon ?? undefined,
-          marker_color: markerColor,
           marker_image_url: markerImageUrl,
           // Preserve the *:* superuser grant instead of materializing it.
           ...(isSuperuser ? {} : { permissionKeys: Array.from(checked) }),
@@ -165,29 +155,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
         <MarkerImagePicker
           value={markerImageUrl}
           onChange={setMarkerImageUrl}
+          defaultUrl={roleMarkerDefault(role.code)}
           disabled={!canManage}
         />
-        <div className="space-y-1.5">
-          <label className="block text-nb-body-sm font-semibold text-nb-black">
-            {t('access-control:fields.markerColor')}
-          </label>
-          <div className="flex items-center gap-2">
-            <input
-              type="color"
-              aria-label={t('access-control:fields.markerColor')}
-              value={/^#[0-9a-fA-F]{6}$/.test(markerColor) ? markerColor : DEFAULT_MARKER_COLOR}
-              onChange={(e) => setMarkerColor(e.target.value)}
-              disabled={!canManage}
-              className="h-11 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <Input
-              value={markerColor}
-              onChange={(e) => setMarkerColor(e.target.value)}
-              disabled={!canManage}
-              className="font-mono"
-            />
-          </div>
-        </div>
       </div>
 
       <div className="space-y-2">

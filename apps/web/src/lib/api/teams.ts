@@ -14,7 +14,6 @@ export interface Team {
   team_type_id: string;
   team_type?: TeamType;
   marker_icon?: string | null;
-  marker_color?: string | null;
   marker_image_url?: string | null;
   is_active: boolean;
   created_at: string;
@@ -25,7 +24,6 @@ export interface CreateTeamDto {
   name: string;
   team_type_id: string;
   marker_icon?: string | null;
-  marker_color?: string | null;
   marker_image_url?: string | null;
 }
 export type UpdateTeamDto = Partial<CreateTeamDto> & { is_active?: boolean };

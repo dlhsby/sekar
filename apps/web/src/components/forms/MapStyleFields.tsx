@@ -6,12 +6,14 @@ import type { MapStyle } from '@/lib/api/regions';
 import { MarkerImagePicker } from './MarkerImagePicker';
 
 // eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default values
-const DEFAULTS = { border: '#1C1917', fill: '#7FBC8C', marker: '#7FBC8C' };
+const DEFAULTS = { border: '#1C1917', fill: '#7FBC8C' };
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 interface MapStyleFieldsProps {
   value: MapStyle;
   onChange: (patch: Partial<MapStyle>) => void;
+  /** System default marker for this entity (shown when none is set). */
+  markerDefaultUrl: string;
   disabled?: boolean;
 }
 
@@ -20,7 +22,12 @@ interface MapStyleFieldsProps {
  * color, each with a 0–1 opacity, plus a marker icon + color. Shared by the
  * rayon / region / area forms.
  */
-export function MapStyleFields({ value, onChange, disabled }: MapStyleFieldsProps) {
+export function MapStyleFields({
+  value,
+  onChange,
+  markerDefaultUrl,
+  disabled,
+}: MapStyleFieldsProps) {
   const { t } = useTranslation();
 
   return (
@@ -53,17 +60,11 @@ export function MapStyleFields({ value, onChange, disabled }: MapStyleFieldsProp
           onChange={(v) => onChange({ fill_opacity: v })}
           disabled={disabled}
         />
-        <ColorField
-          label={t('admin:mapStyle.markerColor')}
-          fallback={DEFAULTS.marker}
-          value={value.marker_color ?? ''}
-          onChange={(v) => onChange({ marker_color: v })}
-          disabled={disabled}
-        />
         <div className="sm:col-span-2">
           <MarkerImagePicker
             value={value.marker_image_url ?? null}
             onChange={(v) => onChange({ marker_image_url: v })}
+            defaultUrl={markerDefaultUrl}
             disabled={disabled}
           />
         </div>

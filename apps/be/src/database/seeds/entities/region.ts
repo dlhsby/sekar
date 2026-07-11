@@ -27,10 +27,10 @@ export async function seedRegions(ctx: SeedContext): Promise<void> {
   }
 
   await ctx.qr.query(
-    `INSERT INTO regions (id, name, rayon_id, border_color, fill_color, border_opacity, fill_opacity, marker_icon, marker_color)
+    `INSERT INTO regions (id, name, rayon_id, border_color, fill_color, border_opacity, fill_opacity, marker_icon, marker_image_url)
      VALUES
-       ($1, 'Kawasan A', $3, '#1C1917', '#7FBC8C', 0.9, 0.25, 'trees', '#7FBC8C'),
-       ($2, 'Kawasan B', $3, '#1C1917', '#69D2E7', 0.9, 0.25, 'trees', '#69D2E7')
+       ($1, 'Kawasan A', $3, '#1C1917', '#7FBC8C', 0.9, 0.25, 'trees', '/markers/pin-yellow.svg'),
+       ($2, 'Kawasan B', $3, '#1C1917', '#69D2E7', 0.9, 0.25, 'trees', '/markers/pin-teal.svg')
      ON CONFLICT (id) DO NOTHING`,
     [R1, R2, rayonId],
   );

@@ -75,10 +75,6 @@ export class Rayon {
   @Column({ length: 50, nullable: true })
   marker_icon?: string;
 
-  @ApiPropertyOptional({ example: '#7FBC8C' })
-  @Column({ length: 9, nullable: true })
-  marker_color?: string;
-
   @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
   @Column({ type: 'text', nullable: true })
   marker_image_url?: string;

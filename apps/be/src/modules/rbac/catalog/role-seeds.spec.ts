@@ -36,8 +36,8 @@ describe('role-seeds consistency', () => {
     expect(new Set(codes).size).toBe(9);
   });
 
-  it('every seed role has a valid hex marker color', () => {
-    const bad = ROLE_SEEDS.filter((r) => !/^#[0-9A-Fa-f]{6}$/.test(r.marker_color));
+  it('every seed role has a marker icon', () => {
+    const bad = ROLE_SEEDS.filter((r) => !r.marker_icon || r.marker_icon.length === 0);
     expect(bad.map((r) => r.code)).toEqual([]);
   });
 
