@@ -12,7 +12,8 @@ const BATCH_SIZE = 50;
  * StaleStatusSweeperService
  *
  * Runs every 5 minutes and promotes ACTIVE workers whose last_location_at
- * is older than MISSING_THRESHOLD_SECONDS (default 900 s / 15 min) to MISSING.
+ * is older than the missing threshold (monitoring.missing_threshold_sec,
+ * default 3600 s / 1 hour — unified with the status calculator) to MISSING.
  *
  * This is a safety net for workers whose devices stop sending pings without
  * going through a clean clock-out — e.g. device battery death, network loss,

@@ -125,6 +125,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'schedule.materialization_days',
     group: 'scheduling',
+    subgroup: 'roster',
     valueType: 'number',
     isSecret: false,
     envKey: 'SCHEDULE_MATERIALIZATION_DAYS',
@@ -135,6 +136,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'schedule.min_shift_duration_min',
     group: 'scheduling',
+    subgroup: 'roster',
     valueType: 'number',
     isSecret: false,
     envKey: 'MINIMUM_SHIFT_DURATION_MINUTES',
@@ -146,6 +148,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'fcm.enabled',
     group: 'integrations',
+    subgroup: 'push',
     valueType: 'boolean',
     isSecret: false,
     envKey: 'FCM_ENABLED',
@@ -155,6 +158,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'maps.browser_key',
     group: 'integrations',
+    subgroup: 'maps',
     valueType: 'string',
     isSecret: true,
     envKey: 'GOOGLE_MAPS_API_KEY',
@@ -166,6 +170,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'ratelimit.global_per_min',
     group: 'limits',
+    subgroup: 'ratelimit',
     valueType: 'number',
     isSecret: false,
     envKey: 'RATE_LIMIT_GLOBAL_PER_MIN',
@@ -175,6 +180,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'ratelimit.login_per_min',
     group: 'limits',
+    subgroup: 'ratelimit',
     valueType: 'number',
     isSecret: false,
     envKey: 'RATE_LIMIT_LOGIN_PER_MIN',
@@ -184,6 +190,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'auth.change_password_throttle_max',
     group: 'limits',
+    subgroup: 'ratelimit',
     valueType: 'number',
     isSecret: false,
     envKey: 'AUTH_CHANGE_PASSWORD_THROTTLE_LIMIT',
@@ -193,6 +200,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'auth.change_password_throttle_ttl_ms',
     group: 'limits',
+    subgroup: 'ratelimit',
     valueType: 'number',
     isSecret: false,
     envKey: 'AUTH_CHANGE_PASSWORD_THROTTLE_TTL',
@@ -204,6 +212,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
   {
     key: 'app.default_locale',
     group: 'general',
+    subgroup: 'app',
     valueType: 'select',
     isSecret: false,
     envKey: 'DEFAULT_LOCALE',

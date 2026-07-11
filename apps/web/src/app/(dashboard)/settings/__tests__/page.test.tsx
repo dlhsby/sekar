@@ -11,9 +11,11 @@ import '@testing-library/jest-dom';
 
 // next/navigation
 const mockRedirect = jest.fn();
+let mockSection: string | null = null;
 jest.mock('next/navigation', () => ({
   redirect: (...args: unknown[]) => mockRedirect(...args),
   usePathname: () => '/settings',
+  useSearchParams: () => ({ get: (k: string) => (k === 'section' ? mockSection : null) }),
 }));
 
 // auth hook
@@ -64,6 +66,7 @@ const PREFS = [
 
 beforeEach(() => {
   jest.clearAllMocks();
+  mockSection = null;
   mockUsePrefs.mockReturnValue({ data: PREFS, isLoading: false, isError: false });
   mockUseAuth.mockReturnValue({ user: adminUser, loading: false, refreshUser: mockRefreshUser });
 });
@@ -105,6 +108,13 @@ describe('SettingsPage — Personal tab (master/detail)', () => {
     await user.click(screen.getByRole('button', { name: /ubah kata sandi/i }));
     // Modal opened → current-password field is required.
     expect(await screen.findByLabelText(/kata sandi saat ini/i)).toBeInTheDocument();
+  });
+
+  it('deep-links to Account & Security via ?section=account (no rail click needed)', () => {
+    mockSection = 'account';
+    render(<SettingsPage />);
+    // The profile form is shown immediately (Account & Security is pre-selected).
+    expect(screen.getByLabelText(/nama lengkap/i)).toHaveValue('Admin User');
   });
 
   it('stages the theme in the Appearance group and applies it on Save', async () => {

@@ -36,7 +36,7 @@ export default function ProfilePage() {
       <SectionCard
         action={
           <Button asChild variant="secondary" size="sm">
-            <Link href="/settings">
+            <Link href="/settings?section=account">
               {t('page.editInSettings')} <ArrowRight className="ml-1 size-4" />
             </Link>
           </Button>

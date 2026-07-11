@@ -12,7 +12,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { redirect } from 'next/navigation';
+import { redirect, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 
 import { Tabs, type TabItem } from '@/components/ui';
@@ -28,6 +28,9 @@ export default function SettingsPage() {
   const { t } = useTranslation();
   const { user, loading } = useAuth();
   const { can } = usePermissions();
+  const searchParams = useSearchParams();
+  // Deep-link: /settings?section=account → Personal tab, Account & Security group.
+  const deepLinkAccount = searchParams.get('section') === 'account';
   const [tab, setTab] = useState<SettingsTab>('personal');
   const canViewSystem = can('settings:read');
 
@@ -61,7 +64,9 @@ export default function SettingsPage() {
         aria-label={t('settings:title')}
       />
 
-      {tab === 'personal' && <PersonalSettingsTab user={user} />}
+      {tab === 'personal' && (
+        <PersonalSettingsTab user={user} initialGroup={deepLinkAccount ? 'accountSecurity' : undefined} />
+      )}
       {tab === 'sistem' && canViewSystem && (
         <SystemSettingsTab canManage={can('settings:manage')} />
       )}

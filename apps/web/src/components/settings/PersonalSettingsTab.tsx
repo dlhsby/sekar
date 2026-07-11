@@ -47,9 +47,16 @@ type GroupKey = 'appearanceLanguage' | 'notifications' | 'accountSecurity';
  * Notifikasi (per-type push), and Akun & Keamanan (identity, change password,
  * future MFA). Every setting is a label-left / control-right row.
  */
-export function PersonalSettingsTab({ user }: { user: PersonalUser }) {
+export function PersonalSettingsTab({
+  user,
+  initialGroup,
+}: {
+  user: PersonalUser;
+  /** Pre-select a group (e.g. deep-link from the profile page). */
+  initialGroup?: GroupKey;
+}) {
   const { t } = useTranslation();
-  const [selected, setSelected] = useState<GroupKey>('appearanceLanguage');
+  const [selected, setSelected] = useState<GroupKey>(initialGroup ?? 'appearanceLanguage');
   const [saving, setSaving] = useState(false);
 
   // Appearance + language — staged against the live values, saved together.
@@ -225,11 +232,15 @@ function AppearanceLanguagePanel({
   ];
   return (
     <PanelShell title={t('settings:personal.groups.appearanceLanguage')} actions={actions}>
-      <SectionCard>
+      <SectionCard title={t('settings:personal.appearanceTitle')}>
         <ul className="divide-y-2 divide-nb-gray-100">
           <Row label={t('settings:personal.themeLabel')} hint={t('settings:general.darkModeHint')}>
             <Segmented options={themeOptions} value={theme} onChange={onTheme} ariaLabel={t('settings:personal.themeLabel')} />
           </Row>
+        </ul>
+      </SectionCard>
+      <SectionCard title={t('settings:personal.languageTitle')}>
+        <ul className="divide-y-2 divide-nb-gray-100">
           <Row label={t('settings:personal.languageLabel')} hint={t('settings:general.languageHint')}>
             <Select options={langOptions} value={lang} onChange={onLang} ariaLabel={t('settings:personal.languageLabel')} />
           </Row>
@@ -259,7 +270,10 @@ function NotificationsPanel({
       title={t('settings:personal.groups.notifications')}
       actions={loading || error ? undefined : actions}
     >
-      <SectionCard meta={t('settings:notifications.perTypePush')}>
+      <SectionCard
+        title={t('settings:notifications.preferences')}
+        meta={t('settings:notifications.perTypePush')}
+      >
         {loading ? (
           <div className="space-y-3 py-2">
             <Skeleton variant="text" />

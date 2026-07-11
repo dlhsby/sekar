@@ -132,12 +132,20 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
     }
     subSections.push(...map.entries());
   }
-  const hasNamedSubgroups = subSections.some(([sub]) => sub !== NO_SUBGROUP);
+
+  // Setting labels + help are localized on the web, keyed by the setting key,
+  // falling back to the backend catalog string (Indonesian) if a key is absent.
+  const asMap = (v: unknown): Record<string, string> =>
+    v && typeof v === 'object' ? (v as Record<string, string>) : {};
+  const labelMap = asMap(t('settings:system.labels', { returnObjects: true }));
+  const helpMap = asMap(t('settings:system.help', { returnObjects: true }));
 
   const renderRow = (s: SettingDescription) => (
     <SettingRow
       key={s.key}
       s={s}
+      label={labelMap[s.key] ?? s.label}
+      help={helpMap[s.key] ?? s.help}
       value={staged[s.key] ?? originalString(s)}
       canManage={canManage}
       reverting={clearSetting.isPending}
@@ -182,24 +190,21 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
               )}
             </div>
 
-            {hasNamedSubgroups ? (
-              subSections.map(([sub, items]) => (
-                <SectionCard
-                  key={sub}
-                  title={
-                    sub === NO_SUBGROUP
-                      ? t('settings:system.subgroups.other')
-                      : t(`settings:system.subgroups.${sub}`, { defaultValue: sub })
-                  }
-                >
-                  <ul className="divide-y-2 divide-nb-gray-100">{items.map(renderRow)}</ul>
-                </SectionCard>
-              ))
-            ) : (
-              <SectionCard>
-                <ul className="divide-y-2 divide-nb-gray-100">{active[1].map(renderRow)}</ul>
+            {/* Always titled sub-group cards — a subgroup-less setting (none in
+                the catalog today) falls back to the "Lainnya"/Other card, so a
+                card is never rendered without a title. */}
+            {subSections.map(([sub, items]) => (
+              <SectionCard
+                key={sub}
+                title={
+                  sub === NO_SUBGROUP
+                    ? t('settings:system.subgroups.other')
+                    : t(`settings:system.subgroups.${sub}`, { defaultValue: sub })
+                }
+              >
+                <ul className="divide-y-2 divide-nb-gray-100">{items.map(renderRow)}</ul>
               </SectionCard>
-            )}
+            ))}
           </div>
         )}
       </div>
@@ -211,6 +216,8 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
 
 function SettingRow({
   s,
+  label,
+  help,
   value,
   canManage,
   reverting,
@@ -221,6 +228,10 @@ function SettingRow({
   secretPlaceholder,
 }: {
   s: SettingDescription;
+  /** Localized label (falls back to the backend catalog string). */
+  label: string;
+  /** Localized help (falls back to the backend catalog string). */
+  help?: string;
   value: string;
   canManage: boolean;
   reverting: boolean;
@@ -234,7 +245,7 @@ function SettingRow({
     <li className="flex flex-wrap items-center justify-between gap-3 py-3">
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-nb-black">{s.label}</span>
+          <span className="font-semibold text-nb-black">{label}</span>
           <Badge variant={SOURCE_VARIANT[s.source]} size="sm">
             {sourceBadge}
           </Badge>
@@ -244,7 +255,7 @@ function SettingRow({
             </Button>
           )}
         </div>
-        {s.help && <p className="text-nb-caption text-nb-gray-600">{s.help}</p>}
+        {help && <p className="text-nb-caption text-nb-gray-600">{help}</p>}
         <p className="font-mono text-[11px] text-nb-gray-600">{s.key}</p>
       </div>
       <div className="w-full sm:w-56">
@@ -253,14 +264,14 @@ function SettingRow({
             checked={value === 'true'}
             disabled={!canManage}
             onToggle={(next) => onChange(String(next))}
-            label={s.label}
+            label={label}
           />
         ) : s.valueType === 'select' ? (
           <select
             value={value}
             disabled={!canManage}
             onChange={(e) => onChange(e.target.value)}
-            aria-label={s.label}
+            aria-label={label}
             className="h-11 w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-3 text-nb-body-sm font-semibold text-nb-black shadow-nb-xs disabled:opacity-60"
           >
             {(s.options ?? []).map((o) => (

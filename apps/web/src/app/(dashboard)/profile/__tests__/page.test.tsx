@@ -46,7 +46,7 @@ describe('ProfilePage (read-only)', () => {
     render(<ProfilePage />);
     expect(screen.getByRole('link', { name: /ubah di pengaturan/i })).toHaveAttribute(
       'href',
-      '/settings',
+      '/settings?section=account',
     );
   });
 });
