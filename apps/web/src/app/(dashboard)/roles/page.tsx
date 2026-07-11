@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, ShieldCheck, Search } from 'lucide-react';
+import { Plus, ShieldCheck, Search, ArrowUpDown, Check } from 'lucide-react';
 import {
   Button,
   Badge,
@@ -16,6 +16,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   EmptyState,
   Skeleton,
 } from '@/components/ui';
@@ -48,6 +52,16 @@ const roleRank = (code: string) => {
   return i === -1 ? ROLE_ORDER.length : i;
 };
 
+type SortMode = 'hierarchy' | 'nameAsc' | 'nameDesc' | 'users' | 'permissions';
+const SORT_MODES: SortMode[] = ['hierarchy', 'nameAsc', 'nameDesc', 'users', 'permissions'];
+const roleComparators: Record<SortMode, (a: Role, b: Role) => number> = {
+  hierarchy: (a, b) => roleRank(a.code) - roleRank(b.code) || a.name.localeCompare(b.name),
+  nameAsc: (a, b) => a.name.localeCompare(b.name),
+  nameDesc: (a, b) => b.name.localeCompare(a.name),
+  users: (a, b) => b.userCount - a.userCount || a.name.localeCompare(b.name),
+  permissions: (a, b) => b.permissionCount - a.permissionCount || a.name.localeCompare(b.name),
+};
+
 export default function RolesPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
@@ -58,18 +72,14 @@ export default function RolesPage() {
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [sortMode, setSortMode] = useState<SortMode>('hierarchy');
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [pendingDelete, setPendingDelete] = useState<Role | null>(null);
 
   const sortedRoles = useMemo(
-    () =>
-      [...(roles ?? [])].sort((a, b) => {
-        const ra = roleRank(a.code);
-        const rb = roleRank(b.code);
-        return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
-      }),
-    [roles],
+    () => [...(roles ?? [])].sort(roleComparators[sortMode]),
+    [roles, sortMode],
   );
   const filteredRoles = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -127,13 +137,40 @@ export default function RolesPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
         {/* Role list */}
         <div className="space-y-2">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('access-control:search.placeholder')}
-            aria-label={t('access-control:search.placeholder')}
-            leftIcon={<Search className="size-4" />}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t('access-control:search.placeholder')}
+              aria-label={t('access-control:search.placeholder')}
+              leftIcon={<Search className="size-4" />}
+              className="flex-1"
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label={t('access-control:sort.label')}
+                  title={t('access-control:sort.label')}
+                >
+                  <ArrowUpDown className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                {SORT_MODES.map((mode) => (
+                  <DropdownMenuItem
+                    key={mode}
+                    onClick={() => setSortMode(mode)}
+                    className="flex items-center justify-between"
+                  >
+                    {t(`access-control:sort.${mode}`)}
+                    {sortMode === mode && <Check className="size-4" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           {isLoading ? (
             <>
               <Skeleton variant="card" />

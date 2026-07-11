@@ -61,5 +61,13 @@
     "updated": "Role \"{{name}}\" updated",
     "deleted": "Role deleted"
   },
-  "denied": "You don't have access to role management"
+  "denied": "You don't have access to role management",
+  "sort": {
+    "label": "Sort",
+    "hierarchy": "Hierarchy",
+    "nameAsc": "Name A–Z",
+    "nameDesc": "Name Z–A",
+    "users": "Most users",
+    "permissions": "Most permissions"
+  }
 }

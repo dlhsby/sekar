@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { OfflineBanner } from '@/components/pwa/OfflineBanner';
 import { UpdateToast } from '@/components/pwa/UpdateToast';
 import { resolveServerLang } from '@/lib/i18n/server-metadata';
+import { resolveServerTheme } from '@/lib/theme-server';
 import { PAGE_METADATA } from '@/lib/i18n/page-metadata';
 
 const inter = Inter({
@@ -92,19 +92,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const lang = await resolveServerLang();
+  const [lang, theme] = await Promise.all([resolveServerLang(), resolveServerTheme()]);
   return (
-    <html lang={lang} suppressHydrationWarning>
-      <head>
-        {pwaEnabled && <link rel="apple-touch-icon" href="/apple-icon.png" />}
-      </head>
+    // Theme class is rendered server-side from the `sekar-theme` cookie (no inline
+    // no-flash script). suppressHydrationWarning covers the first-visit case where
+    // the client store resolves the system preference and updates the class.
+    <html lang={lang} className={theme === 'dark' ? 'dark' : undefined} suppressHydrationWarning>
+      <head>{pwaEnabled && <link rel="apple-touch-icon" href="/apple-icon.png" />}</head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
-        {/* Apply the saved theme before first paint to avoid a flash of the wrong
-            theme. `beforeInteractive` injects this into the initial HTML (runs
-            pre-hydration) without React's raw-<script> client-render warning. */}
-        <Script id="theme-flash-guard" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('sekar-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t!=='light'&&t!=='dark'&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`}
-        </Script>
         <OfflineBanner />
         <UpdateToast />
         <Providers>{children}</Providers>

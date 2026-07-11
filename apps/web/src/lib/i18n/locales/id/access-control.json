@@ -61,5 +61,13 @@
     "updated": "Peran \"{{name}}\" diperbarui",
     "deleted": "Peran dihapus"
   },
-  "denied": "Anda tidak memiliki akses ke manajemen peran"
+  "denied": "Anda tidak memiliki akses ke manajemen peran",
+  "sort": {
+    "label": "Urutkan",
+    "hierarchy": "Hierarki",
+    "nameAsc": "Nama A–Z",
+    "nameDesc": "Nama Z–A",
+    "users": "Pengguna terbanyak",
+    "permissions": "Izin terbanyak"
+  }
 }
