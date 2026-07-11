@@ -372,7 +372,7 @@ function AccountSecurityPanel({ user }: { user: PersonalUser }) {
     >
       {/* Profile (photo + editable fields) */}
       <SectionCard title={t('settings:personal.profileTitle')}>
-        <div className="mb-4 flex items-center gap-4">
+        <div className="mb-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
           <RoleAvatar
             name={user.full_name}
             role={user.role as never}
