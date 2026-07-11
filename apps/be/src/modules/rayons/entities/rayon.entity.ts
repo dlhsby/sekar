@@ -79,6 +79,10 @@ export class Rayon {
   @Column({ length: 9, nullable: true })
   marker_color?: string;
 
+  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
+  @Column({ type: 'text', nullable: true })
+  marker_image_url?: string;
+
   @ApiProperty({
     description: 'Center latitude of the rayon boundary',
     example: -7.2575,

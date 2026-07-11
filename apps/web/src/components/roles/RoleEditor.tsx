@@ -21,6 +21,7 @@ import {
   type PermissionCatalogCategory,
 } from '@/lib/api/roles';
 import { PermissionAccordion } from './PermissionAccordion';
+import { MarkerImagePicker } from '@/components/forms/MarkerImagePicker';
 
 // eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
 const DEFAULT_MARKER_COLOR = '#7FBC8C';
@@ -50,7 +51,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description ?? '');
   const [scope, setScope] = useState<MonitoringScope>(role.monitoring_scope);
-  const [markerIcon, setMarkerIcon] = useState(role.marker_icon ?? '');
+  const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(
+    role.marker_image_url ?? null,
+  );
   const [markerColor, setMarkerColor] = useState(role.marker_color ?? DEFAULT_MARKER_COLOR);
   const [checked, setChecked] = useState<Set<string>>(
     () => new Set(allKeys.filter((k) => hasPermission(role.permissionKeys, k))),
@@ -88,8 +91,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           name: name.trim(),
           description: description.trim() || undefined,
           monitoring_scope: scope,
-          marker_icon: markerIcon.trim() || undefined,
+          marker_icon: role.marker_icon ?? undefined,
           marker_color: markerColor,
+          marker_image_url: markerImageUrl,
           // Preserve the *:* superuser grant instead of materializing it.
           ...(isSuperuser ? {} : { permissionKeys: Array.from(checked) }),
         },
@@ -158,11 +162,9 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           onChange={(e) => setDescription(e.target.value)}
           disabled={!canManage}
         />
-        <FormInput
-          label={t('access-control:fields.markerIcon')}
-          placeholder={t('access-control:fields.markerIconPlaceholder')}
-          value={markerIcon}
-          onChange={(e) => setMarkerIcon(e.target.value)}
+        <MarkerImagePicker
+          value={markerImageUrl}
+          onChange={setMarkerImageUrl}
           disabled={!canManage}
         />
         <div className="space-y-1.5">

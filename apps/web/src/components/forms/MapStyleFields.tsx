@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui';
 import type { MapStyle } from '@/lib/api/regions';
+import { MarkerImagePicker } from './MarkerImagePicker';
 
 // eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default values
 const DEFAULTS = { border: '#1C1917', fill: '#7FBC8C', marker: '#7FBC8C' };
@@ -52,17 +53,6 @@ export function MapStyleFields({ value, onChange, disabled }: MapStyleFieldsProp
           onChange={(v) => onChange({ fill_opacity: v })}
           disabled={disabled}
         />
-        <div className="space-y-1.5">
-          <label className="block text-nb-body-sm font-semibold text-nb-black">
-            {t('admin:mapStyle.markerIcon')}
-          </label>
-          <Input
-            value={value.marker_icon ?? ''}
-            placeholder={t('admin:mapStyle.markerIconPlaceholder')}
-            onChange={(e) => onChange({ marker_icon: e.target.value })}
-            disabled={disabled}
-          />
-        </div>
         <ColorField
           label={t('admin:mapStyle.markerColor')}
           fallback={DEFAULTS.marker}
@@ -70,6 +60,13 @@ export function MapStyleFields({ value, onChange, disabled }: MapStyleFieldsProp
           onChange={(v) => onChange({ marker_color: v })}
           disabled={disabled}
         />
+        <div className="sm:col-span-2">
+          <MarkerImagePicker
+            value={value.marker_image_url ?? null}
+            onChange={(v) => onChange({ marker_image_url: v })}
+            disabled={disabled}
+          />
+        </div>
       </div>
     </div>
   );

@@ -68,6 +68,10 @@ export class Region {
   @Column({ length: 9, nullable: true })
   marker_color?: string;
 
+  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
+  @Column({ type: 'text', nullable: true })
+  marker_image_url?: string;
+
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 

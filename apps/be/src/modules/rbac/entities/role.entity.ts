@@ -52,6 +52,10 @@ export class Role {
   @Column({ length: 9, nullable: true })
   marker_color?: string;
 
+  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
+  @Column({ type: 'text', nullable: true })
+  marker_image_url?: string;
+
   @ManyToMany(() => Permission, (permission) => permission.roles, { cascade: false })
   @JoinTable({
     name: 'role_permissions',

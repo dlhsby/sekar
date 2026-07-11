@@ -8,7 +8,7 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { AreaType } from '../../area-types/entities/area-type.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 
@@ -141,6 +141,10 @@ export class Area {
   @ApiProperty({ required: false, example: '#7FBC8C' })
   @Column({ length: 9, nullable: true })
   marker_color?: string;
+
+  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
+  @Column({ type: 'text', nullable: true })
+  marker_image_url?: string;
 
   @ApiProperty({
     description: 'GeoJSON polygon defining area boundary',

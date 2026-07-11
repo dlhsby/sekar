@@ -254,5 +254,15 @@
     "noPermission": {
       "short": "Access denied"
     }
+  },
+  "marker": {
+    "label": "Map Marker",
+    "upload": "Upload image",
+    "clear": "Clear marker",
+    "custom": "Custom marker",
+    "preset": "Marker option {{n}}",
+    "hint": "Pick a preset marker or upload an image (SVG/PNG, max 200KB).",
+    "tooLarge": "Image must be 200KB or smaller",
+    "readError": "Failed to read image"
   }
 }

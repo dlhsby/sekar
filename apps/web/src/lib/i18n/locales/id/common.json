@@ -254,5 +254,15 @@
     "noPermission": {
       "short": "Akses ditolak"
     }
+  },
+  "marker": {
+    "label": "Penanda Peta",
+    "upload": "Unggah gambar",
+    "clear": "Hapus penanda",
+    "custom": "Penanda kustom",
+    "preset": "Opsi penanda {{n}}",
+    "hint": "Pilih penanda bawaan atau unggah gambar (SVG/PNG, maks 200KB).",
+    "tooLarge": "Ukuran gambar maksimal 200KB",
+    "readError": "Gagal membaca gambar"
   }
 }

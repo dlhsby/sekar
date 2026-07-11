@@ -10,6 +10,7 @@ export interface MapStyle {
   fill_opacity?: number | null;
   marker_icon?: string | null;
   marker_color?: string | null;
+  marker_image_url?: string | null;
 }
 
 export interface Region extends MapStyle {

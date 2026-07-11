@@ -42,6 +42,10 @@ export class Team {
   @Column({ length: 9, nullable: true })
   marker_color?: string;
 
+  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
+  @Column({ type: 'text', nullable: true })
+  marker_image_url?: string;
+
   @ApiProperty({ example: true })
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
