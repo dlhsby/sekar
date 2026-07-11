@@ -42,6 +42,19 @@ const nextConfig: NextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 
+  // LAN/phone testing: when started via `./scripts/start.sh --lan`, proxy the
+  // API (and monitoring socket) through the web origin so only the web port must
+  // be reachable from the phone — no separate backend-port firewall rule and no
+  // CORS. Guarded by an env flag so normal dev/build is unaffected.
+  async rewrites() {
+    if (process.env.SEKAR_LAN_PROXY !== '1') return [];
+    const be = `http://127.0.0.1:${process.env.SEKAR_API_PORT || '3000'}`;
+    return [
+      { source: '/api/:path*', destination: `${be}/api/:path*` },
+      { source: '/socket.io/:path*', destination: `${be}/socket.io/:path*` },
+    ];
+  },
+
   // Security + SW headers
   // Note: to rebuild the service worker after editing src/sw/sw.ts, run:
   //   npm run sw:build

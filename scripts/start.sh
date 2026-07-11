@@ -82,11 +82,17 @@ if [ "$LAN" = true ]; then
     print_error "Could not auto-detect a LAN IP. Pass one: ./scripts/start.sh --lan <ip>"
     exit 1
   fi
-  export NEXT_PUBLIC_API_URL="http://$LAN_IP:$BE_PORT"
-  export NEXT_PUBLIC_WS_URL="ws://$LAN_IP:$BE_PORT"
+  # Same-origin: the browser talks only to the web origin; the web dev server
+  # proxies /api + /socket.io to the backend (next.config rewrites, gated by
+  # SEKAR_LAN_PROXY). So only the WEB port must be reachable from the phone — no
+  # separate backend-port firewall rule, no CORS.
+  export NEXT_PUBLIC_API_URL="http://$LAN_IP:$WEB_PORT"
+  export NEXT_PUBLIC_WS_URL="http://$LAN_IP:$WEB_PORT"
   export CORS_ORIGIN="http://localhost:$WEB_PORT,http://$LAN_IP:$WEB_PORT,http://localhost:19006"
+  export SEKAR_LAN_PROXY=1
+  export SEKAR_API_PORT="$BE_PORT"
   WEB_ARGS=(-- -H 0.0.0.0) # leave localhost-only; backend already binds 0.0.0.0
-  print_info "LAN mode: advertising http://$LAN_IP:$WEB_PORT (API http://$LAN_IP:$BE_PORT)"
+  print_info "LAN mode: serving http://$LAN_IP:$WEB_PORT (API proxied to :$BE_PORT — only the web port needs to reach your phone)"
 fi
 
 start_bg backend "$ROOT/apps/be" npm run start:dev
@@ -112,18 +118,17 @@ if [ "$LAN" = true ]; then
   if is_wsl && [ -n "$WSL_IP" ]; then
     PS1_FILE="$LOG_DIR/windows-lan-setup.ps1"
     cat >"$PS1_FILE" <<PS
-# SEKAR — expose WSL2 ports on the Windows LAN so your phone can reach them.
+# SEKAR — expose the WSL2 web port on the Windows LAN so your phone can reach it.
+# (The API is proxied through the web server, so only the web port is needed.)
 # Run ONCE in an ELEVATED PowerShell (right-click > Run as administrator).
 # Re-run only if the WSL IP changes (after a full WSL/PC restart).
-netsh interface portproxy add v4tov4 listenport=$BE_PORT  listenaddress=0.0.0.0 connectport=$BE_PORT  connectaddress=$WSL_IP
 netsh interface portproxy add v4tov4 listenport=$WEB_PORT listenaddress=0.0.0.0 connectport=$WEB_PORT connectaddress=$WSL_IP
-New-NetFirewallRule -DisplayName "SEKAR LAN ($BE_PORT,$WEB_PORT)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $BE_PORT,$WEB_PORT -ErrorAction SilentlyContinue
-# To UNDO: netsh interface portproxy delete v4tov4 listenport=$BE_PORT listenaddress=0.0.0.0 ; (same for $WEB_PORT) ; Remove-NetFirewallRule -DisplayName "SEKAR LAN ($BE_PORT,$WEB_PORT)"
+New-NetFirewallRule -DisplayName "SEKAR LAN ($WEB_PORT)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $WEB_PORT -ErrorAction SilentlyContinue
+# To UNDO: netsh interface portproxy delete v4tov4 listenport=$WEB_PORT listenaddress=0.0.0.0 ; Remove-NetFirewallRule -DisplayName "SEKAR LAN ($WEB_PORT)"
 PS
     print_warning "WSL2 — the phone can't reach WSL ($WSL_IP) directly. If it can't connect, run ONCE in an elevated PowerShell (saved to logs/windows-lan-setup.ps1):"
-    echo -e "    ${GREEN}netsh interface portproxy add v4tov4 listenport=$BE_PORT  listenaddress=0.0.0.0 connectport=$BE_PORT  connectaddress=$WSL_IP${NC}"
     echo -e "    ${GREEN}netsh interface portproxy add v4tov4 listenport=$WEB_PORT listenaddress=0.0.0.0 connectport=$WEB_PORT connectaddress=$WSL_IP${NC}"
-    echo -e "    ${GREEN}New-NetFirewallRule -DisplayName \"SEKAR LAN ($BE_PORT,$WEB_PORT)\" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $BE_PORT,$WEB_PORT${NC}"
+    echo -e "    ${GREEN}New-NetFirewallRule -DisplayName \"SEKAR LAN ($WEB_PORT)\" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $WEB_PORT${NC}"
   fi
 fi
 echo ""
