@@ -21,7 +21,7 @@ Guidance for Claude Code. Docs are **product/feature-organized** — nav hub `sp
 ```bash
 # One-command flow (recommended) — run from project root
 ./scripts/setup.sh          # env files, all installs, infra, migrations (+ optional destructive seed)
-./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
+./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro; --lan [IP] to also expose on your Wi-Fi for phone testing)
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 # Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
 # Ports: apps/be/.env.local PORT (default 3000) · apps/web/.env.local WEB_PORT (default 3001)
