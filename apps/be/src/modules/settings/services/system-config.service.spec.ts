@@ -22,22 +22,22 @@ describe('SystemConfigService', () => {
 
   describe('resolve precedence (DB → env → default)', () => {
     it('returns the code default when no override and no env', async () => {
-      delete process.env.MONITORING_IDLE_THRESHOLD_MIN;
+      delete process.env.MONITORING_ACTIVE_MAX_AGE_SEC;
       await service.onModuleInit();
-      expect(service.resolve('monitoring.idle_threshold_min')).toBe(5);
+      expect(service.resolve('monitoring.active_max_age_sec')).toBe(300);
     });
 
     it('prefers env over default (coerced to the value type)', async () => {
-      process.env.MONITORING_IDLE_THRESHOLD_MIN = '9';
+      process.env.MONITORING_ACTIVE_MAX_AGE_SEC = '9';
       await service.onModuleInit();
-      expect(service.resolve('monitoring.idle_threshold_min')).toBe(9);
+      expect(service.resolve('monitoring.active_max_age_sec')).toBe(9);
     });
 
     it('prefers a DB override over env', async () => {
-      process.env.MONITORING_IDLE_THRESHOLD_MIN = '9';
+      process.env.MONITORING_ACTIVE_MAX_AGE_SEC = '9';
       repo.find.mockResolvedValue([
         {
-          key: 'monitoring.idle_threshold_min',
+          key: 'monitoring.active_max_age_sec',
           value: '12',
           is_secret: false,
           value_type: 'number',
@@ -45,7 +45,7 @@ describe('SystemConfigService', () => {
         } as SystemConfig,
       ]);
       await service.onModuleInit();
-      expect(service.resolve('monitoring.idle_threshold_min')).toBe(12);
+      expect(service.resolve('monitoring.active_max_age_sec')).toBe(12);
     });
 
     it('returns undefined for an unknown key', () => {
@@ -71,7 +71,7 @@ describe('SystemConfigService', () => {
       const tol = service.describeAll().find((d) => d.key === 'geofence.tolerance_m')!;
       // has a code default but no override/env → source unset, value from default
       expect(tol.source).toBe('unset');
-      expect(tol.value).toBe(100);
+      expect(tol.value).toBe(50);
     });
   });
 

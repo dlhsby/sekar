@@ -2,7 +2,8 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { getEnvFilePaths } from './config/load-env';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './common/guards/app-throttler.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
@@ -168,12 +169,13 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
   controllers: [AppController],
   providers: [
     AppService,
-    // Global rate limiting guard (disabled in test environment)
+    // Global rate limiting guard (disabled in test environment). Resolves
+    // limits from SystemConfigService at request time (ADR-049).
     ...(process.env.NODE_ENV !== 'test'
       ? [
           {
             provide: APP_GUARD,
-            useClass: ThrottlerGuard,
+            useClass: AppThrottlerGuard,
           },
         ]
       : []),

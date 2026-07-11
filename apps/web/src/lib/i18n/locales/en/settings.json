@@ -8,6 +8,38 @@
     "system": "System",
     "personal": "Personal"
   },
+  "actionBar": {
+    "save": "Save Changes",
+    "reset": "Reset Changes",
+    "unsavedDot": "Unsaved changes"
+  },
+  "personal": {
+    "saved": "Preferences saved",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeLabel": "Theme",
+    "languageLabel": "Language",
+    "changePasswordTitle": "Change Password",
+    "mfaTitle": "Two-Factor Authentication (2FA)",
+    "mfaHint": "Add an extra layer of security at login.",
+    "comingSoon": "Coming soon",
+    "groups": {
+      "appearanceLanguage": "Appearance & Language",
+      "appearanceLanguageHint": "App theme & language.",
+      "notifications": "Notifications",
+      "notificationsHint": "Per-type push preferences.",
+      "accountSecurity": "Account & Security",
+      "accountSecurityHint": "Identity, password & security."
+    },
+    "profileTitle": "Profile",
+    "profileSaved": "Profile saved",
+    "photoSaved": "Profile photo updated",
+    "changePhoto": "Change Photo",
+    "securityTitle": "Security",
+    "passwordLabel": "Password",
+    "changePasswordHint": "Update your login password.",
+    "changePasswordButton": "Change Password"
+  },
   "system": {
     "title": "System Settings",
     "loading": "Loading settings…",
@@ -24,13 +56,19 @@
       "unset": "default"
     },
     "groups": {
-      "monitoring": "Monitoring",
-      "geofence": "Geofence",
+      "monitoring": "Monitoring & Geofence",
+      "scheduling": "Scheduling",
       "integrations": "Integrations",
-      "limits": "Limits",
+      "limits": "Security & Limits",
       "general": "General"
     },
-    "unsaved": "Unsaved changes"
+    "unsaved": "Unsaved changes",
+    "subgroups": {
+      "thresholds": "Status Thresholds",
+      "geofence": "Geofence",
+      "other": "Other"
+    },
+    "settingCount": "{{count}} settings"
   },
   "general": {
     "identity": "Identity",

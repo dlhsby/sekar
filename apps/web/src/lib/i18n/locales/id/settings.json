@@ -8,6 +8,38 @@
     "system": "Sistem",
     "personal": "Pribadi"
   },
+  "actionBar": {
+    "save": "Simpan Perubahan",
+    "reset": "Reset Perubahan",
+    "unsavedDot": "Perubahan belum disimpan"
+  },
+  "personal": {
+    "saved": "Preferensi disimpan",
+    "themeLight": "Terang",
+    "themeDark": "Gelap",
+    "themeLabel": "Tema",
+    "languageLabel": "Bahasa",
+    "changePasswordTitle": "Ubah Kata Sandi",
+    "mfaTitle": "Autentikasi Dua Faktor (2FA)",
+    "mfaHint": "Tambahkan lapisan keamanan ekstra saat login.",
+    "comingSoon": "Segera hadir",
+    "groups": {
+      "appearanceLanguage": "Tampilan & Bahasa",
+      "appearanceLanguageHint": "Tema & bahasa aplikasi.",
+      "notifications": "Notifikasi",
+      "notificationsHint": "Preferensi push per jenis.",
+      "accountSecurity": "Akun & Keamanan",
+      "accountSecurityHint": "Identitas, kata sandi & keamanan."
+    },
+    "profileTitle": "Profil",
+    "profileSaved": "Profil disimpan",
+    "photoSaved": "Foto profil diperbarui",
+    "changePhoto": "Ubah Foto",
+    "securityTitle": "Keamanan",
+    "passwordLabel": "Kata Sandi",
+    "changePasswordHint": "Perbarui kata sandi login Anda.",
+    "changePasswordButton": "Ubah Kata Sandi"
+  },
   "system": {
     "title": "Pengaturan Sistem",
     "loading": "Memuat pengaturan…",
@@ -24,13 +56,19 @@
       "unset": "default"
     },
     "groups": {
-      "monitoring": "Monitoring",
-      "geofence": "Geofence",
+      "monitoring": "Pemantauan & Geofence",
+      "scheduling": "Penjadwalan",
       "integrations": "Integrasi",
-      "limits": "Batas",
+      "limits": "Keamanan & Batas",
       "general": "Umum"
     },
-    "unsaved": "Perubahan belum disimpan"
+    "unsaved": "Perubahan belum disimpan",
+    "subgroups": {
+      "thresholds": "Ambang Status",
+      "geofence": "Geofence",
+      "other": "Lainnya"
+    },
+    "settingCount": "{{count}} setelan"
   },
   "general": {
     "identity": "Identitas",

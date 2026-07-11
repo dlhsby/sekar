@@ -11,6 +11,7 @@ import { NotificationPreference } from './entities/notification-preference.entit
 import { ShiftReminderCron } from './cron/shift-reminder.cron';
 import { UsersModule } from '../users/users.module';
 import { SchedulesModule } from '../schedules/schedules.module';
+import { SettingsModule } from '../settings/settings.module';
 import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
 
 /**
@@ -32,6 +33,7 @@ import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
     // @InjectQueue('fcm-retry'). The queue's actual config lives in
     // QueueModule (already imported at app level).
     BullModule.registerQueue({ name: FCM_RETRY_QUEUE }),
+    SettingsModule, // ADR-049: runtime FCM kill-switch via SystemConfigService
   ],
   controllers: [NotificationsController, NotificationPreferencesController],
   providers: [NotificationsService, NotificationPreferencesService, ShiftReminderCron],

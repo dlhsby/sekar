@@ -40,6 +40,12 @@ jest.mock('@/lib/api/notification-preferences', () => ({
   useUpdateNotificationPreferences: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
 }));
 
+// self-service profile hooks (Account & Security editable form)
+jest.mock('@/lib/api/profile', () => ({
+  useUpdateMyProfile: () => ({ mutateAsync: jest.fn().mockResolvedValue({}), isPending: false }),
+  useUploadProfilePicture: () => ({ mutateAsync: jest.fn().mockResolvedValue({}), isPending: false }),
+}));
+
 // sonner
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
@@ -86,36 +92,46 @@ describe('SettingsPage — auth gating', () => {
   });
 });
 
-describe('SettingsPage — Umum tab', () => {
-  it('shows identity fields and a link to the profile page', () => {
-    render(<SettingsPage />);
-    expect(screen.getByText('Admin User')).toBeInTheDocument();
-    expect(screen.getByText('admin')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /ubah profil/i })).toHaveAttribute('href', '/profile');
-  });
-
-  it('exposes a dark-mode switch', async () => {
+describe('SettingsPage — Personal tab (master/detail)', () => {
+  it('Account & Security has an editable profile form; password change opens a modal', async () => {
     const user = userEvent.setup();
     render(<SettingsPage />);
-    const darkSwitch = screen.getByRole('switch', { name: /mode gelap/i });
-    expect(darkSwitch).toBeInTheDocument();
-    await user.click(darkSwitch);
+    await user.click(screen.getByRole('button', { name: /akun & keamanan/i }));
+    // Editable identity fields, pre-filled from the current user.
+    expect(screen.getByLabelText(/nama lengkap/i)).toHaveValue('Admin User');
+    expect(screen.getByLabelText(/username/i)).toHaveValue('admin');
+    // Password change is a separate modal — not inline.
+    expect(screen.queryByLabelText(/kata sandi saat ini/i)).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /ubah kata sandi/i }));
+    // Modal opened → current-password field is required.
+    expect(await screen.findByLabelText(/kata sandi saat ini/i)).toBeInTheDocument();
+  });
+
+  it('stages the theme in the Appearance group and applies it on Save', async () => {
+    const user = userEvent.setup();
+    render(<SettingsPage />);
+    // Navigate to the Appearance (Tampilan) group in the master rail.
+    await user.click(screen.getByRole('button', { name: /tampilan/i }));
+    const darkOption = screen.getByRole('radio', { name: /gelap/i });
+    await user.click(darkOption);
+    // Theme is staged (not applied yet) → the Save bar becomes enabled.
+    const save = screen.getByRole('button', { name: /simpan perubahan/i });
+    await waitFor(() => expect(save).toBeEnabled());
+    await user.click(save);
     await waitFor(() => expect(document.documentElement).toHaveClass('dark'));
-    // reset for other tests
     document.documentElement.classList.remove('dark');
   });
-});
 
-describe('SettingsPage — Personal tab (notifications)', () => {
-  it('lists configurable types with per-type switches and saves changes', async () => {
+  it('lists notification types and saves staged toggle changes', async () => {
     const user = userEvent.setup();
     render(<SettingsPage />);
-    // Notifications now live on the default Personal tab (no tab switch needed).
+    // Notifications live in their own group.
+    await user.click(screen.getByRole('button', { name: /notifikasi/i }));
 
     expect(screen.getByText(/tugas baru ditugaskan/i)).toBeInTheDocument();
     expect(screen.getByText(/lembur disetujui/i)).toBeInTheDocument();
 
-    const save = screen.getByRole('button', { name: /simpan/i });
+    const save = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(save).toBeDisabled(); // nothing changed yet
 
     // Flip the first type off, then save.

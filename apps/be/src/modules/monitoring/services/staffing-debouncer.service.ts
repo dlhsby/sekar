@@ -1,5 +1,5 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 // Audit M4 (2026-05-23): cross-replica deduplication. Without Redis-backed
 // gating, two replicas both fire after the in-process timer expires and emit
 // twice. We SET NX EX a per-area key on emission — the first replica wins,
@@ -31,18 +31,20 @@ interface PendingFlip {
 export class StaffingDebouncerService {
   private readonly logger = new Logger(StaffingDebouncerService.name);
   private readonly pending = new Map<string, PendingFlip>();
-  private readonly debounceMs: number;
   private emitter?: (areaId: string, state: AreaState) => void;
 
   constructor(
-    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
     // Optional: when Redis isn't wired (e.g. unit tests, single-replica dev)
     // the dedupe step is skipped and the original in-process behaviour
     // takes over. `@Optional()` keeps existing test providers (which omit
     // RedisService) working.
     @Optional() private readonly redis?: RedisService,
-  ) {
-    this.debounceMs = config.get<number>('STAFFING_DEBOUNCE_SECONDS', 30) * 1000;
+  ) {}
+
+  /** Resolved at use-time (DB → env → default) so overrides apply without restart. */
+  private get debounceMs(): number {
+    return this.systemConfig.getNumber('monitoring.staffing_debounce_sec', 30) * 1000;
   }
 
   /**

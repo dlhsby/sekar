@@ -13,12 +13,15 @@ import {
   getCatalogEntry,
   coerceValue,
   ConfigValueType,
+  SelectOption,
 } from '../catalog/settings-catalog';
 import { encryptSecret, decryptSecret, encryptionAvailable } from '../settings-encryption';
 
 export interface SettingDescription {
   key: string;
   group: string;
+  /** Optional sub-section within a group (SWAT-style). */
+  subgroup?: string;
   valueType: ConfigValueType;
   isSecret: boolean;
   label: string;
@@ -27,6 +30,8 @@ export interface SettingDescription {
   isSet: boolean;
   /** Effective value for non-secret keys only; omitted for secrets. */
   value?: string | number | boolean;
+  /** Allowed options for `select` value types. */
+  options?: SelectOption[];
 }
 
 /**
@@ -73,6 +78,28 @@ export class SystemConfigService implements OnModuleInit {
     return entry.default;
   }
 
+  /** Effective number for a key (DB → env → default); NaN-safe fallback. */
+  getNumber(key: string, fallback = 0): number {
+    const v = this.resolve(key);
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  /** Effective boolean for a key (DB → env → default). */
+  getBoolean(key: string, fallback = false): boolean {
+    const v = this.resolve(key);
+    if (typeof v === 'boolean') return v;
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    return fallback;
+  }
+
+  /** Effective string for a key (DB → env → default). */
+  getString(key: string, fallback?: string): string | undefined {
+    const v = this.resolve(key);
+    return v == null ? fallback : String(v);
+  }
+
   /** All catalog keys with their source + (non-secret) effective value. */
   describeAll(): SettingDescription[] {
     return SETTINGS_CATALOG.map((entry) => {
@@ -82,12 +109,14 @@ export class SystemConfigService implements OnModuleInit {
       const desc: SettingDescription = {
         key: entry.key,
         group: entry.group,
+        subgroup: entry.subgroup,
         valueType: entry.valueType,
         isSecret: entry.isSecret,
         label: entry.label,
         help: entry.help,
         source,
         isSet: source !== 'unset',
+        options: entry.options,
       };
       if (!entry.isSecret) {
         desc.value = this.resolve(entry.key);
@@ -105,6 +134,16 @@ export class SystemConfigService implements OnModuleInit {
       coerceValue(rawValue, entry.valueType);
     } catch (err) {
       throw new BadRequestException((err as Error).message);
+    }
+    // A select must be one of its declared options.
+    if (
+      entry.valueType === 'select' &&
+      entry.options &&
+      !entry.options.some((o) => o.value === rawValue)
+    ) {
+      throw new BadRequestException(
+        `Invalid value '${rawValue}' for ${key}; expected one of: ${entry.options.map((o) => o.value).join(', ')}`,
+      );
     }
 
     let stored = rawValue;

@@ -1,11 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 
-export type ConfigValueType = 'string' | 'number' | 'boolean';
+export type ConfigValueType = 'string' | 'number' | 'boolean' | 'select';
+
+export interface SelectOption {
+  value: string;
+  label: string;
+}
 
 export interface SettingDescription {
   key: string;
   group: string;
+  /** Optional sub-section within a group (SWAT-style). */
+  subgroup?: string;
   valueType: ConfigValueType;
   isSecret: boolean;
   label: string;
@@ -14,6 +21,8 @@ export interface SettingDescription {
   isSet: boolean;
   /** Effective value for non-secret keys only. */
   value?: string | number | boolean;
+  /** Allowed options for `select` value types. */
+  options?: SelectOption[];
 }
 
 export const settingsKeys = {

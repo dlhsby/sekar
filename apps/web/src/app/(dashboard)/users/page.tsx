@@ -34,6 +34,7 @@ import {
   useResetUserPassword,
 } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
+import { useRegions } from '@/lib/api/regions';
 import { useRoles } from '@/lib/api/roles';
 import { useAreas } from '@/lib/api/areas';
 import { useUser } from '@/lib/auth/hooks';
@@ -62,6 +63,14 @@ export default function UsersPage() {
   const rayonFilterOptions = useMemo(
     () => rayons.map((r) => ({ value: r.name, label: r.name })),
     [rayons]
+  );
+  // Kawasan (region) — like rayon, only region_id is on the user; resolve the
+  // name via the full regions catalog (no rayon filter → every region).
+  const { data: regions = [] } = useRegions();
+  const regionNameById = useMemo(() => new Map(regions.map((r) => [r.id, r.name])), [regions]);
+  const regionFilterOptions = useMemo(
+    () => regions.map((r) => ({ value: r.name, label: r.name })),
+    [regions]
   );
   // Role filter is data-driven (ADR-044) — options come from the /roles catalog
   // (incl. custom roles), labelled via roleLabel to match the column accessor.
@@ -197,6 +206,22 @@ export default function UsersPage() {
         },
       },
       {
+        id: 'region',
+        accessorFn: (u) => (u.region_id ? (regionNameById.get(u.region_id) ?? '') : ''),
+        header: t('admin:users.columnRegion'),
+        meta: {
+          label: t('admin:users.columnRegion'),
+          filterVariant: 'enum',
+          filterOptions: regionFilterOptions,
+        },
+        cell: ({ row }) => {
+          const id = row.original.region_id;
+          return (
+            <span className="text-nb-body-sm">{id ? (regionNameById.get(id) ?? '—') : '—'}</span>
+          );
+        },
+      },
+      {
         id: 'areas',
         accessorFn: (u) => (u.assigned_area_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
         header: t('admin:users.columnArea'),
@@ -312,7 +337,17 @@ export default function UsersPage() {
         ),
       },
     ],
-    [actorName, rayonNameById, t, rayonFilterOptions, roleFilterOptions, areaNameById, areaFilterOptions]
+    [
+      actorName,
+      rayonNameById,
+      t,
+      rayonFilterOptions,
+      regionNameById,
+      regionFilterOptions,
+      roleFilterOptions,
+      areaNameById,
+      areaFilterOptions,
+    ]
   );
 
   const rowActions = useCallback(

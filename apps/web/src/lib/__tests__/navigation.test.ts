@@ -53,13 +53,14 @@ describe('Navigation Utilities', () => {
       const accessItem = navigationItems.find((item) => item.id === 'access');
       expect(accessItem?.children?.map((c) => c.id)).toEqual(['users', 'roles']);
 
-      // 'Data Master' group: areas / rayons / plants + the 'Data Base' embed
-      // page. Seeds and assets are archived (commented out) per request.
+      // 'Data Master' group, ordered by the location hierarchy Rayon → Kawasan
+      // (regions) → Lokasi (areas) → Tim (teams), then plants + the 'Data Base'
+      // embed page. Seeds and assets are archived (commented out) per request.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
-        'areas',
         'rayons',
         'regions',
+        'areas',
         'teams',
         'plants',
         'database',

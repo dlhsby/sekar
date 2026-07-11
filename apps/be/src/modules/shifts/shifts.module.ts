@@ -11,6 +11,7 @@ import { MonitoringModule } from '../monitoring/monitoring.module';
 import { AuditModule } from '../audit/audit.module';
 import { UserAreasModule } from '../user-areas/user-areas.module';
 import { SchedulesModule } from '../schedules/schedules.module';
+import { SettingsModule } from '../settings/settings.module';
 
 /**
  * Shifts Module
@@ -28,6 +29,7 @@ import { SchedulesModule } from '../schedules/schedules.module';
     AuditModule,
     UserAreasModule,
     SchedulesModule,
+    SettingsModule, // ADR-049: runtime min-shift-duration via SystemConfigService
   ],
   controllers: [ShiftsController],
   providers: [ShiftsService],

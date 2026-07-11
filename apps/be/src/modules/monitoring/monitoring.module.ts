@@ -39,6 +39,7 @@ import { PlantsModule } from '../plants/plants.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AuditModule } from '../audit/audit.module';
 import { SharedModule } from '../../shared/shared.module';
+import { SettingsModule } from '../settings/settings.module';
 
 @Module({
   imports: [
@@ -67,6 +68,7 @@ import { SharedModule } from '../../shared/shared.module';
     NotificationsModule, // Phase 4-3 (M2): missing-worker alert FCM trigger
     AuditModule, // Phase 4-4: reassignment audit trail
     SharedModule, // Phase 4-7 (H1): BoundaryCheckService for status calculation
+    SettingsModule, // ADR-049: runtime config (missing/staffing thresholds) via SystemConfigService
   ],
   controllers: [MonitoringController],
   providers: [

@@ -136,9 +136,9 @@ describe('AreaForm', () => {
         { wrapper: createWrapper() }
       );
 
-      expect(screen.getByLabelText(/nama area/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/nama lokasi/i)).toBeInTheDocument();
       expect(screen.getByText('Rayon')).toBeInTheDocument();
-      expect(screen.getByText('Tipe Area')).toBeInTheDocument();
+      expect(screen.getByText('Tipe Lokasi')).toBeInTheDocument();
       expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /buat area/i })).toBeInTheDocument();
     });

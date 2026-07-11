@@ -47,10 +47,9 @@ export function UserFormModal({
   const handleSubmit = async (data: CreateUserDto & UpdateUserDto): Promise<void> => {
     try {
       if (isEdit && user) {
-        // username is immutable — UpdateUserDto rejects it (forbidNonWhitelisted).
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { username, ...updateData } = data;
-        await updateMutation.mutateAsync({ id: user.id, data: updateData });
+        // Username is editable (ADR-044) — UpdateUserDto accepts it and the
+        // service re-checks availability only when it actually changes.
+        await updateMutation.mutateAsync({ id: user.id, data });
         toast.success(t('admin:messages.userUpdatedSuccess', { name: data.full_name }));
       } else {
         const created = (await createMutation.mutateAsync(data)) as CreatedUser;

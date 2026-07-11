@@ -575,10 +575,17 @@ export class UsersService {
     if (updateMyProfileDto.phone_number && updateMyProfileDto.phone_number !== user.phone_number) {
       await this.userValidation.assertPhoneAvailable(updateMyProfileDto.phone_number, userId);
     }
+    // Validate username uniqueness if it actually changes.
+    if (updateMyProfileDto.username && updateMyProfileDto.username !== user.username) {
+      await this.userValidation.assertUsernameAvailable(updateMyProfileDto.username);
+    }
 
     // Update only allowed fields
     if (updateMyProfileDto.full_name !== undefined) {
       user.full_name = updateMyProfileDto.full_name.trim();
+    }
+    if (updateMyProfileDto.username !== undefined) {
+      user.username = updateMyProfileDto.username;
     }
     if (updateMyProfileDto.phone_number !== undefined) {
       user.phone_number = updateMyProfileDto.phone_number;

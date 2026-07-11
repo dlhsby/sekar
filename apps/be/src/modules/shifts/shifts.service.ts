@@ -13,6 +13,7 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
+import { SystemConfigService } from '../settings/services/system-config.service';
 import { Area } from '../areas/entities/area.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { User } from '../users/entities/user.entity';
@@ -53,6 +54,10 @@ export class ShiftsService {
     // legacy specs without the provider fall back to a local instance.
     @Optional()
     private readonly boundaryCheckService?: BoundaryCheckService,
+    // ADR-049: runtime min-shift-duration via SystemConfigService (DB → env →
+    // default). Optional → specs without the provider fall back to the env helper.
+    @Optional()
+    private readonly systemConfig?: SystemConfigService,
   ) {}
 
   private get boundaryCheck(): BoundaryCheckService {
@@ -314,8 +319,11 @@ export class ShiftsService {
       );
     }
 
-    // Check minimum shift duration (configurable via MINIMUM_SHIFT_DURATION_MINUTES env)
-    const minMinutes = getMinimumShiftDurationMinutes();
+    // Minimum shift duration — DB override → env → default (ADR-049); falls back
+    // to the env helper when SystemConfigService isn't provided (legacy specs).
+    const minMinutes = this.systemConfig
+      ? this.systemConfig.getNumber('schedule.min_shift_duration_min', 5)
+      : getMinimumShiftDurationMinutes();
     const minMs = minMinutes * 60 * 1000;
     const shiftDurationMs = Date.now() - shift.clock_in_time.getTime();
 

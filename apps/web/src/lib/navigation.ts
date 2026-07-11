@@ -140,13 +140,7 @@ export const navigationItems: NavItem[] = [
     icon: FolderIcon,
     roles: [...ADMIN_ROLES, 'management', 'admin_rayon'],
     children: [
-      {
-        id: 'areas',
-        label: 'common:nav.areas',
-        href: '/areas',
-        icon: MapPinIcon,
-        roles: [...ADMIN_ROLES, 'management'],
-      },
+      // Location hierarchy, top → bottom: Rayon → Kawasan → Lokasi → Tim.
       {
         id: 'rayons',
         label: 'common:nav.rayons',
@@ -158,6 +152,13 @@ export const navigationItems: NavItem[] = [
         id: 'regions',
         label: 'common:nav.regions',
         href: '/regions',
+        icon: MapPinIcon,
+        roles: [...ADMIN_ROLES, 'management'],
+      },
+      {
+        id: 'areas',
+        label: 'common:nav.areas',
+        href: '/areas',
         icon: MapPinIcon,
         roles: [...ADMIN_ROLES, 'management'],
       },
@@ -390,7 +391,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/schedules': 'Jadwal',
   '/users': 'Pengguna',
   '/roles': 'Manajemen Peran',
-  '/areas': 'Area',
+  '/areas': 'Lokasi',
   '/rayons': 'Rayon',
   '/regions': 'Kawasan',
   '/teams': 'Tim',
@@ -443,7 +444,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/pruning-requests': ['Pekerjaan', 'Permohonan Perantingan'],
   '/users': ['Pengguna & Hak Akses', 'Pengguna'],
   '/roles': ['Pengguna & Hak Akses', 'Manajemen Peran'],
-  '/areas': ['Data Master', 'Area'],
+  '/areas': ['Data Master', 'Lokasi'],
   '/rayons': ['Data Master', 'Rayon'],
   '/regions': ['Data Master', 'Kawasan'],
   '/teams': ['Data Master', 'Tim'],

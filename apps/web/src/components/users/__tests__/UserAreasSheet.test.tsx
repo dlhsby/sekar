@@ -39,7 +39,7 @@ describe('UserAreasSheet', () => {
 
     await waitFor(() => expect(screen.getByText('Jl. Ahmad Yani')).toBeInTheDocument());
     expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
-    expect(screen.getByText('2 area')).toBeInTheDocument();
+    expect(screen.getByText('2 lokasi')).toBeInTheDocument();
     expect(screen.getByText('Budi')).toBeInTheDocument();
     // rayon name resolved client-side from rayon_id
     expect(screen.getByText(/Rayon Taman Aktif · Taman/)).toBeInTheDocument();
@@ -52,7 +52,7 @@ describe('UserAreasSheet', () => {
     renderSheet(<UserAreasSheet user={{ id: 'u1', full_name: 'Budi' }} onClose={jest.fn()} />);
     await waitFor(() => expect(screen.getByText('Taman Bungkul')).toBeInTheDocument());
 
-    fireEvent.change(screen.getByLabelText('Cari area'), { target: { value: 'bungkul' } });
+    fireEvent.change(screen.getByLabelText('Cari lokasi'), { target: { value: 'bungkul' } });
 
     expect(screen.queryByText('Jl. Ahmad Yani')).not.toBeInTheDocument();
     expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();

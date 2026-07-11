@@ -12,6 +12,7 @@ import { SendNotificationDto } from './dto/send-notification.dto';
 import { NotificationPreferencesService } from './notification-preferences.service';
 import { UsersService } from '../users/users.service';
 import { getMessaging, isFirebaseInitialized } from '../../config/firebase.config';
+import { SystemConfigService } from '../settings/services/system-config.service';
 import { FCM_RETRY_QUEUE } from '../queue/queue.constants';
 
 /**
@@ -41,7 +42,17 @@ export class NotificationsService {
     // the gate fails open (always sends).
     @Optional()
     private readonly preferencesService?: NotificationPreferencesService,
+    // ADR-049: runtime push kill-switch via System Settings. Optional so legacy
+    // specs keep working; when absent, falls back to the FCM_ENABLED env flag.
+    @Optional()
+    private readonly systemConfig?: SystemConfigService,
   ) {}
+
+  /** Runtime FCM enabled (DB → env → boot flag), used as a live kill-switch. */
+  private isFcmEnabled(): boolean {
+    const envFlag = process.env.FCM_ENABLED === 'true';
+    return this.systemConfig ? this.systemConfig.getBoolean('fcm.enabled', envFlag) : envFlag;
+  }
 
   /**
    * Register a device FCM token
@@ -403,6 +414,13 @@ export class NotificationsService {
 
     if (tokens.length === 0) {
       this.logger.debug(`No active tokens for user: ${notification.user_id}`);
+      return;
+    }
+
+    // Runtime kill-switch (ADR-049): operators can disable push in System Settings
+    // without a restart. Skip the send entirely when disabled.
+    if (!this.isFcmEnabled()) {
+      this.logger.debug('FCM disabled via settings — skipping push send.');
       return;
     }
 

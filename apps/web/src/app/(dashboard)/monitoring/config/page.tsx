@@ -9,11 +9,7 @@
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/lib/auth/hooks';
-import {
-  useMonitoringConfig,
-  useUpdateMonitoringConfig,
-  type MonitoringConfigItem,
-} from '@/lib/api/monitoring';
+import { useMonitoringConfig, useUpdateMonitoringConfig } from '@/lib/api/monitoring';
 import { Card, CardHeader, CardContent, Button } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { useRouter } from 'next/navigation';
@@ -42,70 +38,8 @@ interface ConfigSection {
 
 function getConfigSections(t: any): ConfigSection[] {
   return [
-    {
-      title: t('monitoring:config.sections.statusThresholds.title'),
-      description: t('monitoring:config.sections.statusThresholds.description'),
-      configKey: 'status_thresholds',
-      fields: [
-        {
-          key: 'active_max_age_seconds',
-          label: t('monitoring:config.sections.statusThresholds.activeMaxAge'),
-          type: 'number',
-          min: 60,
-          max: 600,
-          step: 30,
-          unit: t('monitoring:config.units.seconds'),
-          description: t('monitoring:config.sections.statusThresholds.activeMaxAgeHelp'),
-        },
-        {
-          key: 'inactive_threshold_seconds',
-          label: t('monitoring:config.sections.statusThresholds.inactiveThreshold'),
-          type: 'number',
-          min: 300,
-          max: 3600,
-          step: 60,
-          unit: t('monitoring:config.units.seconds'),
-          description: t('monitoring:config.sections.statusThresholds.inactiveThresholdHelp'),
-        },
-        {
-          key: 'missing_threshold_seconds',
-          label: t('monitoring:config.sections.statusThresholds.missingThreshold'),
-          type: 'number',
-          min: 1800,
-          max: 7200,
-          step: 300,
-          unit: t('monitoring:config.units.seconds'),
-          description: t('monitoring:config.sections.statusThresholds.missingThresholdHelp'),
-        },
-      ],
-    },
-    {
-      title: t('monitoring:config.sections.geofencing.title'),
-      description: t('monitoring:config.sections.geofencing.description'),
-      configKey: 'geofencing',
-      fields: [
-        {
-          key: 'boundary_tolerance_meters',
-          label: t('monitoring:config.sections.geofencing.boundaryTolerance'),
-          type: 'number',
-          min: 0,
-          max: 500,
-          step: 10,
-          unit: t('monitoring:config.units.meters'),
-          description: t('monitoring:config.sections.geofencing.boundaryToleranceHelp'),
-        },
-        {
-          key: 'outside_area_grace_period_seconds',
-          label: t('monitoring:config.sections.geofencing.gracePeriod'),
-          type: 'number',
-          min: 0,
-          max: 600,
-          step: 30,
-          unit: t('monitoring:config.units.seconds'),
-          description: t('monitoring:config.sections.geofencing.gracePeriodHelp'),
-        },
-      ],
-    },
+    // Status thresholds + geofencing moved to System Settings (ADR-049 unify);
+    // this page keeps the monitoring-presentation config (map + alerts).
     {
       title: t('monitoring:config.sections.mapDefaults.title'),
       description: t('monitoring:config.sections.mapDefaults.description'),

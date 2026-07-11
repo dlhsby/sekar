@@ -93,7 +93,7 @@ describe('DeleteAreaModal', () => {
     });
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: /hapus area/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /hapus lokasi/i })).toBeInTheDocument();
     expect(screen.getAllByText(/taman bungkul/i).length).toBeGreaterThan(0);
   });
 

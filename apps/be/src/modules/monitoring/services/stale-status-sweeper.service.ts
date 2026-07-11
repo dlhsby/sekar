@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { StatusCalculatorService } from './status-calculator.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 
 const BATCH_SIZE = 50;
 
@@ -24,19 +24,22 @@ const BATCH_SIZE = 50;
 @Injectable()
 export class StaleStatusSweeperService {
   private readonly logger = new Logger(StaleStatusSweeperService.name);
-  private readonly missingStaleSecs: number;
   private sweepRunning = false;
 
   constructor(
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
-    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
     // Phase 4-3 (§C1 #8): reuse the calculator's recipient-resolution + dedup so
     // workers the sweeper flips directly (bypassing recalculate) still alert
     // korlap + kepala_rayon.
     private readonly statusCalculator: StatusCalculatorService,
-  ) {
-    this.missingStaleSecs = config.get<number>('MISSING_THRESHOLD_SECONDS', 900);
+  ) {}
+
+  /** Resolved at use-time (DB → env → default) so overrides apply without restart.
+   *  Unified with the status calculator's missing threshold (ADR-049). */
+  private get missingStaleSecs(): number {
+    return this.systemConfig.getNumber('monitoring.missing_threshold_sec', 3600);
   }
 
   @Cron('*/5 * * * *')

@@ -14,6 +14,8 @@
     "usernameLabel": "Username",
     "phoneLabel": "Nomor Telepon",
     "adminNote": "Username dan nomor telepon dikelola oleh administrator.",
-    "saveButton": "Simpan Perubahan"
+    "saveButton": "Simpan Perubahan",
+    "editInSettings": "Ubah di Pengaturan",
+    "editInSettingsHint": "Ubah nama, username, nomor HP, foto & kata sandi di Pengaturan → Akun & Keamanan."
   }
 }
