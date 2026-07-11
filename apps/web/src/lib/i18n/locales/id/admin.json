@@ -338,7 +338,8 @@
     "card": {
       "statsUnavailable": "Statistik tidak tersedia",
       "viewDetail": "Lihat Detail"
-    }
+    },
+    "undoChanges": "Urungkan Perubahan"
   },
   "dialogs": {
     "tempPassword": {

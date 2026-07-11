@@ -82,7 +82,7 @@ export function RegionForm({
     [t],
   );
 
-  const { register, handleSubmit, setValue, watch, formState } = useForm<RegionFormData>({
+  const { register, handleSubmit, setValue, watch, reset, formState } = useForm<RegionFormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       name: initialData?.name ?? '',
@@ -114,6 +114,16 @@ export function RegionForm({
   const [seedPolygon, setSeedPolygon] = useState(initialData?.boundary_polygon);
   const [editorKey, setEditorKey] = useState(0);
 
+  // Undo: revert every field to the loaded values + remount the map editor with
+  // the original boundary. preventDefault stops native reset (which would clear
+  // fields to empty instead of restoring defaults).
+  const handleReset = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    reset();
+    setSeedPolygon(initialData?.boundary_polygon);
+    setEditorKey((k) => k + 1);
+  };
+
   const submit = async (data: RegionFormData) => {
     const payload: UpdateRegionDto = {
       name: data.name,
@@ -133,7 +143,7 @@ export function RegionForm({
   };
 
   return (
-    <form id={formId} onSubmit={handleSubmit(submit)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(submit)} onReset={handleReset} className="space-y-6">
       <div className="space-y-4">
         <FormInput
           label={t('admin:regions.form.name')}

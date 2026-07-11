@@ -338,7 +338,8 @@
     "card": {
       "statsUnavailable": "Statistics unavailable",
       "viewDetail": "View Details"
-    }
+    },
+    "undoChanges": "Undo Changes"
   },
   "dialogs": {
     "tempPassword": {

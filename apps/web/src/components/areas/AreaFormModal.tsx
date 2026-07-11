@@ -149,6 +149,7 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
               }
               loading={isPending}
               disabled={!hasGeometry}
+              showReset={isEdit}
               onCancel={() => onOpenChange(false)}
             />
           )}

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 import { Inter, JetBrains_Mono, Space_Grotesk } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
@@ -96,15 +97,14 @@ export default async function RootLayout({
     <html lang={lang} suppressHydrationWarning>
       <head>
         {pwaEnabled && <link rel="apple-touch-icon" href="/apple-icon.png" />}
-        {/* Apply the saved theme before first paint to avoid a flash of the
-            wrong theme. Mirrors the logic in src/lib/theme.ts. */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('sekar-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t!=='light'&&t!=='dark'&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`,
-          }}
-        />
       </head>
       <body className={`${inter.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}>
+        {/* Apply the saved theme before first paint to avoid a flash of the wrong
+            theme. `beforeInteractive` injects this into the initial HTML (runs
+            pre-hydration) without React's raw-<script> client-render warning. */}
+        <Script id="theme-flash-guard" strategy="beforeInteractive">
+          {`(function(){try{var t=localStorage.getItem('sekar-theme');var m=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='dark'||(t!=='light'&&t!=='dark'&&m)){document.documentElement.classList.add('dark');}}catch(e){}})();`}
+        </Script>
         <OfflineBanner />
         <UpdateToast />
         <Providers>{children}</Providers>

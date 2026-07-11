@@ -127,6 +127,7 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
               }
               loading={isPending}
               disabled={!hasGeometry}
+              showReset={isEdit}
               onCancel={() => onOpenChange(false)}
             />
           )}

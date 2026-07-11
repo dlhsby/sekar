@@ -43,16 +43,25 @@ export function TeamFormModal({ open, onOpenChange, team, onSuccess }: TeamFormM
   const [typeId, setTypeId] = useState('');
   const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(null);
 
-  // Reset the form whenever the modal opens for a different team.
-  useEffect(() => {
-    if (!open) return;
+  // Revert the form to the loaded team's values (also runs on open).
+  const revert = () => {
     setName(team?.name ?? '');
     setTypeId(team?.team_type_id ?? '');
     setMarkerImageUrl(team?.marker_image_url ?? null);
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    revert();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- revert is stable per (open, team)
   }, [open, team]);
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const canSave = name.trim().length >= 2 && !!typeId;
+  const isDirty =
+    name !== (team?.name ?? '') ||
+    typeId !== (team?.team_type_id ?? '') ||
+    (markerImageUrl ?? null) !== (team?.marker_image_url ?? null);
 
   const handleSave = async () => {
     const payload = {
@@ -109,7 +118,12 @@ export function TeamFormModal({ open, onOpenChange, team, onSuccess }: TeamFormM
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common:actions.cancel')}
           </Button>
-          <Button onClick={handleSave} loading={isPending} disabled={!canSave}>
+          {isEdit && (
+            <Button variant="ghost" onClick={revert} disabled={!isDirty || isPending}>
+              {t('admin:shared.undoChanges')}
+            </Button>
+          )}
+          <Button onClick={handleSave} loading={isPending} disabled={!canSave || (isEdit && !isDirty)}>
             {t('common:actions.save')}
           </Button>
         </DialogFooter>

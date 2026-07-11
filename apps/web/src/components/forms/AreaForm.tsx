@@ -121,6 +121,7 @@ export function AreaForm({
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<AreaFormData>({
     resolver: zodResolver(areaSchema),
@@ -151,6 +152,15 @@ export function AreaForm({
     initialData?.boundary_polygon,
   );
   const [editorKey, setEditorKey] = useState(0);
+
+  // Undo: revert fields to loaded values + remount the map editor with the
+  // original boundary (preventDefault stops native reset from clearing fields).
+  const handleReset = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    reset();
+    setSeedPolygon(initialData?.boundary_polygon);
+    setEditorKey((k) => k + 1);
+  };
 
   // Boundary and location pin are fully independent — drawing/redrawing a
   // boundary never touches the pin (the user places it explicitly).
@@ -209,7 +219,7 @@ export function AreaForm({
   };
 
   return (
-    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} onReset={handleReset} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('admin:areas.form.basicInfoTitle')}</h3>

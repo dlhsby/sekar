@@ -31,6 +31,23 @@ import {
 import { RoleEditor } from '@/components/roles/RoleEditor';
 import { cn } from '@/lib/utils/cn';
 
+// System-role hierarchy (top → bottom). Custom roles sort after these, by name.
+const ROLE_ORDER = [
+  'superadmin',
+  'admin_system',
+  'management',
+  'kepala_rayon',
+  'admin_rayon',
+  'korlap',
+  'linmas',
+  'satgas',
+  'staff_kecamatan',
+];
+const roleRank = (code: string) => {
+  const i = ROLE_ORDER.indexOf(code);
+  return i === -1 ? ROLE_ORDER.length : i;
+};
+
 export default function RolesPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
@@ -45,7 +62,15 @@ export default function RolesPage() {
   const [newName, setNewName] = useState('');
   const [pendingDelete, setPendingDelete] = useState<Role | null>(null);
 
-  const sortedRoles = useMemo(() => roles ?? [], [roles]);
+  const sortedRoles = useMemo(
+    () =>
+      [...(roles ?? [])].sort((a, b) => {
+        const ra = roleRank(a.code);
+        const rb = roleRank(b.code);
+        return ra !== rb ? ra - rb : a.name.localeCompare(b.name);
+      }),
+    [roles],
+  );
   const filteredRoles = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return sortedRoles;

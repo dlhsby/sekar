@@ -113,6 +113,7 @@ export function RegionFormModal({
               }
               loading={isPending}
               disabled={!hasGeometry}
+              showReset={isEdit}
               onCancel={() => onOpenChange(false)}
             />
           )}

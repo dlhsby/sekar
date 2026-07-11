@@ -119,6 +119,7 @@ export function RayonForm({
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<RayonFormData>({
     resolver: zodResolver(rayonSchema),
@@ -175,6 +176,15 @@ export function RayonForm({
   >(initialData?.boundary_polygon);
   const [editorKey, setEditorKey] = useState(0);
 
+  // Undo: revert fields to loaded values + remount the map editor with the
+  // original boundary (preventDefault stops native reset from clearing fields).
+  const handleReset = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    reset();
+    setSeedPolygon(initialData?.boundary_polygon);
+    setEditorKey((k) => k + 1);
+  };
+
   const handleImportBoundary = (geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon) => {
     setValue('boundary_polygon', geometry, { shouldValidate: true });
     setSeedPolygon(geometry);
@@ -201,7 +211,7 @@ export function RayonForm({
   };
 
   return (
-    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} onReset={handleReset} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('admin:rayons.form.basicInfoTitle')}</h3>
