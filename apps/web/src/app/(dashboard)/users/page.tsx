@@ -33,7 +33,6 @@ import {
   useActivateUser,
   useResetUserPassword,
 } from '@/lib/api/users';
-import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
 import { useAreas } from '@/lib/api/areas';
 import { useUser } from '@/lib/auth/hooks';
@@ -56,19 +55,12 @@ export default function UsersPage() {
   const deactivateUser = useDeactivateUser();
   const activateUser = useActivateUser();
   const resetPassword = useResetUserPassword();
-  const { data: shifts = [] } = useShiftDefinitions();
-  const shiftNameById = useMemo(() => new Map(shifts.map((s) => [s.id, s.name])), [shifts]);
-  // Rayon has no entity relation on User (only rayon_id) — resolve the name via
-  // a map, mirroring how shift names are resolved above.
+  // Rayon has no entity relation on User (only rayon_id) — resolve the name via a map.
   const { data: rayons = [] } = useRayons();
   const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
   const rayonFilterOptions = useMemo(
     () => rayons.map((r) => ({ value: r.name, label: r.name })),
     [rayons]
-  );
-  const shiftFilterOptions = useMemo(
-    () => shifts.map((s) => ({ value: s.name, label: s.name })),
-    [shifts]
   );
 
   // Full area master data so the multi-value Area filter can list every area
@@ -224,20 +216,6 @@ export default function UsersPage() {
         },
       },
       {
-        id: 'shift',
-        accessorFn: (u) => (u.shift_definition_id ? shiftNameById.get(u.shift_definition_id) ?? '' : ''),
-        header: t('admin:users.columnShift'),
-        meta: {
-          label: t('admin:users.columnShift'),
-          filterVariant: 'enum',
-          filterOptions: shiftFilterOptions,
-        },
-        cell: ({ row }) => {
-          const id = row.original.shift_definition_id;
-          return <span className="text-nb-body-sm">{id ? shiftNameById.get(id) ?? '—' : '—'}</span>;
-        },
-      },
-      {
         id: 'password_must_change',
         accessorFn: (u) => (u.password_must_change ? t('admin:users.statusYes') : t('admin:users.statusNo')),
         header: t('admin:users.columnPasswordMustChange'),
@@ -326,16 +304,7 @@ export default function UsersPage() {
         ),
       },
     ],
-    [
-      actorName,
-      shiftNameById,
-      rayonNameById,
-      t,
-      rayonFilterOptions,
-      shiftFilterOptions,
-      areaNameById,
-      areaFilterOptions,
-    ]
+    [actorName, rayonNameById, t, rayonFilterOptions, areaNameById, areaFilterOptions]
   );
 
   const rowActions = useCallback(

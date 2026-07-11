@@ -20,6 +20,7 @@ describe('RegionsService', () => {
       update: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
       execute: jest.fn().mockResolvedValue(undefined),
     };
     areaRepo = {
@@ -71,7 +72,24 @@ describe('RegionsService', () => {
       areaRepo.find.mockResolvedValue([{ id: 'a1', name: 'Area 1', rayon_id: 'rayon-1' }]);
       const res = await service.assignAreas('reg-1', ['a1']);
       expect(res).toEqual({ updated: 1 });
-      expect(areaRepo.update).toHaveBeenCalled();
+      // Un-parents non-selected areas of this region, then parents the selected set.
+      expect(areaRepo._qb.andWhere).toHaveBeenCalledWith('id NOT IN (:...areaIds)', {
+        areaIds: ['a1'],
+      });
+      expect(areaRepo.update).toHaveBeenCalledWith(
+        { id: expect.anything() },
+        { region_id: 'reg-1' },
+      );
+    });
+
+    it('clears all areas when the selection is empty', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1' });
+      const res = await service.assignAreas('reg-1', []);
+      expect(res).toEqual({ updated: 0 });
+      // Un-parents every area of the region; no positive assignment.
+      expect(areaRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
+      expect(areaRepo._qb.andWhere).not.toHaveBeenCalled();
+      expect(areaRepo.update).not.toHaveBeenCalled();
     });
   });
 });

@@ -75,20 +75,44 @@ export class RegionsService {
   }
 
   /** Re-parent areas into this region (all must share the region's rayon). */
+  /**
+   * Set the region's areas to EXACTLY `areaIds` (replace semantics): selected
+   * areas are re-parented in, and any area currently in this region but no longer
+   * selected is un-parented (region_id → NULL). All selected areas must share the
+   * region's rayon. Passing an empty list clears the region's areas.
+   */
   async assignAreas(id: string, areaIds: string[]): Promise<{ updated: number }> {
     const region = await this.findOne(id);
-    if (areaIds.length === 0) return { updated: 0 };
-    const areas = await this.areaRepo.find({ where: { id: In(areaIds) } });
-    if (areas.length !== areaIds.length) {
-      throw new NotFoundException('One or more areas not found');
+
+    if (areaIds.length > 0) {
+      const areas = await this.areaRepo.find({ where: { id: In(areaIds) } });
+      if (areas.length !== areaIds.length) {
+        throw new NotFoundException('One or more areas not found');
+      }
+      const mismatched = areas.filter((a) => a.rayon_id !== region.rayon_id);
+      if (mismatched.length > 0) {
+        throw new BadRequestException(
+          `Areas must belong to the region's rayon: ${mismatched.map((a) => a.name).join(', ')}`,
+        );
+      }
     }
-    const mismatched = areas.filter((a) => a.rayon_id !== region.rayon_id);
-    if (mismatched.length > 0) {
-      throw new BadRequestException(
-        `Areas must belong to the region's rayon: ${mismatched.map((a) => a.name).join(', ')}`,
-      );
+
+    // Un-parent areas currently in this region that are no longer selected.
+    // TypeORM update() skips undefined, so clear via a NULL-setting QueryBuilder.
+    const unassign = this.areaRepo
+      .createQueryBuilder()
+      .update()
+      .set({ region_id: () => 'NULL' })
+      .where('region_id = :id', { id });
+    if (areaIds.length > 0) {
+      unassign.andWhere('id NOT IN (:...areaIds)', { areaIds });
     }
-    await this.areaRepo.update({ id: In(areaIds) }, { region_id: id });
+    await unassign.execute();
+
+    // Parent the selected areas into the region.
+    if (areaIds.length > 0) {
+      await this.areaRepo.update({ id: In(areaIds) }, { region_id: id });
+    }
     return { updated: areaIds.length };
   }
 

@@ -430,6 +430,15 @@
       "geometryRequired": "A boundary or center pin is required",
       "submit": "Save Changes",
       "submitNew": "Create Region"
+    },
+    "assignAreas": {
+      "action": "Manage Areas",
+      "title": "Areas for {{name}}",
+      "help": "Pick the areas (within this Kawasan's rayon) that belong to it. Unselected areas are un-parented.",
+      "label": "Areas in this Kawasan",
+      "placeholder": "Select areas…",
+      "empty": "No areas in this Kawasan's rayon",
+      "success": "Areas for \"{{name}}\" updated"
     }
   },
   "mapStyle": {

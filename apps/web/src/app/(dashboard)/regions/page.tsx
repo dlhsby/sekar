@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, MapPin } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -22,6 +22,7 @@ import { getErrorMessage } from '@/lib/api/client';
 import { useRegions, useDeleteRegion, type Region } from '@/lib/api/regions';
 import { useRayons } from '@/lib/api/rayons';
 import { RegionFormModal } from '@/components/regions/RegionFormModal';
+import { AssignAreasModal } from '@/components/regions/AssignAreasModal';
 
 export default function RegionsPage() {
   const { t } = useTranslation();
@@ -32,6 +33,7 @@ export default function RegionsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Region | null>(null);
+  const [assigning, setAssigning] = useState<Region | null>(null);
   const [viewing, setViewing] = useState<Region | null>(null);
   const [toDelete, setToDelete] = useState<Region | null>(null);
 
@@ -89,6 +91,13 @@ export default function RegionsPage() {
         setEditing(r);
         setFormOpen(true);
       },
+    },
+    {
+      key: 'assign-areas',
+      label: t('admin:regions.assignAreas.action'),
+      icon: MapPin,
+      hidden: !can('region:update'),
+      onClick: () => setAssigning(r),
     },
     {
       key: 'delete',
@@ -165,6 +174,12 @@ export default function RegionsPage() {
           readOnly
         />
       )}
+      <AssignAreasModal
+        open={!!assigning}
+        onOpenChange={(o) => !o && setAssigning(null)}
+        region={assigning}
+        onSuccess={() => refetch()}
+      />
 
       <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <DialogContent size="sm">

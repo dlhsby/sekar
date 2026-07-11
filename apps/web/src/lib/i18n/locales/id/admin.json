@@ -430,6 +430,15 @@
       "geometryRequired": "Perlu batas wilayah atau titik lokasi",
       "submit": "Simpan Perubahan",
       "submitNew": "Buat Kawasan"
+    },
+    "assignAreas": {
+      "action": "Kelola Area",
+      "title": "Area untuk {{name}}",
+      "help": "Pilih area (dalam rayon kawasan ini) yang termasuk dalam kawasan. Area yang tidak dipilih akan dilepas.",
+      "label": "Area dalam kawasan",
+      "placeholder": "Pilih area…",
+      "empty": "Tidak ada area pada rayon kawasan ini",
+      "success": "Area untuk \"{{name}}\" diperbarui"
     }
   },
   "mapStyle": {
