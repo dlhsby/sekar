@@ -18,6 +18,36 @@ Data-driven RBAC: roles and permissions are database rows managed at runtime fro
 - **Database:** [`../../database/schema.md`](../../database/schema.md)
 - **Web:** Role management page (permission matrix, scope + marker) — [`../../platforms/web/pages.md`](../../platforms/web/pages.md)
 
+## Endpoint permission migration (Phase 5.5) — planned
+
+**Why this is its own phase (not done piecemeal):** custom roles are *assignable* to
+users today, but the ~182 legacy `@Roles(...)` guards still gate by role code, so a
+custom role gets **403** on every un-migrated endpoint. A **partial** migration is
+worse than none — a custom role would work on some endpoints and 403 on others,
+which is unpredictable. So this runs as one focused pass with a parity guarantee.
+
+**Audit (2026-07-11):** 182 `@Roles` usages across 27 controllers, all built from
+**~25 role-group constants** in `apps/be/src/modules/users/constants/role-groups.ts`
+(top: `USER_MANAGERS` ×47, `CLOCKABLE_ROLES` ×10, `MONITORING_AREA` ×9,
+`ASSET_MANAGERS`/`ANALYTICS_VIEWERS` ×7…). So the work is bounded by the group set,
+not 182 unique combinations.
+
+**Strategy (per endpoint):** replace `@Roles(...GROUP)` with
+`@RequirePermissions('resource:action')` where the action is the endpoint's verb
+(list→`:read`, POST→`:create`, PATCH→`:update`, DELETE→`:delete`, plus domain
+verbs like `:approve`/`:verify`/`:assign`). Then ensure **`role-seeds.ts` grants
+that key to exactly the roles that were in `GROUP`** — this is the parity contract.
+
+**Parity test (the safety net):** a data-driven test that, for each of the 9 system
+roles, asserts the set of endpoints reachable under the old `@Roles` list equals the
+set reachable under `@RequirePermissions` + that role's seeded permissions. It must
+be green before merge — proving no system role loses or gains access on staging.
+
+**Order:** migrate module-by-module (users → areas/rayons/regions → activities/tasks
+→ monitoring → the rest), each module fully done + parity-green, so custom roles
+light up incrementally without breaking system roles. Keep `PermissionsGuard`
+(global, no-op without metadata) coexisting with `RolesGuard` throughout.
+
 ## Related features
 - [auth](../auth/README.md) · [users](../users/README.md) · [monitoring](../monitoring/README.md) · [settings](../settings/README.md)
 
