@@ -30,8 +30,6 @@
       "limits": "Limits",
       "general": "General"
     },
-    "searchPlaceholder": "Search settings…",
-    "noResults": "No settings match",
     "unsaved": "Unsaved changes"
   },
   "general": {
@@ -46,16 +44,6 @@
     "darkModeHint": "Switch between light and dark themes for this console.",
     "language": "Language",
     "languageHint": "Choose the display language for this console."
-  },
-  "security": {
-    "changePassword": "Change Password",
-    "currentPassword": "Current Password",
-    "newPassword": "New Password",
-    "confirmNewPassword": "Confirm New Password",
-    "minChars": "At least 8 characters",
-    "mismatch": "Confirmation does not match",
-    "savePassword": "Save Password",
-    "passwordChanged": "Password changed successfully"
   },
   "notifications": {
     "title": "Notifications",

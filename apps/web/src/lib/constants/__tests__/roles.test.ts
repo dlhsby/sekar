@@ -7,7 +7,6 @@ import type { UserRole } from '@/types/models';
 import {
   WEB_ROLES,
   ADMIN_ROLES,
-  roleAssignmentScope,
   MONITORING_ROLES,
   TASK_MANAGER_ROLES,
   CLOCKABLE_ROLES,
@@ -242,34 +241,6 @@ describe('Role Constants', () => {
 
     it('should return false for empty allowed list', () => {
       expect(hasRole('admin_system', [])).toBe(false);
-    });
-  });
-
-  describe('roleAssignmentScope (ADR-044/045 role-driven inputs)', () => {
-    it('hides all scope inputs for system + management roles', () => {
-      for (const role of ['superadmin', 'admin_system', 'management'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: false, region: false, location: false });
-      }
-    });
-
-    it('shows rayon only for kepala_rayon + admin_rayon (district)', () => {
-      for (const role of ['kepala_rayon', 'admin_rayon'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: true, region: false, location: false });
-      }
-    });
-
-    it('shows rayon + region + optional location for korlap (region)', () => {
-      expect(roleAssignmentScope('korlap')).toEqual({ rayon: true, region: true, location: true });
-    });
-
-    it('hides all scope inputs for satgas/linmas (area+shift come from schedules)', () => {
-      for (const role of ['satgas', 'linmas', 'staff_kecamatan'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: false, region: false, location: false });
-      }
-    });
-
-    it('shows nothing for an unset role', () => {
-      expect(roleAssignmentScope('')).toEqual({ rayon: false, region: false, location: false });
     });
   });
 

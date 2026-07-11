@@ -130,9 +130,8 @@ export const ALL_ROLES: UserRole[] = [
 ];
 
 /**
- * Organizational hierarchy order (top → bottom) for role pickers. Roles not
- * listed here (system + external) are appended alphabetically by label — see
- * {@link sortedRoleOptions}.
+ * Organizational hierarchy order (top → bottom) for role pickers/sorting. Roles
+ * not listed here sort after these, alphabetically by label.
  */
 export const ROLE_HIERARCHY_ORDER: UserRole[] = [
   'superadmin',
@@ -145,14 +144,6 @@ export const ROLE_HIERARCHY_ORDER: UserRole[] = [
   'satgas',
   'staff_kecamatan',
 ];
-
-/** Role dropdown options sorted by hierarchy first, then alphabetically. */
-export const sortedRoleOptions = (): { value: UserRole; label: string }[] => {
-  const rest = ALL_ROLES.filter((r) => !ROLE_HIERARCHY_ORDER.includes(r)).sort((a, b) =>
-    ROLE_LABELS[a].localeCompare(ROLE_LABELS[b]),
-  );
-  return [...ROLE_HIERARCHY_ORDER, ...rest].map((r) => ({ value: r, label: ROLE_LABELS[r] }));
-};
 
 /** Valid assignment targets per role (who can assign to whom) */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
@@ -167,37 +158,3 @@ export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
 export const hasRole = (userRole: UserRole, allowedRoles: UserRole[]): boolean =>
   allowedRoles.includes(userRole);
 
-/**
- * Which assignment fields the user form should show for a given role:
- *  - none: superadmin / admin_system / management
- *  - rayon only: kepala_rayon / admin_rayon / staff_kecamatan (kecamatan belongs to a rayon)
- *  - rayon + area: korlap
- *  - rayon + area + shift: satgas / linmas (shift defaults to Shift 1)
- * An unset/unknown role shows nothing (fields appear once a role is picked).
- */
-/**
- * Which scope inputs the user form shows, derived from the role's monitoring
- * scope (ADR-044/045):
- *  - district (kepala_rayon / admin_rayon): rayon
- *  - region (korlap): rayon + region (cascade) + optional single location
- *  - none/city (satgas / linmas / staff_kecamatan / management / admin / super):
- *    nothing — satgas/linmas work area + shift come from schedules (Phase 4).
- */
-export interface RoleAssignmentScope {
-  rayon: boolean;
-  region: boolean;
-  location: boolean;
-}
-export const roleAssignmentScope = (role: UserRole | '' | undefined): RoleAssignmentScope => {
-  switch (role) {
-    case 'korlap':
-      return { rayon: true, region: true, location: true };
-    case 'kepala_rayon':
-    case 'admin_rayon':
-      return { rayon: true, region: false, location: false };
-    default:
-      // satgas / linmas / staff_kecamatan / management / admin_system /
-      // superadmin / unset → no scope fields
-      return { rayon: false, region: false, location: false };
-  }
-};

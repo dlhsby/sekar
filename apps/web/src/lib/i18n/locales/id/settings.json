@@ -30,8 +30,6 @@
       "limits": "Batas",
       "general": "Umum"
     },
-    "searchPlaceholder": "Cari pengaturan…",
-    "noResults": "Tidak ada pengaturan yang cocok",
     "unsaved": "Perubahan belum disimpan"
   },
   "general": {
@@ -46,16 +44,6 @@
     "darkModeHint": "Beralih antara tema terang dan gelap untuk konsol ini.",
     "language": "Bahasa",
     "languageHint": "Pilih bahasa tampilan untuk konsol ini."
-  },
-  "security": {
-    "changePassword": "Ubah Kata Sandi",
-    "currentPassword": "Kata Sandi Saat Ini",
-    "newPassword": "Kata Sandi Baru",
-    "confirmNewPassword": "Konfirmasi Kata Sandi Baru",
-    "minChars": "Minimal 8 karakter",
-    "mismatch": "Konfirmasi tidak cocok",
-    "savePassword": "Simpan Kata Sandi",
-    "passwordChanged": "Kata sandi berhasil diubah"
   },
   "notifications": {
     "title": "Notifikasi",
