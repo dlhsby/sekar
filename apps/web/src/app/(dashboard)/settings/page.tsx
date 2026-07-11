@@ -22,6 +22,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Button,
   LanguageSwitcher,
+  Skeleton,
   SectionCard,
   StatusPill,
   Tabs,
@@ -217,9 +218,11 @@ function NotificationsTab({ userId }: { userId: string }) {
   if (isLoading || !data) {
     return (
       <SectionCard title={t('settings:notifications.title')}>
-        <p className="py-4 text-nb-body-sm text-nb-gray-600">
-          {t('settings:notifications.loadingPreferences')}
-        </p>
+        <div className="space-y-3 py-2">
+          <Skeleton variant="text" />
+          <Skeleton variant="text" />
+          <Skeleton variant="text" />
+        </div>
       </SectionCard>
     );
   }

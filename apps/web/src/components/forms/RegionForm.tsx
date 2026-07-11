@@ -214,7 +214,7 @@ export function RegionForm({
           readonly={readOnly}
           autoLocateOnMount={mode === 'create' && !seedPolygon && !readOnly}
         />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
           <FormInput
             label={t('admin:regions.form.latitude')}
             type="number"

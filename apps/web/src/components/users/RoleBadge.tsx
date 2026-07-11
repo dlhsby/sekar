@@ -2,10 +2,11 @@
 
 import { Badge } from '@/components/ui';
 import type { UserRole } from '@/types/models';
-import { ROLE_LABELS, ROLE_BADGE_VARIANTS } from '@/lib/constants/roles';
+import { roleLabel, ROLE_BADGE_VARIANTS } from '@/lib/constants/roles';
 
 interface RoleBadgeProps {
-  role: UserRole;
+  /** Any role code — custom roles get the neutral variant + a title-cased label. */
+  role: string;
 }
 
 /**
@@ -14,8 +15,8 @@ interface RoleBadgeProps {
  */
 export function RoleBadge({ role }: RoleBadgeProps) {
   return (
-    <Badge variant={ROLE_BADGE_VARIANTS[role] ?? 'secondary'} size="sm">
-      {ROLE_LABELS[role] ?? role}
+    <Badge variant={ROLE_BADGE_VARIANTS[role as UserRole] ?? 'secondary'} size="sm">
+      {roleLabel(role)}
     </Badge>
   );
 }

@@ -34,9 +34,10 @@ import {
   useResetUserPassword,
 } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
+import { useRoles } from '@/lib/api/roles';
 import { useAreas } from '@/lib/api/areas';
 import { useUser } from '@/lib/auth/hooks';
-import { ADMIN_ROLES, ROLE_LABELS } from '@/lib/constants/roles';
+import { ADMIN_ROLES, roleLabel } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 import { getErrorMessage } from '@/lib/api/client';
 import type { User } from '@/types/models';
@@ -61,6 +62,13 @@ export default function UsersPage() {
   const rayonFilterOptions = useMemo(
     () => rayons.map((r) => ({ value: r.name, label: r.name })),
     [rayons]
+  );
+  // Role filter is data-driven (ADR-044) — options come from the /roles catalog
+  // (incl. custom roles), labelled via roleLabel to match the column accessor.
+  const { data: rolesCatalog = [] } = useRoles();
+  const roleFilterOptions = useMemo(
+    () => rolesCatalog.map((r) => ({ value: roleLabel(r.code), label: roleLabel(r.code) })),
+    [rolesCatalog]
   );
 
   // Full area master data so the multi-value Area filter can list every area
@@ -154,14 +162,14 @@ export default function UsersPage() {
       },
       {
         id: 'role',
-        // Filter/sort/search against the human label ("Top Management"), not the
-        // raw enum ("management"), so typing the visible text matches.
-        accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
+        // Filter/sort/search against the human label ("Management"), not the raw
+        // code ("management"). roleLabel() covers custom roles too (ADR-044).
+        accessorFn: (u) => roleLabel(u.role),
         header: t('admin:users.columnRole'),
         meta: {
           label: t('admin:users.columnRole'),
           filterVariant: 'enum',
-          filterOptions: Object.values(ROLE_LABELS).map((label) => ({ value: label, label })),
+          filterOptions: roleFilterOptions,
         },
         cell: ({ row }) => <RolePill role={row.original.role} />,
       },
@@ -304,7 +312,7 @@ export default function UsersPage() {
         ),
       },
     ],
-    [actorName, rayonNameById, t, rayonFilterOptions, areaNameById, areaFilterOptions]
+    [actorName, rayonNameById, t, rayonFilterOptions, roleFilterOptions, areaNameById, areaFilterOptions]
   );
 
   const rowActions = useCallback(

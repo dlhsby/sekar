@@ -87,6 +87,19 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   staff_kecamatan: 'Staff Kecamatan',
 };
 
+/**
+ * Human label for ANY role code — the 9 system roles use their curated label;
+ * custom/data-driven roles (ADR-044) fall back to a title-cased code so they
+ * never render as a raw slug. (For the exact operator-set name, the roles
+ * catalog is the source; this is the presentational fallback.)
+ */
+export function roleLabel(code: string): string {
+  return (
+    ROLE_LABELS[code as UserRole] ??
+    code.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+}
+
 /** Badge variant for each role */
 export const ROLE_BADGE_VARIANTS: Record<
   UserRole,

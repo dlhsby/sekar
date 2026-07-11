@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils/cn';
 import type { UserRole } from '@/types/models';
-import { ROLE_LABELS } from '@/lib/constants/roles';
+import { roleLabel } from '@/lib/constants/roles';
 
 /** Role-accent pill colours (hi-fi USR-1 `.pill` per role). */
 export const ROLE_PILL_STYLE: Record<UserRole, string> = {
@@ -20,11 +20,12 @@ export const ROLE_PILL_STYLE: Record<UserRole, string> = {
 const base =
   'inline-flex items-center rounded-full border-[1.5px] border-nb-black px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide leading-none';
 
-/** Static role-accent pill (table cells, detail headers). */
-export function RolePill({ role, className }: { role: UserRole; className?: string }) {
+/** Role-accent pill (table cells, detail headers). Accepts any role code —
+ *  custom roles render with the neutral accent + a title-cased label. */
+export function RolePill({ role, className }: { role: string; className?: string }) {
   return (
-    <span className={cn(base, ROLE_PILL_STYLE[role], className)}>
-      {ROLE_LABELS[role] ?? role}
+    <span className={cn(base, ROLE_PILL_STYLE[role as UserRole], className)}>
+      {roleLabel(role)}
     </span>
   );
 }
