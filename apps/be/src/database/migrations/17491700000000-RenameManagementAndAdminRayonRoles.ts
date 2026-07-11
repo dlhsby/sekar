@@ -37,13 +37,15 @@ export class RenameManagementAndAdminRayonRoles17491700000000 implements Migrati
     );
 
     // 3. Rename login usernames carrying the old role prefix (e.g. admin_data_pusat_1).
+    // Underscore-anchored patterns so only role-prefixed handles (admin_data_x)
+    // match — never a real name that merely starts with the string.
     await queryRunner.query(
       `UPDATE users SET username = 'management' || substring(username FROM 15)
-       WHERE username LIKE 'top_management%'`,
+       WHERE username LIKE 'top_management\\_%' ESCAPE '\\'`,
     );
     await queryRunner.query(
       `UPDATE users SET username = 'admin_rayon' || substring(username FROM 11)
-       WHERE username LIKE 'admin_data%'`,
+       WHERE username LIKE 'admin_data\\_%' ESCAPE '\\'`,
     );
 
     // 4. RBAC roles catalog (table + code column exist only after AddRbacTables).
@@ -125,11 +127,11 @@ export class RenameManagementAndAdminRayonRoles17491700000000 implements Migrati
 
     await queryRunner.query(
       `UPDATE users SET username = 'admin_data' || substring(username FROM 12)
-       WHERE username LIKE 'admin_rayon%'`,
+       WHERE username LIKE 'admin_rayon\\_%' ESCAPE '\\'`,
     );
     await queryRunner.query(
       `UPDATE users SET username = 'top_management' || substring(username FROM 11)
-       WHERE username LIKE 'management%'`,
+       WHERE username LIKE 'management\\_%' ESCAPE '\\'`,
     );
 
     await queryRunner.query(
