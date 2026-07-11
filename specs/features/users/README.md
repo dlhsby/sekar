@@ -23,6 +23,7 @@ User CRUD (admin), self-profile management, preferred language, profile photo, a
 - [access-control](../access-control/README.md)
 
 ## Changelog
+- 2026-07-11 — Review polish: removed the always-empty Shift column (shift comes from schedules/Phase 4); i18n the Area column header; Rayon/Region scope fields marked required.
 - 2026-07-10 — Phase 3 landed: `users.region_id` (Create/Update DTO + service); web user form scope is role-driven from monitoring_scope (kepala_rayon/admin_rayon→rayon; korlap→rayon+region+optional location; satgas/linmas/management→none). satgas/linmas area+shift now come from schedules (Phase 4) — new such users are unmonitored until scheduled. Verified live.
 - 2026-07-10 — Role-driven scope inputs + `users.region_id`; satgas/linmas area picker removed (ADR-044/045).
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
