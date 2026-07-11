@@ -4,6 +4,14 @@
   "addRole": "Tambah Peran",
   "roleList": "Daftar Peran",
   "systemBadge": "Sistem",
+  "systemBadgeHint": "Peran bawaan sistem — tidak dapat dihapus atau diganti kodenya; izin, label, cakupan, dan penanda tetap dapat diubah.",
+  "search": {
+    "placeholder": "Cari peran…",
+    "noResults": "Tidak ada peran yang cocok"
+  },
+  "validation": {
+    "nameRequired": "Nama peran wajib diisi"
+  },
   "counts": {
     "permissions": "{{count}} izin",
     "users": "{{count}} pengguna"

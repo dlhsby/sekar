@@ -73,7 +73,14 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
 
   const scopeOptions = SCOPES.map((s) => ({ value: s, label: t(`access-control:scope.${s}`) }));
 
+  const trimmedName = name.trim();
+  const nameError = !trimmedName ? t('access-control:validation.nameRequired') : undefined;
+
   const handleSave = async () => {
+    if (nameError) {
+      toast.error(nameError);
+      return;
+    }
     try {
       await updateRole.mutateAsync({
         id: role.id,
@@ -99,7 +106,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
         <div className="flex items-center gap-2">
           <h2 className="text-nb-h2">{role.name}</h2>
           {role.is_system && (
-            <Badge variant="secondary" size="sm">
+            <Badge variant="secondary" size="sm" title={t('access-control:systemBadgeHint')}>
               {t('access-control:systemBadge')}
             </Badge>
           )}
@@ -116,7 +123,11 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
             </Button>
           )}
           {canManage && (
-            <Button onClick={handleSave} loading={updateRole.isPending}>
+            <Button
+              onClick={handleSave}
+              loading={updateRole.isPending}
+              disabled={!!nameError}
+            >
               {updateRole.isPending
                 ? t('access-control:actions.saving')
                 : t('access-control:actions.save')}
@@ -125,12 +136,14 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         <FormInput
           label={t('access-control:fields.name')}
           value={name}
           onChange={(e) => setName(e.target.value)}
           disabled={!canManage}
+          required
+          error={canManage ? nameError : undefined}
         />
         <FormSelect
           label={t('access-control:fields.scope')}
@@ -139,14 +152,12 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           onChange={(v) => setScope(v as MonitoringScope)}
           disabled={!canManage}
         />
-        <div className="md:col-span-2">
-          <Textarea
-            label={t('access-control:fields.description')}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={!canManage}
-          />
-        </div>
+        <Textarea
+          label={t('access-control:fields.description')}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={!canManage}
+        />
         <FormInput
           label={t('access-control:fields.markerIcon')}
           placeholder={t('access-control:fields.markerIconPlaceholder')}

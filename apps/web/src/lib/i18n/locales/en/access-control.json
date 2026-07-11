@@ -4,6 +4,14 @@
   "addRole": "Add Role",
   "roleList": "Roles",
   "systemBadge": "System",
+  "systemBadgeHint": "Built-in system role — cannot be deleted or have its code renamed; permissions, label, scope, and marker remain editable.",
+  "search": {
+    "placeholder": "Search roles…",
+    "noResults": "No roles match"
+  },
+  "validation": {
+    "nameRequired": "Role name is required"
+  },
   "counts": {
     "permissions": "{{count}} permissions",
     "users": "{{count}} users"

@@ -3,11 +3,12 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, ShieldCheck } from 'lucide-react';
+import { Plus, ShieldCheck, Search } from 'lucide-react';
 import {
   Button,
   Badge,
   Card,
+  Input,
   FormInput,
   Dialog,
   DialogBody,
@@ -39,11 +40,17 @@ export default function RolesPage() {
   const deleteRole = useDeleteRole();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
   const [pendingDelete, setPendingDelete] = useState<Role | null>(null);
 
   const sortedRoles = useMemo(() => roles ?? [], [roles]);
+  const filteredRoles = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return sortedRoles;
+    return sortedRoles.filter((r) => r.name.toLowerCase().includes(q));
+  }, [sortedRoles, search]);
   // `selected` falls back to the first role, so no effect is needed to seed it.
   const selected = useMemo(
     () => sortedRoles.find((r) => r.id === selectedId) ?? sortedRoles[0] ?? null,
@@ -95,39 +102,61 @@ export default function RolesPage() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[320px_1fr]">
         {/* Role list */}
         <div className="space-y-2">
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('access-control:search.placeholder')}
+            aria-label={t('access-control:search.placeholder')}
+            leftIcon={<Search className="size-4" />}
+          />
           {isLoading ? (
             <>
               <Skeleton variant="card" />
               <Skeleton variant="card" />
             </>
+          ) : filteredRoles.length === 0 ? (
+            <p className="px-1 py-6 text-center text-nb-body-sm text-nb-gray-600">
+              {t('access-control:search.noResults')}
+            </p>
           ) : (
-            sortedRoles.map((role) => (
-              <button
-                key={role.id}
-                type="button"
-                onClick={() => setSelectedId(role.id)}
-                className={cn(
-                  'w-full rounded-nb-base border-2 border-nb-black bg-nb-white p-3 text-left shadow-nb-sm transition-transform hover:-translate-y-0.5',
-                  selected?.id === role.id && 'bg-nb-primary-light',
-                )}
-              >
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="size-4 shrink-0" aria-hidden />
-                  <span className="min-w-0 flex-1 truncate font-bold text-nb-black">
-                    {role.name}
-                  </span>
-                  {role.is_system && (
-                    <Badge variant="secondary" size="sm">
-                      {t('access-control:systemBadge')}
-                    </Badge>
+            filteredRoles.map((role) => {
+              const isSelected = selected?.id === role.id;
+              return (
+                <button
+                  key={role.id}
+                  type="button"
+                  aria-current={isSelected}
+                  onClick={() => setSelectedId(role.id)}
+                  className={cn(
+                    'w-full rounded-nb-base border-2 border-nb-black p-3 text-left transition-transform hover:-translate-y-0.5',
+                    isSelected
+                      ? '-translate-y-0.5 bg-nb-primary shadow-nb-md'
+                      : 'bg-nb-white shadow-nb-sm',
                   )}
-                </div>
-                <p className="mt-1 text-[11px] text-nb-gray-600">
-                  {t('access-control:counts.permissions', { count: role.permissionCount })} ·{' '}
-                  {t('access-control:counts.users', { count: role.userCount })}
-                </p>
-              </button>
-            ))
+                >
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="size-4 shrink-0" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate font-bold text-nb-black">
+                      {role.name}
+                    </span>
+                    {role.is_system && (
+                      <Badge variant="secondary" size="sm" title={t('access-control:systemBadgeHint')}>
+                        {t('access-control:systemBadge')}
+                      </Badge>
+                    )}
+                  </div>
+                  <p
+                    className={cn(
+                      'mt-1 text-[11px]',
+                      isSelected ? 'text-nb-black' : 'text-nb-gray-600',
+                    )}
+                  >
+                    {t('access-control:counts.permissions', { count: role.permissionCount })} ·{' '}
+                    {t('access-control:counts.users', { count: role.userCount })}
+                  </p>
+                </button>
+              );
+            })
           )}
         </div>
 
