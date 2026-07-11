@@ -85,7 +85,7 @@ describe('filterHelpers', () => {
     });
 
     it('replaces underscores with spaces and capitalises each word for admin_rayon', () => {
-      expect(toTitleCase('admin_rayon')).toBe('Admin Data');
+      expect(toTitleCase('admin_rayon')).toBe('Admin Rayon');
     });
 
     it('replaces underscores with spaces and capitalises each word for admin_system', () => {
@@ -93,7 +93,7 @@ describe('filterHelpers', () => {
     });
 
     it('replaces underscores with spaces and capitalises each word for management', () => {
-      expect(toTitleCase('management')).toBe('Top Management');
+      expect(toTitleCase('management')).toBe('Management');
     });
 
     it('handles strings with no underscores', () => {

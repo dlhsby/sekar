@@ -10,9 +10,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   satgas: 'Satgas',
   linmas: 'Linmas',
   korlap: 'Korlap',
-  admin_rayon: 'Admin Data',
+  admin_rayon: 'Admin Rayon',
   kepala_rayon: 'Kepala Rayon',
-  management: 'Top Management',
+  management: 'Management',
   admin_system: 'Admin Sistem',
   superadmin: 'Superadmin',
   // Phase 3 — public intake (ADR-033)
