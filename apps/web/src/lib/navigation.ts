@@ -94,8 +94,8 @@ export const navigationItems: NavItem[] = [
         label: 'common:nav.schedules',
         href: '/schedules',
         icon: CalendarDaysIcon,
-        // Managers (admin/kepala_rayon/admin_data) edit; korlap + top_management view.
-        roles: [...ADMIN_ROLES, 'kepala_rayon', 'admin_data', 'korlap', 'top_management'],
+        // Managers (admin/kepala_rayon/admin_rayon) edit; korlap + management view.
+        roles: [...ADMIN_ROLES, 'kepala_rayon', 'admin_rayon', 'korlap', 'management'],
       },
       // Pruning-request disposition is operational work (ADR-038).
       {
@@ -103,7 +103,7 @@ export const navigationItems: NavItem[] = [
         label: 'common:nav.pruningRequests',
         href: '/pruning-requests',
         icon: InboxArrowDownIcon,
-        roles: ['admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'],
+        roles: ['admin_rayon', 'kepala_rayon', 'management', 'admin_system', 'superadmin'],
       },
     ],
   },
@@ -114,14 +114,14 @@ export const navigationItems: NavItem[] = [
     label: 'common:nav.usersAccess',
     href: '#',
     icon: UsersIcon,
-    roles: [...ADMIN_ROLES, 'admin_data'],
+    roles: [...ADMIN_ROLES, 'admin_rayon'],
     children: [
       {
         id: 'users',
         label: 'common:nav.users',
         href: '/users',
         icon: UsersIcon,
-        roles: [...ADMIN_ROLES, 'admin_data'],
+        roles: [...ADMIN_ROLES, 'admin_rayon'],
       },
       {
         id: 'roles',
@@ -138,35 +138,35 @@ export const navigationItems: NavItem[] = [
     label: 'common:nav.masterData',
     href: '#',
     icon: FolderIcon,
-    roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+    roles: [...ADMIN_ROLES, 'management', 'admin_rayon'],
     children: [
       {
         id: 'areas',
         label: 'common:nav.areas',
         href: '/areas',
         icon: MapPinIcon,
-        roles: [...ADMIN_ROLES, 'top_management'],
+        roles: [...ADMIN_ROLES, 'management'],
       },
       {
         id: 'rayons',
         label: 'common:nav.rayons',
         href: '/rayons',
         icon: BuildingOfficeIcon,
-        roles: [...ADMIN_ROLES, 'top_management'],
+        roles: [...ADMIN_ROLES, 'management'],
       },
       {
         id: 'regions',
         label: 'common:nav.regions',
         href: '/regions',
         icon: MapPinIcon,
-        roles: [...ADMIN_ROLES, 'top_management'],
+        roles: [...ADMIN_ROLES, 'management'],
       },
       {
         id: 'teams',
         label: 'common:nav.teams',
         href: '/teams',
         icon: UsersIcon,
-        roles: [...ADMIN_ROLES, 'top_management'],
+        roles: [...ADMIN_ROLES, 'management'],
       },
       // Phase 3-8/3-12 web pages (shipped with the phase-3 close-out)
       {
@@ -174,7 +174,7 @@ export const navigationItems: NavItem[] = [
         label: 'common:nav.plants',
         href: '/plants',
         icon: SparklesIcon,
-        roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+        roles: [...ADMIN_ROLES, 'management', 'admin_rayon', 'kepala_rayon'],
       },
       // ARCHIVED 2026-07-07 — hidden from the sidebar per request, page still
       // lives at /seeds. Uncomment to restore.
@@ -183,7 +183,7 @@ export const navigationItems: NavItem[] = [
       //   label: 'common:nav.seeds',
       //   href: '/seeds',
       //   icon: ArchiveBoxIcon,
-      //   roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+      //   roles: [...ADMIN_ROLES, 'management', 'admin_rayon', 'kepala_rayon'],
       // },
       // ARCHIVED 2026-07-07 — hidden from the sidebar per request, page still
       // lives at /assets. Uncomment to restore.
@@ -192,14 +192,14 @@ export const navigationItems: NavItem[] = [
       //   label: 'common:nav.assets',
       //   href: '/assets',
       //   icon: Square2StackIcon,
-      //   roles: [...ADMIN_ROLES, 'top_management', 'admin_data', 'kepala_rayon'],
+      //   roles: [...ADMIN_ROLES, 'management', 'admin_rayon', 'kepala_rayon'],
       // },
       {
         id: 'database',
         label: 'common:nav.database',
         href: '/database',
         icon: TableCellsIcon,
-        roles: [...ADMIN_ROLES, 'top_management', 'admin_data'],
+        roles: [...ADMIN_ROLES, 'management', 'admin_rayon'],
       },
     ],
   },
@@ -213,21 +213,21 @@ export const navigationItems: NavItem[] = [
     label: 'common:nav.reports',
     href: '#',
     icon: Square2StackIcon,
-    roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+    roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
     children: [
       // {
       //   id: 'reports-list',
       //   label: 'common:nav.reportsList',
       //   href: '/reports',
       //   icon: Square2StackIcon,
-      //   roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      //   roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
       // },
       // {
       //   id: 'reports-builder',
       //   label: 'common:nav.reportsBuilder',
       //   href: '/reports/builder',
       //   icon: Square2StackIcon,
-      //   roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+      //   roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
       // },
       // {
       //   id: 'reports-schedules',
@@ -241,7 +241,7 @@ export const navigationItems: NavItem[] = [
         label: 'common:nav.reportsReporting',
         href: '/reports/reporting',
         icon: DocumentTextIcon,
-        roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+        roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
       },
     ],
   },
@@ -254,28 +254,28 @@ export const navigationItems: NavItem[] = [
   //   label: 'common:nav.analytics',
   //   href: '/analytics',
   //   icon: ChartBarIcon,
-  //   roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //   roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
   //   children: [
   //     {
   //       id: 'analytics-overview',
   //       label: 'common:nav.analyticsSummary',
   //       href: '/analytics',
   //       icon: ChartBarIcon,
-  //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //       roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
   //     },
   //     {
   //       id: 'analytics-workers',
   //       label: 'common:nav.workerPerformance',
   //       href: '/analytics/workers',
   //       icon: ChartBarIcon,
-  //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //       roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
   //     },
   //     {
   //       id: 'analytics-areas',
   //       label: 'common:nav.areaComparison',
   //       href: '/analytics/areas',
   //       icon: ChartBarIcon,
-  //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
+  //       roles: ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'],
   //     },
   //   ],
   // },

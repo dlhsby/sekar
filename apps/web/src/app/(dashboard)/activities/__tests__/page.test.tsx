@@ -86,9 +86,9 @@ const mockKepalaRayonUser = {
 
 const mockAdminDataUser = {
   id: 'user-admin-data',
-  username: 'admin_data1',
+  username: 'admin_rayon1',
   full_name: 'Admin Data',
-  role: 'admin_data' as const,
+  role: 'admin_rayon' as const,
   area_id: null,
   created_at: '2026-01-01T00:00:00Z',
 };
@@ -252,7 +252,7 @@ describe('ActivitiesPage', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('should allow admin_data role to access the page', () => {
+    it('should allow admin_rayon role to access the page', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
@@ -786,7 +786,7 @@ describe('ActivitiesPage', () => {
       expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Setujui menuitem for admin_data role', async () => {
+    it('should NOT show Setujui menuitem for admin_rayon role', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
@@ -798,7 +798,7 @@ describe('ActivitiesPage', () => {
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Tolak menuitem for admin_data role', async () => {
+    it('should NOT show Tolak menuitem for admin_rayon role', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 

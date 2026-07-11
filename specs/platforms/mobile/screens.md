@@ -2665,9 +2665,9 @@ fontSize: {
 | satgas | Home, Aktivitas, Tugas, Lembur, Profil |
 | linmas | Home, Aktivitas, Tugas, Lembur, Profil |
 | korlap | Home, Aktivitas, Tugas, Monitoring, Profil |
-| admin_data | Home, Aktivitas, Profil |
+| admin_rayon | Home, Aktivitas, Profil |
 | kepala_rayon | Home, Tugas, Monitoring, Profil |
-| top_management | Monitoring, Tugas, Profil |
+| management | Monitoring, Tugas, Profil |
 | admin_system | Monitoring, Tugas, Profil |
 | superadmin | Monitoring, Tugas, Profil |
 
@@ -2712,7 +2712,7 @@ fontSize: {
 | ProfileScreen | Add profile picture upload/change section |
 | ClockInOutScreen | Make selfie optional (add "Skip" button) |
 | MapDashboardScreen | Profile pictures in markers; multi-area korlap filter |
-| MonitoringFilterModal | Multi-select areas for korlap; admin_data rayon-scoped filter |
+| MonitoringFilterModal | Multi-select areas for korlap; admin_rayon rayon-scoped filter |
 | TaskDetailScreen | Add audit trail / revision history timeline |
 | ActivityDetailScreen | Add audit trail section |
 
@@ -2726,7 +2726,7 @@ fontSize: {
 
 | Role | Change |
 |------|--------|
-| admin_data | **+Home tab** (now clockable); Overtime tab → clock-in/out flow |
+| admin_rayon | **+Home tab** (now clockable); Overtime tab → clock-in/out flow |
 | kepala_rayon | **+Home tab** (now clockable); Overtime tab → clock-in/out flow |
 | satgas, linmas, korlap | Overtime tab → clock-in/out flow (replaces submission) |
 
@@ -2753,7 +2753,7 @@ Phase 3 opens with **M1-R Redesign Foundation** (sub-phases 3-R1…3-R5). After 
 | Pruning task form | Full-screen NB form, sticky CTA | Full-screen, sticky CTA | Dialog (convert flow) or full page (new) |
 | Species autocomplete | Full-screen `NBModal type="fullscreen"` fuzzy | Full-screen sheet | Combobox dropdown |
 | Pruning request submit (kecamatan) | 5-step full-screen flow | 5-step full-screen flow on `(kecamatan)` layout | Same, plus breadcrumb |
-| Pruning request review (admin_data) | Bottom-sheet detail | Vertical card list + filter sheet | Sortable data table + right filter rail |
+| Pruning request review (admin_rayon) | Bottom-sheet detail | Vertical card list + filter sheet | Sortable data table + right filter rail |
 | Capacity calendar | Read-only chip in ReviewQueue | Vertical week cards (collapsible) + full-screen edit dialog | 7-column week grid editor |
 | Monitoring map | Full map + bottom sheets | Full-viewport map + drag-up sheet (10/45/90 % snaps) | Sidebar │ map 65 % │ panel 35 % |
 | Modals | `NBModal` (sheet for ≤50 % / fullscreen for complex) | Bottom sheet | Centered Radix Dialog |
@@ -2767,15 +2767,15 @@ All three presentations consume the **same generated tokens** — colors, shadow
 
 | Stack | Screen | File | Role Access |
 |-------|--------|------|-------------|
-| Monitoring | **MapDashboard v2** (rebuild) | `src/screens/monitoring/MapDashboardScreen.tsx` | korlap / kepala_rayon / admin_data / top_management / admin_system / superadmin |
+| Monitoring | **MapDashboard v2** (rebuild) | `src/screens/monitoring/MapDashboardScreen.tsx` | korlap / kepala_rayon / admin_rayon / management / admin_system / superadmin |
 | Tasks | **Pruning Task Form** (dynamic) | `src/components/tasks/PruningTaskForm.tsx` | satgas / linmas / korlap |
 | Tasks | **Task Resume flow** (resume-tomorrow) | `src/screens/tasks/TaskDetailScreen.tsx` (extend) | assignee |
 | PruningRequests | Submit Request | `src/screens/pruningRequests/SubmitScreen.tsx` | staff_kecamatan |
 | PruningRequests | My Requests | `src/screens/pruningRequests/MyRequestsScreen.tsx` | staff_kecamatan |
-| PruningRequests | Request Detail | `src/screens/pruningRequests/RequestDetailScreen.tsx` | owner / admin_data (rayon) / management |
-| PruningRequests | Review Queue | `src/screens/pruningRequests/ReviewQueueScreen.tsx` | admin_data (rayon) |
-| Seeds | Seeds List | `src/screens/seeds/SeedsListScreen.tsx` | admin_data @ Taman Aktif / top_management |
-| Seeds | Add Transaction | `src/screens/seeds/AddTransactionScreen.tsx` | admin_data @ Taman Aktif / top_management |
+| PruningRequests | Request Detail | `src/screens/pruningRequests/RequestDetailScreen.tsx` | owner / admin_rayon (rayon) / management |
+| PruningRequests | Review Queue | `src/screens/pruningRequests/ReviewQueueScreen.tsx` | admin_rayon (rayon) |
+| Seeds | Seeds List | `src/screens/seeds/SeedsListScreen.tsx` | admin_rayon @ Taman Aktif / management |
+| Seeds | Add Transaction | `src/screens/seeds/AddTransactionScreen.tsx` | admin_rayon @ Taman Aktif / management |
 
 ### New Components
 
@@ -2800,9 +2800,9 @@ New map components MUST carry forward:
 | Role | Change |
 |------|--------|
 | staff_kecamatan | New role tab set: Submit Request / My Requests / Profile. No Map, no Tasks, no Home. |
-| admin_data | + Review Queue tab (pruning-requests scoped to `users.rayon_id`) |
-| admin_data @ Taman Aktif | + Seeds tab |
-| top_management | + Seeds tab (read-only ledger + transaction insert) |
+| admin_rayon | + Review Queue tab (pruning-requests scoped to `users.rayon_id`) |
+| admin_rayon @ Taman Aktif | + Seeds tab |
+| management | + Seeds tab (read-only ledger + transaction insert) |
 
 ### Redux Slices
 

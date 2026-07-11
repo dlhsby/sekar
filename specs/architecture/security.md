@@ -134,9 +134,9 @@ api.interceptors.response.use(
 - `satgas` — Field worker (clock-in/out, reports)
 - `linmas` — Security/patrol (clock-in/out, reports)
 - `korlap` — Field coordinator (multi-area assignment, monitoring)
-- `admin_data` — Data manager (disposition authority over pruning requests, scoped by rayon)
+- `admin_rayon` — Data manager (disposition authority over pruning requests, scoped by rayon)
 - `kepala_rayon` — Rayon head (approvals, rayon oversight)
-- `top_management` — Executive dashboard
+- `management` — Executive dashboard
 - `admin_system` — System administration
 - `superadmin` — Full system access
 
@@ -170,7 +170,7 @@ async getAllWorkers() {
 
 #### Permission Matrix
 
-Permission matrix has expanded to 8 core roles + 1 external. See `specs/COMPLETION_STATUS.md` and `specs/architecture/decisions/ADR-009.md` (role system), `ADR-032.md` (admin_data disposition), `ADR-033.md` (staff_kecamatan) for comprehensive breakdown.
+Permission matrix has expanded to 8 core roles + 1 external. See `specs/COMPLETION_STATUS.md` and `specs/architecture/decisions/ADR-009.md` (role system), `ADR-032.md` (admin_rayon disposition), `ADR-033.md` (staff_kecamatan) for comprehensive breakdown.
 
 ---
 
@@ -893,13 +893,13 @@ npm audit fix --force  # Use with caution
 
 ### Role & Authorization Changes
 
-#### admin_data — Extended with Disposition Authority (ADR-032)
+#### admin_rayon — Extended with Disposition Authority (ADR-032)
 
-Phase 2C's ADR-009 explicitly excluded `admin_data` from approval flows (overtime, schedules). Phase 3 narrowly amends that boundary so `admin_data` can review and convert `pruning_requests`, scoped by `users.rayon_id`:
+Phase 2C's ADR-009 explicitly excluded `admin_rayon` from approval flows (overtime, schedules). Phase 3 narrowly amends that boundary so `admin_rayon` can review and convert `pruning_requests`, scoped by `users.rayon_id`:
 
-- **What changes:** New permission constant `PRUNING_REQUEST_REVIEWERS` (admin_data + top_management + admin_system + superadmin) governs `POST /pruning-requests/:id/review` and `POST /pruning-requests/:id/convert-to-task`. `admin_data` actions are additionally constrained by `pruning_requests.rayon_id = actor.rayon_id` (or null before review, in which case `admin_data` may assign it to their own rayon).
-- **What does NOT change:** `admin_data` gains no rights over overtime approval, schedule approval, or user management. The extension is surgical: a single new capability, scoped tightly, audited via `audit_logs`.
-- **Rationale:** `admin_data` is already rayon-scoped per ADR-013 (multi-area assignment) and is the organizational owner of per-rayon data operations. Creating a new `admin_rayon` role would duplicate responsibility.
+- **What changes:** New permission constant `PRUNING_REQUEST_REVIEWERS` (admin_rayon + management + admin_system + superadmin) governs `POST /pruning-requests/:id/review` and `POST /pruning-requests/:id/convert-to-task`. `admin_rayon` actions are additionally constrained by `pruning_requests.rayon_id = actor.rayon_id` (or null before review, in which case `admin_rayon` may assign it to their own rayon).
+- **What does NOT change:** `admin_rayon` gains no rights over overtime approval, schedule approval, or user management. The extension is surgical: a single new capability, scoped tightly, audited via `audit_logs`.
+- **Rationale:** `admin_rayon` is already rayon-scoped per ADR-013 (multi-area assignment) and is the organizational owner of per-rayon data operations. Creating a new `admin_rayon` role would duplicate responsibility.
 
 #### staff_kecamatan — New External Role (ADR-033)
 

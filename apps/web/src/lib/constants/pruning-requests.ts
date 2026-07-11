@@ -49,9 +49,9 @@ export const PRUNING_REQUEST_STATUS_TONES: Record<
 
 /** Roles allowed to view + disposition pruning requests on the web dashboard. */
 export const PRUNING_REQUEST_ADMIN_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ] as const;

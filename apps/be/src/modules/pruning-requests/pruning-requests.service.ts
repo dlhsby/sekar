@@ -79,7 +79,7 @@ export class PruningRequestsService {
     this.logger.log(
       `Pruning request ${saved.id} created with reference code ${saved.referenceCode}`,
     );
-    // May 13 — heads-up push to every admin_data / kepala_rayon in the
+    // May 13 — heads-up push to every admin_rayon / kepala_rayon in the
     // request's rayon. Fire-and-forget; submit must not block on FCM.
     void this.notifications.notifyRayonAdmins(
       saved.rayonId,
@@ -142,7 +142,7 @@ export class PruningRequestsService {
       gpsLng: dto.lng,
       photoUrls: dto.photo_keys,
       // May 9, 2026 — `expected_date` is no longer written from submit; the
-      // concrete day is set by admin_data via `scheduled_date` later.
+      // concrete day is set by admin_rayon via `scheduled_date` later.
       expectedDate: null,
       expectedYear: requestedWeek.expectedYear,
       expectedIsoWeek: requestedWeek.expectedIsoWeek,
@@ -178,8 +178,8 @@ export class PruningRequestsService {
 
   /**
    * Get a single pruning request by ID. Access: the submitter, rayon-scoped
-   * admins (admin_data / kepala_rayon with matching rayon) and read-all
-   * roles (top_management / admin_system / superadmin).
+   * admins (admin_rayon / kepala_rayon with matching rayon) and read-all
+   * roles (management / admin_system / superadmin).
    */
   async findById(id: string, user: User): Promise<PruningRequest> {
     this.logger.log(`Fetching pruning request ${id} for user ${user.id} (role: ${user.role})`);
@@ -195,7 +195,7 @@ export class PruningRequestsService {
 
   /**
    * Review a pruning request (approve or reject). Only 'submitted' /
-   * 'under_review' requests are reviewable; admin_data is rayon-scoped.
+   * 'under_review' requests are reviewable; admin_rayon is rayon-scoped.
    */
   async review(id: string, dto: ReviewPruningRequestDto, user: User): Promise<PruningRequest> {
     this.logger.log(
@@ -276,7 +276,7 @@ export class PruningRequestsService {
   }
 
   /**
-   * List pruning requests with filtering and pagination. For admin_data
+   * List pruning requests with filtering and pagination. For admin_rayon
    * users, rayonId is auto-forced to their rayon_id.
    */
   async findAll(
@@ -333,7 +333,7 @@ export class PruningRequestsService {
     if (query.status) {
       qb.where('pr.status = :status', { status: query.status });
     }
-    const rayonId = user.role === UserRole.ADMIN_DATA ? user.rayon_id : query.rayonId;
+    const rayonId = user.role === UserRole.ADMIN_RAYON ? user.rayon_id : query.rayonId;
     if (!rayonId) return;
     if (query.status) {
       qb.andWhere('pr.rayonId = :rayonId', { rayonId });
@@ -402,7 +402,7 @@ export class PruningRequestsService {
 
   /**
    * Update editable fields on a pruning request (address, notes, tree details, contacts).
-   * Admin roles only; admin_data is rayon-scoped.
+   * Admin roles only; admin_rayon is rayon-scoped.
    */
   async update(id: string, dto: UpdatePruningRequestDto, user: User): Promise<PruningRequest> {
     this.logger.log(`Updating pruning request ${id} by user ${user.id}`);

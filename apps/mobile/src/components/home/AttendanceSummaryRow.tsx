@@ -3,7 +3,7 @@
  * Masuk hugs the left, Keluar the right. Instead of a status pill, the times
  * themselves are colour-coded: a late clock-in / early clock-out reads in
  * danger-dark, an on-time one in success-dark (a missing clock-out stays muted).
- * Shared by the field / coordinator / admin_data home heroes.
+ * Shared by the field / coordinator / admin_rayon home heroes.
  */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';

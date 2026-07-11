@@ -88,12 +88,12 @@ describe('Navigation Utilities', () => {
     });
 
     it('should restrict the Users route to admin roles', () => {
-      // Users management is admin/admin_data only — nested under 'Pengguna & Hak Akses'.
+      // Users management is admin/admin_rayon only — nested under 'Pengguna & Hak Akses'.
       const accessItem = navigationItems.find((item) => item.id === 'access');
       const usersItem = accessItem?.children?.find((child) => child.id === 'users');
       expect(usersItem?.roles).toContain('admin_system');
       expect(usersItem?.roles).toContain('superadmin');
-      expect(usersItem?.roles).toContain('admin_data');
+      expect(usersItem?.roles).toContain('admin_rayon');
     });
   });
 
@@ -127,12 +127,12 @@ describe('Navigation Utilities', () => {
       expect(accessItem?.children?.find((child) => child.id === 'users')).toBeDefined();
     });
 
-    it('should filter out admin-only children for top_management', () => {
-      const filtered = filterNavigationByRole(navigationItems, 'top_management');
+    it('should filter out admin-only children for management', () => {
+      const filtered = filterNavigationByRole(navigationItems, 'management');
 
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem).toBeDefined();
-      // top_management sees tasks/activities/overtime + schedule (view) + pruning.
+      // management sees tasks/activities/overtime + schedule (view) + pruning.
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',
         'activities',
@@ -144,9 +144,9 @@ describe('Navigation Utilities', () => {
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeDefined();
       expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeDefined();
-      // Users is admin/admin_data only — hidden from top_management.
+      // Users is admin/admin_rayon only — hidden from management.
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
-      // Pengaturan is visible to all monitoring roles (incl. top_management).
+      // Pengaturan is visible to all monitoring roles (incl. management).
       expect(filtered.find((item) => item.id === 'settings')).toBeDefined();
     });
 
@@ -180,7 +180,7 @@ describe('Navigation Utilities', () => {
       expect(filtered.find((item) => item.id === 'monitoring')).toBeDefined();
 
       // korlap sees tasks/activities/overtime + the schedule (view access). No
-      // pruning-requests (that's admin_data/kepala_rayon/management only).
+      // pruning-requests (that's admin_rayon/kepala_rayon/management only).
       const workItem = filtered.find((item) => item.id === 'work');
       expect(workItem?.children?.map((c) => c.id)).toEqual([
         'tasks',

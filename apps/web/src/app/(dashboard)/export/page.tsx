@@ -37,7 +37,7 @@ import {
 } from '@/lib/api/export';
 
 /** Roles allowed to reach this page (server enforces the finer scoping). */
-const EXPORT_ROLES: UserRole[] = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
+const EXPORT_ROLES: UserRole[] = ['admin_system', 'superadmin', 'management', 'kepala_rayon'];
 
 function getEntityLabels(t: ReturnType<typeof useTranslation>['t']): Record<ExportEntityType, string> {
   return {

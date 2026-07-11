@@ -39,11 +39,11 @@ Each workspace (`/`, `apps/{be,mobile,web}/`) is **fully independent** — `npm 
 
 **CRITICAL: always lowercase, matching backend enum. Never Pascal case** (`'Worker'`, `'Admin'`).
 
-8 roles (ADR-009): `satgas` (field worker), `linmas` (security), `korlap` (field coordinator), `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`. **Removed:** `worker`, `supervisor`, `admin`, `koordinator_lapangan`.
+8 roles (ADR-009): `satgas` (field worker), `linmas` (security), `korlap` (field coordinator), `admin_rayon`, `kepala_rayon`, `management`, `admin_system`, `superadmin`. **Removed:** `worker`, `supervisor`, `admin`, `koordinator_lapangan`.
 
-Phase 3 additions (ADR-032/033): `staff_kecamatan` (external, non-clockable, submits pruning requests); `admin_data` gains narrow `pruning_requests` disposition scoped by `users.rayon_id` — **no `admin_rayon` role**.
+Phase 3 additions (ADR-032/033): `staff_kecamatan` (external, non-clockable, submits pruning requests); `admin_rayon` (formerly `admin_data`) gains narrow `pruning_requests` disposition scoped by `users.rayon_id`.
 
-**UAT revamp (ADR-044, in progress):** roles become **data-driven** (`roles`/`permissions`/`role_permissions`) with per-role `monitoring_scope` (`city|district|region|location|none`) + map marker; operators can create custom roles. Role **codes stay lowercase & stable** (still in JWT + guards) — only **display labels** change: `top_management` → "Management", `admin_data` → "Admin Rayon" (label only; code unchanged, access equalized to `kepala_rayon`). Guards migrate `@Roles(...)` → `@RequirePermissions('resource:action')` (flat colon keys + wildcard) incrementally via a compat shim. **Only `satgas`+`linmas` are scheduled/understaffed**; other clock-in roles are monitorable but not counted. See `specs/features/access-control/README.md`.
+**UAT revamp (ADR-044, in progress):** roles become **data-driven** (`roles`/`permissions`/`role_permissions`) with per-role `monitoring_scope` (`city|district|region|location|none`) + map marker; operators can create custom roles. Role **codes stay lowercase**; the UAT revamp **renamed two codes** (data migration, forced re-login): `top_management` → `management`, `admin_data` → `admin_rayon` (access equalized to `kepala_rayon`). Codes stay stable going forward (JWT + guards). Guards migrate `@Roles(...)` → `@RequirePermissions('resource:action')` (flat colon keys + wildcard) incrementally via a compat shim. **Only `satgas`+`linmas` are scheduled/understaffed**; other clock-in roles are monitorable but not counted. See `specs/features/access-control/README.md`.
 
 ## Terminology Convention (ADR-010)
 

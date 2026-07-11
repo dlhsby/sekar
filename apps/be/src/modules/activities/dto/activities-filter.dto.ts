@@ -106,7 +106,7 @@ export class ActivitiesFilterDto extends PaginationDto {
    * ADR-038 (May 2026) — when true, return activities where the current user
    * is the owner OR appears in `activity_tags`. Overrides the default
    * role-based scope so tagged satgas/linmas see activities filed for them
-   * by korlap/admin_data/kepala_rayon even outside their own area.
+   * by korlap/admin_rayon/kepala_rayon even outside their own area.
    */
   @ApiPropertyOptional({
     description:

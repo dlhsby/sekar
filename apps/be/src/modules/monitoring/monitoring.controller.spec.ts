@@ -60,7 +60,7 @@ describe('MonitoringController', () => {
     username: 'admindata1',
     password_hash: 'hashed',
     full_name: 'Admin Data 1',
-    role: UserRole.ADMIN_DATA,
+    role: UserRole.ADMIN_RAYON,
     is_active: true,
     rayon_id: 'rayon-1',
     created_at: new Date(),
@@ -364,7 +364,7 @@ describe('MonitoringController', () => {
       );
     });
 
-    it('should allow admin_data to access own rayon', async () => {
+    it('should allow admin_rayon to access own rayon', async () => {
       service.getRayonStats.mockResolvedValue(mockRayonStats);
 
       const result = await controller.getRayonStats('rayon-1', mockAdminData);
@@ -373,7 +373,7 @@ describe('MonitoringController', () => {
       expect(result).toEqual(mockRayonStats);
     });
 
-    it('should deny admin_data access to other rayon', async () => {
+    it('should deny admin_rayon access to other rayon', async () => {
       await expect(controller.getRayonStats('rayon-other', mockAdminData)).rejects.toThrow(
         ForbiddenException,
       );
@@ -568,7 +568,7 @@ describe('MonitoringController', () => {
       );
     });
 
-    it('should force rayon_id scope for ADMIN_DATA user', async () => {
+    it('should force rayon_id scope for ADMIN_RAYON user', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
       const filters: LiveUsersFilterDto = {};
 
@@ -579,7 +579,7 @@ describe('MonitoringController', () => {
       );
     });
 
-    it('should not override explicit rayon_id filter for ADMIN_DATA', async () => {
+    it('should not override explicit rayon_id filter for ADMIN_RAYON', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
       const filters: LiveUsersFilterDto = { rayon_id: 'rayon-1' };
 
@@ -688,7 +688,7 @@ describe('MonitoringController', () => {
       expect(call).not.toHaveProperty('rayon_id');
     });
 
-    it('should scope admin_data to own rayon', async () => {
+    it('should scope admin_rayon to own rayon', async () => {
       const mockBoundaries = { rayons: [], generated_at: new Date() };
       statsService.getBoundaries.mockResolvedValue(mockBoundaries);
 

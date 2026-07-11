@@ -94,7 +94,7 @@ describe('validateUsers', () => {
       {
         username: 'topmgr',
         full_name: 'Top Manager',
-        role: 'top_management',
+        role: 'management',
         password: 'Password123!',
       },
     ]);

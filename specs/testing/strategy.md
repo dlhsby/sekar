@@ -720,7 +720,7 @@ k6 load test harness at `infra/loadtest/` — **scenario validated, baseline sna
 ### Integration Tests (Phase 3+4, Shipped)
 
 - ✅ Task partial-complete → resume-tomorrow → child completion → parent rollup (3 tests, all green)
-- ✅ Pruning request submit (staff_kecamatan) → review (admin_data, rayon-scoped) → convert-to-task → outcome visibility (15 tests)
+- ✅ Pruning request submit (staff_kecamatan) → review (admin_rayon, rayon-scoped) → convert-to-task → outcome visibility (15 tests)
 - ✅ `service_capacity` booking decrement on convert-to-task, rebalance on cancellation (6 tests)
 - ✅ CSV backfill seeder idempotency on `activities.reference_code` (integration test + manual prod validation, 4,979/5,008 rows)
 

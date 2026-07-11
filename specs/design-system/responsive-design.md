@@ -597,7 +597,7 @@ const Screen = () => {
 
 | Role | Default View | Side Panel Default | Extra Controls |
 |------|-------------|-------------------|----------------|
-| top_management | City-wide map, all rayons | Rayon summary list | Rayon selector dropdown |
+| management | City-wide map, all rayons | Rayon summary list | Rayon selector dropdown |
 | kepala_rayon | Rayon-focused map | Area summary list | Area selector, staffing overview |
 | korlap | Area-focused map | Worker list | Worker search, quick actions |
 | admin_system | City-wide map | Full worker list | Config access, all filters |

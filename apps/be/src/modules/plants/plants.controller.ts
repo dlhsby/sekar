@@ -217,7 +217,7 @@ export class PlantsController {
   @Post('areas/:areaId/notable-plants')
   @Roles(
     UserRole.KORLAP,
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
@@ -265,13 +265,13 @@ export class PlantsController {
   /**
    * Create a new plant species
    *
-   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Only admin_rayon, admin_system, and superadmin can manage the plant species catalog.
    *
    * @param dto Create DTO (nameId, nameLatin, category, defaultPruningCycleDays, notes)
    * @returns Created plant species
    */
   @Post('plant-species')
-  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Create plant species',
     description: 'Add a new plant species to the catalog',
@@ -300,7 +300,7 @@ export class PlantsController {
   /**
    * Update an existing plant species
    *
-   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Only admin_rayon, admin_system, and superadmin can manage the plant species catalog.
    * All fields in the update DTO are optional.
    *
    * @param id Plant species UUID
@@ -308,7 +308,7 @@ export class PlantsController {
    * @returns Updated plant species
    */
   @Patch('plant-species/:id')
-  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Update plant species',
     description: 'Modify an existing plant species record (all fields optional)',
@@ -350,13 +350,13 @@ export class PlantsController {
   /**
    * Delete a plant species (soft delete)
    *
-   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Only admin_rayon, admin_system, and superadmin can manage the plant species catalog.
    * Will reject deletion if the species is referenced by area_plants or notable_plants.
    *
    * @param id Plant species UUID
    */
   @Delete('plant-species/:id')
-  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   @HttpCode(204)
   @ApiOperation({
     summary: 'Delete plant species',

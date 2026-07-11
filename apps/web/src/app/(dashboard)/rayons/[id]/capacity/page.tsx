@@ -1,9 +1,9 @@
 /**
  * Rayon Capacity Calendar — CAP-1 (Phase 3-11)
  *
- * Weekly service-capacity grid for one rayon. Read: admin_data (own rayon,
- * server-enforced), kepala_rayon, top_management, admin_system, superadmin.
- * Write (PUT upsert): kepala_rayon, top_management, superadmin — matches
+ * Weekly service-capacity grid for one rayon. Read: admin_rayon (own rayon,
+ * server-enforced), kepala_rayon, management, admin_system, superadmin.
+ * Write (PUT upsert): kepala_rayon, management, superadmin — matches
  * apps/be/src/modules/service-capacity/service-capacity.controller.ts.
  */
 
@@ -20,13 +20,13 @@ import { CapacityWeeklyGrid } from '@/components/capacity/CapacityWeeklyGrid';
 import { FormSelect, PageHeader, StatusPill } from '@/components/ui';
 
 const ALLOWED_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];
-const WRITE_ROLES = ['kepala_rayon', 'top_management', 'superadmin'];
+const WRITE_ROLES = ['kepala_rayon', 'management', 'superadmin'];
 
 // The booking pipeline only consumes 'pruning' today (pruning-requests
 // disposition); extend when new service types reach production.

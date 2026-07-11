@@ -46,7 +46,7 @@ to the API/DB/UI detail rather than repeating it. **Start here to understand a c
 - **UUID PKs** (ADR-001) — offline record creation without ID conflicts
 - **Soft polygon geofencing** (ADR-005→010) — replaced the hard 100 m radius
 - **Dynamic RBAC** (ADR-044, revamps ADR-009/032/033) — roles/permissions/scope/markers as data;
-  9 seeded roles (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system,
+  9 seeded roles (satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system,
   superadmin, staff_kecamatan) plus operator-created custom roles
 - **Event-sourced monitoring** (ADR-011→029) via Redis Streams
 

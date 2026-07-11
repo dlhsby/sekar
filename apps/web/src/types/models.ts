@@ -11,9 +11,9 @@ export type UserRole =
   | 'satgas'
   | 'linmas'
   | 'korlap'
-  | 'admin_data'
+  | 'admin_rayon'
   | 'kepala_rayon'
-  | 'top_management'
+  | 'management'
   | 'admin_system'
   | 'superadmin'
   /** Phase 3 ADR-033 — external sub-district staff; no dashboard access */

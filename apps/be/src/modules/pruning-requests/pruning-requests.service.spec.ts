@@ -54,12 +54,12 @@ describe('PruningRequestsService', () => {
 
   const mockAdminData: User = {
     id: mockAdminId,
-    username: 'admin_data_pusat_1',
+    username: 'admin_rayon_pusat_1',
     password_hash: 'hashed',
     full_name: 'Admin Data',
     phone_number: '081200000002',
     profile_picture_url: null,
-    role: UserRole.ADMIN_DATA,
+    role: UserRole.ADMIN_RAYON,
     rayon_id: mockRayonId,
     is_active: true,
     password_must_change: false,
@@ -434,7 +434,7 @@ describe('PruningRequestsService', () => {
       });
     });
 
-    it('should return request for rayon-scoped admin_data with matching rayon', async () => {
+    it('should return request for rayon-scoped admin_rayon with matching rayon', async () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
       const result = await service.findById(mockRequestId, mockAdminData);
@@ -442,7 +442,7 @@ describe('PruningRequestsService', () => {
       expect(result).toEqual(mockPruningRequest);
     });
 
-    it('should deny access for rayon-scoped admin_data with non-matching rayon', async () => {
+    it('should deny access for rayon-scoped admin_rayon with non-matching rayon', async () => {
       const differentRayonId = 'different-rayon-id-99999999';
       const requestDifferentRayon = {
         ...mockPruningRequest,
@@ -583,7 +583,7 @@ describe('PruningRequestsService', () => {
       expect(mockPruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should deny admin_data review access for mismatched rayon', async () => {
+    it('should deny admin_rayon review access for mismatched rayon', async () => {
       const dto = { decision: 'approve' as const };
       const mismatchedRequest = {
         ...mockPruningRequest,
@@ -698,7 +698,7 @@ describe('PruningRequestsService', () => {
       expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
     });
 
-    it('should deny admin_data convert access for mismatched rayon', async () => {
+    it('should deny admin_rayon convert access for mismatched rayon', async () => {
       const dto = {
         areaId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
@@ -868,7 +868,7 @@ describe('PruningRequestsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return paginated list of all requests for top_management', async () => {
+    it('should return paginated list of all requests for management', async () => {
       const requests = [mockPruningRequest];
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
@@ -896,7 +896,7 @@ describe('PruningRequestsService', () => {
       expect(result.page).toBe(1);
     });
 
-    it('should auto-filter admin_data by their rayon', async () => {
+    it('should auto-filter admin_rayon by their rayon', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
         // Audit H1: findAll now also calls leftJoin + addSelect to project
@@ -1113,7 +1113,7 @@ describe('PruningRequestsService', () => {
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('throws ForbiddenException for admin_data on different rayon', async () => {
+    it('throws ForbiddenException for admin_rayon on different rayon', async () => {
       pruningRequestRepository.findOne.mockResolvedValue({
         ...mockPruningRequest,
         rayonId: 'other-rayon-id',
@@ -1525,7 +1525,7 @@ describe('PruningRequestsService', () => {
       expect(savedArg.address).toEqual('New Address');
     });
 
-    it('should allow admin_data with matching rayon', async () => {
+    it('should allow admin_rayon with matching rayon', async () => {
       const dto = { address: 'New Address' };
       pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
       pruningRequestRepository.save.mockResolvedValue({
@@ -1539,7 +1539,7 @@ describe('PruningRequestsService', () => {
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should deny admin_data with different rayon', async () => {
+    it('should deny admin_rayon with different rayon', async () => {
       const dto = { address: 'New Address' };
       const adminDifferentRayon = {
         ...mockAdminData,
@@ -1580,13 +1580,13 @@ describe('PruningRequestsService', () => {
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should allow top_management regardless of rayon', async () => {
+    it('should allow management regardless of rayon', async () => {
       const dto = { address: 'New Address' };
       const topMgmt: User = {
         ...mockAdminData,
         id: '88888888-8888-8888-8888-888888888801',
         username: 'top_mgmt',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       };
       pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
       pruningRequestRepository.save.mockResolvedValue({

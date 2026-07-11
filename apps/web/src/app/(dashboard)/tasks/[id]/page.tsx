@@ -41,7 +41,7 @@ import type { UserRole } from '@/types/models';
 // ADR-038: which roles a delegator may hand a task to. Mirrors the backend
 // VALID_TASK_ASSIGNMENTS map in apps/be/src/modules/users/constants/role-groups.ts.
 const DELEGATION_TARGETS: Record<string, UserRole[]> = {
-  top_management: ['kepala_rayon', 'korlap'],
+  management: ['kepala_rayon', 'korlap'],
   kepala_rayon: ['korlap'],
   korlap: ['satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap'],

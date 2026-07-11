@@ -6,7 +6,7 @@ import type { SeedContext } from '../lib/context';
  * Demo: All clockable users as offline + sample of 30 with varied statuses
  * for dashboard visualization.
  *
- * Staging: All 1076 clockable users (satgas/linmas/korlap/admin_data/kepala_rayon)
+ * Staging: All 1076 clockable users (satgas/linmas/korlap/admin_rayon/kepala_rayon)
  * as offline (default tracking status for UAT).
  */
 export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
@@ -16,7 +16,7 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
     // STAGING: Backfill all 1076 clockable users as offline
     const clockableUsers = (await ctx.qr.query(`
       SELECT id, area_id, rayon_id FROM users
-      WHERE role IN ('satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon')
+      WHERE role IN ('satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon')
         AND deleted_at IS NULL
     `)) as Array<{ id: string; area_id: string | null; rayon_id: string | null }>;
 
@@ -36,7 +36,7 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
     // ==========================================
     const clockableUsers = (await ctx.qr.query(`
       SELECT id, area_id FROM users
-      WHERE role IN ('satgas', 'linmas', 'korlap', 'admin_data') AND deleted_at IS NULL
+      WHERE role IN ('satgas', 'linmas', 'korlap', 'admin_rayon') AND deleted_at IS NULL
     `)) as Array<{ id: string; area_id: string | null }>;
 
     for (const user of clockableUsers) {

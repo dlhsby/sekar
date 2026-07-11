@@ -14,7 +14,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 /**
  * DTO for converting a pruning request to a task.
  *
- * Used by admin_data, kepala_rayon, top_management, admin_system, or superadmin
+ * Used by admin_rayon, kepala_rayon, management, admin_system, or superadmin
  * to convert an approved pruning request into a task for workers to execute.
  */
 export class AssignPruningRequestDto {

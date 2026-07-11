@@ -169,11 +169,11 @@ describe('OvertimeService', () => {
       expect(result).toHaveProperty('id', 'overtime-uuid-2');
     });
 
-    it('should submit overtime by admin_data', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should submit overtime by admin_rayon', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       const adminDataActivityType = {
         ...mockActivityType,
-        applicable_roles: [UserRole.ADMIN_DATA],
+        applicable_roles: [UserRole.ADMIN_RAYON],
       };
       mockUserRepo.findOne.mockResolvedValue(adminDataUser);
       mockActivityTypeRepo.findOne.mockResolvedValue(adminDataActivityType);
@@ -186,7 +186,7 @@ describe('OvertimeService', () => {
         user_id: userId,
       });
 
-      const result = await service.submit(userId, UserRole.ADMIN_DATA, createDto);
+      const result = await service.submit(userId, UserRole.ADMIN_RAYON, createDto);
       expect(result).toHaveProperty('id', 'overtime-uuid-3');
     });
 
@@ -368,10 +368,10 @@ describe('OvertimeService', () => {
       await expect(service.approve(overtimeId, approverId)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should approve kepala_rayon overtime by top_management', async () => {
+    it('should approve kepala_rayon overtime by management', async () => {
       const topMgmtApprover = {
         id: 'top-mgmt-uuid',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       };
 
       mockOvertimeRepo.findOne.mockResolvedValue({
@@ -393,10 +393,10 @@ describe('OvertimeService', () => {
       expect(result.status).toBe(OvertimeStatus.APPROVED);
     });
 
-    it('should reject top_management approving non-kepala_rayon overtime', async () => {
+    it('should reject management approving non-kepala_rayon overtime', async () => {
       const topMgmtApprover = {
         id: 'top-mgmt-uuid',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       };
 
       mockOvertimeRepo.findOne.mockResolvedValue({

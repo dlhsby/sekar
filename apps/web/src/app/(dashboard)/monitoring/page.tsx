@@ -131,7 +131,7 @@ export default function MonitoringPage() {
     if (user?.role === 'korlap' && user.area_id) {
       return { view: { scope: 'area', id: user.area_id }, floor: 'area' };
     }
-    if ((user?.role === 'kepala_rayon' || user?.role === 'admin_data') && user.rayon_id) {
+    if ((user?.role === 'kepala_rayon' || user?.role === 'admin_rayon') && user.rayon_id) {
       return {
         view: { scope: 'rayon', id: user.rayon_id, rayonId: user.rayon_id },
         floor: 'rayon',

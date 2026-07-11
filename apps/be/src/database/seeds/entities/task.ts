@@ -38,9 +38,7 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
   const taskKepala = await ctx.qr.query(
     `SELECT id FROM users WHERE username = 'kepala_rayon_pusat_1' LIMIT 1`,
   );
-  const taskTopMgmt = await ctx.qr.query(
-    `SELECT id FROM users WHERE role = 'top_management' LIMIT 1`,
-  );
+  const taskTopMgmt = await ctx.qr.query(`SELECT id FROM users WHERE role = 'management' LIMIT 1`);
   const taskAreas = await ctx.qr.query(
     `SELECT id FROM areas WHERE rayon_id = (SELECT id FROM rayons WHERE name = 'Rayon Pusat')
      ORDER BY name LIMIT 5`,

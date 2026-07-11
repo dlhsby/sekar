@@ -3,7 +3,7 @@ import type { SeedContext } from '../lib/context';
 /**
  * Seed overtime records (Phase 2C).
  *
- * 10 overtime rows across 5 roles: satgas (3), linmas (3), korlap (2), admin_data (2).
+ * 10 overtime rows across 5 roles: satgas (3), linmas (3), korlap (2), admin_rayon (2).
  * Covers pending, approved, rejected statuses.
  */
 export async function seedOvertimes(ctx: SeedContext): Promise<void> {
@@ -167,13 +167,13 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
 
       // Admin Data overtimes (2: pending, approved)
       const adminDataOtResult = await ctx.qr.query(`
-        SELECT id, area_id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1
+        SELECT id, area_id FROM users WHERE username = 'admin_rayon_pusat_1' LIMIT 1
       `);
       if (adminDataOtResult.length > 0) {
         const OVERTIME_9_ID = 'a8b9c0d1-e2f3-4a4b-8b6d-6e7f8a9b0c1d';
         const OVERTIME_10_ID = 'b9c0d1e2-f3a4-4b5c-8d7e-7f8a9b0c1d2e';
         const adminDataOtId = adminDataOtResult[0].id;
-        // admin_data is in Rayon Pusat but has no area_id; use tamanBungkulId as fallback
+        // admin_rayon is in Rayon Pusat but has no area_id; use tamanBungkulId as fallback
         const adminDataAreaId = adminDataOtResult[0].area_id || tamanBungkulId;
         const cekAbsensiId = otActivityTypes.find((a: any) => a.code === 'cek_absensi')?.id;
 
@@ -203,7 +203,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
               )
             ON CONFLICT (id) DO NOTHING;
           `);
-          ctx.log('  ✓ Created 2 admin_data overtime records (pending, approved)');
+          ctx.log('  ✓ Created 2 admin_rayon overtime records (pending, approved)');
         }
       }
     } else {

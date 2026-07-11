@@ -22,14 +22,14 @@ During the February 10, 2026 client meeting, DLH Surabaya provided feedback requ
 | `admin` | Single admin role | Too broad - data entry vs system management vs full control need separation |
 | `koordinator_lapangan` | Field coordinator | Name too long, should be "korlap" |
 | `kepala_rayon` | District head | No issues |
-| `top_management` | City-wide view | No issues |
+| `management` | City-wide view | No issues |
 
 ### Client Requirements
 
 1. Use DLH Surabaya organizational terms (satgas, korlap)
 2. Separate admin responsibilities: data entry, system management, and full system control
 3. Field coordinator (korlap) is a clockable role with activity submission capability
-4. New admin_data role for staff who handle attendance and report data entry
+4. New admin_rayon role for staff who handle attendance and report data entry
 5. Remove GPS boundary restriction on clock-in (top management request) — replaced by soft polygon geofencing (ADR-010)
 
 ---
@@ -45,9 +45,9 @@ Replace the 7-role system with 8 clearly defined roles matching DLH Surabaya org
 | 1 | `satgas` | `worker` | Client organizational term for field worker |
 | 2 | `linmas` | `linmas` | No change |
 | 3 | `korlap` | `koordinator_lapangan`, `supervisor` | Shortened name, absorbed legacy supervisor |
-| 4 | `admin_data` | _(new)_ | Data entry personnel - distinct from system admin |
+| 4 | `admin_rayon` | _(new)_ | Data entry personnel - distinct from system admin |
 | 5 | `kepala_rayon` | `kepala_rayon` | No change |
-| 6 | `top_management` | `top_management` | No change |
+| 6 | `management` | `management` | No change |
 | 7 | `admin_system` | Part of `admin` | Day-to-day system administration |
 | 8 | `superadmin` | Part of `admin` | Full system control + configuration |
 
@@ -55,7 +55,7 @@ Replace the 7-role system with 8 clearly defined roles matching DLH Surabaya org
 
 The single `admin` role was too broad. DLH Surabaya needs three distinct admin levels:
 
-1. **admin_data** - Clerical staff who check attendance records and enter reports. They need clock-in capability and activity submission but NO access to user management, system settings, or monitoring dashboards. This prevents data entry staff from accidentally modifying system configuration.
+1. **admin_rayon** - Clerical staff who check attendance records and enter reports. They need clock-in capability and activity submission but NO access to user management, system settings, or monitoring dashboards. This prevents data entry staff from accidentally modifying system configuration.
 
 2. **admin_system** - IT staff or designated managers who handle day-to-day system administration: creating users, managing areas and rayons, scheduling, and viewing monitoring dashboards. They do NOT need clock-in capability.
 
@@ -84,7 +84,7 @@ Phase 2B had 6 task statuses including `accepted` and `declined` (worker accept/
 1. **Phase 0 (prerequisite):** Database role enum migration + add `area_id` to users table during maintenance window
 2. **Data migration:** `worker->satgas`, `koordinator_lapangan->korlap`, `supervisor->korlap`, `admin->superadmin`
 3. **Force re-login:** Invalidate all refresh tokens post-migration
-4. **New roles:** `admin_data` and `admin_system` created manually by superadmin
+4. **New roles:** `admin_rayon` and `admin_system` created manually by superadmin
 5. **Rollback:** Reverse SQL migration available, tested before deployment
 
 ---
@@ -95,7 +95,7 @@ Phase 2B had 6 task statuses including `accepted` and `declined` (worker accept/
 
 - **Client alignment:** Role names match DLH Surabaya organizational terminology
 - **Security improvement:** Principle of least privilege via admin role separation
-- **Operational clarity:** Data entry staff (admin_data) cannot modify system configuration
+- **Operational clarity:** Data entry staff (admin_rayon) cannot modify system configuration
 - **Better geofencing:** Polygon-based soft warnings more useful than hard radius blocking
 - **Simplified naming:** `korlap` is more practical than `koordinator_lapangan`
 
@@ -119,7 +119,7 @@ Phase 2B had 6 task statuses including `accepted` and `declined` (worker accept/
 
 ## Alternatives Considered
 
-1. **Keep existing roles, add admin_data only** - Insufficient; client requires satgas/korlap naming and admin split
+1. **Keep existing roles, add admin_rayon only** - Insufficient; client requires satgas/korlap naming and admin split
 2. **Use role hierarchy instead of flat roles** - Over-engineered for 8 roles; flat system with explicit permissions is simpler
 3. **Gradual migration (alias both old and new names)** - Increases complexity; clean break is preferred given single deployment target
 

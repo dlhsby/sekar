@@ -40,9 +40,9 @@ Default UI language is **Indonesian (`id`)**; English (`en`) is the alternate.
 | `satgas` | Satgas | Field Worker |
 | `linmas` | Linmas | Security |
 | `korlap` | Koordinator Lapangan | Field Coordinator |
-| `admin_data` | Admin Data | Data Admin |
+| `admin_rayon` | Admin Data | Data Admin |
 | `kepala_rayon` | Kepala Rayon | Rayon Head |
-| `top_management` | Manajemen | Management |
+| `management` | Manajemen | Management |
 | `admin_system` | Admin Sistem | System Admin |
 | `superadmin` | Super Admin | Super Admin |
 | `staff_kecamatan` | Staf Kecamatan | District Staff |

@@ -64,9 +64,9 @@ export function getRoleIcon(role: string): string {
     satgas: 'account-hard-hat',
     linmas: 'shield-account',
     korlap: 'clipboard-account',
-    admin_data: 'file-document-edit',
+    admin_rayon: 'file-document-edit',
     kepala_rayon: 'account-star',
-    top_management: 'crown',
+    management: 'crown',
     admin_system: 'cog-outline',
     superadmin: 'shield-crown',
   };

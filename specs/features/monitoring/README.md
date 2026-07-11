@@ -13,8 +13,8 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - ⚠️ The legacy `supervisor` module is **deprecated** — superseded by this feature; do not extend it.
 
 ## Revamp notes (post-UAT) — target model (ADR-046)
-- **Subject model** — *monitorable* (anyone clocked-in: satgas, linmas, korlap, kepala_rayon, admin_data) vs *scheduled/staffing-counted* (**only satgas + linmas**). Non-scheduled clock-ins surface only via daftar petugas / search.
-- **Supervisor visibility** (hierarchical, server-enforced) — management → all Surabaya; kepala_rayon/admin_data → their rayon; korlap → their region (+ optional location) incl. team members; satgas/linmas → none.
+- **Subject model** — *monitorable* (anyone clocked-in: satgas, linmas, korlap, kepala_rayon, admin_rayon) vs *scheduled/staffing-counted* (**only satgas + linmas**). Non-scheduled clock-ins surface only via daftar petugas / search.
+- **Supervisor visibility** (hierarchical, server-enforced) — management → all Surabaya; kepala_rayon/admin_rayon → their rayon; korlap → their region (+ optional location) incl. team members; satgas/linmas → none.
 - **Static vs mobile** — static geofenced to their area; mobile (e.g. penyiraman) geofenced to their region, same tolerance as areas ([ADR-045](../../architecture/decisions/ADR-045-four-level-location-hierarchy.md)). Drill visibility: rayon = all; region = mobile-of-region + static-in-its-areas; area = static-of-area.
 - **Drill** — **remove the Surabaya bubble**; draw all rayon boundaries on first load with per-rayon bubbles; no workers at top level. Drill: Rayon → Region → Area → workers.
 - **Bubble** = marker + active-count with status-tinted ring; **hover** = `total / active / by_shift{s1,s2,s3} / by_role / understaffed` at that scope. **Teams** render as one group bubble (member count + team name) that expands to members ([teams](../teams/README.md)).

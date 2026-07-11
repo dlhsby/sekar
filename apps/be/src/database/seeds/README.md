@@ -176,8 +176,8 @@ Login with **username** or **phone number** as identifier.
 |----------|------|-------------|-------------------|
 | admin | superadmin | — | — |
 | admin_system_1 | admin_system | — | — |
-| top_management_1 | top_management | — | — |
-| admin_data_pusat_1 | admin_data | Rayon Pusat | — |
+| management_1 | management | — | — |
+| admin_rayon_pusat_1 | admin_rayon | Rayon Pusat | — |
 | kepala_rayon_pusat_1 | kepala_rayon | Rayon Pusat | — |
 | kepala_rayon_selatan_1 | kepala_rayon | Rayon Selatan | — |
 | korlap_pusat_1 | korlap | Taman Bungkul + Jalan Raya Darmo | — |

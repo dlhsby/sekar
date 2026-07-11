@@ -23,9 +23,9 @@ export class PlantSeedsController {
 
   @Get()
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -38,7 +38,7 @@ export class PlantSeedsController {
   }
 
   @Post()
-  @Roles(UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.KEPALA_RAYON, UserRole.MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({ summary: 'Create new seed SKU' })
   @ApiResponse({ status: 201, description: 'Seed created', type: PlantSeed })
   @ApiResponse({ status: 400, description: 'Bad request' })
@@ -49,7 +49,7 @@ export class PlantSeedsController {
   }
 
   @Patch(':id')
-  @Roles(UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.KEPALA_RAYON, UserRole.MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({ summary: 'Update seed master record metadata' })
   @ApiParam({ name: 'id', description: 'Seed ID' })
   @ApiResponse({ status: 200, description: 'Seed updated', type: PlantSeed })
@@ -63,9 +63,9 @@ export class PlantSeedsController {
 
   @Get(':id')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -79,7 +79,7 @@ export class PlantSeedsController {
   }
 
   @Post(':id/transactions')
-  @Roles(UserRole.ADMIN_DATA, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.KEPALA_RAYON, UserRole.MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({ summary: 'Record seed transaction' })
   @ApiParam({ name: 'id', description: 'Seed ID' })
   @ApiResponse({ status: 201, description: 'Transaction recorded' })
@@ -98,9 +98,9 @@ export class PlantSeedsController {
 
   @Get(':id/transactions')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )

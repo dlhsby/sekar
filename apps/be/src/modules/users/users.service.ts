@@ -222,7 +222,7 @@ export class UsersService {
     // Rayon-scoped roles see only users in their rayon.
     // May 11, 2026 — switched from `area.rayon_id` (which required users to
     // have an `area_id` set) to `user.rayon_id` directly. The old form
-    // excluded rayon-scoped roles (`admin_data`, `kepala_rayon`) and any
+    // excluded rayon-scoped roles (`admin_rayon`, `kepala_rayon`) and any
     // satgas/korlap not yet placed in an area, so the Tugaskan ke Petugas
     // assignee dropdown rendered "Tidak ada Admin Data di rayon ini" even
     // when those users existed in the rayon. We OR the area-derived
@@ -230,7 +230,7 @@ export class UsersService {
     // still appear — defensive for legacy rows.
     if (
       requestingUser &&
-      (requestingUser.role === UserRole.ADMIN_DATA ||
+      (requestingUser.role === UserRole.ADMIN_RAYON ||
         requestingUser.role === UserRole.KEPALA_RAYON) &&
       requestingUser.rayon_id
     ) {

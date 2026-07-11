@@ -22,7 +22,7 @@ export class PruningRequestNotificationsService {
   ) {}
 
   /**
-   * Notify every admin_data + kepala_rayon in `rayonId` about a state change
+   * Notify every admin_rayon + kepala_rayon in `rayonId` about a state change
    * on `request`. Used on submit, cancel — anywhere the kecamatan-side
    * surface changes and admins need a heads-up without polling the queue.
    */
@@ -40,7 +40,7 @@ export class PruningRequestNotificationsService {
       const admins = await this.findActiveRayonAdmins(rayonId);
       if (admins.length === 0) {
         this.logger.warn(
-          `No active admin_data/kepala_rayon found for rayon ${rayonId} (request ${request.referenceCode})`,
+          `No active admin_rayon/kepala_rayon found for rayon ${rayonId} (request ${request.referenceCode})`,
         );
         return;
       }
@@ -97,7 +97,7 @@ export class PruningRequestNotificationsService {
   private findActiveRayonAdmins(rayonId: string): Promise<User[]> {
     return this.userRepository.find({
       where: [
-        { rayon_id: rayonId, role: UserRole.ADMIN_DATA, is_active: true },
+        { rayon_id: rayonId, role: UserRole.ADMIN_RAYON, is_active: true },
         { rayon_id: rayonId, role: UserRole.KEPALA_RAYON, is_active: true },
       ],
       select: ['id'],

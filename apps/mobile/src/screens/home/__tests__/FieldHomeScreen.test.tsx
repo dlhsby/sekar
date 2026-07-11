@@ -467,8 +467,8 @@ describe('HomeScreen Clock In/Out FAB', () => {
     });
   });
 
-  it('should NOT render Clock In FAB for top_management role', async () => {
-    // top_management never reaches HomeScreen via navigation,
+  it('should NOT render Clock In FAB for management role', async () => {
+    // management never reaches HomeScreen via navigation,
     // but if it did, the role guard should hide the FAB
     const store = configureStore({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
@@ -485,7 +485,7 @@ describe('HomeScreen Clock In/Out FAB', () => {
             id: '1',
             username: 'mgmt1',
             full_name: 'Top Management',
-            role: 'top_management',
+            role: 'management',
           },
           assignedArea: null,
           token: 'test-token',
@@ -658,8 +658,8 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
     jest.clearAllMocks();
   });
 
-  const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
-  const nonClockableRoles = ['top_management', 'admin_system', 'superadmin'];
+  const clockableRoles = ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'];
+  const nonClockableRoles = ['management', 'admin_system', 'superadmin'];
 
   clockableRoles.forEach((role) => {
     it(`should show FAB for clockable role: ${role}`, async () => {

@@ -104,7 +104,7 @@ export class CreatePruningRequestDto {
    * Expected date for the pruning work (ISO date string, today or future).
    *
    * **Deprecated as of 2026-05-01 (ADR-035 amendment + ADR-038).** New mobile
-   * builds send `expected_year` + `expected_iso_week` and let `admin_data`
+   * builds send `expected_year` + `expected_iso_week` and let `admin_rayon`
    * pick the concrete day at assign-to-task. Kept accepted for one release
    * so older builds continue to work; when present, the service derives
    * `(expected_year, expected_iso_week)` from this date.
@@ -125,7 +125,7 @@ export class CreatePruningRequestDto {
    * Calendar year of the ISO week the submitter prefers.
    *
    * Pairs with `expected_iso_week`. ADR-035 amendment 2026-05-01: kecamatan
-   * picks a week, server (or admin_data) picks the concrete day inside it.
+   * picks a week, server (or admin_rayon) picks the concrete day inside it.
    *
    * @example 2026
    */

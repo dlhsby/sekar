@@ -33,11 +33,11 @@ import type { PruningRequest } from '../../types/models.types';
 import { formatDateLong, getISOWeek } from '../../utils/dateUtils';
 
 // Assignable roles ordered top-down by org hierarchy (Kepala Rayon → Linmas).
-// Default selection is intentionally Admin Data (not the first item) — admin_data
+// Default selection is intentionally Admin Data (not the first item) — admin_rayon
 // is the common "Tugaskan" flow.
 const ASSIGNABLE_ROLES = [
   'kepala_rayon',
-  'admin_data',
+  'admin_rayon',
   'korlap',
   'satgas',
   'linmas',
@@ -102,15 +102,15 @@ export function AssignToTaskSheet({
   //   - `areaId` removed — pruning runs in neighborhoods / private yards.
   //   - `caseType` + `pruningAction` removed — not needed at assignment;
   //     the satgas captures these on the eventual activity report.
-  //   - Two-step assignee picker: role first (default `admin_data`), then
+  //   - Two-step assignee picker: role first (default `admin_rayon`), then
   //     person filtered by selected role (default = the current admin
   //     themselves — supports the centralized-recap pattern where
-  //     admin_data takes ownership and tags satgas on the activity later).
+  //     admin_rayon takes ownership and tags satgas on the activity later).
   //   - `scheduledDate` pre-fills from `request.scheduledDate` (set by
   //     admin via Atur Jadwal pre-approve). Read-only here; to change,
   //     use Atur Ulang Jadwal which cascades to task.deadline + capacity.
   //   - `units` defaults to 1 server-side (capacity = permohonan slots).
-  const [assignedRole, setAssignedRole] = useState<AssignableRole>('admin_data');
+  const [assignedRole, setAssignedRole] = useState<AssignableRole>('admin_rayon');
   const [assignedTo, setAssignedTo] = useState<string>('');
   const scheduledDate = useMemo<Date | null>(
     () => (request.scheduledDate ? new Date(request.scheduledDate) : null),
@@ -118,7 +118,7 @@ export function AssignToTaskSheet({
   );
 
   // Default the assignee to the current admin themselves when their role
-  // matches the selected role (typical case: admin_data assigning to
+  // matches the selected role (typical case: admin_rayon assigning to
   // self). When the role filter changes and the current admin doesn't
   // qualify, clear the selection so the placeholder prompts a pick.
   useEffect(() => {
@@ -293,7 +293,7 @@ export function AssignToTaskSheet({
 
           {/* Ditugaskan Ke — two-step picker (role → person). Both
               dropdowns are searchable; the person list re-filters whenever
-              the role changes. Role defaults to admin_data; the person
+              the role changes. Role defaults to admin_rayon; the person
               defaults to the current admin themselves when their role
               matches (centralized-recap pattern), otherwise the dropdown
               starts unselected. */}

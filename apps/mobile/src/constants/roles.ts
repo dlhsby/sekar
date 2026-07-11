@@ -10,9 +10,9 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   satgas: 'Satgas',
   linmas: 'Linmas',
   korlap: 'Korlap',
-  admin_data: 'Admin Data',
+  admin_rayon: 'Admin Data',
   kepala_rayon: 'Kepala Rayon',
-  top_management: 'Top Management',
+  management: 'Top Management',
   admin_system: 'Admin Sistem',
   superadmin: 'Superadmin',
   // Phase 3 — public intake (ADR-033)
@@ -24,7 +24,7 @@ export const CLOCKABLE_ROLES: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
 ];
 
@@ -33,54 +33,54 @@ export const ACTIVITY_SUBMITTERS: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
 ];
 
 /** Roles that can create tasks (mirrors backend TASK_CREATORS).
- *  May 11, 2026 — `admin_data` added: they create tasks via the pruning
+ *  May 11, 2026 — `admin_rayon` added: they create tasks via the pruning
  *  Tugaskan flow and directly via the Tugas tab. */
 export const TASK_CREATORS: UserRole[] = [
   'korlap',
   'kepala_rayon',
-  'admin_data',
-  'top_management',
+  'admin_rayon',
+  'management',
   'admin_system',
   'superadmin',
 ];
 
 /** Roles that can receive task assignments (mirrors backend TASK_RECEIVERS).
- *  May 11, 2026 — `admin_data` added: they may take pruning tasks
+ *  May 11, 2026 — `admin_rayon` added: they may take pruning tasks
  *  themselves for the centralized-recap pattern. */
 export const TASK_RECEIVERS: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
   'kepala_rayon',
-  'admin_data',
+  'admin_rayon',
 ];
 
 /** Roles that can submit overtime */
-export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'];
+export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'];
 
 /** Roles that can approve overtime */
-export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'top_management'];
+export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'management'];
 
 /** Monitoring access by scope */
 export const MONITORING_ROLES: Record<'city' | 'rayon' | 'area', UserRole[]> = {
-  city: ['top_management', 'admin_system', 'superadmin'],
-  rayon: ['kepala_rayon', 'admin_data'],
+  city: ['management', 'admin_system', 'superadmin'],
+  rayon: ['kepala_rayon', 'admin_rayon'],
   area: ['korlap'],
 };
 
 /** Hierarchical task assignment rules (mirrors backend VALID_TASK_ASSIGNMENTS).
- *  May 11, 2026 — admin_data + kepala_rayon + top_management can assign
+ *  May 11, 2026 — admin_rayon + kepala_rayon + management can assign
  *  across the full rayon roster; korlap may assign to self/satgas/linmas. */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
   korlap: ['korlap', 'satgas', 'linmas'],
-  kepala_rayon: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
-  admin_data: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
-  top_management: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
+  kepala_rayon: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
+  admin_rayon: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
+  management: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap'],
   superadmin: ['kepala_rayon', 'korlap'],
 };
@@ -130,11 +130,11 @@ export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.area];
  */
 export const FILTER_SUBORDINATE_ROLES: Partial<Record<UserRole, UserRole[]>> = {
   korlap: ['satgas', 'linmas'],
-  kepala_rayon: ['korlap', 'admin_data', 'satgas', 'linmas'],
-  top_management: ['kepala_rayon', 'admin_data', 'korlap', 'satgas', 'linmas'],
-  admin_system: ['kepala_rayon', 'korlap', 'admin_data', 'satgas', 'linmas'],
-  superadmin: ['kepala_rayon', 'korlap', 'admin_data', 'satgas', 'linmas', 'top_management', 'admin_system'],
-  // May 11, 2026 — admin_data has a full delegation roster (was []) so
+  kepala_rayon: ['korlap', 'admin_rayon', 'satgas', 'linmas'],
+  management: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
+  admin_system: ['kepala_rayon', 'korlap', 'admin_rayon', 'satgas', 'linmas'],
+  superadmin: ['kepala_rayon', 'korlap', 'admin_rayon', 'satgas', 'linmas', 'management', 'admin_system'],
+  // May 11, 2026 — admin_rayon has a full delegation roster (was []) so
   // the Tugaskan-Ulang picker on TaskDetailScreen shows candidates.
-  admin_data: ['korlap', 'satgas', 'linmas'],
+  admin_rayon: ['korlap', 'satgas', 'linmas'],
 };

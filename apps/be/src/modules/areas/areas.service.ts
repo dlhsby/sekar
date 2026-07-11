@@ -75,8 +75,8 @@ export class AreasService {
    * Get all areas
    *
    * Rayon scoping (2026-05-18):
-   *   - City roles (superadmin / admin_system / top_management): see all areas.
-   *   - Everyone else (kepala_rayon / admin_data / korlap / satgas / linmas /
+   *   - City roles (superadmin / admin_system / management): see all areas.
+   *   - Everyone else (kepala_rayon / admin_rayon / korlap / satgas / linmas /
    *     staff_kecamatan): filtered to `area.rayon_id = user.rayon_id`.
    *     Users without a rayon_id see nothing (defensive default).
    *

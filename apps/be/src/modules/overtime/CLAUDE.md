@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Overtime module manages overtime submission and approval workflow for SEKAR clockable roles (Phase 2E). It supports two flows: (1) **Start/End Overtime** — clock-in based overtime with in_progress status linked to a shift via shift_id, and (2) **Submit Overtime** — legacy form-based submission. Approval follows a 3-level hierarchy: Korlap approves satgas/linmas, Kepala Rayon approves korlap/admin_data, Top Management approves kepala_rayon.
+The Overtime module manages overtime submission and approval workflow for SEKAR clockable roles (Phase 2E). It supports two flows: (1) **Start/End Overtime** — clock-in based overtime with in_progress status linked to a shift via shift_id, and (2) **Submit Overtime** — legacy form-based submission. Approval follows a 3-level hierarchy: Korlap approves satgas/linmas, Kepala Rayon approves korlap/admin_rayon, Top Management approves kepala_rayon.
 
 ## Module Structure
 
@@ -101,7 +101,7 @@ All endpoints require authentication (`@UseGuards(JwtAuthGuard, RolesGuard)`).
 ## Business Rules
 
 ### Submission Rules
-1. All clockable roles (satgas, linmas, korlap, admin_data, kepala_rayon) can submit overtime
+1. All clockable roles (satgas, linmas, korlap, admin_rayon, kepala_rayon) can submit overtime
 2. Overtime is automatically associated with user's area_id
 3. Each overtime submission must:
    - Reference a valid, active activity_type
@@ -112,7 +112,7 @@ All endpoints require authentication (`@UseGuards(JwtAuthGuard, RolesGuard)`).
 
 ### Approval Rules (3-level hierarchy)
 1. **Korlap** approves satgas/linmas overtime (area-scoped)
-2. **Kepala Rayon** approves korlap/admin_data overtime (rayon-scoped)
+2. **Kepala Rayon** approves korlap/admin_rayon overtime (rayon-scoped)
 3. **Top Management** approves kepala_rayon overtime (city-wide, no scope check)
 4. Only pending overtime can be approved/rejected
 5. Self-approval is not allowed
@@ -162,8 +162,8 @@ This prevents workers from claiming overtime for activities they're not authoriz
 - `TypeOrmModule.forFeature([Overtime, ActivityType, User])`
 
 ### Role Groups (from `users/constants/role-groups.ts`)
-- `OVERTIME_SUBMITTERS` = [SATGAS, LINMAS, KORLAP, ADMIN_DATA, KEPALA_RAYON]
-- `OVERTIME_APPROVERS` = [KORLAP, KEPALA_RAYON, TOP_MANAGEMENT]
+- `OVERTIME_SUBMITTERS` = [SATGAS, LINMAS, KORLAP, ADMIN_RAYON, KEPALA_RAYON]
+- `OVERTIME_APPROVERS` = [KORLAP, KEPALA_RAYON, MANAGEMENT]
 - `USER_MANAGERS` = [ADMIN_SYSTEM, SUPERADMIN]
 
 ### Entities

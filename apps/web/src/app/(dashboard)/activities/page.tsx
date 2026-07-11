@@ -72,7 +72,7 @@ export default function ActivitiesPage() {
   });
   const limit = 20;
   const isAdmin =
-    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'management';
 
   const approveMutation = useApproveActivity();
   const rejectMutation = useRejectActivity();

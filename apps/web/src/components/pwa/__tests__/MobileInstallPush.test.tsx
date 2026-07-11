@@ -36,8 +36,8 @@ describe('MobileInstallPush', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
-  it('is hidden for admin_data role', () => {
-    mockUseAuth.mockReturnValue({ user: makeUser('admin_data') });
+  it('is hidden for admin_rayon role', () => {
+    mockUseAuth.mockReturnValue({ user: makeUser('admin_rayon') });
     render(<MobileInstallPush />);
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
@@ -48,8 +48,8 @@ describe('MobileInstallPush', () => {
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });
 
-  it('is hidden for top_management role', () => {
-    mockUseAuth.mockReturnValue({ user: makeUser('top_management') });
+  it('is hidden for management role', () => {
+    mockUseAuth.mockReturnValue({ user: makeUser('management') });
     render(<MobileInstallPush />);
     expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
   });

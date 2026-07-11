@@ -172,9 +172,9 @@ describe('MonitoringReassignService', () => {
       await expect(service.reassign(dto, makeSuperadmin())).rejects.toThrow('non-existent-uuid');
     });
 
-    // 3. Non-reassignable role (top_management)
+    // 3. Non-reassignable role (management)
     it('should throw BadRequestException when worker has non-reassignable role', async () => {
-      const topMgmtWorker = makeUser({ role: UserRole.TOP_MANAGEMENT });
+      const topMgmtWorker = makeUser({ role: UserRole.MANAGEMENT });
       userRepository.findOne.mockResolvedValue(topMgmtWorker);
       areaRepository.findOne.mockResolvedValue(makeArea());
 
@@ -182,7 +182,7 @@ describe('MonitoringReassignService', () => {
         BadRequestException,
       );
       await expect(service.reassign(makeDto(), makeSuperadmin())).rejects.toThrow(
-        UserRole.TOP_MANAGEMENT,
+        UserRole.MANAGEMENT,
       );
     });
 

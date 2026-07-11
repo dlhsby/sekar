@@ -35,7 +35,7 @@ export default function AreasPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin =
-    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'management';
 
   // include_inactive: the admin grid must show deactivated areas too (and
   // let them be reactivated) — otherwise deactivating one makes it vanish

@@ -6,10 +6,10 @@ import { User, UserRole } from '../../modules/users/entities/user.entity';
 import { UserAreasService } from '../../modules/user-areas/user-areas.service';
 
 /** Roles that watch the whole city */
-const CITY_ROLES: string[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+const CITY_ROLES: string[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT];
 
 /** Roles scoped to a rayon */
-const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
+const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
 
 /**
  * RoomJoinService — computes and applies the WebSocket room set for a user

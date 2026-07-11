@@ -237,10 +237,10 @@ describe('Auth API', () => {
       const validRoles: Array<User['role']> = [
         'admin_system',
         'superadmin',
-        'top_management',
+        'management',
         'kepala_rayon',
         'korlap',
-        'admin_data',
+        'admin_rayon',
         'satgas',
         'linmas',
       ];

@@ -69,7 +69,7 @@ export default function OvertimePage() {
   const rejectMutation = useRejectOvertime();
   const deleteMutation = useDeleteOvertime();
 
-  const isAdmin = user ? hasRole(user.role, ['top_management', 'admin_system', 'superadmin']) : false;
+  const isAdmin = user ? hasRole(user.role, ['management', 'admin_system', 'superadmin']) : false;
 
   useEffect(() => {
     if (!authLoading && user && !hasRole(user.role, MONITORING_ROLES)) {

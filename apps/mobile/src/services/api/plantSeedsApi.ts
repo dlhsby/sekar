@@ -1,6 +1,6 @@
 /**
  * Plant Seeds API Service
- * Phase 3 sub-phase 3-12: seed inventory management for admin_data and top_management
+ * Phase 3 sub-phase 3-12: seed inventory management for admin_rayon and management
  */
 
 import { get, post } from './apiClient';
@@ -9,7 +9,7 @@ import type { PlantSeed, SeedTransaction } from '../../types/models.types';
 
 /**
  * List all plant seeds with optional search and pagination
- * Accessible to: admin_data, kepala_rayon, top_management, admin_system, superadmin
+ * Accessible to: admin_rayon, kepala_rayon, management, admin_system, superadmin
  */
 export async function getSeeds(
   filters?: {
@@ -30,7 +30,7 @@ export async function getSeedById(id: string): Promise<ApiResponse<PlantSeed>> {
 
 /**
  * Create a new seed record
- * Accessible to: admin_data, kepala_rayon, top_management, superadmin
+ * Accessible to: admin_rayon, kepala_rayon, management, superadmin
  */
 export async function createSeed(data: {
   nameId: string;          // Seed SKU/name
@@ -55,7 +55,7 @@ export async function createSeed(data: {
 
 /**
  * Record a transaction (purchase, distribution, or adjustment)
- * Accessible to: admin_data, kepala_rayon, top_management, superadmin
+ * Accessible to: admin_rayon, kepala_rayon, management, superadmin
  *
  * For purchase: qty is added to stock
  * For distribution: qty is subtracted from stock
@@ -101,7 +101,7 @@ export async function recordTransaction(
 
 /**
  * Get transaction ledger for a seed
- * Accessible to: admin_data, kepala_rayon, top_management, admin_system, superadmin
+ * Accessible to: admin_rayon, kepala_rayon, management, admin_system, superadmin
  */
 export async function getSeedTransactions(
   seedId: string,

@@ -86,9 +86,9 @@ const mockKorlapUser = {
 
 const mockAdminDataUser = {
   id: 'admin-1',
-  username: 'admin_data1',
+  username: 'admin_rayon1',
   full_name: 'Admin Data',
-  role: 'admin_data' as const,
+  role: 'admin_rayon' as const,
   created_at: '2024-01-01T00:00:00Z',
 };
 

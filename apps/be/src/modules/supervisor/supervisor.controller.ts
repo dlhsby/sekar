@@ -29,7 +29,7 @@ import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination
 @ApiBearerAuth()
 @Controller('supervisor')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.ADMIN_DATA)
+@Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.ADMIN_RAYON)
 export class SupervisorController {
   constructor(private readonly supervisorService: SupervisorService) {}
 

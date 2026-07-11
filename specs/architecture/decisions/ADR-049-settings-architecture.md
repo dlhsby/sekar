@@ -24,7 +24,7 @@ Self-service, scoped to the caller: language (`preferred_language`), theme, noti
 
 Operator-managed, grouped/sub-grouped, e.g. **Monitoring** (staffing thresholds, idle/offline timings, day-type — absorbs `monitoring/config`), **Integrations** (FCM/maps/webhook knobs), **Limits** (rate-limit tuning, geofence defaults), **General** toggles.
 
-Stored as a typed key/value table: `key`, `value`, `value_type` (`string|number|boolean`), `is_secret`, `group`, `updated_by`. Read through a cached settings service; edited with `settings:manage`, viewed with `settings:read` ([ADR-044](./ADR-044-dynamic-rbac.md)). `admin_system`/`superadmin` manage system settings; `top_management` (Management) is **read-only** on them per UAT.
+Stored as a typed key/value table: `key`, `value`, `value_type` (`string|number|boolean`), `is_secret`, `group`, `updated_by`. Read through a cached settings service; edited with `settings:manage`, viewed with `settings:read` ([ADR-044](./ADR-044-dynamic-rbac.md)). `admin_system`/`superadmin` manage system settings; `management` (Management) is **read-only** on them per UAT.
 
 Representative catalog (the full list lives in the code-side catalog; this shows shape + coverage):
 

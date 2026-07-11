@@ -452,7 +452,7 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 4. **Generic Audit Trail (ADR-015):** New `audit_logs` table with JSONB `old_value`/`new_value` for tracking entity changes. Append-only, `actor_id` uses `ON DELETE RESTRICT` for immutability. BRIN index for time-range queries.
 
-5. **Expanded Clockable Roles:** `CLOCKABLE_ROLES` expands from [satgas, linmas, korlap] to include admin_data, kepala_rayon. Rayon-level boundary checking for admin_data/kepala_rayon (uses `rayons.boundary_polygon`).
+5. **Expanded Clockable Roles:** `CLOCKABLE_ROLES` expands from [satgas, linmas, korlap] to include admin_rayon, kepala_rayon. Rayon-level boundary checking for admin_rayon/kepala_rayon (uses `rayons.boundary_polygon`).
 
 ### Breaking Changes
 - Login API: `{ username, password }` → `{ identifier, password }`

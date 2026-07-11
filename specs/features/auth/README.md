@@ -7,7 +7,7 @@ Authentication and role-based access for all SEKAR users. Username **or** phone-
 
 ## Key decisions
 - **JWT + refresh rotation** (ADR-004) — short access token, rotating refresh.
-- **8 roles** (ADR-009): satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin; + external `staff_kecamatan` (ADR-033).
+- **8 roles** (ADR-009): satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin; + external `staff_kecamatan` (ADR-033).
 - **Phone-number login** (ADR-012) — identifier can be username or phone.
 - **Forgot-password = contact admin** (ADR-041) — no self-serve reset; `password_must_change` forces a change on first login.
 - **Onboarding** (ADR-042) — pre-login carousel + permission priming + area preview (mobile).

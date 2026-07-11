@@ -88,7 +88,7 @@ always win over geocoding and are never cleared by `seed:geocode`/`sheet:pull`.
    - Rayons (7 rayons per DLH Surabaya structure)
 
 2. **User Data** (Authentication & Authorization)
-   - 8 roles per ADR-009 (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin)
+   - 8 roles per ADR-009 (satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin)
    - Test users for each role (`satgas1`, `linmas1`, etc. password: `Password123!`)
    - Staging seed: 85 users (see `specs/COMPLETION_STATUS.md`)
 
@@ -1518,7 +1518,7 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 | `worker` | Satgas | `satgas` |
 | `Linmas` | Linmas | `linmas` (unchanged) |
 | `KepalaRayon` | Kepala Rayon | `kepala_rayon` (unchanged) |
-| N/A | Admin Data | `admin_data` (new) |
+| N/A | Admin Data | `admin_rayon` (new) |
 | N/A | Superadmin | `superadmin` (new) |
 
 ### New Seed Users (Phase 2C)
@@ -1532,8 +1532,8 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 | satgas2 | `satgas` | Password123! | Phase 1 | Field worker |
 | satgas3 | `satgas` | Password123! | Phase 1 | Field worker |
 | admin_system1 | `admin_system` | Password123! | Phase 2 | System administration |
-| admin_data1 | `admin_data` | Password123! | Phase 2 | Data management |
-| top_management1 | `top_management` | Password123! | Phase 2 | City-wide view |
+| admin_rayon1 | `admin_rayon` | Password123! | Phase 2 | Data management |
+| management1 | `management` | Password123! | Phase 2 | City-wide view |
 | kepala_rayon_selatan | `kepala_rayon` | Password123! | Phase 2 | Rayon manager |
 | kepala_rayon_utara | `kepala_rayon` | Password123! | Phase 2 | Rayon manager |
 | korlap_bungkul | `korlap` | Password123! | Phase 2 | Area coordinator (Taman Bungkul) |
@@ -1548,7 +1548,7 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 | `satgas` | Penyiraman, Penanaman, Perantingan, Pembersihan Taman, Pemupukan, Perawatan Tanaman, Perapian Taman |
 | `linmas` | Patroli Keamanan, Laporan Insiden, Pemantauan Pengunjung, Pengecekan Fasilitas, Pengamanan Area, Patroli Malam |
 | `korlap` | Inspeksi Lapangan, Koordinasi Tim, Evaluasi Kinerja |
-| `admin_data` | Input Data Tanaman, Pembaruan Data Area, Dokumentasi Aset |
+| `admin_rayon` | Input Data Tanaman, Pembaruan Data Area, Dokumentasi Aset |
 
 ### Task Seeds (Phase 2C — 8 statuses)
 
@@ -1663,9 +1663,9 @@ npm run seed:tasks
 | satgas2 | 081234567012 |
 | linmas1 | 081234567021 |
 | linmas2 | 081234567022 |
-| admin_data1 | 081234567031 |
+| admin_rayon1 | 081234567031 |
 | kepala_rayon1 | 081234567041 |
-| top_management1 | 081234567051 |
+| management1 | 081234567051 |
 
 ### Multi-Area Assignments (user_areas)
 

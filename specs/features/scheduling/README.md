@@ -17,7 +17,7 @@ Shift definitions and the materialized **daily roster** that assigns workers to 
 - **Calendar UI** — day/week/month (Google-Calendar-style) for create/edit; datatable becomes secondary.
 - **Individual + team** — team events name a PIC + invited members (korlap/satgas/linmas), fanned out to member occurrences ([teams](../teams/README.md)).
 - **Static vs mobile scope** — `area_id` (static) or `region_id` (mobile, e.g. penyiraman).
-- **Only satgas/linmas** occurrences feed understaffing; korlap optional (never auto-materialized); management/kepala_rayon/admin_data need no schedule.
+- **Only satgas/linmas** occurrences feed understaffing; korlap optional (never auto-materialized); management/kepala_rayon/admin_rayon need no schedule.
 - **Multiple shifts/day allowed** — a user may hold non-overlapping shifts (e.g. shift 1 + shift 2). The **overlap guard is time-based** (rejects true time-window overlaps, honors shift-3 midnight crossing), not one-per-day.
 - **Rolling horizon** — a daily cron materializes each active event today + N days forward (`schedule.materialization_days`, default 30); event create/edit materializes in-horizon immediately (no blind full-calendar generation). Edits offer this / this-and-future / series scopes.
 - **Occurrence link** — `schedules.schedule_event_id` (nullable FK): set = rule-generated, NULL = manual/ad-hoc.

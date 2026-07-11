@@ -630,7 +630,7 @@ export class AssetsService {
         if (areaIds.length > 0) {
           qb.andWhere('asset.area_id IN (:...areaIds)', { areaIds });
         }
-      } else if (role === UserRole.ADMIN_DATA) {
+      } else if (role === UserRole.ADMIN_RAYON) {
         qb.andWhere('asset.area_id = :areaId', { areaId: area_id });
       } else if (role === UserRole.KEPALA_RAYON) {
         qb.andWhere('asset.rayon_id = :rayonId', { rayonId: rayon_id });
@@ -650,7 +650,7 @@ export class AssetsService {
         if (areaIds.length > 0) {
           qb.andWhere('asset.area_id IN (:...areaIds)', { areaIds });
         }
-      } else if (role === UserRole.ADMIN_DATA) {
+      } else if (role === UserRole.ADMIN_RAYON) {
         qb.andWhere('asset.area_id = :areaId', { areaId: area_id });
       } else if (role === UserRole.KEPALA_RAYON) {
         qb.andWhere('asset.rayon_id = :rayonId', { rayonId: rayon_id });
@@ -674,7 +674,7 @@ export class AssetsService {
       if (asset.area_id && !areaIds.includes(asset.area_id)) {
         throw new ForbiddenException('You can only view assets in your assigned areas');
       }
-    } else if (role === UserRole.ADMIN_DATA) {
+    } else if (role === UserRole.ADMIN_RAYON) {
       if (asset.area_id && area_id && asset.area_id !== area_id) {
         throw new ForbiddenException('You can only view assets in your area');
       }

@@ -200,7 +200,7 @@ export class UsersController {
    * @returns Paginated users (without passwords)
    */
   @Get()
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({
     summary: 'Get all users with pagination',
     description:
@@ -265,7 +265,7 @@ export class UsersController {
    * @route GET /api/users/:id/areas
    */
   @Get(':id/areas')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({ summary: "Get a user's permanent assigned areas" })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
@@ -283,7 +283,7 @@ export class UsersController {
    * @throws NotFoundException if user not found
    */
   @Get(':id')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({
     summary: 'Get user by ID',
     description:
@@ -571,7 +571,7 @@ export class UsersController {
     const isAdmin = [
       UserRole.ADMIN_SYSTEM,
       UserRole.SUPERADMIN,
-      UserRole.TOP_MANAGEMENT, // full admin_system parity
+      UserRole.MANAGEMENT, // full admin_system parity
     ].includes(currentUser.role as UserRole);
     if (currentUser.id !== id && !isAdmin) {
       throw new ForbiddenException('You can only update your own profile picture');

@@ -30,14 +30,14 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
   const [boundaryDraft, setBoundaryDraft] = useState<GeoJSON.Polygon | null>(null);
 
   const isAdmin =
-    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'top_management';
+    user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'management';
 
   // Worker assignment matches the backend gate (USER_MANAGERS + kepala_rayon).
-  // top_management has full admin_system parity.
+  // management has full admin_system parity.
   const canManageWorkers =
     user?.role === 'admin_system' ||
     user?.role === 'superadmin' ||
-    user?.role === 'top_management' ||
+    user?.role === 'management' ||
     user?.role === 'kepala_rayon';
 
   const { data: boundaryData } = useAreaBoundary(id);

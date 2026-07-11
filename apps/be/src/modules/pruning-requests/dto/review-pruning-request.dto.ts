@@ -4,7 +4,7 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 /**
  * DTO for reviewing a pruning request (approve/reject).
  *
- * Used by admin_data, kepala_rayon, top_management, admin_system, or superadmin
+ * Used by admin_rayon, kepala_rayon, management, admin_system, or superadmin
  * to review and make decisions on submitted pruning requests.
  */
 export class ReviewPruningRequestDto {

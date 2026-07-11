@@ -192,10 +192,10 @@ describe('AnalyticsService', () => {
       expect(result).toHaveProperty('data');
     });
 
-    it('should filter workers by area for admin_data', async () => {
+    it('should filter workers by area for admin_rayon', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         area_id: 'area-1',
       } as User;
 
@@ -360,10 +360,10 @@ describe('AnalyticsService', () => {
   });
 
   describe('enforceAreaAccess - scope enforcement', () => {
-    it('should allow top_management to access any area', async () => {
+    it('should allow management to access any area', async () => {
       const topMgmtUser = {
         ...mockUser,
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       } as User;
 
       mockDataSource.query.mockResolvedValue([
@@ -471,10 +471,10 @@ describe('AnalyticsService', () => {
       );
     });
 
-    it('should allow admin_data to access area in their rayon', async () => {
+    it('should allow admin_rayon to access area in their rayon', async () => {
       const adminDataUser = {
         id: 'admin-data-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-1',
       } as User;
 
@@ -499,10 +499,10 @@ describe('AnalyticsService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should deny admin_data accessing area outside their rayon', async () => {
+    it('should deny admin_rayon accessing area outside their rayon', async () => {
       const adminDataUser = {
         id: 'admin-data-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-2',
       } as User;
 

@@ -1,6 +1,6 @@
 /**
  * Rayon Detail Page — RAY-1 (Phase 4-R revamp)
- * Access: admin_system, superadmin, top_management, kepala_rayon
+ * Access: admin_system, superadmin, management, kepala_rayon
  */
 
 'use client';
@@ -29,7 +29,7 @@ import type { ColumnDef } from '@/components/ui/data-table';
 
 // Lowercase roles per ADR-009 (the prior PascalCase gate matched nothing and
 // redirected every user to a non-existent /dashboard).
-const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
+const ALLOWED_ROLES = ['admin_system', 'superadmin', 'management', 'kepala_rayon'];
 
 interface RayonDetailPageProps {
   // Next 16: route params are a Promise and must be unwrapped with `use()`.

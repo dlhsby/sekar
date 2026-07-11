@@ -46,7 +46,7 @@ export default function UsersPage() {
   const { t } = useTranslation();
   const currentUser = useUser();
   // Full management (create/edit/delete) is admin-only; other roles that can
-  // reach this page (admin_data) get a view-only kebab.
+  // reach this page (admin_rayon) get a view-only kebab.
   const canManage = !!currentUser && ADMIN_ROLES.includes(currentUser.role);
 
   const { data, isLoading, error, refetch } = useUsers({ limit: 1000 });
@@ -163,7 +163,7 @@ export default function UsersPage() {
       {
         id: 'role',
         // Filter/sort/search against the human label ("Top Management"), not the
-        // raw enum ("top_management"), so typing the visible text matches.
+        // raw enum ("management"), so typing the visible text matches.
         accessorFn: (u) => ROLE_LABELS[u.role] ?? u.role,
         header: t('admin:users.columnRole'),
         meta: {

@@ -19,7 +19,7 @@ The client's explicit roadmap beyond Phase 3 includes extending SEKAR into a "DL
 Design constraints:
 
 - **Granularity.** Daily capacity tracking at the rayon level is noise — daily volume varies with crew composition, weather, and unrelated events. Weekly granularity smooths this and matches how DLH actually plans (by the week). **Client confirmation (Apr 25, 2026, Q3 answer):** weekly is the **booking** granularity (kecamatan submits, capacity calendar shows weekly slots). Once a request is approved and converted into a task, the **assignment day** is selectable per-task — the convert-to-task flow exposes a day-picker scoped to the booked week, and the task carries a specific `scheduled_date`. Capacity tracking stays weekly; the daily picker is a UI affordance, not a separate capacity column.
-- **Capacity is soft, not hard.** A converted task that exceeds capacity should surface a warning with alternatives (next available week), but `admin_data` or `top_management` can override. Hard blocks would make the system brittle against real-world exceptions.
+- **Capacity is soft, not hard.** A converted task that exceeds capacity should surface a warning with alternatives (next available week), but `admin_rayon` or `management` can override. Hard blocks would make the system brittle against real-world exceptions.
 - **Service breadth.** The same pattern must serve pruning today, watering and planting next quarter, street sweeping and garbage collection later. Separate tables per service compound migration and reporting cost linearly with service count.
 - **Booking model.** A task implicitly books capacity on creation from a converted pruning request. Cancellation releases booking. Manual adjustments (override, rebalance) need an explicit endpoint.
 
@@ -49,7 +49,7 @@ CREATE INDEX idx_service_capacity_rayon_week ON service_capacity(rayon_id, year,
 - **Implicit booking on task creation from pruning-request conversion.** `POST /api/v1/pruning-requests/:id/convert-to-task` computes `(year, iso_week)` from the chosen target date and atomically increments `booked_units` by `task.target_plant_count`.
 - **Implicit release on task cancellation.** If the converted task is cancelled before completion, `booked_units` is decremented.
 - **Soft over-capacity.** If the booking would push `booked_units > capacity_units`, the API returns **HTTP 409** with a response body containing the current utilization plus a suggested-week payload (next 4 weeks with available capacity). The client UI can let the reviewer proceed (override) or reschedule. The override path still performs the booking.
-- **Explicit manual adjust.** `POST /api/v1/rayons/:id/capacity/book` with `{ service_type, year, iso_week, delta }` — for exceptional corrections by `admin_data` (rayon) or `top_management`.
+- **Explicit manual adjust.** `POST /api/v1/rayons/:id/capacity/book` with `{ service_type, year, iso_week, delta }` — for exceptional corrections by `admin_rayon` (rayon) or `management`.
 
 ### Capacity unit interpretation
 
@@ -71,7 +71,7 @@ Units are domain-specific per service_type but the table doesn't care — capaci
 ### Admin read/write
 
 - `GET /api/v1/rayons/:id/capacity?service_type=&year=&from_week=&to_week=` — calendar view for admin UI.
-- `PUT /api/v1/rayons/:id/capacity` — bulk edit of `capacity_units` (roles: `admin_data` rayon, `top_management`). `booked_units` is read-only through this endpoint; it only changes via booking flows.
+- `PUT /api/v1/rayons/:id/capacity` — bulk edit of `capacity_units` (roles: `admin_rayon` rayon, `management`). `booked_units` is read-only through this endpoint; it only changes via booking flows.
 
 ## Consequences
 
@@ -124,19 +124,19 @@ Units are domain-specific per service_type but the table doesn't care — capaci
 
 Past dates are filtered at the picker layer. The projection lives in `apps/mobile/src/screens/pruningRequests/utils/capacityCalendar.ts` and is consumed by `AvailabilityCalendar`. **No backend or database change.**
 
-**Read access widened.** `GET /api/v1/rayons/:id/capacity` now allows `staff_kecamatan` (scoped to their own `rayon_id` exactly like `admin_data`) so the submit calendar can display availability without leaking other rayons' booking data.
+**Read access widened.** `GET /api/v1/rayons/:id/capacity` now allows `staff_kecamatan` (scoped to their own `rayon_id` exactly like `admin_rayon`) so the submit calendar can display availability without leaking other rayons' booking data.
 
-**New write endpoint.** `PATCH /api/v1/pruning-requests/:id/expected-date` lets `admin_data` (rayon-scoped), `kepala_rayon`, `top_management`, `admin_system`, and `superadmin` adjust a request's `expected_date` independent of the convert-to-task flow. Allowed when status ∈ {`submitted`, `under_review`, `approved`} and the new date is today-or-future. This endpoint does **not** mutate `service_capacity`; capacity bookings still occur only at convert-to-task time.
+**New write endpoint.** `PATCH /api/v1/pruning-requests/:id/expected-date` lets `admin_rayon` (rayon-scoped), `kepala_rayon`, `management`, `admin_system`, and `superadmin` adjust a request's `expected_date` independent of the convert-to-task flow. Allowed when status ∈ {`submitted`, `under_review`, `approved`} and the new date is today-or-future. This endpoint does **not** mutate `service_capacity`; capacity bookings still occur only at convert-to-task time.
 
 ## 2026-05-01 amendment — kecamatan picks a week, not a day
 
 **Storage stays weekly** (no further change to the `service_capacity` shape). What changes is what `staff_kecamatan` is asked to choose at submit time.
 
-**Why the shift.** The day-grid `AvailabilityCalendar` led submitters to assume the chosen day was a commitment, even though capacity is booked weekly and the actual execution day is set by `admin_data` at convert-to-task. The day-grid also offered no useful affordance — every day in the same ISO week shared the same status colour. Switching to a week-picker matches the storage model, removes the false specificity, and frees the admin to schedule the concrete day inside that week without renegotiating with the submitter.
+**Why the shift.** The day-grid `AvailabilityCalendar` led submitters to assume the chosen day was a commitment, even though capacity is booked weekly and the actual execution day is set by `admin_rayon` at convert-to-task. The day-grid also offered no useful affordance — every day in the same ISO week shared the same status colour. Switching to a week-picker matches the storage model, removes the false specificity, and frees the admin to schedule the concrete day inside that week without renegotiating with the submitter.
 
 **Submission DTO.** `CreatePruningRequestDto` accepts `expected_year: number` and `expected_iso_week: number` (both 1-indexed, ISO 8601 week numbering). Legacy `detail_date` remains accepted for one release as a fallback so older mobile builds continue to work; when present it is normalised to `(year, iso_week)` server-side. New mobile builds send only the week pair.
 
-**Persistence.** `pruning_requests` gains two nullable columns `expected_year INT` and `expected_iso_week INT`. The pre-existing `expected_date` column is **kept**: it is populated by `admin_data` (or by the convert-to-task auto-pick described below) once the concrete day is decided. Three states are now valid:
+**Persistence.** `pruning_requests` gains two nullable columns `expected_year INT` and `expected_iso_week INT`. The pre-existing `expected_date` column is **kept**: it is populated by `admin_rayon` (or by the convert-to-task auto-pick described below) once the concrete day is decided. Three states are now valid:
 
 | State | `expected_year`/`expected_iso_week` | `expected_date` | Meaning |
 |-------|-------------------------------------|-----------------|---------|

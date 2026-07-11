@@ -149,10 +149,10 @@ describe('EventsGateway', () => {
       expect(mockClient.join).toHaveBeenCalledWith('monitoring:city');
     });
 
-    it('should auto-join city room for top_management role', async () => {
+    it('should auto-join city room for management role', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'manager-1',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       });
 
       await gateway.handleConnection(mockClient);
@@ -590,10 +590,10 @@ describe('EventsGateway', () => {
       expect(mockClient.disconnect).not.toHaveBeenCalled();
     });
 
-    it('should auto-join rayon room for admin_data', async () => {
+    it('should auto-join rayon room for admin_rayon', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'ad-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
       });
       userRepo.findOne.mockResolvedValue({ id: 'ad-1', rayon_id: 'rayon-2', area_id: null });
 

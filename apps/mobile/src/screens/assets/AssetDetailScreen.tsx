@@ -282,7 +282,7 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
 
 /**
  * Local hook for asset-specific role access
- * User role types: satgas | linmas | korlap | admin_data | kepala_rayon | top_management | admin_system | superadmin
+ * User role types: satgas | linmas | korlap | admin_rayon | kepala_rayon | management | admin_system | superadmin
  */
 function useAssetRoleAccess() {
   const user = useAppSelector((state) => state.auth.user);

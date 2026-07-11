@@ -409,8 +409,8 @@ describe('ActivitiesService', () => {
       // Should not have scope-based andWhere calls for admin
     });
 
-    it('should return paginated activities for ADMIN_DATA (rayon-scoped)', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA, rayon_id: 'rayon-uuid-1' };
+    it('should return paginated activities for ADMIN_RAYON (rayon-scoped)', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON, rayon_id: 'rayon-uuid-1' };
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 15]);
 
       const result = await service.findAllPaginated({}, adminDataUser as any, 1, 50);
@@ -663,8 +663,8 @@ describe('ActivitiesService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should allow ADMIN_DATA to access activities from their rayon', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA, rayon_id: 'rayon-uuid-1' };
+    it('should allow ADMIN_RAYON to access activities from their rayon', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON, rayon_id: 'rayon-uuid-1' };
       const activityWithRayon = {
         ...mockActivity,
         shift: {
@@ -679,10 +679,10 @@ describe('ActivitiesService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should throw ApiException when ADMIN_DATA tries to access activity outside their rayon', async () => {
+    it('should throw ApiException when ADMIN_RAYON tries to access activity outside their rayon', async () => {
       const adminDataUser = {
         ...mockUser,
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'different-rayon-uuid',
       };
       const activityWithRayon = {

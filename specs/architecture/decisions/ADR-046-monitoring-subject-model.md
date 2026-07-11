@@ -12,7 +12,7 @@ Accepted — **Extends [ADR-029](./ADR-029-monitoring-v2-event-sourced-redis.md)
 
 Monitoring today assumes every clocked-in worker is a scheduled subject of an area, and understaffing is `active_count < AreaStaffRequirement.required_count` across all roles. UAT corrects several assumptions:
 
-- **Not everyone is scheduled.** `kepala_rayon`, `admin_data`, and `korlap` clock in and should be visible to their supervisors, but they must **not** generate schedules or count toward understaffing.
+- **Not everyone is scheduled.** `kepala_rayon`, `admin_rayon`, and `korlap` clock in and should be visible to their supervisors, but they must **not** generate schedules or count toward understaffing.
 - **Only `satgas` + `linmas`** are the workforce measured for staffing.
 - **Static vs mobile.** Some subjects are location-bound (assigned to an area); others roam a region (e.g. penyiraman truck) and have no fixed location.
 - **UI dislikes** the current Surabaya bubble and the active/terjadwal ratio bubbles; keep the drill-down but rework the visuals.
@@ -24,7 +24,7 @@ Monitoring today assumes every clocked-in worker is a scheduled subject of an ar
 
 Two orthogonal properties per monitored person:
 
-1. **Monitorable** — anyone who clocks in and streams location: `satgas`, `linmas`, `korlap`, `kepala_rayon`, `admin_data`. They appear on the map/roster **when clocked in**. Their geofence follows their assignment: `satgas`/`linmas`/`korlap` per their schedule occurrence (area or region); `kepala_rayon`/`admin_data` are geofenced to their **`rayon_id`** (they have no schedule — their "monitoring area" is the whole rayon).
+1. **Monitorable** — anyone who clocks in and streams location: `satgas`, `linmas`, `korlap`, `kepala_rayon`, `admin_rayon`. They appear on the map/roster **when clocked in**. Their geofence follows their assignment: `satgas`/`linmas`/`korlap` per their schedule occurrence (area or region); `kepala_rayon`/`admin_rayon` are geofenced to their **`rayon_id`** (they have no schedule — their "monitoring area" is the whole rayon).
 2. **Scheduled / staffing-counted** — **only `satgas` + `linmas`**. Understaffing, "scheduled", "expected/absent" counts derive exclusively from these two roles. Others are shown but excluded from staffing math.
 
 Subjects with no schedule are **not** rendered by default; they surface only via **daftar petugas** or **search** once they clock in and send location.
@@ -33,7 +33,7 @@ Subjects with no schedule are **not** rendered by default; they surface only via
 
 Independent of the map, a supervisor sees the workers beneath them, enforced by the role's `monitoring_scope` + assignment ([ADR-044](./ADR-044-dynamic-rbac.md)):
 - **management** (`city`) → every worker across Surabaya.
-- **kepala_rayon / admin_data** (`district`) → all workers in **their** `rayon_id` (their korlap, satgas, linmas).
+- **kepala_rayon / admin_rayon** (`district`) → all workers in **their** `rayon_id` (their korlap, satgas, linmas).
 - **korlap** (`region`) → workers within their assigned region (+ optional single location), including their team members.
 - **satgas / linmas** (`none`) → no monitoring access.
 Every daftar-petugas / search / snapshot query is filtered by this scope server-side; a district role can never see another rayon.

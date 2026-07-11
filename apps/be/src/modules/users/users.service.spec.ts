@@ -420,11 +420,11 @@ describe('UsersService', () => {
       expect(result.meta.totalPages).toBe(0);
     });
 
-    it('should filter users by rayon for admin_data user', async () => {
+    it('should filter users by rayon for admin_rayon user', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid',
         username: 'admindata1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-uuid-1',
       };
       const users = [mockUser];
@@ -510,11 +510,11 @@ describe('UsersService', () => {
       });
     });
 
-    it('should return empty array for admin_data when no users in their rayon', async () => {
+    it('should return empty array for admin_rayon when no users in their rayon', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid-2',
         username: 'admindata2',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'empty-rayon-uuid',
       };
       const mockQueryBuilder = {
@@ -572,11 +572,11 @@ describe('UsersService', () => {
       expect(result.meta.total).toBe(0);
     });
 
-    it('should properly scope admin_data to only their rayon users', async () => {
+    it('should properly scope admin_rayon to only their rayon users', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid',
         username: 'admindata1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-uuid-1',
       };
       const rayon1Users = [

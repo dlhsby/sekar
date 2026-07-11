@@ -33,7 +33,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [029](./ADR-029-monitoring-v2-event-sourced-redis.md) | Monitoring v2 — Event-Sourced Status via Redis Streams + Socket.IO Redis Adapter | Active |
 | [030](./ADR-030-area-aggregate-plant-inventory.md) | Area-Aggregate Plant Inventory with Optional Notable-Plant Records | Active |
 | [031](./ADR-031-task-typing-and-custom-fields.md) | Task Typing via `task_type` Enum + JSONB `custom_fields` Validated by Per-Type Schema Registry | Active · amended by 038 |
-| [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) | Extend `admin_data` with Disposition Authority over `pruning_requests`, Scoped by `users.rayon_id` | Active |
+| [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) | Extend `admin_rayon` with Disposition Authority over `pruning_requests`, Scoped by `users.rayon_id` | Active |
 | [033](./ADR-033-staff-kecamatan-role.md) | New External Role `staff_kecamatan` for Public Pruning Intake | Active |
 | [034](./ADR-034-pruning-cycle-prediction.md) | Pruning Cycle Prediction — Species × Area_Type Lookup (No ML), with Manual Override | Active |
 | [035](./ADR-035-service-capacity-model.md) | Generic `service_capacity` Model (Rayon × ISO-Week × Service_Type) | Active |
@@ -69,7 +69,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **005 → 010** — hard 100 m GPS radius replaced by soft polygon geofencing.
 - **011 → 029** — materialized status tracking replaced by event-sourced Redis Streams.
 - **036 palette → 040** — design-token palette re-baselined (sage-primary + pinwheel).
-- **009 amended by 032, 033 & 044** — admin_data pruning disposition; external staff_kecamatan role; then data-driven RBAC (roles/permissions/scope).
+- **009 amended by 032, 033 & 044** — admin_rayon pruning disposition; external staff_kecamatan role; then data-driven RBAC (roles/permissions/scope).
 - **031 amended by 038** — task typing extended with pruning workflow entry points.
 - **010 & 013 amended by 045** — 3-level spatial model gains a Region (Kawasan) tier + per-level styling.
 - **013 amended by 047** — template-derived roster → rule-based recurring events materialized into occurrences.

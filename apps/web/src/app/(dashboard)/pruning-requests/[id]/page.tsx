@@ -51,7 +51,7 @@ import { useUsers } from '@/lib/api/users';
 type CaseType = ConvertToTaskDto['caseType'];
 type PruningAction = ConvertToTaskDto['pruningAction'];
 
-const ASSIGNEE_ROLES: UserRole[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'];
+const ASSIGNEE_ROLES: UserRole[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_rayon'];
 
 export default function PruningRequestDetailPage() {
   const { t } = useTranslation();

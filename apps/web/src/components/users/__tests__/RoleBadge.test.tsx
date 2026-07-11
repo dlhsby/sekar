@@ -25,8 +25,8 @@ describe('RoleBadge', () => {
       expect(screen.getByText('Korlap')).toBeInTheDocument();
     });
 
-    it('should render admin_data role badge', () => {
-      render(<RoleBadge role="admin_data" />);
+    it('should render admin_rayon role badge', () => {
+      render(<RoleBadge role="admin_rayon" />);
       expect(screen.getByText('Admin Data')).toBeInTheDocument();
     });
 
@@ -35,8 +35,8 @@ describe('RoleBadge', () => {
       expect(screen.getByText('Kepala Rayon')).toBeInTheDocument();
     });
 
-    it('should render top_management role badge', () => {
-      render(<RoleBadge role="top_management" />);
+    it('should render management role badge', () => {
+      render(<RoleBadge role="management" />);
       expect(screen.getByText('Top Management')).toBeInTheDocument();
     });
 
@@ -75,9 +75,9 @@ describe('RoleBadge', () => {
         { role: 'satgas', label: 'Satgas' },
         { role: 'linmas', label: 'Linmas' },
         { role: 'korlap', label: 'Korlap' },
-        { role: 'admin_data', label: 'Admin Data' },
+        { role: 'admin_rayon', label: 'Admin Data' },
         { role: 'kepala_rayon', label: 'Kepala Rayon' },
-        { role: 'top_management', label: 'Top Management' },
+        { role: 'management', label: 'Top Management' },
         { role: 'admin_system', label: 'Admin Sistem' },
         { role: 'superadmin', label: 'Superadmin' },
       ];

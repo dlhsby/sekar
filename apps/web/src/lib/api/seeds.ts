@@ -1,6 +1,6 @@
 /**
  * Plant Seeds API Hooks (Phase 3)
- * Inventory management for admin_data, kepala_rayon, top_management, admin_system, superadmin
+ * Inventory management for admin_rayon, kepala_rayon, management, admin_system, superadmin
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';

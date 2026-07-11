@@ -23,7 +23,7 @@ Complete PostgreSQL database schema for SEKAR system with production-ready optim
 
 ### 1. users
 
-Stores all system users with 8 roles (ADR-009: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin).
+Stores all system users with 8 roles (ADR-009: satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin).
 
 ```sql
 CREATE TABLE users (
@@ -32,7 +32,7 @@ CREATE TABLE users (
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(100) NOT NULL,
   phone VARCHAR(20),
-  role VARCHAR(20) NOT NULL, -- 8 roles: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin
+  role VARCHAR(20) NOT NULL, -- 8 roles: satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin
   rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -40,7 +40,7 @@ CREATE TABLE users (
   deleted_at TIMESTAMPTZ,
 
   CONSTRAINT uq_users_username UNIQUE (username),
-  CONSTRAINT chk_users_role CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'))
+  CONSTRAINT chk_users_role CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon', 'management', 'admin_system', 'superadmin'))
 );
 
 -- Indexes
@@ -70,7 +70,7 @@ export class User {
   phone?: string;
 
   @Column({ type: 'varchar', length: 20 })
-  role: 'satgas' | 'linmas' | 'korlap' | 'admin_data' | 'kepala_rayon' | 'top_management' | 'admin_system' | 'superadmin';
+  role: 'satgas' | 'linmas' | 'korlap' | 'admin_rayon' | 'kepala_rayon' | 'management' | 'admin_system' | 'superadmin';
 
   @Column({ type: 'uuid', nullable: true })
   rayon_id?: string;
@@ -2020,8 +2020,8 @@ Before deploying to production:
 ### Role Enum Update (Implemented)
 ```sql
 -- users.role CHECK constraint (8 roles):
--- 'satgas', 'linmas', 'korlap', 'admin_data',
--- 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'
+-- 'satgas', 'linmas', 'korlap', 'admin_rayon',
+-- 'kepala_rayon', 'management', 'admin_system', 'superadmin'
 ```
 
 ### New Column: users.area_id (Implemented)
@@ -2086,7 +2086,7 @@ CREATE TABLE overtime_aktivitas (
 | `shifts` | area_id now nullable (auto-detected from WorkerSchedule/WorkerAssignment) |
 | `work_reports` | Added photo_urls TEXT[], gps_lat/gps_lng now nullable, report_type now nullable |
 | `tasks` | Added rayon_id FK→rayons (nullable), area_id now nullable, status simplified to 4 values, removed activity_type_id/GPS completion fields/decline columns |
-| `activity_types` | applicable_roles updated for Phase 2C roles (satgas, linmas, korlap, admin_data) |
+| `activity_types` | applicable_roles updated for Phase 2C roles (satgas, linmas, korlap, admin_rayon) |
 | `worker_assignments` | Added deprecated BOOLEAN (default false), migrated_to_schedule_id UUID |
 
 ---
@@ -2406,7 +2406,7 @@ CREATE TABLE pruning_requests (
   notes TEXT,
   status TEXT NOT NULL DEFAULT 'submitted',
   rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL,
-  reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL, -- admin_data
+  reviewed_by UUID REFERENCES users(id) ON DELETE SET NULL, -- admin_rayon
   reviewed_at TIMESTAMPTZ,
   review_notes TEXT,
   converted_task_id UUID REFERENCES tasks(id) ON DELETE SET NULL,
@@ -2519,12 +2519,12 @@ CREATE INDEX idx_tasks_parent ON tasks (parent_task_id);
 ```sql
 ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_role;
 ALTER TABLE users ADD CONSTRAINT chk_users_role CHECK (
-  role IN ('satgas','linmas','korlap','admin_data','kepala_rayon',
-           'top_management','admin_system','superadmin','staff_kecamatan')
+  role IN ('satgas','linmas','korlap','admin_rayon','kepala_rayon',
+           'management','admin_system','superadmin','staff_kecamatan')
 );
 ```
 
-> `admin_data` is **not** being redefined as a new role — ADR-032 extends its capability (disposition authority over `pruning_requests`, scoped by `users.rayon_id`) via code/policy, not schema.
+> `admin_rayon` is **not** being redefined as a new role — ADR-032 extends its capability (disposition authority over `pruning_requests`, scoped by `users.rayon_id`) via code/policy, not schema.
 
 #### location_logs (missing indexes — surfaced by Phase 3 profiling)
 

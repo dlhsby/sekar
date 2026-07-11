@@ -23,7 +23,7 @@ export interface ActivityListFilters {
   // ADR-038 (May 2026) — return activities where the current user is the
   // owner OR appears in `activity_tags`. When set, this overrides the
   // default role-based scope so tagged satgas/linmas see activities filed
-  // for them by korlap/admin_data even outside their own area.
+  // for them by korlap/admin_rayon even outside their own area.
   involving_me?: boolean;
 }
 
@@ -146,9 +146,9 @@ export class ActivityQueryService {
 
   /**
    * Listing scope: involving_me (owner OR tagged) overrides the role scope;
-   * otherwise korlap sees their assigned areas, kepala_rayon/admin_data their
+   * otherwise korlap sees their assigned areas, kepala_rayon/admin_rayon their
    * rayon, submitters their own rows. ADMIN_SYSTEM / SUPERADMIN /
-   * TOP_MANAGEMENT see all.
+   * MANAGEMENT see all.
    */
   private async applyAccessScope(
     queryBuilder: SelectQueryBuilder<Activity>,
@@ -170,7 +170,7 @@ export class ActivityQueryService {
     if (user.role === UserRole.KORLAP) {
       return this.applyKorlapScope(queryBuilder, user);
     }
-    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
+    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
       queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
       return;
     }
@@ -270,7 +270,7 @@ export class ActivityQueryService {
     if (user.role === UserRole.KORLAP) {
       return this.assertKorlapReadScope(activity, user);
     }
-    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
+    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
       return this.assertRayonReadScope(activity, user);
     }
     if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole) && activity.user_id !== user.id) {
@@ -280,7 +280,7 @@ export class ActivityQueryService {
         'You can only access your own activities',
       );
     }
-    // ADMIN_SYSTEM, SUPERADMIN, TOP_MANAGEMENT can see all activities
+    // ADMIN_SYSTEM, SUPERADMIN, MANAGEMENT can see all activities
   }
 
   private async assertKorlapReadScope(activity: Activity, user: User): Promise<void> {

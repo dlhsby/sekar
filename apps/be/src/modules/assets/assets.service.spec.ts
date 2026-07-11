@@ -195,10 +195,10 @@ describe('AssetsService', () => {
       );
     });
 
-    it('should apply ADMIN_DATA scope filter', async () => {
+    it('should apply ADMIN_RAYON scope filter', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         area_id: 'area-1',
       } as User;
 
@@ -211,16 +211,16 @@ describe('AssetsService', () => {
       );
     });
 
-    it('should not apply scope filter for TOP_MANAGEMENT users', async () => {
+    it('should not apply scope filter for MANAGEMENT users', async () => {
       const topMgmtUser = {
         id: 'tm-1',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       } as User;
 
       const qb = mockAssetRepo.createQueryBuilder();
       await service.findAll(topMgmtUser, {});
 
-      // TOP_MANAGEMENT is not in ASSET_VIEWERS, so no special filtering applied
+      // MANAGEMENT is not in ASSET_VIEWERS, so no special filtering applied
       expect(qb.andWhere).not.toHaveBeenCalledWith(
         expect.stringContaining('asset.area_id'),
         expect.any(Object),
@@ -575,10 +575,10 @@ describe('AssetsService', () => {
       await expect(service.findOne('asset-1', korlapNoAreas)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow ADMIN_DATA user to view asset in their area', async () => {
+    it('should allow ADMIN_RAYON user to view asset in their area', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         area_id: 'area-1',
       } as User;
 
@@ -587,10 +587,10 @@ describe('AssetsService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should deny ADMIN_DATA user viewing asset from different area', async () => {
+    it('should deny ADMIN_RAYON user viewing asset from different area', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         area_id: 'area-2',
       } as User;
 
@@ -600,10 +600,10 @@ describe('AssetsService', () => {
       await expect(service.findOne('asset-1', adminDataUser)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow TOP_MANAGEMENT user to view any asset', async () => {
+    it('should allow MANAGEMENT user to view any asset', async () => {
       const topMgmtUser = {
         id: 'topMgmt-1',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       } as User;
 
       const result = await service.findOne('asset-1', topMgmtUser);
@@ -639,10 +639,10 @@ describe('AssetsService', () => {
       await expect(service.findOne('asset-1', superadminUser)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow ADMIN_DATA user to view asset (in ASSET_VIEWERS)', async () => {
+    it('should allow ADMIN_RAYON user to view asset (in ASSET_VIEWERS)', async () => {
       const adminDataUser = {
         id: 'admin-data-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         area_id: 'area-1',
       } as User;
 

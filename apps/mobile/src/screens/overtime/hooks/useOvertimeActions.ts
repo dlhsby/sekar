@@ -57,7 +57,7 @@ export function useOvertimeActions(
       const inSameRayon =
         overtime.area?.rayon_id === user.rayon_id ||
         overtime.user?.rayon_id === user.rayon_id;
-      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_data');
+      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
     }
     return false;
   }, [overtime, user]);

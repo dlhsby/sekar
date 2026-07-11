@@ -3,7 +3,7 @@ import type { SeedContext } from '../lib/context';
 /**
  * Seed shifts (Phase 2C).
  *
- * 4 completed shifts for korlap/linmas/admin_data/kepala_rayon (ready for live clock-in),
+ * 4 completed shifts for korlap/linmas/admin_rayon/kepala_rayon (ready for live clock-in),
  * + 19 historical shifts for satgas_pusat_1 spread across 2+ months (for filter/scroll testing).
  * Total: 23 shift records.
  */
@@ -17,7 +17,7 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
     `SELECT id, area_id FROM users WHERE username = 'korlap_pusat_1' LIMIT 1`,
   );
   const shiftAdminData = await ctx.qr.query(
-    `SELECT id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1`,
+    `SELECT id FROM users WHERE username = 'admin_rayon_pusat_1' LIMIT 1`,
   );
   const shiftKepalaRayon = await ctx.qr.query(
     `SELECT id FROM users WHERE username = 'kepala_rayon_selatan_1' LIMIT 1`,
@@ -80,7 +80,7 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
             NOW() - INTERVAL '3 days', -7.2906, 112.7399, NOW() - INTERVAL '3 days 8 hours', NOW() - INTERVAL '3 days')
       `);
       shiftCount += 1;
-      ctx.log('  ✓ Created 1 shift for admin_data_pusat_1 (completed)');
+      ctx.log('  ✓ Created 1 shift for admin_rayon_pusat_1 (completed)');
     }
 
     if (shiftKepalaRayon.length > 0) {

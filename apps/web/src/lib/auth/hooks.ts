@@ -45,8 +45,8 @@ export function useUser(): User | null {
  * // Require any authenticated user
  * useRequireAuth();
  *
- * // Require admin or top_management
- * useRequireAuth(['admin', 'top_management']);
+ * // Require admin or management
+ * useRequireAuth(['admin', 'management']);
  * ```
  */
 export function useRequireAuth(requiredRoles?: UserRole[]) {
@@ -91,7 +91,7 @@ export function useRequireAuth(requiredRoles?: UserRole[]) {
  *
  * @example
  * ```tsx
- * const canManageUsers = useHasRole(['admin', 'top_management']);
+ * const canManageUsers = useHasRole(['admin', 'management']);
  * ```
  */
 export function useHasRole(roles: UserRole[]): boolean {

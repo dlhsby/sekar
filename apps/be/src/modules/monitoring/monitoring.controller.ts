@@ -350,7 +350,7 @@ export class MonitoringController {
     const cityOnlyRoles: UserRole[] = [
       UserRole.SUPERADMIN,
       UserRole.ADMIN_SYSTEM,
-      UserRole.TOP_MANAGEMENT,
+      UserRole.MANAGEMENT,
     ];
     if (scope === 'city' && !cityOnlyRoles.includes(user.role as UserRole)) {
       throw new ForbiddenException('City-scope snapshot requires city-level role');
@@ -376,7 +376,7 @@ export class MonitoringController {
   // ---- Scope enforcement helpers ----
 
   private enforceScopeRayon(user: User, rayonId: string): void {
-    const scopedRoles = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
+    const scopedRoles = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
     if (scopedRoles.includes(user.role as UserRole) && user.rayon_id !== rayonId) {
       throw new ForbiddenException('You can only view monitoring for your own rayon');
     }
@@ -420,7 +420,7 @@ export class MonitoringController {
         filters.rayon_id = user.rayon_id;
       }
     } else if (
-      (user.role === UserRole.ADMIN_DATA || user.role === UserRole.KEPALA_RAYON) &&
+      (user.role === UserRole.ADMIN_RAYON || user.role === UserRole.KEPALA_RAYON) &&
       user.rayon_id
     ) {
       filters.rayon_id = user.rayon_id;
@@ -428,7 +428,7 @@ export class MonitoringController {
   }
 
   private async enforceScopeUser(viewer: User, targetUserId: string): Promise<void> {
-    const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+    const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT];
     if (cityRoles.includes(viewer.role as UserRole)) return;
 
     const target = await this.monitoringService.getUserDaySummary(targetUserId);
@@ -446,7 +446,7 @@ export class MonitoringController {
       }
       return;
     }
-    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_DATA) {
+    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_RAYON) {
       // Allow if target rayon is unknown (not yet tracked)
       if (!target.rayon_id) return;
       if (target.rayon_id !== viewer.rayon_id) {

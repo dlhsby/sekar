@@ -21,7 +21,7 @@ import { useAreaAnalytics, useArea, type AreaAnalytics } from '@/lib/api/analyti
 import { AreaComparisonChart } from '@/components/analytics/AreaComparisonChart';
 import { X } from 'lucide-react';
 
-const ANALYTICS_VIEWERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'];
+const ANALYTICS_VIEWERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'];
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 

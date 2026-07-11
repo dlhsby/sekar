@@ -112,9 +112,9 @@ const ALL_ROLES = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
   'staff_kecamatan',
@@ -239,7 +239,7 @@ describe('MainNavigator', () => {
     });
 
     it('monitoring roles surface Monitoring', () => {
-      (['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'] as const).forEach(
+      (['korlap', 'kepala_rayon', 'management', 'admin_system', 'superadmin'] as const).forEach(
         (role) => {
           const routes = MENU_CONFIGS[role].flatMap((s) => s.items.map((i) => i.route));
           expect(routes).toContain('Monitoring');
@@ -263,7 +263,7 @@ describe('MainNavigator', () => {
     });
 
     it('renders the same 3 tabs for a management role', () => {
-      const { getByText } = renderNavigator('top_management');
+      const { getByText } = renderNavigator('management');
       expect(getByText('Beranda')).toBeTruthy();
       expect(getByText('Menu')).toBeTruthy();
       expect(getByText('Profil')).toBeTruthy();

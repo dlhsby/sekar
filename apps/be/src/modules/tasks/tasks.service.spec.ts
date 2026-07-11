@@ -493,7 +493,7 @@ describe('TasksService', () => {
 
     it('allows the creator to reassign from ASSIGNED before the assignee accepts', async () => {
       // May 11, 2026 — admin reassign path: callerId === task.created_by
-      // while task.status === ASSIGNED. Lets admin_data fix a wrong
+      // while task.status === ASSIGNED. Lets admin_rayon fix a wrong
       // Tugaskan pick without forcing the assignee to decline first.
       const assignedTask = {
         ...mockTask,
@@ -502,7 +502,7 @@ describe('TasksService', () => {
         created_by: 'creator-uuid',
       };
       const newAssignee = { ...mockUser, id: 'right-person-uuid', role: UserRole.SATGAS };
-      const creator = { ...mockUser, id: 'creator-uuid', role: UserRole.ADMIN_DATA };
+      const creator = { ...mockUser, id: 'creator-uuid', role: UserRole.ADMIN_RAYON };
       const previousAssignee = { ...mockUser, id: 'wrong-person-uuid', role: UserRole.SATGAS };
 
       taskRepository.findOne
@@ -1608,7 +1608,7 @@ describe('TasksService', () => {
 
     const mockTopManagementVerifier: Partial<User> = {
       id: 'tm-uuid',
-      role: UserRole.TOP_MANAGEMENT,
+      role: UserRole.MANAGEMENT,
       is_active: true,
     };
 
@@ -1687,7 +1687,7 @@ describe('TasksService', () => {
       expect(result.status).toBe(TaskStatus.VERIFIED);
     });
 
-    it('should allow top_management to verify kepala_rayon task without scope restriction', async () => {
+    it('should allow management to verify kepala_rayon task without scope restriction', async () => {
       const completedTask = {
         ...mockTask,
         status: TaskStatus.COMPLETED,
@@ -1710,7 +1710,7 @@ describe('TasksService', () => {
 
       const result = await service.verifyTask('task-uuid', 'tm-uuid');
 
-      // top_management has no scope check so areasService should not be called
+      // management has no scope check so areasService should not be called
       expect(areasService.findOne).not.toHaveBeenCalled();
       expect(taskRepository.save).toHaveBeenCalled();
       expect(result.status).toBe(TaskStatus.VERIFIED);
@@ -1945,7 +1945,7 @@ describe('TasksService', () => {
       await expect(
         service.partialComplete('task-uuid', { completed_count: 1 }, {
           id: 'u',
-          role: UserRole.TOP_MANAGEMENT,
+          role: UserRole.MANAGEMENT,
         } as User),
       ).rejects.toThrow(ForbiddenException);
     });
@@ -2168,7 +2168,7 @@ describe('TasksService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow admin_data access when task in their rayon', async () => {
+    it('should allow admin_rayon access when task in their rayon', async () => {
       const task = {
         ...mockTask,
         rayon_id: 'my-rayon',
@@ -2177,7 +2177,7 @@ describe('TasksService', () => {
 
       const result = await service.findOne('task-uuid', {
         id: 'me',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'my-rayon',
       } as User);
       expect(result).toBeDefined();

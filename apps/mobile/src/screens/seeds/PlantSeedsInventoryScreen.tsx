@@ -1,7 +1,7 @@
 /**
  * Plant Seeds Inventory Screen (Phase 3 3-12)
  * Catalog list with stock info, low-stock badge, and recent transactions
- * Access: admin_data, top_management, admin_system, superadmin
+ * Access: admin_rayon, management, admin_system, superadmin
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';

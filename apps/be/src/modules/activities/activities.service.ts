@@ -363,7 +363,7 @@ export class ActivitiesService {
 
   /**
    * Approve a pending activity (Phase 2C). Korlap approves satgas/linmas in
-   * their area; Kepala Rayon approves korlap/admin_data in their rayon.
+   * their area; Kepala Rayon approves korlap/admin_rayon in their rayon.
    */
   async approveActivity(activityId: string, reviewerId: string): Promise<Activity> {
     const activity = await this.loadPendingForReview(activityId, reviewerId);
@@ -429,7 +429,7 @@ export class ActivitiesService {
 
   /**
    * Hierarchy rules (Phase 2C): Korlap approves satgas/linmas within their
-   * area; Kepala Rayon approves korlap/admin_data within their rayon.
+   * area; Kepala Rayon approves korlap/admin_rayon within their rayon.
    */
   private validateApprovalHierarchy(activity: Activity, reviewer: User): void {
     if (reviewer.role === UserRole.KORLAP) {
@@ -455,7 +455,7 @@ export class ActivitiesService {
       throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
     }
     const submitterRole = activity.user?.role;
-    if (!['korlap', 'admin_data'].includes(submitterRole)) {
+    if (!['korlap', 'admin_rayon'].includes(submitterRole)) {
       throw new ForbiddenException(
         'Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data',
       );
@@ -464,7 +464,7 @@ export class ActivitiesService {
       throw new ForbiddenException('You can only approve activities in your rayon');
     }
     if (
-      submitterRole === 'admin_data' &&
+      submitterRole === 'admin_rayon' &&
       (!activity.user.rayon_id || activity.user.rayon_id !== reviewer.rayon_id)
     ) {
       throw new ForbiddenException('You can only approve activities in your rayon');

@@ -431,7 +431,7 @@ export class TasksController {
     UserRole.SATGAS,
     UserRole.LINMAS,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
   )
   @ApiOperation({ summary: 'List task delegation chain (ADR-038)' })
   @ApiParam({ name: 'id', description: 'Task UUID' })
@@ -454,7 +454,7 @@ export class TasksController {
     UserRole.SATGAS,
     UserRole.LINMAS,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
   )
   @ApiOperation({ summary: 'Get task lineage — parent chain + children' })
   @ApiParam({ name: 'id', description: 'Task UUID' })

@@ -115,7 +115,7 @@ describe('UsersController', () => {
       expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, mockUser);
     });
 
-    it('should pass admin_data user context for rayon filtering', async () => {
+    it('should pass admin_rayon user context for rayon filtering', async () => {
       const adminDataUser: User = {
         id: 'admin-data-uuid',
         username: 'admindata1',
@@ -123,7 +123,7 @@ describe('UsersController', () => {
         full_name: 'Admin Data One',
         phone_number: null,
         profile_picture_url: null,
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-uuid-1',
         is_active: true,
         password_must_change: false,

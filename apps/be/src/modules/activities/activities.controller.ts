@@ -79,7 +79,7 @@ export class ActivitiesController {
    * - Field workers (ACTIVITY_SUBMITTERS): Own activities only
    * - KORLAP: Activities from their area
    * - KEPALA_RAYON: Activities from their rayon
-   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
+   * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get()
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
@@ -220,7 +220,7 @@ export class ActivitiesController {
    * - Field workers: Own activities only
    * - KORLAP: Activities from their area
    * - KEPALA_RAYON: Activities from their rayon
-   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
+   * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get(':id')
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)

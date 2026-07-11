@@ -156,7 +156,7 @@ export class TaskVerificationService {
     this.assertRoleCanVerify(verifier.role, assignee.role);
     this.assertKorlapScope(verifier, assignee);
     await this.assertKepalaRayonScope(verifier, assignee);
-    // top_management: no scope restriction
+    // management: no scope restriction
   }
 
   private assertRoleCanVerify(verifierRole: UserRole, assigneeRole: UserRole): void {

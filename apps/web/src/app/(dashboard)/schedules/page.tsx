@@ -164,7 +164,7 @@ export default function SchedulesPage() {
       const targetRole = roster.user?.role;
       if (!targetRole || !canEditTargetRole(currentUser.role, targetRole)) return false;
       if (isGlobalRosterEditor(currentUser.role)) return true;
-      if (currentUser.role === 'kepala_rayon' || currentUser.role === 'admin_data') {
+      if (currentUser.role === 'kepala_rayon' || currentUser.role === 'admin_rayon') {
         if (!currentUser.rayon_id) return false;
         if (roster.rayon_id === currentUser.rayon_id) return true;
         return roster.schedule_areas.some(

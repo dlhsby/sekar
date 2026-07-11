@@ -1,8 +1,8 @@
 /**
  * RescheduleSheet — admin "Atur Jadwal" entry point.
  *
- * Renders a fullscreen `NBModal` hosting `AvailabilityCalendar` so admin_data /
- * top_management can adjust a request's `expected_date` independent of the
+ * Renders a fullscreen `NBModal` hosting `AvailabilityCalendar` so admin_rayon /
+ * management can adjust a request's `expected_date` independent of the
  * assign-to-task flow. On confirm dispatches `reschedulePruningRequest`.
  *
  * Round 4 (Apr 28). Switched from `type="sheet"` to `type="fullscreen"` on

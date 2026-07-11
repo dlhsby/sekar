@@ -255,7 +255,7 @@ export class TasksService {
     [UserRole.LINMAS]: (qb, user) => this.scopeToFieldWorker(qb, user),
     [UserRole.KORLAP]: (qb, user) => this.scopeToKorlap(qb, user),
     [UserRole.KEPALA_RAYON]: (qb, user) => this.scopeToKepalaRayon(qb, user),
-    // top_management, admin_system, superadmin: no scope restriction
+    // management, admin_system, superadmin: no scope restriction
   };
 
   /** Field workers: only tasks assigned to them or where they're tagged. */

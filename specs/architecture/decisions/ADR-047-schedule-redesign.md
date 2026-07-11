@@ -12,7 +12,7 @@ Accepted — **Amends [ADR-013](./ADR-013-multi-area-assignment.md)** (template-
 
 Scheduling today is a **materialized daily roster**: a cron generates one `schedules` row per worker per WIB day from the worker's standing template (`users.shift_definition_id` + permanent `user_areas`), with a `(user_id, schedule_date)` unique constraint and a `schedule_areas` join for 0..N areas. There is no recurrence engine, no calendar UI (only a datatable), and no team concept. Monitoring reads these materialized rows to know who is "scheduled".
 
-UAT wants a **Google-Calendar-inspired** model: schedules defined per day per shift, set as recurring (every N days, weekly, specific dates) or one-off, viewable as day/week/month calendars, supporting **individual and team** schedules, and **static or mobile** scope. Only `korlap` (optional), `satgas`, and `linmas` need schedules; management/kepala_rayon/admin_data do not. Shift 3 crosses midnight (already modeled on `ShiftDefinition.crosses_midnight`).
+UAT wants a **Google-Calendar-inspired** model: schedules defined per day per shift, set as recurring (every N days, weekly, specific dates) or one-off, viewable as day/week/month calendars, supporting **individual and team** schedules, and **static or mobile** scope. Only `korlap` (optional), `satgas`, and `linmas` need schedules; management/kepala_rayon/admin_rayon do not. Shift 3 crosses midnight (already modeled on `ShiftDefinition.crosses_midnight`).
 
 ## Decision
 
@@ -55,7 +55,7 @@ A team schedule is created with a **PIC** (korlap or satgas/linmas) and **invite
 
 ### Who gets scheduled
 
-`satgas`/`linmas` are the scheduled workforce; only their occurrences feed understaffing ([ADR-046](./ADR-046-monitoring-subject-model.md)). `korlap` scheduling is **optional** — korlap are never auto-materialized from a standing template; a korlap occurrence exists only if someone explicitly creates a korlap event in the calendar (individual, or as a team PIC/member). `management`/`kepala_rayon`/`admin_data` are never scheduled. Korlap occurrences are still never counted toward understaffing.
+`satgas`/`linmas` are the scheduled workforce; only their occurrences feed understaffing ([ADR-046](./ADR-046-monitoring-subject-model.md)). `korlap` scheduling is **optional** — korlap are never auto-materialized from a standing template; a korlap occurrence exists only if someone explicitly creates a korlap event in the calendar (individual, or as a team PIC/member). `management`/`kepala_rayon`/`admin_rayon` are never scheduled. Korlap occurrences are still never counted toward understaffing.
 
 ### UI
 

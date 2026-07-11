@@ -19,7 +19,7 @@ duplicate them). Keep each feature spec ≤ ~150 lines; put deep detail in the l
 | [Teams](teams/README.md) | 🚧 | `teams`, `schedules` | Typed crews with markers; membership via schedules (ADR-048) |
 | [Monitoring](monitoring/README.md) | ✅ 🚧 | `monitoring`, `location`, `gateways` | Live positions, drill-down, realtime; subject-model revamp planned (ADR-046). ⚠️ legacy `supervisor` deprecated |
 | [Plants](plants/README.md) | ✅ | `plants`, `plant-seeds` | Area-aggregate inventory (seeds UI parked) |
-| [Pruning](pruning/README.md) | ✅ | `pruning-requests` | Kecamatan intake + admin_data disposition |
+| [Pruning](pruning/README.md) | ✅ | `pruning-requests` | Kecamatan intake + admin_rayon disposition |
 | [Notifications](notifications/README.md) | ✅ | `notifications`, `queue` | FCM push via BullMQ |
 | [System](system/README.md) | ✅ | `health`, `audit`, `config`, `app-releases` | Health, audit log, runtime config, versioning |
 | [Settings](settings/README.md) | 🚧 | `settings`, `system` | Personal preferences vs system settings, grouped (ADR-049) |

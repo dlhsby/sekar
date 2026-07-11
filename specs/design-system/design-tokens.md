@@ -524,7 +524,7 @@ Web is installable as a PWA starting Phase 3 M1-R sub-phase 3-R4.
 ### Push notifications
 
 - Same FCM project as the native app.
-- Subscribed on login for `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`.
+- Subscribed on login for `admin_rayon`, `kepala_rayon`, `management`, `admin_system`, `superadmin`.
 - Notification types mirror mobile: `task_assigned`, `task_overdue`, `pruning_request_submitted`, `overtime_pending_review`, `area_plant_overdue`.
 - Notification styling: hard-edge SEKAR icon + `theme_color` badge.
 

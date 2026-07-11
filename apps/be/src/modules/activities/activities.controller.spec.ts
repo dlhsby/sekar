@@ -118,8 +118,8 @@ describe('ActivitiesController', () => {
       );
     });
 
-    it('should create an activity for ADMIN_DATA', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should create an activity for ADMIN_RAYON', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       mockService.createActivity.mockResolvedValue(mockActivity);
 
       const result = await controller.create(createDto, adminDataUser as any);
@@ -368,8 +368,8 @@ describe('ActivitiesController', () => {
       expect(result).toHaveLength(1);
     });
 
-    it('should work for ADMIN_DATA role', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should work for ADMIN_RAYON role', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       mockService.findMyActivities.mockResolvedValue([mockActivity]);
 
       const result = await controller.getMyActivities(undefined, adminDataUser as any);
@@ -418,8 +418,8 @@ describe('ActivitiesController', () => {
       expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, adminUser);
     });
 
-    it('should return activity by ID for TOP_MANAGEMENT', async () => {
-      const topMgmtUser = { ...mockUser, role: UserRole.TOP_MANAGEMENT };
+    it('should return activity by ID for MANAGEMENT', async () => {
+      const topMgmtUser = { ...mockUser, role: UserRole.MANAGEMENT };
       mockService.findOne.mockResolvedValue(mockActivity);
 
       const result = await controller.findOne(mockActivity.id, topMgmtUser as any);
@@ -475,8 +475,8 @@ describe('ActivitiesController', () => {
       expect(service.update).toHaveBeenCalledWith(mockActivity.id, updateDto, korlapUser.id);
     });
 
-    it('should update activity for ADMIN_DATA', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA };
+    it('should update activity for ADMIN_RAYON', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON };
       const updatedActivity = { ...mockActivity, ...updateDto };
       mockService.update.mockResolvedValue(updatedActivity);
 
@@ -537,8 +537,8 @@ describe('ActivitiesController', () => {
 
   describe('Role Guard Integration', () => {
     it('should allow ACTIVITY_SUBMITTERS to create activities', async () => {
-      // ACTIVITY_SUBMITTERS = [SATGAS, LINMAS, KORLAP, ADMIN_DATA]
-      const roles = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_DATA];
+      // ACTIVITY_SUBMITTERS = [SATGAS, LINMAS, KORLAP, ADMIN_RAYON]
+      const roles = [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP, UserRole.ADMIN_RAYON];
 
       for (const role of roles) {
         const user = { ...mockUser, role };
@@ -556,11 +556,11 @@ describe('ActivitiesController', () => {
     });
 
     it('should allow MONITORING_AREA roles to view activities', async () => {
-      // MONITORING_AREA = [KORLAP, KEPALA_RAYON, TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN]
+      // MONITORING_AREA = [KORLAP, KEPALA_RAYON, MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN]
       const roles = [
         UserRole.KORLAP,
         UserRole.KEPALA_RAYON,
-        UserRole.TOP_MANAGEMENT,
+        UserRole.MANAGEMENT,
         UserRole.ADMIN_SYSTEM,
         UserRole.SUPERADMIN,
       ];

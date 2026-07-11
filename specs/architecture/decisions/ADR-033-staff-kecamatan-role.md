@@ -16,7 +16,7 @@ Candidates considered:
 
 - **A new "public citizen" role** — too broad. Individual citizens submitting directly would open an unauthenticated or weakly-authenticated surface with no accountability, high spam risk, and no address verification. The client explicitly does not want this yet.
 - **`staff_kecamatan`** — kecamatan staff collect intake at the sub-district office, verify identity and address on paper, then submit into the app. This is the current paper workflow, digitized. Accountability stays at the kecamatan office.
-- **Fold into existing roles** — kecamatan staff are external to DLH. They are not satgas, not korlap, not admin_data. No existing role fits.
+- **Fold into existing roles** — kecamatan staff are external to DLH. They are not satgas, not korlap, not admin_rayon. No existing role fits.
 
 Role-boundary constraints:
 
@@ -37,7 +37,7 @@ Introduce a ninth role, `staff_kecamatan`, designed as a strictly-external, narr
 |---|---|
 | Role key | `staff_kecamatan` |
 | Clockable | **No** (excluded from `CLOCKABLE_ROLES`) |
-| Rayon binding | None (their own `rayon_id` is NULL; rayon is resolved per-request by `admin_data` on review — ADR-032) |
+| Rayon binding | None (their own `rayon_id` is NULL; rayon is resolved per-request by `admin_rayon` on review — ADR-032) |
 | Area binding | None |
 | Monitoring access | None |
 | User management | None |
@@ -72,7 +72,7 @@ Introduce a ninth role, `staff_kecamatan`, designed as a strictly-external, narr
 - **Clean separation from DLH internals.** Kecamatan staff cannot accidentally be assigned tasks, clocked in, or surfaced on monitoring maps.
 - **Digitizes the existing paper flow.** Minimal operational change; kecamatan continues to be the accountability boundary.
 - **Easy to revoke.** If a kecamatan staff member changes jobs, disable their account; no rayon/area/shift cleanup needed.
-- **Ownership scope is simple.** `submitted_by = self` is the only filter on their list/detail endpoints. No complex rayon scoping (that's `admin_data`'s problem per ADR-032).
+- **Ownership scope is simple.** `submitted_by = self` is the only filter on their list/detail endpoints. No complex rayon scoping (that's `admin_rayon`'s problem per ADR-032).
 - **Future-proof for citizen-direct intake.** If DLH later wants citizen-direct submission, a new `public_user` role can inherit the `PRUNING_REQUEST_SUBMITTERS` pattern with additional anti-spam constraints (rate limiting, OTP-gated submission).
 
 ### Negative
@@ -91,7 +91,7 @@ Introduce a ninth role, `staff_kecamatan`, designed as a strictly-external, narr
 ## Alternatives Considered
 
 1. **Generic "public_user" role for all citizens.** Rejected. The client wants kecamatan-mediated intake first, for accountability and spam control. Citizen-direct is a future option, not this phase.
-2. **Fold kecamatan staff into `admin_data`.** Rejected. `admin_data` is internal DLH with rayon scoping; kecamatan staff are external with their own org chart. Mixing them breaks ADR-032's narrow extension and inflates `admin_data` responsibilities.
+2. **Fold kecamatan staff into `admin_rayon`.** Rejected. `admin_rayon` is internal DLH with rayon scoping; kecamatan staff are external with their own org chart. Mixing them breaks ADR-032's narrow extension and inflates `admin_rayon` responsibilities.
 3. **No dedicated role — ingest via an unauthenticated webhook from a separate kecamatan app.** Rejected. Requires building and maintaining a second app; authentication/accountability end up in a worse place.
 4. **Reuse `satgas` role for kecamatan staff.** Rejected. `satgas` is clockable, GPS-tracked, shift-bound, and rayon-scoped. Complete mismatch.
 

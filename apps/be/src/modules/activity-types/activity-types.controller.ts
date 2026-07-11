@@ -94,7 +94,7 @@ export class ActivityTypesController {
   @ApiOperation({
     summary: 'Get activity types for current user',
     description:
-      "Returns activity types applicable to the authenticated user's role (satgas, linmas, korlap, admin_data).",
+      "Returns activity types applicable to the authenticated user's role (satgas, linmas, korlap, admin_rayon).",
   })
   @ApiResponse({
     status: 200,

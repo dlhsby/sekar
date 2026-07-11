@@ -530,7 +530,7 @@ describe('SchedulesService', () => {
   describe('edit hierarchy (assertCanEdit via setLeave)', () => {
     const KORLAP = { id: 'k1', role: UserRole.KORLAP } as User;
     const KEPALA = { id: 'kr1', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' } as User;
-    const TOP = { id: 't1', role: UserRole.TOP_MANAGEMENT } as User;
+    const TOP = { id: 't1', role: UserRole.MANAGEMENT } as User;
 
     /** Queue findOne(id) then the post-save refresh so an ALLOWED edit resolves. */
     function allowRow(row: Record<string, unknown>): void {
@@ -599,7 +599,7 @@ describe('SchedulesService', () => {
       );
     });
 
-    it('top_management can edit any role (full admin_system parity) — kepala_rayon and satgas', async () => {
+    it('management can edit any role (full admin_system parity) — kepala_rayon and satgas', async () => {
       allowRow({
         id: 'd1',
         user_id: 'A',
@@ -621,11 +621,11 @@ describe('SchedulesService', () => {
   });
 
   describe('generateRoster — manager whole-rayon + top-tier skip', () => {
-    it('assigns kepala_rayon the whole rayon, field workers their areas, and skips top_management', async () => {
+    it('assigns kepala_rayon the whole rayon, field workers their areas, and skips management', async () => {
       userRepo.find.mockResolvedValue([
         { id: 'kr', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' },
         { id: 'sat', role: UserRole.SATGAS, rayon_id: null, shift_definition_id: 's1' },
-        { id: 'tm', role: UserRole.TOP_MANAGEMENT },
+        { id: 'tm', role: UserRole.MANAGEMENT },
       ]);
       rosterRepo.find.mockResolvedValue([]); // nothing rostered yet
       userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(new Map([['sat', ['areaS']]]));
@@ -636,7 +636,7 @@ describe('SchedulesService', () => {
 
       const created = await service.generateRoster('2026-07-01', 'admin');
 
-      // kr + sat rostered; top_management skipped.
+      // kr + sat rostered; management skipped.
       expect(created).toBe(2);
       const rosteredUserIds = rosterRepo.save.mock.calls.map((c) => c[0].user_id);
       expect(rosteredUserIds).toEqual(expect.arrayContaining(['kr', 'sat']));

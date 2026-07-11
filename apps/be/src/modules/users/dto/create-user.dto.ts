@@ -102,7 +102,7 @@ export class CreateUserDto {
   })
   @IsEnum(UserRole, {
     message:
-      'Role must be one of: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin',
+      'Role must be one of: satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin',
   })
   @IsOptional()
   role?: UserRole;

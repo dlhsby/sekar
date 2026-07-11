@@ -30,23 +30,23 @@ Three new tables:
 
 ### Roles seeded as `is_system`
 
-The 9 current roles are seeded and locked. Codes are **unchanged** (used in JWT + guards); only display labels and permission sets may change:
+The 9 current roles are seeded and locked. Codes are lowercase and used in JWT + guards; the UAT revamp **renamed two codes** — `top_management` → `management` and `admin_data` → `admin_rayon` (data migration `17491700000000`, forced re-login) — after which codes stay stable. Display labels and permission sets remain editable:
 
 | code | label | monitoring_scope | notes |
 |---|---|---|---|
 | `superadmin` | Superadmin | city | all permissions |
 | `admin_system` | Admin Sistem | city | manage roles/permissions/settings/master-data |
-| `top_management` | **Management** | city | read-all across the city; no system-settings edit |
+| `management` | **Management** | city | read-all across the city; no system-settings edit |
 | `kepala_rayon` | Kepala Rayon | district | manage user+area data in own rayon; clockable |
-| `admin_data` | **Admin Rayon** | district | **equalized to kepala_rayon** (was pruning-only) |
+| `admin_rayon` | **Admin Rayon** | district | **equalized to kepala_rayon** (was pruning-only) |
 | `korlap` | Korlap | region | monitor own region/location; no data management |
 | `satgas` | Satgas | none | field worker; scheduled; no monitoring |
 | `linmas` | Linmas | none | security; scheduled; no monitoring |
 | `staff_kecamatan` | Staff Kecamatan | none | external pruning intake (ADR-033) |
 
-**`admin_rayon` is a display label, not a new role code.** ADR-033 rejected a distinct `admin_rayon` role; that decision stands at the schema level. The DLH org chart calls this persona "Admin Rayon", so `roles.name` = "Admin Rayon" while `roles.code` remains `admin_data`. UAT **equalizes** its access to `kepala_rayon`: both get district scope and the same base permissions (manage users/areas in their own rayon, review pruning-requests scoped by rayon). This is a *widening* of `admin_data`, not a narrowing — it **keeps** ADR-032's pruning-request disposition and **adds** the user/area-management parity; the two roles are now identical in scope + base permission set.
+**`admin_rayon` is now the role code** (renamed from `admin_data` in the UAT revamp), with label "Admin Rayon". This **supersedes ADR-033's** "no distinct `admin_rayon` role" naming stance — the code is now `admin_rayon` at the schema level, not just a label. UAT **equalizes** its access to `kepala_rayon`: both get district scope and the same base permissions (manage users/areas in their own rayon, review pruning-requests scoped by rayon). This is a *widening* of the former `admin_data`, not a narrowing — it **keeps** ADR-032's pruning-request disposition and **adds** the user/area-management parity; the two roles are now identical in scope + base permission set.
 
-**Code vs label discipline:** backend guards, JWT, `@Roles`, API request/response payloads, and permission checks always use the role **code** (e.g. `admin_data`); the **label** ("Admin Rayon") is UI-only, read from `roles.name`. Never put a label in a code position or vice-versa.
+**Code vs label discipline:** backend guards, JWT, `@Roles`, API request/response payloads, and permission checks always use the role **code** (e.g. `admin_rayon`); the **label** ("Admin Rayon") is UI-only, read from `roles.name`. Never put a label in a code position or vice-versa.
 
 ### System-role permission seeds
 
@@ -56,9 +56,9 @@ Seeded `role_permissions` for the locked roles (custom roles start empty). Wildc
 |---|---|
 | `superadmin` | `*:*` |
 | `admin_system` | `*:*` **except** none — full incl. `role:*`, `permission:*`, `settings:manage`, all master-data |
-| `top_management` (Management) | `*:read`, `monitoring:read`, `report:*`, **`settings:read`** (no `settings:manage`), `user:read`, `role:read` — read-broad, **no system-settings writes, no role/permission edits** |
+| `management` (Management) | `*:read`, `monitoring:read`, `report:*`, **`settings:read`** (no `settings:manage`), `user:read`, `role:read` — read-broad, **no system-settings writes, no role/permission edits** |
 | `kepala_rayon` | `monitoring:read`, `user:{read,create,update}`, `area:*`, `region:read`, `schedule:*`, `team:*`, `task:verify`, `overtime:approve`, `pruning-request:{read,review}`, `activity:read` — all rayon-scoped |
-| `admin_data` (Admin Rayon) | **identical to `kepala_rayon`** |
+| `admin_rayon` (Admin Rayon) | **identical to `kepala_rayon`** |
 | `korlap` | `monitoring:read`, `schedule:{read,create,update}`, `team:read`, `activity:approve`, `task:{read,assign}`, `overtime:submit` — region-scoped, **no `user:*`/`area:*` management** |
 | `satgas` / `linmas` | `activity:create`, `task:read`, `overtime:submit`, `schedule:read` (own) — **no `monitoring:*`** |
 | `staff_kecamatan` | `pruning-request:{submit,read}` (own) — external (ADR-033) |
@@ -125,7 +125,7 @@ A living test at `apps/be/src/modules/rbac/__tests__/role-endpoint-matrix.spec.t
 ## Follow-ups (deferred — revisit in a later pass)
 
 1. **Endpoint migration `@Roles` → `@RequirePermissions`.** Phase 1 gates only the *new* RBAC/settings endpoints on permissions; the ~182 existing `@Roles(...)` endpoints are untouched (behavior-preserving). Migrating them via the `RolesCompatGuard` is a dedicated later pass, guarded by the `role-endpoint-matrix.spec.ts` proving access is unchanged before/after. Until then, editing a role's permissions in the UI only affects the new endpoints; legacy endpoints still honor their `@Roles` gates. Best done per-module as Phases 2–5 touch each area (or as one focused pass afterward).
-2. **Management (`top_management`) default grants.** Seeded with everything except `settings:manage` (matches the UAT "same as admin_system except system settings" wording), which means it *can* manage roles/permissions. This is a **seed default**, retunable at runtime via the role page (no deploy). Revisit whether Management should keep `role:*`/`permission:*`; if not, narrow `MANAGEMENT_PERMISSIONS` in `role-seeds.ts`.
+2. **Management (`management`) default grants.** Seeded with everything except `settings:manage` (matches the UAT "same as admin_system except system settings" wording), which means it *can* manage roles/permissions. This is a **seed default**, retunable at runtime via the role page (no deploy). Revisit whether Management should keep `role:*`/`permission:*`; if not, narrow `MANAGEMENT_PERMISSIONS` in `role-seeds.ts`.
 
 ## Alternatives Considered
 1. **Fixed enum + config layer** (scope/marker/curated toggles only, no custom roles). Rejected — client explicitly wants to create arbitrary roles.
@@ -134,8 +134,8 @@ A living test at `apps/be/src/modules/rbac/__tests__/role-endpoint-matrix.spec.t
 
 ## References
 - [ADR-009](./ADR-009-phase2c-role-system-overhaul.md) — original role system (amended here)
-- [ADR-032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) — admin_data pruning disposition (retained; scope widened to kepala_rayon parity here)
-- [ADR-033](./ADR-033-staff-kecamatan-role.md) — "no admin_rayon role" (upheld at schema level)
+- [ADR-032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) — admin_rayon pruning disposition (retained; scope widened to kepala_rayon parity here)
+- [ADR-033](./ADR-033-staff-kecamatan-role.md) — "no admin_rayon role" **superseded**: the code is now `admin_rayon` (renamed from `admin_data`), see the role-rename note above
 - [ADR-016](./ADR-016-redis-websocket-scaling.md) — Redis caching reused for permissions
 - [ADR-045](./ADR-045-four-level-location-hierarchy.md) — `users.region_id` + scope tiers
 - Feature spec: `../../features/access-control/README.md`

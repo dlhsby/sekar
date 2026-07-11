@@ -1202,8 +1202,8 @@ Root
 │
 └─ Main Stack (Authenticated - all 8 roles)
    └─ MainTabs (dynamically configured per role)
-      ├─ Home (Tab) ─── [satgas, linmas, korlap, admin_data, kepala_rayon]
-      ├─ Aktivitas (Tab) ─── [satgas, linmas, korlap, admin_data]
+      ├─ Home (Tab) ─── [satgas, linmas, korlap, admin_rayon, kepala_rayon]
+      ├─ Aktivitas (Tab) ─── [satgas, linmas, korlap, admin_rayon]
       ├─ Tugas (Tab) ─── [satgas, linmas, korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
       ├─ Lembur (Tab) ─── [satgas, linmas]
       ├─ Monitoring (Tab) ─── [korlap, kepala_rayon, top_mgmt, admin_sys, superadmin]
@@ -1226,9 +1226,9 @@ Root
 | satgas | Home | Aktivitas | Tugas | Lembur | Profil |
 | linmas | Home | Aktivitas | Tugas | Lembur | Profil |
 | korlap | Home | Aktivitas | Tugas | Monitoring | Profil |
-| admin_data | Home | Aktivitas | Profil | - | - |
+| admin_rayon | Home | Aktivitas | Profil | - | - |
 | kepala_rayon | Home | Tugas | Monitoring | Profil | - |
-| top_management | Monitoring | Tugas | Profil | - | - |
+| management | Monitoring | Tugas | Profil | - | - |
 | admin_system | Monitoring | Tugas | Profil | - | - |
 | superadmin | Monitoring | Tugas | Profil | - | - |
 
@@ -1267,7 +1267,7 @@ MonitoringMap (MapDashboardScreen)
 |------|-----------------|-------------------|
 | korlap | Own area, zoom 15 | Area fixed to own, no rayon filter |
 | kepala_rayon | Own rayon areas, zoom 13 | Rayon fixed to own, area selectable within rayon |
-| top_management | All 7 rayons, zoom 12 | No constraints |
+| management | All 7 rayons, zoom 12 | No constraints |
 | admin_system | All 7 rayons, zoom 12 | No constraints |
 | superadmin | All 7 rayons, zoom 12 | No constraints |
 

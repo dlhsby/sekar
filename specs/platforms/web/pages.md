@@ -2520,7 +2520,7 @@ The dashboard provides supervisors and administrators with powerful tools to mon
 ### Updated: `/monitoring` Page
 
 **Route:** `/monitoring`
-**Access:** korlap, kepala_rayon, top_management, admin_system, superadmin
+**Access:** korlap, kepala_rayon, management, admin_system, superadmin
 **Layout:** Split view — 65% map (left) + 35% side panel (right) at xl breakpoint; stacked at md/sm
 
 #### Map Panel (65%)
@@ -2597,7 +2597,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 | `/login` | `username` → `identifier` (accepts phone or username) |
 | `/users/[id]` | Profile picture upload, phone number field, multi-area assignment for korlap |
 | `/users/new` | Profile picture upload, phone number field |
-| `/monitoring` | Profile pics in markers, multi-area korlap filter, admin_data access (rayon-scoped) |
+| `/monitoring` | Profile pics in markers, multi-area korlap filter, admin_rayon access (rayon-scoped) |
 | `/overtime` | Show overtime shift data (clock-in/out times, linked shift) |
 | `/tasks/[id]` | Add audit trail / revision history timeline |
 | `/activities/[id]` | Add audit trail section |
@@ -2614,7 +2614,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 
 | Route | New Access (Phase 2E) |
 |-------|----------------------|
-| `/monitoring` | **+admin_data** (rayon-scoped, same as kepala_rayon) |
+| `/monitoring` | **+admin_rayon** (rayon-scoped, same as kepala_rayon) |
 
 #### Page Count (Phase 2E)
 - Total pages: 21 (no new pages, 7 modified)
@@ -2629,15 +2629,15 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 
 | Route | Access | Notes |
 |-------|--------|-------|
-| `/monitoring` (v2 **redesign**) | korlap / kepala_rayon / admin_data / top_management / admin_system / superadmin | Google Maps supercluster layer, incremental WebSocket patches, virtualized worker list, role-based hierarchy toggles, plant-status overlay (ok/due/overdue), area-detail drawer with plant inventory breakdown |
-| `/plants` | admin_data / admin_system / superadmin / top_management | Plant species master + per-area inventory entry |
+| `/monitoring` (v2 **redesign**) | korlap / kepala_rayon / admin_rayon / management / admin_system / superadmin | Google Maps supercluster layer, incremental WebSocket patches, virtualized worker list, role-based hierarchy toggles, plant-status overlay (ok/due/overdue), area-detail drawer with plant inventory breakdown |
+| `/plants` | admin_rayon / admin_system / superadmin / management | Plant species master + per-area inventory entry |
 | `/plants/[areaId]` | same | Bulk upsert of species × count rows for the area |
-| `/pruning-requests` | staff_kecamatan (own) / admin_data (rayon) / admin_system / superadmin / top_management | Queue with status filter; row actions vary by role |
-| `/pruning-requests/[id]` | owner / admin_data (rayon) / management | Detail view with review + convert-to-task actions (admin_data), result view (owner) |
-| `/rayons/[id]/capacity` | admin_data (own rayon) / top_management | Weekly grid editor: `service_capacity` per service_type × ISO week, with booked-vs-capacity bars |
-| `/seeds` | admin_data @ Taman Aktif / top_management | Plant-seed inventory list + balance per seed |
+| `/pruning-requests` | staff_kecamatan (own) / admin_rayon (rayon) / admin_system / superadmin / management | Queue with status filter; row actions vary by role |
+| `/pruning-requests/[id]` | owner / admin_rayon (rayon) / management | Detail view with review + convert-to-task actions (admin_rayon), result view (owner) |
+| `/rayons/[id]/capacity` | admin_rayon (own rayon) / management | Weekly grid editor: `service_capacity` per service_type × ISO week, with booked-vs-capacity bars |
+| `/seeds` | admin_rayon @ Taman Aktif / management | Plant-seed inventory list + balance per seed |
 | `/seeds/[id]` | same | Transaction ledger (purchase / distribution / adjustment), add-transaction form |
-| `/tasks/new` (**enhanced**) | korlap / admin_data / admin_system / superadmin | Dynamic form per `task_type`; pruning variant includes species multi-select with target counts |
+| `/tasks/new` (**enhanced**) | korlap / admin_rayon / admin_system / superadmin | Dynamic form per `task_type`; pruning variant includes species multi-select with target counts |
 
 ### New Components
 
@@ -2662,7 +2662,7 @@ Monitoring page replaces full-refresh-on-filter with WebSocket-driven incrementa
 
 ### Sidebar Role Gating
 
-Sidebar now accounts for 9 roles (8 existing + `staff_kecamatan`). `staff_kecamatan` sees only: Submit Request, My Requests, Profile. `admin_data` gains Pruning Requests queue link (scoped to `users.rayon_id`). `admin_data` at Taman Aktif and `top_management` see Seeds link.
+Sidebar now accounts for 9 roles (8 existing + `staff_kecamatan`). `staff_kecamatan` sees only: Submit Request, My Requests, Profile. `admin_rayon` gains Pruning Requests queue link (scoped to `users.rayon_id`). `admin_rayon` at Taman Aktif and `management` see Seeds link.
 
 ### Page Count (Phase 3 target)
 - Total pages: 27 (+6 vs Phase 2E)

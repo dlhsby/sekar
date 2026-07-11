@@ -693,11 +693,11 @@ if (event.new_status === 'missing') {
 switch (user.role) {
   case 'superadmin':
   case 'admin_system':
-  case 'top_management':
+  case 'management':
     socket.emit('join', { room: 'city' });
     break;
   case 'kepala_rayon':
-  case 'admin_data':
+  case 'admin_rayon':
     socket.emit('join', { room: `rayon:${user.rayon_id}` });
     break;
   case 'korlap':

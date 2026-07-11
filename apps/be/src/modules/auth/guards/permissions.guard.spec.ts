@@ -41,13 +41,13 @@ describe('PermissionsGuard', () => {
   it('allows when the role has all required permissions', async () => {
     withMeta(['user:read', 'user:create']);
     rolePermissions.getRolePermissionKeys.mockResolvedValue(['user:*']);
-    await expect(guard.canActivate(ctxFor({ role: 'admin_data' }))).resolves.toBe(true);
+    await expect(guard.canActivate(ctxFor({ role: 'admin_rayon' }))).resolves.toBe(true);
   });
 
   it('denies when a required permission is missing', async () => {
     withMeta(['settings:manage']);
     rolePermissions.getRolePermissionKeys.mockResolvedValue(['settings:read']);
-    await expect(guard.canActivate(ctxFor({ role: 'top_management' }))).rejects.toBeInstanceOf(
+    await expect(guard.canActivate(ctxFor({ role: 'management' }))).rejects.toBeInstanceOf(
       ForbiddenException,
     );
   });

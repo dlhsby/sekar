@@ -69,8 +69,8 @@ export class SchedulesService {
   /**
    * Enforce the roster edit hierarchy: the `editor` may only edit a row whose
    * worker role is below theirs (see schedule-edit.policy) AND within their
-   * scope — rayon for kepala_rayon/admin_data, assigned areas for korlap.
-   * admin_system/superadmin/top_management act globally. Throws otherwise.
+   * scope — rayon for kepala_rayon/admin_rayon, assigned areas for korlap.
+   * admin_system/superadmin/management act globally. Throws otherwise.
    */
   private async assertCanEdit(editor: User, row: Schedule): Promise<void> {
     const target = row.user ?? (await this.userRepo.findOne({ where: { id: row.user_id } }));
@@ -189,7 +189,7 @@ export class SchedulesService {
    * Returns the number of rows created.
    */
   async generateRoster(date: string, actorId: string | null): Promise<number> {
-    // Top-of-org / oversight roles (top_management, admin_system, superadmin,
+    // Top-of-org / oversight roles (management, admin_system, superadmin,
     // staff_kecamatan) get no roster row.
     const users = (await this.userRepo.find({ where: { is_active: true } })).filter(
       (u) => !isNonRosteredRole(u.role),
@@ -202,8 +202,8 @@ export class SchedulesService {
     const usersToCreate = users.filter((u) => !alreadyRostered.has(u.id));
 
     // Field workers (satgas/linmas/korlap) get their permanent areas; rayon
-    // managers (kepala_rayon/admin_data) get a fixed assignment to their WHOLE
-    // rayon (all its areas) — editable only up the chain (top_management+).
+    // managers (kepala_rayon/admin_rayon) get a fixed assignment to their WHOLE
+    // rayon (all its areas) — editable only up the chain (management+).
     const fieldWorkers = usersToCreate.filter((u) => !isRayonManagerRole(u.role));
     const userAreaMap = await this.userAreasService.getPermanentAreaIdsForUsers(
       fieldWorkers.map((u) => u.id),

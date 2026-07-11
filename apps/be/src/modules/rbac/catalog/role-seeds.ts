@@ -18,7 +18,7 @@ export interface RoleSeed {
   permissions: string[];
 }
 
-// Rayon-scoped base set shared by kepala_rayon and admin_data (equalized per UAT).
+// Rayon-scoped base set shared by kepala_rayon and admin_rayon (equalized per UAT).
 const RAYON_ADMIN_PERMISSIONS: string[] = [
   'monitoring:read',
   'user:read',
@@ -50,12 +50,14 @@ const RAYON_ADMIN_PERMISSIONS: string[] = [
   'pruning-request:convert',
 ];
 
-// Management: same reach as admin_system EXCEPT changing system settings (UAT).
-// Expressed as broad per-resource wildcards; settings limited to read only.
+// Management: broad cross-rayon visibility + data management, but NOT the
+// system-administration surfaces — role/permission editing and system settings
+// belong to admin_system only (UAT). Roles/permissions are read-only here so the
+// management page renders; settings are read-only too.
 const MANAGEMENT_PERMISSIONS: string[] = [
   'user:*',
-  'role:*',
-  'permission:*',
+  'role:read',
+  'permission:read',
   'city:*',
   'rayon:*',
   'region:*',
@@ -91,7 +93,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     permissions: ['*:*'],
   },
   {
-    code: 'top_management',
+    code: 'management',
     name: 'Management',
     description: 'Melihat seluruh data lintas rayon; tidak mengubah pengaturan sistem',
     monitoring_scope: MonitoringScope.CITY,
@@ -109,7 +111,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     permissions: RAYON_ADMIN_PERMISSIONS,
   },
   {
-    code: 'admin_data',
+    code: 'admin_rayon',
     name: 'Admin Rayon',
     description: 'Akses setara Kepala Rayon dalam rayonnya',
     monitoring_scope: MonitoringScope.DISTRICT,

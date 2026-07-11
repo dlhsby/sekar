@@ -63,7 +63,7 @@ Implement overtime as a **flagged shift** reusing existing shift infrastructure:
    - Overtime clock-out requires activity submission (mandatory)
    - Normal clock-out does not require activity (existing behavior)
 
-5. **Clockable roles for overtime** — All roles in `CLOCKABLE_ROLES`: satgas, linmas, korlap, admin_data, kepala_rayon.
+5. **Clockable roles for overtime** — All roles in `CLOCKABLE_ROLES`: satgas, linmas, korlap, admin_rayon, kepala_rayon.
 
 6. **Selfie is optional** for both normal and overtime clock-in/clock-out (feedback item #7).
 

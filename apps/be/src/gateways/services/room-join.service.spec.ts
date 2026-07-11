@@ -31,7 +31,7 @@ describe('RoomJoinService', () => {
       expect(rooms).toContain('user:u1');
     });
 
-    it.each([UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT])(
+    it.each([UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT])(
       'should include the city room for %s',
       async (role) => {
         const rooms = await service.getRoomsForUser('u1', role);
@@ -47,7 +47,7 @@ describe('RoomJoinService', () => {
       expect(userRepository.findOne).not.toHaveBeenCalled();
     });
 
-    it.each([UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA])(
+    it.each([UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON])(
       'should include the rayon room for %s',
       async (role) => {
         userRepository.findOne.mockResolvedValue({ id: 'u1', rayon_id: 'rayon-3', area_id: null });

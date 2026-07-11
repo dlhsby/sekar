@@ -1,7 +1,7 @@
 /**
  * Pruning Requests dashboard list page (Phase 3 — admin disposition)
  *
- * Lets admin / admin_data / kepala_rayon / top_management triage kecamatan
+ * Lets admin / admin_rayon / kepala_rayon / management triage kecamatan
  * pruning requests from the desktop. Full DataTable with toolbar (search, column
  * filters, column toggle, refresh) + row actions (View, Edit, Cancel).
  */

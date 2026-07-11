@@ -1,6 +1,6 @@
 /**
  * Pruning requests — Phase 3 sub-phase 3-9/3-10.
- * Staff kecamatan submits requests for pruning work; admin_data reviews/converts to tasks.
+ * Staff kecamatan submits requests for pruning work; admin_rayon reviews/converts to tasks.
  */
 import type { Rayon, User } from './user.types';
 import type { Task } from './task.types';

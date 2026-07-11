@@ -40,7 +40,7 @@ jest.mock('react-native-safe-area-context', () => {
 });
 
 jest.mock('../../../hooks/useUserRole', () => ({
-  useUserRole: () => 'admin_data',
+  useUserRole: () => 'admin_rayon',
 }));
 
 jest.mock('../../../services/api/pruningRequestsApi');
@@ -223,8 +223,8 @@ function createMockStore(
           id: 'user1',
           name: 'Admin',
           full_name: 'Admin Pusat',
-          username: 'admin_data_pusat_1',
-          role: 'admin_data',
+          username: 'admin_rayon_pusat_1',
+          role: 'admin_rayon',
           rayon_id: 'rayon-pusat',
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial auth fixture

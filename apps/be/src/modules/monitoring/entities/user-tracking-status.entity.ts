@@ -110,7 +110,7 @@ export class UserTrackingStatus {
   @JoinColumn({ name: 'area_id' })
   area: Area;
 
-  @ApiProperty({ description: 'Rayon ID for admin_data/kepala_rayon tracking', nullable: true })
+  @ApiProperty({ description: 'Rayon ID for admin_rayon/kepala_rayon tracking', nullable: true })
   @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
   rayon_id: string | null;
 

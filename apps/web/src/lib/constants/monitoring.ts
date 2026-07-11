@@ -58,9 +58,9 @@ export const ROLE_MARKER_ICONS: Record<string, string> = {
   satgas: 'user',
   linmas: 'shield',
   korlap: 'star',
-  admin_data: 'database',
+  admin_rayon: 'database',
   kepala_rayon: 'crown',
-  top_management: 'building',
+  management: 'building',
   admin_system: 'settings',
   superadmin: 'key',
 };
@@ -144,9 +144,9 @@ export const ROLE_ABBREVIATIONS: Record<string, string> = {
   linmas: 'LMS',
   korlap: 'KLP',
   kepala_rayon: 'KR',
-  top_management: 'TM',
+  management: 'TM',
   admin_system: 'ADM',
-  admin_data: 'AD',
+  admin_rayon: 'AD',
   superadmin: 'SA',
 };
 

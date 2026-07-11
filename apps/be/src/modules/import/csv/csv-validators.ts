@@ -40,9 +40,9 @@ const IMPORTABLE_ROLES: UserRole[] = [
   UserRole.SATGAS,
   UserRole.LINMAS,
   UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
+  UserRole.ADMIN_RAYON,
   UserRole.KEPALA_RAYON,
-  UserRole.TOP_MANAGEMENT,
+  UserRole.MANAGEMENT,
   UserRole.ADMIN_SYSTEM,
 ];
 
@@ -51,7 +51,7 @@ const PHONE_REQUIRED_ROLES: UserRole[] = [
   UserRole.SATGAS,
   UserRole.LINMAS,
   UserRole.KORLAP,
-  UserRole.ADMIN_DATA,
+  UserRole.ADMIN_RAYON,
   UserRole.KEPALA_RAYON,
 ];
 

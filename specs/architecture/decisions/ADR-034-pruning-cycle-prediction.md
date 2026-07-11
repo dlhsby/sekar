@@ -54,7 +54,7 @@ Activity submission (ADR-031) also triggers an inline recalc for the specific `a
 
 ### Manual override
 
-- `admin_data` (rayon-scoped per ADR-032) or `top_management` can `PATCH /api/v1/areas/:id/plants/:plant_id` to set `next_due_at` directly (e.g., "this area was pruned outside the app last week").
+- `admin_rayon` (rayon-scoped per ADR-032) or `management` can `PATCH /api/v1/areas/:id/plants/:plant_id` to set `next_due_at` directly (e.g., "this area was pruned outside the app last week").
 - Overrides are tagged (`area_plants.override_at`, `override_by`) so the cron knows not to recompute. A later activity submission clears the override.
 
 ### Future refinement (not built)

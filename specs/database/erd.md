@@ -301,8 +301,8 @@ graph TD
 |------|-----------|-------|-------------|
 | Superadmin | `superadmin` | System-wide | Full system access |
 | Admin System | `admin_system` | System-wide | System administration |
-| Admin Data | `admin_data` | System-wide | Data management |
-| Top Management | `top_management` | City-wide | City-wide dashboards |
+| Admin Data | `admin_rayon` | System-wide | Data management |
+| Top Management | `management` | City-wide | City-wide dashboards |
 | Kepala Rayon | `kepala_rayon` | 1 Rayon | Rayon management (via rayon_id) |
 | Korlap | `korlap` | 1 Area | Area coordination (via area_id) |
 | Satgas | `satgas` | Assigned area | Field worker |
@@ -480,8 +480,8 @@ erDiagram
 
 ```sql
 -- users.role (Phase 2C: 8 roles)
-CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_data',
-                'kepala_rayon', 'top_management', 'admin_system', 'superadmin'))
+CHECK (role IN ('satgas', 'linmas', 'korlap', 'admin_rayon',
+                'kepala_rayon', 'management', 'admin_system', 'superadmin'))
 
 -- tasks.status (Phase 2C: 4 statuses, simplified from 6)
 CHECK (status IN ('pending', 'assigned', 'in_progress', 'completed'))
@@ -514,7 +514,7 @@ CHECK (battery_level BETWEEN 0 AND 100)
 
 ```mermaid
 sequenceDiagram
-    participant U as User (satgas/linmas/korlap/admin_data/kepala_rayon)
+    participant U as User (satgas/linmas/korlap/admin_rayon/kepala_rayon)
     participant S as Shifts Service
     participant SC as Schedules
     participant A as Areas
@@ -644,20 +644,20 @@ erDiagram
 | USERS | `phone_number` VARCHAR(20) UNIQUE NULL, `profile_picture_url` TEXT NULL | New `user_areas` relation |
 | SHIFTS | `is_overtime` BOOLEAN DEFAULT false | Links to overtimes via FK |
 | OVERTIMES | `shift_id` UUID FK→shifts NULL | Status enum adds 'in_progress' |
-| USER_TRACKING_STATUS | `rayon_id` UUID FK→rayons NULL | Rayon-level tracking for admin_data/kepala_rayon |
+| USER_TRACKING_STATUS | `rayon_id` UUID FK→rayons NULL | Rayon-level tracking for admin_rayon/kepala_rayon |
 
 ### Updated Role Assignments (Phase 2E)
 
 ```mermaid
 erDiagram
-    USERS ||--o| RAYONS : "kepala_rayon/admin_data manages"
+    USERS ||--o| RAYONS : "kepala_rayon/admin_rayon manages"
     USERS ||--o{ USER_AREAS : "korlap assigned (multi-area)"
     USERS ||--o| SCHEDULES : "satgas/linmas scheduled"
 ```
 
 **Assignment Rules (Phase 2E):**
 - **kepala_rayon** → assigned via `users.rayon_id`
-- **admin_data** → assigned via `users.rayon_id` (same as kepala_rayon)
+- **admin_rayon** → assigned via `users.rayon_id` (same as kepala_rayon)
 - **korlap** → assigned via `user_areas` (permanent, multiple areas in 1 rayon); `users.area_id` kept for backward compat
 - **satgas/linmas** → permanent via `schedules` + dynamic `user_areas` (task_based) from active tasks
 
@@ -717,7 +717,7 @@ erDiagram
     ACTIVITIES o|--o| PRUNING_REQUESTS : "fulfills"
 
     USERS ||--o{ PRUNING_REQUESTS : "submitted_by (staff_kecamatan)"
-    USERS ||--o{ PRUNING_REQUESTS : "reviewed_by (admin_data)"
+    USERS ||--o{ PRUNING_REQUESTS : "reviewed_by (admin_rayon)"
     RAYONS ||--o{ PRUNING_REQUESTS : "assigned_to"
     TASKS o|--o| PRUNING_REQUESTS : "converted_from"
 
@@ -783,7 +783,7 @@ erDiagram
         text notes "NULL"
         text status "submitted..cancelled"
         uuid rayon_id FK "NULL, SET NULL"
-        uuid reviewed_by FK "NULL, SET NULL, admin_data"
+        uuid reviewed_by FK "NULL, SET NULL, admin_rayon"
         timestamptz reviewed_at "NULL"
         text review_notes "NULL"
         uuid converted_task_id FK "NULL, SET NULL"
@@ -831,7 +831,7 @@ erDiagram
 |--------|-------------|---------|
 | ACTIVITIES | `custom_fields` JSONB, `photo_before_url` TEXT, `photo_after_url` TEXT, `reference_code` TEXT UNIQUE, `pruning_request_id` UUID FK | New relations to `activity_plant_items` and `pruning_requests`; supports CSV backfill via `reference_code` |
 | TASKS | `task_type` TEXT, `custom_fields` JSONB, `parent_task_id` UUID FK→tasks, `target_plant_count` INT, `completed_plant_count` INT | Self-referential parent/child linkage for resume-tomorrow; typed task registry (ADR-031) |
-| USERS.role | Enum adds `staff_kecamatan` | ADR-033; `admin_data` unchanged at schema level (capability extended via policy per ADR-032) |
+| USERS.role | Enum adds `staff_kecamatan` | ADR-033; `admin_rayon` unchanged at schema level (capability extended via policy per ADR-032) |
 | LOCATION_LOGS | (indexes only) | `(user_id, logged_at DESC)`, `(shift_id, logged_at)`, `(user_id, shift_id, logged_at)` |
 | USER_TRACKING_STATUS | (indexes only) | `(area_id, updated_at DESC)`, `(is_within_area, area_id)` |
 

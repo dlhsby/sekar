@@ -64,7 +64,7 @@ export class PruningRequest {
   expectedDate: Date | null;
 
   // ADR-035 amendment 2026-05-01: kecamatan submitter picks an ISO week; the
-  // concrete `expectedDate` is set later by admin_data at assign-to-task or
+  // concrete `expectedDate` is set later by admin_rayon at assign-to-task or
   // by the convert auto-pick.
   @Column({ type: 'int', nullable: true, name: 'expected_year' })
   expectedYear: number | null;
@@ -72,7 +72,7 @@ export class PruningRequest {
   @Column({ type: 'int', nullable: true, name: 'expected_iso_week' })
   expectedIsoWeek: number | null;
 
-  // May 9, 2026 — admin-confirmed work day. Set by admin_data via
+  // May 9, 2026 — admin-confirmed work day. Set by admin_rayon via
   // `/assign-to-task` (auto-picked from the booked week) or via the
   // "Atur Jadwal" reschedule endpoint. This replaces the previous overload
   // of `expected_date`, which stays NULL going forward (kept on the

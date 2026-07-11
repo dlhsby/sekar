@@ -24,7 +24,7 @@ export class AuditController {
   }
 
   @Get(':entityType/:entityId')
-  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA)
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
   @ApiOperation({ summary: 'Get audit trail for a specific entity' })
   @ApiParam({ name: 'entityType', description: 'Entity type (task, activity, overtime, shift)' })
   @ApiParam({ name: 'entityId', description: 'Entity ID (UUID)' })

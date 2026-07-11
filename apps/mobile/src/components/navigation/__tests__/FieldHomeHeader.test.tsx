@@ -196,7 +196,7 @@ describe('FieldHomeHeader', () => {
     });
 
     it('should display Admin Data role label', () => {
-      const store = createMockStore('admin_data', 'Rina Admin');
+      const store = createMockStore('admin_rayon', 'Rina Admin');
       const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
@@ -218,7 +218,7 @@ describe('FieldHomeHeader', () => {
     });
 
     it('should display Top Management role label', () => {
-      const store = createMockStore('top_management', 'Bu Kepala');
+      const store = createMockStore('management', 'Bu Kepala');
       const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />

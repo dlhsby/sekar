@@ -122,7 +122,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         view: { scope: 'area', id: currentUser.area_id, rayonId: currentUser.rayon_id ?? null, name: null },
         floor: 'area',
       };
-    } else if ((role === 'kepala_rayon' || role === 'admin_data') && currentUser.rayon_id) {
+    } else if ((role === 'kepala_rayon' || role === 'admin_rayon') && currentUser.rayon_id) {
       payload = {
         view: { scope: 'rayon', id: currentUser.rayon_id, rayonId: currentUser.rayon_id, name: null },
         floor: 'rayon',

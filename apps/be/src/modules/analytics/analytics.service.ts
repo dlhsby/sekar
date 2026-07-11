@@ -399,21 +399,21 @@ export class AnalyticsService {
   }
 
   private applyWorkerScope(qb: any, user: User): void {
-    const adminRoles = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.TOP_MANAGEMENT];
+    const adminRoles = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.MANAGEMENT];
 
     if (!adminRoles.includes(user.role)) {
       if (user.role === UserRole.KEPALA_RAYON) {
         qb.andWhere('u.rayon_id = :rayonId', { rayonId: user.rayon_id });
       } else if (user.role === UserRole.KORLAP) {
         qb.andWhere('u.area_id = :areaId', { areaId: user.area_id });
-      } else if (user.role === UserRole.ADMIN_DATA) {
+      } else if (user.role === UserRole.ADMIN_RAYON) {
         qb.andWhere('u.area_id = :areaId', { areaId: user.area_id });
       }
     }
   }
 
   private applyAreaScope(qb: any, user: User): void {
-    const adminRoles = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.TOP_MANAGEMENT];
+    const adminRoles = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.MANAGEMENT];
 
     if (!adminRoles.includes(user.role)) {
       if (user.role === UserRole.KEPALA_RAYON) {
@@ -434,21 +434,21 @@ export class AnalyticsService {
 
   /**
    * Enforce per-role area scoping for area analytics:
-   * - top_management / admin_system / superadmin → all areas (global)
-   * - kepala_rayon / admin_data → their own rayon (admin_data is rayon-scoped, ADR-033)
+   * - management / admin_system / superadmin → all areas (global)
+   * - kepala_rayon / admin_rayon → their own rayon (admin_rayon is rayon-scoped, ADR-033)
    * - korlap → their assigned areas (user_areas), not a single area_id
    */
   private async enforceAreaAccess(user: User, area: Area): Promise<void> {
     const { role } = user;
     if (
-      role === UserRole.TOP_MANAGEMENT ||
+      role === UserRole.MANAGEMENT ||
       role === UserRole.ADMIN_SYSTEM ||
       role === UserRole.SUPERADMIN
     ) {
       return;
     }
 
-    if (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_DATA) {
+    if (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_RAYON) {
       if (area.rayon_id !== user.rayon_id) {
         throw new ForbiddenException('Cannot access areas outside your rayon');
       }
