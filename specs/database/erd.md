@@ -289,8 +289,8 @@ erDiagram
 ```mermaid
 graph TD
     SA[Superadmin] --> AS[Admin System]
-    AS --> AD[Admin Data]
-    SA --> TM[Top Management]
+    AS --> AD[Admin Rayon]
+    SA --> TM[Management]
     TM --> KR[Kepala Rayon]
     KR --> KO[Korlap]
     KO --> ST[Satgas]
@@ -301,8 +301,8 @@ graph TD
 |------|-----------|-------|-------------|
 | Superadmin | `superadmin` | System-wide | Full system access |
 | Admin System | `admin_system` | System-wide | System administration |
-| Admin Data | `admin_rayon` | System-wide | Data management |
-| Top Management | `management` | City-wide | City-wide dashboards |
+| Admin Rayon | `admin_rayon` | System-wide | Data management |
+| Management | `management` | City-wide | City-wide dashboards |
 | Kepala Rayon | `kepala_rayon` | 1 Rayon | Rayon management (via rayon_id) |
 | Korlap | `korlap` | 1 Area | Area coordination (via area_id) |
 | Satgas | `satgas` | Assigned area | Field worker |
