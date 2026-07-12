@@ -11,6 +11,9 @@ import { Rayon } from '../rayons/entities/rayon.entity';
 import { Location } from '../locations/entities/location.entity';
 import { CreateRegionDto } from './dto/create-region.dto';
 import { UpdateRegionDto } from './dto/update-region.dto';
+import { User, UserRole } from '../users/entities/user.entity';
+import { MONITORING_CITY } from '../users/constants/role-groups';
+import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-validator.util';
 
 /**
  * Regions (Kawasan) master data (ADR-045). Region delete nulls child areas'
@@ -28,9 +31,16 @@ export class RegionsService {
     private readonly locationRepo: Repository<Location>,
   ) {}
 
-  findAll(rayonId?: string): Promise<Region[]> {
+  /** List regions; non-city-scope callers (kepala_rayon/admin_rayon/korlap)
+   * only ever see their own rayon's regions — mirroring the locations list. */
+  findAll(requester: User, rayonId?: string): Promise<Region[]> {
+    let effectiveRayonId = rayonId;
+    if (!MONITORING_CITY.includes(requester.role as UserRole)) {
+      if (!requester.rayon_id) return Promise.resolve([]);
+      effectiveRayonId = requester.rayon_id;
+    }
     return this.regionRepo.find({
-      where: rayonId ? { rayon_id: rayonId } : {},
+      where: effectiveRayonId ? { rayon_id: effectiveRayonId } : {},
       order: { name: 'ASC' },
     });
   }
@@ -52,9 +62,27 @@ export class RegionsService {
     const region = await this.findOne(id);
     if (dto.rayon_id && dto.rayon_id !== region.rayon_id) {
       await this.assertRayonExists(dto.rayon_id);
+      // Moving a region across rayons would break the `region.rayon_id ==
+      // location.rayon_id` invariant for its children — require detaching them
+      // first (locations can't follow: their rayon assignment is master data).
+      const children = await this.locationRepo.count({ where: { region_id: id } });
+      if (children > 0) {
+        throw new BadRequestException(
+          'Region has assigned areas; detach or reassign them before moving the region to another rayon',
+        );
+      }
     }
     if (dto.name && dto.name !== region.name) {
       await this.assertNameFree(dto.rayon_id ?? region.rayon_id, dto.name, id);
+    }
+    // Regions are drawn fresh in the editor as simple Polygons; validate them
+    // like location boundaries (MultiPolygon isn't modelled by the validator).
+    const boundary = dto.boundary_polygon as GeoJsonPolygon | null | undefined;
+    if (boundary != null && boundary.type === 'Polygon') {
+      const errors = GeoJsonValidator.validatePolygon(boundary);
+      if (errors.length > 0) {
+        throw new BadRequestException(`Invalid polygon: ${errors.join('; ')}`);
+      }
     }
     Object.assign(region, dto);
     return this.regionRepo.save(region);

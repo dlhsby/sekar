@@ -25,6 +25,7 @@ describe('RegionsService', () => {
     };
     locationRepo = {
       find: jest.fn(),
+      count: jest.fn().mockResolvedValue(0),
       update: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(() => qb),
       _qb: qb,
@@ -38,6 +39,47 @@ describe('RegionsService', () => {
       await expect(service.create({ name: 'K', rayon_id: 'nope' } as any)).rejects.toBeInstanceOf(
         BadRequestException,
       );
+    });
+  });
+
+  describe('findAll scoping', () => {
+    it('forces district-scoped callers onto their own rayon', async () => {
+      await service.findAll({ role: 'kepala_rayon', rayon_id: 'rayon-mine' } as any, 'rayon-other');
+      expect(regionRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { rayon_id: 'rayon-mine' } }),
+      );
+    });
+
+    it('returns nothing for a district-scoped caller without a rayon', async () => {
+      const result = await service.findAll({ role: 'korlap', rayon_id: null } as any);
+      expect(result).toEqual([]);
+      expect(regionRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('lets city-scope callers filter any rayon', async () => {
+      await service.findAll({ role: 'admin_system', rayon_id: null } as any, 'rayon-2');
+      expect(regionRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { rayon_id: 'rayon-2' } }),
+      );
+    });
+  });
+
+  describe('update', () => {
+    it('blocks moving a region to another rayon while it has assigned areas', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1', name: 'K' });
+      locationRepo.count.mockResolvedValue(3);
+      await expect(service.update('reg-1', { rayon_id: 'rayon-2' } as any)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('rejects a structurally invalid boundary polygon', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1', name: 'K' });
+      await expect(
+        service.update('reg-1', {
+          boundary_polygon: { type: 'Polygon', coordinates: [[]] },
+        } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 

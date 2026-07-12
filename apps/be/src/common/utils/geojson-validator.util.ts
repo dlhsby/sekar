@@ -6,7 +6,7 @@
  * Surabaya bounding box enforced for all coordinates.
  */
 
-interface GeoJsonPolygon {
+export interface GeoJsonPolygon {
   type: string;
   coordinates: number[][][];
 }

@@ -21,6 +21,8 @@ import { AssignAreasDto } from './dto/assign-areas.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { User } from '../users/entities/user.entity';
 
 /**
  * Regions (Kawasan) master data (ADR-045). Gated by the permission model
@@ -38,8 +40,8 @@ export class RegionsController {
   @ApiOperation({ summary: 'List regions (optionally filtered by rayon)' })
   @ApiQuery({ name: 'rayon_id', required: false })
   @ApiResponse({ status: 200, type: [Region] })
-  findAll(@Query('rayon_id') rayonId?: string): Promise<Region[]> {
-    return this.regionsService.findAll(rayonId);
+  findAll(@GetUser() user: User, @Query('rayon_id') rayonId?: string): Promise<Region[]> {
+    return this.regionsService.findAll(user, rayonId);
   }
 
   @Get(':id')
