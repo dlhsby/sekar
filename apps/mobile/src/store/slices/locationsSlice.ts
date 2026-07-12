@@ -8,7 +8,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { Area } from '../../types/models.types';
-import { getAreas } from '../../services/api/areasApi';
+import { getAreas } from '../../services/api/locationsApi';
 import i18n from '../../i18n/config';
 
 interface AreasState {
@@ -36,7 +36,7 @@ export const fetchAreas = createAsyncThunk<Area[], void, { rejectValue: string }
   },
 );
 
-const areasSlice = createSlice({
+const locationsSlice = createSlice({
   name: 'areas',
   initialState,
   reducers: {
@@ -62,5 +62,5 @@ const areasSlice = createSlice({
   },
 });
 
-export const { clearAreasError } = areasSlice.actions;
-export default areasSlice.reducer;
+export const { clearAreasError } = locationsSlice.actions;
+export default locationsSlice.reducer;

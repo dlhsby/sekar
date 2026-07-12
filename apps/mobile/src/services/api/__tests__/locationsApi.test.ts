@@ -2,7 +2,7 @@
  * Areas API Service Tests
  */
 
-import * as areasApi from '../areasApi';
+import * as locationsApi from '../locationsApi';
 import * as apiClient from '../apiClient';
 
 // Mock the API client
@@ -15,7 +15,7 @@ jest.mock('../apiClient', () => ({
 
 const mockGet = apiClient.get as jest.MockedFunction<typeof apiClient.get>;
 
-describe('areasApi', () => {
+describe('locationsApi', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -40,7 +40,7 @@ describe('areasApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await areasApi.getAreas();
+      const result = await locationsApi.getAreas();
 
       expect(mockGet).toHaveBeenCalledWith('/areas', undefined);
       expect(result).toEqual(mockResponse);
@@ -65,7 +65,7 @@ describe('areasApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await areasApi.getAreas('RTH');
+      const result = await locationsApi.getAreas('RTH');
 
       expect(mockGet).toHaveBeenCalledWith('/areas', { area_type: 'RTH' });
       expect(result).toEqual(mockResponse);
@@ -75,7 +75,7 @@ describe('areasApi', () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      await areasApi.getAreas();
+      await locationsApi.getAreas();
 
       expect(mockGet).toHaveBeenCalledWith('/areas', undefined);
     });
@@ -84,7 +84,7 @@ describe('areasApi', () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      await areasApi.getAreas('TAMAN');
+      await locationsApi.getAreas('TAMAN');
 
       expect(mockGet).toHaveBeenCalledWith('/areas', { area_type: 'TAMAN' });
     });
@@ -93,7 +93,7 @@ describe('areasApi', () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await areasApi.getAreas();
+      const result = await locationsApi.getAreas();
 
       expect(result).toEqual({ data: [] });
     });
@@ -102,7 +102,7 @@ describe('areasApi', () => {
       const error = new Error('Network error');
       mockGet.mockRejectedValue(error);
 
-      await expect(areasApi.getAreas()).rejects.toThrow('Network error');
+      await expect(locationsApi.getAreas()).rejects.toThrow('Network error');
     });
   });
 
@@ -125,7 +125,7 @@ describe('areasApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await areasApi.getAreaById(areaId);
+      const result = await locationsApi.getAreaById(areaId);
 
       expect(mockGet).toHaveBeenCalledWith(`/areas/${areaId}`);
       expect(result).toEqual(mockResponse);
@@ -136,7 +136,7 @@ describe('areasApi', () => {
       const mockResponse = { data: { id: areaId, name: 'Test Area' } };
       mockGet.mockResolvedValue(mockResponse);
 
-      await areasApi.getAreaById(areaId);
+      await locationsApi.getAreaById(areaId);
 
       expect(mockGet).toHaveBeenCalledWith('/areas/area-xyz-789');
     });
@@ -145,7 +145,7 @@ describe('areasApi', () => {
       const error = new Error('Not found');
       mockGet.mockRejectedValue(error);
 
-      await expect(areasApi.getAreaById('nonexistent')).rejects.toThrow('Not found');
+      await expect(locationsApi.getAreaById('nonexistent')).rejects.toThrow('Not found');
     });
 
     it('returns single area data', async () => {
@@ -157,7 +157,7 @@ describe('areasApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await areasApi.getAreaById('area-1');
+      const result = await locationsApi.getAreaById('area-1');
 
       expect(result.data).toEqual(mockResponse.data);
     });
