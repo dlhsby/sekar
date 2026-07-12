@@ -43,8 +43,8 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
        COALESCE(
          u.location_id,
          (SELECT ul.location_id FROM user_locations ul
-          WHERE ul.user_id = u.id AND ul.deleted_at IS NULL
-          ORDER BY ul.created_at ASC LIMIT 1)
+          WHERE ul.user_id = u.id AND ul.assignment_type = 'permanent'
+          ORDER BY ul.assigned_at ASC, ul.location_id ASC LIMIT 1)
        ),
        NULL,
        false,
@@ -67,8 +67,8 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
        AND COALESCE(
          u.location_id,
          (SELECT ul.location_id FROM user_locations ul
-          WHERE ul.user_id = u.id AND ul.deleted_at IS NULL
-          ORDER BY ul.created_at ASC LIMIT 1)
+          WHERE ul.user_id = u.id AND ul.assignment_type = 'permanent'
+          ORDER BY ul.assigned_at ASC, ul.location_id ASC LIMIT 1)
        ) IS NOT NULL
        AND NOT EXISTS (
          SELECT 1 FROM schedule_events se
@@ -86,21 +86,20 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
   // (mimics ScheduleMaterializerService.materializeEvent logic)
   const materializeResult = await ctx.qr.query(
     `WITH event_members AS (
-       -- Resolve members: individual events use user_id, team events use pic + invited
-       SELECT se.id, u.id AS user_id
+       -- Resolve members: individual events use user_id; team events use the
+       -- PIC + invited members. UNION dedups a PIC who is also invited.
+       SELECT se.id AS schedule_event_id, se.user_id
        FROM schedule_events se
-       CROSS JOIN LATERAL (
-         CASE
-           WHEN se.is_team = false THEN
-             SELECT se.user_id
-           ELSE
-             SELECT se.pic_user_id
-             UNION ALL
-             SELECT sem.user_id FROM schedule_event_members sem WHERE sem.schedule_event_id = se.id
-         END AS user_id
-       ) u(id)
-       WHERE se.is_active = true AND se.deleted_at IS NULL
-       GROUP BY se.id, u.id
+       WHERE se.is_active = true AND se.deleted_at IS NULL AND se.is_team = false
+       UNION
+       SELECT se.id, se.pic_user_id
+       FROM schedule_events se
+       WHERE se.is_active = true AND se.deleted_at IS NULL AND se.is_team = true
+       UNION
+       SELECT sem.schedule_event_id, sem.user_id
+       FROM schedule_event_members sem
+       JOIN schedule_events se ON se.id = sem.schedule_event_id
+       WHERE se.is_active = true AND se.deleted_at IS NULL AND se.is_team = true
      ),
      occurrence_inserts AS (
        INSERT INTO schedules

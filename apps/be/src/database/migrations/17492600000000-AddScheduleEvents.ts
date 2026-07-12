@@ -25,15 +25,6 @@ export class AddScheduleEvents17492600000000 implements MigrationInterface {
     return rows?.length > 0;
   }
 
-  private async indexExists(qr: QueryRunner, indexName: string): Promise<boolean> {
-    const rows = await qr.query(
-      `SELECT 1 FROM information_schema.tables
-       WHERE table_schema = 'public' AND table_name = $1`,
-      [indexName],
-    );
-    return rows?.length > 0;
-  }
-
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Create schedule_events table if not exists
     if (!(await this.tableExists(queryRunner, 'schedule_events'))) {
@@ -79,58 +70,21 @@ export class AddScheduleEvents17492600000000 implements MigrationInterface {
       `);
     }
 
-    // Create indexes on schedule_events
-    if (
-      !(await queryRunner
-        .query(
-          `SELECT 1 FROM information_schema.statistics
-       WHERE table_schema = 'public' AND table_name = 'schedule_events' AND column_name = 'shift_definition_id'`,
-        )
-        .then((r) => r?.length > 0))
-    ) {
-      await queryRunner.query(
-        `CREATE INDEX IF NOT EXISTS IDX_schedule_events_shift_definition ON schedule_events(shift_definition_id)`,
-      );
-    }
-
-    if (
-      !(await queryRunner
-        .query(
-          `SELECT 1 FROM information_schema.statistics
-       WHERE table_schema = 'public' AND table_name = 'schedule_events' AND column_name = 'user_id'`,
-        )
-        .then((r) => r?.length > 0))
-    ) {
-      await queryRunner.query(
-        `CREATE INDEX IF NOT EXISTS IDX_schedule_events_user ON schedule_events(user_id)`,
-      );
-    }
-
-    if (
-      !(await queryRunner
-        .query(
-          `SELECT 1 FROM information_schema.statistics
-       WHERE table_schema = 'public' AND table_name = 'schedule_events' AND column_name = 'team_id'`,
-        )
-        .then((r) => r?.length > 0))
-    ) {
-      await queryRunner.query(
-        `CREATE INDEX IF NOT EXISTS IDX_schedule_events_team ON schedule_events(team_id)`,
-      );
-    }
-
-    if (
-      !(await queryRunner
-        .query(
-          `SELECT 1 FROM information_schema.statistics
-       WHERE table_schema = 'public' AND table_name = 'schedule_events' AND column_name = 'start_date'`,
-        )
-        .then((r) => r?.length > 0))
-    ) {
-      await queryRunner.query(
-        `CREATE INDEX IF NOT EXISTS IDX_schedule_events_start_date ON schedule_events(start_date)`,
-      );
-    }
+    // Create indexes on schedule_events (IF NOT EXISTS makes these idempotent;
+    // note: information_schema has no index view in Postgres — never query
+    // information_schema.statistics, that's MySQL-only).
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_schedule_events_shift_definition" ON schedule_events(shift_definition_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_schedule_events_user" ON schedule_events(user_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_schedule_events_team" ON schedule_events(team_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS "IDX_schedule_events_start_date" ON schedule_events(start_date)`,
+    );
 
     // Create schedule_event_members table if not exists
     if (!(await this.tableExists(queryRunner, 'schedule_event_members'))) {
@@ -172,47 +126,32 @@ export class AddScheduleEvents17492600000000 implements MigrationInterface {
 
     // Add index for schedule_event_id
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS IDX_schedules_schedule_event ON schedules(schedule_event_id)`,
+      `CREATE INDEX IF NOT EXISTS "IDX_schedules_schedule_event" ON schedules(schedule_event_id)`,
     );
 
-    // Replace roster uniqueness constraint: drop old, add new
-    // The old constraint is UQ_schedules_user_date — drop it if it exists
-    try {
-      await queryRunner.query(`ALTER TABLE schedules DROP CONSTRAINT UQ_schedules_user_date`);
-    } catch {
-      // Already dropped or doesn't exist
-    }
-
-    // Add new unique constraint that includes shift_definition_id
-    try {
-      await queryRunner.query(
-        `CREATE UNIQUE INDEX UQ_schedules_user_date_shift
-         ON schedules(user_id, schedule_date, shift_definition_id)
-         WHERE deleted_at IS NULL`,
-      );
-    } catch {
-      // Already exists
-    }
+    // Replace roster uniqueness: the old one-row-per-(user,day) rule was a
+    // PARTIAL UNIQUE INDEX named "UQ_schedules_user_date" (mixed case — must be
+    // quoted; it is NOT a table constraint, so DROP CONSTRAINT would never
+    // match). The new rule allows multiple non-overlapping shifts per day;
+    // true time overlaps are enforced by ScheduleOverlapService.
+    await queryRunner.query(`DROP INDEX IF EXISTS "UQ_schedules_user_date"`);
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "UQ_schedules_user_date_shift"
+       ON schedules(user_id, schedule_date, shift_definition_id)
+       WHERE deleted_at IS NULL`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Drop new index
-    try {
-      await queryRunner.query(`DROP INDEX IF EXISTS UQ_schedules_user_date_shift`);
-    } catch {
-      // Already gone
-    }
+    await queryRunner.query(`DROP INDEX IF EXISTS "UQ_schedules_user_date_shift"`);
 
-    // Recreate old unique index
-    try {
-      await queryRunner.query(
-        `CREATE UNIQUE INDEX UQ_schedules_user_date
-         ON schedules(user_id, schedule_date)
-         WHERE deleted_at IS NULL`,
-      );
-    } catch {
-      // Already exists
-    }
+    // Recreate the old unique index. NOTE: this fails if multi-shift days were
+    // created in the meantime — expected; resolve the duplicate rows first.
+    await queryRunner.query(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "UQ_schedules_user_date"
+       ON schedules(user_id, schedule_date)
+       WHERE deleted_at IS NULL`,
+    );
 
     // Drop columns from schedules
     if (await this.columnExists(queryRunner, 'schedules', 'is_detached')) {
@@ -231,12 +170,7 @@ export class AddScheduleEvents17492600000000 implements MigrationInterface {
       await queryRunner.query(`ALTER TABLE schedules DROP COLUMN schedule_event_id`);
     }
 
-    // Drop index on schedule_event_id if exists
-    try {
-      await queryRunner.query(`DROP INDEX IF EXISTS IDX_schedules_schedule_event`);
-    } catch {
-      // Already gone
-    }
+    await queryRunner.query(`DROP INDEX IF EXISTS "IDX_schedules_schedule_event"`);
 
     // Drop schedule_event_members table
     if (await this.tableExists(queryRunner, 'schedule_event_members')) {

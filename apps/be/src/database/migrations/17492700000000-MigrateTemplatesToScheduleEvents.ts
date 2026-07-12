@@ -11,10 +11,11 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * can add more locations via the calendar later.
  *
  * IDEMPOTENT: checks NOT EXISTS before inserting, so retrying this migration
- * is safe. Skips users with no location.
+ * is safe. Skips users with no location — they simply stop being auto-rostered
+ * until someone schedules them in the calendar (accepted Option-B trade-off).
  *
- * Down: best-effort delete of seed rows (identified by is_team=false,
- * recurrence_type='daily', title IS NULL, deleted_at IS NULL).
+ * Down: best-effort delete of migrated rows, identified by the marker note
+ * ('Migrated from standing template') + is_team=false + recurrence_type='daily'.
  */
 export class MigrateTemplatesToScheduleEvents17492700000000 implements MigrationInterface {
   name = 'MigrateTemplatesToScheduleEvents17492700000000';
@@ -58,9 +59,11 @@ export class MigrateTemplatesToScheduleEvents17492700000000 implements Migration
         'static',
         COALESCE(
           u.location_id,
+          -- user_locations has NO deleted_at column; permanent assignments only,
+          -- earliest first for determinism.
           (SELECT ul.location_id FROM user_locations ul
-           WHERE ul.user_id = u.id AND ul.deleted_at IS NULL
-           ORDER BY ul.created_at ASC LIMIT 1)
+           WHERE ul.user_id = u.id AND ul.assignment_type = 'permanent'
+           ORDER BY ul.assigned_at ASC, ul.location_id ASC LIMIT 1)
         ),
         NULL,
         false,
@@ -85,8 +88,8 @@ export class MigrateTemplatesToScheduleEvents17492700000000 implements Migration
         AND COALESCE(
           u.location_id,
           (SELECT ul.location_id FROM user_locations ul
-           WHERE ul.user_id = u.id AND ul.deleted_at IS NULL
-           ORDER BY ul.created_at ASC LIMIT 1)
+           WHERE ul.user_id = u.id AND ul.assignment_type = 'permanent'
+           ORDER BY ul.assigned_at ASC, ul.location_id ASC LIMIT 1)
         ) IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM schedule_events se
@@ -96,14 +99,14 @@ export class MigrateTemplatesToScheduleEvents17492700000000 implements Migration
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Best-effort delete of migrated rows: is_team=false, recurrence_type='daily',
-    // title='Migrated from standing template', deleted_at IS NULL.
+    // Best-effort delete of migrated rows — the marker lives in NOTES (title is
+    // NULL on migrated rows).
     await queryRunner.query(`
       DELETE FROM schedule_events
       WHERE
         is_team = false
         AND recurrence_type = 'daily'
-        AND title = 'Migrated from standing template'
+        AND notes = 'Migrated from standing template'
         AND deleted_at IS NULL;
     `);
   }
