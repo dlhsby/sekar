@@ -155,7 +155,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: SubscribeAreaDto,
   ): { success: boolean; room: string } {
-    const room = `monitoring:area:${dto.area_id}`;
+    const room = `monitoring:area:${dto.location_id}`;
     client.join(room);
 
     this.logger.log(`Client ${client.id} subscribed to ${room}`);
@@ -171,7 +171,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     @ConnectedSocket() client: Socket,
     @MessageBody() dto: UnsubscribeAreaDto,
   ): { success: boolean; room: string } {
-    const room = `monitoring:area:${dto.area_id}`;
+    const room = `monitoring:area:${dto.location_id}`;
     client.leave(room);
 
     this.logger.log(`Client ${client.id} unsubscribed from ${room}`);
@@ -218,7 +218,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.logger.debug(`Emitting user location: ${event.user_id} at ${event.area_name}`);
 
     // Emit to area subscribers
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_LOCATION, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_LOCATION, event);
 
     // Emit to rayon subscribers
     if (event.rayon_id) {
@@ -234,7 +234,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   emitUserClockIn(event: UserClockInEvent): void {
     this.logger.log(`Emitting user clock-in: ${event.user_name} at ${event.area_name}`);
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_CLOCK_IN, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_CLOCK_IN, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_IN, event);
     }
@@ -247,7 +247,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   emitUserClockOut(event: UserClockOutEvent): void {
     this.logger.log(`Emitting user clock-out: ${event.user_name} at ${event.area_name}`);
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_CLOCK_OUT, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_CLOCK_OUT, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_OUT, event);
     }
@@ -262,7 +262,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       `Emitting area staffing: ${event.area_name} - ${event.workers_online}/${event.workers_required}`,
     );
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.AREA_STAFFING, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.AREA_STAFFING, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.AREA_STAFFING, event);
     }
@@ -275,7 +275,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   emitTaskAssigned(event: TaskAssignedEvent): void {
     this.logger.log(`Emitting task assigned: "${event.title}" to ${event.assignee_name}`);
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.TASK_ASSIGNED, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.TASK_ASSIGNED, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.TASK_ASSIGNED, event);
     }
@@ -291,7 +291,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   emitTaskCompleted(event: TaskCompletedEvent): void {
     this.logger.log(`Emitting task completed: "${event.title}" by ${event.completer_name}`);
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.TASK_COMPLETED, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.TASK_COMPLETED, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.TASK_COMPLETED, event);
     }
@@ -308,8 +308,10 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
       `Status change: ${event.user_name} ${event.previous_status} → ${event.new_status}`,
     );
 
-    if (event.area_id) {
-      this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_STATUS_CHANGED, event);
+    if (event.location_id) {
+      this.server
+        .to(`monitoring:area:${event.location_id}`)
+        .emit(EventType.USER_STATUS_CHANGED, event);
     }
     if (event.rayon_id) {
       this.server
@@ -325,7 +327,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   emitUserLeftArea(event: UserAreaEvent): void {
     this.logger.log(`User left area: ${event.user_name} left ${event.area_name}`);
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_LEFT_AREA, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_LEFT_AREA, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_LEFT_AREA, event);
     }
@@ -338,7 +340,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   emitUserEnteredArea(event: UserAreaEvent): void {
     this.logger.log(`User entered area: ${event.user_name} entered ${event.area_name}`);
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.USER_ENTERED_AREA, event);
+    this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_ENTERED_AREA, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_ENTERED_AREA, event);
     }
@@ -370,10 +372,12 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   emitAreaStaffingChanged(event: AreaStaffingChangedEvent): void {
     this.logger.log(
-      `Area staffing changed: area ${event.area_id} - ${event.active_count}/${event.required_count} (met: ${event.is_met})`,
+      `Location staffing changed: area ${event.location_id} - ${event.active_count}/${event.required_count} (met: ${event.is_met})`,
     );
 
-    this.server.to(`monitoring:area:${event.area_id}`).emit(EventType.AREA_STAFFING_CHANGED, event);
+    this.server
+      .to(`monitoring:area:${event.location_id}`)
+      .emit(EventType.AREA_STAFFING_CHANGED, event);
     if (event.rayon_id) {
       this.server
         .to(`monitoring:rayon:${event.rayon_id}`)

@@ -42,14 +42,14 @@ export class AreaPlantSpeciesSummaryDto {
 }
 
 /**
- * Area-level plant maintenance status response.
+ * Location-level plant maintenance status response.
  */
 export class AreaPlantStatusDto {
   @ApiProperty({
     description: 'UUID of the area',
     example: '550e8400-e29b-41d4-a716-446655440000',
   })
-  areaId: string;
+  locationId: string;
 
   @ApiProperty({
     description: 'Total count of all plants in the area',

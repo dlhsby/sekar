@@ -91,14 +91,14 @@ export function AddScheduleModal({
     }
 
     // Guard: only submit areas that belong to the chosen rayon.
-    const areaIds = selectedAreaIds.filter((id) => filteredAreas.some((a) => a.id === id));
+    const locationIds = selectedAreaIds.filter((id) => filteredAreas.some((a) => a.id === id));
 
     try {
       await onSubmit({
         user_id: selectedUserId,
         date,
         shift_definition_id: selectedShiftId,
-        area_ids: areaIds.length > 0 ? areaIds : undefined,
+        location_ids: locationIds.length > 0 ? locationIds : undefined,
       });
       toast.success(t('messages.addSuccess'));
       onClose();

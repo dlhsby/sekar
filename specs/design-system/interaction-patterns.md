@@ -617,8 +617,8 @@ UserDetailPanel → [click "Back"] → UserList (slide right 200ms)
 |-------|-----------|----------|-------|
 | Position update | Marker slides to new position | 500ms ease | Smooth interpolation between coordinates |
 | Status change | Color cross-fade + brief scale pulse | 300ms + 200ms | Old color → new color with 1.2x scale bump |
-| Boundary exit | Area polygon flashes orange border | 800ms | 3 quick flashes, then settles |
-| Boundary enter | Area polygon briefly glows green | 500ms | Single fade-in/fade-out |
+| Boundary exit | Location polygon flashes orange border | 800ms | 3 quick flashes, then settles |
+| Boundary enter | Location polygon briefly glows green | 500ms | Single fade-in/fade-out |
 | New user online | Marker appears with scale-up | 200ms ease-out | From 0 to 1 scale |
 | User goes offline | Marker fades out + shrinks | 300ms ease-in | From 1 to 0 opacity + scale |
 

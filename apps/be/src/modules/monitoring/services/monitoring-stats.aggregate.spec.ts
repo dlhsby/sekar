@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringStatsService } from './monitoring-stats.service';
 import { DayTypeService } from './day-type.service';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
@@ -11,12 +11,11 @@ import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
-  AreaStaffRequirement,
+  LocationStaffRequirement,
   DayType,
-} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+} from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
-import { Schedule } from '../../schedules/entities/schedule.entity';
-import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
+import { Schedule, ScheduleLocation } from '../../schedules/entities/schedule.entity';
 
 /**
  * Focused unit tests for MonitoringStatsService.getAggregate — the lightweight
@@ -43,7 +42,7 @@ describe('MonitoringStatsService.getAggregate', () => {
 
   const trackingRepo: any = { createQueryBuilder: jest.fn(), find: jest.fn() };
   const staffRepo: any = { createQueryBuilder: jest.fn() };
-  const areaRepo: any = { find: jest.fn(), count: jest.fn() };
+  const locationRepo: any = { find: jest.fn(), count: jest.fn() };
   const rayonRepo: any = { find: jest.fn() };
   const scheduleRepo: any = { createQueryBuilder: jest.fn() };
   const scheduleAreaRepo: any = { createQueryBuilder: jest.fn() };
@@ -57,17 +56,17 @@ describe('MonitoringStatsService.getAggregate', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringStatsService,
-        { provide: getRepositoryToken(Area), useValue: areaRepo },
+        { provide: getRepositoryToken(Location), useValue: locationRepo },
         { provide: getRepositoryToken(Shift), useValue: {} },
         { provide: getRepositoryToken(Task), useValue: {} },
         { provide: getRepositoryToken(Activity), useValue: {} },
         { provide: getRepositoryToken(LocationLog), useValue: {} },
         { provide: getRepositoryToken(Rayon), useValue: rayonRepo },
         { provide: getRepositoryToken(ShiftDefinition), useValue: {} },
-        { provide: getRepositoryToken(AreaStaffRequirement), useValue: staffRepo },
+        { provide: getRepositoryToken(LocationStaffRequirement), useValue: staffRepo },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepo },
         { provide: getRepositoryToken(Schedule), useValue: scheduleRepo },
-        { provide: getRepositoryToken(ScheduleArea), useValue: scheduleAreaRepo },
+        { provide: getRepositoryToken(ScheduleLocation), useValue: scheduleAreaRepo },
         {
           provide: DayTypeService,
           useValue: {
@@ -90,7 +89,7 @@ describe('MonitoringStatsService.getAggregate', () => {
       { id: 'rayon-1', name: 'Rayon Selatan', center_lat: -7.3, center_lng: 112.7 },
       { id: 'rayon-2', name: 'Rayon Utara', center_lat: null, center_lng: null },
     ]);
-    areaRepo.find.mockResolvedValue([
+    locationRepo.find.mockResolvedValue([
       { id: 'area-1', rayon_id: 'rayon-1' },
       { id: 'area-2', rayon_id: 'rayon-1' },
       { id: 'area-3', rayon_id: 'rayon-2' },
@@ -192,7 +191,7 @@ describe('MonitoringStatsService.getAggregate', () => {
   });
 
   it('rayon scope: builds one node per area in the rayon', async () => {
-    areaRepo.find.mockResolvedValue([
+    locationRepo.find.mockResolvedValue([
       { id: 'area-1', name: 'Taman Bungkul', gps_lat: -7.29, gps_lng: 112.73 },
     ]);
     trackingRepo.createQueryBuilder
@@ -247,7 +246,7 @@ describe('MonitoringStatsService.getAggregate', () => {
   });
 
   it('rayon scope with zero areas returns no nodes (no empty-IN query)', async () => {
-    areaRepo.find.mockResolvedValue([]); // rayon has no active areas
+    locationRepo.find.mockResolvedValue([]); // rayon has no active areas
     const res = await service.getAggregate('rayon', 'rayon-empty');
     expect(res.scope).toBe('rayon');
     expect(res.nodes).toEqual([]);
@@ -286,7 +285,7 @@ describe('MonitoringStatsService.getAggregate', () => {
           },
         },
       ]);
-      areaRepo.count.mockResolvedValue(4);
+      locationRepo.count.mockResolvedValue(4);
 
       const res = await service.getBoundaries({ level: 'rayon' });
 
@@ -298,7 +297,7 @@ describe('MonitoringStatsService.getAggregate', () => {
       const ring = (r.boundary_polygon as any).coordinates[0];
       expect(ring).not.toContainEqual([0.5, 0]);
       // areaRepository.count used, not find (no geometry load).
-      expect(areaRepo.count).toHaveBeenCalled();
+      expect(locationRepo.count).toHaveBeenCalled();
     });
   });
 });

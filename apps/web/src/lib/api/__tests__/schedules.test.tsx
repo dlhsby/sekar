@@ -339,7 +339,7 @@ describe('Daily Schedules API', () => {
 
       result.current.mutate({
         id: 'daily-1',
-        area_ids: ['area-1', 'area-2'],
+        location_ids: ['area-1', 'area-2'],
       });
 
       await waitFor(() => {

@@ -8,7 +8,7 @@ import { FILTER_SUBORDINATE_ROLES } from '../../../constants/roles';
 import type { Task } from '../../../types/models.types';
 import type { User } from '../../../types/models.types';
 
-const TASK_VERIFIER_ROLES = ['korlap', 'kepala_rayon', 'top_management'];
+const TASK_VERIFIER_ROLES = ['korlap', 'kepala_rayon', 'management'];
 
 export interface UseTaskVisibilityReturn {
   showAccept: boolean;

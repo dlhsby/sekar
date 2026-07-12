@@ -2,16 +2,17 @@
 
 import { cn } from '@/lib/utils/cn';
 import type { UserRole } from '@/types/models';
-import { ROLE_LABELS } from '@/lib/constants/roles';
+import { roleLabel } from '@/lib/constants/roles';
+import { isHexColor, readableInk } from '@/lib/utils/color';
 
 /** Role-accent pill colours (hi-fi USR-1 `.pill` per role). */
 export const ROLE_PILL_STYLE: Record<UserRole, string> = {
   satgas: 'bg-role-satgas text-nb-black',
   linmas: 'bg-role-linmas text-nb-white',
   korlap: 'bg-role-korlap text-nb-black',
-  admin_data: 'bg-role-admin-data text-nb-white',
+  admin_rayon: 'bg-role-admin-data text-nb-white',
   kepala_rayon: 'bg-role-kepala text-nb-black',
-  top_management: 'bg-role-top text-nb-white',
+  management: 'bg-role-top text-nb-white',
   admin_system: 'bg-role-admin-sys text-nb-white',
   superadmin: 'bg-role-superadmin text-nb-white',
   staff_kecamatan: 'bg-role-kecamatan text-nb-black',
@@ -20,11 +21,25 @@ export const ROLE_PILL_STYLE: Record<UserRole, string> = {
 const base =
   'inline-flex items-center rounded-full border-[1.5px] border-nb-black px-2 py-0.5 font-mono text-[10px] font-bold uppercase tracking-wide leading-none';
 
-/** Static role-accent pill (table cells, detail headers). */
-export function RolePill({ role, className }: { role: UserRole; className?: string }) {
+/** Role-accent pill (table cells, detail headers). Accepts any role code —
+ *  when a data-driven `color` (role `marker_color`) is supplied it drives the
+ *  tint (covers custom roles too); otherwise the fixed per-role token applies. */
+export function RolePill({
+  role,
+  color,
+  className,
+}: {
+  role: string;
+  color?: string | null;
+  className?: string;
+}) {
+  const tinted = isHexColor(color);
   return (
-    <span className={cn(base, ROLE_PILL_STYLE[role], className)}>
-      {ROLE_LABELS[role] ?? role}
+    <span
+      className={cn(base, !tinted && ROLE_PILL_STYLE[role as UserRole], className)}
+      style={tinted ? { backgroundColor: color, color: readableInk(color) } : undefined}
+    >
+      {roleLabel(role)}
     </span>
   );
 }

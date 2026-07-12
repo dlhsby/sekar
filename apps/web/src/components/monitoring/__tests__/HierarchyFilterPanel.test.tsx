@@ -29,8 +29,8 @@ jest.mock('@/lib/api/rayons', () => ({
   })),
 }));
 
-jest.mock('@/lib/api/areas', () => ({
-  useAreas: jest.fn(() => ({
+jest.mock('@/lib/api/locations', () => ({
+  useLocations: jest.fn(() => ({
     data: {
       data: [
         { id: 'a1', name: 'Area Bungkul', rayon_id: 'r1' },

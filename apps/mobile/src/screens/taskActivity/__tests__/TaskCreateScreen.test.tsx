@@ -596,9 +596,9 @@ describe('TaskCreateScreen', () => {
     });
   });
 
-  it('top_management can select rayon and area', async () => {
+  it('management can select rayon and area', async () => {
     mockUseRoleAccess.mockReturnValue({
-      role: 'top_management' as any,
+      role: 'management' as any,
       canClock: false,
       canSubmitActivity: false,
       canCreateTask: true,
@@ -609,7 +609,7 @@ describe('TaskCreateScreen', () => {
       monitoringScope: 'rayon',
     });
 
-    const store = createTestStore({ role: 'top_management', rayon_id: undefined, area_id: undefined });
+    const store = createTestStore({ role: 'management', rayon_id: undefined, area_id: undefined });
 
     render(
       <Provider store={store}>
@@ -619,7 +619,7 @@ describe('TaskCreateScreen', () => {
       </Provider>
     );
 
-    // Should fetch rayons for top_management
+    // Should fetch rayons for management
     await waitFor(() => {
       expect(rayonsApi.getRayons).toHaveBeenCalled();
     });

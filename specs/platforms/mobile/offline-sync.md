@@ -51,7 +51,7 @@ const STORAGE_KEYS = {
 ```typescript
 interface PendingClockIn {
   local_id: string; // UUID v4
-  area_id: string;
+  location_id: string;
   user_id: string;
   gps_lat: number;
   gps_lng: number;
@@ -150,14 +150,14 @@ import uuid from 'react-native-uuid';
 export class OfflineQueue {
   // Add clock-in to queue
   async addPendingClockIn(data: {
-    area_id: string;
+    location_id: string;
     gps_lat: number;
     gps_lng: number;
     selfie_path: string;
   }): Promise<PendingClockIn> {
     const clockIn: PendingClockIn = {
       local_id: uuid.v4() as string,
-      area_id: data.area_id,
+      location_id: data.location_id,
       user_id: await this.getUserId(),
       gps_lat: data.gps_lat,
       gps_lng: data.gps_lng,
@@ -385,7 +385,7 @@ async syncClockIns(): Promise<SyncResult> {
 
       // Call API
       const response = await shiftsApi.clockIn({
-        area_id: item.area_id,
+        location_id: item.location_id,
         gps_lat: item.gps_lat,
         gps_lng: item.gps_lng,
         selfie_photo: `data:image/jpeg;base64,${selfieBase64}`,

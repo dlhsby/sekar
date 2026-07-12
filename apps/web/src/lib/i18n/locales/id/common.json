@@ -159,9 +159,11 @@
     "pruningRequests": "Permohonan Perantingan",
     "usersAccess": "Pengguna & Hak Akses",
     "users": "Pengguna",
+    "roles": "Peran",
     "masterData": "Data Master",
-    "areas": "Area",
+    "areas": "Lokasi",
     "rayons": "Rayon",
+    "regions": "Kawasan",
     "plants": "Tanaman",
     "seeds": "Bibit",
     "assets": "Aset",
@@ -184,7 +186,8 @@
     "guide": "Panduan",
     "districtNav": "Navigasi kecamatan",
     "mainNav": "Navigasi utama",
-    "breadcrumbAria": "Navigasi breadcrumb"
+    "breadcrumbAria": "Navigasi breadcrumb",
+    "teams": "Tim"
   },
   "pagination": {
     "previous": "Sebelumnya",
@@ -251,5 +254,22 @@
     "noPermission": {
       "short": "Akses ditolak"
     }
+  },
+  "marker": {
+    "label": "Penanda Peta",
+    "upload": "Unggah gambar",
+    "clear": "Hapus penanda",
+    "custom": "Penanda kustom",
+    "preset": "Opsi penanda {{n}}",
+    "hint": "Pilih penanda bawaan atau unggah gambar (SVG/PNG, maks 200KB).",
+    "tooLarge": "Ukuran gambar maksimal 200KB",
+    "readError": "Gagal membaca gambar",
+    "change": "Ubah",
+    "reset": "Setel ke bawaan",
+    "default": "Bawaan",
+    "done": "Selesai",
+    "current": "Penanda saat ini",
+    "usingDefault": "Menggunakan bawaan sistem",
+    "colorHint": "Warna pin/label di peta — tidak mewarnai ikon gambar."
   }
 }

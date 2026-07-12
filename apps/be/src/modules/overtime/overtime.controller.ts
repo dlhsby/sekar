@@ -104,7 +104,7 @@ export class OvertimeController {
   }
 
   @Get()
-  @Roles(...OVERTIME_APPROVERS, ...USER_MANAGERS, UserRole.ADMIN_DATA)
+  @Roles(...OVERTIME_APPROVERS, ...USER_MANAGERS, UserRole.ADMIN_RAYON)
   @ApiOperation({
     summary: 'Get all overtime (paginated, role-scoped)',
   })

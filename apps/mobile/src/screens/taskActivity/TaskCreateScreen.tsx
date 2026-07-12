@@ -1,7 +1,7 @@
 /**
  * Task Create Screen
  * Phase 2C: Create new task with hierarchical assignment validation
- * Access: TASK_CREATORS roles only (korlap, kepala_rayon, top_management, admin_system, superadmin)
+ * Access: TASK_CREATORS roles only (korlap, kepala_rayon, management, admin_system, superadmin)
  */
 
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';

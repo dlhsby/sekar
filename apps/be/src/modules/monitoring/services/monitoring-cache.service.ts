@@ -57,13 +57,13 @@ export class MonitoringCacheService {
 
   private thresholdsLoader: (() => Promise<StatusThresholds>) | null = null;
   private geofencingLoader: (() => Promise<GeofencingConfig>) | null = null;
-  private boundaryLoader: ((areaId: string) => Promise<number[][][] | null>) | null = null;
+  private boundaryLoader: ((locationId: string) => Promise<number[][][] | null>) | null = null;
   private dayTypeLoader: (() => Promise<DayTypeEnum>) | null = null;
 
   setLoaders(loaders: {
     thresholds?: () => Promise<StatusThresholds>;
     geofencing?: () => Promise<GeofencingConfig>;
-    boundary?: (areaId: string) => Promise<number[][][] | null>;
+    boundary?: (locationId: string) => Promise<number[][][] | null>;
     dayType?: () => Promise<DayTypeEnum>;
   }): void {
     if (loaders.thresholds) this.thresholdsLoader = loaders.thresholds;
@@ -110,20 +110,20 @@ export class MonitoringCacheService {
     return DEFAULT_GEOFENCING;
   }
 
-  async getAreaBoundary(areaId: string): Promise<number[][][] | null> {
+  async getAreaBoundary(locationId: string): Promise<number[][][] | null> {
     const now = Date.now();
-    const cached = this.areaBoundaryCache.get(areaId);
+    const cached = this.areaBoundaryCache.get(locationId);
     if (cached && cached.expiresAt > now) {
       return cached.data;
     }
 
     if (this.boundaryLoader) {
       try {
-        const data = await this.boundaryLoader(areaId);
-        this.areaBoundaryCache.set(areaId, { data, expiresAt: now + this.BOUNDARY_TTL_MS });
+        const data = await this.boundaryLoader(locationId);
+        this.areaBoundaryCache.set(locationId, { data, expiresAt: now + this.BOUNDARY_TTL_MS });
         return data;
       } catch (error) {
-        this.logger.warn(`Failed to load boundary for area ${areaId}: ${error.message}`);
+        this.logger.warn(`Failed to load boundary for area ${locationId}: ${error.message}`);
       }
     }
 
@@ -136,10 +136,10 @@ export class MonitoringCacheService {
     this.logger.debug('Invalidated thresholds and geofencing cache');
   }
 
-  invalidateAreaBoundary(areaId?: string): void {
-    if (areaId) {
-      this.areaBoundaryCache.delete(areaId);
-      this.logger.debug(`Invalidated boundary cache for area ${areaId}`);
+  invalidateAreaBoundary(locationId?: string): void {
+    if (locationId) {
+      this.areaBoundaryCache.delete(locationId);
+      this.logger.debug(`Invalidated boundary cache for area ${locationId}`);
     } else {
       this.areaBoundaryCache.clear();
       this.logger.debug('Invalidated all boundary caches');

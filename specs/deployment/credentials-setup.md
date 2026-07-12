@@ -460,7 +460,7 @@ cd apps/web
 npm run dev
 
 # Visit http://localhost:3001
-# Navigate to Monitoring or the Rayon/Area forms
+# Navigate to Monitoring or the Rayon/Location forms
 # Verify the map renders without blank tiles
 ```
 

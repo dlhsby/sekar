@@ -1,6 +1,5 @@
 import {
   IsString,
-  IsEnum,
   IsUUID,
   IsArray,
   MaxLength,
@@ -10,7 +9,6 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../entities/user.entity';
 import { ValidationConstants } from '../../../common/constants/auth.constants';
 import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.util';
 
@@ -21,6 +19,20 @@ import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.u
  * Password will be hashed before updating if provided.
  */
 export class UpdateUserDto {
+  @ApiPropertyOptional({
+    description: 'Username for login (alphanumeric with underscores/hyphens allowed)',
+    example: 'satgas4',
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(ValidationConstants.USERNAME_MAX_LENGTH, {
+    message: `Username must not exceed ${ValidationConstants.USERNAME_MAX_LENGTH} characters`,
+  })
+  @Matches(/^[a-zA-Z0-9_-]+$/, {
+    message: 'Username can only contain letters, numbers, underscores, and hyphens',
+  })
+  username?: string;
+
   @ApiPropertyOptional({
     description: "User's full name",
     example: 'Pekerja Satu Updated',
@@ -44,16 +56,12 @@ export class UpdateUserDto {
   phone_number?: string;
 
   @ApiPropertyOptional({
-    description: 'User role',
+    description: 'Role code — must exist in the data-driven roles table (ADR-044).',
     example: 'korlap',
-    enum: UserRole,
   })
-  @IsEnum(UserRole, {
-    message:
-      'Role must be one of: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin',
-  })
+  @IsString()
   @IsOptional()
-  role?: UserRole;
+  role?: string;
 
   @ApiPropertyOptional({
     description: 'Rayon ID (single). Optional for all roles.',
@@ -63,11 +71,18 @@ export class UpdateUserDto {
   rayon_id?: string;
 
   @ApiPropertyOptional({
+    description: 'Region (Kawasan) ID for region-scoped roles (korlap). ADR-045.',
+  })
+  @IsUUID()
+  @IsOptional()
+  region_id?: string;
+
+  @ApiPropertyOptional({
     description: 'Permanent area assignments (multi). The first becomes the primary area.',
     type: [String],
   })
   @IsArray()
-  // Area ids are deterministic UUID v5 — accept any version ('v4' rejects them).
+  // Location ids are deterministic UUID v5 — accept any version ('v4' rejects them).
   @IsUUID('all', { each: true })
   @IsOptional()
   area_ids?: string[];

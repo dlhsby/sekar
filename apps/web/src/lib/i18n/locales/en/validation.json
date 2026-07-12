@@ -13,7 +13,7 @@
   "nameMin": "Name must be at least {{count}} characters",
   "phoneRequired": "Phone number is required",
   "roleRequired": "Role is required",
-  "rayonRequired": "Rayon is required",
+  "rayonRequired": "District is required",
   "areaTypeRequired": "Area type is required",
   "boundaryRequired": "Area boundary must be drawn on the map",
   "colorInvalid": "Color format must be hexadecimal, e.g. #RRGGBB",

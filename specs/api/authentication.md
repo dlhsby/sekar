@@ -4,7 +4,7 @@ Comprehensive authentication and authorization specifications for SEKAR Backend 
 
 **Last Updated:** 2026-06-20 · **Status:** Phase 5 Complete (reflects 8-role system, JWT rotation, Phase 2E+ scope fields)
 
-> **Current System:** This document reflects the 8-role system (ADR-009: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin). JWT tokens include scope fields (rayon_id, area_id) since Phase 2E. Phase 2D adds scope-based monitoring authorization. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping.
+> **Current System:** This document reflects the 8-role system (ADR-009: satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin). JWT tokens include scope fields (rayon_id, location_id) since Phase 2E. Phase 2D adds scope-based monitoring authorization. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping.
 
 ## Table of Contents
 
@@ -25,7 +25,7 @@ SEKAR uses a stateless JWT (JSON Web Token) based authentication system combined
 
 - **Stateless Authentication:** No server-side session storage
 - **Two-Token System:** Access tokens (15 min) + Refresh tokens (7 days) with rotation
-- **Role-Based Access:** Eight roles (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin) with distinct permissions (see ADR-009)
+- **Role-Based Access:** Eight roles (satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin) with distinct permissions (see ADR-009)
 - **Password Security:** Bcrypt hashing with 10 rounds
 - **Passport.js Integration:** Standard authentication middleware
 - **Swagger Integration:** Bearer token authentication in API docs
@@ -60,7 +60,7 @@ Access tokens are JWTs consisting of three parts: Header, Payload, and Signature
   "username": "satgas1",
   "role": "satgas",
   "rayon_id": "uuid-or-null",
-  "area_id": "uuid-or-null",
+  "location_id": "uuid-or-null",
   "iat": 1736420400,
   "exp": 1736421300
 }
@@ -71,9 +71,9 @@ Access tokens are JWTs consisting of three parts: Header, Payload, and Signature
 |-------|------|-------------|
 | `sub` | string | User ID (UUID) - Subject claim |
 | `username` | string | Username for logging/debugging |
-| `role` | string | User role (one of 8 roles: `satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`) |
+| `role` | string | User role (one of 8 roles: `satgas`, `linmas`, `korlap`, `admin_rayon`, `kepala_rayon`, `management`, `admin_system`, `superadmin`) |
 | `rayon_id` | string\|null | User's assigned rayon UUID (null for superadmin/admin_system) |
-| `area_id` | string\|null | User's assigned area UUID (null for roles above area level) |
+| `location_id` | string\|null | User's assigned area UUID (null for roles above area level) |
 | `iat` | number | Issued At timestamp (Unix epoch) |
 | `exp` | number | Expiration timestamp (Unix epoch, +15 minutes) |
 
@@ -330,9 +330,9 @@ export enum UserRole {
   SATGAS = 'satgas',               // Field worker (was 'worker')
   LINMAS = 'linmas',               // Security officer
   KORLAP = 'korlap',              // Field coordinator (was 'koordinator_lapangan')
-  ADMIN_DATA = 'admin_data',       // Data administrator
+  ADMIN_RAYON = 'admin_rayon',       // Data administrator
   KEPALA_RAYON = 'kepala_rayon',   // Rayon manager
-  TOP_MANAGEMENT = 'top_management', // City-wide view
+  MANAGEMENT = 'management', // City-wide view
   ADMIN_SYSTEM = 'admin_system',   // System administrator (was 'admin')
   SUPERADMIN = 'superadmin',       // Full system access
 }
@@ -348,7 +348,7 @@ export enum UserRole {
 │  - System configuration              │
 └──────────────────────────────────────┘
 ┌──────────────────────────────────────┐
-│         TOP_MANAGEMENT               │  City-wide oversight
+│         MANAGEMENT               │  City-wide oversight
 │  - View all rayons/areas             │
 │  - Verify kepala_rayon tasks         │
 │  - Analytics & monitoring            │
@@ -357,12 +357,12 @@ export enum UserRole {
 ┌──────────────────────────────────────┐
 │         KEPALA_RAYON                 │  Rayon management
 │  - Manage rayon scope                │
-│  - Approve korlap/admin_data work    │
+│  - Approve korlap/admin_rayon work    │
 │  - Verify korlap tasks              │
 └──────────────────────────────────────┘
                 ▲
 ┌──────────────────────────────────────┐
-│    KORLAP / ADMIN_DATA               │  Area coordination
+│    KORLAP / ADMIN_RAYON               │  Area coordination
 │  - Korlap: field coordination        │
 │  - Admin_data: data management       │
 │  - Approve satgas/linmas activities  │
@@ -445,7 +445,7 @@ export class UsersController {
 
   // Supervisory+ roles can list users (scoped by rayon/area)
   @Get()
-  @Roles(UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.MANAGEMENT, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   findAll() {
     return this.usersService.findAll();
   }
@@ -489,14 +489,14 @@ export const GetUser = createParamDecorator(
 @UseGuards(JwtAuthGuard)
 async getMe(@GetUser() user: User): Promise<MeResponseDto> {
   // Returns typed MeResponseDto with area/rayon resolution
-  // For korlap: uses User.area_id (permanent assignment)
+  // For korlap: uses User.location_id (permanent assignment)
   // For satgas/linmas: resolves area from active Schedule
   return {
     id: user.id,
     username: user.username,
     full_name: user.full_name,
     role: user.role,
-    area_id: user.area_id || null,  // resolved from schedule if needed
+    location_id: user.location_id || null,  // resolved from schedule if needed
     rayon_id: user.rayon_id || null,
     created_at: user.created_at,
     assigned_area: { id, name, gps_lat, gps_lng, radius_meters, area_type },
@@ -515,12 +515,12 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 | Group | Roles | Purpose |
 |-------|-------|---------|
 | `FIELD_WORKERS` | satgas, linmas | Clock-in/out, submit activities |
-| `ALL_WORKERS` | satgas, linmas, korlap, admin_data | Activity submission |
+| `ALL_WORKERS` | satgas, linmas, korlap, admin_rayon | Activity submission |
 | `TASK_RECEIVERS` | satgas, linmas, korlap, kepala_rayon | Accept/decline tasks |
-| `TASK_CREATORS` | korlap, kepala_rayon, top_management, admin_system, superadmin | Create/assign tasks |
-| `TASK_VERIFIERS` | korlap, kepala_rayon, top_management | Verify completed tasks |
+| `TASK_CREATORS` | korlap, kepala_rayon, management, admin_system, superadmin | Create/assign tasks |
+| `TASK_VERIFIERS` | korlap, kepala_rayon, management | Verify completed tasks |
 | `ACTIVITY_APPROVERS` | korlap, kepala_rayon | Approve/reject activities |
-| `SUPERVISORS` | korlap, kepala_rayon, top_management | Monitoring, oversight |
+| `SUPERVISORS` | korlap, kepala_rayon, management | Monitoring, oversight |
 | `ADMINS` | admin_system, superadmin | System management |
 
 ### Users Module
@@ -543,7 +543,7 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 | `PATCH /activities/:id/approve` | ❌ | ✅* | ❌ | ✅* | ❌ |
 | `PATCH /activities/:id/reject` | ❌ | ✅* | ❌ | ✅* | ❌ |
 
-*Scoped: hierarchical approval (korlap→satgas/linmas, kepala_rayon→korlap/admin_data)
+*Scoped: hierarchical approval (korlap→satgas/linmas, kepala_rayon→korlap/admin_rayon)
 
 ### Tasks Module (Phase 2C)
 
@@ -571,7 +571,7 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 
 ### Monitoring Module (Phase 2D)
 
-| Endpoint | satgas | linmas | korlap | admin_data | kepala_rayon | top_management | admin_system | superadmin |
+| Endpoint | satgas | linmas | korlap | admin_rayon | kepala_rayon | management | admin_system | superadmin |
 |----------|--------|--------|--------|------------|-------------|---------------|-------------|-----------|
 | GET /monitoring/city | - | - | - | - | - | ✅ | ✅ | ✅ |
 | GET /monitoring/rayon/:id | - | - | - | - | ✅ (own) | ✅ | ✅ | ✅ |
@@ -592,15 +592,15 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 *korlap can only reassign workers within their own area
 
 **Scope Rules:**
-- `korlap`: Filtered to own area_id automatically
+- `korlap`: Filtered to own location_id automatically
 - `kepala_rayon`: Filtered to own rayon_id automatically
-- `top_management`, `admin_system`, `superadmin`: No scope restrictions
-- `satgas`, `linmas`, `admin_data`: No direct monitoring access (they are monitored, not monitors)
+- `management`, `admin_system`, `superadmin`: No scope restrictions
+- `satgas`, `linmas`, `admin_rayon`: No direct monitoring access (they are monitored, not monitors)
 
 **WebSocket Room Assignment:**
-- `superadmin`, `admin_system`, `top_management` → join `city` room
-- `kepala_rayon`, `admin_data` → join `rayon:{rayon_id}` room
-- `korlap` → join `area:{area_id}` room
+- `superadmin`, `admin_system`, `management` → join `city` room
+- `kepala_rayon`, `admin_rayon` → join `rayon:{rayon_id}` room
+- `korlap` → join `area:{location_id}` room
 
 **Legend:**
 - ✅ = Allowed
@@ -611,19 +611,19 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 
 ### Monitoring Scope-Based Authorization (Phase 2D)
 
-Monitoring endpoints enforce scope-based authorization at the service level. The requesting user's `rayon_id` and `area_id` are extracted from the JWT token and used to filter results automatically.
+Monitoring endpoints enforce scope-based authorization at the service level. The requesting user's `rayon_id` and `location_id` are extracted from the JWT token and used to filter results automatically.
 
 | Role | Monitoring Scope | Details |
 |------|-----------------|---------|
-| `top_management` | All rayons, all areas, all workers | City-wide visibility with no scope restrictions |
+| `management` | All rayons, all areas, all workers | City-wide visibility with no scope restrictions |
 | `admin_system` | All rayons, all areas, all workers | Full system access for administration and configuration |
 | `kepala_rayon` | Own rayon's areas and workers only | Filtered by `rayon_id` from JWT; cannot see other rayons |
-| `korlap` | Own area's workers only | Filtered by `area_id` from JWT; cannot see other areas |
+| `korlap` | Own area's workers only | Filtered by `location_id` from JWT; cannot see other areas |
 | `satgas`, `linmas` | No monitoring access | Field workers are monitored, not monitors |
-| `admin_data` | No monitoring access | Data entry role; no real-time monitoring privileges |
+| `admin_rayon` | No monitoring access | Data entry role; no real-time monitoring privileges |
 | `superadmin` | All rayons, all areas, all workers | Full access including config management |
 
-**Enforcement mechanism:** The `MonitoringService` reads `user.rayon_id` and `user.area_id` from the authenticated request (populated by JWT strategy) and applies WHERE clauses to all database queries. A `kepala_rayon` requesting `/monitoring/live-users` will only receive users whose area belongs to their rayon. A `korlap` will only receive users assigned to their specific area. Requests for resources outside the user's scope return 403 Forbidden.
+**Enforcement mechanism:** The `MonitoringService` reads `user.rayon_id` and `user.location_id` from the authenticated request (populated by JWT strategy) and applies WHERE clauses to all database queries. A `kepala_rayon` requesting `/monitoring/live-users` will only receive users whose area belongs to their rayon. A `korlap` will only receive users assigned to their specific area. Requests for resources outside the user's scope return 403 Forbidden.
 
 ---
 
@@ -1259,23 +1259,23 @@ async login(loginDto: LoginDto): Promise<AuthResponseDto> {
 
 **Shifts Module (expanded CLOCKABLE_ROLES):**
 
-| Endpoint | satgas | linmas | korlap | admin_data | kepala_rayon | top_mgmt+ |
+| Endpoint | satgas | linmas | korlap | admin_rayon | kepala_rayon | top_mgmt+ |
 |----------|--------|--------|--------|------------|--------------|-----------|
 | `POST /shifts/clock-in` | ✅ | ✅ | ✅ | **✅ (NEW)** | **✅ (NEW)** | ❌ |
 | `POST /shifts/clock-out` | ✅ | ✅ | ✅ | **✅ (NEW)** | **✅ (NEW)** | ❌ |
 
-**Monitoring Module (admin_data scope correction):**
+**Monitoring Module (admin_rayon scope correction):**
 
-The Phase 2D matrix listed admin_data as "No monitoring access." This is **incorrect** — admin_data already has monitoring access via `MONITORING_RAYON` group since Phase 2C. Phase 2E confirms and documents this:
+The Phase 2D matrix listed admin_rayon as "No monitoring access." This is **incorrect** — admin_rayon already has monitoring access via `MONITORING_RAYON` group since Phase 2C. Phase 2E confirms and documents this:
 
-| Endpoint | admin_data (corrected) |
+| Endpoint | admin_rayon (corrected) |
 |----------|----------------------|
 | GET /monitoring/live-users | ✅ (own rayon) |
 | GET /monitoring/area/:id | ✅ (own rayon areas) |
 | GET /monitoring/rayon/:id | ✅ (own rayon) |
 
 **WebSocket Room (korlap multi-area):**
-- `korlap` → joins `area:{area_id}` rooms for **each assigned area** (was single room)
+- `korlap` → joins `area:{location_id}` rooms for **each assigned area** (was single room)
 
 ### New Endpoints (Phase 2E)
 
@@ -1284,7 +1284,7 @@ The Phase 2D matrix listed admin_data as "No monitoring access." This is **incor
 | POST | `/users/:id/profile-picture` | All (own), admin_system, superadmin | Upload profile picture |
 | GET | `/users/:id/areas` | admin_system, superadmin, korlap (own) | Get user area assignments |
 | POST | `/users/:id/areas` | admin_system, superadmin | Assign areas to user |
-| DELETE | `/users/:userId/areas/:areaId` | admin_system, superadmin | Remove area assignment |
+| DELETE | `/users/:userId/areas/:locationId` | admin_system, superadmin | Remove area assignment |
 | POST | `/overtime/start` | CLOCKABLE_ROLES | Start overtime (clock-in) |
 | POST | `/overtime/:id/end` | CLOCKABLE_ROLES | End overtime (clock-out + activity) |
 | GET | `/overtime/active` | CLOCKABLE_ROLES | Get active overtime |

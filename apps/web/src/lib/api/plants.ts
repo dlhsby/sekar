@@ -225,7 +225,7 @@ export function useAreaPlants(areaId: string | null | undefined) {
   return useQuery({
     queryKey: areaId ? plantsKeys.areaPlants(areaId) : ['areaPlants', 'null'],
     queryFn: async (): Promise<AreaPlantRow[]> => {
-      const { data } = await apiClient.get(`/areas/${areaId}/plants`);
+      const { data } = await apiClient.get(`/locations/${areaId}/plants`);
       return Array.isArray(data) ? data : (data?.data ?? []);
     },
     enabled: !!areaId,
@@ -237,7 +237,7 @@ export function useNotablePlants(areaId: string | null | undefined) {
   return useQuery({
     queryKey: areaId ? plantsKeys.notablePlants(areaId) : ['notablePlants', 'null'],
     queryFn: async (): Promise<NotablePlantRow[]> => {
-      const { data } = await apiClient.get(`/areas/${areaId}/notable-plants`);
+      const { data } = await apiClient.get(`/locations/${areaId}/notable-plants`);
       return Array.isArray(data) ? data : (data?.data ?? []);
     },
     enabled: !!areaId,

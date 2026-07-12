@@ -5,7 +5,7 @@ import {
   SpecialDayOverride,
   SpecialDayType,
 } from '../../special-day-overrides/entities/special-day-override.entity';
-import { DayType } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { DayType } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { MonitoringCacheService, DayTypeEnum } from './monitoring-cache.service';
 
 const DAY_TYPE_LABELS: Record<DayType, string> = {

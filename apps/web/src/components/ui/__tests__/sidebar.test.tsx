@@ -208,7 +208,7 @@ describe('Sidebar Component', () => {
         label: 'Data',
         href: '#',
         children: [
-          { id: 'areas', label: 'Areas', href: '/areas' },
+          { id: 'areas', label: 'Areas', href: '/locations' },
           { id: 'rayons', label: 'Rayons', href: '/rayons' },
         ],
       },

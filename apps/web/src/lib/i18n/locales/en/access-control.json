@@ -1,0 +1,74 @@
+{
+  "title": "Roles",
+  "subtitle": "Manage roles, permissions, monitoring scope, and map markers",
+  "addRole": "Add Role",
+  "roleList": "Roles",
+  "systemBadge": "System",
+  "systemBadgeHint": "Built-in system role — cannot be deleted or have its code renamed; permissions, label, scope, and marker remain editable.",
+  "search": {
+    "placeholder": "Search roles…",
+    "noResults": "No roles match"
+  },
+  "validation": {
+    "nameRequired": "Role name is required",
+    "colorInvalid": "Colour must be a hex code like #7FBC8C"
+  },
+  "counts": {
+    "permissions": "{{count}} permissions",
+    "users": "{{count}} users"
+  },
+  "empty": {
+    "selectRole": "Select a role to view and edit its permissions",
+    "noPermissions": "No permissions yet",
+    "loadError": "Failed to load role data"
+  },
+  "superuser": "This role has all permissions (superuser) and its permissions cannot be edited.",
+  "fields": {
+    "name": "Role Name",
+    "namePlaceholder": "e.g. Park Supervisor",
+    "description": "Description",
+    "scope": "Monitoring Scope",
+    "markerIcon": "Marker Icon",
+    "markerIconPlaceholder": "e.g. shield",
+    "markerColor": "Marker Color"
+  },
+  "scope": {
+    "city": "Whole City (Surabaya)",
+    "district": "District",
+    "region": "Region",
+    "location": "Location",
+    "none": "No Monitoring"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "selectedOfTotal": "{{selected}}/{{total}}"
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete Role",
+    "create": "Create",
+    "cancel": "Cancel",
+    "resetChanges": "Undo Changes"
+  },
+  "dialog": {
+    "createTitle": "Add New Role",
+    "createHint": "The new role starts with no permissions. Pick permissions then save.",
+    "deleteTitle": "Delete Role",
+    "deleteMessage": "Delete role \"{{name}}\"? This action cannot be undone."
+  },
+  "toast": {
+    "created": "Role \"{{name}}\" created",
+    "updated": "Role \"{{name}}\" updated",
+    "deleted": "Role deleted"
+  },
+  "denied": "You don't have access to role management",
+  "sort": {
+    "label": "Sort",
+    "hierarchy": "Hierarchy",
+    "nameAsc": "Name A–Z",
+    "nameDesc": "Name Z–A",
+    "users": "Most users",
+    "permissions": "Most permissions"
+  }
+}

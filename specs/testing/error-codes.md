@@ -866,7 +866,7 @@ describe('Shift Error Codes (e2e)', () => {
 
   it('POST /api/v1/shifts/clock-in returns SHIFT_GPS_OUT_OF_BOUNDS', async () => {
     const outOfBoundsDto = {
-      area_id: areaId,
+      location_id: locationId,
       gps_lat: -7.3037, // 1.5km away
       gps_lng: 112.7375,
       selfie_photo: validBase64Photo,
@@ -1119,7 +1119,7 @@ const tamanBungkul = {
   gps_lat: -7.2905,
   gps_lng: 112.7398,
   radius_meters: 150,
-  area_type_id: areaTypeId,
+  location_type_id: locationTypeId,
 };
 ```
 

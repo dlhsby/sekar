@@ -9,9 +9,9 @@ import { fetchPruningRequestById } from '../../../store/slices/pruningRequestsSl
 import { useUserRole } from '../../../hooks/useUserRole';
 
 const ADMIN_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];

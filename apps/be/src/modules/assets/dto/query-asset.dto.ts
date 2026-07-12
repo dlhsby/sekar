@@ -17,7 +17,7 @@ export class QueryAssetDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Filter by area id' })
   @IsOptional()
   @IsUUID()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({ description: 'Filter by rayon id' })
   @IsOptional()

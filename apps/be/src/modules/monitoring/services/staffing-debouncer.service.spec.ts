@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { RedisService } from '../../../common/services/redis.service';
 import { StaffingDebouncerService } from './staffing-debouncer.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 
 describe('StaffingDebouncerService', () => {
   let service: StaffingDebouncerService;
@@ -13,10 +13,10 @@ describe('StaffingDebouncerService', () => {
       providers: [
         StaffingDebouncerService,
         {
-          provide: ConfigService,
+          provide: SystemConfigService,
           useValue: {
-            get: jest.fn((key: string, def?: number) =>
-              key === 'STAFFING_DEBOUNCE_SECONDS' ? 30 : def,
+            getNumber: jest.fn((key: string, def?: number) =>
+              key === 'monitoring.staffing_debounce_sec' ? 30 : def,
             ),
           },
         },
@@ -118,8 +118,8 @@ describe('StaffingDebouncerService', () => {
         providers: [
           StaffingDebouncerService,
           {
-            provide: ConfigService,
-            useValue: { get: jest.fn(() => 30) },
+            provide: SystemConfigService,
+            useValue: { getNumber: jest.fn(() => 30) },
           },
           {
             provide: RedisService,

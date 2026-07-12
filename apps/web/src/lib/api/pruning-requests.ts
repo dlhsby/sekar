@@ -2,7 +2,7 @@
  * Pruning Requests API Client (Phase 3 — admin disposition on web)
  *
  * Mirrors the mobile pruningRequestsApi but emits TanStack Query hooks for
- * the dashboard pages. Admin / kepala_rayon / admin_data use these to review
+ * the dashboard pages. Admin / kepala_rayon / admin_rayon use these to review
  * and convert kecamatan-submitted pruning requests.
  */
 
@@ -85,7 +85,7 @@ export interface ConvertToTaskDto {
 /**
  * Payload for a kecamatan submission (KEC-1). Mirrors the mobile SubmitScreen
  * shape: photos are base64 data-URI strings (the S3 pipeline lands in a later
- * phase), and timing preference is expressed as an ISO week pair — admin_data
+ * phase), and timing preference is expressed as an ISO week pair — admin_rayon
  * picks the concrete day at assign-to-task. `kecamatan_name`/`rayon_id` are
  * auto-derived server-side from the submitter profile when omitted.
  */
@@ -249,7 +249,7 @@ export interface UpdatePruningRequestPayload {
 }
 
 /**
- * Update editable fields on a pruning request (admin_data / kepala_rayon / admin_system / superadmin).
+ * Update editable fields on a pruning request (admin_rayon / kepala_rayon / admin_system / superadmin).
  * Cannot modify status, GPS, photos, or workflow timestamps.
  */
 export function useUpdatePruningRequest(id: string) {
@@ -270,7 +270,7 @@ export function useUpdatePruningRequest(id: string) {
 }
 
 /**
- * Cancel a pruning request (admin_data / kepala_rayon / admin_system / superadmin).
+ * Cancel a pruning request (admin_rayon / kepala_rayon / admin_system / superadmin).
  * Sets status to 'cancelled'. Optional reason for audit trail.
  */
 export function useCancelPruningRequest(id: string) {

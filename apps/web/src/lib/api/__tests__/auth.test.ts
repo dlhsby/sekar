@@ -215,7 +215,7 @@ describe('Auth API', () => {
         assigned_area: {
           id: 'area-1',
           name: 'Taman Bungkul',
-          area_type_id: 'type-1',
+          location_type_id: 'type-1',
           gps_lat: -7.289659,
           gps_lng: 112.739208,
           radius_meters: 100,
@@ -237,10 +237,10 @@ describe('Auth API', () => {
       const validRoles: Array<User['role']> = [
         'admin_system',
         'superadmin',
-        'top_management',
+        'management',
         'kepala_rayon',
         'korlap',
-        'admin_data',
+        'admin_rayon',
         'satgas',
         'linmas',
       ];

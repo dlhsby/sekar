@@ -7,7 +7,7 @@
  *    integrity risk. Reassignment is now only offered via delete + Tambah
  *    Jadwal, so this modal must never expose a way to change the worker.
  * 2. The worker field must correctly display the current worker's name for
- *    EVERY role (kepala_rayon, admin_data, top_management, etc.), not just
+ *    EVERY role (kepala_rayon, admin_rayon, management, etc.), not just
  *    satgas/linmas/korlap — it used to look up the name in a role-filtered
  *    list and silently show nothing for other roles.
  */
@@ -63,8 +63,8 @@ describe('EditScheduleModal', () => {
   it.each([
     ['satgas', 'Budi Santoso'],
     ['kepala_rayon', 'Siti Rahma'],
-    ['admin_data', 'Agus Wijaya'],
-    ['top_management', 'Dewi Lestari'],
+    ['admin_rayon', 'Agus Wijaya'],
+    ['management', 'Dewi Lestari'],
   ] as const)(
     'displays the current worker name for role=%s (not just satgas/linmas/korlap)',
     (role, name) => {

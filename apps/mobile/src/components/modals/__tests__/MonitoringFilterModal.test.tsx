@@ -156,7 +156,7 @@ const mockTopManagement: User = {
   id: 'user-4',
   username: 'top1',
   full_name: 'Top Management',
-  role: 'top_management',
+  role: 'management',
 };
 
 const emptyFilters: MonitoringFilters = {};
@@ -290,7 +290,7 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('top_management sees rayon select picker', async () => {
+    it('management sees rayon select picker', async () => {
       const { getByTestId } = render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockTopManagement })} />
       );

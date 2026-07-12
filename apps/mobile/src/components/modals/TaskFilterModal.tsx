@@ -93,16 +93,16 @@ export function TaskFilterModal({
   , [userRole, userAreaId]);
 
   const showRayon = useMemo(() =>
-    userRole === 'kepala_rayon' || userRole === 'admin_data' ||
-    userRole === 'top_management' || userRole === 'admin_system' || userRole === 'superadmin'
+    userRole === 'kepala_rayon' || userRole === 'admin_rayon' ||
+    userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
   const isRayonFixed = useMemo(() =>
-    userRole === 'kepala_rayon' || userRole === 'admin_data'
+    userRole === 'kepala_rayon' || userRole === 'admin_rayon'
   , [userRole]);
 
   const canFilterRayon = useMemo(() =>
-    userRole === 'top_management' || userRole === 'admin_system' || userRole === 'superadmin'
+    userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
   const hasSubordinates = useMemo(
@@ -113,7 +113,7 @@ export function TaskFilterModal({
   // Roles that can create tasks (and thus see "Dibuat oleh Saya").
   // May 12 — source of truth is the shared TASK_CREATORS constant which
   // mirrors backend role-groups. Previously hand-rolled here and got
-  // stale after admin_data was added to TASK_CREATORS (May 11), hiding
+  // stale after admin_rayon was added to TASK_CREATORS (May 11), hiding
   // the filter from admins who CAN create tasks via the pruning
   // Tugaskan flow.
   const canCreateTask = useMemo(

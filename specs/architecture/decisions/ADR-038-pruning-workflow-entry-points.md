@@ -12,21 +12,21 @@ Accepted — **Amends [ADR-031](./ADR-031-task-typing-and-custom-fields.md), [AD
 
 After Phase 3 sub-phases 3-7 / 3-10 / 3-11 shipped (kecamatan submission + admin disposition + convert-to-task + `PruningTaskForm`), client review surfaced that the **kecamatan request** path is one of **five** legitimate ways a pruning workflow gets started — and the existing model under-documents the other four. Three concrete gaps emerged:
 
-1. **Pruning is an activity, not a request type.** Most real pruning work today is logged as a daily activity by `korlap` (often involving multiple `satgas` / `linmas` on the same job) without ever passing through a `pruning_request`. The admin_data on each rayon currently recaps this into a Google Form per location. The system must let `korlap` (and `kepala_rayon`, `admin_data`) create a pruning **activity** directly, without a parent task and without a parent request.
+1. **Pruning is an activity, not a request type.** Most real pruning work today is logged as a daily activity by `korlap` (often involving multiple `satgas` / `linmas` on the same job) without ever passing through a `pruning_request`. The admin_rayon on each rayon currently recaps this into a Google Form per location. The system must let `korlap` (and `kepala_rayon`, `admin_rayon`) create a pruning **activity** directly, without a parent task and without a parent request.
 
 2. **An activity can involve multiple workers, but only one is the assignee/reporter.** When `korlap` files a pruning activity that involved three `satgas`, all three should see that activity on their own activity feed (so daily history reflects what they actually did) — but the canonical reporter / assignee is still the `korlap`. This requires an activity tagging relation parallel to `task_tags`.
 
-3. **Tasks routinely flow through a delegation chain** before reaching the worker who executes the job. A common pattern: `top_management` assigns to `kepala_rayon` → `kepala_rayon` delegates to `admin_data` → `admin_data` delegates to `korlap` → `korlap` self-handles or assigns to `satgas`. The current `POST /tasks/:id/assign` endpoint overwrites `assigned_to` in place, losing the chain. Stakeholders need an audit trail of every delegation step (who, when, why) for accountability and reporting.
+3. **Tasks routinely flow through a delegation chain** before reaching the worker who executes the job. A common pattern: `management` assigns to `kepala_rayon` → `kepala_rayon` delegates to `admin_rayon` → `admin_rayon` delegates to `korlap` → `korlap` self-handles or assigns to `satgas`. The current `POST /tasks/:id/assign` endpoint overwrites `assigned_to` in place, losing the chain. Stakeholders need an audit trail of every delegation step (who, when, why) for accountability and reporting.
 
 The five legitimate pruning entry points are therefore:
 
 | # | Path | Trigger | Owner |
 |---|------|---------|-------|
-| **a** | Kecamatan request → review → convert to task → assign → execute → activity | External `staff_kecamatan` | `staff_kecamatan` → `admin_data` → `korlap` / `satgas` |
-| **b** | Top-down task: `top_management` creates a task targeted at `kepala_rayon` / `admin_data` / `korlap` / `satgas` directly | Internal directive | `top_management` → assignee chain |
-| **c** | Mid-level task: `kepala_rayon` or `admin_data` creates a task targeted at `korlap` or `satgas` | Internal planning | `kepala_rayon` / `admin_data` → executor |
-| **d** | Self-assigned + tag: `kepala_rayon` / `admin_data` / `korlap` creates a task assigned to themselves and tags the workers involved | Centralized reporting | Reporter (assignee) + tagged workers |
-| **e** | Direct activity, no task: `korlap` / `kepala_rayon` / `admin_data` opens `ActivitySubmissionScreen`, picks pruning type, optionally tags involved workers | Daily field reality | Reporter + tagged workers |
+| **a** | Kecamatan request → review → convert to task → assign → execute → activity | External `staff_kecamatan` | `staff_kecamatan` → `admin_rayon` → `korlap` / `satgas` |
+| **b** | Top-down task: `management` creates a task targeted at `kepala_rayon` / `admin_rayon` / `korlap` / `satgas` directly | Internal directive | `management` → assignee chain |
+| **c** | Mid-level task: `kepala_rayon` or `admin_rayon` creates a task targeted at `korlap` or `satgas` | Internal planning | `kepala_rayon` / `admin_rayon` → executor |
+| **d** | Self-assigned + tag: `kepala_rayon` / `admin_rayon` / `korlap` creates a task assigned to themselves and tags the workers involved | Centralized reporting | Reporter (assignee) + tagged workers |
+| **e** | Direct activity, no task: `korlap` / `kepala_rayon` / `admin_rayon` opens `ActivitySubmissionScreen`, picks pruning type, optionally tags involved workers | Daily field reality | Reporter + tagged workers |
 
 Paths **b**, **c**, **d** all need delegation tracking when the original assignee is not the executor. Paths **d** and **e** need activity tagging so tagged workers see the activity on their feed even though they didn't create it.
 
@@ -81,8 +81,8 @@ CREATE INDEX idx_task_delegations_task ON task_delegations(task_id, created_at);
 - Every successful task assignment writes one `task_delegations` row. Existing endpoints (`POST /tasks` with `assignedTo`, `POST /tasks/:id/assign`) wrap their save in the same transaction that writes the audit row.
 - `action` discrimination:
   - `initial_assign`: first time the task gets an assignee (`from_user_id = NULL`).
-  - `reassign`: a `top_management` / `kepala_rayon` reroutes the task to a different assignee at the same hierarchy level or higher.
-  - `delegate`: assignee themself hands the task to a subordinate (e.g., `kepala_rayon` → `admin_data`, `admin_data` → `korlap`, `korlap` → `satgas`). Distinguished from `reassign` by `from_user_id == previous assignee`.
+  - `reassign`: a `management` / `kepala_rayon` reroutes the task to a different assignee at the same hierarchy level or higher.
+  - `delegate`: assignee themself hands the task to a subordinate (e.g., `kepala_rayon` → `admin_rayon`, `admin_rayon` → `korlap`, `korlap` → `satgas`). Distinguished from `reassign` by `from_user_id == previous assignee`.
   - `self_handle`: assignee marks they will execute the task personally (no change in `assigned_to`, but the audit chain stops). Often paired with tagging involved workers.
 - `reason` is optional but encouraged; surfaced to the receiving user in the assignment notification.
 - New endpoint `GET /api/v1/tasks/:id/delegation-history` returns the chain ordered by `created_at` with embedded `from_user` + `to_user` summaries.
@@ -104,7 +104,7 @@ No new entry-point endpoints are needed; the existing surface covers them once a
 ### Positive
 
 - **Real-world fidelity.** Path-e (direct activity) matches how field work is actually reported today; the system stops forcing artificial `pruning_request` rows for internally-initiated work.
-- **Centralized reporting works.** Path-d (self-assign + tag) lets `kepala_rayon` / `admin_data` keep daily reporting centralized while every involved worker still sees the activity on their own feed.
+- **Centralized reporting works.** Path-d (self-assign + tag) lets `kepala_rayon` / `admin_rayon` keep daily reporting centralized while every involved worker still sees the activity on their own feed.
 - **Accountability.** Delegation history makes "who passed this to whom" answerable from production data, not Slack memory.
 - **Schema is small.** Two new tables, both append-only or near-append-only, both follow the `*_tags` / `*_history` pattern already accepted in the codebase.
 - **Backward compatible.** Existing tasks and activities continue to work; the new fields are all optional.

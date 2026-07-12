@@ -120,7 +120,7 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
   )) as Array<{ id: string; rayon_id: string | null; username: string }>;
   const fallbackAdmin =
     staffKecUsers.length === 0
-      ? await ctx.qr.query(`SELECT id, rayon_id FROM users WHERE role = 'admin_data' LIMIT 1`)
+      ? await ctx.qr.query(`SELECT id, rayon_id FROM users WHERE role = 'admin_rayon' LIMIT 1`)
       : [];
   const submitterId = staffKecUsers.length > 0 ? staffKecUsers[0].id : fallbackAdmin[0]?.id;
   // Pick the canonical Pusat staff_kecamatan user for the original 6 sample requests
@@ -129,14 +129,14 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
     staffKecUsers.find((s) => s.username === 'staff_kecamatan_pusat_1');
   const sampleSubmitterId = pusatStaff?.id ?? submitterId;
   const reviewer = await ctx.qr.query(
-    `SELECT id FROM users WHERE role IN ('admin_data','kepala_rayon','superadmin') LIMIT 1`,
+    `SELECT id FROM users WHERE role IN ('admin_rayon','kepala_rayon','superadmin') LIMIT 1`,
   );
   const reviewerId = reviewer.length > 0 ? reviewer[0].id : null;
   const rayonForRequests = await ctx.qr.query(`SELECT id FROM rayons ORDER BY name LIMIT 1`);
   const rayonIdForReq = rayonForRequests[0]?.id ?? null;
 
   if (!submitterId) {
-    ctx.log('  ⚠ No staff_kecamatan or admin_data users found, skipping pruning_requests');
+    ctx.log('  ⚠ No staff_kecamatan or admin_rayon users found, skipping pruning_requests');
   } else {
     // ── Sample requests (6 rows with distinct statuses)
     for (let i = 0; i < sampleRequests.length; i++) {

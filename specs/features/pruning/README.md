@@ -1,13 +1,13 @@
 # Pruning Requests
 
-**Status:** ✅ Active · **Backend:** `pruning-requests` · **Key ADRs:** ADR-032 (admin_data disposition), ADR-033 (staff_kecamatan role), ADR-034 (cycle prediction), ADR-035 (service capacity), ADR-038 (workflow entry points)
+**Status:** ✅ Active · **Backend:** `pruning-requests` · **Key ADRs:** ADR-032 (admin_rayon disposition), ADR-033 (staff_kecamatan role), ADR-034 (cycle prediction), ADR-035 (service capacity), ADR-038 (workflow entry points)
 
 ## Overview
-Perantingan (tree-pruning) intake and disposition. External `staff_kecamatan` users submit requests; `admin_data` disposes of them scoped by rayon. Requests tie into activities and service-capacity planning.
+Perantingan (tree-pruning) intake and disposition. External `staff_kecamatan` users submit requests; `admin_rayon` disposes of them scoped by rayon. Requests tie into activities and service-capacity planning.
 
 ## Key decisions
 - **External intake role** (ADR-033) — `staff_kecamatan` is non-clockable; submits pruning requests only.
-- **Scoped disposition** (ADR-032) — `admin_data` gains narrow pruning-request disposition scoped by `users.rayon_id`; no `admin_rayon` role.
+- **Scoped disposition** (ADR-032) — `admin_rayon` gains narrow pruning-request disposition scoped by `users.rayon_id`; no `admin_rayon` role.
 - **Workflow entry points & activity tagging** (ADR-038); **cycle prediction** (ADR-034); **capacity** (ADR-035).
 
 ## Implementation

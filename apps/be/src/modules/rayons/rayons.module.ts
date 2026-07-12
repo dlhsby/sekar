@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { RayonsController } from './rayons.controller';
 import { RayonsService } from './rayons.service';
 import { Rayon } from './entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 
 /**
  * Module for managing rayons (geographic sectors)
@@ -12,7 +12,7 @@ import { Area } from '../areas/entities/area.entity';
  * Exports RayonsService for use in other modules.
  */
 @Module({
-  imports: [TypeOrmModule.forFeature([Rayon, Area])],
+  imports: [TypeOrmModule.forFeature([Rayon, Location])],
   controllers: [RayonsController],
   providers: [RayonsService],
   exports: [RayonsService],

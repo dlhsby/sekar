@@ -31,8 +31,8 @@ export interface ProtectedRouteProps {
  *   <DashboardContent />
  * </ProtectedRoute>
  *
- * // Require admin or top_management
- * <ProtectedRoute requiredRoles={['admin', 'top_management']}>
+ * // Require admin or management
+ * <ProtectedRoute requiredRoles={['admin', 'management']}>
  *   <AdminPanel />
  * </ProtectedRoute>
  * ```

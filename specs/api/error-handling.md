@@ -343,7 +343,7 @@ POST /api/shifts/clock-in HTTP/1.1
 Content-Type: application/json
 
 {
-  "area_id": "area-uuid",
+  "location_id": "area-uuid",
   "latitude": -7.2756,
   "longitude": 112.7138
 }
@@ -408,7 +408,7 @@ POST /api/shifts/clock-in HTTP/1.1
 Content-Type: application/json
 
 {
-  "area_id": "area-uuid",
+  "location_id": "area-uuid",
   "latitude": -7.3000,
   "longitude": 112.8000
 }
@@ -427,7 +427,7 @@ Content-Type: application/json
 ```typescript
 // shifts.service.ts
 async clockIn(userId: string, dto: ClockInDto): Promise<Shift> {
-  const area = await this.areasService.findOne(dto.area_id);
+  const area = await this.areasService.findOne(dto.location_id);
   
   const distance = calculateHaversineDistance(
     dto.latitude,
@@ -647,7 +647,7 @@ throw new InternalServerErrorException(
 export class ClockInDto {
   @IsUUID()
   @IsNotEmpty()
-  area_id: string;
+  location_id: string;
 
   @IsNumber()
   @Min(-90)
@@ -733,7 +733,7 @@ describe('ShiftsService', () => {
     jest.spyOn(areasService, 'findOne').mockResolvedValue(area);
 
     // Act: Try to clock in 500m away
-    const dto = { area_id: 'uuid', latitude: -7.25, longitude: 112.70 };
+    const dto = { location_id: 'uuid', latitude: -7.25, longitude: 112.70 };
 
     // Assert
     await expect(
@@ -752,7 +752,7 @@ describe('POST /api/shifts/clock-in', () => {
       .post('/api/shifts/clock-in')
       .set('Authorization', `Bearer ${workerToken}`)
       .send({
-        area_id: areaId,
+        location_id: locationId,
         latitude: -7.30, // Too far
         longitude: 112.80,
       })
@@ -824,7 +824,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
 | `PHONE_NUMBER_DUPLICATE` | 409 | Phone number already in use | User creation/update with existing phone_number |
 | `PROFILE_PICTURE_INVALID` | 400 | Invalid image format or size exceeded | Profile picture upload validation |
 | `AREA_ASSIGNMENT_INVALID` | 400 | Cannot assign area outside user's rayon | Multi-area assignment validation |
-| `AREA_ASSIGNMENT_DUPLICATE` | 409 | User already assigned to this area | Duplicate user_areas entry |
+| `AREA_ASSIGNMENT_DUPLICATE` | 409 | User already assigned to this area | Duplicate user_locations entry |
 | `OVERTIME_NORMAL_SHIFT_ACTIVE` | 400 | Cannot start overtime while normal shift is active | Overtime clock-in validation |
 | `OVERTIME_NOT_IN_PROGRESS` | 400 | No active overtime to end | Overtime clock-out without active overtime |
 | `OVERTIME_ACTIVITY_REQUIRED` | 400 | Activity submission required to end overtime | Missing mandatory activity on overtime clock-out |

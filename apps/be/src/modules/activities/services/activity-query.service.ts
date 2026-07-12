@@ -12,7 +12,7 @@ import { ACTIVITY_SUBMITTERS } from '../../users/constants/role-groups';
 export interface ActivityListFilters {
   user_id?: string;
   shift_id?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   activity_type_id?: string;
   from_date?: string;
@@ -23,7 +23,7 @@ export interface ActivityListFilters {
   // ADR-038 (May 2026) — return activities where the current user is the
   // owner OR appears in `activity_tags`. When set, this overrides the
   // default role-based scope so tagged satgas/linmas see activities filed
-  // for them by korlap/admin_data even outside their own area.
+  // for them by korlap/admin_rayon even outside their own area.
   involving_me?: boolean;
 }
 
@@ -100,18 +100,18 @@ export class ActivityQueryService {
 
   /**
    * Resolve the set of area UUIDs a korlap is permanently assigned to via
-   * `user_areas`. Falls back to `[user.area_id]` if no row exists, so legacy
+   * `user_areas`. Falls back to `[user.location_id]` if no row exists, so legacy
    * single-area users keep working before backfill.
    */
   async getKorlapAreaIds(user: User): Promise<string[]> {
-    const rows: Array<{ area_id: string }> = await this.activitiesRepository.manager.query(
-      `SELECT area_id FROM user_areas
+    const rows: Array<{ location_id: string }> = await this.activitiesRepository.manager.query(
+      `SELECT location_id FROM user_locations
         WHERE user_id = $1 AND assignment_type = 'permanent'`,
       [user.id],
     );
-    const ids = rows.map((r) => r.area_id);
+    const ids = rows.map((r) => r.location_id);
     if (ids.length > 0) return ids;
-    return user.area_id ? [user.area_id] : [];
+    return user.location_id ? [user.location_id] : [];
   }
 
   /**
@@ -146,9 +146,9 @@ export class ActivityQueryService {
 
   /**
    * Listing scope: involving_me (owner OR tagged) overrides the role scope;
-   * otherwise korlap sees their assigned areas, kepala_rayon/admin_data their
+   * otherwise korlap sees their assigned areas, kepala_rayon/admin_rayon their
    * rayon, submitters their own rows. ADMIN_SYSTEM / SUPERADMIN /
-   * TOP_MANAGEMENT see all.
+   * MANAGEMENT see all.
    */
   private async applyAccessScope(
     queryBuilder: SelectQueryBuilder<Activity>,
@@ -170,7 +170,7 @@ export class ActivityQueryService {
     if (user.role === UserRole.KORLAP) {
       return this.applyKorlapScope(queryBuilder, user);
     }
-    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
+    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
       queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
       return;
     }
@@ -182,7 +182,7 @@ export class ActivityQueryService {
   /**
    * Korlap may have multiple permanent areas via `user_areas` (e.g.
    * korlap_pusat_1 → all 13 Rayon Pusat areas); the legacy single
-   * `user.area_id` only reflects their primary area.
+   * `user.location_id` only reflects their primary area.
    */
   private async applyKorlapScope(
     queryBuilder: SelectQueryBuilder<Activity>,
@@ -193,7 +193,7 @@ export class ActivityQueryService {
       queryBuilder.andWhere('1=0');
       return;
     }
-    queryBuilder.andWhere('activity.area_id IN (:...korlapAreaIds)', { korlapAreaIds });
+    queryBuilder.andWhere('activity.location_id IN (:...korlapAreaIds)', { korlapAreaIds });
   }
 
   private applyEntityFilters(
@@ -206,8 +206,10 @@ export class ActivityQueryService {
     if (filters.shift_id) {
       queryBuilder.andWhere('activity.shift_id = :shiftId', { shiftId: filters.shift_id });
     }
-    if (filters.area_id) {
-      queryBuilder.andWhere('activity.area_id = :filterAreaId', { filterAreaId: filters.area_id });
+    if (filters.location_id) {
+      queryBuilder.andWhere('activity.location_id = :filterAreaId', {
+        filterAreaId: filters.location_id,
+      });
     }
     if (filters.rayon_id) {
       queryBuilder.andWhere('area.rayon_id = :filterRayonId', { filterRayonId: filters.rayon_id });
@@ -270,7 +272,7 @@ export class ActivityQueryService {
     if (user.role === UserRole.KORLAP) {
       return this.assertKorlapReadScope(activity, user);
     }
-    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA) {
+    if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
       return this.assertRayonReadScope(activity, user);
     }
     if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole) && activity.user_id !== user.id) {
@@ -280,12 +282,12 @@ export class ActivityQueryService {
         'You can only access your own activities',
       );
     }
-    // ADMIN_SYSTEM, SUPERADMIN, TOP_MANAGEMENT can see all activities
+    // ADMIN_SYSTEM, SUPERADMIN, MANAGEMENT can see all activities
   }
 
   private async assertKorlapReadScope(activity: Activity, user: User): Promise<void> {
     const korlapAreaIds = await this.getKorlapAreaIds(user);
-    if (!activity.area_id || !korlapAreaIds.includes(activity.area_id)) {
+    if (!activity.location_id || !korlapAreaIds.includes(activity.location_id)) {
       throw new ApiException(
         HttpStatus.FORBIDDEN,
         ApiErrorCode.ACTIVITY_ACCESS_DENIED,

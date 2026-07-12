@@ -110,10 +110,10 @@ describe('OvertimeController', () => {
       expect(result.data).toHaveLength(1);
     });
 
-    it('should call service.findAllPaginated for admin_data user', async () => {
+    it('should call service.findAllPaginated for admin_rayon user', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-uuid-1',
       } as User;
       const filterDto: OvertimeFilterDto = {};

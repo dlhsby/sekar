@@ -7,8 +7,8 @@
     "loading": "Loading…",
     "noData": "No data",
     "updated": "Updated {{time}}",
-    "searchPlaceholder": "Search officers, areas, rayons…",
-    "searchLabel": "Search officers, areas, or rayons",
+    "searchPlaceholder": "Search officers, areas, districts…",
+    "searchLabel": "Search officers, areas, or districts",
     "filterLabel": "Filter",
     "refreshLabel": "Refresh",
     "refreshSuccess": "Monitoring data refreshed",
@@ -31,7 +31,7 @@
   },
   "surabaya": {
     "title": "Surabaya",
-    "tapHint": "Tap to view rayons"
+    "tapHint": "Tap to view districts"
   },
   "layers": {
     "title": "Settings",
@@ -39,13 +39,13 @@
     "areaPins": "Area Pins",
     "petugas": "Officers",
     "overdue": "Overdue Plants",
-    "rayon": "Rayon Border",
+    "rayon": "District Border",
     "area": "Area Border"
   },
   "search": {
     "personnelLabel": "Officers",
     "areaLabel": "Area",
-    "rayonLabel": "Rayon",
+    "rayonLabel": "District",
     "recentTitle": "Recent Searches",
     "clearRecent": "Clear",
     "recentEmpty": "No recent searches yet",
@@ -65,8 +65,8 @@
     "label": "Search Officers",
     "placeholder": "Officer name…",
     "statusLabel": "Status",
-    "rayonLabel": "Rayon",
-    "rayonAllOption": "All Rayons",
+    "rayonLabel": "District",
+    "rayonAllOption": "All Districts",
     "roleLabel": "Role",
     "roleAllOption": "All Roles",
     "matchSummary": "{{matched}} / {{total}} officers",
@@ -76,7 +76,7 @@
   "sidebar": {
     "backToList": "Back to list",
     "location": "Location",
-    "rayonLabel": "Rayon:",
+    "rayonLabel": "District:",
     "areaLabel": "Area:",
     "withinArea": "Within area",
     "outsideArea": "Outside area",
@@ -101,7 +101,7 @@
     "description": "Select multiple officers from another area to reassign at once",
     "sourceAreaLabel": "Source Area",
     "selectSourcePlaceholder": "-- Select source area --",
-    "noOtherAreas": "No other areas in the same rayon.",
+    "noOtherAreas": "No other areas in the same district.",
     "selectLabel": "Select Officers",
     "selectedCount": "({{count}} selected)",
     "deselectAll": "Deselect All",
@@ -123,7 +123,7 @@
     "description": "Select an officer from another area to reassign",
     "sourceAreaLabel": "Source Area",
     "sourceAreaPlaceholder": "-- Select source area --",
-    "noOtherAreas": "No other areas in the same rayon.",
+    "noOtherAreas": "No other areas in the same district.",
     "selectLabel": "Select Officer",
     "noActiveWorkers": "No active officers in this area.",
     "reasonLabel": "Reason",
@@ -136,11 +136,11 @@
   "hierarchy": {
     "scopeLabel": "Filter scope",
     "city": "City",
-    "rayon": "Rayon",
+    "rayon": "District",
     "area": "Area",
-    "rayonLabel": "Select Rayon",
+    "rayonLabel": "Select District",
     "areaLabel": "Select Area",
-    "areaDisabled": "Select rayon first",
+    "areaDisabled": "Select district first",
     "activeCount": "{{count}} active",
     "resetLabel": "Reset all filters"
   },
@@ -150,7 +150,7 @@
     "workers": "Officers",
     "plants": "Plants",
     "overdue": "Overdue",
-    "rayons": "Rayon Boundaries",
+    "rayons": "District Boundaries",
     "areas": "Area Boundaries",
     "showLayer": "Show {{label}}"
   },
@@ -207,9 +207,9 @@
     "heritageNoLabel": "No label",
     "workersLabel": "Officers in This Area",
     "workersList": "List of officers in this area",
-    "pruningTitle": "Pruning Requests in Rayon {{rayon}}",
+    "pruningTitle": "Pruning Requests in District {{district}}",
     "loadingPruning": "Loading requests…",
-    "noPruning": "No active pruning requests in this rayon.",
+    "noPruning": "No active pruning requests in this district.",
     "unknownSpecies": "Unknown species",
     "treeUnit": "tree",
     "overduePlantStatus": "Overdue",
@@ -251,7 +251,7 @@
     "tasksTitle": "Today's Tasks",
     "contactTitle": "Contact",
     "phoneLabel": "Phone",
-    "rayonLabel": "Rayon:",
+    "rayonLabel": "District:",
     "areaLabel": "Area:"
   },
   "sidePanel": {
@@ -281,7 +281,7 @@
     "shortageLabel": "Short",
     "reassignButton": "Reassign Officers",
     "dataUnavailable": "Data not available.",
-    "rayonDataUnavailable": "Rayon data not available.",
+    "rayonDataUnavailable": "District data not available.",
     "cityDataUnavailable": "City data not available.",
     "activeStatus": "Active",
     "idleStatus": "Idle",
@@ -345,6 +345,6 @@
     }
   },
   "areaDrawer": {
-    "rayonFallback": "Rayon —"
+    "rayonFallback": "District —"
   }
 }

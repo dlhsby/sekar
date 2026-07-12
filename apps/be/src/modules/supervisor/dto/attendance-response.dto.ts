@@ -5,10 +5,10 @@ import { PaginatedResponseDto } from '../../../common/dto/pagination.dto';
  * DTO for area info in attendance
  */
 export class AttendanceAreaDto {
-  @ApiProperty({ description: 'Area UUID' })
+  @ApiProperty({ description: 'Location UUID' })
   id: string;
 
-  @ApiProperty({ description: 'Area name', example: 'Taman Bungkul' })
+  @ApiProperty({ description: 'Location name', example: 'Taman Bungkul' })
   name: string;
 }
 
@@ -27,7 +27,7 @@ export class ClockedInWorkerDto {
 
   @ApiProperty({
     type: AttendanceAreaDto,
-    description: 'Area (from shift or user assignment)',
+    description: 'Location (from shift or user assignment)',
     nullable: true,
   })
   area: AttendanceAreaDto | null;

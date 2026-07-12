@@ -14,7 +14,7 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as activitiesApi from '@/lib/api/activities';
 import * as activityTypesApi from '@/lib/api/activity-types';
-import * as areasApi from '@/lib/api/areas';
+import * as areasApi from '@/lib/api/locations';
 
 // ─── Next.js Mocks ────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ jest.mock('@/lib/auth/hooks', () => ({
 
 jest.mock('@/lib/api/activities');
 jest.mock('@/lib/api/activity-types');
-jest.mock('@/lib/api/areas');
+jest.mock('@/lib/api/locations');
 
 // ─── Test Users ───────────────────────────────────────────────────────────────
 
@@ -86,9 +86,9 @@ const mockKepalaRayonUser = {
 
 const mockAdminDataUser = {
   id: 'user-admin-data',
-  username: 'admin_data1',
+  username: 'admin_rayon1',
   full_name: 'Admin Data',
-  role: 'admin_data' as const,
+  role: 'admin_rayon' as const,
   area_id: null,
   created_at: '2026-01-01T00:00:00Z',
 };
@@ -199,7 +199,7 @@ describe('ActivitiesPage', () => {
       isLoading: false,
     });
 
-    (areasApi.useAreas as jest.Mock).mockReturnValue({
+    (areasApi.useLocations as jest.Mock).mockReturnValue({
       data: mockAreasData,
       isLoading: false,
     });
@@ -252,7 +252,7 @@ describe('ActivitiesPage', () => {
       expect(mockPush).not.toHaveBeenCalled();
     });
 
-    it('should allow admin_data role to access the page', () => {
+    it('should allow admin_rayon role to access the page', () => {
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
@@ -786,7 +786,7 @@ describe('ActivitiesPage', () => {
       expect(screen.queryByRole('menuitem', { name: /^tolak$/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Setujui menuitem for admin_data role', async () => {
+    it('should NOT show Setujui menuitem for admin_rayon role', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
@@ -798,7 +798,7 @@ describe('ActivitiesPage', () => {
       expect(screen.queryByRole('menuitem', { name: /setujui/i })).not.toBeInTheDocument();
     });
 
-    it('should NOT show Tolak menuitem for admin_data role', async () => {
+    it('should NOT show Tolak menuitem for admin_rayon role', async () => {
       const user = userEvent.setup();
       mockUseAuth.mockReturnValue({ user: mockAdminDataUser, loading: false });
 
@@ -959,7 +959,7 @@ describe('ActivitiesPage', () => {
     });
 
     it('should handle undefined areas data gracefully without throwing', () => {
-      (areasApi.useAreas as jest.Mock).mockReturnValue({
+      (areasApi.useLocations as jest.Mock).mockReturnValue({
         data: undefined,
         isLoading: false,
       });

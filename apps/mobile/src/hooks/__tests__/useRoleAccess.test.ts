@@ -16,29 +16,29 @@ jest.mock('../../store/hooks', () => ({
 // Mock the roles constants
 jest.mock('../../constants/roles', () => ({
   isClockableRole: jest.fn((role: string) =>
-    ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'].includes(role),
+    ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'].includes(role),
   ),
   canSubmitActivities: jest.fn((role: string) =>
-    ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'].includes(role),
+    ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'].includes(role),
   ),
   canCreateTasks: jest.fn((role: string) =>
-    ['korlap', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'].includes(role),
+    ['korlap', 'kepala_rayon', 'management', 'admin_system', 'superadmin'].includes(role),
   ),
   canReceiveTasks: jest.fn((role: string) =>
     ['satgas', 'linmas', 'korlap', 'kepala_rayon'].includes(role),
   ),
   canSubmitOvertime: jest.fn((role: string) =>
-    ['satgas', 'linmas', 'korlap', 'admin_data', 'kepala_rayon'].includes(role),
+    ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'].includes(role),
   ),
   canApproveOvertime: jest.fn((role: string) =>
-    ['korlap', 'kepala_rayon', 'top_management'].includes(role),
+    ['korlap', 'kepala_rayon', 'management'].includes(role),
   ),
   canMonitor: jest.fn((role: string) =>
-    ['korlap', 'admin_data', 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'].includes(role),
+    ['korlap', 'admin_rayon', 'kepala_rayon', 'management', 'admin_system', 'superadmin'].includes(role),
   ),
   getMonitoringScope: jest.fn((role: string) => {
-    if (['top_management', 'admin_system', 'superadmin'].includes(role)) return 'city';
-    if (['kepala_rayon', 'admin_data'].includes(role)) return 'rayon';
+    if (['management', 'admin_system', 'superadmin'].includes(role)) return 'city';
+    if (['kepala_rayon', 'admin_rayon'].includes(role)) return 'rayon';
     if (role === 'korlap') return 'area';
     return null;
   }),
@@ -103,9 +103,9 @@ describe('useRoleAccess', () => {
     });
   });
 
-  describe('admin_data role', () => {
+  describe('admin_rayon role', () => {
     it('should have correct permissions', () => {
-      setupRole('admin_data');
+      setupRole('admin_rayon');
       const { result } = renderHook(() => useRoleAccess());
 
       expect(result.current.canClock).toBe(true);
@@ -135,9 +135,9 @@ describe('useRoleAccess', () => {
     });
   });
 
-  describe('top_management role', () => {
+  describe('management role', () => {
     it('should have correct permissions', () => {
-      setupRole('top_management');
+      setupRole('management');
       const { result } = renderHook(() => useRoleAccess());
 
       expect(result.current.canClock).toBe(false);

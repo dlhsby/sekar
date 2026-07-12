@@ -1,6 +1,6 @@
 /**
  * Rayon Detail Page — RAY-1 (Phase 4-R revamp)
- * Access: admin_system, superadmin, top_management, kepala_rayon
+ * Access: admin_system, superadmin, management, kepala_rayon
  */
 
 'use client';
@@ -23,13 +23,13 @@ import {
   PageHeader,
   StatusPill,
 } from '@/components/ui';
-import { Area } from '@/types/models';
+import { Location } from '@/types/models';
 import { formatArea } from '@/lib/utils/geo';
 import type { ColumnDef } from '@/components/ui/data-table';
 
 // Lowercase roles per ADR-009 (the prior PascalCase gate matched nothing and
 // redirected every user to a non-existent /dashboard).
-const ALLOWED_ROLES = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
+const ALLOWED_ROLES = ['admin_system', 'superadmin', 'management', 'kepala_rayon'];
 
 interface RayonDetailPageProps {
   // Next 16: route params are a Promise and must be unwrapped with `use()`.
@@ -74,7 +74,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   const areas = areasData?.data || [];
   const pagination = areasData?.meta;
 
-  const columns: ColumnDef<Area>[] = [
+  const columns: ColumnDef<Location>[] = [
     {
       id: 'name',
       header: t('admin:areas.columnName'),
@@ -82,7 +82,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       enableColumnFilter: false,
       meta: { label: t('admin:areas.columnName') },
       cell: ({ row }) => (
-        <Link href={`/areas/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
+        <Link href={`/locations/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
           {row.original.name}
         </Link>
       ),
@@ -93,7 +93,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       enableSorting: false,
       enableColumnFilter: false,
       meta: { label: t('admin:areas.columnType') },
-      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.areaType?.name || '—'}</span>,
+      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.locationType?.name || '—'}</span>,
     },
     {
       id: 'coverage_area',

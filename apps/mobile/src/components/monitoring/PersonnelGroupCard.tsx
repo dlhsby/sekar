@@ -22,7 +22,7 @@ const ROLE_ICON: Record<string, string> = {
   linmas: 'shield-account',
   korlap: 'account-tie',
   kepala_rayon: 'account-star',
-  admin_data: 'account-cog',
+  admin_rayon: 'account-cog',
 };
 
 // Activity buckets shown in the compact breakdown row (CP6). Offline is omitted

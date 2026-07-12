@@ -1177,7 +1177,7 @@ _[tool: fork_verifier_agent]_
 - **01 Monitoring** (5) — map default, drag-up worker list, user detail sheet w/ sticky actions, trail mode, layer toggle sheet
 - **02 Login** (3) — idle / submitting / error
 - **03 Onboarding** (3) — welcome / permissions / area preview
-- **04 Home per role** (5) — satgas, korlap, kepala_rayon, top_management, staff_kecamatan
+- **04 Home per role** (5) — satgas, korlap, kepala_rayon, management, staff_kecamatan
 - **05 Profile + Settings** (3) — profile, settings, edit profile
 
 **Key tightenings noted on each frame:**
@@ -1512,7 +1512,7 @@ _[tool: fork_verifier_agent]_
 
 **File 1 · `wf-flows.html`** (12) — 5-slide pre-login carousel · login (idle / per-input error / generic error toast / forgot) · permissions (location, kamera, notifikasi, gallery, telepon, SMS) · area preview
 
-**File 2 · `wf-home-monitoring.html`** (18) — Absensi component 3 states (belum / sedang / selesai) · Home for all 7 roles (satgas, linmas, korlap, admin_data, kepala_rayon, top_management, kecamatan — each composed from absensi + role-specific widgets) · Monitoring deep-dives with **Tools FAB grouping** (collapsed → expanded toolbox with refresh, ukur jarak, fullscreen, screenshot, share location, Waze) · zoom group as pill · worker list sheet · user detail w/ sticky 4-button action bar · trail mode w/ scrubber · layer toggle sheet · area detail sheet · plant detail
+**File 2 · `wf-home-monitoring.html`** (18) — Absensi component 3 states (belum / sedang / selesai) · Home for all 7 roles (satgas, linmas, korlap, admin_rayon, kepala_rayon, management, kecamatan — each composed from absensi + role-specific widgets) · Monitoring deep-dives with **Tools FAB grouping** (collapsed → expanded toolbox with refresh, ukur jarak, fullscreen, screenshot, share location, Waze) · zoom group as pill · worker list sheet · user detail w/ sticky 4-button action bar · trail mode w/ scrubber · layer toggle sheet · area detail sheet · plant detail
 
 **File 3 · `wf-features.html`** (16) — Tugas (list / detail / execution with foto-required gating) · Aktivitas (list / create / camera with watermark per ADR-021) · Lembur (request w/ pre-fill + 3-step approval timeline) · **Perantingan full chain** (kecamatan list → 4-step stepper create → vertical tracking timeline visible to all stakeholders → admin review+delegate w/ SLA badge → satgas execution showing "DARI PERANTINGAN" provenance pill) · Profile (satgas vs kepala_rayon — different cards) · Settings (LAPANGAN section gated to field roles)
 

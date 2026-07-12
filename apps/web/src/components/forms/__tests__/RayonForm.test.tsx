@@ -67,7 +67,7 @@ function ExternalSubmitButton() {
 }
 
 describe('RayonForm', () => {
-  it('renders name, color, description and the boundary editor', () => {
+  it('renders name, map-style colours, description and the boundary editor', () => {
     render(
       <>
         <RayonForm formId={FORM_ID} mode="create" onSubmit={jest.fn().mockResolvedValue(undefined)} />
@@ -75,7 +75,11 @@ describe('RayonForm', () => {
       </>
     );
     expect(screen.getByLabelText(/nama rayon/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/kode warna/i)).toBeInTheDocument();
+    // The legacy single "Warna" field is gone — only the map-style border/fill
+    // colours remain (fill is optional, toggled off by default).
+    expect(screen.getByLabelText(/warna batas/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/kode warna/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: /aktifkan warna isi/i })).toBeInTheDocument();
     expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /buat rayon/i })).toBeInTheDocument();
   });

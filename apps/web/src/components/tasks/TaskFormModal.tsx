@@ -19,7 +19,7 @@ import { FormActions } from '@/components/forms/FormActions';
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useRayons } from '@/lib/api/rayons';
 import { getErrorMessage } from '@/lib/api/client';
 import { VALID_TASK_ASSIGNMENTS, ROLE_LABELS } from '@/lib/constants/roles';
@@ -43,7 +43,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   const { user } = useAuth();
   const createMutation = useCreateTask();
   const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useAreas({ limit: 1000 });
+  const { data: areasData } = useLocations({ limit: 1000 });
   const { data: rayonsData } = useRayons();
 
   const [title, setTitle] = useState('');
@@ -169,7 +169,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                   { value: 'none', label: t('tasks:form.areaPlaceholder') },
                   ...areas.map((a) => ({
                     value: a.id,
-                    label: a.areaType?.name ? `${a.name} (${a.areaType.name})` : a.name,
+                    label: a.locationType?.name ? `${a.name} (${a.locationType.name})` : a.name,
                   })),
                 ]}
               />

@@ -12,9 +12,9 @@ const ANALYTICS_VIEWERS: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];
@@ -23,8 +23,8 @@ const ANALYTICS_VIEWERS: UserRole[] = [
 const TEAM_ANALYTICS_VIEWERS: UserRole[] = [
   'korlap',
   'kepala_rayon',
-  'admin_data',
-  'top_management',
+  'admin_rayon',
+  'management',
   'admin_system',
   'superadmin',
 ];

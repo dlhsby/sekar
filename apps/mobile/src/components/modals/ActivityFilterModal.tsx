@@ -66,16 +66,16 @@ export function ActivityFilterModal({
   , [userRole]);
 
   const showRayon = useMemo(() =>
-    userRole === 'kepala_rayon' || userRole === 'admin_data' ||
-    userRole === 'top_management' || userRole === 'admin_system' || userRole === 'superadmin'
+    userRole === 'kepala_rayon' || userRole === 'admin_rayon' ||
+    userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
   const isRayonFixed = useMemo(() =>
-    userRole === 'kepala_rayon' || userRole === 'admin_data'
+    userRole === 'kepala_rayon' || userRole === 'admin_rayon'
   , [userRole]);
 
   const canSelectRayon = useMemo(() =>
-    userRole === 'top_management' || userRole === 'admin_system' || userRole === 'superadmin'
+    userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
   const hasSubordinates = useMemo(

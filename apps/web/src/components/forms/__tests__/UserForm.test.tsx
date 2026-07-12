@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserForm } from '../UserForm';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import type { User } from '@/types/models';
 import { ReactNode } from 'react';
 
@@ -18,15 +18,32 @@ import { ReactNode } from 'react';
 jest.mock('@/lib/api/rayons', () => ({
   useRayons: jest.fn(),
 }));
-jest.mock('@/lib/api/areas', () => ({
-  useAreas: jest.fn(),
+jest.mock('@/lib/api/locations', () => ({
+  useLocations: jest.fn(),
 }));
 jest.mock('@/lib/api/shift-definitions', () => ({
   useShiftDefinitions: jest.fn(() => ({ data: [], isLoading: false })),
 }));
-jest.mock('@/lib/api/user-areas', () => ({
+jest.mock('@/lib/api/user-locations', () => ({
   // Stable `undefined` ref so the prefill effect doesn't loop in tests.
   useUserAreas: jest.fn(() => ({ data: undefined })),
+}));
+// Roles are data-driven (ADR-044): the form derives its options + scope inputs
+// from the /roles catalog, so provide it (with monitoring_scope) to the tests.
+jest.mock('@/lib/api/roles', () => ({
+  useRoles: jest.fn(() => ({
+    data: [
+      { code: 'satgas', name: 'Satgas', monitoring_scope: 'none' },
+      { code: 'linmas', name: 'Linmas', monitoring_scope: 'none' },
+      { code: 'korlap', name: 'Korlap', monitoring_scope: 'region' },
+      { code: 'kepala_rayon', name: 'Kepala Rayon', monitoring_scope: 'district' },
+      { code: 'admin_rayon', name: 'Admin Rayon', monitoring_scope: 'district' },
+      { code: 'management', name: 'Management', monitoring_scope: 'city' },
+      { code: 'admin_system', name: 'Admin Sistem', monitoring_scope: 'city' },
+      { code: 'superadmin', name: 'Superadmin', monitoring_scope: 'city' },
+      { code: 'staff_kecamatan', name: 'Staff Kecamatan', monitoring_scope: 'none' },
+    ],
+  })),
 }));
 
 const FORM_ID = 'user-form-test';
@@ -72,7 +89,7 @@ describe('UserForm', () => {
       data: mockRayons,
       isLoading: false,
     });
-    (useAreas as jest.Mock).mockReturnValue({
+    (useLocations as jest.Mock).mockReturnValue({
       data: { data: [], total: 0 },
       isLoading: false,
     });
@@ -299,7 +316,7 @@ describe('UserForm', () => {
       await user.click(screen.getByLabelText(/role/i));
 
       expect(screen.getByText('Admin')).toBeInTheDocument();
-      expect(screen.getByText('Top Management')).toBeInTheDocument();
+      expect(screen.getByText('Management')).toBeInTheDocument();
       expect(screen.getByText('Kepala Rayon')).toBeInTheDocument();
       expect(screen.getByText('Koordinator Lapangan')).toBeInTheDocument();
       expect(screen.getByText('Worker')).toBeInTheDocument();
@@ -411,7 +428,7 @@ describe('UserForm', () => {
             role: 'admin_system',
             rayon_id: null,
             shift_definition_id: null,
-            area_ids: [],
+            location_ids: [],
           }),
         );
       });
@@ -505,13 +522,14 @@ describe('UserForm', () => {
         isLoading: true,
       });
 
-      // Rayon is now shown only for roles with a rayon scope — render a satgas
-      // user (rayon + area + shift) so the field is present.
+      // Rayon is shown only for roles with a rayon scope — render a kepala_rayon
+      // user (district scope) so the rayon field is present. (satgas has no scope
+      // inputs now; its work area comes from schedules.)
       const initialData: User = {
         id: '1',
         username: 'testuser',
         full_name: 'Test User',
-        role: 'satgas',
+        role: 'kepala_rayon',
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
       };

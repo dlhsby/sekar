@@ -22,7 +22,7 @@ import { MonitoringService } from './monitoring.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringReassignService } from './services/monitoring-reassign.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
@@ -63,7 +63,7 @@ export class MonitoringController {
     private readonly configService: MonitoringConfigService,
     private readonly statsService: MonitoringStatsService,
     private readonly reassignService: MonitoringReassignService,
-    private readonly userAreasService: UserAreasService,
+    private readonly userAreasService: UserLocationsService,
     private readonly areaPlantStatusService: AreaPlantStatusService,
     private readonly auditLogService: AuditLogService,
   ) {}
@@ -93,9 +93,9 @@ export class MonitoringController {
   @Get('area/:id')
   @Roles(...MONITORING_AREA)
   @ApiOperation({ summary: 'Get area-level monitoring statistics' })
-  @ApiParam({ name: 'id', description: 'Area ID (UUID)' })
+  @ApiParam({ name: 'id', description: 'Location ID (UUID)' })
   @ApiResponse({ status: 200, type: AreaStatsDto })
-  @ApiResponse({ status: 404, description: 'Area not found' })
+  @ApiResponse({ status: 404, description: 'Location not found' })
   async getAreaStats(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
@@ -163,9 +163,9 @@ export class MonitoringController {
       user_id: userId,
       history: reassignmentLogs.map((log) => ({
         id: log.id,
-        previous_area_id: log.old_value?.area_id ?? null,
+        previous_area_id: log.old_value?.location_id ?? null,
         previous_area_name: log.old_value?.area_name ?? null,
-        new_area_id: log.new_value?.area_id ?? null,
+        new_area_id: log.new_value?.location_id ?? null,
         new_area_name: log.new_value?.area_name ?? null,
         reason: log.metadata?.reason ?? null,
         effective_date: log.metadata?.effective_date ?? null,
@@ -194,21 +194,21 @@ export class MonitoringController {
     const filters: {
       rayon_id?: string;
       area_ids?: string[];
-      area_id?: string;
+      location_id?: string;
       level?: 'rayon' | 'area';
     } = {};
     if (rayonId) filters.rayon_id = rayonId;
     if (level === 'rayon' || level === 'area') filters.level = level;
     await this.applyScopeFilters(user, filters);
-    // Korlap scope: collapse area_id / area_ids into a single area_ids list so
+    // Korlap scope: collapse location_id / area_ids into a single area_ids list so
     // the service only returns assigned areas, not the entire rayon.
     if (user.role === UserRole.KORLAP) {
       const ids: string[] = [];
       if (filters.area_ids) ids.push(...filters.area_ids);
-      if (filters.area_id) ids.push(filters.area_id);
+      if (filters.location_id) ids.push(filters.location_id);
       if (ids.length > 0) {
         filters.area_ids = ids;
-        delete filters.area_id;
+        delete filters.location_id;
         // Korlap can be assigned to areas in different rayons (e.g. Taman
         // Bungkul lives in 'Rayon Taman Aktif' while the korlap's home rayon
         // is Pusat). Drop the rayon anchor so the cross-rayon assignments
@@ -227,9 +227,9 @@ export class MonitoringController {
       'Returns plant status aggregates (ok/due_soon/overdue/unknown) and per-species breakdown for an area. ' +
       'Status is computed using PlantDueDateService with deterministic species-default pruning cycles.',
   })
-  @ApiParam({ name: 'id', description: 'Area ID (UUID)' })
+  @ApiParam({ name: 'id', description: 'Location ID (UUID)' })
   @ApiResponse({ status: 200, type: AreaPlantStatusDto })
-  @ApiResponse({ status: 404, description: 'Area not found' })
+  @ApiResponse({ status: 404, description: 'Location not found' })
   async getAreaPlantStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
@@ -339,7 +339,7 @@ export class MonitoringController {
   @ApiQuery({
     name: 'id',
     required: false,
-    description: 'Rayon or Area UUID (required for rayon/area scope)',
+    description: 'Rayon or Location UUID (required for rayon/area scope)',
   })
   @ApiResponse({ status: 200, description: 'Snapshot returned successfully' })
   async getSnapshot(
@@ -350,7 +350,7 @@ export class MonitoringController {
     const cityOnlyRoles: UserRole[] = [
       UserRole.SUPERADMIN,
       UserRole.ADMIN_SYSTEM,
-      UserRole.TOP_MANAGEMENT,
+      UserRole.MANAGEMENT,
     ];
     if (scope === 'city' && !cityOnlyRoles.includes(user.role as UserRole)) {
       throw new ForbiddenException('City-scope snapshot requires city-level role');
@@ -376,21 +376,21 @@ export class MonitoringController {
   // ---- Scope enforcement helpers ----
 
   private enforceScopeRayon(user: User, rayonId: string): void {
-    const scopedRoles = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
+    const scopedRoles = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
     if (scopedRoles.includes(user.role as UserRole) && user.rayon_id !== rayonId) {
       throw new ForbiddenException('You can only view monitoring for your own rayon');
     }
   }
 
-  private async enforceScopeArea(user: User, areaId: string): Promise<void> {
+  private async enforceScopeArea(user: User, locationId: string): Promise<void> {
     if (user.role === UserRole.KORLAP) {
       // Multi-area: check if korlap is assigned to this area
-      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
+      const assignedAreaIds = await this.userAreasService.getPermanentLocationIds(user.id);
       if (assignedAreaIds.length > 0) {
-        if (!assignedAreaIds.includes(areaId)) {
+        if (!assignedAreaIds.includes(locationId)) {
           throw new ForbiddenException('You can only view monitoring for your assigned areas');
         }
-      } else if (user.area_id !== areaId) {
+      } else if (user.location_id !== locationId) {
         // Fallback to legacy single area
         throw new ForbiddenException('You can only view monitoring for your own area');
       }
@@ -399,7 +399,7 @@ export class MonitoringController {
 
   private async applyScopeFilters(
     user: User,
-    filters: { area_id?: string; area_ids?: string[]; rayon_id?: string },
+    filters: { location_id?: string; area_ids?: string[]; rayon_id?: string },
   ): Promise<void> {
     // City-level roles see everything — no scope filter applied.
     if (MONITORING_CITY.includes(user.role as UserRole)) {
@@ -408,11 +408,11 @@ export class MonitoringController {
 
     if (user.role === UserRole.KORLAP) {
       // Multi-area: get all assigned area IDs
-      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(user.id);
+      const assignedAreaIds = await this.userAreasService.getPermanentLocationIds(user.id);
       if (assignedAreaIds.length > 0) {
         filters.area_ids = assignedAreaIds;
-      } else if (user.area_id) {
-        filters.area_id = user.area_id;
+      } else if (user.location_id) {
+        filters.location_id = user.location_id;
       }
       // Always anchor to the korlap's rayon as well so endpoints that only
       // honor `rayon_id` (e.g. boundaries) never leak other-rayon data.
@@ -420,7 +420,7 @@ export class MonitoringController {
         filters.rayon_id = user.rayon_id;
       }
     } else if (
-      (user.role === UserRole.ADMIN_DATA || user.role === UserRole.KEPALA_RAYON) &&
+      (user.role === UserRole.ADMIN_RAYON || user.role === UserRole.KEPALA_RAYON) &&
       user.rayon_id
     ) {
       filters.rayon_id = user.rayon_id;
@@ -428,25 +428,25 @@ export class MonitoringController {
   }
 
   private async enforceScopeUser(viewer: User, targetUserId: string): Promise<void> {
-    const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
+    const cityRoles = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT];
     if (cityRoles.includes(viewer.role as UserRole)) return;
 
     const target = await this.monitoringService.getUserDaySummary(targetUserId);
 
     if (viewer.role === UserRole.KORLAP) {
       // Allow if target area is unknown (not yet clocked in or rayon-scoped)
-      if (!target.area_id) return;
-      const assignedAreaIds = await this.userAreasService.getPermanentAreaIds(viewer.id);
+      if (!target.location_id) return;
+      const assignedAreaIds = await this.userAreasService.getPermanentLocationIds(viewer.id);
       if (assignedAreaIds.length > 0) {
-        if (!assignedAreaIds.includes(target.area_id)) {
+        if (!assignedAreaIds.includes(target.location_id)) {
           throw new ForbiddenException('You can only view users in your assigned areas');
         }
-      } else if (target.area_id !== viewer.area_id) {
+      } else if (target.location_id !== viewer.location_id) {
         throw new ForbiddenException('You can only view users in your own area');
       }
       return;
     }
-    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_DATA) {
+    if (viewer.role === UserRole.KEPALA_RAYON || viewer.role === UserRole.ADMIN_RAYON) {
       // Allow if target rayon is unknown (not yet tracked)
       if (!target.rayon_id) return;
       if (target.rayon_id !== viewer.rayon_id) {

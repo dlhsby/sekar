@@ -81,7 +81,7 @@ export type MainTabParamList = {
   QRScanner: undefined;
   AssetCheckout: { assetId: string };
   AssetReturn: { assetId: string };
-  // Pruning Requests (admin_data flow)
+  // Pruning Requests (admin_rayon flow)
   PruningReviewQueue: undefined;
   PruningDetail: {
     requestId: string;

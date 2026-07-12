@@ -39,7 +39,7 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 
 /**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
- * and admin_data are confined to their own rayon (forced on list, checked on
+ * and admin_rayon are confined to their own rayon (forced on list, checked on
  * edit). Workers read their own day via `GET /schedules/my`.
  */
 @ApiTags('schedules')
@@ -49,9 +49,9 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 export class SchedulesController {
   constructor(private readonly service: SchedulesService) {}
 
-  /** Whether the caller is rayon-scoped (kepala_rayon / admin_data). */
+  /** Whether the caller is rayon-scoped (kepala_rayon / admin_rayon). */
   private isRayonScoped(user: User): boolean {
-    return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_DATA;
+    return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON;
   }
 
   @Get('my')

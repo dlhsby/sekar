@@ -64,7 +64,7 @@ export class MeResponseDto {
   role: UserRole;
 
   @ApiPropertyOptional({ example: 'area-uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
   rayon_id: string | null;
@@ -84,4 +84,9 @@ export class MeResponseDto {
   // Phase 4-7 (M3a): mobile reads this to gate ChangePasswordScreen.
   @ApiProperty({ example: false })
   password_must_change: boolean;
+
+  // Dynamic RBAC (ADR-044): the caller's granted permission keys (may include
+  // wildcards like `*:*`, `user:*`). Powers the web `usePermissions()` hook.
+  @ApiProperty({ type: [String], example: ['role:read', 'user:*'] })
+  permissions: string[];
 }

@@ -49,7 +49,7 @@ export async function listNotablePlants(areaId: string): Promise<ApiResponse<Not
 
 /**
  * Create a notable plant (heritage tree)
- * Restricted to admin_data, kepala_rayon, superadmin
+ * Restricted to admin_rayon, kepala_rayon, superadmin
  */
 export async function createNotablePlant(
   areaId: string,

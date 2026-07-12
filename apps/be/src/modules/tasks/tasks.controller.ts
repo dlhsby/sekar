@@ -69,7 +69,7 @@ export class TasksController {
   @ApiResponse({ status: 400, description: 'Invalid input or custom_fields schema mismatch' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - insufficient permissions' })
-  @ApiResponse({ status: 404, description: 'Area or activity type not found' })
+  @ApiResponse({ status: 404, description: 'Location or activity type not found' })
   async create(@Body() createTaskDto: CreateTaskTypedDto, @GetUser() user: User): Promise<Task> {
     return this.tasksService.create(createTaskDto, user.id);
   }
@@ -431,7 +431,7 @@ export class TasksController {
     UserRole.SATGAS,
     UserRole.LINMAS,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
   )
   @ApiOperation({ summary: 'List task delegation chain (ADR-038)' })
   @ApiParam({ name: 'id', description: 'Task UUID' })
@@ -454,7 +454,7 @@ export class TasksController {
     UserRole.SATGAS,
     UserRole.LINMAS,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
   )
   @ApiOperation({ summary: 'Get task lineage — parent chain + children' })
   @ApiParam({ name: 'id', description: 'Task UUID' })

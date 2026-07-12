@@ -7,11 +7,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
-import { Schedule, ScheduleStatus } from './entities/schedule.entity';
-import { ScheduleArea } from './entities/schedule-area.entity';
+import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
 import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { Location } from '../locations/entities/location.entity';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import {
   canEditTargetRole,
@@ -54,13 +53,13 @@ export class SchedulesService {
   constructor(
     @InjectRepository(Schedule)
     private readonly rosterRepo: Repository<Schedule>,
-    @InjectRepository(ScheduleArea)
-    private readonly rosterAreaRepo: Repository<ScheduleArea>,
+    @InjectRepository(ScheduleLocation)
+    private readonly rosterAreaRepo: Repository<ScheduleLocation>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepo: Repository<Area>,
-    private readonly userAreasService: UserAreasService,
+    @InjectRepository(Location)
+    private readonly locationRepo: Repository<Location>,
+    private readonly userAreasService: UserLocationsService,
     private readonly auditLogService: AuditLogService,
   ) {}
 
@@ -69,8 +68,8 @@ export class SchedulesService {
   /**
    * Enforce the roster edit hierarchy: the `editor` may only edit a row whose
    * worker role is below theirs (see schedule-edit.policy) AND within their
-   * scope — rayon for kepala_rayon/admin_data, assigned areas for korlap.
-   * admin_system/superadmin/top_management act globally. Throws otherwise.
+   * scope — rayon for kepala_rayon/admin_rayon, assigned areas for korlap.
+   * admin_system/superadmin/management act globally. Throws otherwise.
    */
   private async assertCanEdit(editor: User, row: Schedule): Promise<void> {
     const target = row.user ?? (await this.userRepo.findOne({ where: { id: row.user_id } }));
@@ -93,8 +92,8 @@ export class SchedulesService {
       return;
     }
     // korlap: the row's areas must overlap the coordinator's own assigned areas.
-    const editorAreaIds = await this.userAreasService.getPermanentAreaIds(editor.id);
-    const overlap = rowAreas.some((a) => editorAreaIds.includes(a.area_id));
+    const editorAreaIds = await this.userAreasService.getPermanentLocationIds(editor.id);
+    const overlap = rowAreas.some((a) => editorAreaIds.includes(a.location_id));
     if (!overlap) throw new ForbiddenException('This worker is outside your assigned areas');
   }
 
@@ -119,8 +118,8 @@ export class SchedulesService {
     }
     // korlap: the worker's permanent areas must overlap the coordinator's.
     const [editorAreaIds, targetAreaIds] = await Promise.all([
-      this.userAreasService.getPermanentAreaIds(editor.id),
-      this.userAreasService.getPermanentAreaIds(target.id),
+      this.userAreasService.getPermanentLocationIds(editor.id),
+      this.userAreasService.getPermanentLocationIds(target.id),
     ]);
     if (!targetAreaIds.some((a) => editorAreaIds.includes(a))) {
       throw new ForbiddenException('This worker is outside your assigned areas');
@@ -170,14 +169,15 @@ export class SchedulesService {
         created_by: actor.id,
       }),
     );
-    const areaIds = dto.area_ids ?? (await this.userAreasService.getPermanentAreaIds(dto.user_id));
-    await this.setAreas(row.id, areaIds, actor.id);
+    const locationIds =
+      dto.area_ids ?? (await this.userAreasService.getPermanentLocationIds(dto.user_id));
+    await this.setAreas(row.id, locationIds, actor.id);
     await this.audit(
       row,
       'add_schedule',
       actor.id,
       {},
-      { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: areaIds },
+      { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: locationIds },
     );
     return this.findOne(row.id);
   }
@@ -189,7 +189,7 @@ export class SchedulesService {
    * Returns the number of rows created.
    */
   async generateRoster(date: string, actorId: string | null): Promise<number> {
-    // Top-of-org / oversight roles (top_management, admin_system, superadmin,
+    // Top-of-org / oversight roles (management, admin_system, superadmin,
     // staff_kecamatan) get no roster row.
     const users = (await this.userRepo.find({ where: { is_active: true } })).filter(
       (u) => !isNonRosteredRole(u.role),
@@ -202,10 +202,10 @@ export class SchedulesService {
     const usersToCreate = users.filter((u) => !alreadyRostered.has(u.id));
 
     // Field workers (satgas/linmas/korlap) get their permanent areas; rayon
-    // managers (kepala_rayon/admin_data) get a fixed assignment to their WHOLE
-    // rayon (all its areas) — editable only up the chain (top_management+).
+    // managers (kepala_rayon/admin_rayon) get a fixed assignment to their WHOLE
+    // rayon (all its areas) — editable only up the chain (management+).
     const fieldWorkers = usersToCreate.filter((u) => !isRayonManagerRole(u.role));
-    const userAreaMap = await this.userAreasService.getPermanentAreaIdsForUsers(
+    const userAreaMap = await this.userAreasService.getPermanentLocationIdsForUsers(
       fieldWorkers.map((u) => u.id),
     );
     const managerRayonIds = [
@@ -220,7 +220,7 @@ export class SchedulesService {
 
     let created = 0;
     for (const user of usersToCreate) {
-      const areaIds = isRayonManagerRole(user.role)
+      const locationIds = isRayonManagerRole(user.role)
         ? user.rayon_id
           ? (rayonAreaMap.get(user.rayon_id) ?? [])
           : []
@@ -236,7 +236,7 @@ export class SchedulesService {
         created_by: actorId,
       });
       const saved = await this.rosterRepo.save(row);
-      await this.setAreas(saved.id, areaIds, actorId);
+      await this.setAreas(saved.id, locationIds, actorId);
       created += 1;
     }
 
@@ -250,7 +250,7 @@ export class SchedulesService {
   private async buildRayonAreaMap(rayonIds: string[]): Promise<Map<string, string[]>> {
     const map = new Map<string, string[]>();
     if (rayonIds.length === 0) return map;
-    const areas = await this.areaRepo.find({
+    const areas = await this.locationRepo.find({
       where: { rayon_id: In(rayonIds) },
       select: ['id', 'rayon_id'],
     });
@@ -351,7 +351,7 @@ export class SchedulesService {
       throw new ForbiddenException('You cannot assign this replacement worker');
     }
 
-    const areaIds = (original.schedule_areas ?? []).map((dsa) => dsa.area_id);
+    const locationIds = (original.schedule_areas ?? []).map((dsa) => dsa.location_id);
 
     // Mark the original as replaced.
     const prevStatus = original.status;
@@ -406,7 +406,7 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(coverRowId, areaIds, actorId);
+    await this.setAreas(coverRowId, locationIds, actorId);
 
     await this.audit(
       original,
@@ -419,19 +419,19 @@ export class SchedulesService {
   }
 
   /** Set the day's areas (0..N). */
-  async updateAreas(id: string, areaIds: string[], actor: User): Promise<Schedule> {
+  async updateAreas(id: string, locationIds: string[], actor: User): Promise<Schedule> {
     const actorId = actor.id;
     const row = await this.findOne(id);
     await this.assertCanEdit(actor, row);
-    const before = (row.schedule_areas ?? []).map((dsa) => dsa.area_id);
-    await this.setAreas(row.id, areaIds, actorId);
+    const before = (row.schedule_areas ?? []).map((dsa) => dsa.location_id);
+    await this.setAreas(row.id, locationIds, actorId);
     // Raw column UPDATE, not `save(row)` — `schedule_areas` is a `cascade: true`
     // relation and `row` still holds the now-stale in-memory array from
     // `findOne()` above. Saving the full entity would cascade-reinsert those
     // rows right after `setAreas()` just deleted them, silently reverting the
     // change (the bug: areas appeared to save but reverted on refresh).
     await this.rosterRepo.update(id, { source: 'manual', updated_by: actorId });
-    await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: areaIds });
+    await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: locationIds });
     return this.findOne(id);
   }
 
@@ -476,7 +476,7 @@ export class SchedulesService {
   async overrideForDay(
     userId: string,
     date: string,
-    params: { areaId: string; rayonId?: string | null; shiftDefinitionId?: string | null },
+    params: { locationId: string; rayonId?: string | null; shiftDefinitionId?: string | null },
     actorId: string,
   ): Promise<string> {
     // NOTE: monitoring-reassign is authorized by its own guard; this path
@@ -512,7 +512,7 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(row.id, [params.areaId], actorId);
+    await this.setAreas(row.id, [params.locationId], actorId);
     return row.id;
   }
 
@@ -527,7 +527,7 @@ export class SchedulesService {
   // ---- Read helpers for clock-in ----
 
   /** Today's rostered areas for a worker (empty when no roster row / no areas). */
-  async getActiveAreasForDay(userId: string, date: string): Promise<Area[]> {
+  async getActiveAreasForDay(userId: string, date: string): Promise<Location[]> {
     const row = await this.findByUserAndDate(userId, date);
     return (row?.schedule_areas ?? []).map((dsa) => dsa.area).filter(Boolean);
   }
@@ -573,19 +573,19 @@ export class SchedulesService {
 
   // ---- internals ----
 
-  /** Reconcile a row's area set to exactly `areaIds`. */
+  /** Reconcile a row's area set to exactly `locationIds`. */
   private async setAreas(
     rosterId: string,
-    areaIds: string[],
+    locationIds: string[],
     actorId: string | null,
   ): Promise<void> {
-    const desired = [...new Set(areaIds)];
+    const desired = [...new Set(locationIds)];
     await this.rosterAreaRepo.delete({ schedule_id: rosterId });
     if (!desired.length) return;
     const rows = desired.map((areaId) =>
       this.rosterAreaRepo.create({
         schedule_id: rosterId,
-        area_id: areaId,
+        location_id: areaId,
         assigned_by: actorId,
       }),
     );

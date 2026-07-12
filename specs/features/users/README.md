@@ -1,13 +1,15 @@
 # Users & Profile
 
-**Status:** ✅ Active · **Backend:** `users`, `user-areas` · **Key ADRs:** ADR-009 (roles), ADR-013 (multi-area)
+**Status:** ✅ Active · 🚧 role-driven form revamp planned · **Backend:** `users`, `user-locations`, `rbac` · **Key ADRs:** ADR-044 (dynamic RBAC), ADR-045 (region scope), ADR-013 (multi-location)
 
 ## Overview
-User CRUD (admin), self-profile management, preferred language, profile photo, and user→area assignment. Korlap may be assigned to multiple areas.
+User CRUD (admin), self-profile management, preferred language, profile photo, and scope assignment. Login by username **or** phone number. The add/edit form's scope inputs are **derived from the selected role's `monitoring_scope`** (UAT revamp), not hardcoded.
 
 ## Key decisions
-- **Multi-area assignment** (ADR-013) — junction table `user_areas` for many-to-many korlap↔area.
-- `users.preferred_language` drives app locale (id/en); `users.rayon_id` scopes admin_data authority.
+- **Role-driven scope inputs** (ADR-044) — derived from the role's `monitoring_scope`: `city`/`none` → **no inputs**; `district` → rayon (**required**); `region` → rayon + region (**required**) + single location (**optional**). **satgas/linmas show no scope inputs** — their work area comes from schedules, not `user_locations`.
+- **`users.region_id` added** (ADR-045) for korlap; korlap's optional location reuses `location_id` (single). Cascades: region filtered by rayon, location by region. The legacy multi-location `user_locations` is **not** used for korlap under the new model.
+- **satgas/linmas** — backend stops writing `user_locations`; web hides the location picker entirely (removes today's satgas location multi-select).
+- `users.preferred_language` drives app locale (id/en); scope (`rayon_id`/`region_id`/`location_id`) enforced server-side by the role's monitoring scope + `monitoring:read` (ADR-044).
 
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)
@@ -18,6 +20,12 @@ User CRUD (admin), self-profile management, preferred language, profile photo, a
 ## Related features
 - [auth](../auth/README.md)
 - [geography](../geography/README.md)
+- [access-control](../access-control/README.md)
 
 ## Changelog
+- 2026-07-12 — **Area→Location terminology sweep.** Renamed `user-areas` → `user-locations`, `location_id` → `location_id`, location picker/multi-select references, ADR-013.
+- 2026-07-11 — Username edit now persists (was dropped by the update DTO); role dropdown is data-driven (dynamic /roles, hierarchy sort, correct labels); Shift column removed (comes from schedules).
+- 2026-07-11 — Review polish: removed the always-empty Shift column (shift comes from schedules/Phase 4); i18n the Location column header; Rayon/Region scope fields marked required.
+- 2026-07-10 — Phase 3 landed: `users.region_id` (Create/Update DTO + service); web user form scope is role-driven from monitoring_scope (kepala_rayon/admin_rayon→rayon; korlap→rayon+region+optional location; satgas/linmas/management→none). satgas/linmas location+shift now come from schedules (Phase 4) — new such users are unmonitored until scheduled. Verified live.
+- 2026-07-10 — Role-driven scope inputs + `users.region_id`; satgas/linmas location picker removed (ADR-044/045).
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

@@ -34,12 +34,12 @@ describe('ImportController', () => {
     update_areas: 1,
     areas: [
       {
-        name: 'Area 1',
+        name: 'Location 1',
         center: { latitude: -7.29, longitude: 112.74 },
         match_status: 'new',
       },
       {
-        name: 'Area 2',
+        name: 'Location 2',
         center: { latitude: -7.3, longitude: 112.75 },
         existing_area_id: 'area-2',
         match_status: 'update',
@@ -55,8 +55,8 @@ describe('ImportController', () => {
     skipped: 0,
     failed: 0,
     results: [
-      { name: 'Area 1', action: 'created', area_id: 'new-area-1' },
-      { name: 'Area 2', action: 'updated', area_id: 'area-2' },
+      { name: 'Location 1', action: 'created', location_id: 'new-area-1' },
+      { name: 'Location 2', action: 'updated', location_id: 'area-2' },
     ],
   };
 
@@ -198,7 +198,7 @@ describe('ImportController', () => {
         updated: 0,
         skipped: 1,
         failed: 0,
-        results: [{ name: 'Area 1', action: 'skipped' }],
+        results: [{ name: 'Location 1', action: 'skipped' }],
       };
 
       service.confirmImport.mockResolvedValue(skipResponse);
@@ -220,7 +220,7 @@ describe('ImportController', () => {
         updated: 0,
         skipped: 0,
         failed: 1,
-        results: [{ name: 'Area 1', action: 'failed', error: 'Database error' }],
+        results: [{ name: 'Location 1', action: 'failed', error: 'Database error' }],
       };
 
       service.confirmImport.mockResolvedValue(failedResponse);
@@ -246,7 +246,7 @@ describe('ImportController', () => {
             index: 0,
             action: 'create' as const,
             name_override: 'Custom Name',
-            area_type_id: 'type-1',
+            location_type_id: 'type-1',
             rayon_id: 'rayon-1',
           },
         ],

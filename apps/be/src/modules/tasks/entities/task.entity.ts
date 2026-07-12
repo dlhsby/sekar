@@ -11,7 +11,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { TaskTag } from './task-tag.entity';
 
@@ -46,7 +46,7 @@ export enum TaskPriority {
  * Workers can accept, decline, start, and complete tasks with photo evidence.
  */
 @Entity('tasks')
-@Index(['area_id', 'status'])
+@Index(['location_id', 'status'])
 @Index(['assigned_to', 'status'])
 @Index(['created_by'])
 @Index(['deadline'])
@@ -79,8 +79,8 @@ export class Task {
   deadline: Date | null;
 
   // Foreign keys
-  @Column({ name: 'area_id', type: 'uuid', nullable: true })
-  area_id: string | null;
+  @Column({ name: 'location_id', type: 'uuid', nullable: true })
+  location_id: string | null;
 
   @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
   rayon_id: string | null;
@@ -160,9 +160,9 @@ export class Task {
   deleted_by?: string;
 
   // Relations
-  @ManyToOne(() => Area, { onDelete: 'RESTRICT', nullable: true })
-  @JoinColumn({ name: 'area_id' })
-  area: Area | null;
+  @ManyToOne(() => Location, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'location_id' })
+  area: Location | null;
 
   @ManyToOne(() => Rayon, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'rayon_id' })

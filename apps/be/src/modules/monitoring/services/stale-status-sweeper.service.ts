@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { ConfigService } from '@nestjs/config';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { StatusCalculatorService } from './status-calculator.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 
 const BATCH_SIZE = 50;
 
@@ -12,7 +12,8 @@ const BATCH_SIZE = 50;
  * StaleStatusSweeperService
  *
  * Runs every 5 minutes and promotes ACTIVE workers whose last_location_at
- * is older than MISSING_THRESHOLD_SECONDS (default 900 s / 15 min) to MISSING.
+ * is older than the missing threshold (monitoring.missing_threshold_sec,
+ * default 3600 s / 1 hour — unified with the status calculator) to MISSING.
  *
  * This is a safety net for workers whose devices stop sending pings without
  * going through a clean clock-out — e.g. device battery death, network loss,
@@ -24,19 +25,22 @@ const BATCH_SIZE = 50;
 @Injectable()
 export class StaleStatusSweeperService {
   private readonly logger = new Logger(StaleStatusSweeperService.name);
-  private readonly missingStaleSecs: number;
   private sweepRunning = false;
 
   constructor(
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
-    private readonly config: ConfigService,
+    private readonly systemConfig: SystemConfigService,
     // Phase 4-3 (§C1 #8): reuse the calculator's recipient-resolution + dedup so
     // workers the sweeper flips directly (bypassing recalculate) still alert
     // korlap + kepala_rayon.
     private readonly statusCalculator: StatusCalculatorService,
-  ) {
-    this.missingStaleSecs = config.get<number>('MISSING_THRESHOLD_SECONDS', 900);
+  ) {}
+
+  /** Resolved at use-time (DB → env → default) so overrides apply without restart.
+   *  Unified with the status calculator's missing threshold (ADR-049). */
+  private get missingStaleSecs(): number {
+    return this.systemConfig.getNumber('monitoring.missing_threshold_sec', 3600);
   }
 
   @Cron('*/5 * * * *')
@@ -84,7 +88,7 @@ export class StaleStatusSweeperService {
       for (const record of stale) {
         void this.statusCalculator.notifyMissingWorker(
           record.user_id,
-          record.area_id,
+          record.location_id,
           record.rayon_id,
         );
       }

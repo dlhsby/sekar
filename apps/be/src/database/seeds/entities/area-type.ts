@@ -5,11 +5,11 @@ import type { SeedContext } from '../lib/context';
  * Combines INSERT from seed-phase1 and UPDATE from seed-phase2.
  */
 export async function seedAreaTypes(ctx: SeedContext): Promise<void> {
-  ctx.log('🏷️  Seeding Area Types…');
+  ctx.log('🏷️  Seeding Location Types…');
 
   // Insert 4 area types
   await ctx.qr.query(`
-    INSERT INTO area_types (code, name, description) VALUES
+    INSERT INTO location_types (code, name, description) VALUES
       ('park',        'Taman',      'Taman kota dan ruang terbuka hijau publik'),
       ('pedestrian',  'Trotoar',    'Jalur pejalan kaki di sepanjang jalan raya'),
       ('mini_garden', 'Taman Mini', 'Taman kecil di area pemukiman atau perumahan'),
@@ -20,12 +20,12 @@ export async function seedAreaTypes(ctx: SeedContext): Promise<void> {
 
   // Update categories: ACTIVE
   await ctx.qr.query(`
-    UPDATE area_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
+    UPDATE location_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
   `);
 
   // Update categories: PASSIVE
   await ctx.qr.query(`
-    UPDATE area_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
+    UPDATE location_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
   `);
-  ctx.log('  ✓ Updated Area Types with ACTIVE/PASSIVE categories');
+  ctx.log('  ✓ Updated Location Types with ACTIVE/PASSIVE categories');
 }

@@ -52,7 +52,7 @@ export class ShiftsController {
   @ApiOperation({
     summary: 'Clock in to start a shift',
     description:
-      'User clocks in to start a shift. Area can be auto-detected from schedule or provided manually. ' +
+      'User clocks in to start a shift. Location can be auto-detected from schedule or provided manually. ' +
       'Only one active shift allowed per user.',
   })
   @ApiBody({ type: ClockInDto })
@@ -243,7 +243,7 @@ export class ShiftsController {
           {
             id: 'shift-uuid',
             user_id: 'user-uuid',
-            area_id: 'area-uuid',
+            location_id: 'area-uuid',
             clock_in_time: '2026-01-16T08:00:00.000Z',
             clock_out_time: null,
             user: {

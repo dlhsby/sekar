@@ -5,7 +5,7 @@
  * `apps/be/src/modules/import`:
  *   GET  /import/template/:entity  → CSV template (header row)
  *   POST /import/users/csv         → { validCount, errors, sessionId? }
- *   POST /import/areas/csv         → { validCount, errors, sessionId? }
+ *   POST /import/locations/csv         → { validCount, errors, sessionId? }
  *   POST /import/confirm/:sessionId→ { imported, skipped, skippedReasons }
  *   POST /import/kmz/upload        → parsed areas + session
  *   POST /import/kmz/confirm       → import result
@@ -91,7 +91,7 @@ export async function downloadCsvTemplate(entity: CsvImportEntity): Promise<void
 
 export type KmzMatchStatus = 'new' | 'update';
 
-export interface ParsedArea {
+export interface ParsedLocation {
   name: string;
   description?: string;
   center: { latitude: number; longitude: number };
@@ -106,7 +106,7 @@ export interface KmzUploadResponse {
   total_areas: number;
   new_areas: number;
   update_areas: number;
-  areas: ParsedArea[];
+  locations: ParsedLocation[];
   expires_at: string;
 }
 
@@ -114,7 +114,7 @@ export interface KmzConfirmSelection {
   index: number;
   action: 'create' | 'update' | 'skip';
   name_override?: string;
-  area_type_id?: string;
+  location_type_id?: string;
   rayon_id?: string;
 }
 

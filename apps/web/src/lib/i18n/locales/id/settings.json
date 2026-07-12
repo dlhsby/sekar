@@ -4,7 +4,114 @@
   "tabs": {
     "general": "Umum",
     "security": "Keamanan",
-    "notifications": "Notifikasi"
+    "notifications": "Notifikasi",
+    "system": "Sistem",
+    "personal": "Pribadi"
+  },
+  "actionBar": {
+    "save": "Simpan Perubahan",
+    "reset": "Reset Perubahan",
+    "unsavedDot": "Perubahan belum disimpan"
+  },
+  "personal": {
+    "saved": "Preferensi disimpan",
+    "themeLight": "Terang",
+    "themeDark": "Gelap",
+    "themeLabel": "Tema",
+    "languageLabel": "Bahasa",
+    "changePasswordTitle": "Ubah Kata Sandi",
+    "mfaTitle": "Autentikasi Dua Faktor (2FA)",
+    "mfaHint": "Tambahkan lapisan keamanan ekstra saat login.",
+    "comingSoon": "Segera hadir",
+    "groups": {
+      "appearanceLanguage": "Tampilan & Bahasa",
+      "appearanceLanguageHint": "Tema & bahasa aplikasi.",
+      "notifications": "Notifikasi",
+      "notificationsHint": "Preferensi push per jenis.",
+      "accountSecurity": "Akun & Keamanan",
+      "accountSecurityHint": "Identitas, kata sandi & keamanan."
+    },
+    "profileTitle": "Profil",
+    "profileSaved": "Profil disimpan",
+    "photoSaved": "Foto profil diperbarui",
+    "changePhoto": "Ubah Foto",
+    "securityTitle": "Keamanan",
+    "passwordLabel": "Kata Sandi",
+    "changePasswordHint": "Perbarui kata sandi login Anda.",
+    "changePasswordButton": "Ubah Kata Sandi",
+    "appearanceTitle": "Tampilan",
+    "languageTitle": "Bahasa"
+  },
+  "system": {
+    "title": "Pengaturan Sistem",
+    "loading": "Memuat pengaturan…",
+    "loadError": "Gagal memuat pengaturan sistem.",
+    "save": "Simpan",
+    "saved": "Pengaturan disimpan",
+    "revert": "Kembalikan",
+    "reverted": "Dikembalikan ke nilai default",
+    "readOnly": "Anda hanya dapat melihat pengaturan sistem, tidak dapat mengubahnya.",
+    "secretPlaceholder": "•••••• (tersimpan terenkripsi)",
+    "source": {
+      "db": "override",
+      "env": "env",
+      "unset": "default"
+    },
+    "groups": {
+      "monitoring": "Pemantauan & Geofence",
+      "scheduling": "Penjadwalan",
+      "integrations": "Integrasi",
+      "limits": "Keamanan & Batas",
+      "general": "Umum"
+    },
+    "unsaved": "Perubahan belum disimpan",
+    "subgroups": {
+      "thresholds": "Ambang Status",
+      "geofence": "Geofence",
+      "roster": "Roster & Shift",
+      "push": "Notifikasi Push",
+      "maps": "Peta",
+      "ratelimit": "Batas Laju",
+      "app": "Aplikasi",
+      "other": "Lainnya"
+    },
+    "settingCount": "{{count}} setelan",
+    "labels": {
+      "monitoring.active_max_age_sec": "Usia maksimum status aktif (detik)",
+      "monitoring.inactive_threshold_sec": "Ambang batas tidak aktif (detik)",
+      "monitoring.missing_threshold_sec": "Ambang batas hilang (detik)",
+      "monitoring.location_ping_interval_sec": "Interval ping lokasi (detik)",
+      "monitoring.staffing_debounce_sec": "Debounce peringatan understaffed (detik)",
+      "geofence.tolerance_m": "Toleransi batas geofence (meter)",
+      "geofence.outside_area_grace_sec": "Tenggang di luar area (detik)",
+      "schedule.materialization_days": "Horizon materialisasi jadwal (hari)",
+      "schedule.min_shift_duration_min": "Durasi shift minimum (menit)",
+      "fcm.enabled": "Aktifkan push notification (FCM)",
+      "maps.browser_key": "Google Maps browser key",
+      "ratelimit.global_per_min": "Batas permintaan global / menit",
+      "ratelimit.login_per_min": "Batas percobaan login / menit",
+      "auth.change_password_throttle_max": "Batas percobaan ganti sandi",
+      "auth.change_password_throttle_ttl_ms": "Jendela throttle ganti sandi (ms)",
+      "app.default_locale": "Bahasa default aplikasi"
+    },
+    "help": {
+      "monitoring.active_max_age_sec": "Usia lokasi terakhir agar petugas masih dihitung aktif",
+      "monitoring.inactive_threshold_sec": "Usia lokasi terakhir sebelum status berubah aktif → tidak aktif",
+      "monitoring.missing_threshold_sec": "Usia lokasi terakhir sebelum status berubah menjadi hilang (dipakai kalkulator status + penyapu latar)",
+      "monitoring.staffing_debounce_sec": "Jeda tenang sebelum peringatan kekurangan petugas dikirim",
+      "geofence.outside_area_grace_sec": "Berapa lama petugas boleh di luar batas sebelum ditandai keluar area",
+      "schedule.materialization_days": "Berapa hari ke depan jadwal berulang dibuat (ADR-047)",
+      "maps.browser_key": "Kunci Maps untuk web; disimpan terenkripsi",
+      "monitoring.location_ping_interval_sec": "Frekuensi perangkat mengirim lokasi ke server",
+      "geofence.tolerance_m": "Kelonggaran jarak dari batas area sebelum dianggap keluar",
+      "schedule.min_shift_duration_min": "Durasi minimum agar clock-out dihitung sebagai shift sah",
+      "fcm.enabled": "Matikan untuk menghentikan semua notifikasi push seketika",
+      "ratelimit.global_per_min": "Batas total permintaan per IP per menit",
+      "ratelimit.login_per_min": "Batas percobaan login per IP per menit (anti brute-force)",
+      "auth.change_password_throttle_max": "Batas percobaan ganti sandi dalam satu jendela waktu",
+      "auth.change_password_throttle_ttl_ms": "Panjang jendela waktu throttle ganti sandi",
+      "app.default_locale": "Bahasa awal untuk pengguna baru sebelum mereka memilih preferensi"
+    }
   },
   "general": {
     "identity": "Identitas",
@@ -18,16 +125,6 @@
     "darkModeHint": "Beralih antara tema terang dan gelap untuk konsol ini.",
     "language": "Bahasa",
     "languageHint": "Pilih bahasa tampilan untuk konsol ini."
-  },
-  "security": {
-    "changePassword": "Ubah Kata Sandi",
-    "currentPassword": "Kata Sandi Saat Ini",
-    "newPassword": "Kata Sandi Baru",
-    "confirmNewPassword": "Konfirmasi Kata Sandi Baru",
-    "minChars": "Minimal 8 karakter",
-    "mismatch": "Konfirmasi tidak cocok",
-    "savePassword": "Simpan Kata Sandi",
-    "passwordChanged": "Kata sandi berhasil diubah"
   },
   "notifications": {
     "title": "Notifikasi",

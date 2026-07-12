@@ -40,7 +40,7 @@ export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
     { title: 'menu:sections.operations', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA] },
     { title: 'menu:sections.supervision', items: [MONITORING, TIM] },
   ],
-  admin_data: [
+  admin_rayon: [
     { title: 'menu:sections.operations', items: [ABSENSI, TUGAS, AKTIVITAS, ASET] },
     { title: 'menu:sections.treeCare', items: [PERANTINGAN_REVIEW, BIBIT] },
     { title: 'menu:sections.reportsMonitoring', items: [LAPORAN, MONITORING] },
@@ -49,7 +49,7 @@ export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
     { title: 'menu:sections.supervision', items: [MONITORING, TIM, LAPORAN] },
     { title: 'menu:sections.operations', items: [LEMBUR, ASET] },
   ],
-  top_management: [
+  management: [
     { title: 'menu:sections.supervision', items: [MONITORING, LAPORAN, ANALITIK] },
     { title: 'menu:sections.other', items: [BIBIT] },
   ],

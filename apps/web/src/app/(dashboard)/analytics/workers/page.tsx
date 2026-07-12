@@ -24,7 +24,7 @@ import { useWorkerAnalytics, useWorker, type WorkerAnalytics } from '@/lib/api/a
 import { WorkerRankingChart } from '@/components/analytics/WorkerRankingChart';
 import { X } from 'lucide-react';
 
-const ANALYTICS_VIEWERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'];
+const ANALYTICS_VIEWERS: UserRole[] = ['korlap', 'kepala_rayon', 'admin_rayon', 'management', 'admin_system', 'superadmin'];
 
 type Grade = 'A' | 'B' | 'C' | 'D' | 'E' | 'F';
 

@@ -26,10 +26,15 @@ export interface User {
    * Absent → default to Indonesian.
    */
   preferred_language?: 'id' | 'en';
+  /**
+   * Granted permission keys for the user's role (ADR-044), possibly with
+   * wildcards (`*:*`, `user:*`). Returned by /auth/me; powers `usePermissions()`.
+   */
+  permissions?: string[];
   assigned_area?: {
     id: string;
     name: string;
-    area_type_id: string;
+    location_type_id: string;
     gps_lat: number;
     gps_lng: number;
     radius_meters: number;

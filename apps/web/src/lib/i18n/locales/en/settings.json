@@ -4,7 +4,114 @@
   "tabs": {
     "general": "General",
     "security": "Security",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "system": "System",
+    "personal": "Personal"
+  },
+  "actionBar": {
+    "save": "Save Changes",
+    "reset": "Reset Changes",
+    "unsavedDot": "Unsaved changes"
+  },
+  "personal": {
+    "saved": "Preferences saved",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeLabel": "Theme",
+    "languageLabel": "Language",
+    "changePasswordTitle": "Change Password",
+    "mfaTitle": "Two-Factor Authentication (2FA)",
+    "mfaHint": "Add an extra layer of security at login.",
+    "comingSoon": "Coming soon",
+    "groups": {
+      "appearanceLanguage": "Appearance & Language",
+      "appearanceLanguageHint": "App theme & language.",
+      "notifications": "Notifications",
+      "notificationsHint": "Per-type push preferences.",
+      "accountSecurity": "Account & Security",
+      "accountSecurityHint": "Identity, password & security."
+    },
+    "profileTitle": "Profile",
+    "profileSaved": "Profile saved",
+    "photoSaved": "Profile photo updated",
+    "changePhoto": "Change Photo",
+    "securityTitle": "Security",
+    "passwordLabel": "Password",
+    "changePasswordHint": "Update your login password.",
+    "changePasswordButton": "Change Password",
+    "appearanceTitle": "Appearance",
+    "languageTitle": "Language"
+  },
+  "system": {
+    "title": "System Settings",
+    "loading": "Loading settings…",
+    "loadError": "Failed to load system settings.",
+    "save": "Save",
+    "saved": "Settings saved",
+    "revert": "Revert",
+    "reverted": "Reverted to default value",
+    "readOnly": "You can view system settings but cannot change them.",
+    "secretPlaceholder": "•••••• (stored encrypted)",
+    "source": {
+      "db": "override",
+      "env": "env",
+      "unset": "default"
+    },
+    "groups": {
+      "monitoring": "Monitoring & Geofence",
+      "scheduling": "Scheduling",
+      "integrations": "Integrations",
+      "limits": "Security & Limits",
+      "general": "General"
+    },
+    "unsaved": "Unsaved changes",
+    "subgroups": {
+      "thresholds": "Status Thresholds",
+      "geofence": "Geofence",
+      "roster": "Roster & Shift",
+      "push": "Push Notifications",
+      "maps": "Maps",
+      "ratelimit": "Rate Limits",
+      "app": "Application",
+      "other": "Other"
+    },
+    "settingCount": "{{count}} settings",
+    "labels": {
+      "monitoring.active_max_age_sec": "Max active-status age (seconds)",
+      "monitoring.inactive_threshold_sec": "Inactive threshold (seconds)",
+      "monitoring.missing_threshold_sec": "Missing threshold (seconds)",
+      "monitoring.location_ping_interval_sec": "Location ping interval (seconds)",
+      "monitoring.staffing_debounce_sec": "Understaffed-alert debounce (seconds)",
+      "geofence.tolerance_m": "Geofence boundary tolerance (meters)",
+      "geofence.outside_area_grace_sec": "Outside-area grace (seconds)",
+      "schedule.materialization_days": "Schedule materialization horizon (days)",
+      "schedule.min_shift_duration_min": "Minimum shift duration (minutes)",
+      "fcm.enabled": "Enable push notifications (FCM)",
+      "maps.browser_key": "Google Maps browser key",
+      "ratelimit.global_per_min": "Global request limit / minute",
+      "ratelimit.login_per_min": "Login attempt limit / minute",
+      "auth.change_password_throttle_max": "Change-password attempt limit",
+      "auth.change_password_throttle_ttl_ms": "Change-password throttle window (ms)",
+      "app.default_locale": "Default application language"
+    },
+    "help": {
+      "monitoring.active_max_age_sec": "Age of the last location for a worker to still count as active",
+      "monitoring.inactive_threshold_sec": "Age of the last location before status changes active → inactive",
+      "monitoring.missing_threshold_sec": "Age of the last location before status becomes missing (used by the status calculator + background sweeper)",
+      "monitoring.staffing_debounce_sec": "Quiet period before an understaffed alert is sent",
+      "geofence.outside_area_grace_sec": "How long a worker may be outside the boundary before being marked outside the area",
+      "schedule.materialization_days": "How many days ahead recurring schedules are generated (ADR-047)",
+      "maps.browser_key": "Maps key for the web; stored encrypted",
+      "monitoring.location_ping_interval_sec": "How often devices send their location to the server",
+      "geofence.tolerance_m": "Distance leeway from the boundary before counting as outside",
+      "schedule.min_shift_duration_min": "Minimum duration for a clock-out to count as a valid shift",
+      "fcm.enabled": "Turn off to stop all push notifications immediately",
+      "ratelimit.global_per_min": "Total requests per IP per minute",
+      "ratelimit.login_per_min": "Login attempts per IP per minute (anti brute-force)",
+      "auth.change_password_throttle_max": "Change-password attempts allowed within one time window",
+      "auth.change_password_throttle_ttl_ms": "Length of the change-password throttle window",
+      "app.default_locale": "Initial language for new users before they choose a preference"
+    }
   },
   "general": {
     "identity": "Identity",
@@ -18,16 +125,6 @@
     "darkModeHint": "Switch between light and dark themes for this console.",
     "language": "Language",
     "languageHint": "Choose the display language for this console."
-  },
-  "security": {
-    "changePassword": "Change Password",
-    "currentPassword": "Current Password",
-    "newPassword": "New Password",
-    "confirmNewPassword": "Confirm New Password",
-    "minChars": "At least 8 characters",
-    "mismatch": "Confirmation does not match",
-    "savePassword": "Save Password",
-    "passwordChanged": "Password changed successfully"
   },
   "notifications": {
     "title": "Notifications",

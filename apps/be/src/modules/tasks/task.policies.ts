@@ -74,7 +74,7 @@ function canEditTags(task: Task, callerId: string): boolean {
 /**
  * Throw unless the user may read the task. staff_kecamatan is handled
  * separately (needs an async DB lookup); roles missing from the map
- * (top_management, admin_system, superadmin) have no restriction.
+ * (management, admin_system, superadmin) have no restriction.
  */
 export function assertTaskReadAccess(task: Task, user: User): void {
   const canRead = TASK_READ_RULES[user.role] ?? (() => true);
@@ -92,12 +92,12 @@ const fieldWorkerCanRead: ReadRule = (task, user) =>
   task.assigned_to === user.id || task.created_by === user.id || isTagged(task, user.id);
 
 const korlapCanRead: ReadRule = (task, user) =>
-  task.area_id === user.area_id ||
+  task.location_id === user.location_id ||
   task.created_by === user.id ||
   task.assigned_to === user.id ||
   isTagged(task, user.id);
 
-// May 11, 2026 — admin_data joined the rayon-scoped admin path (was falling
+// May 11, 2026 — admin_rayon joined the rayon-scoped admin path (was falling
 // through to "no restriction", which was incorrect).
 const rayonAdminCanRead: ReadRule = (task, user) =>
   task.area?.rayon_id === user.rayon_id ||
@@ -110,5 +110,5 @@ const TASK_READ_RULES: Partial<Record<UserRole, ReadRule>> = {
   [UserRole.LINMAS]: fieldWorkerCanRead,
   [UserRole.KORLAP]: korlapCanRead,
   [UserRole.KEPALA_RAYON]: rayonAdminCanRead,
-  [UserRole.ADMIN_DATA]: rayonAdminCanRead,
+  [UserRole.ADMIN_RAYON]: rayonAdminCanRead,
 };

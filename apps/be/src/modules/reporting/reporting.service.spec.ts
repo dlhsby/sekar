@@ -33,7 +33,7 @@ describe('ReportingService', () => {
     id: 'user-1',
     email: 'admin@test.com',
     role: UserRole.ADMIN_SYSTEM,
-    area_id: undefined,
+    location_id: undefined,
     rayon_id: undefined,
     phone: '081234567890',
     full_name: 'Admin Test',

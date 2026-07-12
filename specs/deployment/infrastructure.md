@@ -826,7 +826,7 @@ terraform/
 
 - **Socket.IO Redis adapter** — cross-instance room fanout; unlocks horizontal scaling of the backend.
 - **Redis Streams** — `location-pings` stream with consumer group `status-projectors`; decouples location ingest from status projection so bursts don't back up the ingest endpoint.
-- **Cache** — area boundaries (TTL 5 min), `monitoring_configs` rows (TTL 5 min), `area_plants.status` summaries (TTL 1 min), `plant_species` catalog (TTL 1 h).
+- **Cache** — area boundaries (TTL 5 min), `monitoring_configs` rows (TTL 5 min), `location_plants.status` summaries (TTL 1 min), `plant_species` catalog (TTL 1 h).
 - **Reserved for Phase 4** — JWT refresh-token blacklist (per ADR-016), rate-limiting counters.
 
 **Docker Compose entry (`infra/docker-compose.yml`):**
@@ -867,7 +867,7 @@ If Redis becomes unreachable at runtime, the backend degrades gracefully:
 ### Cron jobs (new)
 
 - `MonitoringStaleSweeper` — every 5 min; flips `ACTIVE` without a recent ping to `MISSING`.
-- `PlantDueDateRecalculator` — daily at 02:00 local; recomputes `area_plants.next_due_at` and `status`.
+- `PlantDueDateRecalculator` — daily at 02:00 local; recomputes `location_plants.next_due_at` and `status`.
 
 ### Load-test harness
 

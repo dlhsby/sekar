@@ -98,9 +98,9 @@ describe('TaskFilterModal', () => {
       expect(getByText('Tanggal Dibuat')).toBeTruthy();
     });
 
-    it('shows task filter trigger with Semua Petugas (Termasuk Saya) when taskFilter is all for top_management', () => {
+    it('shows task filter trigger with Semua Petugas (Termasuk Saya) when taskFilter is all for management', () => {
       const { getByText } = render(
-        <TaskFilterModal {...DEFAULT_PROPS} taskFilter="all" userRole="top_management" visible={true} />,
+        <TaskFilterModal {...DEFAULT_PROPS} taskFilter="all" userRole="management" visible={true} />,
       );
 
       // NBSelect shows the selected option label — 'all' maps to 'Semua Petugas (Termasuk Saya)'
@@ -395,11 +395,11 @@ describe('TaskFilterModal', () => {
       });
     });
 
-    it('shows Rayon section for top_management role', async () => {
+    it('shows Rayon section for management role', async () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
-          userRole="top_management"
+          userRole="management"
         />,
       );
 
@@ -458,7 +458,7 @@ describe('TaskFilterModal', () => {
       render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
-          userRole="top_management"
+          userRole="management"
           visible={true}
         />,
       );
@@ -490,7 +490,7 @@ describe('TaskFilterModal', () => {
         render(
           <TaskFilterModal
             {...DEFAULT_PROPS}
-            userRole="top_management"
+            userRole="management"
             visible={true}
           />,
         ),
@@ -512,7 +512,7 @@ describe('TaskFilterModal', () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
-          userRole="top_management"
+          userRole="management"
           visible={true}
         />,
       );
@@ -683,7 +683,7 @@ describe('TaskFilterModal', () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
-          userRole="top_management"
+          userRole="management"
           rayonFilter="rayon-1"
           onApplyFilters={onApplyFilters}
         />,
@@ -738,7 +738,7 @@ describe('TaskFilterModal', () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
-          userRole="top_management"
+          userRole="management"
           rayonFilter={null}
           onApplyFilters={onApplyFilters}
         />,
@@ -778,7 +778,7 @@ describe('TaskFilterModal', () => {
       const { getAllByText, getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
-          userRole="top_management"
+          userRole="management"
           rayonFilter={null}
           onApplyFilters={onApplyFilters}
         />,
@@ -978,7 +978,7 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal
           {...DEFAULT_PROPS}
           taskFilter="tagged"
-          userRole="top_management"
+          userRole="management"
           onApplyFilters={onApplyFilters}
         />,
       );
@@ -995,15 +995,15 @@ describe('TaskFilterModal', () => {
       );
     });
 
-    it('shows Penugasan trigger label for top_management with taskFilter all', async () => {
-      // Verifies the initial label shown in the Penugasan NBSelect trigger for top_management.
+    it('shows Penugasan trigger label for management with taskFilter all', async () => {
+      // Verifies the initial label shown in the Penugasan NBSelect trigger for management.
       // The dropdown items live inside a nested NBSelect Modal that RNTL cannot inspect
       // directly; asserting the trigger label is the reliable test boundary.
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           taskFilter="all"
-          userRole="top_management"
+          userRole="management"
         />,
       );
 
@@ -1014,7 +1014,7 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal
           {...DEFAULT_PROPS}
           taskFilter="created_by_me"
-          userRole="top_management"
+          userRole="management"
         />,
       );
       expect(getByText2('Dibuat oleh Saya')).toBeTruthy();

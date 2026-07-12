@@ -55,7 +55,7 @@ export class ShiftReminderCron {
       .filter((r) => r.status === ScheduleStatus.PLANNED && !!r.shift_definition)
       .map((r) => ({
         user_id: r.user_id,
-        area_id: r.schedule_areas?.[0]?.area_id ?? null,
+        location_id: r.schedule_areas?.[0]?.location_id ?? null,
         shift_definition_id: r.shift_definition_id as string,
         shift_name: r.shift_definition!.name,
         start_time: r.shift_definition!.start_time,
@@ -81,7 +81,7 @@ export class ShiftReminderCron {
           title: 'Pengingat shift',
           body: `Shift ${row.shift_name} Anda dimulai dalam ${ShiftReminderCron.WINDOW_MINUTES} menit.`,
           type: NotificationType.SHIFT_REMINDER,
-          data: { shift_definition_id: row.shift_definition_id, area_id: row.area_id },
+          data: { shift_definition_id: row.shift_definition_id, location_id: row.location_id },
         })
         .catch((err) =>
           this.logger.warn(

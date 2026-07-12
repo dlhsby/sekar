@@ -195,15 +195,15 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Korlap')).toBeTruthy();
     });
 
-    it('should display Admin Data role label', () => {
-      const store = createMockStore('admin_data', 'Rina Admin');
+    it('should display Admin Rayon role label', () => {
+      const store = createMockStore('admin_rayon', 'Rina Admin');
       const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
-      expect(getByText('Admin Data')).toBeTruthy();
+      expect(getByText('Admin Rayon')).toBeTruthy();
     });
 
     it('should display Kepala Rayon role label', () => {
@@ -217,15 +217,15 @@ describe('FieldHomeHeader', () => {
       expect(getByText('Kepala Rayon')).toBeTruthy();
     });
 
-    it('should display Top Management role label', () => {
-      const store = createMockStore('top_management', 'Bu Kepala');
+    it('should display Management role label', () => {
+      const store = createMockStore('management', 'Bu Kepala');
       const { getByText } = render(
         <Provider store={store}>
           <FieldHomeHeader />
         </Provider>
       );
 
-      expect(getByText('Top Management')).toBeTruthy();
+      expect(getByText('Management')).toBeTruthy();
     });
 
     it('should display Admin Sistem role label', () => {

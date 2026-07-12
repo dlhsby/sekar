@@ -51,7 +51,7 @@ describe('AuthProvider', () => {
     id: 2,
     username: 'topmanager1',
     name: 'Test Manager',
-    role: 'top_management',
+    role: 'management',
     phone: '081234567891',
   };
 

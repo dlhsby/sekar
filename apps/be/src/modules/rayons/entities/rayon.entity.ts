@@ -54,6 +54,31 @@ export class Rayon {
   @Column({ type: 'jsonb', nullable: true })
   boundary_polygon?: object;
 
+  // ── Per-level map styling (ADR-045) — legacy `color` above is the fallback ──
+  @ApiPropertyOptional({ example: '#1C1917' })
+  @Column({ length: 9, nullable: true })
+  border_color?: string;
+
+  @ApiPropertyOptional({ example: '#7FBC8C' })
+  @Column({ length: 9, nullable: true })
+  fill_color?: string;
+
+  @ApiPropertyOptional({ example: 0.8 })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
+  border_opacity?: number;
+
+  @ApiPropertyOptional({ example: 0.25 })
+  @Column({ type: 'decimal', precision: 3, scale: 2, nullable: true })
+  fill_opacity?: number;
+
+  @ApiPropertyOptional({ example: 'building' })
+  @Column({ length: 50, nullable: true })
+  marker_icon?: string;
+
+  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
+  @Column({ type: 'text', nullable: true })
+  marker_image_url?: string;
+
   @ApiProperty({
     description: 'Center latitude of the rayon boundary',
     example: -7.2575,

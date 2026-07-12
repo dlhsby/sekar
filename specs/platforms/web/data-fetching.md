@@ -176,7 +176,7 @@ export const useReports = (filters?: ReportFilters) => {
       const params = new URLSearchParams();
 
       if (filters?.date) params.append('date', filters.date);
-      if (filters?.area_id) params.append('area_id', filters.area_id);
+      if (filters?.location_id) params.append('location_id', filters.location_id);
       if (filters?.worker_id) params.append('worker_id', filters.worker_id);
       if (filters?.report_type) params.append('report_type', filters.report_type);
 
@@ -201,13 +201,13 @@ export const useReport = (id: string) => {
 
 ```typescript
 // lib/queries/useAttendance.ts
-export const useAttendance = (date: string, areaId?: string) => {
+export const useAttendance = (date: string, locationId?: string) => {
   return useQuery({
-    queryKey: ['attendance', date, areaId],
+    queryKey: ['attendance', date, locationId],
     queryFn: async () => {
       const params = new URLSearchParams({ date });
 
-      if (areaId) params.append('area_id', areaId);
+      if (locationId) params.append('location_id', locationId);
 
       const { data } = await apiClient.get(`/supervisor/attendance?${params.toString()}`);
       return data;
@@ -583,7 +583,7 @@ Use descriptive, hierarchical query keys:
 ```typescript
 // ✅ Good
 ['workers', 'active']
-['reports', { date: '2026-01-16', areaId: 'abc' }]
+['reports', { date: '2026-01-16', locationId: 'abc' }]
 ['reports', reportId]
 
 // ❌ Bad
@@ -704,7 +704,7 @@ function useLocationHistory(userId: string | null, date: string) {
 }
 
 // Staffing summary (for filter modal)
-function useStaffingSummary(filters?: { rayon_id?: string; area_id?: string }) {
+function useStaffingSummary(filters?: { rayon_id?: string; location_id?: string }) {
   return useQuery({
     queryKey: ['monitoring', 'staffing-summary', filters],
     queryFn: () => monitoringApi.getStaffingSummary(filters),
@@ -744,11 +744,11 @@ function useBoundaries(scope?: MonitoringScope) {
 }
 
 // Area boundary (single area)
-function useAreaBoundary(areaId: string | null) {
+function useAreaBoundary(locationId: string | null) {
   return useQuery({
-    queryKey: ['areas', areaId, 'boundary'],
-    queryFn: () => areasApi.getBoundary(areaId!),
-    enabled: !!areaId,
+    queryKey: ['areas', locationId, 'boundary'],
+    queryFn: () => areasApi.getBoundary(locationId!),
+    enabled: !!locationId,
     staleTime: 300_000,
   });
 }
@@ -757,10 +757,10 @@ function useAreaBoundary(areaId: string | null) {
 function useUpdateAreaBoundary() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ areaId, data }: { areaId: string; data: UpdateAreaBoundaryDto }) =>
-      areasApi.updateBoundary(areaId, data),
-    onSuccess: (_, { areaId }) => {
-      queryClient.invalidateQueries({ queryKey: ['areas', areaId, 'boundary'] });
+    mutationFn: ({ locationId, data }: { locationId: string; data: UpdateAreaBoundaryDto }) =>
+      areasApi.updateBoundary(locationId, data),
+    onSuccess: (_, { locationId }) => {
+      queryClient.invalidateQueries({ queryKey: ['areas', locationId, 'boundary'] });
       queryClient.invalidateQueries({ queryKey: ['monitoring'] });
       toast.success('Batas area berhasil diperbarui');
     },
@@ -775,7 +775,7 @@ function useUpdateAreaBoundary() {
 | `user:status-changed` | `['monitoring', 'live-users']` — setQueryData for specific user |
 | `user:left-area` / `user:entered-area` | `['monitoring', 'live-users']` — update is_within_area |
 | Config update | `['monitoring', 'config']` — full invalidate |
-| Boundary update | `['areas', areaId, 'boundary']` + `['monitoring']` — recalculate is_within_area |
+| Boundary update | `['areas', locationId, 'boundary']` + `['monitoring']` — recalculate is_within_area |
 
 **Last Updated:** 2026-03-06
 **Dependencies:** `@tanstack/react-query`, `axios`, `next`

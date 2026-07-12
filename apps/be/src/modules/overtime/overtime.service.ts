@@ -98,7 +98,8 @@ export class OvertimeService {
     // Create overtime record
     const overtime = this.overtimeRepo.create({
       user_id: user.id,
-      area_id: (await this.shiftsService.getActiveArea(user.id))?.id || user.area_id || undefined,
+      location_id:
+        (await this.shiftsService.getActiveArea(user.id))?.id || user.location_id || undefined,
       start_datetime: new Date(),
       end_datetime: null,
       status: OvertimeStatus.IN_PROGRESS,
@@ -228,7 +229,8 @@ export class OvertimeService {
 
     const overtime = this.overtimeRepo.create({
       user_id: userId,
-      area_id: (await this.shiftsService.getActiveArea(userId))?.id || user.area_id || undefined,
+      location_id:
+        (await this.shiftsService.getActiveArea(userId))?.id || user.location_id || undefined,
       start_datetime: startDt,
       end_datetime: endDt,
       status: OvertimeStatus.PENDING,
@@ -365,14 +367,14 @@ export class OvertimeService {
       .leftJoinAndSelect('overtime.approver', 'approver');
 
     // Role-based scoping
-    if (requesterRole === UserRole.KORLAP && requester?.area_id) {
-      qb.andWhere('overtime.area_id = :areaId', { areaId: requester.area_id });
+    if (requesterRole === UserRole.KORLAP && requester?.location_id) {
+      qb.andWhere('overtime.location_id = :areaId', { areaId: requester.location_id });
     } else if (requesterRole === UserRole.KEPALA_RAYON) {
       if (!requester?.rayon_id) {
         throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
       }
       qb.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
-    } else if (requesterRole === UserRole.ADMIN_DATA) {
+    } else if (requesterRole === UserRole.ADMIN_RAYON) {
       if (!requester?.rayon_id) {
         throw new ForbiddenException('Admin Data account has no assigned rayon');
       }
@@ -410,16 +412,16 @@ export class OvertimeService {
       if (!['satgas', 'linmas'].includes(submitterRole)) {
         throw new ForbiddenException('Korlap can only approve overtime from satgas and linmas');
       }
-      if (!approver.area_id || overtime.area_id !== approver.area_id) {
+      if (!approver.location_id || overtime.location_id !== approver.location_id) {
         throw new ForbiddenException('You can only approve overtime for your area');
       }
     } else if (approver.role === UserRole.KEPALA_RAYON) {
       if (!approver.rayon_id) {
         throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
       }
-      if (!['korlap', 'admin_data'].includes(submitterRole)) {
+      if (!['korlap', 'admin_rayon'].includes(submitterRole)) {
         throw new ForbiddenException(
-          'Kepala Rayon can only approve overtime from korlap and admin_data',
+          'Kepala Rayon can only approve overtime from korlap and admin_rayon',
         );
       }
       if (
@@ -429,11 +431,11 @@ export class OvertimeService {
       ) {
         throw new ForbiddenException('You can only approve overtime for your rayon');
       }
-    } else if (approver.role === UserRole.TOP_MANAGEMENT) {
+    } else if (approver.role === UserRole.MANAGEMENT) {
       if (submitterRole !== 'kepala_rayon') {
         throw new ForbiddenException('Top management can only approve overtime from kepala_rayon');
       }
-      // No area/rayon scope check — top_management has city-wide visibility
+      // No area/rayon scope check — management has city-wide visibility
     } else {
       throw new ForbiddenException('You do not have authority to approve overtime');
     }
@@ -444,8 +446,8 @@ export class OvertimeService {
       qb.andWhere('overtime.status = :status', { status: filters.status });
     }
 
-    if (filters.area_id) {
-      qb.andWhere('overtime.area_id = :filterAreaId', { filterAreaId: filters.area_id });
+    if (filters.location_id) {
+      qb.andWhere('overtime.location_id = :filterAreaId', { filterAreaId: filters.location_id });
     }
 
     if (filters.from_date) {

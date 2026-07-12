@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { getStatusLabels } from '@/lib/constants/monitoring';
-import { ROLE_LABELS } from '@/lib/constants/roles';
+import { roleLabel } from '@/lib/constants/roles';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
@@ -179,7 +179,7 @@ export function MonitoringFilters({
             <option value="all">{t('monitoring:filters.roleAllOption')}</option>
             {roleOptions.map((role) => (
               <option key={role} value={role}>
-                {ROLE_LABELS[role] ?? role}
+                {roleLabel(role)}
               </option>
             ))}
           </select>

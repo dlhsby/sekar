@@ -14,7 +14,7 @@ import { fetchLiveUsers } from '../../store/slices/monitoringSlice';
 
 /**
  * Exec Home Screen (Phase 4 M3 Checkpoint 5) — city-wide overview for the
- * monitoring-first roles (top_management, admin_system, superadmin). No hi-fi
+ * monitoring-first roles (management, admin_system, superadmin). No hi-fi
  * frame exists; composed from the role-scoped monitoring slice (the backend
  * returns city scope for these roles), reusing the Home widgets.
  */

@@ -90,7 +90,7 @@
     },
     "fields": {
       "kecamatan": "Kecamatan",
-      "rayon": "Rayon",
+      "rayon": "District",
       "submitter": "Submitter",
       "expectedWeek": "Expected Week",
       "treeCount": "Number of Trees",
@@ -117,7 +117,7 @@
     "assign": {
       "title": "Assign to Officer",
       "meta": "Empty date selected automatically within requested week",
-      "noOptions": "No areas or officers available for this rayon. Contact administrator.",
+      "noOptions": "No areas or officers available for this district. Contact administrator.",
       "area": "Area",
       "areaPlaceholder": "— Select area —",
       "assignedTo": "Assigned To",
@@ -160,7 +160,7 @@
   "columns": {
     "referenceCode": "Reference Code",
     "kecamatan": "Sub-district",
-    "rayon": "Rayon",
+    "rayon": "District",
     "dateRange": "Week / Date",
     "status": "Status",
     "createdAt": "Created",

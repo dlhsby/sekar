@@ -205,7 +205,7 @@ apps/be/
 
 **Examples:**
 - `1704441600000-InitialSchema.ts` - Initial database setup
-- `1704528000000-AddAreaTypes.ts` - Add area_types table
+- `1704528000000-AddAreaTypes.ts` - Add location_types table
 - `1704614400000-AddIndexes.ts` - Add performance indexes
 - `1704700800000-AlterUsersAddPhone.ts` - Add phone column to users
 
@@ -578,7 +578,7 @@ export class CreateAreasTable1704441600000 implements MigrationInterface {
       CREATE TABLE "areas" (
         "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         "name" VARCHAR(100) NOT NULL,
-        "area_type_id" UUID NOT NULL,
+        "location_type_id" UUID NOT NULL,
         "gps_lat" DECIMAL(10, 8) NOT NULL,
         "gps_lng" DECIMAL(11, 8) NOT NULL,
         "radius_meters" INTEGER DEFAULT 100,
@@ -586,7 +586,7 @@ export class CreateAreasTable1704441600000 implements MigrationInterface {
         "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         "updated_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         CONSTRAINT "fk_areas_area_type"
-          FOREIGN KEY ("area_type_id") REFERENCES "area_types"("id")
+          FOREIGN KEY ("location_type_id") REFERENCES "location_types"("id")
       )
     `);
   }
@@ -1631,7 +1631,7 @@ export class Phase2AddTasks1705392000000 implements MigrationInterface {
         "description" TEXT,
         "assigned_to" UUID,
         "assigned_by" UUID,
-        "area_id" UUID,
+        "location_id" UUID,
         "priority" VARCHAR(20) DEFAULT 'normal',
         "status" VARCHAR(30) DEFAULT 'pending',
         "due_date" TIMESTAMPTZ,
@@ -1649,7 +1649,7 @@ export class Phase2AddTasks1705392000000 implements MigrationInterface {
         CONSTRAINT "fk_tasks_assigned_by"
           FOREIGN KEY ("assigned_by") REFERENCES "users"("id") ON DELETE SET NULL,
         CONSTRAINT "fk_tasks_area"
-          FOREIGN KEY ("area_id") REFERENCES "areas"("id") ON DELETE SET NULL,
+          FOREIGN KEY ("location_id") REFERENCES "areas"("id") ON DELETE SET NULL,
         CONSTRAINT "chk_task_priority"
           CHECK ("priority" IN ('low', 'normal', 'high', 'urgent')),
         CONSTRAINT "chk_task_status"
@@ -1676,7 +1676,7 @@ export class Phase2AddTasks1705392000000 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE INDEX "idx_tasks_area_status"
-      ON "tasks"("area_id", "status", "created_at")
+      ON "tasks"("location_id", "status", "created_at")
       WHERE "deleted_at" IS NULL
     `);
 
@@ -1911,7 +1911,7 @@ export class Phase3AddAnalyticsViews1706688000000 implements MigrationInterface 
         u.id as worker_id,
         u.full_name,
         u.phone,
-        wa.area_id,
+        wa.location_id,
         a.name as area_name,
         COUNT(DISTINCT DATE(s.clock_in_time)) as days_worked,
         AVG(EXTRACT(EPOCH FROM (s.clock_out_time - s.clock_in_time)) / 3600) as avg_shift_hours,
@@ -1920,11 +1920,11 @@ export class Phase3AddAnalyticsViews1706688000000 implements MigrationInterface 
         MAX(s.clock_in_time) as last_shift_date
       FROM users u
       LEFT JOIN worker_assignments wa ON u.id = wa.worker_id
-      LEFT JOIN areas a ON wa.area_id = a.id
+      LEFT JOIN areas a ON wa.location_id = a.id
       LEFT JOIN shifts s ON u.id = s.worker_id AND s.deleted_at IS NULL
       LEFT JOIN work_reports r ON u.id = r.worker_id AND r.deleted_at IS NULL
       WHERE u.role = 'worker' AND u.deleted_at IS NULL
-      GROUP BY u.id, u.full_name, u.phone, wa.area_id, a.name
+      GROUP BY u.id, u.full_name, u.phone, wa.location_id, a.name
     `);
 
     // Add index on materialized view
@@ -1937,7 +1937,7 @@ export class Phase3AddAnalyticsViews1706688000000 implements MigrationInterface 
     await queryRunner.query(`
       CREATE MATERIALIZED VIEW "mv_area_coverage" AS
       SELECT
-        a.id as area_id,
+        a.id as location_id,
         a.name,
         a.gps_lat,
         a.gps_lng,
@@ -1951,17 +1951,17 @@ export class Phase3AddAnalyticsViews1706688000000 implements MigrationInterface 
           WHEN r.condition = 'Buruk' THEN 1
         END) as avg_condition_score
       FROM areas a
-      JOIN area_types at ON a.area_type_id = at.id
-      LEFT JOIN worker_assignments wa ON a.id = wa.area_id
-      LEFT JOIN shifts s ON a.id = s.area_id AND s.deleted_at IS NULL
-      LEFT JOIN work_reports r ON a.id = r.area_id AND r.deleted_at IS NULL
+      JOIN location_types at ON a.location_type_id = at.id
+      LEFT JOIN worker_assignments wa ON a.id = wa.location_id
+      LEFT JOIN shifts s ON a.id = s.location_id AND s.deleted_at IS NULL
+      LEFT JOIN work_reports r ON a.id = r.location_id AND r.deleted_at IS NULL
       WHERE a.deleted_at IS NULL
       GROUP BY a.id, a.name, a.gps_lat, a.gps_lng, at.name
     `);
 
     await queryRunner.query(`
       CREATE UNIQUE INDEX "idx_mv_area_coverage"
-      ON "mv_area_coverage"("area_id")
+      ON "mv_area_coverage"("location_id")
     `);
 
     // Create function to refresh views (run daily via cron)
@@ -2183,7 +2183,7 @@ export class Phase4AddAssetAssignments1708070400000 implements MigrationInterfac
         "asset_id" UUID NOT NULL,
         "assigned_to" UUID NOT NULL,
         "assigned_by" UUID NOT NULL,
-        "area_id" UUID,
+        "location_id" UUID,
         "assigned_at" TIMESTAMPTZ DEFAULT NOW(),
         "returned_at" TIMESTAMPTZ,
         "return_condition" VARCHAR(20),
@@ -2200,7 +2200,7 @@ export class Phase4AddAssetAssignments1708070400000 implements MigrationInterfac
         CONSTRAINT "fk_asset_assignments_assigner"
           FOREIGN KEY ("assigned_by") REFERENCES "users"("id") ON DELETE RESTRICT,
         CONSTRAINT "fk_asset_assignments_area"
-          FOREIGN KEY ("area_id") REFERENCES "areas"("id") ON DELETE SET NULL,
+          FOREIGN KEY ("location_id") REFERENCES "areas"("id") ON DELETE SET NULL,
         CONSTRAINT "chk_assignment_return"
           CHECK ("returned_at" IS NULL OR "returned_at" > "assigned_at"),
         CONSTRAINT "chk_return_condition"
@@ -2666,7 +2666,7 @@ Add these to `apps/be/package.json`:
 |-----------|-------|--------|
 | ALTER | `users` | ADD `phone_number` VARCHAR(20), ADD `profile_picture_url` TEXT |
 | CREATE INDEX | `users` | UNIQUE partial index on `phone_number` WHERE NOT NULL |
-| CREATE TABLE | `user_areas` | Junction table (user_id, area_id, assignment_type, assigned_by) |
+| CREATE TABLE | `user_locations` | Junction table (user_id, location_id, assignment_type, assigned_by) |
 | ALTER | `shifts` | ADD `is_overtime` BOOLEAN DEFAULT false |
 | ALTER | `overtimes` | ADD `shift_id` UUID FK→shifts |
 | ALTER | `user_tracking_status` | ADD `rayon_id` UUID FK→rayons |
@@ -2678,7 +2678,7 @@ Add these to `apps/be/package.json`:
 **Notes:**
 - Uses `CREATE INDEX CONCURRENTLY` for indexes on existing large tables (overtimes, user_tracking_status)
 - `audit_logs.actor_id` uses `ON DELETE RESTRICT` (immutable audit records)
-- `user_areas` has composite unique constraint `(user_id, area_id, assignment_type)`
+- `user_locations` has composite unique constraint `(user_id, location_id, assignment_type)`
 - OvertimeStatus enum needs `IN_PROGRESS` value added
 
 ---

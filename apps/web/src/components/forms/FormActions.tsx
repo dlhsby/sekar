@@ -22,6 +22,8 @@ export interface FormActionsProps {
   readOnly?: boolean;
   /** Matches the target `<form id=...>` — required unless FormActions is rendered inside that form. */
   formId?: string;
+  /** Show an Undo button (native `type="reset"`) that reverts the form to its loaded values. */
+  showReset?: boolean;
 }
 
 export function FormActions({
@@ -31,6 +33,7 @@ export function FormActions({
   onCancel,
   readOnly = false,
   formId,
+  showReset = false,
 }: FormActionsProps) {
   const { t } = useTranslation();
 
@@ -47,6 +50,11 @@ export function FormActions({
       {onCancel && (
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           {t('admin:shared.cancel')}
+        </Button>
+      )}
+      {showReset && (
+        <Button type="reset" form={formId} variant="ghost" disabled={loading}>
+          {t('admin:shared.undoChanges')}
         </Button>
       )}
       <Button type="submit" form={formId} variant="default" loading={loading} disabled={loading || disabled}>

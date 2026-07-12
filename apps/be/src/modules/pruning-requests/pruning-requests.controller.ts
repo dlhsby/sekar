@@ -134,7 +134,7 @@ export class PruningRequestsController {
   })
   @ApiQuery({
     name: 'rayonId',
-    description: 'Filter by rayon ID (admin only; auto-forced for admin_data)',
+    description: 'Filter by rayon ID (admin only; auto-forced for admin_rayon)',
     required: false,
     type: String,
   })
@@ -213,9 +213,9 @@ export class PruningRequestsController {
    *
    * Access is allowed to:
    * - The submitter (owner)
-   * - admin_data users with matching rayon
+   * - admin_rayon users with matching rayon
    * - kepala_rayon users with matching rayon
-   * - top_management, admin_system, and superadmin users (unrestricted)
+   * - management, admin_system, and superadmin users (unrestricted)
    *
    * @param id - Pruning request ID (UUID)
    * @param user - Authenticated user (injected from JWT)
@@ -228,10 +228,10 @@ export class PruningRequestsController {
   // Ownership / rayon scoping is still enforced inside `findById`.
   @Roles(
     UserRole.STAFF_KECAMATAN,
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
     UserRole.KORLAP,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -270,7 +270,7 @@ export class PruningRequestsController {
   /**
    * Review a pruning request (approve or reject).
    *
-   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system, and superadmin can review.
+   * Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system, and superadmin can review.
    * Requests must be in 'submitted' or 'under_review' status to be reviewable.
    *
    * @param id - Pruning request ID
@@ -280,16 +280,16 @@ export class PruningRequestsController {
    */
   @Post(':id/review')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
   @ApiOperation({
     summary: 'Review a pruning request',
     description:
-      'Approve or reject a pruning request. Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system, and superadmin can perform this action.',
+      'Approve or reject a pruning request. Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system, and superadmin can perform this action.',
   })
   @ApiParam({
     name: 'id',
@@ -333,7 +333,7 @@ export class PruningRequestsController {
   /**
    * Convert an approved pruning request to a task.
    *
-   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system, and superadmin can convert.
+   * Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system, and superadmin can convert.
    * Request must be 'approved' to be converted. Idempotent: returns existing task if already converted.
    *
    * @param id - Pruning request ID
@@ -343,9 +343,9 @@ export class PruningRequestsController {
    */
   @Post(':id/assign-to-task')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -402,16 +402,16 @@ export class PruningRequestsController {
   /**
    * Reschedule the expected date of a pruning request.
    *
-   * Round 4 (Apr 28): admin_data (rayon-scoped), kepala_rayon, top_management,
+   * Round 4 (Apr 28): admin_rayon (rayon-scoped), kepala_rayon, management,
    * admin_system, and superadmin can adjust `expected_date` independent of the
    * assign-to-task flow. Only requests in 'submitted', 'under_review', or
    * 'approved' status can be rescheduled.
    */
   @Patch(':id/expected-date')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )
@@ -462,7 +462,7 @@ export class PruningRequestsController {
   /**
    * Update editable fields on a pruning request.
    *
-   * Only admin_data (rayon-scoped), kepala_rayon, top_management, admin_system,
+   * Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system,
    * and superadmin can update. Editable fields are address, notes, tree details
    * (count, height, diameter), and contact information (requester, RT leader).
    *
@@ -476,9 +476,9 @@ export class PruningRequestsController {
    */
   @Patch(':id')
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
   )

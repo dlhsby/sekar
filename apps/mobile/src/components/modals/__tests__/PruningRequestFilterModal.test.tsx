@@ -157,25 +157,25 @@ describe('PruningRequestFilterModal', () => {
       expect(queryByText('Rayon')).toBeNull();
     });
 
-    it('shows a fixed Rayon for admin_data and does not load the rayon list', async () => {
+    it('shows a fixed Rayon for admin_rayon and does not load the rayon list', async () => {
       const { getByText } = render(
         <PruningRequestFilterModal
           {...DEFAULT_PROPS}
-          userRole="admin_data"
+          userRole="admin_rayon"
           userRayonId="rayon-pusat"
         />,
       );
       expect(getByText('Rayon')).toBeTruthy();
-      // admin_data is rayon-locked, so the selectable rayon list is never fetched.
+      // admin_rayon is rayon-locked, so the selectable rayon list is never fetched.
       await waitFor(() => expect(mockGetRayons).not.toHaveBeenCalled());
     });
 
-    it('shows a selectable Rayon for top_management and loads the rayon list', async () => {
+    it('shows a selectable Rayon for management and loads the rayon list', async () => {
       mockGetRayons.mockResolvedValue({
         data: [{ id: 'rayon-1', name: 'Rayon Utara' }],
       } as any);
       const { getByText } = render(
-        <PruningRequestFilterModal {...DEFAULT_PROPS} userRole="top_management" />,
+        <PruningRequestFilterModal {...DEFAULT_PROPS} userRole="management" />,
       );
       expect(getByText('Rayon')).toBeTruthy();
       await waitFor(() => expect(mockGetRayons).toHaveBeenCalled());
@@ -185,7 +185,7 @@ describe('PruningRequestFilterModal', () => {
       mockGetRayons.mockRejectedValue(new Error('Network error'));
       expect(() =>
         render(
-          <PruningRequestFilterModal {...DEFAULT_PROPS} userRole="top_management" />,
+          <PruningRequestFilterModal {...DEFAULT_PROPS} userRole="management" />,
         ),
       ).not.toThrow();
       await waitFor(() => expect(mockGetRayons).toHaveBeenCalled());

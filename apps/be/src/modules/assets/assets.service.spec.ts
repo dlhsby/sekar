@@ -7,8 +7,8 @@ import { AssetCategory } from './entities/asset-category.entity';
 import { AssetAssignment } from './entities/asset-assignment.entity';
 import { AssetMaintenance } from './entities/asset-maintenance.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { UserArea } from '../user-areas/entities/user-area.entity';
-import { Area } from '../areas/entities/area.entity';
+import { UserLocation } from '../user-locations/entities/user-location.entity';
+import { Location } from '../locations/entities/location.entity';
 import { QrCodeService } from './services/qr-code.service';
 import { AuditLogService } from '../audit/audit.service';
 import {
@@ -36,7 +36,7 @@ describe('AssetsService', () => {
   const mockUser = {
     id: 'user-1',
     role: UserRole.KORLAP,
-    area_id: 'area-1',
+    location_id: 'area-1',
     rayon_id: null,
   } as unknown as User;
 
@@ -54,7 +54,7 @@ describe('AssetsService', () => {
     name: 'Sapu Lidi',
     status: AssetStatus.AVAILABLE,
     condition: AssetCondition.GOOD,
-    area_id: 'area-1',
+    location_id: 'area-1',
     rayon_id: 'rayon-1',
     qr_code_url: null,
     photo_url: null,
@@ -104,7 +104,7 @@ describe('AssetsService', () => {
     };
 
     mockUserAreaRepo = {
-      find: jest.fn().mockResolvedValue([{ area_id: 'area-1' }]),
+      find: jest.fn().mockResolvedValue([{ location_id: 'area-1' }]),
     };
 
     mockAreaRepo = {
@@ -128,8 +128,8 @@ describe('AssetsService', () => {
         { provide: getRepositoryToken(AssetAssignment), useValue: mockAssignmentRepo },
         { provide: getRepositoryToken(AssetMaintenance), useValue: mockMaintenanceRepo },
         { provide: getRepositoryToken(User), useValue: mockUserRepo },
-        { provide: getRepositoryToken(UserArea), useValue: mockUserAreaRepo },
-        { provide: getRepositoryToken(Area), useValue: mockAreaRepo },
+        { provide: getRepositoryToken(UserLocation), useValue: mockUserAreaRepo },
+        { provide: getRepositoryToken(Location), useValue: mockAreaRepo },
         { provide: QrCodeService, useValue: mockQrCodeService },
         { provide: AuditLogService, useValue: mockAuditService },
       ],
@@ -165,14 +165,14 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       const qb = mockAssetRepo.createQueryBuilder();
       await service.findAll(satgasUser, {});
 
       expect(qb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('asset.area_id'),
+        expect.stringContaining('asset.location_id'),
         expect.any(Object),
       );
     });
@@ -181,48 +181,51 @@ describe('AssetsService', () => {
       const korlapUser = {
         id: 'korlap-1',
         role: UserRole.KORLAP,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
-      mockUserAreaRepo.find.mockResolvedValue([{ area_id: 'area-1' }, { area_id: 'area-2' }]);
+      mockUserAreaRepo.find.mockResolvedValue([
+        { location_id: 'area-1' },
+        { location_id: 'area-2' },
+      ]);
 
       const qb = mockAssetRepo.createQueryBuilder();
       await service.findAll(korlapUser, {});
 
       expect(qb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('asset.area_id'),
+        expect.stringContaining('asset.location_id'),
         expect.any(Object),
       );
     });
 
-    it('should apply ADMIN_DATA scope filter', async () => {
+    it('should apply ADMIN_RAYON scope filter', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
-        area_id: 'area-1',
+        role: UserRole.ADMIN_RAYON,
+        location_id: 'area-1',
       } as User;
 
       const qb = mockAssetRepo.createQueryBuilder();
       await service.findAll(adminDataUser, {});
 
       expect(qb.andWhere).toHaveBeenCalledWith(
-        expect.stringContaining('asset.area_id'),
+        expect.stringContaining('asset.location_id'),
         expect.any(Object),
       );
     });
 
-    it('should not apply scope filter for TOP_MANAGEMENT users', async () => {
+    it('should not apply scope filter for MANAGEMENT users', async () => {
       const topMgmtUser = {
         id: 'tm-1',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       } as User;
 
       const qb = mockAssetRepo.createQueryBuilder();
       await service.findAll(topMgmtUser, {});
 
-      // TOP_MANAGEMENT is not in ASSET_VIEWERS, so no special filtering applied
+      // MANAGEMENT is not in ASSET_VIEWERS, so no special filtering applied
       expect(qb.andWhere).not.toHaveBeenCalledWith(
-        expect.stringContaining('asset.area_id'),
+        expect.stringContaining('asset.location_id'),
         expect.any(Object),
       );
     });
@@ -255,7 +258,7 @@ describe('AssetsService', () => {
     it('should create asset and generate QR', async () => {
       const dto: CreateAssetDto = {
         category_id: 'cat-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         name: 'Sapu Lidi',
       };
 
@@ -513,7 +516,7 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       const result = await service.findOne('asset-1', satgasUser);
@@ -525,10 +528,10 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
 
       await expect(service.findOne('asset-1', satgasUser)).rejects.toThrow(ForbiddenException);
@@ -538,7 +541,7 @@ describe('AssetsService', () => {
       const linmasUser = {
         id: 'linmas-1',
         role: UserRole.LINMAS,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       const result = await service.findOne('asset-1', linmasUser);
@@ -550,10 +553,10 @@ describe('AssetsService', () => {
       const linmasUser = {
         id: 'linmas-1',
         role: UserRole.LINMAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
 
       await expect(service.findOne('asset-1', linmasUser)).rejects.toThrow(ForbiddenException);
@@ -569,17 +572,17 @@ describe('AssetsService', () => {
       const korlapNoAreas = { ...mockUser };
       mockUserAreaRepo.find.mockResolvedValueOnce([]); // No assigned areas
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
 
       await expect(service.findOne('asset-1', korlapNoAreas)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow ADMIN_DATA user to view asset in their area', async () => {
+    it('should allow ADMIN_RAYON user to view asset in their area', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
-        area_id: 'area-1',
+        role: UserRole.ADMIN_RAYON,
+        location_id: 'area-1',
       } as User;
 
       const result = await service.findOne('asset-1', adminDataUser);
@@ -587,23 +590,23 @@ describe('AssetsService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should deny ADMIN_DATA user viewing asset from different area', async () => {
+    it('should deny ADMIN_RAYON user viewing asset from different area', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
-        area_id: 'area-2',
+        role: UserRole.ADMIN_RAYON,
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValueOnce(outOfScopeAsset);
 
       await expect(service.findOne('asset-1', adminDataUser)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow TOP_MANAGEMENT user to view any asset', async () => {
+    it('should allow MANAGEMENT user to view any asset', async () => {
       const topMgmtUser = {
         id: 'topMgmt-1',
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       } as User;
 
       const result = await service.findOne('asset-1', topMgmtUser);
@@ -639,11 +642,11 @@ describe('AssetsService', () => {
       await expect(service.findOne('asset-1', superadminUser)).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow ADMIN_DATA user to view asset (in ASSET_VIEWERS)', async () => {
+    it('should allow ADMIN_RAYON user to view asset (in ASSET_VIEWERS)', async () => {
       const adminDataUser = {
         id: 'admin-data-1',
-        role: UserRole.ADMIN_DATA,
-        area_id: 'area-1',
+        role: UserRole.ADMIN_RAYON,
+        location_id: 'area-1',
       } as User;
 
       const result = await service.findOne('asset-1', adminDataUser);
@@ -669,10 +672,10 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
 
       await expect(service.generateQr('asset-1', satgasUser)).rejects.toThrow(ForbiddenException);
@@ -693,10 +696,10 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
 
       await expect(service.scanByCode('AK-UTARA-001', satgasUser)).rejects.toThrow(
@@ -735,10 +738,10 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
 
       await expect(
@@ -781,10 +784,10 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
 
       await expect(
@@ -808,10 +811,10 @@ describe('AssetsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-2',
+        location_id: 'area-2',
       } as User;
 
-      const outOfScopeAsset = { ...mockAsset, area_id: 'area-1' };
+      const outOfScopeAsset = { ...mockAsset, location_id: 'area-1' };
       mockAssetRepo.findOne.mockResolvedValue(outOfScopeAsset);
 
       await expect(service.listAssignments('asset-1', satgasUser)).rejects.toThrow(

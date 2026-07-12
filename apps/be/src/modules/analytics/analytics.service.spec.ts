@@ -4,9 +4,9 @@ import { DataSource } from 'typeorm';
 import { AnalyticsService } from './analytics.service';
 import { PerformanceScoreService } from './services/performance-score.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
-import { UserArea } from '../user-areas/entities/user-area.entity';
+import { UserLocation } from '../user-locations/entities/user-location.entity';
 import { RedisService } from '../../common/services/redis.service';
 import { WorkerAnalyticsQueryDto } from './dto/worker-analytics-query.dto';
 import { AreaAnalyticsQueryDto } from './dto/area-analytics-query.dto';
@@ -25,7 +25,7 @@ describe('AnalyticsService', () => {
     id: 'user-1',
     full_name: 'Test User',
     role: UserRole.KORLAP,
-    area_id: 'area-1',
+    location_id: 'area-1',
     rayon_id: null,
   } as unknown as User;
 
@@ -34,7 +34,7 @@ describe('AnalyticsService', () => {
     name: 'Taman Utara',
     rayon_id: 'rayon-1',
     deleted_at: null,
-  } as unknown as Area;
+  } as unknown as Location;
 
   beforeEach(async () => {
     mockDataSource = {
@@ -69,7 +69,7 @@ describe('AnalyticsService', () => {
     };
 
     mockUserAreaRepo = {
-      find: jest.fn().mockResolvedValue([{ area_id: 'area-1' }]),
+      find: jest.fn().mockResolvedValue([{ location_id: 'area-1' }]),
     };
 
     mockRedis = {
@@ -98,7 +98,7 @@ describe('AnalyticsService', () => {
           useValue: mockUserRepo,
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: mockAreaRepo,
         },
         {
@@ -106,7 +106,7 @@ describe('AnalyticsService', () => {
           useValue: mockRayonRepo,
         },
         {
-          provide: getRepositoryToken(UserArea),
+          provide: getRepositoryToken(UserLocation),
           useValue: mockUserAreaRepo,
         },
         {
@@ -182,7 +182,7 @@ describe('AnalyticsService', () => {
       const korlapUser = {
         id: 'korlap-1',
         role: UserRole.KORLAP,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       const query = { page: 1, limit: 50 } as WorkerAnalyticsQueryDto;
@@ -192,11 +192,11 @@ describe('AnalyticsService', () => {
       expect(result).toHaveProperty('data');
     });
 
-    it('should filter workers by area for admin_data', async () => {
+    it('should filter workers by area for admin_rayon', async () => {
       const adminDataUser = {
         id: 'admin-1',
-        role: UserRole.ADMIN_DATA,
-        area_id: 'area-1',
+        role: UserRole.ADMIN_RAYON,
+        location_id: 'area-1',
       } as User;
 
       const query = { page: 1, limit: 50 } as WorkerAnalyticsQueryDto;
@@ -360,10 +360,10 @@ describe('AnalyticsService', () => {
   });
 
   describe('enforceAreaAccess - scope enforcement', () => {
-    it('should allow top_management to access any area', async () => {
+    it('should allow management to access any area', async () => {
       const topMgmtUser = {
         ...mockUser,
-        role: UserRole.TOP_MANAGEMENT,
+        role: UserRole.MANAGEMENT,
       } as User;
 
       mockDataSource.query.mockResolvedValue([
@@ -471,10 +471,10 @@ describe('AnalyticsService', () => {
       );
     });
 
-    it('should allow admin_data to access area in their rayon', async () => {
+    it('should allow admin_rayon to access area in their rayon', async () => {
       const adminDataUser = {
         id: 'admin-data-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-1',
       } as User;
 
@@ -499,10 +499,10 @@ describe('AnalyticsService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should deny admin_data accessing area outside their rayon', async () => {
+    it('should deny admin_rayon accessing area outside their rayon', async () => {
       const adminDataUser = {
         id: 'admin-data-1',
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'rayon-2',
       } as User;
 
@@ -520,7 +520,7 @@ describe('AnalyticsService', () => {
       const korlapUser = {
         id: 'korlap-1',
         role: UserRole.KORLAP,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       mockAreaRepo.findOne.mockResolvedValue({
@@ -528,7 +528,7 @@ describe('AnalyticsService', () => {
         rayon_id: 'rayon-1',
       });
 
-      mockUserAreaRepo.find.mockResolvedValue([{ area_id: 'area-1' }]);
+      mockUserAreaRepo.find.mockResolvedValue([{ location_id: 'area-1' }]);
 
       mockDataSource.query.mockResolvedValue([
         {
@@ -550,7 +550,7 @@ describe('AnalyticsService', () => {
       const korlapUser = {
         id: 'korlap-1',
         role: UserRole.KORLAP,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       mockAreaRepo.findOne.mockResolvedValue({
@@ -558,7 +558,7 @@ describe('AnalyticsService', () => {
         rayon_id: 'rayon-1',
       });
 
-      mockUserAreaRepo.find.mockResolvedValue([{ area_id: 'area-1' }]);
+      mockUserAreaRepo.find.mockResolvedValue([{ location_id: 'area-1' }]);
 
       await expect(service.getArea('area-2', korlapUser, {})).rejects.toThrow(
         'Cannot access areas outside your assigned areas',
@@ -569,7 +569,7 @@ describe('AnalyticsService', () => {
       const satgasUser = {
         id: 'satgas-1',
         role: UserRole.SATGAS,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       mockAreaRepo.findOne.mockResolvedValue({
@@ -662,7 +662,7 @@ describe('AnalyticsService', () => {
       const korlapUser = {
         id: 'korlap-1',
         role: UserRole.KORLAP,
-        area_id: 'area-1',
+        location_id: 'area-1',
       } as User;
 
       mockUserRepo.findOne.mockResolvedValue({

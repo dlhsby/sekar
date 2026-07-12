@@ -52,7 +52,7 @@ export class ActivityTypesService {
    * Returns activity types applicable to the user's role wrapped in a data object.
    * Used by mobile app to show only relevant activity types.
    *
-   * @param role - User role (satgas, linmas, korlap, admin_data, etc.)
+   * @param role - User role (satgas, linmas, korlap, admin_rayon, etc.)
    * @returns Object containing array of activity types
    */
   async findByUserRole(role: string): Promise<{ data: ActivityType[] }> {

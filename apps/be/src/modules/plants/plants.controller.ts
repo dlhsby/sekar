@@ -22,7 +22,7 @@ import {
 } from '@nestjs/swagger';
 import { PlantsService } from './services/plants.service';
 import { PlantSpecies } from './entities/plant-species.entity';
-import { AreaPlant } from './entities/area-plant.entity';
+import { LocationPlant } from './entities/location-plant.entity';
 import { NotablePlant } from './entities/notable-plant.entity';
 import { SearchSpeciesDto } from './dto/search-species.dto';
 import { CreateNotablePlantDto } from './dto/create-notable-plant.dto';
@@ -137,24 +137,24 @@ export class PlantsController {
   /**
    * Get all plants in an area (inventory rollup)
    *
-   * @param areaId Area UUID
-   * @returns Area plants with species details and aggregate counts
+   * @param locationId Location UUID
+   * @returns Location plants with species details and aggregate counts
    */
-  @Get('areas/:areaId/plants')
+  @Get('areas/:locationId/plants')
   @ApiOperation({
     summary: 'Get area plant inventory',
     description: 'Returns aggregate plant inventory for an area (count per species)',
   })
   @ApiParam({
-    name: 'areaId',
-    description: 'Area UUID',
+    name: 'locationId',
+    description: 'Location UUID',
     example: '11111111-1111-1111-1111-111111111101',
     type: 'string',
   })
   @ApiResponse({
     status: 200,
-    description: 'Area plants retrieved',
-    type: [AreaPlant],
+    description: 'Location plants retrieved',
+    type: [LocationPlant],
   })
   @ApiResponse({
     status: 401,
@@ -162,10 +162,10 @@ export class PlantsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Area not found',
+    description: 'Location not found',
   })
-  async listAreaPlants(@Param('areaId', ParseUUIDPipe) areaId: string) {
-    return this.plantsService.listAreaPlants(areaId);
+  async listAreaPlants(@Param('locationId', ParseUUIDPipe) locationId: string) {
+    return this.plantsService.listAreaPlants(locationId);
   }
 
   /**
@@ -173,17 +173,17 @@ export class PlantsController {
    *
    * Returns heritage trees and significant specimens (read-only for satgas/linmas).
    *
-   * @param areaId Area UUID
+   * @param locationId Location UUID
    * @returns Notable plants with species details
    */
-  @Get('areas/:areaId/notable-plants')
+  @Get('areas/:locationId/notable-plants')
   @ApiOperation({
     summary: 'Get notable plants in area',
     description: 'Returns heritage trees and significant specimens (specific tagged locations)',
   })
   @ApiParam({
-    name: 'areaId',
-    description: 'Area UUID',
+    name: 'locationId',
+    description: 'Location UUID',
     example: '11111111-1111-1111-1111-111111111101',
     type: 'string',
   })
@@ -198,10 +198,10 @@ export class PlantsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Area not found',
+    description: 'Location not found',
   })
-  async listNotablePlants(@Param('areaId', ParseUUIDPipe) areaId: string) {
-    return this.plantsService.listNotablePlants(areaId);
+  async listNotablePlants(@Param('locationId', ParseUUIDPipe) locationId: string) {
+    return this.plantsService.listNotablePlants(locationId);
   }
 
   /**
@@ -209,15 +209,15 @@ export class PlantsController {
    *
    * Only korlap and higher roles can create new heritage trees or significant specimens.
    *
-   * @param areaId Area UUID
+   * @param locationId Location UUID
    * @param dto Create DTO
    * @param user Current authenticated user
    * @returns Created notable plant
    */
-  @Post('areas/:areaId/notable-plants')
+  @Post('areas/:locationId/notable-plants')
   @Roles(
     UserRole.KORLAP,
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
     UserRole.ADMIN_SYSTEM,
     UserRole.SUPERADMIN,
@@ -227,8 +227,8 @@ export class PlantsController {
     description: 'Create a heritage tree or significant specimen record',
   })
   @ApiParam({
-    name: 'areaId',
-    description: 'Area UUID (must match dto.area_id)',
+    name: 'locationId',
+    description: 'Location UUID (must match dto.location_id)',
     example: '11111111-1111-1111-1111-111111111101',
     type: 'string',
   })
@@ -247,16 +247,16 @@ export class PlantsController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Area or species not found',
+    description: 'Location or species not found',
   })
   async createNotablePlant(
-    @Param('areaId', ParseUUIDPipe) areaId: string,
+    @Param('locationId', ParseUUIDPipe) locationId: string,
     @Body() dto: CreateNotablePlantDto,
     @GetUser() user: User,
   ) {
     // Validate path matches body
-    if (dto.area_id !== areaId) {
-      throw new BadRequestException('Area ID in path must match area_id in request body');
+    if (dto.location_id !== locationId) {
+      throw new BadRequestException('Location ID in path must match location_id in request body');
     }
 
     return this.plantsService.createNotablePlant(dto, user);
@@ -265,13 +265,13 @@ export class PlantsController {
   /**
    * Create a new plant species
    *
-   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Only admin_rayon, admin_system, and superadmin can manage the plant species catalog.
    *
    * @param dto Create DTO (nameId, nameLatin, category, defaultPruningCycleDays, notes)
    * @returns Created plant species
    */
   @Post('plant-species')
-  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Create plant species',
     description: 'Add a new plant species to the catalog',
@@ -300,7 +300,7 @@ export class PlantsController {
   /**
    * Update an existing plant species
    *
-   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Only admin_rayon, admin_system, and superadmin can manage the plant species catalog.
    * All fields in the update DTO are optional.
    *
    * @param id Plant species UUID
@@ -308,7 +308,7 @@ export class PlantsController {
    * @returns Updated plant species
    */
   @Patch('plant-species/:id')
-  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Update plant species',
     description: 'Modify an existing plant species record (all fields optional)',
@@ -350,13 +350,13 @@ export class PlantsController {
   /**
    * Delete a plant species (soft delete)
    *
-   * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
+   * Only admin_rayon, admin_system, and superadmin can manage the plant species catalog.
    * Will reject deletion if the species is referenced by area_plants or notable_plants.
    *
    * @param id Plant species UUID
    */
   @Delete('plant-species/:id')
-  @Roles(UserRole.ADMIN_DATA, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
+  @Roles(UserRole.ADMIN_RAYON, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN)
   @HttpCode(204)
   @ApiOperation({
     summary: 'Delete plant species',

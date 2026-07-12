@@ -42,7 +42,7 @@ interface MonitoringStatusSheetProps {
 
 // Field roles first (the ones a supervisor actively handles on the map), then
 // the rest. Roles not listed sort last, alphabetically by label.
-const ROLE_ORDER: string[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_data'];
+const ROLE_ORDER: string[] = ['korlap', 'satgas', 'linmas', 'kepala_rayon', 'admin_rayon'];
 
 function roleRank(role: string): number {
   const idx = ROLE_ORDER.indexOf(role);

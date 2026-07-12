@@ -18,7 +18,7 @@ export class OvertimeFilterDto extends PaginationDto {
   })
   @IsOptional()
   @IsUUID()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter from date (YYYY-MM-DD) — matches on start_datetime::date',

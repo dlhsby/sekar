@@ -353,7 +353,7 @@ Single column layout for most content:
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│ Nama           │ Area          │ Status    │ Jam Masuk │ ⋮  │
+│ Nama           │ Lokasi        │ Status    │ Jam Masuk │ ⋮  │
 ├──────────────────────────────────────────────────────────────┤
 │ Ahmad Rizki    │ Taman Bungkul │ ● Online  │ 08:05     │ ⋮  │
 │ Budi Santoso   │ Taman Surya   │ ○ Offline │ -         │ ⋮  │
@@ -597,9 +597,9 @@ const Screen = () => {
 
 | Role | Default View | Side Panel Default | Extra Controls |
 |------|-------------|-------------------|----------------|
-| top_management | City-wide map, all rayons | Rayon summary list | Rayon selector dropdown |
-| kepala_rayon | Rayon-focused map | Area summary list | Area selector, staffing overview |
-| korlap | Area-focused map | Worker list | Worker search, quick actions |
+| management | City-wide map, all rayons | Rayon summary list | Rayon selector dropdown |
+| kepala_rayon | Rayon-focused map | Location summary list | Location selector, staffing overview |
+| korlap | Location-focused map | Worker list | Worker search, quick actions |
 | admin_system | City-wide map | Full worker list | Config access, all filters |
 
 ### Status Card Responsive Sizing

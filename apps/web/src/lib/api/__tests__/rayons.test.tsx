@@ -8,7 +8,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../client';
 import { rayonKeys, useRayons, useRayon, useRayonStats, useRayonAreas } from '../rayons';
-import type { Rayon, RayonStats, Area, PaginatedResponse } from '@/types/models';
+import type { Location } from '@/types/models';
 import { ReactNode } from 'react';
 
 describe('Rayons API', () => {
@@ -55,12 +55,12 @@ describe('Rayons API', () => {
     active_shifts_today: 3,
   };
 
-  const mockAreas: PaginatedResponse<Area> = {
+  const mockAreas: PaginatedResponse<Location> = {
     data: [
       {
         id: '1',
         name: 'Taman Bungkul',
-        area_type_id: 'type-1',
+        location_type_id: 'type-1',
         rayon_id: '1',
         boundary: {
           type: 'Polygon',

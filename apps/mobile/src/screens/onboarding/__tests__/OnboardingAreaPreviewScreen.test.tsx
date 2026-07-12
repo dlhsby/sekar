@@ -51,8 +51,8 @@ describe('OnboardingAreaPreviewScreen', () => {
     expect(getByTestId('area-preview-kecamatan')).toBeTruthy();
   });
 
-  it('shows admin variant for admin_data', () => {
-    const { getByTestId } = renderForRole('admin_data');
+  it('shows admin variant for admin_rayon', () => {
+    const { getByTestId } = renderForRole('admin_rayon');
     expect(getByTestId('area-preview-admin')).toBeTruthy();
   });
 

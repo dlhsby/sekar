@@ -208,7 +208,7 @@
       <div class="tn" style="margin-top:8px;">Home = team status + clock-in.</div>
     </div>
     <div class="box" style="padding:14px;">
-      <div class="label" style="margin-bottom:6px;">ADMIN_DATA · 5 TABS</div>
+      <div class="label" style="margin-bottom:6px;">ADMIN_RAYON · 5 TABS</div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;border:1.5px solid var(--black);border-radius:var(--r-base);padding:6px;background:var(--paper);">
         <div class="tab active"><div class="icn">⌂</div>HOME</div>
         <div class="tab"><div class="icn">≡</div>TUGAS</div>
@@ -822,7 +822,7 @@
           <div class="btn-pri-lg">MULAI</div>
         </div>
       </div></div>
-      <div class="note">For staff_kecamatan, this screen swaps "RAYON / AREA / KORLAP" with "KECAMATAN / KELURAHAN / ADMIN PENJAWAB". For top_management, this step is skipped (no territorial assignment).</div>
+      <div class="note">For staff_kecamatan, this screen swaps "RAYON / AREA / KORLAP" with "KECAMATAN / KELURAHAN / ADMIN PENJAWAB". For management, this step is skipped (no territorial assignment).</div>
     </div>
 
   </div>
@@ -833,7 +833,7 @@
      ═══════════════════════════════════════════════════════════════ -->
 <section id="absensi">
   <div class="sec-head"><span class="sec-num">①</span><h2 class="sec-title">Absensi component · 3 states</h2><span class="sec-tag">mobile-only</span></div>
-  <p class="sec-lede">Absensi is a <b>component</b> that lives at the top of the home tab for satgas/linmas/korlap/admin_data. Three states: <b>before shift</b> (Clock-In CTA), <b>during shift</b> (live counters + Clock-Out), <b>between shifts</b> (today's summary read-only). Mobile-only — PWA shows a read-only "Hari ini di lapangan" card instead.</p>
+  <p class="sec-lede">Absensi is a <b>component</b> that lives at the top of the home tab for satgas/linmas/korlap/admin_rayon. Three states: <b>before shift</b> (Clock-In CTA), <b>during shift</b> (live counters + Clock-Out), <b>between shifts</b> (today's summary read-only). Mobile-only — PWA shows a read-only "Hari ini di lapangan" card instead.</p>
 
   <div class="frames">
 
@@ -1086,7 +1086,7 @@
 
     <!-- HM admin -->
     <div class="phone">
-      <div class="phone-head"><span class="phone-id">HM-admin</span><span class="phone-name">Home · admin_data</span></div>
+      <div class="phone-head"><span class="phone-id">HM-admin</span><span class="phone-name">Home · admin_rayon</span></div>
       <div class="phone-note">Absensi (compact) → Queue KPI tiles → Aksi cepat. Tabs: Home · Tugas · Monit · Req · Profil.</div>
       <div class="bezel"><div class="screen">
         <div class="statusbar"><span>09:18</span><div class="right"><span style="font-size:9px;">●●●</span><div class="batt"></div></div></div>
@@ -1186,9 +1186,9 @@
       <div class="note">Kepala rayon doesn't clock in/out — they're salaried managerial. Top map serves as both visual anchor and quick-access to monitoring (which is their entry route per spec).</div>
     </div>
 
-    <!-- HM top_management -->
+    <!-- HM management -->
     <div class="phone">
-      <div class="phone-head"><span class="phone-id">HM-top</span><span class="phone-name">Home · top_management</span></div>
+      <div class="phone-head"><span class="phone-id">HM-top</span><span class="phone-name">Home · management</span></div>
       <div class="phone-note">No absensi. City-wide health hero · rayon overview · alerts.</div>
       <div class="bezel"><div class="screen">
         <div class="statusbar"><span>09:42</span><div class="right"><span style="font-size:9px;">●●●</span><div class="batt"></div></div></div>
@@ -2540,7 +2540,7 @@
 
 <section id="profile">
   <div class="sec-head"><span class="sec-num">⑤</span><h2 class="sec-title">Profile · per role + settings</h2><span class="sec-tag">role-aware contents</span></div>
-  <p class="sec-lede">Profile composes from <b>identity (always) + role-specific cards + utility links</b>. Settings is mostly shared but kecamatan + top_management hide field-specific options (offline cache, location accuracy).</p>
+  <p class="sec-lede">Profile composes from <b>identity (always) + role-specific cards + utility links</b>. Settings is mostly shared but kecamatan + management hide field-specific options (offline cache, location accuracy).</p>
 
   <div class="frames">
 
@@ -2711,7 +2711,7 @@
           </div>
         </div>
       </div></div>
-      <div class="note"><b>LAPANGAN section</b> shown only for field roles (yellow tag indicates which roles see it). Office roles (kepala_rayon, top_management, kecamatan) skip the entire section — no offline cache, no location accuracy.</div>
+      <div class="note"><b>LAPANGAN section</b> shown only for field roles (yellow tag indicates which roles see it). Office roles (kepala_rayon, management, kecamatan) skip the entire section — no offline cache, no location accuracy.</div>
     </div>
 
   </div>

@@ -70,20 +70,20 @@ export function PruningRequestFilterModal({
   );
 
   // staff_kecamatan only sees their own submissions, so rayon picker is hidden.
-  // admin_data is rayon-locked to their own rayon (backend forces it anyway).
-  // top_management / admin_system / superadmin can pick any rayon.
+  // admin_rayon is rayon-locked to their own rayon (backend forces it anyway).
+  // management / admin_system / superadmin can pick any rayon.
   const showRayon = useMemo(
-    () => userRole === 'kepala_rayon' || userRole === 'admin_data' ||
-          userRole === 'top_management' || userRole === 'admin_system' ||
+    () => userRole === 'kepala_rayon' || userRole === 'admin_rayon' ||
+          userRole === 'management' || userRole === 'admin_system' ||
           userRole === 'superadmin',
     [userRole],
   );
   const isRayonFixed = useMemo(
-    () => userRole === 'kepala_rayon' || userRole === 'admin_data',
+    () => userRole === 'kepala_rayon' || userRole === 'admin_rayon',
     [userRole],
   );
   const canSelectRayon = useMemo(
-    () => userRole === 'top_management' || userRole === 'admin_system' ||
+    () => userRole === 'management' || userRole === 'admin_system' ||
           userRole === 'superadmin',
     [userRole],
   );

@@ -13,7 +13,7 @@
     "status": "Status",
     "shift": "Shift",
     "area": "Area",
-    "rayon": "Rayon",
+    "rayon": "District",
     "replacement": "Replacement"
   },
   "status": {
@@ -75,7 +75,7 @@
       "title": "Edit Schedule",
       "workerLabel": "Worker",
       "workerLocked": "The worker cannot be changed here. To reassign, delete this schedule and create a new one.",
-      "rayonLabel": "Rayon",
+      "rayonLabel": "District",
       "shiftLabel": "Shift",
       "areaLabel": "Areas",
       "submit": "Save"
@@ -107,7 +107,7 @@
   "capacity": {
     "pageTitle": "Service Capacity",
     "pageDescriptionLoading": "Loading…",
-    "pageDescription": "Weekly service capacity calendar for Rayon {{name}}",
+    "pageDescription": "Weekly service capacity calendar for District {{name}}",
     "readOnlyStatus": "View only",
     "yearLabel": "Year",
     "saveError": "Failed to save capacity.",

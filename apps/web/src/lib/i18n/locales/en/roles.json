@@ -2,9 +2,9 @@
   "satgas": "Field Worker",
   "linmas": "Security",
   "korlap": "Field Coordinator",
-  "admin_data": "Data Admin",
-  "kepala_rayon": "Rayon Head",
-  "top_management": "Management",
+  "admin_rayon": "Admin District",
+  "kepala_rayon": "District Head",
+  "management": "Management",
   "admin_system": "System Admin",
   "superadmin": "Super Admin",
   "staff_kecamatan": "District Staff"

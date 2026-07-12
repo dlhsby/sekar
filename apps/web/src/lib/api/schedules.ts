@@ -12,7 +12,7 @@ export type AddScheduleInput = {
   user_id: string;
   date: string;
   shift_definition_id?: string | null;
-  area_ids?: string[];
+  location_ids?: string[];
 };
 
 /**
@@ -153,9 +153,9 @@ async function replaceWorker(
 /**
  * Update areas assigned to a daily schedule
  */
-async function updateAreas(id: string, area_ids: string[]): Promise<Schedule> {
+async function updateAreas(id: string, location_ids: string[]): Promise<Schedule> {
   const response = await apiClient.patch<Schedule>(`/schedules/${id}/areas`, {
-    area_ids,
+    location_ids,
   });
   return response.data;
 }
@@ -254,8 +254,8 @@ export function useUpdateRosterAreas() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, area_ids }: { id: string; area_ids: string[] }) =>
-      updateAreas(id, area_ids),
+    mutationFn: ({ id, location_ids }: { id: string; location_ids: string[] }) =>
+      updateAreas(id, location_ids),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },

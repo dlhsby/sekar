@@ -53,7 +53,7 @@ Per-rayon admin contact data is stored in `rayons` table (existing fields `conta
 
 - **24/7 admin coverage required.** A satgas who forgets their password at 2 am can't reset until an admin is reachable. Mitigated by per-rayon WhatsApp contact + 8 rayons means generally someone is awake.
 - **Doesn't scale to consumer-grade adoption.** If SEKAR ever opens to public-facing users beyond `staff_kecamatan`, this flow must be revisited.
-- **Admin burden.** ~ 5 resets/week today; expected to plateau at ~ 15/week at full deployment (500 satgas). Admin time per reset ≈ 2 min — total ≈ 30 min/week absorbed by `admin_data` role.
+- **Admin burden.** ~ 5 resets/week today; expected to plateau at ~ 15/week at full deployment (500 satgas). Admin time per reset ≈ 2 min — total ≈ 30 min/week absorbed by `admin_rayon` role.
 
 ### Neutral
 
@@ -68,4 +68,4 @@ Phase 4 Sub-Phase 4-R (mobile + web AS-4 / AS-5 screens) + backend `password_mus
 - `design/project/hifi-mobile.html` § Login & auth (AS-4, AS-5)
 - `design/chats/chat1.md` — design intent (forgot-password discussion)
 - ADR-004 — JWT authentication baseline
-- ADR-009 — role system (admin / admin_data / superadmin are the reset-authorized roles)
+- ADR-009 — role system (admin / admin_rayon / superadmin are the reset-authorized roles)

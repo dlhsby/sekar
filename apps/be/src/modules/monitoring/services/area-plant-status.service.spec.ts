@@ -4,35 +4,35 @@ import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { AreaPlantStatusService } from './area-plant-status.service';
 import { PlantDueDateService } from '../../plants/services/plant-due-date.service';
-import { AreaPlant } from '../../plants/entities/area-plant.entity';
+import { LocationPlant } from '../../plants/entities/location-plant.entity';
 import { PlantSpecies } from '../../plants/entities/plant-species.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
-import { AreaType } from '../../area-types/entities/area-type.entity';
+import { LocationType } from '../../location-types/entities/location-type.entity';
 
 describe('AreaPlantStatusService', () => {
   let service: AreaPlantStatusService;
-  let areaPlantRepository: jest.Mocked<Repository<AreaPlant>>;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaPlantRepository: jest.Mocked<Repository<LocationPlant>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
   let plantDueDateService: jest.Mocked<PlantDueDateService>;
 
-  const mockAreaType: AreaType = {
+  const mockAreaType: LocationType = {
     id: 'area-type-1',
     code: 'park',
     name: 'Park',
     category: 'ACTIVE',
-  } as AreaType;
+  } as LocationType;
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
     name: 'Taman Bungkul',
-    area_type_id: 'area-type-1',
+    location_type_id: 'area-type-1',
     areaType: mockAreaType,
     gps_lat: -7.25,
     gps_lng: 112.75,
     radius_meters: 100,
     is_active: true,
-  } as Area;
+  } as Location;
 
   const mockSpecies1: PlantSpecies = {
     id: 'species-1',
@@ -50,9 +50,9 @@ describe('AreaPlantStatusService', () => {
     defaultPruningCycleDays: 60,
   } as PlantSpecies;
 
-  const mockAreaPlant1: AreaPlant = {
+  const mockAreaPlant1: LocationPlant = {
     id: 'ap-1',
-    areaId: 'area-1',
+    locationId: 'area-1',
     speciesId: 'species-1',
     count: 5,
     lastPrunedAt: new Date('2026-02-01'), // 85 days ago from Apr 27
@@ -63,11 +63,11 @@ describe('AreaPlantStatusService', () => {
     area: mockArea,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as AreaPlant;
+  } as LocationPlant;
 
-  const mockAreaPlant2: AreaPlant = {
+  const mockAreaPlant2: LocationPlant = {
     id: 'ap-2',
-    areaId: 'area-1',
+    locationId: 'area-1',
     speciesId: 'species-2',
     count: 8,
     lastPrunedAt: new Date('2026-03-28'), // 30 days ago from Apr 27
@@ -78,11 +78,11 @@ describe('AreaPlantStatusService', () => {
     area: mockArea,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as AreaPlant;
+  } as LocationPlant;
 
-  const mockAreaPlant3: AreaPlant = {
+  const mockAreaPlant3: LocationPlant = {
     id: 'ap-3',
-    areaId: 'area-1',
+    locationId: 'area-1',
     speciesId: 'species-1',
     count: 3,
     lastPrunedAt: null, // Never pruned
@@ -93,20 +93,20 @@ describe('AreaPlantStatusService', () => {
     area: mockArea,
     createdAt: new Date(),
     updatedAt: new Date(),
-  } as AreaPlant;
+  } as LocationPlant;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AreaPlantStatusService,
         {
-          provide: getRepositoryToken(AreaPlant),
+          provide: getRepositoryToken(LocationPlant),
           useValue: {
             find: jest.fn(),
           },
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             findOne: jest.fn(),
             find: jest.fn().mockResolvedValue([]),
@@ -128,8 +128,8 @@ describe('AreaPlantStatusService', () => {
     }).compile();
 
     service = module.get<AreaPlantStatusService>(AreaPlantStatusService);
-    areaPlantRepository = module.get(getRepositoryToken(AreaPlant));
-    areaRepository = module.get(getRepositoryToken(Area));
+    areaPlantRepository = module.get(getRepositoryToken(LocationPlant));
+    areaRepository = module.get(getRepositoryToken(Location));
     plantDueDateService = module.get(PlantDueDateService);
   });
 
@@ -166,7 +166,7 @@ describe('AreaPlantStatusService', () => {
       await service.getAreaPlantStatus('area-1');
 
       expect(areaPlantRepository.find).toHaveBeenCalledWith({
-        where: { areaId: 'area-1' },
+        where: { locationId: 'area-1' },
         relations: ['species'],
       });
     });
@@ -187,7 +187,7 @@ describe('AreaPlantStatusService', () => {
 
       const result = await service.getAreaPlantStatus('area-1');
 
-      expect(result).toHaveProperty('areaId', 'area-1');
+      expect(result).toHaveProperty('locationId', 'area-1');
       expect(result).toHaveProperty('total');
       expect(result).toHaveProperty('ok');
       expect(result).toHaveProperty('due_soon');
@@ -304,10 +304,20 @@ describe('AreaPlantStatusService', () => {
     });
 
     it('should handle all status types in aggregation', async () => {
-      const plant1 = { ...mockAreaPlant1, count: 2 } as AreaPlant;
-      const plant2 = { ...mockAreaPlant2, count: 3 } as AreaPlant;
-      const plant3 = { ...mockAreaPlant1, id: 'ap-3', status: 'overdue', count: 1 } as AreaPlant;
-      const plant4 = { ...mockAreaPlant1, id: 'ap-4', status: 'unknown', count: 4 } as AreaPlant;
+      const plant1 = { ...mockAreaPlant1, count: 2 } as LocationPlant;
+      const plant2 = { ...mockAreaPlant2, count: 3 } as LocationPlant;
+      const plant3 = {
+        ...mockAreaPlant1,
+        id: 'ap-3',
+        status: 'overdue',
+        count: 1,
+      } as LocationPlant;
+      const plant4 = {
+        ...mockAreaPlant1,
+        id: 'ap-4',
+        status: 'unknown',
+        count: 4,
+      } as LocationPlant;
 
       areaRepository.findOne.mockResolvedValue(mockArea);
       areaPlantRepository.find.mockResolvedValue([plant1, plant2, plant3, plant4]);
@@ -367,22 +377,22 @@ describe('AreaPlantStatusService', () => {
       name: 'Taman Bungkul',
       rayon_id: RAYON_A,
       areaType: {},
-    } as unknown as Area;
+    } as unknown as Location;
     const areaA2 = {
       id: 'area-a2',
       name: 'Taman Flora',
       rayon_id: RAYON_A,
       areaType: {},
-    } as unknown as Area;
+    } as unknown as Location;
     const areaB1 = {
       id: 'area-b1',
       name: 'Taman Apsari',
       rayon_id: RAYON_B,
       areaType: {},
-    } as unknown as Area;
+    } as unknown as Location;
 
-    function plantRow(areaId: string, speciesId: string): AreaPlant {
-      return { areaId, speciesId, count: 2, species: mockSpecies1 } as unknown as AreaPlant;
+    function plantRow(locationId: string, speciesId: string): LocationPlant {
+      return { locationId, speciesId, count: 2, species: mockSpecies1 } as unknown as LocationPlant;
     }
 
     beforeEach(() => {
@@ -418,8 +428,8 @@ describe('AreaPlantStatusService', () => {
       const south = summary.rayons.find((r) => r.rayon_id === RAYON_A)!;
       expect(south).toMatchObject({ rayon_name: 'Rayon Selatan', ok: 1, overdue: 2 });
       expect(south.overdue_areas).toEqual([
-        { area_id: 'area-a1', area_name: 'Taman Bungkul', overdue: 1 },
-        { area_id: 'area-a2', area_name: 'Taman Flora', overdue: 1 },
+        { location_id: 'area-a1', area_name: 'Taman Bungkul', overdue: 1 },
+        { location_id: 'area-a2', area_name: 'Taman Flora', overdue: 1 },
       ]);
       const north = summary.rayons.find((r) => r.rayon_id === RAYON_B)!;
       expect(north).toMatchObject({ due_soon: 1, overdue: 0, overdue_areas: [] });

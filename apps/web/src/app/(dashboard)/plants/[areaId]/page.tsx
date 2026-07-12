@@ -27,7 +27,7 @@ import {
 } from '@/components/ui';
 import { SectionCard } from '@/components/ui/section-card';
 import { PlantStatusBadge } from '@/components/plants/PlantStatusBadge';
-import { useArea } from '@/lib/api/areas';
+import { useLocation } from '@/lib/api/locations';
 import { useAreaPlants, useNotablePlants, summarizePlantStatuses } from '@/lib/api/plants';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
@@ -38,7 +38,7 @@ export default function AreaPlantsPage({ params }: { params: Promise<{ areaId: s
   const { t } = useTranslation(['plants', 'common']);
 
   // Fetch area info
-  const { data: area, isLoading: areaLoading } = useArea(areaId);
+  const { data: area, isLoading: areaLoading } = useLocation(areaId);
 
   // Fetch plants for this area
   const { data: plants, isLoading: plantsLoading } = useAreaPlants(areaId);

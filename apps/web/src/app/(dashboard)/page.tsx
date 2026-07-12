@@ -24,7 +24,7 @@ import { usePlantStatusSummary } from '@/lib/api/plants';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
 
-const ADMIN_ROLES = new Set(['admin_system', 'superadmin', 'top_management']);
+const ADMIN_ROLES = new Set(['admin_system', 'superadmin', 'management']);
 
 // Presence model (current shift): HADIR = scheduled + clocked in, split into
 // Aktif (fresh ping) / Tidak aktif (offline or stale), each with a dalam/luar

@@ -2,29 +2,29 @@ import { canEditTargetRole, isGlobalRosterEditor } from '../schedule-permissions
 
 describe('schedule-permissions (roster edit hierarchy — mirrors backend)', () => {
   describe('canEditTargetRole', () => {
-    it('admin_system / superadmin / top_management may edit anyone (full parity)', () => {
-      for (const admin of ['admin_system', 'superadmin', 'top_management'] as const) {
+    it('admin_system / superadmin / management may edit anyone (full parity)', () => {
+      for (const admin of ['admin_system', 'superadmin', 'management'] as const) {
         for (const target of [
           'satgas',
           'linmas',
           'korlap',
-          'admin_data',
+          'admin_rayon',
           'kepala_rayon',
-          'top_management',
+          'management',
         ] as const) {
           expect(canEditTargetRole(admin, target)).toBe(true);
         }
       }
     });
 
-    it('kepala_rayon / admin_data edit korlap + satgas + linmas, not peers/up', () => {
-      for (const mgr of ['kepala_rayon', 'admin_data'] as const) {
+    it('kepala_rayon / admin_rayon edit korlap + satgas + linmas, not peers/up', () => {
+      for (const mgr of ['kepala_rayon', 'admin_rayon'] as const) {
         expect(canEditTargetRole(mgr, 'korlap')).toBe(true);
         expect(canEditTargetRole(mgr, 'satgas')).toBe(true);
         expect(canEditTargetRole(mgr, 'linmas')).toBe(true);
         expect(canEditTargetRole(mgr, 'kepala_rayon')).toBe(false);
-        expect(canEditTargetRole(mgr, 'admin_data')).toBe(false);
-        expect(canEditTargetRole(mgr, 'top_management')).toBe(false);
+        expect(canEditTargetRole(mgr, 'admin_rayon')).toBe(false);
+        expect(canEditTargetRole(mgr, 'management')).toBe(false);
       }
     });
 
@@ -43,10 +43,10 @@ describe('schedule-permissions (roster edit hierarchy — mirrors backend)', () 
   });
 
   describe('isGlobalRosterEditor', () => {
-    it('is true only for admin_system / superadmin / top_management', () => {
+    it('is true only for admin_system / superadmin / management', () => {
       expect(isGlobalRosterEditor('admin_system')).toBe(true);
       expect(isGlobalRosterEditor('superadmin')).toBe(true);
-      expect(isGlobalRosterEditor('top_management')).toBe(true);
+      expect(isGlobalRosterEditor('management')).toBe(true);
       expect(isGlobalRosterEditor('kepala_rayon')).toBe(false);
       expect(isGlobalRosterEditor('korlap')).toBe(false);
     });

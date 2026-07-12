@@ -79,12 +79,12 @@ export class ActivitiesController {
    * - Field workers (ACTIVITY_SUBMITTERS): Own activities only
    * - KORLAP: Activities from their area
    * - KEPALA_RAYON: Activities from their rayon
-   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
+   * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get()
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
   @ApiOperation({
-    summary: 'List activities with filters and pagination (Scope-based: Own/Area/Rayon/City)',
+    summary: 'List activities with filters and pagination (Scope-based: Own/Location/Rayon/City)',
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
@@ -133,7 +133,7 @@ export class ActivitiesController {
       {
         user_id: filterDto.user_id,
         shift_id: filterDto.shift_id,
-        area_id: filterDto.area_id,
+        location_id: filterDto.location_id,
         rayon_id: filterDto.rayon_id,
         activity_type_id: filterDto.activity_type_id,
         from_date: filterDto.from_date,
@@ -220,11 +220,11 @@ export class ActivitiesController {
    * - Field workers: Own activities only
    * - KORLAP: Activities from their area
    * - KEPALA_RAYON: Activities from their rayon
-   * - TOP_MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
+   * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get(':id')
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)
-  @ApiOperation({ summary: 'Get activity details (Scope-based: Own/Area/Rayon/City)' })
+  @ApiOperation({ summary: 'Get activity details (Scope-based: Own/Location/Rayon/City)' })
   @ApiResponse({
     status: 200,
     description: 'Activity details',

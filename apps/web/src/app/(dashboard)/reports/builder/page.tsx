@@ -72,8 +72,8 @@ export default function ReportBuilderPage() {
   const REPORTING_VIEWERS: UserRole[] = [
     'korlap',
     'kepala_rayon',
-    'admin_data',
-    'top_management',
+    'admin_rayon',
+    'management',
     'admin_system',
     'superadmin',
   ];

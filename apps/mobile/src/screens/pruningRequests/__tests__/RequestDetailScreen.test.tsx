@@ -319,7 +319,7 @@ jest.mock('../../../components/nb/NBToast', () => ({
 
 // Mock useUserRole hook
 jest.mock('../../../hooks/useUserRole', () => ({
-  useUserRole: () => 'admin_data',
+  useUserRole: () => 'admin_rayon',
 }));
 
 // Mock API
@@ -408,11 +408,11 @@ describe('RequestDetailScreen', () => {
 
     store = configureStore({
       reducer: {
-        auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+        auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
         pruningRequests: pruningRequestsReducer,
       },
       preloadedState: {
-        auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+        auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
         pruningRequests: {
           mine: [],
           adminList: [],
@@ -456,11 +456,11 @@ describe('RequestDetailScreen', () => {
       // Create a store with isLoading=true
       const loadingStore = configureStore({
         reducer: {
-          auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+          auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
           pruningRequests: pruningRequestsReducer,
         },
         preloadedState: {
-          auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+          auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
           pruningRequests: {
             mine: [],
             adminList: [],
@@ -575,11 +575,11 @@ describe('RequestDetailScreen', () => {
       // Update store with reviewed request
       store = configureStore({
         reducer: {
-          auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+          auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
           pruningRequests: pruningRequestsReducer,
         },
         preloadedState: {
-          auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+          auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
           pruningRequests: {
             mine: [],
             adminList: [],
@@ -607,11 +607,11 @@ describe('RequestDetailScreen', () => {
       // Update store with reviewed request
       store = configureStore({
         reducer: {
-          auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+          auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
           pruningRequests: pruningRequestsReducer,
         },
         preloadedState: {
-          auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+          auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
           pruningRequests: {
             mine: [],
             adminList: [],
@@ -639,11 +639,11 @@ describe('RequestDetailScreen', () => {
       // Update store with converted request
       store = configureStore({
         reducer: {
-          auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+          auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
           pruningRequests: pruningRequestsReducer,
         },
         preloadedState: {
-          auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+          auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
           pruningRequests: {
             mine: [],
             adminList: [],
@@ -672,11 +672,11 @@ describe('RequestDetailScreen', () => {
       // Update store with converted request
       store = configureStore({
         reducer: {
-          auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+          auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
           pruningRequests: pruningRequestsReducer,
         },
         preloadedState: {
-          auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+          auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
           pruningRequests: {
             mine: [],
             adminList: [],
@@ -715,11 +715,11 @@ describe('RequestDetailScreen', () => {
       // Create a store with no request initially
       const errorStore = configureStore({
         reducer: {
-          auth: (state = { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
+          auth: (state = { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null }) => state,
           pruningRequests: pruningRequestsReducer,
         },
         preloadedState: {
-          auth: { user: { id: '1', role: 'admin_data', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
+          auth: { user: { id: '1', role: 'admin_rayon', phone: '08123456789', name: 'Admin' }, assignedArea: null, isAuthenticated: true, isLoading: false, isRestoring: false, error: null },
           pruningRequests: {
             mine: [],
             adminList: [],

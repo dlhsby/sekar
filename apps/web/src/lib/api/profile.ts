@@ -15,6 +15,7 @@ import type { User } from './auth';
 
 export interface UpdateMyProfilePayload {
   full_name?: string;
+  username?: string;
   phone_number?: string;
   preferred_language?: 'id' | 'en';
 }

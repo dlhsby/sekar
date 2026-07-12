@@ -27,13 +27,13 @@ import {
   BUNGKUL_AREA_ID,
   TAMAN_FLORA_AREA_ID,
   TAMAN_BUK_TONG_ID,
-} from '../kmz-areas';
+} from '../kmz-locations';
 
 /**
  * Seed users (mode-dependent):
  *
  * Demo: ~60 users (Phase 1 + Phase 2 + Phase 3 test users). Combines superadmin,
- * resettest, per-rayon managers (korlap/admin_data), field workers (satgas/linmas),
+ * resettest, per-rayon managers (korlap/admin_rayon), field workers (satgas/linmas),
  * and 31 staff_kecamatan users.
  *
  * Staging: 1125 users. Superadmin + admin system + top management + per-rayon
@@ -56,7 +56,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const USER_ADMIN_SYS_ID = '53c5d6e7-f8a9-4701-2345-678980910213';
     const USER_TOP_MGMT_ID = '53d6e7f8-a9b0-4812-3456-789091021324';
     const USER_KEPALA_RAYON_ID = '53e7f8a9-b0c1-4923-4567-890102132435';
-    const USER_ADMIN_DATA_ID = '53f8a9b0-c1d2-4a34-5678-901213243546';
+    const USER_ADMIN_RAYON_ID = '53f8a9b0-c1d2-4a34-5678-901213243546';
     const USER_KORLAP_PUSAT1_ID = '54a9b0c1-d2e3-4b45-6789-012324354657';
     const USER_KORLAP_PUSAT2_ID = '54b0c1d2-e3f4-4c56-7890-123435465768';
     const USER_KORLAP_BUNGKUL_ID = '54c1d2e3-f4a5-4d67-8901-234546576879';
@@ -110,10 +110,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       '5a010506-0000-4001-8005-00000000001e',
     ];
 
-    // Resolve real Pusat + Timur 2 areas for the dummy assignments.
+    // Resolve real Pusat + Timur 2 locations for the dummy assignments.
     const pusatDummyAreaIds: string[] = (
       (await ctx.qr.query(
-        `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
+        `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
         [RAYON_PUSAT_ID],
       )) as Array<{ id: string }>
     ).map((r) => r.id);
@@ -121,7 +121,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const timur2DummyAreaId =
       (
         (await ctx.qr.query(
-          `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
+          `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
           [RAYON_TIMUR2_ID],
         )) as Array<{ id: string }>
       )[0]?.id ?? null;
@@ -140,7 +140,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       opts: { passwordHash?: string; mustChange?: boolean } = {},
     ) => {
       const result = await ctx.qr.query(
-        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, is_active, password_must_change)
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, kecamatan_name, is_active, password_must_change)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10)
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,
@@ -182,9 +182,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     await insertUser(
       USER_TOP_MGMT_ID,
-      'top_management_1',
-      'Top Management Satu',
-      'top_management',
+      'management_1',
+      'Management Satu',
+      'management',
       '081200000012',
     );
     // Rayon Pusat management.
@@ -197,10 +197,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       RAYON_PUSAT_ID,
     );
     await insertUser(
-      USER_ADMIN_DATA_ID,
-      'admin_data_pusat_1',
-      'Admin Data Pusat Satu',
-      'admin_data',
+      USER_ADMIN_RAYON_ID,
+      'admin_rayon_pusat_1',
+      'Admin Rayon Pusat Satu',
+      'admin_rayon',
       '081200000014',
       RAYON_PUSAT_ID,
     );
@@ -316,9 +316,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     await insertUser(
       '5a0b0002-0000-4002-8003-000000000004',
-      'admin_data_taman_aktif_1',
-      'Admin Data Taman Aktif Satu',
-      'admin_data',
+      'admin_rayon_taman_aktif_1',
+      'Admin Rayon Taman Aktif Satu',
+      'admin_rayon',
       '081200000064',
       RAYON_TAMAN_AKTIF_ID,
     );
@@ -375,9 +375,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
         assignArea: false,
       },
       {
-        role: 'admin_data',
-        usernamePrefix: 'admin_data',
-        fullNamePrefix: 'Admin Data',
+        role: 'admin_rayon',
+        usernamePrefix: 'admin_rayon',
+        fullNamePrefix: 'Admin Rayon',
         assignArea: false,
       },
       { role: 'korlap', usernamePrefix: 'korlap', fullNamePrefix: 'Korlap', assignArea: true },
@@ -411,7 +411,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       USER_PRAMUDITA_ID,
       'pramudita_yustiani',
       'Pramudita Yustiani',
-      'top_management',
+      'management',
       '08563302643',
     );
     await insertUser(USER_WAHYU_ID, 'wahyu_tri_p', 'Wahyu Tri P', 'superadmin', '081232939377');
@@ -427,7 +427,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       USER_PONCO_ID,
       'ponco_adi_prabowo',
       'Ponco Adi Prabowo',
-      'admin_data',
+      'admin_rayon',
       '081200000002',
       RAYON_PUSAT_ID,
     );
@@ -503,7 +503,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     const tamanAktifAreaIdByName = new Map<string, string>(
       (
-        (await ctx.qr.query(`SELECT id, name FROM areas WHERE rayon_id = $1`, [
+        (await ctx.qr.query(`SELECT id, name FROM locations WHERE rayon_id = $1`, [
           RAYON_TAMAN_AKTIF_ID,
         ])) as Array<{ id: string; name: string }>
       ).map((r) => [r.name, r.id]),
@@ -513,10 +513,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       let phone: string | null = u.phone || null;
       if (phone && existingPhones.has(phone)) phone = null;
       if (phone) existingPhones.add(phone);
-      const areaIds = u.area_names
+      const locationIds = u.area_names
         .map((n) => tamanAktifAreaIdByName.get(n))
         .filter((x): x is string => Boolean(x));
-      const primaryAreaId = areaIds[0] ?? null;
+      const primaryAreaId = locationIds[0] ?? null;
       // A roster id can collide with a system/dummy row's id when the client
       // sheet was reconciled against the live DB (a roster user may have adopted
       // a seeded-dummy id under a different username). users.csv is gitignored
@@ -524,7 +524,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       // by a DIFFERENT username, mint a fresh one instead of hitting users_pkey.
       // Non-colliding rows keep their deterministic id.
       await ctx.qr.query(
-        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active, password_must_change)
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active, password_must_change)
          VALUES (
            CASE WHEN EXISTS (SELECT 1 FROM users WHERE id = $1::uuid AND username <> $2)
                 THEN gen_random_uuid() ELSE $1::uuid END,
@@ -537,9 +537,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ])) as Array<{ id: string }>;
       const uid = uidRows[0]?.id;
       if (uid) {
-        for (const aid of areaIds) {
+        for (const aid of locationIds) {
           await ctx.qr.query(
-            `INSERT INTO user_areas (user_id, area_id, assignment_type, assigned_by)
+            `INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
              VALUES ($1, $2, 'permanent', $3) ON CONFLICT DO NOTHING`,
             [uid, aid, USER_SUPERADMIN_ID],
           );
@@ -558,7 +558,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       const phone = `0812000${String(kecPhoneSeq).padStart(5, '0')}`;
       kecPhoneSeq += 1;
       await ctx.qr.query(
-        `INSERT INTO users (username, password_hash, full_name, phone_number, role, rayon_id, area_id, kecamatan_name, kecamatan_id, is_active, password_must_change)
+        `INSERT INTO users (username, password_hash, full_name, phone_number, role, rayon_id, location_id, kecamatan_name, kecamatan_id, is_active, password_must_change)
          VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE, TRUE)
          ON CONFLICT (username) DO NOTHING`,
         [
@@ -587,7 +587,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     // STEP 10: derive rayon_id for field workers from their area.
     await ctx.qr.query(
-      `UPDATE users u SET rayon_id = a.rayon_id FROM areas a WHERE u.area_id = a.id AND u.rayon_id IS NULL AND u.role IN ('satgas', 'linmas', 'korlap')`,
+      `UPDATE users u SET rayon_id = a.rayon_id FROM locations a WHERE u.location_id = a.id AND u.rayon_id IS NULL AND u.role IN ('satgas', 'linmas', 'korlap')`,
     );
     ctx.log('✅ Staging users seeding complete');
   } else {
@@ -651,12 +651,12 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const USER_SATGAS_BUNGKUL_1_ID = 'a3c9e7f2-1d5b-4a8e-b6c4-9f2e7a3c5d1b';
     const USER_SATGAS_BUNGKUL_2_ID = 'd7b4f1e9-3c6a-4d2f-a8e5-2b9f4d7c1e6a';
 
-    const USER_ADMIN_DATA_SELATAN_ID = '1a4c7e9b-2d5f-4a8c-93e6-7f9a1c4e7b2d';
-    const USER_ADMIN_DATA_UTARA_ID = '2b5d8f0c-3e6a-4b9d-a4f7-8a0b2d5f8c3e';
-    const USER_ADMIN_DATA_TIMUR1_ID = '3c6e9a1d-4f7b-4c0e-b5a8-9b1c3e6a9d4f';
-    const USER_ADMIN_DATA_TIMUR2_ID = '4d7f0b2e-5a8c-4d1f-86b9-0c2d4f7b0e5a';
-    const USER_ADMIN_DATA_BARAT1_ID = '5e8a1c3f-6b9d-4e2a-97c0-1d3e5a8c1f6b';
-    const USER_ADMIN_DATA_BARAT2_ID = '6f9b2d4a-7c0e-4f3b-a8d1-2e4f6b9d2a7c';
+    const USER_ADMIN_RAYON_SELATAN_ID = '1a4c7e9b-2d5f-4a8c-93e6-7f9a1c4e7b2d';
+    const USER_ADMIN_RAYON_UTARA_ID = '2b5d8f0c-3e6a-4b9d-a4f7-8a0b2d5f8c3e';
+    const USER_ADMIN_RAYON_TIMUR1_ID = '3c6e9a1d-4f7b-4c0e-b5a8-9b1c3e6a9d4f';
+    const USER_ADMIN_RAYON_TIMUR2_ID = '4d7f0b2e-5a8c-4d1f-86b9-0c2d4f7b0e5a';
+    const USER_ADMIN_RAYON_BARAT1_ID = '5e8a1c3f-6b9d-4e2a-97c0-1d3e5a8c1f6b';
+    const USER_ADMIN_RAYON_BARAT2_ID = '6f9b2d4a-7c0e-4f3b-a8d1-2e4f6b9d2a7c';
 
     const USER_KORLAP_HARMONI_ID = '7a0c3e5b-8d1f-4a4c-b9e2-3f5a7c0e3b8d';
     const USER_KORLAP_UTARA_ID = '8b1d4f6c-9e2a-4b5d-a0f3-4a6b8d1f4c9e';
@@ -667,15 +667,15 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     // Initial Phase 2C users (11)
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
-      ('${USER_PHASE2_1_ID}', 'top_management_1', '${passwordHash}', 'Top Management Satu', '081234567890', 'top_management', NULL, NULL, TRUE),
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
+      ('${USER_PHASE2_1_ID}', 'management_1', '${passwordHash}', 'Management Satu', '081234567890', 'management', NULL, NULL, TRUE),
       ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan_1', '${passwordHash}', 'Kepala Rayon Selatan Satu', '081234567891', 'kepala_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('${USER_PHASE2_3_ID}', 'kepala_rayon_utara_1', '${passwordHash}', 'Kepala Rayon Utara Satu', '081234567892', 'kepala_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${DARMO_P3_AREA_ID}', TRUE),
       ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_pusat_1', '${passwordHash}', 'Linmas Pusat Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
       ('${USER_LINMAS_DARMO_1_ID}',   'linmas_pusat_2',   '${passwordHash}', 'Linmas Pusat Dua',   '081234567895', 'linmas', NULL, NULL, TRUE),
       ('${USER_KORLAP_DARMO_ID}',     'korlap_pusat_2',     '${passwordHash}', 'Korlap Pusat Dua',  '081234567896', 'korlap', NULL, NULL, TRUE),
-      ('${USER_PHASE2_8_ID}', 'admin_data_pusat_1', '${passwordHash}', 'Admin Data Pusat Satu', '081234567897', 'admin_data', '${RAYON_PUSAT_ID}', NULL, TRUE),
+      ('${USER_PHASE2_8_ID}', 'admin_rayon_pusat_1', '${passwordHash}', 'Admin Rayon Pusat Satu', '081234567897', 'admin_rayon', '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_PHASE2_9_ID}', 'admin_system_1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
       ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_PUSAT_ID}', '${DARMO_P4_AREA_ID}', TRUE),
       ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_PUSAT_ID}', '${DARMO_P5_AREA_ID}', TRUE),
@@ -683,7 +683,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('5a0b0001-0000-4002-8003-000000000003', 'korlap_taman_aktif_1', '${passwordHash}', 'Korlap Taman Aktif Satu', '081300000041', 'korlap', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000004', 'linmas_taman_aktif_1', '${passwordHash}', 'Linmas Taman Aktif Satu', '081300000042', 'linmas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000005', 'kepala_rayon_taman_aktif_1', '${passwordHash}', 'Kepala Rayon Taman Aktif Satu', '081300000043', 'kepala_rayon', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
-      ('5a0b0001-0000-4002-8003-000000000006', 'admin_data_taman_aktif_1', '${passwordHash}', 'Admin Data Taman Aktif Satu', '081300000044', 'admin_data', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
+      ('5a0b0001-0000-4002-8003-000000000006', 'admin_rayon_taman_aktif_1', '${passwordHash}', 'Admin Rayon Taman Aktif Satu', '081300000044', 'admin_rayon', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
       ('5a0b0001-0000-4002-8003-000000000007', 'satgas_taman_flora_1', '${passwordHash}', 'Satgas Taman Flora Satu', '081300000045', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${TAMAN_FLORA_AREA_ID}', TRUE)
     ON CONFLICT (username) DO NOTHING;
   `);
@@ -692,7 +692,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     // 15 users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
       ('${USER_NEW_1_ID}',  'kepala_rayon_pusat_1',  '${passwordHash}', 'Kepala Rayon Pusat Satu',   '081300000001', 'kepala_rayon', '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_NEW_2_ID}',  'satgas_pusat_1',      '${passwordHash}', 'Satgas Pusat Satu',    '081300000002', 'satgas',       '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_NEW_3_ID}',  'satgas_pusat_2',      '${passwordHash}', 'Satgas Pusat Dua',     '081300000003', 'satgas',       '${RAYON_PUSAT_ID}', NULL, TRUE),
@@ -713,15 +713,15 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     ctx.log('  ✓ Seeded 15 users for missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)');
 
-    // 12 users: admin_data + korlap for 6 remaining rayons
+    // 12 users: admin_rayon + korlap for 6 remaining rayons
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
-      ('${USER_ADMIN_DATA_SELATAN_ID}', 'admin_data_selatan_1', '${passwordHash}', 'Admin Data Selatan Satu', '081300000018', 'admin_data', '${RAYON_SELATAN_ID}', NULL, TRUE),
-      ('${USER_ADMIN_DATA_UTARA_ID}',   'admin_data_utara_1',   '${passwordHash}', 'Admin Data Utara Satu',   '081300000019', 'admin_data', '${RAYON_UTARA_ID}', NULL, TRUE),
-      ('${USER_ADMIN_DATA_TIMUR1_ID}',  'admin_data_timur_1_1',  '${passwordHash}', 'Admin Data Timur 1 Satu', '081300000020', 'admin_data', '${RAYON_TIMUR1_ID}', NULL, TRUE),
-      ('${USER_ADMIN_DATA_TIMUR2_ID}',  'admin_data_timur_2_1',  '${passwordHash}', 'Admin Data Timur 2 Satu', '081300000021', 'admin_data', '${RAYON_TIMUR2_ID}', NULL, TRUE),
-      ('${USER_ADMIN_DATA_BARAT1_ID}',  'admin_data_barat_1_1',  '${passwordHash}', 'Admin Data Barat 1 Satu', '081300000022', 'admin_data', '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_ADMIN_DATA_BARAT2_ID}',  'admin_data_barat_2_1',  '${passwordHash}', 'Admin Data Barat 2 Satu', '081300000023', 'admin_data', '${RAYON_BARAT2_ID}', NULL, TRUE),
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
+      ('${USER_ADMIN_RAYON_SELATAN_ID}', 'admin_rayon_selatan_1', '${passwordHash}', 'Admin Rayon Selatan Satu', '081300000018', 'admin_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_UTARA_ID}',   'admin_rayon_utara_1',   '${passwordHash}', 'Admin Rayon Utara Satu',   '081300000019', 'admin_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_TIMUR1_ID}',  'admin_rayon_timur_1_1',  '${passwordHash}', 'Admin Rayon Timur 1 Satu', '081300000020', 'admin_rayon', '${RAYON_TIMUR1_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_TIMUR2_ID}',  'admin_rayon_timur_2_1',  '${passwordHash}', 'Admin Rayon Timur 2 Satu', '081300000021', 'admin_rayon', '${RAYON_TIMUR2_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_BARAT1_ID}',  'admin_rayon_barat_1_1',  '${passwordHash}', 'Admin Rayon Barat 1 Satu', '081300000022', 'admin_rayon', '${RAYON_BARAT1_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_BARAT2_ID}',  'admin_rayon_barat_2_1',  '${passwordHash}', 'Admin Rayon Barat 2 Satu', '081300000023', 'admin_rayon', '${RAYON_BARAT2_ID}', NULL, TRUE),
       ('${USER_KORLAP_HARMONI_ID}', 'korlap_selatan_1', '${passwordHash}', 'Korlap Selatan Satu', '081300000024', 'korlap', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('${USER_KORLAP_UTARA_ID}',   'korlap_utara_1',   '${passwordHash}', 'Korlap Utara Satu',   '081300000025', 'korlap', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur_1_1',  '${passwordHash}', 'Korlap Timur 1 Satu', '081300000026', 'korlap', '${RAYON_TIMUR1_ID}', NULL, TRUE),
@@ -731,11 +731,11 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     ON CONFLICT (username) DO NOTHING;
   `);
 
-    ctx.log('  ✓ Seeded 12 admin_data + korlap users for 6 remaining rayons');
+    ctx.log('  ✓ Seeded 12 admin_rayon + korlap users for 6 remaining rayons');
 
     // 8 fill-in users: satgas Selatan/Utara + linmas for all 6 non-Pusat rayons
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
       ('5a020001-0000-4002-8001-000000000001', 'satgas_selatan_1',  '${passwordHash}', 'Satgas Selatan Satu',  '081300000030', 'satgas', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('5a020002-0000-4002-8001-000000000002', 'satgas_utara_1',    '${passwordHash}', 'Satgas Utara Satu',    '081300000031', 'satgas', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('5a020003-0000-4002-8002-000000000003', 'linmas_selatan_1',  '${passwordHash}', 'Linmas Selatan Satu',  '081300000032', 'linmas', '${RAYON_SELATAN_ID}', NULL, TRUE),
@@ -820,7 +820,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       await ctx.qr.query(
         `INSERT INTO users
          (username, password_hash, full_name, phone_number,
-          role, rayon_id, area_id, kecamatan_name, is_active)
+          role, rayon_id, location_id, kecamatan_name, is_active)
        VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, TRUE)
        ON CONFLICT (username) DO NOTHING`,
         [username, STAFF_KEC_PWD_HASH, fullName, phone, rayonId, _name],
@@ -830,25 +830,25 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     ctx.log('  ✓ Seeded 31 staff_kecamatan users (one per kecamatan)');
 
     // ==========================================
-    // STEP 8.1: Scenario remap — repoint legacy dev users onto real KMZ areas.
+    // STEP 8.1: Scenario remap — repoint legacy dev users onto real KMZ locations.
     // ==========================================
-    ctx.log('🌳 Remapping legacy dev users onto KMZ areas...');
+    ctx.log('🌳 Remapping legacy dev users onto KMZ locations...');
     await ctx.qr.query(
-      `UPDATE users SET area_id = '${DARMO_P1_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
+      `UPDATE users SET location_id = '${DARMO_P1_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
     );
     await ctx.qr.query(
-      `UPDATE users SET area_id = '${DARMO_P2_AREA_ID}' WHERE username = 'satgas_pusat_2';`,
+      `UPDATE users SET location_id = '${DARMO_P2_AREA_ID}' WHERE username = 'satgas_pusat_2';`,
     );
     await ctx.qr.query(`
-    UPDATE users SET rayon_id = '${RAYON_TIMUR2_ID}', area_id = '${TAMAN_BUK_TONG_ID}'
+    UPDATE users SET rayon_id = '${RAYON_TIMUR2_ID}', location_id = '${TAMAN_BUK_TONG_ID}'
     WHERE username = 'satgas_timur_1_2';
   `);
     await ctx.qr.query(`
-    UPDATE users SET area_id = NULL
+    UPDATE users SET location_id = NULL
     WHERE username = 'satgas_timur_1_1';
   `);
     await ctx.qr.query(`
-    UPDATE users SET area_id = '${TAMAN_BUK_TONG_ID}'
+    UPDATE users SET location_id = '${TAMAN_BUK_TONG_ID}'
     WHERE username IN ('satgas_timur_2_1', 'satgas_timur_2_2');
   `);
     ctx.log(
@@ -856,41 +856,41 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
 
     // ==========================================
-    // STEP 8.5: Assign area_id + rayon_id to field workers missing them.
+    // STEP 8.5: Assign location_id + rayon_id to field workers missing them.
     // ==========================================
-    ctx.log('📍 Assigning area_id and rayon_id to field workers...');
+    ctx.log('📍 Assigning location_id and rayon_id to field workers...');
     await ctx.qr.query(
-      `UPDATE users SET area_id = $1
+      `UPDATE users SET location_id = $1
      WHERE username IN ('korlap_pusat_1', 'linmas_pusat_1')
-       AND area_id IS NULL`,
+       AND location_id IS NULL`,
       [DARMO_BCA_AREA_ID],
     );
     await ctx.qr.query(
-      `UPDATE users SET area_id = $1
+      `UPDATE users SET location_id = $1
      WHERE username IN ('korlap_pusat_2', 'linmas_pusat_2')
-       AND area_id IS NULL`,
+       AND location_id IS NULL`,
       [DARMO_P1_AREA_ID],
     );
     await ctx.qr.query(`
     UPDATE users u
     SET rayon_id = a.rayon_id
-    FROM areas a
-    WHERE u.area_id = a.id
+    FROM locations a
+    WHERE u.location_id = a.id
       AND u.rayon_id IS NULL
       AND u.role IN ('satgas', 'linmas', 'korlap');
   `);
     await ctx.qr.query(
-      `UPDATE users SET area_id = $1
-     WHERE username = 'korlap_timur_2_1' AND area_id IS NULL`,
+      `UPDATE users SET location_id = $1
+     WHERE username = 'korlap_timur_2_1' AND location_id IS NULL`,
       [TAMAN_BUK_TONG_ID],
     );
-    ctx.log('  ✓ Assigned area_id + rayon_id to field workers');
+    ctx.log('  ✓ Assigned location_id + rayon_id to field workers');
 
     // ==========================================
     // STEP 9: Assign each worker a default shift
     // ==========================================
     // (ADR-013) A worker's shift lives on the user now (`users.shift_definition_id`);
-    // the daily roster is materialized from that + `user_areas`. Round-robin across
+    // the daily roster is materialized from that + `user_locations`. Round-robin across
     // the 3 shift definitions for all clockable roles (korlap is clockable too).
     ctx.log('📅 Assigning worker shifts...');
     const workerResult = await ctx.qr.query(`

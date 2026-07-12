@@ -43,10 +43,10 @@ export class ReplaceWorkerDto {
 
 /** Set the areas for the day (0..N). */
 export class UpdateRosterAreasDto {
-  @ApiProperty({ type: [String], description: 'Area ids for the day (may be empty)' })
+  @ApiProperty({ type: [String], description: 'Location ids for the day (may be empty)' })
   @IsArray()
-  // Area ids are deterministic UUID v5 (minted from rayon:name), so accept any
-  // version — 'v4' wrongly rejects every seeded area id (the "Ubah Area" 400).
+  // Location ids are deterministic UUID v5 (minted from rayon:name), so accept any
+  // version — 'v4' wrongly rejects every seeded area id (the "Ubah Location" 400).
   @IsUUID('all', { each: true })
   area_ids: string[];
 }
@@ -77,11 +77,11 @@ export class AddScheduleDto {
   @ApiProperty({
     type: [String],
     required: false,
-    description: "Area ids for the day; omit to use the worker's permanent areas",
+    description: "Location ids for the day; omit to use the worker's permanent areas",
   })
   @IsOptional()
   @IsArray()
-  // Area ids are deterministic UUID v5 — accept any version ('v4' rejects them).
+  // Location ids are deterministic UUID v5 — accept any version ('v4' rejects them).
   @IsUUID('all', { each: true })
   area_ids?: string[];
 }

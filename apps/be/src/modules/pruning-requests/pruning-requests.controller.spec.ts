@@ -490,8 +490,8 @@ describe('PruningRequestsController', () => {
     const mockAdminUser: User = {
       ...mockStaffKecamatan,
       id: '44444444-4444-4444-4444-444444444401',
-      username: 'admin_data_1',
-      role: UserRole.ADMIN_DATA,
+      username: 'admin_rayon_1',
+      role: UserRole.ADMIN_RAYON,
     };
 
     it('should update a pruning request with provided fields', async () => {

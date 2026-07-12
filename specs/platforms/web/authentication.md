@@ -75,7 +75,7 @@ hooks below — never read cookies or call `/auth/*` directly from components.
 const { user, loading, login, logout } = useAuth();   // full context
 const user = useUser();                                // user | null
 const canManage = useHasRole(['admin_system', 'superadmin']);
-useRequireAuth(['kepala_rayon', 'top_management']);    // client guard: redirects if absent/!role
+useRequireAuth(['kepala_rayon', 'management']);    // client guard: redirects if absent/!role
 ```
 
 ---
@@ -127,7 +127,7 @@ const isAdmin = useHasRole(['admin_system', 'superadmin']);
 
 `useRequireAuth(requiredRoles)` redirects to `/login?redirect=…` when unauthenticated, or to
 `/dashboard?error=access_denied` when the role is insufficient. Role values:
-`satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`,
+`satgas`, `linmas`, `korlap`, `admin_rayon`, `kepala_rayon`, `management`, `admin_system`,
 `superadmin`, `staff_kecamatan`.
 
 ---

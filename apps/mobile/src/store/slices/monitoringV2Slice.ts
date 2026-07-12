@@ -223,7 +223,7 @@ const monitoringV2Slice = createSlice({
 
     /**
      * Initialise the drill view + floor from the viewer's role.
-     * korlap → area; kepala_rayon/admin_data → rayon; city roles → surabaya.
+     * korlap → area; kepala_rayon/admin_rayon → rayon; city roles → surabaya.
      */
     initMonitoringView(
       state,

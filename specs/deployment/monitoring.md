@@ -423,7 +423,7 @@ Actions:
   "context": {
     "userId": "uuid-here",
     "workerId": "uuid-here",
-    "areaId": "uuid-here",
+    "locationId": "uuid-here",
     "shiftId": "uuid-here",
     "gps": {
       "lat": -7.290500,

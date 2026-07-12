@@ -1,6 +1,6 @@
 /**
- * Pruning Request Review Queue Screen — admin (admin_data, kepala_rayon,
- * top_management, admin_system, superadmin) inbox for incoming permohonan
+ * Pruning Request Review Queue Screen — admin (admin_rayon, kepala_rayon,
+ * management, admin_system, superadmin) inbox for incoming permohonan
  * perantingan.
  *
  * Visual + interaction parity with the canonical list screens (Tugas,
@@ -12,7 +12,7 @@
  *   - `FlatList` of `PerantinganRequestCard` (NBCard variant="elevated") —
  *     same card the staff_kecamatan list uses
  *   - Generic `SortModal` + dedicated `PruningRequestFilterModal` (admin
- *     surface; rayon picker hidden for admin_data because the backend forces
+ *     surface; rayon picker hidden for admin_rayon because the backend forces
  *     scoping)
  *
  * Approve / reject / assign-to-task happen on `RequestDetailScreen` (passed
@@ -75,9 +75,9 @@ import type { PruningRequest } from '../../types/models.types';
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const ADMIN_ROLES = [
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];

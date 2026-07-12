@@ -9,7 +9,7 @@ import { StatusCalculatorService } from './services/status-calculator.service';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
 import { DayTypeService } from './services/day-type.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { Task, TaskStatus, TaskPriority } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
@@ -17,25 +17,25 @@ import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import {
-  AreaStaffRequirement,
+  LocationStaffRequirement,
   StaffRole,
   DayType,
-} from '../area-staff-requirements/entities/area-staff-requirement.entity';
+} from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
-import { ScheduleArea } from '../schedules/entities/schedule-area.entity';
+import { ScheduleLocation } from '../schedules/entities/schedule.entity';
 
 describe('MonitoringService', () => {
   let service: MonitoringService;
   let userRepository: jest.Mocked<Repository<User>>;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
   let shiftRepository: jest.Mocked<Repository<Shift>>;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
-  let staffRequirementRepository: jest.Mocked<Repository<AreaStaffRequirement>>;
+  let staffRequirementRepository: jest.Mocked<Repository<LocationStaffRequirement>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
 
   const mockRayon: Rayon = {
@@ -46,10 +46,10 @@ describe('MonitoringService', () => {
     updated_at: new Date(),
   };
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
     name: 'Taman Bungkul',
-    area_type_id: 'type-1',
+    location_type_id: 'type-1',
     areaType: {
       id: 'type-1',
       code: 'park',
@@ -88,7 +88,7 @@ describe('MonitoringService', () => {
     id: 'shift-1',
     user_id: 'user-1',
     user: mockUser,
-    area_id: 'area-1',
+    location_id: 'area-1',
     area: mockArea,
     clock_in_time: new Date(),
     clock_in_gps_lat: -7.2905,
@@ -138,7 +138,7 @@ describe('MonitoringService', () => {
     status: TaskStatus.PENDING,
     priority: TaskPriority.MEDIUM,
     deadline: new Date(),
-    area_id: 'area-1',
+    location_id: 'area-1',
     rayon_id: null,
     assigned_to: null,
     created_by: 'user-1',
@@ -164,9 +164,9 @@ describe('MonitoringService', () => {
     updated_at: new Date(),
   };
 
-  const mockStaffRequirement: AreaStaffRequirement = {
+  const mockStaffRequirement: LocationStaffRequirement = {
     id: 'req-1',
-    area_id: 'area-1',
+    location_id: 'area-1',
     shift_definition_id: 'shift-def-1',
     role: StaffRole.SATGAS,
     required_count: 5,
@@ -223,7 +223,7 @@ describe('MonitoringService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -286,7 +286,7 @@ describe('MonitoringService', () => {
           },
         },
         {
-          provide: getRepositoryToken(AreaStaffRequirement),
+          provide: getRepositoryToken(LocationStaffRequirement),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -311,7 +311,7 @@ describe('MonitoringService', () => {
           },
         },
         {
-          provide: getRepositoryToken(ScheduleArea),
+          provide: getRepositoryToken(ScheduleLocation),
           useValue: {
             find: jest.fn(),
             createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
@@ -345,14 +345,14 @@ describe('MonitoringService', () => {
       .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
       .mockResolvedValue(new Set<string>());
     userRepository = module.get(getRepositoryToken(User));
-    areaRepository = module.get(getRepositoryToken(Area));
+    areaRepository = module.get(getRepositoryToken(Location));
     shiftRepository = module.get(getRepositoryToken(Shift));
     taskRepository = module.get(getRepositoryToken(Task));
     activityRepository = module.get(getRepositoryToken(Activity));
     locationRepository = module.get(getRepositoryToken(LocationLog));
     rayonRepository = module.get(getRepositoryToken(Rayon));
     shiftDefinitionRepository = module.get(getRepositoryToken(ShiftDefinition));
-    staffRequirementRepository = module.get(getRepositoryToken(AreaStaffRequirement));
+    staffRequirementRepository = module.get(getRepositoryToken(LocationStaffRequirement));
     trackingRepository = module.get(getRepositoryToken(UserTrackingStatus));
   });
 
@@ -496,7 +496,7 @@ describe('MonitoringService', () => {
       shift: mockShift,
       shift_definition_id: 'shift-def-1',
       shift_definition: mockShiftDefinition,
-      area_id: 'area-1',
+      location_id: 'area-1',
       area: mockArea,
       rayon_id: null,
       rayon: null as any,
@@ -633,7 +633,7 @@ describe('MonitoringService', () => {
       shift: mockShift,
       shift_definition_id: 'shift-def-1',
       shift_definition: mockShiftDefinition,
-      area_id: 'area-1',
+      location_id: 'area-1',
       area: mockArea,
       status: TrackingStatus.ACTIVE,
       last_latitude: -7.2905,
@@ -664,15 +664,17 @@ describe('MonitoringService', () => {
       expect(result.total_active).toBe(1);
     });
 
-    it('should filter by area_id', async () => {
+    it('should filter by location_id', async () => {
       const qb = createMockQueryBuilder([], 0);
       trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
       areaRepository.createQueryBuilder = jest.fn(() => createMockQueryBuilder([]) as any);
       taskRepository.createQueryBuilder = jest.fn(() => createMockQueryBuilder([]) as any);
 
-      await service.getLiveUsers({ area_id: 'area-1' });
+      await service.getLiveUsers({ location_id: 'area-1' });
 
-      expect(qb.andWhere).toHaveBeenCalledWith('uts.area_id = :areaId', { areaId: 'area-1' });
+      expect(qb.andWhere).toHaveBeenCalledWith('uts.location_id = :locationId', {
+        locationId: 'area-1',
+      });
     });
 
     it('should filter by rayon_id', async () => {
@@ -882,7 +884,7 @@ describe('MonitoringService', () => {
       expect(result.active_tasks.length).toBe(1);
     });
 
-    it('should handle empty areaIds in count methods', async () => {
+    it('should handle empty locationIds in count methods', async () => {
       rayonRepository.find.mockResolvedValue([mockRayon]);
       areaRepository.find.mockResolvedValue([]); // No areas
       shiftRepository.count.mockResolvedValue(0);
@@ -962,7 +964,7 @@ describe('MonitoringService', () => {
       shiftRepository.findOne.mockResolvedValue({
         ...mockShift,
         shift_definition_id: 'shift-def-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
       areaRepository.findOne.mockResolvedValue(mockArea);
       shiftDefinitionRepository.findOne.mockResolvedValue(mockShiftDefinition);
@@ -1029,7 +1031,7 @@ describe('MonitoringService', () => {
         shift: mockShift,
         shift_definition: null,
         user: mockUser,
-        area_id: 'area-1',
+        location_id: 'area-1',
         area: mockArea,
         status: TrackingStatus.ACTIVE,
         last_latitude: -7.2905,
@@ -1059,7 +1061,7 @@ describe('MonitoringService', () => {
     it('should return OFFLINE status when no tracking record', async () => {
       userRepository.findOne.mockResolvedValue({
         ...mockUser,
-        area_id: undefined,
+        location_id: undefined,
         phone_number: null,
       });
       trackingRepository.findOne.mockResolvedValue(null);
@@ -1084,7 +1086,7 @@ describe('MonitoringService', () => {
         shift_definition: null,
         user: mockUser,
         area: null,
-        area_id: null,
+        location_id: null,
         status: TrackingStatus.OFFLINE,
         last_location_at: null,
         last_latitude: null,
@@ -1112,7 +1114,7 @@ describe('MonitoringService', () => {
         shift_definition: null,
         user: mockUser,
         area: null,
-        area_id: null,
+        location_id: null,
         status: TrackingStatus.OFFLINE,
         last_location_at: null,
         last_latitude: null,
@@ -1134,8 +1136,8 @@ describe('MonitoringService', () => {
       expect(result.tasks_today).toHaveLength(1);
     });
 
-    it('should resolve area from user.area_id when tracking has no area', async () => {
-      userRepository.findOne.mockResolvedValue({ ...mockUser, area_id: 'area-1' });
+    it('should resolve area from user.location_id when tracking has no area', async () => {
+      userRepository.findOne.mockResolvedValue({ ...mockUser, location_id: 'area-1' });
       const tracking: any = {
         user_id: 'user-1',
         shift_id: null,
@@ -1144,7 +1146,7 @@ describe('MonitoringService', () => {
         shift_definition: null,
         user: mockUser,
         area: null,
-        area_id: null,
+        location_id: null,
         status: TrackingStatus.OFFLINE,
         last_location_at: null,
         last_latitude: null,
@@ -1203,7 +1205,7 @@ describe('MonitoringService', () => {
         { ...mockUser, id: 'user-2', role: UserRole.SATGAS },
       ]);
 
-      const result = await service.getStaffingSummary({ area_id: 'area-1' });
+      const result = await service.getStaffingSummary({ location_id: 'area-1' });
 
       expect(result.items).toHaveLength(1);
       expect(result.items[0].id).toBe('area-1');
@@ -1290,7 +1292,7 @@ describe('MonitoringService', () => {
       shiftDefinitionRepository.find.mockResolvedValue([]);
 
       const qb = createMockQueryBuilder();
-      qb.getRawMany = jest.fn().mockResolvedValue([{ area_id: 'area-1', count: '3' }]);
+      qb.getRawMany = jest.fn().mockResolvedValue([{ location_id: 'area-1', count: '3' }]);
       trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => qb as any);
 
@@ -1310,15 +1312,15 @@ describe('MonitoringService', () => {
       const trackQb = createMockQueryBuilder();
       trackQb.getRawMany = jest
         .fn()
-        .mockResolvedValueOnce([{ area_id: 'area-1', count: '3' }]) // assigned counts
-        .mockResolvedValueOnce([{ area_id: 'area-1', role: 'satgas', count: '2' }]); // active counts
+        .mockResolvedValueOnce([{ location_id: 'area-1', count: '3' }]) // assigned counts
+        .mockResolvedValueOnce([{ location_id: 'area-1', role: 'satgas', count: '2' }]); // active counts
       trackingRepository.createQueryBuilder = jest.fn(() => trackQb as any);
 
       const reqQb = createMockQueryBuilder();
-      reqQb.getRawMany = jest.fn().mockResolvedValue([{ area_id: 'area-1', total: '5' }]);
+      reqQb.getRawMany = jest.fn().mockResolvedValue([{ location_id: 'area-1', total: '5' }]);
       reqQb.getMany = jest
         .fn()
-        .mockResolvedValue([{ area_id: 'area-1', role: 'satgas', required_count: 5 }]);
+        .mockResolvedValue([{ location_id: 'area-1', role: 'satgas', required_count: 5 }]);
       staffRequirementRepository.createQueryBuilder = jest.fn(() => reqQb as any);
 
       const result = await statsService.getBoundaries();
@@ -1353,7 +1355,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker One',
             phone: '08123456789',
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
@@ -1379,7 +1381,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker Two',
             phone: '08129999999',
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
@@ -1438,7 +1440,7 @@ describe('MonitoringService', () => {
         lat: -7.2905,
         lng: 112.7398,
         status: TrackingStatus.ACTIVE,
-        area_id: 'area-1',
+        location_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
@@ -1450,7 +1452,7 @@ describe('MonitoringService', () => {
       // Validate area_summaries: computed staffing per area
       expect(result.data.area_summaries).toHaveLength(1);
       expect(result.data.area_summaries[0]).toMatchObject({
-        area_id: 'area-1',
+        location_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
@@ -1474,7 +1476,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker One',
             phone: '08123456789',
             role: 'satgas',
-            area_id: null,
+            location_id: null,
             area_name: 'Unknown',
             rayon_id: null,
             rayon_name: null,
@@ -1527,7 +1529,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker One',
             phone: null,
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
@@ -1553,7 +1555,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker Two',
             phone: null,
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
@@ -1579,7 +1581,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker Three',
             phone: null,
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
@@ -1634,7 +1636,7 @@ describe('MonitoringService', () => {
           full_name: `Worker ${i + 1}`,
           phone: null,
           role: 'satgas',
-          area_id: 'area-1',
+          location_id: 'area-1',
           area_name: 'Taman Bungkul',
           rayon_id: 'rayon-1',
           rayon_name: 'Rayon Selatan',
@@ -1689,7 +1691,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker One',
             phone: null,
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
@@ -1715,7 +1717,7 @@ describe('MonitoringService', () => {
             full_name: 'Worker Two',
             phone: null,
             role: 'satgas',
-            area_id: 'area-1',
+            location_id: 'area-1',
             area_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',

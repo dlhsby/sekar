@@ -168,7 +168,7 @@ docker exec -it sekar-postgres psql -U postgres -d sekar_db
 -- Count records in key tables
 SELECT
   (SELECT COUNT(*) FROM users) as users,
-  (SELECT COUNT(*) FROM areas) as areas,
+  (SELECT COUNT(*) FROM locations) as areas,
   (SELECT COUNT(*) FROM rayons) as rayons,
   (SELECT COUNT(*) FROM tasks) as tasks;
 

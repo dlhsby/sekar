@@ -90,7 +90,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   // shift is created with area_id = null). The form surfaces "no area" inline;
   // rayon-scoped roles show a "no specific area" note instead.
   const userRole = useAppSelector((state) => state.auth.user?.role);
-  const isRayonScoped = userRole === 'admin_data' || userRole === 'kepala_rayon';
+  const isRayonScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
 
   // Loading GPS
   if (location.loading && !location.latitude) {

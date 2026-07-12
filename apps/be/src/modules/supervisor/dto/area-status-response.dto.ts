@@ -4,10 +4,10 @@ import { ApiProperty } from '@nestjs/swagger';
  * DTO for individual area status
  */
 export class AreaStatusDto {
-  @ApiProperty({ description: 'Area UUID' })
+  @ApiProperty({ description: 'Location UUID' })
   id: string;
 
-  @ApiProperty({ description: 'Area name', example: 'Taman Bungkul' })
+  @ApiProperty({ description: 'Location name', example: 'Taman Bungkul' })
   name: string;
 
   @ApiProperty({

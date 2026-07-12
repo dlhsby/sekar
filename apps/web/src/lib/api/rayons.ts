@@ -5,7 +5,14 @@
 
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { apiClient } from './client';
-import { Rayon, RayonStats, Area, AreaFilters, PaginatedResponse } from '@/types/models';
+import {
+  Rayon,
+  RayonStats,
+  Location,
+  LocationFilters,
+  PaginatedResponse,
+  MapStyleFieldsDto,
+} from '@/types/models';
 import { makeCrudHooks } from './crud-hooks';
 
 /**
@@ -19,7 +26,7 @@ export const rayonKeys = {
   details: () => [...rayonKeys.all, 'detail'] as const,
   detail: (id: string) => [...rayonKeys.details(), id] as const,
   stats: (id: string) => [...rayonKeys.detail(id), 'stats'] as const,
-  areas: (id: string, filters?: AreaFilters) =>
+  areas: (id: string, filters?: LocationFilters) =>
     [...rayonKeys.detail(id), 'areas', filters] as const,
 };
 
@@ -74,11 +81,11 @@ export function useRayonStats(id: string) {
  * Fetch all areas in a rayon
  * Supports filtering and pagination
  */
-export function useRayonAreas(id: string, filters?: AreaFilters) {
+export function useRayonAreas(id: string, filters?: LocationFilters) {
   return useQuery({
     queryKey: rayonKeys.areas(id, filters),
     queryFn: async () => {
-      const response = await apiClient.get<PaginatedResponse<Area>>(`/rayons/${id}/areas`, {
+      const response = await apiClient.get<PaginatedResponse<Location>>(`/rayons/${id}/areas`, {
         params: filters,
       });
       return response.data;
@@ -123,7 +130,7 @@ export function useRayonsWithStats() {
 /**
  * DTO for creating a rayon
  */
-export interface CreateRayonDto {
+export interface CreateRayonDto extends MapStyleFieldsDto {
   name: string;
   color?: string | null;
   description?: string | null;
@@ -134,7 +141,7 @@ export interface CreateRayonDto {
 /**
  * DTO for updating a rayon
  */
-export interface UpdateRayonDto {
+export interface UpdateRayonDto extends MapStyleFieldsDto {
   name?: string;
   color?: string | null;
   description?: string | null;

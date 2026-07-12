@@ -49,7 +49,7 @@ const renderScreen = () => {
     preloadedState: {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- legacy test preloadedState
       auth: {
-        user: { id: 't1', username: 'mgmt', full_name: 'Bu Kepala', role: 'top_management' },
+        user: { id: 't1', username: 'mgmt', full_name: 'Bu Kepala', role: 'management' },
         assignedArea: null,
         isAuthenticated: true,
         isLoading: false,

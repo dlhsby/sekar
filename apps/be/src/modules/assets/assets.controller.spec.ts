@@ -13,7 +13,7 @@ describe('AssetsController', () => {
   const mockUser = {
     id: 'user-1',
     role: UserRole.KORLAP,
-    area_id: 'area-1',
+    location_id: 'area-1',
   } as User;
 
   beforeEach(async () => {

@@ -10,22 +10,26 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { FormInput, Input, Textarea } from '@/components/ui';
+import { FormInput, Textarea } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
+import { MapStyleFields } from '@/components/forms/MapStyleFields';
+import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
-import type { Rayon } from '@/types/models';
+import type { Rayon, MapStyleFieldsDto } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
-// Default value for the native color input (a data value, not a rendered style
-// token) — matches nb-primary so a new rayon starts on-brand. ADR-036 token rule
-// targets styling colors; an <input type="color"> default must be a literal hex.
-// eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
-const DEFAULT_COLOR = '#7FBC8C';
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
+  'border_color',
+  'fill_color',
+  'border_opacity',
+  'fill_opacity',
+  'marker_icon',
+  'marker_image_url',
+];
 
 /** Coerce a number-input value to a number, or null when empty/invalid (coords are optional). */
 const toNullableNumber = (v: unknown): number | null => {
@@ -34,9 +38,8 @@ const toNullableNumber = (v: unknown): number | null => {
   return Number.isNaN(n) ? null : n;
 };
 
-type RayonFormData = {
+type RayonFormData = MapStyleFieldsDto & {
   name: string;
-  color?: string | null;
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
@@ -72,14 +75,6 @@ export function RayonForm({
     () =>
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
-        color: z
-          .string()
-          .optional()
-          .nullable()
-          .refine(
-            (v) => !v || HEX_COLOR_RE.test(v),
-            t('validation:colorInvalid')
-          ),
         description: z.string().optional().nullable(),
         center_lat: z
           .number()
@@ -108,18 +103,26 @@ export function RayonForm({
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<RayonFormData>({
     resolver: zodResolver(rayonSchema),
     defaultValues: {
       name: initialData?.name || '',
-      color: initialData?.color || '',
       description: initialData?.description || '',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
       boundary_polygon: initialData?.boundary_polygon ?? null,
+      border_color: initialData?.border_color ?? undefined,
+      fill_color: initialData?.fill_color ?? undefined,
+      border_opacity: initialData?.border_opacity ?? undefined,
+      fill_opacity: initialData?.fill_opacity ?? undefined,
+      marker_icon: initialData?.marker_icon ?? undefined,
+      marker_image_url: initialData?.marker_image_url ?? undefined,
     },
   });
+
+  const style: MapStyleFieldsDto = Object.fromEntries(STYLE_KEYS.map((k) => [k, watch(k)]));
 
   const nameValue = watch('name');
   const nameStatus = useAvailabilityCheck({
@@ -129,8 +132,6 @@ export function RayonForm({
     isUnchanged: (v) => mode === 'edit' && v === initialData?.name,
   });
 
-  const colorValue = watch('color') || '';
-  const swatchValue = HEX_COLOR_RE.test(colorValue) ? colorValue : DEFAULT_COLOR;
   const centerLat = watch('center_lat');
   const centerLng = watch('center_lng');
   const boundaryValue = watch('boundary_polygon');
@@ -156,6 +157,15 @@ export function RayonForm({
   >(initialData?.boundary_polygon);
   const [editorKey, setEditorKey] = useState(0);
 
+  // Undo: revert fields to loaded values + remount the map editor with the
+  // original boundary (preventDefault stops native reset from clearing fields).
+  const handleReset = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    reset();
+    setSeedPolygon(initialData?.boundary_polygon);
+    setEditorKey((k) => k + 1);
+  };
+
   const handleImportBoundary = (geometry: GeoJSON.Polygon | GeoJSON.MultiPolygon) => {
     setValue('boundary_polygon', geometry, { shouldValidate: true });
     setSeedPolygon(geometry);
@@ -165,18 +175,27 @@ export function RayonForm({
   const onSubmitForm = async (data: RayonFormData) => {
     const submitData: UpdateRayonDto = {
       name: data.name,
-      color: data.color?.trim() || null,
+      // Keep the legacy single `color` column mirroring the border colour so any
+      // consumer still reading it stays consistent (the UI now only edits
+      // border/fill via MapStyleFields).
+      color: data.border_color || null,
       description: data.description || null,
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
       boundary_polygon: data.boundary_polygon ?? null,
+      border_color: data.border_color || null,
+      fill_color: data.fill_color || null,
+      border_opacity: data.border_opacity ?? null,
+      fill_opacity: data.fill_opacity ?? null,
+      marker_icon: data.marker_icon || null,
+      marker_image_url: data.marker_image_url || null,
     };
 
     await onSubmit(submitData);
   };
 
   return (
-    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit(onSubmitForm)} onReset={handleReset} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
         <h3 className="font-bold text-lg">{t('admin:rayons.form.basicInfoTitle')}</h3>
@@ -199,40 +218,6 @@ export function RayonForm({
           />
         </div>
 
-        {/* Color picker */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none" htmlFor="rayon-color-hex">
-            {t('admin:rayons.form.color')}
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              aria-label={t('admin:rayons.form.colorLabel')}
-              value={swatchValue}
-              onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
-              disabled={readOnly}
-              className="h-12 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <Input
-              id="rayon-color-hex"
-              type="text"
-              placeholder={DEFAULT_COLOR}
-              value={colorValue}
-              onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
-              error={errors.color?.message}
-              aria-label={t('admin:rayons.form.colorHex')}
-              disabled={readOnly}
-            />
-          </div>
-          {errors.color?.message ? (
-            <p className="text-nb-body-sm text-nb-danger">{errors.color.message}</p>
-          ) : (
-            <p className="text-nb-body-sm text-nb-gray-500">
-              {t('admin:rayons.form.colorHelper')}
-            </p>
-          )}
-        </div>
-
         <div className="space-y-1.5">
           <label className="text-sm font-bold leading-none">{t('admin:rayons.form.description')}</label>
           <Textarea
@@ -244,6 +229,17 @@ export function RayonForm({
           />
         </div>
       </div>
+
+      <MapStyleFields
+        value={style}
+        markerDefaultUrl={entityMarkerDefault('rayon')}
+        onChange={(patch) =>
+          Object.entries(patch).forEach(([k, v]) =>
+            setValue(k as keyof RayonFormData, v as never, { shouldValidate: false }),
+          )
+        }
+        disabled={readOnly}
+      />
 
       {/* Boundary + center pin on a single Google map */}
       <div className="space-y-4">
@@ -293,7 +289,7 @@ export function RayonForm({
         />
 
         {/* Manual entry / fine-tuning — stays in sync with the pin. Optional. */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-4">
           <FormInput
             label={t('admin:rayons.form.latitude')}
             type="number"

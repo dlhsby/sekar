@@ -43,7 +43,7 @@ describe('ActivitiesService', () => {
     role: UserRole.SATGAS,
     full_name: 'Worker One',
     is_active: true,
-    area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+    location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
     rayon_id: 'rayon-uuid-1',
   };
 
@@ -58,9 +58,9 @@ describe('ActivitiesService', () => {
   const mockActiveShift: any = {
     id: 'shift-uuid-5e6f7a8b-c9d0-1234-ef01-345678901234',
     worker_id: mockUser.id,
-    area_id: mockUser.area_id,
+    location_id: mockUser.location_id,
     area: {
-      id: mockUser.area_id,
+      id: mockUser.location_id,
       name: 'Taman Bungkul',
       rayon_id: 'rayon-uuid-1',
     },
@@ -72,7 +72,7 @@ describe('ActivitiesService', () => {
     id: 'activity-uuid-1',
     user_id: mockUser.id,
     shift_id: mockActiveShift.id,
-    area_id: mockUser.area_id,
+    location_id: mockUser.location_id,
     activity_type_id: mockActivityType.id,
     description: 'Penyiraman tanaman area Taman Bungkul',
     photo_urls: ['https://s3.amazonaws.com/activities/photo1.jpg'],
@@ -234,7 +234,7 @@ describe('ActivitiesService', () => {
         expect.objectContaining({
           user_id: mockUser.id,
           shift_id: mockActiveShift.id,
-          area_id: mockActiveShift.area_id,
+          location_id: mockActiveShift.location_id,
           activity_type_id: createDto.activity_type_id,
           description: createDto.description,
           photo_urls: createDto.photo_urls,
@@ -376,13 +376,13 @@ describe('ActivitiesService', () => {
       const result = await service.findAllPaginated({}, korlapUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      // Multi-area scope (ADR-013): KORLAP filters via `area_id IN (:...korlapAreaIds)`
-      // sourced from `user_areas` (with fallback to `[user.area_id]` when the table
+      // Multi-area scope (ADR-013): KORLAP filters via `location_id IN (:...korlapAreaIds)`
+      // sourced from `user_areas` (with fallback to `[user.location_id]` when the table
       // is empty — which is the case here because the mocked
       // `activitiesRepository.manager.query` returns `[]`).
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        'activity.area_id IN (:...korlapAreaIds)',
-        { korlapAreaIds: [korlapUser.area_id] },
+        'activity.location_id IN (:...korlapAreaIds)',
+        { korlapAreaIds: [korlapUser.location_id] },
       );
     });
 
@@ -409,8 +409,8 @@ describe('ActivitiesService', () => {
       // Should not have scope-based andWhere calls for admin
     });
 
-    it('should return paginated activities for ADMIN_DATA (rayon-scoped)', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA, rayon_id: 'rayon-uuid-1' };
+    it('should return paginated activities for ADMIN_RAYON (rayon-scoped)', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON, rayon_id: 'rayon-uuid-1' };
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 15]);
 
       const result = await service.findAllPaginated({}, adminDataUser as any, 1, 50);
@@ -594,7 +594,7 @@ describe('ActivitiesService', () => {
     });
 
     it('should throw ApiException when KORLAP tries to access activity outside their area', async () => {
-      const korlapUser = { ...mockUser, role: UserRole.KORLAP, area_id: 'different-area-uuid' };
+      const korlapUser = { ...mockUser, role: UserRole.KORLAP, location_id: 'different-area-uuid' };
       mockActivitiesRepo.findOne.mockResolvedValue(mockActivity);
 
       try {
@@ -663,8 +663,8 @@ describe('ActivitiesService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should allow ADMIN_DATA to access activities from their rayon', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_DATA, rayon_id: 'rayon-uuid-1' };
+    it('should allow ADMIN_RAYON to access activities from their rayon', async () => {
+      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON, rayon_id: 'rayon-uuid-1' };
       const activityWithRayon = {
         ...mockActivity,
         shift: {
@@ -679,10 +679,10 @@ describe('ActivitiesService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should throw ApiException when ADMIN_DATA tries to access activity outside their rayon', async () => {
+    it('should throw ApiException when ADMIN_RAYON tries to access activity outside their rayon', async () => {
       const adminDataUser = {
         ...mockUser,
-        role: UserRole.ADMIN_DATA,
+        role: UserRole.ADMIN_RAYON,
         rayon_id: 'different-rayon-uuid',
       };
       const activityWithRayon = {
@@ -879,14 +879,14 @@ describe('ActivitiesService', () => {
     const korlapReviewer = {
       id: 'korlap-uuid-1',
       role: UserRole.KORLAP,
-      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
       rayon_id: 'rayon-uuid-1',
     };
 
     const kepalaRayonReviewer = {
       id: 'kepala-rayon-uuid-1',
       role: UserRole.KEPALA_RAYON,
-      area_id: null,
+      location_id: null,
       rayon_id: 'rayon-uuid-1',
     };
 
@@ -899,7 +899,7 @@ describe('ActivitiesService', () => {
       reviewed_by: null,
       reviewed_at: null,
       rejection_reason: null,
-      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
       area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
       user: { ...mockUser, role: UserRole.SATGAS },
       photo_urls: [],
@@ -962,7 +962,7 @@ describe('ActivitiesService', () => {
 
     it('should throw ForbiddenException when Korlap area does not match activity area', async () => {
       const activity = buildPendingActivity();
-      const differentAreaKorlap = { ...korlapReviewer, area_id: 'different-area-uuid' };
+      const differentAreaKorlap = { ...korlapReviewer, location_id: 'different-area-uuid' };
       mockActivitiesRepo.findOne.mockResolvedValue(activity);
       mockUsersService.findOne.mockResolvedValue(differentAreaKorlap as any);
 
@@ -1013,7 +1013,7 @@ describe('ActivitiesService', () => {
     const korlapReviewer = {
       id: 'korlap-uuid-1',
       role: UserRole.KORLAP,
-      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
       rayon_id: 'rayon-uuid-1',
     };
 
@@ -1026,7 +1026,7 @@ describe('ActivitiesService', () => {
       reviewed_by: null,
       reviewed_at: null,
       rejection_reason: null,
-      area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+      location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
       area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
       user: { ...mockUser, role: UserRole.SATGAS },
       photo_urls: [],
@@ -1085,7 +1085,7 @@ describe('ActivitiesService', () => {
       const invalidReviewer = {
         id: 'user-uuid',
         role: UserRole.SATGAS,
-        area_id: null,
+        location_id: null,
         rayon_id: null,
       };
       mockActivitiesRepo.findOne.mockResolvedValue(activity);

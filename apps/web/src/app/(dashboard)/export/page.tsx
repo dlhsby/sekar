@@ -26,7 +26,7 @@ import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import { getErrorMessage } from '@/lib/api/client';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import {
   useExportData,
   useExportJobs,
@@ -37,7 +37,7 @@ import {
 } from '@/lib/api/export';
 
 /** Roles allowed to reach this page (server enforces the finer scoping). */
-const EXPORT_ROLES: UserRole[] = ['admin_system', 'superadmin', 'top_management', 'kepala_rayon'];
+const EXPORT_ROLES: UserRole[] = ['admin_system', 'superadmin', 'management', 'kepala_rayon'];
 
 function getEntityLabels(t: ReturnType<typeof useTranslation>['t']): Record<ExportEntityType, string> {
   return {
@@ -119,7 +119,7 @@ function ExportForm({ role }: { role: UserRole }) {
   const activeJob = useExportJob(activeJobId);
 
   const { data: rayons } = useRayons();
-  const { data: areasPage } = useAreas(rayonId !== ALL ? { rayon_id: rayonId } : {});
+  const { data: areasPage } = useLocations(rayonId !== ALL ? { rayon_id: rayonId } : {});
 
   const formatOptions = useMemo(() => {
     const base = [

@@ -35,7 +35,7 @@ import type { Activity, Task, Shift } from '../../types/models.types';
 
 /**
  * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
- * (satgas, linmas, and — until HOME-2/HOME-3 land — korlap/kepala_rayon/admin_data).
+ * (satgas, linmas, and — until HOME-2/HOME-3 land — korlap/kepala_rayon/admin_rayon).
  * Selected by the role-aware `HomeScreen` dispatcher.
  *
  * Layout (hi-fi HOME-1): absensi hero (live clock + in-area pill + clock-out) →
@@ -508,7 +508,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 
           {/* Not-assigned hint (field roles only — rayon-scoped roles excluded) */}
           {!assignedArea && !currentShift &&
-            user?.role !== 'admin_data' && user?.role !== 'kepala_rayon' && (
+            user?.role !== 'admin_rayon' && user?.role !== 'kepala_rayon' && (
               <View style={styles.warningCard}>
                 <NBText variant="body-sm" color="statusIdle" align="center">
                   {t('home:field.warning.noAssignedArea')}

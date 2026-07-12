@@ -3,16 +3,16 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { ImportService } from './import.service';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 
 describe('ImportService', () => {
   let service: ImportService;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
-    name: 'Test Area',
-    area_type_id: 'type-1',
+    name: 'Test Location',
+    location_type_id: 'type-1',
     areaType: {
       id: 'type-1',
       code: 'park',
@@ -59,7 +59,7 @@ describe('ImportService', () => {
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <Placemark>
-      <name>Polygon Area</name>
+      <name>Polygon Location</name>
       <Polygon>
         <outerBoundaryIs>
           <LinearRing>
@@ -82,7 +82,7 @@ describe('ImportService', () => {
       providers: [
         ImportService,
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -94,7 +94,7 @@ describe('ImportService', () => {
     }).compile();
 
     service = module.get<ImportService>(ImportService);
-    areaRepository = module.get(getRepositoryToken(Area));
+    areaRepository = module.get(getRepositoryToken(Location));
   });
 
   afterEach(() => {
@@ -146,7 +146,7 @@ describe('ImportService', () => {
       const result = await service.uploadKmz(file, 'user-1');
 
       expect(result.areas.length).toBe(1);
-      expect(result.areas[0].name).toBe('Polygon Area');
+      expect(result.areas[0].name).toBe('Polygon Location');
       expect(result.areas[0].polygon).toBeDefined();
       expect(result.areas[0].polygon!.length).toBeGreaterThan(0);
       expect(result.areas[0].coverage_area).toBeGreaterThan(0);
@@ -254,7 +254,7 @@ describe('ImportService', () => {
             {
               index: 0,
               action: 'create',
-              area_type_id: 'type-1',
+              location_type_id: 'type-1',
             },
           ],
         },
@@ -263,7 +263,7 @@ describe('ImportService', () => {
 
       expect(result.created).toBe(1);
       expect(result.results[0].action).toBe('created');
-      expect(result.results[0].area_id).toBe('new-area-id');
+      expect(result.results[0].location_id).toBe('new-area-id');
     });
 
     it('should update existing areas', async () => {
@@ -373,7 +373,7 @@ describe('ImportService', () => {
       let savedArea: any;
       areaRepository.save.mockImplementation((entity: any) => {
         savedArea = entity;
-        return Promise.resolve({ ...mockArea, id: 'new-area-id' } as Area);
+        return Promise.resolve({ ...mockArea, id: 'new-area-id' } as Location);
       });
 
       const uploadResult = await service.uploadKmz(file, 'user-1');
@@ -446,7 +446,7 @@ describe('ImportService', () => {
       <Folder>
         <name>Child</name>
         <Placemark>
-          <name>Nested Area</name>
+          <name>Nested Location</name>
           <Point>
             <coordinates>112.7398,-7.2905,0</coordinates>
           </Point>
@@ -466,7 +466,7 @@ describe('ImportService', () => {
       const result = await service.uploadKmz(file, 'user-1');
 
       expect(result.areas.length).toBe(1);
-      expect(result.areas[0].name).toBe('Nested Area');
+      expect(result.areas[0].name).toBe('Nested Location');
     });
 
     it('should handle multiple placemarks', async () => {
@@ -474,15 +474,15 @@ describe('ImportService', () => {
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <Placemark>
-      <name>Area 1</name>
+      <name>Location 1</name>
       <Point><coordinates>112.7398,-7.2905,0</coordinates></Point>
     </Placemark>
     <Placemark>
-      <name>Area 2</name>
+      <name>Location 2</name>
       <Point><coordinates>112.7400,-7.2900,0</coordinates></Point>
     </Placemark>
     <Placemark>
-      <name>Area 3</name>
+      <name>Location 3</name>
       <Point><coordinates>112.7402,-7.2895,0</coordinates></Point>
     </Placemark>
   </Document>
@@ -498,7 +498,7 @@ describe('ImportService', () => {
       const result = await service.uploadKmz(file, 'user-1');
 
       expect(result.total_areas).toBe(3);
-      expect(result.areas.map((a) => a.name)).toEqual(['Area 1', 'Area 2', 'Area 3']);
+      expect(result.areas.map((a) => a.name)).toEqual(['Location 1', 'Location 2', 'Location 3']);
     });
 
     it('should handle LineString as boundary', async () => {
@@ -506,7 +506,7 @@ describe('ImportService', () => {
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <Placemark>
-      <name>Path Area</name>
+      <name>Path Location</name>
       <LineString>
         <coordinates>
           112.739,-7.291,0 112.740,-7.291,0 112.740,-7.290,0 112.739,-7.290,0
@@ -534,11 +534,11 @@ describe('ImportService', () => {
 <kml xmlns="http://www.opengis.net/kml/2.2">
   <Document>
     <Placemark>
-      <name>Valid Area</name>
+      <name>Valid Location</name>
       <Point><coordinates>112.7398,-7.2905,0</coordinates></Point>
     </Placemark>
     <Placemark>
-      <name>Invalid Area</name>
+      <name>Invalid Location</name>
       <description>No geometry</description>
     </Placemark>
   </Document>
@@ -554,7 +554,7 @@ describe('ImportService', () => {
       const result = await service.uploadKmz(file, 'user-1');
 
       expect(result.total_areas).toBe(1);
-      expect(result.areas[0].name).toBe('Valid Area');
+      expect(result.areas[0].name).toBe('Valid Location');
     });
   });
 });

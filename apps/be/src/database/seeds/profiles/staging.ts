@@ -1,5 +1,8 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
 import { truncateAll } from '../lib/truncate';
+import { seedPermissions } from '../entities/permission';
+import { seedRoles } from '../entities/role';
+import { seedTeams } from '../entities/team';
 import { seedAreaTypes } from '../entities/area-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
@@ -24,13 +27,13 @@ import { seedServiceCapacity } from '../entities/service-capacity';
  *
  * **CRITICAL COUNTS (must match exactly):**
  *   - users 1075 (3 system + 1041 from CSV + 31 staff_kecamatan)
- *   - areas 937 (KMZ geographic + Taman Aktif parks)
+ *   - locations 937 (KMZ geographic + Taman Aktif parks)
  *   - monitoring_configs 9
- *   - area_staff_requirements 332
- *   - user_areas 717 (280 from CSV + 27 multi-area + korlap rayons)
+ *   - location_staff_requirements 332
+ *   - user_locations 717 (280 from CSV + 27 multi-area + korlap rayons)
  *   - user_tracking_status 1028
  *   - schedules 1075 (daily roster materialized, one per active user)
- *   - schedule_areas 692 (today's area assignments from user_areas)
+ *   - schedule_locations 692 (today's area assignments from user_locations)
  *   - plant_species 128
  *   - service_capacity 96
  *   - All others per spec
@@ -44,6 +47,9 @@ async function seedStaging(ctx: SeedContext): Promise<void> {
   await truncateAll(ctx);
 
   // Reference data (identical across demo/staging/production paths).
+  await seedPermissions(ctx);
+  await seedRoles(ctx);
+  await seedTeams(ctx);
   await seedAreaTypes(ctx);
   await seedRayons(ctx);
   await seedShiftDefinitions(ctx);
@@ -52,7 +58,7 @@ async function seedStaging(ctx: SeedContext): Promise<void> {
   await seedKecamatans(ctx);
   await seedMonitoringConfigs(ctx);
 
-  // Staging-specific data (937 areas, 1125 users, etc.).
+  // Staging-specific data (937 locations, 1125 users, etc.).
   await seedAreas(ctx);
   await seedUsers(ctx);
   // Daily roster + phase 3 (plants, capacity).

@@ -20,7 +20,11 @@ import type {
   UserAreaEvent,
 } from '../api/monitoring-types';
 
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Empty NEXT_PUBLIC_API_URL = same origin (works on localhost + any LAN host via
+// the dev proxy); server-side has no origin, so fall back to the local backend.
+const API_ORIGIN =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000');
 
 interface UserLocationWsEvent {
   user_id: string;

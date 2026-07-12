@@ -131,7 +131,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
       const inSameRayon =
         activity.area?.rayon_id === user.rayon_id ||
         activity.user?.rayon_id === user.rayon_id;
-      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_data');
+      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
     }
     return false;
   }, [activity, user]);

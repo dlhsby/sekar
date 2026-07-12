@@ -11,20 +11,20 @@ import { User, UserRole } from '../users/entities/user.entity';
 const UNRESTRICTED_READ_ROLES: UserRole[] = [
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
-  UserRole.TOP_MANAGEMENT,
+  UserRole.MANAGEMENT,
 ];
 
 const RAYON_SCOPED_READ_ROLES: UserRole[] = [
-  UserRole.ADMIN_DATA,
+  UserRole.ADMIN_RAYON,
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
-  UserRole.TOP_MANAGEMENT,
+  UserRole.MANAGEMENT,
   UserRole.KEPALA_RAYON,
 ];
 
 const BROAD_CANCEL_ROLES: UserRole[] = [
   UserRole.KEPALA_RAYON,
-  UserRole.TOP_MANAGEMENT,
+  UserRole.MANAGEMENT,
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
 ];
@@ -38,7 +38,7 @@ const BROAD_CANCEL_ROLES: UserRole[] = [
 const CANCELLABLE_STATUSES: PruningRequestStatus[] = ['submitted', 'under_review', 'approved'];
 
 /**
- * admin_data is scoped to its own rayon for write operations; every other
+ * admin_rayon is scoped to its own rayon for write operations; every other
  * role passes through (their access is constrained by @Roles upstream).
  * `action` slots into the original per-endpoint message ('review',
  * 'convert', 'reschedule').
@@ -48,7 +48,7 @@ export function assertAdminDataRayonScope(
   user: User,
   action: string,
 ): void {
-  if (user.role !== UserRole.ADMIN_DATA) return;
+  if (user.role !== UserRole.ADMIN_RAYON) return;
   if (request.rayonId === user.rayon_id) return;
   throw new ForbiddenException(`You do not have permission to ${action} this pruning request`);
 }
@@ -68,12 +68,12 @@ export function canReadPruningRequest(request: PruningRequest, user: User): bool
 }
 
 /**
- * Cancel actors: the original submitter, admin_data scoped to the request's
+ * Cancel actors: the original submitter, admin_rayon scoped to the request's
  * rayon, or the broad admin roles.
  */
 export function assertCanCancel(request: PruningRequest, user: User): void {
   const isSubmitter = request.submittedBy === user.id;
-  const isAdminScoped = user.role === UserRole.ADMIN_DATA && request.rayonId === user.rayon_id;
+  const isAdminScoped = user.role === UserRole.ADMIN_RAYON && request.rayonId === user.rayon_id;
   if (isSubmitter || isAdminScoped || BROAD_CANCEL_ROLES.includes(user.role)) return;
   throw new ForbiddenException('You do not have permission to cancel this pruning request');
 }

@@ -36,7 +36,7 @@ const renderMenu = (role: string, navigate = jest.fn()) => {
 
 describe('MenuScreen', () => {
   it('renders the section titles for the role', () => {
-    const { getByText } = renderMenu('admin_data');
+    const { getByText } = renderMenu('admin_rayon');
     // section.title holds i18n keys; expect resolved text
     expect(getByText('Operasional')).toBeTruthy(); // menu:sections.operations
     expect(getByText('Perawatan Pohon')).toBeTruthy(); // menu:sections.treeCare

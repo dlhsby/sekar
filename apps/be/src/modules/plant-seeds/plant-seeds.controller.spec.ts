@@ -43,7 +43,7 @@ describe('PlantSeedsController', () => {
   const mockUser = {
     id: mockUserId,
     email: 'admin@test.com',
-    role: UserRole.ADMIN_DATA,
+    role: UserRole.ADMIN_RAYON,
     rayon_id: null,
   };
 

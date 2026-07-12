@@ -120,8 +120,8 @@ describe('UserMarker', () => {
       expect(icons[0].props.children).toBe('clipboard-account');
     });
 
-    it('should render admin_data role icon', () => {
-      const user = createMockUser({ role: 'admin_data' });
+    it('should render admin_rayon role icon', () => {
+      const user = createMockUser({ role: 'admin_rayon' });
       const { getAllByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );

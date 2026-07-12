@@ -1,0 +1,56 @@
+{
+  "title": "Role Management",
+  "subtitle": "Manage roles, permissions, monitoring scope, and map markers",
+  "addRole": "Add Role",
+  "roleList": "Roles",
+  "systemBadge": "System",
+  "counts": {
+    "permissions": "{{count}} permissions",
+    "users": "{{count}} users"
+  },
+  "empty": {
+    "selectRole": "Select a role to view and edit its permissions",
+    "noPermissions": "No permissions yet",
+    "loadError": "Failed to load role data"
+  },
+  "superuser": "This role has all permissions (superuser) and its permissions cannot be edited.",
+  "fields": {
+    "name": "Role Name",
+    "namePlaceholder": "e.g. Park Supervisor",
+    "description": "Description",
+    "scope": "Monitoring Scope",
+    "markerIcon": "Marker Icon",
+    "markerIconPlaceholder": "e.g. shield",
+    "markerColor": "Marker Color"
+  },
+  "scope": {
+    "city": "Whole City (Surabaya)",
+    "district": "Rayon",
+    "region": "Region",
+    "location": "Location",
+    "none": "No Monitoring"
+  },
+  "permissions": {
+    "title": "Permissions",
+    "selectedOfTotal": "{{selected}}/{{total}}"
+  },
+  "actions": {
+    "save": "Save",
+    "saving": "Saving…",
+    "delete": "Delete Role",
+    "create": "Create",
+    "cancel": "Cancel"
+  },
+  "dialog": {
+    "createTitle": "Add New Role",
+    "createHint": "The new role starts with no permissions. Pick permissions then save.",
+    "deleteTitle": "Delete Role",
+    "deleteMessage": "Delete role \"{{name}}\"? This action cannot be undone."
+  },
+  "toast": {
+    "created": "Role \"{{name}}\" created",
+    "updated": "Role \"{{name}}\" updated",
+    "deleted": "Role deleted"
+  },
+  "denied": "You don't have access to role management"
+}

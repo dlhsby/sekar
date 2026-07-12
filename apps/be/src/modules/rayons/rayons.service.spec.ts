@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { RayonsService } from './rayons.service';
 import { Rayon } from './entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 
@@ -12,7 +12,7 @@ describe('RayonsService', () => {
   let module: TestingModule;
   let service: RayonsService;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
 
   const mockRayon: Rayon = {
     id: '11111111-1111-1111-1111-111111111101',
@@ -22,7 +22,7 @@ describe('RayonsService', () => {
     updated_at: new Date('2024-01-01T00:00:00Z'),
   };
 
-  const mockArea: Partial<Area> = {
+  const mockArea: Partial<Location> = {
     id: '22222222-2222-2222-2222-222222222201',
     name: 'Taman Bungkul',
     rayon_id: mockRayon.id,
@@ -36,6 +36,8 @@ describe('RayonsService', () => {
     save: jest.fn(),
     softDelete: jest.fn(),
     softRemove: jest.fn(),
+    // manager.query used by remove() to count referencing regions (ADR-045).
+    manager: { query: jest.fn().mockResolvedValue([{ count: 0 }]) },
   };
 
   const mockAreaRepository = {
@@ -52,7 +54,7 @@ describe('RayonsService', () => {
           useValue: mockRayonRepository,
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: mockAreaRepository,
         },
       ],
@@ -60,7 +62,7 @@ describe('RayonsService', () => {
 
     service = module.get<RayonsService>(RayonsService);
     rayonRepository = module.get(getRepositoryToken(Rayon)) as jest.Mocked<Repository<Rayon>>;
-    areaRepository = module.get(getRepositoryToken(Area)) as jest.Mocked<Repository<Area>>;
+    areaRepository = module.get(getRepositoryToken(Location)) as jest.Mocked<Repository<Location>>;
   });
 
   afterEach(async () => {
@@ -262,6 +264,16 @@ describe('RayonsService', () => {
       await expect(service.remove(mockRayon.id)).rejects.toThrow(BadRequestException);
       await expect(service.remove(mockRayon.id)).rejects.toThrow(
         'Cannot delete rayon: 3 area(s) reference this rayon',
+      );
+    });
+
+    it('should throw BadRequestException if regions reference this rayon (ADR-045)', async () => {
+      mockRayonRepository.findOne.mockResolvedValue(mockRayon);
+      mockAreaRepository.count.mockResolvedValue(0);
+      mockRayonRepository.manager.query.mockResolvedValueOnce([{ count: 2 }]);
+
+      await expect(service.remove(mockRayon.id)).rejects.toThrow(
+        'Cannot delete rayon: 2 region(s) reference this rayon',
       );
     });
   });

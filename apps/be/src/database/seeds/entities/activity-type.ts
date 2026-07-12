@@ -1,7 +1,7 @@
 import type { SeedContext } from '../lib/context';
 
 /**
- * Seed 20 activity types across 4 roles (8 satgas + 5 linmas + 4 korlap + 3 admin_data).
+ * Seed 20 activity types across 4 roles (8 satgas + 5 linmas + 4 korlap + 3 admin_rayon).
  */
 export async function seedActivityTypes(ctx: SeedContext): Promise<void> {
   ctx.log('🔧 Seeding Activity Types…');
@@ -29,7 +29,7 @@ export async function seedActivityTypes(ctx: SeedContext): Promise<void> {
 
   const AT_CEK_ABSENSI_ID = 'c1f4d8b9-0e2a-4f5b-8c7d-8e9f0a1b2c3d';
   const AT_ENTRI_LAPORAN_ID = 'd2a5e9c0-1f3b-4a6c-9d8e-9f0a1b2c3d4e';
-  const AT_LAINNYA_ADMIN_DATA_ID = 'e3b6f0d1-2a4c-4b7d-8e9f-0a1b2c3d4e5f';
+  const AT_LAINNYA_ADMIN_RAYON_ID = 'e3b6f0d1-2a4c-4b7d-8e9f-0a1b2c3d4e5f';
 
   // Satgas activities (8)
   await ctx.qr.query(
@@ -87,16 +87,16 @@ export async function seedActivityTypes(ctx: SeedContext): Promise<void> {
   );
   ctx.log('  ✓ Created 4 Korlap Activity Types');
 
-  // Admin Data activities (3)
+  // Admin Rayon activities (3)
   await ctx.qr.query(
     `
     INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
-      ($1, 'Cek Absensi', 'cek_absensi', 'Pengecekan data absensi', ARRAY['admin_data'], TRUE),
-      ($2, 'Cek dan Entri Laporan', 'entri_laporan', 'Pengecekan dan entri laporan', ARRAY['admin_data'], TRUE),
-      ($3, 'Lainnya', 'lainnya_admin_data', 'Aktivitas admin data lainnya', ARRAY['admin_data'], TRUE)
+      ($1, 'Cek Absensi', 'cek_absensi', 'Pengecekan data absensi', ARRAY['admin_rayon'], TRUE),
+      ($2, 'Cek dan Entri Laporan', 'entri_laporan', 'Pengecekan dan entri laporan', ARRAY['admin_rayon'], TRUE),
+      ($3, 'Lainnya', 'lainnya_admin_rayon', 'Aktivitas admin rayon lainnya', ARRAY['admin_rayon'], TRUE)
     ON CONFLICT (code) DO NOTHING;
   `,
-    [AT_CEK_ABSENSI_ID, AT_ENTRI_LAPORAN_ID, AT_LAINNYA_ADMIN_DATA_ID],
+    [AT_CEK_ABSENSI_ID, AT_ENTRI_LAPORAN_ID, AT_LAINNYA_ADMIN_RAYON_ID],
   );
-  ctx.log('  ✓ Created 3 Admin Data Activity Types');
+  ctx.log('  ✓ Created 3 Admin Rayon Activity Types');
 }

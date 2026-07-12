@@ -1,6 +1,6 @@
 /**
  * Shared attendance summary used by the home "Kehadiran saya" hero across the
- * field / coordinator / admin_data dashboards (avoids triplicating the memo).
+ * field / coordinator / admin_rayon dashboards (avoids triplicating the memo).
  */
 import { isClockInLate, isClockOutEarly } from './dateUtils';
 import type { Shift, ShiftDefinition } from '../types/models.types';

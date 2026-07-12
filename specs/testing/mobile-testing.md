@@ -555,7 +555,7 @@ describe('OfflineQueue', () => {
 
   it('should add item to queue', async () => {
     const queue = new OfflineQueue();
-    const item = { type: 'CLOCK_IN', data: { area_id: '123' } };
+    const item = { type: 'CLOCK_IN', data: { location_id: '123' } };
 
     await queue.add(item);
 
@@ -566,7 +566,7 @@ describe('OfflineQueue', () => {
 
   it('should remove item from queue', async () => {
     const queue = new OfflineQueue();
-    const item = { type: 'CLOCK_IN', data: { area_id: '123' } };
+    const item = { type: 'CLOCK_IN', data: { location_id: '123' } };
 
     const id = await queue.add(item);
     await queue.remove(id);
@@ -601,7 +601,7 @@ describe('Sync Service', () => {
   it('should sync queued shifts', async () => {
     const queuedShift = {
       type: 'CLOCK_IN',
-      data: { area_id: '123', gps_lat: -7.2905, gps_lng: 112.7398 },
+      data: { location_id: '123', gps_lat: -7.2905, gps_lng: 112.7398 },
     };
 
     (apiClient.post as jest.Mock).mockResolvedValue({ shift_id: '456' });
@@ -792,7 +792,7 @@ describe('Clock In Flow', () => {
 
     // 4. Send to API
     const result = await clockIn({
-      area_id: '123',
+      location_id: '123',
       gps_lat: location.latitude,
       gps_lng: location.longitude,
       selfie_photo: photo.uri,

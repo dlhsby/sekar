@@ -25,6 +25,33 @@ That's it! Services run at:
 - `satgas1/12345678`
 - `081200000006/12345678` (phone login)
 
+### Test the web from your phone (same Wi-Fi)
+
+`./scripts/start.sh` **exposes the web on your LAN by default** — just open
+`http://<LAN_IP>:3001` on the phone (the IP is printed on start).
+
+```bash
+./scripts/start.sh                  # localhost + LAN (prints the phone URL)
+./scripts/start.sh 192.168.1.5      # force the advertised LAN IP
+./scripts/start.sh --local          # localhost only (opt out of LAN exposure)
+```
+
+How it stays safe for localhost: the browser bundle uses an **empty
+`NEXT_PUBLIC_API_URL`, i.e. the same origin that served the page**, and the web
+dev server proxies `/api` + `/socket.io` to the backend (`next.config` rewrites,
+gated by `SEKAR_LAN_PROXY`). So the **one build works on `localhost:3001` AND
+`<LAN_IP>:3001`** with no baked IP, **no CORS**, and nothing breaks when you're
+offline or your IP changes. The phone only needs the **web port** reachable. The
+script also sets `SEKAR_ALLOWED_DEV_ORIGINS` so Next 16 serves its dev bundle to
+the LAN host (otherwise the page hangs on the loading gate).
+
+- **WSL2:** your phone reaches the *Windows* host IP, not WSL. The script prints
+  a one-time `netsh portproxy` + firewall command (also saved to
+  `logs/windows-lan-setup.ps1`) — run it once in an elevated PowerShell.
+- **CORS** stays env-driven via `CORS_ORIGIN` (`apps/be/.env.local`); you only
+  add an origin there if a browser hits `http://<LAN_IP>:3000` directly (not the
+  default same-origin proxy path).
+
 ---
 
 ## Table of Contents

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ConfigService } from '@nestjs/config';
 import { StaleStatusSweeperService } from './stale-status-sweeper.service';
 import { StatusCalculatorService } from './status-calculator.service';
+import { SystemConfigService } from '../../settings/services/system-config.service';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 
 const mockFind = jest.fn();
@@ -31,10 +31,10 @@ describe('StaleStatusSweeperService', () => {
           useValue: mockTrackingRepository,
         },
         {
-          provide: ConfigService,
+          provide: SystemConfigService,
           useValue: {
-            get: jest.fn((key: string, def?: number) =>
-              key === 'MISSING_THRESHOLD_SECONDS' ? 900 : def,
+            getNumber: jest.fn((key: string, def?: number) =>
+              key === 'monitoring.missing_threshold_sec' ? 900 : def,
             ),
           },
         },
@@ -75,7 +75,7 @@ describe('StaleStatusSweeperService', () => {
     it('alerts korlap + kepala_rayon for each worker it flips (§C1 #8)', async () => {
       const staleWorker = {
         user_id: 'user-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         rayon_id: 'rayon-1',
         status: TrackingStatus.ACTIVE,
         last_location_at: new Date(Date.now() - 1000 * 1000),

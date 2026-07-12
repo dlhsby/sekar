@@ -3,7 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 
 export enum TrackingStatus {
@@ -104,13 +104,13 @@ export class UserTrackingStatus {
 
   @ApiProperty({ description: 'Current area ID', nullable: true })
   @Column({ type: 'uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
-  @ManyToOne(() => Area, { onDelete: 'SET NULL', nullable: true })
-  @JoinColumn({ name: 'area_id' })
-  area: Area;
+  @ManyToOne(() => Location, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'location_id' })
+  area: Location;
 
-  @ApiProperty({ description: 'Rayon ID for admin_data/kepala_rayon tracking', nullable: true })
+  @ApiProperty({ description: 'Rayon ID for admin_rayon/kepala_rayon tracking', nullable: true })
   @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
   rayon_id: string | null;
 

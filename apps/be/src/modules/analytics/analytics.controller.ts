@@ -85,7 +85,7 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get area analytics by ID' })
   @ApiResponse({
     status: 200,
-    description: 'Area analytics',
+    description: 'Location analytics',
     type: AreaAnalyticsDto,
   })
   async getArea(

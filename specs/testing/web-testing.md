@@ -249,7 +249,7 @@ E2E tests use a mock API system that intercepts all API calls, providing:
 | koordinator | koordinator_bungkul | Password123! | koordinator_lapangan |
 | kepalaRayon | kepala_rayon_selatan | Password123! | kepala_rayon |
 | worker | worker1 | Password123! | worker |
-| topManagement | top_management1 | Password123! | top_management |
+| topManagement | management1 | Password123! | management |
 
 ### Running E2E Tests
 

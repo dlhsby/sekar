@@ -13,7 +13,7 @@ Accepted
 SEKAR's web dashboard serves two audiences today and will serve a third in Phase 3:
 
 1. **Supervisors in the field** — `korlap`, `kepala_rayon`. They use their phone browser when away from a desk; the current site is desktop-only and hostile on a phone.
-2. **Desk roles** — `admin_data`, `top_management`, `admin_system`, `superadmin`. Stable desk with reliable internet.
+2. **Desk roles** — `admin_rayon`, `management`, `admin_system`, `superadmin`. Stable desk with reliable internet.
 3. **Kecamatan staff (new, Phase 3)** — `staff_kecamatan`. Submit pruning requests from a sub-district office, then monitor outcomes. Primary channel is mobile; the backup is a phone browser.
 
 Two Phase 3 realities tip the balance:
@@ -50,7 +50,7 @@ Native apps are already covered by `apps/mobile`. The web channel doesn't need t
 
 - **Offline banner:** persistent top strip when `navigator.onLine === false`; `role="status"`; write CTAs visually disabled with tooltip "Butuh koneksi."
 
-- **Web push notifications** (same FCM project as the native app): subscribed for `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`. Types mirror mobile (`pruning_request_submitted`, `task_overdue`, `area_plant_overdue`, etc.); click deep-links into the PWA.
+- **Web push notifications** (same FCM project as the native app): subscribed for `admin_rayon`, `kepala_rayon`, `management`, `admin_system`, `superadmin`. Types mirror mobile (`pruning_request_submitted`, `task_overdue`, `area_plant_overdue`, etc.); click deep-links into the PWA.
 
 - **Field-role mobile-web escape hatch:** if a user with role `satgas` / `linmas` / `korlap` hits the site on a viewport < 768 px, show a banner pointing to Play Store / App Store. Don't redirect; field staff may legitimately need a browser fallback.
 

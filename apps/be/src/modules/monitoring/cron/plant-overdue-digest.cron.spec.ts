@@ -27,7 +27,7 @@ describe('PlantOverdueDigestCron', () => {
         due_soon: 1,
         overdue: 3,
         unknown: 0,
-        overdue_areas: [{ area_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
+        overdue_areas: [{ location_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
       },
       {
         rayon_id: RAYON_B,
@@ -43,7 +43,7 @@ describe('PlantOverdueDigestCron', () => {
 
   const topManagement = {
     id: 'tm-1',
-    role: UserRole.TOP_MANAGEMENT,
+    role: UserRole.MANAGEMENT,
     rayon_id: null,
   } as unknown as User;
   const kepalaA = { id: 'kr-a', role: UserRole.KEPALA_RAYON, rayon_id: RAYON_A } as unknown as User;
@@ -80,7 +80,7 @@ describe('PlantOverdueDigestCron', () => {
     expect(notifications.sendToUser).not.toHaveBeenCalled();
   });
 
-  it('should digest top_management for all overdue rayons', async () => {
+  it('should digest management for all overdue rayons', async () => {
     await cron.sendDigest();
 
     const tmCall = notifications.sendToUser.mock.calls.find(
@@ -97,7 +97,7 @@ describe('PlantOverdueDigestCron', () => {
   it('should digest kepala_rayon only for their own overdue rayon', async () => {
     const sent = await cron.sendDigest();
 
-    expect(sent).toBe(2); // top_management + kepala A; kepala B is clean
+    expect(sent).toBe(2); // management + kepala A; kepala B is clean
     const krACall = notifications.sendToUser.mock.calls.find(
       (c: [{ user_id: string }]) => c[0].user_id === 'kr-a',
     );

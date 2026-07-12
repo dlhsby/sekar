@@ -7,7 +7,6 @@ import type { UserRole } from '@/types/models';
 import {
   WEB_ROLES,
   ADMIN_ROLES,
-  roleAssignmentScope,
   MONITORING_ROLES,
   TASK_MANAGER_ROLES,
   CLOCKABLE_ROLES,
@@ -29,16 +28,16 @@ describe('Role Constants', () => {
       expect(WEB_ROLES).toContain('korlap');
     });
 
-    it('should include admin_data in WEB_ROLES', () => {
-      expect(WEB_ROLES).toContain('admin_data');
+    it('should include admin_rayon in WEB_ROLES', () => {
+      expect(WEB_ROLES).toContain('admin_rayon');
     });
 
     it('should include kepala_rayon in WEB_ROLES', () => {
       expect(WEB_ROLES).toContain('kepala_rayon');
     });
 
-    it('should include top_management in WEB_ROLES', () => {
-      expect(WEB_ROLES).toContain('top_management');
+    it('should include management in WEB_ROLES', () => {
+      expect(WEB_ROLES).toContain('management');
     });
 
     it('should include admin_system in WEB_ROLES', () => {
@@ -68,13 +67,13 @@ describe('Role Constants', () => {
       expect(ADMIN_ROLES).toContain('superadmin');
     });
 
-    it('should include top_management (full admin_system parity)', () => {
-      expect(ADMIN_ROLES).toContain('top_management');
+    it('should include management (full admin_system parity)', () => {
+      expect(ADMIN_ROLES).toContain('management');
     });
 
     it('should not include other roles', () => {
       expect(ADMIN_ROLES).not.toContain('korlap');
-      expect(ADMIN_ROLES).not.toContain('admin_data');
+      expect(ADMIN_ROLES).not.toContain('admin_rayon');
       expect(ADMIN_ROLES).not.toContain('kepala_rayon');
     });
   });
@@ -84,14 +83,14 @@ describe('Role Constants', () => {
       expect(MONITORING_ROLES).toHaveLength(6);
     });
 
-    it('should include admin_data for monitoring', () => {
-      expect(MONITORING_ROLES).toContain('admin_data');
+    it('should include admin_rayon for monitoring', () => {
+      expect(MONITORING_ROLES).toContain('admin_rayon');
     });
 
     it('should include all admin and management roles', () => {
       expect(MONITORING_ROLES).toContain('korlap');
       expect(MONITORING_ROLES).toContain('kepala_rayon');
-      expect(MONITORING_ROLES).toContain('top_management');
+      expect(MONITORING_ROLES).toContain('management');
       expect(MONITORING_ROLES).toContain('admin_system');
       expect(MONITORING_ROLES).toContain('superadmin');
     });
@@ -124,8 +123,8 @@ describe('Role Constants', () => {
       expect(CLOCKABLE_ROLES).toHaveLength(3);
     });
 
-    it('should not include admin_data or kepala_rayon', () => {
-      expect(CLOCKABLE_ROLES).not.toContain('admin_data');
+    it('should not include admin_rayon or kepala_rayon', () => {
+      expect(CLOCKABLE_ROLES).not.toContain('admin_rayon');
       expect(CLOCKABLE_ROLES).not.toContain('kepala_rayon');
     });
   });
@@ -147,9 +146,9 @@ describe('Role Constants', () => {
       expect(ROLE_LABELS.satgas).toBe('Satgas');
       expect(ROLE_LABELS.linmas).toBe('Linmas');
       expect(ROLE_LABELS.korlap).toBe('Korlap');
-      expect(ROLE_LABELS.admin_data).toBe('Admin Data');
+      expect(ROLE_LABELS.admin_rayon).toBe('Admin Rayon');
       expect(ROLE_LABELS.kepala_rayon).toBe('Kepala Rayon');
-      expect(ROLE_LABELS.top_management).toBe('Top Management');
+      expect(ROLE_LABELS.management).toBe('Management');
       expect(ROLE_LABELS.admin_system).toBe('Admin Sistem');
       expect(ROLE_LABELS.superadmin).toBe('Superadmin');
     });
@@ -201,9 +200,9 @@ describe('Role Constants', () => {
       expect(VALID_TASK_ASSIGNMENTS.kepala_rayon).toEqual(['korlap']);
     });
 
-    it('should define assignment rules for top_management', () => {
-      expect(VALID_TASK_ASSIGNMENTS.top_management).toContain('kepala_rayon');
-      expect(VALID_TASK_ASSIGNMENTS.top_management).toContain('korlap');
+    it('should define assignment rules for management', () => {
+      expect(VALID_TASK_ASSIGNMENTS.management).toContain('kepala_rayon');
+      expect(VALID_TASK_ASSIGNMENTS.management).toContain('korlap');
     });
 
     it('should define assignment rules for admin roles', () => {
@@ -230,7 +229,7 @@ describe('Role Constants', () => {
 
     it('should work with WEB_ROLES', () => {
       expect(hasRole('korlap', WEB_ROLES)).toBe(true);
-      expect(hasRole('admin_data', WEB_ROLES)).toBe(true);
+      expect(hasRole('admin_rayon', WEB_ROLES)).toBe(true);
       expect(hasRole('satgas', WEB_ROLES)).toBe(false);
     });
 
@@ -242,34 +241,6 @@ describe('Role Constants', () => {
 
     it('should return false for empty allowed list', () => {
       expect(hasRole('admin_system', [])).toBe(false);
-    });
-  });
-
-  describe('roleAssignmentScope', () => {
-    it('hides rayon/area/shift for system + management roles', () => {
-      for (const role of ['superadmin', 'admin_system', 'top_management'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: false, area: false, shift: false });
-      }
-    });
-
-    it('shows rayon only for kepala_rayon, admin_data, staff_kecamatan', () => {
-      for (const role of ['kepala_rayon', 'admin_data', 'staff_kecamatan'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: true, area: false, shift: false });
-      }
-    });
-
-    it('shows rayon + area for korlap', () => {
-      expect(roleAssignmentScope('korlap')).toEqual({ rayon: true, area: true, shift: false });
-    });
-
-    it('shows rayon + area + shift for satgas and linmas', () => {
-      for (const role of ['satgas', 'linmas'] as UserRole[]) {
-        expect(roleAssignmentScope(role)).toEqual({ rayon: true, area: true, shift: true });
-      }
-    });
-
-    it('shows nothing for an unset role', () => {
-      expect(roleAssignmentScope('')).toEqual({ rayon: false, area: false, shift: false });
     });
   });
 

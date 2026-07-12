@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { GpsUtil } from '../../common/utils/gps.util';
 
 /**
- * Area-shaped input for boundary checks. Structural type so the service stays
- * entity-agnostic (works with Area entities, cached boundary rows, DTOs).
+ * Location-shaped input for boundary checks. Structural type so the service stays
+ * entity-agnostic (works with Location entities, cached boundary rows, DTOs).
  */
 export interface BoundaryArea {
   boundary_polygon?: { type?: string; coordinates?: number[][][] } | null;

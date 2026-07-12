@@ -10,6 +10,15 @@ import type { SeedContext } from './context';
  */
 export const TRUNCATE_ORDER: readonly string[] = [
   'audit_logs',
+  // Dynamic RBAC (ADR-044) — join first, then roles/permissions.
+  'role_permissions',
+  'roles',
+  'permissions',
+  // Settings overrides (ADR-049) — operator config, cleared on full reseed.
+  'system_config',
+  // Teams (ADR-048) — teams before their type catalog.
+  'teams',
+  'team_types',
   // Phase 3 (plants / pruning / seeds / capacity) — cleared first (deepest FKs).
   'seed_transactions',
   'plant_seeds',
@@ -17,13 +26,13 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'activity_plant_items',
   'pruning_requests',
   'notable_plants',
-  'area_plants',
+  'location_plants',
   'plant_species',
   // Daily roster.
-  'schedule_areas',
+  'schedule_locations',
   'schedules',
   // Core transactional + assignment tables.
-  'user_areas',
+  'user_locations',
   'user_tracking_status',
   'monitoring_configs',
   'notification_tokens',
@@ -31,14 +40,15 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'task_tags',
   'overtimes',
   'special_day_overrides',
-  'area_staff_requirements',
+  'location_staff_requirements',
   'tasks',
   'location_logs',
   'activities',
   'shifts',
   'shift_definitions',
-  'areas',
-  'area_types',
+  'locations',
+  'regions',
+  'location_types',
   'activity_types',
   'kecamatans',
   'rayons',

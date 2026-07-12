@@ -100,7 +100,7 @@ export class UserDaySummaryDto {
   status: TrackingStatus;
 
   @ApiPropertyOptional({ example: 'area-uuid' })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiPropertyOptional({ example: 'Taman Bungkul' })
   area_name: string | null;

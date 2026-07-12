@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
 /**
@@ -19,7 +19,7 @@ import { ShiftDefinition } from '../../shift-definitions/entities/shift-definiti
  * Phase 2C: 8 roles with hierarchy:
  * - Satgas: Field worker (formerly Worker)
  * - Linmas: Security officer
- * - Korlap: Field coordinator, manages specific Area (formerly Supervisor/KoordinatorLapangan)
+ * - Korlap: Field coordinator, manages specific Location (formerly Supervisor/KoordinatorLapangan)
  * - AdminData: Data entry and reporting
  * - KepalaRayon: Manages an entire Rayon
  * - TopManagement: City-wide view (Kepala Dinas, Wali Kota, Kepala Bidang)
@@ -30,9 +30,9 @@ export enum UserRole {
   SATGAS = 'satgas',
   LINMAS = 'linmas',
   KORLAP = 'korlap',
-  ADMIN_DATA = 'admin_data',
+  ADMIN_RAYON = 'admin_rayon',
   KEPALA_RAYON = 'kepala_rayon',
-  TOP_MANAGEMENT = 'top_management',
+  MANAGEMENT = 'management',
   ADMIN_SYSTEM = 'admin_system',
   SUPERADMIN = 'superadmin',
   STAFF_KECAMATAN = 'staff_kecamatan',
@@ -75,12 +75,16 @@ export class User {
   @Column({ type: 'uuid', nullable: true })
   rayon_id?: string;
 
+  // Region (Kawasan) scope for korlap (ADR-045). Nullable; no FK (matches rayon_id).
+  @Column({ type: 'uuid', nullable: true })
+  region_id?: string;
+
   @ApiProperty({
-    description: 'Area ID for Korlap role',
+    description: 'Location ID for Korlap role',
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  area_id?: string;
+  location_id?: string;
 
   // Phase 3 Apr 27 — staff_kecamatan kecamatan attribution.
   // Each staff_kecamatan user is mapped to one kecamatan; their pruning_requests
@@ -102,9 +106,9 @@ export class User {
   @Column({ name: 'kecamatan_id', type: 'uuid', nullable: true })
   kecamatan_id?: string;
 
-  @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'area_id' })
-  area?: Area;
+  @ManyToOne(() => Location, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'location_id' })
+  area?: Location;
 
   // The worker's single working shift (one timeframe; may span several areas).
   // Source of truth for the derived roster + clock-in lateness; nullable for
@@ -132,6 +136,11 @@ export class User {
   @Column({ name: 'preferred_language', type: 'varchar', length: 2, default: 'id' })
   preferred_language?: string;
 
+  // Personal theme preference ('light' | 'dark' | 'system'); null = follow system
+  // default (ADR-049). Edited via PATCH /me/preferences.
+  @Column({ name: 'preference_theme', type: 'varchar', length: 10, nullable: true })
+  preference_theme?: string;
+
   @CreateDateColumn()
   created_at: Date;
 
@@ -139,11 +148,11 @@ export class User {
   updated_at: Date;
 
   // Not persisted — populated by the users-list query (findAllPaginated) with the
-  // number of permanent area assignments, for the management grid's Area column.
+  // number of permanent area assignments, for the management grid's Location column.
   @ApiProperty({ description: 'Count of permanent area assignments', required: false })
-  assigned_area_count?: number;
+  assigned_location_count?: number;
 
-  // Not persisted — populated alongside assigned_area_count with the actual
+  // Not persisted — populated alongside assigned_location_count with the actual
   // area IDs, so the management grid can filter by area without an N+1
   // per-user fetch (GET /users/:id/areas remains the source of truth for
   // full area detail — this is IDs only, for filtering).
@@ -152,7 +161,7 @@ export class User {
     required: false,
     type: [String],
   })
-  assigned_area_ids?: string[];
+  assigned_location_ids?: string[];
 
   @DeleteDateColumn()
   deleted_at?: Date;

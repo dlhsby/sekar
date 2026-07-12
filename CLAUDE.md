@@ -21,7 +21,7 @@ Guidance for Claude Code. Docs are **product/feature-organized** — nav hub `sp
 ```bash
 # One-command flow (recommended) — run from project root
 ./scripts/setup.sh          # env files, all installs, infra, migrations (+ optional destructive seed)
-./scripts/start.sh          # backend + web in background, Metro foreground (--no-mobile to skip Metro)
+./scripts/start.sh          # backend + web in background, Metro foreground; web is also LAN-reachable by default (same-origin proxy, safe for localhost — prints the phone URL). Flags: --no-mobile (skip Metro) · --local (localhost only) · [IP] (force advertised LAN IP)
 ./scripts/stop.sh           # stop services (--infra to also stop Docker)
 # Single services: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
 # Ports: apps/be/.env.local PORT (default 3000) · apps/web/.env.local WEB_PORT (default 3001)
@@ -39,9 +39,11 @@ Each workspace (`/`, `apps/{be,mobile,web}/`) is **fully independent** — `npm 
 
 **CRITICAL: always lowercase, matching backend enum. Never Pascal case** (`'Worker'`, `'Admin'`).
 
-8 roles (ADR-009): `satgas` (field worker), `linmas` (security), `korlap` (field coordinator), `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`. **Removed:** `worker`, `supervisor`, `admin`, `koordinator_lapangan`.
+8 roles (ADR-009): `satgas` (field worker), `linmas` (security), `korlap` (field coordinator), `admin_rayon`, `kepala_rayon`, `management`, `admin_system`, `superadmin`. **Removed:** `worker`, `supervisor`, `admin`, `koordinator_lapangan`.
 
-Phase 3 additions (ADR-032/033): `staff_kecamatan` (external, non-clockable, submits pruning requests); `admin_data` gains narrow `pruning_requests` disposition scoped by `users.rayon_id` — **no `admin_rayon` role**.
+Phase 3 additions (ADR-032/033): `staff_kecamatan` (external, non-clockable, submits pruning requests); `admin_rayon` (formerly `admin_data`) gains narrow `pruning_requests` disposition scoped by `users.rayon_id`.
+
+**UAT revamp (ADR-044, in progress):** roles become **data-driven** (`roles`/`permissions`/`role_permissions`) with per-role `monitoring_scope` (`city|district|region|location|none`) + map marker; operators can create custom roles. Role **codes stay lowercase**; the UAT revamp **renamed two codes** (data migration, forced re-login): `top_management` → `management`, `admin_data` → `admin_rayon` (access equalized to `kepala_rayon`). Codes stay stable going forward (JWT + guards). Guards migrate `@Roles(...)` → `@RequirePermissions('resource:action')` (flat colon keys + wildcard) incrementally via a compat shim. **Only `satgas`+`linmas` are scheduled/understaffed**; other clock-in roles are monitorable but not counted. See `specs/features/access-control/README.md`.
 
 ## Terminology Convention (ADR-010)
 

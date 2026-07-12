@@ -189,7 +189,7 @@ export function useSocketRoom(room: string) {
 }
 
 // Usage - subscribe to specific area updates
-useSocketRoom(`area:${areaId}`);
+useSocketRoom(`area:${locationId}`);
 ```
 
 ---
@@ -207,14 +207,14 @@ export interface LocationUpdate {
   longitude: number;
   accuracy: number;
   timestamp: string;
-  areaId: string;
+  locationId: string;
 }
 
 export interface ShiftEvent {
   type: 'clock_in' | 'clock_out';
   workerId: string;
   workerName: string;
-  areaId: string;
+  locationId: string;
   areaName: string;
   timestamp: string;
 }
@@ -223,7 +223,7 @@ export interface ReportEvent {
   reportId: string;
   workerId: string;
   workerName: string;
-  areaId: string;
+  locationId: string;
   areaName: string;
   condition: string;
   timestamp: string;
@@ -272,12 +272,12 @@ const SURABAYA = { lat: -7.2756, lng: 112.7138 };
 const toPath = (poly: GeoJSON.Polygon) =>
   poly.coordinates[0].map(([lng, lat]) => ({ lat, lng }));
 
-export function MonitoringMap({ areas }: { areas: Area[] }) {
+export function MonitoringMap({ locations }: { locations: Location[] }) {
   const [workers, setWorkers] = useState<Map<string, WorkerMarker>>(new Map());
 
-  // Subscribe to all areas & handle location updates
-  areas.forEach((area) => {
-    useSocketRoom(`area:${area.id}`);
+  // Subscribe to all locations & handle location updates
+  locations.forEach((location) => {
+    useSocketRoom(`area:${location.id}`);
   });
 
   const handleLocationUpdate = useCallback((data: LocationUpdate) => {
@@ -303,11 +303,11 @@ export function MonitoringMap({ areas }: { areas: Area[] }) {
       center={SURABAYA}
       zoom={13}
     >
-      {/* Area boundaries */}
-      {areas.map((area) => (
+      {/* Location boundaries */}
+      {locations.map((location) => (
         <Polygon
-          key={area.id}
-          paths={toPath(area.boundary)}
+          key={location.id}
+          paths={toPath(location.boundary)}
           options={{ fillColor: '#7FBC8C', fillOpacity: 0.1, strokeColor: '#1C1917', strokeWeight: 2 }}
         />
       ))}
@@ -656,9 +656,9 @@ npm install socket.io-client
 
 | Event | Payload | Action |
 |-------|---------|--------|
-| `user:status-changed` | `{ user_id, user_name, role, area_id, area_name, rayon_id, previous_status, new_status, latitude, longitude, timestamp }` | Update user in TanStack Query cache, recalculate status counts, toast if new_status is 'missing' |
-| `user:left-area` | `{ user_id, user_name, role, area_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to false, visual warning on marker |
-| `user:entered-area` | `{ user_id, user_name, role, area_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to true, clear warning |
+| `user:status-changed` | `{ user_id, user_name, role, location_id, area_name, rayon_id, previous_status, new_status, latitude, longitude, timestamp }` | Update user in TanStack Query cache, recalculate status counts, toast if new_status is 'missing' |
+| `user:left-area` | `{ user_id, user_name, role, location_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to false, visual warning on marker |
+| `user:entered-area` | `{ user_id, user_name, role, location_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to true, clear warning |
 
 ### Enhanced Existing Event
 
@@ -693,15 +693,15 @@ if (event.new_status === 'missing') {
 switch (user.role) {
   case 'superadmin':
   case 'admin_system':
-  case 'top_management':
+  case 'management':
     socket.emit('join', { room: 'city' });
     break;
   case 'kepala_rayon':
-  case 'admin_data':
+  case 'admin_rayon':
     socket.emit('join', { room: `rayon:${user.rayon_id}` });
     break;
   case 'korlap':
-    socket.emit('join', { room: `area:${user.area_id}` });
+    socket.emit('join', { room: `area:${user.location_id}` });
     break;
 }
 ```

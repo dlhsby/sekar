@@ -30,9 +30,9 @@ export class ServiceCapacityController {
 
   @Get()
   @Roles(
-    UserRole.ADMIN_DATA,
+    UserRole.ADMIN_RAYON,
     UserRole.KEPALA_RAYON,
-    UserRole.TOP_MANAGEMENT,
+    UserRole.MANAGEMENT,
     UserRole.SUPERADMIN,
     UserRole.ADMIN_SYSTEM,
     UserRole.STAFF_KECAMATAN,
@@ -40,7 +40,7 @@ export class ServiceCapacityController {
   @ApiOperation({
     summary: 'Get service capacity calendar',
     description:
-      'Retrieve capacity and booking info for a rayon. admin_data and staff_kecamatan are scoped to own rayon.',
+      'Retrieve capacity and booking info for a rayon. admin_rayon and staff_kecamatan are scoped to own rayon.',
   })
   @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
   @ApiResponse({
@@ -55,7 +55,7 @@ export class ServiceCapacityController {
     @Query() query: QueryCapacityDto,
     @GetUser() user: User,
   ): Promise<ServiceCapacity[]> {
-    const scopedRoles = [UserRole.ADMIN_DATA, UserRole.STAFF_KECAMATAN];
+    const scopedRoles = [UserRole.ADMIN_RAYON, UserRole.STAFF_KECAMATAN];
     if (scopedRoles.includes(user.role as UserRole) && user.rayon_id !== rayonId) {
       throw new ForbiddenException('Cannot access other rayon');
     }
@@ -67,10 +67,10 @@ export class ServiceCapacityController {
   }
 
   @Put()
-  @Roles(UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
+  @Roles(UserRole.KEPALA_RAYON, UserRole.MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Override capacity units',
-    description: 'Set capacity units for a week/service-type. admin_data cannot override.',
+    description: 'Set capacity units for a week/service-type. admin_rayon cannot override.',
   })
   @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
   @ApiResponse({
@@ -79,7 +79,7 @@ export class ServiceCapacityController {
     type: ServiceCapacity,
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - admin_data cannot override' })
+  @ApiResponse({ status: 403, description: 'Forbidden - admin_rayon cannot override' })
   async upsertCapacity(
     @Param('rayonId') rayonId: string,
     @Body() dto: UpsertCapacityDto,
@@ -91,7 +91,7 @@ export class ServiceCapacityController {
   }
 
   @Post('book')
-  @Roles(UserRole.KEPALA_RAYON, UserRole.TOP_MANAGEMENT, UserRole.SUPERADMIN)
+  @Roles(UserRole.KEPALA_RAYON, UserRole.MANAGEMENT, UserRole.SUPERADMIN)
   @ApiOperation({
     summary: 'Book capacity units',
     description: 'Atomically book units; throws ConflictException if capacity exceeded.',

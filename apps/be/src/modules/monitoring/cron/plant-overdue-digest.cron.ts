@@ -17,7 +17,7 @@ import { RedisService } from '../../../common/services/redis.service';
  * Daily at 08:00 WIB: aggregates areas with overdue plant maintenance via
  * AreaPlantStatusService.getSummary() and pushes one AREA_PLANT_OVERDUE
  * digest per recipient:
- *  - top_management: city-wide digest (every rayon with overdue species)
+ *  - management: city-wide digest (every rayon with overdue species)
  *  - kepala_rayon:   own-rayon digest only
  * Preference enforcement happens inside NotificationsService.sendToUser.
  * Redis SET-NX dedup (per user per Jakarta date) guards against re-fires.
@@ -59,7 +59,7 @@ export class PlantOverdueDigestCron {
 
     const recipients = await this.userRepository.find({
       where: [
-        { role: UserRole.TOP_MANAGEMENT, is_active: true },
+        { role: UserRole.MANAGEMENT, is_active: true },
         { role: UserRole.KEPALA_RAYON, is_active: true },
       ],
       select: ['id', 'role', 'rayon_id'],

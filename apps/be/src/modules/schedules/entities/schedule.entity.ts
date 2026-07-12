@@ -14,7 +14,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { ScheduleArea } from './schedule-area.entity';
+import { ScheduleLocation } from './schedule-area.entity';
 
 /**
  * Per-worker, per-WIB-day roster status.
@@ -134,6 +134,8 @@ export class Schedule {
   @JoinColumn({ name: 'replacement_user_id' })
   replacement_user?: User | null;
 
-  @OneToMany(() => ScheduleArea, (dsa) => dsa.schedule, { cascade: true })
-  schedule_areas: ScheduleArea[];
+  @OneToMany(() => ScheduleLocation, (dsa) => dsa.schedule, { cascade: true })
+  schedule_areas: ScheduleLocation[];
 }
+
+export { ScheduleLocation };

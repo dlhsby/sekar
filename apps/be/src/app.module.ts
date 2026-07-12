@@ -2,16 +2,19 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { getEnvFilePaths } from './config/load-env';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { AppThrottlerGuard } from './common/guards/app-throttler.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { UsersModule } from './modules/users/users.module';
-import { AreaTypesModule } from './modules/area-types/area-types.module';
-import { AreasModule } from './modules/areas/areas.module';
+import { LocationTypesModule } from './modules/location-types/location-types.module';
+import { LocationsModule } from './modules/locations/locations.module';
 import { ShiftsModule } from './modules/shifts/shifts.module';
 import { ActivitiesModule } from './modules/activities/activities.module';
 import { LocationModule } from './modules/location/location.module';
@@ -19,10 +22,12 @@ import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { SharedModule } from './shared/shared.module';
 // Phase 2 modules
 import { RayonsModule } from './modules/rayons/rayons.module';
+import { RegionsModule } from './modules/regions/regions.module';
+import { TeamsModule } from './modules/teams/teams.module';
 import { KecamatansModule } from './modules/kecamatans/kecamatans.module';
 import { ShiftDefinitionsModule } from './modules/shift-definitions/shift-definitions.module';
 import { ActivityTypesModule } from './modules/activity-types/activity-types.module';
-import { AreaStaffRequirementsModule } from './modules/area-staff-requirements/area-staff-requirements.module';
+import { LocationStaffRequirementsModule } from './modules/location-staff-requirements/location-staff-requirements.module';
 import { SchedulesModule } from './modules/schedules/schedules.module';
 import { SpecialDayOverridesModule } from './modules/special-day-overrides/special-day-overrides.module';
 import { TasksModule } from './modules/tasks/tasks.module';
@@ -32,7 +37,7 @@ import { ImportModule } from './modules/import/import.module';
 import { ExportModule } from './modules/export/export.module';
 import { EventsModule } from './gateways/events.module';
 import { OvertimeModule } from './modules/overtime/overtime.module';
-import { UserAreasModule } from './modules/user-areas/user-areas.module';
+import { UserLocationsModule } from './modules/user-locations/user-locations.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CommonModule } from './common/common.module';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
@@ -118,20 +123,24 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     // Feature modules (order matters due to dependencies)
     CommonModule, // Global shared infrastructure (Redis, etc.) — Phase 3
     SharedModule, // Shared services (S3, etc.)
+    RbacModule, // Dynamic RBAC — global PermissionsGuard + RolePermissionsService (ADR-044)
+    SettingsModule, // System settings + personal preferences (ADR-049)
     AuthModule, // Must be first (provides guards)
     UsersModule,
-    AreaTypesModule, // Needed by Areas
-    AreasModule, // Needed by Shifts
+    LocationTypesModule, // Needed by Locations
+    LocationsModule, // Needed by Shifts
     ShiftsModule,
     ActivitiesModule, // Depends on Shifts, SharedModule (Phase 2C: renamed from ReportsModule)
     LocationModule, // Depends on Shifts
     SupervisorModule, // Depends on all above modules
     // Phase 2 modules
     RayonsModule, // Geographic sectors
+    RegionsModule, // Kawasan — level between rayon and area (ADR-045)
+    TeamsModule, // Teams (crews) + team-type catalog (ADR-048)
     KecamatansModule, // Surabaya kecamatans (FK to rayon)
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering
-    AreaStaffRequirementsModule, // Staff requirements per area/shift
+    LocationStaffRequirementsModule, // Staff requirements per area/shift
     SchedulesModule, // Materialized per-day roster (the single schedule concept, ADR-013)
     SpecialDayOverridesModule, // Special day overrides (holidays, etc.)
     TasksModule, // Task management for workers
@@ -142,7 +151,7 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     ExportModule, // Phase 4-5: CSV/XLSX/KMZ data export
     EventsModule, // WebSocket real-time events
     OvertimeModule, // Overtime submission and approval
-    UserAreasModule, // User-area assignment management (Phase 2E)
+    UserLocationsModule, // User-location assignment management (Phase 2E)
     AuditModule, // Audit logging (Phase 2E)
     // Phase 3 entity registration modules
     PlantsModule,
@@ -160,12 +169,13 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
   controllers: [AppController],
   providers: [
     AppService,
-    // Global rate limiting guard (disabled in test environment)
+    // Global rate limiting guard (disabled in test environment). Resolves
+    // limits from SystemConfigService at request time (ADR-049).
     ...(process.env.NODE_ENV !== 'test'
       ? [
           {
             provide: APP_GUARD,
-            useClass: ThrottlerGuard,
+            useClass: AppThrottlerGuard,
           },
         ]
       : []),

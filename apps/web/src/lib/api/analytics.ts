@@ -261,7 +261,7 @@ async function fetchAreaAnalytics(
 /**
  * Hook to fetch area analytics (paginated, filtered)
  */
-export function useAreaAnalytics(filters: AreaAnalyticsFilters = {}) {
+export function useLocationAnalytics(filters: AreaAnalyticsFilters = {}) {
   return useQuery({
     queryKey: analyticsQueryKeys.areasWithFilters(filters),
     queryFn: () => fetchAreaAnalytics(filters),
@@ -282,7 +282,7 @@ async function fetchArea(
   if (filters?.date_to) params.append('date_to', filters.date_to);
 
   const { data } = await apiClient.get<AreaAnalytics>(
-    `/analytics/areas/${id}${params.toString() ? `?${params}` : ''}`
+    `/analytics/locations/${id}${params.toString() ? `?${params}` : ''}`
   );
   return data;
 }
@@ -290,7 +290,7 @@ async function fetchArea(
 /**
  * Hook to fetch single area analytics
  */
-export function useArea(id: string, filters?: Omit<AreaAnalyticsFilters, 'page' | 'limit'>) {
+export function useLocation(id: string, filters?: Omit<AreaAnalyticsFilters, 'page' | 'limit'>) {
   return useQuery({
     queryKey: [analyticsQueryKeys.area(id), filters],
     queryFn: () => fetchArea(id, filters),

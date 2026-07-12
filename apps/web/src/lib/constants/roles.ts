@@ -8,9 +8,9 @@ import type { UserRole } from '@/types/models';
 /** Roles that can access the web dashboard (excludes staff_kecamatan — uses (kecamatan) layout) */
 export const WEB_ROLES: UserRole[] = [
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];
@@ -20,17 +20,17 @@ export const KECAMATAN_ROLES: UserRole[] = ['staff_kecamatan'];
 
 /**
  * Admin roles with full system configuration + data-management access.
- * top_management has full parity with admin_system (mirrors the backend
+ * management has full parity with admin_system (mirrors the backend
  * RolesGuard elevation); only superadmin sits above.
  */
-export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin', 'top_management'];
+export const ADMIN_ROLES: UserRole[] = ['admin_system', 'superadmin', 'management'];
 
 /** Roles with monitoring access (hierarchical) */
 export const MONITORING_ROLES: UserRole[] = [
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];
@@ -39,7 +39,7 @@ export const MONITORING_ROLES: UserRole[] = [
 export const TASK_MANAGER_ROLES: UserRole[] = [
   'korlap',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
 ];
@@ -48,9 +48,9 @@ export const TASK_MANAGER_ROLES: UserRole[] = [
 export const SCHEDULE_MANAGER_ROLES: UserRole[] = [
   'admin_system',
   'superadmin',
-  'top_management',
+  'management',
   'korlap',
-  'admin_data',
+  'admin_rayon',
 ];
 
 /** Roles that can reassign workers between areas (Phase 4-4, matches POST /monitoring/reassign) */
@@ -72,20 +72,33 @@ export const OVERTIME_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
 export const ACTIVITY_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
 
 /** Roles that can verify/request-revision on tasks */
-export const TASK_VERIFIER_ROLES: UserRole[] = ['korlap', 'kepala_rayon', 'top_management'];
+export const TASK_VERIFIER_ROLES: UserRole[] = ['korlap', 'kepala_rayon', 'management'];
 
 /** Indonesian labels for each role */
 export const ROLE_LABELS: Record<UserRole, string> = {
   satgas: 'Satgas',
   linmas: 'Linmas',
   korlap: 'Korlap',
-  admin_data: 'Admin Data',
+  admin_rayon: 'Admin Rayon',
   kepala_rayon: 'Kepala Rayon',
-  top_management: 'Top Management',
+  management: 'Management',
   admin_system: 'Admin Sistem',
   superadmin: 'Superadmin',
   staff_kecamatan: 'Staff Kecamatan',
 };
+
+/**
+ * Human label for ANY role code — the 9 system roles use their curated label;
+ * custom/data-driven roles (ADR-044) fall back to a title-cased code so they
+ * never render as a raw slug. (For the exact operator-set name, the roles
+ * catalog is the source; this is the presentational fallback.)
+ */
+export function roleLabel(code: string): string {
+  return (
+    ROLE_LABELS[code as UserRole] ??
+    code.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  );
+}
 
 /** Badge variant for each role */
 export const ROLE_BADGE_VARIANTS: Record<
@@ -95,9 +108,9 @@ export const ROLE_BADGE_VARIANTS: Record<
   satgas: 'secondary',
   linmas: 'secondary',
   korlap: 'success',
-  admin_data: 'default',
+  admin_rayon: 'default',
   kepala_rayon: 'warning',
-  top_management: 'default',
+  management: 'default',
   admin_system: 'destructive',
   superadmin: 'destructive',
   staff_kecamatan: 'secondary',
@@ -108,41 +121,35 @@ export const ALL_ROLES: UserRole[] = [
   'satgas',
   'linmas',
   'korlap',
-  'admin_data',
+  'admin_rayon',
   'kepala_rayon',
-  'top_management',
+  'management',
   'admin_system',
   'superadmin',
   'staff_kecamatan',
 ];
 
 /**
- * Organizational hierarchy order (top → bottom) for role pickers. Roles not
- * listed here (system + external) are appended alphabetically by label — see
- * {@link sortedRoleOptions}.
+ * Organizational hierarchy order (top → bottom) for role pickers/sorting. Roles
+ * not listed here sort after these, alphabetically by label.
  */
 export const ROLE_HIERARCHY_ORDER: UserRole[] = [
-  'top_management',
+  'superadmin',
+  'admin_system',
+  'management',
   'kepala_rayon',
-  'admin_data',
+  'admin_rayon',
   'korlap',
-  'satgas',
   'linmas',
+  'satgas',
+  'staff_kecamatan',
 ];
-
-/** Role dropdown options sorted by hierarchy first, then alphabetically. */
-export const sortedRoleOptions = (): { value: UserRole; label: string }[] => {
-  const rest = ALL_ROLES.filter((r) => !ROLE_HIERARCHY_ORDER.includes(r)).sort((a, b) =>
-    ROLE_LABELS[a].localeCompare(ROLE_LABELS[b]),
-  );
-  return [...ROLE_HIERARCHY_ORDER, ...rest].map((r) => ({ value: r, label: ROLE_LABELS[r] }));
-};
 
 /** Valid assignment targets per role (who can assign to whom) */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
   korlap: ['satgas', 'linmas'],
   kepala_rayon: ['korlap'],
-  top_management: ['kepala_rayon', 'korlap'],
+  management: ['kepala_rayon', 'korlap'],
   admin_system: ['kepala_rayon', 'korlap'],
   superadmin: ['kepala_rayon', 'korlap'],
 };
@@ -151,32 +158,3 @@ export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
 export const hasRole = (userRole: UserRole, allowedRoles: UserRole[]): boolean =>
   allowedRoles.includes(userRole);
 
-/**
- * Which assignment fields the user form should show for a given role:
- *  - none: superadmin / admin_system / top_management
- *  - rayon only: kepala_rayon / admin_data / staff_kecamatan (kecamatan belongs to a rayon)
- *  - rayon + area: korlap
- *  - rayon + area + shift: satgas / linmas (shift defaults to Shift 1)
- * An unset/unknown role shows nothing (fields appear once a role is picked).
- */
-export interface RoleAssignmentScope {
-  rayon: boolean;
-  area: boolean;
-  shift: boolean;
-}
-export const roleAssignmentScope = (role: UserRole | '' | undefined): RoleAssignmentScope => {
-  switch (role) {
-    case 'satgas':
-    case 'linmas':
-      return { rayon: true, area: true, shift: true };
-    case 'korlap':
-      return { rayon: true, area: true, shift: false };
-    case 'kepala_rayon':
-    case 'admin_data':
-    case 'staff_kecamatan':
-      return { rayon: true, area: false, shift: false };
-    default:
-      // superadmin / admin_system / top_management / unset → no scope fields
-      return { rayon: false, area: false, shift: false };
-  }
-};

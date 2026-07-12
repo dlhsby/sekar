@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
+import { Role } from '../rbac/entities/role.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -16,7 +17,7 @@ import { AuthService } from '../auth/auth.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { UserValidationService } from './services/user-validation.service';
 import { AuditLogService } from '../audit/audit.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { generateTempPassword } from '../../common/utils/password.util';
 
 /** A user plus a one-time plaintext password (only present on create/reset). */
@@ -37,14 +38,32 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    // Roles are data-driven (ADR-044) — validate assigned role codes against the
+    // `roles` table rather than a static enum. Repo is provided globally by the
+    // @Global rbac module.
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
     private readonly authService: AuthService,
     // Phase 4-7 (H2): uniqueness validation extracted from CRUD methods
     private readonly userValidation: UserValidationService,
     // Phase 4-4 (C2): account mutations are audit-logged
     private readonly auditLogService: AuditLogService,
     // Simplified assignment: rayon + permanent areas + one shift set in user mgmt
-    private readonly userAreasService: UserAreasService,
+    private readonly userAreasService: UserLocationsService,
   ) {}
+
+  /**
+   * Validate an assigned role code against the data-driven `roles` table
+   * (ADR-044) — replaces the static enum/CHECK constraint. Undefined is allowed
+   * (create falls back to the column default).
+   */
+  private async assertRoleValid(role?: string): Promise<void> {
+    if (!role) return;
+    const exists = await this.roleRepository.exists({ where: { code: role } });
+    if (!exists) {
+      throw new BadRequestException(`Unknown role: ${role}`);
+    }
+  }
 
   /** Fire-and-forget audit write — account changes must never fail on logging */
   private audit(params: Parameters<AuditLogService['log']>[0]): void {
@@ -60,12 +79,21 @@ export class UsersService {
    * @throws ConflictException if username already exists
    */
   async create(createUserDto: CreateUserDto, actor?: User): Promise<UserWithTempPassword> {
-    const { username, password, full_name, role, phone_number, rayon_id, shift_definition_id } =
-      createUserDto;
-    const areaIds = [...new Set(createUserDto.area_ids ?? [])];
+    const {
+      username,
+      password,
+      full_name,
+      role,
+      phone_number,
+      rayon_id,
+      region_id,
+      shift_definition_id,
+    } = createUserDto;
+    const locationIds = [...new Set(createUserDto.area_ids ?? [])];
 
     this.logger.log(`Creating new user: ${username}`);
 
+    await this.assertRoleValid(role);
     await this.userValidation.assertUsernameAvailable(username);
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number);
@@ -85,23 +113,24 @@ export class UsersService {
       username,
       password_hash,
       full_name,
-      role,
+      role: role as UserRole,
       phone_number: phone_number || null,
       password_must_change: true,
       rayon_id: rayon_id ?? undefined,
+      region_id: region_id ?? undefined,
       shift_definition_id: shift_definition_id ?? undefined,
-      // Primary area = first assigned area (legacy `users.area_id` fallback).
-      area_id: areaIds[0] ?? undefined,
+      // Primary area = first assigned area (legacy `users.location_id` fallback).
+      location_id: locationIds[0] ?? undefined,
     });
 
     const savedUser = await this.userRepository.save(user);
     this.logger.log(`User created successfully: ${username} (ID: ${savedUser.id})`);
 
     // Permanent area membership (multi) drives monitoring scope + geofence.
-    if (areaIds.length) {
-      await this.userAreasService.reconcilePermanentAreas(
+    if (locationIds.length) {
+      await this.userAreasService.reconcilePermanentLocations(
         savedUser.id,
-        areaIds,
+        locationIds,
         actor?.id ?? savedUser.id,
       );
     }
@@ -111,7 +140,15 @@ export class UsersService {
       entity_id: savedUser.id,
       action: 'create',
       actor_id: actor?.id ?? savedUser.id, // self-attributed for internal callers (e.g. CSV import w/o actor)
-      new_value: { username, full_name, role, rayon_id, shift_definition_id, area_ids: areaIds },
+      new_value: {
+        username,
+        full_name,
+        role,
+        rayon_id,
+        region_id,
+        shift_definition_id,
+        area_ids: locationIds,
+      },
     });
 
     return tempPassword ? Object.assign(savedUser, { temp_password: tempPassword }) : savedUser;
@@ -163,8 +200,9 @@ export class UsersService {
         'full_name',
         'role',
         'is_active',
-        'area_id',
+        'location_id',
         'rayon_id',
+        'region_id',
         'created_at',
         'updated_at',
         'created_by',
@@ -203,16 +241,16 @@ export class UsersService {
 
     // Rayon-scoped roles see only users in their rayon.
     // May 11, 2026 — switched from `area.rayon_id` (which required users to
-    // have an `area_id` set) to `user.rayon_id` directly. The old form
-    // excluded rayon-scoped roles (`admin_data`, `kepala_rayon`) and any
+    // have an `location_id` set) to `user.rayon_id` directly. The old form
+    // excluded rayon-scoped roles (`admin_rayon`, `kepala_rayon`) and any
     // satgas/korlap not yet placed in an area, so the Tugaskan ke Petugas
     // assignee dropdown rendered "Tidak ada Admin Data di rayon ini" even
     // when those users existed in the rayon. We OR the area-derived
-    // rayon too so satgas with only an `area_id` (no direct `rayon_id`)
+    // rayon too so satgas with only an `location_id` (no direct `rayon_id`)
     // still appear — defensive for legacy rows.
     if (
       requestingUser &&
-      (requestingUser.role === UserRole.ADMIN_DATA ||
+      (requestingUser.role === UserRole.ADMIN_RAYON ||
         requestingUser.role === UserRole.KEPALA_RAYON) &&
       requestingUser.rayon_id
     ) {
@@ -225,8 +263,9 @@ export class UsersService {
           'user.full_name',
           'user.role',
           'user.is_active',
-          'user.area_id',
+          'user.location_id',
           'user.rayon_id',
+          'user.region_id',
           'user.phone_number',
           'user.shift_definition_id',
           'user.profile_picture_url',
@@ -254,8 +293,9 @@ export class UsersService {
         'full_name',
         'role',
         'is_active',
-        'area_id',
+        'location_id',
         'rayon_id',
+        'region_id',
         'phone_number',
         'shift_definition_id',
         'profile_picture_url',
@@ -274,19 +314,21 @@ export class UsersService {
   }
 
   /**
-   * Attach `assigned_area_count` + `assigned_area_ids` (permanent area
-   * assignments) to each user for the management grid's Area column — one
+   * Attach `assigned_location_count` + `assigned_location_ids` (permanent area
+   * assignments) to each user for the management grid's Location column — one
    * batched query per page, no N+1. Full area detail (name, boundary, etc.)
    * is still loaded lazily via GET /users/:id/areas; this is IDs only, so the
    * grid can filter by area.
    */
   private async withAreaCounts(users: User[]): Promise<User[]> {
     if (!users.length) return users;
-    const byUser = await this.userAreasService.getPermanentAreaIdsForUsers(users.map((u) => u.id));
+    const byUser = await this.userAreasService.getPermanentLocationIdsForUsers(
+      users.map((u) => u.id),
+    );
     for (const user of users) {
-      const areaIds = byUser.get(user.id) ?? [];
-      user.assigned_area_count = areaIds.length;
-      user.assigned_area_ids = areaIds;
+      const locationIds = byUser.get(user.id) ?? [];
+      user.assigned_location_count = locationIds.length;
+      user.assigned_location_ids = locationIds;
     }
     return users;
   }
@@ -306,8 +348,9 @@ export class UsersService {
         'full_name',
         'role',
         'is_active',
-        'area_id',
+        'location_id',
         'rayon_id',
+        'region_id',
         'phone_number',
         'shift_definition_id',
         'profile_picture_url',
@@ -357,6 +400,13 @@ export class UsersService {
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number, id);
     }
+    // Username is editable on update; only re-check availability when it changes.
+    if (updateData.username && updateData.username !== user.username) {
+      await this.userValidation.assertUsernameAvailable(updateData.username);
+    }
+    if (updateData.role && updateData.role !== user.role) {
+      await this.assertRoleValid(updateData.role);
+    }
 
     // Reassignment = editing the user's permanent areas. Past shifts/tracking
     // history are immutable; today/future use the new set.
@@ -364,8 +414,8 @@ export class UsersService {
     let primaryAreaId: string | undefined;
     if (area_ids) {
       const desired = [...new Set(area_ids)];
-      const before = await this.userAreasService.getPermanentAreaIds(id);
-      areaChange = await this.userAreasService.reconcilePermanentAreas(
+      const before = await this.userAreasService.getPermanentLocationIds(id);
+      areaChange = await this.userAreasService.reconcilePermanentLocations(
         id,
         desired,
         actor?.id ?? id,
@@ -383,12 +433,12 @@ export class UsersService {
       }
     }
 
-    // area_id may be cleared to null when all areas are removed → loose payload.
+    // location_id may be cleared to null when all areas are removed → loose payload.
     const savePayload: Record<string, unknown> = {
       ...user,
       ...updateData,
       ...(phone_number !== undefined ? { phone_number } : {}),
-      ...(area_ids ? { area_id: primaryAreaId ?? null } : {}),
+      ...(area_ids ? { location_id: primaryAreaId ?? null } : {}),
     };
     const savedUser = await this.userRepository.save(savePayload as unknown as User);
     this.logger.log(`User updated successfully: ID ${id}`);
@@ -527,10 +577,17 @@ export class UsersService {
     if (updateMyProfileDto.phone_number && updateMyProfileDto.phone_number !== user.phone_number) {
       await this.userValidation.assertPhoneAvailable(updateMyProfileDto.phone_number, userId);
     }
+    // Validate username uniqueness if it actually changes.
+    if (updateMyProfileDto.username && updateMyProfileDto.username !== user.username) {
+      await this.userValidation.assertUsernameAvailable(updateMyProfileDto.username);
+    }
 
     // Update only allowed fields
     if (updateMyProfileDto.full_name !== undefined) {
       user.full_name = updateMyProfileDto.full_name.trim();
+    }
+    if (updateMyProfileDto.username !== undefined) {
+      user.username = updateMyProfileDto.username;
     }
     if (updateMyProfileDto.phone_number !== undefined) {
       user.phone_number = updateMyProfileDto.phone_number;

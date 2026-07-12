@@ -10,9 +10,9 @@ export type UserRole =
   | 'satgas'
   | 'linmas'
   | 'korlap'
-  | 'admin_data'
+  | 'admin_rayon'
   | 'kepala_rayon'
-  | 'top_management'
+  | 'management'
   | 'admin_system'
   | 'superadmin'
   | 'staff_kecamatan';
