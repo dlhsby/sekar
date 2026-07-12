@@ -377,9 +377,9 @@ export const userColumns: ColumnDef<User>[] = [
     filterFn: (row, id, value) => value.includes(row.getValue(id)),
   },
   {
-    accessorKey: 'assignedArea.name',
-    header: 'Area',
-    cell: ({ row }) => row.original.assignedArea?.name || '-',
+    accessorKey: 'location.name',
+    header: 'Lokasi',
+    cell: ({ row }) => row.original.location?.name || '-',
   },
   {
     accessorKey: 'isActive',
@@ -414,8 +414,8 @@ export const reportColumns: ColumnDef<Report>[] = [
     header: 'Petugas',
   },
   {
-    accessorKey: 'area.name',
-    header: 'Area',
+    accessorKey: 'location.name',
+    header: 'Lokasi',
   },
   {
     accessorKey: 'condition',

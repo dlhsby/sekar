@@ -272,12 +272,12 @@ const SURABAYA = { lat: -7.2756, lng: 112.7138 };
 const toPath = (poly: GeoJSON.Polygon) =>
   poly.coordinates[0].map(([lng, lat]) => ({ lat, lng }));
 
-export function MonitoringMap({ areas }: { areas: Area[] }) {
+export function MonitoringMap({ locations }: { locations: Location[] }) {
   const [workers, setWorkers] = useState<Map<string, WorkerMarker>>(new Map());
 
-  // Subscribe to all areas & handle location updates
-  areas.forEach((area) => {
-    useSocketRoom(`area:${area.id}`);
+  // Subscribe to all locations & handle location updates
+  locations.forEach((location) => {
+    useSocketRoom(`area:${location.id}`);
   });
 
   const handleLocationUpdate = useCallback((data: LocationUpdate) => {
@@ -303,11 +303,11 @@ export function MonitoringMap({ areas }: { areas: Area[] }) {
       center={SURABAYA}
       zoom={13}
     >
-      {/* Area boundaries */}
-      {areas.map((area) => (
+      {/* Location boundaries */}
+      {locations.map((location) => (
         <Polygon
-          key={area.id}
-          paths={toPath(area.boundary)}
+          key={location.id}
+          paths={toPath(location.boundary)}
           options={{ fillColor: '#7FBC8C', fillOpacity: 0.1, strokeColor: '#1C1917', strokeWeight: 2 }}
         />
       ))}

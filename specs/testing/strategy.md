@@ -667,14 +667,14 @@ it('should reject worker accessing supervisor endpoints', async () => {
 
 > **Full specification:** See [build history](../history/CHANGELOG.md)
 
-### New Test Areas
+### New Test Coverage Areas
 
 | Area | Tests | Priority |
 |------|-------|----------|
 | Phone number login (dual-identifier) | 8 unit + 3 E2E | CRITICAL |
 | Profile picture upload (S3 integration) | 5 unit | HIGH |
-| Multi-area assignment (user_areas CRUD) | 10 unit + 2 integration | CRITICAL |
-| Multi-area boundary checking | 6 unit | CRITICAL |
+| Multi-location assignment (user_locations CRUD) | 10 unit + 2 integration | CRITICAL |
+| Multi-location boundary checking | 6 unit | CRITICAL |
 | Admin_data/kepala_rayon clock-in (rayon boundary) | 4 unit | HIGH |
 | Overtime clock-in/out flow | 10 unit + 1 integration | CRITICAL |
 | Optional selfie (shift + overtime) | 3 unit | MEDIUM |

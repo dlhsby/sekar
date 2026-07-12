@@ -1265,8 +1265,8 @@ MonitoringMap (MapDashboardScreen)
 
 | Role | Default Map View | Filter Constraints |
 |------|-----------------|-------------------|
-| korlap | Own area, zoom 15 | Area fixed to own, no rayon filter |
-| kepala_rayon | Own rayon areas, zoom 13 | Rayon fixed to own, area selectable within rayon |
+| korlap | Own location, zoom 15 | Location fixed to own, no rayon filter |
+| kepala_rayon | Own rayon locations, zoom 13 | Rayon fixed to own, location selectable within rayon |
 | management | All 7 rayons, zoom 12 | No constraints |
 | admin_system | All 7 rayons, zoom 12 | No constraints |
 | superadmin | All 7 rayons, zoom 12 | No constraints |

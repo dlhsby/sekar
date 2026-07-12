@@ -51,7 +51,7 @@ const STORAGE_KEYS = {
 ```typescript
 interface PendingClockIn {
   local_id: string; // UUID v4
-  area_id: string;
+  location_id: string;
   user_id: string;
   gps_lat: number;
   gps_lng: number;
@@ -150,7 +150,7 @@ import uuid from 'react-native-uuid';
 export class OfflineQueue {
   // Add clock-in to queue
   async addPendingClockIn(data: {
-    area_id: string;
+    location_id: string;
     gps_lat: number;
     gps_lng: number;
     selfie_path: string;

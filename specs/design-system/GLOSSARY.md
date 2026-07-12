@@ -17,7 +17,7 @@ Default UI language is **Indonesian (`id`)**; English (`en`) is the alternate.
 | Code term (English) | Key | Indonesian (id) | English (en) | Notes |
 |---|---|---|---|---|
 | User | `common:entities.user` | Pengguna | User | |
-| Area | `common:entities.area` | Area | Area | Geofenced work location |
+| Location | `common:entities.location` | Lokasi | Location | Geofenced work location (formerly Area); 4-level hierarchy: City → Rayon → Kawasan → Location |
 | Rayon | `common:entities.rayon` | Rayon | Rayon | 7-rayon admin structure; kept untranslated |
 | Task | `common:entities.task` | Tugas | Task | |
 | Activity | `common:entities.activity` | Aktivitas | Activity | Renamed from `Report`/`work_reports` (ADR-010) |

@@ -467,13 +467,13 @@ export type CreateUserFormValues = z.infer<typeof createUserSchema>;
 export type UpdateUserFormValues = z.infer<typeof updateUserSchema>;
 ```
 
-### Area Form Schema
+### Location Form Schema
 
 ```typescript
-// lib/validations/area.ts
-export const createAreaSchema = z.object({
-  name: z.string().min(3, 'Nama area minimal 3 karakter'),
-  areaTypeId: z.number({ required_error: 'Pilih jenis area' }),
+// lib/validations/location.ts
+export const createLocationSchema = z.object({
+  name: z.string().min(3, 'Nama lokasi minimal 3 karakter'),
+  locationTypeId: z.number({ required_error: 'Pilih jenis lokasi' }),
   description: z.string().optional(),
   centerLat: z.number().min(-90).max(90),
   centerLng: z.number().min(-180).max(180),
@@ -490,7 +490,7 @@ export const reportFilterSchema = z.object({
     from: z.date(),
     to: z.date(),
   }),
-  areaId: z.string().uuid().optional(),
+  locationId: z.string().uuid().optional(),
   workerId: z.string().uuid().optional(),
   condition: z.enum(['Baik', 'Cukup', 'Buruk']).optional(),
 });
@@ -510,7 +510,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createUserSchema, CreateUserFormValues } from '@/lib/validations/user';
 import { useCreateUser } from '@/lib/hooks/useUsers';
-import { useAreas } from '@/lib/hooks/useAreas';
+import { useLocations } from '@/lib/api/locations';
 
 interface CreateUserFormProps {
   onSuccess: () => void;
@@ -519,7 +519,7 @@ interface CreateUserFormProps {
 
 export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
   const createUser = useCreateUser();
-  const { data: areas } = useAreas();
+  const { data: locations } = useLocations();
 
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
@@ -528,7 +528,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
       fullName: '',
       phone: '',
       role: undefined,
-      areaId: undefined,
+      locationId: undefined,
       password: '',
     },
   });
@@ -584,10 +584,10 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
         {watchRole === 'Worker' && (
           <SelectField
             control={form.control}
-            name="areaId"
-            label="Area Tugas"
-            placeholder="Pilih area"
-            options={areas?.map((a) => ({ value: a.id, label: a.name })) || []}
+            name="locationId"
+            label="Lokasi Tugas"
+            placeholder="Pilih lokasi"
+            options={locations?.map((a) => ({ value: a.id, label: a.name })) || []}
           />
         )}
 
@@ -618,7 +618,7 @@ export function CreateUserForm({ onSuccess, onCancel }: CreateUserFormProps) {
 ```typescript
 // components/reports/ReportFilterForm.tsx
 export function ReportFilterForm({ onFilter }: ReportFilterFormProps) {
-  const { data: areas } = useAreas();
+  const { data: locations } = useLocations();
   const { data: workers } = useWorkers();
 
   const form = useForm<ReportFilterFormValues>({
@@ -646,12 +646,12 @@ export function ReportFilterForm({ onFilter }: ReportFilterFormProps) {
 
         <SelectField
           control={form.control}
-          name="areaId"
-          label="Area"
-          placeholder="Semua area"
+          name="locationId"
+          label="Lokasi"
+          placeholder="Semua lokasi"
           options={[
-            { value: '', label: 'Semua area' },
-            ...(areas?.map((a) => ({ value: a.id, label: a.name })) || []),
+            { value: '', label: 'Semua lokasi' },
+            ...(locations?.map((a) => ({ value: a.id, label: a.name })) || []),
           ]}
         />
 
