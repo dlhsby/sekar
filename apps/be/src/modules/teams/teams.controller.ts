@@ -5,13 +5,14 @@ import {
   Patch,
   Delete,
   Param,
+  Query,
   Body,
   UseGuards,
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
 import { Team } from './entities/team.entity';
 import { TeamType } from './entities/team-type.entity';
@@ -33,10 +34,11 @@ export class TeamsController {
   // ── Team types (catalog) ──────────────────────────────────────────────────
   @Get('team-types')
   @RequirePermissions('team:read')
-  @ApiOperation({ summary: 'List team types (crew-type catalog)' })
+  @ApiOperation({ summary: 'List team types (crew-type catalog; active only by default)' })
+  @ApiQuery({ name: 'include_inactive', required: false, type: Boolean })
   @ApiResponse({ status: 200, type: [TeamType] })
-  listTypes(): Promise<TeamType[]> {
-    return this.teamsService.listTypes();
+  listTypes(@Query('include_inactive') includeInactive?: string): Promise<TeamType[]> {
+    return this.teamsService.listTypes(includeInactive === 'true');
   }
 
   @Post('team-types')

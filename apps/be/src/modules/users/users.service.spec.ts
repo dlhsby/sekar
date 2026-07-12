@@ -54,6 +54,7 @@ describe('UsersService', () => {
     softRemove: jest.Mock;
     createQueryBuilder: jest.Mock;
     update: jest.Mock;
+    manager: { query: jest.Mock };
   } = {
     findOne: jest.fn(),
     find: jest.fn(),
@@ -64,6 +65,17 @@ describe('UsersService', () => {
     softRemove: jest.fn(),
     createQueryBuilder: jest.fn(),
     update: jest.fn(),
+    // Region-belongs-to-rayon cross-check (scope validation) issues a raw query.
+    manager: { query: jest.fn().mockResolvedValue([]) },
+  };
+
+  // Data-driven roles: scope 'none' by default so scope rules don't interfere
+  // with unrelated tests; scope-validation tests override per-call.
+  const mockRoleRepository = {
+    exists: jest.fn().mockResolvedValue(true),
+    findOne: jest.fn(({ where }: { where: { code: string } }) =>
+      Promise.resolve({ code: where.code, monitoring_scope: 'none' }),
+    ),
   };
 
   const mockAuthService = {
@@ -92,9 +104,8 @@ describe('UsersService', () => {
           useValue: mockUserRepository,
         },
         {
-          // Data-driven role validation (ADR-044): default to "role exists".
           provide: getRepositoryToken(Role),
-          useValue: { exists: jest.fn().mockResolvedValue(true) },
+          useValue: mockRoleRepository,
         },
         {
           provide: AuthService,
@@ -614,6 +625,70 @@ describe('UsersService', () => {
       );
       expect(result.data).toHaveLength(2);
       expect(result.meta.total).toBe(2);
+    });
+  });
+
+  describe('role/scope consistency (ADR-044/045)', () => {
+    it('rejects creating a region-scope role without a rayon', async () => {
+      mockRoleRepository.findOne.mockResolvedValueOnce({
+        code: 'korlap',
+        monitoring_scope: 'region',
+      });
+      await expect(
+        service.create({ username: 'k1', full_name: 'K', role: 'korlap' } as never),
+      ).rejects.toThrow('requires a rayon assignment');
+    });
+
+    it('rejects a region assignment on a role without region scope', async () => {
+      mockRoleRepository.findOne.mockResolvedValueOnce({
+        code: 'kepala_rayon',
+        monitoring_scope: 'district',
+      });
+      await expect(
+        service.create({
+          username: 'k1',
+          full_name: 'K',
+          role: 'kepala_rayon',
+          rayon_id: 'rayon-1',
+          region_id: 'region-1',
+        } as never),
+      ).rejects.toThrow('does not take a region');
+    });
+
+    it('rejects a region that belongs to a different rayon', async () => {
+      mockRoleRepository.findOne.mockResolvedValueOnce({
+        code: 'korlap',
+        monitoring_scope: 'region',
+      });
+      mockUserRepository.manager.query.mockResolvedValueOnce([{ rayon_id: 'rayon-other' }]);
+      await expect(
+        service.create({
+          username: 'k1',
+          full_name: 'K',
+          role: 'korlap',
+          rayon_id: 'rayon-1',
+          region_id: 'region-1',
+        } as never),
+      ).rejects.toThrow("Region must belong to the user's rayon");
+    });
+
+    it('clears a stale region when the role changes away from region scope', async () => {
+      const korlap = {
+        ...mockUser,
+        role: 'korlap',
+        rayon_id: 'rayon-1',
+        region_id: 'region-1',
+      };
+      mockUserRepository.findOne.mockResolvedValue(korlap);
+      mockUserRepository.save.mockImplementation((u) => Promise.resolve(u));
+      // Role lookups during the update resolve satgas → scope none.
+      mockRoleRepository.findOne.mockResolvedValue({ code: 'satgas', monitoring_scope: 'none' });
+
+      await service.update(korlap.id, { role: 'satgas' } as never);
+
+      expect(mockUserRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ region_id: null }),
+      );
     });
   });
 

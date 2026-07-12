@@ -39,6 +39,7 @@ const RAYON_ADMIN_PERMISSIONS: string[] = [
   'team:read',
   'team:create',
   'team:update',
+  'team:delete',
   'task:read',
   'task:verify',
   'task:assign',
