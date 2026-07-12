@@ -73,6 +73,13 @@ detect_lan_ip() {
 
 echo -e "${GREEN}══ SEKAR dev stack ══${NC}"
 load_ports
+# Clean any prior instance FIRST (stale PID files + orphaned `--watch` parents),
+# then free the ports. Otherwise `free_port` kills the port listener but the PID
+# file still points at a live orphaned watcher, so start_bg wrongly skips
+# ("already running") and the health check hangs for 120s. A re-run must always
+# start fresh.
+stop_pid backend "nest start --watch|apps/be/dist/src/main" >/dev/null 2>&1 || true
+stop_pid web "next dev|next-server" >/dev/null 2>&1 || true
 free_port "$BE_PORT" "backend"
 free_port "$WEB_PORT" "web"
 ensure_infra
