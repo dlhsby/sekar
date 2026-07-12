@@ -47,7 +47,7 @@
 | `lib/auth` | 100% | 2 test files | ✅ Perfect |
 | `lib/api` | 92.42% | 10 test files | ✅ Excellent |
 | `lib/utils` | 95.1% | 3 test files | ✅ Excellent |
-| `components/areas` | 100% | 2 test files | ✅ Perfect |
+| `components/locations` | 100% | 2 test files | ✅ Perfect |
 | `components/users` | 99.34% | 2 test files | ✅ Excellent |
 | `components/rayons` | 100% | 2 test files | ✅ Perfect |
 | `components/layout` | 94.11% | 2 test files | ✅ Excellent |
@@ -114,7 +114,7 @@ apps/web/
 │   │   └── __tests__/              # 1 navigation test (29 tests)
 │   ├── components/
 │   │   ├── ui/__tests__/           # 15 UI component tests (505 tests)
-│   │   ├── areas/__tests__/        # 2 area component tests (25 tests)
+│   │   ├── locations/__tests__/    # 2 location component tests (25 tests)
 │   │   ├── users/__tests__/        # 2 user component tests (10 tests)
 │   │   ├── layout/__tests__/       # 2 layout tests (22 tests)
 │   │   └── rayons/__tests__/       # 2 rayon tests (19 tests)
@@ -129,7 +129,7 @@ apps/web/
 │   ├── 03-task-management.spec.ts  # 18 tests
 │   ├── 04-reports-review.spec.ts   # 16 tests
 │   ├── 05-navigation-dashboard.spec.ts # 14 tests
-│   ├── 06-areas-management.spec.ts # 20 tests
+│   ├── 06-locations-management.spec.ts # 20 tests
 │   ├── 07-schedules.spec.ts        # 27 tests
 │   └── 08-monitoring.spec.ts       # 41 tests
 ├── jest.config.ts                  # Jest configuration
@@ -322,7 +322,7 @@ Configured in `playwright.config.ts`:
 #### 4. Reports Review (04-reports-review.spec.ts)
 - ✅ Display reports list
 - ✅ Filter by type/date
-- ✅ Search by worker/area
+- ✅ Search by worker/location
 - ✅ View report detail
 - ✅ Access control
 
@@ -335,8 +335,8 @@ Configured in `playwright.config.ts`:
 - ✅ Responsive design
 - ✅ Accessibility (ARIA, keyboard)
 
-#### 6. Areas Management (06-areas-management.spec.ts)
-- ✅ Display areas list
+#### 6. Locations Management (06-locations-management.spec.ts)
+- ✅ Display locations list
 - ✅ CRUD operations
 - ✅ Field validation
 - ✅ Filter by rayon
@@ -354,7 +354,7 @@ Configured in `playwright.config.ts`:
 - ✅ Real-time worker status
 - ✅ Live location tracking
 - ✅ Dashboard statistics
-- ✅ Filter by rayon/area
+- ✅ Filter by rayon/location
 - ✅ Performance metrics
 
 ### Phase 2D Monitoring Component Tests
@@ -434,10 +434,10 @@ describe('Users API', () => {
 ```typescript
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { AreaCard } from '@/components/areas/AreaCard';
+import { LocationCard } from '@/components/locations/LocationCard';
 
-describe('AreaCard', () => {
-  const mockArea = {
+describe('LocationCard', () => {
+  const mockLocation = {
     id: '1',
     name: 'Taman Bungkul',
     area_type: { name: 'Taman' },
@@ -445,8 +445,8 @@ describe('AreaCard', () => {
     area_m2: 15000,
   };
 
-  it('should display area information', () => {
-    render(<AreaCard area={mockArea} />);
+  it('should display location information', () => {
+    render(<LocationCard location={mockLocation} />);
 
     expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
     expect(screen.getByText('Taman')).toBeInTheDocument();
@@ -457,7 +457,7 @@ describe('AreaCard', () => {
     const onEdit = jest.fn();
     const user = userEvent.setup();
 
-    render(<AreaCard area={mockArea} onEdit={onEdit} />);
+    render(<LocationCard location={mockLocation} onEdit={onEdit} />);
     await user.click(screen.getByRole('button', { name: /edit/i }));
 
     expect(onEdit).toHaveBeenCalledWith('1');

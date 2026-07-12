@@ -17,7 +17,7 @@ Default UI language is **Indonesian (`id`)**; English (`en`) is the alternate.
 | Code term (English) | Key | Indonesian (id) | English (en) | Notes |
 |---|---|---|---|---|
 | User | `common:entities.user` | Pengguna | User | |
-| Area | `common:entities.area` | Area | Area | Geofenced work location |
+| Location | `common:entities.location` | Lokasi | Location | Leaf geography entity (geofenced work area). Formerly "Area"; hierarchy: City → District (Rayon) → Region (Kawasan) → Location |
 | Rayon | `common:entities.rayon` | Rayon | Rayon | 7-rayon admin structure; kept untranslated |
 | Task | `common:entities.task` | Tugas | Task | |
 | Activity | `common:entities.activity` | Aktivitas | Activity | Renamed from `Report`/`work_reports` (ADR-010) |
@@ -25,7 +25,7 @@ Default UI language is **Indonesian (`id`)**; English (`en`) is the alternate.
 | Shift | `common:entities.shift` | Shift | Shift | Not renamed |
 | Overtime | `common:entities.overtime` | Lembur | Overtime | Flattened: 1 overtime = 1 activity (ADR-010) |
 | Attendance | `common:entities.attendance` | Kehadiran | Attendance | Clock-in/out |
-| Monitoring | `common:entities.monitoring` | Pemantauan | Monitoring | |
+| Monitoring | `common:entities.monitoring` | Pemantauan | Monitoring | Umbrella term for supervision across all geography levels (monitoring areas) |
 | Pruning Request | `common:entities.pruningRequest` | Permohonan Pangkas | Pruning Request | Phase 3 public intake |
 | Plant | `common:entities.plant` | Tanaman | Plant | |
 | Seed | `common:entities.seed` | Bibit | Seed | Plant-seed ledger |

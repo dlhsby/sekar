@@ -305,10 +305,10 @@ jest.mock('@react-navigation/native');
 
 it('should display data from route params', () => {
   (useRoute as jest.Mock).mockReturnValue({
-    params: { areaName: 'Taman Bungkul' },
+    params: { locationName: 'Taman Bungkul' },
   });
 
-  const { getByText } = render(<AreaDetailScreen />);
+  const { getByText } = render(<LocationDetailScreen />);
 
   expect(getByText('Taman Bungkul')).toBeTruthy();
 });
@@ -555,7 +555,7 @@ describe('OfflineQueue', () => {
 
   it('should add item to queue', async () => {
     const queue = new OfflineQueue();
-    const item = { type: 'CLOCK_IN', data: { area_id: '123' } };
+    const item = { type: 'CLOCK_IN', data: { location_id: '123' } };
 
     await queue.add(item);
 
@@ -566,7 +566,7 @@ describe('OfflineQueue', () => {
 
   it('should remove item from queue', async () => {
     const queue = new OfflineQueue();
-    const item = { type: 'CLOCK_IN', data: { area_id: '123' } };
+    const item = { type: 'CLOCK_IN', data: { location_id: '123' } };
 
     const id = await queue.add(item);
     await queue.remove(id);
@@ -601,7 +601,7 @@ describe('Sync Service', () => {
   it('should sync queued shifts', async () => {
     const queuedShift = {
       type: 'CLOCK_IN',
-      data: { area_id: '123', gps_lat: -7.2905, gps_lng: 112.7398 },
+      data: { location_id: '123', gps_lat: -7.2905, gps_lng: 112.7398 },
     };
 
     (apiClient.post as jest.Mock).mockResolvedValue({ shift_id: '456' });
@@ -792,7 +792,7 @@ describe('Clock In Flow', () => {
 
     // 4. Send to API
     const result = await clockIn({
-      area_id: '123',
+      location_id: '123',
       gps_lat: location.latitude,
       gps_lng: location.longitude,
       selfie_photo: photo.uri,
@@ -812,7 +812,7 @@ describe('Clock In Flow', () => {
 | MapDashboardScreen | Unit + Integration | Map render, marker colors by status, summary bar counts, filter selection, user tap → detail sheet |
 | UserDetailSheet | Unit | User info display, status badge color, shift time, action buttons (call/WhatsApp), close gesture |
 | LocationTrail | Unit | Trail point rendering, date navigation, distance summary, map sync |
-| LocationStatusCard | Unit | GPS coords display, accuracy badge, area status banner (green/orange), refresh button, visibility gate (shift active) |
+| LocationStatusCard | Unit | GPS coords display, accuracy badge, location status banner (green/orange), refresh button, visibility gate (shift active) |
 | useHomeLocation | Hook test | getCurrentLocation call, boundary check, refresh triggers captureNow+forceUpload, error handling |
 | MonitoringSummaryBar | Unit | 5 status counts, color coding, tap filter interaction |
 
@@ -868,7 +868,7 @@ describe('Login Flow', () => {
     await expect(element(by.text('Welcome, Pekerja Satu'))).toBeVisible();
   });
 
-  it('should clock in at area', async () => {
+  it('should clock in at location', async () => {
     await element(by.id('clock-in-button')).tap();
     await element(by.id('camera-capture')).tap();
     await element(by.id('confirm-clock-in')).tap();

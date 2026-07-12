@@ -41,7 +41,7 @@ the client keeps filling their input sheet — without code edits:
 **IDs are deterministic UUID v5** (namespace + natural key), so reloads are idempotent and a
 future Apps Script two-way sync can key on a stable id. `npm run seed:export-ids` writes
 `data/*-with-ids.csv` (name → id) for pasting back into the sheet's `id` column. Recommended
-sheet columns to add for sync: `id`, `rayon_id`/`area_id`, and `gps_lat`/`gps_lng` (the Taman
+sheet columns to add for sync: `id`, `rayon_id`/`location_id`, and `gps_lat`/`gps_lng` (the Taman
 Aktif parks have no coordinates yet — seeded with a placeholder pin + no geofence until filled).
 
 **Login & passwords:** every seeded account uses **`Password123!`** with
@@ -84,7 +84,7 @@ always win over geocoding and are never cleared by `seed:geocode`/`sheet:pull`.
 ### Data Categories
 
 1. **Master Data** (Reference Tables)
-   - Area Types (4–6 types: park, pedestrian, mini_garden, street, +green_corridor, +median)
+   - Location Types (4–6 types: park, pedestrian, mini_garden, street, +green_corridor, +median)
    - Rayons (7 rayons per DLH Surabaya structure)
 
 2. **User Data** (Authentication & Authorization)
@@ -93,8 +93,8 @@ always win over geocoding and are never cleared by `seed:geocode`/`sheet:pull`.
    - Staging seed: 85 users (see `specs/COMPLETION_STATUS.md`)
 
 3. **Work Location Data**
-   - Areas (multiple, scoped by rayon)
-   - User area assignments (user_areas table)
+   - Locations (multiple, scoped by rayon)
+   - User location assignments (user_locations table)
 
 4. **Activity Data** (Phase 1–2)
    - Shifts, Activities (renamed from work_reports), Location Logs
@@ -102,17 +102,17 @@ always win over geocoding and are never cleared by `seed:geocode`/`sheet:pull`.
 
 ---
 
-## 1. Area Types (Master Data)
+## 1. Location Types (Master Data)
 
-Reference table with predefined area type categories.
+Reference table with predefined location type categories.
 
 ### SQL Insert
 
 ```sql
--- Phase 1: Basic area types
+-- Phase 1: Basic location types
 -- Phase 2: Added 'category' column (ACTIVE/PASSIVE)
 
-INSERT INTO area_types (id, code, name, description, category, created_at) VALUES
+INSERT INTO location_types (id, code, name, description, category, created_at) VALUES
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'park', 'Taman', 'Taman kota dan ruang terbuka hijau publik', 'ACTIVE', NOW()),
   ('b2c3d4e5-f6a7-8901-bcde-f12345678901', 'pedestrian', 'Trotoar', 'Jalur pejalan kaki di sepanjang jalan raya', 'PASSIVE', NOW()),
   ('c3d4e5f6-a7b8-9012-cdef-123456789012', 'mini_garden', 'Taman Mini', 'Taman kecil di area pemukiman atau perumahan', 'ACTIVE', NOW()),
@@ -250,11 +250,11 @@ Three real locations in Surabaya representing different area types.
 ### SQL Insert
 
 ```sql
-INSERT INTO areas (id, name, area_type_id, gps_lat, gps_lng, radius_meters, address, is_active, created_at, updated_at) VALUES
+INSERT INTO locations (id, name, location_type_id, gps_lat, gps_lng, radius_meters, address, is_active, created_at, updated_at) VALUES
   (
     'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     'Taman Bungkul',
-    (SELECT id FROM area_types WHERE code = 'park'),
+    (SELECT id FROM location_types WHERE code = 'park'),
     -7.29050000,
     112.73980000,
     150,
@@ -266,7 +266,7 @@ INSERT INTO areas (id, name, area_type_id, gps_lat, gps_lng, radius_meters, addr
   (
     'c3d4e5f6-a7b8-9012-cdef-123456789012',
     'Jalan Raya Darmo',
-    (SELECT id FROM area_types WHERE code = 'pedestrian'),
+    (SELECT id FROM location_types WHERE code = 'pedestrian'),
     -7.28440000,
     112.79150000,
     200,
@@ -278,7 +278,7 @@ INSERT INTO areas (id, name, area_type_id, gps_lat, gps_lng, radius_meters, addr
   (
     'd4e5f6a7-b8c9-0123-def0-123456789012',
     'Taman Harmoni',
-    (SELECT id FROM area_types WHERE code = 'park'),
+    (SELECT id FROM location_types WHERE code = 'park'),
     -7.30370000,
     112.73750000,
     100,
@@ -346,7 +346,7 @@ Three workers assigned to three different areas (1:1 relationship).
 ### SQL Insert
 
 ```sql
-INSERT INTO worker_assignments (id, worker_id, area_id, assigned_at) VALUES
+INSERT INTO worker_assignments (id, worker_id, location_id, assigned_at) VALUES
   (
     'e5f6a7b8-c9d0-1234-ef01-23456789abcd',
     (SELECT id FROM users WHERE username = 'worker1'),
@@ -391,7 +391,7 @@ Four shift records demonstrating different scenarios.
 
 ```sql
 INSERT INTO shifts (
-  id, worker_id, area_id,
+  id, worker_id, location_id,
   clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url,
   clock_out_time, clock_out_gps_lat, clock_out_gps_lng,
   created_at, updated_at
@@ -1130,14 +1130,14 @@ Update existing area types to include category classification.
 
 ```sql
 -- Add category column if not exists
-ALTER TABLE area_types ADD COLUMN IF NOT EXISTS category VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE location_types ADD COLUMN IF NOT EXISTS category VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
 
 -- Update existing area types with categories
-UPDATE area_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
-UPDATE area_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
+UPDATE location_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
+UPDATE location_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
 
 -- Add new area types for Phase 2
-INSERT INTO area_types (id, code, name, description, category, created_at) VALUES
+INSERT INTO location_types (id, code, name, description, category, created_at) VALUES
   ('d4e5f6a7-b8c9-0123-def0-123456789013', 'green_corridor', 'Koridor Hijau', 'Jalur hijau penghubung antar area', 'ACTIVE', NOW()),
   ('d4e5f6a7-b8c9-0123-def0-123456789014', 'median', 'Median Jalan', 'Median jalan dengan tanaman hias', 'PASSIVE', NOW())
 ON CONFLICT (code) DO NOTHING;
@@ -1175,7 +1175,7 @@ Six new users representing the expanded role hierarchy.
 -- Passwords hashed with bcrypt (10 rounds)
 -- All use: <role>123 (e.g., kepalrayoon123)
 
-INSERT INTO users (id, username, password_hash, full_name, role, rayon_id, area_id, is_active, created_at, updated_at) VALUES
+INSERT INTO users (id, username, password_hash, full_name, role, rayon_id, location_id, is_active, created_at, updated_at) VALUES
   -- TopManagement (no rayon/area assignment)
   ('f634880a-7498-449a-a293-9c5204176310', 'kepaladinas', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Dinas DLHK', 'TopManagement', NULL, NULL, true, NOW(), NOW()),
   ('f634880a-7498-449a-a293-9c5204176311', 'kepalabidang', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Bidang Pertamanan', 'TopManagement', NULL, NULL, true, NOW(), NOW()),
@@ -1184,8 +1184,8 @@ INSERT INTO users (id, username, password_hash, full_name, role, rayon_id, area_
   ('f634880a-7498-449a-a293-9c5204176312', 'kepalaselatan', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Rayon Selatan', 'KepalaRayon', '11111111-1111-1111-1111-111111111101', NULL, true, NOW(), NOW()),
   ('f634880a-7498-449a-a293-9c5204176313', 'kepalapusat', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Kepala Rayon Pusat', 'KepalaRayon', '11111111-1111-1111-1111-111111111103', NULL, true, NOW(), NOW()),
 
-  -- KoordinatorLapangan (assigned to specific Area via area_id column)
-  -- Note: area_id column is used for KoordinatorLapangan scope restriction
+  -- KoordinatorLapangan (assigned to specific Area via location_id column)
+  -- Note: location_id column is used for KoordinatorLapangan scope restriction
   ('f634880a-7498-449a-a293-9c5204176314', 'koordinator1', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Koordinator Taman Bungkul', 'KoordinatorLapangan', NULL, 'b2c3d4e5-f6a7-8901-bcde-f12345678901', true, NOW(), NOW()),
   ('f634880a-7498-449a-a293-9c5204176316', 'koordinator2', '$2b$10$VKp2dHMC2TJwjRK9tVK8X.ZRnYq0dFm0VKp2dHMC2TJwjRK9tVK8X', 'Koordinator Jalan Darmo', 'KoordinatorLapangan', NULL, 'c3d4e5f6-a7b8-9012-cdef-123456789012', true, NOW(), NOW()),
 
@@ -1217,7 +1217,7 @@ ON CONFLICT (username) DO NOTHING;
 | koordinator1 | koordinator123 | Koordinator Taman Bungkul | KoordinatorLapangan | Taman Bungkul |
 | koordinator2 | koordinator123 | Koordinator Jalan Darmo | KoordinatorLapangan | Jalan Raya Darmo |
 
-**Note:** KoordinatorLapangan uses the `area_id` column on the users table for scope restriction. They can only view/manage workers and reports within their assigned area.
+**Note:** KoordinatorLapangan uses the `location_id` column on the users table for scope restriction. They can only view/manage workers and reports within their assigned area.
 
 #### Linmas User
 
@@ -1243,7 +1243,7 @@ Staff requirements for each area per shift.
 ### SQL Insert
 
 ```sql
-INSERT INTO area_staff_requirements (id, area_id, shift_definition_id, role, required_count, day_type, created_at, updated_at) VALUES
+INSERT INTO location_staff_requirements (id, location_id, shift_definition_id, role, required_count, day_type, created_at, updated_at) VALUES
   -- Taman Bungkul (large park) - higher staffing
   ('44444444-4444-4444-4444-444444444401', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', 'Worker', 6, 'WEEKDAY', NOW(), NOW()),
   ('44444444-4444-4444-4444-444444444402', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', 'Linmas', 2, 'WEEKDAY', NOW(), NOW()),
@@ -1264,7 +1264,7 @@ INSERT INTO area_staff_requirements (id, area_id, shift_definition_id, role, req
   -- Taman Harmoni (small park) - minimal staffing
   ('44444444-4444-4444-4444-444444444412', 'd4e5f6a7-b8c9-0123-def0-123456789012', '22222222-2222-2222-2222-222222222201', 'Worker', 2, 'WEEKDAY', NOW(), NOW()),
   ('44444444-4444-4444-4444-444444444413', 'd4e5f6a7-b8c9-0123-def0-123456789012', '22222222-2222-2222-2222-222222222202', 'Worker', 2, 'WEEKDAY', NOW(), NOW())
-ON CONFLICT (area_id, shift_definition_id, role, day_type) DO NOTHING;
+ON CONFLICT (location_id, shift_definition_id, role, day_type) DO NOTHING;
 ```
 
 ### Staff Requirement Details
@@ -1308,7 +1308,7 @@ Worker assignments to areas and shifts.
 ### SQL Insert
 
 ```sql
-INSERT INTO worker_schedules (id, user_id, area_id, shift_definition_id, effective_date, end_date, created_by, created_at, updated_at) VALUES
+INSERT INTO worker_schedules (id, user_id, location_id, shift_definition_id, effective_date, end_date, created_by, created_at, updated_at) VALUES
   -- Worker1 assigned to Taman Bungkul, Shift 1 (ongoing)
   ('55555555-5555-5555-5555-555555555501', 'f634880a-7498-449a-a293-9c5204176300', 'b2c3d4e5-f6a7-8901-bcde-f12345678901', '22222222-2222-2222-2222-222222222201', CURRENT_DATE - INTERVAL '30 days', NULL, 'e5f6a7b8-c9d0-1234-ef01-23456789abcd', NOW(), NOW()),
 
@@ -1667,7 +1667,7 @@ npm run seed:tasks
 | kepala_rayon1 | 081234567041 |
 | top_management1 | 081234567051 |
 
-### Multi-Area Assignments (user_areas)
+### Multi-Location Assignments (user_locations)
 
 | Username | Area | Type |
 |----------|------|------|
@@ -1687,6 +1687,6 @@ npm run seed:tasks
 
 **Last Updated:** 2026-03-10
 **Seed Data Version:** 3.4 (Phase 2E Planned — Phone numbers, multi-area, audit logs)
-**Total Records:** ~158 + ~30 planned (user phone numbers, user_areas, audit_logs)
+**Total Records:** ~158 + ~30 planned (user phone numbers, user_locations, audit_logs)
 
 > **Note:** Phase 1/2 sections above use old role names (admin, supervisor, worker) for historical reference. The actual seeder code uses Phase 2C roles (superadmin, korlap, satgas, etc.). See Phase 2C section for current seed user table. `activity_types.applicable_roles` uses PascalCase in DB seeds (`ARRAY['Worker']`) — this is a known legacy pattern from Phase 2 seed SQL.

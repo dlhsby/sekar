@@ -109,17 +109,17 @@ Mobile: Store new token
     │ Capture selfie              │             │            │
     │             │               │             │            │
     │ POST /api/shifts/clock-in   │             │            │
-    │ { areaId, lat, lng, photo } │             │            │
+    │ { locationId, lat, lng, photo } │             │            │
     ├────────────────────────────>│             │            │
     │             │               │             │            │
     │             │               │ Verify JWT  │            │
     │             │               │             │            │
-    │             │               │ Get area    │            │
+    │             │               │ Get location│            │
     │             │               │ boundaries  │            │
     │             │               ├────────────>│            │
     │             │               │             │            │
     │             │               │<────────────┤            │
-    │             │               │ Area data   │            │
+    │             │               │ Location data           │
     │             │               │             │            │
     │             │               │ Validate GPS│            │
     │             │               │ (Haversine) │            │
@@ -155,8 +155,8 @@ Mobile: Store new token
 
 **Validation Rules:**
 1. GPS accuracy < 50 meters
-2. Distance to area center < 100 meters (Haversine)
-3. Worker assigned to this area
+2. Distance to location center < 100 meters (Haversine)
+3. Worker assigned to this location
 4. No active shift exists
 5. Photo file size < 5MB
 6. Photo format: JPEG/PNG
@@ -177,14 +177,14 @@ const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 const distance = R * c; // in meters
 
 if (distance > 100) {
-  throw new BadRequestException('Too far from work area');
+  throw new BadRequestException('Too far from assigned location');
 }
 ```
 
 **Error Cases:**
 - `400 Bad Request`: GPS validation failed, already clocked in
-- `403 Forbidden`: Not assigned to this area
-- `404 Not Found`: Area not found
+- `403 Forbidden`: Not assigned to this location
+- `404 Not Found`: Location not found
 - `413 Payload Too Large`: Photo too large
 
 ---
@@ -203,7 +203,7 @@ Mobile → API: POST /api/shifts/{shiftId}/clock-out
 
 API → DB: Get shift record
 API: Validate shift is active
-API: Validate GPS (same area)
+API: Validate GPS (same location)
 API → S3: Upload clock-out photo
 API → DB: Update shift (clock_out_time, clock_out_photo, location)
 API → Mobile: 200 OK { shift }
@@ -215,7 +215,7 @@ Mobile: Update local state
 **Validation Rules:**
 1. Shift exists and belongs to user
 2. Shift is active (clock_out_time is null)
-3. GPS within area boundary (100m tolerance)
+3. GPS within location boundary (100m tolerance)
 4. Photo required
 
 ---
@@ -380,7 +380,7 @@ Mobile: Display list with thumbnails
 Supervisor Web → API: GET /api/supervisor/reports?date={date}&status=pending
 
 API → DB: Query reports with filters
-          JOIN shifts, users, areas
+          JOIN shifts, users, locations
           WHERE supervisor_id = current_user
 
 API → Web: 200 OK { reports: [...] }
@@ -443,12 +443,13 @@ Web: Use WebSocket for real-time updates
       },
       "shift": {
         "id": "uuid",
-        "clock_in_time": "2024-01-15T08:00:00Z",
-        "area": {
-          "name": "Taman Bungkul"
-        }
+        "clock_in_time": "2024-01-15T08:00:00Z"
       },
       "location": {
+        "id": "location-uuid",
+        "name": "Taman Bungkul"
+      },
+      "gps": {
         "latitude": -7.289,
         "longitude": 112.734,
         "timestamp": "2024-01-15T10:25:00Z"
@@ -543,7 +544,7 @@ Check network status
   ↓
 Fetch user profile
 Fetch today's shift (if exists)
-Fetch assigned areas
+Fetch assigned locations
 Fetch pending reports
   ↓
 Store in Redux + AsyncStorage
@@ -556,7 +557,7 @@ Show "Offline" indicator
 
 **Cache Invalidation:**
 - User profile: 24 hours
-- Areas: 7 days
+- Locations: 7 days
 - Shifts: On app open + after clock-in/out
 - Reports: After submission
 
@@ -812,7 +813,7 @@ Mobile App              GPS Service           API Server           Map Service
     │ Accuracy: 12m          │                     │                     │
     │                        │                     │                     │
     │ POST /shifts/clock-in  │                     │                     │
-    │ { areaId, gps_lat, gps_lng }                │                     │
+    │ { locationId, gps_lat, gps_lng }            │                     │
     ├────────────────────────┼────────────────────>│                     │
     │                        │                     │                     │
     │                        │                     │ Calculate distance  │
@@ -829,7 +830,7 @@ Mobile App              GPS Service           API Server           Map Service
     │ Show error modal       │                     │                     │
     │ "Anda 150m dari lokasi"│                     │                     │
     │                        │                     │                     │
-    │ Fetch area boundary    │                     │                     │
+    │ Fetch location boundary│                     │                     │
     ├────────────────────────┼────────────────────>│                     │
     │                        │                     │                     │
     │                        │<────────────────────┤                     │
@@ -1472,16 +1473,16 @@ Client → POST /auth/login { identifier, password }
        → Generate JWT → Return token
 ```
 
-### New Flow: Multi-Area Boundary Check
+### New Flow: Multi-Location Boundary Check
 
 ```
 LocationService.onLocationPing(userId, lat, lng)
-  → UserAreasService.getEffectiveAreas(userId)
-    → permanent areas (from user_areas)
-    → task-based areas (from active tasks)
-  → For each area: GpsUtil.isWithinBoundary(lat, lng, area)
-  → isWithinAnyArea = results.some(r => r.inside)
-  → StatusCalculatorService.calculateStatus(isWithinAnyArea, ...)
+  → UserLocationsService.getEffectiveLocations(userId)
+    → permanent locations (from user_locations)
+    → task-based locations (from active tasks)
+  → For each location: GpsUtil.isWithinBoundary(lat, lng, location)
+  → isWithinAnyLocation = results.some(r => r.inside)
+  → StatusCalculatorService.calculateStatus(isWithinAnyLocation, ...)
 ```
 
 ### New Flow: Overtime Clock-In/Out

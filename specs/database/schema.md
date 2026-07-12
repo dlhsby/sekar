@@ -14,7 +14,7 @@ Complete PostgreSQL database schema for SEKAR system with production-ready optim
 - **ORM:** TypeORM 0.3.x
 - **Character Set:** UTF-8
 - **Primary Keys:** UUID (all tables)
-- **Soft Delete:** users, areas, shifts, reports (deleted_at column)
+- **Soft Delete:** users, locations, shifts, activities (deleted_at column)
 - **Partitioning:** location_logs (by month), audit_logs (Phase 6)
 
 ---
@@ -95,12 +95,12 @@ export class User {
 
 ---
 
-### 2. area_types
+### 2. location_types
 
-Lookup table for area types (park, pedestrian, mini_garden, street).
+Lookup table for location types (park, pedestrian, mini_garden, street).
 
 ```sql
-CREATE TABLE area_types (
+CREATE TABLE location_types (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   code VARCHAR(20) NOT NULL,
   name VARCHAR(50) NOT NULL,
@@ -108,14 +108,14 @@ CREATE TABLE area_types (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  CONSTRAINT uq_area_types_code UNIQUE (code)
+  CONSTRAINT uq_location_types_code UNIQUE (code)
 );
 
 -- Indexes
-CREATE UNIQUE INDEX idx_area_types_code ON area_types(code);
+CREATE UNIQUE INDEX idx_location_types_code ON location_types(code);
 
 -- Seed data
-INSERT INTO area_types (code, name, description) VALUES
+INSERT INTO location_types (code, name, description) VALUES
 ('park', 'Taman', 'Taman kota (city park)'),
 ('pedestrian', 'Jalur Pedestrian', 'Trotoar dan jalur pejalan kaki'),
 ('mini_garden', 'Taman Mini', 'Taman kecil di perumahan'),
@@ -124,15 +124,15 @@ INSERT INTO area_types (code, name, description) VALUES
 
 ---
 
-### 3. areas
+### 3. locations
 
-Work areas with GPS boundaries.
+Work locations with GPS boundaries.
 
 ```sql
-CREATE TABLE areas (
+CREATE TABLE locations (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(100) NOT NULL,
-  area_type_id UUID NOT NULL REFERENCES area_types(id) ON DELETE RESTRICT,
+  location_type_id UUID NOT NULL REFERENCES location_types(id) ON DELETE RESTRICT,
   gps_lat DECIMAL(10, 8) NOT NULL,
   gps_lng DECIMAL(11, 8) NOT NULL,
   radius_meters INTEGER DEFAULT 100,
@@ -142,27 +142,27 @@ CREATE TABLE areas (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ,
 
-  CONSTRAINT chk_areas_gps_lat CHECK (gps_lat BETWEEN -90 AND 90),
-  CONSTRAINT chk_areas_gps_lng CHECK (gps_lng BETWEEN -180 AND 180),
-  CONSTRAINT chk_areas_radius CHECK (radius_meters BETWEEN 1 AND 10000)
+  CONSTRAINT chk_locations_gps_lat CHECK (gps_lat BETWEEN -90 AND 90),
+  CONSTRAINT chk_locations_gps_lng CHECK (gps_lng BETWEEN -180 AND 180),
+  CONSTRAINT chk_locations_radius CHECK (radius_meters BETWEEN 1 AND 10000)
 );
 
 -- Indexes
-CREATE INDEX idx_areas_type ON areas(area_type_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_areas_active ON areas(is_active) WHERE deleted_at IS NULL AND is_active = TRUE;
+CREATE INDEX idx_locations_type ON locations(location_type_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_locations_active ON locations(is_active) WHERE deleted_at IS NULL AND is_active = TRUE;
 ```
 
 ---
 
 ### 4. worker_assignments
 
-One-to-one mapping of workers to their assigned areas.
+One-to-one mapping of workers to their assigned locations. ⚠️ **DEPRECATED (Phase 2C)** — replaced by `schedules` table.
 
 ```sql
 CREATE TABLE worker_assignments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE RESTRICT,
   assigned_at TIMESTAMPTZ DEFAULT NOW(),
 
   CONSTRAINT uq_worker_assignments_worker UNIQUE (worker_id)
@@ -170,7 +170,7 @@ CREATE TABLE worker_assignments (
 
 -- Indexes
 CREATE UNIQUE INDEX idx_worker_assignments_worker ON worker_assignments(worker_id);
-CREATE INDEX idx_worker_assignments_area ON worker_assignments(area_id);
+CREATE INDEX idx_worker_assignments_location ON worker_assignments(location_id);
 ```
 
 ---
@@ -183,7 +183,7 @@ Clock-in and clock-out records with GPS validation.
 CREATE TABLE shifts (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE RESTRICT,
   clock_in_time TIMESTAMPTZ NOT NULL,
   clock_in_gps_lat DECIMAL(10, 8) NOT NULL,
   clock_in_gps_lng DECIMAL(11, 8) NOT NULL,
@@ -203,23 +203,23 @@ CREATE TABLE shifts (
 
 -- CRITICAL Indexes for performance
 CREATE INDEX idx_shifts_worker_date ON shifts(worker_id, clock_in_time DESC) WHERE deleted_at IS NULL;
-CREATE INDEX idx_shifts_area_date ON shifts(area_id, clock_in_time DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_shifts_location_date ON shifts(location_id, clock_in_time DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_shifts_active ON shifts(worker_id) WHERE clock_out_time IS NULL AND deleted_at IS NULL;
 CREATE INDEX idx_shifts_date_range ON shifts(clock_in_time DESC) WHERE deleted_at IS NULL;
 ```
 
 ---
 
-### 6. work_reports
+### 6. activities
 
-Daily work reports with photos and GPS tracking.
+Daily activity reports with photos and GPS tracking. ⚠️ **Formerly named `work_reports`** (Phase 2C rename).
 
 ```sql
-CREATE TABLE work_reports (
+CREATE TABLE activities (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE RESTRICT,
   worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE RESTRICT,
   report_type VARCHAR(50) NOT NULL,
   description TEXT NOT NULL,
   condition VARCHAR(20),
@@ -240,10 +240,10 @@ CREATE TABLE work_reports (
 );
 
 -- CRITICAL Indexes
-CREATE INDEX idx_reports_shift_created ON work_reports(shift_id, created_at DESC) WHERE deleted_at IS NULL;
-CREATE INDEX idx_reports_worker_date ON work_reports(worker_id, created_at DESC) WHERE deleted_at IS NULL;
-CREATE INDEX idx_reports_type_date ON work_reports(report_type, created_at DESC) WHERE deleted_at IS NULL;
-CREATE INDEX idx_reports_unreviewed ON work_reports(is_reviewed, created_at DESC) WHERE is_reviewed = FALSE AND deleted_at IS NULL;
+CREATE INDEX idx_activities_shift_created ON activities(shift_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_activities_worker_date ON activities(worker_id, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_activities_type_date ON activities(report_type, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_activities_unreviewed ON activities(is_reviewed, created_at DESC) WHERE is_reviewed = FALSE AND deleted_at IS NULL;
 ```
 
 ---
@@ -326,7 +326,7 @@ CREATE TABLE tasks (
   description TEXT,
   assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
   assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
-  area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   priority VARCHAR(20) DEFAULT 'normal',
   status VARCHAR(30) DEFAULT 'pending',
   due_date TIMESTAMPTZ,
@@ -353,7 +353,7 @@ CREATE TABLE tasks (
 
 -- CRITICAL Indexes for task queries
 CREATE INDEX idx_tasks_assigned_status ON tasks(assigned_to, status, due_date) WHERE deleted_at IS NULL;
-CREATE INDEX idx_tasks_area_status ON tasks(area_id, status, created_at DESC) WHERE deleted_at IS NULL;
+CREATE INDEX idx_tasks_location_status ON tasks(location_id, status, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_tasks_assignee_supervisor ON tasks(assigned_by, created_at DESC) WHERE deleted_at IS NULL;
 CREATE INDEX idx_tasks_overdue ON tasks(due_date, status)
   WHERE status NOT IN ('completed', 'cancelled') AND deleted_at IS NULL;
@@ -493,8 +493,8 @@ export class Rayon {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @OneToMany(() => Area, (area) => area.rayon)
-  areas: Area[];
+  @OneToMany(() => Location, (location) => location.rayon)
+  locations: Location[];
 
   @OneToMany(() => User, (user) => user.rayon)
   users: User[];
@@ -652,14 +652,14 @@ export class ActivityType {
 
 ---
 
-### 7. area_staff_requirements
+### 7. location_staff_requirements
 
-Staff requirements per area per shift per day type.
+Staff requirements per location per shift per day type.
 
 ```sql
-CREATE TABLE area_staff_requirements (
+CREATE TABLE location_staff_requirements (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   shift_definition_id UUID NOT NULL REFERENCES shift_definitions(id) ON DELETE CASCADE,
   role VARCHAR(50) NOT NULL,
   required_count INTEGER NOT NULL DEFAULT 1,
@@ -670,28 +670,28 @@ CREATE TABLE area_staff_requirements (
   CONSTRAINT chk_staff_role CHECK (role IN ('Worker', 'Linmas')),
   CONSTRAINT chk_day_type CHECK (day_type IN ('WEEKDAY', 'WEEKEND', 'HOLIDAY')),
   CONSTRAINT chk_required_count CHECK (required_count >= 0),
-  CONSTRAINT uq_area_staff_requirements UNIQUE (area_id, shift_definition_id, role, day_type)
+  CONSTRAINT uq_location_staff_requirements UNIQUE (location_id, shift_definition_id, role, day_type)
 );
 
 -- Indexes
-CREATE INDEX idx_area_staff_requirements_area ON area_staff_requirements(area_id);
-CREATE INDEX idx_area_staff_requirements_shift ON area_staff_requirements(shift_definition_id);
-CREATE INDEX idx_area_staff_requirements_lookup ON area_staff_requirements(area_id, shift_definition_id, day_type);
+CREATE INDEX idx_location_staff_requirements_location ON location_staff_requirements(location_id);
+CREATE INDEX idx_location_staff_requirements_shift ON location_staff_requirements(shift_definition_id);
+CREATE INDEX idx_location_staff_requirements_lookup ON location_staff_requirements(location_id, shift_definition_id, day_type);
 ```
 
 **TypeORM Entity:**
 ```typescript
-@Entity('area_staff_requirements')
-export class AreaStaffRequirement {
+@Entity('location_staff_requirements')
+export class LocationStaffRequirement {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column()
-  area_id: string;
+  location_id: string;
 
-  @ManyToOne(() => Area, (area) => area.staffRequirements, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'area_id' })
-  area: Area;
+  @ManyToOne(() => Location, (location) => location.staffRequirements, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'location_id' })
+  location: Location;
 
   @Column()
   shift_definition_id: string;
@@ -721,7 +721,7 @@ export class AreaStaffRequirement {
 ```sql
 -- Taman Bungkul staffing requirements
 -- Shift 1, Weekday: 6 Workers, 2 Linmas
-INSERT INTO area_staff_requirements (area_id, shift_definition_id, role, required_count, day_type) VALUES
+INSERT INTO location_staff_requirements (location_id, shift_definition_id, role, required_count, day_type) VALUES
   ('taman-bungkul-uuid', 'shift1-uuid', 'Worker', 6, 'WEEKDAY'),
   ('taman-bungkul-uuid', 'shift1-uuid', 'Linmas', 2, 'WEEKDAY'),
   ('taman-bungkul-uuid', 'shift2-uuid', 'Worker', 9, 'WEEKDAY'),
@@ -793,10 +793,10 @@ export class SpecialDayOverride {
 Assignment of workers to areas and shifts with effective dates.
 
 ```sql
-CREATE TABLE worker_schedules (
+CREATE TABLE schedules (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   shift_definition_id UUID NOT NULL REFERENCES shift_definitions(id) ON DELETE CASCADE,
   effective_date DATE NOT NULL,
   end_date DATE,
@@ -805,22 +805,22 @@ CREATE TABLE worker_schedules (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
   CONSTRAINT chk_schedule_dates CHECK (end_date IS NULL OR end_date >= effective_date),
-  CONSTRAINT uq_worker_schedule_overlap UNIQUE (user_id, effective_date, shift_definition_id)
+  CONSTRAINT uq_schedule_overlap UNIQUE (user_id, effective_date, shift_definition_id)
 );
 
 -- CRITICAL Indexes for schedule queries
-CREATE INDEX idx_worker_schedules_user ON worker_schedules(user_id);
-CREATE INDEX idx_worker_schedules_area ON worker_schedules(area_id);
-CREATE INDEX idx_worker_schedules_shift ON worker_schedules(shift_definition_id);
-CREATE INDEX idx_worker_schedules_date_range ON worker_schedules(effective_date, end_date);
-CREATE INDEX idx_worker_schedules_active ON worker_schedules(user_id, effective_date, end_date)
+CREATE INDEX idx_schedules_user ON schedules(user_id);
+CREATE INDEX idx_schedules_location ON schedules(location_id);
+CREATE INDEX idx_schedules_shift ON schedules(shift_definition_id);
+CREATE INDEX idx_schedules_date_range ON schedules(effective_date, end_date);
+CREATE INDEX idx_schedules_active ON schedules(user_id, effective_date, end_date)
   WHERE end_date IS NULL OR end_date >= CURRENT_DATE;
 ```
 
 **TypeORM Entity:**
 ```typescript
-@Entity('worker_schedules')
-export class WorkerSchedule {
+@Entity('schedules')
+export class Schedule {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -832,11 +832,11 @@ export class WorkerSchedule {
   user: User;
 
   @Column()
-  area_id: string;
+  location_id: string;
 
-  @ManyToOne(() => Area, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'area_id' })
-  area: Area;
+  @ManyToOne(() => Location, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'location_id' })
+  location: Location;
 
   @Column()
   shift_definition_id: string;
@@ -924,33 +924,33 @@ export class User {
 1. **Admin** - Full system access, manages all entities
 2. **TopManagement** - View all Rayons, city-wide dashboard
 3. **KepalaRayon** - Manages one Rayon (assigned via `rayon_id`)
-4. **KoordinatorLapangan** - Manages one Area (assigned via `area_id`)
+4. **KoordinatorLapangan** - Manages one Location (assigned via `location_id`)
 5. **Worker** - Field worker (Satgas), uses schedules
 6. **Linmas** - Security officer, uses schedules
 
 ---
 
-### Update: area_types table
+### Update: location_types table
 
 Add category column for Active/Passive grouping.
 
 ```sql
 -- Add category column
-ALTER TABLE area_types ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE location_types ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
 
 -- Add constraint
-ALTER TABLE area_types ADD CONSTRAINT chk_area_types_category
+ALTER TABLE location_types ADD CONSTRAINT chk_location_types_category
   CHECK (category IN ('ACTIVE', 'PASSIVE'));
 
 -- Update existing types
-UPDATE area_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
-UPDATE area_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
+UPDATE location_types SET category = 'ACTIVE' WHERE code IN ('park', 'mini_garden');
+UPDATE location_types SET category = 'PASSIVE' WHERE code IN ('pedestrian', 'street');
 ```
 
 **Updated TypeORM Entity:**
 ```typescript
-@Entity('area_types')
-export class AreaType {
+@Entity('location_types')
+export class LocationType {
   // ... existing fields ...
 
   @Column({ length: 20, default: 'ACTIVE' })
@@ -959,38 +959,38 @@ export class AreaType {
 ```
 
 **Category Definitions:**
-- **ACTIVE**: Areas requiring active maintenance (parks, gardens)
-- **PASSIVE**: Areas with passive maintenance (sidewalks, street medians)
+- **ACTIVE**: Locations requiring active maintenance (parks, gardens)
+- **PASSIVE**: Locations with passive maintenance (sidewalks, street medians)
 
 ---
 
-### Update: areas table
+### Update: locations table
 
 Add rayon assignment, polygon boundary, and coverage area.
 
 ```sql
 -- Add new columns
-ALTER TABLE areas ADD COLUMN rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL;
-ALTER TABLE areas ADD COLUMN boundary_polygon JSONB;
-ALTER TABLE areas ADD COLUMN coverage_area DECIMAL(12, 2);
+ALTER TABLE locations ADD COLUMN rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL;
+ALTER TABLE locations ADD COLUMN boundary_polygon JSONB;
+ALTER TABLE locations ADD COLUMN coverage_area DECIMAL(12, 2);
 
 -- Note: radius_meters kept for backward compatibility, use boundary_polygon when available
 
 -- Create indexes
-CREATE INDEX idx_areas_rayon ON areas(rayon_id) WHERE deleted_at IS NULL;
-CREATE INDEX idx_areas_polygon ON areas USING GIN (boundary_polygon);
+CREATE INDEX idx_locations_rayon ON locations(rayon_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_locations_polygon ON locations USING GIN (boundary_polygon);
 ```
 
 **Updated TypeORM Entity:**
 ```typescript
-@Entity('areas')
-export class Area {
+@Entity('locations')
+export class Location {
   // ... existing fields ...
 
   @Column({ nullable: true })
   rayon_id?: string;
 
-  @ManyToOne(() => Rayon, (rayon) => rayon.areas, { nullable: true })
+  @ManyToOne(() => Rayon, (rayon) => rayon.locations, { nullable: true })
   @JoinColumn({ name: 'rayon_id' })
   rayon?: Rayon;
 
@@ -1000,8 +1000,8 @@ export class Area {
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   coverage_area?: number;  // Square meters
 
-  @OneToMany(() => AreaStaffRequirement, (req) => req.area)
-  staffRequirements: AreaStaffRequirement[];
+  @OneToMany(() => LocationStaffRequirement, (req) => req.location)
+  staffRequirements: LocationStaffRequirement[];
 }
 ```
 
@@ -1191,20 +1191,20 @@ SELECT
   u.id as worker_id,
   u.full_name,
   u.phone,
-  wa.area_id,
-  a.name as area_name,
+  wa.location_id,
+  l.name as location_name,
   COUNT(DISTINCT DATE(s.clock_in_time)) as days_worked,
   AVG(EXTRACT(EPOCH FROM (s.clock_out_time - s.clock_in_time)) / 3600) as avg_shift_hours,
-  COUNT(r.id) as total_reports,
-  SUM(CASE WHEN r.condition = 'Baik' THEN 1 ELSE 0 END) as good_reports,
+  COUNT(a.id) as total_activities,
+  SUM(CASE WHEN a.activity_metadata->>'condition' = 'Baik' THEN 1 ELSE 0 END) as good_activities,
   MAX(s.clock_in_time) as last_shift_date
 FROM users u
 LEFT JOIN worker_assignments wa ON u.id = wa.worker_id
-LEFT JOIN areas a ON wa.area_id = a.id
+LEFT JOIN locations l ON wa.location_id = l.id
 LEFT JOIN shifts s ON u.id = s.worker_id AND s.deleted_at IS NULL
-LEFT JOIN work_reports r ON u.id = r.worker_id AND r.deleted_at IS NULL
-WHERE u.role = 'worker' AND u.deleted_at IS NULL
-GROUP BY u.id, u.full_name, u.phone, wa.area_id, a.name;
+LEFT JOIN activities a ON u.id = a.user_id AND a.deleted_at IS NULL
+WHERE u.role = 'satgas' AND u.deleted_at IS NULL
+GROUP BY u.id, u.full_name, u.phone, wa.location_id, l.name;
 
 CREATE UNIQUE INDEX idx_mv_worker_performance ON mv_worker_performance(worker_id);
 
@@ -1213,31 +1213,31 @@ CREATE UNIQUE INDEX idx_mv_worker_performance ON mv_worker_performance(worker_id
 ```
 
 ```sql
--- Area coverage summary (refresh hourly)
-CREATE MATERIALIZED VIEW mv_area_coverage AS
+-- Location coverage summary (refresh hourly)
+CREATE MATERIALIZED VIEW mv_location_coverage AS
 SELECT
-  a.id as area_id,
-  a.name,
-  a.gps_lat,
-  a.gps_lng,
-  at.name as area_type,
+  l.id as location_id,
+  l.name,
+  l.gps_lat,
+  l.gps_lng,
+  lt.name as location_type,
   COUNT(DISTINCT wa.worker_id) as assigned_workers,
   COUNT(DISTINCT DATE(s.clock_in_time)) as days_covered,
-  COUNT(r.id) as total_reports,
+  COUNT(act.id) as total_activities,
   AVG(CASE
-    WHEN r.condition = 'Baik' THEN 3
-    WHEN r.condition = 'Cukup' THEN 2
-    WHEN r.condition = 'Buruk' THEN 1
+    WHEN act.activity_metadata->>'condition' = 'Baik' THEN 3
+    WHEN act.activity_metadata->>'condition' = 'Cukup' THEN 2
+    WHEN act.activity_metadata->>'condition' = 'Buruk' THEN 1
   END) as avg_condition_score
-FROM areas a
-JOIN area_types at ON a.area_type_id = at.id
-LEFT JOIN worker_assignments wa ON a.id = wa.area_id
-LEFT JOIN shifts s ON a.id = s.area_id AND s.deleted_at IS NULL
-LEFT JOIN work_reports r ON a.id = r.area_id AND r.deleted_at IS NULL
-WHERE a.deleted_at IS NULL
-GROUP BY a.id, a.name, a.gps_lat, a.gps_lng, at.name;
+FROM locations l
+JOIN location_types lt ON l.location_type_id = lt.id
+LEFT JOIN worker_assignments wa ON l.id = wa.location_id
+LEFT JOIN shifts s ON l.id = s.location_id AND s.deleted_at IS NULL
+LEFT JOIN activities act ON l.id = act.location_id AND act.deleted_at IS NULL
+WHERE l.deleted_at IS NULL
+GROUP BY l.id, l.name, l.gps_lat, l.gps_lng, lt.name;
 
-CREATE UNIQUE INDEX idx_mv_area_coverage ON mv_area_coverage(area_id);
+CREATE UNIQUE INDEX idx_mv_location_coverage ON mv_location_coverage(location_id);
 ```
 
 ---
@@ -1294,7 +1294,7 @@ CREATE TABLE assets (
   status VARCHAR(30) DEFAULT 'available',
   condition VARCHAR(20) DEFAULT 'good',
   current_holder_id UUID REFERENCES users(id) ON DELETE SET NULL,
-  current_area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   last_maintenance_date DATE,
   next_maintenance_date DATE,
   gps_lat DECIMAL(10, 8),
@@ -1313,9 +1313,9 @@ CREATE TABLE assets (
     'excellent', 'good', 'fair', 'poor', 'broken'
   )),
   CONSTRAINT chk_asset_location CHECK (
-    (current_holder_id IS NOT NULL AND current_area_id IS NULL) OR
-    (current_holder_id IS NULL AND current_area_id IS NOT NULL) OR
-    (current_holder_id IS NULL AND current_area_id IS NULL)
+    (current_holder_id IS NOT NULL AND location_id IS NULL) OR
+    (current_holder_id IS NULL AND location_id IS NOT NULL) OR
+    (current_holder_id IS NULL AND location_id IS NULL)
   )
 );
 
@@ -1326,8 +1326,8 @@ CREATE INDEX idx_assets_available ON assets(status, asset_type_id, condition)
   WHERE status = 'available' AND deleted_at IS NULL;
 CREATE INDEX idx_assets_holder ON assets(current_holder_id, status)
   WHERE current_holder_id IS NOT NULL AND deleted_at IS NULL;
-CREATE INDEX idx_assets_area ON assets(current_area_id, status)
-  WHERE current_area_id IS NOT NULL AND deleted_at IS NULL;
+CREATE INDEX idx_assets_location ON assets(location_id, status)
+  WHERE location_id IS NOT NULL AND deleted_at IS NULL;
 CREATE INDEX idx_assets_maintenance ON assets(next_maintenance_date)
   WHERE status != 'retired' AND deleted_at IS NULL;
 ```
@@ -1344,7 +1344,7 @@ CREATE TABLE asset_assignments (
   asset_id UUID NOT NULL REFERENCES assets(id) ON DELETE CASCADE,
   assigned_to UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
   assigned_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-  area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   assigned_at TIMESTAMPTZ DEFAULT NOW(),
   returned_at TIMESTAMPTZ,
   return_condition VARCHAR(20),
@@ -1911,7 +1911,7 @@ scenarios:
   - name: "Mixed workload"
     flow:
       - get:
-          url: "/api/v1/areas"
+          url: "/api/v1/locations"
       - think: 2
       - post:
           url: "/api/v1/shifts/clock-in"
@@ -2024,11 +2024,11 @@ Before deploying to production:
 -- 'kepala_rayon', 'top_management', 'admin_system', 'superadmin'
 ```
 
-### New Column: users.area_id (Implemented)
+### New Column: users.location_id (Implemented)
 ```sql
-ALTER TABLE users ADD COLUMN area_id UUID REFERENCES areas(id) ON DELETE SET NULL;
+ALTER TABLE users ADD COLUMN location_id UUID REFERENCES locations(id) ON DELETE SET NULL;
 -- Used by korlap role for area scoping
-CREATE INDEX idx_users_area ON users(area_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_users_location ON users(location_id) WHERE deleted_at IS NULL;
 ```
 
 ### New Tables (Implemented)
@@ -2049,7 +2049,7 @@ CREATE TABLE task_tags (
 CREATE TABLE overtimes (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
@@ -2082,10 +2082,10 @@ CREATE TABLE overtime_aktivitas (
 
 | Table | Changes |
 |-------|---------|
-| `users` | Added area_id UUID FK→areas (nullable), role CHECK updated to 8 roles |
-| `shifts` | area_id now nullable (auto-detected from WorkerSchedule/WorkerAssignment) |
+| `users` | Added location_id UUID FK→locations (nullable), role CHECK updated to 8 roles |
+| `shifts` | location_id now nullable (auto-detected from WorkerSchedule/WorkerAssignment) |
 | `work_reports` | Added photo_urls TEXT[], gps_lat/gps_lng now nullable, report_type now nullable |
-| `tasks` | Added rayon_id FK→rayons (nullable), area_id now nullable, status simplified to 4 values, removed activity_type_id/GPS completion fields/decline columns |
+| `tasks` | Added rayon_id FK→rayons (nullable), location_id now nullable, status simplified to 4 values, removed activity_type_id/GPS completion fields/decline columns |
 | `activity_types` | applicable_roles updated for Phase 2C roles (satgas, linmas, korlap, admin_data) |
 | `worker_assignments` | Added deprecated BOOLEAN (default false), migrated_to_schedule_id UUID |
 
@@ -2108,18 +2108,18 @@ Materialized tracking status for each user. Updated by StatusCalculatorService o
 | last_location_lng | DECIMAL(10,7) | NULL | Last known longitude |
 | is_within_area | BOOLEAN | DEFAULT false | Whether inside assigned area boundary |
 | current_shift_id | UUID | NULL, FK → shifts.id | Active shift reference |
-| current_area_id | UUID | NULL, FK → areas.id | Currently assigned area |
+| location_id | UUID | NULL, FK → locations.id | Currently assigned location |
 | updated_at | TIMESTAMP | NOT NULL, DEFAULT NOW() | Last status update |
 
 **Indexes:**
 - `idx_uts_status` — B-tree on `status` (filter by status)
-- `idx_uts_area_status` — Composite on `(current_area_id, status)` (area stats queries)
+- `idx_uts_location_status` — Composite on `(location_id, status)` (area stats queries)
 - `idx_uts_updated` — B-tree on `updated_at` (stale detection)
 
 **Relationships:**
 - user_tracking_status.user_id → users.id (1:1)
 - user_tracking_status.current_shift_id → shifts.id (N:1)
-- user_tracking_status.current_area_id → areas.id (N:1)
+- user_tracking_status.location_id → locations.id (N:1)
 
 ```sql
 CREATE TABLE user_tracking_status (
@@ -2130,14 +2130,14 @@ CREATE TABLE user_tracking_status (
   last_location_lng DECIMAL(10, 7),
   is_within_area BOOLEAN DEFAULT FALSE,
   current_shift_id UUID REFERENCES shifts(id) ON DELETE SET NULL,
-  current_area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  location_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
   CONSTRAINT chk_uts_status CHECK (status IN ('active', 'inactive', 'outside_area', 'missing', 'offline'))
 );
 
 CREATE INDEX idx_uts_status ON user_tracking_status(status);
-CREATE INDEX idx_uts_area_status ON user_tracking_status(current_area_id, status);
+CREATE INDEX idx_uts_location_status ON user_tracking_status(location_id, status);
 CREATE INDEX idx_uts_updated ON user_tracking_status(updated_at);
 ```
 
@@ -2190,7 +2190,7 @@ The two new tables connect to existing entities as follows:
 users ─────1:1────► user_tracking_status
                         │
                         ├── N:1 ──► shifts
-                        └── N:1 ──► areas
+                        └── N:1 ──► locations
 
 users ─────1:N────► monitoring_configs (updated_by)
 ```
@@ -2235,22 +2235,22 @@ CREATE INDEX CONCURRENTLY idx_tracking_rayon ON user_tracking_status (rayon_id) 
 
 ### New Tables
 
-**user_areas** — Multi-area assignment junction table (korlap permanent, satgas/linmas task-based)
+**user_locations** — Multi-location assignment junction table (korlap permanent, satgas/linmas task-based)
 ```sql
-CREATE TABLE user_areas (
+CREATE TABLE user_locations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+    location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
     assignment_type VARCHAR(20) NOT NULL DEFAULT 'permanent',
     assigned_at TIMESTAMPTZ DEFAULT NOW(),
     assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    CONSTRAINT uq_user_area UNIQUE (user_id, area_id, assignment_type),
-    CONSTRAINT chk_user_areas_assignment_type CHECK (assignment_type IN ('permanent', 'task_based'))
+    CONSTRAINT uq_user_area UNIQUE (user_id, location_id, assignment_type),
+    CONSTRAINT chk_user_locations_assignment_type CHECK (assignment_type IN ('permanent', 'task_based'))
 );
-CREATE INDEX idx_user_areas_user_type ON user_areas (user_id, assignment_type);
-CREATE INDEX idx_user_areas_area ON user_areas (area_id);
+CREATE INDEX idx_user_locations_user_type ON user_locations (user_id, assignment_type);
+CREATE INDEX idx_user_locations_area ON user_locations (location_id);
 ```
 
 **audit_logs** — Generic audit trail for entity changes
@@ -2283,7 +2283,7 @@ CHECK (status IN ('in_progress', 'pending', 'approved', 'rejected'))
 
 | Phase | Tables | New/Changed |
 |-------|--------|-------------|
-| Phase 2E (Feedback II) | +2 | +user_areas, +audit_logs; ALTERED: users, shifts, overtimes, user_tracking_status |
+| Phase 2E (Feedback II) | +2 | +user_locations, +audit_logs; ALTERED: users, shifts, overtimes, user_tracking_status |
 | **Total** | **22** | Up from 20 in Phase 2D |
 
 ---
@@ -2328,14 +2328,14 @@ export class PlantSpecies {
 }
 ```
 
-#### area_plants
+#### location_plants
 
-Area-aggregate inventory (species × count), drives pruning-cycle status and overdue alerts (ADR-030, ADR-034).
+Location-aggregate inventory (species × count), drives pruning-cycle status and overdue alerts (ADR-030, ADR-034).
 
 ```sql
-CREATE TABLE area_plants (
+CREATE TABLE location_plants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
   count INT NOT NULL DEFAULT 0,
   last_pruned_at TIMESTAMPTZ,
@@ -2343,11 +2343,11 @@ CREATE TABLE area_plants (
   status TEXT NOT NULL DEFAULT 'ok', -- 'ok' | 'due' | 'overdue'
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  CONSTRAINT uq_area_species UNIQUE (area_id, species_id),
-  CONSTRAINT chk_area_plants_status CHECK (status IN ('ok','due','overdue'))
+  CONSTRAINT uq_area_species UNIQUE (location_id, species_id),
+  CONSTRAINT chk_location_plants_status CHECK (status IN ('ok','due','overdue'))
 );
-CREATE INDEX idx_area_plants_area_status ON area_plants (area_id, status);
-CREATE INDEX idx_area_plants_next_due ON area_plants (next_due_at);
+CREATE INDEX idx_location_plants_location_status ON location_plants (location_id, status);
+CREATE INDEX idx_location_plants_next_due ON location_plants (next_due_at);
 ```
 
 #### notable_plants
@@ -2357,7 +2357,7 @@ Optional individual records for heritage or flagged plants (ADR-030).
 ```sql
 CREATE TABLE notable_plants (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+  location_id UUID NOT NULL REFERENCES locations(id) ON DELETE CASCADE,
   species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
   gps_lat NUMERIC(10,7),
   gps_lng NUMERIC(10,7),
@@ -2369,7 +2369,7 @@ CREATE TABLE notable_plants (
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
 );
-CREATE INDEX idx_notable_plants_area ON notable_plants (area_id) WHERE deleted_at IS NULL;
+CREATE INDEX idx_notable_plants_location ON notable_plants (location_id) WHERE deleted_at IS NULL;
 ```
 
 #### activity_plant_items
@@ -2472,7 +2472,7 @@ CREATE TABLE seed_transactions (
   supplier TEXT,
   receipt_url TEXT,
   to_rayon_id UUID REFERENCES rayons(id) ON DELETE SET NULL,
-  to_area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+  to_area_id UUID REFERENCES locations(id) ON DELETE SET NULL,
   recipient_name TEXT,
   occurred_at DATE NOT NULL,
   recorded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -2537,8 +2537,8 @@ CREATE INDEX idx_location_logs_user_shift_time ON location_logs (user_id, shift_
 #### user_tracking_status (additional indexes)
 
 ```sql
-CREATE INDEX idx_uts_area_updated ON user_tracking_status (area_id, updated_at DESC);
-CREATE INDEX idx_uts_within_area ON user_tracking_status (is_within_area, area_id);
+CREATE INDEX idx_uts_location_updated ON user_tracking_status (location_id, updated_at DESC);
+CREATE INDEX idx_uts_within_area ON user_tracking_status (is_within_area, location_id);
 ```
 
 #### monitoring_configs (new rows)

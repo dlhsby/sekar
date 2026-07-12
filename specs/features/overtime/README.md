@@ -7,7 +7,7 @@ Overtime request submission by field workers with a clock-in/clock-out flow, rou
 
 ## Key decisions
 - **Overtime clock-in/out flow** (ADR-014) — overtime is a distinct shift flow, not a task.
-- 3-level approval hierarchy (korlap → kepala_rayon → management, scoped by area/rayon).
+- 3-level approval hierarchy (korlap → kepala_rayon → management, scoped by location/rayon).
 
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)

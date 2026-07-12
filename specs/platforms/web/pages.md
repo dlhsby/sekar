@@ -271,8 +271,8 @@ GET /api/supervisor/active-workers
     workers: Array<{
       id: string,
       name: string,
-      area: {id: string, name: string, type: string},
-      location: {lat: number, lng: number, timestamp: string},
+      location: {id: string, name: string, type: string},
+      position: {lat: number, lng: number, timestamp: string},
       shift: {
         clock_in_time: string,
         hours_worked: number
@@ -281,12 +281,12 @@ GET /api/supervisor/active-workers
     }>
   }
 
-GET /api/areas?include_boundaries=true
+GET /api/locations?include_boundaries=true
   Response: {
-    areas: Array<{
+    locations: Array<{
       id: string,
       name: string,
-      area_type: string,
+      location_type: string,
       center: {lat: number, lng: number},
       radius_meters: number,
       assigned_workers_count: number
@@ -308,9 +308,9 @@ GET /api/location/worker/:workerId?from_date=&to_date=
 - Click marker → Show info popup
 - Click "View Details" → Navigate to worker detail page
 - Click "Track" → Enable route tracking mode
-- Click area boundary → Show area details modal
+- Click location boundary → Show location details modal
 - Search worker → Center map and highlight
-- Filter area type → Show/hide relevant markers
+- Filter location type → Show/hide relevant markers
 - Toggle clustering → Recalculate markers
 - Drag map → Update visible workers list
 
@@ -406,7 +406,7 @@ GET /api/location/worker/:workerId?from_date=&to_date=
 
 **API Endpoints:**
 ```typescript
-GET /api/users?role=worker&page=1&limit=20&search=&area_id=&status=
+GET /api/users?role=worker&page=1&limit=20&search=&location_id=&status=
   Response: {
     workers: Array<{
       id: string,
@@ -430,7 +430,7 @@ GET /api/users?role=worker&page=1&limit=20&search=&area_id=&status=
   }
 
 POST /api/workers/bulk-assign
-  Body: {worker_ids: string[], area_id: string}
+  Body: {worker_ids: string[], location_id: string}
 
 PATCH /api/users/bulk-update
   Body: {user_ids: string[], is_active: boolean}
@@ -685,7 +685,7 @@ PATCH /api/users/:id
   Response: {user: {...}}
 
 POST /api/workers/:id/assign
-  Body: {area_id: string}
+  Body: {location_id: string}
   Response: {assignment: {...}}
 
 GET /api/areas  // For area dropdown
@@ -709,7 +709,7 @@ const workerSchema = z.object({
   password: z.string()
     .min(6, 'Password must be at least 6 characters')
     .optional(),
-  area_id: z.string().uuid().optional(),
+  location_id: z.string().uuid().optional(),
   is_active: z.boolean().default(true)
 });
 ```
@@ -827,7 +827,7 @@ Each card shows:
 
 **API Endpoints:**
 ```typescript
-GET /api/reports?page=1&limit=24&search=&worker_id=&area_id=&area_type=&report_type=&status=&from_date=&to_date=&sort=
+GET /api/reports?page=1&limit=24&search=&worker_id=&location_id=&location_type=&report_type=&status=&from_date=&to_date=&sort=
   Response: {
     reports: Array<{
       id: string,
@@ -1157,7 +1157,7 @@ Click worker row to expand:
 
 **API Endpoints:**
 ```typescript
-GET /api/supervisor/attendance?date=2026-01-16&area_id=&area_type=&status=
+GET /api/supervisor/attendance?date=2026-01-16&location_id=&location_type=&status=
   Response: {
     date: string,
     summary: {
@@ -1394,7 +1394,7 @@ Sortable by any column, filterable by area.
 
 **API Endpoints:**
 ```typescript
-GET /api/analytics/summary?from_date=&to_date=&area_id=&area_type=
+GET /api/analytics/summary?from_date=&to_date=&location_id=&location_type=
   Response: {
     avg_attendance_rate: number,
     total_hours: number,
@@ -1440,7 +1440,7 @@ GET /api/analytics/reports-by-type?from_date=&to_date=
 
 GET /api/analytics/area-coverage?from_date=&to_date=
   Response: {
-    area_types: Array<{
+    location_types: Array<{
       type: string,
       count: number,
       percentage: number,
@@ -1488,13 +1488,13 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 
 ---
 
-## 7. Area Management
+## 7. Location Management
 
-### 7.1 Areas List Page
+### 7.1 Locations List Page
 
-**Route:** `/dashboard/areas`
+**Route:** `/dashboard/locations`
 **Access:** Supervisor, Admin
-**Description:** Manage work areas with CRUD operations and bulk actions.
+**Description:** Manage work locations with CRUD operations and bulk actions.
 
 ### Page Layout
 
@@ -1502,15 +1502,15 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 ┌─────────────────────────────────────────────────────────┐
 │ Header                                                  │
 ├──────────┬──────────────────────────────────────────────┤
-│          │ Areas Management                             │
+│          │ Locations Management                         │
 │ Sidebar  │                                              │
 │          │ [Filters & Actions Bar]                      │
 │          │ ┌────────────────────────────────────────┐  │
-│          │ │[Search] [Type▼] [Status▼] [+ New Area]│  │
+│          │ │[Search] [Type▼] [Status▼] [+ New Location]│
 │          │ │[Import KMZ] [View on Map]              │  │
 │          │ └────────────────────────────────────────┘  │
 │          │                                              │
-│          │ [Areas Table]                                │
+│          │ [Locations Table]                            │
 │          │ ┌────────────────────────────────────────┐  │
 │          │ │☑│Name         │Type  │Workers│Status  │  │
 │          │ ├────────────────────────────────────────┤  │
@@ -1522,9 +1522,9 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 │          │                                              │
 │          │ [Map Preview - Collapsible]                  │
 │          │ ┌────────────────────────────────────────┐  │
-│          │ │  [Google Map showing all areas]        │  │
+│          │ │  [Google Map showing all locations]    │  │
 │          │ │  - Color-coded by type                 │  │
-│          │ │  - Click area for details              │  │
+│          │ │  - Click location for details          │  │
 │          │ └────────────────────────────────────────┘  │
 │          │                                              │
 │          │ [Pagination] [Bulk Actions]                  │
@@ -1535,8 +1535,8 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 
 #### Table Columns
 - **Checkbox** - Select for bulk actions
-- **Area Name** - Full name (sortable)
-- **Area Type** - Badge with icon (Park, Pedestrian, Mini Garden, Street)
+- **Location Name** - Full name (sortable)
+- **Location Type** - Badge with icon (Park, Pedestrian, Mini Garden, Street)
 - **Address** - Full address (truncated with tooltip)
 - **GPS Coordinates** - Lat/Lng with map icon (click to view)
 - **Radius** - Geofence radius in meters
@@ -1548,23 +1548,23 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 - **Actions** - View, Edit, Assign Workers, Deactivate, Delete
 
 #### Filters & Search
-- **Search** - Area name, address (debounced 300ms)
-- **Area Type Filter** - Park, Pedestrian, Mini Garden, Street, All
+- **Search** - Location name, address (debounced 300ms)
+- **Location Type Filter** - Park, Pedestrian, Mini Garden, Street, All
 - **Status Filter** - Active, Inactive, All
 - **Assignment Filter** - Has Workers, No Workers, All
 - **Sort By** - Name, Type, Workers Count, Created Date
 
 #### Map Preview
 - Toggle to show/hide map
-- All areas displayed as circles
-- Color-coded by area type
+- All locations displayed as circles
+- Color-coded by location type
 - Click circle to highlight in table
-- Zoom to fit all areas
-- Search area on map
+- Zoom to fit all locations
+- Search location on map
 
 #### Bulk Actions
 - Assign Workers (opens multi-select modal)
-- Change Area Type
+- Change Location Type
 - Activate/Deactivate
 - Export Selected (CSV, KML)
 - Delete Areas (admin only, confirmation required)
@@ -1573,12 +1573,12 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 
 **API Endpoints:**
 ```typescript
-GET /api/areas?page=1&limit=50&search=&area_type=&status=&sort=
+GET /api/locations?page=1&limit=50&search=&location_type=&status=&sort=
   Response: {
-    areas: Array<{
+    locations: Array<{
       id: string,
       name: string,
-      area_type: {id, code, name},
+      location_type: {id, code, name},
       address: string,
       gps_lat: string,
       gps_lng: string,
@@ -1591,21 +1591,21 @@ GET /api/areas?page=1&limit=50&search=&area_type=&status=&sort=
     total: number
   }
 
-POST /api/areas/bulk-assign
-  Body: {area_ids: string[], worker_ids: string[]}
+POST /api/locations/bulk-assign
+  Body: {location_ids: string[], worker_ids: string[]}
 
-PATCH /api/areas/bulk-update
-  Body: {area_ids: string[], is_active?: boolean, area_type_id?: string}
+PATCH /api/locations/bulk-update
+  Body: {location_ids: string[], is_active?: boolean, location_type_id?: string}
 
-DELETE /api/areas/bulk-delete
-  Body: {area_ids: string[]}
+DELETE /api/locations/bulk-delete
+  Body: {location_ids: string[]}
 ```
 
 ### User Interactions
-- Click row → Navigate to area detail page
+- Click row → Navigate to location detail page
 - Click GPS icon → Open map modal
 - Click worker count → Open assigned workers modal
-- Click "New Area" → Navigate to create form
+- Click "New Location" → Navigate to create form
 - Click "Import KMZ" → Open file uploader
 - Apply filter → Refetch with filter params
 - Toggle status → Update immediately with confirmation
@@ -1615,7 +1615,7 @@ DELETE /api/areas/bulk-delete
 
 ### 7.2 Area Detail Page
 
-**Route:** `/dashboard/areas/:id`
+**Route:** `/dashboard/locations/:id`
 **Access:** Supervisor, Admin
 **Description:** Detailed view of single area with all related data.
 
@@ -1751,10 +1751,10 @@ GET /api/areas/:id?include=workers,stats
     }
   }
 
-GET /api/shifts?area_id=:id&from_date=&to_date=
+GET /api/shifts?location_id=:id&from_date=&to_date=
   Response: {shifts: [...]}
 
-GET /api/reports?area_id=:id&from_date=&to_date=
+GET /api/reports?location_id=:id&from_date=&to_date=
   Response: {reports: [...]}
 
 GET /api/analytics/area/:id?from_date=&to_date=
@@ -1775,7 +1775,7 @@ GET /api/analytics/area/:id?from_date=&to_date=
 
 ### 7.3 Create/Edit Area Form
 
-**Route:** `/dashboard/areas/new` or `/dashboard/areas/:id/edit`
+**Route:** `/dashboard/locations/new` or `/dashboard/locations/:id/edit`
 **Access:** Admin only
 **Description:** Form to create new area or edit existing area.
 
@@ -1869,7 +1869,7 @@ GET /api/analytics/area/:id?from_date=&to_date=
 POST /api/areas
   Body: {
     name: string,
-    area_type_id: string,
+    location_type_id: string,
     address?: string,
     gps_lat: number,
     gps_lng: number,
@@ -1883,7 +1883,7 @@ PATCH /api/areas/:id
   Response: {area: {...}}
 
 GET /api/area-types  // For area type dropdown
-  Response: {area_types: [...]}
+  Response: {location_types: [...]}
 
 POST /api/areas/validate-location
   Body: {gps_lat: number, gps_lng: number, radius_meters: number}
@@ -1901,7 +1901,7 @@ const areaSchema = z.object({
   name: z.string()
     .min(2, 'Name must be at least 2 characters')
     .max(200, 'Name must be less than 200 characters'),
-  area_type_id: z.string().uuid('Select an area type'),
+  location_type_id: z.string().uuid('Select a location type'),
   address: z.string().max(500, 'Address is too long').optional(),
   gps_lat: z.number()
     .min(-90, 'Latitude must be between -90 and 90')
@@ -2644,7 +2644,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 | Component | File | Notes |
 |-----------|------|-------|
 | ClusterLayer | `src/components/monitoring/ClusterLayer.tsx` | Google Maps cluster source with custom paint for count bubbles |
-| PlantOverlayLayer | `src/components/monitoring/PlantOverlayLayer.tsx` | Area polygon fills tinted by `area_plants.status` |
+| PlantOverlayLayer | `src/components/monitoring/PlantOverlayLayer.tsx` | Area polygon fills tinted by `location_plants.status` |
 | AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Legend + area highlight on hover |
 | HierarchyFilterPanel | `src/components/monitoring/HierarchyFilterPanel.tsx` | Toggle groups for rayon / area / worker-role hierarchy (role-aware) |
 | WorkerListVirtual | `src/components/monitoring/WorkerListVirtual.tsx` | react-virtuoso list, updates via WS patches |

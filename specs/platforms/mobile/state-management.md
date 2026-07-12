@@ -22,7 +22,7 @@ import shiftReducer from './slices/shiftSlice';
 import reportReducer from './slices/reportSlice';
 import offlineReducer from './slices/offlineSlice';
 import userReducer from './slices/userSlice';
-import areaReducer from './slices/areaSlice';
+import locationsReducer from './slices/locationsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -31,7 +31,7 @@ export const store = configureStore({
     report: reportReducer,
     offline: offlineReducer,
     user: userReducer,
-    area: areaReducer,
+    locations: locationsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -623,7 +623,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['auth', 'area'], // Only persist these slices
+  whitelist: ['auth', 'locations'], // Only persist these slices
   blacklist: ['shift', 'report'], // Don't persist these
 };
 
@@ -746,7 +746,7 @@ interface MonitoringState {
 
 interface MonitoringFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus;
   search?: string;
@@ -799,7 +799,7 @@ type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offl
 - No Redux slice needed (fetched on-demand in components via `useState`/`useEffect`)
 
 ### User Model Changes
-- `User` type adds: `phone_number`, `profile_picture_url`, `user_areas[]`
+- `User` type adds: `phone_number`, `profile_picture_url`, `user_locations[]`
 - `Shift` type adds: `is_overtime` boolean
 - `Overtime` type adds: `shift_id`, `shift?` relation
 

@@ -48,9 +48,9 @@ Cache computed responses to reduce database queries.
 
 | Endpoint | TTL | Invalidation Trigger |
 |----------|-----|---------------------|
-| `GET /areas` | 24 hours | Area CRUD operations |
-| `GET /areas/:id` | 24 hours | Area update |
-| `GET /area-types` | 7 days | Rarely changes |
+| `GET /locations` | 24 hours | Location CRUD operations |
+| `GET /locations/:id` | 24 hours | Location update |
+| `GET /location-types` | 7 days | Rarely changes |
 | `GET /users` (list) | 5 minutes | User CRUD operations |
 | `GET /users/:id` | 1 hour | User update |
 | `GET /supervisor/dashboard` | 30 seconds | Shift/report changes |
@@ -122,16 +122,16 @@ interface DashboardStats {
   activeShifts: number;
   pendingReports: number;
   completedReports: number;
-  areasWithActivity: number;
+  locationsWithActivity: number;
 }
 ```
 
-**Area Boundaries (GPS coordinates):**
+**Location Boundaries (GPS coordinates):**
 ```typescript
-// Cache key: `area:${area_id}:boundaries`
+// Cache key: `area:${location_id}:boundaries`
 // TTL: 24 hours
-// Invalidate: On area update
-interface AreaBoundary {
+// Invalidate: On location update
+interface LocationBoundary {
   gps_lat: number;
   gps_lng: number;
   radius_meters: number;
@@ -146,17 +146,17 @@ Cache static data in application memory for ultra-fast access.
 
 #### Cacheable Data
 
-**Area Types:**
+**Location Types:**
 ```typescript
 // Singleton service with in-memory cache
 @Injectable()
-export class AreaTypesCache {
-  private cache: AreaType[] = [];
+export class LocationTypesCache {
+  private cache: LocationType[] = [];
   private lastRefresh: Date;
 
-  async getAll(): Promise<AreaType[]> {
+  async getAll(): Promise<LocationType[]> {
     if (this.shouldRefresh()) {
-      this.cache = await this.areaTypesRepository.find();
+      this.cache = await this.locationTypeRepository.find();
       this.lastRefresh = new Date();
     }
     return this.cache;
@@ -199,14 +199,14 @@ await redis.setex('key', 3600, JSON.stringify(data)); // 1 hour TTL
 Invalidate cache when source data changes.
 
 ```typescript
-// After updating area
+// After updating location
 @Put(':id')
-async update(@Param('id') id: string, @Body() dto: UpdateAreaDto) {
-  const updated = await this.areasService.update(id, dto);
+async update(@Param('id') id: string, @Body() dto: UpdateLocationDto) {
+  const updated = await this.locationsService.update(id, dto);
 
   // Invalidate cache
   await this.cacheManager.del(`area:${id}`);
-  await this.cacheManager.del('areas:list');
+  await this.cacheManager.del('locations:list');
 
   return updated;
 }
@@ -385,18 +385,18 @@ async function bootstrap() {
 @Injectable()
 export class CacheWarmerService {
   constructor(
-    private areasService: AreasService,
-    private areaTypesService: AreaTypesService,
+    private locationsService: LocationsService,
+    private locationTypesService: LocationTypesService,
   ) {}
 
   async warmup() {
     console.log('[Cache] Warming up...');
 
-    // Load all areas (referenced frequently for GPS validation)
-    await this.areasService.findAll();
+    // Load all locations (referenced frequently for GPS validation)
+    await this.locationsService.findAll();
 
-    // Load area types
-    await this.areaTypesService.findAll();
+    // Load location types
+    await this.locationTypesService.findAll();
 
     console.log('[Cache] Warmup complete');
   }
@@ -508,18 +508,18 @@ await redis.set(`user:${id}:basic`, JSON.stringify({
 ### Unit Tests
 
 ```typescript
-describe('CachedAreasService', () => {
-  it('should return cached area on second call', async () => {
-    const area = await service.findOne('area-id');
+describe('CachedLocationsService', () => {
+  it('should return cached location on second call', async () => {
+    const location = await service.findOne('location-id');
 
     // First call hits database
     expect(repository.findOne).toHaveBeenCalledTimes(1);
 
-    const cachedArea = await service.findOne('area-id');
+    const cachedLocation = await service.findOne('location-id');
 
     // Second call uses cache
     expect(repository.findOne).toHaveBeenCalledTimes(1);
-    expect(cachedArea).toEqual(area);
+    expect(cachedLocation).toEqual(location);
   });
 });
 ```
@@ -528,7 +528,7 @@ describe('CachedAreasService', () => {
 
 ```bash
 # Artillery load test with caching
-artillery quick --count 100 --num 1000 http://localhost:3000/api/areas
+artillery quick --count 100 --num 1000 http://localhost:3000/api/locations
 
 # Expected results:
 # - Without cache: ~300ms p95, 30% DB CPU
@@ -548,14 +548,14 @@ artillery quick --count 100 --num 1000 http://localhost:3000/api/areas
 
 ### Phase 2.2: Implement Application Cache (Week 2)
 
-- [ ] Cache area types (in-memory)
-- [ ] Cache area boundaries (Redis)
+- [ ] Cache location types (in-memory)
+- [ ] Cache location boundaries (Redis)
 - [ ] Cache user profiles (Redis)
 
 ### Phase 2.3: Implement API Cache (Week 3)
 
 - [ ] Cache supervisor dashboard (30s TTL)
-- [ ] Cache area list endpoints (24h TTL)
+- [ ] Cache location list endpoints (24h TTL)
 - [ ] Cache user list endpoints (5m TTL)
 
 ### Phase 2.4: Add Monitoring (Week 4)

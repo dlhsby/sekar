@@ -784,7 +784,7 @@ it('should only allow admin to delete users', async () => {
 it('should validate GPS within boundary', () => {
   const result = gpsUtils.isWithinBoundary(
     -7.2905, 112.7398,  // Current position
-    -7.2905, 112.7398,  // Area center
+    -7.2905, 112.7398,  // Location center
     100                  // Radius in meters
   );
 

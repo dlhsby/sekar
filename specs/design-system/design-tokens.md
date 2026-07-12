@@ -228,7 +228,7 @@ Used by the monitoring map and status chips. Not the same as generic success/war
 
 ### Colors — Plant status (Phase 3)
 
-| Token | Hex | Area polygon fill opacity |
+| Token | Hex | Location polygon fill opacity |
 |-------|-----|---------------------------|
 | `plant.ok` | `#15803D` | 0.15 |
 | `plant.due` | `#D97706` | 0.25 |

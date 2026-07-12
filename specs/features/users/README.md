@@ -1,12 +1,12 @@
 # Users & Profile
 
-**Status:** ✅ Active · **Backend:** `users`, `user-areas` · **Key ADRs:** ADR-009 (roles), ADR-013 (multi-area)
+**Status:** ✅ Active · **Backend:** `users`, `user-locations` · **Key ADRs:** ADR-009 (roles), ADR-013 (multi-location)
 
 ## Overview
-User CRUD (admin), self-profile management, preferred language, profile photo, and user→area assignment. Korlap may be assigned to multiple areas.
+User CRUD (admin), self-profile management, preferred language, profile photo, and user→location assignment. Korlap may be assigned to multiple locations.
 
 ## Key decisions
-- **Multi-area assignment** (ADR-013) — junction table `user_areas` for many-to-many korlap↔area.
+- **Multi-location assignment** (ADR-013) — junction table `user_locations` for many-to-many korlap↔location.
 - `users.preferred_language` drives app locale (id/en); `users.rayon_id` scopes admin_data authority.
 
 ## Implementation

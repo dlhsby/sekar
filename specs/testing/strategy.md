@@ -673,8 +673,8 @@ it('should reject worker accessing supervisor endpoints', async () => {
 |------|-------|----------|
 | Phone number login (dual-identifier) | 8 unit + 3 E2E | CRITICAL |
 | Profile picture upload (S3 integration) | 5 unit | HIGH |
-| Multi-area assignment (user_areas CRUD) | 10 unit + 2 integration | CRITICAL |
-| Multi-area boundary checking | 6 unit | CRITICAL |
+| Multi-location assignment (user_locations CRUD) | 10 unit + 2 integration | CRITICAL |
+| Multi-location boundary checking | 6 unit | CRITICAL |
 | Admin_data/kepala_rayon clock-in (rayon boundary) | 4 unit | HIGH |
 | Overtime clock-in/out flow | 10 unit + 1 integration | CRITICAL |
 | Optional selfie (shift + overtime) | 3 unit | MEDIUM |
@@ -732,7 +732,7 @@ k6 load test harness at `infra/loadtest/` — **scenario validated, baseline sna
 - ✅ `03-task-management.spec.ts` (18 tests)
 - ✅ `04-reports-review.spec.ts` (16 tests)
 - ✅ `05-navigation-dashboard.spec.ts` (14 tests)
-- ✅ `06-areas-management.spec.ts` (20 tests)
+- ✅ `06-locations-management.spec.ts` (20 tests)
 - ✅ `07-schedules.spec.ts` (27 tests)
 - ✅ `08-monitoring.spec.ts` (41 tests)
 - ✅ `12-security.spec.ts` (23 tests — auth/RBAC/IDOR/rate-limit)

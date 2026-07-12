@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Patch release** — execution of v2.1.0 spec lock. No new tokens; this entry tracks the implementation rollout.
 
+### Terminology Updates
+
+- **Area → Location:** Renamed entity to match backend/mobile/web code. Leaf geography entity is now **Location (EN) / Lokasi (ID)**, formerly "Area". Hierarchy: **City → District (Rayon) → Region (Kawasan) → Location**. Generic umbrella term "monitoring area" retained for prose.
+
 ### Shipped
 
 - **3-R1 (Token pipeline + CI + ESLint) — 2026-04-25.** `scripts/build-tokens.ts` generator emits `apps/web/src/app/generated/tokens.css` + `apps/mobile/src/constants/generated/tokens.ts` from `tokens.json`. CI job `tokens-verify` regenerates and `git diff --exit-code`s on every PR. ESLint rules `no-inline-hex-colors`, `no-tailwind-shadow-classes-with-blur`, `prefer-nb-shadow-utility`, RN ban on `shadowRadius > 0`.

@@ -1469,6 +1469,44 @@ export class FixTaskAssignmentIssue1705478400000 implements MigrationInterface {
 
 ---
 
+## Area → Location Rename (Post-Phase 2D)
+
+**Overview:** Complete rename of the "Area" entity to "Location" across database schema, API routes, and documentation. Driven by product terminology cleanup (ADR-010).
+
+### Migrations
+
+Two idempotent migrations handle this rename:
+
+1. **`17492300000000-RenameAreaToLocation`** — Rename tables and columns:
+   - DB tables: `areas` → `locations`, `area_types` → `location_types`, `area_staff_requirements` → `location_staff_requirements`, `user_areas` → `user_locations`, `schedule_areas` → `schedule_locations`, `area_plants` → `location_plants`
+   - DB columns: `area_id` → `location_id`, `area_type_id` → `location_type_id`
+   - Constraints, indexes, and foreign key names updated
+   - Idempotent: can be run multiple times safely
+
+2. **`17492400000000-ReconcileSyncOnlyArtifacts`** — Reconcile computed/sync-only structures:
+   - Updates views, triggers, or other database artifacts that reference old names
+   - Idempotent
+
+### Backward Compatibility Notes
+
+**Code that CHANGED (update your app):**
+- API routes: `/areas` → `/locations` (keep `/areas` as deprecated alias)
+- Response field names: `assigned_area_ids` → `assigned_location_ids`, `assigned_area_count` → `assigned_location_count` (in `/users` and monitoring endpoints)
+- JWT payload field: `area_id` → `location_id`
+
+**Code that STAYED THE SAME (do NOT change):**
+- Response fields: `area_name`, `is_within_area` (still emitted by DTOs)
+- Auth endpoint `/me` still returns `assigned_area` (DTO field) — though the internal Location object is now used
+- Route path `/areas/:locationId/staff-requirements` (path prefix unchanged, only param name changed)
+- Internal enum `entityType` value still `'areas'`
+
+**Deployment Order:**
+1. Run migrations (`npm run migration:run`)
+2. Deploy app code (updated routes, field names)
+3. Update API documentation and clients
+
+---
+
 ## Phase Migration Examples
 
 ### Phase 1 to Phase 2: Role Enum Migration

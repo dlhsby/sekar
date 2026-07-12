@@ -25,7 +25,7 @@ SEKAR (Sistem Evaluasi Kinerja Satgas RTH) is a distributed worker tracking and 
 │                    NestJS Backend API                         │
 ├───────────────────────────────────────────────────────────────┤
 │  ┌─────────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
-│  │ Auth Module │  │  Users   │  │  Areas   │  │  Shifts  │ │
+│  │ Auth Module │  │  Users   │  │Locations │  │  Shifts  │ │
 │  └─────────────┘  └──────────┘  └──────────┘  └──────────┘ │
 │  ┌─────────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │
 │  │   Reports   │  │ Location │  │Supervisor│  │Assignments│ │
@@ -71,9 +71,9 @@ Mobile architecture prioritizes offline operation:
 **Key Modules:**
 - **auth:** JWT authentication, role-based access control
 - **users:** User management (CRUD, soft delete, profiles)
-- **area-types:** Work area type classification
-- **areas:** Work location management with GPS boundaries
-- **worker-assignments:** Worker-to-area assignments
+- **location-types:** Work location type classification
+- **locations:** Work location management with GPS boundaries
+- **location-staff-requirements:** Worker-to-location assignment requirements
 - **shifts:** Shift tracking (clock-in/out with GPS validation)
 - **reports:** Work report submission with multimedia
 - **location:** Real-time GPS tracking during shifts
@@ -121,7 +121,7 @@ Mobile architecture prioritizes offline operation:
 - Work report review and approval
 - Analytics and reporting
 - User management
-- Area configuration
+- Location configuration
 - Installable PWA (offline shell, Web Push)
 
 **Architecture Patterns:**
@@ -235,9 +235,9 @@ Mobile App
 Camera Service
   ↓ (4) POST /api/shifts/clock-in
 Backend API
-  ↓ (5) Validate GPS within area boundary
+  ↓ (5) Validate GPS within location boundary
 Haversine Calculation
-  ↓ (6) Validate worker assigned to area
+  ↓ (6) Validate worker assigned to location
 Database Query
   ↓ (7) Upload photo to S3
 AWS S3
@@ -446,7 +446,7 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 1. **Dual-Identifier Authentication (ADR-012):** Login accepts phone number OR username via `identifier` field. New `phone_number` column on users with unique partial index.
 
-2. **Multi-Area Assignment Model (ADR-013):** New `user_areas` junction table replaces single `users.area_id` for korlap. Supports `permanent` (admin-assigned) and `task_based` (auto-computed from active tasks) types. `users.area_id` kept for backward compatibility.
+2. **Multi-Location Assignment Model (ADR-013):** New `user_locations` junction table replaces single `users.location_id` for korlap. Supports `permanent` (admin-assigned) and `task_based` (auto-computed from active tasks) types. `users.location_id` kept for backward compatibility.
 
 3. **Overtime as Flagged Shift (ADR-014):** Overtime reuses shift infrastructure with `shifts.is_overtime` boolean. New `overtimes.shift_id` FK links overtime record to its clock-in/out shift. Requires normal shift clock-out before overtime clock-in.
 
@@ -456,7 +456,7 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 ### Breaking Changes
 - Login API: `{ username, password }` → `{ identifier, password }`
-- Monitoring scope: korlap multi-area boundary checking
+- Monitoring scope: korlap multi-location boundary checking
 - Overtime flow: submission-based → clock-in/out-based
 
 ---

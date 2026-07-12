@@ -133,7 +133,7 @@ api.interceptors.response.use(
 **8 Core Roles:**
 - `satgas` — Field worker (clock-in/out, reports)
 - `linmas` — Security/patrol (clock-in/out, reports)
-- `korlap` — Field coordinator (multi-area assignment, monitoring)
+- `korlap` — Field coordinator (multi-location assignment, monitoring)
 - `admin_data` — Data manager (disposition authority over pruning requests, scoped by rayon)
 - `kepala_rayon` — Rayon head (approvals, rayon oversight)
 - `top_management` — Executive dashboard
@@ -608,7 +608,7 @@ async validateLocation(lat: number, lng: number, timestamp: Date): Promise<void>
 
 ---
 
-### GS-2: Area Boundary Validation
+### GS-2: Location Boundary Validation
 
 #### Haversine Distance Calculation
 ```typescript
@@ -628,9 +628,9 @@ function calculateHaversine(lat1: number, lng1: number, lat2: number, lng2: numb
 }
 
 // Validation
-const distance = calculateHaversine(userLat, userLng, areaLat, areaLng);
+const distance = calculateHaversine(userLat, userLng, locationLat, locationLng);
 if (distance > 100) {
-  throw new BadRequestException('You are too far from the work area');
+  throw new BadRequestException('You are too far from the assigned location');
 }
 ```
 
@@ -646,7 +646,7 @@ if (distance > 100) {
 - Report submissions
 - Report approvals/rejections
 - User creation/modification/deletion
-- Area assignments
+- Location assignments
 - Failed authentication attempts
 - GPS validation failures
 
@@ -899,7 +899,7 @@ Phase 2C's ADR-009 explicitly excluded `admin_data` from approval flows (overtim
 
 - **What changes:** New permission constant `PRUNING_REQUEST_REVIEWERS` (admin_data + top_management + admin_system + superadmin) governs `POST /pruning-requests/:id/review` and `POST /pruning-requests/:id/convert-to-task`. `admin_data` actions are additionally constrained by `pruning_requests.rayon_id = actor.rayon_id` (or null before review, in which case `admin_data` may assign it to their own rayon).
 - **What does NOT change:** `admin_data` gains no rights over overtime approval, schedule approval, or user management. The extension is surgical: a single new capability, scoped tightly, audited via `audit_logs`.
-- **Rationale:** `admin_data` is already rayon-scoped per ADR-013 (multi-area assignment) and is the organizational owner of per-rayon data operations. Creating a new `admin_rayon` role would duplicate responsibility.
+- **Rationale:** `admin_data` is already rayon-scoped per ADR-013 (multi-location assignment) and is the organizational owner of per-rayon data operations. Creating a new `admin_rayon` role would duplicate responsibility.
 
 #### staff_kecamatan — New External Role (ADR-033)
 
@@ -915,7 +915,7 @@ Kecamatan (sub-district) staff are outside the DLH org chart but need structured
 Redis 7 enters the production trust boundary earlier than Phase 4 planning had anticipated. Security implications:
 
 - **Network posture:** Redis binds to a private subnet only, not publicly reachable. ACL user per service (Socket.IO adapter user, Streams consumer user, cache user) with minimum-necessary command access. No default user / no empty password.
-- **Data classification:** Stream entries contain `user_id`, GPS coordinates, area IDs, timestamps — classified the same as `location_logs` (sensitive). `redis_stream_max_len` cap (100,000) prevents unbounded retention; TTL on cache keys is 5 minutes.
+- **Data classification:** Stream entries contain `user_id`, GPS coordinates, location IDs, timestamps — classified the same as `location_logs` (sensitive). `redis_stream_max_len` cap (100,000) prevents unbounded retention; TTL on cache keys is 5 minutes.
 - **Failure mode:** If Redis is unreachable the monitoring pipeline falls back to in-process Socket.IO pub/sub (single-instance degraded mode) and the `/health` endpoint surfaces `redis: degraded`. Degraded mode is a known-state fallback, not a silent failure.
 - **Secrets:** `REDIS_URL` (connection string with password) stored in AWS Secrets Manager; local/dev uses `.env.example` placeholder. Rotation policy: 90 days (matches IAM key rotation).
 - **Audit:** Connection attempts logged via Redis `SLOWLOG` + application-level connect/disconnect events written to `audit_logs` with `entity_type = 'infrastructure'` for operations-initiated actions.

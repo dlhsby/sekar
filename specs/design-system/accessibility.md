@@ -515,7 +515,7 @@ SEKAR is used by park workers in outdoor environments with challenging condition
   color: colors.black,                  // #1C1917 (Stone-900)
   fontFamily: 'Inter',                  // NB 2.0 body font
 }}>
-  Area: Taman Bungkul
+  Location: Taman Bungkul
 </Text>
 
 // ✅ Use warm pastel backgrounds (NB 2.0)
@@ -600,7 +600,7 @@ SEKAR is used by park workers in outdoor environments with challenging condition
   }}
 >
   <Text style={{ fontSize: 16, fontWeight: '500' }}>
-    Area: Taman Bungkul
+    Location: Taman Bungkul
   </Text>
 </TouchableOpacity>
 ```

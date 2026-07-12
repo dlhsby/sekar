@@ -9,8 +9,8 @@ This document provides comprehensive test data, fixtures, and sample datasets fo
 ## Table of Contents
 
 1. [Test Users](#test-users)
-2. [Area Types](#area-types)
-3. [Sample Areas](#sample-areas)
+2. [Location Types](#location-types)
+3. [Sample Locations](#sample-locations)
 4. [GPS Coordinates](#gps-coordinates)
 5. [Worker Assignments](#worker-assignments)
 6. [Shifts](#shifts)
@@ -129,7 +129,7 @@ export const TEST_TOKENS = {
 
 ---
 
-## Area Types
+## Location Types
 
 ```typescript
 export const TEST_AREA_TYPES = {
@@ -169,18 +169,18 @@ export const TEST_AREA_TYPES = {
 
 ---
 
-## Sample Areas
+## Sample Locations
 
 ### Surabaya Landmarks
 
 ```typescript
-export const TEST_AREAS = {
+export const TEST_LOCATIONS = {
   tamanBungkul: {
     id: 'aaaa1111-1111-1111-1111-111111111111',
     name: 'Taman Bungkul',
-    area_type_id: '1',
-    area_type_code: 'park',
-    area_type_name: 'Taman',
+    location_type_id: '1',
+    location_type_code: 'park',
+    location_type_name: 'Taman',
     gps_lat: -7.2905,
     gps_lng: 112.7398,
     radius_meters: 150,
@@ -193,9 +193,9 @@ export const TEST_AREAS = {
   jalanRayaDarmo: {
     id: 'aaaa2222-2222-2222-2222-222222222222',
     name: 'Jalan Raya Darmo',
-    area_type_id: '2',
-    area_type_code: 'pedestrian',
-    area_type_name: 'Trotoar',
+    location_type_id: '2',
+    location_type_code: 'pedestrian',
+    location_type_name: 'Trotoar',
     gps_lat: -7.2844,
     gps_lng: 112.7915,
     radius_meters: 200,
@@ -208,9 +208,9 @@ export const TEST_AREAS = {
   tamanHarmoni: {
     id: 'aaaa3333-3333-3333-3333-333333333333',
     name: 'Taman Harmoni',
-    area_type_id: '1',
-    area_type_code: 'park',
-    area_type_name: 'Taman',
+    location_type_id: '1',
+    location_type_code: 'park',
+    location_type_name: 'Taman',
     gps_lat: -7.3037,
     gps_lng: 112.7375,
     radius_meters: 100,
@@ -223,9 +223,9 @@ export const TEST_AREAS = {
   tamanSurya: {
     id: 'aaaa4444-4444-4444-4444-444444444444',
     name: 'Taman Surya',
-    area_type_id: '1',
-    area_type_code: 'park',
-    area_type_name: 'Taman',
+    location_type_id: '1',
+    location_type_code: 'park',
+    location_type_name: 'Taman',
     gps_lat: -7.2571,
     gps_lng: 112.7512,
     radius_meters: 120,
@@ -235,12 +235,12 @@ export const TEST_AREAS = {
     updated_at: new Date('2026-01-01T00:00:00Z'),
   },
 
-  inactiveArea: {
+  inactiveLocation: {
     id: 'aaaa5555-5555-5555-5555-555555555555',
     name: 'Area Nonaktif',
-    area_type_id: '1',
-    area_type_code: 'park',
-    area_type_name: 'Taman',
+    location_type_id: '1',
+    location_type_code: 'park',
+    location_type_name: 'Taman',
     gps_lat: -7.2500,
     gps_lng: 112.7500,
     radius_meters: 100,
@@ -281,7 +281,7 @@ export const TEST_GPS_COORDS = {
     accuracy: 15,
   },
 
-  // Far from any area
+  // Far from any location
   farAway: {
     latitude: -7.5000,
     longitude: 113.0000,
@@ -335,21 +335,21 @@ export const TEST_WORKER_ASSIGNMENTS = {
   worker1ToBungkul: {
     id: 'bbbb1111-1111-1111-1111-111111111111',
     worker_id: TEST_USERS.worker1.id,
-    area_id: TEST_AREAS.tamanBungkul.id,
+    location_id: TEST_LOCATIONS.tamanBungkul.id,
     assigned_at: new Date('2026-01-01T00:00:00Z'),
   },
 
   worker2ToDarmo: {
     id: 'bbbb2222-2222-2222-2222-222222222222',
     worker_id: TEST_USERS.worker2.id,
-    area_id: TEST_AREAS.jalanRayaDarmo.id,
+    location_id: TEST_LOCATIONS.jalanRayaDarmo.id,
     assigned_at: new Date('2026-01-01T00:00:00Z'),
   },
 
   worker3ToHarmoni: {
     id: 'bbbb3333-3333-3333-3333-333333333333',
     worker_id: TEST_USERS.worker3.id,
-    area_id: TEST_AREAS.tamanHarmoni.id,
+    location_id: TEST_LOCATIONS.tamanHarmoni.id,
     assigned_at: new Date('2026-01-01T00:00:00Z'),
   },
 };
@@ -365,7 +365,7 @@ export const TEST_SHIFTS = {
   activeShift: {
     id: 'cccc1111-1111-1111-1111-111111111111',
     worker_id: TEST_USERS.worker1.id,
-    area_id: TEST_AREAS.tamanBungkul.id,
+    location_id: TEST_LOCATIONS.tamanBungkul.id,
     clock_in_time: new Date('2026-01-15T08:05:00Z'),
     clock_in_gps_lat: -7.2905,
     clock_in_gps_lng: 112.7398,
@@ -381,7 +381,7 @@ export const TEST_SHIFTS = {
   completedShift: {
     id: 'cccc2222-2222-2222-2222-222222222222',
     worker_id: TEST_USERS.worker1.id,
-    area_id: TEST_AREAS.tamanBungkul.id,
+    location_id: TEST_LOCATIONS.tamanBungkul.id,
     clock_in_time: new Date('2026-01-14T08:00:00Z'),
     clock_in_gps_lat: -7.2905,
     clock_in_gps_lng: 112.7398,
@@ -397,7 +397,7 @@ export const TEST_SHIFTS = {
   shortShift: {
     id: 'cccc3333-3333-3333-3333-333333333333',
     worker_id: TEST_USERS.worker2.id,
-    area_id: TEST_AREAS.jalanRayaDarmo.id,
+    location_id: TEST_LOCATIONS.jalanRayaDarmo.id,
     clock_in_time: new Date('2026-01-15T10:00:00Z'),
     clock_in_gps_lat: -7.2844,
     clock_in_gps_lng: 112.7915,
@@ -413,7 +413,7 @@ export const TEST_SHIFTS = {
   longShift: {
     id: 'cccc4444-4444-4444-4444-444444444444',
     worker_id: TEST_USERS.worker3.id,
-    area_id: TEST_AREAS.tamanHarmoni.id,
+    location_id: TEST_LOCATIONS.tamanHarmoni.id,
     clock_in_time: new Date('2026-01-14T07:00:00Z'),
     clock_in_gps_lat: -7.3037,
     clock_in_gps_lng: 112.7375,
@@ -599,14 +599,14 @@ const adminUser = createTestUser({ role: 'Admin', full_name: 'Admin User' });
 const workerUser = createTestUser({ role: 'Worker' });
 ```
 
-### Area Factory
+### Location Factory
 
 ```typescript
-export function createTestArea(overrides?: Partial<Area>): Area {
+export function createTestLocation(overrides?: Partial<Location>): Location {
   return {
     id: uuidv4(),
-    name: `Test Area ${Date.now()}`,
-    area_type_id: '1',
+    name: `Test Location ${Date.now()}`,
+    location_type_id: '1',
     gps_lat: -7.2905,
     gps_lng: 112.7398,
     radius_meters: 100,
@@ -628,7 +628,7 @@ export function createTestShift(overrides?: Partial<Shift>): Shift {
   return {
     id: uuidv4(),
     worker_id: TEST_USERS.worker1.id,
-    area_id: TEST_AREAS.tamanBungkul.id,
+    location_id: TEST_LOCATIONS.tamanBungkul.id,
     clock_in_time: clockInTime,
     clock_in_gps_lat: -7.2905,
     clock_in_gps_lng: 112.7398,
@@ -686,7 +686,7 @@ export const MOCK_CLOCK_IN_SUCCESS = {
 
 export const MOCK_CLOCK_IN_ERROR_OUTSIDE_BOUNDARY = {
   statusCode: 400,
-  message: 'GPS location is outside area boundary',
+  message: 'GPS location is outside location boundary',
   error: 'Bad Request',
 };
 
@@ -775,20 +775,20 @@ export const TEST_CONFIG = {
 ### Backend Unit Test
 
 ```typescript
-import { TEST_USERS, TEST_AREAS, createTestShift } from '../../test/fixtures';
+import { TEST_USERS, TEST_LOCATIONS, createTestShift } from '../../test/fixtures';
 
 describe('ShiftsService', () => {
   it('should create shift successfully', async () => {
     const worker = TEST_USERS.worker1;
-    const area = TEST_AREAS.tamanBungkul;
+    const location = TEST_LOCATIONS.tamanBungkul;
 
     mockUserRepository.findOne.mockResolvedValue(worker);
-    mockAreaRepository.findOne.mockResolvedValue(area);
+    mockLocationRepository.findOne.mockResolvedValue(location);
 
     const result = await service.clockIn(worker.id, {
-      area_id: area.id,
-      gps_lat: area.gps_lat,
-      gps_lng: area.gps_lng,
+      location_id: location.id,
+      gps_lat: location.gps_lat,
+      gps_lng: location.gps_lng,
     });
 
     expect(result).toHaveProperty('shift_id');
@@ -799,13 +799,13 @@ describe('ShiftsService', () => {
 ### Mobile Component Test
 
 ```typescript
-import { TEST_USERS, TEST_AREAS } from '../../test/fixtures';
+import { TEST_USERS, TEST_LOCATIONS } from '../../test/fixtures';
 
 describe('HomeScreen', () => {
   it('should display user info and assigned area', () => {
     const props = {
       user: TEST_USERS.worker1,
-      assignedArea: TEST_AREAS.tamanBungkul,
+      assignedLocation: TEST_LOCATIONS.tamanBungkul,
     };
 
     const { getByText } = render(<HomeScreen {...props} />);
@@ -884,7 +884,7 @@ export function createTestTrackingStatus(overrides?: Partial<UserTrackingStatus>
     last_accuracy: 10,
     last_location_at: new Date(),
     shift_id: TEST_SHIFTS.activeShift.id,
-    area_id: TEST_AREAS.tamanBungkul.id,
+    location_id: TEST_LOCATIONS.tamanBungkul.id,
     is_inside_boundary: true,
     created_at: new Date(),
     updated_at: new Date(),
@@ -957,7 +957,7 @@ When updating test data:
 |---------|---------|
 | Users with `phone_number` | Phone login testing (all clockable roles) |
 | Users with `profile_picture_url` | Profile picture display testing |
-| `user_areas` entries | Multi-area korlap + task-based satgas/linmas |
+| `user_locations` entries | Multi-location korlap + task-based satgas/linmas |
 | Shifts with `is_overtime: true` | Overtime shift testing |
 | Overtimes with `shift_id` | Overtime-shift linkage |
 | `audit_logs` entries | Audit trail display testing |

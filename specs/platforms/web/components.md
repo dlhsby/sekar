@@ -623,12 +623,12 @@ All components follow WCAG 2.1 AA standards:
 
 | Component | File | Description |
 |-----------|------|-------------|
-| MonitoringMap | `components/monitoring/MonitoringMap.tsx` | Google Maps map with area polygons, user markers (role-shaped, status-colored), supercluster clustering, hover tooltips, click selection |
+| MonitoringMap | `components/monitoring/MonitoringMap.tsx` | Google Maps map with location polygons, user markers (role-shaped, status-colored), supercluster clustering, hover tooltips, click selection |
 | MonitoringSidePanel | `components/monitoring/MonitoringSidePanel.tsx` | 35% width panel (min 320px, max 480px). Contains filters, 2×2 status cards, virtual-scroll user list. Push navigation for detail/timeline views |
 | UserDetailPanel | `components/monitoring/UserDetailPanel.tsx` | Push navigation within side panel. Shows shift info, last location, activities, tasks, WhatsApp/Call/History action buttons |
-| LocationTimeline | `components/monitoring/LocationTimeline.tsx` | Vertical timeline with distance/time summary. Per-point entries with timestamp, coords, accuracy, battery. Click syncs map. Events highlighted (clock-in, area-exit, area-enter) |
+| LocationTimeline | `components/monitoring/LocationTimeline.tsx` | Vertical timeline with distance/time summary. Per-point entries with timestamp, coords, accuracy, battery. Click syncs map. Events highlighted (clock-in, location-exit, location-enter) |
 | StatusCard | `components/monitoring/StatusCard.tsx` | Card in 2×2 grid. Count (28px bold), label (12px uppercase), icon (16px). Clickable filter toggle. Light status-color background |
-| UserListItem | `components/monitoring/UserListItem.tsx` | 60px row: status dot (10px), name (14px semibold), role badge + area (12px gray), relative time, battery icon < 20%. Selected: 3px left border |
+| UserListItem | `components/monitoring/UserListItem.tsx` | 60px row: status dot (10px), name (14px semibold), role badge + location (12px gray), relative time, battery icon < 20%. Selected: 3px left border |
 | MonitoringConfigForm | `components/monitoring/MonitoringConfigForm.tsx` | Form for admin threshold management. Number inputs, toggles. Calls PATCH /monitoring/config/:key per section |
 
 ### Status Color CSS Variables

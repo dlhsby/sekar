@@ -37,11 +37,11 @@ WHERE "deleted_at" IS NULL;
 #### 2. idx_shifts_area_date
 ```sql
 CREATE INDEX "idx_shifts_area_date"
-ON "shifts" ("area_id", "clock_in_time" DESC)
+ON "shifts" ("location_id", "clock_in_time" DESC)
 WHERE "deleted_at" IS NULL;
 ```
 - **Purpose:** Supervisor area filtering and monitoring
-- **Columns:** area_id, clock_in_time DESC
+- **Columns:** location_id, clock_in_time DESC
 - **Filter:** Excludes soft-deleted records
 - **Expected Impact:** 20-80x faster for area-based queries
 
@@ -182,11 +182,11 @@ ALTER TABLE "reports" ADD CONSTRAINT "chk_reports_gps_lng"
   CHECK (gps_lng IS NULL OR (gps_lng >= -180 AND gps_lng <= 180));
 ```
 
-#### Areas Table
+#### Locations Table
 ```sql
-ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_gps_lat"
+ALTER TABLE "locations" ADD CONSTRAINT "chk_locations_gps_lat"
   CHECK (gps_lat >= -90 AND gps_lat <= 90);
-ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_gps_lng"
+ALTER TABLE "locations" ADD CONSTRAINT "chk_locations_gps_lng"
   CHECK (gps_lng >= -180 AND gps_lng <= 180);
 ```
 
@@ -228,14 +228,14 @@ ALTER TABLE "reports" ADD CONSTRAINT "chk_reports_condition"
 - **Logic:** Only allow predefined Indonesian condition values
 - **Values:** Baik (Good), Cukup (Fair), Buruk (Poor)
 
-#### Area Radius Validation
+#### Location Radius Validation
 ```sql
-ALTER TABLE "areas" ADD CONSTRAINT "chk_areas_radius"
+ALTER TABLE "locations" ADD CONSTRAINT "chk_locations_radius"
   CHECK (radius_meters >= 1 AND radius_meters <= 10000);
 ```
 - **Purpose:** Enforce reasonable geofence sizes
 - **Logic:** Radius between 1m and 10km
-- **Impact:** Prevents configuration errors in area boundaries
+- **Impact:** Prevents configuration errors in location boundaries
 
 ---
 
@@ -412,10 +412,10 @@ WHERE gps_lat IS NOT NULL AND (gps_lat < -90 OR gps_lat > 90);
 SELECT 'Invalid reports lng' as issue, COUNT(*) FROM reports
 WHERE gps_lng IS NOT NULL AND (gps_lng < -180 OR gps_lng > 180);
 
-SELECT 'Invalid areas lat' as issue, COUNT(*) FROM areas
+SELECT 'Invalid locations lat' as issue, COUNT(*) FROM locations
 WHERE gps_lat < -90 OR gps_lat > 90;
 
-SELECT 'Invalid areas lng' as issue, COUNT(*) FROM areas
+SELECT 'Invalid locations lng' as issue, COUNT(*) FROM locations
 WHERE gps_lng < -180 OR gps_lng > 180;
 ```
 
@@ -436,8 +436,8 @@ WHERE battery_level IS NOT NULL
 SELECT 'Invalid report types' as issue, COUNT(*) FROM reports
 WHERE report_type NOT IN ('task_completion', 'incident', 'maintenance_request');
 
--- Check for invalid area radius
-SELECT 'Invalid area radius' as issue, COUNT(*) FROM areas
+-- Check for invalid location radius
+SELECT 'Invalid location radius' as issue, COUNT(*) FROM locations
 WHERE radius_meters < 1 OR radius_meters > 10000;
 ```
 
@@ -476,7 +476,7 @@ docker exec sekar-postgres psql -U postgres -d sekar_db -c "
   ANALYZE shifts;
   ANALYZE location_logs;
   ANALYZE reports;
-  ANALYZE areas;
+  ANALYZE locations;
 "
 ```
 
@@ -503,7 +503,7 @@ SELECT
   conrelid::regclass AS table_name,
   pg_get_constraintdef(oid) AS constraint_definition
 FROM pg_constraint
-WHERE conrelid::regclass::text IN ('shifts', 'location_logs', 'reports', 'areas')
+WHERE conrelid::regclass::text IN ('shifts', 'location_logs', 'reports', 'locations')
   AND contype = 'c'  -- CHECK constraints
 ORDER BY table_name, constraint_name;
 ```
@@ -593,9 +593,9 @@ ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_gps_lat;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_gps_lng;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_type;
 ALTER TABLE reports DROP CONSTRAINT IF EXISTS chk_reports_condition;
-ALTER TABLE areas DROP CONSTRAINT IF EXISTS chk_areas_gps_lat;
-ALTER TABLE areas DROP CONSTRAINT IF EXISTS chk_areas_gps_lng;
-ALTER TABLE areas DROP CONSTRAINT IF EXISTS chk_areas_radius;
+ALTER TABLE locations DROP CONSTRAINT IF EXISTS chk_locations_gps_lat;
+ALTER TABLE locations DROP CONSTRAINT IF EXISTS chk_locations_gps_lng;
+ALTER TABLE locations DROP CONSTRAINT IF EXISTS chk_locations_radius;
 
 -- 3. Revert FK cascade (back to RESTRICT)
 ALTER TABLE location_logs DROP CONSTRAINT FK_6938df393d1969889c5b0633a08;

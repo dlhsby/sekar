@@ -464,13 +464,13 @@ Each status has both a color AND a shape/icon modifier to ensure accessibility:
 └─────────────────────┘
 ```
 
-### Area/Rayon Markers
+### Location/Rayon Markers
 
 | Type | Shape | Color | Usage |
 |------|-------|-------|-------|
-| Area center | Flag | Area status color | Area overview, distinct from user markers |
+| Location center | Flag | Location status color | Location overview, distinct from user markers |
 | Rayon center | Flag (larger) | Rayon aggregate color | Rayon overview |
-| Understaffed area border | Dashed rectangle | `#DC2626` (red) | Warning indicator on area polygon |
+| Understaffed location border | Dashed rectangle | `#DC2626` (red) | Warning indicator on location polygon |
 
 ### Action Button Icons
 

@@ -693,14 +693,14 @@ When adding new text content:
 | Total Workers | Total Pekerja | Summary header |
 | Staffing | Kepegawaian | Staffing summary |
 | Last Updated | Terakhir Diperbarui | Timestamp label |
-| Inside Work Area | Di dalam area kerja | Home screen banner |
-| Outside Work Area | Di luar area kerja | Home screen banner |
+| Inside Location | Di dalam lokasi kerja | Home screen banner |
+| Outside Area | Di luar area kerja | Home screen banner |
 
 ### Map Label Truncation Rules
 | Element | Max Characters | Truncation | Example |
 |---------|---------------|------------|---------|
 | Marker name | 12 | Ellipsis | "Muhammad A..." |
-| Area label | 18 | Ellipsis | "Taman Bungkul P..." |
+| Location label | 18 | Ellipsis | "Taman Bungkul P..." |
 | Popup title | 25 | Ellipsis | "Muhammad Aris Setiaw..." |
 | Side panel name | 20 | Ellipsis | "Muhammad Aris Se..." |
 

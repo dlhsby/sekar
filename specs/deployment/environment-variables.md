@@ -261,7 +261,7 @@ API_VERSION=v1  # API version
 # Google Maps (per-environment, encrypted in dotenvx)
 # Shared by THREE consumers off one key per environment: (1) mobile (baked),
 # (2) backend `seed:geocode`, (3) web client at runtime via GET /config/maps
-# (Rayon/Area coordinate drop-pin picker + display modal). Enable both the
+# (Rayon/Location coordinate drop-pin picker + display modal). Enable both the
 # Geocoding API and the Maps JavaScript API; restrict by HTTP referrer.
 GOOGLE_MAPS_API_KEY=<encrypted-secret>  # dev/staging/production keys differ, all encrypted
 

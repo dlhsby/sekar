@@ -1285,7 +1285,7 @@ const statusBadgeVariant = {
 ### Map Polygon Colors
 | Element | Fill | Stroke | Opacity |
 |---------|------|--------|---------|
-| Area boundary | Status color | Status color | Fill: 0.1, Stroke: 1.0, Width: 2px |
+| Location boundary | Status color | Status color | Fill: 0.1, Stroke: 1.0, Width: 2px |
 | Rayon boundary | #3B82F6 | #2563EB | Fill: 0.05, Stroke: 1.0, Width: 3px |
 | Cluster circle | Severity color | #000000 | Fill: 0.8, Stroke: 1.0, Width: 2px |
 

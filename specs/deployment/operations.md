@@ -168,7 +168,7 @@ docker exec -it sekar-postgres psql -U postgres -d sekar_db
 -- Count records in key tables
 SELECT
   (SELECT COUNT(*) FROM users) as users,
-  (SELECT COUNT(*) FROM areas) as areas,
+  (SELECT COUNT(*) FROM locations) as locations,
   (SELECT COUNT(*) FROM rayons) as rayons,
   (SELECT COUNT(*) FROM tasks) as tasks;
 
@@ -575,7 +575,7 @@ See [Rolling Back to a Previous Release](#rolling-back-to-a-previous-release).
 **Symptoms:**
 ```
 ERROR: relation "users" does not exist
-ERROR: relation "areas" does not exist
+ERROR: relation "locations" does not exist
 ```
 
 **Cause:** Migrations have not been applied yet.

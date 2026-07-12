@@ -1,13 +1,13 @@
 # Scheduling
 
-**Status:** ✅ Active · **Backend:** `shifts`, `shift-definitions`, `schedules`, `special-day-overrides`, `service-capacity` · **Key ADRs:** ADR-013 (multi-area), ADR-035 (service capacity)
+**Status:** ✅ Active · **Backend:** `shifts`, `shift-definitions`, `schedules`, `special-day-overrides`, `service-capacity` · **Key ADRs:** ADR-013 (multi-location), ADR-035 (service capacity)
 
 ## Overview
-Shift definitions and the materialized **daily roster** that assigns workers to shifts/areas per day. A generation cron builds the roster; an edit policy governs allowed changes. Special-day overrides adjust the roster for holidays; service-capacity models rayon × ISO-week × service-type throughput. **Under revamp** post-UAT (a top UAT-feedback area).
+Shift definitions and the materialized **daily roster** that assigns workers to shifts/locations per day. A generation cron builds the roster; an edit policy governs allowed changes. Special-day overrides adjust the roster for holidays; service-capacity models rayon × ISO-week × service-type throughput. **Under revamp** post-UAT (a top UAT-feedback area).
 
 ## Key decisions
 - **Materialized daily roster** — `daily-roster-generation.cron.ts` generates schedules per day from shift definitions for fast lookup and monitoring joins; `schedule-edit.policy.ts` gates edits.
-- **Multi-area** (ADR-013) — a korlap/worker can be rostered across multiple areas.
+- **Multi-location** (ADR-013) — a korlap/worker can be rostered across multiple locations.
 - **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); web UI is the rayon capacity weekly grid (`rayons/[id]/capacity`).
 - `special-day-overrides` — **API implemented, no dedicated UI**.
 

@@ -57,7 +57,7 @@ export enum ApiErrorCode {
   SYNC_STALE_DATA = 'SYNC_STALE_DATA',
   SYNC_PARTIAL_FAILURE = 'SYNC_PARTIAL_FAILURE',
 
-  // Areas (2 codes)
+  // Locations (2 codes)
   AREA_NOT_FOUND = 'AREA_NOT_FOUND',
   AREA_CODE_DUPLICATE = 'AREA_CODE_DUPLICATE',
 
@@ -376,7 +376,7 @@ describe('ApiExceptionHelpers', () => {
     it('should create 409 exception', () => {
       const exception = ApiExceptionHelpers.conflict(
         ApiErrorCode.AREA_CODE_DUPLICATE,
-        'Area code already exists'
+        'Location code already exists'
       );
 
       expect(exception.getStatus()).toBe(409);
@@ -402,7 +402,7 @@ describe('ApiExceptionHelpers - Real World Scenarios', () => {
   it('should handle GPS out of bounds with distance details', () => {
     const exception = ApiExceptionHelpers.badRequest(
       ApiErrorCode.SHIFT_GPS_OUT_OF_BOUNDS,
-      'GPS location is outside the allowed area boundary',
+      'GPS location is outside the allowed location boundary',
       {
         distance: 250.5,
         maxDistance: 150,
@@ -564,7 +564,7 @@ it('should throw SHIFT_ALREADY_ACTIVE if worker already clocked in', async () =>
     worker_id: workerId,
     clock_in_time: new Date(),
     clock_out_time: null,
-    area: { name: 'Taman Bungkul' },
+    location: { name: 'Taman Bungkul' },
   };
   mockRepository.findOne.mockResolvedValue(mockActiveShift);
 
@@ -578,7 +578,7 @@ it('should throw SHIFT_ALREADY_ACTIVE if worker already clocked in', async () =>
     expect(error.getDetails()).toEqual({
       activeShiftId: 'shift-123',
       clockedInAt: expect.any(Date),
-      areaName: 'Taman Bungkul',
+      locationName: 'Taman Bungkul',
     });
   }
 });
@@ -586,7 +586,7 @@ it('should throw SHIFT_ALREADY_ACTIVE if worker already clocked in', async () =>
 
 #### SHIFT_NOT_ASSIGNED
 ```typescript
-it('should throw SHIFT_NOT_ASSIGNED if worker not assigned to area', async () => {
+it('should throw SHIFT_NOT_ASSIGNED if worker not assigned to location', async () => {
   mockRepository.findOne.mockResolvedValue(null); // No active shift
   mockAssignmentRepository.findOne.mockResolvedValue(null); // No assignment
 
@@ -596,7 +596,7 @@ it('should throw SHIFT_NOT_ASSIGNED if worker not assigned to area', async () =>
   } catch (error) {
     expect(error).toBeInstanceOf(ApiException);
     expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ASSIGNED);
-    expect(error.message).toContain('not assigned to any area');
+    expect(error.message).toContain('not assigned to any location');
   }
 });
 ```
@@ -866,7 +866,7 @@ describe('Shift Error Codes (e2e)', () => {
 
   it('POST /api/v1/shifts/clock-in returns SHIFT_GPS_OUT_OF_BOUNDS', async () => {
     const outOfBoundsDto = {
-      area_id: areaId,
+      location_id: locationId,
       gps_lat: -7.3037, // 1.5km away
       gps_lng: 112.7375,
       selfie_photo: validBase64Photo,
@@ -1111,7 +1111,7 @@ const users = {
 };
 ```
 
-### Standard Test Area
+### Standard Test Location
 ```typescript
 const tamanBungkul = {
   code: 'TB-001',
@@ -1119,7 +1119,7 @@ const tamanBungkul = {
   gps_lat: -7.2905,
   gps_lng: 112.7398,
   radius_meters: 150,
-  area_type_id: areaTypeId,
+  location_type_id: locationTypeId,
 };
 ```
 
@@ -1156,7 +1156,7 @@ const outOfRange = { gps_lat: -200, gps_lng: 500 };
 | HTTP Filter | 100% | ✅ |
 | Database Migration | 95% | ✅ |
 | Location | >85% | ✅ |
-| Areas | >85% | ✅ |
+| Locations | >85% | ✅ |
 | Supervisor | >85% | ✅ |
 | Users | >85% | ✅ |
 

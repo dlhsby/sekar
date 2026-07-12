@@ -37,9 +37,9 @@ Task cards display assigned work items with status, location, and priority indic
 ┌────────────────────────────────────────┐
 │ [!] Prioritas Tinggi              [⋮] │  ← Priority badge + menu
 ├────────────────────────────────────────┤
-│ Perantingan Rumput Area B              │  ← Task title (xl)
+│ Perantingan Rumput Kawasan B          │  ← Task title (xl)
 │                                        │
-│ 📍 Taman Bungkul - Zona B              │  ← Location (sm, secondary)
+│ 📍 Taman Bungkul - Lokasi B           │  ← Location (sm, secondary)
 │ ⏱ Deadline: 15 Jan 2026, 16:00 WIB    │  ← Due date (sm, secondary)
 │                                        │
 │ ┌────────────────┐                     │
@@ -271,7 +271,7 @@ Data visualization components for analytics dashboard.
 
 ```
 ┌────────────────────────────────────┐
-│ Laporan Per Area (Minggu Ini)     │
+│ Laporan Per Lokasi (Minggu Ini)    │
 ├────────────────────────────────────┤
 │                                    │
 │ 45 ┤                     ██        │

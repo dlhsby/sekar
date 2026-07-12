@@ -4,7 +4,7 @@ Comprehensive authentication and authorization specifications for SEKAR Backend 
 
 **Last Updated:** 2026-06-20 · **Status:** Phase 5 Complete (reflects 8-role system, JWT rotation, Phase 2E+ scope fields)
 
-> **Current System:** This document reflects the 8-role system (ADR-009: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin). JWT tokens include scope fields (rayon_id, area_id) since Phase 2E. Phase 2D adds scope-based monitoring authorization. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping.
+> **Current System:** This document reflects the 8-role system (ADR-009: satgas, linmas, korlap, admin_data, kepala_rayon, top_management, admin_system, superadmin). JWT tokens include scope fields (rayon_id, location_id) since Phase 2E. Phase 2D adds scope-based monitoring authorization. See [ADR-009](../architecture/decisions/ADR-009-phase2c-role-system-overhaul.md) for role mapping.
 
 ## Table of Contents
 
@@ -60,7 +60,7 @@ Access tokens are JWTs consisting of three parts: Header, Payload, and Signature
   "username": "satgas1",
   "role": "satgas",
   "rayon_id": "uuid-or-null",
-  "area_id": "uuid-or-null",
+  "location_id": "uuid-or-null",
   "iat": 1736420400,
   "exp": 1736421300
 }
@@ -73,7 +73,7 @@ Access tokens are JWTs consisting of three parts: Header, Payload, and Signature
 | `username` | string | Username for logging/debugging |
 | `role` | string | User role (one of 8 roles: `satgas`, `linmas`, `korlap`, `admin_data`, `kepala_rayon`, `top_management`, `admin_system`, `superadmin`) |
 | `rayon_id` | string\|null | User's assigned rayon UUID (null for superadmin/admin_system) |
-| `area_id` | string\|null | User's assigned area UUID (null for roles above area level) |
+| `location_id` | string\|null | User's assigned location UUID (null for roles above location level) |
 | `iat` | number | Issued At timestamp (Unix epoch) |
 | `exp` | number | Expiration timestamp (Unix epoch, +15 minutes) |
 
@@ -488,18 +488,18 @@ export const GetUser = createParamDecorator(
 @Get('me')
 @UseGuards(JwtAuthGuard)
 async getMe(@GetUser() user: User): Promise<MeResponseDto> {
-  // Returns typed MeResponseDto with area/rayon resolution
-  // For korlap: uses User.area_id (permanent assignment)
-  // For satgas/linmas: resolves area from active Schedule
+  // Returns typed MeResponseDto with location/rayon resolution
+  // For korlap: uses User.location_id (permanent assignment)
+  // For satgas/linmas: resolves location from active Schedule
   return {
     id: user.id,
     username: user.username,
     full_name: user.full_name,
     role: user.role,
-    area_id: user.area_id || null,  // resolved from schedule if needed
+    location_id: user.location_id || null,  // resolved from schedule if needed
     rayon_id: user.rayon_id || null,
     created_at: user.created_at,
-    assigned_area: { id, name, gps_lat, gps_lng, radius_meters, area_type },
+    assigned_area: { id, name, gps_lat, gps_lng, radius_meters, location_type },
   };
 }
 ```
@@ -575,24 +575,24 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 |----------|--------|--------|--------|------------|-------------|---------------|-------------|-----------|
 | GET /monitoring/city | - | - | - | - | - | ✅ | ✅ | ✅ |
 | GET /monitoring/rayon/:id | - | - | - | - | ✅ (own) | ✅ | ✅ | ✅ |
-| GET /monitoring/area/:id | - | - | ✅ (own) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
-| GET /monitoring/live-users | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
-| GET /monitoring/users/:id/location-history | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
-| GET /monitoring/users/:id/day-summary | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
-| GET /monitoring/staffing-summary | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/location/:id | - | - | ✅ (own) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/live-users | - | - | ✅ (own location) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/users/:id/location-history | - | - | ✅ (own location) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/users/:id/day-summary | - | - | ✅ (own location) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
+| GET /monitoring/staffing-summary | - | - | ✅ (own location) | - | ✅ (own rayon) | ✅ | ✅ | ✅ |
 | GET /monitoring/config | - | - | - | - | - | - | ✅ | ✅ |
 | PATCH /monitoring/config/:key | - | - | - | - | - | - | ✅ | ✅ |
-| GET /areas/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
-| PUT /areas/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
-| GET /monitoring/boundaries | - | - | ✅ (own area) | - | ✅ (own rayon) | ✅ | ✅ | - |
-| POST /monitoring/reassign | - | - | ✅* (own area) | - | ✅ | ✅ | ✅ | - |
+| GET /locations/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
+| PUT /locations/:id/boundary | - | - | - | - | - | - | ✅ | ✅ |
+| GET /monitoring/boundaries | - | - | ✅ (own location) | - | ✅ (own rayon) | ✅ | ✅ | - |
+| POST /monitoring/reassign | - | - | ✅* (own location) | - | ✅ | ✅ | ✅ | - |
 | GET /monitoring/config | - | - | - | - | - | - | ✅ | ✅ |
 | PUT /monitoring/config | - | - | - | - | - | - | ✅ | ✅ |
 
 *korlap can only reassign workers within their own area
 
 **Scope Rules:**
-- `korlap`: Filtered to own area_id automatically
+- `korlap`: Filtered to own location_id automatically
 - `kepala_rayon`: Filtered to own rayon_id automatically
 - `top_management`, `admin_system`, `superadmin`: No scope restrictions
 - `satgas`, `linmas`, `admin_data`: No direct monitoring access (they are monitored, not monitors)
@@ -600,7 +600,7 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 **WebSocket Room Assignment:**
 - `superadmin`, `admin_system`, `top_management` → join `city` room
 - `kepala_rayon`, `admin_data` → join `rayon:{rayon_id}` room
-- `korlap` → join `area:{area_id}` room
+- `korlap` → join `location:{location_id}` room
 
 **Legend:**
 - ✅ = Allowed
@@ -611,19 +611,19 @@ async getMe(@GetUser() user: User): Promise<MeResponseDto> {
 
 ### Monitoring Scope-Based Authorization (Phase 2D)
 
-Monitoring endpoints enforce scope-based authorization at the service level. The requesting user's `rayon_id` and `area_id` are extracted from the JWT token and used to filter results automatically.
+Monitoring endpoints enforce scope-based authorization at the service level. The requesting user's `rayon_id` and `location_id` are extracted from the JWT token and used to filter results automatically.
 
 | Role | Monitoring Scope | Details |
 |------|-----------------|---------|
-| `top_management` | All rayons, all areas, all workers | City-wide visibility with no scope restrictions |
-| `admin_system` | All rayons, all areas, all workers | Full system access for administration and configuration |
-| `kepala_rayon` | Own rayon's areas and workers only | Filtered by `rayon_id` from JWT; cannot see other rayons |
-| `korlap` | Own area's workers only | Filtered by `area_id` from JWT; cannot see other areas |
+| `top_management` | All rayons, all locations, all workers | City-wide visibility with no scope restrictions |
+| `admin_system` | All rayons, all locations, all workers | Full system access for administration and configuration |
+| `kepala_rayon` | Own rayon's locations and workers only | Filtered by `rayon_id` from JWT; cannot see other rayons |
+| `korlap` | Own location's workers only | Filtered by `location_id` from JWT; cannot see other locations |
 | `satgas`, `linmas` | No monitoring access | Field workers are monitored, not monitors |
 | `admin_data` | No monitoring access | Data entry role; no real-time monitoring privileges |
 | `superadmin` | All rayons, all areas, all workers | Full access including config management |
 
-**Enforcement mechanism:** The `MonitoringService` reads `user.rayon_id` and `user.area_id` from the authenticated request (populated by JWT strategy) and applies WHERE clauses to all database queries. A `kepala_rayon` requesting `/monitoring/live-users` will only receive users whose area belongs to their rayon. A `korlap` will only receive users assigned to their specific area. Requests for resources outside the user's scope return 403 Forbidden.
+**Enforcement mechanism:** The `MonitoringService` reads `user.rayon_id` and `user.location_id` from the authenticated request (populated by JWT strategy) and applies WHERE clauses to all database queries. A `kepala_rayon` requesting `/monitoring/live-users` will only receive users whose location belongs to their rayon. A `korlap` will only receive users assigned to their specific location. Requests for resources outside the user's scope return 403 Forbidden.
 
 ---
 
@@ -1275,7 +1275,7 @@ The Phase 2D matrix listed admin_data as "No monitoring access." This is **incor
 | GET /monitoring/rayon/:id | ✅ (own rayon) |
 
 **WebSocket Room (korlap multi-area):**
-- `korlap` → joins `area:{area_id}` rooms for **each assigned area** (was single room)
+- `korlap` → joins `area:{location_id}` rooms for **each assigned area** (was single room)
 
 ### New Endpoints (Phase 2E)
 
