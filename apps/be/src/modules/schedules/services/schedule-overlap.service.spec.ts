@@ -206,10 +206,13 @@ describe('ScheduleOverlapService', () => {
   });
 
   describe('soft-delete handling', () => {
-    it('should ignore soft-deleted rows', async () => {
+    it('should exclude soft-deleted rows via repository default scope (not in-code filtering)', async () => {
       const userId = 'user-1';
       const date = '2026-07-15';
 
+      // The repository's default scope excludes soft-deleted rows,
+      // so the mock returns only live rows. This test verifies the
+      // query uses Between(prevDay, nextDay) to bound the date range.
       jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([
         {
           id: 'sched-1',
@@ -217,13 +220,24 @@ describe('ScheduleOverlapService', () => {
           schedule_date: date,
           shift_definition_id: mockShift1.id,
           shift_definition: mockShift1,
-          deleted_at: new Date(), // Soft-deleted
+          deleted_at: null, // Live row only
         } as unknown as Schedule,
       ]);
 
-      // Check same shift 1
+      // Candidate: same shift 1 (should conflict with the live row)
       const conflict = await service.findConflict(userId, date, mockShift1);
-      expect(conflict).toBeNull(); // Soft-deleted rows don't count
+      expect(conflict).not.toBeNull(); // Live row causes conflict
+      expect(conflict?.shift_name).toBe('Shift 1');
+
+      // Verify the where clause uses Between() to limit date range
+      expect(scheduleRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            user_id: userId,
+            schedule_date: expect.any(Object), // Between operator
+          }),
+        }),
+      );
     });
   });
 

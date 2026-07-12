@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In } from 'typeorm';
+import { Repository, In, MoreThanOrEqual } from 'typeorm';
 import { ScheduleEvent } from '../entities/schedule-event.entity';
 import { Schedule, ScheduleStatus } from '../entities/schedule.entity';
 import { ScheduleLocation } from '../entities/schedule-area.entity';
@@ -73,21 +73,24 @@ export class ScheduleMaterializerService {
     let created = 0;
     const skipped: MaterializationResult['skipped'] = [];
 
+    // One query for every existing row of this event in the window (incl.
+    // soft-deleted tombstones and detached overrides) — none of these may be
+    // regenerated. Avoids a findOne per (member, date).
+    const existingRows =
+      dates.length === 0
+        ? []
+        : await this.scheduleRepo.find({
+            where: { schedule_event_id: event.id, schedule_date: In(dates) },
+            withDeleted: true,
+            select: ['user_id', 'schedule_date'],
+          });
+    const occupied = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
+
     // For each (member, date) tuple, create or skip a schedule row
     for (const memberId of memberIds) {
       for (const dateStr of dates) {
-        // Check for tombstone (soft-deleted or detached row already exists)
-        const existing = await this.scheduleRepo.findOne({
-          where: {
-            user_id: memberId,
-            schedule_date: dateStr,
-            schedule_event_id: event.id,
-          },
-          withDeleted: true, // Include soft-deleted rows
-        });
-
-        if (existing) {
-          // Tombstone or already-existing row for this event
+        if (occupied.has(`${memberId}:${dateStr}`)) {
+          // Tombstone, detached override, or already-materialized occurrence.
           skipped.push({ user_id: memberId, date: dateStr, reason: 'tombstone' });
           continue;
         }
@@ -157,18 +160,18 @@ export class ScheduleMaterializerService {
     const from = fromDate || today;
     const to = this.addDays(today, this.horizonDays());
 
-    // Hard-delete future non-detached, non-soft-deleted rows of this event
-    // (soft-deleted rows act as tombstones and must be preserved)
-    const toDelete = await this.scheduleRepo.find({
+    // Hard-delete future non-detached rows of this event (>= from). Default
+    // repository finds already exclude soft-deleted rows, so tombstones —
+    // which must survive to keep blocking regeneration — are never selected.
+    const rowsToDelete = await this.scheduleRepo.find({
       where: {
         schedule_event_id: event.id,
-        schedule_date: from, // >= from (we'll filter client-side)
+        schedule_date: MoreThanOrEqual(from),
         is_detached: false,
-        deleted_at: null as any, // Non-soft-deleted
       },
+      select: ['id'],
     });
 
-    const rowsToDelete = toDelete.filter((r) => r.schedule_date >= from);
     if (rowsToDelete.length > 0) {
       // Hard delete via the connection to avoid soft-delete behavior
       await this.scheduleRepo

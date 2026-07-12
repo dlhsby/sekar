@@ -196,7 +196,8 @@
     "conflicts": {
       "title": "Schedule Conflicts",
       "message": "Some members are already scheduled for this time. The schedule will be created for available members.",
-      "worker": "{{name}} is already scheduled on {{date}}"
+      "worker": "{{name}} is already scheduled on {{date}}",
+      "more": "… and {{count}} more conflicts"
     },
     "empty": {
       "noEvents": "No schedules for this day",
@@ -205,7 +206,8 @@
     "messages": {
       "createSuccess": "Schedule created",
       "updateSuccess": "Schedule updated",
-      "deleteSuccess": "Schedule deleted"
+      "deleteSuccess": "Schedule deleted",
+      "loadEventError": "Failed to load the schedule details"
     },
     "validation": {
       "intervalRange": "Interval must be between 2–30 days",

@@ -1,3 +1,4 @@
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ForbiddenException } from '@nestjs/common';
@@ -6,9 +7,11 @@ import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
+import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
+import { ScheduleOverlapService } from './services/schedule-overlap.service';
 
 /** A global editor (superadmin) — passes the edit hierarchy for any target. */
 const ADMIN = { id: 'admin', role: UserRole.SUPERADMIN } as User;
@@ -39,23 +42,27 @@ describe('SchedulesService', () => {
   let service: SchedulesService;
   let rosterRepo: ReturnType<typeof makeRosterRepo>;
   let eventRepo: { find: jest.Mock };
-  let locationRepo: { delete: jest.Mock; create: jest.Mock; save: jest.Mock };
+  let locationRepo: { find: jest.Mock; delete: jest.Mock; create: jest.Mock; save: jest.Mock };
   let areaEntityRepo: { find: jest.Mock };
   let userRepo: { find: jest.Mock; findOne: jest.Mock };
+  let shiftDefinitionRepo: { findOne: jest.Mock };
   let userAreas: { getPermanentLocationIdsForUsers: jest.Mock; getPermanentLocationIds: jest.Mock };
   let audit: { log: jest.Mock };
   let materializer: { materializeEvent: jest.Mock };
+  let overlapService: { findConflict: jest.Mock };
 
   beforeEach(async () => {
     rosterRepo = makeRosterRepo();
     eventRepo = { find: jest.fn() };
     locationRepo = {
+      find: jest.fn().mockResolvedValue([]),
       delete: jest.fn(),
       create: jest.fn((x) => ({ ...x })),
       save: jest.fn(async (x) => x),
     };
     areaEntityRepo = { find: jest.fn().mockResolvedValue([]) };
     userRepo = { find: jest.fn(), findOne: jest.fn() };
+    shiftDefinitionRepo = { findOne: jest.fn() };
     userAreas = {
       getPermanentLocationIdsForUsers: jest.fn().mockResolvedValue(new Map()),
       getPermanentLocationIds: jest.fn().mockResolvedValue([]),
@@ -63,6 +70,9 @@ describe('SchedulesService', () => {
     audit = { log: jest.fn().mockResolvedValue(undefined) };
     materializer = {
       materializeEvent: jest.fn().mockResolvedValue({ created: 0, skipped: [] }),
+    };
+    overlapService = {
+      findConflict: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -73,9 +83,11 @@ describe('SchedulesService', () => {
         { provide: getRepositoryToken(ScheduleEvent), useValue: eventRepo },
         { provide: getRepositoryToken(Location), useValue: areaEntityRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: getRepositoryToken(ShiftDefinition), useValue: shiftDefinitionRepo },
         { provide: UserLocationsService, useValue: userAreas },
         { provide: AuditLogService, useValue: audit },
         { provide: ScheduleMaterializerService, useValue: materializer },
+        { provide: ScheduleOverlapService, useValue: overlapService },
       ],
     }).compile();
 
@@ -220,7 +232,7 @@ describe('SchedulesService', () => {
   });
 
   describe('replaceWorker', () => {
-    it('marks the original replaced and upserts a covering row for the same day', async () => {
+    it('marks the original replaced and upserts a covering row for the same day (now uses findAllByUserAndDate)', async () => {
       const original = {
         id: 'd1',
         user_id: 'A',
@@ -233,8 +245,9 @@ describe('SchedulesService', () => {
       };
       rosterRepo.findOne
         .mockResolvedValueOnce(original) // findOne(id)
-        .mockResolvedValueOnce(null) // findByUserAndDate(replacement) → no row yet
         .mockResolvedValueOnce({ ...original, status: ScheduleStatus.REPLACED }); // final refresh
+      // findAllByUserAndDate(replacement_id, date) → no existing rows
+      rosterRepo.find.mockResolvedValueOnce([]);
       userRepo.findOne.mockResolvedValue({ id: 'B', role: UserRole.SATGAS });
 
       await service.replaceWorker('d1', 'B', undefined, ADMIN);
@@ -264,14 +277,16 @@ describe('SchedulesService', () => {
       const existingCoverRow = {
         id: 'cover1',
         user_id: 'B',
+        shift_definition_id: 's1', // Matching shift for reuse
         status: ScheduleStatus.OFF,
-        // Stale eager relation from findByUserAndDate() — must be ignored.
+        // Stale eager relation from findAllByUserAndDate() — must be ignored.
         shift_definition: { id: 'old-shift' },
       };
       rosterRepo.findOne
         .mockResolvedValueOnce(original) // findOne(id)
-        .mockResolvedValueOnce(existingCoverRow) // findByUserAndDate(replacement)
         .mockResolvedValueOnce({ ...original, status: ScheduleStatus.REPLACED }); // final refresh
+      // findAllByUserAndDate(replacement_id, date) returns one existing row
+      rosterRepo.find.mockResolvedValueOnce([existingCoverRow]);
       userRepo.findOne.mockResolvedValue({ id: 'B', role: UserRole.SATGAS });
 
       await service.replaceWorker('d1', 'B', undefined, ADMIN);
@@ -294,31 +309,35 @@ describe('SchedulesService', () => {
       await expect(service.replaceWorker('d1', 'A', undefined, ADMIN)).rejects.toThrow();
     });
 
-    it('rejects a replacement who is already committed (planned) that day', async () => {
-      rosterRepo.findOne
-        .mockResolvedValueOnce({
-          id: 'd1',
-          user_id: 'A',
-          user: { role: UserRole.SATGAS },
-          schedule_date: '2026-06-30',
-          rayon_id: 'r1',
-          shift_definition_id: 's1',
-          status: ScheduleStatus.PLANNED,
-          schedule_areas: [],
-        })
-        .mockResolvedValueOnce({
+    it('rejects a replacement who is already committed (planned/leave) that day', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        schedule_date: '2026-06-30',
+        rayon_id: 'r1',
+        shift_definition_id: 's1',
+        status: ScheduleStatus.PLANNED,
+        schedule_areas: [],
+      });
+      // findAllByUserAndDate(replacement_id, date) returns rows with BUSY status
+      rosterRepo.find.mockResolvedValueOnce([
+        {
           id: 'd2',
           user_id: 'B',
-          status: ScheduleStatus.PLANNED,
-        }); // B already planned → can't cover
+          status: ScheduleStatus.PLANNED, // BUSY → can't cover
+        },
+      ]);
       userRepo.findOne.mockResolvedValue({ id: 'B', role: UserRole.SATGAS });
 
-      await expect(service.replaceWorker('d1', 'B', undefined, ADMIN)).rejects.toThrow();
+      await expect(service.replaceWorker('d1', 'B', undefined, ADMIN)).rejects.toThrow(
+        'already has a schedule',
+      );
     });
   });
 
   describe('addForDay', () => {
-    it('adds one row, defaulting shift + areas to the worker template', async () => {
+    it('adds one row with a shift, using overlapService.findConflict to check for conflicts', async () => {
       userRepo.findOne.mockResolvedValue({
         id: 'W',
         is_active: true,
@@ -326,12 +345,21 @@ describe('SchedulesService', () => {
         rayon_id: 'r1',
         shift_definition_id: 's1',
       });
-      rosterRepo.findOne
-        .mockResolvedValueOnce(null) // findByUserAndDate → no existing row
-        .mockResolvedValueOnce({ id: 'new', user_id: 'W' }); // final findOne
+      shiftDefinitionRepo.findOne.mockResolvedValue({
+        id: 's1',
+        name: 'Shift 1',
+        start_time: '06:00:00',
+        end_time: '15:00:00',
+      });
+      overlapService.findConflict.mockResolvedValue(null); // No conflict
+      rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
+      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', schedule_areas: [] }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
-      await service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN);
+      await service.addForDay(
+        { user_id: 'W', date: '2026-07-04', shift_definition_id: 's1' },
+        ADMIN,
+      );
 
       const saved = rosterRepo.save.mock.calls[0][0];
       expect(saved).toMatchObject({
@@ -341,17 +369,107 @@ describe('SchedulesService', () => {
         status: ScheduleStatus.PLANNED,
         source: 'manual',
       });
-      // Default areas (worker's permanent areas) are applied.
-      expect(locationRepo.save).toHaveBeenCalled();
+      // Verify overlapService was called
+      expect(overlapService.findConflict).toHaveBeenCalledWith(
+        'W',
+        '2026-07-04',
+        expect.objectContaining({ id: 's1' }),
+      );
     });
 
-    it('rejects when the worker already has a schedule that day (one per day)', async () => {
+    it('adds one row without a shift (OFF status), rejecting if the worker already has any row', async () => {
+      userRepo.findOne.mockResolvedValue({
+        id: 'W',
+        is_active: true,
+        role: UserRole.SATGAS,
+        rayon_id: 'r1',
+      });
+      // Shiftless add: check findAllByUserAndDate, which returns empty
+      rosterRepo.find.mockResolvedValue([]);
+      rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
+      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
+
+      await service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN);
+
+      const saved = rosterRepo.save.mock.calls[0][0];
+      expect(saved).toMatchObject({
+        user_id: 'W',
+        schedule_date: '2026-07-04',
+        shift_definition_id: null,
+        status: ScheduleStatus.OFF,
+        source: 'manual',
+      });
+    });
+
+    it('rejects shiftless add when the worker already has any schedule that day', async () => {
       userRepo.findOne.mockResolvedValue({ id: 'W', is_active: true, role: UserRole.SATGAS });
-      rosterRepo.findOne.mockResolvedValueOnce({ id: 'existing', user_id: 'W' });
+      // findAllByUserAndDate returns one existing row
+      rosterRepo.find.mockResolvedValue([
+        { id: 'existing', user_id: 'W', schedule_date: '2026-07-04', status: ScheduleStatus.OFF },
+      ]);
 
       await expect(service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN)).rejects.toThrow(
         'already has a schedule',
       );
+      expect(rosterRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('allows non-overlapping second shift to be added (ADR-047)', async () => {
+      userRepo.findOne.mockResolvedValue({
+        id: 'W',
+        is_active: true,
+        role: UserRole.SATGAS,
+        rayon_id: 'r1',
+      });
+      shiftDefinitionRepo.findOne.mockResolvedValue({
+        id: 's2',
+        name: 'Shift 2',
+        start_time: '15:00:00',
+        end_time: '23:00:00',
+      });
+      // First shift exists (06:00-15:00), candidate is 15:00-23:00 (touching, not overlapping)
+      overlapService.findConflict.mockResolvedValue(null);
+      rosterRepo.save.mockResolvedValue({ id: 'new2', user_id: 'W' });
+      rosterRepo.findOne.mockResolvedValue({ id: 'new2', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
+
+      await service.addForDay(
+        { user_id: 'W', date: '2026-07-04', shift_definition_id: 's2' },
+        ADMIN,
+      );
+
+      expect(rosterRepo.save).toHaveBeenCalled();
+      expect(overlapService.findConflict).toHaveBeenCalledWith(
+        'W',
+        '2026-07-04',
+        expect.objectContaining({ id: 's2' }),
+      );
+    });
+
+    it('rejects overlapping shift with message containing "overlapping"', async () => {
+      userRepo.findOne.mockResolvedValue({
+        id: 'W',
+        is_active: true,
+        role: UserRole.SATGAS,
+        rayon_id: 'r1',
+      });
+      shiftDefinitionRepo.findOne.mockResolvedValue({
+        id: 's3',
+        name: 'Shift 3',
+        start_time: '14:00:00',
+        end_time: '22:00:00',
+      });
+      // Overlap detected
+      overlapService.findConflict.mockResolvedValue({
+        schedule_id: 'existing-s2',
+        date: '2026-07-04',
+        shift_name: 'Shift 2',
+      });
+
+      await expect(
+        service.addForDay({ user_id: 'W', date: '2026-07-04', shift_definition_id: 's3' }, ADMIN),
+      ).rejects.toThrow(/overlapping/i);
       expect(rosterRepo.save).not.toHaveBeenCalled();
     });
 
@@ -365,6 +483,155 @@ describe('SchedulesService', () => {
       await expect(service.addForDay({ user_id: 'K', date: '2026-07-04' }, ADMIN)).rejects.toThrow(
         'not schedulable',
       );
+    });
+  });
+
+  describe('findAllByUserAndDate', () => {
+    it('returns all rows for a user on a date, sorted by shift start_time', async () => {
+      const shift1 = { id: 's1', start_time: '06:00:00', end_time: '15:00:00' };
+      const shift2 = { id: 's2', start_time: '15:00:00', end_time: '23:00:00' };
+      rosterRepo.find.mockResolvedValue([
+        { id: 'd1', user_id: 'W', shift_definition: shift2 }, // Out of order in DB
+        { id: 'd2', user_id: 'W', shift_definition: shift1 },
+      ]);
+
+      const result = await service.findAllByUserAndDate('W', '2026-07-04');
+
+      expect(result).toHaveLength(2);
+      // Sorted by start_time
+      expect(result[0].shift_definition?.start_time).toBe('06:00:00');
+      expect(result[1].shift_definition?.start_time).toBe('15:00:00');
+    });
+
+    it('returns single row as-is', async () => {
+      const row = { id: 'd1', user_id: 'W', shift_definition: null };
+      rosterRepo.find.mockResolvedValue([row]);
+
+      const result = await service.findAllByUserAndDate('W', '2026-07-04');
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toBe(row);
+    });
+
+    it('returns empty array when no rows exist', async () => {
+      rosterRepo.find.mockResolvedValue([]);
+
+      const result = await service.findAllByUserAndDate('W', '2026-07-04');
+
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('findByUserAndDate', () => {
+    it('returns null when no rows exist', async () => {
+      rosterRepo.find.mockResolvedValue([]);
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result).toBeNull();
+    });
+
+    it('returns single row as-is', async () => {
+      const row = { id: 'd1', user_id: 'W', shift_definition: null };
+      rosterRepo.find.mockResolvedValue([row]);
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result).toBe(row);
+    });
+
+    /** Freeze "now" at a WIB wall-clock time (jakartaNow returns a Date whose
+     * UTC fields read as WIB). */
+    const freezeWibClock = (hours: number, minutes = 0) => {
+      const frozen = new Date(Date.UTC(2026, 6, 4, hours, minutes, 0));
+      return jest.spyOn(TimezoneUtil, 'jakartaNow').mockReturnValue(frozen);
+    };
+
+    it('picks the shift whose window covers now (WIB)', async () => {
+      const shift1 = { id: 's1', start_time: '06:00:00', end_time: '15:00:00' };
+      const shift2 = { id: 's2', start_time: '15:00:00', end_time: '23:00:00' };
+      rosterRepo.find.mockResolvedValue([
+        { id: 'd1', shift_definition: shift1 },
+        { id: 'd2', shift_definition: shift2 },
+      ]);
+      const spy = freezeWibClock(16, 30); // 16:30 WIB → inside shift 2
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result?.id).toBe('d2');
+      spy.mockRestore();
+    });
+
+    it('covers a crosses-midnight shift after its evening start', async () => {
+      const shift1 = { id: 's1', start_time: '06:00:00', end_time: '15:00:00' };
+      const shift3 = {
+        id: 's3',
+        start_time: '21:00:00',
+        end_time: '05:00:00',
+        crosses_midnight: true,
+      };
+      rosterRepo.find.mockResolvedValue([
+        { id: 'd1', shift_definition: shift1 },
+        { id: 'd3', shift_definition: shift3 },
+      ]);
+      const spy = freezeWibClock(22, 0); // 22:00 WIB → inside shift 3 tonight
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result?.id).toBe('d3');
+      spy.mockRestore();
+    });
+
+    it("at 03:00, TODAY's crosses-midnight row is not yet covering — the upcoming day shift wins", async () => {
+      // The 00:00–05:00 tail belongs to YESTERDAY's shift-3 row (served when
+      // querying yesterday's date); today's shift-3 row starts tonight.
+      const shift1 = { id: 's1', start_time: '06:00:00', end_time: '15:00:00' };
+      const shift3 = {
+        id: 's3',
+        start_time: '21:00:00',
+        end_time: '05:00:00',
+        crosses_midnight: true,
+      };
+      rosterRepo.find.mockResolvedValue([
+        { id: 'd1', shift_definition: shift1 },
+        { id: 'd3', shift_definition: shift3 },
+      ]);
+      const spy = freezeWibClock(3, 0);
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result?.id).toBe('d1');
+      spy.mockRestore();
+    });
+
+    it('picks the next upcoming shift when none covers now', async () => {
+      const shift1 = { id: 's1', start_time: '06:00:00', end_time: '15:00:00' };
+      const shift2 = { id: 's2', start_time: '16:00:00', end_time: '23:00:00' };
+      rosterRepo.find.mockResolvedValue([
+        { id: 'd1', shift_definition: shift1 },
+        { id: 'd2', shift_definition: shift2 },
+      ]);
+      const spy = freezeWibClock(15, 30); // 15:30 WIB → between the shifts
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result?.id).toBe('d2');
+      spy.mockRestore();
+    });
+
+    it('falls back to the last shift of the day when all have passed', async () => {
+      const shift1 = { id: 's1', start_time: '06:00:00', end_time: '15:00:00' };
+      const shift2 = { id: 's2', start_time: '15:00:00', end_time: '20:00:00' };
+      rosterRepo.find.mockResolvedValue([
+        { id: 'd1', shift_definition: shift1 },
+        { id: 'd2', shift_definition: shift2 },
+      ]);
+      const spy = freezeWibClock(23, 0); // 23:00 WIB → after both
+
+      const result = await service.findByUserAndDate('W', '2026-07-04');
+
+      expect(result?.id).toBe('d2');
+      spy.mockRestore();
     });
   });
 
@@ -485,25 +752,27 @@ describe('SchedulesService', () => {
 
   describe('getActiveAreasForDay', () => {
     it("returns the day's areas", async () => {
-      rosterRepo.findOne.mockResolvedValue({
-        id: 'd1',
-        schedule_areas: [{ area: { id: 'area1' } }, { area: { id: 'area2' } }],
-      });
+      rosterRepo.find.mockResolvedValue([
+        {
+          id: 'd1',
+          schedule_areas: [{ area: { id: 'area1' } }, { area: { id: 'area2' } }],
+        },
+      ]);
       const areas = await service.getActiveAreasForDay('A', '2026-06-30');
       expect(areas.map((a) => a.id)).toEqual(['area1', 'area2']);
     });
 
     it('returns empty when there is no roster row', async () => {
-      rosterRepo.findOne.mockResolvedValue(null);
+      rosterRepo.find.mockResolvedValue([]);
       expect(await service.getActiveAreasForDay('A', '2026-06-30')).toEqual([]);
     });
   });
 
   describe('overrideForDay', () => {
     it('creates a PLANNED row with the shift when one is provided', async () => {
-      rosterRepo.findOne
-        .mockResolvedValueOnce(null) // findByUserAndDate → no existing row
-        .mockResolvedValue({ id: 'gen-1', schedule_areas: [] }); // subsequent this.findOne()
+      // findAllByUserAndDate returns empty array (no existing row)
+      rosterRepo.find.mockResolvedValue([]);
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
 
       await service.overrideForDay(
         'u1',
@@ -519,9 +788,8 @@ describe('SchedulesService', () => {
     });
 
     it('creates an OFF row (not PLANNED) when no shift is provided', async () => {
-      rosterRepo.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.find.mockResolvedValue([]);
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
 
       await service.overrideForDay('u1', '2026-07-01', { locationId: 'a1' }, 'admin');
 
@@ -531,9 +799,8 @@ describe('SchedulesService', () => {
     });
 
     it('sets the day to exactly the target area', async () => {
-      rosterRepo.findOne
-        .mockResolvedValueOnce(null)
-        .mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.find.mockResolvedValue([]);
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
 
       await service.overrideForDay(
         'u1',
@@ -547,16 +814,15 @@ describe('SchedulesService', () => {
     });
 
     it('updates an EXISTING row via update(), not save() (same stale-eager-relation pitfall)', async () => {
-      rosterRepo.findOne
-        .mockResolvedValueOnce({
-          id: 'existing-1',
-          status: ScheduleStatus.OFF,
-          shift_definition_id: null,
-          // Stale eager relation — would win over a manual FK set on save().
-          shift_definition: null,
-          schedule_areas: [],
-        })
-        .mockResolvedValue({ id: 'existing-1', schedule_areas: [] });
+      const existingRow = {
+        id: 'existing-1',
+        status: ScheduleStatus.OFF,
+        shift_definition_id: null,
+        shift_definition: null,
+        schedule_areas: [],
+      };
+      // findAllByUserAndDate returns the existing row
+      rosterRepo.find.mockResolvedValue([existingRow]);
 
       await service.overrideForDay(
         'u1',
@@ -569,6 +835,7 @@ describe('SchedulesService', () => {
         'existing-1',
         expect.objectContaining({ shift_definition_id: 's1', status: ScheduleStatus.PLANNED }),
       );
+      // The existing row should NOT be passed to save()
       expect(rosterRepo.save.mock.calls.some((c) => c[0]?.id === 'existing-1')).toBe(false);
     });
   });

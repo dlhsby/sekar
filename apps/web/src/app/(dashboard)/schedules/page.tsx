@@ -7,7 +7,7 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
@@ -51,8 +51,13 @@ import { useRayons } from '@/lib/api/rayons';
 import { useLocations } from '@/lib/api/locations';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
+import { todayJakartaISODate } from '@/lib/utils/formatters';
 
 const isoDate = (d: Date): string => formatISO(d, { representation: 'date' });
+
+/** WIB "today" as a local-midnight Date — roster days are WIB days, so the
+ * calendar anchors on the WIB calendar day even for non-WIB browsers. */
+const wibTodayDate = (): Date => new Date(`${todayJakartaISODate()}T00:00:00`);
 
 export default function SchedulesPage() {
   const { t, i18n } = useTranslation(['schedules', 'common']);
@@ -60,7 +65,7 @@ export default function SchedulesPage() {
   const queryClient = useQueryClient();
 
   const [view, setView] = useState<ViewType>('month');
-  const [anchor, setAnchor] = useState<Date>(() => new Date());
+  const [anchor, setAnchor] = useState<Date>(() => wibTodayDate());
 
   // Visible range per view (month view spans the full Mon–Sun grid; stays well
   // under the API's 62-day cap).
@@ -106,10 +111,19 @@ export default function SchedulesPage() {
   const [deleteChooserOpen, setDeleteChooserOpen] = useState(false);
 
   // The full rule (event) behind the chosen occurrence, for series edits.
-  const { data: chosenEvent } = useScheduleEvent(
+  const { data: chosenEvent, isError: chosenEventError } = useScheduleEvent(
     chosen?.schedule_event_id ?? '',
     !!chosen?.schedule_event_id && !!eventEdit,
   );
+  // If the event can't be loaded the edit flow would silently never open —
+  // surface it and reset the flow.
+  useEffect(() => {
+    if (eventEdit && chosenEventError) {
+      toast.error(t('schedules:calendar.messages.loadEventError'));
+      setEventEdit(null);
+      setChosen(null);
+    }
+  }, [eventEdit, chosenEventError, t]);
 
   // Row-level ("this occurrence") editing reuses the roster-table machinery:
   // the day's roster is fetched and the chosen row fed to EditScheduleModal.
@@ -201,7 +215,7 @@ export default function SchedulesPage() {
           currentMonth={anchor}
           onPrevMonth={() => setAnchor((d) => addMonths(d, -1))}
           onNextMonth={() => setAnchor((d) => addMonths(d, 1))}
-          onToday={() => setAnchor(new Date())}
+          onToday={() => setAnchor(wibTodayDate())}
           onDayClick={openCreate}
           onOccurrenceClick={onOccurrenceClick}
           locale={{ code: localeCode }}
@@ -212,7 +226,7 @@ export default function SchedulesPage() {
           currentDate={anchor}
           onPrevWeek={() => setAnchor((d) => addWeeks(d, -1))}
           onNextWeek={() => setAnchor((d) => addWeeks(d, 1))}
-          onToday={() => setAnchor(new Date())}
+          onToday={() => setAnchor(wibTodayDate())}
           onDayClick={openCreate}
           onOccurrenceClick={onOccurrenceClick}
         />
@@ -222,7 +236,7 @@ export default function SchedulesPage() {
           currentDate={anchor}
           onPrevDay={() => setAnchor((d) => addDays(d, -1))}
           onNextDay={() => setAnchor((d) => addDays(d, 1))}
-          onToday={() => setAnchor(new Date())}
+          onToday={() => setAnchor(wibTodayDate())}
           onOccurrenceClick={onOccurrenceClick}
         />
       )}

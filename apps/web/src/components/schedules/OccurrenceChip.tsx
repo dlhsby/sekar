@@ -38,10 +38,17 @@ export function OccurrenceChip({
 
   const displayName = isTeam && teamName ? `${teamName} (${memberCount || 0})` : occurrence.user.full_name;
 
+  // Chips live inside clickable day cells — stop propagation so a chip click
+  // never also fires the cell's "create on this day" handler.
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick?.();
+  };
+
   if (compact) {
     return (
       <button
-        onClick={onClick}
+        onClick={handleClick}
         className={`w-full px-1.5 py-0.5 rounded-nb-sm text-xs font-medium truncate ${colors.bg} ${colors.text} hover:opacity-80 transition-opacity ${className}`}
         title={displayName}
       >
@@ -53,7 +60,7 @@ export function OccurrenceChip({
 
   return (
     <Badge
-      onClick={onClick}
+      onClick={handleClick}
       className={`${colors.bg} ${colors.text} cursor-pointer border-none px-2 py-1 text-xs font-medium ${className}`}
       title={`${displayName} - ${shiftName}`}
     >
