@@ -115,8 +115,9 @@ export interface ScheduleOccurrence {
   id: string;
   user_id: string;
   schedule_date: string;
-  shift_definition_id: string;
+  shift_definition_id: string | null;
   scope: ScheduleScope;
+  status: string;
   location_id?: string | null;
   region_id?: string | null;
   schedule_event_id?: string | null;
@@ -133,7 +134,7 @@ export interface ScheduleOccurrence {
     start_time: string;
     end_time: string;
     crosses_midnight?: boolean;
-  };
+  } | null;
   team?: {
     id: string;
     name: string;
@@ -149,30 +150,70 @@ export interface ScheduleOccurrence {
   } | null;
 }
 
+/** Raw roster row as the backend returns it (Schedule entity: locations ride in
+ * `schedule_areas[].area`; there is no `scope` field). */
+interface RawScheduleRangeRow {
+  id: string;
+  user_id: string;
+  schedule_date: string;
+  shift_definition_id: string | null;
+  status: string;
+  region_id?: string | null;
+  team_id?: string | null;
+  schedule_event_id?: string | null;
+  is_detached?: boolean;
+  user: ScheduleOccurrence['user'];
+  shift_definition?: ScheduleOccurrence['shift_definition'];
+  schedule_areas?: Array<{ location_id: string; area?: { id: string; name: string } | null }>;
+  region?: ScheduleOccurrence['region'];
+  team?: ScheduleOccurrence['team'];
+}
+
+/** Normalize a raw roster row to the calendar's occurrence shape. */
+function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
+  const firstArea = row.schedule_areas?.[0];
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    schedule_date: row.schedule_date,
+    shift_definition_id: row.shift_definition_id,
+    scope: row.region_id ? 'mobile' : 'static',
+    status: row.status,
+    location_id: firstArea?.location_id ?? null,
+    region_id: row.region_id ?? null,
+    schedule_event_id: row.schedule_event_id ?? null,
+    is_detached: row.is_detached ?? false,
+    user: row.user,
+    shift_definition: row.shift_definition ?? null,
+    team: row.team ?? null,
+    location: firstArea?.area ?? null,
+    region: row.region ?? null,
+  };
+}
+
+/** Per-member/date conflicts reported by the backend materializer — only ids;
+ * the UI resolves display names from its loaded users. */
+export interface MaterializationSkipped {
+  user_id: string;
+  date: string;
+  reason: 'overlap' | 'tombstone' | string;
+}
+
+export interface MaterializationResult {
+  created: number;
+  skipped: MaterializationSkipped[];
+}
+
 export interface CreateScheduleEventResponse {
   event: ScheduleEvent;
-  materialization: {
-    created: number;
-    skipped: Array<{
-      user_id: string;
-      user_name: string;
-      date: string;
-      reason: string;
-    }>;
-  };
+  materialization: MaterializationResult;
 }
 
 export interface UpdateScheduleEventResponse {
   event: ScheduleEvent;
-  materialization: {
-    updated: number;
-    skipped: Array<{
-      user_id: string;
-      user_name: string;
-      date: string;
-      reason: string;
-    }>;
-  };
+  /** Present for edit_scope=this_and_future — the split-off series. */
+  new_event?: ScheduleEvent;
+  materialization: MaterializationResult;
 }
 
 /**
@@ -217,10 +258,10 @@ async function fetchScheduleRange(
   if (filters?.team_id) params.append('team_id', filters.team_id);
   if (filters?.shift_definition_id) params.append('shift_definition_id', filters.shift_definition_id);
 
-  const response = await apiClient.get<ScheduleOccurrence[]>(
+  const response = await apiClient.get<RawScheduleRangeRow[]>(
     `/schedules/range?${params.toString()}`,
   );
-  return response.data || [];
+  return (response.data || []).map(toOccurrence);
 }
 
 /**

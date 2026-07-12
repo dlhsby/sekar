@@ -177,7 +177,8 @@
       "notesLabel": "Catatan",
       "notesPlaceholder": "Masukkan catatan…",
       "submit": "Simpan",
-      "cancel": "Batal"
+      "cancel": "Batal",
+      "datesLabel": "Tanggal terpilih"
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
@@ -189,7 +190,8 @@
       "title": "Hapus Yang Mana?",
       "this": "Hanya hari ini",
       "thisAndFuture": "Hari ini & seterusnya",
-      "series": "Seluruh rangkaian"
+      "series": "Seluruh rangkaian",
+      "confirm": "Hapus jadwal ini?"
     },
     "conflicts": {
       "title": "Bentrok Jadwal",
@@ -199,6 +201,18 @@
     "empty": {
       "noEvents": "Tidak ada jadwal pada hari ini",
       "noOccurrences": "Tidak ada jadwal"
-    }
+    },
+    "messages": {
+      "createSuccess": "Jadwal berhasil dibuat",
+      "updateSuccess": "Jadwal berhasil diperbarui",
+      "deleteSuccess": "Jadwal berhasil dihapus"
+    },
+    "validation": {
+      "intervalRange": "Interval harus antara 2–30 hari",
+      "weekdaysRequired": "Pilih minimal satu hari",
+      "datesRequired": "Tambahkan minimal satu tanggal",
+      "endBeforeStart": "Tanggal akhir harus setelah tanggal mulai"
+    },
+    "moreCount": "+{{count}} lagi"
   }
 }

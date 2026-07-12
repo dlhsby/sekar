@@ -136,8 +136,8 @@ export function MonthGrid({
                       />
                     ))}
                     {dayOccurrences.length > 3 && (
-                      <div className="text-xs text-nb-gray-500">
-                        +{dayOccurrences.length - 3} {t('schedules:calendar.occurrenceChip.team')}
+                      <div className="text-nb-caption text-nb-gray-500">
+                        {t('schedules:calendar.moreCount', { count: dayOccurrences.length - 3 })}
                       </div>
                     )}
                   </div>

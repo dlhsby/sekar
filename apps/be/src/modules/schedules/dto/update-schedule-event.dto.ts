@@ -14,7 +14,7 @@ import { Type } from 'class-transformer';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
 import { ScheduleScope } from '../enums/schedule-scope.enum';
 import { EditScope } from '../enums/edit-scope.enum';
-import { RecurrenceConfig } from '../entities/schedule-event.entity';
+import { RecurrenceConfigDto } from './create-schedule-event.dto';
 
 /**
  * Update DTO for schedule events.
@@ -44,11 +44,11 @@ export class UpdateScheduleEventDto {
   @IsDateString()
   end_date?: string;
 
-  @ApiPropertyOptional({ description: 'Recurrence configuration' })
+  @ApiPropertyOptional({ description: 'Recurrence configuration', type: RecurrenceConfigDto })
   @IsOptional()
   @ValidateNested()
-  @Type(() => Object)
-  recurrence_config?: RecurrenceConfig;
+  @Type(() => RecurrenceConfigDto)
+  recurrence_config?: RecurrenceConfigDto;
 
   @ApiPropertyOptional({ description: 'Shift definition id' })
   @IsOptional()
@@ -77,7 +77,7 @@ export class UpdateScheduleEventDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(0)
-  @IsUUID('4', { each: true })
+  @IsUUID('all', { each: true })
   member_ids?: string[];
 
   @ApiPropertyOptional({ description: 'Notes / reason' })

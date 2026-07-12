@@ -32,8 +32,9 @@ export function OccurrenceChip({
 }: OccurrenceChipProps) {
   const { t } = useTranslation();
 
-  const shiftIndex = parseInt(occurrence.shift_definition.name?.match(/\d+/)?.[0] || '0', 10) - 1;
-  const colors = SHIFT_COLORS[Math.min(shiftIndex, 3)] || SHIFT_COLORS[0];
+  const shiftName = occurrence.shift_definition?.name ?? '';
+  const shiftIndex = parseInt(shiftName.match(/\d+/)?.[0] || '0', 10) - 1;
+  const colors = SHIFT_COLORS[Math.min(Math.max(shiftIndex, 0), 3)] || SHIFT_COLORS[0];
 
   const displayName = isTeam && teamName ? `${teamName} (${memberCount || 0})` : occurrence.user.full_name;
 
@@ -54,7 +55,7 @@ export function OccurrenceChip({
     <Badge
       onClick={onClick}
       className={`${colors.bg} ${colors.text} cursor-pointer border-none px-2 py-1 text-xs font-medium ${className}`}
-      title={`${displayName} - ${occurrence.shift_definition.name}`}
+      title={`${displayName} - ${shiftName}`}
     >
       <span className="truncate">{displayName}</span>
       {occurrence.is_detached && (

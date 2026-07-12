@@ -177,7 +177,8 @@
       "notesLabel": "Notes",
       "notesPlaceholder": "Enter notes…",
       "submit": "Save",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "datesLabel": "Selected dates"
     },
     "editScope": {
       "title": "Edit What?",
@@ -189,7 +190,8 @@
       "title": "Delete What?",
       "this": "This occurrence only",
       "thisAndFuture": "This and future occurrences",
-      "series": "Entire series"
+      "series": "Entire series",
+      "confirm": "Delete this schedule?"
     },
     "conflicts": {
       "title": "Schedule Conflicts",
@@ -199,6 +201,18 @@
     "empty": {
       "noEvents": "No schedules for this day",
       "noOccurrences": "No schedules"
-    }
+    },
+    "messages": {
+      "createSuccess": "Schedule created",
+      "updateSuccess": "Schedule updated",
+      "deleteSuccess": "Schedule deleted"
+    },
+    "validation": {
+      "intervalRange": "Interval must be between 2–30 days",
+      "weekdaysRequired": "Select at least one day",
+      "datesRequired": "Add at least one date",
+      "endBeforeStart": "End date must be after the start date"
+    },
+    "moreCount": "+{{count}} more"
   }
 }
