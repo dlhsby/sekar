@@ -11,6 +11,7 @@ import { Rayon } from './entities/rayon.entity';
 import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
+import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-validator.util';
 
 /**
  * Service for managing rayons (geographic sectors)
@@ -125,6 +126,18 @@ export class RayonsService {
       if (existingByName) {
         this.logger.warn(`Rayon with name "${updateRayonDto.name}" already exists`);
         throw new ConflictException(`Rayon with name "${updateRayonDto.name}" already exists`);
+      }
+    }
+
+    // A rayon boundary must be a structurally valid polygon (same rule as
+    // location boundaries). Only simple Polygons are validated — KMZ-imported
+    // rayon boundaries can legitimately be MultiPolygon, which the validator
+    // doesn't model yet.
+    const rayonBoundary = updateRayonDto.boundary_polygon as GeoJsonPolygon | null | undefined;
+    if (rayonBoundary != null && rayonBoundary.type === 'Polygon') {
+      const errors = GeoJsonValidator.validatePolygon(rayonBoundary);
+      if (errors.length > 0) {
+        throw new BadRequestException(`Invalid polygon: ${errors.join('; ')}`);
       }
     }
 

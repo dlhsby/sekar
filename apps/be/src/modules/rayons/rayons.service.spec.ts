@@ -181,14 +181,15 @@ describe('RayonsService', () => {
     });
 
     it('persists boundary_polygon (admin correction of the KMZ outline)', async () => {
+      // Valid Surabaya-bounds polygon — boundary writes are now validated.
       const polygon = {
         type: 'Polygon',
         coordinates: [
           [
-            [1, 1],
-            [2, 2],
-            [3, 1],
-            [1, 1],
+            [112.7, -7.3],
+            [112.8, -7.2],
+            [112.9, -7.3],
+            [112.7, -7.3],
           ],
         ],
       };
@@ -202,6 +203,15 @@ describe('RayonsService', () => {
       expect(mockRayonRepository.save).toHaveBeenCalledWith(
         expect.objectContaining({ boundary_polygon: polygon }),
       );
+    });
+
+    it('rejects a structurally invalid boundary polygon', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon });
+      await expect(
+        service.update(mockRayon.id, {
+          boundary_polygon: { type: 'Polygon', coordinates: [[]] },
+        } as UpdateRayonDto),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('should update a rayon with new name', async () => {

@@ -75,7 +75,8 @@ export function useAssignRegionAreas() {
       (await apiClient.patch<{ updated: number }>(`/regions/${id}/areas`, { locationIds })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: regionKeys.all });
-      qc.invalidateQueries({ queryKey: ['areas'] });
+      // Locations carry region_id — their list cache is keyed 'locations'.
+      qc.invalidateQueries({ queryKey: ['locations'] });
     },
   });
 }
