@@ -558,7 +558,7 @@ describe('PlantsService', () => {
       await expect(service.deleteSpecies('non-existent-id')).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ConflictException if species is referenced by area_plants', async () => {
+    it('should throw ConflictException if species is referenced by location_plants', async () => {
       const species = { ...mockSpecies, deletedAt: null };
       mockSpeciesRepository.findOne.mockResolvedValue(species);
       mockAreaPlantRepository.count.mockResolvedValue(5); // 5 references
@@ -581,10 +581,10 @@ describe('PlantsService', () => {
       );
     });
 
-    it('should prioritize the area_plants error when both are referenced', async () => {
+    it('should prioritize the location_plants error when both are referenced', async () => {
       // Both referential-integrity checks run concurrently (Promise.all) rather than
-      // sequentially — area_plants and notable_plants counts are independent queries
-      // with no data dependency, so both always run; area_plants takes priority for
+      // sequentially — location_plants and notable_plants counts are independent queries
+      // with no data dependency, so both always run; location_plants takes priority for
       // which error message is thrown when both are non-zero.
       const species = { ...mockSpecies, deletedAt: null };
       mockSpeciesRepository.findOne.mockResolvedValue(species);

@@ -134,7 +134,7 @@ const PLANT_SPECIES: Array<{ nameId: string; category: string }> = [
 
 /**
  * Seed 124 plant species (reference data).
- * Builds ctx.maps.speciesIdByName for downstream area_plants/notable_plants lookups.
+ * Builds ctx.maps.speciesIdByName for downstream location_plants/notable_plants lookups.
  */
 export async function seedPlantSpecies(ctx: SeedContext): Promise<void> {
   ctx.log('🌳 Seeding Plant Species…');

@@ -86,7 +86,7 @@ export class ExportService {
       },
       areas: {
         repo: () => this.areaRepo as Repository<ObjectLiteral>,
-        alias: 'areas',
+        alias: 'locations',
         dateColumn: 'created_at',
         areaColumn: 'id',
         rayonColumn: 'rayon_id',
@@ -157,11 +157,11 @@ export class ExportService {
     return { kind: 'job', job };
   }
 
-  /** Validate the format against the entity (kmz is areas-only). */
+  /** Validate the format against the entity (kmz is locations-only). */
   private resolveFormat(dto: ExportRequestDto): ExportFormat {
     const format = dto.format ?? 'csv';
     if (format === 'kmz' && dto.entityType !== 'areas') {
-      throw new BadRequestException('KMZ format is only available for areas');
+      throw new BadRequestException('KMZ format is only available for locations');
     }
     return format;
   }
@@ -220,7 +220,7 @@ export class ExportService {
     return qb;
   }
 
-  /** Scope by rayon directly when the entity carries rayon_id, else via its areas. */
+  /** Scope by rayon directly when the entity carries rayon_id, else via its locations. */
   private applyRayonFilter(
     qb: SelectQueryBuilder<ObjectLiteral>,
     cfg: EntityConfig,
@@ -230,7 +230,7 @@ export class ExportService {
       qb.andWhere(`${cfg.alias}.${cfg.rayonColumn} = :rayonId`, { rayonId });
     } else if (cfg.areaColumn) {
       qb.andWhere(
-        `${cfg.alias}.${cfg.areaColumn} IN (SELECT id FROM areas WHERE rayon_id = :rayonId)`,
+        `${cfg.alias}.${cfg.areaColumn} IN (SELECT id FROM locations WHERE rayon_id = :rayonId)`,
         { rayonId },
       );
     } else {

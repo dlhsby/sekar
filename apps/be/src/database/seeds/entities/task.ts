@@ -42,12 +42,12 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
     `SELECT id FROM users WHERE role = 'top_management' LIMIT 1`,
   );
   const taskAreas = await ctx.qr.query(
-    `SELECT id FROM areas WHERE rayon_id = (SELECT id FROM rayons WHERE name = 'Rayon Pusat')
+    `SELECT id FROM locations WHERE rayon_id = (SELECT id FROM rayons WHERE name = 'Rayon Pusat')
      ORDER BY name LIMIT 5`,
   );
 
   if (taskCreator.length === 0 || taskSatgas.length === 0 || taskAreas.length === 0) {
-    ctx.log('  ⚠ Required users/areas not found, skipping tasks');
+    ctx.log('  ⚠ Required users/locations not found, skipping tasks');
   } else {
     const cId = taskCreator[0].id;
     const s1Id = taskSatgas[0]?.id;

@@ -12,12 +12,12 @@ import {
 } from '../kmz-locations';
 
 /**
- * Seed user_areas assignments (mode-dependent):
+ * Seed user_locations assignments (mode-dependent):
  *
  * Demo: ~15 demo assignments (korlap/satgas multi-area assignments for testing).
  *
- * Staging: 381 permanent assignments. Korlap_pusat_1,2 → 12 Pusat areas each.
- * Satgas/linmas distributed across areas. Real users assigned to Bungkul + other
+ * Staging: 381 permanent assignments. Korlap_pusat_1,2 → 12 Pusat locations each.
+ * Satgas/linmas distributed across locations. Real users assigned to Bungkul + other
  * parks. All generated from user + area data at runtime.
  */
 export async function seedUserAreas(ctx: SeedContext): Promise<void> {
@@ -25,7 +25,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
 
   if (ctx.mode === 'staging') {
     // Faithful port of seed-staging STEP 11 — a FIXED set of permanent
-    // assignments (not "all areas in rayon"). The roster's taman-aktif area
+    // assignments (not "all locations in rayon"). The roster's taman-aktif area
     // links are already created during user seeding (STEP 9).
     const superadminRow = (await ctx.qr.query(
       `SELECT id FROM users WHERE username = 'superadmin' LIMIT 1`,
@@ -33,7 +33,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     const superadminId = superadminRow[0]?.id;
     const pusatDummyAreaIds: string[] = (
       (await ctx.qr.query(
-        `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
+        `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
         [RAYON_PUSAT_ID],
       )) as Array<{ id: string }>
     ).map((r) => r.id);
@@ -43,7 +43,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     const assign = async (username: string, locationId: string | null) => {
       if (!locationId) return;
       await ctx.qr.query(
-        `INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+        `INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
          SELECT u.id, $2, 'permanent', $3 FROM users u WHERE u.username = $1
          ON CONFLICT DO NOTHING`,
         [username, locationId, superadminId],
@@ -71,115 +71,115 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     for (const un of ['edi_santoso', 'jihan_nabila_safitri', 'deni_purwanto', 'agus_ramadhan']) {
       await assign(un, AREA_BUNGKUL_ID);
     }
-    ctx.log('✅ Staging user_areas (STEP 11 fixed assignments) complete');
+    ctx.log('✅ Staging user_locations (STEP 11 fixed assignments) complete');
   } else {
-    // DEMO: Demo user_areas assignments
+    // DEMO: Demo user_locations assignments
     ctx.log('  [Demo assignments]');
 
     // korlap_pusat_1 → Darmo Pulau 3 (primary permanent area, Rayon Pusat)
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P3_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // korlap_pusat_1 also → Jalan Raya Darmo (same Rayon Pusat — korlap must stay within one rayon)
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // korlap_pusat_2 → Jalan Raya Darmo (primary permanent area)
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'korlap_pusat_2' AND a.id = '${DARMO_P1_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // satgas_pusat_1 → Darmo Pulau 1 (default area, post-remap) + Darmo Pulau 2 (extra permanent).
-    // Tests: satgas with default location_id can also be assigned to extra areas via user_areas.
+    // Tests: satgas with default location_id can also be assigned to extra locations via user_locations.
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P2_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // satgas_pusat_3 → Darmo Pulau 4 (default area, no extra assignments)
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_pusat_3' AND a.id = '${DARMO_P4_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // satgas_taman_bungkul_1 → Taman Bungkul (Rayon Taman Aktif park worker)
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_taman_bungkul_1' AND a.id = '${BUNGKUL_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // korlap_taman_aktif_1 → Taman Bungkul + Taman Flora (multi-area within Rayon Taman Aktif)
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'korlap_taman_aktif_1' AND a.id IN ('${BUNGKUL_AREA_ID}', '${TAMAN_FLORA_AREA_ID}')
     ON CONFLICT DO NOTHING;
   `);
 
     // linmas_taman_aktif_1 → Taman Bungkul
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'linmas_taman_aktif_1' AND a.id = '${BUNGKUL_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // satgas_taman_flora_1 → Taman Flora
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_taman_flora_1' AND a.id = '${TAMAN_FLORA_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     // satgas_pusat_4 → Darmo Pulau 5 (default location_id) + Jalan Raya Darmo Pulau 1 (secondary permanent area)
-    // This tests: satgas with two permanent areas in the same rayon
+    // This tests: satgas with two permanent locations in the same rayon
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P5_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P1_AREA_ID}'
     ON CONFLICT DO NOTHING;
   `);
@@ -187,9 +187,9 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     // satgas_timur_1_2 → Taman Buk Tong (post-remap, now in Rayon Timur 2).
     // The old "Taman Timur 1" dummy area is gone; user was moved in STEP 8.1.
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'satgas_timur_1_2' AND a.id = '${TAMAN_BUK_TONG_ID}'
     ON CONFLICT DO NOTHING;
   `);
@@ -204,18 +204,18 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     );
 
     // Per-rayon korlap area assignments. Only Rayon Timur 2 has a KMZ area
-    // (Taman Buk Tong); the other rayons leave user_areas empty for korlap,
+    // (Taman Buk Tong); the other rayons leave user_locations empty for korlap,
     // which exercises the "korlap with no assignments" supervisor view.
     await ctx.qr.query(`
-    INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+    INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
-    FROM users u, areas a
+    FROM users u, locations a
     WHERE u.username = 'korlap_timur_2_1' AND a.id = '${TAMAN_BUK_TONG_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
     ctx.log(
-      '  ✓ korlap_timur_2_1→Taman Buk Tong; other rayon korlap have no user_areas (intentional)',
+      '  ✓ korlap_timur_2_1→Taman Buk Tong; other rayon korlap have no user_locations (intentional)',
     );
 
     ctx.log('✅ User-area assignments seeding complete (demo)');

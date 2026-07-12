@@ -71,7 +71,7 @@ export class StatusCalculatorService {
     private readonly userLocationsService?: UserLocationsService,
     // Monitoring/geofencing/tracking read the day's GENERATED roster, not the
     // raw user assignment (the user record is only the template that feeds
-    // generation). Optional → legacy specs fall back to user_areas.
+    // generation). Optional → legacy specs fall back to user_locations.
     @Optional()
     private readonly dailySchedulesService?: SchedulesService,
   ) {}
@@ -92,7 +92,7 @@ export class StatusCalculatorService {
    * never silence a safety alert.
    *
    * Korlap scope matches the worker's primary `users.location_id` (multi-area via
-   * `user_areas` is a later follow-up); kepala_rayon scope matches `rayon_id`.
+   * `user_locations` is a later follow-up); kepala_rayon scope matches `rayon_id`.
    */
   async notifyMissingWorker(
     workerUserId: string,
@@ -671,7 +671,7 @@ export class StatusCalculatorService {
    * A worker counts as within-area if they are inside their primary (clocked-in)
    * area OR any other area on **today's generated roster** (the operational
    * source of truth — we check the day's penjadwalan, not the raw user
-   * assignment). Falls back to `user_areas` only when no roster service/rows are
+   * assignment). Falls back to `user_locations` only when no roster service/rows are
    * available (legacy). The extra lookup only runs when the worker is outside
    * their primary area, keeping the per-ping hot path at one boundary check.
    */

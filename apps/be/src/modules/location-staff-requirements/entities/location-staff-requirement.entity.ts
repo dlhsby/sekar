@@ -31,7 +31,7 @@ export enum StaffRole {
  *
  * Example: Taman Bungkul, Shift 1, Weekday needs 6 Satgas and 2 Linmas
  */
-@Entity('area_staff_requirements')
+@Entity('location_staff_requirements')
 export class LocationStaffRequirement {
   @ApiProperty({
     description: 'Unique identifier',

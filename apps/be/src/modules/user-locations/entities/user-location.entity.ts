@@ -10,7 +10,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 
-@Entity('user_areas')
+@Entity('user_locations')
 export class UserLocation {
   @PrimaryGeneratedColumn('uuid')
   id: string;

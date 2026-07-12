@@ -70,7 +70,7 @@ export class MonitoringUserService {
     if (filters?.location_id) {
       qb.andWhere('uts.location_id = :locationId', { locationId: filters.location_id });
     }
-    // Multi-area scoping (e.g. korlap with several `user_areas` rows).
+    // Multi-area scoping (e.g. korlap with several `user_locations` rows).
     const scopedAreaIds = (filters as { location_ids?: string[] } | undefined)?.location_ids;
     if (scopedAreaIds) {
       if (scopedAreaIds.length === 0) {

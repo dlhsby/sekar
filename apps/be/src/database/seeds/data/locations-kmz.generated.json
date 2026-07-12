@@ -2,7 +2,7 @@
   "_generated": "scripts/extract-kmz-seed-data.js — do not hand-edit; re-run the extractor.",
   "_source": "src/database/seeds/data/kmz/*.kmz",
   "count": 937,
-  "areas": [
+  "locations": [
     {
       "id": "ad12255c-e963-5234-aee8-665c5decdc9d",
       "name": "Mayjend Sungkono Pulau 1",

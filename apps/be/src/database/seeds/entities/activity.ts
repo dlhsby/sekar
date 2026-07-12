@@ -29,7 +29,9 @@ export async function seedActivities(ctx: SeedContext): Promise<void> {
   );
   const actKorlap = await ctx.qr.query(`SELECT id FROM users WHERE role = 'korlap' LIMIT 1`);
   const actShift = await ctx.qr.query(`SELECT id FROM shifts LIMIT 1`);
-  const actArea = await ctx.qr.query(`SELECT id FROM areas WHERE name ILIKE '%bungkul%' LIMIT 1`);
+  const actArea = await ctx.qr.query(
+    `SELECT id FROM locations WHERE name ILIKE '%bungkul%' LIMIT 1`,
+  );
 
   if (
     actSatgas1.length === 0 ||

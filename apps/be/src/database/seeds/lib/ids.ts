@@ -22,7 +22,7 @@ export const RAYON_BARAT1_ID = 'bf040137-fce4-4016-b5e7-704ad82c1594';
 export const RAYON_BARAT2_ID = '7422e6ee-0693-4565-9016-d4f759bdeed2';
 export const RAYON_TAMAN_AKTIF_ID = '8a8a8a8a-1111-4222-9333-444444444444';
 
-/** rayon code → id (mirrors the RayonCode union in kmz-areas.ts). */
+/** rayon code → id (mirrors the RayonCode union in kmz-locations.ts). */
 export const RAYON_ID_BY_CODE: Record<string, string> = {
   SELATAN: RAYON_SELATAN_ID,
   UTARA: RAYON_UTARA_ID,

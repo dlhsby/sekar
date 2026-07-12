@@ -54,7 +54,7 @@ describe('SoftDeletePurgeCron', () => {
 
     expect(dataSource.transaction).toHaveBeenCalledTimes(2);
     const sqls = manager.query.mock.calls.map((c: [string]) => c[0]);
-    expect(sqls.some((s: string) => s.includes('DELETE FROM user_areas'))).toBe(true);
+    expect(sqls.some((s: string) => s.includes('DELETE FROM user_locations'))).toBe(true);
     expect(sqls.some((s: string) => s.includes('DELETE FROM shifts'))).toBe(true);
     expect(sqls.some((s: string) => s.includes('DELETE FROM users WHERE id = $1'))).toBe(true);
   });

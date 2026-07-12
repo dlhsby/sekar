@@ -351,7 +351,7 @@ export class PlantsController {
    * Delete a plant species (soft delete)
    *
    * Only admin_data, admin_system, and superadmin can manage the plant species catalog.
-   * Will reject deletion if the species is referenced by area_plants or notable_plants.
+   * Will reject deletion if the species is referenced by location_plants or notable_plants.
    *
    * @param id Plant species UUID
    */

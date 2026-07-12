@@ -110,10 +110,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       '5a010506-0000-4001-8005-00000000001e',
     ];
 
-    // Resolve real Pusat + Timur 2 areas for the dummy assignments.
+    // Resolve real Pusat + Timur 2 locations for the dummy assignments.
     const pusatDummyAreaIds: string[] = (
       (await ctx.qr.query(
-        `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
+        `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
         [RAYON_PUSAT_ID],
       )) as Array<{ id: string }>
     ).map((r) => r.id);
@@ -121,7 +121,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const timur2DummyAreaId =
       (
         (await ctx.qr.query(
-          `SELECT id FROM areas WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
+          `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
           [RAYON_TIMUR2_ID],
         )) as Array<{ id: string }>
       )[0]?.id ?? null;
@@ -503,7 +503,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     const tamanAktifAreaIdByName = new Map<string, string>(
       (
-        (await ctx.qr.query(`SELECT id, name FROM areas WHERE rayon_id = $1`, [
+        (await ctx.qr.query(`SELECT id, name FROM locations WHERE rayon_id = $1`, [
           RAYON_TAMAN_AKTIF_ID,
         ])) as Array<{ id: string; name: string }>
       ).map((r) => [r.name, r.id]),
@@ -539,7 +539,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       if (uid) {
         for (const aid of locationIds) {
           await ctx.qr.query(
-            `INSERT INTO user_areas (user_id, location_id, assignment_type, assigned_by)
+            `INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
              VALUES ($1, $2, 'permanent', $3) ON CONFLICT DO NOTHING`,
             [uid, aid, USER_SUPERADMIN_ID],
           );
@@ -587,7 +587,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     // STEP 10: derive rayon_id for field workers from their area.
     await ctx.qr.query(
-      `UPDATE users u SET rayon_id = a.rayon_id FROM areas a WHERE u.location_id = a.id AND u.rayon_id IS NULL AND u.role IN ('satgas', 'linmas', 'korlap')`,
+      `UPDATE users u SET rayon_id = a.rayon_id FROM locations a WHERE u.location_id = a.id AND u.rayon_id IS NULL AND u.role IN ('satgas', 'linmas', 'korlap')`,
     );
     ctx.log('✅ Staging users seeding complete');
   } else {
@@ -830,9 +830,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     ctx.log('  ✓ Seeded 31 staff_kecamatan users (one per kecamatan)');
 
     // ==========================================
-    // STEP 8.1: Scenario remap — repoint legacy dev users onto real KMZ areas.
+    // STEP 8.1: Scenario remap — repoint legacy dev users onto real KMZ locations.
     // ==========================================
-    ctx.log('🌳 Remapping legacy dev users onto KMZ areas...');
+    ctx.log('🌳 Remapping legacy dev users onto KMZ locations...');
     await ctx.qr.query(
       `UPDATE users SET location_id = '${DARMO_P1_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
     );
@@ -874,7 +874,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     await ctx.qr.query(`
     UPDATE users u
     SET rayon_id = a.rayon_id
-    FROM areas a
+    FROM locations a
     WHERE u.location_id = a.id
       AND u.rayon_id IS NULL
       AND u.role IN ('satgas', 'linmas', 'korlap');
@@ -890,7 +890,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // STEP 9: Assign each worker a default shift
     // ==========================================
     // (ADR-013) A worker's shift lives on the user now (`users.shift_definition_id`);
-    // the daily roster is materialized from that + `user_areas`. Round-robin across
+    // the daily roster is materialized from that + `user_locations`. Round-robin across
     // the 3 shift definitions for all clockable roles (korlap is clockable too).
     ctx.log('📅 Assigning worker shifts...');
     const workerResult = await ctx.qr.query(`

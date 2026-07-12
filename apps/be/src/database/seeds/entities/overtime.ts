@@ -28,7 +28,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
   `);
 
   const tamanBungkulIdResult = await ctx.qr.query(`
-    SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1
+    SELECT id FROM locations WHERE name = 'Taman Bungkul' LIMIT 1
   `);
 
   if (korlapOtResult.length > 0 && satgasOtResult.length > 0 && tamanBungkulIdResult.length > 0) {
@@ -210,6 +210,6 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       ctx.log('  ⚠ Activity types not found, skipping overtime seeding');
     }
   } else {
-    ctx.log('  ⚠ Required users or areas not found, skipping overtime seeding');
+    ctx.log('  ⚠ Required users or locations not found, skipping overtime seeding');
   }
 }

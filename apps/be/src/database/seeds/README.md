@@ -23,7 +23,7 @@ the pre-refactor seeders (demo, staging, reference).
 | File | Purpose | Safe for prod? |
 |------|---------|----------------|
 | `profiles/demo.ts` | Local `db:seed` — truncate + full dev dataset (incl. demo transaction + plant data) | No (destructive) |
-| `profiles/staging.ts` | Staging/UAT — truncate + real roster from `data/users.csv`, 937 KMZ areas, all-area staffing, materialised daily roster, Phase-3 reference | No |
+| `profiles/staging.ts` | Staging/UAT — truncate + real roster from `data/users.csv`, 937 KMZ locations, all-area staffing, materialised daily roster, Phase-3 reference | No |
 | `profiles/reference.ts` | Reference/config only — idempotent upsert (128 plant_species, monitoring_configs, capacity grid) | Yes |
 | `profiles/production.ts` | Production cold-start — idempotent upsert (rayons, shifts, kecamatans, 2 admins; passwords from env) | Yes |
 | `entities/*.ts` | One `seedX(ctx)` per table; `ctx.mode` branches where demo/staging/reference diverge | — |
@@ -123,14 +123,14 @@ After running the snippet above, `npm run migration:run` will report "No migrati
 Clears 21 core tables (via TRUNCATE with explicit list — `typeorm_migrations` is never touched) then seeds:
 - 1 user: `admin` (superadmin)
 - 4 area types: park, pedestrian, mini_garden, street
-- 3 areas: Taman Bungkul, Jalan Raya Darmo, Taman Harmoni
+- 3 locations: Taman Bungkul, Jalan Raya Darmo, Taman Harmoni
 
 ### seed-phase2.ts (Sections A → E)
 
 **Section A** — Core Phase 2 data:
 - 7 Rayons, 3 Shift Definitions, 20 Activity Types, 4 Special Day Overrides
 - ~40 users covering all 7 rayons and all 8 roles
-- 10 areas (incl. Pusat, Timur 1/2, Barat 1/2, Utara, Selatan)
+- 10 locations (incl. Pusat, Timur 1/2, Barat 1/2, Utara, Selatan)
 - Staff requirements, notification tokens, schedules, overtimes, shifts
 
 **Section B** — Tasks:
@@ -148,7 +148,7 @@ Clears 21 core tables (via TRUNCATE with explicit list — `typeorm_migrations` 
 
 **Section E** — Phase 2E:
 - `phone_number` set for all users
-- `user_areas` multi-area assignments
+- `user_locations` multi-area assignments
 
 ### seed-phase3.ts (idempotent, Phase 3)
 

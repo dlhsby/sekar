@@ -28,9 +28,9 @@ import { USER_MANAGERS } from '../users/constants/role-groups';
  * - Admin can create, update, and delete area types
  * - All authenticated users can view area types
  */
-@ApiTags('area-types')
+@ApiTags('location-types')
 @ApiBearerAuth('JWT-auth')
-@Controller('area-types')
+@Controller(['location-types', 'area-types'])
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LocationTypesController {
   constructor(private readonly locationTypesService: LocationTypesService) {}

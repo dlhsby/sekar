@@ -85,10 +85,10 @@ export class PlantsService {
   /**
    * Get all plants in an area (inventory rollup)
    *
-   * Returns area_plants rows with eager-loaded species details.
+   * Returns location_plants rows with eager-loaded species details.
    *
    * @param locationId Location UUID
-   * @returns Array of area_plants with species relation
+   * @returns Array of location_plants with species relation
    * @throws NotFoundException if area does not exist
    */
   async listAreaPlants(locationId: string): Promise<LocationPlant[]> {
@@ -263,7 +263,7 @@ export class PlantsService {
    * Delete a plant species (soft delete)
    *
    * Performs referential integrity check — throws ConflictException if the species
-   * is referenced by area_plants or notable_plants.
+   * is referenced by location_plants or notable_plants.
    *
    * @param id Plant species UUID
    * @returns void
@@ -279,7 +279,7 @@ export class PlantsService {
       throw new NotFoundException(`Plant species with ID ${id} not found`);
     }
 
-    // Check referential integrity against area_plants and notable_plants concurrently.
+    // Check referential integrity against location_plants and notable_plants concurrently.
     const [areaPlantRefs, notablePlantRefs] = await Promise.all([
       this.areaPlantRepository.count({ where: { speciesId: id } }),
       this.notablePlantRepository.count({ where: { speciesId: id } }),

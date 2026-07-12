@@ -10,7 +10,7 @@ export const SOFT_DELETE_RETENTION_DAYS = 180;
  * Soft-delete cleanup cron (Phase 4-6 B2/I2).
  *
  * Weekly (Sunday 03:00 WIB) hard-purge of users soft-deleted more than 180
- * days ago, including their dependent rows (user_areas, schedules, shifts —
+ * days ago, including their dependent rows (user_locations, schedules, shifts —
  * which cascades location_logs — and activities).
  *
  * DESTRUCTIVE: disabled unless ENABLE_HARD_PURGE=true. Each user purges in
@@ -60,7 +60,7 @@ export class SoftDeletePurgeCron {
   private async purgeUser(userId: string): Promise<boolean> {
     try {
       await this.dataSource.transaction(async (manager) => {
-        await manager.query(`DELETE FROM user_areas WHERE user_id = $1`, [userId]);
+        await manager.query(`DELETE FROM user_locations WHERE user_id = $1`, [userId]);
         await manager.query(`DELETE FROM location_logs WHERE user_id = $1`, [userId]);
         await manager.query(`DELETE FROM activities WHERE user_id = $1`, [userId]);
         // shifts delete cascades any remaining location_logs via FK

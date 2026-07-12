@@ -15,11 +15,11 @@ import {
  *
  * Master data (id/name/description/color) comes from `data/rayons.csv`; the
  * official boundary outlines come from the KMZ ("Batas Wilayah Kerja Rayon")
- * via `RAYON_BOUNDARIES` — never derived from member areas (see
+ * via `RAYON_BOUNDARIES` — never derived from member locations (see
  * ADR/PR #145). Taman Aktif has no admin outline, so its boundary is the convex
  * hull of its member park polygons, with the office as the map center.
  *
- * Populates `ctx.maps.rayonIdByCode` for downstream entities (areas, users…).
+ * Populates `ctx.maps.rayonIdByCode` for downstream entities (locations, users…).
  */
 export async function seedRayons(ctx: SeedContext): Promise<void> {
   ctx.log('📍 Seeding Rayons…');

@@ -20,13 +20,13 @@ import {
 } from '../kmz-locations';
 
 /**
- * Seed areas (mode-dependent):
+ * Seed locations (mode-dependent):
  *
- * Demo (38 areas): 13 Rayon Pusat + 25 Rayon Timur 2 + Rayon Timur 1 coverage areas
+ * Demo (38 locations): 13 Rayon Pusat + 25 Rayon Timur 2 + Rayon Timur 1 coverage locations
  * + Taman Aktif parks + Taman Flora. Empty rayons (Selatan/Utara/Barat1/Barat2)
- * intentionally have no areas.
+ * intentionally have no locations.
  *
- * Staging (937 areas): All KMZ geographic coverage areas (7 rayons) + ALL Taman
+ * Staging (937 locations): All KMZ geographic coverage locations (7 rayons) + ALL Taman
  * Aktif parks (~90) + Taman Flora. Full real-world footprint for UAT.
  */
 export async function seedAreas(ctx: SeedContext): Promise<void> {
@@ -44,7 +44,7 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
     rayonId: string,
   ): Promise<void> => {
     await ctx.qr.query(
-      `INSERT INTO areas (
+      `INSERT INTO locations (
         id, name, location_type_id, gps_lat, gps_lng, radius_meters,
         boundary_polygon, coverage_area, rayon_id, is_active
       )
@@ -77,7 +77,7 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
   const kmzAll = loadKmzAreas();
 
   if (ctx.mode === 'staging') {
-    // STAGING: Seed ALL KMZ geographic areas (937 total) for all 7 rayons
+    // STAGING: Seed ALL KMZ geographic locations (937 total) for all 7 rayons
     // + ALL Taman Aktif parks + Taman Flora. Full real-world footprint for UAT.
     const kmzByRayon: Record<string, number> = {};
     const kmzAreas = kmzAll.filter((a) => a.rayonCode !== 'TAMAN_AKTIF');
@@ -99,7 +99,7 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
       kmzByRayon[a.rayonCode] = (kmzByRayon[a.rayonCode] ?? 0) + 1;
     }
     ctx.log(
-      `  ✓ ${kmzAreas.length} KMZ coverage areas → ` +
+      `  ✓ ${kmzAreas.length} KMZ coverage locations → ` +
         Object.entries(kmzByRayon)
           .map(([r, n]) => `${r}:${n}`)
           .join('  '),
@@ -196,20 +196,20 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
       ctx.log('  ✓ Rayon Taman Aktif boundary (convex hull of park polygons)');
     }
   } else {
-    // DEMO: Curated Pusat + Timur 2 areas, geometry refreshed from the latest KMZ
+    // DEMO: Curated Pusat + Timur 2 locations, geometry refreshed from the latest KMZ
     // (matched by deterministic id) so ids + dummy assignments stay stable.
     const freshCoordsById = new Map(kmzAll.map((a) => [a.id, a.coordStrings]));
     const ALL_AREA_DEFS: AreaDef[] = [...RAYON_PUSAT_AREAS, ...TIMUR2_AREAS];
     for (const areaDef of ALL_AREA_DEFS) {
       await insertAreaDef(areaDef, freshCoordsById.get(areaDef.id) ?? areaDef.coordStrings);
     }
-    ctx.log(`  ✓ Seeded ${ALL_AREA_DEFS.length} areas (13 Rayon Pusat + 25 Rayon Timur 2)`);
+    ctx.log(`  ✓ Seeded ${ALL_AREA_DEFS.length} locations (13 Rayon Pusat + 25 Rayon Timur 2)`);
 
-    // Rayon Timur 1 coverage areas — full set from the KMZ so local testing has
+    // Rayon Timur 1 coverage locations — full set from the KMZ so local testing has
     // Timur 1 boundaries.
     const timur1Areas = kmzAll.filter((a) => a.rayonCode === 'TIMUR1');
     for (const a of timur1Areas) await insertAreaDef(a, a.coordStrings);
-    ctx.log(`  ✓ Seeded ${timur1Areas.length} Rayon Timur 1 coverage areas (KMZ)`);
+    ctx.log(`  ✓ Seeded ${timur1Areas.length} Rayon Timur 1 coverage locations (KMZ)`);
 
     // Taman Aktif parks with real geofences
     const normParkName = (s: string): string =>
@@ -293,7 +293,7 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
   const floraPolygon = surabayaOutlinePolygon();
   const floraRing = floraPolygon.coordinates[0].map(([lng, lat]) => [lng, lat] as [number, number]);
   await ctx.qr.query(
-    `INSERT INTO areas (
+    `INSERT INTO locations (
       id, name, location_type_id, gps_lat, gps_lng, radius_meters,
       boundary_polygon, coverage_area, rayon_id, is_active
     )

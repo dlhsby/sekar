@@ -1,5 +1,5 @@
 {
-  "_note": "Maps deterministic KMZ v5 area ids → the live-DB (app-created v4) ids for Rayon Timur 1, whose areas were imported via the app during UAT rather than seeded from KMZ. Applied by scripts/extract-kmz-seed-data.js so the generated json + a fresh seed reproduce the live ids (non-destructive reconciliation). Matched by normalized name (centroid tiebreak).",
+  "_note": "Maps deterministic KMZ v5 area ids → the live-DB (app-created v4) ids for Rayon Timur 1, whose locations were imported via the app during UAT rather than seeded from KMZ. Applied by scripts/extract-kmz-seed-data.js so the generated json + a fresh seed reproduce the live ids (non-destructive reconciliation). Matched by normalized name (centroid tiebreak).",
   "_generated": "scripts/build via area sync 2026-07",
   "map": {
     "d064bfe4-62a3-53bb-9954-f57e44dfef78": "7ca15843-5c42-48d9-b5f8-e1fa8da074e2",

@@ -11,7 +11,7 @@ import {
 import { Location } from '../../locations/entities/location.entity';
 import { PlantSpecies } from './plant-species.entity';
 
-@Entity('area_plants')
+@Entity('location_plants')
 @Unique('uq_area_plants_area_species', ['locationId', 'speciesId'])
 export class LocationPlant {
   @PrimaryGeneratedColumn('uuid')

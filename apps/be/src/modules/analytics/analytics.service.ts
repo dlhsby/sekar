@@ -440,7 +440,7 @@ export class AnalyticsService {
    * Enforce per-role area scoping for area analytics:
    * - top_management / admin_system / superadmin → all areas (global)
    * - kepala_rayon / admin_data → their own rayon (admin_data is rayon-scoped, ADR-033)
-   * - korlap → their assigned areas (user_areas), not a single location_id
+   * - korlap → their assigned areas (user_locations), not a single location_id
    */
   private async enforceAreaAccess(user: User, area: Location): Promise<void> {
     const { role } = user;

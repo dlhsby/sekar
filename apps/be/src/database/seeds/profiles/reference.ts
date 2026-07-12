@@ -29,7 +29,7 @@ import { superadminPasswordHash } from '../constants';
  *   - monitoring_configs 9 (5 Phase 2 + 4 Phase 3)
  *   - plant_species 128
  *   - service_capacity 96 (8 rayons × 12 ISO weeks × pruning, capacity_units=0)
- *   - areas 0 (no areas in reference — loaded via KMZ import)
+ *   - locations 0 (no locations in reference — loaded via KMZ import)
  *   - All transactional tables 0
  */
 async function seedReference(ctx: SeedContext): Promise<void> {

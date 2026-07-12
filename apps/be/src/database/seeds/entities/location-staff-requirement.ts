@@ -22,14 +22,14 @@ export async function seedAreaStaffRequirements(ctx: SeedContext): Promise<void>
   if (ctx.mode === 'staging') {
     // STAGING: 332 rows (1 satgas + 1 linmas per area in Taman Aktif + Timur 2)
     await ctx.qr.query(
-      `INSERT INTO area_staff_requirements (location_id, shift_definition_id, role, required_count, day_type)
+      `INSERT INTO location_staff_requirements (location_id, shift_definition_id, role, required_count, day_type)
        SELECT
          a.id,
          $1,
          r.role,
          1,
          'WEEKDAY'
-       FROM areas a
+       FROM locations a
        CROSS JOIN (VALUES ('satgas'), ('linmas')) AS r(role)
        WHERE a.rayon_id IN ($2, $3)
        AND a.deleted_at IS NULL
@@ -44,13 +44,13 @@ export async function seedAreaStaffRequirements(ctx: SeedContext): Promise<void>
 
     // Get Taman Bungkul location_id
     const areaResult = await ctx.qr.query(`
-    SELECT id FROM areas WHERE name = 'Taman Bungkul' LIMIT 1;
+    SELECT id FROM locations WHERE name = 'Taman Bungkul' LIMIT 1;
   `);
     const tamanBungkulId = areaResult[0]?.id;
 
     if (tamanBungkulId) {
       await ctx.qr.query(`
-      INSERT INTO area_staff_requirements (location_id, shift_definition_id, role, required_count, day_type) VALUES
+      INSERT INTO location_staff_requirements (location_id, shift_definition_id, role, required_count, day_type) VALUES
         -- Shift 1 Weekday
         ('${tamanBungkulId}', '${SHIFT_1_ID}', 'satgas', 6, 'WEEKDAY'),
         ('${tamanBungkulId}', '${SHIFT_1_ID}', 'linmas', 2, 'WEEKDAY'),
@@ -79,11 +79,11 @@ export async function seedAreaStaffRequirements(ctx: SeedContext): Promise<void>
       ctx.log('  ⚠ Taman Bungkul not found, skipping staff requirements');
     }
 
-    // Extra staff requirements for the real park areas that anchor scenarios.
+    // Extra staff requirements for the real park locations that anchor scenarios.
     // Mirror Bungkul for the ACTIVE-park scenario in Rayon Timur 2 so
     // understaffing alerts have inputs.
     await ctx.qr.query(`
-      INSERT INTO area_staff_requirements (location_id, shift_definition_id, role, required_count, day_type) VALUES
+      INSERT INTO location_staff_requirements (location_id, shift_definition_id, role, required_count, day_type) VALUES
         ('${TAMAN_BUK_TONG_ID}', '${SHIFT_1_ID}', 'satgas', 3, 'WEEKDAY'),
         ('${TAMAN_BUK_TONG_ID}', '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY'),
         ('${TAMAN_BUK_TONG_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY')

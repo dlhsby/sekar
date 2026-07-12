@@ -100,12 +100,12 @@ export class ActivityQueryService {
 
   /**
    * Resolve the set of area UUIDs a korlap is permanently assigned to via
-   * `user_areas`. Falls back to `[user.location_id]` if no row exists, so legacy
+   * `user_locations`. Falls back to `[user.location_id]` if no row exists, so legacy
    * single-area users keep working before backfill.
    */
   async getKorlapAreaIds(user: User): Promise<string[]> {
     const rows: Array<{ location_id: string }> = await this.activitiesRepository.manager.query(
-      `SELECT location_id FROM user_areas
+      `SELECT location_id FROM user_locations
         WHERE user_id = $1 AND assignment_type = 'permanent'`,
       [user.id],
     );
@@ -180,7 +180,7 @@ export class ActivityQueryService {
   }
 
   /**
-   * Korlap may have multiple permanent areas via `user_areas` (e.g.
+   * Korlap may have multiple permanent areas via `user_locations` (e.g.
    * korlap_pusat_1 → all 13 Rayon Pusat areas); the legacy single
    * `user.location_id` only reflects their primary area.
    */

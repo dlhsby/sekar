@@ -107,7 +107,7 @@ export class MonitoringConfigService {
 
   private async loadAreaBoundary(locationId: string): Promise<number[][][] | null> {
     const area = await this.configRepository.manager.query(
-      'SELECT boundary_polygon FROM areas WHERE id = $1',
+      'SELECT boundary_polygon FROM locations WHERE id = $1',
       [locationId],
     );
     return area?.[0]?.boundary_polygon?.coordinates || null;

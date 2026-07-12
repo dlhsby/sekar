@@ -46,7 +46,7 @@ export class ShiftsService {
     private readonly statusCalculator: StatusCalculatorService | undefined,
     private readonly auditLogService: AuditLogService,
     // Daily roster (ADR-013). Optional → legacy specs without the provider keep
-    // the pre-roster behavior (user_areas + schedules + primary area).
+    // the pre-roster behavior (user_locations + schedules + primary area).
     @Optional()
     private readonly dailySchedulesService?: SchedulesService,
     // Phase 4-7 (H1): boundary math extracted to the shared service. Optional →
@@ -63,7 +63,7 @@ export class ShiftsService {
   /**
    * Resolve the area a worker is clocking into.
    *
-   * A worker may have several assigned areas (permanent `user_areas` +
+   * A worker may have several assigned areas (permanent `user_locations` +
    * task_based + active explicit schedules) and a single shift. With GPS we
    * pick the assigned area whose geofence CONTAINS the point; if several/none
    * contain it we pick the CLOSEST centre. Without GPS we prefer the primary
@@ -76,7 +76,7 @@ export class ShiftsService {
    */
   async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Location | null> {
     // Prefer today's roster areas (ADR-013); fall back to the standing
-    // assignment (user_areas + active schedules) when there is no roster row.
+    // assignment (user_locations + active schedules) when there is no roster row.
     let candidates: Location[] = [];
     if (this.dailySchedulesService) {
       const today = TimezoneUtil.jakartaDateString();
@@ -107,7 +107,7 @@ export class ShiftsService {
 
   /**
    * Distinct assigned areas from the worker's standing assignment: permanent +
-   * task_based (`user_areas`). The roster (today's areas) is preferred upstream
+   * task_based (`user_locations`). The roster (today's areas) is preferred upstream
    * in `getActiveArea`; this is the fallback when there is no roster row.
    */
   private async getCandidateAreas(userId: string): Promise<Location[]> {

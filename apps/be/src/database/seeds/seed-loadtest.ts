@@ -38,11 +38,11 @@ async function pickTargets(qr: QueryRunner): Promise<SeedTargets> {
   const rayonId = rayonRows[0].id;
 
   const areaRows = await qr.query(
-    `SELECT id FROM areas WHERE rayon_id = $1 ORDER BY created_at ASC LIMIT 1`,
+    `SELECT id FROM locations WHERE rayon_id = $1 ORDER BY created_at ASC LIMIT 1`,
     [rayonId],
   );
   if (!areaRows.length) {
-    throw new Error(`No areas found for rayon ${rayonId} — seed broken.`);
+    throw new Error(`No locations found for rayon ${rayonId} — seed broken.`);
   }
   return { rayonId, locationId: areaRows[0].id };
 }

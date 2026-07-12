@@ -331,7 +331,7 @@ export class AuthController {
       }
     } else {
       // Satgas/Linmas: resolve the assigned area from the worker's effective
-      // areas (permanent user_areas ∪ task-based). ADR-013 made the user the
+      // areas (permanent user_locations ∪ task-based). ADR-013 made the user the
       // source of truth, replacing the legacy date-based schedules lookup.
       const effective = await this.userLocationsService.getEffectiveAreas(user.id);
       const primary = effective[0];

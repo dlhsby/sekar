@@ -51,7 +51,7 @@ export async function seedNotablePlants(ctx: SeedContext): Promise<void> {
 
   let notableInserted = 0;
   for (const n of NOTABLES) {
-    const areaRow = await ctx.qr.query(`SELECT id FROM areas WHERE name = $1 LIMIT 1`, [
+    const areaRow = await ctx.qr.query(`SELECT id FROM locations WHERE name = $1 LIMIT 1`, [
       n.areaName,
     ]);
     if (areaRow.length === 0) continue;

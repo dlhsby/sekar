@@ -75,7 +75,7 @@ export class LocationPlantStatusService {
   /**
    * Get plant maintenance status for an area.
    *
-   * Fetches all area_plants rows for the given area, eagerly loading species
+   * Fetches all location_plants rows for the given area, eagerly loading species
    * and location_type via the area relation. For each plant, recomputes next_due_at
    * and status using PlantDueDateService. Aggregates status counts and returns
    * a per-species breakdown.

@@ -51,8 +51,8 @@ async function seedMonitoringDemo() {
         a.name as area_name,
         a.boundary_polygon
       FROM users u
-      LEFT JOIN user_areas ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
-      LEFT JOIN areas a ON ua.location_id = a.id
+      LEFT JOIN user_locations ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
+      LEFT JOIN locations a ON ua.location_id = a.id
       LEFT JOIN rayons r ON a.rayon_id = r.id
       WHERE u.role IN ('satgas', 'linmas', 'korlap')
         AND u.deleted_at IS NULL

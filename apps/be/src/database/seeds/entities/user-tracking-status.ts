@@ -58,7 +58,7 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
     const monitoringUsers = (await ctx.qr.query(`
     SELECT u.id, u.username, u.rayon_id, u.location_id, a.gps_lat, a.gps_lng
     FROM users u
-    LEFT JOIN areas a ON u.location_id = a.id
+    LEFT JOIN locations a ON u.location_id = a.id
     WHERE u.role IN ('satgas', 'linmas', 'korlap')
     AND u.is_active = TRUE
     AND u.deleted_at IS NULL

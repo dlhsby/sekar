@@ -2,7 +2,7 @@
  * Pruning CSV Backfill Importer (Phase 3 sub-phase 3-13)
  *
  * Imports the 5,008-row historical pruning log (`data/rekap_perantingan.csv`)
- * into `activities` + `activity_plant_items` (and bumps `area_plants`
+ * into `activities` + `activity_plant_items` (and bumps `location_plants`
  * aggregates) so the production system has continuity with the paper
  * records the kecamatans have been keeping.
  *
@@ -21,7 +21,7 @@
  *  - S3 photo rehosting (Drive URLs in cols 13/14 are still public Drive
  *    links; production needs them on `sekar-media` bucket with presigned
  *    URLs). Tracked separately.
- *  - Backfilling `area_plants` aggregates. Requires species + area
+ *  - Backfilling `location_plants` aggregates. Requires species + area
  *    matching beyond a simple name lookup; documented in
  *    `specs/phases/phase-3-plants-monitoring-rebuild/database.md` §3-13.
  *  - `pruning_request` ancestry. The CSV predates the kecamatan workflow;

@@ -5,8 +5,8 @@
  * without code edits: update the CSVs (or re-run the KMZ extractor) and reseed.
  *
  *   data/rayons.csv                — 8 rayons master data (name/description/color)
- *   data/areas-kmz.generated.json  — geographic areas (run scripts/extract-kmz-seed-data.js)
- *   data/areas-taman-aktif.csv     — Taman Aktif parks (exported from the sheet)
+ *   data/locations-kmz.generated.json  — geographic locations (run scripts/extract-kmz-seed-data.js)
+ *   data/locations-taman-aktif.csv     — Taman Aktif parks (exported from the sheet)
  *   data/users.csv                 — real roster (exported + merged from the sheet)
  */
 import * as fs from 'fs';
@@ -81,13 +81,13 @@ export function loadRayons(): SeedRayonRow[] {
 }
 
 export function loadKmzAreas(): KmzAreaRow[] {
-  const file = path.join(DATA_DIR, 'areas-kmz.generated.json');
-  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as { areas: KmzAreaRow[] };
-  return parsed.areas;
+  const file = path.join(DATA_DIR, 'locations-kmz.generated.json');
+  const parsed = JSON.parse(fs.readFileSync(file, 'utf8')) as { locations: KmzAreaRow[] };
+  return parsed.locations;
 }
 
 export function loadTamanAktifAreas(): TamanAktifAreaRow[] {
-  return readCsvRecords(path.join(DATA_DIR, 'areas-taman-aktif.csv')).map((r) => ({
+  return readCsvRecords(path.join(DATA_DIR, 'locations-taman-aktif.csv')).map((r) => ({
     id: r.id,
     name: r.name,
     korlap: r.korlap,

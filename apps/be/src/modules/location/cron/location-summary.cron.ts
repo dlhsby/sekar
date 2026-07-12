@@ -64,7 +64,7 @@ export class LocationSummaryCron {
         $3
       FROM location_logs ll
       LEFT JOIN shifts s ON s.id = ll.shift_id
-      LEFT JOIN areas a ON a.id = s.location_id
+      LEFT JOIN locations a ON a.id = s.location_id
       WHERE (ll.logged_at AT TIME ZONE 'Asia/Jakarta')::date BETWEEN $1::date AND $2::date
       GROUP BY ll.user_id, wib_date
       ON CONFLICT ON CONSTRAINT uq_location_summary_user_date DO NOTHING

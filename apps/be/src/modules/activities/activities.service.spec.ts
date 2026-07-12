@@ -92,7 +92,7 @@ describe('ActivitiesService', () => {
     find: jest.fn(),
     remove: jest.fn(),
     createQueryBuilder: jest.fn(),
-    // KORLAP scope (find / findOne) reads `user_areas` via
+    // KORLAP scope (find / findOne) reads `user_locations` via
     // `this.activitiesRepository.manager.query(...)`. Without this mock
     // the access-control assertion throws TypeError on undefined `manager`
     // instead of the expected ApiException — silently masking guard logic.
@@ -377,7 +377,7 @@ describe('ActivitiesService', () => {
 
       expect(result.data).toHaveLength(1);
       // Multi-area scope (ADR-013): KORLAP filters via `location_id IN (:...korlapAreaIds)`
-      // sourced from `user_areas` (with fallback to `[user.location_id]` when the table
+      // sourced from `user_locations` (with fallback to `[user.location_id]` when the table
       // is empty — which is the case here because the mocked
       // `activitiesRepository.manager.query` returns `[]`).
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(

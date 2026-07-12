@@ -22,7 +22,7 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
   const shiftKepalaRayon = await ctx.qr.query(
     `SELECT id FROM users WHERE username = 'kepala_rayon_selatan_1' LIMIT 1`,
   );
-  const shiftArea = await ctx.qr.query(`SELECT id FROM areas LIMIT 1`);
+  const shiftArea = await ctx.qr.query(`SELECT id FROM locations LIMIT 1`);
 
   if (shiftArea.length > 0) {
     const locationId = shiftArea[0].id;
@@ -152,6 +152,6 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
       '  ✓ Created 19 shifts for satgas_pusat_1 (spread across 2+ months for filter/scroll testing)',
     );
   } else {
-    ctx.log('  ⚠ No areas found, skipping Phase 2C shifts');
+    ctx.log('  ⚠ No locations found, skipping Phase 2C shifts');
   }
 }

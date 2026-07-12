@@ -84,7 +84,7 @@ export function computeRingAreaM2(coords: [number, number][]): number {
   return Math.round(area * latM * lngM * 100) / 100;
 }
 
-/** Sum of ring areas — works for single Polygon or MultiPolygon area defs. */
+/** Sum of ring locations — works for single Polygon or MultiPolygon area defs. */
 export function computeAreaM2FromRings(rings: [number, number][][]): number {
   return rings.reduce((acc, r) => acc + computeRingAreaM2(r), 0);
 }
@@ -2026,7 +2026,7 @@ export const RAYON_BOUNDARIES: Partial<Record<RayonCode, GeoJsonPolygon>> = {
   },
 };
 
-// ── Rayon Timur 2 areas (25 placemarks from KORLAP BERLIAN SABRINA MAZAYA.kmz) ──
+// ── Rayon Timur 2 locations (25 placemarks from KORLAP BERLIAN SABRINA MAZAYA.kmz) ──
 export const TIMUR2_AREAS: AreaDef[] = [
   {
     id: '6622c7ff-ecd7-571d-96a0-ff1f7d683bc6',
@@ -2315,14 +2315,14 @@ export const TIMUR2_AREAS: AreaDef[] = [
 // Convenience exports (used by dev seeder scenario remap):
 export const TAMAN_BUK_TONG_ID = '790a84da-cd0d-5679-b51e-868937fb0449';
 
-// ── Rayon Pusat areas (13 placemarks — Bungkul + 12 Darmo pedestrian) ──
+// ── Rayon Pusat locations (13 placemarks — Bungkul + 12 Darmo pedestrian) ──
 export const RAYON_PUSAT_AREAS: AreaDef[] = [
   {
     id: '51a1b2c3-d4e5-4f67-8901-2a3b4c5d6e7f',
     name: 'Taman Bungkul',
     typeCode: 'park',
     // Taman Bungkul lives in the logical 'Rayon Taman Aktif' bucket.
-    // Pusat-based field staff can still be assigned to it via user_areas;
+    // Pusat-based field staff can still be assigned to it via user_locations;
     // the monitoring scope logic permits cross-rayon korlap assignments.
     rayonCode: 'TAMAN_AKTIF',
     coordStrings: [
