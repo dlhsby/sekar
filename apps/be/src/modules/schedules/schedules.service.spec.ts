@@ -3,10 +3,12 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { ForbiddenException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { ScheduleEvent } from './entities/schedule-event.entity';
 import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
+import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 
 /** A global editor (superadmin) — passes the edit hierarchy for any target. */
 const ADMIN = { id: 'admin', role: UserRole.SUPERADMIN } as User;
@@ -36,14 +38,17 @@ function makeRosterRepo() {
 describe('SchedulesService', () => {
   let service: SchedulesService;
   let rosterRepo: ReturnType<typeof makeRosterRepo>;
+  let eventRepo: { find: jest.Mock };
   let locationRepo: { delete: jest.Mock; create: jest.Mock; save: jest.Mock };
   let areaEntityRepo: { find: jest.Mock };
   let userRepo: { find: jest.Mock; findOne: jest.Mock };
   let userAreas: { getPermanentLocationIdsForUsers: jest.Mock; getPermanentLocationIds: jest.Mock };
   let audit: { log: jest.Mock };
+  let materializer: { materializeEvent: jest.Mock };
 
   beforeEach(async () => {
     rosterRepo = makeRosterRepo();
+    eventRepo = { find: jest.fn() };
     locationRepo = {
       delete: jest.fn(),
       create: jest.fn((x) => ({ ...x })),
@@ -56,16 +61,21 @@ describe('SchedulesService', () => {
       getPermanentLocationIds: jest.fn().mockResolvedValue([]),
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
+    materializer = {
+      materializeEvent: jest.fn().mockResolvedValue({ created: 0, skipped: [] }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         SchedulesService,
         { provide: getRepositoryToken(Schedule), useValue: rosterRepo },
         { provide: getRepositoryToken(ScheduleLocation), useValue: locationRepo },
+        { provide: getRepositoryToken(ScheduleEvent), useValue: eventRepo },
         { provide: getRepositoryToken(Location), useValue: areaEntityRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: UserLocationsService, useValue: userAreas },
         { provide: AuditLogService, useValue: audit },
+        { provide: ScheduleMaterializerService, useValue: materializer },
       ],
     }).compile();
 
@@ -88,42 +98,77 @@ describe('SchedulesService', () => {
     });
   });
 
-  describe('generateRoster', () => {
-    it('materializes a row per active user — PLANNED with a shift, OFF without', async () => {
-      userRepo.find.mockResolvedValue([
-        { id: 'A', is_active: true, rayon_id: 'r1', shift_definition_id: 's1' },
-        { id: 'B', is_active: true, rayon_id: null, shift_definition_id: null },
-      ]);
-      rosterRepo.find.mockResolvedValue([]); // none yet
-      userAreas.getPermanentLocationIdsForUsers.mockResolvedValue(
-        new Map([
-          ['A', ['area1']],
-          ['B', []],
-        ]),
-      );
-
-      const created = await service.generateRoster('2026-06-30', 'admin');
-
-      expect(created).toBe(2);
-      const statuses = rosterRepo.save.mock.calls.map((c) => c[0].status);
-      expect(statuses).toContain(ScheduleStatus.PLANNED);
-      expect(statuses).toContain(ScheduleStatus.OFF);
-      // worker A's single area materialized into the join table
-      expect(locationRepo.save).toHaveBeenCalled();
+  describe('findByDateRange', () => {
+    it('queries schedules between from and to dates inclusive', async () => {
+      await service.findByDateRange('2026-06-30', '2026-07-05');
+      expect(rosterRepo.qb.where).toHaveBeenCalledWith('ds.schedule_date >= :from', {
+        from: '2026-06-30',
+      });
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.schedule_date <= :to', {
+        to: '2026-07-05',
+      });
     });
 
-    it('is idempotent — skips users who already have a row for the day', async () => {
-      userRepo.find.mockResolvedValue([
-        { id: 'A', is_active: true, shift_definition_id: 's1' },
-        { id: 'B', is_active: true, shift_definition_id: 's1' },
-      ]);
-      rosterRepo.find.mockResolvedValue([{ id: 'x', user_id: 'A' }]); // A already rostered
-      userAreas.getPermanentLocationIdsForUsers.mockResolvedValue(new Map([['B', []]])); // only B
+    it('joins user, shift_definition, schedule_areas, region, and team relations', async () => {
+      await service.findByDateRange('2026-06-30', '2026-07-05');
+      const joinCalls = rosterRepo.qb.leftJoinAndSelect.mock.calls;
+      expect(joinCalls.some((c) => c[0] === 'ds.user')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.shift_definition')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.schedule_areas')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.region')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.team')).toBe(true);
+    });
+
+    it('scopes to a rayon when one is given', async () => {
+      await service.findByDateRange('2026-06-30', '2026-07-05', 'r1');
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.rayon_id = :rayonId', {
+        rayonId: 'r1',
+      });
+    });
+  });
+
+  describe('generateRoster', () => {
+    it('materializes all active schedule events for the given date via ScheduleMaterializerService', async () => {
+      const event1 = { id: 'event1' };
+      const event2 = { id: 'event2' };
+      eventRepo.find.mockResolvedValue([event1, event2]);
+      materializer.materializeEvent
+        .mockResolvedValueOnce({ created: 5, skipped: [] })
+        .mockResolvedValueOnce({ created: 3, skipped: [] });
 
       const created = await service.generateRoster('2026-06-30', 'admin');
 
-      expect(created).toBe(1);
-      expect(rosterRepo.save.mock.calls.every((c) => c[0].user_id !== 'A')).toBe(true);
+      expect(created).toBe(8); // 5 + 3
+      expect(eventRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({ is_active: true }),
+        }),
+      );
+      expect(materializer.materializeEvent).toHaveBeenCalledTimes(2);
+      expect(materializer.materializeEvent).toHaveBeenCalledWith(
+        event1,
+        '2026-06-30',
+        '2026-06-30',
+      );
+      expect(materializer.materializeEvent).toHaveBeenCalledWith(
+        event2,
+        '2026-06-30',
+        '2026-06-30',
+      );
+    });
+
+    it('logs failures per event but continues materializing remaining events', async () => {
+      const event1 = { id: 'event1' };
+      const event2 = { id: 'event2' };
+      eventRepo.find.mockResolvedValue([event1, event2]);
+      materializer.materializeEvent
+        .mockRejectedValueOnce(new Error('event1 failed'))
+        .mockResolvedValueOnce({ created: 3, skipped: [] });
+
+      const created = await service.generateRoster('2026-06-30', 'admin');
+
+      expect(created).toBe(3); // only event2 succeeded
+      expect(materializer.materializeEvent).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -621,31 +666,33 @@ describe('SchedulesService', () => {
     });
   });
 
-  describe('generateRoster — manager whole-rayon + top-tier skip', () => {
-    it('assigns kepala_rayon the whole rayon, field workers their areas, and skips management', async () => {
-      userRepo.find.mockResolvedValue([
-        { id: 'kr', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' },
-        { id: 'sat', role: UserRole.SATGAS, rayon_id: null, shift_definition_id: 's1' },
-        { id: 'tm', role: UserRole.MANAGEMENT },
-      ]);
-      rosterRepo.find.mockResolvedValue([]); // nothing rostered yet
-      userAreas.getPermanentLocationIdsForUsers.mockResolvedValue(new Map([['sat', ['areaS']]]));
-      areaEntityRepo.find.mockResolvedValue([
-        { id: 'a1', rayon_id: 'r1' },
-        { id: 'a2', rayon_id: 'r1' },
-      ]);
+  describe('generateRoster — event-based materialization', () => {
+    it('returns 0 when no active events exist', async () => {
+      eventRepo.find.mockResolvedValue([]);
 
       const created = await service.generateRoster('2026-07-01', 'admin');
 
-      // kr + sat rostered; management skipped.
-      expect(created).toBe(2);
-      const rosteredUserIds = rosterRepo.save.mock.calls.map((c) => c[0].user_id);
-      expect(rosteredUserIds).toEqual(expect.arrayContaining(['kr', 'sat']));
-      expect(rosteredUserIds).not.toContain('tm');
+      expect(created).toBe(0);
+      expect(materializer.materializeEvent).not.toHaveBeenCalled();
+    });
 
-      // The kepala_rayon's row is assigned to ALL areas of rayon r1.
-      const assignedAreaIds = locationRepo.create.mock.calls.map((c) => c[0].location_id);
-      expect(assignedAreaIds).toEqual(expect.arrayContaining(['a1', 'a2', 'areaS']));
+    it('materializes multiple events and sums their created counts', async () => {
+      eventRepo.find.mockResolvedValue([
+        { id: 'e1', is_active: true },
+        { id: 'e2', is_active: true },
+        { id: 'e3', is_active: true },
+      ]);
+      materializer.materializeEvent
+        .mockResolvedValueOnce({
+          created: 2,
+          skipped: [{ user_id: 'u1', date: '2026-07-01', reason: 'overlap' }],
+        })
+        .mockResolvedValueOnce({ created: 4, skipped: [] })
+        .mockResolvedValueOnce({ created: 1, skipped: [] });
+
+      const created = await service.generateRoster('2026-07-01', 'admin');
+
+      expect(created).toBe(7); // 2 + 4 + 1
     });
   });
 });
