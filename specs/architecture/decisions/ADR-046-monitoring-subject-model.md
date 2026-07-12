@@ -48,19 +48,19 @@ Mobile geofencing reuses the **same tolerance** as location geofencing (ADR-010 
 
 **Visibility per drill level** (which subjects render at each tier):
 - **Rayon** → all monitorable workers in the rayon (static + mobile).
-- **Region** → mobile subjects with this `region_id` **plus** static subjects whose area sits under this region.
-- **Area** → static subjects bound to this `location_id`. (Mobile subjects are not pinned to an area; they show at region level.)
+- **Region** → mobile subjects with this `region_id` **plus** static subjects whose location sits under this region.
+- **Location** → static subjects bound to this `location_id`. (Mobile subjects are not pinned to a location; they show at region level.)
 
 ### Drill & bubbles
 
 - **Remove the Surabaya-level bubble.** On first load, draw **all rayon boundaries immediately** with a per-rayon bubble + hover stats; do **not** render workers at the top level.
-- Drill: **Rayon → Region → Area → workers**; workers render only at deeper zoom.
+- Drill: **Rayon → Region → Location → workers**; workers render only at deeper zoom.
 - **Team schedules render as one group bubble** (team marker from [ADR-048](./ADR-048-teams.md)) that expands to individual members on click/zoom.
-- **Bubble content** (replaces the disliked active/terjadwal ratio): a marker + **active worker count** with a status-tinted ring; **hover** reveals the detail card — `total` (in scope), `active`, `by_shift {s1,s2,s3}`, `by_role {satgas,linmas,korlap}`, and, for satgas/linmas, `understaffed` (bool). Rayon/region/area bubbles share this shape at their own scope; team bubbles show member count + team name.
+- **Bubble content** (replaces the disliked active/terjadwal ratio): a marker + **active worker count** with a status-tinted ring; **hover** reveals the detail card — `total` (in scope), `active`, `by_shift {s1,s2,s3}`, `by_role {satgas,linmas,korlap}`, and, for satgas/linmas, `understaffed` (bool). Rayon/region/location bubbles share this shape at their own scope; team bubbles show member count + team name.
 - Stats + **daftar petugas** are scoped to the chosen level and filtered by the caller's role `monitoring_scope` ([ADR-044](./ADR-044-dynamic-rbac.md)):
   - **rayon** → all workers in the rayon;
-  - **region** → mobile subjects of the region + static subjects in its areas;
-  - **area** → static subjects of that area.
+  - **region** → mobile subjects of the region + static subjects in its locations;
+  - **location** → static subjects of that location.
 
 ### Understaffing
 
@@ -70,7 +70,7 @@ Mobile geofencing reuses the **same tolerance** as location geofencing (ADR-010 
 
 Keep the event-sourced Redis-stream model (ADR-029) and the web in-place snapshot-patch approach (`useMonitoringSocket.ts`) — patch cached snapshots without remounting the map. **Bubble aggregates are computed server-side** (per rayon/region/area) and pushed on status change, so the client renders bubbles from an aggregate feed rather than recomputing from every worker. Region tier is added to the room model (`monitoring:rayon:{id}` / `monitoring:region:{id}` / `monitoring:area:{id}`); the client subscribes to the room for its current drill scope.
 
-**Search** is server-backed and scope-filtered ([supervisor visibility](#supervisor-hierarchical-visibility)): it matches worker name, area name, or team keyword and returns matches that are **clocked-in with a location fix in the last 24h** (including monitorable-but-not-scheduled workers), each with its live status + last position — this is how non-scheduled clock-ins are found without cluttering the default map.
+**Search** is server-backed and scope-filtered ([supervisor visibility](#supervisor-hierarchical-visibility)): it matches worker name, location name, or team keyword and returns matches that are **clocked-in with a location fix in the last 24h** (including monitorable-but-not-scheduled workers), each with its live status + last position — this is how non-scheduled clock-ins are found without cluttering the default map.
 
 ## Consequences
 

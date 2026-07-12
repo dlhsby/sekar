@@ -71,7 +71,7 @@ A TypeORM migration creates the tables; an **idempotent seed** (upsert on `permi
 
 ### Marker & styling constraints
 
-`marker_color` (and the geography styling colors in [ADR-045](./ADR-045-four-level-location-hierarchy.md)) validate against `^#[0-9A-Fa-f]{6}$`. `marker_icon` is a value from a curated icon set (a named enum in the shared design-system tokens, not free-form) so web + mobile render the same glyph. Every seeded role ships a sensible default icon+color; custom roles require both.
+`marker_color` (and the geography styling colors in [ADR-045](./ADR-045-four-level-location-hierarchy.md)) validate against `^#[0-9A-Fa-f]{6}$`. `marker_icon` is a value from a curated icon set (a named enum in the shared design-system tokens, not free-form) so web + mobile render the same glyph. Every seeded role ships a sensible default icon+color; for custom roles all marker fields (`marker_icon`, `marker_image_url`, `marker_color`) are optional/nullable — the UI falls back to defaults when unset.
 
 ### Permission catalog
 
@@ -87,6 +87,7 @@ Flat `resource:action` keys, defined in a code-side catalog that also carries th
 
 - New global `PermissionsGuard` + **`@RequirePermissions(...keys)`** decorator (AND semantics; a `RequireAnyPermission` variant for OR). A wildcard-aware permission matcher (`permissionMatches`/`hasPermission`/`hasAllPermissions`) is shared by backend guard and the web `usePermissions()` hook.
 - **`RolesCompatGuard`** resolves existing `@Roles(UserRole.X)` decorators to permissions via the `roles` table, so all current endpoints keep working unchanged. Endpoints migrate to `@RequirePermissions` incrementally; the old `roles.guard.ts` is retained for rollback.
+  *Implementation note (2026-07-12): the compat shim was **not built**. In practice the legacy `@Roles`+`RolesGuard` endpoints simply coexist with the new global `PermissionsGuard` (which no-ops without `@RequirePermissions` metadata); the endpoint migration is deferred — plan in [access-control](../../features/access-control/README.md) §"Guard → permission migration".*
 - `RolePermissionsService` resolves a role's permission keys with **Redis caching** (key `rbac:role:{roleCode}:permissions`, ~300s TTL), invalidated when a role's permissions change; graceful re-query on cache miss. Reuses the existing Redis/cache layer (ADR-016).
 - **Web:** a `usePermissions()` hook exposes `can(key)` / `canAny([])` / `canAll([])` for nav/button gating (UX only; server authoritative), mirroring the backend matcher including wildcards.
 

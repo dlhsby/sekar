@@ -21,14 +21,14 @@ import { Rayon } from '../../rayons/entities/rayon.entity';
 @Entity('locations')
 export class Location {
   @ApiProperty({
-    description: 'Unique identifier for the area',
+    description: 'Unique identifier for the location',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
   })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty({
-    description: 'Name of the area',
+    description: 'Name of the location',
     example: 'Taman Bungkul',
   })
   @Column({ length: 100 })

@@ -24,22 +24,24 @@ Self-service, scoped to the caller: language (`preferred_language`), theme, noti
 
 Operator-managed, grouped/sub-grouped, e.g. **Monitoring** (staffing thresholds, idle/offline timings, day-type — absorbs `monitoring/config`), **Integrations** (FCM/maps/webhook knobs), **Limits** (rate-limit tuning, geofence defaults), **General** toggles.
 
-Stored as a typed key/value table: `key`, `value`, `value_type` (`string|number|boolean`), `is_secret`, `group`, `updated_by`. Read through a cached settings service; edited with `settings:manage`, viewed with `settings:read` ([ADR-044](./ADR-044-dynamic-rbac.md)). `admin_system`/`superadmin` manage system settings; `management` (Management) is **read-only** on them per UAT.
+Stored as a typed key/value table: `key`, `value`, `value_type` (`string|number|boolean`), `is_secret`, `config_group` (+ an optional `subgroup` per catalog entry for sub-sections within a group), `updated_by`. Read through a cached settings service; edited with `settings:manage`, viewed with `settings:read` ([ADR-044](./ADR-044-dynamic-rbac.md)). `admin_system`/`superadmin` manage system settings; `management` (Management) is **read-only** on them per UAT.
 
 Representative catalog (the full list lives in the code-side catalog; this shows shape + coverage):
 
-| group | key | type | env mapping | secret | note |
-|---|---|---|---|---|---|
-| monitoring | `monitoring.idle_threshold_min` | number | `MONITORING_IDLE_THRESHOLD_MIN` | no | active→inactive cutoff |
-| monitoring | `monitoring.offline_threshold_min` | number | `MONITORING_OFFLINE_THRESHOLD_MIN` | no | inactive→offline cutoff |
-| monitoring | `schedule.materialization_days` | number | `SCHEDULE_MATERIALIZATION_DAYS` | no | rolling horizon (ADR-047) |
-| geofence | `geofence.default_radius_m` | number | `GEOFENCE_DEFAULT_RADIUS_M` | no | fallback location radius |
-| geofence | `geofence.tolerance_m` | number | `GEOFENCE_TOLERANCE_M` | no | soft-boundary tolerance (ADR-010) |
-| integrations | `fcm.enabled` | boolean | `FCM_ENABLED` | no | push on/off |
-| integrations | `maps.browser_key` | string | `GOOGLE_MAPS_BROWSER_KEY` | **yes** | client Maps key |
-| limits | `ratelimit.global_per_min` | number | `RATE_LIMIT_GLOBAL_PER_MIN` | no | global throttle |
-| limits | `ratelimit.login_per_min` | number | `RATE_LIMIT_LOGIN_PER_MIN` | no | login throttle |
-| general | `app.default_locale` | string | `DEFAULT_LOCALE` | no | id/en default |
+| group | subgroup | key | type | env mapping | secret | note |
+|---|---|---|---|---|---|---|
+| monitoring | thresholds | `monitoring.active_max_age_sec` | number | `MONITORING_ACTIVE_MAX_AGE_SEC` | no | active→inactive cutoff |
+| monitoring | thresholds | `monitoring.inactive_threshold_sec` | number | `MONITORING_INACTIVE_THRESHOLD_SEC` | no | inactive→offline cutoff |
+| monitoring | geofence | `geofence.tolerance_m` | number | `GEOFENCE_TOLERANCE_M` | no | soft-boundary tolerance (ADR-010) |
+| monitoring | geofence | `geofence.outside_area_grace_sec` | number | — | no | grace before outside-area flips |
+| scheduling | roster | `schedule.materialization_days` | number | `SCHEDULE_MATERIALIZATION_DAYS` | no | rolling horizon (ADR-047) |
+| integrations | push | `fcm.enabled` | boolean | `FCM_ENABLED` | no | push on/off |
+| integrations | maps | `maps.browser_key` | string | `GOOGLE_MAPS_BROWSER_KEY` | **yes** | client Maps key |
+| limits | ratelimit | `ratelimit.global_per_min` | number | `RATE_LIMIT_GLOBAL_PER_MIN` | no | global throttle |
+| limits | ratelimit | `ratelimit.login_per_min` | number | `RATE_LIMIT_LOGIN_PER_MIN` | no | login throttle |
+| general | app | `app.default_locale` | string | `DEFAULT_LOCALE` | no | id/en default |
+
+(Illustrative — the code-side catalog `apps/be/src/modules/settings/catalog/settings-catalog.ts` is the source of truth for keys, groups/subgroups, and env mappings.)
 
 ### Precedence & env override
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — **Supersedes [ADR-011](./ADR-011-phase2d-monitoring-status-model.md)**
+Accepted — **Supersedes [ADR-011](./ADR-011-phase2d-monitoring-status-model.md)** · extended by [ADR-046](./ADR-046-monitoring-subject-model.md) (subject model + drill/bubble revamp)
 
 ## Date
 
