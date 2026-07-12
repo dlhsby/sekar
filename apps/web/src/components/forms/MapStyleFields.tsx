@@ -90,6 +90,10 @@ function FillControl({
 }) {
   const { t } = useTranslation();
   const enabled = value != null && value !== '';
+  // The colour shown in the border swatch: the set border_color, or the border
+  // default when it's unset. Fill defaults to (and "same as border" copies) this
+  // effective colour — so it works even before border_color is explicitly typed.
+  const effectiveBorder = HEX_COLOR.test(borderValue) ? borderValue : DEFAULTS.border;
 
   return (
     <div className="space-y-3">
@@ -103,7 +107,7 @@ function FillControl({
           aria-checked={enabled}
           aria-label={t('admin:mapStyle.fillToggle')}
           disabled={disabled}
-          onClick={() => onChange({ fill_color: enabled ? null : borderValue || DEFAULTS.fill })}
+          onClick={() => onChange({ fill_color: enabled ? null : effectiveBorder })}
           className={cn(
             'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-nb-black transition-colors disabled:cursor-not-allowed disabled:opacity-60',
             enabled ? 'bg-nb-primary' : 'bg-nb-gray-200',
@@ -130,8 +134,8 @@ function FillControl({
             />
             <button
               type="button"
-              disabled={disabled || !HEX_COLOR.test(borderValue)}
-              onClick={() => onChange({ fill_color: borderValue })}
+              disabled={disabled}
+              onClick={() => onChange({ fill_color: effectiveBorder })}
               className="text-nb-body-sm font-semibold text-nb-primary underline underline-offset-2 disabled:opacity-50"
             >
               {t('admin:mapStyle.fillSameAsBorder')}
