@@ -115,5 +115,104 @@
     "noServiceTypes": "Tidak ada jenis layanan.",
     "noChangesToSave": "Tidak ada perubahan untuk disimpan.",
     "saved": "Kapasitas disimpan."
+  },
+  "calendar": {
+    "views": {
+      "month": "Bulan",
+      "week": "Minggu",
+      "day": "Hari",
+      "table": "Tabel"
+    },
+    "navigation": {
+      "today": "Hari ini",
+      "prevMonth": "Bulan Lalu",
+      "nextMonth": "Bulan Depan",
+      "prevWeek": "Minggu Lalu",
+      "nextWeek": "Minggu Depan",
+      "prevDay": "Hari Lalu",
+      "nextDay": "Hari Depan"
+    },
+    "event": {
+      "createTitle": "Buat Jadwal",
+      "editTitle": "Ubah Jadwal",
+      "formNotice": "Fitur kalender sedang dalam pengembangan. Untuk saat ini, gunakan tabel jadwal di bawah.",
+      "kindLabel": "Jenis",
+      "kindIndividual": "Individu",
+      "kindTeam": "Tim",
+      "workerLabel": "Pekerja",
+      "workerPlaceholder": "Pilih pekerja…",
+      "teamLabel": "Tim",
+      "teamPlaceholder": "Pilih tim…",
+      "picLabel": "PIC (Penanggung Jawab)",
+      "picPlaceholder": "Pilih PIC…",
+      "memberLabel": "Anggota",
+      "memberPlaceholder": "Pilih anggota…",
+      "shiftLabel": "Shift",
+      "shiftPlaceholder": "Pilih shift…",
+      "scopeLabel": "Jangkauan",
+      "scopeStatic": "Statis",
+      "scopeMobile": "Mobile",
+      "locationLabel": "Lokasi",
+      "locationPlaceholder": "Pilih lokasi…",
+      "regionLabel": "Wilayah",
+      "regionPlaceholder": "Pilih wilayah…",
+      "recurrenceLabel": "Pengulangan",
+      "recurrenceNone": "Sekali",
+      "recurrenceDaily": "Harian",
+      "recurrenceEveryNDays": "Setiap {{n}} hari",
+      "recurrenceEveryNDaysLabel": "Setiap berapa hari?",
+      "recurrenceWeekly": "Mingguan",
+      "recurrenceSpecificDates": "Tanggal Tertentu",
+      "weekdaysSun": "Min",
+      "weekdaysMon": "Sen",
+      "weekdaysTue": "Sel",
+      "weekdaysWed": "Rab",
+      "weekdaysThu": "Kam",
+      "weekdaysFri": "Jum",
+      "weekdaysSat": "Sab",
+      "startDateLabel": "Tanggal Mulai",
+      "endDateLabel": "Tanggal Akhir",
+      "endDateOptional": "Opsional",
+      "endDateOpenEnded": "Tanpa Akhir",
+      "notesLabel": "Catatan",
+      "notesPlaceholder": "Masukkan catatan…",
+      "submit": "Simpan",
+      "cancel": "Batal",
+      "datesLabel": "Tanggal terpilih"
+    },
+    "editScope": {
+      "title": "Ubah Yang Mana?",
+      "this": "Hanya hari ini",
+      "thisAndFuture": "Hari ini & seterusnya",
+      "series": "Seluruh rangkaian"
+    },
+    "deleteScope": {
+      "title": "Hapus Yang Mana?",
+      "this": "Hanya hari ini",
+      "thisAndFuture": "Hari ini & seterusnya",
+      "series": "Seluruh rangkaian",
+      "confirm": "Hapus jadwal ini?"
+    },
+    "conflicts": {
+      "title": "Bentrok Jadwal",
+      "message": "Beberapa anggota sudah terjadwal pada waktu ini. Jadwal tetap dibuat untuk anggota yang tersedia.",
+      "worker": "{{name}} sudah terjadwal pada {{date}}"
+    },
+    "empty": {
+      "noEvents": "Tidak ada jadwal pada hari ini",
+      "noOccurrences": "Tidak ada jadwal"
+    },
+    "messages": {
+      "createSuccess": "Jadwal berhasil dibuat",
+      "updateSuccess": "Jadwal berhasil diperbarui",
+      "deleteSuccess": "Jadwal berhasil dihapus"
+    },
+    "validation": {
+      "intervalRange": "Interval harus antara 2–30 hari",
+      "weekdaysRequired": "Pilih minimal satu hari",
+      "datesRequired": "Tambahkan minimal satu tanggal",
+      "endBeforeStart": "Tanggal akhir harus setelah tanggal mulai"
+    },
+    "moreCount": "+{{count}} lagi"
   }
 }

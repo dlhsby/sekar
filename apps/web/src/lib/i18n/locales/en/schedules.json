@@ -115,5 +115,104 @@
     "noServiceTypes": "No service types.",
     "noChangesToSave": "No changes to save.",
     "saved": "Capacity saved."
+  },
+  "calendar": {
+    "views": {
+      "month": "Month",
+      "week": "Week",
+      "day": "Day",
+      "table": "Table"
+    },
+    "navigation": {
+      "today": "Today",
+      "prevMonth": "Previous Month",
+      "nextMonth": "Next Month",
+      "prevWeek": "Previous Week",
+      "nextWeek": "Next Week",
+      "prevDay": "Previous Day",
+      "nextDay": "Next Day"
+    },
+    "event": {
+      "createTitle": "Create Schedule",
+      "editTitle": "Edit Schedule",
+      "formNotice": "The calendar feature is under development. For now, use the schedule table below.",
+      "kindLabel": "Type",
+      "kindIndividual": "Individual",
+      "kindTeam": "Team",
+      "workerLabel": "Worker",
+      "workerPlaceholder": "Select worker…",
+      "teamLabel": "Team",
+      "teamPlaceholder": "Select team…",
+      "picLabel": "PIC (Person in Charge)",
+      "picPlaceholder": "Select PIC…",
+      "memberLabel": "Members",
+      "memberPlaceholder": "Select members…",
+      "shiftLabel": "Shift",
+      "shiftPlaceholder": "Select shift…",
+      "scopeLabel": "Scope",
+      "scopeStatic": "Static",
+      "scopeMobile": "Mobile",
+      "locationLabel": "Location",
+      "locationPlaceholder": "Select location…",
+      "regionLabel": "Region",
+      "regionPlaceholder": "Select region…",
+      "recurrenceLabel": "Recurrence",
+      "recurrenceNone": "Once",
+      "recurrenceDaily": "Daily",
+      "recurrenceEveryNDays": "Every {{n}} days",
+      "recurrenceEveryNDaysLabel": "Every how many days?",
+      "recurrenceWeekly": "Weekly",
+      "recurrenceSpecificDates": "Specific Dates",
+      "weekdaysSun": "Sun",
+      "weekdaysMon": "Mon",
+      "weekdaysTue": "Tue",
+      "weekdaysWed": "Wed",
+      "weekdaysThu": "Thu",
+      "weekdaysFri": "Fri",
+      "weekdaysSat": "Sat",
+      "startDateLabel": "Start Date",
+      "endDateLabel": "End Date",
+      "endDateOptional": "Optional",
+      "endDateOpenEnded": "No End Date",
+      "notesLabel": "Notes",
+      "notesPlaceholder": "Enter notes…",
+      "submit": "Save",
+      "cancel": "Cancel",
+      "datesLabel": "Selected dates"
+    },
+    "editScope": {
+      "title": "Edit What?",
+      "this": "This occurrence only",
+      "thisAndFuture": "This and future occurrences",
+      "series": "Entire series"
+    },
+    "deleteScope": {
+      "title": "Delete What?",
+      "this": "This occurrence only",
+      "thisAndFuture": "This and future occurrences",
+      "series": "Entire series",
+      "confirm": "Delete this schedule?"
+    },
+    "conflicts": {
+      "title": "Schedule Conflicts",
+      "message": "Some members are already scheduled for this time. The schedule will be created for available members.",
+      "worker": "{{name}} is already scheduled on {{date}}"
+    },
+    "empty": {
+      "noEvents": "No schedules for this day",
+      "noOccurrences": "No schedules"
+    },
+    "messages": {
+      "createSuccess": "Schedule created",
+      "updateSuccess": "Schedule updated",
+      "deleteSuccess": "Schedule deleted"
+    },
+    "validation": {
+      "intervalRange": "Interval must be between 2–30 days",
+      "weekdaysRequired": "Select at least one day",
+      "datesRequired": "Add at least one date",
+      "endBeforeStart": "End date must be after the start date"
+    },
+    "moreCount": "+{{count}} more"
   }
 }

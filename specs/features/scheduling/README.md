@@ -1,18 +1,22 @@
 # Scheduling
 
-**Status:** ✅ Active · **Backend:** `shifts`, `shift-definitions`, `schedules`, `special-day-overrides`, `service-capacity` · **Key ADRs:** ADR-013 (multi-location), ADR-035 (service capacity)
+**Status:** ✅ Active (ADR-047 revamp landed — Phase 4) · **Backend:** `shifts`, `shift-definitions`, `schedules` (incl. `schedule_events`), `special-day-overrides`, `service-capacity` · **Key ADRs:** ADR-047 (rule + occurrences), ADR-013 (multi-location), ADR-035 (service capacity)
 
 ## Overview
-Shift definitions and the materialized **daily roster** that assigns workers to shifts/locations per day. A generation cron builds the roster; an edit policy governs allowed changes. Special-day overrides adjust the roster for holidays; service-capacity models rayon × ISO-week × service-type throughput. **Under revamp** post-UAT (a top UAT-feedback area).
+"Jadwal" is rule-driven (ADR-047): a **`ScheduleEvent`** holds recurrence, shift, scope (static location / mobile region), and target (individual or team); a **materializer** expands active events into the per-day `schedules`/`schedule_locations` roster over a rolling horizon, so monitoring reads are unchanged. The web page is a **calendar** (month/week/day) with the datatable as a secondary view. Special-day overrides adjust the roster for holidays; service-capacity models rayon × ISO-week × service-type throughput.
 
 ## Key decisions
-- **Materialized daily roster** — `daily-roster-generation.cron.ts` generates schedules per day from shift definitions for fast lookup and monitoring joins; `schedule-edit.policy.ts` gates edits.
-- **Multi-location** (ADR-013) — a korlap/worker can be rostered across multiple locations.
+- **Rule + occurrences** (ADR-047) — `schedule_events` (+ `schedule_event_members`) is the rule layer; `schedule-materializer.service` writes occurrences (`schedules.schedule_event_id` set; NULL = manual/ad-hoc). The **standing-template generator is retired** — migration `17492700000000` converted each active satgas/linmas template (shift + primary location) into an open-ended daily event; `POST /schedules/generate` now materializes events for the date.
+- **Rolling horizon** — cron (00:15 + 17:00 WIB + boot self-heal) materializes today + N days (`schedule.materialization_days` system setting, default 30); create/edit materializes in-horizon immediately.
+- **Time-based overlap guard** — roster uniqueness is `(user, date, shift)`; a user may hold multiple non-overlapping shifts a day. True time-window overlaps are rejected (shift-3 `crosses_midnight` honored; touching windows allowed). Team fan-out reports conflicted members per-member (`materialization.skipped[]`) and schedules the rest.
+- **Calendar edit semantics** — *this occurrence* edits the roster row directly and marks it `is_detached` (never regenerated); *this-and-future* splits the series (old event gets `end_date`, a new event continues); *series* re-materializes future non-detached rows. Deleted occurrences leave soft-delete tombstones the generator never resurrects. Past days are never rewritten.
+- **Occurrences carry `team_id` + `region_id`** so Phase 5 monitoring renders team bubbles / mobile geofences without another migration.
+- **Multi-location** (ADR-013) — a roster row can span multiple locations (`schedule_locations`); event-generated static occurrences carry the event's single location.
 - **Service capacity** (ADR-035) — generic `service_capacity` model (rayon × ISO-week × service_type); web UI is the rayon capacity weekly grid (`rayons/[id]/capacity`).
 - `special-day-overrides` — **API implemented, no dedicated UI**.
 
-## Revamp notes (post-UAT) — target design (ADR-047, ADR-048)
-"Jadwal" names the whole process, not one entity. Design:
+## Revamp notes (post-UAT) — ADR-047/048 (landed, Phase 4)
+"Jadwal" names the whole process, not one entity. Design (all implemented; see Key decisions):
 - **Rule + occurrences** — a `ScheduleEvent` holds recurrence (`none | daily | every_n_days | weekly | specific_dates`), shift, and scope; a generator materializes per-day, per-member **occurrences** into the existing `schedules`/`schedule_locations` roster so monitoring reads are unchanged.
 - **Calendar UI** — day/week/month (Google-Calendar-style) for create/edit; datatable becomes secondary.
 - **Individual + team** — team events name a PIC + invited members (korlap/satgas/linmas), fanned out to member occurrences ([teams](../teams/README.md)).
@@ -36,6 +40,7 @@ Shift definitions and the materialized **daily roster** that assigns workers to 
 - [monitoring](../monitoring/README.md)
 
 ## Changelog
+- 2026-07-12 — **Phase 4 landed (ADR-047).** `schedule_events` + members + recurrence expansion util; `ScheduleMaterializerService` (rolling horizon, tombstones, detached overrides); time-based `ScheduleOverlapService` (roster unique now `(user,date,shift)` — migration `17492600000000`); `/schedule-events` CRUD (`@RequirePermissions schedule:*`, rayon-scoped, per-member conflict reporting) + `GET /schedules/range` (62-day cap); **template generator retired** (migration `17492700000000` converts standing templates → daily events; users without a location stop being auto-rostered until scheduled); demo seed seeds events + today's roster. Web: calendar-first Jadwal page (Bulan/Minggu/Hari + Tabel), `ScheduleEventModal` (recurrence incl. every-N/weekly/specific-dates, team PIC+members, static/mobile), edit/delete scope choosers (this / this-and-future / series), conflict warnings. Verified live on a scratch DB end-to-end (recurrence materialization, duplicate→overlap conflicts, team fan-out with `team_id` rows, series split, series delete, scope 400s, rayon scoping). Fixed en route: nested `recurrence_config` DTO whitelisting (`@Type(() => Object)` rejected all keys), version-pinned `@IsUUID('4')` vs deterministic v5 seed ids.
 - 2026-07-12 — **Area→Location terminology sweep.** Renamed multi-location, schedule_locations → schedule_locations, location_id field.
 - 2026-07-10 — Revamp target set: rule-based recurrence + occurrences, calendar UI, teams, static/mobile (ADR-047/048).
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

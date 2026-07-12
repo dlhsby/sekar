@@ -28,6 +28,7 @@ import { seedPruningRequests } from '../entities/pruning-request';
 import { seedPlantSeeds } from '../entities/plant-seed';
 import { seedServiceCapacity } from '../entities/service-capacity';
 import { seedNotifications } from '../entities/notification';
+import { seedScheduleEvents } from '../entities/schedule-event';
 
 /**
  * DEMO profile — the full local dev seed (`npm run db:seed`).
@@ -68,6 +69,9 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await seedMonitoringConfigs(ctx);
   await seedUserTrackingStatus(ctx);
   await seedUserAreas(ctx);
+
+  // Schedule events (Phase-4 demo data).
+  await seedScheduleEvents(ctx);
 
   // Plants / pruning / capacity (Phase-3 demo data).
   await seedPlantSpecies(ctx);

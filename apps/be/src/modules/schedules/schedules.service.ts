@@ -8,10 +8,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, IsNull, Repository } from 'typeorm';
 import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
+import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 import {
   canEditTargetRole,
   isGlobalRosterEditor,
@@ -55,12 +57,15 @@ export class SchedulesService {
     private readonly rosterRepo: Repository<Schedule>,
     @InjectRepository(ScheduleLocation)
     private readonly rosterAreaRepo: Repository<ScheduleLocation>,
+    @InjectRepository(ScheduleEvent)
+    private readonly eventRepo: Repository<ScheduleEvent>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @InjectRepository(Location)
     private readonly locationRepo: Repository<Location>,
     private readonly userAreasService: UserLocationsService,
     private readonly auditLogService: AuditLogService,
+    private readonly materializer: ScheduleMaterializerService,
   ) {}
 
   // ---- Edit-permission hierarchy (ADR-013 addendum) ----
@@ -183,67 +188,49 @@ export class SchedulesService {
   }
 
   /**
-   * Generate (materialize) the roster for a WIB day from every active user's
-   * template. Idempotent: users with an existing live row for the day are
-   * skipped, so re-running never duplicates and never overwrites manual edits.
-   * Returns the number of rows created.
+   * Generate (materialize) the roster for a WIB day from all active ScheduleEvents.
+   * Materializes occurrences for any event whose recurrence includes the given date.
+   * Idempotent: existing rows (including tombstones) are skipped, so re-running
+   * never duplicates and never overwrites manual edits or detached overrides.
+   * Returns the number of new rows created (not including skipped/conflicts).
+   *
+   * Supports manual ad-hoc scheduling and backfill. The POST /schedules/generate
+   * endpoint calls this; the daily cron uses ScheduleEventMaterializationCron instead.
    */
   async generateRoster(date: string, actorId: string | null): Promise<number> {
-    // Top-of-org / oversight roles (management, admin_system, superadmin,
-    // staff_kecamatan) get no roster row.
-    const users = (await this.userRepo.find({ where: { is_active: true } })).filter(
-      (u) => !isNonRosteredRole(u.role),
-    );
-    const existing = await this.rosterRepo.find({
-      where: { schedule_date: date },
-      select: ['id', 'user_id'],
+    // Fetch all active, non-deleted schedule events
+    const events = await this.eventRepo.find({
+      where: {
+        is_active: true,
+        deleted_at: null as any, // Use null for IS NULL check
+      },
+      relations: ['shift_definition', 'location', 'region', 'team', 'pic_user', 'user', 'members'],
     });
-    const alreadyRostered = new Set(existing.map((r) => r.user_id));
-    const usersToCreate = users.filter((u) => !alreadyRostered.has(u.id));
 
-    // Field workers (satgas/linmas/korlap) get their permanent areas; rayon
-    // managers (kepala_rayon/admin_rayon) get a fixed assignment to their WHOLE
-    // rayon (all its areas) — editable only up the chain (management+).
-    const fieldWorkers = usersToCreate.filter((u) => !isRayonManagerRole(u.role));
-    const userAreaMap = await this.userAreasService.getPermanentLocationIdsForUsers(
-      fieldWorkers.map((u) => u.id),
-    );
-    const managerRayonIds = [
-      ...new Set(
-        usersToCreate
-          .filter((u) => isRayonManagerRole(u.role))
-          .map((u) => u.rayon_id)
-          .filter((id): id is string => !!id),
-      ),
-    ];
-    const rayonAreaMap = await this.buildRayonAreaMap(managerRayonIds);
+    let totalCreated = 0;
 
-    let created = 0;
-    for (const user of usersToCreate) {
-      const locationIds = isRayonManagerRole(user.role)
-        ? user.rayon_id
-          ? (rayonAreaMap.get(user.rayon_id) ?? [])
-          : []
-        : (userAreaMap.get(user.id) ?? []);
-      const hasShift = !!user.shift_definition_id;
-      const row = this.rosterRepo.create({
-        user_id: user.id,
-        schedule_date: date,
-        rayon_id: user.rayon_id ?? null,
-        shift_definition_id: user.shift_definition_id ?? null,
-        status: hasShift ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
-        source: 'template',
-        created_by: actorId,
-      });
-      const saved = await this.rosterRepo.save(row);
-      await this.setAreas(saved.id, locationIds, actorId);
-      created += 1;
+    // Materialize each event for the given date
+    for (const event of events) {
+      try {
+        const result = await this.materializer.materializeEvent(event, date, date);
+        totalCreated += result.created;
+
+        if (result.skipped.length > 0) {
+          this.logger.debug(
+            `Event ${event.id} for ${date}: created ${result.created}, skipped ${result.skipped.length}`,
+          );
+        }
+      } catch (err) {
+        this.logger.warn(
+          `Failed to materialize event ${event.id} for ${date}: ${(err as Error).message}`,
+        );
+      }
     }
 
     this.logger.log(
-      `Generated ${created} roster rows for ${date} (skipped ${alreadyRostered.size})`,
+      `Generated ${totalCreated} roster rows for ${date} from active schedule events`,
     );
-    return created;
+    return totalCreated;
   }
 
   /** Map each rayon id → the ids of all areas in it (for whole-rayon assignment). */
@@ -289,6 +276,28 @@ export class SchedulesService {
       where: { user_id: userId, schedule_date: date, deleted_at: IsNull() },
       relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'rayon'],
     });
+  }
+
+  /**
+   * All roster rows for a date range [from, to] inclusive, rayon-scoped.
+   * Relations: user, shift_definition, schedule_areas/locations, region, team.
+   */
+  async findByDateRange(from: string, to: string, rayonId?: string | null): Promise<Schedule[]> {
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .leftJoinAndSelect('ds.user', 'u')
+      .leftJoinAndSelect('ds.shift_definition', 'sd')
+      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
+      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.region', 'r')
+      .leftJoinAndSelect('ds.team', 't')
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL');
+    if (rayonId) {
+      qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
+    }
+    return qb.orderBy('ds.schedule_date', 'ASC').addOrderBy('ds.status', 'ASC').getMany();
   }
 
   async findOne(id: string): Promise<Schedule> {

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted — **Amends [ADR-013](./ADR-013-multi-area-assignment.md)** (template-derived roster → rule-based recurring events)
+Accepted — **Implemented (Phase 4, 2026-07-12)** · Amends [ADR-013](./ADR-013-multi-area-assignment.md) (template-derived roster → rule-based recurring events; the standing-template generator is retired — templates were data-migrated into daily events)
 
 ## Date
 

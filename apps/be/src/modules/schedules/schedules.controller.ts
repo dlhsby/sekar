@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -85,6 +86,43 @@ export class SchedulesController {
       return user.rayon_id ? this.service.findByDate(date, user.rayon_id) : Promise.resolve([]);
     }
     return this.service.findByDate(date, rayonId);
+  }
+
+  @Get('range')
+  @Roles(...ROSTER_VIEWERS)
+  @ApiOperation({ summary: 'List roster rows for a date range [from, to]' })
+  @ApiQuery({ name: 'from', example: '2026-06-30' })
+  @ApiQuery({ name: 'to', example: '2026-07-31' })
+  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiResponse({ status: 200, type: [Schedule] })
+  getByRange(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @GetUser() user: User,
+    @Query('rayonId') rayonId?: string,
+  ): Promise<Schedule[]> {
+    // Validate from <= to
+    if (from > to) {
+      throw new BadRequestException('from date must be <= to date');
+    }
+
+    // Validate date span (cap at 62 days)
+    const fromDate = new Date(from + 'T00:00:00Z');
+    const toDate = new Date(to + 'T00:00:00Z');
+    const days = Math.floor((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    if (days > 62) {
+      throw new BadRequestException(
+        `Date range exceeds 62 days (${days} requested). Reduce the span.`,
+      );
+    }
+
+    // Rayon-scoped roles always see only their own rayon
+    if (this.isRayonScoped(user)) {
+      return user.rayon_id
+        ? this.service.findByDateRange(from, to, user.rayon_id)
+        : Promise.resolve([]);
+    }
+    return this.service.findByDateRange(from, to, rayonId);
   }
 
   @Post('generate')

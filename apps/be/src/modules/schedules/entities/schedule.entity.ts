@@ -14,6 +14,9 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
+import { Region } from '../../regions/entities/region.entity';
+import { Team } from '../../teams/entities/team.entity';
+import { ScheduleEvent } from './schedule-event.entity';
 import { ScheduleLocation } from './schedule-area.entity';
 
 /**
@@ -36,7 +39,7 @@ export enum ScheduleStatus {
   OFF = 'off',
 }
 
-export type ScheduleSource = 'template' | 'manual';
+export type ScheduleSource = 'template' | 'manual' | 'event';
 
 /**
  * Schedule — one materialized roster row per worker per WIB day,
@@ -46,9 +49,9 @@ export type ScheduleSource = 'template' | 'manual';
 @Entity('schedules')
 @Index('IDX_schedules_date', ['schedule_date'])
 @Index('IDX_schedules_rayon_date', ['rayon_id', 'schedule_date'])
-// One live roster row per worker per day (soft-deleted rows excluded so a
-// delete + regenerate is possible). Mirrors the migration's partial index.
-@Index('UQ_schedules_user_date', ['user_id', 'schedule_date'], {
+// Roster uniqueness is now time-based, not per (user, day): a user can have
+// multiple non-overlapping shifts. The overlap guard enforces real conflicts.
+@Index('UQ_schedules_user_date_shift', ['user_id', 'schedule_date', 'shift_definition_id'], {
   unique: true,
   where: '"deleted_at" IS NULL',
 })
@@ -97,6 +100,34 @@ export class Schedule {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
+  @ApiProperty({
+    description: 'If materialized from a ScheduleEvent, the event id',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  schedule_event_id: string | null;
+
+  @ApiProperty({
+    description: 'Region (for mobile-scope events)',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  region_id: string | null;
+
+  @ApiProperty({
+    description: 'Team (for team-scoped events)',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  team_id: string | null;
+
+  @ApiProperty({
+    description: 'Is this occurrence detached (overridden from the event)',
+    default: false,
+  })
+  @Column({ type: 'boolean', default: false })
+  is_detached: boolean;
+
   // Actor audit (set explicitly by the service; no FK — historical reference).
   @Column({ type: 'uuid', nullable: true })
   created_by: string | null;
@@ -133,6 +164,18 @@ export class Schedule {
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'replacement_user_id' })
   replacement_user?: User | null;
+
+  @ManyToOne(() => ScheduleEvent, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'schedule_event_id' })
+  schedule_event?: ScheduleEvent | null;
+
+  @ManyToOne(() => Region, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'region_id' })
+  region?: Region | null;
+
+  @ManyToOne(() => Team, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'team_id' })
+  team?: Team | null;
 
   @OneToMany(() => ScheduleLocation, (dsa) => dsa.schedule, { cascade: true })
   schedule_areas: ScheduleLocation[];
