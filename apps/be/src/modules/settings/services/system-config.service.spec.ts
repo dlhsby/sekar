@@ -13,7 +13,11 @@ describe('SystemConfigService', () => {
       delete: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(),
     };
-    service = new SystemConfigService(repo as unknown as any);
+    service = new SystemConfigService(
+      repo as unknown as any,
+      { emit: jest.fn() } as unknown as any,
+      { log: jest.fn().mockResolvedValue(undefined) } as unknown as any,
+    );
   });
 
   afterEach(() => {
@@ -91,6 +95,30 @@ describe('SystemConfigService', () => {
       await expect(service.set('maps.browser_key', 'AIzaSy')).rejects.toBeInstanceOf(
         BadRequestException,
       );
+    });
+
+    it('rejects an empty string for a number setting (would coerce to 0)', async () => {
+      await expect(service.set('ratelimit.login_per_min', '')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.set('ratelimit.login_per_min', '   ')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('enforces catalog bounds so security knobs cannot be disabled', async () => {
+      await expect(service.set('ratelimit.login_per_min', '0')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.set('ratelimit.login_per_min', '-5')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.set('ratelimit.login_per_min', '99999')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(
+        service.set('monitoring.active_max_age_sec', '5'), // below min 10
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
   });
 });

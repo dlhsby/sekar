@@ -47,12 +47,26 @@ export async function seedRoles(ctx: SeedContext): Promise<void> {
     }
 
     for (const key of r.permissions) {
-      await ctx.qr.query(
+      const inserted = (await ctx.qr.query(
         `INSERT INTO role_permissions (role_id, permission_id)
          SELECT $1, p.id FROM permissions p WHERE p.key = $2
-         ON CONFLICT DO NOTHING`,
+         ON CONFLICT DO NOTHING
+         RETURNING role_id`,
         [roleId, key],
-      );
+      )) as Array<{ role_id: string }>;
+      // A grant that resolves no permission row means seedPermissions didn't
+      // run first (or the catalog key is a typo) — fail loudly, never silently
+      // ship a role with missing grants.
+      if (inserted.length === 0) {
+        const exists = (await ctx.qr.query(`SELECT 1 FROM permissions WHERE key = $1`, [
+          key,
+        ])) as unknown[];
+        if (exists.length === 0) {
+          throw new Error(
+            `seedRoles: permission '${key}' for role '${r.code}' does not exist — run seedPermissions first / fix the catalog key`,
+          );
+        }
+      }
     }
   }
 

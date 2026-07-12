@@ -12,11 +12,14 @@ export function permissionMatches(granted: string, required: string): boolean {
   if (granted === required) return true;
   if (granted === '*:*') return true;
 
-  const [gRes, gAct] = granted.split(':');
-  const [rRes, rAct] = required.split(':');
-  if (gRes === undefined || gAct === undefined || rRes === undefined || rAct === undefined) {
-    return false;
-  }
+  // Strictly two segments — malformed keys ('user', 'user:read:extra',
+  // 'user::read') never match instead of being silently truncated.
+  const gParts = granted.split(':');
+  const rParts = required.split(':');
+  if (gParts.length !== 2 || rParts.length !== 2) return false;
+  const [gRes, gAct] = gParts;
+  const [rRes, rAct] = rParts;
+  if (!gRes || !gAct || !rRes || !rAct) return false;
 
   const resOk = gRes === '*' || gRes === rRes;
   const actOk = gAct === '*' || gAct === rAct;

@@ -13,6 +13,7 @@ import { UpdateRoleDto } from '../dto/update-role.dto';
 import { RoleView } from '../dto/role-view.dto';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
 import { RolePermissionsService } from './role-permissions.service';
+import { AuditLogService } from '../../audit/audit.service';
 
 /**
  * CRUD for data-driven roles (ADR-044). System roles (`is_system`) may have
@@ -28,6 +29,7 @@ export class RolesService {
     @InjectRepository(Permission)
     private readonly permissionRepo: Repository<Permission>,
     private readonly rolePermissions: RolePermissionsService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async list(): Promise<RoleView[]> {
@@ -63,13 +65,39 @@ export class RolesService {
       created_by: actorId,
       updated_by: actorId,
     });
-    const saved = await this.roleRepo.save(role);
+    let saved: Role;
+    try {
+      saved = await this.roleRepo.save(role);
+    } catch (err) {
+      // Unique-violation race on the generated code (two concurrent creates).
+      if ((err as { code?: string }).code === '23505') {
+        throw new ConflictException('A role with this code was just created — please retry');
+      }
+      throw err;
+    }
+    await this.recordAudit('create', saved.id, actorId, null, {
+      code: saved.code,
+      name: saved.name,
+      permissionKeys: (permissions ?? []).map((p) => p.key).sort(),
+    });
     return this.findOne(saved.id);
   }
 
   async update(id: string, dto: UpdateRoleDto, actorId?: string): Promise<RoleView> {
     const role = await this.roleRepo.findOne({ where: { id }, relations: ['permissions'] });
     if (!role) throw new NotFoundException('Role not found');
+
+    // The superadmin role must always keep its full grant — narrowing it would
+    // let a role editor lock every operator (including superadmin) out.
+    if (dto.permissionKeys !== undefined && role.code === 'superadmin') {
+      throw new BadRequestException('The superadmin role permissions cannot be modified');
+    }
+
+    const oldValue = {
+      name: role.name,
+      monitoring_scope: role.monitoring_scope,
+      permissionKeys: (role.permissions ?? []).map((p) => p.key).sort(),
+    };
 
     if (dto.name !== undefined) role.name = dto.name.trim();
     if (dto.description !== undefined) role.description = dto.description;
@@ -84,10 +112,15 @@ export class RolesService {
 
     await this.roleRepo.save(role);
     await this.rolePermissions.invalidateRole(role.code);
+    await this.recordAudit('update', role.id, actorId, oldValue, {
+      name: role.name,
+      monitoring_scope: role.monitoring_scope,
+      permissionKeys: (role.permissions ?? []).map((p) => p.key).sort(),
+    });
     return this.findOne(role.id);
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(id: string, actorId?: string): Promise<void> {
     const role = await this.roleRepo.findOne({ where: { id } });
     if (!role) throw new NotFoundException('Role not found');
     if (role.is_system) {
@@ -104,6 +137,30 @@ export class RolesService {
     // the request actor — matching the codebase convention (see rayons.service).
     await this.roleRepo.softRemove(role);
     await this.rolePermissions.invalidateRole(role.code);
+    await this.recordAudit('delete', role.id, actorId, { code: role.code, name: role.name }, null);
+  }
+
+  /** Best-effort change audit (ADR-015) — a failed audit write never fails the mutation. */
+  private async recordAudit(
+    action: 'create' | 'update' | 'delete',
+    roleId: string,
+    actorId: string | undefined,
+    oldValue: Record<string, unknown> | null,
+    newValue: Record<string, unknown> | null,
+  ): Promise<void> {
+    if (!actorId) return; // audit_logs.actor_id is a required FK
+    try {
+      await this.auditLog.log({
+        entity_type: 'role',
+        entity_id: roleId,
+        action,
+        actor_id: actorId,
+        old_value: oldValue,
+        new_value: newValue,
+      });
+    } catch {
+      // Non-fatal: the mutation already succeeded.
+    }
   }
 
   /** Resolve permission keys to rows; reject unknown keys so grants never silently no-op. */

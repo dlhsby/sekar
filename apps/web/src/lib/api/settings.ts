@@ -11,7 +11,7 @@ export interface SelectOption {
 export interface SettingDescription {
   key: string;
   group: string;
-  /** Optional sub-section within a group (SWAT-style). */
+  /** Optional sub-section within a group. */
   subgroup?: string;
   valueType: ConfigValueType;
   isSecret: boolean;
@@ -23,6 +23,9 @@ export interface SettingDescription {
   value?: string | number | boolean;
   /** Allowed options for `select` value types. */
   options?: SelectOption[];
+  /** Inclusive bounds for `number` values (from the backend catalog). */
+  min?: number;
+  max?: number;
 }
 
 export const settingsKeys = {

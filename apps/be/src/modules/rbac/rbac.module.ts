@@ -8,6 +8,7 @@ import { PermissionsService } from './services/permissions.service';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RolesController } from './roles.controller';
 import { PermissionsController } from './permissions.controller';
+import { AuditModule } from '../audit/audit.module';
 
 /**
  * RbacModule — data-driven roles & permissions (ADR-044).
@@ -19,7 +20,7 @@ import { PermissionsController } from './permissions.controller';
  */
 @Global()
 @Module({
-  imports: [TypeOrmModule.forFeature([Role, Permission])],
+  imports: [TypeOrmModule.forFeature([Role, Permission]), AuditModule],
   controllers: [RolesController, PermissionsController],
   providers: [RolePermissionsService, RolesService, PermissionsService, PermissionsGuard],
   exports: [RolePermissionsService, PermissionsGuard, TypeOrmModule],

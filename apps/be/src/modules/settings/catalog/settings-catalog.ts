@@ -34,6 +34,11 @@ export interface SettingsCatalogEntry {
   help?: string;
   /** Code default when neither DB override nor env is set. */
   default?: string | number | boolean;
+  /** Inclusive bounds for `number` values — enforced on write so operators
+   * cannot set security-critical knobs (rate limits, thresholds) to
+   * nonsensical/disabling values. */
+  min?: number;
+  max?: number;
   /** Allowed options for `select` value types. */
   options?: SelectOption[];
 }
@@ -53,6 +58,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Usia maksimum status aktif (detik)',
     help: 'Usia lokasi terakhir agar petugas masih dihitung aktif',
     default: 300,
+    min: 10,
+    max: 86400,
   },
   {
     key: 'monitoring.inactive_threshold_sec',
@@ -64,6 +71,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Ambang batas tidak aktif (detik)',
     help: 'Usia lokasi terakhir sebelum status berubah aktif → tidak aktif',
     default: 900,
+    min: 10,
+    max: 86400,
   },
   {
     key: 'monitoring.missing_threshold_sec',
@@ -77,6 +86,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Ambang batas hilang (detik)',
     help: 'Usia lokasi terakhir sebelum status berubah menjadi hilang (dipakai kalkulator status + penyapu latar)',
     default: 3600,
+    min: 60,
+    max: 604800,
   },
   {
     key: 'monitoring.location_ping_interval_sec',
@@ -87,6 +98,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'MONITORING_LOCATION_PING_INTERVAL_SEC',
     label: 'Interval ping lokasi (detik)',
     default: 60,
+    min: 5,
+    max: 3600,
   },
   {
     key: 'monitoring.staffing_debounce_sec',
@@ -98,6 +111,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Debounce peringatan understaffed (detik)',
     help: 'Jeda tenang sebelum peringatan kekurangan petugas dikirim',
     default: 30,
+    min: 0,
+    max: 3600,
   },
   {
     key: 'geofence.tolerance_m',
@@ -108,6 +123,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'GEOFENCE_TOLERANCE_M',
     label: 'Toleransi batas geofence (meter)',
     default: 50,
+    min: 0,
+    max: 10000,
   },
   {
     key: 'geofence.outside_area_grace_sec',
@@ -119,6 +136,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Tenggang di luar area (detik)',
     help: 'Berapa lama petugas boleh di luar batas sebelum ditandai keluar area',
     default: 120,
+    min: 0,
+    max: 86400,
   },
 
   // ── Penjadwalan (scheduling) ──────────────────────────────────────────────
@@ -132,6 +151,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Horizon materialisasi jadwal (hari)',
     help: 'Berapa hari ke depan jadwal berulang dibuat (ADR-047)',
     default: 30,
+    min: 1,
+    max: 90,
   },
   {
     key: 'schedule.min_shift_duration_min',
@@ -142,6 +163,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'MINIMUM_SHIFT_DURATION_MINUTES',
     label: 'Durasi shift minimum (menit)',
     default: 5,
+    min: 1,
+    max: 1440,
   },
 
   // ── Integrasi (integrations) ──────────────────────────────────────────────
@@ -176,6 +199,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'RATE_LIMIT_GLOBAL_PER_MIN',
     label: 'Batas permintaan global / menit',
     default: 100,
+    min: 1,
+    max: 100000,
   },
   {
     key: 'ratelimit.login_per_min',
@@ -186,6 +211,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'RATE_LIMIT_LOGIN_PER_MIN',
     label: 'Batas percobaan login / menit',
     default: 5,
+    min: 1,
+    max: 1000,
   },
   {
     key: 'auth.change_password_throttle_max',
@@ -196,6 +223,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'AUTH_CHANGE_PASSWORD_THROTTLE_LIMIT',
     label: 'Batas percobaan ganti sandi',
     default: 3,
+    min: 1,
+    max: 100,
   },
   {
     key: 'auth.change_password_throttle_ttl_ms',
@@ -206,6 +235,8 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'AUTH_CHANGE_PASSWORD_THROTTLE_TTL',
     label: 'Jendela throttle ganti sandi (ms)',
     default: 60000,
+    min: 1000,
+    max: 86400000,
   },
 
   // ── Umum (general) ────────────────────────────────────────────────────────
@@ -239,6 +270,8 @@ export function coerceValue(raw: string, type: ConfigValueType): string | number
     throw new Error(`Expected 'true' or 'false', got '${raw}'`);
   }
   if (type === 'number') {
+    // Number('') and Number('   ') are 0 — reject blanks explicitly.
+    if (raw.trim() === '') throw new Error(`Expected a number, got an empty value`);
     const n = Number(raw);
     if (!Number.isFinite(n)) throw new Error(`Expected a number, got '${raw}'`);
     return n;
