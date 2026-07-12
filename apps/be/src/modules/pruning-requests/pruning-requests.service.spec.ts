@@ -622,7 +622,7 @@ describe('PruningRequestsService', () => {
   describe('assignToTask', () => {
     it('should convert approved request to task (idempotent)', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -675,7 +675,7 @@ describe('PruningRequestsService', () => {
 
     it('should return existing task if already converted (idempotent)', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -700,7 +700,7 @@ describe('PruningRequestsService', () => {
 
     it('should deny admin_data convert access for mismatched rayon', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -721,7 +721,7 @@ describe('PruningRequestsService', () => {
 
     it('should reject conversion of non-approved request', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -741,7 +741,7 @@ describe('PruningRequestsService', () => {
 
     it('should propagate capacity booking conflict', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -769,7 +769,7 @@ describe('PruningRequestsService', () => {
     // ── ADR-035 amendment 2026-05-01 (auto-pick day inside requested week) ──
     it('auto-picks the first day of the requested week when scheduledDate is omitted', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         // scheduledDate intentionally omitted
         caseType: 'GT' as const,
@@ -828,7 +828,7 @@ describe('PruningRequestsService', () => {
 
     it('rejects auto-pick when request has no week and admin omits scheduledDate', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         caseType: 'GT' as const,
         pruningAction: 'PM' as const,
@@ -852,7 +852,7 @@ describe('PruningRequestsService', () => {
 
     it('should reject conversion of non-existent request', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -1042,7 +1042,7 @@ describe('PruningRequestsService', () => {
   describe('assignToTask edge cases', () => {
     it('should reject conversion when request has no rayonId', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -1063,7 +1063,7 @@ describe('PruningRequestsService', () => {
 
     it('should rethrow non-ConflictException errors from bookAtomic', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,

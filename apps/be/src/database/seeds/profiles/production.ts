@@ -1,6 +1,6 @@
 import * as bcrypt from 'bcrypt';
 import { runProfileCli, type SeedContext } from '../lib/context';
-import { seedAreaTypes } from '../entities/area-type';
+import { seedAreaTypes } from '../entities/location-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';

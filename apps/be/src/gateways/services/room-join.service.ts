@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Socket } from 'socket.io';
 import { User, UserRole } from '../../modules/users/entities/user.entity';
-import { UserAreasService } from '../../modules/user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 
 /** Roles that watch the whole city */
 const CITY_ROLES: string[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.TOP_MANAGEMENT];
@@ -20,7 +20,7 @@ const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_DATA];
  *   emitToUser pattern, ADR-016)
  * - `monitoring:city` — city-wide roles
  * - `monitoring:rayon:{rayonId}` — rayon-scoped roles
- * - `monitoring:area:{areaId}` — korlap's assigned areas (multi-area aware)
+ * - `monitoring:area:{locationId}` — korlap's assigned areas (multi-area aware)
  */
 @Injectable()
 export class RoomJoinService {
@@ -29,7 +29,7 @@ export class RoomJoinService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly userAreasService: UserAreasService,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
 
   /**
@@ -51,7 +51,7 @@ export class RoomJoinService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'rayon_id', 'area_id'],
+        select: ['id', 'rayon_id', 'location_id'],
       });
 
       if (!user) return rooms;
@@ -62,11 +62,11 @@ export class RoomJoinService {
 
       if (role === UserRole.KORLAP) {
         // Multi-area: all assigned area rooms, falling back to the legacy single area
-        const areaIds = await this.userAreasService.getPermanentAreaIds(userId);
-        if (areaIds.length > 0) {
-          rooms.push(...areaIds.map((areaId) => `monitoring:area:${areaId}`));
-        } else if (user.area_id) {
-          rooms.push(`monitoring:area:${user.area_id}`);
+        const locationIds = await this.userLocationsService.getPermanentLocationIds(userId);
+        if (locationIds.length > 0) {
+          rooms.push(...locationIds.map((locationId) => `monitoring:area:${locationId}`));
+        } else if (user.location_id) {
+          rooms.push(`monitoring:area:${user.location_id}`);
         }
       }
     } catch (error) {

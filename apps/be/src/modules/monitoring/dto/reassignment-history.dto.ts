@@ -5,13 +5,13 @@ export class ReassignmentHistoryEntryDto {
   id: string;
 
   @ApiPropertyOptional({ example: 'area-1', description: 'Previous area ID (null if unknown)' })
-  previous_area_id: string | null;
+  previous_location_id: string | null;
 
   @ApiPropertyOptional({ example: 'Taman Bungkul', description: 'Previous area name' })
   previous_area_name: string | null;
 
   @ApiProperty({ example: 'area-2', description: 'New area ID' })
-  new_area_id: string;
+  new_location_id: string;
 
   @ApiProperty({ example: 'Taman Sapran', description: 'New area name' })
   new_area_name: string;

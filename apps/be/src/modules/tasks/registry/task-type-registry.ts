@@ -8,7 +8,7 @@ export const PRUNING_SOURCES = ['TIW', 'TS', 'CC', 'PW', 'Wk'] as const;
 export type TaskTypeName = 'generic' | 'pruning' | 'planting' | 'cleaning';
 
 const pruningSchema = z.object({
-  area_type: z.enum(['road', 'park', 'median']),
+  location_type: z.enum(['road', 'park', 'median']),
   pruning_action: z.enum(PRUNING_ACTIONS),
   source: z.enum(PRUNING_SOURCES),
   target_species: z
@@ -29,7 +29,7 @@ const plantingSchema = z.object({
 });
 
 const cleaningSchema = z.object({
-  area_type: z.enum(['road', 'park', 'median', 'drainage']).optional(),
+  location_type: z.enum(['road', 'park', 'median', 'drainage']).optional(),
   notes: z.string().optional(),
 });
 

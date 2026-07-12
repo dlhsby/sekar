@@ -8,7 +8,7 @@ import { normalizePhone, INDO_MOBILE_REGEX } from '../../../common/utils/phone.u
  * Data Transfer Object for self-service profile updates.
  *
  * Allows authenticated users to update only their name and phone number.
- * All privilege fields (role, rayon_id, area_id, is_active, password, username)
+ * All privilege fields (role, rayon_id, location_id, is_active, password, username)
  * are forbidden and will be stripped by the global ValidationPipe.
  */
 export class UpdateMyProfileDto {

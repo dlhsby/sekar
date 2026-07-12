@@ -21,7 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { RayonsService } from './rayons.service';
 import { Rayon } from './entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -146,7 +146,7 @@ export class RayonsController {
   @ApiResponse({
     status: 200,
     description: 'Areas retrieved successfully',
-    type: [Area],
+    type: [Location],
   })
   @ApiResponse({
     status: 401,
@@ -156,7 +156,7 @@ export class RayonsController {
     status: 404,
     description: 'Rayon not found',
   })
-  findAreas(@Param('id') id: string): Promise<Area[]> {
+  findAreas(@Param('id') id: string): Promise<Location[]> {
     return this.rayonsService.findAreasByRayonId(id);
   }
 

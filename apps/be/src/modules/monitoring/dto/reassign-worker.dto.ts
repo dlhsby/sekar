@@ -8,7 +8,7 @@ export class ReassignWorkerDto {
 
   @ApiProperty({ example: 'area-uuid', description: 'Target area ID' })
   @IsUUID()
-  target_area_id: string;
+  target_location_id: string;
 
   @ApiPropertyOptional({
     example: 'shift-def-uuid',
@@ -51,13 +51,13 @@ export class ReassignWorkerResponseDto {
   user_name: string;
 
   @ApiProperty({ example: 'area-uuid' })
-  previous_area_id: string | null;
+  previous_location_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
   previous_area_name: string | null;
 
   @ApiProperty({ example: 'area-uuid' })
-  new_area_id: string;
+  new_location_id: string;
 
   @ApiProperty({ example: 'Taman Mundu' })
   new_area_name: string;

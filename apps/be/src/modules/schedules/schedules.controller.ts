@@ -147,7 +147,7 @@ export class SchedulesController {
     @Body() dto: UpdateRosterAreasDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
-    return this.service.updateAreas(id, dto.area_ids, user);
+    return this.service.updateAreas(id, dto.location_ids, user);
   }
 
   @Patch(':id/shift')

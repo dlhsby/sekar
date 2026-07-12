@@ -9,7 +9,7 @@ import {
 } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User, UserRole } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { EventsGateway } from '../../../gateways/events.gateway';
 import {
   UserStatusChangedEvent,
@@ -17,13 +17,13 @@ import {
   UserLocationEvent,
   AreaStaffingChangedEvent,
 } from '../../../gateways/dto/events.dto';
-import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { LocationStaffRequirement } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { StaffingDebouncerService } from './staffing-debouncer.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
 import { BoundaryCheckService } from '../../../shared/services/boundary-check.service';
-import { UserAreasService } from '../../user-areas/user-areas.service';
+import { UserLocationsService } from '../../user-locations/user-locations.service';
 import { SchedulesService } from '../../schedules/schedules.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 
@@ -42,10 +42,10 @@ export class StatusCalculatorService {
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
-    @InjectRepository(AreaStaffRequirement)
-    private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
+    @InjectRepository(LocationStaffRequirement)
+    private readonly staffRequirementRepository: Repository<LocationStaffRequirement>,
     private readonly cacheService: MonitoringCacheService,
     @Inject(forwardRef(() => EventsGateway))
     private readonly eventsGateway: EventsGateway,
@@ -68,7 +68,7 @@ export class StatusCalculatorService {
     // within-area while inside that task's area. Optional → legacy specs
     // without the provider fall back to primary-area-only checking.
     @Optional()
-    private readonly userAreasService?: UserAreasService,
+    private readonly userLocationsService?: UserLocationsService,
     // Monitoring/geofencing/tracking read the day's GENERATED roster, not the
     // raw user assignment (the user record is only the template that feeds
     // generation). Optional → legacy specs fall back to user_areas.
@@ -91,15 +91,15 @@ export class StatusCalculatorService {
    * flapping worker isn't spammed; the dedup fails OPEN — a Redis hiccup must
    * never silence a safety alert.
    *
-   * Korlap scope matches the worker's primary `users.area_id` (multi-area via
+   * Korlap scope matches the worker's primary `users.location_id` (multi-area via
    * `user_areas` is a later follow-up); kepala_rayon scope matches `rayon_id`.
    */
   async notifyMissingWorker(
     workerUserId: string,
-    areaId: string | null,
+    locationId: string | null,
     rayonId?: string | null,
   ): Promise<void> {
-    if (!this.notificationsService || !areaId) return;
+    if (!this.notificationsService || !locationId) return;
 
     // Cross-path dedup: claim once per worker per Jakarta day.
     const claimed = await this.claimMissingAlert(workerUserId);
@@ -113,7 +113,7 @@ export class StatusCalculatorService {
       const workerName = worker?.full_name ?? 'pekerja';
 
       const korlaps = await this.userRepository.find({
-        where: { role: UserRole.KORLAP, area_id: areaId, is_active: true },
+        where: { role: UserRole.KORLAP, location_id: locationId, is_active: true },
         select: ['id'],
       });
 
@@ -134,7 +134,7 @@ export class StatusCalculatorService {
             title: 'Pekerja hilang',
             body: `${workerName} terdeteksi MISSING di area Anda. Mohon segera periksa.`,
             type: NotificationType.MISSING_WORKER_ALERT,
-            data: { worker_user_id: workerUserId, area_id: areaId },
+            data: { worker_user_id: workerUserId, location_id: locationId },
           }),
         ),
       );
@@ -262,12 +262,12 @@ export class StatusCalculatorService {
       await this.trackingRepository.save(existing);
 
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
-      await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
+      await this.emitStaffingChangedIfNeeded(existing.location_id, previousStatus, newStatus, now);
 
       // Phase 4-3 (M2): alert korlap + kepala_rayon on transition into MISSING.
       // Fire-and-forget; do not block the status calculation if dispatch fails.
       if (newStatus === TrackingStatus.MISSING && previousStatus !== TrackingStatus.MISSING) {
-        void this.notifyMissingWorker(userId, existing.area_id, existing.rayon_id);
+        void this.notifyMissingWorker(userId, existing.location_id, existing.rayon_id);
       }
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
@@ -279,7 +279,7 @@ export class StatusCalculatorService {
   async onClockIn(
     userId: string,
     shiftId: string,
-    areaId: string | null,
+    locationId: string | null,
     shiftDefinitionId: string | null,
     clockInLat?: number,
     clockInLng?: number,
@@ -287,8 +287,8 @@ export class StatusCalculatorService {
     const now = new Date();
 
     let isWithinArea = true;
-    if (areaId && clockInLat !== undefined && clockInLng !== undefined) {
-      isWithinArea = await this.checkWithinArea(areaId, clockInLat, clockInLng);
+    if (locationId && clockInLat !== undefined && clockInLng !== undefined) {
+      isWithinArea = await this.checkWithinArea(locationId, clockInLat, clockInLng);
     }
 
     // Resolve rayon_id from the day's generated roster first (the operational
@@ -299,9 +299,9 @@ export class StatusCalculatorService {
       : null;
     if (roster?.rayon_id) {
       rayonId = roster.rayon_id;
-    } else if (areaId) {
+    } else if (locationId) {
       const area = await this.areaRepository.findOne({
-        where: { id: areaId },
+        where: { id: locationId },
         select: ['id', 'rayon_id'],
       });
       rayonId = area?.rayon_id || null;
@@ -319,7 +319,7 @@ export class StatusCalculatorService {
         user_id: userId,
         shift_id: shiftId,
         shift_definition_id: shiftDefinitionId,
-        area_id: areaId,
+        location_id: locationId,
         rayon_id: rayonId,
         status: TrackingStatus.ACTIVE,
         is_within_area: isWithinArea,
@@ -339,7 +339,7 @@ export class StatusCalculatorService {
         user_id: userId,
         shift_id: null,
         shift_definition_id: null,
-        area_id: null,
+        location_id: null,
         rayon_id: null,
         status: TrackingStatus.OFFLINE,
         is_within_area: true,
@@ -381,8 +381,8 @@ export class StatusCalculatorService {
     const now = new Date();
 
     let isWithinArea = true;
-    if (existing.area_id) {
-      isWithinArea = await this.checkWithinAnyAssignedArea(userId, existing.area_id, lat, lng);
+    if (existing.location_id) {
+      isWithinArea = await this.checkWithinAnyAssignedArea(userId, existing.location_id, lat, lng);
     }
 
     const thresholds = await this.cacheService.getThresholds();
@@ -415,7 +415,7 @@ export class StatusCalculatorService {
     // defensive) so we keep parity with the previous behaviour.
     const context = existing.user
       ? { user: existing.user, area: existing.area ?? null }
-      : await this.resolveUserContext(existing.user_id, existing.area_id);
+      : await this.resolveUserContext(existing.user_id, existing.location_id);
 
     // Broadcast boundary crossing events via WebSocket
     if (previousWithinArea && !isWithinArea) {
@@ -427,7 +427,7 @@ export class StatusCalculatorService {
     // Broadcast status change via WebSocket if changed
     if (newStatus !== previousStatus) {
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now, context);
-      await this.emitStaffingChangedIfNeeded(existing.area_id, previousStatus, newStatus, now);
+      await this.emitStaffingChangedIfNeeded(existing.location_id, previousStatus, newStatus, now);
     }
 
     // Always emit location update
@@ -451,10 +451,10 @@ export class StatusCalculatorService {
     previousStatus: TrackingStatus,
     newStatus: TrackingStatus,
     timestamp: Date,
-    preResolved?: { user: User; area: Area | null } | null,
+    preResolved?: { user: User; area: Location | null } | null,
   ): Promise<void> {
     const context =
-      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.location_id));
     if (!context) return;
 
     const thresholds = await this.cacheService.getThresholds();
@@ -472,7 +472,7 @@ export class StatusCalculatorService {
       user_id: tracking.user_id,
       user_name: context.user.full_name,
       role: context.user.role as UserRole,
-      area_id: tracking.area_id,
+      location_id: tracking.location_id,
       area_name: context.area?.name || null,
       rayon_id: context.area?.rayon_id || null,
       previous_status: previousStatus,
@@ -493,19 +493,19 @@ export class StatusCalculatorService {
     lat: number,
     lng: number,
     timestamp: Date,
-    preResolved?: { user: User; area: Area | null } | null,
+    preResolved?: { user: User; area: Location | null } | null,
   ): Promise<void> {
-    if (!tracking.area_id) return;
+    if (!tracking.location_id) return;
 
     const context =
-      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.location_id));
     if (!context || !context.area) return;
 
     const event: UserAreaEvent = {
       user_id: tracking.user_id,
       user_name: context.user.full_name,
       role: context.user.role as UserRole,
-      area_id: tracking.area_id,
+      location_id: tracking.location_id,
       area_name: context.area.name,
       rayon_id: context.area.rayon_id || null,
       latitude: lat,
@@ -529,12 +529,12 @@ export class StatusCalculatorService {
     status: TrackingStatus,
     isWithinArea: boolean,
     timestamp: Date,
-    preResolved?: { user: User; area: Area | null } | null,
+    preResolved?: { user: User; area: Location | null } | null,
   ): Promise<void> {
-    if (!tracking.area_id || !tracking.shift_id) return;
+    if (!tracking.location_id || !tracking.shift_id) return;
 
     const context =
-      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.area_id));
+      preResolved ?? (await this.resolveUserContext(tracking.user_id, tracking.location_id));
     if (!context) return;
 
     const thresholds = await this.cacheService.getThresholds();
@@ -554,7 +554,7 @@ export class StatusCalculatorService {
       role: context.user.role as UserRole,
       shift_id: tracking.shift_id,
       shift_name: tracking.shift_definition?.name || 'Active Shift',
-      area_id: tracking.area_id,
+      location_id: tracking.location_id,
       area_name: context.area?.name || 'Unknown',
       rayon_id: context.area?.rayon_id || null,
       latitude: lat,
@@ -580,12 +580,12 @@ export class StatusCalculatorService {
   }
 
   private async emitStaffingChangedIfNeeded(
-    areaId: string | null,
+    locationId: string | null,
     previousStatus: TrackingStatus,
     newStatus: TrackingStatus,
     timestamp: Date,
   ): Promise<void> {
-    if (!areaId) return;
+    if (!locationId) return;
 
     const wasActive = this.isActiveStatus(previousStatus);
     const isNowActive = this.isActiveStatus(newStatus);
@@ -593,7 +593,7 @@ export class StatusCalculatorService {
 
     const activeCount = await this.trackingRepository
       .createQueryBuilder('uts')
-      .where('uts.area_id = :areaId', { areaId })
+      .where('uts.location_id = :locationId', { locationId })
       .andWhere('uts.status IN (:...statuses)', {
         statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
       })
@@ -602,19 +602,19 @@ export class StatusCalculatorService {
     const reqResult = await this.staffRequirementRepository
       .createQueryBuilder('req')
       .select('SUM(req.required_count)', 'total')
-      .where('req.area_id = :areaId', { areaId })
+      .where('req.location_id = :locationId', { locationId })
       .getRawOne();
 
     const requiredCount = parseInt(reqResult?.total || '0');
     if (requiredCount === 0) return;
 
     const area = await this.areaRepository.findOne({
-      where: { id: areaId },
+      where: { id: locationId },
       select: ['id', 'rayon_id'],
     });
 
     const event: AreaStaffingChangedEvent = {
-      area_id: areaId,
+      location_id: locationId,
       rayon_id: area?.rayon_id || null,
       active_count: activeCount,
       required_count: requiredCount,
@@ -625,7 +625,7 @@ export class StatusCalculatorService {
     // Route through debouncer when available to coalesce rapid successive
     // status changes (e.g. shift-start wave) into a single broadcast.
     if (this.staffingDebouncer) {
-      this.staffingDebouncer.flag(areaId, event as unknown as Record<string, unknown>);
+      this.staffingDebouncer.flag(locationId, event as unknown as Record<string, unknown>);
     } else {
       this.eventsGateway.emitAreaStaffingChanged(event);
     }
@@ -633,8 +633,8 @@ export class StatusCalculatorService {
 
   private async resolveUserContext(
     userId: string,
-    areaId: string | null,
-  ): Promise<{ user: User; area: Area | null } | null> {
+    locationId: string | null,
+  ): Promise<{ user: User; area: Location | null } | null> {
     const user = await this.userRepository.findOne({
       where: { id: userId },
       select: ['id', 'full_name', 'role'],
@@ -642,9 +642,9 @@ export class StatusCalculatorService {
 
     if (!user) return null;
 
-    const area = areaId
+    const area = locationId
       ? await this.areaRepository.findOne({
-          where: { id: areaId },
+          where: { id: locationId },
           select: ['id', 'name', 'rayon_id'],
         })
       : null;
@@ -652,8 +652,8 @@ export class StatusCalculatorService {
     return { user, area };
   }
 
-  private async checkWithinArea(areaId: string, lat: number, lng: number): Promise<boolean> {
-    const boundary = await this.cacheService.getAreaBoundary(areaId);
+  private async checkWithinArea(locationId: string, lat: number, lng: number): Promise<boolean> {
+    const boundary = await this.cacheService.getAreaBoundary(locationId);
     if (!boundary || boundary.length === 0) {
       return true;
     }
@@ -687,7 +687,7 @@ export class StatusCalculatorService {
     // Union today's + yesterday's roster areas so an overnight (Shift-3) worker
     // whose roster row sits on the clock-in day is still recognized after WIB
     // midnight. Only runs when the worker is outside their primary area.
-    let rosterAreas: Area[] = [];
+    let rosterAreas: Location[] = [];
     if (this.dailySchedulesService) {
       const today = TimezoneUtil.jakartaDateString();
       const yesterday = TimezoneUtil.jakartaDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
@@ -695,15 +695,15 @@ export class StatusCalculatorService {
         this.dailySchedulesService.getActiveAreasForDay(userId, today),
         this.dailySchedulesService.getActiveAreasForDay(userId, yesterday),
       ]);
-      const byId = new Map<string, Area>();
+      const byId = new Map<string, Location>();
       for (const a of [...todayAreas, ...yesterdayAreas]) byId.set(a.id, a);
       rosterAreas = [...byId.values()];
     }
     const candidates =
       rosterAreas.length > 0
         ? rosterAreas
-        : this.userAreasService
-          ? await this.userAreasService.getEffectiveAreas(userId)
+        : this.userLocationsService
+          ? await this.userLocationsService.getEffectiveAreas(userId)
           : [];
     for (const area of candidates) {
       if (area.id === primaryAreaId) continue;

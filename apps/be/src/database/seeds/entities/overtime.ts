@@ -66,7 +66,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       // Satgas overtimes (3: pending, approved, rejected + overnight example)
       await ctx.qr.query(`
         INSERT INTO overtimes (
-          id, user_id, area_id, start_datetime, end_datetime,
+          id, user_id, location_id, start_datetime, end_datetime,
           activity_type_id, description, photo_urls,
           gps_lat, gps_lng, status, approved_by, approved_at,
           created_at, updated_at
@@ -102,7 +102,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       if (linmasOtId) {
         await ctx.qr.query(`
           INSERT INTO overtimes (
-            id, user_id, area_id, start_datetime, end_datetime,
+            id, user_id, location_id, start_datetime, end_datetime,
             activity_type_id, description, photo_urls,
             gps_lat, gps_lng, status, approved_by, approved_at,
             created_at, updated_at
@@ -139,7 +139,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
       if (korlap1OtId) {
         await ctx.qr.query(`
           INSERT INTO overtimes (
-            id, user_id, area_id, start_datetime, end_datetime,
+            id, user_id, location_id, start_datetime, end_datetime,
             activity_type_id, description, photo_urls,
             gps_lat, gps_lng, status, approved_by, approved_at,
             created_at, updated_at
@@ -167,20 +167,20 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
 
       // Admin Data overtimes (2: pending, approved)
       const adminDataOtResult = await ctx.qr.query(`
-        SELECT id, area_id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1
+        SELECT id, location_id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1
       `);
       if (adminDataOtResult.length > 0) {
         const OVERTIME_9_ID = 'a8b9c0d1-e2f3-4a4b-8b6d-6e7f8a9b0c1d';
         const OVERTIME_10_ID = 'b9c0d1e2-f3a4-4b5c-8d7e-7f8a9b0c1d2e';
         const adminDataOtId = adminDataOtResult[0].id;
-        // admin_data is in Rayon Pusat but has no area_id; use tamanBungkulId as fallback
-        const adminDataAreaId = adminDataOtResult[0].area_id || tamanBungkulId;
+        // admin_data is in Rayon Pusat but has no location_id; use tamanBungkulId as fallback
+        const adminDataAreaId = adminDataOtResult[0].location_id || tamanBungkulId;
         const cekAbsensiId = otActivityTypes.find((a: any) => a.code === 'cek_absensi')?.id;
 
         if (cekAbsensiId) {
           await ctx.qr.query(`
             INSERT INTO overtimes (
-              id, user_id, area_id, start_datetime, end_datetime,
+              id, user_id, location_id, start_datetime, end_datetime,
               activity_type_id, description, photo_urls,
               gps_lat, gps_lng, status, approved_by, approved_at,
               created_at, updated_at

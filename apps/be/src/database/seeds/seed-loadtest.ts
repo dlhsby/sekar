@@ -12,7 +12,7 @@ import { DEFAULT_PASSWORD_HASH } from './constants';
  *   - role:           'satgas'
  *   - password:       12345678 (shared bcrypt hash with the rest of the seeds)
  *   - rayon_id:       first existing rayon row (queried at runtime)
- *   - area_id:        first existing area row in that rayon
+ *   - location_id:        first existing area row in that rayon
  *   - phone_number:   `0812LT0NNNN` (zero-padded VU index, kept unique by UNIQUE on phone)
  *
  * Usage: LOADTEST_USERS=500 npm run db:seed:loadtest
@@ -27,7 +27,7 @@ const USERNAME_PREFIX = process.env.LOADTEST_PREFIX || 'loadtest_satgas';
 
 interface SeedTargets {
   rayonId: string;
-  areaId: string;
+  locationId: string;
 }
 
 async function pickTargets(qr: QueryRunner): Promise<SeedTargets> {
@@ -44,7 +44,7 @@ async function pickTargets(qr: QueryRunner): Promise<SeedTargets> {
   if (!areaRows.length) {
     throw new Error(`No areas found for rayon ${rayonId} — seed broken.`);
   }
-  return { rayonId, areaId: areaRows[0].id };
+  return { rayonId, locationId: areaRows[0].id };
 }
 
 export async function seedLoadtest(dataSource: DataSource): Promise<void> {
@@ -55,8 +55,8 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
     console.log(
       `🔧 Load-test seed: generating ${LOADTEST_USER_COUNT} ${USERNAME_PREFIX}{N} users…`,
     );
-    const { rayonId, areaId } = await pickTargets(qr);
-    console.log(`   target rayon=${rayonId} area=${areaId}`);
+    const { rayonId, locationId } = await pickTargets(qr);
+    console.log(`   target rayon=${rayonId} area=${locationId}`);
 
     let inserted = 0;
     let skipped = 0;
@@ -70,11 +70,11 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
 
       const result = await qr.query(
         `INSERT INTO users
-           (username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active)
+           (username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active)
          VALUES ($1, $2, $3, $4, 'satgas', $5, $6, TRUE)
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,
-        [username, PASSWORD_HASH, fullName, phone, rayonId, areaId],
+        [username, PASSWORD_HASH, fullName, phone, rayonId, locationId],
       );
       if (result.length > 0) inserted++;
       else skipped++;

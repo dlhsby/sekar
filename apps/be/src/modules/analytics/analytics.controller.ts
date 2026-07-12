@@ -10,10 +10,10 @@ import { User } from '../users/entities/user.entity';
 import { ANALYTICS_VIEWERS, ANALYTICS_ADMINS } from '../users/constants/role-groups';
 import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import { WorkerAnalyticsDto } from './dto/worker-analytics.dto';
-import { AreaAnalyticsDto } from './dto/area-analytics.dto';
+import { LocationAnalyticsDto } from './dto/location-analytics.dto';
 import { OperationalAnalyticsDto } from './dto/operational-analytics.dto';
 import { WorkerAnalyticsQueryDto } from './dto/worker-analytics-query.dto';
-import { AreaAnalyticsQueryDto } from './dto/area-analytics-query.dto';
+import { LocationAnalyticsQueryDto } from './dto/location-analytics-query.dto';
 import { OperationalQueryDto } from './dto/operational-query.dto';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
@@ -74,9 +74,9 @@ export class AnalyticsController {
     description: 'Paginated area analytics',
   })
   async listAreas(
-    @Query() query: AreaAnalyticsQueryDto,
+    @Query() query: LocationAnalyticsQueryDto,
     @GetUser() user: User,
-  ): Promise<PaginatedResponseDto<AreaAnalyticsDto>> {
+  ): Promise<PaginatedResponseDto<LocationAnalyticsDto>> {
     return this.analyticsService.listAreas(user, query);
   }
 
@@ -85,14 +85,14 @@ export class AnalyticsController {
   @ApiOperation({ summary: 'Get area analytics by ID' })
   @ApiResponse({
     status: 200,
-    description: 'Area analytics',
-    type: AreaAnalyticsDto,
+    description: 'Location analytics',
+    type: LocationAnalyticsDto,
   })
   async getArea(
     @Param('id') id: string,
-    @Query() query: AreaAnalyticsQueryDto,
+    @Query() query: LocationAnalyticsQueryDto,
     @GetUser() user: User,
-  ): Promise<AreaAnalyticsDto> {
+  ): Promise<LocationAnalyticsDto> {
     return this.analyticsService.getArea(id, user, query);
   }
 

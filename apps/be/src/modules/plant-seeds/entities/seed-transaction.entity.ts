@@ -26,7 +26,7 @@ export class SeedTransaction {
   @Column({ type: 'uuid', nullable: true, name: 'to_rayon_id' })
   toRayonId: string | null;
 
-  @Column({ type: 'uuid', nullable: true, name: 'to_area_id' })
+  @Column({ type: 'uuid', nullable: true, name: 'to_location_id' })
   toAreaId: string | null;
 
   @Column({ type: 'text', nullable: true, name: 'recipient_name' })

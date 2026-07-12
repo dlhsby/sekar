@@ -4,8 +4,8 @@ import { StatusCalculatorService, StatusInput } from './status-calculator.servic
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
-import { AreaStaffRequirement } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { Location } from '../../locations/entities/location.entity';
+import { LocationStaffRequirement } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { EventsGateway } from '../../../gateways/events.gateway';
 
 describe('StatusCalculatorService', () => {
@@ -73,8 +73,11 @@ describe('StatusCalculatorService', () => {
         StatusCalculatorService,
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
         { provide: getRepositoryToken(User), useValue: userRepository },
-        { provide: getRepositoryToken(Area), useValue: areaRepository },
-        { provide: getRepositoryToken(AreaStaffRequirement), useValue: staffRequirementRepository },
+        { provide: getRepositoryToken(Location), useValue: areaRepository },
+        {
+          provide: getRepositoryToken(LocationStaffRequirement),
+          useValue: staffRequirementRepository,
+        },
         { provide: MonitoringCacheService, useValue: cacheService },
         { provide: EventsGateway, useValue: eventsGateway },
       ],
@@ -258,7 +261,7 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({
           user_id: 'user-1',
           shift_id: 'shift-1',
-          area_id: 'area-1',
+          location_id: 'area-1',
           shift_definition_id: 'sd-1',
           status: TrackingStatus.ACTIVE,
           is_within_area: true,
@@ -328,7 +331,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         status: TrackingStatus.ACTIVE,
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
 
       await service.onClockOut('user-1');
@@ -349,7 +352,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: null,
+        location_id: null,
         status: TrackingStatus.INACTIVE,
         is_within_area: true,
         last_latitude: null,
@@ -385,12 +388,12 @@ describe('StatusCalculatorService', () => {
 
     it('should broadcast user-left-area via WebSocket when transitioning outside', async () => {
       const mockUser = { id: 'user-1', full_name: 'Test User', role: 'satgas' };
-      const mockArea = { id: 'area-1', name: 'Test Area', rayon_id: 'rayon-1' };
+      const mockArea = { id: 'area-1', name: 'Test Location', rayon_id: 'rayon-1' };
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_latitude: -7.29,
@@ -418,20 +421,20 @@ describe('StatusCalculatorService', () => {
       await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
 
       expect(eventsGateway.emitUserLeftArea).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: 'user-1', area_id: 'area-1' }),
+        expect.objectContaining({ user_id: 'user-1', location_id: 'area-1' }),
       );
     });
 
     it('stays within-area when outside primary but inside a task-based area (ADR-013 §5)', async () => {
       // Worker assigned to area-1 (primary) + area-2 (task_based).
-      (service as unknown as { userAreasService: unknown }).userAreasService = {
+      (service as unknown as { userLocationsService: unknown }).userLocationsService = {
         getEffectiveAreas: jest.fn().mockResolvedValue([{ id: 'area-1' }, { id: 'area-2' }]),
       };
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_latitude: -7.29,
@@ -443,9 +446,9 @@ describe('StatusCalculatorService', () => {
       });
 
       // area-1 excludes the ping; area-2 (the task area) contains it.
-      cacheService.getAreaBoundary.mockImplementation((areaId: string) =>
+      cacheService.getAreaBoundary.mockImplementation((locationId: string) =>
         Promise.resolve(
-          areaId === 'area-2'
+          locationId === 'area-2'
             ? [
                 [
                   [112.89, -7.49],
@@ -492,7 +495,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 20 * 60 * 1000), // 20 min ago
@@ -521,7 +524,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(), // just now
@@ -542,9 +545,9 @@ describe('StatusCalculatorService', () => {
           StatusCalculatorService,
           { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
           { provide: getRepositoryToken(User), useValue: userRepository },
-          { provide: getRepositoryToken(Area), useValue: areaRepository },
+          { provide: getRepositoryToken(Location), useValue: areaRepository },
           {
-            provide: getRepositoryToken(AreaStaffRequirement),
+            provide: getRepositoryToken(LocationStaffRequirement),
             useValue: staffRequirementRepository,
           },
           { provide: MonitoringCacheService, useValue: cacheService },
@@ -562,7 +565,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 2 * 3600 * 1000), // 2h ago → MISSING
@@ -585,7 +588,7 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({
           user_id: 'korlap-1',
           type: 'missing_worker_alert',
-          data: { worker_user_id: 'user-1', area_id: 'area-1' },
+          data: { worker_user_id: 'user-1', location_id: 'area-1' },
         }),
       );
     });
@@ -597,7 +600,7 @@ describe('StatusCalculatorService', () => {
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         status: TrackingStatus.MISSING, // already MISSING
         is_within_area: true,
         last_location_at: new Date(Date.now() - 2 * 3600 * 1000),
@@ -613,14 +616,14 @@ describe('StatusCalculatorService', () => {
       expect(userRepository.find).not.toHaveBeenCalled();
     });
 
-    it('is a no-op when areaId is null', async () => {
+    it('is a no-op when locationId is null', async () => {
       const sendToUser = jest.fn();
       const svc = await buildWithNotifications(sendToUser);
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         shift_id: 'shift-1',
-        area_id: null,
+        location_id: null,
         status: TrackingStatus.ACTIVE,
         is_within_area: true,
         last_location_at: new Date(Date.now() - 2 * 3600 * 1000),
@@ -649,9 +652,9 @@ describe('StatusCalculatorService', () => {
           StatusCalculatorService,
           { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepository },
           { provide: getRepositoryToken(User), useValue: userRepository },
-          { provide: getRepositoryToken(Area), useValue: areaRepository },
+          { provide: getRepositoryToken(Location), useValue: areaRepository },
           {
-            provide: getRepositoryToken(AreaStaffRequirement),
+            provide: getRepositoryToken(LocationStaffRequirement),
             useValue: staffRequirementRepository,
           },
           { provide: MonitoringCacheService, useValue: cacheService },

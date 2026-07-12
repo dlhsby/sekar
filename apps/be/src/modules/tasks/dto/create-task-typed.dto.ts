@@ -19,7 +19,7 @@ export class CreateTaskTypedDto extends CreateTaskDto {
 
   @ApiPropertyOptional({
     description: 'Type-specific custom fields validated against the task type schema',
-    example: { area_type: 'road', pruning_action: 'PM', source: 'TIW' },
+    example: { location_type: 'road', pruning_action: 'PM', source: 'TIW' },
   })
   @IsOptional()
   @IsObject()

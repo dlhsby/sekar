@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import JSZip from 'jszip';
 import * as xml2js from 'xml2js';
 import { v4 as uuidv4 } from 'uuid';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import {
   ParsedAreaDto,
   KmzUploadResponseDto,
@@ -29,8 +29,8 @@ export class ImportService {
   private readonly SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
   constructor(
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
   ) {}
 
   /**
@@ -184,15 +184,19 @@ export class ImportService {
           results.push({
             name: parsedArea.name,
             action: 'created',
-            area_id: area.id,
+            location_id: area.id,
           });
           created++;
-        } else if (selection.action === 'update' && parsedArea.existing_area_id) {
-          const area = await this.updateArea(parsedArea.existing_area_id, parsedArea, selection);
+        } else if (selection.action === 'update' && parsedArea.existing_location_id) {
+          const area = await this.updateArea(
+            parsedArea.existing_location_id,
+            parsedArea,
+            selection,
+          );
           results.push({
             name: parsedArea.name,
             action: 'updated',
-            area_id: area.id,
+            location_id: area.id,
           });
           updated++;
         } else {
@@ -325,7 +329,7 @@ export class ImportService {
   private parsePlacemark(placemark: any): ParsedAreaDto | null {
     if (!placemark) return null;
 
-    const name = placemark.name || 'Unnamed Area';
+    const name = placemark.name || 'Unnamed Location';
     const description = placemark.description || undefined;
 
     let center: { longitude: number; latitude: number } | null = null;
@@ -481,7 +485,7 @@ export class ImportService {
       const match = existingAreas.find((ea) => ea.name.toLowerCase() === area.name.toLowerCase());
 
       if (match) {
-        area.existing_area_id = match.id;
+        area.existing_location_id = match.id;
         area.match_status = 'update';
       } else {
         area.match_status = 'new';
@@ -492,13 +496,13 @@ export class ImportService {
   /**
    * Create new area from parsed data
    */
-  private async createArea(parsedArea: ParsedAreaDto, selection: any): Promise<Area> {
-    const area = new Area();
+  private async createArea(parsedArea: ParsedAreaDto, selection: any): Promise<Location> {
+    const area = new Location();
     area.name = selection.name_override || parsedArea.name;
     area.gps_lat = parsedArea.center.latitude;
     area.gps_lng = parsedArea.center.longitude;
     area.coverage_area = parsedArea.coverage_area;
-    area.area_type_id = selection.area_type_id;
+    area.location_type_id = selection.location_type_id;
     area.rayon_id = selection.rayon_id;
     area.radius_meters = 100; // Default radius
     area.is_active = true;
@@ -510,14 +514,14 @@ export class ImportService {
    * Update existing area with parsed data
    */
   private async updateArea(
-    areaId: string,
+    locationId: string,
     parsedArea: ParsedAreaDto,
     selection: any,
-  ): Promise<Area> {
-    const area = await this.areaRepository.findOne({ where: { id: areaId } });
+  ): Promise<Location> {
+    const area = await this.areaRepository.findOne({ where: { id: locationId } });
 
     if (!area) {
-      throw new NotFoundException(`Area with ID ${areaId} not found`);
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
     }
 
     // Update fields
@@ -532,8 +536,8 @@ export class ImportService {
       area.name = selection.name_override;
     }
 
-    if (selection.area_type_id) {
-      area.area_type_id = selection.area_type_id;
+    if (selection.location_type_id) {
+      area.location_type_id = selection.location_type_id;
     }
 
     if (selection.rayon_id) {

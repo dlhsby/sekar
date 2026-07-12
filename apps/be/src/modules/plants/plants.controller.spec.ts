@@ -3,9 +3,9 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { PlantsController } from './plants.controller';
 import { PlantsService } from './services/plants.service';
 import { PlantSpecies } from './entities/plant-species.entity';
-import { AreaPlant } from './entities/area-plant.entity';
+import { LocationPlant } from './entities/location-plant.entity';
 import { NotablePlant } from './entities/notable-plant.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { CreateNotablePlantDto } from './dto/create-notable-plant.dto';
 import { CreatePlantSpeciesDto } from './dto/create-plant-species.dto';
@@ -37,11 +37,11 @@ describe('PlantsController', () => {
     gps_lng: 112.75,
     radius_meters: 100,
     is_active: true,
-    area_type_id: '33333333-3333-3333-3333-333333333301',
+    location_type_id: '33333333-3333-3333-3333-333333333301',
     rayon_id: '44444444-4444-4444-4444-444444444401',
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
-  } as Area;
+  } as Location;
 
   const mockUser: Partial<User> = {
     id: 'user-id',
@@ -49,21 +49,21 @@ describe('PlantsController', () => {
     full_name: 'Test User',
     role: UserRole.KORLAP,
     rayon_id: '44444444-4444-4444-4444-444444444401',
-    area_id: '11111111-1111-1111-1111-111111111101',
+    location_id: '11111111-1111-1111-1111-111111111101',
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
   };
 
-  const mockAreaPlant: AreaPlant = {
+  const mockAreaPlant: LocationPlant = {
     id: '55555555-5555-5555-5555-555555555501',
-    areaId: '11111111-1111-1111-1111-111111111101',
+    locationId: '11111111-1111-1111-1111-111111111101',
     speciesId: '22222222-2222-2222-2222-222222222201',
     count: 10,
     lastPrunedAt: new Date('2026-03-01'),
     nextDueAt: new Date('2027-03-01'),
     status: 'ok',
     overrideCycleDays: null,
-    area: mockArea as Area,
+    area: mockArea as Location,
     species: mockSpecies,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
@@ -71,7 +71,7 @@ describe('PlantsController', () => {
 
   const mockNotablePlant: NotablePlant = {
     id: '66666666-6666-6666-6666-666666666601',
-    areaId: '11111111-1111-1111-1111-111111111101',
+    locationId: '11111111-1111-1111-1111-111111111101',
     speciesId: '22222222-2222-2222-2222-222222222201',
     gpsLat: -7.25,
     gpsLng: 112.75,
@@ -79,7 +79,7 @@ describe('PlantsController', () => {
     heritage: true,
     photoUrls: [],
     notes: 'Est. 1950',
-    area: mockArea as Area,
+    area: mockArea as Location,
     species: mockSpecies,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
@@ -211,7 +211,7 @@ describe('PlantsController', () => {
 
   describe('createNotablePlant', () => {
     const createDto: CreateNotablePlantDto = {
-      area_id: '11111111-1111-1111-1111-111111111101',
+      location_id: '11111111-1111-1111-1111-111111111101',
       species_id: '22222222-2222-2222-2222-222222222201',
       label: 'Heritage Trembesi',
       last_pruned_at: '2026-03-15T10:30:00+07:00',
@@ -227,10 +227,10 @@ describe('PlantsController', () => {
       expect(plantsService.createNotablePlant).toHaveBeenCalledWith(createDto, mockUser);
     });
 
-    it('should throw BadRequestException if path ID does not match body area_id', async () => {
+    it('should throw BadRequestException if path ID does not match body location_id', async () => {
       const dtoWithDifferentAreaId = {
         ...createDto,
-        area_id: '99999999-9999-9999-9999-999999999999',
+        location_id: '99999999-9999-9999-9999-999999999999',
       };
 
       await expect(

@@ -204,7 +204,7 @@ async function loadCsv(
 
 /**
  * Resolve rayon name → rayon_id. Falls back to NULL when no exact match;
- * the activity is still importable (area_id is nullable for kecamatan-
+ * the activity is still importable (location_id is nullable for kecamatan-
  * driven pruning, per ADR-035 amendment).
  */
 async function buildRayonNameIndex(): Promise<Map<string, string>> {
@@ -331,7 +331,7 @@ async function importOne(
   await AppDataSource.transaction(async (manager) => {
     const result = await manager.query(
       `INSERT INTO activities (
-         user_id, shift_id, area_id, activity_type_id, description,
+         user_id, shift_id, location_id, activity_type_id, description,
          photo_urls, gps_lat, gps_lng, reference_code, case_type,
          custom_fields, photo_before_url, photo_after_url,
          created_at, updated_at

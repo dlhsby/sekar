@@ -45,10 +45,10 @@ class TrendMetrics {
 }
 
 class AlertItem {
-  @ApiProperty({ description: 'Area ID', example: 'area-123' })
-  areaId: string;
+  @ApiProperty({ description: 'Location ID', example: 'area-123' })
+  locationId: string;
 
-  @ApiProperty({ description: 'Area name', example: 'Taman Utara' })
+  @ApiProperty({ description: 'Location name', example: 'Taman Utara' })
   areaName: string;
 
   @ApiProperty({ description: 'Staffing deficit count', example: 2 })

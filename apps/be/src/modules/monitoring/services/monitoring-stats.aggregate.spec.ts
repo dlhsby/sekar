@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringStatsService } from './monitoring-stats.service';
 import { DayTypeService } from './day-type.service';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
@@ -11,12 +11,12 @@ import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
-  AreaStaffRequirement,
+  LocationStaffRequirement,
   DayType,
-} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+} from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
 import { Schedule } from '../../schedules/entities/schedule.entity';
-import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
+import { ScheduleLocation } from '../../schedules/entities/schedule-location.entity';
 
 /**
  * Focused unit tests for MonitoringStatsService.getAggregate — the lightweight
@@ -57,17 +57,17 @@ describe('MonitoringStatsService.getAggregate', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringStatsService,
-        { provide: getRepositoryToken(Area), useValue: areaRepo },
+        { provide: getRepositoryToken(Location), useValue: areaRepo },
         { provide: getRepositoryToken(Shift), useValue: {} },
         { provide: getRepositoryToken(Task), useValue: {} },
         { provide: getRepositoryToken(Activity), useValue: {} },
         { provide: getRepositoryToken(LocationLog), useValue: {} },
         { provide: getRepositoryToken(Rayon), useValue: rayonRepo },
         { provide: getRepositoryToken(ShiftDefinition), useValue: {} },
-        { provide: getRepositoryToken(AreaStaffRequirement), useValue: staffRepo },
+        { provide: getRepositoryToken(LocationStaffRequirement), useValue: staffRepo },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepo },
         { provide: getRepositoryToken(Schedule), useValue: scheduleRepo },
-        { provide: getRepositoryToken(ScheduleArea), useValue: scheduleAreaRepo },
+        { provide: getRepositoryToken(ScheduleLocation), useValue: scheduleAreaRepo },
         {
           provide: DayTypeService,
           useValue: {

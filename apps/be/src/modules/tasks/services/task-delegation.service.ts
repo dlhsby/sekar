@@ -10,7 +10,7 @@ import { AuditLogService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { TaskFinderService } from './task-finder.service';
-import { TaskAreaSyncService } from './task-area-sync.service';
+import { TaskLocationSyncService } from './task-location-sync.service';
 import { assertValidAssignee, assertAssignmentHierarchy } from '../task.policies';
 
 export interface DelegationHop {
@@ -40,7 +40,7 @@ export class TaskDelegationService {
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-    private readonly taskAreaSync: TaskAreaSyncService,
+    private readonly taskAreaSync: TaskLocationSyncService,
   ) {}
 
   /** Assign (or re-assign / delegate) a task to a user. */

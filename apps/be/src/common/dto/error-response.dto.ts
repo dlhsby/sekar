@@ -168,8 +168,8 @@ export class ErrorExamples {
         constraints: ['gps_lat must be a latitude string or number'],
       },
       {
-        field: 'area_id',
-        constraints: ['area_id must be a UUID'],
+        field: 'location_id',
+        constraints: ['location_id must be a UUID'],
       },
     ],
   };

@@ -16,7 +16,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * TABLE ALTERATIONS:
  * 1. users - Add rayon_id, update role enum (6 roles)
  * 2. areas - Add rayon_id, boundary_polygon, coverage_area
- * 3. area_types - Add category column (ACTIVE/PASSIVE)
+ * 3. location_types - Add category column (ACTIVE/PASSIVE)
  * 4. work_reports - Add task_id, activity_type_id
  *
  * Related: specs/database/schema.md (Phase 2 section)
@@ -105,17 +105,17 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
     `);
 
     // ==========================================
-    // STEP 5: Alter area_types table - Add category
+    // STEP 5: Alter location_types table - Add category
     // ==========================================
-    console.log('Adding category column to area_types...');
+    console.log('Adding category column to location_types...');
     await queryRunner.query(`
-      ALTER TABLE area_types
+      ALTER TABLE location_types
       ADD COLUMN category VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
     `);
 
     await queryRunner.query(`
-      ALTER TABLE area_types
-      ADD CONSTRAINT chk_area_types_category CHECK (
+      ALTER TABLE location_types
+      ADD CONSTRAINT chk_location_types_category CHECK (
         category IN ('ACTIVE', 'PASSIVE')
       );
     `);
@@ -181,7 +181,7 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE area_staff_requirements (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        area_id UUID NOT NULL,
+        location_id UUID NOT NULL,
         shift_definition_id UUID NOT NULL,
         role VARCHAR(30) NOT NULL,
         required_count INTEGER NOT NULL DEFAULT 1,
@@ -190,11 +190,11 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         deleted_at TIMESTAMPTZ,
         CONSTRAINT FK_area_staff_requirements_area
-          FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE,
+          FOREIGN KEY (location_id) REFERENCES areas(id) ON DELETE CASCADE,
         CONSTRAINT FK_area_staff_requirements_shift
           FOREIGN KEY (shift_definition_id) REFERENCES shift_definitions(id) ON DELETE CASCADE,
         CONSTRAINT uq_area_staff_requirements
-          UNIQUE (area_id, shift_definition_id, role, day_type),
+          UNIQUE (location_id, shift_definition_id, role, day_type),
         CONSTRAINT chk_area_staff_requirements_role CHECK (
           role IN ('worker', 'linmas')
         ),
@@ -215,7 +215,7 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
       CREATE TABLE worker_schedules (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id UUID NOT NULL,
-        area_id UUID NOT NULL,
+        location_id UUID NOT NULL,
         shift_definition_id UUID NOT NULL,
         effective_date DATE NOT NULL,
         end_date DATE,
@@ -226,7 +226,7 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
         CONSTRAINT FK_worker_schedules_user
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
         CONSTRAINT FK_worker_schedules_area
-          FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE,
+          FOREIGN KEY (location_id) REFERENCES areas(id) ON DELETE CASCADE,
         CONSTRAINT FK_worker_schedules_shift
           FOREIGN KEY (shift_definition_id) REFERENCES shift_definitions(id) ON DELETE CASCADE,
         CONSTRAINT FK_worker_schedules_created_by
@@ -254,7 +254,7 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
 
     await queryRunner.query(`
       CREATE INDEX idx_worker_schedules_area
-      ON worker_schedules(area_id)
+      ON worker_schedules(location_id)
       WHERE deleted_at IS NULL;
     `);
 
@@ -320,7 +320,7 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
     console.log('Summary:');
     console.log('  - Created 6 new tables: rayons, shift_definitions, activity_types,');
     console.log('    area_staff_requirements, worker_schedules, special_day_overrides');
-    console.log('  - Updated 4 existing tables: users, areas, area_types, work_reports');
+    console.log('  - Updated 4 existing tables: users, areas, location_types, work_reports');
     console.log('  - Created 12 new indexes for performance optimization');
     console.log('');
     console.log('⚠️  IMPORTANT: Run seed data after migration:');
@@ -379,12 +379,12 @@ export class Phase2DatabaseSchema1737720000000 implements MigrationInterface {
     await queryRunner.query(`ALTER TABLE users ALTER COLUMN role TYPE VARCHAR(20);`);
 
     // ==========================================
-    // Revert area_types alterations
+    // Revert location_types alterations
     // ==========================================
     await queryRunner.query(
-      `ALTER TABLE area_types DROP CONSTRAINT IF EXISTS chk_area_types_category;`,
+      `ALTER TABLE location_types DROP CONSTRAINT IF EXISTS chk_location_types_category;`,
     );
-    await queryRunner.query(`ALTER TABLE area_types DROP COLUMN IF EXISTS category;`);
+    await queryRunner.query(`ALTER TABLE location_types DROP COLUMN IF EXISTS category;`);
 
     // ==========================================
     // Drop special_day_overrides table

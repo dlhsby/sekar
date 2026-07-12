@@ -43,7 +43,7 @@ describe('TaskTypeRegistry', () => {
     it('accepts a valid pruning payload', () => {
       expect(() =>
         registry.validate('pruning', {
-          area_type: 'road',
+          location_type: 'road',
           pruning_action: 'PM',
           source: 'TIW',
           target_species: [{ species_id: '3b9f8e8e-5c2f-4a3b-9d2e-7f1a8b6c4d5e', count: 2 }],
@@ -55,7 +55,7 @@ describe('TaskTypeRegistry', () => {
     it('rejects pruning with bad enum', () => {
       expect(() =>
         registry.validate('pruning', {
-          area_type: 'highway',
+          location_type: 'highway',
           pruning_action: 'PM',
           source: 'TIW',
         }),
@@ -65,7 +65,7 @@ describe('TaskTypeRegistry', () => {
     it('rejects pruning with bad species uuid', () => {
       expect(() =>
         registry.validate('pruning', {
-          area_type: 'park',
+          location_type: 'park',
           pruning_action: 'PB',
           source: 'TS',
           target_species: [{ species_id: 'not-a-uuid', count: 1 }],
@@ -76,7 +76,7 @@ describe('TaskTypeRegistry', () => {
     it('rejects pruning with non-positive count', () => {
       expect(() =>
         registry.validate('pruning', {
-          area_type: 'median',
+          location_type: 'median',
           pruning_action: 'PC',
           source: 'CC',
           target_species: [{ species_id: '3b9f8e8e-5c2f-4a3b-9d2e-7f1a8b6c4d5e', count: 0 }],
@@ -92,8 +92,8 @@ describe('TaskTypeRegistry', () => {
       expect(() => registry.validate('planting', { planting_type: 'mystery' })).toThrow(ZodError);
     });
 
-    it('accepts a valid cleaning payload with optional area_type', () => {
-      expect(() => registry.validate('cleaning', { area_type: 'drainage' })).not.toThrow();
+    it('accepts a valid cleaning payload with optional location_type', () => {
+      expect(() => registry.validate('cleaning', { location_type: 'drainage' })).not.toThrow();
       expect(() => registry.validate('cleaning', {})).not.toThrow();
     });
 

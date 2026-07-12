@@ -11,10 +11,10 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
   ctx.log('🕐 Seeding shifts for Phase 2C role users...');
 
   const shiftLinmas = await ctx.qr.query(
-    `SELECT id, area_id FROM users WHERE username = 'linmas_pusat_1' LIMIT 1`,
+    `SELECT id, location_id FROM users WHERE username = 'linmas_pusat_1' LIMIT 1`,
   );
   const shiftKorlap1 = await ctx.qr.query(
-    `SELECT id, area_id FROM users WHERE username = 'korlap_pusat_1' LIMIT 1`,
+    `SELECT id, location_id FROM users WHERE username = 'korlap_pusat_1' LIMIT 1`,
   );
   const shiftAdminData = await ctx.qr.query(
     `SELECT id FROM users WHERE username = 'admin_data_pusat_1' LIMIT 1`,
@@ -25,7 +25,7 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
   const shiftArea = await ctx.qr.query(`SELECT id FROM areas LIMIT 1`);
 
   if (shiftArea.length > 0) {
-    const areaId = shiftArea[0].id;
+    const locationId = shiftArea[0].id;
     let shiftCount = 0;
 
     // Phase 3 fix: only seed COMPLETED shifts for korlap/linmas Phase 2C
@@ -37,9 +37,9 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
     // populate the tracking row correctly.
     if (shiftLinmas.length > 0) {
       const linmasId = shiftLinmas[0].id;
-      const linmasAreaId = shiftLinmas[0].area_id || areaId;
+      const linmasAreaId = shiftLinmas[0].location_id || locationId;
       await ctx.qr.query(`
-        INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+        INSERT INTO shifts (user_id, location_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
           clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
         VALUES
           ('${linmasId}', '${linmasAreaId}', NOW() - INTERVAL '1 day 8 hours', -7.2905, 112.7398,
@@ -54,9 +54,9 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
 
     if (shiftKorlap1.length > 0) {
       const korlap1Id = shiftKorlap1[0].id;
-      const korlap1AreaId = shiftKorlap1[0].area_id || areaId;
+      const korlap1AreaId = shiftKorlap1[0].location_id || locationId;
       await ctx.qr.query(`
-        INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+        INSERT INTO shifts (user_id, location_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
           clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
         VALUES
           ('${korlap1Id}', '${korlap1AreaId}', NOW() - INTERVAL '1 day 8 hours', -7.2905, 112.7398,
@@ -72,10 +72,10 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
     if (shiftAdminData.length > 0) {
       const adminDataId = shiftAdminData[0].id;
       await ctx.qr.query(`
-        INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+        INSERT INTO shifts (user_id, location_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
           clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
         VALUES
-          ('${adminDataId}', '${areaId}', NOW() - INTERVAL '3 days 8 hours', -7.2905, 112.7398,
+          ('${adminDataId}', '${locationId}', NOW() - INTERVAL '3 days 8 hours', -7.2905, 112.7398,
             'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/admin-data1-001.jpg',
             NOW() - INTERVAL '3 days', -7.2906, 112.7399, NOW() - INTERVAL '3 days 8 hours', NOW() - INTERVAL '3 days')
       `);
@@ -86,10 +86,10 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
     if (shiftKepalaRayon.length > 0) {
       const kepalaId = shiftKepalaRayon[0].id;
       await ctx.qr.query(`
-        INSERT INTO shifts (user_id, area_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
+        INSERT INTO shifts (user_id, location_id, clock_in_time, clock_in_gps_lat, clock_in_gps_lng,
           clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
         VALUES
-          ('${kepalaId}', '${areaId}', NOW() - INTERVAL '2 days 8 hours', -7.2905, 112.7398,
+          ('${kepalaId}', '${locationId}', NOW() - INTERVAL '2 days 8 hours', -7.2905, 112.7398,
             'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/kepala-rayon-001.jpg',
             NOW() - INTERVAL '2 days', -7.2906, 112.7399, NOW() - INTERVAL '2 days 8 hours', NOW() - INTERVAL '2 days')
       `);
@@ -105,14 +105,14 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
     // and the scrollable list all have meaningful data to display.
     await ctx.qr.query(`
       INSERT INTO shifts (
-        user_id, area_id,
+        user_id, location_id,
         clock_in_time, clock_in_gps_lat, clock_in_gps_lng, clock_in_photo_url,
         clock_out_time, clock_out_gps_lat, clock_out_gps_lng,
         created_at, updated_at
       )
       SELECT
         u.id,
-        u.area_id,
+        u.location_id,
         t.cin,
         -7.2905, 112.7398,
         'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/satgas_pusat1-dummy.jpg',

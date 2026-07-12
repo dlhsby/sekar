@@ -24,7 +24,7 @@ export class Phase5AssetsTables17490000000000 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS "assets" (
         "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
         "category_id" uuid NOT NULL REFERENCES "asset_categories"("id"),
-        "area_id" uuid REFERENCES "areas"("id") ON DELETE SET NULL,
+        "location_id" uuid REFERENCES "areas"("id") ON DELETE SET NULL,
         "rayon_id" uuid REFERENCES "rayons"("id") ON DELETE SET NULL,
         "name" varchar(200) NOT NULL,
         "asset_code" varchar(50) NOT NULL UNIQUE,
@@ -46,7 +46,7 @@ export class Phase5AssetsTables17490000000000 implements MigrationInterface {
     // Create indexes on assets
     await queryRunner.query(`CREATE INDEX IF NOT EXISTS "idx_assets_status" ON "assets"("status")`);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "idx_assets_area_id" ON "assets"("area_id")`,
+      `CREATE INDEX IF NOT EXISTS "idx_assets_location_id" ON "assets"("location_id")`,
     );
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS "idx_assets_rayon_id" ON "assets"("rayon_id")`,

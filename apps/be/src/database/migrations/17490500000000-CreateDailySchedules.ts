@@ -5,7 +5,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * into one editable row per worker per WIB day.
  *
  * `daily_schedules` holds the day's plan + status (planned/absent/leave/replaced/
- * off); `daily_schedule_areas` holds the 0..N areas for that day (join table, so
+ * off); `daily_schedule_locations` holds the 0..N areas for that day (join table, so
  * monitoring/clock-in can join the area entities the geofence code expects).
  * A nightly cron generates tomorrow's rows from each user's template; admins
  * then edit them (leave / replacement / extra area / shift). Monitoring reads
@@ -67,30 +67,30 @@ export class CreateDailySchedules17490500000000 implements MigrationInterface {
     );
 
     await queryRunner.query(`
-      CREATE TABLE IF NOT EXISTS "daily_schedule_areas" (
+      CREATE TABLE IF NOT EXISTS "daily_schedule_locations" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "daily_schedule_id" uuid NOT NULL,
-        "area_id" uuid NOT NULL,
+        "location_id" uuid NOT NULL,
         "assigned_by" uuid,
         "assigned_at" timestamptz NOT NULL DEFAULT now(),
-        CONSTRAINT "PK_daily_schedule_areas" PRIMARY KEY ("id"),
-        CONSTRAINT "FK_daily_schedule_areas_schedule" FOREIGN KEY ("daily_schedule_id")
+        CONSTRAINT "PK_daily_schedule_locations" PRIMARY KEY ("id"),
+        CONSTRAINT "FK_daily_schedule_locations_schedule" FOREIGN KEY ("daily_schedule_id")
           REFERENCES "daily_schedules"("id") ON DELETE CASCADE,
-        CONSTRAINT "FK_daily_schedule_areas_area" FOREIGN KEY ("area_id")
+        CONSTRAINT "FK_daily_schedule_locations_area" FOREIGN KEY ("location_id")
           REFERENCES "areas"("id") ON DELETE CASCADE
       )
     `);
     await queryRunner.query(`
-      CREATE UNIQUE INDEX IF NOT EXISTS "UQ_daily_schedule_areas"
-        ON "daily_schedule_areas" ("daily_schedule_id", "area_id")
+      CREATE UNIQUE INDEX IF NOT EXISTS "UQ_daily_schedule_locations"
+        ON "daily_schedule_locations" ("daily_schedule_id", "location_id")
     `);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS "IDX_daily_schedule_areas_area" ON "daily_schedule_areas" ("area_id")`,
+      `CREATE INDEX IF NOT EXISTS "IDX_daily_schedule_locations_area" ON "daily_schedule_locations" ("location_id")`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TABLE IF EXISTS "daily_schedule_areas"`);
+    await queryRunner.query(`DROP TABLE IF EXISTS "daily_schedule_locations"`);
     await queryRunner.query(`DROP TABLE IF EXISTS "daily_schedules"`);
   }
 }

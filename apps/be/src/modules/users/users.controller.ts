@@ -40,9 +40,9 @@ import { UserRole } from './entities/user.entity';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { normalizePhone, isValidIndonesianMobile } from '../../common/utils/phone.util';
 import { User } from './entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { USER_MANAGERS } from './constants/role-groups';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../user-locations/user-locations.service';
 import { UserValidationService } from './services/user-validation.service';
 
 /**
@@ -60,7 +60,7 @@ import { UserValidationService } from './services/user-validation.service';
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly userAreasService: UserAreasService,
+    private readonly userLocationsService: UserLocationsService,
     private readonly userValidationService: UserValidationService,
   ) {}
 
@@ -76,7 +76,7 @@ export class UsersController {
   @ApiOperation({ summary: "Get the authenticated user's assigned areas" })
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
   getMyAreas(@GetUser() user: User) {
-    return this.userAreasService.getEffectiveAreas(user.id);
+    return this.userLocationsService.getEffectiveAreas(user.id);
   }
 
   /**
@@ -258,7 +258,7 @@ export class UsersController {
    * @route GET /api/users/:id
    * Get a specific user's permanent assigned areas.
    *
-   * Backs the user-management grid's Area column (summary count + slide-over
+   * Backs the user-management grid's Location column (summary count + slide-over
    * list) and the `useUserAreas` hook. Manager/supervisor access mirrors
    * `GET /users/:id`. Declared before `@Get(':id')` so the sub-path wins.
    *
@@ -269,11 +269,11 @@ export class UsersController {
   @ApiOperation({ summary: "Get a user's permanent assigned areas" })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
-  async getUserAreas(@Param('id') id: string): Promise<Area[]> {
-    const userAreas = await this.userAreasService.getPermanentAreas(id);
+  async getUserAreas(@Param('id') id: string): Promise<Location[]> {
+    const userAreas = await this.userLocationsService.getPermanentAreas(id);
     return userAreas
-      .map((ua) => ua.area)
-      .filter((a): a is Area => Boolean(a))
+      .map((ua) => ua.location)
+      .filter((a): a is Location => Boolean(a))
       .sort((a, b) => a.name.localeCompare(b.name));
   }
 

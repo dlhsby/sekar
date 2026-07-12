@@ -1,17 +1,17 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
 import { truncateAll } from '../lib/truncate';
-import { seedAreaTypes } from '../entities/area-type';
+import { seedAreaTypes } from '../entities/location-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
-import { seedAreas } from '../entities/area';
+import { seedAreas } from '../entities/location';
 import { seedSpecialDayOverrides } from '../entities/special-day';
-import { seedAreaStaffRequirements } from '../entities/area-staff-requirement';
+import { seedAreaStaffRequirements } from '../entities/location-staff-requirement';
 import { seedKecamatans } from '../entities/kecamatan';
 import { seedUsers } from '../entities/user';
 import { seedMonitoringConfigs } from '../entities/monitoring-config';
 import { seedUserTrackingStatus } from '../entities/user-tracking-status';
-import { seedUserAreas } from '../entities/user-area';
+import { seedUserAreas } from '../entities/user-location';
 import { seedSchedules } from '../entities/schedule';
 import { seedPlantSpecies } from '../entities/plant-species';
 import { seedServiceCapacity } from '../entities/service-capacity';
@@ -30,7 +30,7 @@ import { seedServiceCapacity } from '../entities/service-capacity';
  *   - user_areas 717 (280 from CSV + 27 multi-area + korlap rayons)
  *   - user_tracking_status 1028
  *   - schedules 1075 (daily roster materialized, one per active user)
- *   - schedule_areas 692 (today's area assignments from user_areas)
+ *   - schedule_locations 692 (today's area assignments from user_areas)
  *   - plant_species 128
  *   - service_capacity 96
  *   - All others per spec

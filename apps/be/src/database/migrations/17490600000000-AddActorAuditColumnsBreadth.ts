@@ -17,7 +17,7 @@ export class AddActorAuditColumnsBreadth17490600000000 implements MigrationInter
     'activities',
     'shifts',
     'shift_definitions',
-    'area_types',
+    'location_types',
     'area_staff_requirements',
     'tasks',
     'kecamatans',

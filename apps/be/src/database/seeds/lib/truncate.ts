@@ -20,7 +20,7 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'area_plants',
   'plant_species',
   // Daily roster.
-  'schedule_areas',
+  'schedule_locations',
   'schedules',
   // Core transactional + assignment tables.
   'user_areas',
@@ -38,7 +38,7 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'shifts',
   'shift_definitions',
   'areas',
-  'area_types',
+  'location_types',
   'activity_types',
   'kecamatans',
   'rayons',

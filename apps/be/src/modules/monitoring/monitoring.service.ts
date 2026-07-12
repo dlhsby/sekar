@@ -2,14 +2,14 @@ import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
-import { AreaStaffRequirement } from '../area-staff-requirements/entities/area-staff-requirement.entity';
-import { DayType } from '../area-staff-requirements/entities/area-staff-requirement.entity';
+import { LocationStaffRequirement } from '../location-staff-requirements/entities/location-staff-requirement.entity';
+import { DayType } from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { CityStatsDto } from './dto/city-stats.dto';
 import { RayonStatsDto } from './dto/rayon-stats.dto';
-import { AreaStatsDto } from './dto/area-stats.dto';
+import { LocationStatsDto } from './dto/location-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryResponseDto } from './dto/location-history.dto';
 import { UserDaySummaryDto } from './dto/user-day-summary.dto';
@@ -32,7 +32,7 @@ export interface SnapshotWorker {
   lat: number;
   lng: number;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -44,7 +44,7 @@ export interface SnapshotWorker {
 }
 
 export interface SnapshotAreaSummary {
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string;
   rayon_name: string;
@@ -77,10 +77,10 @@ export class MonitoringService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
-    @InjectRepository(AreaStaffRequirement)
-    private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
+    @InjectRepository(LocationStaffRequirement)
+    private readonly staffRequirementRepository: Repository<LocationStaffRequirement>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     private readonly statsService: MonitoringStatsService,
@@ -100,8 +100,8 @@ export class MonitoringService {
     return this.statsService.getRayonStats(rayonId);
   }
 
-  async getAreaStats(areaId: string): Promise<AreaStatsDto> {
-    return this.statsService.getAreaStats(areaId);
+  async getLocationStats(locationId: string): Promise<LocationStatsDto> {
+    return this.statsService.getLocationStats(locationId);
   }
 
   // ---- Delegated to MonitoringUserService ----
@@ -138,7 +138,7 @@ export class MonitoringService {
    * Contract matches apps/web/src/lib/api/monitoring-v2.ts.
    */
   async getSnapshot(
-    scope: 'city' | 'rayon' | 'area',
+    scope: 'city' | 'rayon' | 'location',
     id?: string,
   ): Promise<{
     success: boolean;
@@ -152,12 +152,12 @@ export class MonitoringService {
   }
 
   private async computeSnapshot(
-    scope: 'city' | 'rayon' | 'area',
+    scope: 'city' | 'rayon' | 'location',
     id?: string,
   ): Promise<{ success: boolean; data: SnapshotData }> {
     const filters: LiveUsersFilterDto = {};
     if (scope === 'rayon' && id) filters.rayon_id = id;
-    if (scope === 'area' && id) filters.area_id = id;
+    if (scope === 'location' && id) filters.location_id = id;
 
     const result = await this.userService.getLiveUsers(filters);
     const currentShift = await this.statsService.getCurrentShiftDefinition();
@@ -175,7 +175,7 @@ export class MonitoringService {
       lat: u.latitude,
       lng: u.longitude,
       status: u.status,
-      area_id: u.area_id,
+      location_id: u.location_id,
       area_name: u.area_name,
       rayon_id: u.rayon_id,
       rayon_name: u.rayon_name,
@@ -214,7 +214,7 @@ export class MonitoringService {
 
   /**
    * Build area_summaries by grouping workers by area and computing staffing.
-   * For each distinct area: count active workers, get required_count from AreaStaffRequirement
+   * For each distinct area: count active workers, get required_count from LocationStaffRequirement
    * for current shift + day type, compute is_understaffed.
    */
   private async buildAreaSummaries(
@@ -222,22 +222,22 @@ export class MonitoringService {
     currentShift: ShiftDefinition | null,
     currentDayType: DayType,
   ): Promise<SnapshotAreaSummary[]> {
-    // Group workers by area_id; track distinct areas with (id, name, rayon_id, rayon_name)
+    // Group workers by location_id; track distinct areas with (id, name, rayon_id, rayon_name)
     const areaMap = new Map<
       string,
       { name: string; rayon_id: string; rayon_name: string; activeCount: number }
     >();
 
     for (const w of workers) {
-      if (!w.area_id) continue; // Skip workers without area assignment
+      if (!w.location_id) continue; // Skip workers without area assignment
 
-      const existing = areaMap.get(w.area_id);
+      const existing = areaMap.get(w.location_id);
       const activeCount = w.status === TrackingStatus.ACTIVE ? 1 : 0;
 
       if (existing) {
         existing.activeCount += activeCount;
       } else {
-        areaMap.set(w.area_id, {
+        areaMap.set(w.location_id, {
           name: w.area_name ?? 'Unknown',
           rayon_id: w.rayon_id ?? '',
           rayon_name: w.rayon_name ?? 'Unknown',
@@ -249,7 +249,7 @@ export class MonitoringService {
     // For each area, fetch required_count and build summary
     const summaries: SnapshotAreaSummary[] = [];
 
-    for (const [areaId, areaData] of areaMap.entries()) {
+    for (const [locationId, areaData] of areaMap.entries()) {
       // Query required_count for this area + current shift + current day type
       // If no current shift, required_count defaults to 0 (understaffed = activeCount < 0 = false)
       let requiredCount = 0;
@@ -257,7 +257,7 @@ export class MonitoringService {
       if (currentShift) {
         const req = await this.staffRequirementRepository.findOne({
           where: {
-            area_id: areaId,
+            location_id: locationId,
             shift_definition_id: currentShift.id,
             day_type: currentDayType,
           },
@@ -266,7 +266,7 @@ export class MonitoringService {
       }
 
       summaries.push({
-        area_id: areaId,
+        location_id: locationId,
         area_name: areaData.name,
         rayon_id: areaData.rayon_id,
         rayon_name: areaData.rayon_name,
@@ -283,7 +283,7 @@ export class MonitoringService {
 
   async getStaffingSummary(filters: {
     rayon_id?: string;
-    area_id?: string;
+    location_id?: string;
   }): Promise<StaffingSummaryResponseDto> {
     const areas = await this.resolveAreas(filters);
     const currentShift = await this.statsService.getCurrentShiftDefinition();
@@ -305,10 +305,13 @@ export class MonitoringService {
 
   // ---- Private helpers ----
 
-  private async resolveAreas(filters: { rayon_id?: string; area_id?: string }): Promise<Area[]> {
-    if (filters.area_id) {
+  private async resolveAreas(filters: {
+    rayon_id?: string;
+    location_id?: string;
+  }): Promise<Location[]> {
+    if (filters.location_id) {
       const area = await this.areaRepository.findOne({
-        where: { id: filters.area_id, is_active: true },
+        where: { id: filters.location_id, is_active: true },
       });
       return area ? [area] : [];
     }
@@ -320,7 +323,7 @@ export class MonitoringService {
   }
 
   private async buildStaffingItem(
-    area: Area,
+    area: Location,
     currentShift: ShiftDefinition | null,
     currentDayType: DayType,
   ): Promise<StaffingSummaryItemDto> {
@@ -329,7 +332,7 @@ export class MonitoringService {
     const requirements = currentShift
       ? await this.staffRequirementRepository.find({
           where: {
-            area_id: area.id,
+            location_id: area.id,
             shift_definition_id: currentShift.id,
             day_type: currentDayType,
           },
@@ -338,7 +341,7 @@ export class MonitoringService {
 
     const allRequirements = currentShift
       ? await this.staffRequirementRepository.find({
-          where: { area_id: area.id, shift_definition_id: currentShift.id },
+          where: { location_id: area.id, shift_definition_id: currentShift.id },
         })
       : [];
 
@@ -367,7 +370,7 @@ export class MonitoringService {
   }
 
   private buildRequirementsByDayType(
-    allRequirements: AreaStaffRequirement[],
+    allRequirements: LocationStaffRequirement[],
   ): Map<string, DayTypeRequirementsDto> {
     const map = new Map<string, DayTypeRequirementsDto>();
 
@@ -393,7 +396,7 @@ export class MonitoringService {
   }
 
   private async getTrackingRoleCounts(
-    areaId: string,
+    locationId: string,
   ): Promise<Map<string, Record<string, number>>> {
     const rows = await this.trackingRepository
       .createQueryBuilder('uts')
@@ -401,7 +404,7 @@ export class MonitoringService {
       .select('user.role', 'role')
       .addSelect('uts.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .where('uts.area_id = :areaId', { areaId })
+      .where('uts.location_id = :locationId', { locationId })
       .groupBy('user.role')
       .addGroupBy('uts.status')
       .getRawMany();
@@ -415,12 +418,12 @@ export class MonitoringService {
     return map;
   }
 
-  private async getAssignedRoleCounts(areaId: string): Promise<Map<string, number>> {
+  private async getAssignedRoleCounts(locationId: string): Promise<Map<string, number>> {
     const rows = await this.userRepository
       .createQueryBuilder('user')
       .select('user.role', 'role')
       .addSelect('COUNT(*)', 'count')
-      .where('user.area_id = :areaId', { areaId })
+      .where('user.location_id = :locationId', { locationId })
       .andWhere('user.deleted_at IS NULL')
       .groupBy('user.role')
       .getRawMany();

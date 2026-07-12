@@ -21,13 +21,13 @@ export class Phase2EClientFeedback1741200000000 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS user_areas (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+        location_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
         assignment_type VARCHAR(20) NOT NULL DEFAULT 'permanent',
         assigned_at TIMESTAMPTZ DEFAULT NOW(),
         assigned_by UUID REFERENCES users(id) ON DELETE SET NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        CONSTRAINT uq_user_area UNIQUE (user_id, area_id, assignment_type),
+        CONSTRAINT uq_user_area UNIQUE (user_id, location_id, assignment_type),
         CONSTRAINT chk_user_areas_assignment_type CHECK (assignment_type IN ('permanent', 'task_based'))
       )
     `);
@@ -35,7 +35,7 @@ export class Phase2EClientFeedback1741200000000 implements MigrationInterface {
       CREATE INDEX IF NOT EXISTS idx_user_areas_user_type ON user_areas (user_id, assignment_type)
     `);
     await queryRunner.query(`
-      CREATE INDEX IF NOT EXISTS idx_user_areas_area ON user_areas (area_id)
+      CREATE INDEX IF NOT EXISTS idx_user_areas_area ON user_areas (location_id)
     `);
 
     // 3. Alter shifts table

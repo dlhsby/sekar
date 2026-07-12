@@ -4,9 +4,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
 import {
-  AreaPlantStatusService,
+  LocationPlantStatusService,
   RayonPlantStatusSummary,
-} from '../services/area-plant-status.service';
+} from '../services/location-plant-status.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
@@ -15,7 +15,7 @@ import { RedisService } from '../../../common/services/redis.service';
  * Plant-overdue digest cron (Phase 3-8 close-out).
  *
  * Daily at 08:00 WIB: aggregates areas with overdue plant maintenance via
- * AreaPlantStatusService.getSummary() and pushes one AREA_PLANT_OVERDUE
+ * LocationPlantStatusService.getSummary() and pushes one AREA_PLANT_OVERDUE
  * digest per recipient:
  *  - top_management: city-wide digest (every rayon with overdue species)
  *  - kepala_rayon:   own-rayon digest only
@@ -31,7 +31,7 @@ export class PlantOverdueDigestCron {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly areaPlantStatusService: AreaPlantStatusService,
+    private readonly locationPlantStatusService: LocationPlantStatusService,
     private readonly notificationsService: NotificationsService,
     private readonly redisService: RedisService,
   ) {}
@@ -50,7 +50,7 @@ export class PlantOverdueDigestCron {
     const jakarta = new Date(now.getTime() + PlantOverdueDigestCron.JAKARTA_OFFSET_MS);
     const dateStr = jakarta.toISOString().slice(0, 10);
 
-    const summary = await this.areaPlantStatusService.getSummary();
+    const summary = await this.locationPlantStatusService.getSummary();
     const overdueRayons = summary.rayons.filter((r) => r.overdue > 0);
     if (overdueRayons.length === 0) {
       this.logger.debug('Plant overdue digest: nothing overdue today');

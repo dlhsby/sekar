@@ -11,7 +11,7 @@ import {
  */
 export class SubscribeAreaDto {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 }
 
 /**
@@ -19,7 +19,7 @@ export class SubscribeAreaDto {
  */
 export class UnsubscribeAreaDto {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 }
 
 /**
@@ -60,7 +60,7 @@ export class UserLocationEvent {
   shift_name: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -115,7 +115,7 @@ export class UserClockInEvent {
   shift_id: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -147,7 +147,7 @@ export class UserClockOutEvent {
   shift_id: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -163,11 +163,11 @@ export class UserClockOutEvent {
 }
 
 /**
- * Area staffing update event
+ * Location staffing update event
  */
 export class AreaStaffingEvent {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -196,7 +196,7 @@ export class TaskAssignedEvent {
   title: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -230,7 +230,7 @@ export class TaskCompletedEvent {
   title: string;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -266,7 +266,7 @@ export class UserStatusChangedEvent {
 
   @IsUUID()
   @IsOptional()
-  area_id: string | null;
+  location_id: string | null;
 
   @IsString()
   @IsOptional()
@@ -316,7 +316,7 @@ export class UserAreaEvent {
   role: UserRole;
 
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsString()
   area_name: string;
@@ -349,14 +349,14 @@ export class UserReassignedEvent {
 
   @IsUUID()
   @IsOptional()
-  previous_area_id: string | null;
+  previous_location_id: string | null;
 
   @IsString()
   @IsOptional()
   previous_area_name: string | null;
 
   @IsUUID()
-  new_area_id: string;
+  new_location_id: string;
 
   @IsString()
   new_area_name: string;
@@ -370,7 +370,7 @@ export class UserReassignedEvent {
 
 export class AreaStaffingChangedEvent {
   @IsUUID()
-  area_id: string;
+  location_id: string;
 
   @IsUUID()
   @IsOptional()

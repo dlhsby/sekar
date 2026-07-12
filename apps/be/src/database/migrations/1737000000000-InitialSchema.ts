@@ -6,7 +6,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * Source: specs/database/schema.md - Core Tables (Phase 1)
  * Created: 2026-02-10
  *
- * Tables: users, area_types, areas, worker_assignments, shifts, work_reports, location_logs
+ * Tables: users, location_types, areas, worker_assignments, shifts, work_reports, location_logs
  *
  * IMPORTANT: This migration matches the specification EXACTLY.
  * Any deviations from the spec are bugs and should be fixed.
@@ -51,11 +51,11 @@ export class InitialSchema1737000000000 implements MigrationInterface {
     console.log('  ✓ users');
 
     // ==========================================
-    // 2. area_types table
+    // 2. location_types table
     // Spec: specs/database/schema.md - has code, name, description
     // ==========================================
     await queryRunner.query(`
-      CREATE TABLE area_types (
+      CREATE TABLE location_types (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         code VARCHAR(20) NOT NULL,
         name VARCHAR(50) NOT NULL,
@@ -64,13 +64,13 @@ export class InitialSchema1737000000000 implements MigrationInterface {
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         deleted_at TIMESTAMPTZ,
 
-        CONSTRAINT uq_area_types_code UNIQUE (code)
+        CONSTRAINT uq_location_types_code UNIQUE (code)
       );
     `);
 
-    await queryRunner.query(`CREATE UNIQUE INDEX idx_area_types_code ON area_types(code);`);
+    await queryRunner.query(`CREATE UNIQUE INDEX idx_location_types_code ON location_types(code);`);
 
-    console.log('  ✓ area_types');
+    console.log('  ✓ location_types');
 
     // ==========================================
     // 3. areas table
@@ -80,7 +80,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       CREATE TABLE areas (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         name VARCHAR(100) NOT NULL,
-        area_type_id UUID NOT NULL REFERENCES area_types(id) ON DELETE RESTRICT,
+        location_type_id UUID NOT NULL REFERENCES location_types(id) ON DELETE RESTRICT,
         gps_lat DECIMAL(10, 8) NOT NULL,
         gps_lng DECIMAL(11, 8) NOT NULL,
         radius_meters INTEGER DEFAULT 100,
@@ -97,7 +97,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
     `);
 
     await queryRunner.query(
-      `CREATE INDEX idx_areas_type ON areas(area_type_id) WHERE deleted_at IS NULL;`,
+      `CREATE INDEX idx_areas_type ON areas(location_type_id) WHERE deleted_at IS NULL;`,
     );
     await queryRunner.query(
       `CREATE INDEX idx_areas_active ON areas(is_active) WHERE deleted_at IS NULL AND is_active = TRUE;`,
@@ -113,7 +113,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       CREATE TABLE worker_assignments (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+        location_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
         assigned_at TIMESTAMPTZ DEFAULT NOW(),
 
         CONSTRAINT uq_worker_assignments_worker UNIQUE (worker_id)
@@ -124,7 +124,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       `CREATE UNIQUE INDEX idx_worker_assignments_worker ON worker_assignments(worker_id);`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_worker_assignments_area ON worker_assignments(area_id);`,
+      `CREATE INDEX idx_worker_assignments_area ON worker_assignments(location_id);`,
     );
 
     console.log('  ✓ worker_assignments');
@@ -137,7 +137,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       CREATE TABLE shifts (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+        location_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
         clock_in_time TIMESTAMPTZ NOT NULL,
         clock_in_gps_lat DECIMAL(10, 8),
         clock_in_gps_lng DECIMAL(11, 8),
@@ -160,7 +160,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
       `CREATE INDEX idx_shifts_worker_date ON shifts(worker_id, clock_in_time DESC) WHERE deleted_at IS NULL;`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_shifts_area_date ON shifts(area_id, clock_in_time DESC) WHERE deleted_at IS NULL;`,
+      `CREATE INDEX idx_shifts_area_date ON shifts(location_id, clock_in_time DESC) WHERE deleted_at IS NULL;`,
     );
     await queryRunner.query(
       `CREATE INDEX idx_shifts_active ON shifts(worker_id) WHERE clock_out_time IS NULL AND deleted_at IS NULL;`,
@@ -180,7 +180,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         shift_id UUID NOT NULL REFERENCES shifts(id) ON DELETE RESTRICT,
         worker_id UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
+        location_id UUID NOT NULL REFERENCES areas(id) ON DELETE RESTRICT,
         report_type VARCHAR(50) NOT NULL,
         description TEXT NOT NULL,
         condition VARCHAR(20),
@@ -258,7 +258,7 @@ export class InitialSchema1737000000000 implements MigrationInterface {
     await queryRunner.query(`DROP TABLE IF EXISTS shifts CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS worker_assignments CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS areas CASCADE`);
-    await queryRunner.query(`DROP TABLE IF EXISTS area_types CASCADE`);
+    await queryRunner.query(`DROP TABLE IF EXISTS location_types CASCADE`);
     await queryRunner.query(`DROP TABLE IF EXISTS users CASCADE`);
 
     console.log('✅ Phase 1 schema rolled back');

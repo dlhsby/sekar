@@ -8,7 +8,7 @@ import {
   hullPolygonFromRings,
   parseCoords,
   type RayonCode,
-} from '../kmz-areas';
+} from '../kmz-locations';
 
 /**
  * Seed the 8 rayons.

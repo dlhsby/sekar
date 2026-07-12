@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { S3Service } from '../../shared/services/s3.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
@@ -46,7 +46,7 @@ interface EntityConfig {
   alias: string;
   /** Column used for the startDate/endDate filter, or null if unsupported. */
   dateColumn: string | null;
-  /** Column matched by the areaId filter, or null. */
+  /** Column matched by the locationId filter, or null. */
   areaColumn: string | null;
   /** Column matched directly by the rayonId filter, or null. */
   rayonColumn: string | null;
@@ -67,7 +67,7 @@ export class ExportService {
     @InjectRepository(ExportJob)
     private readonly exportJobRepo: Repository<ExportJob>,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
-    @InjectRepository(Area) private readonly areaRepo: Repository<Area>,
+    @InjectRepository(Location) private readonly areaRepo: Repository<Location>,
     @InjectRepository(Rayon) private readonly rayonRepo: Repository<Rayon>,
     @InjectRepository(Task) private readonly taskRepo: Repository<Task>,
     @InjectRepository(Activity) private readonly activityRepo: Repository<Activity>,
@@ -80,7 +80,7 @@ export class ExportService {
         repo: () => this.userRepo as Repository<ObjectLiteral>,
         alias: 'users',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
+        areaColumn: 'location_id',
         rayonColumn: 'rayon_id',
         toDataset: cast(usersDataset),
       },
@@ -104,7 +104,7 @@ export class ExportService {
         repo: () => this.taskRepo as Repository<ObjectLiteral>,
         alias: 'tasks',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
+        areaColumn: 'location_id',
         rayonColumn: 'rayon_id',
         toDataset: cast(tasksDataset),
       },
@@ -112,7 +112,7 @@ export class ExportService {
         repo: () => this.activityRepo as Repository<ObjectLiteral>,
         alias: 'activities',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
+        areaColumn: 'location_id',
         rayonColumn: null,
         toDataset: cast(activitiesDataset),
       },
@@ -120,7 +120,7 @@ export class ExportService {
         repo: () => this.overtimeRepo as Repository<ObjectLiteral>,
         alias: 'overtimes',
         dateColumn: 'created_at',
-        areaColumn: 'area_id',
+        areaColumn: 'location_id',
         rayonColumn: null,
         toDataset: cast(overtimeDataset),
       },
@@ -209,8 +209,10 @@ export class ExportService {
       const endDateExclusive = nextDay.toISOString().split('T')[0];
       qb.andWhere(`${cfg.alias}.${cfg.dateColumn} < :endDate`, { endDate: endDateExclusive });
     }
-    if (filters.areaId && cfg.areaColumn) {
-      qb.andWhere(`${cfg.alias}.${cfg.areaColumn} = :areaId`, { areaId: filters.areaId });
+    if (filters.locationId && cfg.areaColumn) {
+      qb.andWhere(`${cfg.alias}.${cfg.areaColumn} = :locationId`, {
+        locationId: filters.locationId,
+      });
     }
     if (filters.rayonId) {
       this.applyRayonFilter(qb, cfg, filters.rayonId);
@@ -245,7 +247,7 @@ export class ExportService {
     const rows = await this.buildQuery(entityType, filters).getMany();
 
     if (format === 'kmz') {
-      return toKmz(areasPlacemarks(rows as Area[]));
+      return toKmz(areasPlacemarks(rows as Location[]));
     }
     const dataset = this.configs[entityType].toDataset(rows);
     return format === 'xlsx' ? toXlsx(dataset, entityType) : toCsv(dataset);

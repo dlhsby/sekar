@@ -8,17 +8,17 @@ import {
 import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
-import { UserArea } from '../user-areas/entities/user-area.entity';
+import { UserLocation } from '../user-locations/entities/user-location.entity';
 import { RedisService } from '../../common/services/redis.service';
 import { PerformanceScoreService } from './services/performance-score.service';
 import { WorkerAnalyticsDto } from './dto/worker-analytics.dto';
-import { AreaAnalyticsDto } from './dto/area-analytics.dto';
+import { LocationAnalyticsDto } from './dto/location-analytics.dto';
 import { OperationalAnalyticsDto } from './dto/operational-analytics.dto';
 import { DashboardSummaryDto } from './dto/dashboard-summary.dto';
 import { WorkerAnalyticsQueryDto } from './dto/worker-analytics-query.dto';
-import { AreaAnalyticsQueryDto } from './dto/area-analytics-query.dto';
+import { LocationAnalyticsQueryDto } from './dto/location-analytics-query.dto';
 import { OperationalQueryDto } from './dto/operational-query.dto';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
@@ -31,9 +31,9 @@ export class AnalyticsService {
   constructor(
     private dataSource: DataSource,
     @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Area) private areaRepo: Repository<Area>,
+    @InjectRepository(Location) private areaRepo: Repository<Location>,
     @InjectRepository(Rayon) private rayonRepo: Repository<Rayon>,
-    @InjectRepository(UserArea) private userAreaRepo: Repository<UserArea>,
+    @InjectRepository(UserLocation) private userAreaRepo: Repository<UserLocation>,
     private redis: RedisService,
     private performanceScoreService: PerformanceScoreService,
   ) {}
@@ -86,8 +86,8 @@ export class AnalyticsService {
 
     this.applyWorkerScope(qb, user);
 
-    if (query.area_id) {
-      qb.andWhere('u.area_id = :areaId', { areaId: query.area_id });
+    if (query.location_id) {
+      qb.andWhere('u.location_id = :locationId', { locationId: query.location_id });
     }
     if (query.rayon_id) {
       qb.andWhere('u.rayon_id = :rayonId', { rayonId: query.rayon_id });
@@ -121,8 +121,8 @@ export class AnalyticsService {
 
   async listAreas(
     user: User,
-    query: AreaAnalyticsQueryDto,
-  ): Promise<PaginatedResponseDto<AreaAnalyticsDto>> {
+    query: LocationAnalyticsQueryDto,
+  ): Promise<PaginatedResponseDto<LocationAnalyticsDto>> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 50;
     const skip = (page - 1) * limit;
@@ -147,9 +147,13 @@ export class AnalyticsService {
     return new PaginatedResponseDto(data, total, page, limit);
   }
 
-  async getArea(id: string, user: User, query: AreaAnalyticsQueryDto): Promise<AreaAnalyticsDto> {
+  async getArea(
+    id: string,
+    user: User,
+    query: LocationAnalyticsQueryDto,
+  ): Promise<LocationAnalyticsDto> {
     const area = await this.areaRepo.findOne({ where: { id } });
-    if (!area) throw new NotFoundException('Area not found');
+    if (!area) throw new NotFoundException('Location not found');
 
     await this.enforceAreaAccess(user, area);
 
@@ -259,17 +263,17 @@ export class AnalyticsService {
   }
 
   private async buildAreaAnalytics(
-    areaId: string,
+    locationId: string,
     dateStr: string,
     areaName: string,
-  ): Promise<AreaAnalyticsDto> {
+  ): Promise<LocationAnalyticsDto> {
     const result = await this.dataSource.query(
-      `SELECT * FROM area_metrics_daily WHERE area_id = $1 AND date = $2`,
-      [areaId, dateStr],
+      `SELECT * FROM area_metrics_daily WHERE location_id = $1 AND date = $2`,
+      [locationId, dateStr],
     );
 
     if (result.length === 0) {
-      return this.emptyAreaAnalytics(areaId, areaName, dateStr);
+      return this.emptyAreaAnalytics(locationId, areaName, dateStr);
     }
 
     const row = result[0];
@@ -277,7 +281,7 @@ export class AnalyticsService {
       row.required_workers > 0 ? (row.attended_workers / row.required_workers) * 100 : 0;
 
     return {
-      id: areaId,
+      id: locationId,
       area_name: areaName,
       date: dateStr,
       attended_workers: row.attended_workers,
@@ -385,7 +389,7 @@ export class AnalyticsService {
   }
 
   private async getAlerts(user: User): Promise<{
-    understaffedAreas: Array<{ areaId: string; areaName: string; deficit: number }>;
+    understaffedAreas: Array<{ locationId: string; areaName: string; deficit: number }>;
     overdueMaintenances: number;
     missingWorkers: number;
     overdueTasks: number;
@@ -405,9 +409,9 @@ export class AnalyticsService {
       if (user.role === UserRole.KEPALA_RAYON) {
         qb.andWhere('u.rayon_id = :rayonId', { rayonId: user.rayon_id });
       } else if (user.role === UserRole.KORLAP) {
-        qb.andWhere('u.area_id = :areaId', { areaId: user.area_id });
+        qb.andWhere('u.location_id = :locationId', { locationId: user.location_id });
       } else if (user.role === UserRole.ADMIN_DATA) {
-        qb.andWhere('u.area_id = :areaId', { areaId: user.area_id });
+        qb.andWhere('u.location_id = :locationId', { locationId: user.location_id });
       }
     }
   }
@@ -419,7 +423,7 @@ export class AnalyticsService {
       if (user.role === UserRole.KEPALA_RAYON) {
         qb.andWhere('a.rayon_id = :rayonId', { rayonId: user.rayon_id });
       } else if (user.role === UserRole.KORLAP) {
-        qb.andWhere('a.id = :areaId', { areaId: user.area_id });
+        qb.andWhere('a.id = :locationId', { locationId: user.location_id });
       }
     }
   }
@@ -436,9 +440,9 @@ export class AnalyticsService {
    * Enforce per-role area scoping for area analytics:
    * - top_management / admin_system / superadmin → all areas (global)
    * - kepala_rayon / admin_data → their own rayon (admin_data is rayon-scoped, ADR-033)
-   * - korlap → their assigned areas (user_areas), not a single area_id
+   * - korlap → their assigned areas (user_areas), not a single location_id
    */
-  private async enforceAreaAccess(user: User, area: Area): Promise<void> {
+  private async enforceAreaAccess(user: User, area: Location): Promise<void> {
     const { role } = user;
     if (
       role === UserRole.TOP_MANAGEMENT ||
@@ -457,8 +461,8 @@ export class AnalyticsService {
 
     if (role === UserRole.KORLAP) {
       const assigned = await this.userAreaRepo.find({ where: { user_id: user.id } });
-      const areaIds = assigned.map((a) => a.area_id);
-      if (!areaIds.includes(area.id)) {
+      const locationIds = assigned.map((a) => a.location_id);
+      if (!locationIds.includes(area.id)) {
         throw new ForbiddenException('Cannot access areas outside your assigned areas');
       }
       return;
@@ -492,7 +496,7 @@ export class AnalyticsService {
     };
   }
 
-  private emptyAreaAnalytics(id: string, name: string, dateStr: string): AreaAnalyticsDto {
+  private emptyAreaAnalytics(id: string, name: string, dateStr: string): LocationAnalyticsDto {
     return {
       id,
       area_name: name,

@@ -84,7 +84,7 @@ export class Phase2DMonitoringSchema1741000000000 implements MigrationInterface 
         last_battery_level INTEGER,
         last_location_at TIMESTAMPTZ,
         is_within_area BOOLEAN DEFAULT true,
-        area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+        location_id UUID REFERENCES areas(id) ON DELETE SET NULL,
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         CONSTRAINT chk_uts_status CHECK (status IN ('active', 'inactive', 'outside_area', 'missing', 'offline'))
       );
@@ -94,7 +94,7 @@ export class Phase2DMonitoringSchema1741000000000 implements MigrationInterface 
       CREATE INDEX IF NOT EXISTS idx_uts_status ON user_tracking_status(status);
     `);
     await queryRunner.query(`
-      CREATE INDEX IF NOT EXISTS idx_uts_area_id ON user_tracking_status(area_id);
+      CREATE INDEX IF NOT EXISTS idx_uts_location_id ON user_tracking_status(location_id);
     `);
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_uts_shift_id ON user_tracking_status(shift_id);
@@ -103,7 +103,7 @@ export class Phase2DMonitoringSchema1741000000000 implements MigrationInterface 
       CREATE INDEX IF NOT EXISTS idx_uts_updated_at ON user_tracking_status(updated_at);
     `);
     await queryRunner.query(`
-      CREATE INDEX IF NOT EXISTS idx_uts_area_status ON user_tracking_status(area_id, status);
+      CREATE INDEX IF NOT EXISTS idx_uts_area_status ON user_tracking_status(location_id, status);
     `);
 
     console.log('  ✓ user_tracking_status table created with indexes');

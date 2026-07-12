@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PlantSpecies } from '../entities/plant-species.entity';
-import { AreaPlant } from '../entities/area-plant.entity';
-import { AreaType } from '../../area-types/entities/area-type.entity';
+import { LocationPlant } from '../entities/location-plant.entity';
+import { LocationType } from '../../location-types/entities/location-type.entity';
 
 export type PlantStatus = 'ok' | 'due_soon' | 'overdue' | 'unknown';
 
@@ -10,7 +10,7 @@ export type PlantStatus = 'ok' | 'due_soon' | 'overdue' | 'unknown';
  *
  * Computes next due date and status for area plants based on:
  * 1. Species default pruning cycle (days)
- * 2. Area plant override cycle (takes precedence)
+ * 2. Location plant override cycle (takes precedence)
  * 3. Last pruned date (when null, no forecast available)
  * 4. Current date (for status classification)
  *
@@ -30,14 +30,14 @@ export class PlantDueDateService {
    * Compute next due date for an area plant.
    *
    * @param species — PlantSpecies with defaultPruningCycleDays
-   * @param areaType — AreaType (reserved for future species×area_type refinement; currently unused)
+   * @param locationType — LocationType (reserved for future species×location_type refinement; currently unused)
    * @param lastPrunedAt — Date when area was last pruned (null = never pruned)
    * @param overrideCycleDays — Admin override cycle in days (takes precedence over species default)
    * @returns Computed next_due_at date, or null if no forecast available
    */
   computeNextDueDate(
     species: PlantSpecies,
-    areaType: AreaType | null,
+    locationType: LocationType | null,
     lastPrunedAt: Date | null,
     overrideCycleDays?: number | null,
   ): Date | null {
@@ -95,19 +95,19 @@ export class PlantDueDateService {
    * Recompute next_due_at and status for an area plant.
    * Glue method combining computeNextDueDate and classifyStatus.
    *
-   * @param plant — AreaPlant entity with species and area relations
+   * @param plant — LocationPlant entity with species and area relations
    * @param species — PlantSpecies entity
-   * @param areaType — AreaType entity (or null; reserved for future refinement)
+   * @param locationType — LocationType entity (or null; reserved for future refinement)
    * @returns Object with computed nextDueAt and status
    */
   recomputeAreaPlant(
-    plant: AreaPlant,
+    plant: LocationPlant,
     species: PlantSpecies,
-    areaType: AreaType | null,
+    locationType: LocationType | null,
   ): { nextDueAt: Date | null; status: PlantStatus } {
     const nextDueAt = this.computeNextDueDate(
       species,
-      areaType,
+      locationType,
       plant.lastPrunedAt,
       plant.overrideCycleDays,
     );

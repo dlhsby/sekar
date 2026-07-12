@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { PlantOverdueDigestCron } from './plant-overdue-digest.cron';
-import { AreaPlantStatusService } from '../services/area-plant-status.service';
+import { LocationPlantStatusService } from '../services/location-plant-status.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { RedisService } from '../../../common/services/redis.service';
@@ -27,7 +27,7 @@ describe('PlantOverdueDigestCron', () => {
         due_soon: 1,
         overdue: 3,
         unknown: 0,
-        overdue_areas: [{ area_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
+        overdue_areas: [{ location_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
       },
       {
         rayon_id: RAYON_B,
@@ -59,7 +59,7 @@ describe('PlantOverdueDigestCron', () => {
       providers: [
         PlantOverdueDigestCron,
         { provide: getRepositoryToken(User), useValue: userRepository },
-        { provide: AreaPlantStatusService, useValue: statusService },
+        { provide: LocationPlantStatusService, useValue: statusService },
         { provide: NotificationsService, useValue: notifications },
         { provide: RedisService, useValue: { getClient: () => ({ set: redisSet }) } },
       ],

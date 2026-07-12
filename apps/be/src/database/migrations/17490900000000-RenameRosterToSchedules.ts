@@ -8,7 +8,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *    shift+rayon+area assignment now lives on the user (`users.shift_definition_id`
  *    + `user_areas` + `users.rayon_id`); the roster is derived from that.
  * 2. Rename the roster tables `daily_schedules` → `schedules` and
- *    `daily_schedule_areas` → `schedule_areas`, and the FK column
+ *    `daily_schedule_locations` → `schedule_locations`, and the FK column
  *    `daily_schedule_id` → `schedule_id`.
  *
  * Idempotent (IF EXISTS guards). Index/constraint names keep their historical
@@ -26,20 +26,20 @@ export class RenameRosterToSchedules17490900000000 implements MigrationInterface
     // 2. Promote the daily roster to the single "schedules" concept.
     await queryRunner.query(`ALTER TABLE IF EXISTS "daily_schedules" RENAME TO "schedules"`);
     await queryRunner.query(
-      `ALTER TABLE IF EXISTS "daily_schedule_areas" RENAME TO "schedule_areas"`,
+      `ALTER TABLE IF EXISTS "daily_schedule_locations" RENAME TO "schedule_locations"`,
     );
     await queryRunner.query(
-      `ALTER TABLE IF EXISTS "schedule_areas" RENAME COLUMN "daily_schedule_id" TO "schedule_id"`,
+      `ALTER TABLE IF EXISTS "schedule_locations" RENAME COLUMN "daily_schedule_id" TO "schedule_id"`,
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Undo the rename only — the dropped legacy template table is not restored.
     await queryRunner.query(
-      `ALTER TABLE IF EXISTS "schedule_areas" RENAME COLUMN "schedule_id" TO "daily_schedule_id"`,
+      `ALTER TABLE IF EXISTS "schedule_locations" RENAME COLUMN "schedule_id" TO "daily_schedule_id"`,
     );
     await queryRunner.query(
-      `ALTER TABLE IF EXISTS "schedule_areas" RENAME TO "daily_schedule_areas"`,
+      `ALTER TABLE IF EXISTS "schedule_locations" RENAME TO "daily_schedule_locations"`,
     );
     await queryRunner.query(`ALTER TABLE IF EXISTS "schedules" RENAME TO "daily_schedules"`);
   }

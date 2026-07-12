@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { RayonsService } from './rayons.service';
 import { Rayon } from './entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 
@@ -12,7 +12,7 @@ describe('RayonsService', () => {
   let module: TestingModule;
   let service: RayonsService;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
 
   const mockRayon: Rayon = {
     id: '11111111-1111-1111-1111-111111111101',
@@ -22,7 +22,7 @@ describe('RayonsService', () => {
     updated_at: new Date('2024-01-01T00:00:00Z'),
   };
 
-  const mockArea: Partial<Area> = {
+  const mockArea: Partial<Location> = {
     id: '22222222-2222-2222-2222-222222222201',
     name: 'Taman Bungkul',
     rayon_id: mockRayon.id,
@@ -52,7 +52,7 @@ describe('RayonsService', () => {
           useValue: mockRayonRepository,
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: mockAreaRepository,
         },
       ],
@@ -60,7 +60,7 @@ describe('RayonsService', () => {
 
     service = module.get<RayonsService>(RayonsService);
     rayonRepository = module.get(getRepositoryToken(Rayon)) as jest.Mocked<Repository<Rayon>>;
-    areaRepository = module.get(getRepositoryToken(Area)) as jest.Mocked<Repository<Area>>;
+    areaRepository = module.get(getRepositoryToken(Location)) as jest.Mocked<Repository<Location>>;
   });
 
   afterEach(async () => {
@@ -277,7 +277,7 @@ describe('RayonsService', () => {
       expect(result).toEqual(areas);
       expect(mockAreaRepository.find).toHaveBeenCalledWith({
         where: { rayon_id: mockRayon.id, is_active: true },
-        relations: ['areaType'],
+        relations: ['locationType'],
         order: { name: 'ASC' },
       });
     });

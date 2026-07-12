@@ -6,7 +6,7 @@ import { MonitoringUserService } from './monitoring-user.service';
 import { StatusCalculatorService } from './status-calculator.service';
 import { MonitoringCacheService } from './monitoring-cache.service';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
@@ -18,7 +18,7 @@ import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-st
 describe('MonitoringUserService', () => {
   let service: MonitoringUserService;
   let userRepository: jest.Mocked<Repository<User>>;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
   let shiftRepository: jest.Mocked<Repository<Shift>>;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
@@ -33,17 +33,17 @@ describe('MonitoringUserService', () => {
     full_name: 'Satgas One',
     phone_number: '081234567890',
     role: 'satgas',
-    area_id: 'area-1',
+    location_id: 'area-1',
     rayon_id: 'rayon-1',
   } as User;
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
-    name: 'Area 1',
+    name: 'Location 1',
     rayon_id: 'rayon-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
-  } as Area;
+  } as Location;
 
   const mockRayon: Rayon = {
     id: 'rayon-1',
@@ -53,7 +53,7 @@ describe('MonitoringUserService', () => {
   const mockShift: Shift = {
     id: 'shift-1',
     user_id: 'user-1',
-    area_id: 'area-1',
+    location_id: 'area-1',
     clock_in_time: new Date(),
     clock_out_time: null,
     clock_in_outside_boundary: false,
@@ -77,7 +77,7 @@ describe('MonitoringUserService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             findOne: jest.fn(),
             createQueryBuilder: jest.fn(),
@@ -152,7 +152,7 @@ describe('MonitoringUserService', () => {
 
     service = module.get<MonitoringUserService>(MonitoringUserService);
     userRepository = module.get<jest.Mocked<Repository<User>>>(getRepositoryToken(User));
-    areaRepository = module.get<jest.Mocked<Repository<Area>>>(getRepositoryToken(Area));
+    areaRepository = module.get<jest.Mocked<Repository<Location>>>(getRepositoryToken(Location));
     shiftRepository = module.get<jest.Mocked<Repository<Shift>>>(getRepositoryToken(Shift));
     taskRepository = module.get<jest.Mocked<Repository<Task>>>(getRepositoryToken(Task));
     activityRepository = module.get<jest.Mocked<Repository<Activity>>>(
@@ -176,7 +176,7 @@ describe('MonitoringUserService', () => {
         id: 'tracking-1',
         user_id: 'user-1',
         user: mockUser,
-        area_id: 'area-1',
+        location_id: 'area-1',
         area: mockArea,
         shift_id: 'shift-1',
         shift: mockShift,
@@ -295,7 +295,7 @@ describe('MonitoringUserService', () => {
 
       trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      await service.getLiveUsers({ area_id: 'area-1' });
+      await service.getLiveUsers({ location_id: 'area-1' });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
@@ -421,7 +421,7 @@ describe('MonitoringUserService', () => {
       const mockTracking: UserTrackingStatus = {
         id: 'tracking-1',
         user_id: 'user-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         area: mockArea,
         shift_id: 'shift-1',
         shift: mockShift,

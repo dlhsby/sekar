@@ -18,7 +18,7 @@ describe('ShiftReminderCron', () => {
     status: ScheduleStatus.PLANNED,
     shift_definition_id: 'shift-1',
     shift_definition: { name: 'Pagi', start_time: '06:00:00' },
-    schedule_areas: [{ area_id: 'area-1' }],
+    schedule_locations: [{ location_id: 'area-1' }],
   };
 
   beforeEach(async () => {
@@ -51,7 +51,7 @@ describe('ShiftReminderCron', () => {
       expect.objectContaining({
         user_id: 'user-1',
         type: NotificationType.SHIFT_REMINDER,
-        data: { shift_definition_id: 'shift-1', area_id: 'area-1' },
+        data: { shift_definition_id: 'shift-1', location_id: 'area-1' },
       }),
     );
   });

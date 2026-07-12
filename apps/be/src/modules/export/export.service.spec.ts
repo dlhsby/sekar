@@ -4,7 +4,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 
 import { S3Service } from '../../shared/services/s3.service';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
@@ -66,7 +66,7 @@ describe('ExportService', () => {
         ExportService,
         { provide: getRepositoryToken(ExportJob), useValue: exportJobRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
-        { provide: getRepositoryToken(Area), useValue: stubRepo() },
+        { provide: getRepositoryToken(Location), useValue: stubRepo() },
         { provide: getRepositoryToken(Rayon), useValue: stubRepo() },
         { provide: getRepositoryToken(Task), useValue: taskRepo },
         { provide: getRepositoryToken(Activity), useValue: stubRepo() },

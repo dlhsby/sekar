@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringStatsService } from './monitoring-stats.service';
 import { DayTypeService } from './day-type.service';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
@@ -12,24 +12,24 @@ import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
-  AreaStaffRequirement,
+  LocationStaffRequirement,
   DayType,
-} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+} from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { Schedule } from '../../schedules/entities/schedule.entity';
-import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
+import { ScheduleLocation } from '../../schedules/entities/schedule-location.entity';
 import { User } from '../../users/entities/user.entity';
 
 describe('MonitoringStatsService', () => {
   let service: MonitoringStatsService;
-  let areaRepository: jest.Mocked<Repository<Area>>;
+  let areaRepository: jest.Mocked<Repository<Location>>;
   let shiftRepository: jest.Mocked<Repository<Shift>>;
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
-  let staffRequirementRepository: jest.Mocked<Repository<AreaStaffRequirement>>;
+  let staffRequirementRepository: jest.Mocked<Repository<LocationStaffRequirement>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
   let dayTypeService: jest.Mocked<DayTypeService>;
 
@@ -42,21 +42,21 @@ describe('MonitoringStatsService', () => {
     updated_at: new Date(),
   } as Rayon;
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
-    name: 'Area 1',
+    name: 'Location 1',
     rayon_id: 'rayon-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
     coverage_area: 100,
     is_active: true,
-    areaType: { id: 'type-1', name: 'Park', category: 'active' } as any,
-  } as Area;
+    locationType: { id: 'type-1', name: 'Park', category: 'active' } as any,
+  } as Location;
 
   const mockShift: Shift = {
     id: 'shift-1',
     user_id: 'user-1',
-    area_id: 'area-1',
+    location_id: 'area-1',
     clock_in_time: new Date(),
     clock_out_time: null,
     clock_in_outside_boundary: false,
@@ -86,7 +86,7 @@ describe('MonitoringStatsService', () => {
       providers: [
         MonitoringStatsService,
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -138,7 +138,7 @@ describe('MonitoringStatsService', () => {
           },
         },
         {
-          provide: getRepositoryToken(AreaStaffRequirement),
+          provide: getRepositoryToken(LocationStaffRequirement),
           useValue: {
             find: jest.fn(),
             createQueryBuilder: jest.fn(),
@@ -158,7 +158,7 @@ describe('MonitoringStatsService', () => {
           useValue: { find: jest.fn(), createQueryBuilder: jest.fn() },
         },
         {
-          provide: getRepositoryToken(ScheduleArea),
+          provide: getRepositoryToken(ScheduleLocation),
           useValue: { find: jest.fn(), createQueryBuilder: jest.fn() },
         },
         {
@@ -172,7 +172,7 @@ describe('MonitoringStatsService', () => {
     }).compile();
 
     service = module.get<MonitoringStatsService>(MonitoringStatsService);
-    areaRepository = module.get<jest.Mocked<Repository<Area>>>(getRepositoryToken(Area));
+    areaRepository = module.get<jest.Mocked<Repository<Location>>>(getRepositoryToken(Location));
     shiftRepository = module.get<jest.Mocked<Repository<Shift>>>(getRepositoryToken(Shift));
     taskRepository = module.get<jest.Mocked<Repository<Task>>>(getRepositoryToken(Task));
     activityRepository = module.get<jest.Mocked<Repository<Activity>>>(
@@ -185,8 +185,8 @@ describe('MonitoringStatsService', () => {
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
     );
-    staffRequirementRepository = module.get<jest.Mocked<Repository<AreaStaffRequirement>>>(
-      getRepositoryToken(AreaStaffRequirement),
+    staffRequirementRepository = module.get<jest.Mocked<Repository<LocationStaffRequirement>>>(
+      getRepositoryToken(LocationStaffRequirement),
     );
     trackingRepository = module.get<jest.Mocked<Repository<UserTrackingStatus>>>(
       getRepositoryToken(UserTrackingStatus),
@@ -229,8 +229,8 @@ describe('MonitoringStatsService', () => {
       areaRepository.find.mockResolvedValue([mockArea]);
       jest.spyOn(service, 'getAreaSummary').mockResolvedValue({
         id: 'area-1',
-        name: 'Area 1',
-        area_type_category: 'active',
+        name: 'Location 1',
+        location_type_category: 'active',
         workers_required: 5,
         workers_online: 3,
         workers_offline: 2,
@@ -262,7 +262,7 @@ describe('MonitoringStatsService', () => {
     });
   });
 
-  describe('getAreaStats', () => {
+  describe('getLocationStats', () => {
     it('should return area statistics', async () => {
       areaRepository.findOne.mockResolvedValue(mockArea);
       rayonRepository.findOne.mockResolvedValue(mockRayon);
@@ -287,17 +287,17 @@ describe('MonitoringStatsService', () => {
       activityRepository.count.mockResolvedValue(0);
       dayTypeService.getCurrentDayType.mockResolvedValue(DayType.WEEKDAY);
 
-      const result = await service.getAreaStats('area-1');
+      const result = await service.getLocationStats('area-1');
 
       expect(result).toBeDefined();
       expect(result.id).toBe('area-1');
-      expect(result.name).toBe('Area 1');
+      expect(result.name).toBe('Location 1');
     });
 
     it('should throw NotFoundException when area not found', async () => {
       areaRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getAreaStats('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getLocationStats('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -307,7 +307,7 @@ describe('MonitoringStatsService', () => {
         id: 'tracking-1',
         user: mockUser,
         user_id: 'user-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         shift_id: 'shift-1',
         shift: mockShift,
         shift_definition: mockShiftDef,

@@ -60,7 +60,7 @@ export class MonitoringConfigService {
     this.cacheService.setLoaders({
       thresholds: () => this.getTypedConfig<StatusThresholds>('status_thresholds'),
       geofencing: () => this.getTypedConfig<GeofencingConfig>('geofencing'),
-      boundary: (areaId: string) => this.loadAreaBoundary(areaId),
+      boundary: (locationId: string) => this.loadAreaBoundary(locationId),
     });
   }
 
@@ -105,10 +105,10 @@ export class MonitoringConfigService {
     return config.value as T;
   }
 
-  private async loadAreaBoundary(areaId: string): Promise<number[][][] | null> {
+  private async loadAreaBoundary(locationId: string): Promise<number[][][] | null> {
     const area = await this.configRepository.manager.query(
       'SELECT boundary_polygon FROM areas WHERE id = $1',
-      [areaId],
+      [locationId],
     );
     return area?.[0]?.boundary_polygon?.coordinates || null;
   }

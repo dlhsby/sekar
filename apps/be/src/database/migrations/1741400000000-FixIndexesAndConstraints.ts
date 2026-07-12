@@ -73,10 +73,10 @@ export class FixIndexesAndConstraints1741400000000 implements MigrationInterface
         ON activities (status) WHERE deleted_at IS NULL
     `);
 
-    // Area-scoped queries (korlap dashboard)
+    // Location-scoped queries (korlap dashboard)
     await queryRunner.query(`
-      CREATE INDEX IF NOT EXISTS idx_activities_area_id
-        ON activities (area_id, created_at DESC) WHERE deleted_at IS NULL
+      CREATE INDEX IF NOT EXISTS idx_activities_location_id
+        ON activities (location_id, created_at DESC) WHERE deleted_at IS NULL
     `);
 
     // Time-range report queries
@@ -98,7 +98,7 @@ export class FixIndexesAndConstraints1741400000000 implements MigrationInterface
     // Korlap fetching pending overtime for their area
     await queryRunner.query(`
       CREATE INDEX IF NOT EXISTS idx_overtimes_status_area
-        ON overtimes (status, area_id) WHERE status = 'pending'
+        ON overtimes (status, location_id) WHERE status = 'pending'
     `);
 
     // Time-range reporting on overtime
@@ -132,7 +132,7 @@ export class FixIndexesAndConstraints1741400000000 implements MigrationInterface
     await queryRunner.query(`DROP INDEX IF EXISTS idx_overtimes_status_area`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_overtimes_user_id`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_created_at`);
-    await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_area_id`);
+    await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_location_id`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_status`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_activities_pending`);
     await queryRunner.query(`DROP INDEX IF EXISTS idx_schedules_shift_definition_id`);

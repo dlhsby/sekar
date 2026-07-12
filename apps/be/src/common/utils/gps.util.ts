@@ -91,7 +91,7 @@ export class GpsUtil {
    * // Check if worker is within 100m of Taman Bungkul
    * const isWithin = GpsUtil.isWithinBoundary(
    *   -7.2905, 112.7398,  // Worker location
-   *   -7.2900, 112.7398,  // Area center
+   *   -7.2900, 112.7398,  // Location center
    *   100                  // 100m radius
    * );
    * console.log(isWithin); // true or false
@@ -149,7 +149,7 @@ export class GpsUtil {
    *
    * @param lat Latitude of the point
    * @param lng Longitude of the point
-   * @param area Area with optional boundary_polygon, gps_lat, gps_lng, radius_meters
+   * @param area Location with optional boundary_polygon, gps_lat, gps_lng, radius_meters
    * @returns true if within boundary (or no boundary defined), false if outside
    */
   static isWithinAreaBoundary(

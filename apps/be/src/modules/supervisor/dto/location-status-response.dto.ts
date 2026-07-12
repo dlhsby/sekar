@@ -1,0 +1,35 @@
+import { ApiProperty } from '@nestjs/swagger';
+
+/**
+ * DTO for individual area status
+ */
+export class LocationStatusDto {
+  @ApiProperty({ description: 'Location UUID' })
+  id: string;
+
+  @ApiProperty({ description: 'Location name', example: 'Taman Bungkul' })
+  name: string;
+
+  @ApiProperty({
+    description: 'Number of users assigned to this area',
+    example: 3,
+  })
+  assigned_workers_count: number;
+
+  @ApiProperty({
+    description: 'Number of users currently working in this area',
+    example: 2,
+  })
+  active_workers_count: number;
+}
+
+/**
+ * Response DTO for location status endpoint
+ */
+export class LocationStatusResponseDto {
+  @ApiProperty({
+    type: [LocationStatusDto],
+    description: 'Status of all active locations',
+  })
+  areas: LocationStatusDto[];
+}

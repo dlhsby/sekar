@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { SupervisorService } from './supervisor.service';
 import { Shift } from '../shifts/entities/shift.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 
 describe('SupervisorService', () => {
@@ -12,7 +12,7 @@ describe('SupervisorService', () => {
   let service: SupervisorService;
   let shiftsRepository: Repository<Shift>;
   let usersRepository: Repository<User>;
-  let areasRepository: Repository<Area>;
+  let areasRepository: Repository<Location>;
   let locationLogsRepository: Repository<LocationLog>;
 
   const mockShiftsRepository = {
@@ -50,7 +50,7 @@ describe('SupervisorService', () => {
           useValue: mockUsersRepository,
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: mockAreasRepository,
         },
         {
@@ -63,7 +63,7 @@ describe('SupervisorService', () => {
     service = module.get<SupervisorService>(SupervisorService);
     shiftsRepository = module.get<Repository<Shift>>(getRepositoryToken(Shift));
     usersRepository = module.get<Repository<User>>(getRepositoryToken(User));
-    areasRepository = module.get<Repository<Area>>(getRepositoryToken(Area));
+    areasRepository = module.get<Repository<Location>>(getRepositoryToken(Location));
     locationLogsRepository = module.get<Repository<LocationLog>>(getRepositoryToken(LocationLog));
   });
 
@@ -165,7 +165,7 @@ describe('SupervisorService', () => {
         {
           id: 'shift-2',
           user: { id: 'worker-2', username: 'worker2', full_name: 'Worker Two' },
-          area: { id: 'area-1', name: 'Area 1' },
+          area: { id: 'area-1', name: 'Location 1' },
           clock_in_time: new Date(),
           clock_out_time: null,
         },
@@ -304,7 +304,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
         {
           id: 'worker-2',
@@ -312,7 +312,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker Two',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
         {
           id: 'worker-3',
@@ -320,21 +320,21 @@ describe('SupervisorService', () => {
           full_name: 'Worker Three',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
       const mockClockedInShifts = [
         {
           id: 'shift-1',
-          user: { id: 'worker-1', area_id: null },
+          user: { id: 'worker-1', location_id: null },
           area: null,
           clock_in_time: new Date('2026-01-16T08:00:00Z'),
           clock_out_time: new Date('2026-01-16T16:00:00Z'),
         },
         {
           id: 'shift-2',
-          user: { id: 'worker-2', area_id: null },
+          user: { id: 'worker-2', location_id: null },
           area: null,
           clock_in_time: new Date('2026-01-16T08:30:00Z'),
           clock_out_time: null,
@@ -360,7 +360,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
@@ -383,14 +383,14 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
       const mockClockedInShifts = [
         {
           id: 'shift-1',
-          user: { id: 'worker-1', area_id: null },
+          user: { id: 'worker-1', location_id: null },
           area: null,
           clock_in_time: new Date('2026-01-16T08:00:00Z'),
           clock_out_time: new Date('2026-01-16T16:00:00Z'),
@@ -418,7 +418,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
         {
           id: 'worker-2',
@@ -426,7 +426,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker Two',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
         {
           id: 'worker-3',
@@ -434,21 +434,21 @@ describe('SupervisorService', () => {
           full_name: 'Worker Three',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
       const mockClockedInShifts = [
         {
           id: 'shift-1',
-          user: { id: 'worker-1', area_id: null },
+          user: { id: 'worker-1', location_id: null },
           area: { id: 'area-1', name: 'Taman A' },
           clock_in_time: new Date('2026-01-16T08:00:00Z'),
           clock_out_time: new Date('2026-01-16T16:00:00Z'),
         },
         {
           id: 'shift-2',
-          user: { id: 'worker-2', area_id: null },
+          user: { id: 'worker-2', location_id: null },
           area: null,
           clock_in_time: new Date('2026-01-16T08:30:00Z'),
           clock_out_time: null,
@@ -480,7 +480,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
@@ -503,7 +503,7 @@ describe('SupervisorService', () => {
         full_name: `Worker ${i}`,
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: null,
+        location_id: null,
       }));
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
@@ -526,14 +526,14 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
       const mockClockedInShifts = [
         {
           id: 'shift-1',
-          user: { id: 'worker-1', area_id: null },
+          user: { id: 'worker-1', location_id: null },
           area: null,
           clock_in_time: new Date('2026-01-16T08:00:00Z'),
           clock_out_time: new Date('2026-01-16T16:00:00Z'),
@@ -560,15 +560,15 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: null,
+          location_id: null,
         },
       ];
 
       const mockClockedInShifts = [
         {
           id: 'shift-1',
-          user: { id: 'worker-1', area_id: 'user-area-1' },
-          area: { id: 'shift-area-1', name: 'Shift Area' },
+          user: { id: 'worker-1', location_id: 'user-area-1' },
+          area: { id: 'shift-area-1', name: 'Shift Location' },
           clock_in_time: new Date('2026-01-16T08:00:00Z'),
           clock_out_time: null,
         },
@@ -579,10 +579,13 @@ describe('SupervisorService', () => {
 
       const result = await service.getAttendancePaginated(undefined, 1, 50);
 
-      expect(result.clocked_in.data[0].area).toEqual({ id: 'shift-area-1', name: 'Shift Area' });
+      expect(result.clocked_in.data[0].area).toEqual({
+        id: 'shift-area-1',
+        name: 'Shift Location',
+      });
     });
 
-    it('should fallback to user area_id when shift has no area for clocked-in workers', async () => {
+    it('should fallback to user location_id when shift has no area for clocked-in workers', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -590,14 +593,14 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: 'user-area-1',
+          location_id: 'user-area-1',
         },
       ];
 
       const mockClockedInShifts = [
         {
           id: 'shift-1',
-          user: { id: 'worker-1', area_id: 'user-area-1' },
+          user: { id: 'worker-1', location_id: 'user-area-1' },
           area: null,
           clock_in_time: new Date('2026-01-16T08:00:00Z'),
           clock_out_time: null,
@@ -606,14 +609,14 @@ describe('SupervisorService', () => {
 
       mockUsersRepository.find.mockResolvedValue(mockAllWorkers);
       mockShiftsRepository.find.mockResolvedValue(mockClockedInShifts);
-      mockAreasRepository.findOne.mockResolvedValue({ id: 'user-area-1', name: 'User Area' });
+      mockAreasRepository.findOne.mockResolvedValue({ id: 'user-area-1', name: 'User Location' });
 
       const result = await service.getAttendancePaginated(undefined, 1, 50);
 
-      expect(result.clocked_in.data[0].area).toEqual({ id: 'user-area-1', name: 'User Area' });
+      expect(result.clocked_in.data[0].area).toEqual({ id: 'user-area-1', name: 'User Location' });
     });
 
-    it('should include area info when not-clocked-in worker has area_id and area is found', async () => {
+    it('should include area info when not-clocked-in worker has location_id and area is found', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -621,7 +624,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: 'area-1',
+          location_id: 'area-1',
         },
       ];
 
@@ -634,7 +637,7 @@ describe('SupervisorService', () => {
       expect(result.not_clocked_in.data[0].area).toEqual({ id: 'area-1', name: 'Taman Bungkul' });
     });
 
-    it('should set area to null when worker has area_id but area is not found', async () => {
+    it('should set area to null when worker has location_id but area is not found', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -642,7 +645,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: 'area-missing',
+          location_id: 'area-missing',
         },
       ];
 
@@ -656,8 +659,8 @@ describe('SupervisorService', () => {
     });
   });
 
-  describe('getAttendance (area_id branches)', () => {
-    it('should include area info when not-clocked-in worker has area_id and area is found', async () => {
+  describe('getAttendance (location_id branches)', () => {
+    it('should include area info when not-clocked-in worker has location_id and area is found', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -665,7 +668,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: 'area-1',
+          location_id: 'area-1',
         },
       ];
 
@@ -681,7 +684,7 @@ describe('SupervisorService', () => {
       });
     });
 
-    it('should set area to null when worker has area_id but area is not found', async () => {
+    it('should set area to null when worker has location_id but area is not found', async () => {
       const mockAllWorkers = [
         {
           id: 'worker-1',
@@ -689,7 +692,7 @@ describe('SupervisorService', () => {
           full_name: 'Worker One',
           role: UserRole.SATGAS,
           is_active: true,
-          area_id: 'area-missing',
+          location_id: 'area-missing',
         },
       ];
 
@@ -711,7 +714,7 @@ describe('SupervisorService', () => {
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: 'area-1',
+        location_id: 'area-1',
       };
 
       const mockShift = {
@@ -747,7 +750,7 @@ describe('SupervisorService', () => {
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: 'area-1',
+        location_id: 'area-1',
       };
 
       (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
@@ -771,7 +774,7 @@ describe('SupervisorService', () => {
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: null,
+        location_id: null,
       };
 
       const mockShift = {
@@ -802,7 +805,7 @@ describe('SupervisorService', () => {
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: null,
+        location_id: null,
       };
 
       const mockShift = {
@@ -840,7 +843,7 @@ describe('SupervisorService', () => {
         full_name: 'Admin User',
         role: UserRole.SUPERADMIN,
         is_active: true,
-        area_id: null,
+        location_id: null,
       };
 
       (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
@@ -857,7 +860,7 @@ describe('SupervisorService', () => {
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: null,
+        location_id: null,
       };
 
       (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);
@@ -870,14 +873,14 @@ describe('SupervisorService', () => {
       expect(mockShiftsRepository.findOne as jest.Mock).toHaveBeenCalled();
     });
 
-    it('should include user area when area_id is set and area is found', async () => {
+    it('should include user area when location_id is set and area is found', async () => {
       const mockUser = {
         id: 'worker-1',
         username: 'worker1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: 'area-1',
+        location_id: 'area-1',
       };
 
       const mockArea = { id: 'area-1', name: 'Taman Bungkul' };
@@ -893,14 +896,14 @@ describe('SupervisorService', () => {
       expect(mockAreasRepository.findOne).toHaveBeenCalled();
     });
 
-    it('should have null user area when area_id is not set', async () => {
+    it('should have null user area when location_id is not set', async () => {
       const mockUser = {
         id: 'worker-1',
         username: 'worker1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         is_active: true,
-        area_id: null,
+        location_id: null,
       };
 
       (mockUsersRepository.findOne as jest.Mock).mockResolvedValueOnce(mockUser);

@@ -13,7 +13,7 @@ import {
 import { AssetCategory } from './asset-category.entity';
 import { AssetAssignment } from './asset-assignment.entity';
 import { AssetMaintenance } from './asset-maintenance.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { AssetStatus, AssetCondition } from '../enums/asset.enums';
 
@@ -24,7 +24,7 @@ import { AssetStatus, AssetCondition } from '../enums/asset.enums';
  */
 @Entity('assets')
 @Index(['status'])
-@Index(['area_id'])
+@Index(['location_id'])
 @Index(['rayon_id'])
 export class Asset {
   @PrimaryGeneratedColumn('uuid')
@@ -38,11 +38,11 @@ export class Asset {
   category: AssetCategory;
 
   @Column({ type: 'uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
-  @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'area_id' })
-  area: Area | null;
+  @ManyToOne(() => Location, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'location_id' })
+  area: Location | null;
 
   @Column({ type: 'uuid', nullable: true })
   rayon_id: string | null;

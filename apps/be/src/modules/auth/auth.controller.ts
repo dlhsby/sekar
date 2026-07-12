@@ -22,8 +22,8 @@ import { MeResponseDto } from './dto/me-response.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { Location } from '../locations/entities/location.entity';
+import { UserLocationsService } from '../user-locations/user-locations.service';
 
 /**
  * Authentication Controller
@@ -36,9 +36,9 @@ import { UserAreasService } from '../user-areas/user-areas.service';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
-    private readonly userAreasService: UserAreasService,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
+    private readonly userLocationsService: UserLocationsService,
   ) {}
 
   /**
@@ -295,7 +295,7 @@ export class AuthController {
       phone_number: user.phone_number || null,
       profile_picture_url: user.profile_picture_url || null,
       role: user.role,
-      area_id: user.area_id || null,
+      location_id: user.location_id || null,
       rayon_id: user.rayon_id || null,
       kecamatan_id: user.kecamatan_id || null,
       kecamatan_name: user.kecamatan_name || null,
@@ -304,17 +304,17 @@ export class AuthController {
     };
 
     // Include area info for field roles
-    // Phase 2C: Check both User.area_id (korlap permanent assignment)
+    // Phase 2C: Check both User.location_id (korlap permanent assignment)
     // and active Schedule (satgas/linmas date-based assignment)
-    if (user.area_id) {
+    if (user.location_id) {
       // Korlap with permanent area assignment
-      userData.area_id = user.area_id;
+      userData.location_id = user.location_id;
       userData.rayon_id = user.rayon_id ?? null;
 
       // Fetch full area details for clock-in/out
       const area = await this.areaRepository.findOne({
-        where: { id: user.area_id },
-        relations: ['areaType'],
+        where: { id: user.location_id },
+        relations: ['locationType'],
       });
       if (area) {
         userData.assigned_area = {
@@ -324,22 +324,24 @@ export class AuthController {
           gps_lng: area.gps_lng,
           radius_meters: area.radius_meters,
           boundary_polygon: area.boundary_polygon || null,
-          area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+          location_type: area.locationType
+            ? { id: area.locationType.id, name: area.locationType.name }
+            : null,
         };
       }
     } else {
       // Satgas/Linmas: resolve the assigned area from the worker's effective
       // areas (permanent user_areas ∪ task-based). ADR-013 made the user the
       // source of truth, replacing the legacy date-based schedules lookup.
-      const effective = await this.userAreasService.getEffectiveAreas(user.id);
+      const effective = await this.userLocationsService.getEffectiveAreas(user.id);
       const primary = effective[0];
       if (primary) {
         const area = await this.areaRepository.findOne({
           where: { id: primary.id },
-          relations: ['areaType'],
+          relations: ['locationType'],
         });
         if (area) {
-          userData.area_id = area.id;
+          userData.location_id = area.id;
           userData.assigned_area = {
             id: area.id,
             name: area.name,
@@ -347,7 +349,9 @@ export class AuthController {
             gps_lng: area.gps_lng,
             radius_meters: area.radius_meters,
             boundary_polygon: area.boundary_polygon || null,
-            area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+            location_type: area.locationType
+              ? { id: area.locationType.id, name: area.locationType.name }
+              : null,
           };
         }
       }

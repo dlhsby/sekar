@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { SupervisorController } from './supervisor.controller';
 import { SupervisorService } from './supervisor.service';
 import { ActiveUsersResponseDto, ActiveUserDto } from './dto/active-users-response.dto';
-import { AreaStatusResponseDto, AreaStatusDto } from './dto/area-status-response.dto';
+import { LocationStatusResponseDto, LocationStatusDto } from './dto/location-status-response.dto';
 import { AttendanceResponseDto, UserAttendanceDetailDto } from './dto/attendance-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -123,14 +123,14 @@ describe('SupervisorController', () => {
 
   describe('getAreaStatus', () => {
     it('should return area status', async () => {
-      const mockAreaStatus: AreaStatusDto = {
+      const mockAreaStatus: LocationStatusDto = {
         id: 'area-uuid-1',
         name: 'Taman Bungkul',
         assigned_workers_count: 3,
         active_workers_count: 2,
       };
 
-      const mockResponse: AreaStatusResponseDto = {
+      const mockResponse: LocationStatusResponseDto = {
         areas: [mockAreaStatus],
       };
 
@@ -146,7 +146,7 @@ describe('SupervisorController', () => {
     });
 
     it('should return empty array if no areas', async () => {
-      const mockResponse: AreaStatusResponseDto = {
+      const mockResponse: LocationStatusResponseDto = {
         areas: [],
       };
 

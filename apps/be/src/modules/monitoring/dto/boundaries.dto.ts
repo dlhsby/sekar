@@ -11,7 +11,7 @@ export class RoleStaffingItemDto {
   active: number;
 }
 
-export class AreaBoundaryDto {
+export class LocationBoundaryDto {
   @ApiProperty({ example: 'area-uuid' })
   id: string;
 
@@ -74,8 +74,8 @@ export class RayonBoundaryDto {
   @ApiProperty({ example: 1 })
   understaffed_area_count: number;
 
-  @ApiProperty({ type: [AreaBoundaryDto] })
-  areas: AreaBoundaryDto[];
+  @ApiProperty({ type: [LocationBoundaryDto] })
+  areas: LocationBoundaryDto[];
 }
 
 export class BoundariesResponseDto {

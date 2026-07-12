@@ -19,7 +19,7 @@ import {
 } from './dto/events.dto';
 import { TrackingStatus } from '../modules/monitoring/entities/user-tracking-status.entity';
 import { User, UserRole } from '../modules/users/entities/user.entity';
-import { UserAreasService } from '../modules/user-areas/user-areas.service';
+import { UserLocationsService } from '../modules/user-locations/user-locations.service';
 import { RoomJoinService } from './services/room-join.service';
 
 describe('EventsGateway', () => {
@@ -77,8 +77,8 @@ describe('EventsGateway', () => {
           useValue: mockUserRepository,
         },
         {
-          provide: UserAreasService,
-          useValue: { getPermanentAreaIds: jest.fn().mockResolvedValue([]) },
+          provide: UserLocationsService,
+          useValue: { getPermanentLocationIds: jest.fn().mockResolvedValue([]) },
         },
       ],
     }).compile();
@@ -249,7 +249,7 @@ describe('EventsGateway', () => {
   describe('subscribe:area', () => {
     it('should subscribe client to area room', () => {
       const result = gateway.handleSubscribeArea(mockClient, {
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
 
       expect(mockClient.join).toHaveBeenCalledWith('monitoring:area:area-1');
@@ -260,7 +260,7 @@ describe('EventsGateway', () => {
   describe('unsubscribe:area', () => {
     it('should unsubscribe client from area room', () => {
       const result = gateway.handleUnsubscribeArea(mockClient, {
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
 
       expect(mockClient.leave).toHaveBeenCalledWith('monitoring:area:area-1');
@@ -297,7 +297,7 @@ describe('EventsGateway', () => {
       role: UserRole.SATGAS,
       shift_id: 'shift-1',
       shift_name: 'Shift Pagi',
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       latitude: -7.2905,
@@ -353,7 +353,7 @@ describe('EventsGateway', () => {
       user_name: 'Worker One',
       role: UserRole.SATGAS,
       shift_id: 'shift-1',
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       latitude: -7.2905,
@@ -388,7 +388,7 @@ describe('EventsGateway', () => {
       user_id: 'worker-1',
       user_name: 'Worker One',
       shift_id: 'shift-1',
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       timestamp: new Date(),
@@ -419,7 +419,7 @@ describe('EventsGateway', () => {
 
   describe('emitAreaStaffing', () => {
     const staffingEvent: AreaStaffingEvent = {
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       workers_required: 5,
@@ -456,7 +456,7 @@ describe('EventsGateway', () => {
     const taskAssignedEvent: TaskAssignedEvent = {
       task_id: 'task-1',
       title: 'Water plants',
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       assigned_to: 'worker-1',
@@ -500,7 +500,7 @@ describe('EventsGateway', () => {
     const taskCompletedEvent: TaskCompletedEvent = {
       task_id: 'task-1',
       title: 'Water plants',
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       completed_by: 'worker-1',
@@ -542,7 +542,7 @@ describe('EventsGateway', () => {
         sub: 'kr-1',
         role: UserRole.KEPALA_RAYON,
       });
-      userRepo.findOne.mockResolvedValue({ id: 'kr-1', rayon_id: 'rayon-3', area_id: null });
+      userRepo.findOne.mockResolvedValue({ id: 'kr-1', rayon_id: 'rayon-3', location_id: null });
 
       await gateway.handleConnection(mockClient);
 
@@ -556,7 +556,7 @@ describe('EventsGateway', () => {
         sub: 'korlap-1',
         role: UserRole.KORLAP,
       });
-      userRepo.findOne.mockResolvedValue({ id: 'korlap-1', rayon_id: null, area_id: 'area-5' });
+      userRepo.findOne.mockResolvedValue({ id: 'korlap-1', rayon_id: null, location_id: 'area-5' });
 
       await gateway.handleConnection(mockClient);
 
@@ -595,7 +595,7 @@ describe('EventsGateway', () => {
         sub: 'ad-1',
         role: UserRole.ADMIN_DATA,
       });
-      userRepo.findOne.mockResolvedValue({ id: 'ad-1', rayon_id: 'rayon-2', area_id: null });
+      userRepo.findOne.mockResolvedValue({ id: 'ad-1', rayon_id: 'rayon-2', location_id: null });
 
       await gateway.handleConnection(mockClient);
 
@@ -619,7 +619,7 @@ describe('EventsGateway', () => {
       user_id: 'user-1',
       user_name: 'Test User',
       role: UserRole.SATGAS,
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       previous_status: TrackingStatus.ACTIVE,
@@ -640,8 +640,8 @@ describe('EventsGateway', () => {
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_STATUS_CHANGED, statusEvent);
     });
 
-    it('should skip area room when area_id is null', () => {
-      const noAreaEvent = { ...statusEvent, area_id: null };
+    it('should skip area room when location_id is null', () => {
+      const noAreaEvent = { ...statusEvent, location_id: null };
       mockServer.to.mockClear();
 
       gateway.emitUserStatusChanged(noAreaEvent);
@@ -670,7 +670,7 @@ describe('EventsGateway', () => {
       user_id: 'user-1',
       user_name: 'Test User',
       role: UserRole.SATGAS,
-      area_id: 'area-1',
+      location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       latitude: -7.5,
@@ -706,7 +706,7 @@ describe('EventsGateway', () => {
         user_id: 'user-1',
         user_name: 'Test User',
         role: UserRole.SATGAS,
-        area_id: 'area-1',
+        location_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         latitude: -7.29,
@@ -728,10 +728,10 @@ describe('EventsGateway', () => {
       user_id: 'user-1',
       user_name: 'Test User',
       role: UserRole.SATGAS,
-      previous_area_id: 'area-old',
-      previous_area_name: 'Old Area',
-      new_area_id: 'area-new',
-      new_area_name: 'New Area',
+      previous_location_id: 'area-old',
+      previous_area_name: 'Old Location',
+      new_location_id: 'area-new',
+      new_area_name: 'New Location',
       rayon_id: 'rayon-1',
       timestamp: new Date(),
     };
@@ -746,8 +746,8 @@ describe('EventsGateway', () => {
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_REASSIGNED, reassignedEvent);
     });
 
-    it('should skip old area room when previous_area_id is null', () => {
-      const noPrevEvent = { ...reassignedEvent, previous_area_id: null };
+    it('should skip old area room when previous_location_id is null', () => {
+      const noPrevEvent = { ...reassignedEvent, previous_location_id: null };
       mockServer.to.mockClear();
 
       gateway.emitUserReassigned(noPrevEvent);
@@ -775,7 +775,7 @@ describe('EventsGateway', () => {
 
   describe('emitAreaStaffingChanged', () => {
     const staffingChangedEvent: AreaStaffingChangedEvent = {
-      area_id: 'area-1',
+      location_id: 'area-1',
       rayon_id: 'rayon-1',
       active_count: 3,
       required_count: 5,

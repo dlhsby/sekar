@@ -4,7 +4,7 @@ import { Repository, IsNull } from 'typeorm';
 import { Shift } from './entities/shift.entity';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
-import { AreasService } from '../areas/areas.service';
+import { LocationsService } from '../locations/locations.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
@@ -13,12 +13,12 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { getMinimumShiftDurationMinutes } from '../../common/constants/shift.constants';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { User } from '../users/entities/user.entity';
 import { StatusCalculatorService } from '../monitoring/services/status-calculator.service';
 import { AuditLogService } from '../audit/audit.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../user-locations/user-locations.service';
 import { SchedulesService } from '../schedules/schedules.service';
 import { GpsUtil } from '../../common/utils/gps.util';
 
@@ -39,8 +39,8 @@ export class ShiftsService {
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    private readonly userAreasService: UserAreasService,
-    private readonly areasService: AreasService,
+    private readonly userLocationsService: UserLocationsService,
+    private readonly locationsService: LocationsService,
     @Optional()
     @Inject(forwardRef(() => StatusCalculatorService))
     private readonly statusCalculator: StatusCalculatorService | undefined,
@@ -67,17 +67,17 @@ export class ShiftsService {
    * task_based + active explicit schedules) and a single shift. With GPS we
    * pick the assigned area whose geofence CONTAINS the point; if several/none
    * contain it we pick the CLOSEST centre. Without GPS we prefer the primary
-   * (`users.area_id`) then the first candidate. Returns null when the worker
+   * (`users.location_id`) then the first candidate. Returns null when the worker
    * has no assigned area (ad-hoc) — clock-in still proceeds.
    *
    * @param userId User UUID
    * @param lat optional clock-in latitude
    * @param lng optional clock-in longitude
    */
-  async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Area | null> {
+  async getActiveArea(userId: string, lat?: number, lng?: number): Promise<Location | null> {
     // Prefer today's roster areas (ADR-013); fall back to the standing
     // assignment (user_areas + active schedules) when there is no roster row.
-    let candidates: Area[] = [];
+    let candidates: Location[] = [];
     if (this.dailySchedulesService) {
       const today = TimezoneUtil.jakartaDateString();
       candidates = await this.dailySchedulesService.getActiveAreasForDay(userId, today);
@@ -102,7 +102,7 @@ export class ShiftsService {
 
     // No GPS: prefer the designated primary, else the first candidate.
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    return candidates.find((a) => a.id === user?.area_id) ?? candidates[0];
+    return candidates.find((a) => a.id === user?.location_id) ?? candidates[0];
   }
 
   /**
@@ -110,15 +110,15 @@ export class ShiftsService {
    * task_based (`user_areas`). The roster (today's areas) is preferred upstream
    * in `getActiveArea`; this is the fallback when there is no roster row.
    */
-  private async getCandidateAreas(userId: string): Promise<Area[]> {
-    const effective = await this.userAreasService.getEffectiveAreas(userId);
-    const byId = new Map<string, Area>();
+  private async getCandidateAreas(userId: string): Promise<Location[]> {
+    const effective = await this.userLocationsService.getEffectiveAreas(userId);
+    const byId = new Map<string, Location>();
     for (const area of effective) if (area) byId.set(area.id, area);
     return [...byId.values()];
   }
 
   /** Pick the area whose centre is nearest the point. */
-  private closestArea(areas: Area[], lat: number, lng: number): Area {
+  private closestArea(areas: Location[], lat: number, lng: number): Location {
     let best = areas[0];
     let bestDist = Infinity;
     for (const area of areas) {
@@ -187,7 +187,7 @@ export class ShiftsService {
    * Phase 2C: GPS boundary validation removed, area auto-detection added
    *
    * @param userId User UUID
-   * @param dto Clock-in data (optional area_id, GPS, selfie photo)
+   * @param dto Clock-in data (optional location_id, GPS, selfie photo)
    * @returns Created shift entity
    * @throws BadRequestException if already clocked in
    */
@@ -206,9 +206,9 @@ export class ShiftsService {
     }
 
     // 2. Get area: from DTO or auto-detect
-    let area: Area | null = null;
-    if (dto.area_id) {
-      area = await this.areasService.findOne(dto.area_id);
+    let area: Location | null = null;
+    if (dto.location_id) {
+      area = await this.locationsService.findOne(dto.location_id);
     } else {
       // GPS-aware: closest/containing among the worker's assigned areas.
       area = await this.getActiveArea(userId, dto.gps_lat, dto.gps_lng);
@@ -236,7 +236,7 @@ export class ShiftsService {
     // 6. Create shift record
     const shift = this.shiftRepository.create({
       user_id: userId,
-      area_id: area?.id || null,
+      location_id: area?.id || null,
       shift_definition_id: shiftDefinition?.id || null,
       clock_in_time: new Date(),
       clock_in_gps_lat: dto.gps_lat,
@@ -248,7 +248,7 @@ export class ShiftsService {
 
     const savedShift = await this.shiftRepository.save(shift);
     this.logger.log(
-      `User ${userId} clocked in successfully. Shift ID: ${savedShift.id}, Area: ${area?.name || 'None'}`,
+      `User ${userId} clocked in successfully. Shift ID: ${savedShift.id}, Location: ${area?.name || 'None'}`,
     );
 
     if (this.statusCalculator) {
@@ -256,7 +256,7 @@ export class ShiftsService {
         .onClockIn(
           userId,
           savedShift.id,
-          savedShift.area_id,
+          savedShift.location_id,
           savedShift.shift_definition_id ?? null,
           dto.gps_lat,
           dto.gps_lng,
@@ -276,7 +276,7 @@ export class ShiftsService {
         action: 'clock_in',
         actor_id: userId,
         new_value: {
-          area_id: savedShift.area_id,
+          location_id: savedShift.location_id,
           is_overtime: isOvertime,
           clock_in_outside_boundary: clockInOutsideBoundary,
         },
@@ -402,7 +402,7 @@ export class ShiftsService {
         clock_out_time: IsNull(),
       },
       // shift_definition carries the scheduled start_time used for the late check.
-      relations: ['area', 'area.areaType', 'user', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'user', 'shift_definition'],
     });
   }
 
@@ -416,7 +416,7 @@ export class ShiftsService {
   async findOne(id: string): Promise<Shift> {
     const shift = await this.shiftRepository.findOne({
       where: { id },
-      relations: ['area', 'area.areaType', 'user'],
+      relations: ['area', 'area.locationType', 'user'],
     });
 
     if (!shift) {
@@ -440,7 +440,7 @@ export class ShiftsService {
   async findByUserId(userId: string, limit = 50): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       take: limit,
     });
@@ -457,7 +457,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -549,7 +549,7 @@ export class ShiftsService {
     return this.shiftRepository
       .createQueryBuilder('shift')
       .leftJoinAndSelect('shift.area', 'area')
-      .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('area.locationType', 'locationType')
       .leftJoinAndSelect('shift.shift_definition', 'shift_definition')
       .where('shift.user_id = :userId', { userId })
       .andWhere('shift.is_overtime = false')
@@ -608,13 +608,13 @@ export class ShiftsService {
   /**
    * Get all shifts for an area
    *
-   * @param areaId Area UUID
+   * @param locationId Location UUID
    * @param limit Maximum number of results (default: 100)
    * @returns Array of shifts ordered by clock-in time descending
    */
-  async findByAreaId(areaId: string, limit = 100): Promise<Shift[]> {
+  async findByAreaId(locationId: string, limit = 100): Promise<Shift[]> {
     return this.shiftRepository.find({
-      where: { area_id: areaId },
+      where: { location_id: locationId },
       relations: ['user'],
       order: { clock_in_time: 'DESC' },
       take: limit,
@@ -643,7 +643,7 @@ export class ShiftsService {
   async findAllActiveShifts(): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { clock_out_time: IsNull() },
-      relations: ['user', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.locationType'],
       order: { clock_in_time: 'ASC' },
     });
   }
@@ -661,7 +661,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { clock_out_time: IsNull() },
-      relations: ['user', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.locationType'],
       order: { clock_in_time: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

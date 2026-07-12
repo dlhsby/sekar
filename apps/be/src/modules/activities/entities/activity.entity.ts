@@ -12,7 +12,7 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Task } from '../../tasks/entities/task.entity';
 import { ActivityType } from '../../activity-types/entities/activity-type.entity';
 
@@ -57,9 +57,9 @@ export class Activity {
   @Column({ type: 'uuid' })
   shift_id: string;
 
-  @ApiProperty({ description: 'Area UUID where work was performed', nullable: true })
+  @ApiProperty({ description: 'Location UUID where work was performed', nullable: true })
   @Column({ type: 'uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({
     description: 'Task UUID (if activity is linked to a task)',
@@ -201,10 +201,14 @@ export class Activity {
   @JoinColumn({ name: 'shift_id' })
   shift: Shift;
 
-  @ApiProperty({ type: () => Area, description: 'Area where work was performed', nullable: true })
-  @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'area_id' })
-  area?: Area;
+  @ApiProperty({
+    type: () => Location,
+    description: 'Location where work was performed',
+    nullable: true,
+  })
+  @ManyToOne(() => Location, { eager: true, nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'location_id' })
+  area?: Location;
 
   @ApiProperty({
     type: () => Task,

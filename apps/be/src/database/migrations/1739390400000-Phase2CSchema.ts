@@ -7,7 +7,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * ROLE SYSTEM OVERHAUL (Migration 0):
  * - Update users.role CHECK constraint (7 → 8 roles)
- * - Add users.area_id column (UUID FK to areas)
+ * - Add users.location_id column (UUID FK to areas)
  * - Migrate existing role values
  *
  * ACTIVITY TYPES UPDATE (Migration 1):
@@ -26,7 +26,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  *
  * TASKS SCHEMA UPDATE (Migration 3):
  * - ADD tasks.rayon_id (UUID FK to rayons)
- * - ALTER tasks.area_id (make nullable)
+ * - ALTER tasks.location_id (make nullable)
  * - DROP COLUMNS: activity_type_id, completion_gps_lat, completion_gps_lng,
  *                 decline_reason, declined_at, accepted_at
  * - UPDATE TaskStatus constraint (6 → 4 values)
@@ -61,18 +61,18 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       ALTER TABLE users DROP CONSTRAINT IF EXISTS chk_users_role;
     `);
 
-    // Step 2: Add area_id column
-    console.log('  - Adding area_id column to users...');
+    // Step 2: Add location_id column
+    console.log('  - Adding location_id column to users...');
     await queryRunner.query(`
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS area_id UUID;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS location_id UUID;
     `);
     await queryRunner.query(`
-      ALTER TABLE users ADD CONSTRAINT FK_users_area_id
-        FOREIGN KEY (area_id) REFERENCES areas(id)
+      ALTER TABLE users ADD CONSTRAINT FK_users_location_id
+        FOREIGN KEY (location_id) REFERENCES areas(id)
         ON DELETE SET NULL;
     `);
     await queryRunner.query(`
-      CREATE INDEX IF NOT EXISTS idx_users_area_id ON users(area_id);
+      CREATE INDEX IF NOT EXISTS idx_users_location_id ON users(location_id);
     `);
 
     // Step 3: Migrate existing role values
@@ -193,7 +193,7 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       CREATE TABLE IF NOT EXISTS overtimes (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+        location_id UUID REFERENCES areas(id) ON DELETE SET NULL,
         date DATE,
         start_time TIME,
         end_time TIME,
@@ -394,7 +394,7 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
         status VARCHAR(20) NOT NULL DEFAULT 'pending',
         priority VARCHAR(20) NOT NULL DEFAULT 'medium',
         deadline TIMESTAMPTZ,
-        area_id UUID REFERENCES areas(id) ON DELETE SET NULL,
+        location_id UUID REFERENCES areas(id) ON DELETE SET NULL,
         rayon_id UUID,
         assigned_to UUID REFERENCES users(id) ON DELETE SET NULL,
         created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -429,10 +429,10 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       CREATE INDEX IF NOT EXISTS idx_tasks_rayon_id ON tasks(rayon_id);
     `);
 
-    // Make area_id nullable (tasks can be rayon-scoped without specific area)
-    console.log('  - Making tasks.area_id nullable...');
+    // Make location_id nullable (tasks can be rayon-scoped without specific area)
+    console.log('  - Making tasks.location_id nullable...');
     await queryRunner.query(`
-      ALTER TABLE tasks ALTER COLUMN area_id DROP NOT NULL;
+      ALTER TABLE tasks ALTER COLUMN location_id DROP NOT NULL;
     `);
 
     // Remove activity_type_id (tasks don't have activity types in 2C)
@@ -619,11 +619,11 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     console.log('✅ Phase 2C database migration completed successfully!');
     console.log('');
     console.log('Summary of changes:');
-    console.log('  ✅ [M0] Role system: 7 → 8 roles, added users.area_id');
+    console.log('  ✅ [M0] Role system: 7 → 8 roles, added users.location_id');
     console.log('  ✅ [M1] Activity types: PascalCase → lowercase, 10 → 20 types');
     console.log('  ✅ [M2] Terminology: 2 tables renamed, 2 tables dropped, 3 column renames');
     console.log(
-      '  ✅ [M3] Tasks: +rayon_id, area_id nullable, 6 → 4 statuses, task_tags table created',
+      '  ✅ [M3] Tasks: +rayon_id, location_id nullable, 6 → 4 statuses, task_tags table created',
     );
     console.log(
       '  ✅ [M4] Activities: multi-photo support, activity_type_id required, legacy columns dropped',
@@ -634,7 +634,7 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
     console.log('⚠️  IMPORTANT POST-MIGRATION STEPS:');
     console.log('   1. Update seed data (npm run seed)');
     console.log('   2. Invalidate all refresh tokens (force re-authentication)');
-    console.log('   3. Manually populate users.area_id for existing korlap users');
+    console.log('   3. Manually populate users.location_id for existing korlap users');
     console.log('   4. Run backend tests to verify entity changes');
   }
 
@@ -696,9 +696,9 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       '  ⚠️  Cannot restore: accepted_at, declined_at, decline_reason, completion_gps_lat, completion_gps_lng, activity_type_id',
     );
 
-    // Revert area_id to NOT NULL
+    // Revert location_id to NOT NULL
     await queryRunner.query(`
-      ALTER TABLE tasks ALTER COLUMN area_id SET NOT NULL;
+      ALTER TABLE tasks ALTER COLUMN location_id SET NOT NULL;
     `);
 
     // Drop rayon_id
@@ -874,15 +874,15 @@ export class Phase2CSchema1739390400000 implements MigrationInterface {
       );
     `);
 
-    // Drop area_id column
+    // Drop location_id column
     await queryRunner.query(`
-      DROP INDEX IF EXISTS idx_users_area_id;
+      DROP INDEX IF EXISTS idx_users_location_id;
     `);
     await queryRunner.query(`
-      ALTER TABLE users DROP CONSTRAINT IF EXISTS FK_users_area_id;
+      ALTER TABLE users DROP CONSTRAINT IF EXISTS FK_users_location_id;
     `);
     await queryRunner.query(`
-      ALTER TABLE users DROP COLUMN IF EXISTS area_id;
+      ALTER TABLE users DROP COLUMN IF EXISTS location_id;
     `);
 
     console.log('✅ Phase 2C database migration rollback completed!');

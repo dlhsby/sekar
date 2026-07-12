@@ -1,5 +1,5 @@
 import { runProfileCli, type SeedContext } from '../lib/context';
-import { seedAreaTypes } from '../entities/area-type';
+import { seedAreaTypes } from '../entities/location-type';
 import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
@@ -22,7 +22,7 @@ import { superadminPasswordHash } from '../constants';
  *   - users 1 (superadmin only)
  *   - rayons 8 (7 geographic + Taman Aktif)
  *   - kecamatans 31
- *   - area_types 4
+ *   - location_types 4
  *   - shift_definitions 3
  *   - activity_types 20
  *   - special_day_overrides 4
@@ -70,7 +70,7 @@ async function seedReference(ctx: SeedContext): Promise<void> {
   ctx.log('╚═══════════════════════════════════════════════════════════════════════════╝');
   ctx.log('');
   ctx.log('Summary (idempotent):');
-  ctx.log('  - 4   area_types');
+  ctx.log('  - 4   location_types');
   ctx.log('  - 8   rayons (7 geographic + Rayon Taman Aktif)');
   ctx.log('  - 31  kecamatans');
   ctx.log('  - 3   shift_definitions (SHIFT1/2/3)');

@@ -93,7 +93,7 @@ export class Phase5ReportingTables17490001000000 implements MigrationInterface {
         ('Laporan Kinerja Mingguan', 'weekly-performance', 'Weekly performance analysis with trends and rankings', 'weekly_performance', true, NOW(), NOW()),
         ('Ringkasan Laporan Bulanan', 'monthly-summary', 'Monthly summary with KPIs and analysis', 'monthly_summary', true, NOW(), NOW()),
         ('Laporan Kinerja Pekerja', 'worker-performance', 'Individual worker performance report', 'worker_performance', true, NOW(), NOW()),
-        ('Laporan Status Area', 'area-status', 'Area-specific status report with staffing and tasks', 'area_status', true, NOW(), NOW()),
+        ('Laporan Status Location', 'area-status', 'Location-specific status report with staffing and tasks', 'area_status', true, NOW(), NOW()),
         ('Laporan Utilisasi Lembur', 'overtime-utilization', 'Overtime usage and cost analysis', 'overtime_utilization', true, NOW(), NOW())
       ON CONFLICT DO NOTHING
     `);

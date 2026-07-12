@@ -9,7 +9,7 @@ import { AuditLogService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
 import { TaskFinderService } from './task-finder.service';
-import { TaskAreaSyncService } from './task-area-sync.service';
+import { TaskLocationSyncService } from './task-location-sync.service';
 
 /** Pick a subset of keys from an object without mutating. */
 function pick<T, K extends keyof T>(obj: T, keys: K[]): Pick<T, K> {
@@ -53,7 +53,7 @@ export class TaskStatusTransitionsService {
     private readonly taskFinder: TaskFinderService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
-    private readonly taskAreaSync: TaskAreaSyncService,
+    private readonly taskAreaSync: TaskLocationSyncService,
   ) {}
 
   /** Start working on a task (by assignee). */
@@ -203,7 +203,7 @@ export class TaskStatusTransitionsService {
       ...pick(parent, [
         'title',
         'description',
-        'area_id',
+        'location_id',
         'rayon_id',
         'taskType',
         'assigned_to',

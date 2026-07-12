@@ -320,7 +320,7 @@ describe('PruningRequestsController', () => {
   describe('assignToTask', () => {
     it('should convert approved request to task', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -353,7 +353,7 @@ describe('PruningRequestsController', () => {
 
     it('should return existing task if already converted (idempotent)', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,
@@ -379,7 +379,7 @@ describe('PruningRequestsController', () => {
 
     it('should pass through service exceptions', async () => {
       const dto = {
-        areaId: '11111111-1111-1111-1111-111111111101',
+        locationId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
         scheduledDate: '2026-04-28',
         caseType: 'GT' as const,

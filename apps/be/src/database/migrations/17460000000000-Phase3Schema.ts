@@ -25,7 +25,7 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS area_plants (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+        location_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
         species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
         count INT NOT NULL DEFAULT 0,
         last_pruned_at TIMESTAMPTZ NULL,
@@ -34,17 +34,17 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         override_cycle_days INT NULL,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
-        UNIQUE (area_id, species_id)
+        UNIQUE (location_id, species_id)
       )
     `);
     await queryRunner.query(`
       DO $$ BEGIN
-        ALTER TABLE area_plants ADD CONSTRAINT uq_area_plants_area_species UNIQUE (area_id, species_id);
+        ALTER TABLE area_plants ADD CONSTRAINT uq_area_plants_area_species UNIQUE (location_id, species_id);
       EXCEPTION WHEN duplicate_object THEN NULL;
       END $$
     `);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS idx_area_plants_area_status ON area_plants (area_id, status)`,
+      `CREATE INDEX IF NOT EXISTS idx_area_plants_area_status ON area_plants (location_id, status)`,
     );
     await queryRunner.query(
       `CREATE INDEX IF NOT EXISTS idx_area_plants_next_due ON area_plants (next_due_at)`,
@@ -54,7 +54,7 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE TABLE IF NOT EXISTS notable_plants (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        area_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
+        location_id UUID NOT NULL REFERENCES areas(id) ON DELETE CASCADE,
         species_id UUID NOT NULL REFERENCES plant_species(id) ON DELETE RESTRICT,
         gps_lat NUMERIC(10, 8) NOT NULL,
         gps_lng NUMERIC(11, 8) NOT NULL,
@@ -67,7 +67,7 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
       )
     `);
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS idx_notable_plants_area ON notable_plants (area_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_notable_plants_area ON notable_plants (location_id)`,
     );
 
     // 4. pruning_requests (converted_task_id nullable to avoid circular FK)
@@ -176,7 +176,7 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
         supplier TEXT NULL,
         receipt_url TEXT NULL,
         to_rayon_id UUID NULL REFERENCES rayons(id) ON DELETE SET NULL,
-        to_area_id UUID NULL REFERENCES areas(id) ON DELETE SET NULL,
+        to_location_id UUID NULL REFERENCES areas(id) ON DELETE SET NULL,
         recipient_name TEXT NULL,
         occurred_at DATE NOT NULL,
         recorded_by UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
@@ -259,10 +259,10 @@ export class Phase3Schema17460000000000 implements MigrationInterface {
 
     // 12. user_tracking_status indexes
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS idx_user_tracking_area_updated ON user_tracking_status (area_id, updated_at DESC)`,
+      `CREATE INDEX IF NOT EXISTS idx_user_tracking_area_updated ON user_tracking_status (location_id, updated_at DESC)`,
     );
     await queryRunner.query(
-      `CREATE INDEX IF NOT EXISTS idx_user_tracking_within_area ON user_tracking_status (is_within_area, area_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_user_tracking_within_area ON user_tracking_status (is_within_area, location_id)`,
     );
   }
 

@@ -78,7 +78,7 @@ export class ExportRequestDto {
   @ApiPropertyOptional({ description: 'Filter by area id' })
   @IsOptional()
   @IsUUID()
-  areaId?: string;
+  locationId?: string;
 
   @ApiPropertyOptional({ description: 'Filter by rayon id' })
   @IsOptional()

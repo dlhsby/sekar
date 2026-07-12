@@ -8,12 +8,12 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * UNIQUE index so `REFRESH MATERIALIZED VIEW CONCURRENTLY` never blocks reads.
  *
  * Column sources verified against the live schema:
- *   shifts(clock_in_time, clock_out_time, shift_definition_id, user_id, area_id)
+ *   shifts(clock_in_time, clock_out_time, shift_definition_id, user_id, location_id)
  *   shift_definitions(start_time::time)
  *   overtimes(start_datetime, end_datetime, status='approved', user_id)
  *   location_logs(logged_at, user_id)  — no historical within-area flag, so
  *     within_area_pings is reported equal to total_pings for now.
- *   asset_maintenances(asset_id, completed_at, status) → assets(area_id)
+ *   asset_maintenances(asset_id, completed_at, status) → assets(location_id)
  */
 export class Phase5AnalyticsViews17490002000000 implements MigrationInterface {
   name = 'Phase5AnalyticsViews17490002000000';
@@ -101,53 +101,53 @@ export class Phase5AnalyticsViews17490002000000 implements MigrationInterface {
     await queryRunner.query(`
       CREATE MATERIALIZED VIEW IF NOT EXISTS area_metrics_daily AS
       WITH shift_area AS (
-        SELECT s.area_id,
+        SELECT s.location_id,
                DATE(s.clock_in_time) AS date,
                COUNT(DISTINCT s.user_id) FILTER (WHERE s.clock_out_time IS NOT NULL) AS attended_workers
         FROM shifts s
-        WHERE s.deleted_at IS NULL AND s.area_id IS NOT NULL
+        WHERE s.deleted_at IS NULL AND s.location_id IS NOT NULL
           AND s.clock_in_time >= CURRENT_DATE - INTERVAL '90 days'
-        GROUP BY s.area_id, DATE(s.clock_in_time)
+        GROUP BY s.location_id, DATE(s.clock_in_time)
       ),
       task_area AS (
-        SELECT t.area_id,
+        SELECT t.location_id,
                DATE(t.created_at) AS date,
                COUNT(*) FILTER (WHERE t.status NOT IN ('completed', 'verified', 'declined')) AS open_tasks_count
         FROM tasks t
-        WHERE t.deleted_at IS NULL AND t.area_id IS NOT NULL
+        WHERE t.deleted_at IS NULL AND t.location_id IS NOT NULL
           AND t.created_at >= CURRENT_DATE - INTERVAL '90 days'
-        GROUP BY t.area_id, DATE(t.created_at)
+        GROUP BY t.location_id, DATE(t.created_at)
       ),
       maint_area AS (
-        SELECT ast.area_id,
+        SELECT ast.location_id,
                DATE(am.completed_at) AS date,
                COUNT(*) AS maintenance_count
         FROM asset_maintenances am
         JOIN assets ast ON ast.id = am.asset_id
         WHERE am.completed_at >= CURRENT_DATE - INTERVAL '90 days'
-          AND am.status = 'completed' AND ast.area_id IS NOT NULL
-        GROUP BY ast.area_id, DATE(am.completed_at)
+          AND am.status = 'completed' AND ast.location_id IS NOT NULL
+        GROUP BY ast.location_id, DATE(am.completed_at)
       ),
       base AS (
-        SELECT area_id, date FROM shift_area
-        UNION SELECT area_id, date FROM task_area
-        UNION SELECT area_id, date FROM maint_area
+        SELECT location_id, date FROM shift_area
+        UNION SELECT location_id, date FROM task_area
+        UNION SELECT location_id, date FROM maint_area
       )
-      SELECT b.area_id,
+      SELECT b.location_id,
              b.date,
              COALESCE(sa.attended_workers, 0) AS attended_workers,
-             COALESCE((SELECT COUNT(DISTINCT ua.user_id) FROM user_areas ua WHERE ua.area_id = b.area_id), 0) AS required_workers,
+             COALESCE((SELECT COUNT(DISTINCT ua.user_id) FROM user_areas ua WHERE ua.location_id = b.location_id), 0) AS required_workers,
              COALESCE(ta.open_tasks_count, 0) AS open_tasks_count,
              COALESCE(ma.maintenance_count, 0) AS maintenance_count,
              0 AS outside_area_events,
              0 AS missing_events
       FROM base b
-      LEFT JOIN shift_area sa ON sa.area_id = b.area_id AND sa.date = b.date
-      LEFT JOIN task_area ta ON ta.area_id = b.area_id AND ta.date = b.date
-      LEFT JOIN maint_area ma ON ma.area_id = b.area_id AND ma.date = b.date;
+      LEFT JOIN shift_area sa ON sa.location_id = b.location_id AND sa.date = b.date
+      LEFT JOIN task_area ta ON ta.location_id = b.location_id AND ta.date = b.date
+      LEFT JOIN maint_area ma ON ma.location_id = b.location_id AND ma.date = b.date;
     `);
     await queryRunner.query(
-      `CREATE UNIQUE INDEX IF NOT EXISTS idx_amd_area_date ON area_metrics_daily (area_id, date);`,
+      `CREATE UNIQUE INDEX IF NOT EXISTS idx_amd_area_date ON area_metrics_daily (location_id, date);`,
     );
 
     // ---- operational_metrics_daily (6 KPIs / day) — date spine ----

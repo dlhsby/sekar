@@ -44,7 +44,7 @@ const NOTABLES: NotableSeed[] = [
 /**
  * Seed 3 notable/heritage plants with GPS coordinates.
  * Uses ctx.maps.speciesIdByName from plant-species seeding.
- * Idempotent via (area_id, species_id, label) check.
+ * Idempotent via (location_id, species_id, label) check.
  */
 export async function seedNotablePlants(ctx: SeedContext): Promise<void> {
   ctx.log('📍 Seeding Notable Plants…');
@@ -59,13 +59,13 @@ export async function seedNotablePlants(ctx: SeedContext): Promise<void> {
     if (!speciesId) continue;
     const existing = await ctx.qr.query(
       `SELECT id FROM notable_plants
-       WHERE area_id = $1 AND species_id = $2 AND label = $3 LIMIT 1`,
+       WHERE location_id = $1 AND species_id = $2 AND label = $3 LIMIT 1`,
       [areaRow[0].id, speciesId, n.label],
     );
     if (existing.length > 0) continue;
     await ctx.qr.query(
       `INSERT INTO notable_plants
-         (area_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
+         (location_id, species_id, gps_lat, gps_lng, label, heritage, notes, photo_urls)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [areaRow[0].id, speciesId, n.lat, n.lng, n.label, n.heritage, n.notes, []],
     );

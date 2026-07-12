@@ -32,7 +32,7 @@ class AssignedAreaDto {
   boundary_polygon?: object | null;
 
   @ApiPropertyOptional({ type: AssignedAreaTypeDto, nullable: true })
-  area_type: AssignedAreaTypeDto | null;
+  location_type: AssignedAreaTypeDto | null;
 }
 
 /**
@@ -64,7 +64,7 @@ export class MeResponseDto {
   role: UserRole;
 
   @ApiPropertyOptional({ example: 'area-uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
   rayon_id: string | null;

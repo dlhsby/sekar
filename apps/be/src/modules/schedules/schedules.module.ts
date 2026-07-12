@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Schedule } from './entities/schedule.entity';
-import { ScheduleArea } from './entities/schedule-area.entity';
+import { ScheduleLocation } from './entities/schedule-location.entity';
 import { User } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { SchedulesService } from './schedules.service';
 import { SchedulesController } from './schedules.controller';
 import { DailyRosterGenerationCron } from './daily-roster-generation.cron';
-import { UserAreasModule } from '../user-areas/user-areas.module';
+import { UserLocationsModule } from '../user-locations/user-locations.module';
 import { AuditModule } from '../audit/audit.module';
 
 /**
@@ -16,8 +16,8 @@ import { AuditModule } from '../audit/audit.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Schedule, ScheduleArea, User, Area]),
-    UserAreasModule,
+    TypeOrmModule.forFeature([Schedule, ScheduleLocation, User, Location]),
+    UserLocationsModule,
     AuditModule,
   ],
   controllers: [SchedulesController],

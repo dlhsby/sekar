@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
 /**
@@ -44,21 +44,21 @@ export class Shift {
   user: User;
 
   @ApiProperty({
-    description: 'Area UUID (foreign key to areas table) - Phase 2C: optional (auto-detected)',
+    description: 'Location UUID (foreign key to areas table) - Phase 2C: optional (auto-detected)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     nullable: true,
   })
   @Column({ type: 'uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({
-    description: 'Area details',
-    type: () => Area,
+    description: 'Location details',
+    type: () => Location,
     nullable: true,
   })
-  @ManyToOne(() => Area, { eager: true, nullable: true, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'area_id' })
-  area?: Area;
+  @ManyToOne(() => Location, { eager: true, nullable: true, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'location_id' })
+  area?: Location;
 
   @ApiProperty({
     description: 'Shift definition ID (Phase 2D)',

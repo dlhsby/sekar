@@ -45,7 +45,7 @@ export class AuthResponseDto {
       username: 'satgas1',
       full_name: 'Pekerja Satu',
       role: 'satgas',
-      area_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      location_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
       rayon_id: null,
     },
   })
@@ -54,7 +54,7 @@ export class AuthResponseDto {
     username: string;
     full_name: string;
     role: UserRole;
-    area_id: string | null;
+    location_id: string | null;
     rayon_id: string | null;
     kecamatan_id: string | null;
     kecamatan_name: string | null;

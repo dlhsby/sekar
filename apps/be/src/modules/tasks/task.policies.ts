@@ -92,7 +92,7 @@ const fieldWorkerCanRead: ReadRule = (task, user) =>
   task.assigned_to === user.id || task.created_by === user.id || isTagged(task, user.id);
 
 const korlapCanRead: ReadRule = (task, user) =>
-  task.area_id === user.area_id ||
+  task.location_id === user.location_id ||
   task.created_by === user.id ||
   task.assigned_to === user.id ||
   isTagged(task, user.id);

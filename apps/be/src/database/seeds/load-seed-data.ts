@@ -11,7 +11,7 @@
  */
 import * as fs from 'fs';
 import * as path from 'path';
-import type { RayonCode } from './kmz-areas';
+import type { RayonCode } from './kmz-locations';
 import { parseCsvRecords, uuidv5 } from './csv-util';
 
 const DATA_DIR = path.join(__dirname, 'data');

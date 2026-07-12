@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * Area summary within a rayon
+ * Location summary within a rayon
  */
 export class AreaSummaryDto {
   @ApiProperty({ example: 'area-uuid' })
@@ -11,7 +11,7 @@ export class AreaSummaryDto {
   name: string;
 
   @ApiProperty({ example: 'active' })
-  area_type_category: string;
+  location_type_category: string;
 
   @ApiProperty({ example: 6 })
   workers_required: number;

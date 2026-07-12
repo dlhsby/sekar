@@ -1,0 +1,54 @@
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
+} from 'typeorm';
+import { Location } from '../../locations/entities/location.entity';
+import { PlantSpecies } from './plant-species.entity';
+
+@Entity('area_plants')
+@Unique('uq_area_plants_area_species', ['locationId', 'speciesId'])
+export class LocationPlant {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ type: 'uuid', name: 'location_id' })
+  locationId: string;
+
+  @Column({ type: 'uuid', name: 'species_id' })
+  speciesId: string;
+
+  @Column({ type: 'int', default: 0 })
+  count: number;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'last_pruned_at' })
+  lastPrunedAt: Date | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'next_due_at' })
+  nextDueAt: Date | null;
+
+  @Column({ type: 'text', default: 'ok' })
+  status: 'ok' | 'due_soon' | 'overdue' | 'unknown';
+
+  @Column({ type: 'int', nullable: true, name: 'override_cycle_days' })
+  overrideCycleDays: number | null;
+
+  @ManyToOne(() => Location, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'location_id' })
+  area: Location;
+
+  @ManyToOne(() => PlantSpecies, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'species_id' })
+  species: PlantSpecies;
+
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  updatedAt: Date;
+}

@@ -86,26 +86,26 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
 
     // 8 core satgas tasks — covers all 8 statuses after UPDATE pass below
     await ctx.qr.query(`
-      INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, created_at, updated_at) VALUES
+      INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, created_at, updated_at) VALUES
         ('${TASK_1_ID}', 'Penyiraman Taman Pagi', 'Menyiram seluruh area taman pada pagi hari. Fokus tanaman baru.', 'pending', 'high', NOW() + INTERVAL '1 day', '${a1}', NULL, '${cId}', NOW(), NOW()),
         ('${TASK_7_ID}', 'Pembersihan Jalur Jogging', 'Membersihkan jalur jogging dari dedaunan dan sampah.', 'pending', 'high', NOW() + INTERVAL '1 day', '${a1}', NULL, '${cId}', NOW(), NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
     await ctx.qr.query(`
-      INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
+      INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
         ('${TASK_2_ID}', 'Penanaman Bunga Musiman', 'Menanam bunga musiman. Total 50 pot bunga.', 'assigned', 'medium', NOW() + INTERVAL '7 days', '${a2}', '${s1Id}', '${cId}', NOW() - INTERVAL '1 hour', NOW(), NOW()),
         ('${TASK_3_ID}', 'Perantingan Pohon Tinggi', 'Memangkas dahan pohon yang menghalangi jalur pejalan kaki.', 'assigned', 'urgent', NOW() + INTERVAL '1 day', '${a3}', '${s2Id}', '${cId}', NOW() - INTERVAL '2 hours', NOW(), NOW()),
         ('${TASK_8_ID}', 'Perawatan Rumput Taman', 'Memeriksa dan merawat kondisi rumput di area taman.', 'assigned', 'low', NOW() + INTERVAL '7 days', '${a2}', '${s3Id}', '${cId}', NOW() - INTERVAL '30 minutes', NOW(), NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
     await ctx.qr.query(`
-      INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, started_at, created_at, updated_at) VALUES
-        ('${TASK_4_ID}', 'Pembersihan Area Playground', 'Membersihkan area playground dari sampah dan dedaunan.', 'in_progress', 'medium', NOW(), '${a1}', '${s3Id}', '${cId}', NOW() - INTERVAL '3 hours', NOW() - INTERVAL '30 minutes', NOW(), NOW()),
+      INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, started_at, created_at, updated_at) VALUES
+        ('${TASK_4_ID}', 'Pembersihan Location Playground', 'Membersihkan area playground dari sampah dan dedaunan.', 'in_progress', 'medium', NOW(), '${a1}', '${s3Id}', '${cId}', NOW() - INTERVAL '3 hours', NOW() - INTERVAL '30 minutes', NOW(), NOW()),
         ('${TASK_6_ID}', 'Perantingan Semak Belukar', 'Memangkas semak belukar di area belakang taman.', 'in_progress', 'low', NOW() + INTERVAL '7 days', '${a3}', '${s2Id}', '${cId}', NOW() - INTERVAL '4 hours', NOW() - INTERVAL '1 hour', NOW(), NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
     await ctx.qr.query(`
-      INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, started_at, completed_at, completion_notes, completion_photo_urls, created_at, updated_at) VALUES
+      INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, started_at, completed_at, completion_notes, completion_photo_urls, created_at, updated_at) VALUES
         ('${TASK_5_ID}', 'Penyiraman Taman Sore', 'Menyiram taman pada sore hari.', 'completed', 'low', NOW() - INTERVAL '1 day', '${a2}', '${s1Id}', '${cId}', NOW() - INTERVAL '5 hours', NOW() - INTERVAL '3 hours', NOW() - INTERVAL '2 hours', 'Penyiraman selesai. Semua tanaman sudah disiram dengan baik.', ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/sat-watering-complete.jpg'], NOW(), NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
@@ -143,22 +143,22 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
     // Linmas tasks (4)
     if (l1Id) {
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, created_at, updated_at) VALUES
           ('${LINMAS_TASK_1_ID}', 'Patroli Keamanan Malam', 'Patroli area taman 20:00-22:00. Cek lampu dan parkir.', 'pending', 'high', NOW() + INTERVAL '2 days', '${a1}', NULL, '${cId}', NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
           ('${LINMAS_TASK_2_ID}', 'Pengecekan Fasilitas Taman', 'Cek kondisi lampu, bangku, pagar, dan fasilitas umum.', 'assigned', 'medium', NOW() + INTERVAL '1 day', '${a1}', '${l1Id}', '${cId}', NOW() - INTERVAL '1 day', NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, started_at, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, started_at, created_at, updated_at) VALUES
           ('${LINMAS_TASK_3_ID}', 'Pengawasan Event Weekend', 'Jaga keamanan selama event komunitas. Atur lalu lintas pengunjung.', 'in_progress', 'urgent', NOW(), '${a2}', '${l2Id ?? l1Id}', '${cId}', NOW() - INTERVAL '2 hours', NOW() - INTERVAL '1 hour', NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, started_at, completed_at, completion_notes, completion_photo_urls, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, started_at, completed_at, completion_notes, completion_photo_urls, created_at, updated_at) VALUES
           ('${LINMAS_TASK_4_ID}', 'Laporan Insiden PKL', 'Dokumentasi dan pelaporan PKL ilegal di area taman.', 'completed', 'high', NOW() - INTERVAL '1 day', '${a3}', '${l1Id}', '${cId}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW() - INTERVAL '12 hours', 'Laporan insiden PKL selesai. Sudah dikoordinasikan dengan satpol PP.', ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/linmas-incident.jpg'], NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
@@ -168,17 +168,17 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
     // Korlap tasks (3)
     if (kId) {
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
           ('${KORLAP_TASK_1_ID}', 'Koordinasi Tim Mingguan', 'Meeting koordinasi dengan satgas dan linmas. Review progress minggu ini.', 'assigned', 'medium', NOW() + INTERVAL '3 days', '${a1}', '${cId}', '${kId}', NOW() - INTERVAL '1 day', NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, started_at, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, started_at, created_at, updated_at) VALUES
           ('${KORLAP_TASK_2_ID}', 'Pengecekan Kendaraan Operasional', 'Cek kondisi kendaraan dan perlengkapan operasional.', 'in_progress', 'medium', NOW(), NULL, '${cId}', '${kId}', NOW() - INTERVAL '3 hours', NOW() - INTERVAL '2 hours', NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, assigned_at, started_at, completed_at, completion_notes, completion_photo_urls, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, assigned_at, started_at, completed_at, completion_notes, completion_photo_urls, created_at, updated_at) VALUES
           ('${KORLAP_TASK_3_ID}', 'Supervisi Penanaman Pohon', 'Supervisi kegiatan penanaman 50 pohon di area taman.', 'completed', 'high', NOW() - INTERVAL '1 day', '${a2}', '${cId}', '${kId}', NOW() - INTERVAL '3 days', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', 'Supervisi selesai. Penanaman 50 pohon berhasil.', ARRAY['https://sekar-media-dev.s3.amazonaws.com/tasks/korlap-supervision.jpg'], NOW(), NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
@@ -187,14 +187,14 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
 
     // Rayon-scoped + kepala_rayon tasks (2+2)
     await ctx.qr.query(`
-      INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, area_id, assigned_to, created_by, created_at, updated_at) VALUES
-        ('${RAYON_TASK_1_ID}', 'Audit Semua Area di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '7 days', '${RAYON_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW()),
+      INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, location_id, assigned_to, created_by, created_at, updated_at) VALUES
+        ('${RAYON_TASK_1_ID}', 'Audit Semua Location di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '7 days', '${RAYON_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW()),
         ('${RAYON_TASK_2_ID}', 'Koordinasi Event Weekend Rayon', 'Persiapan event di semua taman dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '3 days', '${RAYON_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
     if (kId && tmId) {
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, area_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
+        INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, location_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
           ('${RAYON_TASK_3_ID}', 'Laporan Bulanan Rayon Selatan', 'Compile laporan bulanan dari semua area di rayon.', 'assigned', 'high', NOW() + INTERVAL '5 days', '${RAYON_SELATAN_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '1 day', NOW(), NOW()),
           ('${RAYON_TASK_4_ID}', 'Review Kinerja Korlap', 'Evaluasi kinerja korlap di rayon untuk kuartal ini.', 'in_progress', 'medium', NOW() + INTERVAL '5 days', '${RAYON_SELATAN_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW())
         ON CONFLICT (id) DO NOTHING;
@@ -207,7 +207,7 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
     // 25 extended tasks for scroll/filter testing (IDs via gen_random_uuid — Section B DELETE clears first)
     await ctx.qr.query(
       `
-      INSERT INTO tasks (id, title, description, status, priority, deadline, area_id, assigned_to, created_by, created_at, updated_at)
+      INSERT INTO tasks (id, title, description, status, priority, deadline, location_id, assigned_to, created_by, created_at, updated_at)
       VALUES
         (gen_random_uuid(), 'Perantingan Pohon Minggu Lalu',   'Perantingan pohon di jalur pedestrian.',         'completed',   'medium', $1,  '${a1}', '${s1Id}', '${cId}', $1,  $1 ),
         (gen_random_uuid(), 'Pengecatan Pagar Taman',           'Pengecatan pagar area bermain anak.',            'completed',   'low',    $2,  '${a1}', '${s2Id}', '${cId}', $2,  $2 ),

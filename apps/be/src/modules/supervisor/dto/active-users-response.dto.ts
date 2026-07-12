@@ -18,10 +18,10 @@ export class LatestLocationDto {
  * DTO for area info in active user response
  */
 export class AreaInfoDto {
-  @ApiProperty({ description: 'Area UUID' })
+  @ApiProperty({ description: 'Location UUID' })
   id: string;
 
-  @ApiProperty({ description: 'Area name', example: 'Taman Bungkul' })
+  @ApiProperty({ description: 'Location name', example: 'Taman Bungkul' })
   name: string;
 }
 

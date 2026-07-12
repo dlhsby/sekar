@@ -4,7 +4,7 @@ import type { SeedContext } from '../lib/context';
  * Seed schedules (staging only) — materialize TODAY's daily roster from user
  * + user_areas + shift_definition_id.
  *
- * Staging: 1125 schedules (one per active user) + 378 schedule_areas (join to
+ * Staging: 1125 schedules (one per active user) + 378 schedule_locations (join to
  * user_areas with assignment_type = 'permanent'). Materialized once at seed time.
  *
  * Demo: not seeded (transactional data created dynamically in other seeders).
@@ -44,13 +44,13 @@ export async function seedSchedules(ctx: SeedContext): Promise<void> {
   const schedulesInserted = result.filter((r: any) => r.inserted).length;
   ctx.log(`  ✓ ${schedulesInserted} schedules inserted (1125 target)`);
 
-  // Insert schedule_areas for permanent user_areas assignments (378 target)
+  // Insert schedule_locations for permanent user_areas assignments (378 target)
   // Join schedules → user_areas (permanent) to populate area assignments
   const areaResult = await ctx.qr.query(
-    `INSERT INTO schedule_areas (schedule_id, area_id)
+    `INSERT INTO schedule_locations (schedule_id, location_id)
      SELECT DISTINCT
        s.id,
-       ua.area_id
+       ua.location_id
      FROM schedules s
      JOIN user_areas ua ON s.user_id = ua.user_id
      WHERE s.schedule_date = $1::date
@@ -61,7 +61,7 @@ export async function seedSchedules(ctx: SeedContext): Promise<void> {
   );
 
   const areasInserted = areaResult.filter((r: any) => r.inserted).length;
-  ctx.log(`  ✓ ${areasInserted} schedule_areas inserted (378 target)`);
+  ctx.log(`  ✓ ${areasInserted} schedule_locations inserted (378 target)`);
 
   ctx.log('✅ Schedules seeding complete');
 }

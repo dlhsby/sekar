@@ -35,7 +35,7 @@ export class AddProductionIndexesAndDailySummaries17480600000000 implements Migr
         "avg_longitude" DECIMAL(11, 7),
         "within_area_pings" INT DEFAULT 0,
         "outside_area_pings" INT DEFAULT 0,
-        "area_id" UUID REFERENCES "areas"("id") ON DELETE SET NULL,
+        "location_id" UUID REFERENCES "areas"("id") ON DELETE SET NULL,
         "rayon_id" UUID REFERENCES "rayons"("id") ON DELETE SET NULL,
         "is_backfilled" BOOLEAN DEFAULT false,
         "created_at" TIMESTAMP WITH TIME ZONE DEFAULT NOW(),

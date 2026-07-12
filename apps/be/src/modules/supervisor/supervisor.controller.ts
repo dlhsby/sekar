@@ -14,7 +14,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../users/entities/user.entity';
 import { USER_MANAGERS } from '../users/constants/role-groups';
 import { ActiveUserDto } from './dto/active-users-response.dto';
-import { AreaStatusResponseDto } from './dto/area-status-response.dto';
+import { LocationStatusResponseDto } from './dto/location-status-response.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { AttendanceResponseDto, UserAttendanceDetailDto } from './dto/attendance-response.dto';
 import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -96,10 +96,10 @@ export class SupervisorController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Area status overview',
-    type: AreaStatusResponseDto,
+    description: 'Location status overview',
+    type: LocationStatusResponseDto,
   })
-  async getAreaStatus(): Promise<AreaStatusResponseDto> {
+  async getAreaStatus(): Promise<LocationStatusResponseDto> {
     return this.supervisorService.getAreaStatus();
   }
 

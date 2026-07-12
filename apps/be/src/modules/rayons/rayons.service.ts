@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rayon } from './entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 
@@ -25,8 +25,8 @@ export class RayonsService {
   constructor(
     @InjectRepository(Rayon)
     private readonly rayonRepository: Repository<Rayon>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
   ) {}
 
   /**
@@ -174,7 +174,7 @@ export class RayonsService {
    * @returns Array of areas in the rayon
    * @throws NotFoundException if rayon not found
    */
-  async findAreasByRayonId(id: string): Promise<Area[]> {
+  async findAreasByRayonId(id: string): Promise<Location[]> {
     this.logger.log(`Fetching areas for rayon ID: ${id}`);
 
     // Verify rayon exists
@@ -182,7 +182,7 @@ export class RayonsService {
 
     return this.areaRepository.find({
       where: { rayon_id: id, is_active: true },
-      relations: ['areaType'],
+      relations: ['locationType'],
       order: { name: 'ASC' },
     });
   }

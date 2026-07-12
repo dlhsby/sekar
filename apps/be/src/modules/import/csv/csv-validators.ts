@@ -15,14 +15,14 @@ export interface ValidatedUserRow {
   role: UserRole;
   /** Optional: when omitted the backend generates a one-time temp password. */
   password?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   employee_id?: string;
 }
 
 export interface ValidatedAreaRow {
   name: string;
-  area_type_id: string;
+  location_type_id: string;
   rayon_id: string;
   address?: string;
   latitude: number;
@@ -101,8 +101,8 @@ function validateUserRow(
     fail('password', 'Password must be at least 8 characters');
   }
 
-  if (row.area_id && !UUID_RE.test(row.area_id)) {
-    fail('area_id', 'area_id must be a valid UUID');
+  if (row.location_id && !UUID_RE.test(row.location_id)) {
+    fail('location_id', 'location_id must be a valid UUID');
   }
   if (row.rayon_id && !UUID_RE.test(row.rayon_id)) {
     fail('rayon_id', 'rayon_id must be a valid UUID');
@@ -120,7 +120,7 @@ function validateUserRow(
     role,
     password: row.password || undefined,
     phone_number: phone || undefined,
-    area_id: row.area_id || undefined,
+    location_id: row.location_id || undefined,
     rayon_id: row.rayon_id || undefined,
     employee_id: row.employee_id || undefined,
   };
@@ -190,8 +190,8 @@ function validateAreaRow(
   if (name.length < 2 || name.length > 100) {
     fail('name', 'Name must be 2–100 characters');
   }
-  if (!UUID_RE.test(row.area_type_id ?? '')) {
-    fail('area_type_id', 'area_type_id must be a valid UUID');
+  if (!UUID_RE.test(row.location_type_id ?? '')) {
+    fail('location_type_id', 'location_type_id must be a valid UUID');
   }
   if (!UUID_RE.test(row.rayon_id ?? '')) {
     fail('rayon_id', 'rayon_id must be a valid UUID');
@@ -225,7 +225,7 @@ function validateAreaRow(
   }
   return {
     name,
-    area_type_id: row.area_type_id,
+    location_type_id: row.location_type_id,
     rayon_id: row.rayon_id,
     address: row.address || undefined,
     latitude,
