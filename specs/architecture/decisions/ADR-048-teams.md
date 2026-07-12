@@ -18,8 +18,8 @@ Introduce a lightweight `teams` master-data entity plus a team-type catalog, wit
 
 ### `teams` + `team_types` entities
 
-- **`team_types`** — a small catalog table (`id`, `name`, `is_active`), seeded with perawatan / penyiraman / penanaman / penyapuan and **extensible without a code change** via the `team:manage`-gated `/team-types` API (a dedicated Type-management UI ships with Phase 4; until then types are managed via the API).
-- **`teams`** — `id`, `name`, `team_type_id` (FK), `marker_icon`, `marker_image_url` (image-only markers; `marker_color` removed), `is_active`, audit. Managed via a Teams CRUD page gated by `team:*` permissions.
+- **`team_types`** — the crew-type catalog (`id`, `name`, `is_active`, **`marker_image_url`**, **`marker_color`** for the monitoring bubble), seeded with Perawatan / Penyiraman / Penanaman / Penyapuan and extensible via the `team:manage`-gated `/team-types` API + the `/teams` management page (which manages TYPES).
+- **Concrete teams live on the schedule event** *(amended 2026-07-13, user decision)*: there is **no standing `teams` table**. A team = a team `ScheduleEvent` — its `title` is the team/regu name, `team_type_id` gives the category + marker/colour, `pic_user_id` + members define the roster, and the event's shift/scope/dates define when/where. Roster occurrences carry `team_type_id` so monitoring can bubble-group by `schedule_event_id` and colour by type. Migration `17492800000000` dropped `teams` and re-pointed `schedule_events`/`schedules` to `team_type_id`.
 
 ### Membership via schedules
 

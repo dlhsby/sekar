@@ -15,7 +15,7 @@ import { User } from '../../users/entities/user.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Region } from '../../regions/entities/region.entity';
-import { Team } from '../../teams/entities/team.entity';
+import { TeamType } from '../../teams/entities/team-type.entity';
 import { ScheduleEvent } from './schedule-event.entity';
 import { ScheduleLocation } from './schedule-area.entity';
 
@@ -115,11 +115,11 @@ export class Schedule {
   region_id: string | null;
 
   @ApiProperty({
-    description: 'Team (for team-scoped events)',
+    description: 'Team type (crew category; for team events)',
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  team_id: string | null;
+  team_type_id: string | null;
 
   @ApiProperty({
     description: 'Is this occurrence detached (overridden from the event)',
@@ -127,6 +127,12 @@ export class Schedule {
   })
   @Column({ type: 'boolean', default: false })
   is_detached: boolean;
+
+  /**
+   * Virtual flag (not persisted): marks a row as a projection beyond the
+   * materialization horizon (Phase 4, ADR-047). Omitted/false for materialized rows.
+   */
+  is_projected?: boolean;
 
   // Actor audit (set explicitly by the service; no FK — historical reference).
   @Column({ type: 'uuid', nullable: true })
@@ -173,9 +179,9 @@ export class Schedule {
   @JoinColumn({ name: 'region_id' })
   region?: Region | null;
 
-  @ManyToOne(() => Team, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'team_id' })
-  team?: Team | null;
+  @ManyToOne(() => TeamType, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'team_type_id' })
+  team_type?: TeamType | null;
 
   @OneToMany(() => ScheduleLocation, (dsa) => dsa.schedule, { cascade: true })
   schedule_areas: ScheduleLocation[];

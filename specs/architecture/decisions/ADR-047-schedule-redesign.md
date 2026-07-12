@@ -35,15 +35,15 @@ A generator expands each active `ScheduleEvent` into concrete **per-day, per-mem
 
 ### Overlap guard
 
-Uniqueness is **time-based, not per (user, day)**: a user may hold **multiple non-overlapping shifts in one day** (e.g. shift 1 + shift 2). A new occurrence is rejected only if its shift's time window **overlaps** an existing occurrence for the same user, computing real start/end instants (honoring shift-3's `crosses_midnight`, which extends into the next WIB day).
+Uniqueness is **time-based, not per (user, day)**: a user may hold **multiple non-overlapping shifts in one day** (e.g. shift 1 + shift 2). *(Amended 2026-07-13, user decision — Google-Calendar-style):* a time-window **overlap is a WARNING, not a blocker** — the occurrence is still created and the conflict is reported per member/date in `materialization.conflicts[]` (ad-hoc patrols may legitimately overlay a standing schedule). The only impossibility is an **exact duplicate** (same worker, same day, same shift), enforced by the `(user, date, shift)` unique index and reported as skipped `duplicate`. Window math computes real start/end instants (honoring shift-3's `crosses_midnight`).
 
 Examples (shift 1 06:00–15:00, shift 2 15:00–23:00, shift 3 21:00–05:00+1):
 - shift 1 + shift 2 same day → **allowed** (touching, not overlapping).
-- shift 1 + shift 1 same day → **rejected** (duplicate).
+- shift 1 + shift 1 same day → **rejected** (exact duplicate — the only hard block).
 - prior-day shift 3 (…→05:00) + today shift 1 (06:00→) → **allowed**.
-- shift 2 + shift 3 same day → **rejected** (23:00 vs 21:00 overlap).
+- shift 2 + shift 3 same day → **created with a warning** (23:00 vs 21:00 overlap).
 
-Team fan-out applies the guard per member; an already-booked member is flagged in the response (not silently overwritten), and the rest still schedule.
+Team fan-out applies the check per member; an already-booked member is flagged in `conflicts[]` (their occurrence is still created), and exact duplicates are skipped.
 
 ### Edit semantics (calendar-style)
 

@@ -16,6 +16,7 @@ import { UserLocationsService } from '../../modules/user-locations/user-location
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 import { ScheduleOverlapService } from './services/schedule-overlap.service';
+import { ScheduleRecurrenceUtil } from './utils/schedule-recurrence.util';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
   canEditTargetRole,
@@ -164,17 +165,26 @@ export class SchedulesService {
         ? dto.shift_definition_id
         : (target.shift_definition_id ?? null);
 
-    // Multiple non-overlapping shifts per day are legal (ADR-047); reject only
-    // a true time-window overlap (the (user, date, shift) partial unique index
-    // backs the exact-duplicate case). A shiftless (OFF) row still uses the
-    // one-per-day rule — two OFF rows for the same day are meaningless.
+    // Phase 4: overlaps are warned, not rejected (ADR-047 amended, Google-Calendar style).
+    // Pre-check exact duplicate (same user+date+shift) via the unique index.
+    // A shiftless (OFF) row still enforces one-per-day.
     if (shiftId) {
       const shift = await this.shiftDefinitionRepo.findOne({ where: { id: shiftId } });
       if (!shift) throw new NotFoundException('Shift definition not found');
+
+      // Check for exact duplicate (same shift that day already exists)
+      const exactDuplicates = await this.findAllByUserAndDate(dto.user_id, dto.date);
+      const exactMatch = exactDuplicates.find((r) => r.shift_definition_id === shiftId);
+      if (exactMatch) {
+        throw new BadRequestException('Worker already has this exact shift that day');
+      }
+
+      // Check for overlap and log warning if found (but don't reject)
       const conflict = await this.overlapService.findConflict(dto.user_id, dto.date, shift);
       if (conflict) {
-        throw new BadRequestException(
-          `Worker already has an overlapping schedule (${conflict.shift_name} on ${conflict.date})`,
+        this.logger.warn(
+          `Overlap detected: user ${dto.user_id} on ${dto.date} has ${conflict.shift_name}; ` +
+            `adding ${shift.name} anyway`,
         );
       }
     } else {
@@ -343,9 +353,14 @@ export class SchedulesService {
 
   /**
    * All roster rows for a date range [from, to] inclusive, rayon-scoped.
-   * Relations: user, shift_definition, schedule_areas/locations, region, team.
+   * Relations: user, shift_definition, schedule_areas/locations, region, team_type.
+   *
+   * Phase 4 (ADR-047 amended): includes materialized rows + projected rows from
+   * active events that expand beyond the materialization horizon. Projected rows
+   * are virtual (is_projected=true) and not persisted.
    */
-  async findByDateRange(from: string, to: string, rayonId?: string | null): Promise<Schedule[]> {
+  async findByDateRangeForUser(from: string, to: string, userId: string): Promise<Schedule[]> {
+    // Fetch materialized rows for this user in the range
     const qb = this.rosterRepo
       .createQueryBuilder('ds')
       .leftJoinAndSelect('ds.user', 'u')
@@ -353,14 +368,280 @@ export class SchedulesService {
       .leftJoinAndSelect('ds.schedule_areas', 'dsa')
       .leftJoinAndSelect('dsa.area', 'area')
       .leftJoinAndSelect('ds.region', 'r')
-      .leftJoinAndSelect('ds.team', 't')
+      .leftJoinAndSelect('ds.team_type', 'tt')
+      .where('ds.user_id = :userId', { userId })
+      .andWhere('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL');
+    const materialized = await qb
+      .orderBy('ds.schedule_date', 'ASC')
+      .addOrderBy('ds.status', 'ASC')
+      .getMany();
+
+    // Build a set of (event_id, user_id, date) tuples already materialized
+    const materializedKey = new Set(
+      materialized
+        .filter((r) => r.schedule_event_id)
+        .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
+    );
+
+    // Projection: load active events that include this user and expand beyond the materialized window
+    const events = await this.eventRepo.find({
+      where: { is_active: true },
+      relations: [
+        'shift_definition',
+        'location',
+        'region',
+        'team_type',
+        'pic_user',
+        'user',
+        'members',
+        'members.user',
+      ],
+    });
+
+    const projectedRows: Schedule[] = [];
+    for (const event of events) {
+      // Expand the event's recurrence into concrete dates
+      const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+
+      // Resolve member IDs (same logic as materializer)
+      const memberIds = event.is_team
+        ? Array.from(
+            new Set(
+              [event.pic_user_id, ...(event.members?.map((m) => m.user_id) ?? [])].filter(
+                (id): id is string => id != null,
+              ),
+            ),
+          )
+        : event.user_id
+          ? [event.user_id]
+          : [];
+
+      // Skip this event if the user is not in it
+      if (!memberIds.includes(userId)) continue;
+
+      // Check which (member, date) pairs are already in DB with this event
+      if (dates.length > 0) {
+        const existingRows = await this.rosterRepo.find({
+          where: { schedule_event_id: event.id, user_id: userId, schedule_date: In(dates) },
+          withDeleted: true, // Include soft-deleted tombstones
+          select: ['user_id', 'schedule_date'],
+        });
+        const existingKey = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
+
+        // For each date NOT already in DB, emit a virtual projected row
+        for (const dateStr of dates) {
+          const key = `${event.id}:${userId}:${dateStr}`;
+          if (!materializedKey.has(key)) {
+            // Also check withDeleted to avoid resurrecting tombstones
+            if (!existingKey.has(`${userId}:${dateStr}`)) {
+              // Emit a virtual projected row
+              const projected = new Schedule();
+              projected.id = `projected:${event.id}:${userId}:${dateStr}`;
+              projected.user_id = userId;
+              projected.schedule_date = dateStr;
+              projected.shift_definition_id = event.shift_definition_id;
+              projected.shift_definition = event.shift_definition;
+              projected.status = ScheduleStatus.PLANNED;
+              projected.source = 'event';
+              projected.schedule_event_id = event.id;
+              projected.region_id = event.scope === 'mobile' ? event.region_id : null;
+              projected.region = event.scope === 'mobile' ? event.region : null;
+              projected.team_type_id = event.is_team ? event.team_type_id : null;
+              projected.team_type = event.is_team ? event.team_type : null;
+
+              const rayon_id =
+                event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+              projected.rayon_id = rayon_id ?? null;
+              projected.is_detached = false;
+              projected.is_projected = true;
+
+              // Load user
+              if (event.is_team) {
+                if (userId === event.pic_user_id && event.pic_user) {
+                  projected.user = event.pic_user;
+                } else if (event.members?.length > 0) {
+                  const memberObj = event.members.find((m) => m.user_id === userId);
+                  if (memberObj?.user) {
+                    projected.user = memberObj.user;
+                  }
+                }
+              } else if (event.user) {
+                projected.user = event.user;
+              }
+
+              // For static scope, add schedule_areas
+              if (event.scope === 'static' && event.location) {
+                projected.schedule_areas = [
+                  {
+                    id: `projected:${event.id}:${userId}:${dateStr}:area`,
+                    schedule_id: projected.id,
+                    location_id: event.location_id,
+                    area: event.location,
+                  } as ScheduleLocation,
+                ];
+              }
+
+              projectedRows.push(projected);
+            }
+          }
+        }
+      }
+    }
+
+    // Merge materialized and projected rows, sorted by date + status
+    const all = [...materialized, ...projectedRows];
+    return all.sort((a, b) => {
+      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.status ?? '').localeCompare(b.status ?? '');
+    });
+  }
+
+  async findByDateRange(from: string, to: string, rayonId?: string | null): Promise<Schedule[]> {
+    // Fetch materialized rows for the range
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .leftJoinAndSelect('ds.user', 'u')
+      .leftJoinAndSelect('ds.shift_definition', 'sd')
+      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
+      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.region', 'r')
+      .leftJoinAndSelect('ds.team_type', 'tt')
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL');
     if (rayonId) {
       qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
     }
-    return qb.orderBy('ds.schedule_date', 'ASC').addOrderBy('ds.status', 'ASC').getMany();
+    const materialized = await qb
+      .orderBy('ds.schedule_date', 'ASC')
+      .addOrderBy('ds.status', 'ASC')
+      .getMany();
+
+    // Build a set of (event_id, user_id, date) tuples already materialized
+    const materializedKey = new Set(
+      materialized
+        .filter((r) => r.schedule_event_id)
+        .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
+    );
+
+    // Projection: load active events and expand beyond the materialized window
+    const events = await this.eventRepo.find({
+      where: { is_active: true },
+      relations: [
+        'shift_definition',
+        'location',
+        'region',
+        'team_type',
+        'pic_user',
+        'user',
+        'members',
+        'members.user',
+      ],
+    });
+
+    const projectedRows: Schedule[] = [];
+    for (const event of events) {
+      // Expand the event's recurrence into concrete dates
+      const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+
+      // Resolve member IDs (same logic as materializer)
+      const memberIds = event.is_team
+        ? Array.from(
+            new Set(
+              [event.pic_user_id, ...(event.members?.map((m) => m.user_id) ?? [])].filter(
+                (id): id is string => id != null,
+              ),
+            ),
+          )
+        : event.user_id
+          ? [event.user_id]
+          : [];
+
+      // Check which (member, date) pairs are already in DB with this event
+      if (dates.length > 0) {
+        const existingRows = await this.rosterRepo.find({
+          where: { schedule_event_id: event.id, schedule_date: In(dates) },
+          withDeleted: true, // Include soft-deleted tombstones
+          select: ['user_id', 'schedule_date'],
+        });
+        const existingKey = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
+
+        // For each (member, date) NOT already in DB, emit a virtual projected row
+        for (const memberId of memberIds) {
+          for (const dateStr of dates) {
+            const key = `${event.id}:${memberId}:${dateStr}`;
+            if (!materializedKey.has(key)) {
+              // Also check withDeleted to avoid resurrecting tombstones
+              if (!existingKey.has(`${memberId}:${dateStr}`)) {
+                // Filter by rayon if needed
+                const rayon_id =
+                  event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+                if (rayonId && rayon_id !== rayonId) continue;
+
+                // Emit a virtual projected row
+                const projected = new Schedule();
+                projected.id = `projected:${event.id}:${memberId}:${dateStr}`;
+                projected.user_id = memberId;
+                projected.schedule_date = dateStr;
+                projected.shift_definition_id = event.shift_definition_id;
+                projected.shift_definition = event.shift_definition;
+                projected.status = ScheduleStatus.PLANNED;
+                projected.source = 'event';
+                projected.schedule_event_id = event.id;
+                projected.region_id = event.scope === 'mobile' ? event.region_id : null;
+                projected.region = event.scope === 'mobile' ? event.region : null;
+                projected.team_type_id = event.is_team ? event.team_type_id : null;
+                projected.team_type = event.is_team ? event.team_type : null;
+                projected.rayon_id = rayon_id ?? null;
+                projected.is_detached = false;
+                projected.is_projected = true;
+
+                // Load user from event.user or event.pic_user (will be loaded via relations)
+                if (event.is_team) {
+                  // For team events, find the member user via relations
+                  if (memberId === event.pic_user_id && event.pic_user) {
+                    projected.user = event.pic_user;
+                  } else if (event.members?.length > 0) {
+                    const memberObj = event.members.find((m) => m.user_id === memberId);
+                    if (memberObj?.user) {
+                      projected.user = memberObj.user;
+                    }
+                  }
+                } else if (event.user) {
+                  // Individual event
+                  projected.user = event.user;
+                }
+
+                // For static scope, add schedule_areas
+                if (event.scope === 'static' && event.location) {
+                  projected.schedule_areas = [
+                    {
+                      id: `projected:${event.id}:${memberId}:${dateStr}:area`,
+                      schedule_id: projected.id,
+                      location_id: event.location_id,
+                      area: event.location,
+                    } as ScheduleLocation,
+                  ];
+                }
+
+                projectedRows.push(projected);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Merge materialized and projected rows, sorted by date + status
+    const all = [...materialized, ...projectedRows];
+    return all.sort((a, b) => {
+      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.status ?? '').localeCompare(b.status ?? '');
+    });
   }
 
   async findOne(id: string): Promise<Schedule> {

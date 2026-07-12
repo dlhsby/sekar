@@ -180,10 +180,11 @@ describe('ScheduleMaterializerService', () => {
 
       expect(result.created).toBe(0);
       expect(result.skipped).toHaveLength(1);
-      expect(result.skipped[0].reason).toBe('tombstone');
+      expect(result.skipped[0].reason).toBe('exists');
     });
 
-    it('should skip row with overlap conflict', async () => {
+    it('should create row with overlap conflict and record in conflicts array (Phase 4)', async () => {
+      // Phase 4 (ADR-047 amended): overlaps are warned, not rejected
       const event: Partial<ScheduleEvent> = {
         id: 'event-1',
         recurrence_type: RecurrenceType.NONE,
@@ -207,6 +208,20 @@ describe('ScheduleMaterializerService', () => {
         date: '2026-07-15',
         shift_name: 'Shift 2',
       });
+      // Mock create to return an object
+      jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({
+        user_id: 'user-1',
+        schedule_date: '2026-07-15',
+      } as any);
+      // Mock save to return with id
+      jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({
+        id: 'sched-1',
+        user_id: 'user-1',
+        schedule_date: '2026-07-15',
+      } as any);
+      // Mock create for schedule_location
+      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValueOnce({} as any);
+      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValueOnce({} as any);
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -214,9 +229,12 @@ describe('ScheduleMaterializerService', () => {
         '2026-07-15',
       );
 
-      expect(result.created).toBe(0);
-      expect(result.skipped).toHaveLength(1);
-      expect(result.skipped[0].reason).toBe('overlap');
+      // Row is created despite overlap
+      expect(result.created).toBe(1);
+      expect(result.skipped).toHaveLength(0);
+      // Conflict is recorded
+      expect(result.conflicts).toHaveLength(1);
+      expect(result.conflicts[0].conflicting_shift).toBe('Shift 2');
     });
 
     it('should materialize team event with multiple members', async () => {
@@ -230,7 +248,7 @@ describe('ScheduleMaterializerService', () => {
         user_id: null,
         is_team: true,
         pic_user_id: 'pic-1',
-        team_id: 'team-1',
+        team_type_id: 'team-1',
         scope: ScheduleScope.STATIC,
         location_id: mockLocation.id,
         location: mockLocation as any,
@@ -267,7 +285,7 @@ describe('ScheduleMaterializerService', () => {
         user_id: null,
         is_team: true,
         pic_user_id: 'pic-1', // Also in members
-        team_id: 'team-1',
+        team_type_id: 'team-1',
         scope: ScheduleScope.STATIC,
         location_id: mockLocation.id,
         location: mockLocation as any,

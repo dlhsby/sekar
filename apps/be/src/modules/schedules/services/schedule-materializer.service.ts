@@ -15,7 +15,12 @@ export interface MaterializationResult {
   skipped: Array<{
     user_id: string;
     date: string;
-    reason: 'overlap' | 'tombstone';
+    reason: 'exists' | 'duplicate';
+  }>;
+  conflicts: Array<{
+    user_id: string;
+    date: string;
+    conflicting_shift: string;
   }>;
 }
 
@@ -72,6 +77,7 @@ export class ScheduleMaterializerService {
 
     let created = 0;
     const skipped: MaterializationResult['skipped'] = [];
+    const conflicts: MaterializationResult['conflicts'] = [];
 
     // One query for every existing row of this event in the window (incl.
     // soft-deleted tombstones and detached overrides) — none of these may be
@@ -91,22 +97,18 @@ export class ScheduleMaterializerService {
       for (const dateStr of dates) {
         if (occupied.has(`${memberId}:${dateStr}`)) {
           // Tombstone, detached override, or already-materialized occurrence.
-          skipped.push({ user_id: memberId, date: dateStr, reason: 'tombstone' });
+          skipped.push({ user_id: memberId, date: dateStr, reason: 'exists' });
           continue;
         }
 
-        // Check for overlap with other shifts
+        // Check for overlap with other shifts. Unlike Phase 3, we now CREATE the
+        // row and warn, not skip (ADR-047 amended, overlap policy).
         const conflict = await this.overlapService.findConflict(
           memberId,
           dateStr,
           event.shift_definition,
           { excludeEventId: event.id },
         );
-
-        if (conflict) {
-          skipped.push({ user_id: memberId, date: dateStr, reason: 'overlap' });
-          continue;
-        }
 
         // Create the schedule row
         const rayon_id =
@@ -120,12 +122,23 @@ export class ScheduleMaterializerService {
           source: 'event',
           schedule_event_id: event.id,
           region_id: event.scope === 'mobile' ? event.region_id : null,
-          team_id: event.is_team ? event.team_id : null,
+          team_type_id: event.is_team ? event.team_type_id : null,
           rayon_id,
           created_by: event.created_by,
         });
 
-        await this.scheduleRepo.save(schedule);
+        try {
+          await this.scheduleRepo.save(schedule);
+        } catch (err) {
+          // (user, date, shift) unique — the worker already holds this EXACT
+          // shift that day via another event/manual row. The only thing still
+          // impossible: report as skipped, never crash the fan-out.
+          if ((err as { code?: string }).code === '23505') {
+            skipped.push({ user_id: memberId, date: dateStr, reason: 'duplicate' });
+            continue;
+          }
+          throw err;
+        }
 
         // For static scope, add schedule_locations row
         if (event.scope === 'static' && event.location_id) {
@@ -137,10 +150,23 @@ export class ScheduleMaterializerService {
         }
 
         created++;
+
+        // Log conflict as warning if one was detected
+        if (conflict) {
+          this.logger.warn(
+            `Overlap detected: user ${memberId} on ${dateStr} has ${conflict.shift_name}; ` +
+              `created ${event.shift_definition.name} anyway`,
+          );
+          conflicts.push({
+            user_id: memberId,
+            date: dateStr,
+            conflicting_shift: conflict.shift_name,
+          });
+        }
       }
     }
 
-    return { created, skipped };
+    return { created, skipped, conflicts };
   }
 
   /**

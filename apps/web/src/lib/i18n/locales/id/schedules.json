@@ -141,8 +141,9 @@
       "kindTeam": "Tim",
       "workerLabel": "Pekerja",
       "workerPlaceholder": "Pilih pekerja…",
-      "teamLabel": "Tim",
-      "teamPlaceholder": "Pilih tim…",
+      "teamTypeLabel": "Tipe Tim",
+      "teamTypePlaceholder": "Pilih tipe tim…",
+      "teamNameLabel": "Nama Tim/Regu",
       "picLabel": "PIC (Penanggung Jawab)",
       "picPlaceholder": "Pilih PIC…",
       "memberLabel": "Anggota",
@@ -197,8 +198,11 @@
       "title": "Bentrok Jadwal",
       "message": "Beberapa anggota sudah terjadwal pada waktu ini. Jadwal tetap dibuat untuk anggota yang tersedia.",
       "worker": "{{name}} sudah terjadwal pada {{date}}",
-      "more": "… dan {{count}} konflik lainnya"
+      "more": "… dan {{count}} lainnya",
+      "createdWarning": "Dibuat, bentrok dengan:",
+      "skipped": "Tidak dibuat (duplikat):"
     },
+    "projectedHint": "Proyeksi (belum digenerate)",
     "empty": {
       "noEvents": "Tidak ada jadwal pada hari ini",
       "noOccurrences": "Tidak ada jadwal"

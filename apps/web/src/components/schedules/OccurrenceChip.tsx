@@ -12,6 +12,7 @@ interface OccurrenceChipProps {
   onClick?: () => void;
   className?: string;
   compact?: boolean;
+  hideProjectedAction?: boolean;
 }
 
 const SHIFT_COLORS: Record<number, { bg: string; text: string }> = {
@@ -29,6 +30,7 @@ export function OccurrenceChip({
   onClick,
   className = '',
   compact = false,
+  hideProjectedAction = false,
 }: OccurrenceChipProps) {
   const { t } = useTranslation();
 
@@ -36,21 +38,29 @@ export function OccurrenceChip({
   const shiftIndex = parseInt(shiftName.match(/\d+/)?.[0] || '0', 10) - 1;
   const colors = SHIFT_COLORS[Math.min(Math.max(shiftIndex, 0), 3)] || SHIFT_COLORS[0];
 
+  const teamMarkerColor = occurrence.team_type?.marker_color;
   const displayName = isTeam && teamName ? `${teamName} (${memberCount || 0})` : occurrence.user.full_name;
+  const isProjected = occurrence.is_projected ?? false;
 
   // Chips live inside clickable day cells — stop propagation so a chip click
   // never also fires the cell's "create on this day" handler.
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onClick?.();
+    if (!hideProjectedAction || !isProjected) {
+      onClick?.();
+    }
   };
+
+  const projectedSuffix = isProjected ? ` (${t('schedules:calendar.projectedHint')})` : '';
+  const projectedClass = isProjected ? 'opacity-60 border-dashed' : '';
 
   if (compact) {
     return (
       <button
         onClick={handleClick}
-        className={`w-full px-1.5 py-0.5 rounded-nb-sm text-xs font-medium truncate ${colors.bg} ${colors.text} hover:opacity-80 transition-opacity ${className}`}
-        title={displayName}
+        disabled={hideProjectedAction && isProjected}
+        className={`w-full px-1.5 py-0.5 rounded-nb-sm text-xs font-medium truncate ${colors.bg} ${colors.text} hover:opacity-80 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed ${projectedClass} ${className}`}
+        title={`${displayName}${projectedSuffix}`}
       >
         {displayName}
         {occurrence.is_detached && <span className="ml-1">✎</span>}
@@ -58,11 +68,14 @@ export function OccurrenceChip({
     );
   }
 
+  const borderStyle = teamMarkerColor ? { borderLeftColor: teamMarkerColor } : {};
+
   return (
     <Badge
       onClick={handleClick}
-      className={`${colors.bg} ${colors.text} cursor-pointer border-none px-2 py-1 text-xs font-medium ${className}`}
-      title={`${displayName} - ${shiftName}`}
+      className={`${colors.bg} ${colors.text} cursor-pointer border-2 border-nb-black px-2 py-1 text-xs font-medium ${projectedClass} ${className}`}
+      title={`${displayName}${projectedSuffix} - ${shiftName}`}
+      style={borderStyle}
     >
       <span className="truncate">{displayName}</span>
       {occurrence.is_detached && (

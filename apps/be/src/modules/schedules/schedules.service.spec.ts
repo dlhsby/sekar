@@ -27,7 +27,7 @@ function makeRosterRepo() {
   }
   qb.getMany = jest.fn().mockResolvedValue([]);
   return {
-    find: jest.fn(),
+    find: jest.fn().mockResolvedValue([]),
     findOne: jest.fn(),
     create: jest.fn((x) => ({ ...x })),
     save: jest.fn(async (x) => ({ id: x.id ?? `gen-${++counter}`, ...x })),
@@ -53,7 +53,7 @@ describe('SchedulesService', () => {
 
   beforeEach(async () => {
     rosterRepo = makeRosterRepo();
-    eventRepo = { find: jest.fn() };
+    eventRepo = { find: jest.fn().mockResolvedValue([]) };
     locationRepo = {
       find: jest.fn().mockResolvedValue([]),
       delete: jest.fn(),
@@ -69,7 +69,7 @@ describe('SchedulesService', () => {
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
     materializer = {
-      materializeEvent: jest.fn().mockResolvedValue({ created: 0, skipped: [] }),
+      materializeEvent: jest.fn().mockResolvedValue({ created: 0, skipped: [], conflicts: [] }),
     };
     overlapService = {
       findConflict: jest.fn(),
@@ -121,14 +121,14 @@ describe('SchedulesService', () => {
       });
     });
 
-    it('joins user, shift_definition, schedule_areas, region, and team relations', async () => {
+    it('joins user, shift_definition, schedule_areas, region, and team_type relations (Phase 4)', async () => {
       await service.findByDateRange('2026-06-30', '2026-07-05');
       const joinCalls = rosterRepo.qb.leftJoinAndSelect.mock.calls;
       expect(joinCalls.some((c) => c[0] === 'ds.user')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.shift_definition')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.schedule_areas')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.region')).toBe(true);
-      expect(joinCalls.some((c) => c[0] === 'ds.team')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.team_type')).toBe(true);
     });
 
     it('scopes to a rayon when one is given', async () => {
@@ -447,7 +447,8 @@ describe('SchedulesService', () => {
       );
     });
 
-    it('rejects overlapping shift with message containing "overlapping"', async () => {
+    it('allows overlapping shift (Phase 4: warn, not reject)', async () => {
+      // Phase 4 (ADR-047 amended): overlaps are warned, not rejected (Google-Calendar style)
       userRepo.findOne.mockResolvedValue({
         id: 'W',
         is_active: true,
@@ -460,16 +461,46 @@ describe('SchedulesService', () => {
         start_time: '14:00:00',
         end_time: '22:00:00',
       });
-      // Overlap detected
+      // Overlap detected but allowed (logs warning)
       overlapService.findConflict.mockResolvedValue({
         schedule_id: 'existing-s2',
         date: '2026-07-04',
         shift_name: 'Shift 2',
       });
+      rosterRepo.save.mockResolvedValue({ id: 'new-overlap', user_id: 'W' });
+      rosterRepo.findOne.mockResolvedValue({ id: 'new-overlap', user_id: 'W', schedule_areas: [] });
+      userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
+
+      // Should not throw — creates the row anyway
+      const result = await service.addForDay(
+        { user_id: 'W', date: '2026-07-04', shift_definition_id: 's3' },
+        ADMIN,
+      );
+      expect(result.id).toBe('new-overlap');
+      expect(rosterRepo.save).toHaveBeenCalled();
+    });
+
+    it('rejects exact duplicate shift (Phase 4: same user+date+shift)', async () => {
+      userRepo.findOne.mockResolvedValue({
+        id: 'W',
+        is_active: true,
+        role: UserRole.SATGAS,
+        rayon_id: 'r1',
+      });
+      shiftDefinitionRepo.findOne.mockResolvedValue({
+        id: 's3',
+        name: 'Shift 3',
+        start_time: '14:00:00',
+        end_time: '22:00:00',
+      });
+      // Exact duplicate already exists (same shift that day)
+      rosterRepo.find.mockResolvedValue([
+        { user_id: 'W', schedule_date: '2026-07-04', shift_definition_id: 's3' },
+      ]);
 
       await expect(
         service.addForDay({ user_id: 'W', date: '2026-07-04', shift_definition_id: 's3' }, ADMIN),
-      ).rejects.toThrow(/overlapping/i);
+      ).rejects.toThrow(/already has this exact shift/i);
       expect(rosterRepo.save).not.toHaveBeenCalled();
     });
 
