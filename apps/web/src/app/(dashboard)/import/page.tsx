@@ -102,7 +102,7 @@ function KmzImport() {
       const result = await confirmKmz.mutateAsync({ sessionId: preview.session_id, areas: selections });
       toast.success(t('kmz.successMessage', { created: result.created, updated: result.updated }));
       setPreview(null); // clear the consumed session before navigating away
-      router.push('/areas');
+      router.push('/locations');
     } catch (error) {
       toast.error(getErrorMessage(error));
     }

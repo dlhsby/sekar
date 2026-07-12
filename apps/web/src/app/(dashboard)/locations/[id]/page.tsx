@@ -86,7 +86,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             <p className="text-sm text-nb-gray-600 mb-4">
               {t('admin:areas.detailNotFound')}
             </p>
-            <Button onClick={() => router.push('/areas')}>{t('common:actions.back')}</Button>
+            <Button onClick={() => router.push('/locations')}>{t('common:actions.back')}</Button>
           </CardContent>
         </Card>
       </div>
@@ -100,7 +100,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         <div className="flex-1">
           <nav aria-label={t("common:nav.breadcrumbAria")} className="flex items-center gap-3 mb-2">
             <Button
-              onClick={() => router.push('/areas')}
+              onClick={() => router.push('/locations')}
               variant="secondary"
               size="sm"
               leftIcon={<ArrowLeft className="w-4 h-4" />}
@@ -317,7 +317,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         area={area}
         isOpen={deleteModal}
         onClose={() => setDeleteModal(false)}
-        onSuccess={() => router.push('/areas')}
+        onSuccess={() => router.push('/locations')}
       />
 
       <AreaFormModal open={editModal} onOpenChange={setEditModal} area={area} />
