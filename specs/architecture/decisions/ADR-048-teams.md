@@ -18,7 +18,7 @@ Introduce a lightweight `teams` master-data entity plus a team-type catalog, wit
 
 ### `teams` + `team_types` entities
 
-- **`team_types`** — a small catalog table (`id`, `name`, `is_active`), seeded with perawatan / penyiraman / penanaman / penyapuan and **extensible via a Teams → Type management UI** (no code change to add a type). Gated by `team:manage`.
+- **`team_types`** — a small catalog table (`id`, `name`, `is_active`), seeded with perawatan / penyiraman / penanaman / penyapuan and **extensible without a code change** via the `team:manage`-gated `/team-types` API (a dedicated Type-management UI ships with Phase 4; until then types are managed via the API).
 - **`teams`** — `id`, `name`, `team_type_id` (FK), `marker_icon`, `marker_image_url` (image-only markers; `marker_color` removed), `is_active`, audit. Managed via a Teams CRUD page gated by `team:*` permissions.
 
 ### Membership via schedules

@@ -20,6 +20,7 @@ Crews (perawatan, penyiraman, penanaman, penyapuan, …) as first-class, typed e
 - [scheduling](../scheduling/README.md) · [monitoring](../monitoring/README.md) · [geography](../geography/README.md)
 
 ## Changelog
+- 2026-07-12 — **Phase 3 review hardening.** Team names are **unique (case-insensitive)** — enforced in the service on create/rename; duplicate team-type names return a friendly 409 (was a raw 500 from the DB constraint); `GET /team-types` returns **active types only by default** (`?include_inactive=true` for catalog-management views — form dropdowns no longer offer deactivated types); `kepala_rayon`/`admin_rayon` gain the missing `team:delete` grant (they could create/update but not delete). **Note:** the team-type *management UI* is not built yet — types are managed via the API (`team:manage`); UI ships with Phase 4 (team schedules).
 - 2026-07-12 — **Phase 0–3 verification pass.** Fixed stale `marker_color` reference (teams are image-only markers: `marker_icon` + `marker_image_url`) in ADR-048 + this spec.
 - 2026-07-12 — **Area→Location terminology sweep.** Team scope description now uses `location_id` (static) / `region_id` (mobile).
 - 2026-07-11 — Removed team `marker_color` (image-only markers); team default marker + `marker_image_url` seeded. Migration `17491900000000`.

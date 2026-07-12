@@ -23,7 +23,8 @@ User CRUD (admin), self-profile management, preferred language, profile photo, a
 - [access-control](../access-control/README.md)
 
 ## Changelog
-- 2026-07-12 — **Area→Location terminology sweep.** Renamed `user-areas` → `user-locations`, `location_id` → `location_id`, location picker/multi-select references, ADR-013.
+- 2026-07-12 — **Phase 3 review hardening.** Backend now validates role + scope as a whole on create/update (ADR-044/045): a district/region-scope role **requires a rayon**; a region assignment is only valid for region/location-scope roles and the **region must belong to the user's rayon**; a role change away from region scope **clears a stale `region_id`** automatically (the form already sends explicit values — the API no longer relies on that). Validation runs against the effective post-PATCH state, and works for custom roles (scope read from the roles table). Note: `area_ids` is still accepted for satgas/linmas via the API (back-compat until schedules own their location, Phase 4) — only the form picker was removed.
+- 2026-07-12 — **Area→Location terminology sweep.** Renamed `user-areas` → `user-locations`, `area_id` → `location_id`, location picker/multi-select references, ADR-013.
 - 2026-07-11 — Username edit now persists (was dropped by the update DTO); role dropdown is data-driven (dynamic /roles, hierarchy sort, correct labels); Shift column removed (comes from schedules).
 - 2026-07-11 — Review polish: removed the always-empty Shift column (shift comes from schedules/Phase 4); i18n the Location column header; Rayon/Region scope fields marked required.
 - 2026-07-10 — Phase 3 landed: `users.region_id` (Create/Update DTO + service); web user form scope is role-driven from monitoring_scope (kepala_rayon/admin_rayon→rayon; korlap→rayon+region+optional location; satgas/linmas/management→none). satgas/linmas location+shift now come from schedules (Phase 4) — new such users are unmonitored until scheduled. Verified live.

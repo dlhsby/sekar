@@ -53,16 +53,44 @@ export class UsersService {
   ) {}
 
   /**
-   * Validate an assigned role code against the data-driven `roles` table
-   * (ADR-044) — replaces the static enum/CHECK constraint. Undefined is allowed
-   * (create falls back to the column default).
+   * Validate the user's role + scope fields as a whole (ADR-044/045): the role
+   * code is checked against the data-driven `roles` table (replaces the static
+   * enum/CHECK constraint; undefined role is allowed — create falls back to the
+   * column default). Scope rules: a
+   * district/region-scope role needs a rayon; a region assignment is only valid
+   * for region/location-scope roles and must belong to the user's rayon.
+   * Returns the role's monitoring_scope so callers can reconcile stale fields.
    */
-  private async assertRoleValid(role?: string): Promise<void> {
-    if (!role) return;
-    const exists = await this.roleRepository.exists({ where: { code: role } });
-    if (!exists) {
-      throw new BadRequestException(`Unknown role: ${role}`);
+  private async assertScopeConsistent(effective: {
+    role?: string;
+    rayon_id?: string | null;
+    region_id?: string | null;
+  }): Promise<string | undefined> {
+    let scope: string | undefined;
+    if (effective.role) {
+      const roleRow = await this.roleRepository.findOne({ where: { code: effective.role } });
+      if (!roleRow) throw new BadRequestException(`Unknown role: ${effective.role}`);
+      scope = roleRow.monitoring_scope;
+      if ((scope === 'district' || scope === 'region') && !effective.rayon_id) {
+        throw new BadRequestException(`Role '${effective.role}' requires a rayon assignment`);
+      }
+      if (effective.region_id && scope !== 'region' && scope !== 'location') {
+        throw new BadRequestException(
+          `Role '${effective.role}' does not take a region (kawasan) assignment`,
+        );
+      }
     }
+    if (effective.region_id) {
+      const rows = (await this.userRepository.manager.query(
+        `SELECT rayon_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
+        [effective.region_id],
+      )) as Array<{ rayon_id: string }>;
+      if (rows.length === 0) throw new BadRequestException('Region not found');
+      if (!effective.rayon_id || rows[0].rayon_id !== effective.rayon_id) {
+        throw new BadRequestException("Region must belong to the user's rayon");
+      }
+    }
+    return scope;
   }
 
   /** Fire-and-forget audit write — account changes must never fail on logging */
@@ -93,7 +121,7 @@ export class UsersService {
 
     this.logger.log(`Creating new user: ${username}`);
 
-    await this.assertRoleValid(role);
+    await this.assertScopeConsistent({ role, rayon_id, region_id });
     await this.userValidation.assertUsernameAvailable(username);
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number);
@@ -404,8 +432,31 @@ export class UsersService {
     if (updateData.username && updateData.username !== user.username) {
       await this.userValidation.assertUsernameAvailable(updateData.username);
     }
-    if (updateData.role && updateData.role !== user.role) {
-      await this.assertRoleValid(updateData.role);
+    // Validate role + scope against the EFFECTIVE post-update state (a partial
+    // PATCH inherits current values for anything it omits).
+    const effectiveRole = updateData.role ?? user.role;
+    const effectiveRayonId =
+      updateData.rayon_id !== undefined ? updateData.rayon_id : user.rayon_id;
+    let effectiveRegionId: string | null | undefined =
+      updateData.region_id !== undefined ? updateData.region_id : user.region_id;
+    const roleChanged = !!updateData.role && updateData.role !== user.role;
+    if (roleChanged || updateData.rayon_id !== undefined || updateData.region_id !== undefined) {
+      // Safety net: a role change away from region/location scope clears a
+      // stale inherited region instead of failing on it (the form sends
+      // explicit values, but the API must not rely on that).
+      if (roleChanged && effectiveRegionId && updateData.region_id === undefined) {
+        const newRole = await this.roleRepository.findOne({ where: { code: effectiveRole } });
+        const newScope = newRole?.monitoring_scope as string | undefined;
+        if (newScope !== 'region' && newScope !== 'location') {
+          effectiveRegionId = null;
+          updateData.region_id = null as unknown as typeof updateData.region_id;
+        }
+      }
+      await this.assertScopeConsistent({
+        role: effectiveRole,
+        rayon_id: effectiveRayonId,
+        region_id: effectiveRegionId,
+      });
     }
 
     // Reassignment = editing the user's permanent areas. Past shifts/tracking
