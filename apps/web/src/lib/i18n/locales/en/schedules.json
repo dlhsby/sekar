@@ -141,8 +141,9 @@
       "kindTeam": "Team",
       "workerLabel": "Worker",
       "workerPlaceholder": "Select worker…",
-      "teamLabel": "Team",
-      "teamPlaceholder": "Select team…",
+      "teamTypeLabel": "Team Type",
+      "teamTypePlaceholder": "Select team type…",
+      "teamNameLabel": "Team/Crew Name",
       "picLabel": "PIC (Person in Charge)",
       "picPlaceholder": "Select PIC…",
       "memberLabel": "Members",
@@ -197,8 +198,11 @@
       "title": "Schedule Conflicts",
       "message": "Some members are already scheduled for this time. The schedule will be created for available members.",
       "worker": "{{name}} is already scheduled on {{date}}",
-      "more": "… and {{count}} more conflicts"
+      "more": "… and {{count}} more",
+      "createdWarning": "Created with conflicts:",
+      "skipped": "Not created (duplicate):"
     },
+    "projectedHint": "Projected (not yet generated)",
     "empty": {
       "noEvents": "No schedules for this day",
       "noOccurrences": "No schedules"

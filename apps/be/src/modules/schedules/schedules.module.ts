@@ -7,7 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { Region } from '../regions/entities/region.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
-import { Team } from '../teams/entities/team.entity';
+import { TeamType } from '../teams/entities/team-type.entity';
 import { SchedulesService } from './schedules.service';
 import { SchedulesController } from './schedules.controller';
 import { ScheduleEventsService } from './services/schedule-events.service';
@@ -35,7 +35,7 @@ import { SettingsModule } from '../settings/settings.module';
       Location,
       Region,
       ShiftDefinition,
-      Team,
+      TeamType,
     ]),
     UserLocationsModule,
     AuditModule,

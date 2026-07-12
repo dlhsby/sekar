@@ -480,5 +480,30 @@
       "markerIconPlaceholder": "mis. droplets",
       "markerColor": "Warna Penanda"
     }
+  },
+  "teamTypes": {
+    "pageTitle": "Tipe Tim",
+    "description": "Kelola katalog tipe tim untuk penjadwalan",
+    "searchPlaceholder": "Cari nama tipe…",
+    "columnName": "Nama",
+    "columnStatus": "Status",
+    "columnMarker": "Penanda",
+    "buttonAdd": "Tambah Tipe Tim",
+    "actionEdit": "Ubah",
+    "emptyTitle": "Belum ada tipe tim",
+    "denied": "Anda tidak memiliki akses ke tipe tim",
+    "deleteTitle": "Hapus Tipe Tim",
+    "deleteMessage": "Hapus tipe tim \"{{name}}\"?",
+    "successCreated": "Tipe tim \"{{name}}\" dibuat",
+    "successUpdated": "Tipe tim \"{{name}}\" diperbarui",
+    "successDeleted": "Tipe tim dihapus",
+    "statusActive": "Aktif",
+    "statusInactive": "Nonaktif",
+    "form": {
+      "name": "Nama Tipe Tim",
+      "namePlaceholder": "mis. Tim Penyiraman",
+      "activeLabel": "Tipe aktif",
+      "markerColor": "Warna Penanda"
+    }
   }
 }

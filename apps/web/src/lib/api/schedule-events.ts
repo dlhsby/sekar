@@ -29,7 +29,7 @@ export interface CreateScheduleEventInput {
   region_id?: string | null;
   is_team: boolean;
   user_id?: string | null;
-  team_id?: string | null;
+  team_type_id?: string | null;
   pic_user_id?: string | null;
   member_ids?: string[];
   notes?: string;
@@ -61,7 +61,7 @@ export interface ScheduleEvent {
   location_id: string | null;
   region_id: string | null;
   is_team: boolean;
-  team_id: string | null;
+  team_type_id: string | null;
   pic_user_id: string | null;
   user_id: string | null;
   is_active: boolean;
@@ -85,10 +85,11 @@ export interface ScheduleEvent {
     id: string;
     name: string;
   } | null;
-  team?: {
+  team_type?: {
     id: string;
     name: string;
-    marker?: string;
+    marker_image_url?: string | null;
+    marker_color?: string | null;
   } | null;
   pic_user?: {
     id: string;
@@ -122,6 +123,7 @@ export interface ScheduleOccurrence {
   region_id?: string | null;
   schedule_event_id?: string | null;
   is_detached: boolean;
+  is_projected?: boolean;
   user: {
     id: string;
     full_name: string;
@@ -135,10 +137,11 @@ export interface ScheduleOccurrence {
     end_time: string;
     crosses_midnight?: boolean;
   } | null;
-  team?: {
+  team_type?: {
     id: string;
     name: string;
-    marker?: string;
+    marker_image_url?: string | null;
+    marker_color?: string | null;
   } | null;
   location?: {
     id: string;
@@ -159,14 +162,15 @@ interface RawScheduleRangeRow {
   shift_definition_id: string | null;
   status: string;
   region_id?: string | null;
-  team_id?: string | null;
+  team_type_id?: string | null;
   schedule_event_id?: string | null;
   is_detached?: boolean;
+  is_projected?: boolean;
   user: ScheduleOccurrence['user'];
   shift_definition?: ScheduleOccurrence['shift_definition'];
   schedule_areas?: Array<{ location_id: string; area?: { id: string; name: string } | null }>;
   region?: ScheduleOccurrence['region'];
-  team?: ScheduleOccurrence['team'];
+  team_type?: ScheduleOccurrence['team_type'];
 }
 
 /** Normalize a raw roster row to the calendar's occurrence shape. */
@@ -183,25 +187,27 @@ function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
     region_id: row.region_id ?? null,
     schedule_event_id: row.schedule_event_id ?? null,
     is_detached: row.is_detached ?? false,
+    is_projected: row.is_projected ?? false,
     user: row.user,
     shift_definition: row.shift_definition ?? null,
-    team: row.team ?? null,
+    team_type: row.team_type ?? null,
     location: firstArea?.area ?? null,
     region: row.region ?? null,
   };
 }
 
-/** Per-member/date conflicts reported by the backend materializer — only ids;
- * the UI resolves display names from its loaded users. */
-export interface MaterializationSkipped {
+/** Per-member/date entry for conflicts or skipped entries */
+export interface MaterializationEntry {
   user_id: string;
   date: string;
-  reason: 'overlap' | 'tombstone' | string;
+  reason?: 'exists' | 'duplicate' | string;
+  conflicting_shift?: string;
 }
 
 export interface MaterializationResult {
   created: number;
-  skipped: MaterializationSkipped[];
+  skipped: MaterializationEntry[];
+  conflicts?: MaterializationEntry[];
 }
 
 export interface CreateScheduleEventResponse {

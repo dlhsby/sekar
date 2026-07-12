@@ -38,6 +38,9 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { ROSTER_EDITORS, ROSTER_VIEWERS, USER_MANAGERS } from '../users/constants/role-groups';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 
+// Phase 4: widen roster range access to include satgas, linmas (in addition to ROSTER_VIEWERS)
+const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, UserRole.LINMAS]));
+
 /**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
  * and admin_rayon are confined to their own rayon (forced on list, checked on
@@ -92,8 +95,11 @@ export class SchedulesController {
   }
 
   @Get('range')
-  @Roles(...ROSTER_VIEWERS)
-  @ApiOperation({ summary: 'List roster rows for a date range [from, to]' })
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'List roster rows for a date range [from, to]. Phase 4: includes projected events beyond materialization horizon. Workers (satgas/linmas/korlap) see only their own schedule.',
+  })
   @ApiQuery({ name: 'from', example: '2026-06-30' })
   @ApiQuery({ name: 'to', example: '2026-07-31' })
   @ApiQuery({ name: 'rayonId', required: false })
@@ -125,6 +131,13 @@ export class SchedulesController {
         ? this.service.findByDateRange(from, to, user.rayon_id)
         : Promise.resolve([]);
     }
+
+    // Phase 4: workers (satgas/linmas/korlap not in ROSTER_VIEWERS are self-scoped)
+    // Force user_id = caller.id filter when not in ROSTER_VIEWERS
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.findByDateRangeForUser(from, to, user.id);
+    }
+
     return this.service.findByDateRange(from, to, rayonId);
   }
 

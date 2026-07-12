@@ -9,7 +9,7 @@ import { User, UserRole } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { Team } from '../../teams/entities/team.entity';
+import { TeamType } from '../../teams/entities/team-type.entity';
 import { ScheduleMaterializerService } from './schedule-materializer.service';
 import { AuditLogService } from '../../audit/audit.service';
 import { ScheduleScope } from '../enums/schedule-scope.enum';
@@ -25,7 +25,7 @@ describe('ScheduleEventsService', () => {
   let locationRepo: Record<string, jest.Mock>;
   let regionRepo: Record<string, jest.Mock>;
   let shiftRepo: Record<string, jest.Mock>;
-  let teamRepo: Record<string, jest.Mock>;
+  let teamTypeRepo: Record<string, jest.Mock>;
   let materializer: Record<string, jest.Mock>;
   let auditLog: Record<string, jest.Mock>;
 
@@ -87,7 +87,7 @@ describe('ScheduleEventsService', () => {
     shiftRepo = {
       findOne: jest.fn(),
     };
-    teamRepo = {
+    teamTypeRepo = {
       findOne: jest.fn(),
     };
     materializer = {
@@ -108,7 +108,7 @@ describe('ScheduleEventsService', () => {
         { provide: getRepositoryToken(Location), useValue: locationRepo },
         { provide: getRepositoryToken(Region), useValue: regionRepo },
         { provide: getRepositoryToken(ShiftDefinition), useValue: shiftRepo },
-        { provide: getRepositoryToken(Team), useValue: teamRepo },
+        { provide: getRepositoryToken(TeamType), useValue: teamTypeRepo },
         { provide: ScheduleMaterializerService, useValue: materializer },
         { provide: AuditLogService, useValue: auditLog },
       ],
@@ -167,7 +167,7 @@ describe('ScheduleEventsService', () => {
         recurrence_config: null,
         is_team: true,
         user_id: null,
-        team_id: 'team-1',
+        team_type_id: 'team-1',
         pic_user_id: 'pic-1',
         members: [{ user_id: 'member-1' }, { user_id: 'member-2' }],
         created_by: 'admin',
@@ -284,12 +284,13 @@ describe('ScheduleEventsService', () => {
       userRepo.find.mockResolvedValue([{ id: 'user-1', role: 'satgas', is_active: true }]); // Only 1 found
       shiftRepo.findOne.mockResolvedValue(mockShift);
       locationRepo.findOne.mockResolvedValue(mockLocation);
+      teamTypeRepo.findOne.mockResolvedValue({ id: 'team-1', is_active: true }); // Team type exists
 
       await expect(
         service.create(
           {
             is_team: true,
-            team_id: 'team-1',
+            team_type_id: 'team-1',
             pic_user_id: 'pic-1',
             member_ids: ['user-1', 'unknown-user'],
             shift_definition_id: mockShift.id,
@@ -309,12 +310,13 @@ describe('ScheduleEventsService', () => {
       ]);
       shiftRepo.findOne.mockResolvedValue(mockShift);
       locationRepo.findOne.mockResolvedValue(mockLocation);
+      teamTypeRepo.findOne.mockResolvedValue({ id: 'team-1', is_active: true }); // Team type exists
 
       await expect(
         service.create(
           {
             is_team: true,
-            team_id: 'team-1',
+            team_type_id: 'team-1',
             pic_user_id: 'user-1',
             shift_definition_id: mockShift.id,
             scope: ScheduleScope.STATIC,

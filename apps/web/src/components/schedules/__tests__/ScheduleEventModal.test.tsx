@@ -1,11 +1,10 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ScheduleEventModal } from '../ScheduleEventModal';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: any) => key,
+    t: (key: string) => key,
   }),
 }));
 
@@ -23,7 +22,7 @@ jest.mock('@/lib/api/schedule-events', () => ({
 jest.mock('@/lib/auth/usePermissions', () => ({
   usePermissions: () => ({
     permissions: ['schedule:create', 'schedule:update'],
-    can: (p: string) => true,
+    can: () => true,
   }),
 }));
 
@@ -44,7 +43,7 @@ jest.mock('@/lib/api/users', () => ({
 }));
 
 jest.mock('@/lib/api/teams', () => ({
-  useTeams: () => ({ data: [] }),
+  useTeamTypes: () => ({ data: [] }),
 }));
 
 jest.mock('@/lib/api/rayons', () => ({

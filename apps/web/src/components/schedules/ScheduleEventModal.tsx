@@ -33,13 +33,13 @@ import {
   type CreateScheduleEventInput,
   type UpdateScheduleEventInput,
   type EditScope,
-  type MaterializationSkipped,
+  type MaterializationEntry,
   type RecurrenceType,
   type ScheduleEvent,
 } from '@/lib/api/schedule-events';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUsers } from '@/lib/api/users';
-import { useTeams } from '@/lib/api/teams';
+import { useTeamTypes } from '@/lib/api/teams';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
 import { usePermissions } from '@/lib/auth/usePermissions';
@@ -78,7 +78,7 @@ function createSchema(t: TFn) {
       title: z.string().max(120).optional(),
       kind: z.enum(['individual', 'team']),
       user_id: z.string().optional(),
-      team_id: z.string().optional(),
+      team_type_id: z.string().optional(),
       pic_user_id: z.string().optional(),
       member_ids: z.array(z.string()),
       shift_definition_id: z.string().min(1, t('validation:required')),
@@ -100,8 +100,8 @@ function createSchema(t: TFn) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['user_id'], message: t('validation:required') });
       }
       if (data.kind === 'team') {
-        if (!data.team_id) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['team_id'], message: t('validation:required') });
+        if (!data.team_type_id) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['team_type_id'], message: t('validation:required') });
         }
         if (!data.pic_user_id) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pic_user_id'], message: t('validation:required') });
@@ -178,7 +178,7 @@ export function ScheduleEventModal({
       title: event?.title ?? '',
       kind: event?.is_team ? 'team' : 'individual',
       user_id: event?.user_id ?? '',
-      team_id: event?.team_id ?? '',
+      team_type_id: event?.team_type_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
       member_ids: event?.members?.map((m) => m.user_id) ?? [],
       shift_definition_id: event?.shift_definition_id ?? '',
@@ -200,7 +200,7 @@ export function ScheduleEventModal({
 
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: usersResp } = useUsers({ limit: 1000 });
-  const { data: teams = [] } = useTeams();
+  const { data: teamTypes = [] } = useTeamTypes(can('schedule:create') || can('schedule:update'));
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: regions = [] } = useRegions();
 
@@ -222,7 +222,7 @@ export function ScheduleEventModal({
 
   const shiftOptions = shifts.map((s) => ({ value: s.id, label: s.name }));
   const userOptions = schedulableUsers.map((u) => ({ value: u.id, label: u.full_name }));
-  const teamOptions = teams.map((tm) => ({ value: tm.id, label: tm.name }));
+  const teamTypeOptions = teamTypes.filter((tt) => tt.is_active).map((tt) => ({ value: tt.id, label: tt.name }));
   const locationOptions = locations.map((l) => ({ value: l.id, label: l.name }));
   const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
   const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
@@ -233,22 +233,35 @@ export function ScheduleEventModal({
     { value: 'specific_dates', label: t('schedules:calendar.event.recurrenceSpecificDates') },
   ];
 
-  const warnConflicts = (skipped: MaterializationSkipped[]) => {
-    if (skipped.length === 0) return false;
-    const lines = skipped
-      .slice(0, 5)
-      .map((s) =>
-        t('schedules:calendar.conflicts.worker', {
-          name: userNameById.get(s.user_id) ?? s.user_id,
-          date: s.date,
-        }),
-      )
-      .join('; ');
-    const more =
-      skipped.length > 5
-        ? ` ${t('schedules:calendar.conflicts.more', { count: skipped.length - 5 })}`
-        : '';
-    toast.warning(`${t('schedules:calendar.conflicts.message')} ${lines}${more}`);
+  const warnConflicts = (result: { skipped?: MaterializationEntry[]; conflicts?: MaterializationEntry[] }) => {
+    const { skipped = [], conflicts = [] } = result;
+    const hasWarnings = conflicts.length > 0 || skipped.length > 0;
+    if (!hasWarnings) return false;
+
+    const messages: string[] = [];
+
+    if (conflicts.length > 0) {
+      const conflictLines = conflicts
+        .slice(0, 3)
+        .map(
+          (c) =>
+            `${userNameById.get(c.user_id) ?? c.user_id} ${c.date}${c.conflicting_shift ? ` (${c.conflicting_shift})` : ''}`,
+        )
+        .join('; ');
+      const conflictMore = conflicts.length > 3 ? ` ${t('schedules:calendar.conflicts.more', { count: conflicts.length - 3 })}` : '';
+      messages.push(`${t('schedules:calendar.conflicts.createdWarning')} ${conflictLines}${conflictMore}`);
+    }
+
+    if (skipped.length > 0) {
+      const skipLines = skipped
+        .slice(0, 3)
+        .map((s) => `${userNameById.get(s.user_id) ?? s.user_id} ${s.date}`)
+        .join('; ');
+      const skipMore = skipped.length > 3 ? ` ${t('schedules:calendar.conflicts.more', { count: skipped.length - 3 })}` : '';
+      messages.push(`${t('schedules:calendar.conflicts.skipped')} ${skipLines}${skipMore}`);
+    }
+
+    toast.warning(messages.join(' · '));
     return true;
   };
 
@@ -275,7 +288,7 @@ export function ScheduleEventModal({
         region_id: data.scope === 'mobile' ? data.region_id : null,
         is_team: data.kind === 'team',
         user_id: data.kind === 'individual' ? data.user_id : null,
-        team_id: data.kind === 'team' ? data.team_id : null,
+        team_type_id: data.kind === 'team' ? data.team_type_id : null,
         pic_user_id: data.kind === 'team' ? data.pic_user_id : null,
         member_ids: data.kind === 'team' ? data.member_ids.filter((id) => id !== data.pic_user_id) : [],
         notes: data.notes || undefined,
@@ -283,7 +296,8 @@ export function ScheduleEventModal({
 
       if (isEditing && event) {
         // Kind (individual/team target) is immutable on the backend — strip it.
-        const { is_team: _isTeam, user_id: _userId, team_id: _teamId, pic_user_id: _pic, ...updatable } = payload;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- these are intentionally stripped from the payload
+        const { is_team: _, user_id: __, team_type_id: ___, pic_user_id: ____, ...updatable } = payload;
         const result = await updateMutation.mutateAsync({
           id: event.id,
           // member_ids only applies to team events — the backend rejects it
@@ -295,12 +309,12 @@ export function ScheduleEventModal({
           editScope,
           fromDate,
         });
-        if (!warnConflicts(result.materialization.skipped)) {
+        if (!warnConflicts(result.materialization)) {
           toast.success(t('schedules:calendar.messages.updateSuccess'));
         }
       } else {
         const result = await createMutation.mutateAsync(payload);
-        if (!warnConflicts(result.materialization.skipped)) {
+        if (!warnConflicts(result.materialization)) {
           toast.success(t('schedules:calendar.messages.createSuccess'));
         }
       }
@@ -364,12 +378,12 @@ export function ScheduleEventModal({
             {formKind === 'team' && (
               <>
                 <FormCombobox
-                  label={t('schedules:calendar.event.teamLabel')}
-                  options={teamOptions}
-                  value={watch('team_id') || ''}
-                  onChange={(v) => setValue('team_id', v, { shouldValidate: true })}
-                  placeholder={t('schedules:calendar.event.teamPlaceholder')}
-                  error={errors.team_id?.message}
+                  label={t('schedules:calendar.event.teamTypeLabel')}
+                  options={teamTypeOptions}
+                  value={watch('team_type_id') || ''}
+                  onChange={(v) => setValue('team_type_id', v, { shouldValidate: true })}
+                  placeholder={t('schedules:calendar.event.teamTypePlaceholder')}
+                  error={errors.team_type_id?.message}
                   disabled={isEditing}
                 />
                 <FormCombobox

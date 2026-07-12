@@ -11,6 +11,8 @@ interface EditScopeChooserProps {
   /** When set, a destructive delete entry hands off to the delete-scope flow. */
   onDelete?: () => void;
   selectedDate?: string;
+  /** When true, hide the 'this' (Hanya hari ini) option (for projected occurrences). */
+  hideThisOption?: boolean;
 }
 
 export function EditScopeChooser({
@@ -19,6 +21,7 @@ export function EditScopeChooser({
   onSelect,
   onDelete,
   selectedDate,
+  hideThisOption = false,
 }: EditScopeChooserProps) {
   const { t } = useTranslation();
 
@@ -30,18 +33,20 @@ export function EditScopeChooser({
         </DialogHeader>
         <DialogBody className="space-y-3">
           <div className="space-y-2">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={() => {
-                onSelect('this');
-                onOpenChange(false);
-              }}
-            >
-              <div className="text-left">
-                <div className="font-bold">{t('schedules:calendar.editScope.this')}</div>
-              </div>
-            </Button>
+            {!hideThisOption && (
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => {
+                  onSelect('this');
+                  onOpenChange(false);
+                }}
+              >
+                <div className="text-left">
+                  <div className="font-bold">{t('schedules:calendar.editScope.this')}</div>
+                </div>
+              </Button>
+            )}
 
             <Button
               variant="outline"

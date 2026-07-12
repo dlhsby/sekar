@@ -6,56 +6,40 @@ export interface TeamType {
   id: string;
   name: string;
   is_active: boolean;
+  marker_image_url?: string | null;
+  marker_color?: string | null;
 }
 
-export interface Team {
-  id: string;
+export interface CreateTeamTypeDto {
   name: string;
-  team_type_id: string;
-  team_type?: TeamType;
-  marker_icon?: string | null;
-  marker_image_url?: string | null;
   is_active: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateTeamDto {
-  name: string;
-  team_type_id: string;
-  marker_icon?: string | null;
   marker_image_url?: string | null;
+  marker_color?: string | null;
 }
-export type UpdateTeamDto = Partial<CreateTeamDto> & { is_active?: boolean };
+export type UpdateTeamTypeDto = Partial<CreateTeamTypeDto>;
 
 export const teamKeys = {
   all: ['teams'] as const,
-  lists: () => [...teamKeys.all, 'list'] as const,
-  detail: (id: string) => [...teamKeys.all, 'detail', id] as const,
   types: ['team-types'] as const,
+  typesList: () => [...teamKeys.types, 'list'] as const,
+  typesDetail: (id: string) => [...teamKeys.types, 'detail', id] as const,
 };
 
-export function useTeams() {
+export function useTeamTypes(enabled = true) {
   return useQuery({
-    queryKey: teamKeys.lists(),
-    queryFn: async () => (await apiClient.get<Team[]>('/teams')).data,
-  });
-}
-
-export function useTeamTypes() {
-  return useQuery({
-    queryKey: teamKeys.types,
+    queryKey: teamKeys.typesList(),
     queryFn: async () => (await apiClient.get<TeamType[]>('/team-types')).data,
+    enabled,
     staleTime: 30 * 60 * 1000, // catalog rarely changes
   });
 }
 
-const teamCrudHooks = makeCrudHooks<Team, CreateTeamDto, UpdateTeamDto>({
-  resource: 'teams',
-  listKey: teamKeys.lists(),
-  detailKeyFn: (id) => teamKeys.detail(id),
+const teamTypeCrudHooks = makeCrudHooks<TeamType, CreateTeamTypeDto, UpdateTeamTypeDto>({
+  resource: 'team-types',
+  listKey: teamKeys.typesList(),
+  detailKeyFn: (id) => teamKeys.typesDetail(id),
 });
 
-export const useCreateTeam = teamCrudHooks.useCreate;
-export const useUpdateTeam = teamCrudHooks.useUpdate;
-export const useDeleteTeam = teamCrudHooks.useDelete;
+export const useCreateTeamType = teamTypeCrudHooks.useCreate;
+export const useUpdateTeamType = teamTypeCrudHooks.useUpdate;
+export const useDeleteTeamType = teamTypeCrudHooks.useDelete;
