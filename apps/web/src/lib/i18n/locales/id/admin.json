@@ -448,6 +448,9 @@
     "borderOpacity": "Opasitas Batas",
     "fillColor": "Warna Isi",
     "fillOpacity": "Opasitas Isi",
+    "fillToggle": "Aktifkan warna isi",
+    "fillNone": "Tidak diisi (transparan)",
+    "fillSameAsBorder": "Sama dengan warna batas",
     "markerIcon": "Ikon Penanda",
     "markerIconPlaceholder": "mis. trees",
     "markerColor": "Warna Penanda"

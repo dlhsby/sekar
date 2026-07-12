@@ -25,6 +25,7 @@ The organizational + spatial hierarchy. Being reworked (UAT) from 3 levels to **
 - [teams](../teams/README.md)
 
 ## Changelog
+- 2026-07-12 — **Rayon form colour cleanup.** Removed the duplicate legacy single-colour "Warna" field; map styling now has only **Warna Batas** (border) + **Warna Isi** (fill). **Fill is optional** — a toggle (off = no fill / transparent, `fill_color = null`) with a one-click **"Sama dengan warna batas"**. The legacy `color` column now mirrors `border_color` on save (kept for any remaining consumers). Shared `MapStyleFields` change → applies to rayon/region/area; `ColorField` label made optional.
 - 2026-07-11 — Kawasan **area re-parenting UI**: "Assign Areas" action + `AssignAreasModal` (multi-select, same-rayon only). Backend `assignAreas` now REPLACE semantics (un-parents deselected areas; empty clears). Users **Shift column removed** (shift comes from schedules).
 - 2026-07-11 — Removed rayon/region/area `marker_color` (image-only markers); per-kind default marker; wired `marker_image_url` into the geo forms. Migration `17491900000000`.
 - 2026-07-11 — Marker-as-image: `marker_image_url` on rayons/regions/areas via `MapStyleDto` + `MarkerImagePicker` (preseeded gallery + custom upload) in `MapStyleFields`. Migration `17491800000000`.

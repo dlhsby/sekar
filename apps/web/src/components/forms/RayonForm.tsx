@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { FormInput, Input, Textarea } from '@/components/ui';
+import { FormInput, Textarea } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
@@ -31,13 +31,6 @@ const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
   'marker_image_url',
 ];
 
-// Default value for the native color input (a data value, not a rendered style
-// token) — matches nb-primary so a new rayon starts on-brand. ADR-036 token rule
-// targets styling colors; an <input type="color"> default must be a literal hex.
-// eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default value
-const DEFAULT_COLOR = '#7FBC8C';
-const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
-
 /** Coerce a number-input value to a number, or null when empty/invalid (coords are optional). */
 const toNullableNumber = (v: unknown): number | null => {
   if (v === '' || v === null || v === undefined) return null;
@@ -47,7 +40,6 @@ const toNullableNumber = (v: unknown): number | null => {
 
 type RayonFormData = MapStyleFieldsDto & {
   name: string;
-  color?: string | null;
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
@@ -83,14 +75,6 @@ export function RayonForm({
     () =>
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
-        color: z
-          .string()
-          .optional()
-          .nullable()
-          .refine(
-            (v) => !v || HEX_COLOR_RE.test(v),
-            t('validation:colorInvalid')
-          ),
         description: z.string().optional().nullable(),
         center_lat: z
           .number()
@@ -125,7 +109,6 @@ export function RayonForm({
     resolver: zodResolver(rayonSchema),
     defaultValues: {
       name: initialData?.name || '',
-      color: initialData?.color || '',
       description: initialData?.description || '',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
@@ -149,8 +132,6 @@ export function RayonForm({
     isUnchanged: (v) => mode === 'edit' && v === initialData?.name,
   });
 
-  const colorValue = watch('color') || '';
-  const swatchValue = HEX_COLOR_RE.test(colorValue) ? colorValue : DEFAULT_COLOR;
   const centerLat = watch('center_lat');
   const centerLng = watch('center_lng');
   const boundaryValue = watch('boundary_polygon');
@@ -194,7 +175,10 @@ export function RayonForm({
   const onSubmitForm = async (data: RayonFormData) => {
     const submitData: UpdateRayonDto = {
       name: data.name,
-      color: data.color?.trim() || null,
+      // Keep the legacy single `color` column mirroring the border colour so any
+      // consumer still reading it stays consistent (the UI now only edits
+      // border/fill via MapStyleFields).
+      color: data.border_color || null,
       description: data.description || null,
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
@@ -232,40 +216,6 @@ export function RayonForm({
               taken: t('admin:rayons.form.nameTaken'),
             }}
           />
-        </div>
-
-        {/* Color picker */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none" htmlFor="rayon-color-hex">
-            {t('admin:rayons.form.color')}
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              aria-label={t('admin:rayons.form.colorLabel')}
-              value={swatchValue}
-              onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
-              disabled={readOnly}
-              className="h-12 w-14 shrink-0 cursor-pointer rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm disabled:cursor-not-allowed disabled:opacity-60"
-            />
-            <Input
-              id="rayon-color-hex"
-              type="text"
-              placeholder={DEFAULT_COLOR}
-              value={colorValue}
-              onChange={(e) => setValue('color', e.target.value, { shouldValidate: true })}
-              error={errors.color?.message}
-              aria-label={t('admin:rayons.form.colorHex')}
-              disabled={readOnly}
-            />
-          </div>
-          {errors.color?.message ? (
-            <p className="text-nb-body-sm text-nb-danger">{errors.color.message}</p>
-          ) : (
-            <p className="text-nb-body-sm text-nb-gray-500">
-              {t('admin:rayons.form.colorHelper')}
-            </p>
-          )}
         </div>
 
         <div className="space-y-1.5">

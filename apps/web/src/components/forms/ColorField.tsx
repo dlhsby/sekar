@@ -6,7 +6,10 @@ import { Input } from '@/components/ui';
 export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 interface ColorFieldProps {
-  label: string;
+  /** Visible label. Omit when the caller renders its own header (see the fill
+   *  control) — pass `ariaLabel` instead so the inputs stay accessible. */
+  label?: string;
+  ariaLabel?: string;
   /** Current value (may be empty/partial while typing). */
   value: string;
   /** Swatch + placeholder shown when `value` isn't a valid hex yet. */
@@ -19,15 +22,16 @@ interface ColorFieldProps {
  * A hex-colour input: a native colour swatch paired with a free-text hex field.
  * Reused by the map-style fields (border/fill) and the role editor (accent).
  */
-export function ColorField({ label, value, fallback, onChange, disabled }: ColorFieldProps) {
+export function ColorField({ label, ariaLabel, value, fallback, onChange, disabled }: ColorFieldProps) {
   const swatch = HEX_COLOR.test(value) ? value : fallback;
+  const a11y = label ?? ariaLabel;
   return (
     <div className="space-y-1.5">
-      <label className="block text-nb-body-sm font-semibold text-nb-black">{label}</label>
+      {label && <label className="block text-nb-body-sm font-semibold text-nb-black">{label}</label>}
       <div className="flex items-center gap-2">
         <input
           type="color"
-          aria-label={label}
+          aria-label={a11y}
           value={swatch}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
@@ -36,6 +40,7 @@ export function ColorField({ label, value, fallback, onChange, disabled }: Color
         <Input
           value={value}
           placeholder={fallback}
+          aria-label={label ? undefined : a11y}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           className="font-mono"

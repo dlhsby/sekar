@@ -448,6 +448,9 @@
     "borderOpacity": "Border Opacity",
     "fillColor": "Fill Color",
     "fillOpacity": "Fill Opacity",
+    "fillToggle": "Toggle fill",
+    "fillNone": "No fill (transparent)",
+    "fillSameAsBorder": "Same as border colour",
     "markerIcon": "Marker Icon",
     "markerIconPlaceholder": "e.g. trees",
     "markerColor": "Marker Color"
