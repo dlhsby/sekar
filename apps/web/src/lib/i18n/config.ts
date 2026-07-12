@@ -31,6 +31,13 @@ if (!i18n.isInitialized) {
       resources,
       ns: NAMESPACES as unknown as string[],
       defaultNS: 'common',
+      // Pin the INITIAL language to the default so the server render and the
+      // client's first (hydration) render always match — otherwise the browser
+      // LanguageDetector would set the client to a stored `en` at module load
+      // while the server (no localStorage/cookie access) renders `id`, causing a
+      // hydration mismatch. The stored/detected preference is applied AFTER mount
+      // (LocalePreferenceSync in provider.tsx). The detector is kept for caching.
+      lng: DEFAULT_LANGUAGE,
       fallbackLng: DEFAULT_LANGUAGE,
       supportedLngs: SUPPORTED_LANGUAGES as unknown as string[],
       nonExplicitSupportedLngs: true,
