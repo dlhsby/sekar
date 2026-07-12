@@ -4,25 +4,29 @@
 # Ctrl+C stops backend/web/Metro (Docker services keep running; use
 # ./scripts/stop.sh --infra to stop those too).
 #
-# Usage: ./scripts/start.sh [--no-mobile] [--lan [IP]]
+# Usage: ./scripts/start.sh [--no-mobile] [--local] [IP]
 #   --no-mobile  skip Metro; backend + web keep running in the background
-#   --lan [IP]   also expose the app on your home Wi-Fi so another device (e.g.
-#                your phone) can reach it. Binds web to 0.0.0.0, advertises a
-#                LAN IP to the browser bundle (API/WS) + CORS. IP auto-detected
-#                (the Windows host IP under WSL); pass one to override.
+#   --local      localhost only — don't bind 0.0.0.0 or enable the LAN proxy
+#   [IP]         override the advertised LAN IP (else auto-detected)
+#
+# By DEFAULT the web is also reachable from other devices on your Wi-Fi (e.g.
+# your phone) via a same-origin proxy. The browser always talks to whatever
+# origin served the page, so the SAME build works on localhost AND any LAN host
+# — no baked IP, no CORS, nothing breaks offline. On WSL2 a one-time Windows
+# port-forward is printed.
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 
 NO_MOBILE=false
-LAN=false
+LAN=true
 LAN_IP_ARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-mobile) NO_MOBILE=true ;;
+    --local|--no-lan) LAN=false ;;
     --lan)
-      LAN=true
-      # Optional IP immediately after --lan (e.g. --lan 192.168.1.5).
+      # LAN is on by default; --lan is kept for back-compat. Optional IP override.
       if [[ "${2:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then LAN_IP_ARG="$2"; shift; fi
       ;;
     -h|--help)
@@ -32,18 +36,20 @@ Auto-starts the Docker infra if it's down, then runs backend + web in the
 background (logs/) and Metro in the foreground. Ctrl+C stops the apps; the
 Docker services stay up (use ./scripts/stop.sh --infra to stop those too).
 
-  ./scripts/start.sh                 infra + backend + web + Metro (localhost)
+  ./scripts/start.sh                 infra + backend + web + Metro (also on LAN)
   ./scripts/start.sh --no-mobile     skip Metro (backend + web keep running)
-  ./scripts/start.sh --lan           also reachable from your phone on the LAN
-  ./scripts/start.sh --lan 192.168.1.5   force the advertised LAN IP
-  ./scripts/start.sh --lan --no-mobile   phone web testing, no Metro
+  ./scripts/start.sh --local         localhost only (no LAN exposure)
+  ./scripts/start.sh 192.168.1.5     force the advertised LAN IP
 
---lan advertises your LAN IP to the browser (API/WS) + opens CORS, without
-touching .env.local. On WSL2 it prints the one-time Windows port-forward +
-firewall step. First-time setup is ./scripts/setup.sh.
+By default the web is reachable from your phone on the LAN via a same-origin
+proxy — the same build also works on localhost, so there's no downside. On WSL2
+a one-time Windows port-forward is printed. First-time setup is ./scripts/setup.sh.
 USAGE
       exit 0 ;;
-    *) print_error "Unknown flag: $1 (supported: --no-mobile, --lan [IP], --help)"; exit 1 ;;
+    *)
+      if [[ "$1" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then LAN_IP_ARG="$1";
+      else print_error "Unknown flag: $1 (supported: --no-mobile, --local, [IP], --help)"; exit 1; fi
+      ;;
   esac
   shift
 done
@@ -71,33 +77,30 @@ free_port "$BE_PORT" "backend"
 free_port "$WEB_PORT" "web"
 ensure_infra
 
-# ── LAN mode: advertise a reachable IP + bind web to all interfaces ───────────
+# ── LAN exposure (default): same-origin proxy, safe for localhost ─────────────
 # These env vars override apps/*/.env.local for the child processes only (Next +
 # dotenvx both leave already-set env vars untouched) — .env.local is unchanged.
 WEB_ARGS=()
 LAN_IP=""
 if [ "$LAN" = true ]; then
-  LAN_IP="${LAN_IP_ARG:-${LAN_IP:-$(detect_lan_ip)}}"
-  if [ -z "$LAN_IP" ]; then
-    print_error "Could not auto-detect a LAN IP. Pass one: ./scripts/start.sh --lan <ip>"
-    exit 1
-  fi
-  # Same-origin: the browser talks only to the web origin; the web dev server
-  # proxies /api + /socket.io to the backend (next.config rewrites, gated by
-  # SEKAR_LAN_PROXY). So only the WEB port must be reachable from the phone — no
-  # separate backend-port firewall rule, no CORS.
-  export NEXT_PUBLIC_API_URL="http://$LAN_IP:$WEB_PORT"
-  export NEXT_PUBLIC_WS_URL="http://$LAN_IP:$WEB_PORT"
-  # NOTE: no CORS override needed — the browser only ever talks to the web origin
-  # (same-origin proxy above), so CORS never applies. CORS_ORIGIN stays purely
-  # env-driven (apps/be/.env.local) for anyone hitting the API cross-origin.
+  LAN_IP="${LAN_IP_ARG:-$(detect_lan_ip)}"
+  # Empty API/WS URL = same origin: the browser talks to whatever origin served
+  # the page (localhost OR the LAN IP), and the web dev server proxies /api +
+  # /socket.io to the backend (next.config rewrites, gated by SEKAR_LAN_PROXY).
+  # One build works everywhere — no baked IP, no CORS, nothing breaks offline.
+  export NEXT_PUBLIC_API_URL=""
+  export NEXT_PUBLIC_WS_URL=""
   export SEKAR_LAN_PROXY=1
   export SEKAR_API_PORT="$BE_PORT"
-  # Next 16 blocks cross-origin dev resources (/_next/*) by default; without this
-  # the phone can't load the JS bundle and the page hangs on the loading gate.
-  export SEKAR_ALLOWED_DEV_ORIGINS="$LAN_IP"
-  WEB_ARGS=(-- -H 0.0.0.0) # leave localhost-only; backend already binds 0.0.0.0
-  print_info "LAN mode: serving http://$LAN_IP:$WEB_PORT (API proxied to :$BE_PORT — only the web port needs to reach your phone)"
+  # Next 16 blocks cross-origin dev resources (/_next/*); allow the LAN host so a
+  # phone can load the JS bundle. Harmless on localhost (always allowed).
+  [ -n "$LAN_IP" ] && export SEKAR_ALLOWED_DEV_ORIGINS="$LAN_IP"
+  WEB_ARGS=(-- -H 0.0.0.0) # reachable on the LAN; localhost is unaffected
+  if [ -n "$LAN_IP" ]; then
+    print_info "LAN: also reachable at http://$LAN_IP:$WEB_PORT (same-origin proxy; localhost unaffected)"
+  else
+    print_info "LAN: web bound to 0.0.0.0 (no LAN IP auto-detected; pass one to advertise it, or --local to disable)"
+  fi
 fi
 
 start_bg backend "$ROOT/apps/be" npm run start:dev
@@ -115,8 +118,8 @@ echo -e "  • Adminer:      ${GREEN}http://localhost:8080${NC} (see infra/.env)
 echo -e "  • Logs:         ${GREEN}logs/backend.log${NC} · ${GREEN}logs/web.log${NC}"
 echo -e "  • Ports:        ${GREEN}apps/be/.env.local${NC} (PORT) · ${GREEN}apps/web/.env.local${NC} (WEB_PORT) · ${GREEN}apps/mobile/.env.local${NC} (METRO_PORT=$METRO_PORT)"
 
-# ── LAN mode: phone URL + one-time WSL2 Windows port-forward / firewall ───────
-if [ "$LAN" = true ]; then
+# ── Phone URL + one-time WSL2 Windows port-forward / firewall ─────────────────
+if [ "$LAN" = true ] && [ -n "$LAN_IP" ]; then
   WSL_IP="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1 || true)"
   echo ""
   echo -e "${BLUE}On your phone (same Wi-Fi), open:${NC}  ${GREEN}http://$LAN_IP:$WEB_PORT${NC}"
