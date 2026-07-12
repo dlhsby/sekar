@@ -17,7 +17,7 @@ import {
   FormInput,
 } from '@/components/ui';
 import { useUser, useRequireAuth } from '@/lib/auth/hooks';
-import { useAreaAnalytics, useArea, type AreaAnalytics } from '@/lib/api/analytics';
+import { useAreaAnalytics, useLocation, type AreaAnalytics } from '@/lib/api/analytics';
 import { AreaComparisonChart } from '@/components/analytics/AreaComparisonChart';
 import { X } from 'lucide-react';
 
@@ -54,7 +54,7 @@ export default function AreaAnalyticsPage() {
     search,
   });
 
-  const { data: areaDetail, isLoading: isAreaLoading } = useArea(selectedAreaId || '', {});
+  const { data: areaDetail, isLoading: isAreaLoading } = useLocation(selectedAreaId || '', {});
 
   // Chart data
   const chartData = useMemo(() => {

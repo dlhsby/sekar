@@ -22,7 +22,7 @@ import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
-import { useAreaTypes } from '@/lib/api/area-types';
+import { useLocationTypes } from '@/lib/api/location-types';
 import { useRayons } from '@/lib/api/rayons';
 import {
   useUploadKmz,
@@ -63,12 +63,12 @@ function KmzImport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<KmzUploadResponse | null>(null);
-  const [areaTypeId, setAreaTypeId] = useState(SENTINEL);
+  const [areaTypeId, setLocationTypeId] = useState(SENTINEL);
   const [rayonId, setRayonId] = useState(SENTINEL);
 
   const uploadKmz = useUploadKmz();
   const confirmKmz = useConfirmKmz();
-  const { data: areaTypes } = useAreaTypes();
+  const { data: areaTypes } = useLocationTypes();
   const { data: rayons } = useRayons();
 
   const hasNewAreas = useMemo(() => (preview?.new_areas ?? 0) > 0, [preview]);
@@ -80,7 +80,7 @@ function KmzImport() {
     try {
       const response = await uploadKmz.mutateAsync(file);
       setPreview(response);
-      if (response.total_areas === 0) {
+      if (response.total_locations === 0) {
         toast.warning(t('kmz.noAreasWarning'));
       }
     } catch (error) {
@@ -95,14 +95,14 @@ function KmzImport() {
     const selections: KmzConfirmSelection[] = preview.areas.map((area, index) => ({
       index,
       action: area.match_status === 'update' ? 'update' : 'create',
-      area_type_id: area.match_status === 'update' ? undefined : areaTypeId,
+      location_type_id: area.match_status === 'update' ? undefined : areaTypeId,
       rayon_id: area.match_status === 'update' ? undefined : rayonId,
     }));
     try {
       const result = await confirmKmz.mutateAsync({ sessionId: preview.session_id, areas: selections });
       toast.success(t('kmz.successMessage', { created: result.created, updated: result.updated }));
       setPreview(null); // clear the consumed session before navigating away
-      router.push('/areas');
+      router.push('/locations');
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -152,7 +152,7 @@ function KmzImport() {
                 label={t('kmz.areaTypeLabel')}
                 options={areaTypeOptions}
                 value={areaTypeId}
-                onChange={setAreaTypeId}
+                onChange={setLocationTypeId}
                 placeholder={t('kmz.areaTypePlaceholder')}
               />
               <FormSelect

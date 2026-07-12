@@ -187,7 +187,7 @@ export default function AssetsPage() {
         enableSorting: false,
         enableColumnFilter: false,
         meta: { label: t('list.columns.location') },
-        cell: ({ row }) => row.original.area?.name || row.original.rayon?.name || '—',
+        cell: ({ row }) => row.original.location?.name || row.original.rayon?.name || '—',
       },
       {
         id: 'created_by',
@@ -400,7 +400,7 @@ export default function AssetsPage() {
               </StatusPill>
             ),
           },
-          { label: t('detail.location'), value: view.item.area?.name || view.item.rayon?.name },
+          { label: t('detail.location'), value: view.item.location?.name || view.item.rayon?.name },
           { label: t('detail.createdAt'), value: formatDate(view.item.created_at) },
           { label: t('detail.createdBy'), value: actorName(view.item.created_by) },
           { label: t('detail.updatedAt'), value: formatDate(view.item.updated_at) },

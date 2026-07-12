@@ -229,7 +229,7 @@ export default function OvertimePage() {
       enableSorting: false,
       enableColumnFilter: false,
       meta: { label: t('overtime:list.table.columns.area') },
-      cell: ({ row }) => <div className="text-sm">{row.original.area?.name || '-'}</div>,
+      cell: ({ row }) => <div className="text-sm">{row.original.location?.name || '-'}</div>,
     },
     {
       id: 'time',
@@ -456,7 +456,7 @@ export default function OvertimePage() {
         rows={view.item ? [
           { label: t('overtime:detail.fields.date'), value: formatDateTime(view.item.start_datetime).date },
           { label: t('overtime:detail.fields.user'), value: view.item.user?.full_name },
-          { label: t('overtime:detail.fields.area'), value: view.item.area?.name },
+          { label: t('overtime:detail.fields.area'), value: view.item.location?.name },
           {
             label: t('overtime:detail.fields.time'),
             value: `${formatDateTime(view.item.start_datetime).time} - ${formatDateTime(view.item.end_datetime).time}`,

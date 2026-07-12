@@ -4,24 +4,24 @@ import { useId, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
-import { AreaForm } from '@/components/forms/AreaForm';
+import { LocationForm } from '@/components/forms/LocationForm';
 import { FormActions } from '@/components/forms/FormActions';
-import { useCreateArea, useUpdateArea, useUpdateAreaBoundary } from '@/lib/api/areas';
+import { useCreateLocation, useUpdateLocation, useUpdateLocationBoundary } from '@/lib/api/locations';
 import { getErrorMessage } from '@/lib/api/client';
-import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
+import type { Location, CreateLocationDto, UpdateLocationDto } from '@/types/models';
 
-interface AreaFormModalProps {
+interface LocationFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Present → edit; omitted/null → create. */
-  area?: Area | null;
+  area?: Location | null;
   onSuccess?: () => void;
   /** Read-only "Detail" mode — reuses the form disabled, no submit. */
   readOnly?: boolean;
 }
 
 /**
- * Create / edit an area in a full-screen modal — the AreaForm embeds a Google
+ * Create / edit an area in a full-screen modal — the LocationForm embeds a Google
  * Maps boundary editor, so it needs the whole viewport. Replaces the standalone
  * /areas/new and /areas/[id] form pages.
  *
@@ -29,21 +29,21 @@ interface AreaFormModalProps {
  * update area endpoints (backend whitelist), so scalar fields go through
  * POST/PATCH `/areas` and the polygon goes through `PUT /areas/:id/boundary`.
  */
-export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: AreaFormModalProps) {
+export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: LocationFormModalProps) {
   const { t } = useTranslation();
   const formId = useId();
   const [hasGeometry, setHasGeometry] = useState(true);
   const isEdit = !!area;
-  const createMutation = useCreateArea();
-  const updateMutation = useUpdateArea();
-  const boundaryMutation = useUpdateAreaBoundary();
+  const createMutation = useCreateLocation();
+  const updateMutation = useUpdateLocation();
+  const boundaryMutation = useUpdateLocationBoundary();
   const scalarMutation = isEdit ? updateMutation : createMutation;
 
-  const handleSubmit = async (data: CreateAreaDto | UpdateAreaDto): Promise<void> => {
+  const handleSubmit = async (data: CreateLocationDto | UpdateLocationDto): Promise<void> => {
     // Split out the fields the scalar create/update endpoints reject:
     //  - boundary_polygon → only via PUT /areas/:id/boundary,
-    //  - area_type_id → create-only (UpdateAreaDto omits it; PATCH 400s on it).
-    const { boundary_polygon, area_type_id, ...rest } = data as CreateAreaDto;
+    //  - location_type_id → create-only (UpdateLocationDto omits it; PATCH 400s on it).
+    const { boundary_polygon, location_type_id, ...rest } = data as CreateLocationDto;
     const scalars = rest;
     try {
       // The boundary endpoint accepts a Polygon only. A freshly drawn/edited
@@ -52,7 +52,7 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
       const polygonForPut =
         boundary_polygon == null || boundary_polygon.type === 'Polygon' ? boundary_polygon : null;
       if (isEdit && area) {
-        await updateMutation.mutateAsync({ id: area.id, data: scalars as UpdateAreaDto });
+        await updateMutation.mutateAsync({ id: area.id, data: scalars as UpdateLocationDto });
         const polygonChanged =
           JSON.stringify(area.boundary_polygon ?? null) !==
           JSON.stringify(boundary_polygon ?? null);
@@ -63,8 +63,8 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
           });
         }
       } else {
-        // area_type_id is required on create — add it back here.
-        const created = await createMutation.mutateAsync({ ...scalars, area_type_id } as CreateAreaDto);
+        // location_type_id is required on create — add it back here.
+        const created = await createMutation.mutateAsync({ ...scalars, location_type_id } as CreateLocationDto);
         if (polygonForPut) {
           await boundaryMutation.mutateAsync({
             id: created.id,
@@ -122,7 +122,7 @@ export function AreaFormModal({ open, onOpenChange, area, onSuccess, readOnly = 
               <p className="text-nb-body-sm font-medium text-nb-danger">{errorMessage}</p>
             </div>
           ) : null}
-          <AreaForm
+          <LocationForm
             key={`${area?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
             formId={formId}
             mode={isEdit ? 'edit' : 'create'}

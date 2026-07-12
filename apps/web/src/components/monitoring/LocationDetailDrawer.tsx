@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AreaDetailDrawer — slide-in drawer (right, 380 px) showing area details.
+ * LocationDetailDrawer — slide-in drawer (right, 380 px) showing area details.
  * Shows: area name, staffing counts, plant status placeholder (Phase 3-8),
  * and virtualized worker list for the selected area.
  *
@@ -28,7 +28,7 @@ import {
 // Types
 // ---------------------------------------------------------------------------
 
-export interface AreaDetailDrawerProps {
+export interface LocationDetailDrawerProps {
   area: SnapshotAreaSummary | null;
   workers: WorkerListItem[];
   onClose: () => void;
@@ -41,14 +41,14 @@ export interface AreaDetailDrawerProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function AreaDetailDrawer({
+export function LocationDetailDrawer({
   area,
   workers,
   onClose,
   onWorkerSelect,
   selectedUserId,
   className,
-}: AreaDetailDrawerProps) {
+}: LocationDetailDrawerProps) {
   const { t } = useTranslation(['monitoring']);
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
@@ -184,7 +184,7 @@ export function AreaDetailDrawer({
             </section>
 
             {/* Plant status (Phase 3 sub-phase 3-8 hookup) */}
-            <PlantStatusSection areaId={area.area_id} />
+            <PlantStatusSection areaId={area.location_id} />
 
             {/* Pruning requests (rayon-scoped because requests have no area FK) */}
             <PruningRequestsSection

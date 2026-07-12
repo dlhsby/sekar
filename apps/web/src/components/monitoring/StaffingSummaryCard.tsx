@@ -11,7 +11,7 @@ import { AlertTriangle, Users, ChevronDown, ChevronRight, ArrowRightLeft } from 
 import type { UserRole } from '@/types/models';
 
 export interface StaffingSummaryCardProps {
-  filters: { rayon_id?: string; area_id?: string };
+  filters: { rayon_id?: string; location_id?: string };
   boundaries?: BoundariesResponse;
   dayType?: DayType;
   onReassign?: (areaId: string) => void;
@@ -83,7 +83,7 @@ function UnderstaffedBadge({ shortage }: UnderstaffedBadgeProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Area View (area_id filter selected)
+// Area View (location_id filter selected)
 // ---------------------------------------------------------------------------
 
 interface AreaViewProps {
@@ -93,7 +93,7 @@ interface AreaViewProps {
 
 function AreaView({ areaId, onReassign }: AreaViewProps) {
   const { t } = useTranslation(['monitoring']);
-  const { data, isLoading } = useStaffingSummary({ area_id: areaId });
+  const { data, isLoading } = useStaffingSummary({ location_id: areaId });
 
   if (isLoading) {
     return <div className="h-20 bg-nb-gray-200 animate-pulse rounded-nb-base" />;
@@ -382,7 +382,7 @@ export function StaffingSummaryCard({
 }: StaffingSummaryCardProps) {
   const { t } = useTranslation(['monitoring']);
   const dayTypeLabels = getDayTypeLabels();
-  const hasAreaFilter = !!filters.area_id;
+  const hasAreaFilter = !!filters.location_id;
   const hasRayonFilter = !!filters.rayon_id && !hasAreaFilter;
   const isCityView = !hasAreaFilter && !hasRayonFilter;
 
@@ -413,7 +413,7 @@ export function StaffingSummaryCard({
 
       {/* Body */}
       <div className="px-3 py-2.5">
-        {hasAreaFilter && <AreaView areaId={filters.area_id!} onReassign={onReassign} />}
+        {hasAreaFilter && <AreaView areaId={filters.location_id!} onReassign={onReassign} />}
         {hasRayonFilter && (
           <RayonView rayonId={filters.rayon_id!} boundaries={boundaries} onReassign={onReassign} />
         )}

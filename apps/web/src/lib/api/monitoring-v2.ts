@@ -18,7 +18,7 @@ export interface SnapshotWorker {
   lat: number;
   lng: number;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -30,7 +30,7 @@ export interface SnapshotWorker {
 }
 
 export interface SnapshotAreaSummary {
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string;
   rayon_name: string;

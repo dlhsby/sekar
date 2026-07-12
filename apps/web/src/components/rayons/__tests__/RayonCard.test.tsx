@@ -38,7 +38,7 @@ describe('RayonCard', () => {
   it('should render with stats when provided', () => {
     const mockStats = {
       rayon_id: 'rayon-1',
-      total_areas: 10,
+      total_locations: 10,
       total_users: 50,
       active_users: 45,
       total_coverage_area: 100000,

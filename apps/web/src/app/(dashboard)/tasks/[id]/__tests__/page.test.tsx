@@ -50,7 +50,7 @@ const mockTask = {
   assigned_to: { id: 'satgas-1', full_name: 'Satgas One' },
   assigned_by: { id: 'korlap-1', full_name: 'Korlap One' },
   assigned_at: '2026-02-16T08:00:00Z',
-  area: { id: 'area-1', name: 'Taman Bungkul' },
+  location: { id: 'area-1', name: 'Taman Bungkul' },
   rayon: { id: 'rayon-1', name: 'Rayon 1' },
   status: 'pending' as const,
   priority: 'high' as const,
@@ -113,7 +113,7 @@ const mockKorlapUser = {
   username: 'korlap1',
   full_name: 'Korlap One',
   role: 'korlap' as const,
-  area_id: 'area-1',
+  location_id: 'area-1',
   created_at: '2024-01-01T00:00:00Z',
 };
 

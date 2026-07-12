@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Area Form Component
+ * Location Form Component
  * Reusable form for creating and editing areas
  */
 
@@ -14,9 +14,9 @@ import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/componen
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreaTypes } from '@/lib/api/area-types';
+import { useLocationTypes } from '@/lib/api/location-types';
 import { calculatePolygonCenter, isValidPolygon, isBoundaryGeometry, formatCoordinates } from '@/lib/utils/geo';
-import type { Area, CreateAreaDto, UpdateAreaDto } from '@/types/models';
+import type { Location, CreateLocationDto, UpdateLocationDto } from '@/types/models';
 
 interface LatLng {
   lat: number;
@@ -35,20 +35,20 @@ function boundaryCentroid(geom: BoundaryGeometry): LatLng {
   return { lat, lng };
 }
 
-type AreaFormData = {
+type LocationFormData = {
   name: string;
   rayon_id: string;
-  area_type_id: string;
+  location_type_id: string;
   address?: string | null;
   boundary_polygon?: BoundaryGeometry | null;
 };
 
-export interface AreaFormProps {
+export interface LocationFormProps {
   /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
    *  this form in the DOM) still submits it via the HTML `form` attribute. */
   formId: string;
-  initialData?: Area;
-  onSubmit: (data: CreateAreaDto | UpdateAreaDto) => Promise<void>;
+  initialData?: Location;
+  onSubmit: (data: CreateLocationDto | UpdateLocationDto) => Promise<void>;
   mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
   readOnly?: boolean;
@@ -57,14 +57,14 @@ export interface AreaFormProps {
   onValidityChange?: (valid: boolean) => void;
 }
 
-export function AreaForm({
+export function LocationForm({
   formId,
   initialData,
   onSubmit,
   mode,
   readOnly = false,
   onValidityChange,
-}: AreaFormProps) {
+}: LocationFormProps) {
   const { t } = useTranslation();
 
   // Localized validation schema
@@ -73,7 +73,7 @@ export function AreaForm({
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
         rayon_id: z.string().uuid(t('validation:rayonRequired')),
-        area_type_id: z.string().uuid(t('validation:areaTypeRequired')),
+        location_type_id: z.string().uuid(t('validation:locationTypeRequired')),
         address: z.string().optional().nullable(),
         boundary_polygon: z
           .custom<BoundaryGeometry>((val) => val == null || isBoundaryGeometry(val), {
@@ -100,7 +100,7 @@ export function AreaForm({
 
   // Fetch rayons and area types
   const { data: rayonsData, isLoading: loadingRayons } = useRayons();
-  const { data: areaTypes, isLoading: loadingAreaTypes } = useAreaTypes();
+  const { data: locationTypes, isLoading: loadingLocationTypes } = useLocationTypes();
 
   // Form setup
   const {
@@ -109,12 +109,12 @@ export function AreaForm({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<AreaFormData>({
+  } = useForm<LocationFormData>({
     resolver: zodResolver(areaSchema),
     defaultValues: {
       name: initialData?.name || '',
       rayon_id: initialData?.rayon_id || '',
-      area_type_id: initialData?.area_type_id || '',
+      location_type_id: initialData?.location_type_id || '',
       address: initialData?.address || '',
       boundary_polygon: initialData?.boundary_polygon,
     },
@@ -156,17 +156,17 @@ export function AreaForm({
   }, [hasGeometry, onValidityChange]);
 
   // Handle form submission
-  const onSubmitForm = async (data: AreaFormData) => {
+  const onSubmitForm = async (data: LocationFormData) => {
     // Areas require a GPS coordinate: use the pin, else fall back to the boundary
     // centroid. Block when neither is set.
     const finalCenter =
       center ?? (data.boundary_polygon ? boundaryCentroid(data.boundary_polygon) : null);
     if (!finalCenter) return;
 
-    const submitData: CreateAreaDto | UpdateAreaDto = {
+    const submitData: CreateLocationDto | UpdateLocationDto = {
       name: data.name,
       rayon_id: data.rayon_id,
-      area_type_id: data.area_type_id,
+      location_type_id: data.location_type_id,
       address: data.address || undefined,
       boundary_polygon: data.boundary_polygon ?? undefined,
       gps_lng: finalCenter.lng,
@@ -206,18 +206,18 @@ export function AreaForm({
 
         <FormCombobox
           label={t('admin:areas.form.type')}
-          options={(areaTypes ?? []).map((type) => ({
+          options={(locationTypes ?? []).map((type) => ({
             value: type.id,
             label: `${type.name} (${type.category})`,
           }))}
-          value={watch('area_type_id') || ''}
-          onChange={(value) => setValue('area_type_id', value, { shouldValidate: true })}
-          placeholder={loadingAreaTypes ? t('admin:shared.loading') : t('admin:areas.form.typePlaceholder')}
+          value={watch('location_type_id') || ''}
+          onChange={(value) => setValue('location_type_id', value, { shouldValidate: true })}
+          placeholder={loadingLocationTypes ? t('admin:shared.loading') : t('admin:areas.form.typePlaceholder')}
           searchPlaceholder={t('admin:areas.form.typeSearchPlaceholder')}
-          error={errors.area_type_id?.message}
+          error={errors.location_type_id?.message}
           required
           clearable={false}
-          disabled={loadingAreaTypes || readOnly}
+          disabled={loadingLocationTypes || readOnly}
         />
 
         <div className="space-y-1.5">

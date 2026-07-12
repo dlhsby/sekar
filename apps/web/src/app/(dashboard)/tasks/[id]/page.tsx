@@ -299,10 +299,10 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                   </div>
                 </div>
               )}
-              {task.area && (
+              {task.location && (
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.area')}</div>
-                  <div className="font-bold text-nb-black">{task.area.name}</div>
+                  <div className="font-bold text-nb-black">{task.location?.name}</div>
                 </div>
               )}
               {task.rayon && (

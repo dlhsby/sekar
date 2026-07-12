@@ -1,5 +1,5 @@
 /**
- * Unit Tests: Area Types API
+ * Unit Tests: Location Types API
  * Tests area types data fetching
  */
 
@@ -7,8 +7,8 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import { useAreaTypes } from '../area-types';
-import type { AreaType } from '@/types/models';
+import { useLocationTypes } from '../location-types';
+import type { LocationType } from '@/types/models';
 import { ReactNode } from 'react';
 
 describe('Area Types API', () => {
@@ -30,7 +30,7 @@ describe('Area Types API', () => {
     return Wrapper;
   };
 
-  const mockAreaTypes: AreaType[] = [
+  const mockLocationTypes: LocationType[] = [
     {
       id: '1',
       name: 'Taman',
@@ -66,11 +66,11 @@ describe('Area Types API', () => {
     queryClient?.clear();
   });
 
-  describe('useAreaTypes', () => {
+  describe('useLocationTypes', () => {
     it('should fetch all area types', async () => {
-      mockAxios.onGet('/area-types').reply(200, mockAreaTypes);
+      mockAxios.onGet('/location-types').reply(200, mockLocationTypes);
 
-      const { result } = renderHook(() => useAreaTypes(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocationTypes(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -81,12 +81,12 @@ describe('Area Types API', () => {
     });
 
     it('should handle fetch error', async () => {
-      mockAxios.onGet('/area-types').reply(500, {
+      mockAxios.onGet('/location-types').reply(500, {
         statusCode: 500,
         message: 'Internal server error',
       });
 
-      const { result } = renderHook(() => useAreaTypes(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocationTypes(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -94,9 +94,9 @@ describe('Area Types API', () => {
     });
 
     it('should use correct staleTime', () => {
-      mockAxios.onGet('/area-types').reply(200, mockAreaTypes);
+      mockAxios.onGet('/location-types').reply(200, mockLocationTypes);
 
-      const { result } = renderHook(() => useAreaTypes(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocationTypes(), { wrapper: createWrapper() });
 
       expect(result.current.isStale).toBe(true); // Initially stale until data fetched
     });

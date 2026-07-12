@@ -7,7 +7,7 @@
  *
  * Backend `data` payload keys (verified in apps/be/src triggers):
  *   task_id · activity_id · overtime_id · pruning_request_id ·
- *   worker_user_id · area_id · shift_definition_id
+ *   worker_user_id · location_id · shift_definition_id
  */
 
 import type { AppNotification } from '@/lib/api/notifications';

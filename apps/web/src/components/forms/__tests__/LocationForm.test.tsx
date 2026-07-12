@@ -1,24 +1,24 @@
 /**
- * Unit Tests: AreaForm Component
+ * Unit Tests: LocationForm Component
  * Tests area creation and editing form with map polygon editor
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AreaForm } from '../AreaForm';
+import { LocationForm } from '../LocationForm';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreaTypes } from '@/lib/api/area-types';
+import { useLocationTypes } from '@/lib/api/location-types';
 import { isValidPolygon, calculatePolygonCenter, formatCoordinates } from '@/lib/utils/geo';
-import type { Area } from '@/types/models';
+import type { Location } from '@/types/models';
 import { ReactNode } from 'react';
 
 // Mock API hooks
 jest.mock('@/lib/api/rayons', () => ({
   useRayons: jest.fn(),
 }));
-jest.mock('@/lib/api/area-types', () => ({
-  useAreaTypes: jest.fn(),
+jest.mock('@/lib/api/location-types', () => ({
+  useLocationTypes: jest.fn(),
 }));
 
 // Mock GoogleBoundaryEditor — Google Maps JS needs an API key + WebGL, cannot
@@ -80,7 +80,7 @@ const mockRayons = [
   { id: 'rayon-2', name: 'Rayon Selatan', code: 'RS' },
 ];
 
-const mockAreaTypes = [
+const mockLocationTypes = [
   { id: 'type-1', name: 'Taman Kota', category: 'Taman', code: 'TK' },
   { id: 'type-2', name: 'Jalur Hijau', category: 'Jalur', code: 'JH' },
 ];
@@ -99,16 +99,16 @@ function createWrapper() {
 const FORM_ID = 'area-form-test';
 
 /** Submit/Cancel live in the modal's DialogFooter, outside this form — mirror
- *  AreaFormModal's external button wired via the `form` attribute. */
+ *  LocationFormModal's external button wired via the `form` attribute. */
 function ExternalSubmitButton() {
   return (
     <button type="submit" form={FORM_ID}>
-      Buat Area
+      Buat Location
     </button>
   );
 }
 
-describe('AreaForm', () => {
+describe('LocationForm', () => {
   const mockOnSubmit = jest.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
@@ -117,8 +117,8 @@ describe('AreaForm', () => {
       data: mockRayons,
       isLoading: false,
     });
-    (useAreaTypes as jest.Mock).mockReturnValue({
-      data: mockAreaTypes,
+    (useLocationTypes as jest.Mock).mockReturnValue({
+      data: mockLocationTypes,
       isLoading: false,
     });
     (isValidPolygon as jest.Mock).mockReturnValue(true);
@@ -130,22 +130,22 @@ describe('AreaForm', () => {
     it('renders all form fields in create mode', () => {
       render(
         <>
-          <AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />
+          <LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />
           <ExternalSubmitButton />
         </>,
         { wrapper: createWrapper() }
       );
 
       expect(screen.getByLabelText(/nama area/i)).toBeInTheDocument();
-      expect(screen.getByText('Rayon')).toBeInTheDocument();
-      expect(screen.getByText('Tipe Area')).toBeInTheDocument();
+      expect(screen.getByLabelText(/rayon/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/tipe area/i)).toBeInTheDocument();
       expect(screen.getByTestId('google-boundary-editor')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /buat area/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /buat location/i })).toBeInTheDocument();
     });
 
     it('shows rayons in dropdown', async () => {
       const user = userEvent.setup();
-      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -157,11 +157,11 @@ describe('AreaForm', () => {
 
     it('shows area types in dropdown', async () => {
       const user = userEvent.setup();
-      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
-      // Open the Tipe Area combobox (second combobox trigger).
+      // Open the Tipe Location combobox (second combobox trigger).
       await user.click(screen.getAllByRole('combobox')[1]);
       expect(await screen.findByText(/taman kota/i)).toBeInTheDocument();
       expect(screen.getByText(/jalur hijau/i)).toBeInTheDocument();
@@ -170,7 +170,7 @@ describe('AreaForm', () => {
     it('shows loading state when rayons are loading', () => {
       (useRayons as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
-      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -180,9 +180,9 @@ describe('AreaForm', () => {
     });
 
     it('shows loading state when area types are loading', () => {
-      (useAreaTypes as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
+      (useLocationTypes as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
-      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -191,11 +191,11 @@ describe('AreaForm', () => {
   });
 
   describe('Edit mode', () => {
-    const mockArea: Area = {
+    const mockArea: Location = {
       id: 'area-1',
       name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
-      area_type_id: 'type-1',
+      location_type_id: 'type-1',
       address: 'Jl. Taman Bungkul No. 1',
       boundary_polygon: {
         type: 'Polygon',
@@ -216,7 +216,7 @@ describe('AreaForm', () => {
     };
 
     it('pre-populates form with existing data', () => {
-      render(<AreaForm formId={FORM_ID} mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -224,7 +224,7 @@ describe('AreaForm', () => {
     });
 
     it('displays center coordinates when area has boundary', () => {
-      render(<AreaForm formId={FORM_ID} mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="edit" initialData={mockArea} onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -234,7 +234,7 @@ describe('AreaForm', () => {
 
   describe('Pin interaction', () => {
     it('shows coordinates after the location pin is placed', async () => {
-      render(<AreaForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
+      render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
@@ -251,7 +251,7 @@ describe('AreaForm', () => {
     it('reports invalid until a pin or boundary is set, then valid', async () => {
       const onValidityChange = jest.fn();
       render(
-        <AreaForm
+        <LocationForm
           formId={FORM_ID}
           mode="create"
           onSubmit={mockOnSubmit}

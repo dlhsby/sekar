@@ -53,7 +53,7 @@ describe('Tasks API', () => {
       id: 'admin-1',
       full_name: 'Admin User',
     },
-    area: {
+    location: {
       id: 'area-1',
       name: 'Taman Bungkul',
     },
@@ -161,7 +161,7 @@ describe('Tasks API', () => {
       const newTask: CreateTaskDto = {
         title: 'New Task',
         description: 'Task description',
-        area_id: 'area-1',
+        location_id: 'area-1',
         activity_type_id: 'activity-1',
         priority: 'normal',
         due_date: '2026-02-15',
@@ -182,7 +182,7 @@ describe('Tasks API', () => {
       const newTask: CreateTaskDto = {
         title: 'New Task',
         description: 'Task description',
-        area_id: 'area-1',
+        location_id: 'area-1',
         activity_type_id: 'activity-1',
         priority: 'normal',
         due_date: '2026-02-15',

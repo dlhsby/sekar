@@ -45,7 +45,7 @@ describe('Monitoring API', () => {
 
   const mockCityStats: CityStats = {
     total_rayons: 7,
-    total_areas: 75,
+    total_locations: 75,
     total_workers: 150,
     workers_online: 120,
     workers_offline: 30,
@@ -61,7 +61,7 @@ describe('Monitoring API', () => {
     id: 'rayon-1',
     name: 'Rayon Selatan',
     code: 'RS',
-    total_areas: 15,
+    total_locations: 15,
     total_workers: 40,
     workers_online: 30,
     workers_offline: 10,
@@ -77,7 +77,7 @@ describe('Monitoring API', () => {
   const mockAreaStats: AreaMonitoringStats = {
     id: 'area-1',
     name: 'Taman Bungkul',
-    area_type: 'taman',
+    location_type: 'taman',
     rayon_id: 'rayon-1',
     rayon_name: 'Rayon Selatan',
     coverage_area: 12500,
@@ -106,7 +106,7 @@ describe('Monitoring API', () => {
         role: 'satgas',
         phone: '+6281234567890',
         status: 'active',
-        area_id: 'area-1',
+        location_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
@@ -167,7 +167,7 @@ describe('Monitoring API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.total_rayons).toBe(7);
-      expect(result.current.data?.total_areas).toBe(75);
+      expect(result.current.data?.total_locations).toBe(75);
       expect(result.current.data?.total_workers).toBe(150);
       expect(result.current.data?.workers_online).toBe(120);
       expect(result.current.data?.workers_offline).toBe(30);
@@ -204,7 +204,7 @@ describe('Monitoring API', () => {
       expect(result.current.data?.id).toBe('rayon-1');
       expect(result.current.data?.name).toBe('Rayon Selatan');
       expect(result.current.data?.code).toBe('RS');
-      expect(result.current.data?.total_areas).toBe(15);
+      expect(result.current.data?.total_locations).toBe(15);
       expect(result.current.data?.total_workers).toBe(40);
       expect(result.current.data?.workers_online).toBe(30);
       expect(result.current.data?.workers_offline).toBe(10);
@@ -236,7 +236,7 @@ describe('Monitoring API', () => {
 
   describe('useAreaMonitoring', () => {
     it('should fetch area monitoring statistics with flat shape', async () => {
-      mockAxios.onGet('/monitoring/area/area-1').reply(200, mockAreaStats);
+      mockAxios.onGet('/monitoring/location/area-1').reply(200, mockAreaStats);
 
       const { result } = renderHook(() => useAreaMonitoring('area-1'), {
         wrapper: createWrapper(),
@@ -246,7 +246,7 @@ describe('Monitoring API', () => {
 
       expect(result.current.data?.id).toBe('area-1');
       expect(result.current.data?.name).toBe('Taman Bungkul');
-      expect(result.current.data?.area_type).toBe('taman');
+      expect(result.current.data?.location_type).toBe('taman');
       expect(result.current.data?.rayon_id).toBe('rayon-1');
       expect(result.current.data?.rayon_name).toBe('Rayon Selatan');
       expect(result.current.data?.coverage_area).toBe(12500);
@@ -263,7 +263,7 @@ describe('Monitoring API', () => {
     });
 
     it('should handle fetch error', async () => {
-      mockAxios.onGet('/monitoring/area/area-1').reply(500);
+      mockAxios.onGet('/monitoring/location/area-1').reply(500);
 
       const { result } = renderHook(() => useAreaMonitoring('area-1'), {
         wrapper: createWrapper(),

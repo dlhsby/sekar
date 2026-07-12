@@ -17,7 +17,7 @@ export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' 
 
 export interface CityStats {
   total_rayons: number;
-  total_areas: number;
+  total_locations: number;
   total_workers: number;
   workers_online: number;
   workers_offline: number;
@@ -32,7 +32,7 @@ export interface CityStats {
 export interface RayonMonitoringStats {
   id: string;
   name: string;
-  total_areas: number;
+  total_locations: number;
   total_workers: number;
   workers_online: number;
   workers_offline: number;
@@ -48,7 +48,7 @@ export interface RayonMonitoringStats {
 export interface AreaMonitoringStats {
   id: string;
   name: string;
-  area_type: string;
+  location_type: string;
   rayon_id: string;
   rayon_name: string;
   coverage_area: number | null;
@@ -74,7 +74,7 @@ export interface LiveUser {
   role: UserRole;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -122,7 +122,7 @@ export interface LiveUsersResponse {
 
 export interface LiveUsersFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus;
   search?: string;
@@ -139,7 +139,7 @@ export interface UserDaySummary {
   role: string;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -195,7 +195,7 @@ export interface LocationHistory {
   date: string;
   shift_id: string | null;
   shift_name: string | null;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
@@ -242,7 +242,7 @@ export interface StaffingSummaryResponse {
 
 export interface StaffingFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -268,7 +268,7 @@ export interface UserStatusChangedEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   previous_status: TrackingStatus;
@@ -282,7 +282,7 @@ export interface UserAreaEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string | null;
   latitude: number;
@@ -300,7 +300,7 @@ export interface RoleStaffingItem {
   active: number;
 }
 
-export interface AreaBoundary {
+export interface LocationBoundary {
   id: string;
   name: string;
   boundary_polygon: GeoJSON.Geometry | null;
@@ -325,7 +325,7 @@ export interface RayonBoundary {
   area_count: number;
   is_understaffed: boolean;
   understaffed_area_count: number;
-  areas: AreaBoundary[];
+  areas: LocationBoundary[];
 }
 
 export interface BoundariesResponse {

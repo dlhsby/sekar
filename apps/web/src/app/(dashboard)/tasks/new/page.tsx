@@ -8,7 +8,7 @@
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useRayons } from '@/lib/api/rayons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -52,7 +52,7 @@ export default function CreateTaskPage() {
 
   // Data fetching hooks - always call (enabled by query client)
   const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useAreas({ limit: 1000 });
+  const { data: areasData } = useLocations({ limit: 1000 });
   const { data: rayonsData } = useRayons();
 
   const createMutation = useCreateTask();
@@ -92,7 +92,7 @@ export default function CreateTaskPage() {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
-        area_id: areaId !== 'none' ? areaId : undefined,
+        location_id: areaId !== 'none' ? areaId : undefined,
         rayon_id: rayonId !== 'none' ? rayonId : undefined,
         priority,
         due_date: dueDate ? new Date(dueDate).toISOString() : undefined,

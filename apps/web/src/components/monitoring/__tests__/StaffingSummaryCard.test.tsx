@@ -4,7 +4,7 @@
  * Covers:
  * - City view (no filters) — rayon accordion rows from boundaries prop
  * - Rayon view (rayon_id filter) — per-area expandable rows from boundaries prop
- * - Area view (area_id filter) — role breakdown with progress bars via useStaffingSummary hook
+ * - Area view (location_id filter) — role breakdown with progress bars via useStaffingSummary hook
  * - Day-type badge rendering
  * - Understaffed indicators (UnderstaffedBadge)
  * - Reassign button click callback
@@ -212,11 +212,11 @@ describe('StaffingSummaryCard', () => {
       expect(screen.getByText(/rayon/i)).toBeInTheDocument();
     });
 
-    it('should show "Area" label when area_id filter is active', () => {
+    it('should show "Area" label when location_id filter is active', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
-      render(<StaffingSummaryCard filters={{ area_id: 'area-1' }} boundaries={MOCK_BOUNDARIES} />);
+      render(<StaffingSummaryCard filters={{ location_id: 'area-1' }} boundaries={MOCK_BOUNDARIES} />);
       // The view label is rendered inside a <span> child of the heading
       const heading = screen.getByRole('heading');
       expect(heading).toHaveTextContent(/area/i);
@@ -456,8 +456,8 @@ describe('StaffingSummaryCard', () => {
   // Area View
   // -------------------------------------------------------------------------
 
-  describe('Area view (area_id filter)', () => {
-    const areaFilters = { area_id: 'area-1' };
+  describe('Area view (location_id filter)', () => {
+    const areaFilters = { location_id: 'area-1' };
 
     it('should render loading skeleton while useStaffingSummary is loading', () => {
       mockUseStaffingSummary.mockReturnValue(buildHookReturn({ isLoading: true }));
@@ -536,7 +536,7 @@ describe('StaffingSummaryCard', () => {
       expect(screen.getByText(/kurang 1/i)).toBeInTheDocument();
     });
 
-    it('should call onReassign with area_id when reassign button is clicked', async () => {
+    it('should call onReassign with location_id when reassign button is clicked', async () => {
       const user = userEvent.setup();
       const handleReassign = jest.fn();
       mockUseStaffingSummary.mockReturnValue(
@@ -689,25 +689,25 @@ describe('StaffingSummaryCard', () => {
       expect(screen.getByText('2/2')).toBeInTheDocument();
     });
 
-    it('should pass correct area_id filter to useStaffingSummary hook', () => {
+    it('should pass correct location_id filter to useStaffingSummary hook', () => {
       mockUseStaffingSummary.mockReturnValue(buildHookReturn());
-      render(<StaffingSummaryCard filters={{ area_id: 'area-1' }} boundaries={MOCK_BOUNDARIES} />);
-      expect(mockUseStaffingSummary).toHaveBeenCalledWith({ area_id: 'area-1' });
+      render(<StaffingSummaryCard filters={{ location_id: 'area-1' }} boundaries={MOCK_BOUNDARIES} />);
+      expect(mockUseStaffingSummary).toHaveBeenCalledWith({ location_id: 'area-1' });
     });
   });
 
   // -------------------------------------------------------------------------
-  // area_id takes precedence over rayon_id
+  // location_id takes precedence over rayon_id
   // -------------------------------------------------------------------------
 
   describe('Filter precedence', () => {
-    it('should render area view (not rayon view) when both rayon_id and area_id are present', () => {
+    it('should render area view (not rayon view) when both rayon_id and location_id are present', () => {
       mockUseStaffingSummary.mockReturnValue(
         buildHookReturn({ data: MOCK_STAFFING_RESPONSE, isSuccess: true })
       );
       render(
         <StaffingSummaryCard
-          filters={{ rayon_id: 'rayon-1', area_id: 'area-1' }}
+          filters={{ rayon_id: 'rayon-1', location_id: 'area-1' }}
           boundaries={MOCK_BOUNDARIES}
         />
       );

@@ -27,7 +27,7 @@ export type {
   UserStatusChangedEvent,
   UserAreaEvent,
   RoleStaffingItem,
-  AreaBoundary,
+  LocationBoundary,
   RayonBoundary,
   BoundariesResponse,
   ReassignWorkerPayload,
@@ -108,7 +108,7 @@ export function useAreaMonitoring(areaId: string, enabled = true) {
   return useQuery({
     queryKey: monitoringKeys.area(areaId),
     queryFn: async () => {
-      const response = await apiClient.get<AreaMonitoringStats>(`/monitoring/area/${areaId}`);
+      const response = await apiClient.get<AreaMonitoringStats>(`/monitoring/location/${areaId}`);
       return response.data;
     },
     staleTime: 30 * 1000,

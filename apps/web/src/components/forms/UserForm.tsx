@@ -9,9 +9,9 @@ import { FormInput, FormCombobox, FormMultiCombobox, Button } from '@/components
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import type { UserRole, User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useUserAreas } from '@/lib/api/user-areas';
+import { useUserAreas } from '@/lib/api/user-locations';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
 import { sortedRoleOptions, roleAssignmentScope } from '@/lib/constants/roles';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
@@ -57,7 +57,7 @@ function createUserSchema(t: TFn) {
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface UserFormSubmit extends Omit<UserFormData, 'rayon_id' | 'shift_definition_id'> {
-  area_ids: string[];
+  location_ids: string[];
   /** `null` = explicitly clear on the server (create treats null as unset). */
   rayon_id: string | null;
   shift_definition_id: string | null;
@@ -85,7 +85,7 @@ export function UserForm({
   const userSchema = useMemo(() => createUserSchema(t), [t]);
 
   const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
-  const { data: areasData, isLoading: areasLoading } = useAreas({ limit: 1000 });
+  const { data: areasData, isLoading: areasLoading } = useLocations({ limit: 1000 });
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
@@ -162,14 +162,14 @@ export function UserForm({
     // are sent as an explicit clear (null / empty array), not omitted, so
     // changing a role on edit actually drops the now-irrelevant assignment on
     // the server (a PATCH that omits a field would keep the old value). On
-    // create the backend maps null → unset. area_ids is filtered to valid
+    // create the backend maps null → unset. location_ids is filtered to valid
     // UUIDs so a blank/stale entry can't trip `@IsUUID(..., {each:true})`.
     const scope = roleAssignmentScope(data.role);
     const submitData: UserFormSubmit = {
       ...data,
       rayon_id: scope.rayon ? data.rayon_id || null : null,
       shift_definition_id: scope.shift ? data.shift_definition_id || null : null,
-      area_ids: scope.area ? areaIds.filter((id) => UUID_RE.test(id)) : [],
+      location_ids: scope.area ? areaIds.filter((id) => UUID_RE.test(id)) : [],
     };
     await onSubmit(submitData);
   };

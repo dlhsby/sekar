@@ -45,8 +45,8 @@ const mockOvertime = {
   id: 'ot-1',
   user_id: 'user-1',
   user: { id: 'user-1', username: 'satgas1', full_name: 'Satgas One', role: 'satgas' as const },
-  area_id: 'area-1',
-  area: { id: 'area-1', name: 'Taman Bungkul' },
+  location_id: 'area-1',
+  location: { id: 'area-1', name: 'Taman Bungkul' },
   start_datetime: '2026-02-16T17:00:00+07:00',
   end_datetime: '2026-02-16T20:00:00+07:00',
   status: 'pending' as const,
@@ -80,7 +80,7 @@ const mockKorlapUser = {
   username: 'korlap1',
   full_name: 'Korlap One',
   role: 'korlap' as const,
-  area_id: 'area-1',
+  location_id: 'area-1',
   created_at: '2024-01-01T00:00:00Z',
 };
 

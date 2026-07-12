@@ -17,7 +17,7 @@ const MOCK_USER_1: LiveUser = {
   role: 'satgas',
   phone: '+6281111111111',
   status: 'active',
-  area_id: 'area-1',
+  location_id: 'area-1',
   area_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon Selatan',
@@ -42,7 +42,7 @@ const MOCK_USER_2: LiveUser = {
   role: 'korlap',
   status: 'inactive',
   area_name: 'Taman Flora',
-  area_id: 'area-2',
+  location_id: 'area-2',
 };
 
 const MOCK_DATA: LiveUsersResponse = {

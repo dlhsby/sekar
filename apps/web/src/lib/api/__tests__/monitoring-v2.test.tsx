@@ -45,7 +45,7 @@ describe('Monitoring v2 API', () => {
     lat: -7.29,
     lng: 112.74,
     status: 'active',
-    area_id: 'a-1',
+    location_id: 'a-1',
     area_name: 'Taman Bungkul',
     rayon_id: 'r-1',
     rayon_name: 'Rayon Pusat',
@@ -55,7 +55,7 @@ describe('Monitoring v2 API', () => {
   };
 
   const mockArea: SnapshotAreaSummary = {
-    area_id: 'a-1',
+    location_id: 'a-1',
     area_name: 'Taman Bungkul',
     rayon_id: 'r-1',
     rayon_name: 'Rayon Pusat',

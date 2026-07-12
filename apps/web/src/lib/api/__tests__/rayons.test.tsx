@@ -49,18 +49,18 @@ describe('Rayons API', () => {
 
   const mockRayonStats: RayonStats = {
     rayon_id: '1',
-    total_areas: 15,
+    total_locations: 15,
     total_workers: 25,
     total_area_m2: 50000,
     active_shifts_today: 3,
   };
 
-  const mockAreas: PaginatedResponse<Area> = {
+  const mockAreas: PaginatedResponse<Location> = {
     data: [
       {
         id: '1',
         name: 'Taman Bungkul',
-        area_type_id: 'type-1',
+        location_type_id: 'type-1',
         rayon_id: '1',
         boundary: {
           type: 'Polygon',
@@ -179,7 +179,7 @@ describe('Rayons API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.rayon_id).toBe('1');
-      expect(result.current.data?.total_areas).toBe(15);
+      expect(result.current.data?.total_locations).toBe(15);
       expect(result.current.data?.total_workers).toBe(25);
       expect(result.current.data?.total_area_m2).toBe(50000);
     });

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Delete Area Modal Component
+ * Delete Location Modal Component
  * Confirmation dialog for deleting an area
  */
 
@@ -9,20 +9,20 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui';
-import { useDeleteArea } from '@/lib/api/areas';
+import { useDeleteLocation } from '@/lib/api/locations';
 import { getErrorMessage } from '@/lib/api/client';
-import type { Area } from '@/types/models';
+import type { Location } from '@/types/models';
 
-export interface DeleteAreaModalProps {
-  area: Area | null;
+export interface DeleteLocationModalProps {
+  area: Location | null;
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
-export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteAreaModalProps) {
+export function DeleteLocationModal({ area, isOpen, onClose, onSuccess }: DeleteLocationModalProps) {
   const { t } = useTranslation();
-  const deleteArea = useDeleteArea();
+  const deleteArea = useDeleteLocation();
   const [error, setError] = useState<string | null>(null);
 
   const handleDelete = async () => {
@@ -63,7 +63,7 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
       loading={deleteArea.isPending}
       onConfirm={handleDelete}
     >
-      {/* Area Details */}
+      {/* Location Details */}
       <div className="space-y-2">
         <div className="bg-nb-gray-100 border-2 border-nb-black p-4 space-y-2">
           <div className="flex justify-between">
@@ -72,7 +72,7 @@ export function DeleteAreaModal({ area, isOpen, onClose, onSuccess }: DeleteArea
           </div>
           <div className="flex justify-between">
             <span className="font-bold">{t('admin:areas.detailType')}:</span>
-            <span>{area?.areaType?.name ?? '—'}</span>
+            <span>{area?.locationType?.name ?? '—'}</span>
           </div>
           {area?.rayon && (
             <div className="flex justify-between">

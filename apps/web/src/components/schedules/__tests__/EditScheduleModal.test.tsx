@@ -34,7 +34,7 @@ function makeRoster(overrides: Partial<Schedule> = {}): Schedule {
     user: { id: 'user-1', full_name: 'Budi Santoso', username: 'budi_s', role: 'satgas' },
     shift_definition: { id: 'shift-1', name: 'Shift 1', start_time: '06:00', end_time: '14:00' },
     replacement_user: null,
-    schedule_areas: [{ id: 'sa-1', area_id: 'area-1', area: { id: 'area-1', name: 'Taman A', code: 'A' } }],
+    schedule_areas: [{ id: 'sa-1', location_id: 'area-1', location: { id: 'area-1', name: 'Taman A', code: 'A' } }],
     ...overrides,
   };
 }

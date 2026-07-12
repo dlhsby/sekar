@@ -26,7 +26,7 @@ interface UserLocationWsEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string | null;
   latitude: number;
@@ -39,7 +39,7 @@ interface UserLocationWsEvent {
 
 interface UserReassignedWsEvent {
   user_id: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string | null;
   timestamp: string;
@@ -107,7 +107,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
         status: e.status as WorkerPatch['status'],
         lat: e.latitude,
         lng: e.longitude,
-        area_id: e.area_id,
+        location_id: e.location_id,
         area_name: e.area_name,
         rayon_id: e.rayon_id,
         is_within_area: e.is_within_area,
@@ -120,7 +120,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
       patchWorker({
         user_id: e.user_id,
         status: e.new_status,
-        area_id: e.area_id,
+        location_id: e.location_id,
         area_name: e.area_name,
         rayon_id: e.rayon_id,
         lat: e.latitude ?? undefined,
@@ -144,7 +144,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
     socket.on('user:reassigned', (e: UserReassignedWsEvent) => {
       patchWorker({
         user_id: e.user_id,
-        area_id: e.area_id,
+        location_id: e.location_id,
         area_name: e.area_name,
         rayon_id: e.rayon_id,
         last_update: e.timestamp,

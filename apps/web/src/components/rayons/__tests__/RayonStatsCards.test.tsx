@@ -10,7 +10,7 @@ import type { RayonStats } from '@/types/models';
 describe('RayonStatsCards', () => {
   const mockStats: RayonStats = {
     rayon_id: 'rayon-1',
-    total_areas: 15,
+    total_locations: 15,
     total_users: 50,
     active_users: 45,
     total_coverage_area: 150000,

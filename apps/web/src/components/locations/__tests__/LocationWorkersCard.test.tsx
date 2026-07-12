@@ -1,16 +1,16 @@
 /**
- * Unit Tests: AreaWorkersCard
+ * Unit Tests: LocationWorkersCard
  * Roster render + assign-dialog candidate filtering (schedulable, not-yet-assigned).
  */
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { AreaWorkersCard } from '../AreaWorkersCard';
-import { useAreaUsers, useAssignAreas, useRemoveAssignment } from '@/lib/api/user-areas';
+import { LocationWorkersCard } from '../LocationWorkersCard';
+import { useAreaUsers, useAssignLocations, useRemoveAssignment } from '@/lib/api/user-locations';
 import { useUsers } from '@/lib/api/users';
 
-jest.mock('@/lib/api/user-areas', () => ({
+jest.mock('@/lib/api/user-locations', () => ({
   useAreaUsers: jest.fn(),
-  useAssignAreas: jest.fn(),
+  useAssignLocations: jest.fn(),
   useRemoveAssignment: jest.fn(),
 }));
 jest.mock('@/lib/api/users', () => ({
@@ -27,7 +27,7 @@ beforeAll(() => {
 
 const mockUseAreaUsers = useAreaUsers as jest.Mock;
 const mockUseUsers = useUsers as jest.Mock;
-const mockUseAssign = useAssignAreas as jest.Mock;
+const mockUseAssign = useAssignLocations as jest.Mock;
 const mockUseRemove = useRemoveAssignment as jest.Mock;
 
 const AREA_ID = 'area-1';
@@ -50,9 +50,9 @@ beforeEach(() => {
   mockUseRemove.mockReturnValue({ mutateAsync: jest.fn(), isPending: false, variables: undefined });
 });
 
-describe('AreaWorkersCard', () => {
+describe('LocationWorkersCard', () => {
   it('renders the assigned workers roster', () => {
-    render(<AreaWorkersCard areaId={AREA_ID} canManage={false} />);
+    render(<LocationWorkersCard areaId={AREA_ID} canManage={false} />);
     expect(screen.getByText('Satgas Satu')).toBeInTheDocument();
     expect(screen.getByText('satgas1')).toBeInTheDocument();
     // Read-only: no assign action.
@@ -61,12 +61,12 @@ describe('AreaWorkersCard', () => {
 
   it('shows an empty state when no workers are assigned', () => {
     mockUseAreaUsers.mockReturnValue({ data: [], isLoading: false });
-    render(<AreaWorkersCard areaId={AREA_ID} canManage />);
+    render(<LocationWorkersCard areaId={AREA_ID} canManage />);
     expect(screen.getByText('Belum ada pekerja')).toBeInTheDocument();
   });
 
   it('assign dialog offers only schedulable, not-yet-assigned workers', async () => {
-    render(<AreaWorkersCard areaId={AREA_ID} canManage />);
+    render(<LocationWorkersCard areaId={AREA_ID} canManage />);
     fireEvent.click(screen.getByRole('button', { name: /tugaskan pekerja/i }));
     fireEvent.click(screen.getByText('Pilih Pekerja'));
     await waitFor(() => {

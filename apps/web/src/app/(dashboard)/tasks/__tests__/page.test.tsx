@@ -28,7 +28,7 @@ const mockKorlapUser = {
   username: 'korlap1',
   full_name: 'Korlap One',
   role: 'korlap' as const,
-  area_id: 'area-1',
+  location_id: 'area-1',
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -37,7 +37,7 @@ const mockSatgasUser = {
   username: 'satgas1',
   full_name: 'Satgas One',
   role: 'satgas' as const,
-  area_id: 'area-1',
+  location_id: 'area-1',
   created_at: '2026-01-01T00:00:00Z',
 };
 
@@ -48,7 +48,7 @@ const mockTask: tasksApi.Task = {
   created_by: 'user-1',
   creator: { id: 'user-1', full_name: 'Korlap One' },
   assigned_to: { id: 'user-2', full_name: 'Satgas One' },
-  area: { id: 'area-1', name: 'Taman Bungkul' },
+  location: { id: 'area-1', name: 'Taman Bungkul' },
   rayon: { id: 'rayon-1', name: 'Rayon I' },
   priority: 'high' as const,
   status: 'assigned' as const,

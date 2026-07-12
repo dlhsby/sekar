@@ -56,7 +56,7 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
           {stats && (
             <div className="grid grid-cols-2 gap-3">
               <div className="border-2 border-nb-black p-3 bg-nb-primary/10 rounded-nb-base">
-                <div className="text-2xl font-bold text-nb-primary">{stats.total_areas}</div>
+                <div className="text-2xl font-bold text-nb-primary">{stats.total_locations}</div>
                 <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalAreas')}</div>
               </div>
 

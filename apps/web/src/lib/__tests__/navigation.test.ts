@@ -301,9 +301,9 @@ describe('Navigation Utilities', () => {
     });
 
     it('should use navigation item labels when available', () => {
-      const breadcrumbs = getBreadcrumbPath('/areas');
+      const breadcrumbs = getBreadcrumbPath('/locations');
 
-      expect(breadcrumbs[0].label).toBe('Areas');
+      expect(breadcrumbs[0].label).toBe('Locations');
     });
 
     it('should capitalize segment names when nav item not found', () => {

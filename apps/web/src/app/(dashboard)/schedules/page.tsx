@@ -31,7 +31,7 @@ import {
 import { RolePill } from '@/components/users/RolePill';
 import { AddScheduleModal } from '@/components/schedules/AddScheduleModal';
 import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
-import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
+import { LocationListSheet, type LocationListSheetItem } from '@/components/locations/LocationListSheet';
 import { getErrorMessage } from '@/lib/api/client';
 import {
   useDailyRoster,
@@ -46,11 +46,11 @@ import {
 } from '@/lib/api/schedules';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useRayons } from '@/lib/api/rayons';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUsers } from '@/lib/api/users';
-import { useUserAreas } from '@/lib/api/user-areas';
+import { useUserAreas } from '@/lib/api/user-locations';
 import { canEditTargetRole, isGlobalRosterEditor } from '@/lib/schedule-permissions';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
@@ -96,7 +96,7 @@ function getStatusTone(status: Schedule['status']): 'ok' | 'warn' | 'bad' | 'inf
  */
 function getAreaNames(schedule: Schedule, areaById: Map<string, any>): string[] {
   return schedule.schedule_areas
-    .map((sa) => areaById.get(sa.area_id)?.name)
+    .map((sa) => areaById.get(sa.location_id)?.name)
     .filter(Boolean) as string[];
 }
 
@@ -129,7 +129,7 @@ export default function SchedulesPage() {
   // include_inactive: a schedule's assigned area may have since been
   // deactivated — keep resolving its name (and offering it as a filter
   // option) rather than silently showing "—" for that assignment.
-  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
+  const { data: areasData } = useLocations({ limit: 1000, include_inactive: true });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   // O(1) area lookup for the rayon column (avoids a per-row find over all areas).
   const areaById = useMemo(() => new Map(allAreas.map((a) => [a.id, a])), [allAreas]);
@@ -168,11 +168,11 @@ export default function SchedulesPage() {
         if (!currentUser.rayon_id) return false;
         if (roster.rayon_id === currentUser.rayon_id) return true;
         return roster.schedule_areas.some(
-          (a) => areaById.get(a.area_id)?.rayon?.id === currentUser.rayon_id,
+          (a) => areaById.get(a.location_id)?.rayon?.id === currentUser.rayon_id,
         );
       }
       if (currentUser.role === 'korlap') {
-        return roster.schedule_areas.some((a) => myAreaIds.includes(a.area_id));
+        return roster.schedule_areas.some((a) => myAreaIds.includes(a.location_id));
       }
       return false;
     },
@@ -209,12 +209,12 @@ export default function SchedulesPage() {
   const [addModalOpen, setAddModalOpen] = useState(false);
 
   const [areasSheetRoster, setAreasSheetRoster] = useState<Schedule | null>(null);
-  const areasSheetItems = useMemo<AreaListSheetItem[]>(() => {
+  const areasSheetItems = useMemo<LocationListSheetItem[]>(() => {
     if (!areasSheetRoster) return [];
     return areasSheetRoster.schedule_areas.map((sa) => {
-      const area = areaById.get(sa.area_id);
+      const area = areaById.get(sa.location_id);
       return {
-        id: sa.area_id,
+        id: sa.location_id,
         name: area?.name ?? '—',
       };
     });
@@ -274,12 +274,12 @@ export default function SchedulesPage() {
   const handleUpdateAreasForEdit = async (id: string, areaIds: string[]) => {
     await updateAreas.mutateAsync({
       id,
-      area_ids: areaIds,
+      location_ids: areaIds,
     });
     refetch();
   };
 
-  const handleAddSchedule = async (input: { user_id: string; date: string; shift_definition_id?: string | null; area_ids?: string[] }) => {
+  const handleAddSchedule = async (input: { user_id: string; date: string; shift_definition_id?: string | null; location_ids?: string[] }) => {
     try {
       await addSchedule.mutateAsync(input);
       setAddModalOpen(false);
@@ -664,7 +664,7 @@ export default function SchedulesPage() {
       />
 
       {/* Read-only side sheet listing a roster's areas */}
-      <AreaListSheet
+      <LocationListSheet
         open={!!areasSheetRoster}
         title={t('modals.areaList.title')}
         subtitle={areasSheetRoster?.user?.full_name ?? '—'}

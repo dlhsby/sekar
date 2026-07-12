@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AreaWorkersCard — per-area worker roster + assign/remove (ADR-013).
+ * LocationWorkersCard — per-area worker roster + assign/remove (ADR-013).
  *
  * Shows the workers assigned to an area (GET /areas/:id/users) and lets
  * managers add a permanent assignment (POST /users/:id/areas) or remove one
@@ -30,21 +30,21 @@ import {
   EmptyState,
 } from '@/components/ui';
 import { useUsers } from '@/lib/api/users';
-import { useAreaUsers, useAssignAreas, useRemoveAssignment } from '@/lib/api/user-areas';
+import { useAreaUsers, useAssignLocations, useRemoveAssignment } from '@/lib/api/user-locations';
 import { getErrorMessage } from '@/lib/api/client';
 import { ROLE_LABELS, ROLE_BADGE_VARIANTS, SCHEDULABLE_WORKER_ROLES } from '@/lib/constants/roles';
 
-interface AreaWorkersCardProps {
+interface LocationWorkersCardProps {
   areaId: string;
   /** When false, the roster is read-only (no assign/remove actions). */
   canManage: boolean;
 }
 
-export function AreaWorkersCard({ areaId, canManage }: AreaWorkersCardProps) {
+export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardProps) {
   const { t } = useTranslation();
   const { data: workers, isLoading } = useAreaUsers(areaId);
   const { data: usersData } = useUsers({ limit: 1000 });
-  const assignMutation = useAssignAreas();
+  const assignMutation = useAssignLocations();
   const removeMutation = useRemoveAssignment();
 
   const [assignOpen, setAssignOpen] = useState(false);

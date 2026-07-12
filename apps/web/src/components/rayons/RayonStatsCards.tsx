@@ -43,7 +43,7 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
   const statCards = [
     {
       label: t('common:stats.totalArea'),
-      value: stats.total_areas,
+      value: stats.total_locations,
       color: 'blue',
       icon: <Map className="w-6 h-6" />,
     },

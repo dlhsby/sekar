@@ -98,7 +98,7 @@ export function AddScheduleModal({
         user_id: selectedUserId,
         date,
         shift_definition_id: selectedShiftId,
-        area_ids: areaIds.length > 0 ? areaIds : undefined,
+        location_ids: areaIds.length > 0 ? areaIds : undefined,
       });
       toast.success(t('messages.addSuccess'));
       onClose();

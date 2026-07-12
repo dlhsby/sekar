@@ -72,7 +72,7 @@ export function EditScheduleModal({
     if (roster && open) {
       setSelectedRayonId(roster.rayon_id || '');
       setSelectedShiftId(roster.shift_definition_id);
-      setSelectedAreaIds(roster.schedule_areas.map((a) => a.area_id));
+      setSelectedAreaIds(roster.schedule_areas.map((a) => a.location_id));
     }
   }, [roster, open]);
 
@@ -81,7 +81,7 @@ export function EditScheduleModal({
   const isAreasChanged =
     selectedAreaIds.length !== roster?.schedule_areas.length ||
     !selectedAreaIds.every((id) =>
-      roster?.schedule_areas.some((a) => a.area_id === id),
+      roster?.schedule_areas.some((a) => a.location_id === id),
     );
 
   const handleSubmit = async () => {

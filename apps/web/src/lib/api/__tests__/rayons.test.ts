@@ -150,7 +150,7 @@ describe('Rayons API', () => {
   describe('GET /rayons/:id/stats', () => {
     it('should fetch rayon statistics', async () => {
       const mockStats = {
-        total_areas: 15,
+        total_locations: 15,
         total_workers: 30,
         active_tasks: 5,
         completed_reports_today: 12,
@@ -160,7 +160,7 @@ describe('Rayons API', () => {
 
       const response = await apiClient.get('/rayons/1/stats');
 
-      expect(response.data.total_areas).toBe(15);
+      expect(response.data.total_locations).toBe(15);
       expect(response.data.total_workers).toBe(30);
     });
   });

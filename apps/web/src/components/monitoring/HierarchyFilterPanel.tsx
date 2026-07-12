@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui';
 import { FormSelect } from '@/components/ui';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,7 +46,7 @@ export function HierarchyFilterPanel({
 }: HierarchyFilterPanelProps) {
   const { t } = useTranslation(['monitoring']);
   const { data: rayons } = useRayons();
-  const { data: areasData } = useAreas({
+  const { data: areasData } = useLocations({
     rayon_id: value.rayonId,
   });
   const areas = areasData?.data ?? [];

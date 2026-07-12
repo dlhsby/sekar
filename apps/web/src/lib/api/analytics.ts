@@ -108,7 +108,7 @@ export interface OperationalAnalytics {
 export interface WorkerAnalyticsFilters {
   date_from?: string;
   date_to?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   search?: string;
   page?: number;
@@ -185,7 +185,7 @@ async function fetchWorkerAnalytics(
   const params = new URLSearchParams();
   if (filters.date_from) params.append('date_from', filters.date_from);
   if (filters.date_to) params.append('date_to', filters.date_to);
-  if (filters.area_id) params.append('area_id', filters.area_id);
+  if (filters.location_id) params.append('location_id', filters.location_id);
   if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
   if (filters.search) params.append('search', filters.search);
   if (filters.page) params.append('page', String(filters.page));
@@ -290,7 +290,7 @@ async function fetchArea(
 /**
  * Hook to fetch single area analytics
  */
-export function useArea(id: string, filters?: Omit<AreaAnalyticsFilters, 'page' | 'limit'>) {
+export function useLocation(id: string, filters?: Omit<AreaAnalyticsFilters, 'page' | 'limit'>) {
   return useQuery({
     queryKey: [analyticsQueryKeys.area(id), filters],
     queryFn: () => fetchArea(id, filters),

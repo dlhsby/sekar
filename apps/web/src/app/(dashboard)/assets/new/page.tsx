@@ -50,7 +50,7 @@ export default function CreateAssetPage() {
       const asset = await createMutation.mutateAsync({
         name,
         category_id: categoryId,
-        area_id: areaId || undefined,
+        location_id: areaId || undefined,
         rayon_id: rayonId || undefined,
         description: description || undefined,
         purchase_date: purchaseDate || undefined,

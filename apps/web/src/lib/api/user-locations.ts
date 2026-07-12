@@ -2,28 +2,28 @@
  * User-Areas API Client (ADR-013 multi-area assignment).
  *
  * Wraps the existing backend endpoints that link workers to areas:
- *   GET    /areas/:areaId/users        — roster for an area
- *   POST   /users/:userId/areas        — assign (permanent) areas to a worker
- *   DELETE /users/:userId/areas/:areaId — remove a permanent assignment
+ *   GET    /locations/:areaId/users        — roster for an area
+ *   POST   /users/:userId/locations        — assign (permanent) areas to a worker
+ *   DELETE /users/:userId/locations/:areaId — remove a permanent assignment
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import type { User } from '@/types/models';
 
-export const userAreaKeys = {
+export const userLocationKeys = {
   all: ['user-areas'] as const,
-  areaUsers: (areaId: string) => [...userAreaKeys.all, 'area', areaId] as const,
-  userAreas: (userId: string) => [...userAreaKeys.all, 'user', userId] as const,
+  areaUsers: (areaId: string) => [...userLocationKeys.all, 'area', areaId] as const,
+  userAreas: (userId: string) => [...userLocationKeys.all, 'user', userId] as const,
 };
 
 /** A user's assigned areas (effective: permanent + task-based). */
 export function useUserAreas(userId: string | undefined) {
   return useQuery({
-    queryKey: userAreaKeys.userAreas(userId ?? ''),
+    queryKey: userLocationKeys.userAreas(userId ?? ''),
     queryFn: async () => {
-      const response = await apiClient.get<import('@/types/models').Area[]>(
-        `/users/${userId}/areas`,
+      const response = await apiClient.get<import('@/types/models').Location[]>(
+        `/users/${userId}/locations`,
       );
       return response.data;
     },
@@ -35,9 +35,9 @@ export function useUserAreas(userId: string | undefined) {
 /** Workers assigned to an area (permanent + task-based effective membership). */
 export function useAreaUsers(areaId: string) {
   return useQuery({
-    queryKey: userAreaKeys.areaUsers(areaId),
+    queryKey: userLocationKeys.areaUsers(areaId),
     queryFn: async () => {
-      const response = await apiClient.get<User[]>(`/areas/${areaId}/users`);
+      const response = await apiClient.get<User[]>(`/locations/${areaId}/users`);
       return response.data;
     },
     enabled: !!areaId,
@@ -46,15 +46,15 @@ export function useAreaUsers(areaId: string) {
 }
 
 /** Assign one or more areas (permanent) to a worker. */
-export function useAssignAreas() {
+export function useAssignLocations() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ userId, areaIds }: { userId: string; areaIds: string[] }) => {
-      const response = await apiClient.post(`/users/${userId}/areas`, { area_ids: areaIds });
+      const response = await apiClient.post(`/users/${userId}/locations`, { location_ids: areaIds });
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userAreaKeys.all });
+      queryClient.invalidateQueries({ queryKey: userLocationKeys.all });
     },
   });
 }
@@ -64,10 +64,10 @@ export function useRemoveAssignment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ userId, areaId }: { userId: string; areaId: string }) => {
-      await apiClient.delete(`/users/${userId}/areas/${areaId}`);
+      await apiClient.delete(`/users/${userId}/locations/${areaId}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: userAreaKeys.all });
+      queryClient.invalidateQueries({ queryKey: userLocationKeys.all });
     },
   });
 }

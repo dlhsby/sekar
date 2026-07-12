@@ -135,7 +135,7 @@ export const navigationItems: NavItem[] = [
       {
         id: 'areas',
         label: 'common:nav.areas',
-        href: '/areas',
+        href: '/locations',
         icon: MapPinIcon,
         roles: [...ADMIN_ROLES, 'top_management'],
       },
@@ -225,7 +225,7 @@ export const navigationItems: NavItem[] = [
   },
   // ── Analitik: analytics dashboards (Phase 5-2)
   // ARCHIVED 2026-07-07 — hidden from the sidebar per request, pages still
-  // live at /analytics, /analytics/workers, /analytics/areas. Uncomment to
+  // live at /analytics, /analytics/workers, /analytics/locations. Uncomment to
   // restore.
   // {
   //   id: 'analytics',
@@ -251,7 +251,7 @@ export const navigationItems: NavItem[] = [
   //     {
   //       id: 'analytics-areas',
   //       label: 'common:nav.areaComparison',
-  //       href: '/analytics/areas',
+  //       href: '/analytics/locations',
   //       icon: ChartBarIcon,
   //       roles: ['korlap', 'kepala_rayon', 'admin_data', 'top_management', 'admin_system', 'superadmin'],
   //     },
@@ -367,7 +367,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/overtime': 'Lembur',
   '/schedules': 'Jadwal',
   '/users': 'Pengguna',
-  '/areas': 'Area',
+  '/locations': 'Area',
   '/rayons': 'Rayon',
   '/assets': 'Aset',
   '/assets/new': 'Aset Baru',
@@ -417,7 +417,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/schedules': ['Pekerjaan', 'Jadwal'],
   '/pruning-requests': ['Pekerjaan', 'Permohonan Perantingan'],
   '/users': ['Pengguna & Hak Akses', 'Pengguna'],
-  '/areas': ['Data Master', 'Area'],
+  '/locations': ['Data Master', 'Area'],
   '/rayons': ['Data Master', 'Rayon'],
   '/plants': ['Data Master', 'Tanaman'],
   '/seeds': ['Data Master', 'Bibit'],

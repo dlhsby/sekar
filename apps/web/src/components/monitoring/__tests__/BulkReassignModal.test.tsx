@@ -93,7 +93,7 @@ const MOCK_WORKER_1: LiveUser = {
   role: 'satgas',
   phone: '+6281111111111',
   status: 'active',
-  area_id: AREA_2_ID,
+  location_id: AREA_2_ID,
   area_name: 'Taman Flora',
   rayon_id: RAYON_1_ID,
   rayon_name: 'Rayon Selatan',

@@ -29,7 +29,7 @@ export interface WorkerListItem {
   full_name: string;
   role: string;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   last_update: string;
 }

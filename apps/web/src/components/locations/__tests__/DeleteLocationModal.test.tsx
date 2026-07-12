@@ -1,26 +1,26 @@
 /**
- * Unit Tests: DeleteAreaModal
+ * Unit Tests: DeleteLocationModal
  * Tests area deletion confirmation modal
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { DeleteAreaModal } from '../DeleteAreaModal';
-import { useDeleteArea } from '@/lib/api/areas';
+import { DeleteLocationModal } from '../DeleteLocationModal';
+import { useDeleteLocation } from '@/lib/api/locations';
 
-jest.mock('@/lib/api/areas', () => ({
-  useDeleteArea: jest.fn(),
+jest.mock('@/lib/api/locations', () => ({
+  useDeleteLocation: jest.fn(),
 }));
 
-describe('DeleteAreaModal', () => {
+describe('DeleteLocationModal', () => {
   let queryClient: QueryClient;
 
   const mockArea = {
     id: 'area-1',
     name: 'Taman Bungkul',
     address: 'Jl. Taman Bungkul',
-    area_type_id: 'type-1',
+    location_type_id: 'type-1',
     rayon_id: 'rayon-1',
     rayon: {
       id: 'rayon-1',
@@ -65,14 +65,14 @@ describe('DeleteAreaModal', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: false,
     });
   });
 
   it('should not render when closed', () => {
-    render(<DeleteAreaModal isOpen={false} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={false} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -80,7 +80,7 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should not render when area is null', () => {
-    render(<DeleteAreaModal isOpen={true} area={null} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={null} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -88,7 +88,7 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should render modal when open with area', () => {
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -98,7 +98,7 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should display area details', () => {
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -107,7 +107,7 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should display warning message', () => {
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -118,7 +118,7 @@ describe('DeleteAreaModal', () => {
     const onClose = jest.fn();
     const user = userEvent.setup();
 
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={onClose} />, {
       wrapper: createWrapper(),
     });
 
@@ -129,7 +129,7 @@ describe('DeleteAreaModal', () => {
 
   it('should call deleteArea when delete button clicked', async () => {
     const mockDeleteArea = jest.fn().mockResolvedValue(undefined);
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: mockDeleteArea,
       isPending: false,
     });
@@ -137,7 +137,7 @@ describe('DeleteAreaModal', () => {
     const onClose = jest.fn();
     const user = userEvent.setup();
 
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={onClose} />, {
       wrapper: createWrapper(),
     });
 
@@ -150,7 +150,7 @@ describe('DeleteAreaModal', () => {
 
   it('should call onSuccess after successful deletion', async () => {
     const mockDeleteArea = jest.fn().mockResolvedValue(undefined);
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: mockDeleteArea,
       isPending: false,
     });
@@ -160,7 +160,7 @@ describe('DeleteAreaModal', () => {
     const user = userEvent.setup();
 
     render(
-      <DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} onSuccess={onSuccess} />,
+      <DeleteLocationModal isOpen={true} area={mockArea} onClose={onClose} onSuccess={onSuccess} />,
       { wrapper: createWrapper() }
     );
 
@@ -174,14 +174,14 @@ describe('DeleteAreaModal', () => {
 
   it('should display error message on deletion failure', async () => {
     const mockDeleteArea = jest.fn().mockRejectedValue(new Error('Failed to delete'));
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: mockDeleteArea,
       isPending: false,
     });
 
     const user = userEvent.setup();
 
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -193,12 +193,12 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should disable buttons when deletion is pending', () => {
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: true,
     });
 
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 
@@ -207,7 +207,7 @@ describe('DeleteAreaModal', () => {
   });
 
   it('should not close when clicking cancel during deletion', async () => {
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: jest.fn(),
       isPending: true,
     });
@@ -215,7 +215,7 @@ describe('DeleteAreaModal', () => {
     const onClose = jest.fn();
     const user = userEvent.setup();
 
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={onClose} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={onClose} />, {
       wrapper: createWrapper(),
     });
 
@@ -226,14 +226,14 @@ describe('DeleteAreaModal', () => {
 
   it('should handle non-Error exceptions', async () => {
     const mockDeleteArea = jest.fn().mockRejectedValue('String error');
-    (useDeleteArea as jest.Mock).mockReturnValue({
+    (useDeleteLocation as jest.Mock).mockReturnValue({
       mutateAsync: mockDeleteArea,
       isPending: false,
     });
 
     const user = userEvent.setup();
 
-    render(<DeleteAreaModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
+    render(<DeleteLocationModal isOpen={true} area={mockArea} onClose={jest.fn()} />, {
       wrapper: createWrapper(),
     });
 

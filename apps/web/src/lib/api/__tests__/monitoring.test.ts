@@ -25,7 +25,7 @@ describe('Monitoring API', () => {
     it('should return flat CityStats', async () => {
       const mockData = {
         total_rayons: 7,
-        total_areas: 75,
+        total_locations: 75,
         total_workers: 150,
         workers_online: 120,
         workers_offline: 30,
@@ -43,7 +43,7 @@ describe('Monitoring API', () => {
 
       expect(response.status).toBe(200);
       expect(response.data.total_rayons).toBe(7);
-      expect(response.data.total_areas).toBe(75);
+      expect(response.data.total_locations).toBe(75);
       expect(response.data.total_workers).toBe(150);
       expect(response.data.workers_online).toBe(120);
       expect(response.data.workers_offline).toBe(30);
@@ -75,7 +75,7 @@ describe('Monitoring API', () => {
         id: 'rayon-1',
         name: 'Rayon Selatan',
         code: 'RS',
-        total_areas: 15,
+        total_locations: 15,
         total_workers: 40,
         workers_online: 30,
         workers_offline: 10,
@@ -96,7 +96,7 @@ describe('Monitoring API', () => {
       expect(response.data.id).toBe('rayon-1');
       expect(response.data.name).toBe('Rayon Selatan');
       expect(response.data.code).toBe('RS');
-      expect(response.data.total_areas).toBe(15);
+      expect(response.data.total_locations).toBe(15);
       expect(response.data.total_workers).toBe(40);
       expect(response.data.workers_online).toBe(30);
       expect(response.data.workers_offline).toBe(10);
@@ -116,15 +116,15 @@ describe('Monitoring API', () => {
   });
 
   // -------------------------------------------------------------------------
-  // GET /monitoring/area/:id
+  // GET /monitoring/location/:id
   // -------------------------------------------------------------------------
 
-  describe('GET /monitoring/area/:id', () => {
+  describe('GET /monitoring/location/:id', () => {
     it('should return flat AreaMonitoringStats', async () => {
       const mockData = {
         id: 'area-1',
         name: 'Taman Bungkul',
-        area_type: 'taman',
+        location_type: 'taman',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
         coverage_area: 12500,
@@ -140,14 +140,14 @@ describe('Monitoring API', () => {
         generated_at: '2026-03-05T08:00:00Z',
       };
 
-      mockAxios.onGet('/monitoring/area/area-1').reply(200, mockData);
+      mockAxios.onGet('/monitoring/location/area-1').reply(200, mockData);
 
-      const response = await apiClient.get('/monitoring/area/area-1');
+      const response = await apiClient.get('/monitoring/location/area-1');
 
       expect(response.status).toBe(200);
       expect(response.data.id).toBe('area-1');
       expect(response.data.name).toBe('Taman Bungkul');
-      expect(response.data.area_type).toBe('taman');
+      expect(response.data.location_type).toBe('taman');
       expect(response.data.rayon_id).toBe('rayon-1');
       expect(response.data.rayon_name).toBe('Rayon Selatan');
       expect(response.data.coverage_area).toBe(12500);
@@ -158,10 +158,10 @@ describe('Monitoring API', () => {
     });
 
     it('should handle nullable coverage_area', async () => {
-      mockAxios.onGet('/monitoring/area/area-2').reply(200, {
+      mockAxios.onGet('/monitoring/location/area-2').reply(200, {
         id: 'area-2',
         name: 'Jalur Hijau X',
-        area_type: 'jalur_hijau',
+        location_type: 'jalur_hijau',
         rayon_id: 'rayon-2',
         rayon_name: 'Rayon Utara',
         coverage_area: null,
@@ -177,7 +177,7 @@ describe('Monitoring API', () => {
         generated_at: '2026-03-05T08:00:00Z',
       });
 
-      const response = await apiClient.get('/monitoring/area/area-2');
+      const response = await apiClient.get('/monitoring/location/area-2');
 
       expect(response.data.coverage_area).toBeNull();
       expect(response.data.is_fully_staffed).toBe(false);
@@ -203,7 +203,7 @@ describe('Monitoring API', () => {
           role: 'satgas',
           phone: '+6281234567890',
           status: 'active',
-          area_id: 'area-1',
+          location_id: 'area-1',
           area_name: 'Taman Bungkul',
           rayon_id: 'rayon-1',
           rayon_name: 'Rayon Selatan',
@@ -250,7 +250,7 @@ describe('Monitoring API', () => {
       expect(user.role).toBe('satgas');
       expect(user.phone).toBe('+6281234567890');
       expect(user.status).toBe('active');
-      expect(user.area_id).toBe('area-1');
+      expect(user.location_id).toBe('area-1');
       expect(user.area_name).toBe('Taman Bungkul');
       expect(user.rayon_id).toBe('rayon-1');
       expect(user.rayon_name).toBe('Rayon Selatan');
@@ -303,7 +303,7 @@ describe('Monitoring API', () => {
         role: 'satgas',
         phone: '+6281234567890',
         status: 'active',
-        area_id: 'area-1',
+        location_id: 'area-1',
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
@@ -386,7 +386,7 @@ describe('Monitoring API', () => {
         date: '2026-03-05',
         shift_id: 'shift-1',
         shift_name: 'Pagi',
-        area_id: 'area-1',
+        location_id: 'area-1',
         area_name: 'Taman Bungkul',
         clock_in_time: '2026-03-05T06:05:00Z',
         clock_out_time: null,
@@ -441,7 +441,7 @@ describe('Monitoring API', () => {
         date: '2026-01-01',
         shift_id: null,
         shift_name: null,
-        area_id: null,
+        location_id: null,
         area_name: null,
         clock_in_time: null,
         clock_out_time: null,

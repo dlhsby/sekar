@@ -7,11 +7,11 @@ import MockAdapter from 'axios-mock-adapter';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { apiClient } from '../client';
-import { areaKeys, useAreas, useArea, useCreateArea, useUpdateArea, useDeleteArea } from '../areas';
-import type { Area, PaginatedResponse, CreateAreaDto, UpdateAreaDto } from '@/types/models';
+import { locationKeys, useLocations, useLocation, useCreateLocation, useUpdateLocation, useDeleteLocation } from '../locations';
+import type { Location, PaginatedResponse, CreateLocationDto, UpdateLocationDto } from '@/types/models';
 import { ReactNode } from 'react';
 
-const mockAreaType = {
+const mockLocationType = {
   id: 'type-1',
   name: 'Taman',
   code: 'TAMAN',
@@ -20,7 +20,7 @@ const mockAreaType = {
   updated_at: '2026-01-01',
 };
 
-describe('Areas API', () => {
+describe('Locations API', () => {
   let mockAxios: MockAdapter;
   let queryClient: QueryClient;
 
@@ -48,29 +48,29 @@ describe('Areas API', () => {
     queryClient?.clear();
   });
 
-  describe('areaKeys', () => {
+  describe('locationKeys', () => {
     it('should generate correct query keys', () => {
-      expect(areaKeys.all).toEqual(['areas']);
-      expect(areaKeys.lists()).toEqual(['areas', 'list']);
-      expect(areaKeys.list({ rayon_id: 'rayon-1' })).toEqual([
-        'areas',
+      expect(locationKeys.all).toEqual(['locations']);
+      expect(locationKeys.lists()).toEqual(['locations', 'list']);
+      expect(locationKeys.list({ rayon_id: 'rayon-1' })).toEqual([
+        'locations',
         'list',
         { rayon_id: 'rayon-1' },
       ]);
-      expect(areaKeys.details()).toEqual(['areas', 'detail']);
-      expect(areaKeys.detail('1')).toEqual(['areas', 'detail', '1']);
+      expect(locationKeys.details()).toEqual(['locations', 'detail']);
+      expect(locationKeys.detail('1')).toEqual(['locations', 'detail', '1']);
     });
   });
 
-  describe('useAreas', () => {
-    const mockResponse: PaginatedResponse<Area> = {
+  describe('useLocations', () => {
+    const mockResponse: PaginatedResponse<Location> = {
       data: [
         {
           id: '1',
           name: 'Taman Bungkul',
           code: 'TB',
-          area_type_id: 'type-1',
-          areaType: mockAreaType,
+          location_type_id: 'type-1',
+          locationType: mockLocationType,
           rayon_id: 'rayon-1',
           boundary_polygon: {
             type: 'Polygon',
@@ -99,10 +99,10 @@ describe('Areas API', () => {
       },
     };
 
-    it('should fetch areas without filters', async () => {
-      mockAxios.onGet('/areas?').reply(200, mockResponse);
+    it('should fetch locations without filters', async () => {
+      mockAxios.onGet('/locations?').reply(200, mockResponse);
 
-      const { result } = renderHook(() => useAreas(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocations(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -111,10 +111,10 @@ describe('Areas API', () => {
       expect(result.current.data?.meta.total).toBe(1);
     });
 
-    it('should fetch areas with search filter', async () => {
-      mockAxios.onGet('/areas?search=Bungkul').reply(200, mockResponse);
+    it('should fetch locations with search filter', async () => {
+      mockAxios.onGet('/locations?search=Bungkul').reply(200, mockResponse);
 
-      const { result } = renderHook(() => useAreas({ search: 'Bungkul' }), {
+      const { result } = renderHook(() => useLocations({ search: 'Bungkul' }), {
         wrapper: createWrapper(),
       });
 
@@ -123,10 +123,10 @@ describe('Areas API', () => {
       expect(result.current.data?.data[0].name).toBe('Taman Bungkul');
     });
 
-    it('should fetch areas with rayon_id filter', async () => {
-      mockAxios.onGet('/areas?rayon_id=rayon-1').reply(200, mockResponse);
+    it('should fetch locations with rayon_id filter', async () => {
+      mockAxios.onGet('/locations?rayon_id=rayon-1').reply(200, mockResponse);
 
-      const { result } = renderHook(() => useAreas({ rayon_id: 'rayon-1' }), {
+      const { result } = renderHook(() => useLocations({ rayon_id: 'rayon-1' }), {
         wrapper: createWrapper(),
       });
 
@@ -135,25 +135,25 @@ describe('Areas API', () => {
       expect(result.current.data?.data).toHaveLength(1);
     });
 
-    it('should fetch areas with area_type_id filter', async () => {
-      mockAxios.onGet('/areas?area_type_id=type-1').reply(200, mockResponse);
+    it('should fetch locations with location_type_id filter', async () => {
+      mockAxios.onGet('/locations?location_type_id=type-1').reply(200, mockResponse);
 
-      const { result } = renderHook(() => useAreas({ area_type_id: 'type-1' }), {
+      const { result } = renderHook(() => useLocations({ location_type_id: 'type-1' }), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data?.data[0].area_type_id).toBe('type-1');
+      expect(result.current.data?.data[0].location_type_id).toBe('type-1');
     });
 
-    it('should fetch areas with pagination', async () => {
-      mockAxios.onGet('/areas?page=2&limit=20').reply(200, {
+    it('should fetch locations with pagination', async () => {
+      mockAxios.onGet('/locations?page=2&limit=20').reply(200, {
         data: [],
         meta: { total: 0, page: 2, limit: 20, totalPages: 0 },
       });
 
-      const { result } = renderHook(() => useAreas({ page: 2, limit: 20 }), {
+      const { result } = renderHook(() => useLocations({ page: 2, limit: 20 }), {
         wrapper: createWrapper(),
       });
 
@@ -163,12 +163,12 @@ describe('Areas API', () => {
       expect(result.current.data?.meta.limit).toBe(20);
     });
 
-    it('returns every area from a full-array response without a limit (no cap)', async () => {
-      // Backend returns a plain array (all areas) when page/limit are omitted.
+    it('returns every location from a full-array response without a limit (no cap)', async () => {
+      // Backend returns a plain array (all locations) when page/limit are omitted.
       const barat2Area = { ...mockResponse.data[0], id: '2', name: 'Taman Barat 2', rayon_id: 'rayon-b2' };
-      mockAxios.onGet('/areas?').reply(200, [mockResponse.data[0], barat2Area]);
+      mockAxios.onGet('/locations?').reply(200, [mockResponse.data[0], barat2Area]);
 
-      const { result } = renderHook(() => useAreas({ limit: 1000 }), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocations({ limit: 1000 }), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -180,33 +180,33 @@ describe('Areas API', () => {
       // Regression: 937 areas ordered by id, backend caps limit at 100 → a single
       // request drops Rayon Barat 2 (ids past the first 100). If the "all" call is
       // ever served paginated, the hook must walk all pages and concatenate.
-      const pageOne: PaginatedResponse<Area> = {
-        data: [{ ...mockResponse.data[0], id: '1', name: 'Pusat Area' }],
+      const pageOne: PaginatedResponse<Location> = {
+        data: [{ ...mockResponse.data[0], id: '1', name: 'Pusat Location' }],
         meta: { total: 2, page: 1, limit: 1, totalPages: 2 },
       };
-      const pageTwo: PaginatedResponse<Area> = {
-        data: [{ ...mockResponse.data[0], id: '2', name: 'Barat 2 Area', rayon_id: 'rayon-b2' }],
+      const pageTwo: PaginatedResponse<Location> = {
+        data: [{ ...mockResponse.data[0], id: '2', name: 'Barat 2 Location', rayon_id: 'rayon-b2' }],
         meta: { total: 2, page: 2, limit: 1, totalPages: 2 },
       };
-      mockAxios.onGet('/areas?').reply(200, pageOne); // no-page probe → paginated
-      mockAxios.onGet('/areas?page=1&limit=1000').reply(200, pageOne);
-      mockAxios.onGet('/areas?page=2&limit=1000').reply(200, pageTwo);
+      mockAxios.onGet('/locations?').reply(200, pageOne); // no-page probe → paginated
+      mockAxios.onGet('/locations?page=1&limit=1000').reply(200, pageOne);
+      mockAxios.onGet('/locations?page=2&limit=1000').reply(200, pageTwo);
 
-      const { result } = renderHook(() => useAreas({ limit: 1000 }), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocations({ limit: 1000 }), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.data).toHaveLength(2);
-      expect(result.current.data?.data.map((a) => a.name)).toEqual(['Pusat Area', 'Barat 2 Area']);
+      expect(result.current.data?.data.map((a) => a.name)).toEqual(['Pusat Location', 'Barat 2 Location']);
     });
 
     it('should handle fetch error', async () => {
-      mockAxios.onGet('/areas?').reply(500, {
+      mockAxios.onGet('/locations?').reply(500, {
         statusCode: 500,
         message: 'Internal server error',
       });
 
-      const { result } = renderHook(() => useAreas(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocations(), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -214,13 +214,13 @@ describe('Areas API', () => {
     });
   });
 
-  describe('useArea', () => {
-    const mockArea: Area = {
+  describe('useLocation', () => {
+    const mockArea: Location = {
       id: '1',
       name: 'Taman Bungkul',
       code: 'TB',
-      area_type_id: 'type-1',
-      areaType: mockAreaType,
+      location_type_id: 'type-1',
+      locationType: mockLocationType,
       rayon_id: 'rayon-1',
       boundary_polygon: {
         type: 'Polygon',
@@ -241,10 +241,10 @@ describe('Areas API', () => {
       updated_at: '2026-01-01T00:00:00Z',
     };
 
-    it('should fetch single area by ID', async () => {
-      mockAxios.onGet('/areas/1').reply(200, mockArea);
+    it('should fetch single location by ID', async () => {
+      mockAxios.onGet('/locations/1').reply(200, mockArea);
 
-      const { result } = renderHook(() => useArea('1'), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocation('1'), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -253,14 +253,14 @@ describe('Areas API', () => {
       expect(result.current.data?.coverage_area).toBe(10000);
     });
 
-    it('should handle area not found', async () => {
-      mockAxios.onGet('/areas/999').reply(404, {
+    it('should handle location not found', async () => {
+      mockAxios.onGet('/locations/999').reply(404, {
         statusCode: 404,
-        message: 'Area not found',
+        message: 'Location not found',
         error: 'NotFound',
       });
 
-      const { result } = renderHook(() => useArea('999'), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocation('999'), { wrapper: createWrapper() });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -268,18 +268,18 @@ describe('Areas API', () => {
     });
 
     it('should not fetch when id is empty', () => {
-      const { result } = renderHook(() => useArea(''), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useLocation(''), { wrapper: createWrapper() });
 
       expect(result.current.isFetching).toBe(false);
       expect(result.current.data).toBeUndefined();
     });
   });
 
-  describe('useCreateArea', () => {
-    it('should create new area', async () => {
-      const newArea: CreateAreaDto = {
+  describe('useCreateLocation', () => {
+    it('should create new location', async () => {
+      const newArea: CreateLocationDto = {
         name: 'New Park',
-        area_type_id: 'type-1',
+        location_type_id: 'type-1',
         rayon_id: 'rayon-1',
         gps_lat: -7.2885,
         gps_lng: 112.7395,
@@ -297,10 +297,10 @@ describe('Areas API', () => {
         },
       };
 
-      const createdArea: Area = {
+      const createdArea: Location = {
         ...newArea,
         id: '10',
-        areaType: mockAreaType,
+        locationType: mockLocationType,
         gps_lat: -7.2885,
         gps_lng: 112.7395,
         coverage_area: 10000,
@@ -308,9 +308,9 @@ describe('Areas API', () => {
         updated_at: '2026-02-04T00:00:00Z',
       };
 
-      mockAxios.onPost('/areas', newArea).reply(201, createdArea);
+      mockAxios.onPost('/locations', newArea).reply(201, createdArea);
 
-      const { result } = renderHook(() => useCreateArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useCreateLocation(), { wrapper: createWrapper() });
 
       result.current.mutate(newArea);
 
@@ -321,7 +321,7 @@ describe('Areas API', () => {
     });
 
     it('should handle validation errors', async () => {
-      mockAxios.onPost('/areas').reply(400, {
+      mockAxios.onPost('/locations').reply(400, {
         statusCode: 400,
         message: 'Validation failed',
         errors: {
@@ -330,9 +330,9 @@ describe('Areas API', () => {
         },
       });
 
-      const { result } = renderHook(() => useCreateArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useCreateLocation(), { wrapper: createWrapper() });
 
-      result.current.mutate({} as CreateAreaDto);
+      result.current.mutate({} as CreateLocationDto);
 
       await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -340,9 +340,9 @@ describe('Areas API', () => {
     });
 
     it('should invalidate queries on success', async () => {
-      const newArea: CreateAreaDto = {
+      const newArea: CreateLocationDto = {
         name: 'New Park',
-        area_type_id: 'type-1',
+        location_type_id: 'type-1',
         rayon_id: 'rayon-1',
         gps_lat: -7.2885,
         gps_lng: 112.7395,
@@ -360,10 +360,10 @@ describe('Areas API', () => {
       };
 
       mockAxios
-        .onPost('/areas')
+        .onPost('/locations')
         .reply(201, { ...newArea, id: '10', created_at: '2026-02-04', updated_at: '2026-02-04' });
 
-      const { result } = renderHook(() => useCreateArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useCreateLocation(), { wrapper: createWrapper() });
 
       const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
 
@@ -371,22 +371,22 @@ describe('Areas API', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: areaKeys.lists() });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: locationKeys.lists() });
     });
   });
 
-  describe('useUpdateArea', () => {
-    it('should update existing area', async () => {
-      const updateData: UpdateAreaDto = {
+  describe('useUpdateLocation', () => {
+    it('should update existing location', async () => {
+      const updateData: UpdateLocationDto = {
         name: 'Updated Park Name',
       };
 
-      const updatedArea: Area = {
+      const updatedArea: Location = {
         id: '1',
         name: 'Updated Park Name',
         code: 'TB',
-        area_type_id: 'type-1',
-        areaType: mockAreaType,
+        location_type_id: 'type-1',
+        locationType: mockLocationType,
         rayon_id: 'rayon-1',
         boundary_polygon: {
           type: 'Polygon',
@@ -405,9 +405,9 @@ describe('Areas API', () => {
         updated_at: '2026-01-01T00:00:00Z',
       };
 
-      mockAxios.onPatch('/areas/1', updateData).reply(200, updatedArea);
+      mockAxios.onPatch('/locations/1', updateData).reply(200, updatedArea);
 
-      const { result } = renderHook(() => useUpdateArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useUpdateLocation(), { wrapper: createWrapper() });
 
       result.current.mutate({ id: '1', data: updateData });
 
@@ -417,12 +417,12 @@ describe('Areas API', () => {
     });
 
     it('should handle update error', async () => {
-      mockAxios.onPatch('/areas/1').reply(404, {
+      mockAxios.onPatch('/locations/1').reply(404, {
         statusCode: 404,
-        message: 'Area not found',
+        message: 'Location not found',
       });
 
-      const { result } = renderHook(() => useUpdateArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useUpdateLocation(), { wrapper: createWrapper() });
 
       result.current.mutate({ id: '1', data: { name: 'New Name' } });
 
@@ -432,9 +432,9 @@ describe('Areas API', () => {
     });
 
     it('should invalidate queries on success', async () => {
-      mockAxios.onPatch('/areas/1').reply(200, { id: '1', name: 'Updated' });
+      mockAxios.onPatch('/locations/1').reply(200, { id: '1', name: 'Updated' });
 
-      const { result } = renderHook(() => useUpdateArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useUpdateLocation(), { wrapper: createWrapper() });
 
       const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
 
@@ -442,16 +442,16 @@ describe('Areas API', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: areaKeys.detail('1') });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: areaKeys.lists() });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: locationKeys.detail('1') });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: locationKeys.lists() });
     });
   });
 
-  describe('useDeleteArea', () => {
-    it('should delete area', async () => {
-      mockAxios.onDelete('/areas/1').reply(204);
+  describe('useDeleteLocation', () => {
+    it('should delete location', async () => {
+      mockAxios.onDelete('/locations/1').reply(204);
 
-      const { result } = renderHook(() => useDeleteArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useDeleteLocation(), { wrapper: createWrapper() });
 
       result.current.mutate('1');
 
@@ -459,13 +459,13 @@ describe('Areas API', () => {
     });
 
     it('should handle delete error', async () => {
-      mockAxios.onDelete('/areas/1').reply(404, {
+      mockAxios.onDelete('/locations/1').reply(404, {
         statusCode: 404,
-        message: 'Area not found',
+        message: 'Location not found',
         error: 'NotFound',
       });
 
-      const { result } = renderHook(() => useDeleteArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useDeleteLocation(), { wrapper: createWrapper() });
 
       result.current.mutate('1');
 
@@ -475,9 +475,9 @@ describe('Areas API', () => {
     });
 
     it('should invalidate queries on success', async () => {
-      mockAxios.onDelete('/areas/1').reply(204);
+      mockAxios.onDelete('/locations/1').reply(204);
 
-      const { result } = renderHook(() => useDeleteArea(), { wrapper: createWrapper() });
+      const { result } = renderHook(() => useDeleteLocation(), { wrapper: createWrapper() });
 
       const invalidateSpy = jest.spyOn(queryClient, 'invalidateQueries');
 
@@ -485,7 +485,7 @@ describe('Areas API', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: areaKeys.lists() });
+      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: locationKeys.lists() });
     });
   });
 });

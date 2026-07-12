@@ -32,15 +32,15 @@ export interface User extends Record<string, unknown> {
   profile_picture_url?: string;
   rayon_id?: string;
   rayon?: Rayon;
-  area_id?: string;
-  area?: Area;
+  location_id?: string;
+  location?: Location;
   shift_definition_id?: string;
   shift_definition?: ShiftDefinition;
-  user_areas?: Array<{ id: string; area_id: string; area: Area }>;
-  /** Count of permanent area assignments (from the users-list query) — grid Area column. */
-  assigned_area_count?: number;
-  /** IDs of permanent area assignments (from the users-list query) — grid Area column filter. */
-  assigned_area_ids?: string[];
+  user_locations?: Array<{ id: string; location_id: string; location: Location }>;
+  /** Count of permanent location assignments (from the users-list query) — grid Location column. */
+  assigned_location_count?: number;
+  /** IDs of permanent location assignments (from the users-list query) — grid Location column filter. */
+  assigned_location_ids?: string[];
   password_must_change?: boolean;
   is_active?: boolean;
   created_at: string;
@@ -77,7 +77,7 @@ export interface Rayon {
  */
 export interface RayonStats {
   rayon_id: string;
-  total_areas: number;
+  total_locations: number;
   total_users: number;
   active_users: number;
   total_coverage_area: number;
@@ -105,8 +105,8 @@ export interface CreateUserDto {
   phone_number?: string;
   /** `null` explicitly clears the field (roles without a rayon scope). */
   rayon_id?: string | null;
-  /** Permanent area assignments (multi); first becomes the primary area. */
-  area_ids?: string[];
+  /** Permanent location assignments (multi); first becomes the primary location. */
+  location_ids?: string[];
   /** `null` explicitly clears the field (roles without a shift scope). */
   shift_definition_id?: string | null;
 }
@@ -126,7 +126,7 @@ export interface UpdateUserDto {
   phone_number?: string;
   /** `null` explicitly clears the field (roles without a rayon scope). */
   rayon_id?: string | null;
-  area_ids?: string[];
+  location_ids?: string[];
   /** `null` explicitly clears the field (roles without a shift scope). */
   shift_definition_id?: string | null;
   is_active?: boolean;
@@ -146,9 +146,9 @@ export interface PaginatedResponse<T> {
 }
 
 /**
- * Area Type Interface
+ * Location Type Interface
  */
-export interface AreaType {
+export interface LocationType {
   id: string;
   name: string;
   code: string;
@@ -159,15 +159,15 @@ export interface AreaType {
 }
 
 /**
- * Area Interface
+ * Location Interface
  */
-export interface Area extends Record<string, unknown> {
+export interface Location extends Record<string, unknown> {
   id: string;
   name: string;
   rayon_id: string;
   rayon?: Rayon;
-  area_type_id: string;
-  areaType?: AreaType;
+  location_type_id: string;
+  locationType?: LocationType;
   gps_lat?: number | string;
   gps_lng?: number | string;
   radius_meters?: number;
@@ -185,26 +185,26 @@ export interface Area extends Record<string, unknown> {
 }
 
 /**
- * Area Filter Options
+ * Location Filter Options
  */
-export interface AreaFilters {
+export interface LocationFilters {
   search?: string;
   rayon_id?: string;
-  area_type_id?: string;
+  location_type_id?: string;
   page?: number;
   limit?: number;
-  /** Also return deactivated areas — admin grid + name-resolution maps that
-   *  must still resolve a since-deactivated area's name. */
+  /** Also return deactivated locations — admin grid + name-resolution maps that
+   *  must still resolve a since-deactivated location's name. */
   include_inactive?: boolean;
 }
 
 /**
- * Create Area DTO
+ * Create Location DTO
  */
-export interface CreateAreaDto {
+export interface CreateLocationDto {
   name: string;
   rayon_id: string;
-  area_type_id: string;
+  location_type_id: string;
   gps_lat?: number;
   gps_lng?: number;
   radius_meters?: number;
@@ -213,12 +213,12 @@ export interface CreateAreaDto {
 }
 
 /**
- * Update Area DTO
+ * Update Location DTO
  */
-export interface UpdateAreaDto {
+export interface UpdateLocationDto {
   name?: string;
   rayon_id?: string;
-  area_type_id?: string;
+  location_type_id?: string;
   gps_lat?: number;
   gps_lng?: number;
   radius_meters?: number;
@@ -247,8 +247,8 @@ export interface Schedule extends Record<string, unknown> {
   id: string;
   user_id: string;
   user?: User;
-  area_id: string;
-  area?: Area;
+  location_id: string;
+  location?: Location;
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
   effective_date: string;
@@ -266,7 +266,7 @@ export type WorkerSchedule = Schedule;
  */
 export interface ScheduleFilters {
   search?: string;
-  area_id?: string;
+  location_id?: string;
   shift_definition_id?: string;
   date_from?: string;
   date_to?: string;
@@ -279,7 +279,7 @@ export interface ScheduleFilters {
  */
 export interface CreateScheduleDto {
   user_id: string;
-  area_id: string;
+  location_id: string;
   shift_definition_id: string;
   effective_date: string;
   end_date?: string;
@@ -290,7 +290,7 @@ export interface CreateScheduleDto {
  */
 export interface UpdateScheduleDto {
   user_id?: string;
-  area_id?: string;
+  location_id?: string;
   shift_definition_id?: string;
   effective_date?: string;
   end_date?: string;
@@ -328,8 +328,8 @@ export interface Activity extends Record<string, unknown> {
     role: UserRole;
   };
   shift_id: string;
-  area_id: string;
-  area?: {
+  location_id: string;
+  location?: {
     id: string;
     name: string;
   };
@@ -356,7 +356,7 @@ export interface Activity extends Record<string, unknown> {
  */
 export interface ActivityFilters {
   activity_type_id?: string;
-  area_id?: string;
+  location_id?: string;
   user_id?: string;
   status?: ActivityStatus;
   rayon_id?: string;
@@ -404,8 +404,8 @@ export interface Overtime extends Record<string, unknown> {
     full_name: string;
     role: UserRole;
   };
-  area_id: string;
-  area?: {
+  location_id: string;
+  location?: {
     id: string;
     name: string;
   };
@@ -438,7 +438,7 @@ export interface Overtime extends Record<string, unknown> {
  */
 export interface OvertimeFilters {
   status?: OvertimeStatus;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   user_id?: string;
   from_date?: string;

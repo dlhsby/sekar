@@ -195,7 +195,7 @@ export interface RayonPlantStatusSummary {
   due_soon: number;
   overdue: number;
   unknown: number;
-  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+  overdue_areas: { location_id: string; area_name: string; overdue: number }[];
 }
 
 export interface PlantStatusSummaryResponse {
@@ -246,7 +246,7 @@ export function useNotablePlants(areaId: string | null | undefined) {
 }
 
 /**
- * Pruning requests are filterable by `rayonId`, not `area_id` (the entity
+ * Pruning requests are filterable by `rayonId`, not `location_id` (the entity
  * has no FK to areas — it carries `kecamatan_name` + `rayon_id` only).
  * The drawer fetches the rayon-wide list and the caller can narrow it down
  * for display.

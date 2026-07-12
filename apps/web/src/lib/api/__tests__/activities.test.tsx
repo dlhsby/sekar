@@ -32,8 +32,8 @@ describe('Activities API', () => {
       role: 'satgas',
     },
     shift_id: 'shift-1',
-    area_id: 'area-1',
-    area: {
+    location_id: 'area-1',
+    location: {
       id: 'area-1',
       name: 'Taman Bungkul',
     },
@@ -90,7 +90,7 @@ describe('Activities API', () => {
     });
 
     it('should fetch activities with area filter', async () => {
-      const filters: ActivityFilters = { area_id: 'area-1' };
+      const filters: ActivityFilters = { location_id: 'area-1' };
 
       mock.onGet('/activities', { params: filters }).reply(200, {
         data: [mockActivity],
@@ -100,7 +100,7 @@ describe('Activities API', () => {
       const response = await apiClient.get('/activities', { params: filters });
 
       expect(response.data.data).toHaveLength(1);
-      expect(response.data.data[0].area?.name).toBe('Taman Bungkul');
+      expect(response.data.data[0].location?.name).toBe('Taman Bungkul');
     });
 
     it('should fetch activities with date range filter', async () => {
@@ -249,8 +249,8 @@ describe('Activities API Hooks', () => {
       role: 'satgas',
     },
     shift_id: 'shift-1',
-    area_id: 'area-1',
-    area: {
+    location_id: 'area-1',
+    location: {
       id: 'area-1',
       name: 'Taman Bungkul',
     },
@@ -303,7 +303,7 @@ describe('Activities API Hooks', () => {
         () =>
           useActivities({
             activity_type_id: 'type-1',
-            area_id: 'area-1',
+            location_id: 'area-1',
           }),
         { wrapper: createWrapper() }
       );

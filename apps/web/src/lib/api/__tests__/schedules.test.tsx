@@ -67,8 +67,8 @@ describe('Daily Schedules API', () => {
     schedule_areas: [
       {
         id: 'area-1',
-        area_id: 'area-1',
-        area: {
+        location_id: 'area-1',
+        location: {
           id: 'area-1',
           name: 'Taman Bungkul',
           code: 'TB',
@@ -321,8 +321,8 @@ describe('Daily Schedules API', () => {
     it('should update areas on roster entry', async () => {
       const area2 = {
         id: 'area-2',
-        area_id: 'area-2',
-        area: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
+        location_id: 'area-2',
+        location: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
       };
       const updatedSchedule: Schedule = {
         ...mockSchedule,
@@ -339,7 +339,7 @@ describe('Daily Schedules API', () => {
 
       result.current.mutate({
         id: 'daily-1',
-        area_ids: ['area-1', 'area-2'],
+        location_ids: ['area-1', 'area-2'],
       });
 
       await waitFor(() => {

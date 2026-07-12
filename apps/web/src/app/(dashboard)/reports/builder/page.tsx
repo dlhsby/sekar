@@ -113,7 +113,7 @@ export default function ReportBuilderPage() {
         parameters: {
           start_date: state.startDate || undefined,
           end_date: state.endDate || undefined,
-          area_id: state.areaId || undefined,
+          location_id: state.areaId || undefined,
           rayon_id: state.rayonId || undefined,
           worker_id: state.workerId || undefined,
         },

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * AreaListSheet — presentational right-side slide-over that lists a set of
+ * LocationListSheet — presentational right-side slide-over that lists a set of
  * areas (name + optional secondary line) with a search box and a count. The
  * data is passed in (no fetching), so it's reused wherever a cell summarizes
  * several areas: the user grid (permanent assignments) and the schedule grid
@@ -14,20 +14,20 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { Input, Skeleton } from '@/components/ui';
 
-export interface AreaListSheetItem {
+export interface LocationListSheetItem {
   id: string;
   name: string;
   /** Secondary line, e.g. "Rayon · Tipe". */
   meta?: string;
 }
 
-interface AreaListSheetProps {
+interface LocationListSheetProps {
   open: boolean;
   /** Caption label shown above the subtitle. */
   title?: string;
   /** Main heading — e.g. the worker's name. */
   subtitle: string;
-  items: AreaListSheetItem[];
+  items: LocationListSheetItem[];
   /** Changing this resets the search box (e.g. a new row's id). */
   resetKey?: string;
   isLoading?: boolean;
@@ -36,9 +36,9 @@ interface AreaListSheetProps {
   onClose: () => void;
 }
 
-export function AreaListSheet({
+export function LocationListSheet({
   open,
-  title = 'Area',
+  title = 'Location',
   subtitle,
   items,
   resetKey,
@@ -46,7 +46,7 @@ export function AreaListSheet({
   isError = false,
   emptyText,
   onClose,
-}: AreaListSheetProps) {
+}: LocationListSheetProps) {
   const { t } = useTranslation();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [query, setQuery] = useState('');

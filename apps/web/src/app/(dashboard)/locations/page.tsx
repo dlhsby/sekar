@@ -19,17 +19,17 @@ import {
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
-import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
-import { AreaFormModal } from '@/components/areas/AreaFormModal';
-import { useAreas, useDeactivateArea, useActivateArea } from '@/lib/api/areas';
+import { DeleteLocationModal } from '@/components/locations';
+import { LocationFormModal } from '@/components/locations';
+import { useLocations, useDeactivateLocation, useActivateLocation } from '@/lib/api/locations';
 import { useUsers } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreaTypes } from '@/lib/api/area-types';
+import { useLocationTypes } from '@/lib/api/location-types';
 import { useAuth } from '@/lib/auth/hooks';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatArea } from '@/lib/utils/geo';
 import { formatDate } from '@/lib/utils/time';
-import type { Area } from '@/types/models';
+import type { Location } from '@/types/models';
 
 export default function AreasPage() {
   const { t } = useTranslation();
@@ -40,7 +40,7 @@ export default function AreasPage() {
   // include_inactive: the admin grid must show deactivated areas too (and
   // let them be reactivated) — otherwise deactivating one makes it vanish
   // from the grid entirely, with no way back short of the API directly.
-  const { data: areasData, isLoading, error, refetch } = useAreas({
+  const { data: areasData, isLoading, error, refetch } = useLocations({
     limit: 1000,
     include_inactive: true,
   });
@@ -54,10 +54,10 @@ export default function AreasPage() {
     () => (allRayons ?? []).map((r) => ({ value: r.name, label: r.name })),
     [allRayons]
   );
-  const { data: allAreaTypes } = useAreaTypes();
-  const areaTypeFilterOptions = useMemo(
-    () => (allAreaTypes ?? []).map((t) => ({ value: t.name, label: t.name })),
-    [allAreaTypes]
+  const { data: allLocationTypes } = useLocationTypes();
+  const locationTypeFilterOptions = useMemo(
+    () => (allLocationTypes ?? []).map((t) => ({ value: t.name, label: t.name })),
+    [allLocationTypes]
   );
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
@@ -71,18 +71,18 @@ export default function AreasPage() {
     [userNameById]
   );
 
-  const deactivateArea = useDeactivateArea();
-  const activateArea = useActivateArea();
+  const deactivateArea = useDeactivateLocation();
+  const activateArea = useActivateLocation();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingArea, setEditingArea] = useState<Area | null>(null);
-  const view = useViewModal<Area>();
-  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; area: Area | null }>({
+  const [editingArea, setEditingArea] = useState<Location | null>(null);
+  const view = useViewModal<Location>();
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; area: Location | null }>({
     isOpen: false,
     area: null,
   });
 
-  const columns = useMemo<ColumnDef<Area>[]>(
+  const columns = useMemo<ColumnDef<Location>[]>(
     () => [
       {
         id: 'id',
@@ -113,21 +113,21 @@ export default function AreasPage() {
         cell: ({ row }) => <span>{row.original.rayon?.name ?? '—'}</span>,
       },
       {
-        id: 'area_type',
-        accessorFn: (a) => a.areaType?.name ?? '',
+        id: 'location_type',
+        accessorFn: (a) => a.locationType?.name ?? '',
         header: t('admin:areas.columnType'),
         meta: {
           label: t('admin:areas.columnType'),
           filterVariant: 'enum',
-          filterOptions: areaTypeFilterOptions,
+          filterOptions: locationTypeFilterOptions,
         },
         cell: ({ row }) =>
-          row.original.areaType ? (
+          row.original.locationType ? (
             <Badge
-              variant={row.original.areaType.category === 'ACTIVE' ? 'success' : 'warning'}
+              variant={row.original.locationType.category === 'ACTIVE' ? 'success' : 'warning'}
               size="sm"
             >
-              {row.original.areaType.name}
+              {row.original.locationType.name}
             </Badge>
           ) : (
             <span className="text-nb-gray-500">—</span>
@@ -272,11 +272,11 @@ export default function AreasPage() {
         ),
       },
     ],
-    [actorName, rayonFilterOptions, areaTypeFilterOptions]
+    [actorName, rayonFilterOptions, locationTypeFilterOptions]
   );
 
   const rowActions = useCallback(
-    (a: Area): DataTableRowAction<Area>[] => [
+    (a: Location): DataTableRowAction<Location>[] => [
       {
         key: 'view',
         label: t('admin:areas.actionView'),
@@ -365,14 +365,14 @@ export default function AreasPage() {
         }
       />
 
-      <AreaFormModal
+      <LocationFormModal
         open={formOpen}
         onOpenChange={setFormOpen}
         area={editingArea}
         onSuccess={() => refetch()}
       />
 
-      <DeleteAreaModal
+      <DeleteLocationModal
         area={deleteModal.area}
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, area: null })}
@@ -380,7 +380,7 @@ export default function AreasPage() {
       />
 
       {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
-      <AreaFormModal open={view.open} onOpenChange={view.onOpenChange} area={view.item} readOnly />
+      <LocationFormModal open={view.open} onOpenChange={view.onOpenChange} area={view.item} readOnly />
     </div>
   );
 }

@@ -188,7 +188,7 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
               </div>
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.area')}</div>
-                <div className="font-bold text-nb-black">{activity.area?.name || '-'}</div>
+                <div className="font-bold text-nb-black">{activity.location?.name || '-'}</div>
               </div>
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('activities:detail.fields.activityType')}</div>

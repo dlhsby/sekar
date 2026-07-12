@@ -196,7 +196,7 @@ export default function TasksPage() {
       enableColumnFilter: false,
       meta: { label: t('tasks:list.tableHeaderArea') },
       cell: ({ row }) => (
-        <div className="text-nb-body-sm">{row.original.area?.name ?? row.original.rayon?.name ?? '-'}</div>
+        <div className="text-nb-body-sm">{row.original.location?.name ?? row.original.rayon?.name ?? '-'}</div>
       ),
     },
     {
@@ -370,7 +370,7 @@ export default function TasksPage() {
             </StatusPill>
           ) },
           { label: t('tasks:list.tableHeaderAssignedTo'), value: viewModal.item.assigned_to?.full_name },
-          { label: t('tasks:list.tableHeaderArea'), value: viewModal.item.area?.name ?? viewModal.item.rayon?.name },
+          { label: t('tasks:list.tableHeaderArea'), value: viewModal.item.location?.name ?? viewModal.item.rayon?.name },
           { label: t('tasks:list.tableHeaderDueDate'), value: viewModal.item.due_date ? new Date(viewModal.item.due_date).toLocaleDateString(intlLocale()) : null },
           { label: t('tasks:list.tableHeaderCreated'), value: formatDate(viewModal.item.created_at) },
           { label: t('tasks:list.tableHeaderUpdated'), value: formatDate(viewModal.item.updated_at) },

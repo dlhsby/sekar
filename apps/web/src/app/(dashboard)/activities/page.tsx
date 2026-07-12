@@ -10,7 +10,7 @@ import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -85,19 +85,19 @@ export default function ActivitiesPage() {
 
   // Auto-scope korlap to their area
   useEffect(() => {
-    if (user && user.role === 'korlap' && user.area_id && filters.areaId === 'all') {
+    if (user && user.role === 'korlap' && user.location_id && filters.areaId === 'all') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFilters((prev) => ({ ...prev, areaId: user.area_id as string }));
+      setFilters((prev) => ({ ...prev, areaId: user.location_id as string }));
     }
   }, [user, filters.areaId]);
 
   const { data: activityTypes } = useActivityTypes();
-  const { data: areasData } = useAreas();
+  const { data: areasData } = useLocations();
 
   const apiFilters: ActivityFilters = {
     activity_type_id: filters.activityTypeId !== 'all' ? filters.activityTypeId : undefined,
     status: filters.statusFilter !== 'all' ? filters.statusFilter : undefined,
-    area_id: filters.areaId !== 'all' ? filters.areaId : undefined,
+    location_id: filters.areaId !== 'all' ? filters.areaId : undefined,
     from_date: filters.fromDate || undefined,
     to_date: filters.toDate || undefined,
     page: filters.page,
@@ -259,7 +259,7 @@ export default function ActivitiesPage() {
       enableSorting: false,
       enableColumnFilter: false,
       meta: { label: t('activities:list.table.columns.area') },
-      cell: ({ row }) => <div className="text-sm">{row.original.area?.name || '-'}</div>,
+      cell: ({ row }) => <div className="text-sm">{row.original.location?.name || '-'}</div>,
     },
     {
       id: 'status',
@@ -486,7 +486,7 @@ export default function ActivitiesPage() {
             { label: t('activities:detail.fields.dateTime'), value: new Date(view.item.created_at).toLocaleDateString(intlLocale()) },
             { label: t('activities:detail.fields.user'), value: view.item.user?.full_name },
             { label: t('activities:detail.fields.activityType'), value: view.item.activity_type?.name },
-            { label: t('activities:detail.fields.area'), value: view.item.area?.name },
+            { label: t('activities:detail.fields.area'), value: view.item.location?.name },
             {
               label: t('activities:list.table.columns.status'),
               value: (

@@ -49,7 +49,7 @@ const worker = (over: Record<string, unknown>) => ({
   lat: -7.25,
   lng: 112.75,
   status: 'active',
-  area_id: 'a1',
+  location_id: 'a1',
   area_name: 'Taman A',
   rayon_id: 'r1',
   rayon_name: 'Rayon Pusat',
@@ -67,7 +67,7 @@ const snapshotData = {
         worker({ user_id: 'w2', full_name: 'Budi', status: 'missing', rayon_id: 'r2', rayon_name: 'Rayon Timur' }),
       ],
       area_summaries: [
-        { area_id: 'a1', area_name: 'Taman A', rayon_id: 'r1', rayon_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
+        { location_id: 'a1', area_name: 'Taman A', rayon_id: 'r1', rayon_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
       ],
       total_active: 1,
       total_inactive: 0,
@@ -133,7 +133,7 @@ describe('MonitoringPage', () => {
 
   // A korlap floors at area scope, so the unified drill-down lands directly on
   // the worker view (no mode toggle) — the individual worker list renders.
-  const korlapUser = { id: 'k1', full_name: 'Korlap', role: 'korlap', area_id: 'a1', rayon_id: 'r1' };
+  const korlapUser = { id: 'k1', full_name: 'Korlap', role: 'korlap', location_id: 'a1', rayon_id: 'r1' };
 
   it('opens the worker sheet and shows detail when a worker is selected', () => {
     mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });

@@ -71,7 +71,7 @@ describe('Import API', () => {
   it('uploads a KMZ file and returns the preview', async () => {
     mock.onPost('/import/kmz/upload').reply(201, {
       session_id: 'kmz-1',
-      total_areas: 1,
+      total_locations: 1,
       new_areas: 1,
       update_areas: 0,
       areas: [],
@@ -97,7 +97,7 @@ describe('Import API', () => {
     await act(async () => {
       response = await result.current.mutateAsync({
         sessionId: 'kmz-1',
-        areas: [{ index: 0, action: 'create', area_type_id: 't1', rayon_id: 'r1' }],
+        areas: [{ index: 0, action: 'create', location_type_id: 't1', rayon_id: 'r1' }],
       });
     });
 

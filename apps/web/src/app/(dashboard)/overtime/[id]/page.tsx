@@ -203,7 +203,7 @@ export default function OvertimeDetailPage({ params }: OvertimeDetailPageProps) 
               </div>
               <div>
                 <div className="text-sm font-semibold text-nb-gray-600">{t('overtime:detail.fields.area')}</div>
-                <div className="font-bold text-nb-black">{overtime.area?.name || '-'}</div>
+                <div className="font-bold text-nb-black">{overtime.location?.name || '-'}</div>
               </div>
               {overtime.activity_type && (
                 <div>

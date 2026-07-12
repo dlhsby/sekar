@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Area Detail Page
+ * Location Detail Page
  * View area information with map
  */
 
@@ -11,10 +11,10 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
-import { DeleteAreaModal } from '@/components/areas/DeleteAreaModal';
-import { AreaFormModal } from '@/components/areas/AreaFormModal';
-import { AreaWorkersCard } from '@/components/areas/AreaWorkersCard';
-import { useArea, useAreaBoundary, useUpdateAreaBoundary } from '@/lib/api/areas';
+import { DeleteLocationModal } from '@/components/locations';
+import { LocationFormModal } from '@/components/locations';
+import { LocationWorkersCard } from '@/components/locations';
+import { useLocation, useLocationBoundary, useUpdateLocationBoundary } from '@/lib/api/locations';
 import { useAuth } from '@/lib/auth/hooks';
 import { formatArea, formatCoordinates } from '@/lib/utils/geo';
 
@@ -23,7 +23,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
   const { t } = useTranslation();
   const router = useRouter();
   const { user } = useAuth();
-  const { data: area, isLoading, error } = useArea(id);
+  const { data: area, isLoading, error } = useLocation(id);
   const [deleteModal, setDeleteModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [editingBoundary, setEditingBoundary] = useState(false);
@@ -40,8 +40,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
     user?.role === 'top_management' ||
     user?.role === 'kepala_rayon';
 
-  const { data: boundaryData } = useAreaBoundary(id);
-  const { mutate: updateBoundary, isPending: isSavingBoundary } = useUpdateAreaBoundary();
+  const { data: boundaryData } = useLocationBoundary(id);
+  const { mutate: updateBoundary, isPending: isSavingBoundary } = useUpdateLocationBoundary();
 
   const handleSaveBoundary = () => {
     updateBoundary(
@@ -86,7 +86,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             <p className="text-sm text-nb-gray-600 mb-4">
               {t('admin:areas.detailNotFound')}
             </p>
-            <Button onClick={() => router.push('/areas')}>{t('common:actions.back')}</Button>
+            <Button onClick={() => router.push('/locations')}>{t('common:actions.back')}</Button>
           </CardContent>
         </Card>
       </div>
@@ -100,7 +100,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         <div className="flex-1">
           <nav aria-label={t("common:nav.breadcrumbAria")} className="flex items-center gap-3 mb-2">
             <Button
-              onClick={() => router.push('/areas')}
+              onClick={() => router.push('/locations')}
               variant="secondary"
               size="sm"
               leftIcon={<ArrowLeft className="w-4 h-4" />}
@@ -113,9 +113,9 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
           {/* Badges */}
           <div className="flex items-center gap-2 mt-3">
             {area.rayon && <Badge variant="default">📍 {area.rayon.name}</Badge>}
-            {area.areaType && (
-              <Badge variant={area.areaType.category === 'ACTIVE' ? 'success' : 'warning'}>
-                {area.areaType.name}
+            {area.locationType && (
+              <Badge variant={area.locationType.category === 'ACTIVE' ? 'success' : 'warning'}>
+                {area.locationType.name}
               </Badge>
             )}
           </div>
@@ -180,7 +180,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             </div>
             <div className="flex justify-between">
               <span className="font-bold text-nb-gray-700">{t('admin:areas.detailType')}:</span>
-              <span>{area.areaType?.name || '-'}</span>
+              <span>{area.locationType?.name || '-'}</span>
             </div>
             {area.address && (
               <div>
@@ -197,7 +197,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             <h2 className="font-bold text-lg">{t('admin:areas.coverageInfoTitle')}</h2>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Coverage Area */}
+            {/* Coverage Location */}
             {area.coverage_area && (
               <div className="bg-nb-warning/20 border-2 border-nb-black p-4">
                 <div className="text-sm font-bold text-nb-gray-700 mb-1">{t('admin:areas.coverageLabel')}</div>
@@ -227,7 +227,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
       </div>
 
       {/* Assigned workers roster + assign/remove (ADR-013) */}
-      <AreaWorkersCard areaId={id} canManage={canManageWorkers} />
+      <LocationWorkersCard areaId={id} canManage={canManageWorkers} />
 
       {/* Boundary Section (Phase 2D) */}
       <Card variant="elevated">
@@ -313,14 +313,14 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
       </Card>
 
       {/* Delete Modal */}
-      <DeleteAreaModal
+      <DeleteLocationModal
         area={area}
         isOpen={deleteModal}
         onClose={() => setDeleteModal(false)}
-        onSuccess={() => router.push('/areas')}
+        onSuccess={() => router.push('/locations')}
       />
 
-      <AreaFormModal open={editModal} onOpenChange={setEditModal} area={area} />
+      <LocationFormModal open={editModal} onOpenChange={setEditModal} area={area} />
     </div>
   );
 }

@@ -128,8 +128,8 @@ export default function MonitoringPage() {
 
   // Role determines the landing view + the floor the user can never drill above.
   const roleView = useMemo<{ view: MonitoringView; floor: Scope }>(() => {
-    if (user?.role === 'korlap' && user.area_id) {
-      return { view: { scope: 'area', id: user.area_id }, floor: 'area' };
+    if (user?.role === 'korlap' && user.location_id) {
+      return { view: { scope: 'area', id: user.location_id }, floor: 'area' };
     }
     if ((user?.role === 'kepala_rayon' || user?.role === 'admin_data') && user.rayon_id) {
       return {
@@ -206,7 +206,7 @@ export default function MonitoringPage() {
     if (!showOverdue || !plantSummary.data) return null;
     const map: Record<string, number> = {};
     for (const rayon of plantSummary.data.rayons) {
-      for (const a of rayon.overdue_areas) map[a.area_id] = a.overdue;
+      for (const a of rayon.overdue_areas) map[a.location_id] = a.overdue;
     }
     return map;
   }, [showOverdue, plantSummary.data]);
@@ -267,10 +267,10 @@ export default function MonitoringPage() {
     if (result.type === 'petugas') {
       // Drill into the worker's area so the pin renders, then select + focus.
       const w = workers.find((x) => x.user_id === result.id);
-      if (w?.area_id) {
+      if (w?.location_id) {
         setView({
           scope: 'area',
-          id: w.area_id,
+          id: w.location_id,
           rayonId: w.rayon_id ?? result.rayonId ?? undefined,
           name: w.area_name ?? undefined,
         });
@@ -716,7 +716,7 @@ export default function MonitoringPage() {
           onOpenChange={(open) => {
             if (!open) setBulkTarget(null);
           }}
-          targetAreaId={bulkTarget.area_id}
+          targetAreaId={bulkTarget.location_id}
           targetAreaName={bulkTarget.area_name}
           boundaries={boundaries}
         />

@@ -218,7 +218,7 @@ function AreaSummaryList({
             : 0;
         return (
           <li
-            key={area.area_id}
+            key={area.location_id}
             className={cn(
               'rounded-nb-base border-2 border-nb-black bg-nb-white p-2.5 shadow-nb-sm',
               area.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'

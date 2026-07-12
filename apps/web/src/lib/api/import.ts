@@ -103,7 +103,7 @@ export interface ParsedArea {
 
 export interface KmzUploadResponse {
   session_id: string;
-  total_areas: number;
+  total_locations: number;
   new_areas: number;
   update_areas: number;
   areas: ParsedArea[];
@@ -114,7 +114,7 @@ export interface KmzConfirmSelection {
   index: number;
   action: 'create' | 'update' | 'skip';
   name_override?: string;
-  area_type_id?: string;
+  location_type_id?: string;
   rayon_id?: string;
 }
 

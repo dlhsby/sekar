@@ -41,7 +41,7 @@ export interface Task extends Record<string, unknown> {
     id: string;
     full_name: string;
   };
-  area?: {
+  location?: {
     id: string;
     name: string;
   };
@@ -81,7 +81,7 @@ export interface TaskFilters {
   status?: TaskStatus;
   priority?: TaskPriority;
   assigned_to?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   due_date_from?: string;
   due_date_to?: string;
@@ -96,7 +96,7 @@ export interface CreateTaskDto {
   title: string;
   description?: string;
   assigned_to?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   activity_type_id?: string;
   priority?: TaskPriority;
@@ -111,7 +111,7 @@ export interface UpdateTaskDto {
   title?: string;
   description?: string;
   assigned_to?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   activity_type_id?: string;
   priority?: TaskPriority;
