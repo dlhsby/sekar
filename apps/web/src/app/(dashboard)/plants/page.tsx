@@ -27,7 +27,7 @@ import {
   useDeletePlantSpecies,
   type PlantSpeciesRow,
 } from '@/lib/api/plants';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatDate } from '@/lib/utils/time';
@@ -40,7 +40,7 @@ export default function PlantsPage() {
   const { data: catalogData, isLoading, refetch } = useSpeciesCatalog(1, '', 1000);
   const species = useMemo(() => catalogData?.data ?? [], [catalogData]);
 
-  const { data: areasResponse } = useAreas({ limit: 1000 });
+  const { data: areasResponse } = useLocations({ limit: 1000 });
   const areaOptions = useMemo(
     () => (areasResponse?.data ?? []).map((area) => ({ value: area.id, label: area.name })),
     [areasResponse]

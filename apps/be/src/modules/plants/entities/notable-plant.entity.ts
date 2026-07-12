@@ -7,7 +7,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { PlantSpecies } from './plant-species.entity';
 
 @Entity('notable_plants')
@@ -15,8 +15,8 @@ export class NotablePlant {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', name: 'area_id' })
-  areaId: string;
+  @Column({ type: 'uuid', name: 'location_id' })
+  locationId: string;
 
   @Column({ type: 'uuid', name: 'species_id' })
   speciesId: string;
@@ -39,9 +39,9 @@ export class NotablePlant {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @ManyToOne(() => Area, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'area_id' })
-  area: Area;
+  @ManyToOne(() => Location, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'location_id' })
+  area: Location;
 
   @ManyToOne(() => PlantSpecies, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'species_id' })

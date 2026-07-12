@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
 /**
@@ -19,7 +19,7 @@ import { ShiftDefinition } from '../../shift-definitions/entities/shift-definiti
  * Phase 2C: 8 roles with hierarchy:
  * - Satgas: Field worker (formerly Worker)
  * - Linmas: Security officer
- * - Korlap: Field coordinator, manages specific Area (formerly Supervisor/KoordinatorLapangan)
+ * - Korlap: Field coordinator, manages specific Location (formerly Supervisor/KoordinatorLapangan)
  * - AdminData: Data entry and reporting
  * - KepalaRayon: Manages an entire Rayon
  * - TopManagement: City-wide view (Kepala Dinas, Wali Kota, Kepala Bidang)
@@ -80,11 +80,11 @@ export class User {
   region_id?: string;
 
   @ApiProperty({
-    description: 'Area ID for Korlap role',
+    description: 'Location ID for Korlap role',
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  area_id?: string;
+  location_id?: string;
 
   // Phase 3 Apr 27 — staff_kecamatan kecamatan attribution.
   // Each staff_kecamatan user is mapped to one kecamatan; their pruning_requests
@@ -106,9 +106,9 @@ export class User {
   @Column({ name: 'kecamatan_id', type: 'uuid', nullable: true })
   kecamatan_id?: string;
 
-  @ManyToOne(() => Area, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'area_id' })
-  area?: Area;
+  @ManyToOne(() => Location, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'location_id' })
+  area?: Location;
 
   // The worker's single working shift (one timeframe; may span several areas).
   // Source of truth for the derived roster + clock-in lateness; nullable for
@@ -148,11 +148,11 @@ export class User {
   updated_at: Date;
 
   // Not persisted — populated by the users-list query (findAllPaginated) with the
-  // number of permanent area assignments, for the management grid's Area column.
+  // number of permanent area assignments, for the management grid's Location column.
   @ApiProperty({ description: 'Count of permanent area assignments', required: false })
-  assigned_area_count?: number;
+  assigned_location_count?: number;
 
-  // Not persisted — populated alongside assigned_area_count with the actual
+  // Not persisted — populated alongside assigned_location_count with the actual
   // area IDs, so the management grid can filter by area without an N+1
   // per-user fetch (GET /users/:id/areas remains the source of truth for
   // full area detail — this is IDs only, for filtering).
@@ -161,7 +161,7 @@ export class User {
     required: false,
     type: [String],
   })
-  assigned_area_ids?: string[];
+  assigned_location_ids?: string[];
 
   @DeleteDateColumn()
   deleted_at?: Date;

@@ -21,7 +21,7 @@ export class LiveUserDto {
   role: string;
 
   @ApiProperty({ example: 'area-uuid', nullable: true })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
   area_name: string;
@@ -99,7 +99,7 @@ export class LiveUsersFilterDto {
   @ApiPropertyOptional({ description: 'Filter by area ID' })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({ description: 'Filter by role', enum: CLOCKABLE_ROLES })
   @IsEnum(CLOCKABLE_ROLES)

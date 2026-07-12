@@ -4,8 +4,8 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { User, UserRole } from '../users/entities/user.entity';
-import { Area } from '../areas/entities/area.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { Location } from '../locations/entities/location.entity';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { RolePermissionsService } from '../rbac/services/role-permissions.service';
 
 describe('AuthController', () => {
@@ -33,7 +33,7 @@ describe('AuthController', () => {
   };
 
   const mockUserAreasService = {
-    getEffectiveAreas: jest.fn().mockResolvedValue([]),
+    getEffectiveLocations: jest.fn().mockResolvedValue([]),
   };
 
   const mockAreaRepository = {
@@ -53,11 +53,11 @@ describe('AuthController', () => {
           useValue: mockAuthService,
         },
         {
-          provide: getRepositoryToken(Area),
+          provide: getRepositoryToken(Location),
           useValue: mockAreaRepository,
         },
         {
-          provide: UserAreasService,
+          provide: UserLocationsService,
           useValue: mockUserAreasService,
         },
         {
@@ -155,13 +155,13 @@ describe('AuthController', () => {
       expect(result).toHaveProperty('profile_picture_url', null);
     });
 
-    describe('Phase 2C: Area Assignment', () => {
-      describe('Korlap with permanent area_id', () => {
-        it('should return assigned_area when area_id exists and area is found', async () => {
+    describe('Phase 2C: Location Assignment', () => {
+      describe('Korlap with permanent location_id', () => {
+        it('should return assigned_area when location_id exists and area is found', async () => {
           const korlapUser: User = {
             ...mockUser,
             role: UserRole.KORLAP,
-            area_id: 'area-123',
+            location_id: 'area-123',
             rayon_id: 'rayon-456',
           };
 
@@ -190,7 +190,7 @@ describe('AuthController', () => {
           const result = await controller.getMe(korlapUser);
 
           expect(result).toHaveProperty('id', korlapUser.id);
-          expect(result).toHaveProperty('area_id', 'area-123');
+          expect(result).toHaveProperty('location_id', 'area-123');
           expect(result).toHaveProperty('rayon_id', 'rayon-456');
           expect(result).toHaveProperty('assigned_area');
           expect(result.assigned_area).toEqual({
@@ -208,11 +208,11 @@ describe('AuthController', () => {
           });
         });
 
-        it('should return area_id but no assigned_area when area is deleted', async () => {
+        it('should return location_id but no assigned_area when area is deleted', async () => {
           const korlapUser: User = {
             ...mockUser,
             role: UserRole.KORLAP,
-            area_id: 'deleted-area',
+            location_id: 'deleted-area',
             rayon_id: 'rayon-456',
           };
 
@@ -220,7 +220,7 @@ describe('AuthController', () => {
 
           const result = await controller.getMe(korlapUser);
 
-          expect(result).toHaveProperty('area_id', 'deleted-area');
+          expect(result).toHaveProperty('location_id', 'deleted-area');
           expect(result).toHaveProperty('rayon_id', 'rayon-456');
           expect(result).not.toHaveProperty('assigned_area');
         });
@@ -234,7 +234,7 @@ describe('AuthController', () => {
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([{ id: 'area-456' }]);
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([{ id: 'area-456' }]);
           mockAreaRepository.findOne.mockResolvedValue({
             id: 'area-456',
             name: 'Taman Bungkul',
@@ -256,7 +256,7 @@ describe('AuthController', () => {
             boundary_polygon: null,
             area_type: null,
           });
-          expect(mockUserAreasService.getEffectiveAreas).toHaveBeenCalledWith('satgas-123');
+          expect(mockUserAreasService.getEffectiveLocations).toHaveBeenCalledWith('satgas-123');
           expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
             where: { id: 'area-456' },
             relations: ['areaType'],
@@ -270,7 +270,7 @@ describe('AuthController', () => {
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
 
           const result = await controller.getMe(satgasUser);
 
@@ -284,8 +284,8 @@ describe('AuthController', () => {
             role: UserRole.LINMAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([{ id: 'area-789' }]);
-          mockAreaRepository.findOne.mockResolvedValue(null); // Area was deleted
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([{ id: 'area-789' }]);
+          mockAreaRepository.findOne.mockResolvedValue(null); // Location was deleted
 
           const result = await controller.getMe(linmasUser);
 
@@ -299,7 +299,7 @@ describe('AuthController', () => {
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([
             { id: 'area-789' },
             { id: 'area-other' },
           ]);
@@ -320,19 +320,19 @@ describe('AuthController', () => {
       });
 
       describe('Edge cases', () => {
-        it('should handle user with no area_id and no effective area gracefully', async () => {
+        it('should handle user with no location_id and no effective area gracefully', async () => {
           const basicUser: User = {
             ...mockUser,
             id: 'basic-user',
             role: UserRole.SATGAS,
           };
 
-          mockUserAreasService.getEffectiveAreas.mockResolvedValue([]);
+          mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
 
           const result = await controller.getMe(basicUser);
 
           expect(result).toHaveProperty('id', 'basic-user');
-          expect(result).toHaveProperty('area_id', null);
+          expect(result).toHaveProperty('location_id', null);
           expect(result).toHaveProperty('rayon_id', null);
           expect(result).not.toHaveProperty('assigned_area');
         });

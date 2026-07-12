@@ -52,7 +52,7 @@ export class LocationHistoryResponseDto {
   shift_name: string | null;
 
   @ApiProperty({ example: 'area-uuid' })
-  area_id: string | null;
+  location_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
   area_name: string | null;

@@ -5,7 +5,7 @@ import { Task, TaskStatus } from '../entities/task.entity';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { VERIFY_MAP } from '../../users/constants/role-groups';
 import { UsersService } from '../../users/users.service';
-import { AreasService } from '../../areas/areas.service';
+import { LocationsService } from '../../locations/locations.service';
 import { AuditLogService } from '../../audit/audit.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
@@ -28,7 +28,7 @@ export class TaskVerificationService {
     private readonly taskRepository: Repository<Task>,
     private readonly taskFinder: TaskFinderService,
     private readonly usersService: UsersService,
-    private readonly areasService: AreasService,
+    private readonly locationsService: LocationsService,
     private readonly auditLogService: AuditLogService,
     private readonly notificationsService: NotificationsService,
     private readonly taskAreaSync: TaskAreaSyncService,
@@ -168,7 +168,7 @@ export class TaskVerificationService {
 
   private assertKorlapScope(verifier: User, assignee: User): void {
     if (verifier.role !== UserRole.KORLAP) return;
-    if (!verifier.area_id || verifier.area_id !== assignee.area_id) {
+    if (!verifier.location_id || verifier.location_id !== assignee.location_id) {
       throw new ForbiddenException('You can only verify tasks in your area');
     }
   }
@@ -178,10 +178,10 @@ export class TaskVerificationService {
     if (!verifier.rayon_id) {
       throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
     }
-    if (!assignee.area_id) {
+    if (!assignee.location_id) {
       throw new ForbiddenException('The task assignee has no valid area');
     }
-    const area = await this.areasService.findOne(assignee.area_id);
+    const area = await this.locationsService.findOne(assignee.location_id);
     if (area.rayon_id !== verifier.rayon_id) {
       throw new ForbiddenException('You can only verify tasks in your rayon');
     }

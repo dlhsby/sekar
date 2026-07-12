@@ -6,7 +6,7 @@ import {
   SpecialDayOverride,
   SpecialDayType,
 } from '../../special-day-overrides/entities/special-day-override.entity';
-import { DayType } from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+import { DayType } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 
 describe('DayTypeService', () => {
   let service: DayTypeService;

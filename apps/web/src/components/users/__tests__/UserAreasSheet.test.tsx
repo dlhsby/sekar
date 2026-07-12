@@ -20,11 +20,11 @@ describe('UserAreasSheet', () => {
   });
   afterEach(() => mockAxios.restore());
 
-  // The endpoint returns areas with rayon_id (areaType is eager); the rayon name
+  // The endpoint returns areas with rayon_id (locationType is eager); the rayon name
   // is resolved client-side from GET /rayons.
   const areas = [
-    { id: 'a1', name: 'Jl. Ahmad Yani', rayon_id: 'r1', areaType: { name: 'Jalanan' } },
-    { id: 'a2', name: 'Taman Bungkul', rayon_id: 'r2', areaType: { name: 'Taman' } },
+    { id: 'a1', name: 'Jl. Ahmad Yani', rayon_id: 'r1', locationType: { name: 'Jalanan' } },
+    { id: 'a2', name: 'Taman Bungkul', rayon_id: 'r2', locationType: { name: 'Taman' } },
   ];
   const rayons = [
     { id: 'r1', name: 'Rayon Pusat' },
@@ -32,7 +32,7 @@ describe('UserAreasSheet', () => {
   ];
 
   it('lazy-loads and lists the user areas with a count + rayon label', async () => {
-    mockAxios.onGet('/users/u1/areas').reply(200, areas);
+    mockAxios.onGet('/users/u1/locations').reply(200, areas);
     mockAxios.onGet('/rayons').reply(200, rayons);
 
     renderSheet(<UserAreasSheet user={{ id: 'u1', full_name: 'Budi' }} onClose={jest.fn()} />);
@@ -46,7 +46,7 @@ describe('UserAreasSheet', () => {
   });
 
   it('filters the list by the search box', async () => {
-    mockAxios.onGet('/users/u1/areas').reply(200, areas);
+    mockAxios.onGet('/users/u1/locations').reply(200, areas);
     mockAxios.onGet('/rayons').reply(200, rayons);
 
     renderSheet(<UserAreasSheet user={{ id: 'u1', full_name: 'Budi' }} onClose={jest.fn()} />);
@@ -62,6 +62,6 @@ describe('UserAreasSheet', () => {
     mockAxios.onGet('/rayons').reply(200, rayons);
     renderSheet(<UserAreasSheet user={null} onClose={jest.fn()} />);
     // useUserAreas is disabled → no per-user areas request (rayons may still load).
-    expect(mockAxios.history.get.some((r) => /\/users\/.+\/areas/.test(r.url ?? ''))).toBe(false);
+    expect(mockAxios.history.get.some((r) => /\/users\/.+\/locations/.test(r.url ?? ''))).toBe(false);
   });
 });

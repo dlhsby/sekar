@@ -3,12 +3,12 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { TaskAreaSyncService } from './task-area-sync.service';
 import { Task, TaskStatus } from '../entities/task.entity';
-import { UserAreasService } from '../../user-areas/user-areas.service';
+import { UserLocationsService } from '../../user-locations/user-locations.service';
 
 describe('TaskAreaSyncService', () => {
   let service: TaskAreaSyncService;
   let taskRepository: jest.Mocked<Repository<Task>>;
-  let userAreasService: jest.Mocked<UserAreasService>;
+  let userAreasService: jest.Mocked<UserLocationsService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -19,23 +19,23 @@ describe('TaskAreaSyncService', () => {
           useValue: { find: jest.fn() },
         },
         {
-          provide: UserAreasService,
-          useValue: { syncTaskBasedAreas: jest.fn().mockResolvedValue(undefined) },
+          provide: UserLocationsService,
+          useValue: { syncTaskBasedLocations: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();
 
     service = module.get(TaskAreaSyncService);
     taskRepository = module.get(getRepositoryToken(Task));
-    userAreasService = module.get(UserAreasService);
+    userAreasService = module.get(UserLocationsService);
   });
 
   it('syncs the deduped set of active-task areas for a worker', async () => {
     taskRepository.find.mockResolvedValue([
-      { id: 't1', area_id: 'area-1' },
-      { id: 't2', area_id: 'area-2' },
-      { id: 't3', area_id: 'area-1' }, // duplicate area
-      { id: 't4', area_id: null }, // no area → ignored
+      { id: 't1', location_id: 'area-1' },
+      { id: 't2', location_id: 'area-2' },
+      { id: 't3', location_id: 'area-1' }, // duplicate area
+      { id: 't4', location_id: null }, // no area → ignored
     ] as Task[]);
 
     await service.syncForUser('user-1');
@@ -44,7 +44,7 @@ describe('TaskAreaSyncService', () => {
     expect(taskRepository.find).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ assigned_to: 'user-1' }) }),
     );
-    expect(userAreasService.syncTaskBasedAreas).toHaveBeenCalledWith('user-1', [
+    expect(userAreasService.syncTaskBasedLocations).toHaveBeenCalledWith('user-1', [
       'area-1',
       'area-2',
     ]);
@@ -55,7 +55,7 @@ describe('TaskAreaSyncService', () => {
 
     await service.syncForUser('user-1');
 
-    expect(userAreasService.syncTaskBasedAreas).toHaveBeenCalledWith('user-1', []);
+    expect(userAreasService.syncTaskBasedLocations).toHaveBeenCalledWith('user-1', []);
   });
 
   it('is a no-op for a missing user id', async () => {
@@ -63,14 +63,14 @@ describe('TaskAreaSyncService', () => {
     await service.syncForUser(null);
 
     expect(taskRepository.find).not.toHaveBeenCalled();
-    expect(userAreasService.syncTaskBasedAreas).not.toHaveBeenCalled();
+    expect(userAreasService.syncTaskBasedLocations).not.toHaveBeenCalled();
   });
 
   it('never throws when the sync fails (task transition must not break)', async () => {
     taskRepository.find.mockRejectedValue(new Error('db down'));
 
     await expect(service.syncForUser('user-1')).resolves.toBeUndefined();
-    expect(userAreasService.syncTaskBasedAreas).not.toHaveBeenCalled();
+    expect(userAreasService.syncTaskBasedLocations).not.toHaveBeenCalled();
   });
 
   it('only counts active statuses (assigned/accepted/in_progress/revision_needed)', async () => {

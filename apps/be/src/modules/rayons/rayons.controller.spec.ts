@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RayonsController } from './rayons.controller';
 import { RayonsService } from './rayons.service';
 import { Rayon } from './entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 
@@ -19,7 +19,7 @@ describe('RayonsController', () => {
     updated_at: new Date('2024-01-01T00:00:00Z'),
   };
 
-  const mockArea: Partial<Area> = {
+  const mockArea: Partial<Location> = {
     id: '22222222-2222-2222-2222-222222222201',
     name: 'Taman Bungkul',
     rayon_id: mockRayon.id,

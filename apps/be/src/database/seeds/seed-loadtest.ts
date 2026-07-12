@@ -12,7 +12,7 @@ import { DEFAULT_PASSWORD_HASH } from './constants';
  *   - role:           'satgas'
  *   - password:       12345678 (shared bcrypt hash with the rest of the seeds)
  *   - rayon_id:       first existing rayon row (queried at runtime)
- *   - area_id:        first existing area row in that rayon
+ *   - location_id:        first existing area row in that rayon
  *   - phone_number:   `0812LT0NNNN` (zero-padded VU index, kept unique by UNIQUE on phone)
  *
  * Usage: LOADTEST_USERS=500 npm run db:seed:loadtest
@@ -38,11 +38,11 @@ async function pickTargets(qr: QueryRunner): Promise<SeedTargets> {
   const rayonId = rayonRows[0].id;
 
   const areaRows = await qr.query(
-    `SELECT id FROM areas WHERE rayon_id = $1 ORDER BY created_at ASC LIMIT 1`,
+    `SELECT id FROM locations WHERE rayon_id = $1 ORDER BY created_at ASC LIMIT 1`,
     [rayonId],
   );
   if (!areaRows.length) {
-    throw new Error(`No areas found for rayon ${rayonId} — seed broken.`);
+    throw new Error(`No locations found for rayon ${rayonId} — seed broken.`);
   }
   return { rayonId, areaId: areaRows[0].id };
 }
@@ -70,7 +70,7 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
 
       const result = await qr.query(
         `INSERT INTO users
-           (username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active)
+           (username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active)
          VALUES ($1, $2, $3, $4, 'satgas', $5, $6, TRUE)
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,

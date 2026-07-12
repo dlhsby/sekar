@@ -33,11 +33,11 @@ export class ParsedCoordinateDto {
  * Parsed area from KML
  */
 export class ParsedAreaDto {
-  @ApiProperty({ description: 'Area name from KML', example: 'Taman Bungkul' })
+  @ApiProperty({ description: 'Location name from KML', example: 'Taman Bungkul' })
   @IsString()
   name: string;
 
-  @ApiPropertyOptional({ description: 'Area description from KML' })
+  @ApiPropertyOptional({ description: 'Location description from KML' })
   @IsString()
   @IsOptional()
   @MaxLength(1000)
@@ -110,7 +110,7 @@ export class KmzUploadResponseDto {
 }
 
 /**
- * Area selection for confirm
+ * Location selection for confirm
  */
 export class AreaSelectionDto {
   @ApiProperty({ description: 'Index of the area in the parsed list', example: 0 })
@@ -123,10 +123,10 @@ export class AreaSelectionDto {
   @MaxLength(255)
   name_override?: string;
 
-  @ApiPropertyOptional({ description: 'Area type ID to assign' })
+  @ApiPropertyOptional({ description: 'Location type ID to assign' })
   @IsUUID()
   @IsOptional()
-  area_type_id?: string;
+  location_type_id?: string;
 
   @ApiPropertyOptional({ description: 'Rayon ID to assign' })
   @IsUUID()
@@ -170,8 +170,8 @@ export class AreaImportResultDto {
   @ApiProperty({ description: 'Action taken', example: 'created' })
   action: 'created' | 'updated' | 'skipped' | 'failed';
 
-  @ApiPropertyOptional({ description: 'Area ID if created/updated' })
-  area_id?: string;
+  @ApiPropertyOptional({ description: 'Location ID if created/updated' })
+  location_id?: string;
 
   @ApiPropertyOptional({ description: 'Error message if failed' })
   error?: string;

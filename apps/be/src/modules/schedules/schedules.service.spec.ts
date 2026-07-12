@@ -2,11 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ForbiddenException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
-import { Schedule, ScheduleStatus } from './entities/schedule.entity';
-import { ScheduleArea } from './entities/schedule-area.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 
 /** A global editor (superadmin) — passes the edit hierarchy for any target. */
@@ -37,15 +36,15 @@ function makeRosterRepo() {
 describe('SchedulesService', () => {
   let service: SchedulesService;
   let rosterRepo: ReturnType<typeof makeRosterRepo>;
-  let areaRepo: { delete: jest.Mock; create: jest.Mock; save: jest.Mock };
+  let locationRepo: { delete: jest.Mock; create: jest.Mock; save: jest.Mock };
   let areaEntityRepo: { find: jest.Mock };
   let userRepo: { find: jest.Mock; findOne: jest.Mock };
-  let userAreas: { getPermanentAreaIdsForUsers: jest.Mock; getPermanentAreaIds: jest.Mock };
+  let userAreas: { getPermanentLocationIdsForUsers: jest.Mock; getPermanentLocationIds: jest.Mock };
   let audit: { log: jest.Mock };
 
   beforeEach(async () => {
     rosterRepo = makeRosterRepo();
-    areaRepo = {
+    locationRepo = {
       delete: jest.fn(),
       create: jest.fn((x) => ({ ...x })),
       save: jest.fn(async (x) => x),
@@ -53,8 +52,8 @@ describe('SchedulesService', () => {
     areaEntityRepo = { find: jest.fn().mockResolvedValue([]) };
     userRepo = { find: jest.fn(), findOne: jest.fn() };
     userAreas = {
-      getPermanentAreaIdsForUsers: jest.fn().mockResolvedValue(new Map()),
-      getPermanentAreaIds: jest.fn().mockResolvedValue([]),
+      getPermanentLocationIdsForUsers: jest.fn().mockResolvedValue(new Map()),
+      getPermanentLocationIds: jest.fn().mockResolvedValue([]),
     };
     audit = { log: jest.fn().mockResolvedValue(undefined) };
 
@@ -62,10 +61,10 @@ describe('SchedulesService', () => {
       providers: [
         SchedulesService,
         { provide: getRepositoryToken(Schedule), useValue: rosterRepo },
-        { provide: getRepositoryToken(ScheduleArea), useValue: areaRepo },
-        { provide: getRepositoryToken(Area), useValue: areaEntityRepo },
+        { provide: getRepositoryToken(ScheduleLocation), useValue: locationRepo },
+        { provide: getRepositoryToken(Location), useValue: areaEntityRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
-        { provide: UserAreasService, useValue: userAreas },
+        { provide: UserLocationsService, useValue: userAreas },
         { provide: AuditLogService, useValue: audit },
       ],
     }).compile();
@@ -96,7 +95,7 @@ describe('SchedulesService', () => {
         { id: 'B', is_active: true, rayon_id: null, shift_definition_id: null },
       ]);
       rosterRepo.find.mockResolvedValue([]); // none yet
-      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(
+      userAreas.getPermanentLocationIdsForUsers.mockResolvedValue(
         new Map([
           ['A', ['area1']],
           ['B', []],
@@ -110,7 +109,7 @@ describe('SchedulesService', () => {
       expect(statuses).toContain(ScheduleStatus.PLANNED);
       expect(statuses).toContain(ScheduleStatus.OFF);
       // worker A's single area materialized into the join table
-      expect(areaRepo.save).toHaveBeenCalled();
+      expect(locationRepo.save).toHaveBeenCalled();
     });
 
     it('is idempotent — skips users who already have a row for the day', async () => {
@@ -119,7 +118,7 @@ describe('SchedulesService', () => {
         { id: 'B', is_active: true, shift_definition_id: 's1' },
       ]);
       rosterRepo.find.mockResolvedValue([{ id: 'x', user_id: 'A' }]); // A already rostered
-      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(new Map([['B', []]])); // only B
+      userAreas.getPermanentLocationIdsForUsers.mockResolvedValue(new Map([['B', []]])); // only B
 
       const created = await service.generateRoster('2026-06-30', 'admin');
 
@@ -185,7 +184,7 @@ describe('SchedulesService', () => {
         rayon_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [{ area_id: 'area1' }],
+        schedule_areas: [{ location_id: 'area1' }],
       };
       rosterRepo.findOne
         .mockResolvedValueOnce(original) // findOne(id)
@@ -215,7 +214,7 @@ describe('SchedulesService', () => {
         rayon_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [{ area_id: 'area1' }],
+        schedule_areas: [{ location_id: 'area1' }],
       };
       const existingCoverRow = {
         id: 'cover1',
@@ -285,7 +284,7 @@ describe('SchedulesService', () => {
       rosterRepo.findOne
         .mockResolvedValueOnce(null) // findByUserAndDate → no existing row
         .mockResolvedValueOnce({ id: 'new', user_id: 'W' }); // final findOne
-      userAreas.getPermanentAreaIds.mockResolvedValue(['areaP']);
+      userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN);
 
@@ -298,7 +297,7 @@ describe('SchedulesService', () => {
         source: 'manual',
       });
       // Default areas (worker's permanent areas) are applied.
-      expect(areaRepo.save).toHaveBeenCalled();
+      expect(locationRepo.save).toHaveBeenCalled();
     });
 
     it('rejects when the worker already has a schedule that day (one per day)', async () => {
@@ -403,13 +402,13 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [{ area_id: 'area1' }],
+          schedule_areas: [{ location_id: 'area1' }],
         })
         .mockResolvedValueOnce({ id: 'd1', schedule_areas: [] });
 
       await service.updateAreas('d1', [], ADMIN);
 
-      expect(areaRepo.delete).toHaveBeenCalledWith({ schedule_id: 'd1' });
+      expect(locationRepo.delete).toHaveBeenCalledWith({ schedule_id: 'd1' });
       expect(rosterRepo.update).toHaveBeenCalledWith(
         'd1',
         expect.objectContaining({ source: 'manual' }),
@@ -427,13 +426,15 @@ describe('SchedulesService', () => {
           user: { role: UserRole.SATGAS },
           schedule_areas: [],
         })
-        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [{ area_id: 'area2' }] });
+        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [{ location_id: 'area2' }] });
 
       await service.updateAreas('d1', ['area2'], ADMIN);
 
-      expect(areaRepo.save).toHaveBeenCalled();
-      const inserted = areaRepo.save.mock.calls[0][0];
-      expect(inserted).toEqual([expect.objectContaining({ schedule_id: 'd1', area_id: 'area2' })]);
+      expect(locationRepo.save).toHaveBeenCalled();
+      const inserted = locationRepo.save.mock.calls[0][0];
+      expect(inserted).toEqual([
+        expect.objectContaining({ schedule_id: 'd1', location_id: 'area2' }),
+      ]);
     });
   });
 
@@ -462,7 +463,7 @@ describe('SchedulesService', () => {
       await service.overrideForDay(
         'u1',
         '2026-07-01',
-        { areaId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
+        { locationId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
         'admin',
       );
 
@@ -477,7 +478,7 @@ describe('SchedulesService', () => {
         .mockResolvedValueOnce(null)
         .mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
 
-      await service.overrideForDay('u1', '2026-07-01', { areaId: 'a1' }, 'admin');
+      await service.overrideForDay('u1', '2026-07-01', { locationId: 'a1' }, 'admin');
 
       const created = rosterRepo.save.mock.calls[0][0];
       expect(created.status).toBe(ScheduleStatus.OFF);
@@ -492,11 +493,11 @@ describe('SchedulesService', () => {
       await service.overrideForDay(
         'u1',
         '2026-07-01',
-        { areaId: 'a9', shiftDefinitionId: 's1' },
+        { locationId: 'a9', shiftDefinitionId: 's1' },
         'admin',
       );
 
-      const createdAreaIds = areaRepo.create.mock.calls.map((c) => c[0].area_id);
+      const createdAreaIds = locationRepo.create.mock.calls.map((c) => c[0].location_id);
       expect(createdAreaIds).toEqual(['a9']);
     });
 
@@ -515,7 +516,7 @@ describe('SchedulesService', () => {
       await service.overrideForDay(
         'u1',
         '2026-07-01',
-        { areaId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
+        { locationId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
         'admin',
       );
 
@@ -540,23 +541,23 @@ describe('SchedulesService', () => {
     }
 
     it('korlap can edit a satgas in their assigned area', async () => {
-      userAreas.getPermanentAreaIds.mockResolvedValue(['area1']);
+      userAreas.getPermanentLocationIds.mockResolvedValue(['area1']);
       allowRow({
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [{ area_id: 'area1' }],
+        schedule_areas: [{ location_id: 'area1' }],
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).resolves.toBeDefined();
     });
 
     it('korlap CANNOT edit a satgas outside their areas', async () => {
-      userAreas.getPermanentAreaIds.mockResolvedValue(['areaX']);
+      userAreas.getPermanentLocationIds.mockResolvedValue(['areaX']);
       rosterRepo.findOne.mockResolvedValueOnce({
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [{ area_id: 'area1' }],
+        schedule_areas: [{ location_id: 'area1' }],
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
         ForbiddenException,
@@ -568,7 +569,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.KORLAP },
-        schedule_areas: [{ area_id: 'area1' }],
+        schedule_areas: [{ location_id: 'area1' }],
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
         ForbiddenException,
@@ -628,7 +629,7 @@ describe('SchedulesService', () => {
         { id: 'tm', role: UserRole.MANAGEMENT },
       ]);
       rosterRepo.find.mockResolvedValue([]); // nothing rostered yet
-      userAreas.getPermanentAreaIdsForUsers.mockResolvedValue(new Map([['sat', ['areaS']]]));
+      userAreas.getPermanentLocationIdsForUsers.mockResolvedValue(new Map([['sat', ['areaS']]]));
       areaEntityRepo.find.mockResolvedValue([
         { id: 'a1', rayon_id: 'r1' },
         { id: 'a2', rayon_id: 'r1' },
@@ -643,7 +644,7 @@ describe('SchedulesService', () => {
       expect(rosteredUserIds).not.toContain('tm');
 
       // The kepala_rayon's row is assigned to ALL areas of rayon r1.
-      const assignedAreaIds = areaRepo.create.mock.calls.map((c) => c[0].area_id);
+      const assignedAreaIds = locationRepo.create.mock.calls.map((c) => c[0].location_id);
       expect(assignedAreaIds).toEqual(expect.arrayContaining(['a1', 'a2', 'areaS']));
     });
   });

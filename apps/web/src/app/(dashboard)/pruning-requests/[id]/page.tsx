@@ -45,7 +45,7 @@ import {
   useConvertPruningRequestToTask,
   type ConvertToTaskDto,
 } from '@/lib/api/pruning-requests';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useUsers } from '@/lib/api/users';
 
 type CaseType = ConvertToTaskDto['caseType'];
@@ -69,7 +69,7 @@ export default function PruningRequestDetailPage() {
   const { data: request, isLoading, isError } = usePruningRequest(id);
   // Areas + users — fetched once, filtered client-side by request.rayonId so
   // the dropdowns only show in-scope options.
-  const { data: areasResponse } = useAreas({ rayon_id: request?.rayonId ?? undefined });
+  const { data: areasResponse } = useLocations({ rayon_id: request?.rayonId ?? undefined });
   // useUsers' filter doesn't accept rayon_id; fetch a generous page and filter client-side.
   const { data: usersResponse } = useUsers({ limit: 200 });
 

@@ -71,8 +71,8 @@ export const useDeleteRegion = regionCrudHooks.useDelete;
 export function useAssignRegionAreas() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, areaIds }: { id: string; areaIds: string[] }) =>
-      (await apiClient.patch<{ updated: number }>(`/regions/${id}/areas`, { areaIds })).data,
+    mutationFn: async ({ id, locationIds }: { id: string; locationIds: string[] }) =>
+      (await apiClient.patch<{ updated: number }>(`/regions/${id}/areas`, { locationIds })).data,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: regionKeys.all });
       qc.invalidateQueries({ queryKey: ['areas'] });

@@ -36,7 +36,7 @@ import {
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
 import { useRoles } from '@/lib/api/roles';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, roleLabel } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
@@ -88,11 +88,11 @@ export default function UsersPage() {
   );
 
   // Full area master data so the multi-value Area filter can list every area
-  // (a user can be assigned several) and resolve assigned_area_ids → names.
+  // (a user can be assigned several) and resolve assigned_location_ids → names.
   // include_inactive: a user's assigned area may have since been deactivated —
   // keep resolving its name (and offering it as a filter option) rather than
   // silently showing "—" for that assignment.
-  const { data: areasData } = useAreas({ limit: 1000, include_inactive: true });
+  const { data: areasData } = useLocations({ limit: 1000, include_inactive: true });
   const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
   const areaNameById = useMemo(() => new Map(allAreas.map((a) => [a.id, a.name])), [allAreas]);
   const areaFilterOptions = useMemo(
@@ -238,7 +238,7 @@ export default function UsersPage() {
       },
       {
         id: 'areas',
-        accessorFn: (u) => (u.assigned_area_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
+        accessorFn: (u) => (u.assigned_location_ids ?? []).map((id) => areaNameById.get(id) ?? '').filter(Boolean),
         header: t('admin:users.columnArea'),
         filterFn: enumArrayFilterFn as FilterFn<User>,
         meta: {

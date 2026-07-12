@@ -130,7 +130,7 @@ export class CreateUserDto {
     type: [String],
   })
   @IsArray()
-  // Area ids are deterministic UUID v5 — accept any version ('v4' rejects them).
+  // Location ids are deterministic UUID v5 — accept any version ('v4' rejects them).
   @IsUUID('all', { each: true })
   @IsOptional()
   area_ids?: string[];

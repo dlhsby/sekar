@@ -62,7 +62,7 @@ describe('kmz exporter', () => {
   it('zips KML placemarks with point and polygon geometry', async () => {
     const { buffer, extension, contentType } = await toKmz([
       {
-        name: 'Area A',
+        name: 'Location A',
         description: 'addr',
         latitude: -7.29,
         longitude: 112.73,

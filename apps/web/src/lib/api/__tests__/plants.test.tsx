@@ -105,7 +105,7 @@ describe('Plants API', () => {
 
     it('returns the array shape unchanged', async () => {
       const rows = [row({ status: 'ok' })];
-      mockAxios.onGet('/areas/a-1/plants').reply(200, rows);
+      mockAxios.onGet('/locations/a-1/plants').reply(200, rows);
 
       const { result } = renderHook(() => useAreaPlants('a-1'), {
         wrapper: createWrapper(),
@@ -117,7 +117,7 @@ describe('Plants API', () => {
 
     it('unwraps the {data: …} envelope when the controller wraps responses', async () => {
       const rows = [row({ status: 'overdue' })];
-      mockAxios.onGet('/areas/a-1/plants').reply(200, { data: rows });
+      mockAxios.onGet('/locations/a-1/plants').reply(200, { data: rows });
 
       const { result } = renderHook(() => useAreaPlants('a-1'), {
         wrapper: createWrapper(),
@@ -128,7 +128,7 @@ describe('Plants API', () => {
     });
 
     it('falls back to an empty array when the response is malformed', async () => {
-      mockAxios.onGet('/areas/a-1/plants').reply(200, { foo: 'bar' });
+      mockAxios.onGet('/locations/a-1/plants').reply(200, { foo: 'bar' });
 
       const { result } = renderHook(() => useAreaPlants('a-1'), {
         wrapper: createWrapper(),
@@ -161,7 +161,7 @@ describe('Plants API', () => {
           notes: null,
         },
       ];
-      mockAxios.onGet('/areas/a-1/notable-plants').reply(200, notable);
+      mockAxios.onGet('/locations/a-1/notable-plants').reply(200, notable);
 
       const { result } = renderHook(() => useNotablePlants('a-1'), {
         wrapper: createWrapper(),

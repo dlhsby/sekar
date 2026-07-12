@@ -11,7 +11,7 @@ type AreaPlantSeed = {
 /**
  * Phase 3 showcase plan (per area). The mix is intentional:
  *   - Bungkul/Pusat/Darmo (Rayon Pusat) carry the demo for korlap_pusat_1.
- *   - Other areas have at least one off-status row so admin views never look uniformly green.
+ *   - Other locations have at least one off-status row so admin views never look uniformly green.
  */
 const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
   'Taman Bungkul': [
@@ -144,12 +144,12 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
 const daysAgoIso = (n: number): string => new Date(Date.now() - n * 86400000).toISOString();
 
 /**
- * Seed area_plants with deterministic per-area species mixes, statuses, and pruning schedules.
+ * Seed location_plants with deterministic per-area species mixes, statuses, and pruning schedules.
  * Uses ctx.maps.speciesIdByName from plant-species seeding.
  * Also purges stale rows from prior seeds via ON CONFLICT DO UPDATE.
  */
 export async function seedAreaPlants(ctx: SeedContext): Promise<void> {
-  ctx.log('🌿 Seeding Area Plants (showcase)…');
+  ctx.log('🌿 Seeding Location Plants (showcase)…');
 
   let areaPlantInserted = 0;
   let areaPlantUpdated = 0;
@@ -157,11 +157,11 @@ export async function seedAreaPlants(ctx: SeedContext): Promise<void> {
 
   for (const [areaName, plan] of Object.entries(AREA_PLANT_PLAN)) {
     const areaRow = await ctx.qr.query(
-      `SELECT id FROM areas WHERE name = $1 AND is_active = true LIMIT 1`,
+      `SELECT id FROM locations WHERE name = $1 AND is_active = true LIMIT 1`,
       [areaName],
     );
     if (areaRow.length === 0) {
-      ctx.log(`  ⚠ Area '${areaName}' not found, skipping`);
+      ctx.log(`  ⚠ Location '${areaName}' not found, skipping`);
       continue;
     }
     const areaId = areaRow[0].id;
@@ -178,11 +178,11 @@ export async function seedAreaPlants(ctx: SeedContext): Promise<void> {
         new Date(lastPruned).getTime() + r.cycleDays * 86400000,
       ).toISOString();
       const result = await ctx.qr.query(
-        `INSERT INTO area_plants
-           (area_id, species_id, count, last_pruned_at, override_cycle_days,
+        `INSERT INTO location_plants
+           (location_id, species_id, count, last_pruned_at, override_cycle_days,
             next_due_at, status)
          VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (area_id, species_id) DO UPDATE SET
+         ON CONFLICT (location_id, species_id) DO UPDATE SET
            count = EXCLUDED.count,
            last_pruned_at = EXCLUDED.last_pruned_at,
            override_cycle_days = EXCLUDED.override_cycle_days,
@@ -205,11 +205,11 @@ export async function seedAreaPlants(ctx: SeedContext): Promise<void> {
   }));
   let areaPlantPurged = 0;
   for (const { name, species } of allowedSpeciesByArea) {
-    const areaRow = await ctx.qr.query(`SELECT id FROM areas WHERE name = $1 LIMIT 1`, [name]);
+    const areaRow = await ctx.qr.query(`SELECT id FROM locations WHERE name = $1 LIMIT 1`, [name]);
     if (areaRow.length === 0) continue;
     const purge = await ctx.qr.query(
-      `DELETE FROM area_plants
-       WHERE area_id = $1
+      `DELETE FROM location_plants
+       WHERE location_id = $1
          AND species_id NOT IN (
            SELECT id FROM plant_species WHERE name_id = ANY($2::text[])
          )`,
@@ -219,7 +219,7 @@ export async function seedAreaPlants(ctx: SeedContext): Promise<void> {
   }
   ctx.log(
     `  ✓ ${areaPlantInserted} inserted, ${areaPlantUpdated} updated, ` +
-      `${areaPlantPurged} stale rows purged across ${allowedAreaNames.length} areas` +
+      `${areaPlantPurged} stale rows purged across ${allowedAreaNames.length} locations` +
       (areaPlantSkippedSpecies > 0
         ? ` (skipped ${areaPlantSkippedSpecies} species missing from catalog)`
         : ''),

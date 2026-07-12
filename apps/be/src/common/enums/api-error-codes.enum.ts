@@ -76,7 +76,7 @@ export enum ApiErrorCode {
   SYNC_STALE_DATA = 'SYNC_STALE_DATA',
   SYNC_PARTIAL_FAILURE = 'SYNC_PARTIAL_FAILURE',
 
-  // ==================== Area Errors ====================
+  // ==================== Location Errors ====================
   AREA_NOT_FOUND = 'AREA_NOT_FOUND',
   AREA_CODE_DUPLICATE = 'AREA_CODE_DUPLICATE',
 

@@ -11,8 +11,8 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { RedisService } from '../../../common/services/redis.service';
 import { UsersService } from '../../users/users.service';
-import { AreasService } from '../../areas/areas.service';
-import { Area } from '../../areas/entities/area.entity';
+import { LocationsService } from '../../locations/locations.service';
+import { Location } from '../../locations/entities/location.entity';
 import { parseCsv } from './csv-parser';
 import {
   validateUsers,
@@ -47,9 +47,9 @@ export class CsvImportService {
   constructor(
     private readonly redisService: RedisService,
     private readonly usersService: UsersService,
-    private readonly areasService: AreasService,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    private readonly locationsService: LocationsService,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
   ) {}
 
   /** Parse + validate a CSV upload, creating a session when any row is valid. */
@@ -129,7 +129,7 @@ export class CsvImportService {
           full_name: row.full_name,
           role: row.role,
           phone_number: row.phone_number,
-          area_ids: row.area_id ? [row.area_id] : undefined,
+          area_ids: row.location_id ? [row.location_id] : undefined,
           rayon_id: row.rayon_id,
         });
         // A password omitted from the CSV is auto-generated and returned once —
@@ -159,15 +159,15 @@ export class CsvImportService {
     const skippedReasons: string[] = [];
     for (const row of rows) {
       try {
-        const area = await this.areasService.create({
+        const area = await this.locationsService.create({
           name: row.name,
-          area_type_id: row.area_type_id,
+          location_type_id: row.location_type_id,
           address: row.address,
           gps_lat: row.latitude,
           gps_lng: row.longitude,
           radius_meters: row.radius_meters,
         });
-        // CreateAreaDto carries no rayon_id — assign it directly post-create.
+        // CreateLocationDto carries no rayon_id — assign it directly post-create.
         await this.areaRepository.update(area.id, { rayon_id: row.rayon_id });
         imported++;
       } catch (error) {

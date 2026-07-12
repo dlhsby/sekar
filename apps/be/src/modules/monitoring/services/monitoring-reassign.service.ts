@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
 import { SchedulesService } from '../../schedules/schedules.service';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from '../dto/reassign-worker.dto';
@@ -25,8 +25,8 @@ export class MonitoringReassignService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     private readonly dailySchedulesService: SchedulesService,
@@ -66,15 +66,18 @@ export class MonitoringReassignService {
       }
     }
 
-    const previousAreaId = worker.area_id ?? null;
+    const previousAreaId = worker.location_id ?? null;
     const previousAreaName = worker.area?.name ?? null;
     // Default in WIB — a UTC date here is yesterday between 00:00-07:00 WIB
     const effectiveDate = dto.effective_date || TimezoneUtil.jakartaDateString();
 
-    worker.area_id = dto.target_area_id;
+    worker.location_id = dto.target_area_id;
     await this.userRepository.save(worker);
 
-    await this.trackingRepository.update({ user_id: worker.id }, { area_id: dto.target_area_id });
+    await this.trackingRepository.update(
+      { user_id: worker.id },
+      { location_id: dto.target_area_id },
+    );
 
     // Reflect the reassignment on the worker's roster for the effective day so
     // clock-in + monitoring pick up the new area (and optional shift) at once.
@@ -84,7 +87,7 @@ export class MonitoringReassignService {
       worker.id,
       effectiveDate,
       {
-        areaId: dto.target_area_id,
+        locationId: dto.target_area_id,
         rayonId: targetArea.rayon_id ?? null,
         shiftDefinitionId: dto.shift_definition_id ?? undefined,
       },
@@ -115,8 +118,8 @@ export class MonitoringReassignService {
         entity_id: worker.id,
         action: 'reassign',
         actor_id: requestingUser.id,
-        old_value: { area_id: previousAreaId, area_name: previousAreaName },
-        new_value: { area_id: targetArea.id, area_name: targetArea.name },
+        old_value: { location_id: previousAreaId, area_name: previousAreaName },
+        new_value: { location_id: targetArea.id, area_name: targetArea.name },
         metadata: {
           reason: dto.reason ?? null,
           effective_date: effectiveDate,

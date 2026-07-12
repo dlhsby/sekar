@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { AreaPlant } from '../../plants/entities/area-plant.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { LocationPlant } from '../../plants/entities/location-plant.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { PlantDueDateService, PlantStatus } from '../../plants/services/plant-due-date.service';
 
@@ -18,10 +18,10 @@ export interface AreaPlantSpeciesSummary {
 }
 
 /**
- * Area-level plant status aggregation response.
+ * Location-level plant status aggregation response.
  */
 export interface AreaPlantStatusResponse {
-  areaId: string;
+  locationId: string;
   total: number;
   ok: number;
   due_soon: number;
@@ -40,7 +40,7 @@ export interface RayonPlantStatusSummary {
   due_soon: number;
   overdue: number;
   unknown: number;
-  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+  overdue_areas: { location_id: string; area_name: string; overdue: number }[];
 }
 
 export interface PlantStatusSummaryResponse {
@@ -63,10 +63,10 @@ export class AreaPlantStatusService {
   private readonly logger = new Logger(AreaPlantStatusService.name);
 
   constructor(
-    @InjectRepository(AreaPlant)
-    private readonly areaPlantRepository: Repository<AreaPlant>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(LocationPlant)
+    private readonly areaPlantRepository: Repository<LocationPlant>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
     @InjectRepository(Rayon)
     private readonly rayonRepository: Repository<Rayon>,
     private readonly plantDueDateService: PlantDueDateService,
@@ -80,26 +80,26 @@ export class AreaPlantStatusService {
    * and status using PlantDueDateService. Aggregates status counts and returns
    * a per-species breakdown.
    *
-   * @param areaId — UUID of the area
+   * @param locationId — UUID of the area
    * @returns AreaPlantStatusResponse with status aggregates and per-species details
    * @throws NotFoundException if area does not exist
    */
-  async getAreaPlantStatus(areaId: string): Promise<AreaPlantStatusResponse> {
-    this.logger.log(`Computing plant status for area: ${areaId}`);
+  async getAreaPlantStatus(locationId: string): Promise<AreaPlantStatusResponse> {
+    this.logger.log(`Computing plant status for area: ${locationId}`);
 
     // Verify area exists
     const area = await this.areaRepository.findOne({
-      where: { id: areaId },
+      where: { id: locationId },
       relations: ['areaType'],
     });
 
     if (!area) {
-      throw new NotFoundException(`Area with ID ${areaId} not found`);
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
     }
 
     // Load all plants for this area with species relation
     const areaPlants = await this.areaPlantRepository.find({
-      where: { areaId },
+      where: { locationId },
       relations: ['species'],
     });
 
@@ -133,7 +133,7 @@ export class AreaPlantStatusService {
     const totalCount = plants.reduce((sum, p) => sum + p.count, 0);
 
     return {
-      areaId,
+      locationId,
       total: totalCount,
       ok: aggregates.ok,
       due_soon: aggregates.due_soon,
@@ -163,7 +163,7 @@ export class AreaPlantStatusService {
     const overduePerArea = new Map<string, number>();
 
     for (const plant of plants) {
-      const area = areaById.get(plant.areaId);
+      const area = areaById.get(plant.locationId);
       if (!area) continue; // outside the requested rayon scope (or orphaned)
 
       const { status } = this.plantDueDateService.recomputeAreaPlant(
@@ -193,10 +193,10 @@ export class AreaPlantStatusService {
       }
     }
 
-    for (const [areaId, count] of overduePerArea) {
-      const area = areaById.get(areaId)!;
+    for (const [locationId, count] of overduePerArea) {
+      const area = areaById.get(locationId)!;
       const entry = rayonMap.get(area.rayon_id ?? 'none');
-      entry?.overdue_areas.push({ area_id: areaId, area_name: area.name, overdue: count });
+      entry?.overdue_areas.push({ location_id: locationId, area_name: area.name, overdue: count });
     }
     for (const entry of rayonMap.values()) {
       entry.overdue_areas.sort((a, b) => b.overdue - a.overdue);

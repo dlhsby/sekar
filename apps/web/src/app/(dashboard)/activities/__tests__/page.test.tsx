@@ -14,7 +14,7 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as activitiesApi from '@/lib/api/activities';
 import * as activityTypesApi from '@/lib/api/activity-types';
-import * as areasApi from '@/lib/api/areas';
+import * as areasApi from '@/lib/api/locations';
 
 // ─── Next.js Mocks ────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ jest.mock('@/lib/auth/hooks', () => ({
 
 jest.mock('@/lib/api/activities');
 jest.mock('@/lib/api/activity-types');
-jest.mock('@/lib/api/areas');
+jest.mock('@/lib/api/locations');
 
 // ─── Test Users ───────────────────────────────────────────────────────────────
 
@@ -199,7 +199,7 @@ describe('ActivitiesPage', () => {
       isLoading: false,
     });
 
-    (areasApi.useAreas as jest.Mock).mockReturnValue({
+    (areasApi.useLocations as jest.Mock).mockReturnValue({
       data: mockAreasData,
       isLoading: false,
     });
@@ -959,7 +959,7 @@ describe('ActivitiesPage', () => {
     });
 
     it('should handle undefined areas data gracefully without throwing', () => {
-      (areasApi.useAreas as jest.Mock).mockReturnValue({
+      (areasApi.useLocations as jest.Mock).mockReturnValue({
         data: undefined,
         isLoading: false,
       });

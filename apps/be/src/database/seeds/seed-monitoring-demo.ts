@@ -47,12 +47,12 @@ async function seedMonitoringDemo() {
         u.id,
         u.username,
         u.role,
-        ua.area_id,
+        ua.location_id,
         a.name as area_name,
         a.boundary_polygon
       FROM users u
-      LEFT JOIN user_areas ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
-      LEFT JOIN areas a ON ua.area_id = a.id
+      LEFT JOIN user_locations ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'
+      LEFT JOIN locations a ON ua.location_id = a.id
       LEFT JOIN rayons r ON a.rayon_id = r.id
       WHERE u.role IN ('satgas', 'linmas', 'korlap')
         AND u.deleted_at IS NULL
@@ -140,10 +140,10 @@ async function seedMonitoringDemo() {
         workerIndex++;
 
         // Pick an area for this worker
-        const area = worker.area_id
+        const area = worker.location_id
           ? worker
-          : workers.find((w: any) => w.area_id && w.area_id !== null);
-        if (!area || !area.area_id) {
+          : workers.find((w: any) => w.location_id && w.location_id !== null);
+        if (!area || !area.location_id) {
           console.log(`  ⚠️  Skipping ${worker.username}: no assigned area`);
           continue;
         }
@@ -155,13 +155,13 @@ async function seedMonitoringDemo() {
           const clockInTime = new Date(now.getTime() - 2 * 60 * 60 * 1000); // 2h ago
 
           await queryRunner.query(
-            `INSERT INTO shifts (id, user_id, area_id, clock_in_time, clock_in_gps_lat,
+            `INSERT INTO shifts (id, user_id, location_id, clock_in_time, clock_in_gps_lat,
               clock_in_gps_lng, created_at, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
             [
               shiftId,
               worker.id,
-              area.area_id,
+              area.location_id,
               clockInTime,
               -7.2905, // Bungkul center
               112.7398,
@@ -212,7 +212,7 @@ async function seedMonitoringDemo() {
           await queryRunner.query(
             `INSERT INTO user_tracking_status (user_id, shift_id, status, last_latitude,
               last_longitude, last_accuracy_meters, last_battery_level, last_location_at,
-              is_within_area, area_id, updated_at)
+              is_within_area, location_id, updated_at)
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
              ON CONFLICT (user_id) DO UPDATE SET
                shift_id = $2,
@@ -223,7 +223,7 @@ async function seedMonitoringDemo() {
                last_battery_level = $7,
                last_location_at = $8,
                is_within_area = $9,
-               area_id = $10,
+               location_id = $10,
                updated_at = $11`,
             [
               worker.id,
@@ -235,7 +235,7 @@ async function seedMonitoringDemo() {
               status.name === 'offline' ? 10 : 75,
               lastPingTime,
               status.isWithinArea ?? true,
-              area.area_id,
+              area.location_id,
               now,
             ],
           );

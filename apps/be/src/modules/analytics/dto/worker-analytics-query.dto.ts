@@ -26,7 +26,7 @@ export class WorkerAnalyticsQueryDto extends PaginationDto {
   })
   @IsOptional()
   @IsUUID()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by rayon ID',

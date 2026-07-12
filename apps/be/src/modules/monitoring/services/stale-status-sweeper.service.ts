@@ -88,7 +88,7 @@ export class StaleStatusSweeperService {
       for (const record of stale) {
         void this.statusCalculator.notifyMissingWorker(
           record.user_id,
-          record.area_id,
+          record.location_id,
           record.rayon_id,
         );
       }

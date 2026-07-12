@@ -12,7 +12,7 @@ import { AssetCategory } from './entities/asset-category.entity';
 import { AssetAssignment } from './entities/asset-assignment.entity';
 import { AssetMaintenance } from './entities/asset-maintenance.entity';
 import { User, UserRole } from '../users/entities/user.entity';
-import { UserArea } from '../user-areas/entities/user-area.entity';
+import { UserLocation } from '../user-locations/entities/user-location.entity';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
 import { QueryAssetDto } from './dto/query-asset.dto';
@@ -29,7 +29,7 @@ import {
 import { QrCodeService } from './services/qr-code.service';
 import { AuditLogService } from '../audit/audit.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { ASSET_MANAGERS, ASSET_USERS, ASSET_VIEWERS } from '../users/constants/role-groups';
 
 @Injectable()
@@ -47,10 +47,10 @@ export class AssetsService {
     private maintenanceRepo: Repository<AssetMaintenance>,
     @InjectRepository(User)
     private userRepo: Repository<User>,
-    @InjectRepository(UserArea)
-    private userAreaRepo: Repository<UserArea>,
-    @InjectRepository(Area)
-    private areaRepo: Repository<Area>,
+    @InjectRepository(UserLocation)
+    private userLocationRepo: Repository<UserLocation>,
+    @InjectRepository(Location)
+    private locationRepo: Repository<Location>,
     private qrCodeService: QrCodeService,
     private auditLogService: AuditLogService,
   ) {}
@@ -72,8 +72,8 @@ export class AssetsService {
     if (query.status) {
       qb.andWhere('asset.status = :status', { status: query.status });
     }
-    if (query.area_id) {
-      qb.andWhere('asset.area_id = :areaId', { areaId: query.area_id });
+    if (query.location_id) {
+      qb.andWhere('asset.location_id = :areaId', { areaId: query.location_id });
     }
     if (query.rayon_id) {
       qb.andWhere('asset.rayon_id = :rayonId', { rayonId: query.rayon_id });
@@ -128,16 +128,17 @@ export class AssetsService {
       throw new BadRequestException('Invalid category id');
     }
 
-    const rayonId = dto.rayon_id || (dto.area_id ? await this.getAreaRayon(dto.area_id) : null);
+    const rayonId =
+      dto.rayon_id || (dto.location_id ? await this.getAreaRayon(dto.location_id) : null);
     if (!rayonId) {
-      throw new BadRequestException('Asset must have either area_id or rayon_id');
+      throw new BadRequestException('Asset must have either location_id or rayon_id');
     }
 
     const assetCode = await this.generateAssetCode(category.code_prefix);
 
     const asset = this.assetRepo.create({
       category_id: dto.category_id,
-      area_id: dto.area_id || null,
+      location_id: dto.location_id || null,
       rayon_id: rayonId,
       name: dto.name,
       description: dto.description || null,
@@ -619,19 +620,19 @@ export class AssetsService {
   }
 
   private async applyScopeFilter(qb: any, user: User): Promise<void> {
-    const { role, area_id, rayon_id } = user;
+    const { role, location_id, rayon_id } = user;
 
     if (ASSET_VIEWERS.includes(role as any)) {
       if (role === UserRole.SATGAS || role === UserRole.LINMAS) {
-        qb.andWhere('asset.area_id = :areaId', { areaId: area_id });
+        qb.andWhere('asset.location_id = :areaId', { areaId: location_id });
       } else if (role === UserRole.KORLAP) {
-        const areas = await this.userAreaRepo.find({ where: { user_id: user.id } });
-        const areaIds = areas.map((a) => a.area_id);
-        if (areaIds.length > 0) {
-          qb.andWhere('asset.area_id IN (:...areaIds)', { areaIds });
+        const areas = await this.userLocationRepo.find({ where: { user_id: user.id } });
+        const locationIds = areas.map((a) => a.location_id);
+        if (locationIds.length > 0) {
+          qb.andWhere('asset.location_id IN (:...locationIds)', { locationIds });
         }
       } else if (role === UserRole.ADMIN_RAYON) {
-        qb.andWhere('asset.area_id = :areaId', { areaId: area_id });
+        qb.andWhere('asset.location_id = :areaId', { areaId: location_id });
       } else if (role === UserRole.KEPALA_RAYON) {
         qb.andWhere('asset.rayon_id = :rayonId', { rayonId: rayon_id });
       }
@@ -639,19 +640,19 @@ export class AssetsService {
   }
 
   private async applyScopeFilterForMaintenance(qb: any, user: User): Promise<void> {
-    const { role, area_id, rayon_id } = user;
+    const { role, location_id, rayon_id } = user;
 
     if (ASSET_VIEWERS.includes(role as any)) {
       if (role === UserRole.SATGAS || role === UserRole.LINMAS) {
-        qb.andWhere('asset.area_id = :areaId', { areaId: area_id });
+        qb.andWhere('asset.location_id = :areaId', { areaId: location_id });
       } else if (role === UserRole.KORLAP) {
-        const areas = await this.userAreaRepo.find({ where: { user_id: user.id } });
-        const areaIds = areas.map((a) => a.area_id);
-        if (areaIds.length > 0) {
-          qb.andWhere('asset.area_id IN (:...areaIds)', { areaIds });
+        const areas = await this.userLocationRepo.find({ where: { user_id: user.id } });
+        const locationIds = areas.map((a) => a.location_id);
+        if (locationIds.length > 0) {
+          qb.andWhere('asset.location_id IN (:...locationIds)', { locationIds });
         }
       } else if (role === UserRole.ADMIN_RAYON) {
-        qb.andWhere('asset.area_id = :areaId', { areaId: area_id });
+        qb.andWhere('asset.location_id = :areaId', { areaId: location_id });
       } else if (role === UserRole.KEPALA_RAYON) {
         qb.andWhere('asset.rayon_id = :rayonId', { rayonId: rayon_id });
       }
@@ -663,19 +664,19 @@ export class AssetsService {
       throw new ForbiddenException('You do not have permission to view this asset');
     }
 
-    const { role, area_id, rayon_id } = user;
+    const { role, location_id, rayon_id } = user;
     if (role === UserRole.SATGAS || role === UserRole.LINMAS) {
-      if (asset.area_id && area_id && asset.area_id !== area_id) {
+      if (asset.location_id && location_id && asset.location_id !== location_id) {
         throw new ForbiddenException('You can only view assets in your area');
       }
     } else if (role === UserRole.KORLAP) {
-      const areas = await this.userAreaRepo.find({ where: { user_id: user.id } });
-      const areaIds = areas.map((a) => a.area_id);
-      if (asset.area_id && !areaIds.includes(asset.area_id)) {
+      const areas = await this.userLocationRepo.find({ where: { user_id: user.id } });
+      const locationIds = areas.map((a) => a.location_id);
+      if (asset.location_id && !locationIds.includes(asset.location_id)) {
         throw new ForbiddenException('You can only view assets in your assigned areas');
       }
     } else if (role === UserRole.ADMIN_RAYON) {
-      if (asset.area_id && area_id && asset.area_id !== area_id) {
+      if (asset.location_id && location_id && asset.location_id !== location_id) {
         throw new ForbiddenException('You can only view assets in your area');
       }
     } else if (role === UserRole.KEPALA_RAYON) {
@@ -686,9 +687,9 @@ export class AssetsService {
   }
 
   private async getAreaRayon(areaId: string): Promise<string> {
-    const area = await this.areaRepo.findOne({ where: { id: areaId } });
+    const area = await this.locationRepo.findOne({ where: { id: areaId } });
     if (!area || !area.rayon_id) {
-      throw new BadRequestException('Area does not have associated rayon');
+      throw new BadRequestException('Location does not have associated rayon');
     }
     return area.rayon_id;
   }

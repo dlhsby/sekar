@@ -22,13 +22,13 @@ import type { ColumnDef } from '@/components/ui';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
-import { useAreaTypes } from '@/lib/api/area-types';
+import { useLocationTypes } from '@/lib/api/location-types';
 import { useRayons } from '@/lib/api/rayons';
 import {
   useUploadKmz,
   useConfirmKmz,
   type KmzUploadResponse,
-  type ParsedArea,
+  type ParsedLocation,
   type KmzConfirmSelection,
 } from '@/lib/api/import';
 
@@ -63,16 +63,16 @@ function KmzImport() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<KmzUploadResponse | null>(null);
-  const [areaTypeId, setAreaTypeId] = useState(SENTINEL);
+  const [locationTypeId, setAreaTypeId] = useState(SENTINEL);
   const [rayonId, setRayonId] = useState(SENTINEL);
 
   const uploadKmz = useUploadKmz();
   const confirmKmz = useConfirmKmz();
-  const { data: areaTypes } = useAreaTypes();
+  const { data: locationTypes } = useLocationTypes();
   const { data: rayons } = useRayons();
 
   const hasNewAreas = useMemo(() => (preview?.new_areas ?? 0) > 0, [preview]);
-  const needsDefaults = hasNewAreas && (!areaTypeId || !rayonId);
+  const needsDefaults = hasNewAreas && (!locationTypeId || !rayonId);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,10 +92,10 @@ function KmzImport() {
 
   const handleConfirm = async () => {
     if (!preview) return;
-    const selections: KmzConfirmSelection[] = preview.areas.map((area, index) => ({
+    const selections: KmzConfirmSelection[] = preview.locations.map((area, index) => ({
       index,
       action: area.match_status === 'update' ? 'update' : 'create',
-      area_type_id: area.match_status === 'update' ? undefined : areaTypeId,
+      location_type_id: area.match_status === 'update' ? undefined : locationTypeId,
       rayon_id: area.match_status === 'update' ? undefined : rayonId,
     }));
     try {
@@ -108,7 +108,7 @@ function KmzImport() {
     }
   };
 
-  const areaTypeOptions = (areaTypes ?? []).map((t) => ({ value: t.id, label: t.name }));
+  const locationTypeOptions = (locationTypes ?? []).map((t) => ({ value: t.id, label: t.name }));
   const rayonOptions = (rayons ?? []).map((r) => ({ value: r.id, label: r.name }));
 
   return (
@@ -149,11 +149,11 @@ function KmzImport() {
           {hasNewAreas && (
             <div className="mb-4 grid gap-4 sm:grid-cols-2">
               <FormSelect
-                label={t('kmz.areaTypeLabel')}
-                options={areaTypeOptions}
-                value={areaTypeId}
+                label={t('kmz.locationTypeLabel')}
+                options={locationTypeOptions}
+                value={locationTypeId}
                 onChange={setAreaTypeId}
-                placeholder={t('kmz.areaTypePlaceholder')}
+                placeholder={t('kmz.locationTypePlaceholder')}
               />
               <FormSelect
                 label={t('kmz.rayonLabel')}
@@ -171,7 +171,7 @@ function KmzImport() {
             </Alert>
           )}
 
-          <PreviewTable areas={preview.areas} t={t} />
+          <PreviewTable areas={preview.locations} t={t} />
 
           <div className="mt-4 flex gap-3">
             <Button variant="outline" onClick={() => setPreview(null)}>
@@ -187,8 +187,8 @@ function KmzImport() {
   );
 }
 
-function PreviewTable({ areas, t }: { areas: ParsedArea[]; t: ReturnType<typeof useTranslation>['t'] }) {
-  const columns: ColumnDef<ParsedArea & Record<string, unknown>>[] = [
+function PreviewTable({ areas, t }: { areas: ParsedLocation[]; t: ReturnType<typeof useTranslation>['t'] }) {
+  const columns: ColumnDef<ParsedLocation & Record<string, unknown>>[] = [
     {
       id: 'name',
       accessorKey: 'name',

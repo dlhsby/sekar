@@ -8,7 +8,7 @@
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useRayons } from '@/lib/api/rayons';
 import { useTranslation } from 'react-i18next';
 import {
@@ -52,7 +52,7 @@ export default function CreateTaskPage() {
 
   // Data fetching hooks - always call (enabled by query client)
   const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useAreas({ limit: 1000 });
+  const { data: areasData } = useLocations({ limit: 1000 });
   const { data: rayonsData } = useRayons();
 
   const createMutation = useCreateTask();

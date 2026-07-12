@@ -5,7 +5,7 @@ describe('RegionsService', () => {
   let service: RegionsService;
   let regionRepo: any;
   let rayonRepo: any;
-  let areaRepo: any;
+  let locationRepo: any;
 
   beforeEach(() => {
     regionRepo = {
@@ -23,13 +23,13 @@ describe('RegionsService', () => {
       andWhere: jest.fn().mockReturnThis(),
       execute: jest.fn().mockResolvedValue(undefined),
     };
-    areaRepo = {
+    locationRepo = {
       find: jest.fn(),
       update: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(() => qb),
       _qb: qb,
     };
-    service = new RegionsService(regionRepo, rayonRepo, areaRepo);
+    service = new RegionsService(regionRepo, rayonRepo, locationRepo);
   });
 
   describe('create', () => {
@@ -46,9 +46,9 @@ describe('RegionsService', () => {
       regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1' });
       await service.remove('reg-1');
       // Explicit SET NULL via query builder — repo.update() would skip undefined.
-      expect(areaRepo._qb.set).toHaveBeenCalled();
-      expect(areaRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
-      expect(areaRepo._qb.execute).toHaveBeenCalled();
+      expect(locationRepo._qb.set).toHaveBeenCalled();
+      expect(locationRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
+      expect(locationRepo._qb.execute).toHaveBeenCalled();
       expect(regionRepo.softRemove).toHaveBeenCalled();
     });
 
@@ -58,25 +58,25 @@ describe('RegionsService', () => {
     });
   });
 
-  describe('assignAreas', () => {
+  describe('assignLocations', () => {
     it('rejects areas from a different rayon', async () => {
       regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1' });
-      areaRepo.find.mockResolvedValue([{ id: 'a1', name: 'Area 1', rayon_id: 'rayon-2' }]);
-      await expect(service.assignAreas('reg-1', ['a1'])).rejects.toBeInstanceOf(
+      locationRepo.find.mockResolvedValue([{ id: 'a1', name: 'Location 1', rayon_id: 'rayon-2' }]);
+      await expect(service.assignLocations('reg-1', ['a1'])).rejects.toBeInstanceOf(
         BadRequestException,
       );
     });
 
     it('re-parents same-rayon areas', async () => {
       regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1' });
-      areaRepo.find.mockResolvedValue([{ id: 'a1', name: 'Area 1', rayon_id: 'rayon-1' }]);
-      const res = await service.assignAreas('reg-1', ['a1']);
+      locationRepo.find.mockResolvedValue([{ id: 'a1', name: 'Location 1', rayon_id: 'rayon-1' }]);
+      const res = await service.assignLocations('reg-1', ['a1']);
       expect(res).toEqual({ updated: 1 });
       // Un-parents non-selected areas of this region, then parents the selected set.
-      expect(areaRepo._qb.andWhere).toHaveBeenCalledWith('id NOT IN (:...areaIds)', {
-        areaIds: ['a1'],
+      expect(locationRepo._qb.andWhere).toHaveBeenCalledWith('id NOT IN (:...locationIds)', {
+        locationIds: ['a1'],
       });
-      expect(areaRepo.update).toHaveBeenCalledWith(
+      expect(locationRepo.update).toHaveBeenCalledWith(
         { id: expect.anything() },
         { region_id: 'reg-1' },
       );
@@ -84,12 +84,12 @@ describe('RegionsService', () => {
 
     it('clears all areas when the selection is empty', async () => {
       regionRepo.findOne.mockResolvedValue({ id: 'reg-1', rayon_id: 'rayon-1' });
-      const res = await service.assignAreas('reg-1', []);
+      const res = await service.assignLocations('reg-1', []);
       expect(res).toEqual({ updated: 0 });
       // Un-parents every area of the region; no positive assignment.
-      expect(areaRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
-      expect(areaRepo._qb.andWhere).not.toHaveBeenCalled();
-      expect(areaRepo.update).not.toHaveBeenCalled();
+      expect(locationRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
+      expect(locationRepo._qb.andWhere).not.toHaveBeenCalled();
+      expect(locationRepo.update).not.toHaveBeenCalled();
     });
   });
 });

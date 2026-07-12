@@ -8,7 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { Region } from './entities/region.entity';
 import { Rayon } from '../rayons/entities/rayon.entity';
-import { Area } from '../areas/entities/area.entity';
+import { Location } from '../locations/entities/location.entity';
 import { CreateRegionDto } from './dto/create-region.dto';
 import { UpdateRegionDto } from './dto/update-region.dto';
 
@@ -24,8 +24,8 @@ export class RegionsService {
     private readonly regionRepo: Repository<Region>,
     @InjectRepository(Rayon)
     private readonly rayonRepo: Repository<Rayon>,
-    @InjectRepository(Area)
-    private readonly areaRepo: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly locationRepo: Repository<Location>,
   ) {}
 
   findAll(rayonId?: string): Promise<Region[]> {
@@ -65,9 +65,9 @@ export class RegionsService {
     // Detach child areas first — soft-delete does not fire the FK's ON DELETE
     // SET NULL. Use an explicit SET NULL: repo.update() skips `undefined`, so
     // `{ region_id: undefined }` would be a no-op and leave areas orphaned.
-    await this.areaRepo
+    await this.locationRepo
       .createQueryBuilder()
-      .update(Area)
+      .update(Location)
       .set({ region_id: () => 'NULL' })
       .where('region_id = :id', { id })
       .execute();
@@ -76,17 +76,17 @@ export class RegionsService {
 
   /** Re-parent areas into this region (all must share the region's rayon). */
   /**
-   * Set the region's areas to EXACTLY `areaIds` (replace semantics): selected
+   * Set the region's areas to EXACTLY `locationIds` (replace semantics): selected
    * areas are re-parented in, and any area currently in this region but no longer
    * selected is un-parented (region_id → NULL). All selected areas must share the
    * region's rayon. Passing an empty list clears the region's areas.
    */
-  async assignAreas(id: string, areaIds: string[]): Promise<{ updated: number }> {
+  async assignLocations(id: string, locationIds: string[]): Promise<{ updated: number }> {
     const region = await this.findOne(id);
 
-    if (areaIds.length > 0) {
-      const areas = await this.areaRepo.find({ where: { id: In(areaIds) } });
-      if (areas.length !== areaIds.length) {
+    if (locationIds.length > 0) {
+      const areas = await this.locationRepo.find({ where: { id: In(locationIds) } });
+      if (areas.length !== locationIds.length) {
         throw new NotFoundException('One or more areas not found');
       }
       const mismatched = areas.filter((a) => a.rayon_id !== region.rayon_id);
@@ -99,21 +99,21 @@ export class RegionsService {
 
     // Un-parent areas currently in this region that are no longer selected.
     // TypeORM update() skips undefined, so clear via a NULL-setting QueryBuilder.
-    const unassign = this.areaRepo
+    const unassign = this.locationRepo
       .createQueryBuilder()
       .update()
       .set({ region_id: () => 'NULL' })
       .where('region_id = :id', { id });
-    if (areaIds.length > 0) {
-      unassign.andWhere('id NOT IN (:...areaIds)', { areaIds });
+    if (locationIds.length > 0) {
+      unassign.andWhere('id NOT IN (:...locationIds)', { locationIds });
     }
     await unassign.execute();
 
     // Parent the selected areas into the region.
-    if (areaIds.length > 0) {
-      await this.areaRepo.update({ id: In(areaIds) }, { region_id: id });
+    if (locationIds.length > 0) {
+      await this.locationRepo.update({ id: In(locationIds) }, { region_id: id });
     }
-    return { updated: areaIds.length };
+    return { updated: locationIds.length };
   }
 
   private async assertRayonExists(rayonId: string): Promise<void> {

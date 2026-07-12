@@ -7,7 +7,7 @@ import { ReportType, ReportFormat } from '../enums/report.enums';
  * Report Parameters DTO
  *
  * Dynamic parameters for report generation, depends on report type.
- * Supports filters like date_range, area_id, rayon_id, etc.
+ * Supports filters like date_range, location_id, rayon_id, etc.
  */
 export class ReportParametersDto {
   @ApiPropertyOptional({ description: 'Start date (ISO 8601)' })
@@ -20,10 +20,10 @@ export class ReportParametersDto {
   @IsString()
   end_date?: string;
 
-  @ApiPropertyOptional({ description: 'Area ID (UUID)' })
+  @ApiPropertyOptional({ description: 'Location ID (UUID)' })
   @IsOptional()
   @IsString()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({ description: 'Rayon ID (UUID)' })
   @IsOptional()

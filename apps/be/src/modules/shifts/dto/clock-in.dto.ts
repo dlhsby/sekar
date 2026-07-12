@@ -14,19 +14,19 @@ import {
  * Clock-In DTO
  *
  * Data required for a worker to clock in to their shift.
- * Phase 2C: area_id is optional (auto-detected from schedule if not provided).
+ * Phase 2C: location_id is optional (auto-detected from schedule if not provided).
  * Includes GPS coordinates and selfie photo.
  */
 export class ClockInDto {
   @ApiProperty({
     description:
-      'Area UUID where user is clocking in (optional - auto-detected from schedule if not provided)',
+      'Location UUID where user is clocking in (optional - auto-detected from schedule if not provided)',
     example: 'b2c3d4e5-f6a7-8901-bcde-f12345678901',
     required: false,
   })
   @IsOptional()
   @IsUUID()
-  area_id?: string;
+  location_id?: string;
 
   @ApiProperty({
     description: 'GPS latitude of user location',

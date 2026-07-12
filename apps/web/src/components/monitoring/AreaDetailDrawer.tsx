@@ -13,7 +13,7 @@ import { intlLocale } from '@/lib/i18n/date-locale';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { WorkerListVirtual, type WorkerListItem } from './WorkerListVirtual';
-import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
+import type { SnapshotWorker, SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
 import {
   useAreaPlants,
   useNotablePlants,

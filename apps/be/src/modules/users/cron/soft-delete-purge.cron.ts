@@ -60,7 +60,7 @@ export class SoftDeletePurgeCron {
   private async purgeUser(userId: string): Promise<boolean> {
     try {
       await this.dataSource.transaction(async (manager) => {
-        await manager.query(`DELETE FROM user_areas WHERE user_id = $1`, [userId]);
+        await manager.query(`DELETE FROM user_locations WHERE user_id = $1`, [userId]);
         await manager.query(`DELETE FROM location_logs WHERE user_id = $1`, [userId]);
         await manager.query(`DELETE FROM activities WHERE user_id = $1`, [userId]);
         // shifts delete cascades any remaining location_logs via FK

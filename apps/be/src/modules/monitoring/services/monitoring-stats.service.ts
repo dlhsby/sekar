@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, IsNull, Not, In, type FindOptionsWhere } from 'typeorm';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
@@ -9,9 +9,9 @@ import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
-  AreaStaffRequirement,
+  LocationStaffRequirement,
   DayType,
-} from '../../area-staff-requirements/entities/area-staff-requirement.entity';
+} from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import { CityStatsDto, RayonSummaryDto } from '../dto/city-stats.dto';
 import { RayonStatsDto, AreaSummaryDto, ShiftSummaryDto } from '../dto/rayon-stats.dto';
@@ -22,8 +22,12 @@ import {
   AggregateRosterCountsDto,
   PresenceBreakdownDto,
 } from '../dto/aggregate.dto';
-import { Schedule, ScheduleStatus } from '../../schedules/entities/schedule.entity';
-import { ScheduleArea } from '../../schedules/entities/schedule-area.entity';
+import {
+  Schedule,
+  ScheduleStatus,
+  ScheduleLocation,
+} from '../../schedules/entities/schedule.entity';
+
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import {
   AreaStatsDto,
@@ -46,8 +50,8 @@ export class MonitoringStatsService {
   private readonly logger = new Logger(MonitoringStatsService.name);
 
   constructor(
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
     @InjectRepository(Task)
@@ -60,14 +64,14 @@ export class MonitoringStatsService {
     private readonly rayonRepository: Repository<Rayon>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepository: Repository<ShiftDefinition>,
-    @InjectRepository(AreaStaffRequirement)
-    private readonly staffRequirementRepository: Repository<AreaStaffRequirement>,
+    @InjectRepository(LocationStaffRequirement)
+    private readonly staffRequirementRepository: Repository<LocationStaffRequirement>,
     @InjectRepository(UserTrackingStatus)
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
-    @InjectRepository(ScheduleArea)
-    private readonly scheduleAreaRepository: Repository<ScheduleArea>,
+    @InjectRepository(ScheduleLocation)
+    private readonly scheduleAreaRepository: Repository<ScheduleLocation>,
     private readonly dayTypeService: DayTypeService,
     // Optional: short-TTL response cache. Absent in unit specs; present at runtime.
     @Optional()
@@ -161,15 +165,15 @@ export class MonitoringStatsService {
       workers_on_shift: 0,
     }));
 
-    const areaIds = areas.map((a) => a.id);
+    const locationIds = areas.map((a) => a.id);
     const [tasksPending, tasksInProgress, tasksCompletedToday] = await Promise.all([
-      this.countTasksByAreaIds(areaIds, TaskStatus.PENDING),
-      this.countTasksByAreaIds(areaIds, TaskStatus.IN_PROGRESS),
-      this.countTasksCompletedTodayByAreaIds(areaIds, today),
+      this.countTasksByAreaIds(locationIds, TaskStatus.PENDING),
+      this.countTasksByAreaIds(locationIds, TaskStatus.IN_PROGRESS),
+      this.countTasksCompletedTodayByAreaIds(locationIds, today),
     ]);
 
-    const activitiesSubmittedToday = await this.countActivitiesByAreaIds(areaIds, today);
-    const activeShifts = await this.countActiveShiftsByAreaIds(areaIds);
+    const activitiesSubmittedToday = await this.countActivitiesByAreaIds(locationIds, today);
+    const activeShifts = await this.countActiveShiftsByAreaIds(locationIds);
 
     return {
       id: rayon.id,
@@ -190,15 +194,15 @@ export class MonitoringStatsService {
     };
   }
 
-  async getAreaStats(areaId: string): Promise<AreaStatsDto> {
-    this.logger.log(`Generating statistics for area: ${areaId}`);
+  async getAreaStats(locationId: string): Promise<AreaStatsDto> {
+    this.logger.log(`Generating statistics for area: ${locationId}`);
 
     const area = await this.areaRepository.findOne({
-      where: { id: areaId },
+      where: { id: locationId },
       relations: ['areaType'],
     });
     if (!area) {
-      throw new NotFoundException(`Area with ID ${areaId} not found`);
+      throw new NotFoundException(`Location with ID ${locationId} not found`);
     }
 
     let rayonName = 'Unassigned';
@@ -208,7 +212,7 @@ export class MonitoringStatsService {
     }
 
     const today = this.getTodayRange();
-    const workers = await this.getAreaWorkers(areaId);
+    const workers = await this.getAreaWorkers(locationId);
 
     const workersOnline = workers.filter(
       (w) => w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OUTSIDE_AREA,
@@ -217,11 +221,11 @@ export class MonitoringStatsService {
       (w) => w.status === TrackingStatus.OFFLINE || w.status === TrackingStatus.MISSING,
     ).length;
 
-    const staffRequirements = await this.getAreaStaffRequirements(areaId);
+    const staffRequirements = await this.getAreaStaffRequirements(locationId);
     const isFullyStaffed = staffRequirements.every((r) => r.is_met);
 
     const tasks = await this.taskRepository.find({
-      where: { area_id: areaId },
+      where: { location_id: locationId },
       relations: ['assignee'],
       order: { priority: 'DESC', deadline: 'ASC' },
     });
@@ -252,7 +256,7 @@ export class MonitoringStatsService {
 
     const activitiesSubmittedToday = await this.activityRepository.count({
       where: {
-        area_id: areaId,
+        location_id: locationId,
         created_at: Between(today.start, today.end),
       },
     });
@@ -433,7 +437,7 @@ export class MonitoringStatsService {
     );
   }
 
-  /** Rayon scope: one aggregate node per area in the rayon, grouped by `uts.area_id`. */
+  /** Rayon scope: one aggregate node per area in the rayon, grouped by `uts.location_id`. */
   private async buildAreaNodes(
     rayonId: string,
     shiftDefinitionId: string | undefined,
@@ -450,42 +454,42 @@ export class MonitoringStatsService {
     // throw) and return no nodes.
     if (areas.length === 0) return [];
 
-    const areaIds = areas.map((a) => a.id);
+    const locationIds = areas.map((a) => a.id);
     const [statusRows, roleRows, requiredMap, scheduledByArea] = await Promise.all([
       this.trackingRepository
         .createQueryBuilder('uts')
-        .select('uts.area_id', 'group_id')
+        .select('uts.location_id', 'group_id')
         .addSelect('uts.status', 'status')
         .addSelect('COUNT(*)', 'count')
         .where('uts.shift_id IS NOT NULL')
-        .andWhere('(uts.rayon_id = :rayonId OR uts.area_id IN (:...areaIds))', {
+        .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
           rayonId,
-          areaIds,
+          locationIds,
         })
-        .groupBy('uts.area_id')
+        .groupBy('uts.location_id')
         .addGroupBy('uts.status')
         .getRawMany(),
       this.trackingRepository
         .createQueryBuilder('uts')
         .innerJoin('uts.user', 'user')
-        .select('uts.area_id', 'group_id')
+        .select('uts.location_id', 'group_id')
         .addSelect('user.role', 'role')
         .addSelect('COUNT(*)', 'count')
         .where('uts.shift_id IS NOT NULL')
-        .andWhere('uts.area_id IN (:...areaIds)', {
-          areaIds,
+        .andWhere('uts.location_id IN (:...locationIds)', {
+          locationIds,
         })
-        .groupBy('uts.area_id')
+        .groupBy('uts.location_id')
         .addGroupBy('user.role')
         .getRawMany(),
-      this.requiredCountByGroup('area', shiftDefinitionId, dayType, areaIds),
-      this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { areaIds }),
+      this.requiredCountByGroup('area', shiftDefinitionId, dayType, locationIds),
+      this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { locationIds }),
     ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
     const scheduledIds = this.flattenUserSets(scheduledByArea);
-    const presenceByArea = await this.presenceByGroup('area', scheduledIds, { areaIds });
+    const presenceByArea = await this.presenceByGroup('area', scheduledIds, { locationIds });
 
     return areas.map((area) =>
       this.assembleNode({
@@ -509,7 +513,7 @@ export class MonitoringStatsService {
     groupBy: 'rayon' | 'area',
     shiftDefinitionId: string | undefined,
     dayType: DayType,
-    areaIds?: string[],
+    locationIds?: string[],
   ): Promise<Map<string, number>> {
     if (!shiftDefinitionId) return new Map();
     const qb = this.staffRequirementRepository
@@ -521,10 +525,10 @@ export class MonitoringStatsService {
     if (groupBy === 'rayon') {
       qb.innerJoin('req.area', 'area').select('area.rayon_id', 'group_id').groupBy('area.rayon_id');
     } else {
-      if (!areaIds || areaIds.length === 0) return new Map();
-      qb.select('req.area_id', 'group_id')
-        .andWhere('req.area_id IN (:...areaIds)', { areaIds })
-        .groupBy('req.area_id');
+      if (!locationIds || locationIds.length === 0) return new Map();
+      qb.select('req.location_id', 'group_id')
+        .andWhere('req.location_id IN (:...locationIds)', { locationIds })
+        .groupBy('req.location_id');
     }
 
     const rows = await qb.getRawMany();
@@ -633,7 +637,7 @@ export class MonitoringStatsService {
   private async presenceByGroup(
     groupBy: 'rayon' | 'area',
     scheduledUserIds: string[],
-    opts: { areaIds?: string[] },
+    opts: { locationIds?: string[] },
   ): Promise<Map<string, PresenceBreakdownDto>> {
     const map = new Map<string, PresenceBreakdownDto>();
     if (scheduledUserIds.length === 0) return map;
@@ -642,15 +646,15 @@ export class MonitoringStatsService {
     if (groupBy === 'rayon') {
       qb.innerJoin('uts.area', 'area').select('area.rayon_id', 'group_id');
     } else {
-      qb.select('uts.area_id', 'group_id');
+      qb.select('uts.location_id', 'group_id');
     }
     qb.addSelect('uts.status', 'status')
       .addSelect('uts.is_within_area', 'within')
       .addSelect('COUNT(*)', 'count')
       .where('uts.shift_id IS NOT NULL')
       .andWhere('uts.user_id IN (:...ids)', { ids: scheduledUserIds });
-    if (groupBy === 'area' && opts.areaIds && opts.areaIds.length > 0) {
-      qb.andWhere('uts.area_id IN (:...areaIds)', { areaIds: opts.areaIds });
+    if (groupBy === 'area' && opts.locationIds && opts.locationIds.length > 0) {
+      qb.andWhere('uts.location_id IN (:...locationIds)', { locationIds: opts.locationIds });
     }
     qb.groupBy('group_id').addGroupBy('uts.status').addGroupBy('uts.is_within_area');
 
@@ -692,14 +696,14 @@ export class MonitoringStatsService {
 
   /**
    * Distinct rostered (planned/present) user ids for today, grouped by rayon or
-   * area. Area grouping goes through the schedule_areas join (a worker can be
+   * area. Location grouping goes through the schedule_areas join (a worker can be
    * assigned to several areas in a day).
    */
   private async scheduledUserSetsByGroup(
     groupBy: 'rayon' | 'area',
     today: string,
     shiftDefinitionId: string | undefined,
-    opts: { areaIds?: string[] },
+    opts: { locationIds?: string[] },
   ): Promise<Map<string, Set<string>>> {
     const map = new Map<string, Set<string>>();
     // Kehadiran is scoped to the CURRENT shift: a worker rostered for another
@@ -722,17 +726,17 @@ export class MonitoringStatsService {
       return map;
     }
 
-    const areaIds = opts.areaIds ?? [];
-    if (areaIds.length === 0) return map;
+    const locationIds = opts.locationIds ?? [];
+    if (locationIds.length === 0) return map;
     const rows = await this.scheduleAreaRepository
       .createQueryBuilder('sa')
       .innerJoin('sa.schedule', 's')
-      .select('sa.area_id', 'group_id')
+      .select('sa.location_id', 'group_id')
       .addSelect('s.user_id', 'user_id')
       .where('s.schedule_date = :today', { today })
       .andWhere('s.status IN (:...statuses)', { statuses })
       .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
-      .andWhere('sa.area_id IN (:...areaIds)', { areaIds })
+      .andWhere('sa.location_id IN (:...locationIds)', { locationIds })
       .andWhere('s.deleted_at IS NULL')
       .getRawMany();
     for (const r of rows) this.addToSetMap(map, r.group_id, r.user_id);
@@ -742,11 +746,12 @@ export class MonitoringStatsService {
   /** Distinct user ids that have clocked in (active shift), optionally scoped. */
   private async clockedInUserSet(opts: {
     rayonId?: string;
-    areaIds?: string[];
+    locationIds?: string[];
   }): Promise<Set<string>> {
     const where: FindOptionsWhere<UserTrackingStatus> = { shift_id: Not(IsNull()) };
     if (opts.rayonId) where.rayon_id = opts.rayonId;
-    else if (opts.areaIds && opts.areaIds.length > 0) where.area_id = In(opts.areaIds);
+    else if (opts.locationIds && opts.locationIds.length > 0)
+      where.location_id = In(opts.locationIds);
     const rows = await this.trackingRepository.find({
       where,
       select: ['user_id'],
@@ -841,10 +846,10 @@ export class MonitoringStatsService {
 
   async getRayonSummary(rayon: Rayon): Promise<RayonSummaryDto> {
     const areas = await this.areaRepository.find({ where: { rayon_id: rayon.id } });
-    const areaIds = areas.map((a) => a.id);
-    const workerCount = await this.countWorkersByAreaIds(areaIds);
-    const workersOnline = await this.countOnlineWorkersByAreaIds(areaIds);
-    const workersRequired = await this.countRequiredWorkersByAreaIds(areaIds);
+    const locationIds = areas.map((a) => a.id);
+    const workerCount = await this.countWorkersByAreaIds(locationIds);
+    const workersOnline = await this.countOnlineWorkersByAreaIds(locationIds);
+    const workersRequired = await this.countRequiredWorkersByAreaIds(locationIds);
 
     return {
       id: rayon.id,
@@ -858,17 +863,17 @@ export class MonitoringStatsService {
     };
   }
 
-  async getAreaSummary(area: Area): Promise<AreaSummaryDto> {
+  async getAreaSummary(area: Location): Promise<AreaSummaryDto> {
     const workersOnline = await this.countOnlineWorkersByAreaIds([area.id]);
     const workersOffline = await this.countOfflineWorkersByAreaIds([area.id]);
     const workersRequired = await this.countRequiredWorkersByAreaIds([area.id]);
     const staffingDelta = workersOnline - workersRequired;
 
     const tasksPending = await this.taskRepository.count({
-      where: { area_id: area.id, status: TaskStatus.PENDING },
+      where: { location_id: area.id, status: TaskStatus.PENDING },
     });
     const tasksInProgress = await this.taskRepository.count({
-      where: { area_id: area.id, status: TaskStatus.IN_PROGRESS },
+      where: { location_id: area.id, status: TaskStatus.IN_PROGRESS },
     });
 
     return {
@@ -885,14 +890,14 @@ export class MonitoringStatsService {
     };
   }
 
-  async getAreaWorkers(areaId: string): Promise<UserStatusDto[]> {
+  async getAreaWorkers(locationId: string): Promise<UserStatusDto[]> {
     const trackingRecords = await this.trackingRepository.find({
-      where: { area_id: areaId, shift_id: Not(IsNull()) },
+      where: { location_id: locationId, shift_id: Not(IsNull()) },
       relations: ['user', 'shift', 'shift_definition'],
     });
 
     if (trackingRecords.length === 0) {
-      return this.getAreaWorkersLegacy(areaId);
+      return this.getAreaWorkersLegacy(locationId);
     }
 
     return trackingRecords.map((uts) => ({
@@ -911,9 +916,9 @@ export class MonitoringStatsService {
     }));
   }
 
-  private async getAreaWorkersLegacy(areaId: string): Promise<UserStatusDto[]> {
+  private async getAreaWorkersLegacy(locationId: string): Promise<UserStatusDto[]> {
     const activeShifts = await this.shiftRepository.find({
-      where: { area_id: areaId, clock_out_time: IsNull() },
+      where: { location_id: locationId, clock_out_time: IsNull() },
       relations: ['user'],
     });
 
@@ -962,14 +967,18 @@ export class MonitoringStatsService {
     });
   }
 
-  async getAreaStaffRequirements(areaId: string): Promise<StaffRequirementStatusDto[]> {
+  async getAreaStaffRequirements(locationId: string): Promise<StaffRequirementStatusDto[]> {
     const currentShift = await this.getCurrentShiftDefinition();
     if (!currentShift) return [];
 
     const currentDayType = await this.dayTypeService.getCurrentDayType();
 
     const requirements = await this.staffRequirementRepository.find({
-      where: { area_id: areaId, shift_definition_id: currentShift.id, day_type: currentDayType },
+      where: {
+        location_id: locationId,
+        shift_definition_id: currentShift.id,
+        day_type: currentDayType,
+      },
     });
 
     if (requirements.length === 0) return [];
@@ -980,7 +989,7 @@ export class MonitoringStatsService {
       .select('user.role', 'role')
       .addSelect('uts.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .where('uts.area_id = :areaId', { areaId })
+      .where('uts.location_id = :locationId', { locationId })
       .andWhere('uts.shift_id IS NOT NULL')
       .groupBy('user.role')
       .addGroupBy('uts.status')
@@ -1038,20 +1047,20 @@ export class MonitoringStatsService {
   }
 
   // Count helpers — all use user_tracking_status for consistency
-  async countWorkersByAreaIds(areaIds: string[]): Promise<number> {
-    if (areaIds.length === 0) return 0;
+  async countWorkersByAreaIds(locationIds: string[]): Promise<number> {
+    if (locationIds.length === 0) return 0;
     return this.trackingRepository
       .createQueryBuilder('uts')
-      .where('uts.area_id IN (:...areaIds)', { areaIds })
+      .where('uts.location_id IN (:...locationIds)', { locationIds })
       .andWhere('uts.shift_id IS NOT NULL')
       .getCount();
   }
 
-  async countOnlineWorkersByAreaIds(areaIds: string[]): Promise<number> {
-    if (areaIds.length === 0) return 0;
+  async countOnlineWorkersByAreaIds(locationIds: string[]): Promise<number> {
+    if (locationIds.length === 0) return 0;
     return this.trackingRepository
       .createQueryBuilder('uts')
-      .where('uts.area_id IN (:...areaIds)', { areaIds })
+      .where('uts.location_id IN (:...locationIds)', { locationIds })
       .andWhere('uts.shift_id IS NOT NULL')
       .andWhere('uts.status IN (:...statuses)', {
         statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
@@ -1059,11 +1068,11 @@ export class MonitoringStatsService {
       .getCount();
   }
 
-  async countOfflineWorkersByAreaIds(areaIds: string[]): Promise<number> {
-    if (areaIds.length === 0) return 0;
+  async countOfflineWorkersByAreaIds(locationIds: string[]): Promise<number> {
+    if (locationIds.length === 0) return 0;
     return this.trackingRepository
       .createQueryBuilder('uts')
-      .where('uts.area_id IN (:...areaIds)', { areaIds })
+      .where('uts.location_id IN (:...locationIds)', { locationIds })
       .andWhere('uts.shift_id IS NOT NULL')
       .andWhere('uts.status IN (:...statuses)', {
         statuses: [TrackingStatus.MISSING, TrackingStatus.OFFLINE],
@@ -1071,8 +1080,8 @@ export class MonitoringStatsService {
       .getCount();
   }
 
-  async countRequiredWorkersByAreaIds(areaIds: string[]): Promise<number> {
-    if (areaIds.length === 0) return 0;
+  async countRequiredWorkersByAreaIds(locationIds: string[]): Promise<number> {
+    if (locationIds.length === 0) return 0;
     const currentShift = await this.getCurrentShiftDefinition();
     if (!currentShift) return 0;
 
@@ -1080,7 +1089,7 @@ export class MonitoringStatsService {
 
     const result = await this.staffRequirementRepository
       .createQueryBuilder('req')
-      .where('req.area_id IN (:...areaIds)', { areaIds })
+      .where('req.location_id IN (:...locationIds)', { locationIds })
       .andWhere('req.shift_definition_id = :shiftId', { shiftId: currentShift.id })
       .andWhere('req.day_type = :dayType', { dayType: currentDayType })
       .select('SUM(req.required_count)', 'total')
@@ -1089,45 +1098,45 @@ export class MonitoringStatsService {
     return parseInt(result?.total || '0');
   }
 
-  async countTasksByAreaIds(areaIds: string[], status: TaskStatus): Promise<number> {
-    if (areaIds.length === 0) return 0;
+  async countTasksByAreaIds(locationIds: string[], status: TaskStatus): Promise<number> {
+    if (locationIds.length === 0) return 0;
     return this.taskRepository
       .createQueryBuilder('task')
-      .where('task.area_id IN (:...areaIds)', { areaIds })
+      .where('task.location_id IN (:...locationIds)', { locationIds })
       .andWhere('task.status = :status', { status })
       .getCount();
   }
 
   async countTasksCompletedTodayByAreaIds(
-    areaIds: string[],
+    locationIds: string[],
     today: { start: Date; end: Date },
   ): Promise<number> {
-    if (areaIds.length === 0) return 0;
+    if (locationIds.length === 0) return 0;
     return this.taskRepository
       .createQueryBuilder('task')
-      .where('task.area_id IN (:...areaIds)', { areaIds })
+      .where('task.location_id IN (:...locationIds)', { locationIds })
       .andWhere('task.status = :status', { status: TaskStatus.COMPLETED })
       .andWhere('task.completed_at BETWEEN :start AND :end', today)
       .getCount();
   }
 
   async countActivitiesByAreaIds(
-    areaIds: string[],
+    locationIds: string[],
     today: { start: Date; end: Date },
   ): Promise<number> {
-    if (areaIds.length === 0) return 0;
+    if (locationIds.length === 0) return 0;
     return this.activityRepository
       .createQueryBuilder('activity')
-      .where('activity.area_id IN (:...areaIds)', { areaIds })
+      .where('activity.location_id IN (:...locationIds)', { locationIds })
       .andWhere('activity.created_at BETWEEN :start AND :end', today)
       .getCount();
   }
 
-  async countActiveShiftsByAreaIds(areaIds: string[]): Promise<number> {
-    if (areaIds.length === 0) return 0;
+  async countActiveShiftsByAreaIds(locationIds: string[]): Promise<number> {
+    if (locationIds.length === 0) return 0;
     return this.shiftRepository
       .createQueryBuilder('shift')
-      .where('shift.area_id IN (:...areaIds)', { areaIds })
+      .where('shift.location_id IN (:...locationIds)', { locationIds })
       .andWhere('shift.clock_out_time IS NULL')
       .getCount();
   }
@@ -1204,25 +1213,29 @@ export class MonitoringStatsService {
         }
         const areas = await this.areaRepository.find({ where: areaWhere });
 
-        const areaIds = areas.map((a) => a.id);
+        const locationIds = areas.map((a) => a.id);
         const assignedCounts =
-          areaIds.length > 0
+          locationIds.length > 0
             ? await this.trackingRepository
                 .createQueryBuilder('uts')
-                .select('uts.area_id', 'area_id')
+                .select('uts.location_id', 'location_id')
                 .addSelect('COUNT(*)', 'count')
-                .where('uts.area_id IN (:...areaIds)', { areaIds })
-                .groupBy('uts.area_id')
+                .where('uts.location_id IN (:...locationIds)', { locationIds })
+                .groupBy('uts.location_id')
                 .getRawMany()
             : [];
 
-        const countMap = new Map(assignedCounts.map((r: any) => [r.area_id, parseInt(r.count)]));
+        const countMap = new Map(
+          assignedCounts.map((r: any) => [r.location_id, parseInt(r.count)]),
+        );
 
         const requiredCounts =
-          areaIds.length > 0 ? await this.countRequiredWorkersByAreaIdsMap(areaIds) : new Map();
+          locationIds.length > 0
+            ? await this.countRequiredWorkersByAreaIdsMap(locationIds)
+            : new Map();
 
         const staffingByArea =
-          areaIds.length > 0 ? await this.getStaffingByArea(areaIds) : new Map();
+          locationIds.length > 0 ? await this.getStaffingByArea(locationIds) : new Map();
 
         const areaBoundaries: AreaBoundaryDto[] = areas.map((area) => {
           const assigned = countMap.get(area.id) || 0;
@@ -1273,7 +1286,9 @@ export class MonitoringStatsService {
     };
   }
 
-  private async getStaffingByArea(areaIds: string[]): Promise<Map<string, RoleStaffingItemDto[]>> {
+  private async getStaffingByArea(
+    locationIds: string[],
+  ): Promise<Map<string, RoleStaffingItemDto[]>> {
     const currentShift = await this.getCurrentShiftDefinition();
     if (!currentShift) return new Map();
 
@@ -1281,8 +1296,8 @@ export class MonitoringStatsService {
 
     const requirements = await this.staffRequirementRepository
       .createQueryBuilder('req')
-      .select(['req.area_id', 'req.role', 'req.required_count'])
-      .where('req.area_id IN (:...areaIds)', { areaIds })
+      .select(['req.location_id', 'req.role', 'req.required_count'])
+      .where('req.location_id IN (:...locationIds)', { locationIds })
       .andWhere('req.shift_definition_id = :shiftId', { shiftId: currentShift.id })
       .andWhere('req.day_type = :dayType', { dayType: currentDayType })
       .getMany();
@@ -1290,37 +1305,39 @@ export class MonitoringStatsService {
     const activeCounts = await this.trackingRepository
       .createQueryBuilder('uts')
       .innerJoin('uts.user', 'user')
-      .select('uts.area_id', 'area_id')
+      .select('uts.location_id', 'location_id')
       .addSelect('user.role', 'role')
       .addSelect('COUNT(*)', 'count')
-      .where('uts.area_id IN (:...areaIds)', { areaIds })
+      .where('uts.location_id IN (:...locationIds)', { locationIds })
       .andWhere('uts.status = :status', { status: TrackingStatus.ACTIVE })
-      .groupBy('uts.area_id')
+      .groupBy('uts.location_id')
       .addGroupBy('user.role')
       .getRawMany();
 
     const activeMap = new Map<string, Map<string, number>>();
     for (const row of activeCounts) {
-      if (!activeMap.has(row.area_id)) activeMap.set(row.area_id, new Map());
-      activeMap.get(row.area_id)!.set(row.role, parseInt(row.count));
+      if (!activeMap.has(row.location_id)) activeMap.set(row.location_id, new Map());
+      activeMap.get(row.location_id)!.set(row.role, parseInt(row.count));
     }
 
     const result = new Map<string, RoleStaffingItemDto[]>();
     for (const req of requirements) {
-      const areaStaffing = result.get(req.area_id) || [];
+      const areaStaffing = result.get(req.location_id) || [];
       areaStaffing.push({
         role: req.role,
         required: req.required_count,
-        active: activeMap.get(req.area_id)?.get(req.role) || 0,
+        active: activeMap.get(req.location_id)?.get(req.role) || 0,
       });
-      result.set(req.area_id, areaStaffing);
+      result.set(req.location_id, areaStaffing);
     }
 
     return result;
   }
 
-  private async countRequiredWorkersByAreaIdsMap(areaIds: string[]): Promise<Map<string, number>> {
-    if (areaIds.length === 0) return new Map();
+  private async countRequiredWorkersByAreaIdsMap(
+    locationIds: string[],
+  ): Promise<Map<string, number>> {
+    if (locationIds.length === 0) return new Map();
     const currentShift = await this.getCurrentShiftDefinition();
     if (!currentShift) return new Map();
 
@@ -1328,14 +1345,14 @@ export class MonitoringStatsService {
 
     const rows = await this.staffRequirementRepository
       .createQueryBuilder('req')
-      .select('req.area_id', 'area_id')
+      .select('req.location_id', 'location_id')
       .addSelect('SUM(req.required_count)', 'total')
-      .where('req.area_id IN (:...areaIds)', { areaIds })
+      .where('req.location_id IN (:...locationIds)', { locationIds })
       .andWhere('req.shift_definition_id = :shiftId', { shiftId: currentShift.id })
       .andWhere('req.day_type = :dayType', { dayType: currentDayType })
-      .groupBy('req.area_id')
+      .groupBy('req.location_id')
       .getRawMany();
 
-    return new Map(rows.map((r: any) => [r.area_id, parseInt(r.total)]));
+    return new Map(rows.map((r: any) => [r.location_id, parseInt(r.total)]));
   }
 }

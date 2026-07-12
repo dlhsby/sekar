@@ -9,7 +9,7 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Region (Kawasan) — the level between Rayon and Area (ADR-045). New master data
+ * Region (Kawasan) — the level between Rayon and Location (ADR-045). New master data
  * drawn fresh on the map; areas are re-parented into regions. Carries its own
  * per-level map styling (separate border/fill color + opacity) and marker.
  */

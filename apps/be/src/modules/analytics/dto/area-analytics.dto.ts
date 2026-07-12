@@ -2,11 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
 
 export class AreaAnalyticsDto {
-  @ApiProperty({ description: 'Area ID', example: 'area-123' })
+  @ApiProperty({ description: 'Location ID', example: 'area-123' })
   @Expose()
   id: string;
 
-  @ApiProperty({ description: 'Area name', example: 'Taman Utara' })
+  @ApiProperty({ description: 'Location name', example: 'Taman Utara' })
   @Expose()
   area_name: string;
 

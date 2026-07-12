@@ -72,12 +72,12 @@ export class RegionsController {
   @RequirePermissions('region:update')
   @ApiOperation({ summary: 'Re-parent areas into this region (same rayon only)' })
   @ApiResponse({ status: 200, description: '{ updated: number }' })
-  @ApiResponse({ status: 400, description: 'Area rayon mismatch' })
-  assignAreas(
+  @ApiResponse({ status: 400, description: 'Location rayon mismatch' })
+  assignLocations(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignAreasDto,
   ): Promise<{ updated: number }> {
-    return this.regionsService.assignAreas(id, dto.areaIds);
+    return this.regionsService.assignLocations(id, dto.locationIds);
   }
 
   @Delete(':id')

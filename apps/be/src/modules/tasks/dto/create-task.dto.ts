@@ -16,7 +16,7 @@ import { TaskPriority } from '../entities/task.entity';
 export class CreateTaskDto {
   @ApiProperty({
     description: 'Task title',
-    example: 'Penyiraman Area Timur',
+    example: 'Penyiraman Location Timur',
     maxLength: 200,
   })
   @IsString()
@@ -51,12 +51,12 @@ export class CreateTaskDto {
   deadline?: string;
 
   @ApiPropertyOptional({
-    description: 'Area ID where the task should be performed (optional)',
+    description: 'Location ID where the task should be performed (optional)',
     example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
   })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({
     description: 'Rayon ID for rayon-scoped tasks (optional)',

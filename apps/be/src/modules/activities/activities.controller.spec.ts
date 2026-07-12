@@ -19,7 +19,7 @@ describe('ActivitiesController', () => {
     role: UserRole.SATGAS,
     full_name: 'Worker One',
     is_active: true,
-    area_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+    location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
     rayon_id: 'rayon-uuid-1',
   };
 
@@ -27,7 +27,7 @@ describe('ActivitiesController', () => {
     id: 'activity-uuid-1',
     user_id: mockUser.id,
     shift_id: 'shift-uuid-1',
-    area_id: mockUser.area_id,
+    location_id: mockUser.location_id,
     activity_type_id: 'activity-type-uuid-1',
     description: 'Penyiraman tanaman area Taman Bungkul',
     photo_urls: ['https://s3.amazonaws.com/activities/photo1.jpg?presigned=true'],
@@ -39,7 +39,7 @@ describe('ActivitiesController', () => {
     shift: {
       id: 'shift-uuid-1',
       worker_id: mockUser.id,
-      area_id: mockUser.area_id,
+      location_id: mockUser.location_id,
     },
   };
 

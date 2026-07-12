@@ -268,7 +268,7 @@ export class PruningRequestWorkflowService {
 
   /**
    * Create the task pre-assigned (`assigned` + `assigned_at`) so the satgas
-   * can accept/start/complete. May 11, 2026: `area_id` is optional (pruning
+   * can accept/start/complete. May 11, 2026: `location_id` is optional (pruning
    * often happens in neighborhoods / private yards); `rayon_id` is stamped
    * from the request so monitoring + rayon-scoped queries keep working.
    */
@@ -282,7 +282,7 @@ export class PruningRequestWorkflowService {
     const task = tm.create(Task, {
       title: `Permintaan Perantingan ${request.referenceCode}`,
       description: this.buildTaskDescription(request),
-      area_id: dto.areaId ?? null,
+      location_id: dto.areaId ?? null,
       rayon_id: request.rayonId ?? null,
       assigned_to: dto.assignedTo,
       deadline: scheduledDate,

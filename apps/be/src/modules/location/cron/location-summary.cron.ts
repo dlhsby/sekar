@@ -9,7 +9,7 @@ import { TimezoneUtil } from '../../../common/utils/timezone.util';
  *
  * Aggregates yesterday's (WIB) location_logs into location_daily_summaries so
  * dashboards keep history after the 90-day retention purge (I1) removes the
- * raw pings. area_id/rayon_id come from the ping's shift; within/outside
+ * raw pings. location_id/rayon_id come from the ping's shift; within/outside
  * counts are not derivable from raw logs (no per-ping flag) and stay 0.
  */
 @Injectable()
@@ -50,7 +50,7 @@ export class LocationSummaryCron {
       `
       INSERT INTO location_daily_summaries
         (user_id, date, total_pings, first_ping_at, last_ping_at,
-         avg_latitude, avg_longitude, area_id, rayon_id, is_backfilled)
+         avg_latitude, avg_longitude, location_id, rayon_id, is_backfilled)
       SELECT
         ll.user_id,
         (ll.logged_at AT TIME ZONE 'Asia/Jakarta')::date AS wib_date,
@@ -59,12 +59,12 @@ export class LocationSummaryCron {
         MAX(ll.logged_at),
         ROUND(AVG(ll.gps_lat), 7),
         ROUND(AVG(ll.gps_lng), 7),
-        (ARRAY_AGG(s.area_id ORDER BY ll.logged_at DESC))[1],
+        (ARRAY_AGG(s.location_id ORDER BY ll.logged_at DESC))[1],
         (ARRAY_AGG(a.rayon_id ORDER BY ll.logged_at DESC))[1],
         $3
       FROM location_logs ll
       LEFT JOIN shifts s ON s.id = ll.shift_id
-      LEFT JOIN areas a ON a.id = s.area_id
+      LEFT JOIN locations a ON a.id = s.location_id
       WHERE (ll.logged_at AT TIME ZONE 'Asia/Jakarta')::date BETWEEN $1::date AND $2::date
       GROUP BY ll.user_id, wib_date
       ON CONFLICT ON CONSTRAINT uq_location_summary_user_date DO NOTHING

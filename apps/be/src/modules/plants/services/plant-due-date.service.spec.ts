@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PlantDueDateService, PlantStatus } from './plant-due-date.service';
 import { PlantSpecies } from '../entities/plant-species.entity';
-import { AreaPlant } from '../entities/area-plant.entity';
-import { AreaType } from '../../area-types/entities/area-type.entity';
+import { LocationPlant } from '../entities/location-plant.entity';
+import { LocationType } from '../../location-types/entities/location-type.entity';
 
 describe('PlantDueDateService', () => {
   let service: PlantDueDateService;
 
-  const mockAreaType: AreaType = {
+  const mockAreaType: LocationType = {
     id: 'area-type-1',
     code: 'park',
     name: 'Park',
     category: 'ACTIVE',
-  } as AreaType;
+  } as LocationType;
 
   const mockSpecies: PlantSpecies = {
     id: 'species-1',
@@ -30,16 +30,16 @@ describe('PlantDueDateService', () => {
     defaultPruningCycleDays: null,
   } as PlantSpecies;
 
-  const mockAreaPlant: AreaPlant = {
+  const mockAreaPlant: LocationPlant = {
     id: 'area-plant-1',
-    areaId: 'area-1',
+    locationId: 'area-1',
     speciesId: 'species-1',
     count: 5,
     lastPrunedAt: null,
     nextDueAt: null,
     status: 'ok',
     overrideCycleDays: null,
-  } as AreaPlant;
+  } as LocationPlant;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

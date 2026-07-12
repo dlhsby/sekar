@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserForm } from '../UserForm';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import type { User } from '@/types/models';
 import { ReactNode } from 'react';
 
@@ -18,13 +18,13 @@ import { ReactNode } from 'react';
 jest.mock('@/lib/api/rayons', () => ({
   useRayons: jest.fn(),
 }));
-jest.mock('@/lib/api/areas', () => ({
-  useAreas: jest.fn(),
+jest.mock('@/lib/api/locations', () => ({
+  useLocations: jest.fn(),
 }));
 jest.mock('@/lib/api/shift-definitions', () => ({
   useShiftDefinitions: jest.fn(() => ({ data: [], isLoading: false })),
 }));
-jest.mock('@/lib/api/user-areas', () => ({
+jest.mock('@/lib/api/user-locations', () => ({
   // Stable `undefined` ref so the prefill effect doesn't loop in tests.
   useUserAreas: jest.fn(() => ({ data: undefined })),
 }));
@@ -89,7 +89,7 @@ describe('UserForm', () => {
       data: mockRayons,
       isLoading: false,
     });
-    (useAreas as jest.Mock).mockReturnValue({
+    (useLocations as jest.Mock).mockReturnValue({
       data: { data: [], total: 0 },
       isLoading: false,
     });
@@ -428,7 +428,7 @@ describe('UserForm', () => {
             role: 'admin_system',
             rayon_id: null,
             shift_definition_id: null,
-            area_ids: [],
+            location_ids: [],
           }),
         );
       });

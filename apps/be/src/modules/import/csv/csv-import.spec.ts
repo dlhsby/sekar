@@ -4,8 +4,8 @@ import { NotFoundException, ForbiddenException, BadRequestException } from '@nes
 
 import { RedisService } from '../../../common/services/redis.service';
 import { UsersService } from '../../users/users.service';
-import { AreasService } from '../../areas/areas.service';
-import { Area } from '../../areas/entities/area.entity';
+import { LocationsService } from '../../locations/locations.service';
+import { Location } from '../../locations/entities/location.entity';
 import { CsvImportService } from './csv-import.service';
 import { parseCsv } from './csv-parser';
 import { validateUsers, validateAreas } from './csv-validators';
@@ -157,7 +157,7 @@ describe('validateAreas', () => {
     const { valid, errors } = validateAreas([
       {
         name: 'Taman Baru',
-        area_type_id: VALID_UUID,
+        location_type_id: VALID_UUID,
         rayon_id: VALID_UUID,
         latitude: '-7.29',
         longitude: '112.73',
@@ -171,7 +171,7 @@ describe('validateAreas', () => {
     const { valid, errors } = validateAreas([
       {
         name: 'Bad',
-        area_type_id: VALID_UUID,
+        location_type_id: VALID_UUID,
         rayon_id: VALID_UUID,
         latitude: '999',
         longitude: '0',
@@ -185,14 +185,14 @@ describe('validateAreas', () => {
     const { valid, errors } = validateAreas([
       {
         name: 'Taman Baru',
-        area_type_id: VALID_UUID,
+        location_type_id: VALID_UUID,
         rayon_id: VALID_UUID,
         latitude: '-7.29',
         longitude: '112.73',
       },
       {
         name: 'Taman Baru',
-        area_type_id: VALID_UUID,
+        location_type_id: VALID_UUID,
         rayon_id: VALID_UUID,
         latitude: '-7.30',
         longitude: '112.74',
@@ -211,22 +211,22 @@ describe('CsvImportService', () => {
   let service: CsvImportService;
   let redisClient: { setex: jest.Mock; get: jest.Mock; del: jest.Mock };
   let usersService: { create: jest.Mock };
-  let areasService: { create: jest.Mock };
-  let areaRepo: { update: jest.Mock };
+  let locationsService: { create: jest.Mock };
+  let locationRepo: { update: jest.Mock };
 
   beforeEach(async () => {
     redisClient = { setex: jest.fn(), get: jest.fn(), del: jest.fn() };
     usersService = { create: jest.fn().mockResolvedValue({ id: 'u1' }) };
-    areasService = { create: jest.fn().mockResolvedValue({ id: 'a1' }) };
-    areaRepo = { update: jest.fn().mockResolvedValue(undefined) };
+    locationsService = { create: jest.fn().mockResolvedValue({ id: 'a1' }) };
+    locationRepo = { update: jest.fn().mockResolvedValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CsvImportService,
         { provide: RedisService, useValue: { getClient: () => redisClient } },
         { provide: UsersService, useValue: usersService },
-        { provide: AreasService, useValue: areasService },
-        { provide: getRepositoryToken(Area), useValue: areaRepo },
+        { provide: LocationsService, useValue: locationsService },
+        { provide: getRepositoryToken(Location), useValue: locationRepo },
       ],
     }).compile();
 
@@ -344,7 +344,7 @@ describe('CsvImportService', () => {
           validRows: [
             {
               name: 'Taman',
-              area_type_id: VALID_UUID,
+              location_type_id: VALID_UUID,
               rayon_id: VALID_UUID,
               latitude: -7.29,
               longitude: 112.73,
@@ -356,8 +356,8 @@ describe('CsvImportService', () => {
 
       const result = await service.confirm('sess-1', 'user-1');
 
-      expect(areasService.create).toHaveBeenCalledTimes(1);
-      expect(areaRepo.update).toHaveBeenCalledWith('a1', { rayon_id: VALID_UUID });
+      expect(locationsService.create).toHaveBeenCalledTimes(1);
+      expect(locationRepo.update).toHaveBeenCalledWith('a1', { rayon_id: VALID_UUID });
       expect(result.imported).toBe(1);
     });
   });

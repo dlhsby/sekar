@@ -17,7 +17,7 @@ import {
 } from '@/components/ui';
 import { getErrorMessage } from '@/lib/api/client';
 import { useAssignRegionAreas, type Region } from '@/lib/api/regions';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 
 interface AssignAreasModalProps {
   open: boolean;
@@ -37,7 +37,7 @@ export function AssignAreasModal({ open, onOpenChange, region, onSuccess }: Assi
   // The /areas endpoint doesn't filter by rayon_id (admin sees every rayon), so
   // fetch broadly and narrow to the region's rayon client-side — only same-rayon
   // areas can be re-parented (the backend enforces this too).
-  const { data, isLoading } = useAreas(
+  const { data, isLoading } = useLocations(
     { limit: 2000, include_inactive: true },
     { enabled: open && !!region?.rayon_id },
   );
@@ -59,7 +59,7 @@ export function AssignAreasModal({ open, onOpenChange, region, onSuccess }: Assi
   const save = async () => {
     if (!region) return;
     try {
-      await assign.mutateAsync({ id: region.id, areaIds: selected });
+      await assign.mutateAsync({ id: region.id, locationIds: selected });
       toast.success(t('admin:regions.assignAreas.success', { name: region.name }));
       onSuccess?.();
       onOpenChange(false);

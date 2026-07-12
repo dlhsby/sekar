@@ -23,7 +23,7 @@ interface EditScheduleModalProps {
   onClose: () => void;
   roster: Schedule | null;
   onUpdateShift: (id: string, shiftId: string | null) => Promise<void>;
-  onUpdateAreas: (id: string, areaIds: string[]) => Promise<void>;
+  onUpdateAreas: (id: string, locationIds: string[]) => Promise<void>;
   shiftLoading?: boolean;
   areasLoading?: boolean;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;

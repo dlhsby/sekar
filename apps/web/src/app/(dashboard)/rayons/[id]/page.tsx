@@ -23,7 +23,7 @@ import {
   PageHeader,
   StatusPill,
 } from '@/components/ui';
-import { Area } from '@/types/models';
+import { Location } from '@/types/models';
 import { formatArea } from '@/lib/utils/geo';
 import type { ColumnDef } from '@/components/ui/data-table';
 
@@ -74,7 +74,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   const areas = areasData?.data || [];
   const pagination = areasData?.meta;
 
-  const columns: ColumnDef<Area>[] = [
+  const columns: ColumnDef<Location>[] = [
     {
       id: 'name',
       header: t('admin:areas.columnName'),
@@ -82,7 +82,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       enableColumnFilter: false,
       meta: { label: t('admin:areas.columnName') },
       cell: ({ row }) => (
-        <Link href={`/areas/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
+        <Link href={`/locations/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
           {row.original.name}
         </Link>
       ),
@@ -93,7 +93,7 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
       enableSorting: false,
       enableColumnFilter: false,
       meta: { label: t('admin:areas.columnType') },
-      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.areaType?.name || '—'}</span>,
+      cell: ({ row }) => <span className="text-nb-body-sm">{row.original.locationType?.name || '—'}</span>,
     },
     {
       id: 'coverage_area',

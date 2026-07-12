@@ -8,7 +8,7 @@ import {
   areasPlacemarks,
 } from './entity-datasets';
 import type { User } from '../../users/entities/user.entity';
-import type { Area } from '../../areas/entities/area.entity';
+import type { Location } from '../../locations/entities/location.entity';
 import type { Rayon } from '../../rayons/entities/rayon.entity';
 import type { Task } from '../../tasks/entities/task.entity';
 import type { Activity } from '../../activities/entities/activity.entity';
@@ -39,12 +39,12 @@ describe('entity dataset builders', () => {
       {
         id: 'a1',
         name: 'Taman',
-        area_type_id: 't1',
+        location_type_id: 't1',
         gps_lat: -7.2,
         gps_lng: 112.7,
         radius_meters: 100,
         is_active: true,
-      } as Area,
+      } as Location,
     ]);
     expect(ds.rows[0][1]).toBe('Taman');
   });
@@ -118,7 +118,7 @@ describe('areasPlacemarks', () => {
             ],
           ],
         },
-      } as unknown as Area,
+      } as unknown as Location,
     ]);
     expect(placemarks[0].polygon).toHaveLength(3);
     expect(placemarks[0].polygon?.[0]).toEqual({ longitude: 112.7, latitude: -7.2 });
@@ -132,7 +132,7 @@ describe('areasPlacemarks', () => {
         gps_lat: 0,
         gps_lng: 0,
         boundary_polygon: null,
-      } as unknown as Area,
+      } as unknown as Location,
     ]);
     expect(placemarks[0].polygon).toBeNull();
   });

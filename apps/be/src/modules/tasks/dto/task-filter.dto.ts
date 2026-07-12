@@ -13,7 +13,7 @@ export class TaskFilterDto extends PaginationDto {
   })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  location_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by assigned user ID',

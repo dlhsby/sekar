@@ -4,13 +4,13 @@
  * UserAreasSheet — right-side slide-over listing a user's permanent assigned
  * areas. Opened from the Area column in the user-management grid (a summary
  * "N Area" chip). The list is lazy-loaded via `useUserAreas` when a user is set,
- * then rendered by the shared presentational {@link AreaListSheet}.
+ * then rendered by the shared presentational {@link LocationListSheet}.
  */
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AreaListSheet, type AreaListSheetItem } from '@/components/areas/AreaListSheet';
-import { useUserAreas } from '@/lib/api/user-areas';
+import { LocationListSheet, type LocationListSheetItem } from '@/components/locations/LocationListSheet';
+import { useUserAreas } from '@/lib/api/user-locations';
 import { useRayons } from '@/lib/api/rayons';
 
 export interface UserAreasSheetTarget {
@@ -30,7 +30,7 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
   const { data: rayons = [] } = useRayons();
   const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
 
-  const items: AreaListSheetItem[] = useMemo(
+  const items: LocationListSheetItem[] = useMemo(
     () =>
       areas.map((area) => ({
         id: area.id,
@@ -38,7 +38,7 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
         meta:
           [
             area.rayon?.name ?? (area.rayon_id ? rayonNameById.get(area.rayon_id) : undefined),
-            area.areaType?.name ?? area.areaType?.code,
+            area.locationType?.name ?? area.locationType?.code,
           ]
             .filter(Boolean)
             .join(' · ') || undefined,
@@ -47,7 +47,7 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
   );
 
   return (
-    <AreaListSheet
+    <LocationListSheet
       open={!!user}
       title={t('admin:users.areasTitle')}
       subtitle={user?.full_name ?? '—'}

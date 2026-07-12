@@ -88,7 +88,7 @@ export class MonitoringConfigService {
             120,
           ),
         }),
-      boundary: (areaId: string) => this.loadAreaBoundary(areaId),
+      boundary: (locationId: string) => this.loadAreaBoundary(locationId),
     });
   }
 
@@ -128,10 +128,10 @@ export class MonitoringConfigService {
     return saved;
   }
 
-  private async loadAreaBoundary(areaId: string): Promise<number[][][] | null> {
+  private async loadAreaBoundary(locationId: string): Promise<number[][][] | null> {
     const area = await this.configRepository.manager.query(
-      'SELECT boundary_polygon FROM areas WHERE id = $1',
-      [areaId],
+      'SELECT boundary_polygon FROM locations WHERE id = $1',
+      [locationId],
     );
     return area?.[0]?.boundary_polygon?.coordinates || null;
   }

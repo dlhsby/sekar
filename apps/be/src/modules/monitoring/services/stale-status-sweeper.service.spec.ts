@@ -75,7 +75,7 @@ describe('StaleStatusSweeperService', () => {
     it('alerts korlap + kepala_rayon for each worker it flips (§C1 #8)', async () => {
       const staleWorker = {
         user_id: 'user-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         rayon_id: 'rayon-1',
         status: TrackingStatus.ACTIVE,
         last_location_at: new Date(Date.now() - 1000 * 1000),

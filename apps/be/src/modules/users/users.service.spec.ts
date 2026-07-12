@@ -13,7 +13,7 @@ import { User, UserRole } from './entities/user.entity';
 import { Role } from '../rbac/entities/role.entity';
 import { AuthService } from '../auth/auth.service';
 import { AuditLogService } from '../audit/audit.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -75,9 +75,9 @@ describe('UsersService', () => {
   };
 
   const mockUserAreasService = {
-    reconcilePermanentAreas: jest.fn().mockResolvedValue({ added: [], removed: [] }),
-    getPermanentAreaIds: jest.fn().mockResolvedValue([]),
-    getPermanentAreaIdsForUsers: jest.fn().mockResolvedValue(new Map()),
+    reconcilePermanentLocations: jest.fn().mockResolvedValue({ added: [], removed: [] }),
+    getPermanentLocationIds: jest.fn().mockResolvedValue([]),
+    getPermanentLocationIdsForUsers: jest.fn().mockResolvedValue(new Map()),
   };
 
   beforeEach(async () => {
@@ -105,7 +105,7 @@ describe('UsersService', () => {
           useValue: mockAuditLogService,
         },
         {
-          provide: UserAreasService,
+          provide: UserLocationsService,
           useValue: mockUserAreasService,
         },
       ],
@@ -201,7 +201,7 @@ describe('UsersService', () => {
         area_ids: ['area-1', 'area-2'],
       });
 
-      expect(mockUserAreasService.reconcilePermanentAreas).toHaveBeenCalledWith(
+      expect(mockUserAreasService.reconcilePermanentLocations).toHaveBeenCalledWith(
         mockUser.id,
         ['area-1', 'area-2'],
         expect.any(String),
@@ -332,7 +332,7 @@ describe('UsersService', () => {
           'full_name',
           'role',
           'is_active',
-          'area_id',
+          'location_id',
           'rayon_id',
           'created_at',
         ]),
@@ -358,7 +358,7 @@ describe('UsersService', () => {
           'full_name',
           'role',
           'is_active',
-          'area_id',
+          'location_id',
           'rayon_id',
           'created_at',
         ]),
@@ -368,13 +368,13 @@ describe('UsersService', () => {
       });
     });
 
-    it('attaches assigned_area_count + assigned_area_ids (permanent areas) to each user', async () => {
+    it('attaches assigned_location_count + assigned_location_ids (permanent areas) to each user', async () => {
       const users = [
         { ...mockUser, id: 'u1' },
         { ...mockUser, id: 'u2' },
       ];
       mockUserRepository.findAndCount.mockResolvedValue([users, 2]);
-      mockUserAreasService.getPermanentAreaIdsForUsers.mockResolvedValue(
+      mockUserAreasService.getPermanentLocationIdsForUsers.mockResolvedValue(
         new Map([
           ['u1', ['a1', 'a2', 'a3']],
           ['u2', []],
@@ -383,11 +383,14 @@ describe('UsersService', () => {
 
       const result = await service.findAllPaginated();
 
-      expect(mockUserAreasService.getPermanentAreaIdsForUsers).toHaveBeenCalledWith(['u1', 'u2']);
-      expect(result.data[0].assigned_area_count).toBe(3);
-      expect(result.data[0].assigned_area_ids).toEqual(['a1', 'a2', 'a3']);
-      expect(result.data[1].assigned_area_count).toBe(0);
-      expect(result.data[1].assigned_area_ids).toEqual([]);
+      expect(mockUserAreasService.getPermanentLocationIdsForUsers).toHaveBeenCalledWith([
+        'u1',
+        'u2',
+      ]);
+      expect(result.data[0].assigned_location_count).toBe(3);
+      expect(result.data[0].assigned_location_ids).toEqual(['a1', 'a2', 'a3']);
+      expect(result.data[1].assigned_location_count).toBe(0);
+      expect(result.data[1].assigned_location_ids).toEqual([]);
     });
 
     it('should return paginated users with custom page and limit', async () => {
@@ -406,7 +409,7 @@ describe('UsersService', () => {
           'full_name',
           'role',
           'is_active',
-          'area_id',
+          'location_id',
           'rayon_id',
           'created_at',
         ]),
@@ -506,7 +509,7 @@ describe('UsersService', () => {
           'full_name',
           'role',
           'is_active',
-          'area_id',
+          'location_id',
           'rayon_id',
           'created_at',
         ]),
@@ -712,15 +715,15 @@ describe('UsersService', () => {
     it('reconciles permanent areas + audits a reassign when area_ids change', async () => {
       mockUserRepository.findOne.mockResolvedValue({ ...mockUser });
       mockUserRepository.save.mockResolvedValue({ ...mockUser });
-      mockUserAreasService.getPermanentAreaIds.mockResolvedValue(['area-old']);
-      mockUserAreasService.reconcilePermanentAreas.mockResolvedValue({
+      mockUserAreasService.getPermanentLocationIds.mockResolvedValue(['area-old']);
+      mockUserAreasService.reconcilePermanentLocations.mockResolvedValue({
         added: ['area-new'],
         removed: ['area-old'],
       });
 
       await service.update(mockUser.id, { area_ids: ['area-new'] });
 
-      expect(mockUserAreasService.reconcilePermanentAreas).toHaveBeenCalledWith(
+      expect(mockUserAreasService.reconcilePermanentLocations).toHaveBeenCalledWith(
         mockUser.id,
         ['area-new'],
         expect.any(String),

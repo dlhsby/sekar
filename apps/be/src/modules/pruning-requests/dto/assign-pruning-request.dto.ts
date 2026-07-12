@@ -19,13 +19,13 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  */
 export class AssignPruningRequestDto {
   /**
-   * Area ID where the pruning task will be executed.
+   * Location ID where the pruning task will be executed.
    *
    * **May 11, 2026:** now optional. Pruning happens in neighborhoods /
    * private yards that are not managed areas, so most kecamatan-driven
-   * pruning tasks have no `area_id` — they inherit GPS coords + address
+   * pruning tasks have no `location_id` — they inherit GPS coords + address
    * from the parent pruning_request instead. The Task entity already has
-   * `area_id` nullable; monitoring queries that filter by area simply
+   * `location_id` nullable; monitoring queries that filter by area simply
    * exclude these rows (covered in the Phase 4 monitoring polish backlog).
    *
    * @example '11111111-1111-1111-1111-111111111101'

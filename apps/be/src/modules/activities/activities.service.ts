@@ -153,7 +153,7 @@ export class ActivitiesService {
     return this.activitiesRepository.create({
       user_id: userId,
       shift_id: activeShift.id,
-      area_id: activeShift.area_id,
+      location_id: activeShift.location_id,
       activity_type_id: dto.activity_type_id,
       description: dto.description,
       photo_urls: dto.photo_urls,
@@ -245,7 +245,7 @@ export class ActivitiesService {
         actor_id: userId,
         new_value: {
           activity_type_id: dto.activity_type_id,
-          area_id: activity.area_id,
+          location_id: activity.location_id,
           case_type: dto.case_type,
           reference_code: activity.referenceCode,
         },
@@ -445,7 +445,7 @@ export class ActivitiesService {
     if (!['satgas', 'linmas'].includes(activity.user?.role)) {
       throw new ForbiddenException('Korlap can only approve satgas and linmas activities');
     }
-    if (!reviewer.area_id || activity.area_id !== reviewer.area_id) {
+    if (!reviewer.location_id || activity.location_id !== reviewer.location_id) {
       throw new ForbiddenException('You can only approve activities in your area');
     }
   }

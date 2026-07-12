@@ -12,10 +12,10 @@ import { TaskTag } from './entities/task-tag.entity';
 import { TaskDelegation } from './entities/task-delegation.entity';
 import { TaskTypeRegistry } from './registry/task-type-registry';
 import { UsersModule } from '../users/users.module';
-import { AreasModule } from '../areas/areas.module';
+import { LocationsModule } from '../locations/locations.module';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
-import { UserAreasModule } from '../user-areas/user-areas.module';
+import { UserLocationsModule } from '../user-locations/user-locations.module';
 
 /**
  * Module for task management
@@ -27,10 +27,10 @@ import { UserAreasModule } from '../user-areas/user-areas.module';
   imports: [
     TypeOrmModule.forFeature([Task, TaskTag, TaskDelegation]),
     UsersModule,
-    AreasModule,
+    LocationsModule,
     AuditModule,
     NotificationsModule,
-    UserAreasModule,
+    UserLocationsModule,
   ],
   controllers: [TasksController],
   providers: [

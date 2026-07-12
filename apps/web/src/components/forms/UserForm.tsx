@@ -9,9 +9,9 @@ import { FormInput, FormCombobox, Button } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import type { User } from '@/types/models';
 import { useRayons } from '@/lib/api/rayons';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
-import { useUserAreas } from '@/lib/api/user-areas';
+import { useUserAreas } from '@/lib/api/user-locations';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
 import { useRoles, type MonitoringScope } from '@/lib/api/roles';
 import { ROLE_HIERARCHY_ORDER } from '@/lib/constants/roles';
@@ -66,7 +66,7 @@ function scopeFromMonitoring(ms: MonitoringScope | undefined): {
 
 export interface UserFormSubmit
   extends Omit<UserFormData, 'rayon_id' | 'region_id' | 'shift_definition_id'> {
-  area_ids: string[];
+  location_ids: string[];
   /** `null` = explicitly clear on the server (create treats null as unset). */
   rayon_id: string | null;
   region_id: string | null;
@@ -96,7 +96,7 @@ export function UserForm({
   const userSchema = useMemo(() => createUserSchema(t), [t]);
 
   const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
-  const { data: areasData, isLoading: areasLoading } = useAreas({ limit: 1000 });
+  const { data: areasData, isLoading: areasLoading } = useLocations({ limit: 1000 });
   const { data: roles = [] } = useRoles();
 
   // Dynamic, hierarchy-sorted role options (incl. custom roles) with DB labels.
@@ -113,7 +113,7 @@ export function UserForm({
   const scopeFor = (code: string) => scopeFromMonitoring(rolesByCode.get(code)?.monitoring_scope);
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
-  const [areaIds, setAreaIds] = useState<string[]>([]);
+  const [locationIds, setAreaIds] = useState<string[]>([]);
 
   // Prefill the selected areas from the user's current assignment (edit mode).
   useEffect(() => {
@@ -187,7 +187,7 @@ export function UserForm({
     // are sent as an explicit clear (null / empty array), not omitted, so
     // changing a role on edit actually drops the now-irrelevant assignment on
     // the server (a PATCH that omits a field would keep the old value). On
-    // create the backend maps null → unset. area_ids is filtered to valid
+    // create the backend maps null → unset. location_ids is filtered to valid
     // UUIDs so a blank/stale entry can't trip `@IsUUID(..., {each:true})`.
     const scope = scopeFor(data.role);
     const submitData: UserFormSubmit = {
@@ -197,7 +197,7 @@ export function UserForm({
       // Shift + satgas/linmas work area come from schedules now (Phase 4) —
       // always cleared here; korlap keeps a single optional location.
       shift_definition_id: null,
-      area_ids: scope.location ? areaIds.filter((id) => UUID_RE.test(id)).slice(0, 1) : [],
+      location_ids: scope.location ? locationIds.filter((id) => UUID_RE.test(id)).slice(0, 1) : [],
     };
     await onSubmit(submitData);
   };
@@ -361,7 +361,7 @@ export function UserForm({
         <FormCombobox
           label={t('admin:users.form.location')}
           options={areaOptions}
-          value={areaIds[0] ?? ''}
+          value={locationIds[0] ?? ''}
           onChange={(value) => setAreaIds(value ? [value] : [])}
           placeholder={
             !selectedRegionId

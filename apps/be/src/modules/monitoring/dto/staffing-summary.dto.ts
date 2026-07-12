@@ -10,7 +10,7 @@ export class StaffingSummaryQueryDto {
   @ApiPropertyOptional({ example: 'area-uuid' })
   @IsUUID()
   @IsOptional()
-  area_id?: string;
+  location_id?: string;
 }
 
 export class DayTypeRequirementsDto {

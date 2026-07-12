@@ -12,7 +12,7 @@ import { ACTIVITY_SUBMITTERS } from '../../users/constants/role-groups';
 export interface ActivityListFilters {
   user_id?: string;
   shift_id?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   activity_type_id?: string;
   from_date?: string;
@@ -100,18 +100,18 @@ export class ActivityQueryService {
 
   /**
    * Resolve the set of area UUIDs a korlap is permanently assigned to via
-   * `user_areas`. Falls back to `[user.area_id]` if no row exists, so legacy
+   * `user_areas`. Falls back to `[user.location_id]` if no row exists, so legacy
    * single-area users keep working before backfill.
    */
   async getKorlapAreaIds(user: User): Promise<string[]> {
-    const rows: Array<{ area_id: string }> = await this.activitiesRepository.manager.query(
-      `SELECT area_id FROM user_areas
+    const rows: Array<{ location_id: string }> = await this.activitiesRepository.manager.query(
+      `SELECT location_id FROM user_locations
         WHERE user_id = $1 AND assignment_type = 'permanent'`,
       [user.id],
     );
-    const ids = rows.map((r) => r.area_id);
+    const ids = rows.map((r) => r.location_id);
     if (ids.length > 0) return ids;
-    return user.area_id ? [user.area_id] : [];
+    return user.location_id ? [user.location_id] : [];
   }
 
   /**
@@ -182,7 +182,7 @@ export class ActivityQueryService {
   /**
    * Korlap may have multiple permanent areas via `user_areas` (e.g.
    * korlap_pusat_1 → all 13 Rayon Pusat areas); the legacy single
-   * `user.area_id` only reflects their primary area.
+   * `user.location_id` only reflects their primary area.
    */
   private async applyKorlapScope(
     queryBuilder: SelectQueryBuilder<Activity>,
@@ -193,7 +193,7 @@ export class ActivityQueryService {
       queryBuilder.andWhere('1=0');
       return;
     }
-    queryBuilder.andWhere('activity.area_id IN (:...korlapAreaIds)', { korlapAreaIds });
+    queryBuilder.andWhere('activity.location_id IN (:...korlapAreaIds)', { korlapAreaIds });
   }
 
   private applyEntityFilters(
@@ -206,8 +206,10 @@ export class ActivityQueryService {
     if (filters.shift_id) {
       queryBuilder.andWhere('activity.shift_id = :shiftId', { shiftId: filters.shift_id });
     }
-    if (filters.area_id) {
-      queryBuilder.andWhere('activity.area_id = :filterAreaId', { filterAreaId: filters.area_id });
+    if (filters.location_id) {
+      queryBuilder.andWhere('activity.location_id = :filterAreaId', {
+        filterAreaId: filters.location_id,
+      });
     }
     if (filters.rayon_id) {
       queryBuilder.andWhere('area.rayon_id = :filterRayonId', { filterRayonId: filters.rayon_id });
@@ -285,7 +287,7 @@ export class ActivityQueryService {
 
   private async assertKorlapReadScope(activity: Activity, user: User): Promise<void> {
     const korlapAreaIds = await this.getKorlapAreaIds(user);
-    if (!activity.area_id || !korlapAreaIds.includes(activity.area_id)) {
+    if (!activity.location_id || !korlapAreaIds.includes(activity.location_id)) {
       throw new ApiException(
         HttpStatus.FORBIDDEN,
         ApiErrorCode.ACTIVITY_ACCESS_DENIED,

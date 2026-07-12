@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, In, Not, IsNull } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Area } from '../../areas/entities/area.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
@@ -32,8 +32,8 @@ export class MonitoringUserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(Area)
-    private readonly areaRepository: Repository<Area>,
+    @InjectRepository(Location)
+    private readonly areaRepository: Repository<Location>,
     @InjectRepository(Shift)
     private readonly shiftRepository: Repository<Shift>,
     @InjectRepository(Task)
@@ -67,8 +67,8 @@ export class MonitoringUserService {
       .leftJoin('area.areaType', 'areaType')
       .where('uts.shift_id IS NOT NULL');
 
-    if (filters?.area_id) {
-      qb.andWhere('uts.area_id = :areaId', { areaId: filters.area_id });
+    if (filters?.location_id) {
+      qb.andWhere('uts.location_id = :locationId', { locationId: filters.location_id });
     }
     // Multi-area scoping (e.g. korlap with several `user_areas` rows).
     const scopedAreaIds = (filters as { area_ids?: string[] } | undefined)?.area_ids;
@@ -76,7 +76,7 @@ export class MonitoringUserService {
       if (scopedAreaIds.length === 0) {
         qb.andWhere('1 = 0');
       } else {
-        qb.andWhere('uts.area_id IN (:...scopedAreaIds)', { scopedAreaIds });
+        qb.andWhere('uts.location_id IN (:...scopedAreaIds)', { scopedAreaIds });
       }
     }
     if (filters?.rayon_id) {
@@ -91,11 +91,11 @@ export class MonitoringUserService {
 
     const trackingRecords = await qb.getMany();
 
-    const areaIds = [...new Set(trackingRecords.map((r) => r.area_id).filter(Boolean))];
+    const locationIds = [...new Set(trackingRecords.map((r) => r.location_id).filter(Boolean))];
     const userIds = trackingRecords.map((r) => r.user_id);
 
     const [rayonMap, taskMap, thresholds] = await Promise.all([
-      this.buildRayonMap(areaIds as string[]),
+      this.buildRayonMap(locationIds as string[]),
       this.buildCurrentTaskMap(userIds),
       this.cacheService.getThresholds(),
     ]);
@@ -115,7 +115,7 @@ export class MonitoringUserService {
         full_name: uts.user.full_name,
         phone: uts.user.phone_number || null,
         role: uts.user.role,
-        area_id: uts.area_id,
+        location_id: uts.location_id,
         area_name: uts.area?.name || 'Unknown',
         rayon_id: rayonId,
         rayon_name: rayonId ? rayonMap.get(rayonId) || null : null,
@@ -233,8 +233,8 @@ export class MonitoringUserService {
 
     const dayRange = this.parseDateRange(date);
     const shift = await this.findShiftForHistory(userId, dayRange, shiftId);
-    const area = shift?.area_id
-      ? await this.areaRepository.findOne({ where: { id: shift.area_id } })
+    const area = shift?.location_id
+      ? await this.areaRepository.findOne({ where: { id: shift.location_id } })
       : null;
 
     const shiftDef = shift?.shift_definition_id
@@ -252,7 +252,7 @@ export class MonitoringUserService {
       date,
       shift_id: shift?.id || null,
       shift_name: shiftDef?.name || null,
-      area_id: area?.id || null,
+      location_id: area?.id || null,
       area_name: area?.name || null,
       clock_in_time: shift?.clock_in_time || null,
       clock_out_time: shift?.clock_out_time || null,
@@ -276,7 +276,9 @@ export class MonitoringUserService {
 
     const area =
       tracking?.area ||
-      (user.area_id ? await this.areaRepository.findOne({ where: { id: user.area_id } }) : null);
+      (user.location_id
+        ? await this.areaRepository.findOne({ where: { id: user.location_id } })
+        : null);
 
     const effectiveRayonId = area?.rayon_id ?? user.rayon_id ?? null;
     const rayon = effectiveRayonId
@@ -299,7 +301,7 @@ export class MonitoringUserService {
       role: user.role,
       phone: user.phone_number || null,
       status: tracking?.status || TrackingStatus.OFFLINE,
-      area_id: area?.id || null,
+      location_id: area?.id || null,
       area_name: area?.name || null,
       rayon_id: rayon?.id || null,
       rayon_name: rayon?.name || null,
@@ -327,12 +329,12 @@ export class MonitoringUserService {
     return counts;
   }
 
-  private async buildRayonMap(areaIds: string[]): Promise<Map<string, string>> {
-    if (areaIds.length === 0) return new Map();
+  private async buildRayonMap(locationIds: string[]): Promise<Map<string, string>> {
+    if (locationIds.length === 0) return new Map();
 
     const areas = await this.areaRepository
       .createQueryBuilder('area')
-      .where('area.id IN (:...areaIds)', { areaIds })
+      .where('area.id IN (:...locationIds)', { locationIds })
       .andWhere('area.rayon_id IS NOT NULL')
       .getMany();
 
@@ -415,7 +417,10 @@ export class MonitoringUserService {
     return qb.getMany();
   }
 
-  private buildLocationPoints(logs: LocationLog[], area: Area | null): LocationHistoryPointDto[] {
+  private buildLocationPoints(
+    logs: LocationLog[],
+    area: Location | null,
+  ): LocationHistoryPointDto[] {
     return logs.map((log) => ({
       latitude: Number(log.gps_lat),
       longitude: Number(log.gps_lng),
@@ -494,7 +499,7 @@ export class MonitoringUserService {
 
   private buildLastLocation(
     tracking: UserTrackingStatus | null,
-    area: Area | null,
+    area: Location | null,
   ): UserDaySummaryDto['last_location'] {
     if (!tracking?.last_latitude || !tracking?.last_longitude) return null;
 

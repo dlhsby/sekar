@@ -27,7 +27,7 @@ describe('PlantOverdueDigestCron', () => {
         due_soon: 1,
         overdue: 3,
         unknown: 0,
-        overdue_areas: [{ area_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
+        overdue_areas: [{ location_id: 'a1', area_name: 'Taman Bungkul', overdue: 3 }],
       },
       {
         rayon_id: RAYON_B,

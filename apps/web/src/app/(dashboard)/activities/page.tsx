@@ -10,7 +10,7 @@ import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
-import { useAreas } from '@/lib/api/areas';
+import { useLocations } from '@/lib/api/locations';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -92,7 +92,7 @@ export default function ActivitiesPage() {
   }, [user, filters.areaId]);
 
   const { data: activityTypes } = useActivityTypes();
-  const { data: areasData } = useAreas();
+  const { data: areasData } = useLocations();
 
   const apiFilters: ActivityFilters = {
     activity_type_id: filters.activityTypeId !== 'all' ? filters.activityTypeId : undefined,

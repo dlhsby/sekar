@@ -13,16 +13,16 @@ export async function seedRegions(ctx: SeedContext): Promise<void> {
   const R1 = 'a1a1a1a1-0000-4000-8000-000000000001';
   const R2 = 'a1a1a1a1-0000-4000-8000-000000000002';
 
-  // Pick the rayon with the most areas so the sample regions have areas to hold.
+  // Pick the rayon with the most locations so the sample regions have locations to hold.
   const rayonRows = (await ctx.qr.query(
     `SELECT r.id, count(a.id) AS n
-       FROM rayons r JOIN areas a ON a.rayon_id = r.id AND a.deleted_at IS NULL
+       FROM rayons r JOIN locations a ON a.rayon_id = r.id AND a.deleted_at IS NULL
       WHERE r.deleted_at IS NULL
       GROUP BY r.id ORDER BY n DESC LIMIT 1`,
   )) as Array<{ id: string }>;
   const rayonId = rayonRows[0]?.id;
   if (!rayonId) {
-    ctx.log('  ⚠ no rayon with areas found — skipping regions');
+    ctx.log('  ⚠ no rayon with locations found — skipping regions');
     return;
   }
 
@@ -35,14 +35,14 @@ export async function seedRegions(ctx: SeedContext): Promise<void> {
     [R1, R2, rayonId],
   );
 
-  // Re-parent up to 5 of that rayon's areas into Kawasan A.
+  // Re-parent up to 5 of that rayon's locations into Kawasan A.
   await ctx.qr.query(
-    `UPDATE areas SET region_id = $1
+    `UPDATE locations SET region_id = $1
      WHERE id IN (
-       SELECT id FROM areas WHERE rayon_id = $2 AND deleted_at IS NULL AND region_id IS NULL LIMIT 5
+       SELECT id FROM locations WHERE rayon_id = $2 AND deleted_at IS NULL AND region_id IS NULL LIMIT 5
      )`,
     [R1, rayonId],
   );
 
-  ctx.log('  ✓ Seeded 2 sample regions + linked up to 5 areas');
+  ctx.log('  ✓ Seeded 2 sample regions + linked up to 5 locations');
 }

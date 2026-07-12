@@ -103,7 +103,7 @@ describe('OvertimeService', () => {
 
     const mockUser = {
       id: userId,
-      area_id: areaId,
+      location_id: areaId,
       role: UserRole.SATGAS,
     };
 
@@ -129,7 +129,7 @@ describe('OvertimeService', () => {
       mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType);
       mockOvertimeRepo.create.mockReturnValue({
         user_id: userId,
-        area_id: areaId,
+        location_id: areaId,
         ...createDto,
         status: OvertimeStatus.PENDING,
       });
@@ -256,7 +256,7 @@ describe('OvertimeService', () => {
     const mockPendingOvertime = {
       id: overtimeId,
       user_id: 'worker-uuid-1',
-      area_id: areaId,
+      location_id: areaId,
       status: OvertimeStatus.PENDING,
       user: { id: 'worker-uuid-1', role: UserRole.SATGAS },
       area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -264,7 +264,7 @@ describe('OvertimeService', () => {
 
     const mockApprover = {
       id: approverId,
-      area_id: areaId,
+      location_id: areaId,
       role: UserRole.KORLAP,
     };
 
@@ -293,7 +293,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'korlap-worker-uuid',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'korlap-worker-uuid', role: UserRole.KORLAP },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -314,7 +314,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: approverId,
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: approverId, role: UserRole.SATGAS },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -327,7 +327,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'worker-uuid-1',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.APPROVED,
         user: { id: 'worker-uuid-1', role: UserRole.SATGAS },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -340,14 +340,14 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'worker-uuid-1',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'worker-uuid-1', role: UserRole.SATGAS },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
       });
       mockUserRepo.findOne.mockResolvedValue({
         id: approverId,
-        area_id: 'different-area-uuid',
+        location_id: 'different-area-uuid',
         role: UserRole.KORLAP,
       });
 
@@ -358,7 +358,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'another-korlap',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'another-korlap', role: UserRole.KORLAP },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -377,7 +377,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'kepala-rayon-worker',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'kepala-rayon-worker', role: UserRole.KEPALA_RAYON },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -402,7 +402,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'korlap-worker',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'korlap-worker', role: UserRole.KORLAP },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -423,7 +423,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'worker-uuid-1',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'worker-uuid-1', role: UserRole.SATGAS },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -444,7 +444,7 @@ describe('OvertimeService', () => {
     const mockPendingOvertime = {
       id: overtimeId,
       user_id: 'worker-uuid-1',
-      area_id: areaId,
+      location_id: areaId,
       status: OvertimeStatus.PENDING,
       user: { id: 'worker-uuid-1', role: UserRole.SATGAS },
       area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -458,7 +458,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue(mockPendingOvertime);
       mockUserRepo.findOne.mockResolvedValue({
         id: approverId,
-        area_id: areaId,
+        location_id: areaId,
         role: UserRole.KORLAP,
       });
       mockOvertimeRepo.save.mockResolvedValue({
@@ -478,7 +478,7 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: approverId,
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: approverId, role: UserRole.SATGAS },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
@@ -493,14 +493,14 @@ describe('OvertimeService', () => {
       mockOvertimeRepo.findOne.mockResolvedValue({
         id: overtimeId,
         user_id: 'worker-uuid-1',
-        area_id: areaId,
+        location_id: areaId,
         status: OvertimeStatus.PENDING,
         user: { id: 'worker-uuid-1', role: UserRole.SATGAS },
         area: { id: areaId, rayon_id: 'rayon-uuid-1' },
       });
       mockUserRepo.findOne.mockResolvedValue({
         id: approverId,
-        area_id: 'different-area-uuid',
+        location_id: 'different-area-uuid',
         role: UserRole.KORLAP,
       });
 
@@ -577,17 +577,17 @@ describe('OvertimeService', () => {
     it('should return overtime scoped to korlap area', async () => {
       const mockApprover = {
         id: approverId,
-        area_id: areaId,
+        location_id: areaId,
         role: UserRole.KORLAP,
       };
       mockUserRepo.findOne.mockResolvedValue(mockApprover);
 
-      const mockQb = createMockQueryBuilder([{ id: 'overtime-1', area_id: areaId }], 1);
+      const mockQb = createMockQueryBuilder([{ id: 'overtime-1', location_id: areaId }], 1);
       mockOvertimeRepo.createQueryBuilder.mockReturnValue(mockQb);
 
       const result = await service.findAllPaginated(approverId, UserRole.KORLAP, {});
 
-      expect(mockQb.andWhere).toHaveBeenCalledWith('overtime.area_id = :areaId', { areaId });
+      expect(mockQb.andWhere).toHaveBeenCalledWith('overtime.location_id = :areaId', { areaId });
       expect(result.data).toHaveLength(1);
     });
 
@@ -629,7 +629,7 @@ describe('OvertimeService', () => {
     it('should apply filter combinations', async () => {
       const mockApprover = {
         id: approverId,
-        area_id: areaId,
+        location_id: areaId,
         role: UserRole.KORLAP,
       };
       mockUserRepo.findOne.mockResolvedValue(mockApprover);
@@ -678,13 +678,13 @@ describe('OvertimeService', () => {
 
     const clockableUser: User = {
       id: userId,
-      area_id: areaId,
+      location_id: areaId,
       role: UserRole.SATGAS,
     } as User;
 
     const nonClockableUser: User = {
       id: userId,
-      area_id: areaId,
+      location_id: areaId,
       role: UserRole.SUPERADMIN,
     } as User;
 
@@ -697,7 +697,7 @@ describe('OvertimeService', () => {
     const mockCreatedOvertime = {
       id: overtimeId,
       user_id: userId,
-      area_id: areaId,
+      location_id: areaId,
       status: OvertimeStatus.IN_PROGRESS,
       shift_id: null,
       description: startDto.reason,
@@ -802,7 +802,7 @@ describe('OvertimeService', () => {
 
     const clockableUser: User = {
       id: userId,
-      area_id: areaId,
+      location_id: areaId,
       role: UserRole.SATGAS,
     } as User;
 
@@ -817,7 +817,7 @@ describe('OvertimeService', () => {
     const mockActiveOvertime = {
       id: 'overtime-active-1',
       user_id: userId,
-      area_id: areaId,
+      location_id: areaId,
       status: OvertimeStatus.IN_PROGRESS,
       shift_id: shiftId,
       activityType: null,
@@ -959,7 +959,7 @@ describe('OvertimeService', () => {
     const mockExistingOvertime = {
       id: overtimeId,
       user_id: userId,
-      area_id: areaId,
+      location_id: areaId,
       status: OvertimeStatus.PENDING,
       start_datetime: new Date('2026-02-14T17:00:00+07:00'),
       end_datetime: new Date('2026-02-14T20:00:00+07:00'),
@@ -1119,7 +1119,7 @@ describe('OvertimeService', () => {
     const mockOvertime = {
       id: overtimeId,
       user_id: userId,
-      area_id: areaId,
+      location_id: areaId,
       status: OvertimeStatus.PENDING,
       start_datetime: new Date('2026-02-14T17:00:00+07:00'),
       end_datetime: new Date('2026-02-14T20:00:00+07:00'),

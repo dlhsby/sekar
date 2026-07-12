@@ -20,7 +20,7 @@ import { PartialCompleteTaskDto } from './dto/partial-complete-task.dto';
 import { TaskFilterDto } from './dto/task-filter.dto';
 import { TaskTypeRegistry } from './registry/task-type-registry';
 import { UsersService } from '../users/users.service';
-import { AreasService } from '../areas/areas.service';
+import { LocationsService } from '../locations/locations.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
 import { TaskFinderService } from './services/task-finder.service';
@@ -75,7 +75,7 @@ export class TasksService {
     @InjectRepository(TaskTag)
     private readonly taskTagRepository: Repository<TaskTag>,
     private readonly usersService: UsersService,
-    private readonly areasService: AreasService,
+    private readonly locationsService: LocationsService,
     private readonly auditLogService: AuditLogService,
     private readonly taskTypeRegistry: TaskTypeRegistry,
     private readonly taskFinder: TaskFinderService,
@@ -97,7 +97,7 @@ export class TasksService {
   ): Promise<Task> {
     this.logger.log(`Creating task: ${createTaskDto.title}`);
     const creator = await this.usersService.findOne(creatorId);
-    await this.validateCreateTarget(creator, createTaskDto.area_id);
+    await this.validateCreateTarget(creator, createTaskDto.location_id);
     const assignee = await this.resolveInitialAssignee(createTaskDto.assigned_to, creator);
     const typedFields = this.validateTypedFields(createTaskDto);
 
@@ -115,7 +115,7 @@ export class TasksService {
   }
 
   private async validateCreateTarget(creator: User, areaId?: string): Promise<void> {
-    if (areaId) await this.areasService.findOne(areaId);
+    if (areaId) await this.locationsService.findOne(areaId);
     await this.validateScope(creator, areaId);
   }
 
@@ -157,7 +157,7 @@ export class TasksService {
       description: dto.description,
       priority: dto.priority || TaskPriority.MEDIUM,
       deadline: dto.deadline ? new Date(dto.deadline) : null,
-      area_id: dto.area_id || null,
+      location_id: dto.location_id || null,
       rayon_id: dto.rayon_id || null,
       assigned_to: dto.assigned_to || null,
       status: assignee ? TaskStatus.ASSIGNED : TaskStatus.PENDING,
@@ -204,7 +204,7 @@ export class TasksService {
         entity_id: task.id,
         action: 'create',
         actor_id: creatorId,
-        new_value: { title: task.title, status: task.status, area_id: task.area_id },
+        new_value: { title: task.title, status: task.status, location_id: task.location_id },
       })
       .catch((err) => this.logger.error(`Audit log failed: ${err.message}`));
   }
@@ -234,7 +234,7 @@ export class TasksService {
   private buildWhere(filters?: TaskFilterDto): FindOptionsWhere<Task> {
     if (!filters) return {};
     const where: FindOptionsWhere<Task> = {};
-    if (filters.area_id) where.area_id = filters.area_id;
+    if (filters.location_id) where.location_id = filters.location_id;
     if (filters.assigned_to) where.assigned_to = filters.assigned_to;
     if (filters.created_by) where.created_by = filters.created_by;
     if (filters.status) where.status = filters.status;
@@ -267,12 +267,12 @@ export class TasksService {
 
   /** Korlap: tasks in their area + tasks they created. */
   private scopeToKorlap(qb: SelectQueryBuilder<Task>, user: User): void {
-    if (!user.area_id) {
+    if (!user.location_id) {
       qb.andWhere('task.created_by = :scopeUserId', { scopeUserId: user.id });
       return;
     }
-    qb.andWhere('(task.area_id = :scopeAreaId OR task.created_by = :scopeUserId)', {
-      scopeAreaId: user.area_id,
+    qb.andWhere('(task.location_id = :scopeAreaId OR task.created_by = :scopeUserId)', {
+      scopeAreaId: user.location_id,
       scopeUserId: user.id,
     });
   }
@@ -405,7 +405,7 @@ export class TasksService {
     this.logger.log(`Updating task with ID: ${id}`);
     const task = await this.findOne(id);
     this.assertUpdateAllowed(task, callerId);
-    await this.validateAreaChange(task, updateTaskDto.area_id);
+    await this.validateAreaChange(task, updateTaskDto.location_id);
     await this.taskRepository.save(this.withUpdates(task, updateTaskDto));
     return this.findOne(id);
   }
@@ -417,8 +417,8 @@ export class TasksService {
   }
 
   private async validateAreaChange(task: Task, newAreaId?: string): Promise<void> {
-    if (newAreaId && newAreaId !== task.area_id) {
-      await this.areasService.findOne(newAreaId);
+    if (newAreaId && newAreaId !== task.location_id) {
+      await this.locationsService.findOne(newAreaId);
     }
   }
 
@@ -429,7 +429,7 @@ export class TasksService {
       description: dto.description !== undefined ? dto.description : task.description,
       priority: dto.priority || task.priority,
       deadline: dto.deadline ? new Date(dto.deadline) : task.deadline,
-      area_id: dto.area_id !== undefined ? dto.area_id : task.area_id,
+      location_id: dto.location_id !== undefined ? dto.location_id : task.location_id,
     };
   }
 
@@ -505,7 +505,7 @@ export class TasksService {
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
       .leftJoinAndSelect('tags.user', 'taggedUser')
-      .where('task.area_id = :areaId', { areaId });
+      .where('task.location_id = :areaId', { areaId });
 
     if (activeOnly) {
       queryBuilder.andWhere('task.status NOT IN (:...completedStatuses)', {
@@ -525,7 +525,7 @@ export class TasksService {
       .createQueryBuilder('t')
       .select('t.status', 'status')
       .addSelect('COUNT(*)', 'count')
-      .where('t.area_id = :areaId AND t.deleted_at IS NULL', { areaId })
+      .where('t.location_id = :areaId AND t.deleted_at IS NULL', { areaId })
       .groupBy('t.status')
       .getRawMany<{ status: string; count: string }>();
 
@@ -630,15 +630,15 @@ export class TasksService {
    */
   private async validateScope(creator: User, areaId?: string): Promise<void> {
     if (creator.role === UserRole.KEPALA_RAYON && creator.rayon_id && areaId) {
-      const area = await this.areasService.findOne(areaId);
+      const area = await this.locationsService.findOne(areaId);
       if (area.rayon_id !== creator.rayon_id) {
         throw new ForbiddenException(
           'Kepala Rayon can only create tasks for areas within their rayon',
         );
       }
     }
-    if (creator.role === UserRole.KORLAP && creator.area_id && areaId) {
-      if (areaId !== creator.area_id) {
+    if (creator.role === UserRole.KORLAP && creator.location_id && areaId) {
+      if (areaId !== creator.location_id) {
         throw new ForbiddenException('Korlap can only create tasks for their own area');
       }
     }

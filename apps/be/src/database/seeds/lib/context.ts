@@ -16,7 +16,7 @@ export type SeedMode = 'demo' | 'staging' | 'production' | 'reference';
 export interface SeedMaps {
   /** rayon code (BARAT1, TAMAN_AKTIF, …) → rayon UUID. */
   rayonIdByCode: Map<string, string>;
-  /** plant species name → UUID (phase-3 area_plants/notable_plants). */
+  /** plant species name → UUID (phase-3 location_plants/notable_plants). */
   speciesIdByName: Map<string, string>;
 }
 

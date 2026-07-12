@@ -96,7 +96,7 @@ export class SupervisorController {
   })
   @ApiResponse({
     status: 200,
-    description: 'Area status overview',
+    description: 'Location status overview',
     type: AreaStatusResponseDto,
   })
   async getAreaStatus(): Promise<AreaStatusResponseDto> {

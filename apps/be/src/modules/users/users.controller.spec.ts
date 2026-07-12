@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { UserAreasService } from '../user-areas/user-areas.service';
+import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { UserValidationService } from './services/user-validation.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -41,8 +41,8 @@ describe('UsersController', () => {
   };
 
   const mockUserAreasService = {
-    getEffectiveAreas: jest.fn().mockResolvedValue([]),
-    getPermanentAreas: jest.fn().mockResolvedValue([]),
+    getEffectiveLocations: jest.fn().mockResolvedValue([]),
+    getPermanentLocations: jest.fn().mockResolvedValue([]),
   };
 
   const mockUserValidationService = {
@@ -59,7 +59,7 @@ describe('UsersController', () => {
           useValue: mockUsersService,
         },
         {
-          provide: UserAreasService,
+          provide: UserLocationsService,
           useValue: mockUserAreasService,
         },
         {
@@ -184,8 +184,8 @@ describe('UsersController', () => {
   });
 
   describe('getUserAreas', () => {
-    it("returns the user's permanent areas, sorted by name, unwrapped from UserArea", async () => {
-      mockUserAreasService.getPermanentAreas.mockResolvedValue([
+    it("returns the user's permanent areas, sorted by name, unwrapped from UserLocation", async () => {
+      mockUserAreasService.getPermanentLocations.mockResolvedValue([
         { area: { id: 'a2', name: 'Taman Bungkul' } },
         { area: { id: 'a1', name: 'Jl. Ahmad Yani' } },
         { area: null }, // orphaned assignment → filtered out
@@ -193,12 +193,12 @@ describe('UsersController', () => {
 
       const result = await controller.getUserAreas(mockUser.id);
 
-      expect(mockUserAreasService.getPermanentAreas).toHaveBeenCalledWith(mockUser.id);
+      expect(mockUserAreasService.getPermanentLocations).toHaveBeenCalledWith(mockUser.id);
       expect(result.map((a) => a.name)).toEqual(['Jl. Ahmad Yani', 'Taman Bungkul']);
     });
 
     it('returns an empty list when the user has no permanent areas', async () => {
-      mockUserAreasService.getPermanentAreas.mockResolvedValue([]);
+      mockUserAreasService.getPermanentLocations.mockResolvedValue([]);
       expect(await controller.getUserAreas(mockUser.id)).toEqual([]);
     });
   });

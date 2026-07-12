@@ -2,7 +2,7 @@
  * Pruning CSV Backfill Importer (Phase 3 sub-phase 3-13)
  *
  * Imports the 5,008-row historical pruning log (`data/rekap_perantingan.csv`)
- * into `activities` + `activity_plant_items` (and bumps `area_plants`
+ * into `activities` + `activity_plant_items` (and bumps `location_plants`
  * aggregates) so the production system has continuity with the paper
  * records the kecamatans have been keeping.
  *
@@ -21,7 +21,7 @@
  *  - S3 photo rehosting (Drive URLs in cols 13/14 are still public Drive
  *    links; production needs them on `sekar-media` bucket with presigned
  *    URLs). Tracked separately.
- *  - Backfilling `area_plants` aggregates. Requires species + area
+ *  - Backfilling `location_plants` aggregates. Requires species + area
  *    matching beyond a simple name lookup; documented in
  *    `specs/phases/phase-3-plants-monitoring-rebuild/database.md` §3-13.
  *  - `pruning_request` ancestry. The CSV predates the kecamatan workflow;
@@ -204,7 +204,7 @@ async function loadCsv(
 
 /**
  * Resolve rayon name → rayon_id. Falls back to NULL when no exact match;
- * the activity is still importable (area_id is nullable for kecamatan-
+ * the activity is still importable (location_id is nullable for kecamatan-
  * driven pruning, per ADR-035 amendment).
  */
 async function buildRayonNameIndex(): Promise<Map<string, string>> {
@@ -331,7 +331,7 @@ async function importOne(
   await AppDataSource.transaction(async (manager) => {
     const result = await manager.query(
       `INSERT INTO activities (
-         user_id, shift_id, area_id, activity_type_id, description,
+         user_id, shift_id, location_id, activity_type_id, description,
          photo_urls, gps_lat, gps_lng, reference_code, case_type,
          custom_fields, photo_before_url, photo_after_url,
          created_at, updated_at
