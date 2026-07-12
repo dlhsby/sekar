@@ -98,5 +98,5 @@ export async function seedActivityTypes(ctx: SeedContext): Promise<void> {
   `,
     [AT_CEK_ABSENSI_ID, AT_ENTRI_LAPORAN_ID, AT_LAINNYA_ADMIN_RAYON_ID],
   );
-  ctx.log('  ✓ Created 3 Admin Data Activity Types');
+  ctx.log('  ✓ Created 3 Admin Rayon Activity Types');
 }

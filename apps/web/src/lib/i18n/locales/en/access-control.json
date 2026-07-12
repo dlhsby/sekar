@@ -1,5 +1,5 @@
 {
-  "title": "Role Management",
+  "title": "Roles",
   "subtitle": "Manage roles, permissions, monitoring scope, and map markers",
   "addRole": "Add Role",
   "roleList": "Roles",
@@ -34,7 +34,7 @@
   },
   "scope": {
     "city": "Whole City (Surabaya)",
-    "district": "Rayon",
+    "district": "District",
     "region": "Region",
     "location": "Location",
     "none": "No Monitoring"

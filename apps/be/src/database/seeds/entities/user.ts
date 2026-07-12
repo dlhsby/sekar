@@ -183,7 +183,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     await insertUser(
       USER_TOP_MGMT_ID,
       'management_1',
-      'Top Management Satu',
+      'Management Satu',
       'management',
       '081200000012',
     );
@@ -199,7 +199,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     await insertUser(
       USER_ADMIN_RAYON_ID,
       'admin_rayon_pusat_1',
-      'Admin Data Pusat Satu',
+      'Admin Rayon Pusat Satu',
       'admin_rayon',
       '081200000014',
       RAYON_PUSAT_ID,
@@ -317,7 +317,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     await insertUser(
       '5a0b0002-0000-4002-8003-000000000004',
       'admin_rayon_taman_aktif_1',
-      'Admin Data Taman Aktif Satu',
+      'Admin Rayon Taman Aktif Satu',
       'admin_rayon',
       '081200000064',
       RAYON_TAMAN_AKTIF_ID,
@@ -377,7 +377,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       {
         role: 'admin_rayon',
         usernamePrefix: 'admin_rayon',
-        fullNamePrefix: 'Admin Data',
+        fullNamePrefix: 'Admin Rayon',
         assignArea: false,
       },
       { role: 'korlap', usernamePrefix: 'korlap', fullNamePrefix: 'Korlap', assignArea: true },
@@ -668,14 +668,14 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // Initial Phase 2C users (11)
     await ctx.qr.query(`
     INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
-      ('${USER_PHASE2_1_ID}', 'management_1', '${passwordHash}', 'Top Management Satu', '081234567890', 'management', NULL, NULL, TRUE),
+      ('${USER_PHASE2_1_ID}', 'management_1', '${passwordHash}', 'Management Satu', '081234567890', 'management', NULL, NULL, TRUE),
       ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan_1', '${passwordHash}', 'Kepala Rayon Selatan Satu', '081234567891', 'kepala_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('${USER_PHASE2_3_ID}', 'kepala_rayon_utara_1', '${passwordHash}', 'Kepala Rayon Utara Satu', '081234567892', 'kepala_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${DARMO_P3_AREA_ID}', TRUE),
       ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_pusat_1', '${passwordHash}', 'Linmas Pusat Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
       ('${USER_LINMAS_DARMO_1_ID}',   'linmas_pusat_2',   '${passwordHash}', 'Linmas Pusat Dua',   '081234567895', 'linmas', NULL, NULL, TRUE),
       ('${USER_KORLAP_DARMO_ID}',     'korlap_pusat_2',     '${passwordHash}', 'Korlap Pusat Dua',  '081234567896', 'korlap', NULL, NULL, TRUE),
-      ('${USER_PHASE2_8_ID}', 'admin_rayon_pusat_1', '${passwordHash}', 'Admin Data Pusat Satu', '081234567897', 'admin_rayon', '${RAYON_PUSAT_ID}', NULL, TRUE),
+      ('${USER_PHASE2_8_ID}', 'admin_rayon_pusat_1', '${passwordHash}', 'Admin Rayon Pusat Satu', '081234567897', 'admin_rayon', '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_PHASE2_9_ID}', 'admin_system_1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
       ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_PUSAT_ID}', '${DARMO_P4_AREA_ID}', TRUE),
       ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_PUSAT_ID}', '${DARMO_P5_AREA_ID}', TRUE),
@@ -683,7 +683,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('5a0b0001-0000-4002-8003-000000000003', 'korlap_taman_aktif_1', '${passwordHash}', 'Korlap Taman Aktif Satu', '081300000041', 'korlap', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000004', 'linmas_taman_aktif_1', '${passwordHash}', 'Linmas Taman Aktif Satu', '081300000042', 'linmas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000005', 'kepala_rayon_taman_aktif_1', '${passwordHash}', 'Kepala Rayon Taman Aktif Satu', '081300000043', 'kepala_rayon', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
-      ('5a0b0001-0000-4002-8003-000000000006', 'admin_rayon_taman_aktif_1', '${passwordHash}', 'Admin Data Taman Aktif Satu', '081300000044', 'admin_rayon', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
+      ('5a0b0001-0000-4002-8003-000000000006', 'admin_rayon_taman_aktif_1', '${passwordHash}', 'Admin Rayon Taman Aktif Satu', '081300000044', 'admin_rayon', '${RAYON_TAMAN_AKTIF_ID}', NULL, TRUE),
       ('5a0b0001-0000-4002-8003-000000000007', 'satgas_taman_flora_1', '${passwordHash}', 'Satgas Taman Flora Satu', '081300000045', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${TAMAN_FLORA_AREA_ID}', TRUE)
     ON CONFLICT (username) DO NOTHING;
   `);
@@ -716,12 +716,12 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // 12 users: admin_rayon + korlap for 6 remaining rayons
     await ctx.qr.query(`
     INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, area_id, is_active) VALUES
-      ('${USER_ADMIN_RAYON_SELATAN_ID}', 'admin_rayon_selatan_1', '${passwordHash}', 'Admin Data Selatan Satu', '081300000018', 'admin_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_UTARA_ID}',   'admin_rayon_utara_1',   '${passwordHash}', 'Admin Data Utara Satu',   '081300000019', 'admin_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_TIMUR1_ID}',  'admin_rayon_timur_1_1',  '${passwordHash}', 'Admin Data Timur 1 Satu', '081300000020', 'admin_rayon', '${RAYON_TIMUR1_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_TIMUR2_ID}',  'admin_rayon_timur_2_1',  '${passwordHash}', 'Admin Data Timur 2 Satu', '081300000021', 'admin_rayon', '${RAYON_TIMUR2_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_BARAT1_ID}',  'admin_rayon_barat_1_1',  '${passwordHash}', 'Admin Data Barat 1 Satu', '081300000022', 'admin_rayon', '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_BARAT2_ID}',  'admin_rayon_barat_2_1',  '${passwordHash}', 'Admin Data Barat 2 Satu', '081300000023', 'admin_rayon', '${RAYON_BARAT2_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_SELATAN_ID}', 'admin_rayon_selatan_1', '${passwordHash}', 'Admin Rayon Selatan Satu', '081300000018', 'admin_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_UTARA_ID}',   'admin_rayon_utara_1',   '${passwordHash}', 'Admin Rayon Utara Satu',   '081300000019', 'admin_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_TIMUR1_ID}',  'admin_rayon_timur_1_1',  '${passwordHash}', 'Admin Rayon Timur 1 Satu', '081300000020', 'admin_rayon', '${RAYON_TIMUR1_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_TIMUR2_ID}',  'admin_rayon_timur_2_1',  '${passwordHash}', 'Admin Rayon Timur 2 Satu', '081300000021', 'admin_rayon', '${RAYON_TIMUR2_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_BARAT1_ID}',  'admin_rayon_barat_1_1',  '${passwordHash}', 'Admin Rayon Barat 1 Satu', '081300000022', 'admin_rayon', '${RAYON_BARAT1_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_BARAT2_ID}',  'admin_rayon_barat_2_1',  '${passwordHash}', 'Admin Rayon Barat 2 Satu', '081300000023', 'admin_rayon', '${RAYON_BARAT2_ID}', NULL, TRUE),
       ('${USER_KORLAP_HARMONI_ID}', 'korlap_selatan_1', '${passwordHash}', 'Korlap Selatan Satu', '081300000024', 'korlap', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('${USER_KORLAP_UTARA_ID}',   'korlap_utara_1',   '${passwordHash}', 'Korlap Utara Satu',   '081300000025', 'korlap', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur_1_1',  '${passwordHash}', 'Korlap Timur 1 Satu', '081300000026', 'korlap', '${RAYON_TIMUR1_ID}', NULL, TRUE),

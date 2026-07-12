@@ -165,7 +165,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
         ctx.log('  ✓ Created 2 korlap overtime records (approved, pending)');
       }
 
-      // Admin Data overtimes (2: pending, approved)
+      // Admin Rayon overtimes (2: pending, approved)
       const adminDataOtResult = await ctx.qr.query(`
         SELECT id, area_id FROM users WHERE username = 'admin_rayon_pusat_1' LIMIT 1
       `);

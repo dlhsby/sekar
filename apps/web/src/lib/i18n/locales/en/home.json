@@ -9,7 +9,7 @@
     "title": "Officer Status",
     "loading": "Loading status…",
     "unavailable": "Status unavailable.",
-    "presence": "{{count}} monitored · {{rayons}} rayons",
+    "presence": "{{count}} monitored · {{districts}} districts",
     "active": "Active",
     "idle": "Inactive",
     "missing": "Not detected",
@@ -20,7 +20,7 @@
     "present": "Present",
     "absent": "Absent",
     "onLeave": "On Leave",
-    "perRayon": "Per Rayon"
+    "perRayon": "Per District"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -32,8 +32,8 @@
     "title": "Overdue Plants",
     "viewAll": "Plants →",
     "allOnSchedule": "All plants pruned on schedule. 🌿",
-    "overdueCount": "{{count}} plant species overdue in {{rayons}} rayon",
-    "noRayon": "No Rayon"
+    "overdueCount": "{{count}} plant species overdue in {{districts}} district",
+    "noRayon": "No District"
   },
   "notifications": {
     "title": "Latest Notifications",
@@ -42,6 +42,6 @@
   },
   "greeting": "Hello",
   "user": "User",
-  "statusMeta": "{{hadir}}/{{scheduled}} hadir · {{rayons}} rayons",
+  "statusMeta": "{{hadir}}/{{scheduled}} hadir · {{districts}} districts",
   "ariaStatus": "{{hadir}} of {{scheduled}} present"
 }
