@@ -81,7 +81,15 @@ export class ScheduleEventMaterializationCron implements OnApplicationBootstrap 
         is_active: true,
         deleted_at: IsNull(),
       },
-      relations: ['shift_definition', 'location', 'region', 'team', 'pic_user', 'user', 'members'],
+      relations: [
+        'shift_definition',
+        'location',
+        'region',
+        'team_type',
+        'pic_user',
+        'user',
+        'members',
+      ],
     });
 
     let totalCreated = 0;
