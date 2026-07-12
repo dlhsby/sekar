@@ -51,7 +51,38 @@ light up incrementally without breaking system roles. Keep `PermissionsGuard`
 ## Related features
 - [auth](../auth/README.md) · [users](../users/README.md) · [monitoring](../monitoring/README.md) · [settings](../settings/README.md)
 
+## Guard → permission migration (DEFERRED — revisit during development)
+
+The permission engine works, but only the **rbac + settings** endpoints are gated by
+`@RequirePermissions`/`PermissionsGuard`. **~29 controllers / ~155 endpoints still use
+legacy `@Roles` + `RolesGuard`** (role-list only, no permission fallback), so a *custom*
+role's granted permissions don't unlock them. Completing the migration is deferred and
+tracked here so it isn't re-discovered from scratch.
+
+**Strategy (safety-first, zero system-role regression):** introduce a **unified guard that
+passes on `@Roles` OR `@RequirePermissions`**, then add `@RequirePermissions('resource:action')`
+to each endpoint while **keeping `@Roles` as a safety net**. The 9 system roles keep passing
+via `@Roles` unchanged; custom roles pass via the permission. Retire `@Roles` per-endpoint only
+after a role×endpoint matrix test proves the grants are equivalent.
+
+**Pre-work before converting (else regressions):**
+- **Add missing permissions to the catalog + system-role grants:** `activity:update`, `task:delete`,
+  `overtime:update`/`overtime:delete`, `pruning-request:update`, and whole new resources not yet
+  modelled — `shift:*` (clock-in/out; currently implied by `schedule:*`), `asset:*`, `plant:*`,
+  `location:*`, `capacity:*`, `import:*`, `area-type:*`, `activity-type:*`, `notification:*`,
+  `analytics:*`.
+- **Fix grant gaps in `role-seeds.ts`:** `satgas`/`linmas` need `task:read` (+ task state-change) and
+  `activity:update`; `staff_kecamatan` needs `task:read` for pruning-linked tasks; verify `overtime:*`
+  distribution across the `OVERTIME_*`/`CLOCKABLE_ROLES` groups.
+- **Leave service-layer role/scope checks in place** (~20 services, e.g. `monitoring`, `schedules`,
+  `activities`, `export`): the guard governs *route access*; services govern *data scope*. These are
+  orthogonal and stay.
+
+**Sizing:** 29 controllers, ~155 handlers, 27 role-group constants → 32 (soon ~50) permission keys.
+Do it module-by-module, each behind the full backend suite + the access matrix.
+
 ## Changelog
+- 2026-07-12 — **Guard→permission migration scoped + deferred** (see "Guard → permission migration" above). Full inventory taken (29 controllers / ~155 `@Roles` handlers, ~15–20 missing permissions, grant gaps, service-layer scope checks) and a safety-first unified-guard strategy recorded; execution deferred to revisit alongside feature development (per product call). No code change — verified today that the permission engine + `PermissionsGuard` work on migrated surfaces and system roles pass everywhere via `@Roles`.
 - 2026-07-12 — **Terminology + seeder cleanup.** Nav/page title "Role Management" → **Roles** (`Peran`). English UI standardised on the **city → district → region → location** hierarchy: EN `Rayon(s)` labels → **District(s)** (value-only, keys unchanged; `access-control:scope.district` EN = "District"); ID keeps Rayon / Kawasan / Lokasi. Fixed stale demo **display names** in the seeders (`Top Management …` → `Management …`, `Admin Data …` → `Admin Rayon …`; role codes/usernames were already correct) + migration `17492200000000-FixLegacyRoleDisplayNames` to patch already-seeded/**staging** rows in place (no reseed). **RBAC status note:** the permission engine + `PermissionsGuard` work end-to-end for migrated surfaces (roles/permissions/settings, user-write gating); legacy `@Roles`+`RolesGuard` endpoints (monitoring, schedules, …) are **not yet migrated**, so a *custom* role's granted permissions don't unlock those until each is converted to `@RequirePermissions` (ADR-044 incremental migration).
 - 2026-07-11 — **Fix:** `roles.marker_color` had no migration (the entity column was re-added but `DropMarkerColor17491900000000` had removed it and dev/prod run migrations, not sync) — every `GET /auth/me` 500'd (`column Role.marker_color does not exist`) on any DB past that migration, blanking the app after login. Added migration `17492100000000-AddRoleMarkerColor` (recreates the column + hex check constraint; roles keep the accent colour, geo levels stay image-only).
 - 2026-07-11 — **Role accent colour (`marker_color`) is now data-driven end-to-end.** Reintroduces the orphaned `roles.marker_color` column (created in migration `17491300000000`, never wired) — added to the Role entity, `Create/UpdateRoleDto` (hex `#RRGGBB` validated), `RoleView`, and seeded per system role from the `--color-role-*` design tokens (seed `COALESCE`-backfills existing rows once, never clobbering an operator's pick). Role editor gains a **colour picker** (shared `ColorField`, extracted from `MapStyleFields`). The **user-management pill + avatar** now tint from the role's `marker_color` (readable black/white ink auto-picked by luminance), with the fixed per-role token as fallback — this also gives **custom roles** a pill/avatar colour (previously an undefined token). Scope: user management only — **map markers stay image + status-ring driven** (the map `marker_color` removed on 2026-07-11 below is unrelated; this is the pill/avatar accent).
