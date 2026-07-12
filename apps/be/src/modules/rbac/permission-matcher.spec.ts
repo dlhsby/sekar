@@ -34,6 +34,14 @@ describe('permission-matcher', () => {
       expect(permissionMatches('nocolon', 'user:read')).toBe(false);
       expect(permissionMatches('user:read', 'nocolon')).toBe(false);
     });
+
+    it('never truncates keys with extra or empty segments', () => {
+      expect(permissionMatches('user:read:extra', 'user:read')).toBe(false);
+      expect(permissionMatches('user:read', 'user:read:extra')).toBe(false);
+      expect(permissionMatches('user::read', 'user:read')).toBe(false);
+      expect(permissionMatches('user:', 'user:read')).toBe(false);
+      expect(permissionMatches(':read', 'user:read')).toBe(false);
+    });
   });
 
   describe('hasPermission', () => {

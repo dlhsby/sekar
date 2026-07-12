@@ -46,10 +46,10 @@ export class SettingsController {
   @Delete(':key')
   @RequirePermissions('settings:manage')
   @ApiOperation({ summary: 'Clear a system setting override (fall back to env/default)' })
-  @ApiParam({ name: 'key', example: 'monitoring.idle_threshold_min' })
+  @ApiParam({ name: 'key', example: 'monitoring.active_max_age_sec' })
   @ApiResponse({ status: 200, description: 'Cleared setting' })
   @ApiResponse({ status: 404, description: 'Unknown setting key' })
-  clear(@Param('key') key: string): Promise<SettingDescription> {
-    return this.systemConfig.clear(key);
+  clear(@Param('key') key: string, @GetUser() user: User): Promise<SettingDescription> {
+    return this.systemConfig.clear(key, user.id);
   }
 }

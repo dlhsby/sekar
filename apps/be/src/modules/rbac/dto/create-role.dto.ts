@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
+import { MARKER_IMAGE_PATTERN, MARKER_IMAGE_MESSAGE } from '../../../common/dto/map-style.dto';
 
 export class CreateRoleDto {
   @ApiProperty({ example: 'Pengawas Taman', description: 'Display label' })
@@ -41,6 +42,7 @@ export class CreateRoleDto {
   @IsOptional()
   @IsString()
   @MaxLength(600000)
+  @Matches(MARKER_IMAGE_PATTERN, { message: MARKER_IMAGE_MESSAGE })
   marker_image_url?: string;
 
   @ApiPropertyOptional({

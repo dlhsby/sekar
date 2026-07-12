@@ -9,6 +9,7 @@ describe('RolesService', () => {
   let roleRepo: any;
   let permissionRepo: any;
   let rolePermissions: { invalidateRole: jest.Mock };
+  let auditLog: { log: jest.Mock };
 
   beforeEach(() => {
     roleRepo = {
@@ -21,10 +22,12 @@ describe('RolesService', () => {
     };
     permissionRepo = { find: jest.fn().mockResolvedValue([]) };
     rolePermissions = { invalidateRole: jest.fn().mockResolvedValue(undefined) };
+    auditLog = { log: jest.fn().mockResolvedValue(undefined) };
     service = new RolesService(
       roleRepo as unknown as any,
       permissionRepo as unknown as any,
       rolePermissions as unknown as RolePermissionsService,
+      auditLog as unknown as any,
     );
   });
 
@@ -107,6 +110,36 @@ describe('RolesService', () => {
 
       await service.update('r1', { name: 'Korlap Baru' }, 'actor-1');
       expect(rolePermissions.invalidateRole).toHaveBeenCalledWith('korlap');
+    });
+
+    it('refuses to modify the superadmin role permissions', async () => {
+      roleRepo.findOne.mockResolvedValueOnce({
+        id: 'r0',
+        code: 'superadmin',
+        is_system: true,
+        permissions: [{ key: '*:*' }],
+      });
+      await expect(service.update('r0', { permissionKeys: ['user:read'] })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
+
+    it('records an audit entry on update when an actor is known', async () => {
+      const role = { id: 'r1', code: 'korlap', permissions: [] } as unknown as Role;
+      roleRepo.findOne.mockResolvedValueOnce(role).mockResolvedValueOnce({
+        id: 'r1',
+        code: 'korlap',
+        name: 'Korlap Baru',
+        is_system: true,
+        monitoring_scope: 'region',
+        permissions: [],
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+      await service.update('r1', { name: 'Korlap Baru' }, 'actor-1');
+      expect(auditLog.log).toHaveBeenCalledWith(
+        expect.objectContaining({ entity_type: 'role', action: 'update', actor_id: 'actor-1' }),
+      );
     });
   });
 

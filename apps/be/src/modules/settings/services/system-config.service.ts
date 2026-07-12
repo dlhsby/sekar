@@ -7,7 +7,9 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { SystemConfig } from '../entities/system-config.entity';
+import { AuditLogService } from '../../audit/audit.service';
 import {
   SETTINGS_CATALOG,
   getCatalogEntry,
@@ -20,7 +22,7 @@ import { encryptSecret, decryptSecret, encryptionAvailable } from '../settings-e
 export interface SettingDescription {
   key: string;
   group: string;
-  /** Optional sub-section within a group (SWAT-style). */
+  /** Optional sub-section within a group. */
   subgroup?: string;
   valueType: ConfigValueType;
   isSecret: boolean;
@@ -32,7 +34,15 @@ export interface SettingDescription {
   value?: string | number | boolean;
   /** Allowed options for `select` value types. */
   options?: SelectOption[];
+  /** Inclusive bounds for `number` values (from the catalog). */
+  min?: number;
+  max?: number;
 }
+
+/** Event emitted after a system-setting write/clear so dependent caches
+ * (e.g. monitoring thresholds) can invalidate immediately instead of waiting
+ * out their TTL. */
+export const SETTINGS_CHANGED_EVENT = 'settings.changed';
 
 /**
  * Resolves system settings with **DB override → env → code default** precedence
@@ -50,6 +60,8 @@ export class SystemConfigService implements OnModuleInit {
   constructor(
     @InjectRepository(SystemConfig)
     private readonly repo: Repository<SystemConfig>,
+    private readonly events: EventEmitter2,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   async onModuleInit(): Promise<void> {
@@ -117,6 +129,8 @@ export class SystemConfigService implements OnModuleInit {
         source,
         isSet: source !== 'unset',
         options: entry.options,
+        min: entry.min,
+        max: entry.max,
       };
       if (!entry.isSecret) {
         desc.value = this.resolve(entry.key);
@@ -130,10 +144,21 @@ export class SystemConfigService implements OnModuleInit {
     if (!entry) throw new NotFoundException(`Unknown setting: ${key}`);
 
     // Validate the type before persisting.
+    let typedValue: string | number | boolean;
     try {
-      coerceValue(rawValue, entry.valueType);
+      typedValue = coerceValue(rawValue, entry.valueType);
     } catch (err) {
       throw new BadRequestException((err as Error).message);
+    }
+    // Numeric bounds from the catalog — security-critical knobs (rate limits,
+    // thresholds) must never be settable to disabling/nonsensical values.
+    if (entry.valueType === 'number' && typeof typedValue === 'number') {
+      if (entry.min !== undefined && typedValue < entry.min) {
+        throw new BadRequestException(`${key} must be at least ${entry.min}`);
+      }
+      if (entry.max !== undefined && typedValue > entry.max) {
+        throw new BadRequestException(`${key} must be at most ${entry.max}`);
+      }
     }
     // A select must be one of its declared options.
     if (
@@ -156,6 +181,7 @@ export class SystemConfigService implements OnModuleInit {
       stored = encryptSecret(rawValue);
     }
 
+    const previous = this.cache.get(key);
     await this.repo
       .createQueryBuilder()
       .insert()
@@ -172,15 +198,59 @@ export class SystemConfigService implements OnModuleInit {
       .execute();
 
     await this.reloadCache();
+    this.events.emit(SETTINGS_CHANGED_EVENT, { key, group: entry.group });
+    await this.recordAudit('update', key, this.cache.get(key)?.id, actorId, {
+      // Never persist secret material in the audit trail — mask both sides.
+      old_value: previous ? { value: entry.isSecret ? '***' : previous.value } : null,
+      new_value: { value: entry.isSecret ? '***' : rawValue },
+    });
     return this.describeAll().find((d) => d.key === key)!;
   }
 
-  async clear(key: string): Promise<SettingDescription> {
+  async clear(key: string, actorId?: string): Promise<SettingDescription> {
     const entry = getCatalogEntry(key);
     if (!entry) throw new NotFoundException(`Unknown setting: ${key}`);
+    const previous = this.cache.get(key);
     await this.repo.delete({ key });
     await this.reloadCache();
+    this.events.emit(SETTINGS_CHANGED_EVENT, { key, group: entry.group });
+    if (previous) {
+      await this.recordAudit('delete', key, previous.id, actorId, {
+        old_value: { value: entry.isSecret ? '***' : previous.value },
+        new_value: null,
+      });
+    }
     return this.describeAll().find((d) => d.key === key)!;
+  }
+
+  /** Best-effort change audit (ADR-015). audit_logs.entity_id is a uuid, so the
+   * config row's id anchors the entry and the human-readable key travels in
+   * metadata. */
+  private async recordAudit(
+    action: 'update' | 'delete',
+    key: string,
+    rowId: string | undefined,
+    actorId: string | undefined,
+    values: {
+      old_value: Record<string, unknown> | null;
+      new_value: Record<string, unknown> | null;
+    },
+  ): Promise<void> {
+    if (!actorId) return; // audit_logs.actor_id is a required FK
+    if (!rowId) return; // no row to anchor to (shouldn't happen post-write)
+    try {
+      await this.auditLog.log({
+        entity_type: 'system_config',
+        entity_id: rowId,
+        action,
+        actor_id: actorId,
+        old_value: values.old_value,
+        new_value: values.new_value,
+        metadata: { key },
+      });
+    } catch {
+      // Non-fatal: the mutation already succeeded.
+    }
   }
 
   private async reloadCache(): Promise<void> {

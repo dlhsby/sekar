@@ -1,4 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { SETTINGS_CHANGED_EVENT } from '../../settings/services/system-config.service';
 
 interface CacheEntry<T> {
   data: T;
@@ -134,6 +136,13 @@ export class MonitoringCacheService {
     this.thresholdsCache = null;
     this.geofencingCache = null;
     this.logger.debug('Invalidated thresholds and geofencing cache');
+  }
+
+  /** A monitoring/geofence system setting changed — drop the TTL caches now so
+   * status calculation picks the new value up immediately (not after 60s). */
+  @OnEvent(SETTINGS_CHANGED_EVENT)
+  onSettingsChanged(payload: { key: string; group: string }): void {
+    if (payload?.group === 'monitoring') this.invalidateThresholds();
   }
 
   invalidateAreaBoundary(locationId?: string): void {

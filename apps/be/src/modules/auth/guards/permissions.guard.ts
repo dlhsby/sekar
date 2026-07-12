@@ -33,8 +33,11 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const { user } = context.switchToHttp().getRequest();
-    if (!user?.role) {
+    if (!user) {
       throw new ForbiddenException('Missing authenticated user');
+    }
+    if (!user.role) {
+      throw new ForbiddenException('Authenticated user has no role assigned');
     }
 
     const granted = await this.rolePermissions.getRolePermissionKeys(user.role);

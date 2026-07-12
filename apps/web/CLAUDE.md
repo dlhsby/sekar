@@ -416,7 +416,7 @@ npm run test:e2e:ui       # With UI
 5. **48px touch targets** - All buttons and interactive elements
 6. **Use CVA for variants** - class-variance-authority for component variants
 7. **i18n every UI string (MANDATORY)** - never hardcode display text; use `t('<ns>:<key>')` (react-i18next) and add the key to BOTH `src/lib/i18n/locales/{id,en}/<ns>.json` (id = Indonesian, en = English). Reuse `common`/`status`/`roles`/`validation`/`errors`. Zod → `useMemo(() => z.object(...), [t])`. New namespace → register in `src/lib/i18n/resources.ts`. Verify with `npm run i18n:check` (root). Default language is Indonesian; English is the alternate. See root `CLAUDE.md` §Internationalization.
-8. **Role values MUST be lowercase** - Use `'admin'`, `'worker'`, `'top_management'`, etc. (never PascalCase)
+8. **Role values MUST be lowercase** - Use the current codes, e.g. `'satgas'`, `'korlap'`, `'admin_rayon'`, `'management'` (never PascalCase; `worker`/`admin`/`top_management`/`admin_data` are removed — see root CLAUDE.md §Role Values Convention)
 9. **FormSelect placeholders** - Use `'none'` or `'all'` sentinel values, never empty string `''`
 10. **Type safety** - Avoid `any` type; use proper types from `@/types/models`
 

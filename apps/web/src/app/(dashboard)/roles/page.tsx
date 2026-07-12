@@ -66,7 +66,11 @@ export default function RolesPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
   const { data: roles, isLoading, isError: rolesError } = useRoles();
-  const { data: catalog, isError: catalogError } = usePermissionCatalog();
+  const {
+    data: catalog,
+    isLoading: catalogLoading,
+    isError: catalogError,
+  } = usePermissionCatalog();
   const createRole = useCreateRole();
   const deleteRole = useDeleteRole();
 
@@ -226,6 +230,8 @@ export default function RolesPage() {
         <Card variant="outlined" className="p-5">
           {rolesError || catalogError ? (
             <EmptyState variant="error" title={t('access-control:empty.loadError')} />
+          ) : selected && catalogLoading ? (
+            <Skeleton variant="card" />
           ) : selected && catalog ? (
             <RoleEditor
               key={selected.id}

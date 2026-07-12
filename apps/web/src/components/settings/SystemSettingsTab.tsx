@@ -94,12 +94,14 @@ export function SystemSettingsTab({ canManage }: { canManage: boolean }) {
     try {
       for (const s of changed) {
         await updateSetting.mutateAsync({ key: s.key, value: staged[s.key] });
+        // Un-stage each key as it persists so a mid-group failure leaves only
+        // the actually-unsaved keys marked dirty.
+        setStaged((prev) => {
+          const next = { ...prev };
+          delete next[s.key];
+          return next;
+        });
       }
-      setStaged((prev) => {
-        const next = { ...prev };
-        items.forEach((s) => delete next[s.key]);
-        return next;
-      });
       toast.success(t('settings:system.saved'));
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -286,6 +288,8 @@ function SettingRow({
             value={value}
             disabled={!canManage}
             placeholder={s.isSecret ? secretPlaceholder : undefined}
+            min={s.valueType === 'number' ? s.min : undefined}
+            max={s.valueType === 'number' ? s.max : undefined}
             onChange={(e) => onChange(e.target.value)}
           />
         )}
