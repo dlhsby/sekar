@@ -232,7 +232,15 @@ export class SchedulesService {
     const events = await this.eventRepo.find({
       // Soft-deleted events are excluded by the repository's default scope.
       where: { is_active: true },
-      relations: ['shift_definition', 'location', 'region', 'team_type', 'pic_user', 'user', 'members'],
+      relations: [
+        'shift_definition',
+        'location',
+        'region',
+        'team_type',
+        'pic_user',
+        'user',
+        'members',
+      ],
     });
 
     let totalCreated = 0;
