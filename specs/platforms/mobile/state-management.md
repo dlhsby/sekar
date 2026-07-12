@@ -746,7 +746,7 @@ interface MonitoringState {
 
 interface MonitoringFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus;
   search?: string;
@@ -799,7 +799,7 @@ type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offl
 - No Redux slice needed (fetched on-demand in components via `useState`/`useEffect`)
 
 ### User Model Changes
-- `User` type adds: `phone_number`, `profile_picture_url`, `user_areas[]`
+- `User` type adds: `phone_number`, `profile_picture_url`, `user_locations[]`
 - `Shift` type adds: `is_overtime` boolean
 - `Overtime` type adds: `shift_id`, `shift?` relation
 

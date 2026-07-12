@@ -52,7 +52,7 @@ Permission priming uses **explicit just-in-time justification** at OB-2:
 
 If the user declines a permission, the corresponding feature degrades gracefully (clock-in shows "Aktifkan lokasi" prompt; FCM bell silently disabled; etc.). The onboarding completes regardless; the app does not gatekeep on declined permissions.
 
-OB-3 area-preview shows the user's primary area (from `users.area_id` or first `user_areas` row). Tapping "Mulai shift saya" routes to the role-aware home with the clock-in card primed.
+OB-3 area-preview shows the user's primary area (from `users.location_id` or first `user_locations` row). Tapping "Mulai shift saya" routes to the role-aware home with the clock-in card primed.
 
 For `staff_kecamatan` (the new role added in ADR-033), OB-3 shows their kecamatan map view instead of area, and the CTA becomes "Lihat permohonan saya" (no clock-in available for kecamatan).
 

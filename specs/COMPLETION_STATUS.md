@@ -53,7 +53,7 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 | [Seeds](features/_archived/README.md) | 🅿️ | hidden | present |
 
 **Backend-only (API implemented, no UI):** `special-day-overrides`, `kecamatans` (read-only),
-`area-staff-requirements`, `audit`. (`service-capacity` has a web UI: rayon capacity grid.)
+`location-staff-requirements`, `audit`. (`service-capacity` has a web UI: rayon capacity grid.)
 **Deprecated:** `supervisor` module (superseded by `monitoring`; not removed — 21 refs).
 
 ## Next
@@ -61,8 +61,8 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 **Post-UAT foundational revamp** (specs authored 2026-07-10; ADR-044–049). Phased, one PR per phase,
 bottom-up, web before mobile:
 1. **Access control** — dynamic RBAC (roles/permissions/scope/markers), role-management page, Settings split (ADR-044/049) — 🟡 **In review** (branch `docs/uat-revamp-specs`): backend (rbac + settings modules, migrations, seeds, roles/permissions/settings API) + web (role-management page, system-settings tab, `usePermissions`) landed & tested; existing `@Roles` endpoints untouched (compat migration is a later task). Not yet merged/deployed.
-2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — 🟡 **In review** (branch): backend (regions module + migration, styling on rayons/regions/areas, `areas.region_id`, `users.region_id`) + web (`/regions` page, `MapStyleFields`, area→region select) landed & verified live. City styling + monitoring region-tier drill deferred to Phase 5. Not merged/deployed.
-3. **Users & Teams** — role-driven scope inputs; teams CRUD (ADR-044/048) — 🟡 **In review** (branch): teams backend (teams+team_types, CRUD) + web `/teams`; user form scope role-driven from monitoring_scope + `users.region_id`. Verified live. satgas/linmas area+shift → Phase 4 schedules (unmonitored until scheduled). Not merged/deployed.
+2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — 🟡 **In review** (branch): backend (regions module + migration, styling on rayons/regions/locations, `locations.region_id`, `users.region_id`) + web (`/regions` page, `MapStyleFields`, location→region select) landed & verified live. City styling + monitoring region-tier drill deferred to Phase 5. Not merged/deployed.
+3. **Users & Teams** — role-driven scope inputs; teams CRUD (ADR-044/048) — 🟡 **In review** (branch): teams backend (teams+team_types, CRUD) + web `/teams`; user form scope role-driven from monitoring_scope + `users.region_id`. Verified live. satgas/linmas location+shift → Phase 4 schedules (unmonitored until scheduled). Not merged/deployed.
 4. **Scheduling** — calendar + rule-based recurrence + team schedules (ADR-047) — 🚧 Planned
 5. **Monitoring (web)** — subject model, drop Surabaya bubble, team bubbles, static/mobile, search (ADR-046) — 🚧 Planned
 6. **Mobile parity** — after web design ack.
@@ -71,7 +71,7 @@ Then revisit the parked features above. Track work in each feature spec's `## Ch
 
 **Deferred RBAC follow-ups (ADR-044 §Follow-ups):** (1) migrate the ~182 existing `@Roles` endpoints to `@RequirePermissions` via the compat shim + role-endpoint-matrix test — a dedicated later pass (or per-module as Phases 2–5 touch each); until then, role-permission edits only affect the new RBAC/settings endpoints. (2) Management's default grants = all-except-`settings:manage` (per UAT) — retunable at runtime; revisit whether to narrow `role:*`/`permission:*`.
 
-**Deferred to implementation PRs (not Phase 0 gaps):** fleshing out `database/schema.md` / `database/erd.md` and `api/contracts.md` with the new tables/columns/endpoints (roles/permissions, regions, teams, schedule_events, settings, `users.region_id`, per-level styling) — these current-state detail docs are updated in the **same PR as the migration/code** per the specs-sync mandate. Several still describe today's korlap multi-area (`user_areas`) model and will be reconciled to the region + optional-location model as Phase 1–3 land.
+**Deferred to implementation PRs (not Phase 0 gaps):** fleshing out `database/schema.md` / `database/erd.md` and `api/contracts.md` with the new tables/columns/endpoints (roles/permissions, regions, teams, schedule_events, settings, `users.region_id`, per-level styling) — these current-state detail docs are updated in the **same PR as the migration/code** per the specs-sync mandate. Several still describe today's korlap multi-location (`user_locations`) model and will be reconciled to the region + optional-location model as Phase 1–3 land.
 
 ## Links
 

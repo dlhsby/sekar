@@ -10,11 +10,11 @@ Accepted — **Extends [ADR-029](./ADR-029-monitoring-v2-event-sourced-redis.md)
 
 ## Context
 
-Monitoring today assumes every clocked-in worker is a scheduled subject of an area, and understaffing is `active_count < AreaStaffRequirement.required_count` across all roles. UAT corrects several assumptions:
+Monitoring today assumes every clocked-in worker is a scheduled subject of a location, and understaffing is `active_count < LocationStaffRequirement.required_count` across all roles. UAT corrects several assumptions:
 
 - **Not everyone is scheduled.** `kepala_rayon`, `admin_rayon`, and `korlap` clock in and should be visible to their supervisors, but they must **not** generate schedules or count toward understaffing.
 - **Only `satgas` + `linmas`** are the workforce measured for staffing.
-- **Static vs mobile.** Some subjects are location-bound (assigned to an area); others roam a region (e.g. penyiraman truck) and have no fixed location.
+- **Static vs mobile.** Some subjects are location-bound (assigned to a location); others roam a region (e.g. penyiraman truck) and have no fixed location.
 - **UI dislikes** the current Surabaya bubble and the active/terjadwal ratio bubbles; keep the drill-down but rework the visuals.
 - **Teams** ([ADR-048](./ADR-048-teams.md)) should render as a single group bubble that expands to members.
 
@@ -24,7 +24,7 @@ Monitoring today assumes every clocked-in worker is a scheduled subject of an ar
 
 Two orthogonal properties per monitored person:
 
-1. **Monitorable** — anyone who clocks in and streams location: `satgas`, `linmas`, `korlap`, `kepala_rayon`, `admin_rayon`. They appear on the map/roster **when clocked in**. Their geofence follows their assignment: `satgas`/`linmas`/`korlap` per their schedule occurrence (area or region); `kepala_rayon`/`admin_rayon` are geofenced to their **`rayon_id`** (they have no schedule — their "monitoring area" is the whole rayon).
+1. **Monitorable** — anyone who clocks in and streams location: `satgas`, `linmas`, `korlap`, `kepala_rayon`, `admin_rayon`. They appear on the map/roster **when clocked in**. Their geofence follows their assignment: `satgas`/`linmas`/`korlap` per their schedule occurrence (location or region); `kepala_rayon`/`admin_rayon` are geofenced to their **`rayon_id`** (they have no schedule — their "monitoring area" is the whole rayon).
 2. **Scheduled / staffing-counted** — **only `satgas` + `linmas`**. Understaffing, "scheduled", "expected/absent" counts derive exclusively from these two roles. Others are shown but excluded from staffing math.
 
 Subjects with no schedule are **not** rendered by default; they surface only via **daftar petugas** or **search** once they clock in and send location.
@@ -41,15 +41,15 @@ Every daftar-petugas / search / snapshot query is filtered by this scope server-
 ### Static vs mobile
 
 Each subject's scope for the current shift comes from their schedule occurrence (`schedules.scope`):
-- **Static** → bound to an `area_id`; geofenced against the area polygon/circle.
+- **Static** → bound to a `location_id`; geofenced against the location polygon/circle.
 - **Mobile** → bound to a `region_id` (Kawasan); geofenced against the region boundary; expected to roam.
 
-Mobile geofencing reuses the **same tolerance** as area geofencing (ADR-010 soft polygon, ADR-005 tolerance) — the only difference is the polygon (region vs area). **No new status code**: status color rings (active / inactive / outside-area / missing / offline) are unchanged; "outside-area" for a mobile subject means outside its **region**.
+Mobile geofencing reuses the **same tolerance** as location geofencing (ADR-010 soft polygon, ADR-005 tolerance) — the only difference is the polygon (region vs location). **No new status code**: status color rings (active / inactive / outside-area / missing / offline) are unchanged; "outside-area" for a mobile subject means outside its **region**.
 
 **Visibility per drill level** (which subjects render at each tier):
 - **Rayon** → all monitorable workers in the rayon (static + mobile).
 - **Region** → mobile subjects with this `region_id` **plus** static subjects whose area sits under this region.
-- **Area** → static subjects bound to this `area_id`. (Mobile subjects are not pinned to an area; they show at region level.)
+- **Area** → static subjects bound to this `location_id`. (Mobile subjects are not pinned to an area; they show at region level.)
 
 ### Drill & bubbles
 
@@ -64,7 +64,7 @@ Mobile geofencing reuses the **same tolerance** as area geofencing (ADR-010 soft
 
 ### Understaffing
 
-`is_understaffed` counts only `satgas`+`linmas` with an active status inside their assigned scope vs `AreaStaffRequirement` for the current shift + day type. Supervisory/coordinator roles never affect it.
+`is_understaffed` counts only `satgas`+`linmas` with an active status inside their assigned scope vs `LocationStaffRequirement` for the current shift + day type. Supervisory/coordinator roles never affect it.
 
 ### Realtime & performance
 

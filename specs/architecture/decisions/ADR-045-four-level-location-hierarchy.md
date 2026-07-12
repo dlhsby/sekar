@@ -21,28 +21,28 @@ Adopt a four-level hierarchy and treat every level as a **monitoring area** with
 | City | Surabaya (City View) | city config (single) | — |
 | District | **Rayon** | `rayons` | city |
 | **Region** | **Kawasan** (NEW) | `regions` | rayon |
-| Location | **Lokasi** (current Area) | `areas` | region |
+| Location | **Lokasi** (formerly Area) | `locations` | region |
 
 ### New `regions` (Kawasan) entity
 
-`id`, `name`, `rayon_id` (FK), `boundary_polygon` (GeoJSON), `center_lat/lng`, `marker_icon`, plus the shared styling fields below. Regions are **new master data drawn fresh** on the map; they are not auto-generated from existing areas.
+`id`, `name`, `rayon_id` (FK), `boundary_polygon` (GeoJSON), `center_lat/lng`, `marker_icon`, plus the shared styling fields below. Regions are **new master data drawn fresh** on the map; they are not auto-generated from existing locations.
 
-### Area re-parenting
+### Location re-parenting
 
-`areas.region_id` (nullable FK) is added. Existing areas keep working with `region_id = NULL` and are **re-parented manually** after regions are drawn, via a **bulk re-parent form** (select one or more areas → choose target region → confirm). On save the backend validates `region.rayon_id === area.rayon_id` (an area cannot move to a region in a different rayon) and sets `area.region_id`. `areas.rayon_id` is retained (denormalized) for back-compat and fast rayon rollups; when `region_id` is set, `rayon_id` is kept consistent with the region's rayon. **On region delete**, child areas are **not** cascaded — their `region_id` is set to `NULL` (soft delete on the region), so no area data is lost.
+`locations.region_id` (nullable FK) is added. Existing locations keep working with `region_id = NULL` and are **re-parented manually** after regions are drawn, via a **bulk re-parent form** (select one or more locations → choose target region → confirm). On save the backend validates `region.rayon_id === location.rayon_id` (a location cannot move to a region in a different rayon) and sets `location.region_id`. `locations.rayon_id` is retained (denormalized) for back-compat and fast rayon rollups; when `region_id` is set, `rayon_id` is kept consistent with the region's rayon. **On region delete**, child locations are **not** cascaded — their `region_id` is set to `NULL` (soft delete on the region), so no location data is lost.
 
 ### Per-level styling + marker (all four levels)
 
-The **City** level is a single row (Surabaya) in a `city_config`/settings-backed record; `rayons`, `regions`, `areas` are the other three. Each carries:
-`border_color`, `fill_color`, `border_opacity` (0–1), `fill_opacity` (0–1), `marker_icon`, `marker_color`. Colors validate against `^#[0-9A-Fa-f]{6}$` and opacities against `0..1` at the DTO layer; `marker_icon` is from the curated icon set ([ADR-044](./ADR-044-dynamic-rbac.md) §Marker & styling constraints). The legacy single `color` column is retained as a fallback during migration and mapped onto `border_color`/`fill_color` defaults. Each level is edited in its own master-data CRUD (rayons / regions / areas pages); **City styling** (the single Surabaya row) is edited on a dedicated City card in geography master-data — so operators can set the marker + border/fill/opacity for all four tiers.
+The **City** level is a single row (Surabaya) in a `city_config`/settings-backed record; `rayons`, `regions`, `locations` are the other three. Each carries:
+`border_color`, `fill_color`, `border_opacity` (0–1), `fill_opacity` (0–1), `marker_icon`, `marker_color`. Colors validate against `^#[0-9A-Fa-f]{6}$` and opacities against `0..1` at the DTO layer; `marker_icon` is from the curated icon set ([ADR-044](./ADR-044-dynamic-rbac.md) §Marker & styling constraints). The legacy single `color` column is retained as a fallback during migration and mapped onto `border_color`/`fill_color` defaults. Each level is edited in its own master-data CRUD (rayons / regions / locations pages); **City styling** (the single Surabaya row) is edited on a dedicated City card in geography master-data — so operators can set the marker + border/fill/opacity for all four tiers.
 
 ### Static vs mobile subjects
 
-The new Region level enables **mobile monitoring subjects**: a worker/team assigned to a *region* (not a specific location) is geofenced against the region boundary and expected to roam within it. **Static** subjects remain geofenced to their `area`. Which one applies is a property of the schedule occurrence (`area_id` vs `region_id`), not the user record — see [ADR-047](./ADR-047-schedule-redesign.md) and [ADR-046](./ADR-046-monitoring-subject-model.md).
+The new Region level enables **mobile monitoring subjects**: a worker/team assigned to a *region* (not a specific location) is geofenced against the region boundary and expected to roam within it. **Static** subjects remain geofenced to their `location`. Which one applies is a property of the schedule occurrence (`location_id` vs `region_id`), not the user record — see [ADR-047](./ADR-047-schedule-redesign.md) and [ADR-046](./ADR-046-monitoring-subject-model.md).
 
 ### Monitoring drill tiers
 
-The monitoring aggregate/boundaries endpoints gain a **region tier** between rayon and area: City → Rayon → **Region** → Area → workers.
+The monitoring aggregate/boundaries endpoints gain a **region tier** between rayon and location: City → Rayon → **Region** → Location → workers.
 
 ## Consequences
 
@@ -70,5 +70,5 @@ The monitoring aggregate/boundaries endpoints gain a **region tier** between ray
 - [ADR-010](./ADR-010-phase2c-terminology-cleanup.md) — polygon geofencing (extended to regions)
 - [ADR-013](./ADR-013-multi-area-assignment.md) — area assignment (region tier added above it)
 - [ADR-046](./ADR-046-monitoring-subject-model.md) — static vs mobile subjects, region drill tier
-- [ADR-047](./ADR-047-schedule-redesign.md) — schedule scope (`area_id` vs `region_id`)
+- [ADR-047](./ADR-047-schedule-redesign.md) — schedule scope (`location_id` vs `region_id`)
 - Feature spec: `../../features/geography/README.md`

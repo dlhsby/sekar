@@ -3,7 +3,7 @@
 **Status:** ✅ Active · **Backend:** `activities` (clock events) · **Key ADRs:** ADR-002 (offline-first), ADR-005→010 (polygon geofencing), ADR-014 (overtime clock flow)
 
 ## Overview
-Clock-in / clock-out with mandatory photo evidence and GPS validation against the assigned area's polygon. Works offline and syncs when connectivity returns.
+Clock-in / clock-out with mandatory photo evidence and GPS validation against the assigned location's polygon. Works offline and syncs when connectivity returns.
 
 ## Key decisions
 - **Soft polygon geofencing** (ADR-005→010) — replaced the hard 100 m radius; inside/near/outside is advisory, not blocking.
@@ -21,4 +21,5 @@ Clock-in / clock-out with mandatory photo evidence and GPS validation against th
 - [work](../work/README.md)
 
 ## Changelog
+- 2026-07-12 — **Area→Location terminology sweep.** Renamed "assigned location's polygon".
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

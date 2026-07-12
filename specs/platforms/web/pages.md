@@ -406,7 +406,7 @@ GET /api/location/worker/:workerId?from_date=&to_date=
 
 **API Endpoints:**
 ```typescript
-GET /api/users?role=worker&page=1&limit=20&search=&area_id=&status=
+GET /api/users?role=worker&page=1&limit=20&search=&location_id=&status=
   Response: {
     workers: Array<{
       id: string,
@@ -430,7 +430,7 @@ GET /api/users?role=worker&page=1&limit=20&search=&area_id=&status=
   }
 
 POST /api/workers/bulk-assign
-  Body: {worker_ids: string[], area_id: string}
+  Body: {worker_ids: string[], location_id: string}
 
 PATCH /api/users/bulk-update
   Body: {user_ids: string[], is_active: boolean}
@@ -685,7 +685,7 @@ PATCH /api/users/:id
   Response: {user: {...}}
 
 POST /api/workers/:id/assign
-  Body: {area_id: string}
+  Body: {location_id: string}
   Response: {assignment: {...}}
 
 GET /api/areas  // For area dropdown
@@ -709,7 +709,7 @@ const workerSchema = z.object({
   password: z.string()
     .min(6, 'Password must be at least 6 characters')
     .optional(),
-  area_id: z.string().uuid().optional(),
+  location_id: z.string().uuid().optional(),
   is_active: z.boolean().default(true)
 });
 ```
@@ -827,7 +827,7 @@ Each card shows:
 
 **API Endpoints:**
 ```typescript
-GET /api/reports?page=1&limit=24&search=&worker_id=&area_id=&area_type=&report_type=&status=&from_date=&to_date=&sort=
+GET /api/reports?page=1&limit=24&search=&worker_id=&location_id=&area_type=&report_type=&status=&from_date=&to_date=&sort=
   Response: {
     reports: Array<{
       id: string,
@@ -1157,7 +1157,7 @@ Click worker row to expand:
 
 **API Endpoints:**
 ```typescript
-GET /api/supervisor/attendance?date=2026-01-16&area_id=&area_type=&status=
+GET /api/supervisor/attendance?date=2026-01-16&location_id=&area_type=&status=
   Response: {
     date: string,
     summary: {
@@ -1394,7 +1394,7 @@ Sortable by any column, filterable by area.
 
 **API Endpoints:**
 ```typescript
-GET /api/analytics/summary?from_date=&to_date=&area_id=&area_type=
+GET /api/analytics/summary?from_date=&to_date=&location_id=&area_type=
   Response: {
     avg_attendance_rate: number,
     total_hours: number,
@@ -1440,7 +1440,7 @@ GET /api/analytics/reports-by-type?from_date=&to_date=
 
 GET /api/analytics/area-coverage?from_date=&to_date=
   Response: {
-    area_types: Array<{
+    location_types: Array<{
       type: string,
       count: number,
       percentage: number,
@@ -1492,7 +1492,7 @@ GET /api/analytics/performance-leaderboard?from_date=&to_date=&limit=50
 
 ### 7.1 Areas List Page
 
-**Route:** `/dashboard/areas`
+**Route:** `/dashboard/locations`
 **Access:** Supervisor, Admin
 **Description:** Manage work areas with CRUD operations and bulk actions.
 
@@ -1595,7 +1595,7 @@ POST /api/areas/bulk-assign
   Body: {area_ids: string[], worker_ids: string[]}
 
 PATCH /api/areas/bulk-update
-  Body: {area_ids: string[], is_active?: boolean, area_type_id?: string}
+  Body: {area_ids: string[], is_active?: boolean, location_type_id?: string}
 
 DELETE /api/areas/bulk-delete
   Body: {area_ids: string[]}
@@ -1615,7 +1615,7 @@ DELETE /api/areas/bulk-delete
 
 ### 7.2 Area Detail Page
 
-**Route:** `/dashboard/areas/:id`
+**Route:** `/dashboard/locations/:id`
 **Access:** Supervisor, Admin
 **Description:** Detailed view of single area with all related data.
 
@@ -1751,10 +1751,10 @@ GET /api/areas/:id?include=workers,stats
     }
   }
 
-GET /api/shifts?area_id=:id&from_date=&to_date=
+GET /api/shifts?location_id=:id&from_date=&to_date=
   Response: {shifts: [...]}
 
-GET /api/reports?area_id=:id&from_date=&to_date=
+GET /api/reports?location_id=:id&from_date=&to_date=
   Response: {reports: [...]}
 
 GET /api/analytics/area/:id?from_date=&to_date=
@@ -1775,7 +1775,7 @@ GET /api/analytics/area/:id?from_date=&to_date=
 
 ### 7.3 Create/Edit Area Form
 
-**Route:** `/dashboard/areas/new` or `/dashboard/areas/:id/edit`
+**Route:** `/dashboard/locations/new` or `/dashboard/locations/:id/edit`
 **Access:** Admin only
 **Description:** Form to create new area or edit existing area.
 
@@ -1869,7 +1869,7 @@ GET /api/analytics/area/:id?from_date=&to_date=
 POST /api/areas
   Body: {
     name: string,
-    area_type_id: string,
+    location_type_id: string,
     address?: string,
     gps_lat: number,
     gps_lng: number,
@@ -1883,7 +1883,7 @@ PATCH /api/areas/:id
   Response: {area: {...}}
 
 GET /api/area-types  // For area type dropdown
-  Response: {area_types: [...]}
+  Response: {location_types: [...]}
 
 POST /api/areas/validate-location
   Body: {gps_lat: number, gps_lng: number, radius_meters: number}
@@ -1901,7 +1901,7 @@ const areaSchema = z.object({
   name: z.string()
     .min(2, 'Name must be at least 2 characters')
     .max(200, 'Name must be less than 200 characters'),
-  area_type_id: z.string().uuid('Select an area type'),
+  location_type_id: z.string().uuid('Select an area type'),
   address: z.string().max(500, 'Address is too long').optional(),
   gps_lat: z.number()
     .min(-90, 'Latitude must be between -90 and 90')
@@ -2631,7 +2631,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 |-------|--------|-------|
 | `/monitoring` (v2 **redesign**) | korlap / kepala_rayon / admin_rayon / management / admin_system / superadmin | Google Maps supercluster layer, incremental WebSocket patches, virtualized worker list, role-based hierarchy toggles, plant-status overlay (ok/due/overdue), area-detail drawer with plant inventory breakdown |
 | `/plants` | admin_rayon / admin_system / superadmin / management | Plant species master + per-area inventory entry |
-| `/plants/[areaId]` | same | Bulk upsert of species × count rows for the area |
+| `/plants/[locationId]` | same | Bulk upsert of species × count rows for the area |
 | `/pruning-requests` | staff_kecamatan (own) / admin_rayon (rayon) / admin_system / superadmin / management | Queue with status filter; row actions vary by role |
 | `/pruning-requests/[id]` | owner / admin_rayon (rayon) / management | Detail view with review + convert-to-task actions (admin_rayon), result view (owner) |
 | `/rayons/[id]/capacity` | admin_rayon (own rayon) / management | Weekly grid editor: `service_capacity` per service_type × ISO week, with booked-vs-capacity bars |
@@ -2644,7 +2644,7 @@ Add a **Boundary Management** tab (admin_system, superadmin only):
 | Component | File | Notes |
 |-----------|------|-------|
 | ClusterLayer | `src/components/monitoring/ClusterLayer.tsx` | Google Maps cluster source with custom paint for count bubbles |
-| PlantOverlayLayer | `src/components/monitoring/PlantOverlayLayer.tsx` | Area polygon fills tinted by `area_plants.status` |
+| PlantOverlayLayer | `src/components/monitoring/PlantOverlayLayer.tsx` | Area polygon fills tinted by `location_plants.status` |
 | AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Legend + area highlight on hover |
 | HierarchyFilterPanel | `src/components/monitoring/HierarchyFilterPanel.tsx` | Toggle groups for rayon / area / worker-role hierarchy (role-aware) |
 | WorkerListVirtual | `src/components/monitoring/WorkerListVirtual.tsx` | react-virtuoso list, updates via WS patches |

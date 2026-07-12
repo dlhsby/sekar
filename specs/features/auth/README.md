@@ -10,7 +10,7 @@ Authentication and role-based access for all SEKAR users. Username **or** phone-
 - **8 roles** (ADR-009): satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin; + external `staff_kecamatan` (ADR-033).
 - **Phone-number login** (ADR-012) — identifier can be username or phone.
 - **Forgot-password = contact admin** (ADR-041) — no self-serve reset; `password_must_change` forces a change on first login.
-- **Onboarding** (ADR-042) — pre-login carousel + permission priming + area preview (mobile).
+- **Onboarding** (ADR-042) — pre-login carousel + permission priming + location preview (mobile).
 
 ## Implementation
 - **API:** [`../../api/contracts.md`](../../api/contracts.md) · errors [`../../api/error-handling.md`](../../api/error-handling.md) (live Swagger `/api/v1/docs`)
@@ -20,7 +20,8 @@ Authentication and role-based access for all SEKAR users. Username **or** phone-
 
 ## Related features
 - [users](../users/README.md)
-- [geography](../geography/README.md) (role scope by rayon/area)
+- [geography](../geography/README.md) (role scope by rayon/location)
 
 ## Changelog
+- 2026-07-12 — **Area→Location terminology sweep.** Updated onboarding location preview and role scope references.
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).

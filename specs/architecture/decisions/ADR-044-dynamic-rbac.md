@@ -37,14 +37,14 @@ The 9 current roles are seeded and locked. Codes are lowercase and used in JWT +
 | `superadmin` | Superadmin | city | all permissions |
 | `admin_system` | Admin Sistem | city | manage roles/permissions/settings/master-data |
 | `management` | **Management** | city | read-all across the city; no system-settings edit |
-| `kepala_rayon` | Kepala Rayon | district | manage user+area data in own rayon; clockable |
+| `kepala_rayon` | Kepala Rayon | district | manage user+location data in own rayon; clockable |
 | `admin_rayon` | **Admin Rayon** | district | **equalized to kepala_rayon** (was pruning-only) |
 | `korlap` | Korlap | region | monitor own region/location; no data management |
 | `satgas` | Satgas | none | field worker; scheduled; no monitoring |
 | `linmas` | Linmas | none | security; scheduled; no monitoring |
 | `staff_kecamatan` | Staff Kecamatan | none | external pruning intake (ADR-033) |
 
-**`admin_rayon` is now the role code** (renamed from `admin_data` in the UAT revamp), with label "Admin Rayon". This **supersedes ADR-033's** "no distinct `admin_rayon` role" naming stance — the code is now `admin_rayon` at the schema level, not just a label. UAT **equalizes** its access to `kepala_rayon`: both get district scope and the same base permissions (manage users/areas in their own rayon, review pruning-requests scoped by rayon). This is a *widening* of the former `admin_data`, not a narrowing — it **keeps** ADR-032's pruning-request disposition and **adds** the user/area-management parity; the two roles are now identical in scope + base permission set.
+**`admin_rayon` is now the role code** (renamed from `admin_data` in the UAT revamp), with label "Admin Rayon". This **supersedes ADR-033's** "no distinct `admin_rayon` role" naming stance — the code is now `admin_rayon` at the schema level, not just a label. UAT **equalizes** its access to `kepala_rayon`: both get district scope and the same base permissions (manage users/locations in their own rayon, review pruning-requests scoped by rayon). This is a *widening* of the former `admin_data`, not a narrowing — it **keeps** ADR-032's pruning-request disposition and **adds** the user/location-management parity; the two roles are now identical in scope + base permission set.
 
 **Code vs label discipline:** backend guards, JWT, `@Roles`, API request/response payloads, and permission checks always use the role **code** (e.g. `admin_rayon`); the **label** ("Admin Rayon") is UI-only, read from `roles.name`. Never put a label in a code position or vice-versa.
 
@@ -96,9 +96,9 @@ Left rail = role list (name + "N permissions · M users" badge). Right pane = a 
 
 ### Monitoring scope & enforcement
 
-`roles.monitoring_scope` is the single source of truth for "what can this role see" and "which scope inputs appear on the user form". Enforcement is **two-layered and both must pass**: `@RequirePermissions('monitoring:read')` (does the role have the capability?) **then** a reusable scope check (may the caller see *this* resource?). The scope check is a shared helper — `canViewRayon/Region/Area(id)` returning boolean (services throw `ForbiddenException` on false) — derived from `monitoring_scope` + the caller's `rayon_id`/`region_id`/assigned area(s). It replaces today's inline `enforceScopeRayon` and is applied uniformly to monitoring, user-list, and schedule queries (filter for lists, guard for detail).
+`roles.monitoring_scope` is the single source of truth for "what can this role see" and "which scope inputs appear on the user form". Enforcement is **two-layered and both must pass**: `@RequirePermissions('monitoring:read')` (does the role have the capability?) **then** a reusable scope check (may the caller see *this* resource?). The scope check is a shared helper — `canViewRayon/Region/Location(id)` returning boolean (services throw `ForbiddenException` on false) — derived from `monitoring_scope` + the caller's `rayon_id`/`region_id`/assigned location(s). It replaces today's inline `enforceScopeRayon` and is applied uniformly to monitoring, user-list, and schedule queries (filter for lists, guard for detail).
 
-**Scope tiers → assignment fields:** `city` = no binding (sees all); `district` = `rayon_id`; `region` = `rayon_id` + `region_id` (korlap may optionally narrow to a single location `area_id` within that region — location is optional); `location`/`none` per role. `users.region_id` is added (nullable) for `korlap` (see [ADR-045](./ADR-045-four-level-location-hierarchy.md)); korlap's optional single location reuses `area_id` (the legacy multi-area `user_areas` is not used for korlap under the new model).
+**Scope tiers → assignment fields:** `city` = no binding (sees all); `district` = `rayon_id`; `region` = `rayon_id` + `region_id` (korlap may optionally narrow to a single location `location_id` within that region — location is optional); `location`/`none` per role. `users.region_id` is added (nullable) for `korlap` (see [ADR-045](./ADR-045-four-level-location-hierarchy.md)); korlap's optional single location reuses `location_id` (the legacy multi-location `user_locations` is not used for korlap under the new model).
 
 ### Endpoint-migration matrix test
 

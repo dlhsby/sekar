@@ -957,7 +957,7 @@ When updating test data:
 |---------|---------|
 | Users with `phone_number` | Phone login testing (all clockable roles) |
 | Users with `profile_picture_url` | Profile picture display testing |
-| `user_areas` entries | Multi-area korlap + task-based satgas/linmas |
+| `user_locations` entries | Multi-area korlap + task-based satgas/linmas |
 | Shifts with `is_overtime: true` | Overtime shift testing |
 | Overtimes with `shift_id` | Overtime-shift linkage |
 | `audit_logs` entries | Audit trail display testing |

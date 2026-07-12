@@ -48,9 +48,9 @@ Cache computed responses to reduce database queries.
 
 | Endpoint | TTL | Invalidation Trigger |
 |----------|-----|---------------------|
-| `GET /areas` | 24 hours | Area CRUD operations |
-| `GET /areas/:id` | 24 hours | Area update |
-| `GET /area-types` | 7 days | Rarely changes |
+| `GET /locations` | 24 hours | Location CRUD operations |
+| `GET /locations/:id` | 24 hours | Location update |
+| `GET /location-types` | 7 days | Rarely changes |
 | `GET /users` (list) | 5 minutes | User CRUD operations |
 | `GET /users/:id` | 1 hour | User update |
 | `GET /supervisor/dashboard` | 30 seconds | Shift/report changes |
@@ -122,16 +122,16 @@ interface DashboardStats {
   activeShifts: number;
   pendingReports: number;
   completedReports: number;
-  areasWithActivity: number;
+  locationsWithActivity: number;
 }
 ```
 
-**Area Boundaries (GPS coordinates):**
+**Location Boundaries (GPS coordinates):**
 ```typescript
-// Cache key: `area:${area_id}:boundaries`
+// Cache key: `location:${location_id}:boundaries`
 // TTL: 24 hours
-// Invalidate: On area update
-interface AreaBoundary {
+// Invalidate: On location update
+interface LocationBoundary {
   gps_lat: number;
   gps_lng: number;
   radius_meters: number;
@@ -146,17 +146,17 @@ Cache static data in application memory for ultra-fast access.
 
 #### Cacheable Data
 
-**Area Types:**
+**Location Types:**
 ```typescript
 // Singleton service with in-memory cache
 @Injectable()
-export class AreaTypesCache {
-  private cache: AreaType[] = [];
+export class LocationTypesCache {
+  private cache: LocationType[] = [];
   private lastRefresh: Date;
 
-  async getAll(): Promise<AreaType[]> {
+  async getAll(): Promise<LocationType[]> {
     if (this.shouldRefresh()) {
-      this.cache = await this.areaTypesRepository.find();
+      this.cache = await this.locationTypesRepository.find();
       this.lastRefresh = new Date();
     }
     return this.cache;

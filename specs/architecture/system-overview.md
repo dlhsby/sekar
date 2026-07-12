@@ -446,7 +446,7 @@ Deploy Method: GitHub OIDC → ECR → SSM (no Elastic Beanstalk)
 
 1. **Dual-Identifier Authentication (ADR-012):** Login accepts phone number OR username via `identifier` field. New `phone_number` column on users with unique partial index.
 
-2. **Multi-Area Assignment Model (ADR-013):** New `user_areas` junction table replaces single `users.area_id` for korlap. Supports `permanent` (admin-assigned) and `task_based` (auto-computed from active tasks) types. `users.area_id` kept for backward compatibility.
+2. **Multi-Area Assignment Model (ADR-013):** New `user_locations` junction table replaces single `users.location_id` for korlap. Supports `permanent` (admin-assigned) and `task_based` (auto-computed from active tasks) types. `users.location_id` kept for backward compatibility.
 
 3. **Overtime as Flagged Shift (ADR-014):** Overtime reuses shift infrastructure with `shifts.is_overtime` boolean. New `overtimes.shift_id` FK links overtime record to its clock-in/out shift. Requires normal shift clock-out before overtime clock-in.
 

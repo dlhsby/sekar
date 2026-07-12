@@ -615,7 +615,7 @@ POST /api/shifts/clock-in
 Content-Type: application/json
 
 {
-  "area_id": "uuid",
+  "location_id": "uuid",
   "gps_lat": -7.2903,
   "gps_lng": 112.7400,
   "selfie_photo": "base64..."
@@ -1140,7 +1140,7 @@ const handleClockInError = async (error: ClockInError) => {
     case 'NETWORK_ERROR':
       // Save to offline queue
       await offlineQueue.addPendingClockIn({
-        area_id: areaId,
+        location_id: locationId,
         gps_lat: latitude,
         gps_lng: longitude,
         selfie_path: photoLocalPath,
@@ -2782,7 +2782,7 @@ All three presentations consume the **same generated tokens** — colors, shadow
 | Component | File | Notes |
 |-----------|------|-------|
 | ClusteredUserMarkers | `src/components/monitoring/ClusteredUserMarkers.tsx` | supercluster-backed; MUST preserve `tracksViewChanges={false}` + `key` with `labelMode` + `clusterId` |
-| AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Polygon fill tinted by `area_plants.status` (ok/due/overdue) |
+| AreaStatusOverlay | `src/components/monitoring/AreaStatusOverlay.tsx` | Polygon fill tinted by `location_plants.status` (ok/due/overdue) |
 | MonitoringToggleSheet | `src/components/monitoring/MonitoringToggleSheet.tsx` | Bottom sheet toggles for rayon/area/worker hierarchy + plants overlay |
 | SpeciesAutocomplete | `src/components/tasks/SpeciesAutocomplete.tsx` | Autocomplete over 131 species from `plant_species` |
 

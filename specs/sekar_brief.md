@@ -469,7 +469,7 @@ const RETRY_DELAYS = [60000, 300000, 900000]; // 1min, 5min, 15min
 │      AREAS          │     │       ASSETS        │     │   ASSET_TYPES       │
 ├─────────────────────┤     ├─────────────────────┤     ├─────────────────────┤
 │ id (UUID) PK        │     │ id (UUID) PK        │     │ id (UUID) PK        │
-│ name                │◄────│ area_id FK          │     │ name                │
+│ name                │◄────│ location_id FK          │     │ name                │
 │ type_id FK          │     │ asset_type_id FK    │────►│ category            │
 │ center_lat          │     │ code (QR reference) │     │ requires_maintenance│
 │ center_lng          │     │ name                │     │ created_at          │

@@ -10,13 +10,13 @@ Accepted — **Amends [ADR-013](./ADR-013-multi-area-assignment.md)** (template-
 
 ## Context
 
-Scheduling today is a **materialized daily roster**: a cron generates one `schedules` row per worker per WIB day from the worker's standing template (`users.shift_definition_id` + permanent `user_areas`), with a `(user_id, schedule_date)` unique constraint and a `schedule_areas` join for 0..N areas. There is no recurrence engine, no calendar UI (only a datatable), and no team concept. Monitoring reads these materialized rows to know who is "scheduled".
+Scheduling today is a **materialized daily roster**: a cron generates one `schedules` row per worker per WIB day from the worker's standing template (`users.shift_definition_id` + permanent `user_locations`), with a `(user_id, schedule_date)` unique constraint and a `schedule_locations` join for 0..N locations. There is no recurrence engine, no calendar UI (only a datatable), and no team concept. Monitoring reads these materialized rows to know who is "scheduled".
 
 UAT wants a **Google-Calendar-inspired** model: schedules defined per day per shift, set as recurring (every N days, weekly, specific dates) or one-off, viewable as day/week/month calendars, supporting **individual and team** schedules, and **static or mobile** scope. Only `korlap` (optional), `satgas`, and `linmas` need schedules; management/kepala_rayon/admin_rayon do not. Shift 3 crosses midnight (already modeled on `ShiftDefinition.crosses_midnight`).
 
 ## Decision
 
-Split scheduling into a **rule source** (`ScheduleEvent`) and **materialized occurrences** that reuse the existing roster rows, so monitoring keeps reading `schedules`/`schedule_areas` unchanged.
+Split scheduling into a **rule source** (`ScheduleEvent`) and **materialized occurrences** that reuse the existing roster rows, so monitoring keeps reading `schedules`/`schedule_locations` unchanged.
 
 ### `ScheduleEvent` (rule)
 
@@ -24,12 +24,12 @@ Fields:
 - `id`, `title` (optional), audit.
 - **Recurrence** — structured, not an opaque rrule string: `recurrence_type` (`none | daily | every_n_days | weekly | specific_dates`), `start_date`, `end_date` (nullable = open-ended), and a `recurrence_config` JSON holding `interval_n` (for `every_n_days`), `weekdays[]` (for `weekly`), `dates[]` (for `specific_dates`). `none` = a single-day event on `start_date`.
 - `shift_definition_id` — one shift per event. A user working two shifts in a day has **two events** (see overlap guard).
-- **Scope** — a `scope` enum: `static` requires `area_id` (region_id NULL); `mobile` requires `region_id` (area_id NULL). DTO validation enforces exactly one is set for the scope; setting both, or the wrong one, is rejected.
+- **Scope** — a `scope` enum: `static` requires `location_id` (region_id NULL); `mobile` requires `region_id` (location_id NULL). DTO validation enforces exactly one is set for the scope; setting both, or the wrong one, is rejected.
 - **Kind** — `is_team`: individual events carry `user_id`; team events carry `team_id`, `pic_user_id` (required), and an invited-member list.
 
 ### Materialization
 
-A generator expands each active `ScheduleEvent` into concrete **per-day, per-member occurrences** written to `schedules` (+ `schedule_areas` for static scope; `schedules.region_id` for mobile). Each occurrence sets **`schedules.schedule_event_id`** (nullable FK): non-NULL = rule-generated; NULL = a manual/ad-hoc row (the existing `source` field is retained for back-compat). This preserves the `(user_id, schedule_date, shift_definition_id)` roster contract monitoring reads.
+A generator expands each active `ScheduleEvent` into concrete **per-day, per-member occurrences** written to `schedules` (+ `schedule_locations` for static scope; `schedules.region_id` for mobile). Each occurrence sets **`schedules.schedule_event_id`** (nullable FK): non-NULL = rule-generated; NULL = a manual/ad-hoc row (the existing `source` field is retained for back-compat). This preserves the `(user_id, schedule_date, shift_definition_id)` roster contract monitoring reads.
 
 **Rolling horizon, not blind pre-generation.** A daily cron (~00:15 WIB) materializes each active event for today **+ N days forward** (N = configurable `schedule_materialization_days`, default 30, stored with the other monitoring/system config per [ADR-049](./ADR-049-settings-architecture.md)); creating/editing an event also materializes its in-horizon occurrences immediately. This bounds write volume and avoids materializing far-future or already-past days — addressing the client's "don't generate every day blindly" concern while keeping monitoring's roster reads unchanged.
 
@@ -88,7 +88,7 @@ Web gets a **calendar** (day/week/month) for creating/editing events with recurr
 3. **Store recurrence only on `users` (standing template).** Rejected — can't express per-day/team/mobile variation or overlapping shifts.
 
 ## References
-- [ADR-013](./ADR-013-multi-area-assignment.md) — roster + `schedule_areas` (reused as occurrences)
+- [ADR-013](./ADR-013-multi-area-assignment.md) — roster + `schedule_locations` (reused as occurrences)
 - [ADR-046](./ADR-046-monitoring-subject-model.md) — occurrences feed understaffing; static/mobile
 - [ADR-048](./ADR-048-teams.md) — team catalog + markers
 - Feature spec: `../../features/scheduling/README.md`

@@ -33,7 +33,7 @@ Representative catalog (the full list lives in the code-side catalog; this shows
 | monitoring | `monitoring.idle_threshold_min` | number | `MONITORING_IDLE_THRESHOLD_MIN` | no | active→inactive cutoff |
 | monitoring | `monitoring.offline_threshold_min` | number | `MONITORING_OFFLINE_THRESHOLD_MIN` | no | inactive→offline cutoff |
 | monitoring | `schedule.materialization_days` | number | `SCHEDULE_MATERIALIZATION_DAYS` | no | rolling horizon (ADR-047) |
-| geofence | `geofence.default_radius_m` | number | `GEOFENCE_DEFAULT_RADIUS_M` | no | fallback area radius |
+| geofence | `geofence.default_radius_m` | number | `GEOFENCE_DEFAULT_RADIUS_M` | no | fallback location radius |
 | geofence | `geofence.tolerance_m` | number | `GEOFENCE_TOLERANCE_M` | no | soft-boundary tolerance (ADR-010) |
 | integrations | `fcm.enabled` | boolean | `FCM_ENABLED` | no | push on/off |
 | integrations | `maps.browser_key` | string | `GOOGLE_MAPS_BROWSER_KEY` | **yes** | client Maps key |

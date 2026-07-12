@@ -189,7 +189,7 @@ export function useSocketRoom(room: string) {
 }
 
 // Usage - subscribe to specific area updates
-useSocketRoom(`area:${areaId}`);
+useSocketRoom(`area:${locationId}`);
 ```
 
 ---
@@ -207,14 +207,14 @@ export interface LocationUpdate {
   longitude: number;
   accuracy: number;
   timestamp: string;
-  areaId: string;
+  locationId: string;
 }
 
 export interface ShiftEvent {
   type: 'clock_in' | 'clock_out';
   workerId: string;
   workerName: string;
-  areaId: string;
+  locationId: string;
   areaName: string;
   timestamp: string;
 }
@@ -223,7 +223,7 @@ export interface ReportEvent {
   reportId: string;
   workerId: string;
   workerName: string;
-  areaId: string;
+  locationId: string;
   areaName: string;
   condition: string;
   timestamp: string;
@@ -656,9 +656,9 @@ npm install socket.io-client
 
 | Event | Payload | Action |
 |-------|---------|--------|
-| `user:status-changed` | `{ user_id, user_name, role, area_id, area_name, rayon_id, previous_status, new_status, latitude, longitude, timestamp }` | Update user in TanStack Query cache, recalculate status counts, toast if new_status is 'missing' |
-| `user:left-area` | `{ user_id, user_name, role, area_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to false, visual warning on marker |
-| `user:entered-area` | `{ user_id, user_name, role, area_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to true, clear warning |
+| `user:status-changed` | `{ user_id, user_name, role, location_id, area_name, rayon_id, previous_status, new_status, latitude, longitude, timestamp }` | Update user in TanStack Query cache, recalculate status counts, toast if new_status is 'missing' |
+| `user:left-area` | `{ user_id, user_name, role, location_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to false, visual warning on marker |
+| `user:entered-area` | `{ user_id, user_name, role, location_id, area_name, rayon_id, latitude, longitude, timestamp }` | Update user `is_within_area` to true, clear warning |
 
 ### Enhanced Existing Event
 
@@ -701,7 +701,7 @@ switch (user.role) {
     socket.emit('join', { room: `rayon:${user.rayon_id}` });
     break;
   case 'korlap':
-    socket.emit('join', { room: `area:${user.area_id}` });
+    socket.emit('join', { room: `area:${user.location_id}` });
     break;
 }
 ```

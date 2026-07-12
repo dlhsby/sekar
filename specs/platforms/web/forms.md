@@ -453,7 +453,7 @@ export const createUserSchema = z.object({
   role: z.enum(['Worker', 'Supervisor', 'Admin'], {
     required_error: 'Pilih peran',
   }),
-  areaId: z.string().uuid().optional(),
+  locationId: z.string().uuid().optional(),
   password: z
     .string()
     .min(8, 'Password minimal 8 karakter')
@@ -702,11 +702,11 @@ const schema = z.object({
 const schema = z.discriminatedUnion('role', [
   z.object({
     role: z.literal('Worker'),
-    areaId: z.string().uuid({ message: 'Pilih area tugas' }),
+    locationId: z.string().uuid({ message: 'Pilih area tugas' }),
   }),
   z.object({
     role: z.literal('Supervisor'),
-    areaId: z.string().uuid().optional(),
+    locationId: z.string().uuid().optional(),
   }),
   z.object({
     role: z.literal('Admin'),

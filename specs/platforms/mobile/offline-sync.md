@@ -157,7 +157,7 @@ export class OfflineQueue {
   }): Promise<PendingClockIn> {
     const clockIn: PendingClockIn = {
       local_id: uuid.v4() as string,
-      area_id: data.area_id,
+      location_id: data.location_id,
       user_id: await this.getUserId(),
       gps_lat: data.gps_lat,
       gps_lng: data.gps_lng,
@@ -385,7 +385,7 @@ async syncClockIns(): Promise<SyncResult> {
 
       // Call API
       const response = await shiftsApi.clockIn({
-        area_id: item.area_id,
+        location_id: item.location_id,
         gps_lat: item.gps_lat,
         gps_lng: item.gps_lng,
         selfie_photo: `data:image/jpeg;base64,${selfieBase64}`,

@@ -109,7 +109,7 @@ Mobile: Store new token
     │ Capture selfie              │             │            │
     │             │               │             │            │
     │ POST /api/shifts/clock-in   │             │            │
-    │ { areaId, lat, lng, photo } │             │            │
+    │ { locationId, lat, lng, photo } │             │            │
     ├────────────────────────────>│             │            │
     │             │               │             │            │
     │             │               │ Verify JWT  │            │
@@ -812,7 +812,7 @@ Mobile App              GPS Service           API Server           Map Service
     │ Accuracy: 12m          │                     │                     │
     │                        │                     │                     │
     │ POST /shifts/clock-in  │                     │                     │
-    │ { areaId, gps_lat, gps_lng }                │                     │
+    │ { locationId, gps_lat, gps_lng }                │                     │
     ├────────────────────────┼────────────────────>│                     │
     │                        │                     │                     │
     │                        │                     │ Calculate distance  │
@@ -1477,7 +1477,7 @@ Client → POST /auth/login { identifier, password }
 ```
 LocationService.onLocationPing(userId, lat, lng)
   → UserAreasService.getEffectiveAreas(userId)
-    → permanent areas (from user_areas)
+    → permanent areas (from user_locations)
     → task-based areas (from active tasks)
   → For each area: GpsUtil.isWithinBoundary(lat, lng, area)
   → isWithinAnyArea = results.some(r => r.inside)
