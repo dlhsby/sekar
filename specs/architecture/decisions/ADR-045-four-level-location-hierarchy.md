@@ -34,7 +34,7 @@ Adopt a four-level hierarchy and treat every level as a **monitoring area** with
 ### Per-level styling + marker (all four levels)
 
 The **City** level is a single row (Surabaya) in a `city_config`/settings-backed record; `rayons`, `regions`, `locations` are the other three. Each carries:
-`border_color`, `fill_color`, `border_opacity` (0–1), `fill_opacity` (0–1), `marker_icon`, `marker_color`. Colors validate against `^#[0-9A-Fa-f]{6}$` and opacities against `0..1` at the DTO layer; `marker_icon` is from the curated icon set ([ADR-044](./ADR-044-dynamic-rbac.md) §Marker & styling constraints). The legacy single `color` column is retained as a fallback during migration and mapped onto `border_color`/`fill_color` defaults. Each level is edited in its own master-data CRUD (rayons / regions / locations pages); **City styling** (the single Surabaya row) is edited on a dedicated City card in geography master-data — so operators can set the marker + border/fill/opacity for all four tiers.
+`border_color`, `fill_color`, `border_opacity` (0–1), `fill_opacity` (0–1), `marker_icon`, `marker_image_url` (image-only markers — the configured `marker_color` was removed per UAT feedback; a preset/uploaded marker image is used instead). Colors validate against `^#[0-9A-Fa-f]{6}$` and opacities against `0..1` at the DTO layer; `marker_icon` is from the curated icon set ([ADR-044](./ADR-044-dynamic-rbac.md) §Marker & styling constraints). The legacy single `color` column is retained as a fallback during migration and mapped onto `border_color`/`fill_color` defaults. Each level is edited in its own master-data CRUD (rayons / regions / locations pages); **City styling** (the single Surabaya row) is edited on a dedicated City card in geography master-data — so operators can set the marker + border/fill/opacity for all four tiers.
 
 ### Static vs mobile subjects
 
@@ -42,7 +42,7 @@ The new Region level enables **mobile monitoring subjects**: a worker/team assig
 
 ### Monitoring drill tiers
 
-The monitoring aggregate/boundaries endpoints gain a **region tier** between rayon and location: City → Rayon → **Region** → Location → workers.
+The monitoring aggregate/boundaries endpoints will gain a **region tier** between rayon and location: City → Rayon → **Region** → Location → workers. **Deferred to Phase 5** (the monitoring revamp) — as of Phase 2 the endpoints still expose `rayon | area(location)` tiers only.
 
 ## Consequences
 

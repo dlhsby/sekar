@@ -24,7 +24,7 @@ export interface SelectOption {
 export interface SettingsCatalogEntry {
   key: string;
   group: string;
-  /** Optional sub-section within a group (SWAT-style). */
+  /** Optional sub-section within a group. */
   subgroup?: string;
   valueType: ConfigValueType;
   isSecret: boolean;

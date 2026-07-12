@@ -1,7 +1,7 @@
 # ADR-010: Phase 2C Terminology Cleanup, Schema Redesign & Polygon Geofencing
 
 **Date:** 2026-02-11
-**Status:** Accepted (Backend Implemented Feb 11, 2026)
+**Status:** Accepted (Backend Implemented Feb 11, 2026) — amended by [ADR-045](./ADR-045-four-level-location-hierarchy.md) (four-level hierarchy; leaf entity renamed Area→Location)
 **Deciders:** System Architect, Product Owner
 **Tags:** naming, schema, geofencing, breaking-change
 **Supersedes:** Portions of initial Phase 2C spec (2026-02-10)

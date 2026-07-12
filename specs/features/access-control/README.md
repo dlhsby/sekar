@@ -1,6 +1,6 @@
 # Access Control (Roles & Permissions)
 
-**Status:** 🚧 Planned (UAT revamp) · **Backend:** `rbac`, `auth` · **Key ADRs:** ADR-044 (dynamic RBAC), ADR-009 (original roles)
+**Status:** ✅ Phase 1 landed (dynamic roles/permissions, role management, settings gating) · guard→permission endpoint migration **deferred** (see below) · **Backend:** `rbac`, `auth` · **Key ADRs:** ADR-044 (dynamic RBAC), ADR-009 (original roles)
 
 ## Overview
 Data-driven RBAC: roles and permissions are database rows managed at runtime from a **role-management page**. Permissions are flat **`resource:action`** keys (grouping is presentation-layer via a code-side catalog); each role also has a **monitoring scope** (`city|district|region|location|none`) and a map **marker** (icon + color). Replaces the static `UserRole` enum + hand-maintained role-group arrays. `users.role` stays a string code referencing `roles.code`; JWT is unchanged.
@@ -8,7 +8,7 @@ Data-driven RBAC: roles and permissions are database rows managed at runtime fro
 ## Key decisions
 - **Dynamic RBAC** (ADR-044) — `roles` / `permissions` / `role_permissions` tables; 9 seeded `is_system` roles (codes unchanged), plus operator-created custom roles.
 - **Enforcement** — global `PermissionsGuard` + `@RequirePermissions(...keys)` (AND semantics) with **wildcard** support (`*:*`, `resource:*`); a shared matcher powers the web `usePermissions()` hook. Role permissions cached in Redis (`rbac:role:{code}:permissions`, ~300s TTL), invalidated on change.
-- **Guard migration via compat shim** — `RolesCompatGuard` maps existing `@Roles()` to permissions so endpoints migrate to `@RequirePermissions` incrementally; staging stays green.
+- **Incremental guard migration** — legacy `@Roles()`+`RolesGuard` endpoints keep working unchanged alongside the new global `PermissionsGuard` (no-op without `@RequirePermissions` metadata); endpoints migrate to `@RequirePermissions` incrementally (deferred — see below). The ADR-044 `RolesCompatGuard` shim was **not built**; the chosen strategy is a unified pass-on-either guard applied during the migration pass.
 - **Monitoring scope on the role** is the single source of truth for visibility + which user-form scope inputs appear. `monitoring:read` grants access; scope narrows *how much* is seen (no per-tier permissions).
 - **Role editor** = 3-level accordion (Category → Resource → permission toggles) + scope selector + marker picker.
 - **Role code `admin_rayon`** (renamed from `admin_data`; label "Admin Rayon"), equalized to `kepala_rayon`; the rename supersedes ADR-033's naming stance. `management` is the renamed `top_management`.
@@ -18,46 +18,36 @@ Data-driven RBAC: roles and permissions are database rows managed at runtime fro
 - **Database:** [`../../database/schema.md`](../../database/schema.md)
 - **Web:** Role management page (permission matrix, scope + marker) — [`../../platforms/web/pages.md`](../../platforms/web/pages.md)
 
-## Endpoint permission migration (Phase 5.5) — planned
-
-**Why this is its own phase (not done piecemeal):** custom roles are *assignable* to
-users today, but the ~182 legacy `@Roles(...)` guards still gate by role code, so a
-custom role gets **403** on every un-migrated endpoint. A **partial** migration is
-worse than none — a custom role would work on some endpoints and 403 on others,
-which is unpredictable. So this runs as one focused pass with a parity guarantee.
-
-**Audit (2026-07-11):** 182 `@Roles` usages across 27 controllers, all built from
-**~25 role-group constants** in `apps/be/src/modules/users/constants/role-groups.ts`
-(top: `USER_MANAGERS` ×47, `CLOCKABLE_ROLES` ×10, `MONITORING_AREA` ×9,
-`ASSET_MANAGERS`/`ANALYTICS_VIEWERS` ×7…). So the work is bounded by the group set,
-not 182 unique combinations.
-
-**Strategy (per endpoint):** replace `@Roles(...GROUP)` with
-`@RequirePermissions('resource:action')` where the action is the endpoint's verb
-(list→`:read`, POST→`:create`, PATCH→`:update`, DELETE→`:delete`, plus domain
-verbs like `:approve`/`:verify`/`:assign`). Then ensure **`role-seeds.ts` grants
-that key to exactly the roles that were in `GROUP`** — this is the parity contract.
-
-**Parity test (the safety net):** a data-driven test that, for each of the 9 system
-roles, asserts the set of endpoints reachable under the old `@Roles` list equals the
-set reachable under `@RequirePermissions` + that role's seeded permissions. It must
-be green before merge — proving no system role loses or gains access on staging.
-
-**Order:** migrate module-by-module (users → locations/rayons/regions → activities/tasks
-→ monitoring → the rest), each module fully done + parity-green, so custom roles
-light up incrementally without breaking system roles. Keep `PermissionsGuard`
-(global, no-op without metadata) coexisting with `RolesGuard` throughout.
-
 ## Related features
 - [auth](../auth/README.md) · [users](../users/README.md) · [monitoring](../monitoring/README.md) · [settings](../settings/README.md)
 
-## Guard → permission migration (DEFERRED — revisit during development)
+## Guard → permission migration (Phase 5.5 — DEFERRED, revisit during development)
 
 The permission engine works, but only the **rbac + settings** endpoints are gated by
 `@RequirePermissions`/`PermissionsGuard`. **~29 controllers / ~155 endpoints still use
 legacy `@Roles` + `RolesGuard`** (role-list only, no permission fallback), so a *custom*
 role's granted permissions don't unlock them. Completing the migration is deferred and
 tracked here so it isn't re-discovered from scratch.
+
+**Why one focused pass (not piecemeal):** a **partial** migration is worse than none —
+a custom role would work on some endpoints and 403 on others, unpredictably. All
+`@Roles` usages are built from **~25–27 role-group constants** in
+`apps/be/src/modules/users/constants/role-groups.ts` (top: `USER_MANAGERS`,
+`CLOCKABLE_ROLES`, `MONITORING_AREA`, `ASSET_MANAGERS`, `ANALYTICS_VIEWERS`…), so the
+work is bounded by the group set, not per-handler combinations.
+
+**Per endpoint:** replace `@Roles(...GROUP)` with `@RequirePermissions('resource:action')`
+where the action is the endpoint's verb (list→`:read`, POST→`:create`, PATCH→`:update`,
+DELETE→`:delete`, plus domain verbs like `:approve`/`:verify`/`:assign`), and ensure
+**`role-seeds.ts` grants that key to exactly the roles that were in `GROUP`** — the
+parity contract. **Parity test:** a data-driven test asserting, for each of the 9
+system roles, that endpoint reachability under `@Roles` equals reachability under
+`@RequirePermissions` + seeded grants — green before merge.
+
+**Order:** module-by-module (users → locations/rayons/regions → activities/tasks →
+monitoring → the rest), each module fully done + parity-green, so custom roles light
+up incrementally without breaking system roles. Keep `PermissionsGuard` (global,
+no-op without metadata) coexisting with `RolesGuard` throughout.
 
 **Strategy (safety-first, zero system-role regression):** introduce a **unified guard that
 passes on `@Roles` OR `@RequirePermissions`**, then add `@RequirePermissions('resource:action')`
@@ -69,8 +59,9 @@ after a role×endpoint matrix test proves the grants are equivalent.
 - **Add missing permissions to the catalog + system-role grants:** `activity:update`, `task:delete`,
   `overtime:update`/`overtime:delete`, `pruning-request:update`, and whole new resources not yet
   modelled — `shift:*` (clock-in/out; currently implied by `schedule:*`), `asset:*`, `plant:*`,
-  `location:*`, `capacity:*`, `import:*`, `area-type:*`, `activity-type:*`, `notification:*`,
-  `analytics:*`.
+  `capacity:*`, `import:*`, `area-type:*`, `activity-type:*`, `notification:*`,
+  `analytics:*`. (Locations are already covered by the stable `area:*` resource — do not add a
+  parallel `location:*`.)
 - **Fix grant gaps in `role-seeds.ts`:** `satgas`/`linmas` need `task:read` (+ task state-change) and
   `activity:update`; `staff_kecamatan` needs `task:read` for pruning-linked tasks; verify `overtime:*`
   distribution across the `OVERTIME_*`/`CLOCKABLE_ROLES` groups.
@@ -82,6 +73,7 @@ after a role×endpoint matrix test proves the grants are equivalent.
 Do it module-by-module, each behind the full backend suite + the access matrix.
 
 ## Changelog
+- 2026-07-12 — **Phase 0–3 verification pass.** Status header → Phase 1 landed; consolidated the duplicated guard-migration sections into one "Phase 5.5 — DEFERRED" section; corrected the `RolesCompatGuard` claim (shim never built — legacy `RolesGuard` coexists with `PermissionsGuard`; ADR-044 carries an implementation note); dropped `location:*` from the missing-permissions list (locations use the stable `area:*` resource).
 - 2026-07-12 — **Area→Location terminology sweep.** Renamed module migration order (locations/rayons/regions); keep permission resource keys as `area:*` (stable catalog keys per permission catalog design, label 'Lokasi'). Updated marker-as-image references.
 - 2026-07-12 — **Guard→permission migration scoped + deferred** (see "Guard → permission migration" above). Full inventory taken (29 controllers / ~155 `@Roles` handlers, ~15–20 missing permissions, grant gaps, service-layer scope checks) and a safety-first unified-guard strategy recorded; execution deferred to revisit alongside feature development (per product call). No code change — verified today that the permission engine + `PermissionsGuard` work on migrated surfaces and system roles pass everywhere via `@Roles`.
 - 2026-07-12 — **Terminology + seeder cleanup.** Nav/page title "Role Management" → **Roles** (`Peran`). English UI standardised on the **city → district → region → location** hierarchy: EN `Rayon(s)` labels → **District(s)** (value-only, keys unchanged; `access-control:scope.district` EN = "District"); ID keeps Rayon / Kawasan / Lokasi. Fixed stale demo **display names** in the seeders (`Top Management …` → `Management …`, `Admin Data …` → `Admin Rayon …`; role codes/usernames were already correct) + migration `17492200000000-FixLegacyRoleDisplayNames` to patch already-seeded/**staging** rows in place (no reseed). **RBAC status note:** the permission engine + `PermissionsGuard` work end-to-end for migrated surfaces (roles/permissions/settings, user-write gating); legacy `@Roles`+`RolesGuard` endpoints (monitoring, schedules, …) are **not yet migrated**, so a *custom* role's granted permissions don't unlock those until each is converted to `@RequirePermissions` (ADR-044 incremental migration).

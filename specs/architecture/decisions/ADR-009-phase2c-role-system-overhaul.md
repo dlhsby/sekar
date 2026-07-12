@@ -1,7 +1,7 @@
 # ADR-009: Phase 2C Role System Overhaul
 
 **Date:** 2026-02-10
-**Status:** Accepted (Backend Implemented Feb 11, 2026)
+**Status:** Accepted (Backend Implemented Feb 11, 2026) — amended by [ADR-032](./ADR-032-admin-data-disposition-authority-pruning-requests.md), [ADR-033](./ADR-033-staff-kecamatan-role.md), [ADR-044](./ADR-044-dynamic-rbac.md) (roles are now data-driven)
 **Deciders:** System Architect, Product Owner, Client (DLH Surabaya)
 **Tags:** roles, authentication, authorization, breaking-change
 **Related:** [ADR-010: Terminology Cleanup](./ADR-010-phase2c-terminology-cleanup.md)
