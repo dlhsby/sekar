@@ -2,7 +2,7 @@
  * Monitoring, presence/tracking, staffing and reassignment models (Phase 2D/4).
  */
 import type { GeoJsonGeometry } from './geo.types';
-import type { Area, UserRole } from './user.types';
+import type { Location, UserRole } from './user.types';
 import type { Shift } from './shift.types';
 
 // Tracking status — Phase 2D: server-computed five-status model
@@ -21,8 +21,8 @@ export interface ActiveUser {
   user_id: string;
   full_name: string;
   role: UserRole;
-  area_name: string;
-  area_type: string;
+  location_name: string;
+  location_type: string;
   current_gps_lat: number;
   current_gps_lng: number;
   clock_in_time: string;
@@ -33,8 +33,8 @@ export interface ActiveUser {
 export interface AttendanceRecord {
   user_id: string;
   full_name: string;
-  area_name: string;
-  area_type: string;
+  location_name: string;
+  location_type: string;
   clock_in_time?: string;
   clock_out_time?: string;
   hours_worked: number;
@@ -46,7 +46,7 @@ export interface FieldDashboard {
   current_shift?: Shift;
   today_activities_count: number;
   today_hours_worked: number;
-  assigned_area?: Area;
+  assigned_location?: Location;
   pending_sync_count: number;
 }
 
@@ -74,7 +74,7 @@ export interface LiveUser {
   // `is_within_area` via `deriveAxes` when the backend payload omits them.
   activity?: PresenceActivity;
   location?: PresenceLocation;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -133,7 +133,7 @@ export interface UserDaySummary {
   role: string;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -190,7 +190,7 @@ export interface LocationHistory {
   date: string;
   shift_id: string | null;
   shift_name: string | null;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
@@ -230,7 +230,7 @@ export interface UserStatusChangedEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   previous_status: TrackingStatus;
@@ -247,7 +247,7 @@ export interface UserAreaEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string | null;
   latitude: number;
@@ -260,9 +260,9 @@ export interface UserReassignedEvent {
   user_id: string;
   user_name: string;
   role: string;
-  previous_area_id: string | null;
+  previous_location_id: string | null;
   previous_area_name: string | null;
-  new_area_id: string;
+  new_location_id: string;
   new_area_name: string;
   rayon_id: string | null;
   timestamp: string;
@@ -270,7 +270,7 @@ export interface UserReassignedEvent {
 
 // Phase 2D: WebSocket area staffing changed event
 export interface AreaStaffingChangedEvent {
-  area_id: string;
+  location_id: string;
   rayon_id: string | null;
   active_count: number;
   required_count: number;
@@ -388,7 +388,7 @@ export interface StaffingSummaryResponseFull {
 // Phase 2D: Reassign worker types
 export interface ReassignWorkerPayload {
   user_id: string;
-  target_area_id: string;
+  target_location_id: string;
   shift_definition_id?: string;
   effective_date?: string;
   end_current_schedule?: boolean;
@@ -398,9 +398,9 @@ export interface ReassignWorkerPayload {
 export interface ReassignWorkerResponse {
   user_id: string;
   user_name: string;
-  previous_area_id: string | null;
+  previous_location_id: string | null;
   previous_area_name: string | null;
-  new_area_id: string;
+  new_location_id: string;
   new_area_name: string;
   new_schedule_id: string | null;
   effective_date: string;
@@ -410,9 +410,9 @@ export interface ReassignWorkerResponse {
 // Phase 4-4 A4: Reassignment history audit trail
 export interface ReassignmentHistoryEntry {
   id: string;
-  previous_area_id: string | null;
+  previous_location_id: string | null;
   previous_area_name: string | null;
-  new_area_id: string;
+  new_location_id: string;
   new_area_name: string;
   reason: string | null;
   effective_date: string | null;

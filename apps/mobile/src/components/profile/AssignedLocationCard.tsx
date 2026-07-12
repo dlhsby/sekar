@@ -1,6 +1,6 @@
 /**
- * AssignedAreaCard Component
- * Compact display of the user's assigned work area (PRF-1).
+ * AssignedLocationCard Component
+ * Compact display of the user's assigned work location (PRF-1).
  */
 
 import React from 'react';
@@ -10,55 +10,55 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { NBText } from '../nb/NBText';
 import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../constants/nbTokens';
 
-interface AssignedAreaCardProps {
-  area: {
+interface AssignedLocationCardProps {
+  location: {
     name?: string;
-    areaType?: { name?: string };
+    locationType?: { name?: string };
     radius_meters?: number;
     address?: string;
   } | null;
   testID?: string;
 }
 
-export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
-  area,
-  testID = 'assigned-area-card',
+export const AssignedLocationCard: React.FC<AssignedLocationCardProps> = ({
+  location,
+  testID = 'assigned-location-card',
 }) => {
   const { t } = useTranslation();
-  const metaParts = [area?.areaType?.name, area?.radius_meters ? `${area.radius_meters}m ${t('profile:assignedArea.radiusSuffix')}` : null]
+  const metaParts = [location?.locationType?.name, location?.radius_meters ? `${location.radius_meters}m ${t('profile:assignedLocation.radiusSuffix')}` : null]
     .filter(Boolean)
     .join(' · ');
 
   return (
     <View style={styles.wrapper} testID={testID}>
       <NBText variant="mono-sm" color="gray600" uppercase style={styles.title}>
-        {t('profile:assignedArea.title')}
+        {t('profile:assignedLocation.title')}
       </NBText>
       <View style={styles.card}>
-        {area ? (
+        {location ? (
           <View style={styles.row}>
             <View style={styles.iconChip}>
               <MaterialCommunityIcons name="map-marker-radius" size={16} color={nbColors.black} />
             </View>
             <View style={styles.body}>
-              <NBText variant="body-sm" color="black" style={styles.areaName} numberOfLines={1}>
-                {area.name ?? '—'}
+              <NBText variant="body-sm" color="black" style={styles.locationName} numberOfLines={1}>
+                {location.name ?? '—'}
               </NBText>
               {metaParts ? (
                 <NBText variant="mono-sm" color="gray600" numberOfLines={1}>
                   {metaParts}
                 </NBText>
               ) : null}
-              {area.address ? (
+              {location.address ? (
                 <NBText variant="mono-sm" color="gray500" numberOfLines={2} style={styles.address}>
-                  {area.address}
+                  {location.address}
                 </NBText>
               ) : null}
             </View>
           </View>
         ) : (
-          <NBText variant="body-sm" color="gray500" align="center" style={styles.noArea}>
-            {t('profile:assignedArea.noArea')}
+          <NBText variant="body-sm" color="gray500" align="center" style={styles.noLocation}>
+            {t('profile:assignedLocation.noLocation')}
           </NBText>
         )}
       </View>
@@ -101,13 +101,13 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  areaName: {
+  locationName: {
     fontWeight: '700',
   },
   address: {
     marginTop: 2,
   },
-  noArea: {
+  noLocation: {
     fontStyle: 'italic',
   },
 });

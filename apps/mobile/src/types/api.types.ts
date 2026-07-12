@@ -6,8 +6,8 @@
 
 import type {
   User,
-  Area,
-  AreaType,
+  Location,
+  LocationType,
   Shift,
   Activity,
   LocationPing,
@@ -39,7 +39,7 @@ export interface LoginResponse {
 }
 
 export interface MeResponse extends User {
-  assigned_area?: Area;
+  assigned_location?: Location;
 }
 
 // Users API
@@ -50,7 +50,7 @@ export interface ChangePasswordRequest {
 
 // Shifts API
 export interface ClockInRequest {
-  area_id?: string; // Phase 2C: optional, auto-detected from schedule
+  location_id?: string; // Phase 2C: optional, auto-detected from schedule
   gps_lat: number;
   gps_lng: number;
   selfie_photo?: string; // Phase 2E: base64 encoded with data URI prefix, optional
@@ -74,8 +74,8 @@ export interface ClockOutResponse {
 }
 
 export interface CurrentShiftResponse extends Shift {
-  area_name: string;
-  area_type: string;
+  location_name: string;
+  location_type: string;
   hours_worked: number;
 }
 
@@ -137,7 +137,7 @@ export interface CreateActivityResponse {
 export interface ActivitiesFilter {
   from_date?: string; // YYYY-MM-DD (from date) — matches backend ActivitiesFilterDto
   to_date?: string; // YYYY-MM-DD (to date)
-  area_id?: string;
+  location_id?: string;
   user_id?: string;
   rayon_id?: string;
   activity_type_id?: string;
@@ -174,12 +174,14 @@ export interface LocationBatchResponse {
 
 // Supervisor API
 export interface ActiveUserLocation {
+  id: string;
+  name: string;
   gps_lat: number;
   gps_lng: number;
   logged_at: string;
 }
 
-export interface ActiveUserArea {
+export interface LocationReference {
   id: string;
   name: string;
 }
@@ -187,7 +189,7 @@ export interface ActiveUserArea {
 export interface ActiveUserShift {
   id: string;
   clock_in_time: string;
-  area: ActiveUserArea;
+  location: LocationReference;
 }
 
 export interface ActiveUserData {
@@ -205,8 +207,8 @@ export interface PaginatedActiveUsersResponse {
 
 export interface AttendanceFilter {
   date?: string;
-  area_id?: string;
-  area_type?: string;
+  location_id?: string;
+  location_type?: string;
 }
 
 export interface AttendancePageMeta {
@@ -231,7 +233,7 @@ export interface AttendanceResponse {
   };
 }
 
-export interface AttendanceArea {
+export interface AttendanceLocation {
   id: string;
   name: string;
 }
@@ -240,14 +242,14 @@ export interface NotClockedInUser {
   id: string;
   username: string;
   full_name: string;
-  area?: AttendanceArea | null;
+  location?: AttendanceLocation | null;
 }
 
 export interface ClockedInUser {
   id: string;
   username: string;
   full_name: string;
-  area: AttendanceArea | null;
+  location: AttendanceLocation | null;
   clock_in_time: string;
   clock_out_time: string | null;
 }
@@ -259,7 +261,7 @@ export interface UserAttendanceDetail {
     username: string;
     full_name: string;
     role: string;
-    area: AttendanceArea | null;
+    location: AttendanceLocation | null;
   };
   clocked_in: boolean;
   shift: {
@@ -273,12 +275,12 @@ export interface UserAttendanceDetail {
 }
 
 // Master Data API
-export interface AreasResponse {
-  areas: Area[];
+export interface LocationsResponse {
+  locations: Location[];
 }
 
-export interface AreaTypesResponse {
-  area_types: AreaType[];
+export interface LocationTypesResponse {
+  location_types: LocationType[];
 }
 
 // Generic API Response
@@ -309,7 +311,7 @@ export interface ApiError {
 export interface TasksFilter {
   status?: TaskStatus;
   priority?: TaskPriority;
-  area_id?: string;
+  location_id?: string;
   assigned_to?: string;
   created_by?: string;
   from_date?: string;
@@ -325,7 +327,7 @@ export interface CreateTaskRequest {
   description?: string;
   priority: TaskPriority;
   deadline?: string;
-  area_id?: string; // Phase 2C: optional
+  location_id?: string; // Phase 2C: optional
   rayon_id?: string; // Phase 2C: rayon-scoped tasks
   assigned_to?: string;
   tagged_user_ids?: string[]; // Phase 2C: task tagging
@@ -431,7 +433,7 @@ export interface OvertimeFilter {
   from_date?: string;
   to_date?: string;
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   user_id?: string;
   sort_by?: 'created_at' | 'start_datetime';
   sort_dir?: 'asc' | 'desc';
@@ -491,7 +493,7 @@ export interface BroadcastNotificationRequest {
   title: string;
   body: string;
   target_roles?: UserRole[];
-  target_area_id?: string;
+  target_location_id?: string;
   target_rayon_id?: string;
   data?: Record<string, unknown>;
 }
@@ -499,7 +501,7 @@ export interface BroadcastNotificationRequest {
 // Monitoring API
 export interface MonitoringFilter {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   date?: string;
 }
 
@@ -514,7 +516,7 @@ export interface CityMonitoringResponse extends MonitoringStats {
 export interface RayonMonitoringResponse extends MonitoringStats {
   rayon_id: string;
   rayon_name: string;
-  areas: {
+  locations: {
     id: string;
     name: string;
     stats: MonitoringStats;
@@ -522,9 +524,9 @@ export interface RayonMonitoringResponse extends MonitoringStats {
   }[];
 }
 
-export interface AreaMonitoringResponse extends MonitoringStats {
-  area_id: string;
-  area_name: string;
+export interface LocationMonitoringResponse extends MonitoringStats {
+  location_id: string;
+  location_name: string;
   staffing_status: 'adequate' | 'understaffed' | 'overstaffed';
   required_users: number;
   actual_users: number;
@@ -532,7 +534,7 @@ export interface AreaMonitoringResponse extends MonitoringStats {
 }
 
 export interface LiveUsersFilter {
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   shift_definition_id?: string;
   status?: TrackingStatus[];
@@ -543,7 +545,7 @@ export interface LiveUsersFilter {
 // Phase 2D: MonitoringFilters (used in filter modal and slice)
 export interface MonitoringFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus[];
   /** CP6 — location axis filter (dalam_area / luar_area), applied client-side. */

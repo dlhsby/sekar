@@ -19,7 +19,7 @@ import i18n from '../../i18n/config';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface MonitoringV2Snapshot {
-  scope: 'city' | 'rayon' | 'area';
+  scope: 'city' | 'rayon' | 'location';
   scope_id: string | null;
   workers: LiveUser[];
   generated_at: string | null;
@@ -33,7 +33,7 @@ export interface MonitoringV2VisibleLayers {
   areas: boolean;
 }
 
-export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'area';
+export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'location';
 
 /** Current drill position on the map (Surabaya → rayon → area). */
 export interface MonitoringView {
@@ -60,7 +60,7 @@ export interface MonitoringV2State {
 }
 
 export interface FetchSnapshotParams {
-  scope: 'city' | 'rayon' | 'area';
+  scope: 'city' | 'rayon' | 'location';
   id?: string;
 }
 
@@ -112,7 +112,7 @@ export const fetchSnapshot = createAsyncThunk(
         : `?scope=${params.scope}`;
       const response = await apiClient.get<{
         data?: {
-          scope: 'city' | 'rayon' | 'area';
+          scope: 'city' | 'rayon' | 'area' | 'location';
           scope_id: string | null;
           workers: LiveUser[];
           generated_at: string;
@@ -127,6 +127,11 @@ export const fetchSnapshot = createAsyncThunk(
       const payload = response.data?.data;
       if (!payload) {
         return rejectWithValue(i18n.t('monitoring:screen.error.emptySnapshot'));
+      }
+
+      // Map legacy 'area' to 'location' for backward compatibility
+      if (payload.scope === 'area') {
+        payload.scope = 'location' as any;
       }
 
       return payload;
@@ -240,17 +245,17 @@ const monitoringV2Slice = createSlice({
       state.selectedUserId = null;
     },
 
-    /** Drill one level deeper from a tapped rayon/area node. */
+    /** Drill one level deeper from a tapped rayon/location node. */
     drillTo(
       state,
-      action: PayloadAction<{ id: string; type: 'rayon' | 'area'; name: string; rayonId: string | null }>,
+      action: PayloadAction<{ id: string; type: 'rayon' | 'location'; name: string; rayonId: string | null }>,
     ) {
       const n = action.payload;
       if (n.type === 'rayon') {
         state.view = { scope: 'rayon', id: n.id, rayonId: n.id, name: n.name };
       } else {
         state.view = {
-          scope: 'area',
+          scope: 'location',
           id: n.id,
           rayonId: n.rayonId ?? state.view.rayonId,
           name: n.name,
@@ -262,7 +267,7 @@ const monitoringV2Slice = createSlice({
     /** Drill back up one level, never above the role floor. */
     drillBack(state) {
       if (state.view.scope === state.floor) return;
-      if (state.view.scope === 'area') {
+      if (state.view.scope === 'location') {
         state.view = {
           scope: 'rayon',
           id: state.view.rayonId,
@@ -294,8 +299,9 @@ const monitoringV2Slice = createSlice({
     });
     builder.addCase(fetchSnapshot.fulfilled, (state, action) => {
       state.loading = false;
+      const scope = action.payload.scope === 'area' ? 'location' : action.payload.scope;
       state.snapshot = {
-        scope: action.payload.scope,
+        scope: scope as 'city' | 'rayon' | 'location',
         scope_id: action.payload.scope_id,
         workers: action.payload.workers,
         generated_at: action.payload.generated_at,

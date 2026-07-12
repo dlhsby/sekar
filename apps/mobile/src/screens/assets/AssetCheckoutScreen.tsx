@@ -164,13 +164,13 @@ export function AssetCheckoutScreen({
                 </View>
               )}
 
-              {asset.area && (
+              {asset.location && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    {t('assets:checkout.fields.area')}
+                    {t('assets:checkout.fields.location')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
-                    {asset.area.name}
+                    {asset.location.name}
                   </NBText>
                 </View>
               )}

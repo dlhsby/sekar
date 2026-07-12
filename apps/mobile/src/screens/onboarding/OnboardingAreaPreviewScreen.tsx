@@ -5,7 +5,7 @@
  * RootNavigator routes on to Home / the role's landing tab.
  *
  * Reconciliation: the hi-fi shows a rich map + korlap contact card, but the app
- * only has the assigned area (name + radius + coords, from `auth.area`) at this
+ * only has the assigned area (name + radius + coords, from `auth.location`) at this
  * point — no korlap contact — so the korlap card is omitted.
  */
 

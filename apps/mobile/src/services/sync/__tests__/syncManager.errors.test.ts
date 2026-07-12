@@ -51,7 +51,7 @@ describe('syncManager - Error Scenarios', () => {
         {
           id: '1',
           type: 'clock-in',
-          data: { area_id: 'a1', gps_lat: 10, gps_lng: 20, selfie_photo: 'p1' },
+          data: { location_id: 'a1', gps_lat: 10, gps_lng: 20, selfie_photo: 'p1' },
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
@@ -78,7 +78,7 @@ describe('syncManager - Error Scenarios', () => {
         {
           id: '1',
           type: 'clock-in',
-          data: { area_id: 'a1', gps_lat: 10, gps_lng: 20, selfie_photo: 'p1' },
+          data: { location_id: 'a1', gps_lat: 10, gps_lng: 20, selfie_photo: 'p1' },
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',

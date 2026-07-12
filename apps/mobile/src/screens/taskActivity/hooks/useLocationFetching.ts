@@ -1,9 +1,9 @@
 /**
- * Location (rayon & area) fetching hook for task creation
+ * Location (rayon & location) fetching hook for task creation
  */
 
 import { useState, useEffect } from 'react';
-import { getRayons, getAreasByRayonId } from '../../../services/api/rayonsApi';
+import { getRayons, getLocationsByRayonId } from '../../../services/api/rayonsApi';
 import type { NBSelectOption } from '../../../components/nb/NBSelect';
 
 /**
@@ -15,9 +15,9 @@ export const useLocationFetching = (
   isAreaFixed: boolean,
 ) => {
   const [isLoadingRayons, setIsLoadingRayons] = useState(false);
-  const [isLoadingAreas, setIsLoadingAreas] = useState(false);
+  const [isLoadingLocations, setIsLoadingLocations] = useState(false);
   const [rayonOptions, setRayonOptions] = useState<NBSelectOption[]>([]);
-  const [areaOptions, setAreaOptions] = useState<NBSelectOption[]>([]);
+  const [locationOptions, setLocationOptions] = useState<NBSelectOption[]>([]);
 
   // Fetch rayons for non-fixed roles
   useEffect(() => {
@@ -42,38 +42,38 @@ export const useLocationFetching = (
     fetchRayons();
   }, [isRayonFixed]);
 
-  // Fetch areas when rayon changes (for non-area-fixed roles)
+  // Fetch locations when rayon changes (for non-location-fixed roles)
   useEffect(() => {
     if (isAreaFixed || !rayonId) {
       if (!isAreaFixed) {
-        setAreaOptions([]);
+        setLocationOptions([]);
       }
       return;
     }
 
-    const fetchAreas = async () => {
-      setIsLoadingAreas(true);
+    const fetchLocations = async () => {
+      setIsLoadingLocations(true);
       try {
-        const response = await getAreasByRayonId(rayonId);
+        const response = await getLocationsByRayonId(rayonId);
         if (response.data) {
-          setAreaOptions(
+          setLocationOptions(
             response.data.map((a: any) => ({ label: a.name, value: a.id })),
           );
         }
       } catch {
         // Silently fail
       } finally {
-        setIsLoadingAreas(false);
+        setIsLoadingLocations(false);
       }
     };
 
-    fetchAreas();
+    fetchLocations();
   }, [rayonId, isAreaFixed]);
 
   return {
     isLoadingRayons,
-    isLoadingAreas,
+    isLoadingLocations,
     rayonOptions,
-    areaOptions,
+    locationOptions,
   };
 };

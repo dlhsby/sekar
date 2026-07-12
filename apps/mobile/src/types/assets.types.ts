@@ -3,7 +3,7 @@
  * Phase 5-3: Asset browsing, scanning, checkout/return
  */
 
-import type { User, Area, Rayon } from './user.types';
+import type { User, Location, Rayon } from './user.types';
 
 export type AssetStatus = 'available' | 'in_use' | 'maintenance' | 'retired' | 'lost';
 export type AssetCondition = 'good' | 'fair' | 'poor' | 'damaged' | 'unusable';
@@ -24,8 +24,8 @@ export interface Asset {
   id: string;
   category_id: string;
   category: AssetCategory;
-  area_id?: string | null;
-  area?: Area | null;
+  location_id?: string | null;
+  location?: Location | null;
   rayon_id?: string | null;
   rayon?: Rayon | null;
   name: string;

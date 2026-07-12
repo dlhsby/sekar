@@ -212,7 +212,7 @@ describe('notificationsApi', () => {
       const broadcastData = {
         title: 'Area Alert',
         body: 'Weather warning.',
-        target_area_id: 'area-123',
+        target_location_id: 'area-123',
       };
       const mockResponse = { data: { sent_count: 10 } };
       mockPost.mockResolvedValue(mockResponse);

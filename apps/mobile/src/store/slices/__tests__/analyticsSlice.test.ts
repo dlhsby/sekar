@@ -19,7 +19,7 @@ import analyticsReducer, {
   fetchDashboard,
   fetchWorkerAnalytics,
   fetchTeamAnalytics,
-  fetchAreas,
+  fetchLocations,
   fetchOperational,
 } from '../analyticsSlice';
 import type { DashboardSummary, WorkerAnalytics } from '../../../types/analytics.types';

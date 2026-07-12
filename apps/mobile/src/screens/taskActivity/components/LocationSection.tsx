@@ -31,7 +31,7 @@ interface LocationSectionProps {
   isAreaFixed: boolean;
   isLoadingAreas: boolean;
   areaOptions: NBSelectOption[];
-  userAreaId?: string;
+  userLocationId?: string;
   userAreaName?: string;
 }
 
@@ -49,7 +49,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   isAreaFixed,
   isLoadingAreas,
   areaOptions,
-  userAreaId,
+  userLocationId,
   userAreaName,
 }) => {
   const { t } = useTranslation();
@@ -114,8 +114,8 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
             onValueChange={onAreaChange}
             options={
               isAreaFixed
-                ? userAreaId
-                  ? [{ label: userAreaName || t('tasks:locationSection.yourArea'), value: userAreaId }]
+                ? userLocationId
+                  ? [{ label: userAreaName || t('tasks:locationSection.yourArea'), value: userLocationId }]
                   : []
                 : areaOptions
             }

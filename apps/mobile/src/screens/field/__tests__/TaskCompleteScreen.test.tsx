@@ -61,7 +61,7 @@ const mockTask = {
   description: 'This is a test task',
   status: 'in_progress' as const,
   priority: 'high' as const,
-  area: { id: 'area-1', name: 'Taman Bungkul' },
+  location: { id: 'area-1', name: 'Taman Bungkul' },
   rayon: { id: 'rayon-1', name: 'Rayon 1' }, // Phase 2C: Added rayon
 };
 

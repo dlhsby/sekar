@@ -11,7 +11,7 @@ import { restoreAuth, setRestoring, logout, setAssignedAreas } from '../store/sl
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { getToken, getUser, clearAll } from '../services/storage/secureStorage';
 import { getMe } from '../services/api/authApi';
-import { getMyAreas } from '../services/api/usersApi';
+import { getMyLocations } from '../services/api/usersApi';
 import { getCurrentShift } from '../services/api/shiftsApi';
 import { locationTracker } from '../services/location/locationTracker';
 import { permissionManager } from '../services/permissions/PermissionManager';
@@ -31,7 +31,7 @@ interface AuthProviderProps {
  * This is called after auth restoration to sync shift state with the backend.
  */
 /**
- * Fetch the worker's assigned areas (permanent + task_based) for multi-area
+ * Fetch the worker's assigned locations (permanent + task_based) for multi-location
  * geofencing + the "Jadwal Saya" screen. Boundary polygons are flattened to
  * [lng,lat][] for the mobile gpsUtils. Best-effort — never blocks auth.
  */
@@ -40,16 +40,16 @@ async function loadAssignedAreas(userRole: string, dispatch: AppDispatch): Promi
     return;
   }
   try {
-    const response = await getMyAreas();
+    const response = await getMyLocations();
     if (response.data) {
-      const areas = response.data.map((a) => {
+      const locations = response.data.map((a) => {
         const poly = (a as any)?.boundary_polygon;
         return { ...a, boundary_polygon: poly?.coordinates?.[0] ?? poly ?? undefined };
       });
-      dispatch(setAssignedAreas(areas));
+      dispatch(setAssignedAreas(locations));
     }
   } catch (error) {
-    if (__DEV__) { console.warn('[AuthProvider] Failed to load assigned areas:', error); }
+    if (__DEV__) { console.warn('[AuthProvider] Failed to load assigned locations:', error); }
   }
 }
 
@@ -118,22 +118,22 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             const meResponse = await Promise.race([getMe(), timeoutPromise]);
 
             if (meResponse.data) {
-              // Token is valid, restore auth state with latest area/rayon data
+              // Token is valid, restore auth state with latest location/rayon data
               // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
-              const rawArea = meResponse.data.assigned_area;
-              const rawPolygon = (rawArea as any)?.boundary_polygon;
-              const assignedArea = rawArea
-                ? { ...rawArea, boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined }
+              const rawLocation = meResponse.data.assigned_location;
+              const rawPolygon = (rawLocation as any)?.boundary_polygon;
+              const assignedLocation = rawLocation
+                ? { ...rawLocation, boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined }
                 : null;
               const updatedUser = {
                 ...storedUser,
-                area_id: meResponse.data.area_id ?? storedUser.area_id,
+                location_id: meResponse.data.location_id ?? storedUser.location_id,
                 rayon_id: meResponse.data.rayon_id ?? storedUser.rayon_id,
               };
               dispatch(
                 restoreAuth({
                   user: updatedUser,
-                  area: assignedArea,
+                  location: assignedLocation,
                 }),
               );
             } else {
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
               dispatch(
                 restoreAuth({
                   user: storedUser,
-                  area: null,
+                  location: null,
                 }),
               );
             }
@@ -157,7 +157,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             dispatch(
               restoreAuth({
                 user: storedUser,
-                area: null,
+                location: null,
               }),
             );
             // Still try to load shift (might work if it's just API server being slow)

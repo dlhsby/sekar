@@ -27,7 +27,7 @@ interface MapLayerContentProps {
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
-  scope: 'surabaya' | 'city' | 'rayon' | 'area';
+  scope: 'surabaya' | 'city' | 'rayon' | 'location';
   /** The rayon being viewed (rayon/area scope) — scopes markers to it. */
   rayonId: string | null;
   /** The selected area (area scope) — only its boundary is drawn, on demand. */
@@ -77,7 +77,7 @@ export function MapLayerContent({
   // demand when its marker is tapped) — this keeps the map cheap.
   const scopedRayons = useMemo(() => {
     const all = boundaries?.rayons ?? [];
-    if (scope === 'area') {
+    if (scope === 'location') {
       return all
         .filter((r: any) => r.id === rayonId)
         .map((r: any) => ({ ...r, areas: (r.areas ?? []).filter((a: any) => a.id === areaId) }));
@@ -91,7 +91,7 @@ export function MapLayerContent({
   // Rayon outline follows its toggle from the city view down. Area outlines draw
   // ONLY at area scope (the one selected area) — never all-at-once at rayon scope.
   const showRayonBoundaries = visibleLayers.rayons && scope !== 'surabaya';
-  const showAreaBoundaries = visibleLayers.areas && scope === 'area';
+  const showAreaBoundaries = visibleLayers.areas && scope === 'location';
 
   // Bubbles vs markers are separated by scope (gated independently of the
   // boundary toggles):
@@ -101,7 +101,7 @@ export function MapLayerContent({
   const showRayonBubbles = scope === 'city';
   const showAreaBubbles = scope === 'rayon';
   const showRayonMarker = scope === 'rayon';
-  const showAreaMarker = scope === 'area';
+  const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
     showRayonBoundaries || showAreaBoundaries ||
     showRayonBubbles || showAreaBubbles || showRayonMarker || showAreaMarker;

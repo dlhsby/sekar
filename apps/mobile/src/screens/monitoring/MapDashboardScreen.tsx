@@ -79,7 +79,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   const floor = useSelector((state: RootState) => state.monitoringV2.floor);
   const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
   const scope = view.scope;
-  const showWorkers = scope === 'area';
+  const showWorkers = scope === 'location';
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -89,7 +89,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
   const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
-  const [boundaryDetailType, setBoundaryDetailType] = useState<'rayon' | 'area'>('area');
+  const [boundaryDetailType, setBoundaryDetailType] = useState<'rayon' | 'location'>('location');
   const [boundaryDetailData, setBoundaryDetailData] = useState<RayonBoundary | AreaBoundary | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [boundaryKey, setBoundaryKey] = useState(0);
@@ -109,7 +109,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
-    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, scope === 'area' ? view.id : null);
+    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, scope === 'location' ? view.id : null);
 
 
   // Initialise the unified drill view + floor from the viewer's role.
@@ -117,10 +117,10 @@ export function MapDashboardScreen(): React.JSX.Element {
     if (!currentUser) return;
     const role = currentUser.role;
     let payload: { view: typeof view; floor: MonitoringScope };
-    if (role === 'korlap' && currentUser.area_id) {
+    if (role === 'korlap' && currentUser.location_id) {
       payload = {
-        view: { scope: 'area', id: currentUser.area_id, rayonId: currentUser.rayon_id ?? null, name: null },
-        floor: 'area',
+        view: { scope: 'location', id: currentUser.location_id, rayonId: currentUser.rayon_id ?? null, name: null },
+        floor: 'location',
       };
     } else if ((role === 'kepala_rayon' || role === 'admin_data') && currentUser.rayon_id) {
       payload = {
@@ -141,7 +141,7 @@ export function MapDashboardScreen(): React.JSX.Element {
       void dispatch(fetchAggregate({ scope: 'city' }));
     } else if (scope === 'rayon') {
       void dispatch(fetchAggregate({ scope: 'rayon', id: view.id ?? undefined }));
-    } else if (scope === 'area' && view.rayonId) {
+    } else if (scope === 'location' && view.rayonId) {
       // Keep the parent rayon's area rollup loaded so the selected area's ratio
       // shows (covers area-floored roles that never visited the rayon view).
       void dispatch(fetchAggregate({ scope: 'rayon', id: view.rayonId }));
@@ -153,7 +153,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // level; the map only *renders* worker markers at area scope.
   useEffect(() => {
     void fetchLiveUsersWithFilters(
-      scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
+      scope === 'location' && view.id ? { ...filters, location_id: view.id } : filters,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, view.id, filters]);
@@ -245,10 +245,10 @@ export function MapDashboardScreen(): React.JSX.Element {
       focusOn(Number(area.center_lat), Number(area.center_lng));
       showMarkerPreview(
         { latitude: Number(area.center_lat), longitude: Number(area.center_lng) },
-        { title: area.name, typeText: t('monitoring:entityTypes.area'), accent: nbColors.warning, icon: 'map-marker' },
+        { title: area.name, typeText: t('monitoring:entityTypes.location'), accent: nbColors.warning, icon: 'map-marker' },
         18,
         () => {
-          setBoundaryDetailType('area');
+          setBoundaryDetailType('location');
           setBoundaryDetailData(area);
           setBoundaryDetailVisible(true);
           setMarkerPreview(null);
@@ -267,7 +267,7 @@ export function MapDashboardScreen(): React.JSX.Element {
       if (result.type === 'petugas') {
         const user = liveUsers.find((u) => u.id === result.id);
         if (user) { handleMarkerPress(user); }
-      } else if (result.type === 'area') {
+      } else if (result.type === 'location') {
         const area = boundaries?.rayons.flatMap((r) => r.areas).find((a) => a.id === result.id);
         if (area) { handleAreaPress(area); }
       } else {
@@ -337,7 +337,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   );
   const handleAreaBubblePress = useCallback(
     (area: AreaBoundary) => {
-      dispatch(drillTo({ id: area.id, type: 'area', name: area.name, rayonId: view.rayonId }));
+      dispatch(drillTo({ id: area.id, type: 'location', name: area.name, rayonId: view.rayonId }));
       zoomInTo(Number(area.center_lat), Number(area.center_lng), 0.02);
     },
     [dispatch, zoomInTo, view.rayonId],
@@ -353,7 +353,7 @@ export function MapDashboardScreen(): React.JSX.Element {
         SURABAYA_CITY_REGION.longitude,
         SURABAYA_CITY_REGION.latitudeDelta,
       );
-    } else if (from === 'area' && view.rayonId) {
+    } else if (from === 'location' && view.rayonId) {
       const rayon = boundaries?.rayons?.find((r: RayonBoundary) => r.id === view.rayonId);
       if (rayon) {
         animateTo(Number(rayon.center_lat), Number(rayon.center_lng), 0.08);
@@ -442,7 +442,7 @@ export function MapDashboardScreen(): React.JSX.Element {
                 boundaryKey={boundaryKey}
                 scope={scope}
                 rayonId={view.rayonId ?? view.id}
-                areaId={scope === 'area' ? view.id : null}
+                areaId={scope === 'location' ? view.id : null}
                 rosterById={rosterById}
                 showWorkers={showWorkers}
                 onRayonDrill={handleRayonBubblePress}

@@ -27,7 +27,7 @@ const todayRoster: any = {
   },
   rayon: { id: 'rayon-1', name: 'Rayon 1' },
   schedule_areas: [
-    { id: 'sa-1', area_id: 'area-2', area: { id: 'area-2', name: 'Taman Roster' } },
+    { id: 'sa-1', location_id: 'area-2', location: { id: 'area-2', name: 'Taman Roster' } },
   ],
 };
 

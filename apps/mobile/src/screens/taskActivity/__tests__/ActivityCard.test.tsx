@@ -10,7 +10,7 @@ const BASE_ACTIVITY: Activity = {
   created_at: '2026-02-22T09:30:00Z',
   updated_at: '2026-02-22T09:30:00Z',
   activityType: { id: 'type-1', name: 'Kebersihan' } as any,
-  area: { id: 'area-1', name: 'Area B' } as any,
+  location: { id: 'area-1', name: 'Area B' } as any,
   photo_urls: [],
 } as unknown as Activity;
 
@@ -53,7 +53,7 @@ describe('ActivityCard', () => {
 
   it('does not show area chip when no area', () => {
     const { queryByText } = render(
-      <ActivityCard activity={{ ...BASE_ACTIVITY, area: null } as any} onPress={() => {}} />
+      <ActivityCard activity={{ ...BASE_ACTIVITY, location: null } as any} onPress={() => {}} />
     );
     expect(queryByText(/Area B/)).toBeNull();
   });

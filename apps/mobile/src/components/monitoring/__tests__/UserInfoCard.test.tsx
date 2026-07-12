@@ -29,12 +29,14 @@ describe('UserInfoCard', () => {
     shift: {
       id: 'shift-123',
       clock_in_time: '2026-02-15T07:00:00Z',
-      area: {
+      location: {
         id: 'area-123',
         name: 'Taman A',
       },
     },
     latest_location: {
+      id: 'loc-123',
+      name: 'Taman A',
       gps_lat: -7.250445,
       gps_lng: 112.768845,
       logged_at: '2026-02-15T08:00:00Z',
@@ -176,7 +178,7 @@ describe('UserInfoCard', () => {
         shift: {
           id: 'shift-123',
           clock_in_time: '2026-02-15T07:00:00Z',
-          area: {
+          location: {
             id: 'area-123',
             name: 'Taman Bungkul',
           },

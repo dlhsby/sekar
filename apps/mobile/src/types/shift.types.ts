@@ -1,7 +1,7 @@
 /**
  * Shifts, shift definitions, schedules and staffing requirements.
  */
-import type { Area, User, UserRole } from './user.types';
+import type { Location, User, UserRole } from './user.types';
 
 // Day type for scheduling
 export type DayType = 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
@@ -10,8 +10,8 @@ export type DayType = 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
 export interface Shift {
   id: string;
   user_id: string;
-  area_id: string | null; // Phase 2C: nullable, auto-detected
-  area?: Area;
+  location_id: string | null; // Phase 2C: nullable, auto-detected
+  location?: Location;
   user?: User;
   clock_in_time: string;
   clock_in_gps_lat: number;
@@ -44,8 +44,8 @@ export interface ShiftDefinition {
 // Area Staff Requirements
 export interface AreaStaffRequirement {
   id: string;
-  area_id: string;
-  area?: Area;
+  location_id: string;
+  location?: Location;
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
   role: UserRole;
@@ -68,8 +68,8 @@ export type ScheduleStatus =
 
 export interface ScheduleArea {
   id: string;
-  area_id: string;
-  area: {
+  location_id: string;
+  location: {
     id: string;
     name: string;
   };

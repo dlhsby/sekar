@@ -1,5 +1,5 @@
 /**
- * Users, roles, rayons and areas.
+ * Users, roles, rayons and locations.
  * Phase 2C: ADR-009 (8-role system), ADR-010 (terminology cleanup).
  */
 import type { GeoJsonGeometry } from './geo.types';
@@ -17,11 +17,11 @@ export type UserRole =
   | 'superadmin'
   | 'staff_kecamatan';
 
-// Area types
-export type AreaTypeCode = 'park' | 'pedestrian' | 'mini_garden' | 'street';
+// Location types
+export type LocationTypeCode = 'park' | 'pedestrian' | 'mini_garden' | 'street';
 
-// Area type category
-export type AreaTypeCategory = 'ACTIVE' | 'PASSIVE';
+// Location type category
+export type LocationTypeCategory = 'ACTIVE' | 'PASSIVE';
 
 // User
 export interface User {
@@ -31,8 +31,8 @@ export interface User {
   role: UserRole;
   rayon_id?: string;
   rayon?: Rayon;
-  area_id?: string;
-  area?: Area;
+  location_id?: string;
+  location?: Location;
   phone_number?: string | null; // Phase 2E: for phone login
   profile_picture_url?: string | null; // Phase 2E: profile photo
   kecamatan_name?: string | null; // Phase 3 Apr 27: staff_kecamatan attribution
@@ -52,21 +52,21 @@ export interface Rayon {
   updated_at: string;
 }
 
-// Area Type
-export interface AreaType {
+// Location Type
+export interface LocationType {
   id: string;
-  code: AreaTypeCode;
+  code: LocationTypeCode;
   name: string;
   description: string;
   created_at: string;
 }
 
-// Area
-export interface Area {
+// Location
+export interface Location {
   id: string;
   name: string;
-  area_type_id: string;
-  areaType?: AreaType;
+  location_type_id: string;
+  locationType?: LocationType;
   rayon_id?: string;
   rayon?: Rayon;
   gps_lat: number;

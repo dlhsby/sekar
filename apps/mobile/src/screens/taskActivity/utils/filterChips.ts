@@ -46,7 +46,7 @@ export function buildTaskFilterChips(
     chips.push({ text: i18n.t('tasks:filterChips.rayon'), tone: 'location' });
   }
   if (areaFilter && areaFilter !== initialAreaId) {
-    chips.push({ text: i18n.t('tasks:filterChips.area'), tone: 'location' });
+    chips.push({ text: i18n.t('tasks:filterChips.location'), tone: 'location' });
   }
 
   return chips;
@@ -80,8 +80,8 @@ export function buildActivityFilterChips(
   if (filters.activity_type_id) {
     chips.push({ text: i18n.t('tasks:filterChips.type'), tone: 'assignment' });
   }
-  if (filters.area_id && filters.area_id !== initialAreaId) {
-    chips.push({ text: i18n.t('tasks:filterChips.area'), tone: 'location' });
+  if (filters.location_id && filters.location_id !== initialAreaId) {
+    chips.push({ text: i18n.t('tasks:filterChips.location'), tone: 'location' });
   }
   if (filters.rayon_id) {
     chips.push({ text: i18n.t('tasks:filterChips.rayonSelected'), tone: 'location' });

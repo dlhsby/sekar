@@ -116,7 +116,7 @@ export function UserInfoCard({
           <View style={styles.infoRow}>
             <NBText variant="body-sm" color="gray600">{t("monitoring:userInfo.location")}</NBText>
             <NBText variant="body-sm" style={{ color: nbColors.black, fontWeight: '500' }}>
-              {user.shift.area.name}
+              {user.shift.location.name}
             </NBText>
           </View>
 

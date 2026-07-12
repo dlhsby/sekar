@@ -254,7 +254,7 @@ function ShiftRow({
       onPress={onPress}
       activeOpacity={0.85}
       accessibilityRole="button"
-      accessibilityLabel={`Detail shift ${shift.area?.name ?? ''}`}
+      accessibilityLabel={`Detail shift ${shift.location?.name ?? ''}`}
       accessibilityHint={t('schedules:shiftHistory.detailAccessibilityHint')}
     >
       <View style={styles.shiftRow}>
@@ -263,11 +263,11 @@ function ShiftRow({
           <StatusPill dot tone={isActive ? 'ok' : 'neutral'} label={isActive ? t('schedules:shiftHistory.active') : t('schedules:shiftHistory.completed')} />
         </View>
         <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
-          {shift.area?.name ?? t('schedules:shiftHistory.unknownArea')}
+          {shift.location?.name ?? t('schedules:shiftHistory.unknownArea')}
         </NBText>
-        {shift.area?.areaType?.name ? (
+        {shift.location?.locationType?.name ? (
           <NBText variant="body-sm" color="gray500" style={styles.shiftRowAreaType}>
-            {shift.area.areaType.name}
+            {shift.location.locationType.name}
           </NBText>
         ) : null}
 

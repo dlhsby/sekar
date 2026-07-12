@@ -25,7 +25,7 @@ function buildMeta(overtime: Overtime, photoUnit: string): ListItemMeta[] {
   const meta: ListItemMeta[] = [];
   const duration = formatDurationHours(overtime.start_datetime ?? '', overtime.end_datetime ?? '');
   if (duration && duration !== '-') { meta.push({ icon: 'clock-outline', label: duration }); }
-  if (overtime.area) { meta.push({ icon: 'map-marker-outline', label: overtime.area.name }); }
+  if (overtime.location) { meta.push({ icon: 'map-marker-outline', label: overtime.location.name }); }
   if (overtime.photo_urls && overtime.photo_urls.length > 0) {
     meta.push({ icon: 'camera-outline', label: `${overtime.photo_urls.length} ${photoUnit}` });
   }

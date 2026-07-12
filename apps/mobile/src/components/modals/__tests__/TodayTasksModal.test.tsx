@@ -13,7 +13,7 @@ const task = (over: Partial<Task>): Task =>
     status: 'assigned',
     priority: 'high',
     deadline: new Date('2026-02-15T10:00:00Z').toISOString(),
-    area: { id: 1, name: 'Zona A' },
+    location: { id: 1, name: 'Zona A' },
     created_by: 'u9',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

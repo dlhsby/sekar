@@ -65,7 +65,7 @@ const makeStore = () =>
         user: { id: 'u1', username: 'u', full_name: 'U', role: 'satgas' },
         token: 't', isAuthenticated: true, loading: false, error: null, assignedArea: null,
       } as any,
-      shift: { currentShift: { area_id: 'a1' }, shiftHistory: [], isClockingIn: false, isClockingOut: false, error: null } as any,
+      shift: { currentShift: { location_id: 'a1' }, shiftHistory: [], isClockingIn: false, isClockingOut: false, error: null } as any,
     },
   });
 

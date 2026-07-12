@@ -27,7 +27,7 @@ const clockedInDetail = {
     username: 'satgas1',
     full_name: 'Ahmad Satgas',
     role: 'satgas',
-    area: { id: 'a1', name: 'Taman Bungkul' },
+    location: { id: 'a1', name: 'Taman Bungkul' },
   },
   clocked_in: true,
   shift: {

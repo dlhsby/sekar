@@ -1,6 +1,6 @@
 /**
  * Shifts API Service
- * Phase 2C: area_id optional (auto-detected from schedule)
+ * Phase 2C: location_id optional (auto-detected from schedule)
  */
 
 import { get, post } from './apiClient';
@@ -33,7 +33,7 @@ export async function clockIn(
     payload.selfie_photo = selfiePhotoBase64;
   }
   if (areaId) {
-    payload.area_id = areaId;
+    payload.location_id = areaId;
   }
   return post<ClockInResponse>('/shifts/clock-in', payload);
 }

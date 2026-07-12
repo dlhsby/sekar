@@ -115,7 +115,7 @@ const createTestStore = (currentShift: any = null) => {
           gps_lat: -7.250445,
           gps_lng: 112.768845,
           radius_meters: 100,
-          area_type_id: '1',
+          location_type_id: '1',
           created_at: '2026-01-01T00:00:00Z',
           updated_at: '2026-01-01T00:00:00Z',
         },
@@ -155,15 +155,15 @@ const createTestStore = (currentShift: any = null) => {
 // Helper to create a shift with given clock-in time
 const createShift = (clockInTime: Date) => ({
   id: '1',
-  area_id: '1',
+  location_id: '1',
   user_id: '1',
   clock_in_time: clockInTime.toISOString(),
   clock_in_gps_lat: -7.250445,
   clock_in_gps_lng: 112.768845,
-  area: {
+  location: {
     id: '1',
     name: 'Park A',
-    area_type_id: '1',
+    location_type_id: '1',
     gps_lat: -7.250445,
     gps_lng: 112.768845,
     radius_meters: 100,
@@ -968,7 +968,7 @@ describe('FieldHomeScreen HOME-1 body', () => {
             status: 'assigned',
             priority: 'high',
             deadline: new Date().toISOString(),
-            area: { id: 1, name: 'Zona A' },
+            location: { id: 1, name: 'Zona A' },
             created_by: 'u9',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),

@@ -508,7 +508,7 @@ export function UserDetailSheet({
                       rightText={`${formatTimeShort(ot.start_datetime)}${ot.end_datetime ? `–${formatTimeShort(ot.end_datetime)}` : ''}`}
                       title={ot.activityType?.name ?? t('monitoring:userDetail.overtime.defaultName')}
                       description={ot.reason || ot.description || undefined}
-                      meta={ot.area?.name ? [{ icon: 'map-marker', label: ot.area.name }] : undefined}
+                      meta={ot.location?.name ? [{ icon: 'map-marker', label: ot.location.name }] : undefined}
                       onPress={NOOP}
                       testID={`user-overtime-${ot.id}`}
                     />
@@ -540,7 +540,7 @@ export function UserDetailSheet({
                 {tasksFull.map((task) => {
                   const p = taskPill(task.status);
                   const meta: ListItemMeta[] = [];
-                  if (task.area?.name) { meta.push({ icon: 'map-marker', label: task.area.name }); }
+                  if (task.location?.name) { meta.push({ icon: 'map-marker', label: task.location.name }); }
                   if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
                   if (task.priority) {
                     meta.push({ icon: 'flag', label: t(`monitoring:userDetail.priorities.${task.priority}`) ?? task.priority });
@@ -585,7 +585,7 @@ export function UserDetailSheet({
                 {activitiesFull.map((a) => {
                   const p = activityPill(a.status);
                   const meta: ListItemMeta[] = [];
-                  if (a.area?.name) { meta.push({ icon: 'map-marker', label: a.area.name }); }
+                  if (a.location?.name) { meta.push({ icon: 'map-marker', label: a.location.name }); }
                   if (a.photo_urls && a.photo_urls.length > 0) {
                     meta.push({ icon: 'camera', label: `${a.photo_urls.length} ${t('monitoring:userDetail.photos')}` });
                   }

@@ -27,10 +27,10 @@ export function TaskMetadata({ task, isDeadlinePast }: TaskMetadataProps): React
           </NBText>
         </View>
       )}
-      {task.area && (
+      {task.location && (
         <View style={styles.metaItem}>
           <Icon name="map-marker" size={14} color={nbColors.gray500} />
-          <NBText variant="caption" style={styles.metaTextStyle}>{task.area.name}</NBText>
+          <NBText variant="caption" style={styles.metaTextStyle}>{task.location.name}</NBText>
         </View>
       )}
       {task.rayon && (

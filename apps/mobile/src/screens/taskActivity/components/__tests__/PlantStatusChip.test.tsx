@@ -11,8 +11,8 @@ import * as monitoringApi from '../../../../services/api/monitoringApi';
 
 jest.mock('../../../../services/api/monitoringApi');
 
-const mockGetAreaPlantStatus = monitoringApi.getAreaPlantStatus as jest.MockedFunction<
-  typeof monitoringApi.getAreaPlantStatus
+const mockGetAreaPlantStatus = monitoringApi.getLocationPlantStatus as jest.MockedFunction<
+  typeof monitoringApi.getLocationPlantStatus
 >;
 
 describe('PlantStatusChip', () => {
@@ -20,7 +20,7 @@ describe('PlantStatusChip', () => {
     jest.clearAllMocks();
   });
 
-  it('should not render if area_id is missing', () => {
+  it('should not render if location_id is missing', () => {
     const { getByTestId } = render(
       <PlantStatusChip areaId="" taskTitle="Pruning Task" />
     );

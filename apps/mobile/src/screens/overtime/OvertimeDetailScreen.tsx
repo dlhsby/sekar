@@ -125,7 +125,7 @@ export function OvertimeDetailScreen(): React.JSX.Element {
               shiftId={overtime.shift_id}
               startDatetime={overtime.start_datetime}
               userName={overtime.user?.full_name || tMonitoring('markerPreview.typeOfficer')}
-              areaName={overtime.area?.name}
+              areaName={overtime.location?.name}
             />
           )}
         </ScrollView>

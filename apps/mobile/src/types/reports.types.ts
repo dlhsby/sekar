@@ -55,7 +55,7 @@ export interface ReportTemplate {
 export interface ReportParameters {
   start_date?: string;
   end_date?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   worker_id?: string;
   [key: string]: any;

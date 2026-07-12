@@ -149,7 +149,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
           </NBCardHeader>
           <NBCardContent>
             <NBText variant="body" style={styles.taskTitleStyle}>{task.title}</NBText>
-            {task.area && <NBText variant="body-sm" style={styles.taskAreaStyle}>{t("tasks:complete.areaLabel")} {task.area.name}</NBText>}
+            {task.location && <NBText variant="body-sm" style={styles.taskAreaStyle}>{t("tasks:complete.areaLabel")} {task.location.name}</NBText>}
             {task.rayon && <NBText variant="body-sm" style={styles.taskAreaStyle}>{t("tasks:complete.rayonLabel")} {task.rayon.name}</NBText>}
           </NBCardContent>
         </NBCard>

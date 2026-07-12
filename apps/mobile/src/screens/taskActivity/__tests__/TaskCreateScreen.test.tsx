@@ -151,8 +151,8 @@ const createTestStore = (overrides?: Record<string, any>) => {
           role: 'korlap' as any,
           rayon_id: 'rayon-1',
           rayon: { id: 'rayon-1', name: 'Rayon 1' },
-          area_id: 'area-1',
-          area: { id: 'area-1', name: 'Taman Bungkul' },
+          location_id: 'area-1',
+          location: { id: 'area-1', name: 'Taman Bungkul' },
           ...overrides,
         },
         assignedArea: null,
@@ -192,9 +192,9 @@ describe('TaskCreateScreen', () => {
     // Mock users API
     (usersApi.getUsers as jest.Mock).mockResolvedValue({
       data: [
-        { id: 'u1', full_name: 'Satgas 1', role: 'satgas', area_id: 'area-1' },
-        { id: 'u2', full_name: 'Satgas 2', role: 'satgas', area_id: 'area-1' },
-        { id: 'u3', full_name: 'Satgas 3', role: 'satgas', area_id: 'area-2' },
+        { id: 'u1', full_name: 'Satgas 1', role: 'satgas', location_id: 'area-1' },
+        { id: 'u2', full_name: 'Satgas 2', role: 'satgas', location_id: 'area-1' },
+        { id: 'u3', full_name: 'Satgas 3', role: 'satgas', location_id: 'area-2' },
       ],
     });
 
@@ -206,7 +206,7 @@ describe('TaskCreateScreen', () => {
       ],
     });
 
-    (rayonsApi.getAreasByRayonId as jest.Mock).mockResolvedValue({
+    (rayonsApi.getLocationsByRayonId as jest.Mock).mockResolvedValue({
       data: [
         { id: 'area-1', name: 'Taman Bungkul' },
         { id: 'area-2', name: 'Taman Harmoni' },
@@ -609,7 +609,7 @@ describe('TaskCreateScreen', () => {
       monitoringScope: 'rayon',
     });
 
-    const store = createTestStore({ role: 'top_management', rayon_id: undefined, area_id: undefined });
+    const store = createTestStore({ role: 'top_management', rayon_id: undefined, location_id: undefined });
 
     render(
       <Provider store={store}>
@@ -717,7 +717,7 @@ describe('TaskCreateScreen', () => {
       monitoringScope: 'rayon',
     });
 
-    const store = createTestStore({ role: 'kepala_rayon', area_id: undefined, area: undefined });
+    const store = createTestStore({ role: 'kepala_rayon', location_id: undefined, location: undefined });
 
     render(
       <Provider store={store}>
@@ -729,7 +729,7 @@ describe('TaskCreateScreen', () => {
 
     // Should fetch areas for their rayon
     await waitFor(() => {
-      expect(rayonsApi.getAreasByRayonId).toHaveBeenCalledWith('rayon-1');
+      expect(rayonsApi.getLocationsByRayonId).toHaveBeenCalledWith('rayon-1');
     });
 
     // Should NOT fetch all rayons (rayon is fixed)

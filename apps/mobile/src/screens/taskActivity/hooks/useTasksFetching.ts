@@ -83,7 +83,7 @@ export function useTasksFetching(options: UseTasksFetchingOptions): UseTasksFetc
       page,
       limit: TASKS_PAGE_LIMIT,
       ...(rayonFilter ? { rayon_id: rayonFilter } : {}),
-      ...(areaFilter ? { area_id: areaFilter } : {}),
+      ...(areaFilter ? { location_id: areaFilter } : {}),
       ...(petugasFilter ? { assigned_to: petugasFilter } : {}),
     };
   }, [taskSort, statusFilter, dateFrom, dateTo, createdFrom, createdTo, rayonFilter, areaFilter, petugasFilter]);

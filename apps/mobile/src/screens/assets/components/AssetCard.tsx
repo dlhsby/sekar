@@ -66,9 +66,9 @@ export function AssetCard({ asset, onPress }: AssetCardProps): React.JSX.Element
             />
           </View>
 
-          {asset.area && (
-            <NBText variant="body-sm" style={styles.area}>
-              {asset.area.name}
+          {asset.location && (
+            <NBText variant="body-sm" style={styles.location}>
+              {asset.location.name}
             </NBText>
           )}
 
@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   code: {
     color: nbColors.gray600,
   },
-  area: {
+  location: {
     color: nbColors.gray600,
   },
   footer: {

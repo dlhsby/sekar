@@ -34,7 +34,7 @@ import { SekarLogoBox } from '../../components/brand/SekarLogoBox';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setLoading, setUser, setAssignedAreas } from '../../store/slices/authSlice';
 import { login, getMe } from '../../services/api/authApi';
-import { getMyAreas } from '../../services/api/usersApi';
+import { getMyLocations } from '../../services/api/usersApi';
 import { setToken, setRefreshToken, setUser as setUserStorage } from '../../services/storage/secureStorage';
 import { loadAndSyncCurrentShift } from '../../services/shift';
 import { isValidUsername, isValidPassword } from '../../utils/validators';
@@ -124,17 +124,17 @@ function LoginScreen(): React.JSX.Element {
           if (meResponse.data) {
             enrichedUser = {
               ...loginData.user,
-              area_id: meResponse.data.area_id ?? loginData.user.area_id,
+              location_id: meResponse.data.location_id ?? loginData.user.location_id,
               rayon_id: meResponse.data.rayon_id ?? loginData.user.rayon_id,
             };
-            if (meResponse.data.assigned_area) {
+            if (meResponse.data.assigned_location) {
               // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils.
-              const rawPolygon = (meResponse.data.assigned_area as any).boundary_polygon;
+              const rawPolygon = (meResponse.data.assigned_location as any).boundary_polygon;
               assignedArea = {
-                ...meResponse.data.assigned_area,
-                gps_lat: Number(meResponse.data.assigned_area.gps_lat),
-                gps_lng: Number(meResponse.data.assigned_area.gps_lng),
-                radius_meters: Number(meResponse.data.assigned_area.radius_meters),
+                ...meResponse.data.assigned_location,
+                gps_lat: Number(meResponse.data.assigned_location.gps_lat),
+                gps_lng: Number(meResponse.data.assigned_location.gps_lng),
+                radius_meters: Number(meResponse.data.assigned_location.radius_meters),
                 boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined,
               };
             }
@@ -146,7 +146,7 @@ function LoginScreen(): React.JSX.Element {
         }
       }
 
-      dispatch(setUser({ user: enrichedUser, area: assignedArea ?? undefined }));
+      dispatch(setUser({ user: enrichedUser, location: assignedArea ?? undefined }));
 
       // Load current shift for clockable roles so Home reflects status immediately.
       if (isClockableRole(loginData.user.role as UserRole)) {
@@ -155,20 +155,20 @@ function LoginScreen(): React.JSX.Element {
             console.warn('Shift sync after login failed:', err);
           }
         });
-        // Load all assigned areas (multi-area geofence + Jadwal Saya).
-        getMyAreas()
+        // Load all assigned locations (multi-location geofence + Jadwal Saya).
+        getMyLocations()
           .then((res) => {
             if (res.data) {
-              const areas = res.data.map((a) => {
+              const locations = res.data.map((a) => {
                 const poly = (a as any)?.boundary_polygon;
                 return { ...a, boundary_polygon: poly?.coordinates?.[0] ?? poly ?? undefined };
               });
-              dispatch(setAssignedAreas(areas));
+              dispatch(setAssignedAreas(locations));
             }
           })
           .catch((err) => {
             if (__DEV__) {
-              console.warn('Failed to load assigned areas after login:', err);
+              console.warn('Failed to load assigned locations after login:', err);
             }
           });
       }

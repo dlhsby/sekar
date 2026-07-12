@@ -261,7 +261,7 @@ export function OvertimeTrailModal({
                         {markerPoints[0].accuracy != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.accuracy')}: {Math.round(markerPoints[0].accuracy)}m</Text>}
                         {markerPoints[0].battery_level != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.battery')}: {markerPoints[0].battery_level}%</Text>}
                         <Text style={styles.calloutText}>
-                          {t('overtime:trail.callout.area')}: {markerPoints[0].is_within_area
+                          {t('overtime:trail.callout.location')}: {markerPoints[0].is_within_area
                             ? `${t('overtime:trail.callout.withinArea')}${areaName ? ` (${areaName})` : ''}`
                             : t('overtime:trail.callout.outsideArea')}
                         </Text>
@@ -287,7 +287,7 @@ export function OvertimeTrailModal({
                         {point.accuracy != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.accuracy')}: {Math.round(point.accuracy)}m</Text>}
                         {point.battery_level != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.battery')}: {point.battery_level}%</Text>}
                         <Text style={styles.calloutText}>
-                          {t('overtime:trail.callout.area')}: {point.is_within_area
+                          {t('overtime:trail.callout.location')}: {point.is_within_area
                             ? `${t('overtime:trail.callout.withinArea')}${areaName ? ` (${areaName})` : ''}`
                             : t('overtime:trail.callout.outsideArea')}
                         </Text>
@@ -313,7 +313,7 @@ export function OvertimeTrailModal({
                         {markerPoints[markerPoints.length - 1].accuracy != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.accuracy')}: {Math.round(markerPoints[markerPoints.length - 1].accuracy!)}m</Text>}
                         {markerPoints[markerPoints.length - 1].battery_level != null && <Text style={styles.calloutText}>{t('overtime:trail.callout.battery')}: {markerPoints[markerPoints.length - 1].battery_level}%</Text>}
                         <Text style={styles.calloutText}>
-                          {t('overtime:trail.callout.area')}: {markerPoints[markerPoints.length - 1].is_within_area
+                          {t('overtime:trail.callout.location')}: {markerPoints[markerPoints.length - 1].is_within_area
                             ? `${t('overtime:trail.callout.withinArea')}${areaName ? ` (${areaName})` : ''}`
                             : t('overtime:trail.callout.outsideArea')}
                         </Text>

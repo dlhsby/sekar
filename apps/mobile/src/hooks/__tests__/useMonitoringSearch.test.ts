@@ -34,7 +34,7 @@ describe('useMonitoringSearch', () => {
   });
 
   it('matches areas by name and rayons by name', () => {
-    const areas = renderHook(() => useMonitoringSearch(users, rayons, 'taman')).result.current.area;
+    const areas = renderHook(() => useMonitoringSearch(users, rayons, 'taman')).result.current.location;
     expect(areas.map((a) => a.name).sort()).toEqual(['Taman Apsari', 'Taman Bungkul']);
 
     const rs = renderHook(() => useMonitoringSearch(users, rayons, 'pusat')).result.current.rayon;

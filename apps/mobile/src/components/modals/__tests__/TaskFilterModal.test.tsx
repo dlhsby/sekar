@@ -17,16 +17,16 @@ jest.mock('react-native-safe-area-context', () => ({
 // Mock the API services module that TaskFilterModal uses
 jest.mock('../../../services/api', () => ({
   getRayons: jest.fn(),
-  getAreasByRayonId: jest.fn(),
-  getAreas: jest.fn(),
+  getLocationsByRayonId: jest.fn(),
+  getLocations: jest.fn(),
   getUsers: jest.fn(),
 }));
 
-import { getRayons, getAreasByRayonId, getAreas, getUsers } from '../../../services/api';
+import { getRayons, getLocationsByRayonId, getLocations, getUsers } from '../../../services/api';
 
 const mockGetRayons = getRayons as jest.MockedFunction<typeof getRayons>;
-const mockGetAreasByRayonId = getAreasByRayonId as jest.MockedFunction<typeof getAreasByRayonId>;
-const mockGetAreas = getAreas as jest.MockedFunction<typeof getAreas>;
+const mockGetAreasByRayonId = getLocationsByRayonId as jest.MockedFunction<typeof getLocationsByRayonId>;
+const mockGetAreas = getLocations as jest.MockedFunction<typeof getLocations>;
 const mockGetUsers = getUsers as jest.MockedFunction<typeof getUsers>;
 
 const DEFAULT_PROPS = {
@@ -363,7 +363,7 @@ describe('TaskFilterModal', () => {
 
     it('always shows Area section for all roles including satgas', () => {
       const { getByText } = render(
-        <TaskFilterModal {...DEFAULT_PROPS} userRole="satgas" userAreaId={undefined} />,
+        <TaskFilterModal {...DEFAULT_PROPS} userRole="satgas" userLocationId={undefined} />,
       );
 
       expect(getByText('Area')).toBeTruthy();
@@ -875,12 +875,12 @@ describe('TaskFilterModal', () => {
       });
     });
 
-    it('area filter shows Semua Area placeholder for satgas with userAreaId', async () => {
+    it('area filter shows Semua Area placeholder for satgas with userLocationId', async () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="satgas"
-          userAreaId="area-1"
+          userLocationId="area-1"
         />,
       );
 

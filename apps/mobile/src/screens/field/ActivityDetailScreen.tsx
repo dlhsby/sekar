@@ -123,13 +123,13 @@ export function ActivityDetailScreen(): React.JSX.Element {
     const submitterRole = activity.user?.role;
     if (user.role === 'korlap') {
       return (submitterRole === 'satgas' || submitterRole === 'linmas') &&
-             user.area_id != null && activity.area_id === user.area_id;
+             user.location_id != null && activity.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
       if (!user.rayon_id) {return false;}
       // Check rayon scope: activity area's rayon or submitter's rayon must match
       const inSameRayon =
-        activity.area?.rayon_id === user.rayon_id ||
+        activity.location?.rayon_id === user.rayon_id ||
         activity.user?.rayon_id === user.rayon_id;
       return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_data');
     }
@@ -263,10 +263,10 @@ export function ActivityDetailScreen(): React.JSX.Element {
                   <NBText variant="body" style={styles.valueStyle}>{activity.user.full_name}</NBText>
                 </View>
               )}
-              {activity.area?.name && (
+              {activity.location?.name && (
                 <View style={styles.infoRow}>
-                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.area')}</NBText>
-                  <NBText variant="body" style={styles.valueStyle}>{activity.area.name}</NBText>
+                  <NBText variant="body-sm" style={styles.labelStyle}>{t('activities:detail.sections.location')}</NBText>
+                  <NBText variant="body" style={styles.valueStyle}>{activity.location.name}</NBText>
                 </View>
               )}
             </NBCardContent>

@@ -70,7 +70,7 @@ export function ReassignWorkerModal({
         if (res.data?.users) {
           // Exclude workers already in the target area
           const filtered = res.data.users.filter(
-            u => u.area_id !== targetArea?.id,
+            u => u.location_id !== targetArea?.id,
           );
           setCandidates(filtered);
         }
@@ -85,7 +85,7 @@ export function ReassignWorkerModal({
     setIsSubmitting(true);
     const res = await reassignWorker({
       user_id: selectedUserId,
-      target_area_id: targetArea.id,
+      target_location_id: targetArea.id,
       reason: reason.trim() || undefined,
     });
 

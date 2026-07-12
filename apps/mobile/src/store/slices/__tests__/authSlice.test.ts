@@ -12,7 +12,7 @@ import authReducer, {
   setRestoring,
   restoreAuth,
 } from '../authSlice';
-import type { User, Area } from '../../../types/models.types';
+import type { Location, User } from '../../../types/models.types';
 
 describe('authSlice', () => {
   const initialState = {
@@ -33,10 +33,10 @@ describe('authSlice', () => {
     role: 'satgas' as const,
   };
 
-  const mockArea: Area = {
+  const mockArea: Location = {
     id: 'area-1',
     name: 'Taman Bungkul',
-    area_type_id: 'at-1',
+    location_type_id: 'at-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
     radius_meters: 100,
@@ -75,7 +75,7 @@ describe('authSlice', () => {
     it('should set user with assigned area', () => {
       const state = authReducer(
         initialState,
-        setUser({ user: mockUser, area: mockArea })
+        setUser({ user: mockUser, location: mockArea })
       );
 
       expect(state.user).toEqual(mockUser);
@@ -203,7 +203,7 @@ describe('authSlice', () => {
     it('should restore user and mark as authenticated', () => {
       const state = authReducer(
         initialState,
-        restoreAuth({ user: mockUser, area: null }),
+        restoreAuth({ user: mockUser, location: null }),
       );
 
       expect(state.user).toEqual(mockUser);
@@ -214,7 +214,7 @@ describe('authSlice', () => {
     it('should restore user with assigned area', () => {
       const state = authReducer(
         initialState,
-        restoreAuth({ user: mockUser, area: mockArea }),
+        restoreAuth({ user: mockUser, location: mockArea }),
       );
 
       expect(state.user).toEqual(mockUser);
@@ -226,7 +226,7 @@ describe('authSlice', () => {
     it('should set isRestoring to false', () => {
       const state = authReducer(
         { ...initialState, isRestoring: true },
-        restoreAuth({ user: mockUser, area: null }),
+        restoreAuth({ user: mockUser, location: null }),
       );
 
       expect(state.isRestoring).toBe(false);
@@ -240,7 +240,7 @@ describe('authSlice', () => {
       expect(state.isLoading).toBe(true);
 
       // Set user
-      state = authReducer(state, setUser({ user: mockUser, area: mockArea }));
+      state = authReducer(state, setUser({ user: mockUser, location: mockArea }));
       expect(state.isAuthenticated).toBe(true);
       expect(state.user).toEqual(mockUser);
 

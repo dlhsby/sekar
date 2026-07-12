@@ -13,7 +13,7 @@ import {
   filterUsersByRegion,
 } from '../mapUtils';
 import type { ActiveUserData } from '../../types/api.types';
-import type { Area } from '../../types/models.types';
+import type { Location } from '../../types/models.types';
 import type { Region } from 'react-native-maps';
 
 // Mock data
@@ -39,12 +39,14 @@ const mockUser1: ActiveUserData = {
   shift: {
     id: '101',
     clock_in_time: '2026-01-17T08:00:00.000Z',
-    area: {
+    location: {
       id: '1',
       name: 'Taman Bungkul',
     },
   },
   latest_location: {
+    id: '1',
+    name: 'Taman Bungkul',
     gps_lat: -7.2905, // Exact center
     gps_lng: 112.7398,
     logged_at: '2026-01-17T10:00:00.000Z',
@@ -58,12 +60,14 @@ const mockUser2: ActiveUserData = {
   shift: {
     id: '102',
     clock_in_time: '2026-01-17T08:00:00.000Z',
-    area: {
+    location: {
       id: '1',
       name: 'Taman Bungkul',
     },
   },
   latest_location: {
+    id: '2',
+    name: 'Taman Bungkul',
     gps_lat: -7.2913, // ~89m from center (warning zone)
     gps_lng: 112.7398,
     logged_at: '2026-01-17T10:00:00.000Z',
@@ -77,12 +81,14 @@ const mockUser3: ActiveUserData = {
   shift: {
     id: '103',
     clock_in_time: '2026-01-17T08:00:00.000Z',
-    area: {
+    location: {
       id: '1',
       name: 'Taman Bungkul',
     },
   },
   latest_location: {
+    id: '3',
+    name: 'Taman Bungkul',
     gps_lat: -7.2924, // ~211m from center (outside)
     gps_lng: 112.7398,
     logged_at: '2026-01-17T10:00:00.000Z',
@@ -96,7 +102,7 @@ const mockUserNoLocation: ActiveUserData = {
   shift: {
     id: '104',
     clock_in_time: '2026-01-17T08:00:00.000Z',
-    area: {
+    location: {
       id: '1',
       name: 'Taman Bungkul',
     },
@@ -163,6 +169,8 @@ describe('mapUtils', () => {
         ...mockUser1,
         id: '5',
         latest_location: {
+          id: '5',
+          name: 'Taman Bungkul',
           gps_lat: -7.29051, // Very close to mockUser1
           gps_lng: 112.73981,
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -189,7 +197,7 @@ describe('mapUtils', () => {
     it('should filter workers by specific area', () => {
       const worker2DifferentArea = {
         ...mockUser2,
-        shift: { ...mockUser2.shift, area: { id: '2', name: 'Other Area' } },
+        shift: { ...mockUser2.shift, location: { id: '2', name: 'Other Area' } },
       };
       const workers = [mockUser1, worker2DifferentArea, mockUser3];
       const filtered = filterUsersByArea(workers, '1');
@@ -214,11 +222,11 @@ describe('mapUtils', () => {
   });
 
   describe('getAreaCircles', () => {
-    const fullAreas: Area[] = [
+    const fullAreas: Location[] = [
       {
         id: '1',
         name: 'Taman Bungkul',
-        area_type_id: '1',
+        location_type_id: '1',
         gps_lat: -7.2905,
         gps_lng: 112.7398,
         radius_meters: 100,
@@ -229,7 +237,7 @@ describe('mapUtils', () => {
       {
         id: '2',
         name: 'Taman Jayengrono',
-        area_type_id: '1',
+        location_type_id: '1',
         gps_lat: -7.2575,
         gps_lng: 112.7521,
         radius_meters: 150,
@@ -286,6 +294,8 @@ describe('mapUtils', () => {
       const farWorker: ActiveUserData = {
         ...mockUser1,
         latest_location: {
+          id: 'far',
+          name: 'Far Location',
           gps_lat: -7.5, // Far south
           gps_lng: 112.5, // Far west
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -304,6 +314,8 @@ describe('mapUtils', () => {
       const boundaryWorker: ActiveUserData = {
         ...mockUser1,
         latest_location: {
+          id: 'boundary',
+          name: 'Boundary Location',
           gps_lat: -7.2905 + 0.05, // At edge of latitudeDelta
           gps_lng: 112.7398,
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -317,6 +329,8 @@ describe('mapUtils', () => {
       const outsideBoundary: ActiveUserData = {
         ...mockUser1,
         latest_location: {
+          id: 'outside',
+          name: 'Outside Location',
           gps_lat: -7.2905 + 0.051, // Just outside latitudeDelta
           gps_lng: 112.7398,
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -394,6 +408,8 @@ describe('mapUtils', () => {
         ...mockUser1,
         id: '5',
         latest_location: {
+          id: '5',
+          name: 'Taman Bungkul',
           gps_lat: -7.29051, // Very close
           gps_lng: 112.73981,
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -412,6 +428,8 @@ describe('mapUtils', () => {
         ...mockUser1,
         id: '6',
         latest_location: {
+          id: '6',
+          name: 'Far Location',
           gps_lat: -7.25, // Far from mockUser1
           gps_lng: 112.75,
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -428,6 +446,8 @@ describe('mapUtils', () => {
         ...mockUser1,
         id: '7',
         latest_location: {
+          id: '7',
+          name: 'Taman Bungkul',
           gps_lat: -7.2906,
           gps_lng: 112.7399,
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -497,6 +517,8 @@ describe('mapUtils', () => {
         ...mockUser1,
         id: String(i),
         latest_location: {
+          id: String(i),
+          name: 'Location ' + i,
           gps_lat: -7.29 + (i * 0.001),
           gps_lng: 112.74 + (i * 0.001),
           logged_at: '2026-01-17T10:00:00.000Z',
@@ -626,6 +648,8 @@ describe('mapUtils', () => {
         ...mockUser1,
         id: String(i),
         latest_location: {
+          id: String(i),
+          name: 'Location ' + i,
           gps_lat: -7.29 + (i * 0.001),
           gps_lng: 112.74 + (i * 0.001),
           logged_at: '2026-01-17T10:00:00.000Z',

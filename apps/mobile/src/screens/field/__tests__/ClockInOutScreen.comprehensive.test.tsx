@@ -1,6 +1,6 @@
 /**
  * Comprehensive ClockInOutScreen Tests
- * Phase 2C: Soft geofencing (warnings only, never blocks clock-in), area_id optional
+ * Phase 2C: Soft geofencing (warnings only, never blocks clock-in), location_id optional
  */
 
 // Alert mocked globally in jest.setup.js
@@ -61,7 +61,7 @@ const mockAssignedArea = {
   gps_lat: -7.250445,
   gps_lng: 112.768845,
   radius_meters: 100,
-  areaType: { name: 'Park' },
+  locationType: { name: 'Park' },
 };
 
 const mockUser = {
@@ -76,7 +76,7 @@ const mockShift = {
   clock_in_time: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
   clock_out_time: null,
   user_id: 1,
-  area_id: 'area-123',
+  location_id: 'area-123',
 };
 
 const createMockStore = (preloadedState: any = {}) => {
@@ -560,7 +560,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
   });
 
   describe('Clock-In Flow', () => {
-    it('should successfully clock in with valid data (Phase 2C: no area_id)', async () => {
+    it('should successfully clock in with valid data (Phase 2C: no location_id)', async () => {
       (shiftsApi.clockIn as jest.Mock).mockResolvedValue({
         data: { id: 'shift-123' },
       });
@@ -589,7 +589,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      // Phase 2C: clockIn called WITHOUT area_id (auto-detected from schedule)
+      // Phase 2C: clockIn called WITHOUT location_id (auto-detected from schedule)
       await waitFor(() => {
         expect(shiftsApi.clockIn).toHaveBeenCalledWith(
           -7.250445,

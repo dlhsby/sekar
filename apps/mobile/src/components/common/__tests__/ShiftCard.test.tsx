@@ -28,11 +28,11 @@ jest.mock('../../../utils/dateUtils', () => ({
   }),
 }));
 
-const mockArea = {
+const mockLocation = {
   id: 'area-1',
   name: 'Taman Bungkul',
-  area_type_id: 'type-1',
-  areaType: {
+  location_type_id: 'type-1',
+  locationType: {
     id: 'type-1',
     code: 'park' as const,
     name: 'Taman Kota',
@@ -49,12 +49,12 @@ const mockArea = {
 const mockActiveShift: Shift = {
   id: 'shift-1',
   user_id: 'user-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   clock_in_time: '2024-01-01T08:00:00Z',
   clock_in_gps_lat: -7.275,
   clock_in_gps_lng: 112.75,
   clock_in_photo_url: 'https://example.com/photo.jpg',
-  area: mockArea,
+  location: mockLocation,
   created_at: '2024-01-01T08:00:00Z',
   updated_at: '2024-01-01T08:00:00Z',
 };
@@ -219,14 +219,14 @@ describe('ShiftCard', () => {
 
   describe('Area Information', () => {
     it('should handle missing area gracefully', () => {
-      const shiftWithoutArea = { ...mockActiveShift, area: undefined };
+      const shiftWithoutArea = { ...mockActiveShift, location: undefined };
       const { getByText } = render(<ShiftCard shift={shiftWithoutArea} />);
       expect(getByText('Area tidak diketahui')).toBeTruthy();
     });
 
     it('should handle missing area type gracefully', () => {
-      const areaWithoutType = { ...mockArea, areaType: undefined };
-      const shiftWithPartialArea = { ...mockActiveShift, area: areaWithoutType };
+      const areaWithoutType = { ...mockLocation, locationType: undefined };
+      const shiftWithPartialArea = { ...mockActiveShift, location: areaWithoutType };
       const { getByText, queryByText } = render(
         <ShiftCard shift={shiftWithPartialArea} />
       );
@@ -236,8 +236,8 @@ describe('ShiftCard', () => {
 
     it('should truncate long area names', () => {
       const longAreaName = 'Taman Kota Dengan Nama Yang Sangat Panjang Sekali';
-      const areaWithLongName = { ...mockArea, name: longAreaName };
-      const shiftWithLongName = { ...mockActiveShift, area: areaWithLongName };
+      const areaWithLongName = { ...mockLocation, name: longAreaName };
+      const shiftWithLongName = { ...mockActiveShift, location: areaWithLongName };
       const { getByText } = render(<ShiftCard shift={shiftWithLongName} />);
       const areaText = getByText(longAreaName);
       expect(areaText.props.numberOfLines).toBe(1);
@@ -297,8 +297,8 @@ describe('ShiftCard', () => {
       const shift2: Shift = {
         ...mockActiveShift,
         id: 'shift-2',
-        area: {
-          ...mockArea,
+        location: {
+          ...mockLocation,
           id: 'area-2',
           name: 'Taman Mayangkara',
         },
@@ -331,16 +331,16 @@ describe('ShiftCard', () => {
 
   describe('Edge Cases', () => {
     it('should handle shift with empty area name', () => {
-      const emptyAreaName = { ...mockArea, name: '' };
-      const shiftWithEmptyArea = { ...mockActiveShift, area: emptyAreaName };
+      const emptyAreaName = { ...mockLocation, name: '' };
+      const shiftWithEmptyArea = { ...mockActiveShift, location: emptyAreaName };
       const { getByText } = render(<ShiftCard shift={shiftWithEmptyArea} />);
       // Empty string is falsy, so component shows fallback
       expect(getByText('Area tidak diketahui')).toBeTruthy();
     });
 
     it('should handle shift with undefined area_type name', () => {
-      const undefinedType = { ...mockArea, areaType: { ...mockArea.areaType, name: undefined } };
-      const shift = { ...mockActiveShift, area: undefinedType as any };
+      const undefinedType = { ...mockLocation, locationType: { ...mockLocation.locationType, name: undefined } };
+      const shift = { ...mockActiveShift, location: undefinedType as any };
       const { queryByText } = render(<ShiftCard shift={shift} />);
       // Should not crash
       expect(queryByText('Taman Bungkul')).toBeTruthy();
@@ -362,8 +362,8 @@ describe('ShiftCard', () => {
     });
 
     it('should handle special characters in area name', () => {
-      const specialArea = { ...mockArea, name: "Taman O'Brien & Co." };
-      const shift = { ...mockActiveShift, area: specialArea };
+      const specialArea = { ...mockLocation, name: "Taman O'Brien & Co." };
+      const shift = { ...mockActiveShift, location: specialArea };
       const { getByText } = render(<ShiftCard shift={shift} />);
       expect(getByText("Taman O'Brien & Co.")).toBeTruthy();
     });

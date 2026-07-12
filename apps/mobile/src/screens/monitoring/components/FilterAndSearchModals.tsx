@@ -26,7 +26,7 @@ interface FilterAndSearchModalsProps {
   onSearchSelect: (result: SearchResult) => void;
   boundaryDetailVisible: boolean;
   setBoundaryDetailVisible: (visible: boolean) => void;
-  boundaryDetailType: 'rayon' | 'area';
+  boundaryDetailType: 'rayon' | 'location';
   boundaryDetailData: RayonBoundary | AreaBoundary | null;
 }
 

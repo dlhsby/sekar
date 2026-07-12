@@ -33,15 +33,15 @@ describe('loadAndSyncCurrentShift', () => {
     it('should fetch current shift and dispatch setCurrentShift with data', async () => {
       const mockShift = {
         id: '1',
-        area_id: '1',
+        location_id: '1',
         user_id: '1',
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_in_gps_lat: -7.250445,
         clock_in_gps_lng: 112.768845,
-        area: {
+        location: {
           id: '1',
           name: 'Park A',
-          area_type_id: '1',
+          location_type_id: '1',
           gps_lat: -7.250445,
           gps_lng: 112.768845,
           radius_meters: 100,
@@ -247,7 +247,7 @@ describe('loadAndSyncCurrentShift', () => {
       const mockResponse = {
         data: {
           id: '1',
-          area_id: '1',
+          location_id: '1',
           user_id: '1',
           clock_in_time: '2026-01-20T08:00:00Z',
           clock_in_gps_lat: -7.250445,
@@ -270,7 +270,7 @@ describe('loadAndSyncCurrentShift', () => {
     it('should handle shift with all optional fields populated', async () => {
       const fullShift = {
         id: '1',
-        area_id: '1',
+        location_id: '1',
         user_id: '1',
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_out_time: '2026-01-20T16:00:00Z',
@@ -281,10 +281,10 @@ describe('loadAndSyncCurrentShift', () => {
         clock_in_photo_url: 'https://example.com/selfie.jpg',
         created_at: '2026-01-20T08:00:00Z',
         updated_at: '2026-01-20T16:00:00Z',
-        area: {
+        location: {
           id: '1',
           name: 'Park A',
-          area_type_id: '1',
+          location_type_id: '1',
           gps_lat: -7.250445,
           gps_lng: 112.768845,
           radius_meters: 100,

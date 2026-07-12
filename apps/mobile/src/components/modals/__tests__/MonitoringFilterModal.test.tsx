@@ -24,8 +24,8 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
 
 jest.mock('../../../services/api', () => ({
   getRayons: jest.fn().mockResolvedValue({ data: [] }),
-  getAreas: jest.fn().mockResolvedValue({ data: { areas: [] } }),
-  getAreasByRayonId: jest.fn().mockResolvedValue({ data: [] }),
+  getLocations: jest.fn().mockResolvedValue({ data: { areas: [] } }),
+  getLocationsByRayonId: jest.fn().mockResolvedValue({ data: [] }),
 }));
 
 jest.mock('../../../services/api/monitoringApi', () => ({
@@ -104,12 +104,12 @@ jest.mock('../../nb/NBText', () => ({
   },
 }));
 
-import { getRayons, getAreas, getAreasByRayonId } from '../../../services/api';
+import { getRayons, getLocations, getLocationsByRayonId } from '../../../services/api';
 import { getStaffingSummary } from '../../../services/api/monitoringApi';
 
 const mockGetRayons = getRayons as jest.Mock;
-const mockGetAreas = getAreas as jest.Mock;
-const mockGetAreasByRayonId = getAreasByRayonId as jest.Mock;
+const mockGetAreas = getLocations as jest.Mock;
+const mockGetAreasByRayonId = getLocationsByRayonId as jest.Mock;
 const mockGetStaffingSummary = getStaffingSummary as jest.Mock;
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -121,8 +121,8 @@ const mockSuperadmin: User = {
   role: 'superadmin',
   rayon_id: undefined,
   rayon: undefined,
-  area_id: undefined,
-  area: undefined,
+  location_id: undefined,
+  location: undefined,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
 };
@@ -133,7 +133,7 @@ const mockKorlap: User = {
   username: 'korlap1',
   full_name: 'Korlap 1',
   role: 'korlap',
-  area_id: 'area-1',
+  location_id: 'area-1',
 };
 
 const mockKepalaRayon: User = {
@@ -362,7 +362,7 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('loads all areas via getAreas when no rayon is selected and user is not kepala_rayon', async () => {
+    it('loads all areas via getLocations when no rayon is selected and user is not kepala_rayon', async () => {
       render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockSuperadmin })} />
       );
@@ -371,7 +371,7 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('loads areas by rayon via getAreasByRayonId when kepala_rayon opens modal', async () => {
+    it('loads areas by rayon via getLocationsByRayonId when kepala_rayon opens modal', async () => {
       render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockKepalaRayon })} />
       );

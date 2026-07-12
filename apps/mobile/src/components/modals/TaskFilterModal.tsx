@@ -21,8 +21,8 @@ import {
   nbType,
   nbBorders,
 } from '../../constants/nbTokens';
-import type { TaskStatus, UserRole, Rayon, Area, User } from '../../types/models.types';
-import { getRayons, getAreasByRayonId, getAreas, getUsers } from '../../services/api';
+import type { TaskStatus, UserRole, Rayon, Location, User } from '../../types/models.types';
+import { getRayons, getLocationsByRayonId, getLocations, getUsers } from '../../services/api';
 import { FILTER_SUBORDINATE_ROLES, TASK_CREATORS } from '../../constants/roles';
 import { parseFilterDate, toFilterDateString, toTitleCase } from '../../utils/filterHelpers';
 
@@ -54,7 +54,7 @@ interface TaskFilterModalProps {
   onResetFilters: () => void;
   userRole: UserRole;
   userRayonId?: string;
-  userAreaId?: string;
+  userLocationId?: string;
   userId?: string;
 }
 
@@ -83,14 +83,14 @@ export function TaskFilterModal({
   onResetFilters,
   userRole,
   userRayonId,
-  userAreaId,
+  userLocationId,
   userId,
 }: TaskFilterModalProps): React.JSX.Element {
   const { t } = useTranslation();
   // satgas, linmas, korlap: area is fixed to their assigned area
-  const isAreaFixed = useMemo(() =>
-    (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userAreaId
-  , [userRole, userAreaId]);
+  const isLocationFixed = useMemo(() =>
+    (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userLocationId
+  , [userRole, userLocationId]);
 
   const showRayon = useMemo(() =>
     userRole === 'kepala_rayon' || userRole === 'admin_data' ||
@@ -131,10 +131,10 @@ export function TaskFilterModal({
   const [localAreaFilter, setLocalAreaFilter] = useState(areaFilter);
 
   const [rayons, setRayons] = useState<Rayon[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingRayons, setLoadingRayons] = useState(false);
-  const [loadingAreas, setLoadingAreas] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
@@ -144,15 +144,15 @@ export function TaskFilterModal({
 
   useEffect(() => {
     if (!visible) return;
-    if (isAreaFixed) return;
+    if (isLocationFixed) return;
     const effectiveRayon = localRayonFilter ?? (isRayonFixed ? userRayonId : null) ?? userRayonId;
     if (effectiveRayon) {
-      loadAreasByRayon(effectiveRayon);
+      loadLocationsByRayon(effectiveRayon);
     } else if (canFilterRayon) {
-      loadAllAreas();
+      loadAllLocations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, localRayonFilter, canFilterRayon, isAreaFixed, isRayonFixed, userRayonId]);
+  }, [visible, localRayonFilter, canFilterRayon, isLocationFixed, isRayonFixed, userRayonId]);
 
   useEffect(() => {
     if (!visible || !hasSubordinates) { return; }
@@ -169,9 +169,9 @@ export function TaskFilterModal({
       setLocalCreatedFrom(createdFrom);
       setLocalCreatedTo(createdTo);
       setLocalRayonFilter(rayonFilter);
-      setLocalAreaFilter(isAreaFixed ? (userAreaId ?? null) : areaFilter);
+      setLocalAreaFilter(isLocationFixed ? (userLocationId ?? null) : areaFilter);
     }
-  }, [visible, taskFilter, statusFilter, dateFrom, dateTo, createdFrom, createdTo, rayonFilter, areaFilter, petugasFilter, isAreaFixed, userAreaId]);
+  }, [visible, taskFilter, statusFilter, dateFrom, dateTo, createdFrom, createdTo, rayonFilter, areaFilter, petugasFilter, isLocationFixed, userLocationId]);
 
   const loadRayons = useCallback(async () => {
     setLoadingRayons(true);
@@ -196,7 +196,7 @@ export function TaskFilterModal({
         filtered = filtered.filter((u) => subordinateRoles.includes(u.role));
       }
       if (areaId) {
-        filtered = filtered.filter((u) => (u as any).area_id === areaId);
+        filtered = filtered.filter((u) => (u as any).location_id === areaId);
       }
       setUsers(filtered);
     } catch {
@@ -206,29 +206,29 @@ export function TaskFilterModal({
     }
   }, [userId, userRole]);
 
-  const loadAllAreas = useCallback(async () => {
-    setLoadingAreas(true);
+  const loadAllLocations = useCallback(async () => {
+    setLoadingLocations(true);
     try {
-      const response = await getAreas();
-      if (response.data) setAreas(response.data);
+      const response = await getLocations();
+      if (response.data) setLocations(response.data);
     } catch (error) {
-      if (__DEV__) { console.error('[TaskFilterModal] Error loading areas:', error); }
-      setAreas([]);
+      if (__DEV__) { console.error('[TaskFilterModal] Error loading locations:', error); }
+      setLocations([]);
     } finally {
-      setLoadingAreas(false);
+      setLoadingLocations(false);
     }
   }, []);
 
-  const loadAreasByRayon = useCallback(async (rayonId: string) => {
-    setLoadingAreas(true);
+  const loadLocationsByRayon = useCallback(async (rayonId: string) => {
+    setLoadingLocations(true);
     try {
-      const response = await getAreasByRayonId(rayonId);
-      if (response.data) setAreas(response.data);
+      const response = await getLocationsByRayonId(rayonId);
+      if (response.data) setLocations(response.data);
     } catch (error) {
-      if (__DEV__) { console.error('[TaskFilterModal] Error loading areas by rayon:', error); }
-      setAreas([]);
+      if (__DEV__) { console.error('[TaskFilterModal] Error loading locations by rayon:', error); }
+      setLocations([]);
     } finally {
-      setLoadingAreas(false);
+      setLoadingLocations(false);
     }
   }, []);
 
@@ -268,19 +268,19 @@ export function TaskFilterModal({
     setLocalCreatedFrom('');
     setLocalCreatedTo('');
     setLocalRayonFilter(null);
-    setLocalAreaFilter(isAreaFixed ? (userAreaId ?? null) : null);
+    setLocalAreaFilter(isLocationFixed ? (userLocationId ?? null) : null);
     onResetFilters();
     onClose();
-  }, [isAreaFixed, userAreaId, onResetFilters, onClose]);
+  }, [isLocationFixed, userLocationId, onResetFilters, onClose]);
 
   const handleRayonChange = useCallback((rayonId: string | number) => {
     const newRayonId = rayonId === 'all' ? null : String(rayonId);
     setLocalRayonFilter(newRayonId);
     setLocalAreaFilter(null);
-    setAreas([]);
-    if (newRayonId) loadAreasByRayon(newRayonId);
-    else loadAllAreas();
-  }, [loadAreasByRayon, loadAllAreas]);
+    setLocations([]);
+    if (newRayonId) loadLocationsByRayon(newRayonId);
+    else loadAllLocations();
+  }, [loadLocationsByRayon, loadAllLocations]);
 
   const handleAreaChange = useCallback((areaId: string | number) => {
     const newAreaId = areaId === 'all' ? null : String(areaId);
@@ -419,12 +419,12 @@ export function TaskFilterModal({
 
       {/* 5. Area */}
       <View style={styles.filterSection}>
-        <Text style={styles.filterLabel}>{t('tasks:filter.area')}</Text>
-        {isAreaFixed ? (
+        <Text style={styles.filterLabel}>{t('tasks:filter.location')}</Text>
+        {isLocationFixed ? (
           <NBSelect
-            value={userAreaId ?? 'all'}
+            value={userLocationId ?? 'all'}
             onValueChange={() => {}}
-            options={[{ label: userAreaId ? t('tasks:filter.areaOptions.mine') : t('tasks:filter.areaOptions.all'), value: userAreaId ?? 'all' }]}
+            options={[{ label: userLocationId ? t('tasks:filter.areaOptions.mine') : t('tasks:filter.areaOptions.all'), value: userLocationId ?? 'all' }]}
             disabled={true}
           />
         ) : canFilterRayon || isRayonFixed || userRayonId ? (
@@ -433,9 +433,9 @@ export function TaskFilterModal({
             onValueChange={handleAreaChange}
             options={[
               { label: t('tasks:filter.areaOptions.all'), value: 'all' },
-              ...areas.map(a => ({ label: a.name, value: a.id })),
+              ...locations.map(a => ({ label: a.name, value: a.id })),
             ]}
-            disabled={loadingAreas}
+            disabled={loadingLocations}
             searchable
           />
         ) : null}

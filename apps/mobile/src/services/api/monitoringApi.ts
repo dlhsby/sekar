@@ -13,7 +13,7 @@ import type {
   ActiveUserData,
   CityMonitoringResponse,
   RayonMonitoringResponse,
-  AreaMonitoringResponse,
+  LocationMonitoringResponse,
   LiveUsersResponse,
   LiveUsersFilter,
   MonitoringFilter,
@@ -47,11 +47,11 @@ export async function getRayonMonitoring(
   );
 }
 
-export async function getAreaMonitoring(
-  areaId: string,
+export async function getLocationMonitoring(
+  locationId: string,
   filters?: MonitoringFilter,
-): Promise<ApiResponse<AreaMonitoringResponse>> {
-  return get<AreaMonitoringResponse>(`/monitoring/area/${areaId}`, filters);
+): Promise<ApiResponse<LocationMonitoringResponse>> {
+  return get<LocationMonitoringResponse>(`/monitoring/location/${locationId}`, filters);
 }
 
 export async function getLiveUsers(
@@ -118,7 +118,7 @@ export async function getUserLocationHistory(
 }
 
 export async function getStaffingSummary(
-  filters?: { rayon_id?: string; area_id?: string },
+  filters?: { rayon_id?: string; location_id?: string },
 ): Promise<ApiResponse<StaffingSummaryResponse>> {
   return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
 }
@@ -168,10 +168,10 @@ export async function getMonitoringConfig(): Promise<
 }
 
 // Phase 3 3-8: Plant due-date forecast
-export async function getAreaPlantStatus(
-  areaId: string,
+export async function getLocationPlantStatus(
+  locationId: string,
 ): Promise<ApiResponse<AreaPlantStatusResponse>> {
-  return get<AreaPlantStatusResponse>(`/monitoring/area/${areaId}/plant-status`);
+  return get<AreaPlantStatusResponse>(`/monitoring/location/${locationId}/plant-status`);
 }
 
 // Phase 4-4 A4: Reassignment history audit trail
@@ -184,7 +184,7 @@ export async function getReassignmentHistory(
 export default {
   getCityMonitoring,
   getRayonMonitoring,
-  getAreaMonitoring,
+  getLocationMonitoring,
   getLiveUsers,
   getActiveUsers,
   getAllActivities,
@@ -198,6 +198,6 @@ export default {
   getMonitoringAggregate,
   reassignWorker,
   getMonitoringConfig,
-  getAreaPlantStatus,
+  getLocationPlantStatus,
   getReassignmentHistory,
 };

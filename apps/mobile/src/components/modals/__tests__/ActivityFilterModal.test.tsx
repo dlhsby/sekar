@@ -21,16 +21,16 @@ jest.mock('../../../services/api/activityTypesApi', () => ({
 }));
 
 jest.mock('../../../services/api', () => ({
-  getAreas: jest.fn(),
-  getAreasByRayonId: jest.fn(),
+  getLocations: jest.fn(),
+  getLocationsByRayonId: jest.fn(),
   getRayons: jest.fn(),
   getUsers: jest.fn(),
 }));
 
 import { getMyActivityTypes } from '../../../services/api/activityTypesApi';
-import { getAreas, getAreasByRayonId, getRayons, getUsers } from '../../../services/api';
+import { getLocations, getLocationsByRayonId, getRayons, getUsers } from '../../../services/api';
 
-const mockGetAreasByRayonId = getAreasByRayonId as jest.Mock;
+const mockGetAreasByRayonId = getLocationsByRayonId as jest.Mock;
 
 const mockOnClose = jest.fn();
 const mockOnApply = jest.fn();
@@ -47,7 +47,7 @@ const defaultProps = {
 beforeEach(() => {
   jest.clearAllMocks();
   (getMyActivityTypes as jest.Mock).mockResolvedValue({ data: { data: [] } });
-  (getAreas as jest.Mock).mockResolvedValue({ data: [] });
+  (getLocations as jest.Mock).mockResolvedValue({ data: [] });
   mockGetAreasByRayonId.mockResolvedValue({ data: [] });
   (getRayons as jest.Mock).mockResolvedValue({ data: [] });
   (getUsers as jest.Mock).mockResolvedValue({ data: [] });
@@ -131,7 +131,7 @@ describe('ActivityFilterModal', () => {
     it('loads areas on open', async () => {
       render(<ActivityFilterModal {...defaultProps} />);
       await waitFor(() => {
-        expect(getAreas).toHaveBeenCalled();
+        expect(getLocations).toHaveBeenCalled();
       });
     });
   });
@@ -141,7 +141,7 @@ describe('ActivityFilterModal', () => {
       const { getByText } = render(
         <ActivityFilterModal
           {...defaultProps}
-          filters={{ from_date: '2026-02-18', area_id: 'area1' }}
+          filters={{ from_date: '2026-02-18', location_id: 'area1' }}
         />
       );
       await waitFor(() => {
@@ -151,28 +151,28 @@ describe('ActivityFilterModal', () => {
   });
 
   describe('Fixed area for field worker roles', () => {
-    it('shows disabled area select with "Area Saya" for satgas with userAreaId', async () => {
+    it('shows disabled area select with "Area Saya" for satgas with userLocationId', async () => {
       const { getByText } = render(
         <ActivityFilterModal
           {...defaultProps}
           userRole="satgas"
-          userAreaId="area-1"
+          userLocationId="area-1"
         />
       );
       await waitFor(() => {
         expect(getByText('Area Saya')).toBeTruthy();
       });
       // Should NOT load areas (area is fixed)
-      expect(getAreas).not.toHaveBeenCalled();
+      expect(getLocations).not.toHaveBeenCalled();
       expect(mockGetAreasByRayonId).not.toHaveBeenCalled();
     });
 
-    it('shows disabled area select for linmas with userAreaId', async () => {
+    it('shows disabled area select for linmas with userLocationId', async () => {
       const { getByText } = render(
         <ActivityFilterModal
           {...defaultProps}
           userRole="linmas"
-          userAreaId="area-2"
+          userLocationId="area-2"
         />
       );
       await waitFor(() => {
@@ -180,7 +180,7 @@ describe('ActivityFilterModal', () => {
       });
     });
 
-    it('loads areas by rayon for satgas with userRayonId but no userAreaId', async () => {
+    it('loads areas by rayon for satgas with userRayonId but no userLocationId', async () => {
       mockGetAreasByRayonId.mockResolvedValue({
         data: [{ id: 'area-1', name: 'Taman Bungkul' }],
       } as any);
@@ -196,10 +196,10 @@ describe('ActivityFilterModal', () => {
       });
     });
 
-    it('loads all areas when no userRayonId and no userAreaId', async () => {
+    it('loads all areas when no userRayonId and no userLocationId', async () => {
       render(<ActivityFilterModal {...defaultProps} />);
       await waitFor(() => {
-        expect(getAreas).toHaveBeenCalled();
+        expect(getLocations).toHaveBeenCalled();
       });
     });
   });

@@ -92,14 +92,14 @@ export function AttendanceDetailModal({
     const clocked: AttendanceRow[] = (data?.clocked_in?.data ?? []).map((w) => ({
       id: w.id,
       fullName: w.full_name,
-      areaName: w.area?.name,
+      areaName: w.location?.name,
       status: 'clocked_in',
       clockInTime: w.clock_in_time,
     }));
     const notClocked: AttendanceRow[] = (data?.not_clocked_in?.data ?? []).map((w) => ({
       id: w.id,
       fullName: w.full_name,
-      areaName: w.area?.name,
+      areaName: w.location?.name,
       status: 'not_clocked_in',
     }));
     if (tab === 'clocked_in') { return clocked; }

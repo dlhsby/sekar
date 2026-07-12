@@ -1,7 +1,7 @@
 /**
  * Work activities (was WorkReport) and activity types.
  */
-import type { Area, User, UserRole } from './user.types';
+import type { Location, User, UserRole } from './user.types';
 
 // Activity approval status
 export type ActivityStatus = 'pending' | 'approved' | 'rejected';
@@ -22,8 +22,8 @@ export interface Activity {
   id: string;
   user_id: string;
   shift_id: string;
-  area_id?: string;
-  area?: Area;
+  location_id?: string;
+  location?: Location;
   task_id?: string;
   activity_type_id: string;
   activityType?: ActivityType;

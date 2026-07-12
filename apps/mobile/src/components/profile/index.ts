@@ -2,6 +2,6 @@
  * Profile components barrel export
  */
 
-export { AssignedAreaCard } from './AssignedAreaCard';
+export { AssignedLocationCard } from './AssignedLocationCard';
 export { AssignedKecamatanCard } from './AssignedKecamatanCard';
 export { ProfileStatsRow } from './ProfileStatsRow';

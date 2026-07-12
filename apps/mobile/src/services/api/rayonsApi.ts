@@ -22,8 +22,8 @@ export async function getRayonById(id: string): Promise<ApiResponse<Rayon>> {
 }
 
 /**
- * Get all areas in a rayon
+ * Get all locations in a rayon
  */
-export async function getAreasByRayonId(rayonId: string): Promise<ApiResponse<any[]>> {
-  return get<any[]>(`/rayons/${rayonId}/areas`);
+export async function getLocationsByRayonId(rayonId: string): Promise<ApiResponse<any[]>> {
+  return get<any[]>(`/rayons/${rayonId}/locations`);
 }

@@ -19,8 +19,8 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import type { OvertimeFilter } from '../../types/api.types';
-import type { Area, Rayon, User, UserRole } from '../../types/models.types';
-import { getAreas, getAreasByRayonId, getRayons, getUsers } from '../../services/api';
+import type { Location, Rayon, User, UserRole } from '../../types/models.types';
+import { getLocations, getLocationsByRayonId, getRayons, getUsers } from '../../services/api';
 import { FILTER_SUBORDINATE_ROLES } from '../../constants/roles';
 import { parseFilterDate, toFilterDateString, toTitleCase } from '../../utils/filterHelpers';
 
@@ -34,7 +34,7 @@ interface OvertimeFilterModalProps {
   onResetFilters: () => void;
   userRole?: UserRole;
   userRayonId?: string;
-  userAreaId?: string;
+  userLocationId?: string;
   userId?: string;
 }
 
@@ -48,7 +48,7 @@ export function OvertimeFilterModal({
   onResetFilters,
   userRole,
   userRayonId,
-  userAreaId,
+  userLocationId,
   userId,
 }: OvertimeFilterModalProps): React.JSX.Element {
   const { t } = useTranslation('overtime');
@@ -58,9 +58,9 @@ export function OvertimeFilterModal({
     () => userRole === 'satgas' || userRole === 'linmas',
     [userRole],
   );
-  const isAreaFixed = useMemo(
-    () => (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userAreaId,
-    [userRole, userAreaId],
+  const isLocationFixed = useMemo(
+    () => (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userLocationId,
+    [userRole, userLocationId],
   );
   const showRayon = useMemo(
     () => userRole === 'kepala_rayon' || userRole === 'admin_data' ||
@@ -85,17 +85,17 @@ export function OvertimeFilterModal({
   const [localDateFrom, setLocalDateFrom] = useState(filters.from_date ?? '');
   const [localDateTo, setLocalDateTo] = useState(filters.to_date ?? '');
   const [localRayonId, setLocalRayonId] = useState(filters.rayon_id ?? '');
-  const [localAreaId, setLocalAreaId] = useState(
-    isAreaFixed ? (userAreaId ?? '') : (filters.area_id ?? ''),
+  const [localLocationId, setLocalLocationId] = useState(
+    isLocationFixed ? (userLocationId ?? '') : (filters.location_id ?? ''),
   );
   const [localUserId, setLocalUserId] = useState(filters.user_id ?? '');
 
   // Cascading data
   const [rayons, setRayons] = useState<Rayon[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingRayons, setLoadingRayons] = useState(false);
-  const [loadingAreas, setLoadingAreas] = useState(false);
+  const [loadingLocations, setLoadingLocations] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   // Sync local state when modal opens
@@ -105,30 +105,30 @@ export function OvertimeFilterModal({
       setLocalDateFrom(filters.from_date ?? '');
       setLocalDateTo(filters.to_date ?? '');
       setLocalRayonId(filters.rayon_id ?? '');
-      setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : (filters.area_id ?? ''));
+      setLocalLocationId(isLocationFixed ? (userLocationId ?? '') : (filters.location_id ?? ''));
       setLocalUserId(filters.user_id ?? '');
     }
-  }, [visible, filters, isAreaFixed, userAreaId]);
+  }, [visible, filters, isLocationFixed, userLocationId]);
 
   // Load rayons when modal opens (if user can see rayon selector)
   useEffect(() => {
     if (!visible) { return; }
     if (showRayon && (canSelectRayon || isRayonFixed)) { loadRayons(); }
-    if (isAreaFixed) { return; }
+    if (isLocationFixed) { return; }
     if (userRayonId) {
-      loadAreasByRayon(userRayonId);
+      loadLocationsByRayon(userRayonId);
     } else {
-      loadAllAreas();
+      loadAllLocations();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, isAreaFixed, userRayonId, showRayon, canSelectRayon, isRayonFixed]);
+  }, [visible, isLocationFixed, userRayonId, showRayon, canSelectRayon, isRayonFixed]);
 
   // Load users when area changes (unless field worker)
   useEffect(() => {
     if (!visible || isFieldWorker) { return; }
-    loadUsers(localAreaId || null);
+    loadUsers(localLocationId || null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, localAreaId, isFieldWorker]);
+  }, [visible, localLocationId, isFieldWorker]);
 
   const loadRayons = useCallback(async () => {
     setLoadingRayons(true);
@@ -140,23 +140,23 @@ export function OvertimeFilterModal({
     }
   }, []);
 
-  const loadAllAreas = useCallback(async () => {
-    setLoadingAreas(true);
+  const loadAllLocations = useCallback(async () => {
+    setLoadingLocations(true);
     try {
-      const response = await getAreas();
-      if (response.data) { setAreas(response.data); }
+      const response = await getLocations();
+      if (response.data) { setLocations(response.data); }
     } catch { /* non-critical */ } finally {
-      setLoadingAreas(false);
+      setLoadingLocations(false);
     }
   }, []);
 
-  const loadAreasByRayon = useCallback(async (rayonId: string) => {
-    setLoadingAreas(true);
+  const loadLocationsByRayon = useCallback(async (rayonId: string) => {
+    setLoadingLocations(true);
     try {
-      const response = await getAreasByRayonId(rayonId);
-      if (response.data) { setAreas(response.data); }
+      const response = await getLocationsByRayonId(rayonId);
+      if (response.data) { setLocations(response.data); }
     } catch { /* non-critical */ } finally {
-      setLoadingAreas(false);
+      setLoadingLocations(false);
     }
   }, []);
 
@@ -171,7 +171,7 @@ export function OvertimeFilterModal({
         filtered = filtered.filter((u) => subordinateRoles.includes(u.role));
       }
       if (areaId) {
-        filtered = filtered.filter((u) => (u as any).area_id === areaId);
+        filtered = filtered.filter((u) => (u as any).location_id === areaId);
       }
       setUsers(filtered);
     } catch { /* non-critical */ } finally {
@@ -185,22 +185,22 @@ export function OvertimeFilterModal({
     if (localDateFrom) { applied.from_date = localDateFrom; }
     if (localDateTo) { applied.to_date = localDateTo; }
     if (localRayonId) { applied.rayon_id = localRayonId; }
-    if (localAreaId) { applied.area_id = localAreaId; }
+    if (localLocationId) { applied.location_id = localLocationId; }
     if (localUserId && localUserId !== 'all_subordinates') { applied.user_id = localUserId; }
     onApplyFilters(applied);
     onClose();
-  }, [localStatus, localDateFrom, localDateTo, localRayonId, localAreaId, localUserId, onApplyFilters, onClose]);
+  }, [localStatus, localDateFrom, localDateTo, localRayonId, localLocationId, localUserId, onApplyFilters, onClose]);
 
   const handleReset = useCallback(() => {
     setLocalStatus('');
     setLocalDateFrom('');
     setLocalDateTo('');
     setLocalRayonId('');
-    setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : '');
+    setLocalLocationId(isLocationFixed ? (userLocationId ?? '') : '');
     setLocalUserId('');
     onResetFilters();
     onClose();
-  }, [isAreaFixed, userAreaId, onResetFilters, onClose]);
+  }, [isLocationFixed, userLocationId, onResetFilters, onClose]);
 
   const dateFromParsed = parseFilterDate(localDateFrom);
   const dateToParsed = parseFilterDate(localDateTo);
@@ -285,7 +285,7 @@ export function OvertimeFilterModal({
               value={localRayonId || 'all'}
               onValueChange={(v) => {
                 setLocalRayonId(v === 'all' ? '' : String(v));
-                setLocalAreaId('');
+                setLocalLocationId('');
               }}
               options={[
                 { label: t('filter.rayonOptions.all'), value: 'all' },
@@ -300,26 +300,26 @@ export function OvertimeFilterModal({
 
       {/* 4. Area */}
       <View style={styles.filterSection}>
-        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.area')}</NBText>
-        {isAreaFixed ? (
+        <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.location')}</NBText>
+        {isLocationFixed ? (
           <NBSelect
-            value={userAreaId ?? 'all'}
+            value={userLocationId ?? 'all'}
             onValueChange={() => {}}
-            options={[{ label: userAreaId ? t('filter.areaOptions.mine') : t('filter.areaOptions.all'), value: userAreaId ?? 'all' }]}
+            options={[{ label: userLocationId ? t('filter.areaOptions.mine') : t('filter.areaOptions.all'), value: userLocationId ?? 'all' }]}
             disabled={true}
           />
         ) : (
           <NBSelect
-            value={localAreaId || 'all'}
+            value={localLocationId || 'all'}
             onValueChange={(v) => {
-              setLocalAreaId(v === 'all' ? '' : String(v));
+              setLocalLocationId(v === 'all' ? '' : String(v));
               setLocalUserId('');
             }}
             options={[
               { label: t('filter.areaOptions.all'), value: 'all' },
-              ...areas.map((a) => ({ label: a.name, value: a.id })),
+              ...locations.map((a) => ({ label: a.name, value: a.id })),
             ]}
-            disabled={loadingAreas}
+            disabled={loadingLocations}
             searchable
           />
         )}

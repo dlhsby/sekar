@@ -18,7 +18,7 @@ import plantsReducer from './slices/plantsSlice';
 import pruningRequestsReducer from './slices/pruningRequestsSlice';
 import serviceCapacityReducer from './slices/serviceCapacitySlice';
 import plantSeedsReducer from './slices/plantSeedsSlice';
-import areasReducer from './slices/areasSlice';
+import locationsReducer from './slices/locationsSlice';
 import usersReducer from './slices/usersSlice';
 import reportsReducer from './slices/reportsSlice';
 import analyticsReducer from './slices/analyticsSlice';
@@ -40,7 +40,7 @@ export const store = configureStore({
     pruningRequests: pruningRequestsReducer,
     serviceCapacity: serviceCapacityReducer,
     plantSeeds: plantSeedsReducer,
-    areas: areasReducer,
+    locations: locationsReducer,
     users: usersReducer,
     reports: reportsReducer,
     analytics: analyticsReducer,

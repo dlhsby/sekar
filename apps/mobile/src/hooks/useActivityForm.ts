@@ -105,7 +105,7 @@ export function useActivityForm() {
   // ADR-038: load co-workers in the same area as the active shift, excluding self.
   // Tagging is a feed-visibility hint, so we keep the scope narrow (same-area peers).
   const loadTaggableUsers = useCallback(async () => {
-    const areaId = currentShift?.area_id;
+    const areaId = currentShift?.location_id;
     if (!areaId || !authUser) {
       setTaggableUsers([]);
       return;
@@ -115,7 +115,7 @@ export function useActivityForm() {
       const response = await getUsers();
       if (response.data) {
         const peers = response.data.filter(
-          (u) => u.id !== authUser.id && u.area_id === areaId,
+          (u) => u.id !== authUser.id && u.location_id === areaId,
         );
         setTaggableUsers(peers);
       }
@@ -124,7 +124,7 @@ export function useActivityForm() {
     } finally {
       setIsLoadingTaggableUsers(false);
     }
-  }, [currentShift?.area_id, authUser]);
+  }, [currentShift?.location_id, authUser]);
 
   // Get current GPS location
   const getCurrentLocation = useCallback(() => {

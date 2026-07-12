@@ -82,12 +82,12 @@ describe('ShiftHistoryScreen', () => {
     {
       id: 1,
       user_id: 1,
-      area_id: 'area-uuid-1',
-      area: {
+      location_id: 'area-uuid-1',
+      location: {
         id: 'area-uuid-1',
         name: 'Taman Bungkul',
-        area_type_id: 1,
-        areaType: {
+        location_type_id: 1,
+        locationType: {
           id: 1,
           code: 'park',
           name: 'Taman',
@@ -112,12 +112,12 @@ describe('ShiftHistoryScreen', () => {
     {
       id: 2,
       user_id: 1,
-      area_id: 'area-uuid-1',
-      area: {
+      location_id: 'area-uuid-1',
+      location: {
         id: 'area-uuid-1',
         name: 'Taman Bungkul',
-        area_type_id: 1,
-        areaType: {
+        location_type_id: 1,
+        locationType: {
           id: 1,
           code: 'park',
           name: 'Taman',
@@ -142,12 +142,12 @@ describe('ShiftHistoryScreen', () => {
     {
       id: 3,
       user_id: 1,
-      area_id: 'area-uuid-2',
-      area: {
+      location_id: 'area-uuid-2',
+      location: {
         id: 'area-uuid-2',
         name: 'Pedestrian Darmo',
-        area_type_id: 2,
-        areaType: {
+        location_type_id: 2,
+        locationType: {
           id: 2,
           code: 'pedestrian',
           name: 'Pedestrian',

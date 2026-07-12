@@ -50,12 +50,12 @@ export function useOvertimeActions(
     const submitterRole = overtime.user?.role;
     if (user.role === 'korlap') {
       return (submitterRole === 'satgas' || submitterRole === 'linmas') &&
-             user.area_id != null && overtime.area_id === user.area_id;
+             user.location_id != null && overtime.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
       if (!user.rayon_id) return false;
       const inSameRayon =
-        overtime.area?.rayon_id === user.rayon_id ||
+        overtime.location?.rayon_id === user.rayon_id ||
         overtime.user?.rayon_id === user.rayon_id;
       return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_data');
     }

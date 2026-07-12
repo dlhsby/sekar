@@ -53,7 +53,7 @@ const mockTask = {
   status: 'assigned' as const,
   priority: 'high' as const,
   deadline: '2026-01-30T10:00:00Z',
-  area: { id: 'area-1', name: 'Taman Bungkul' },
+  location: { id: 'area-1', name: 'Taman Bungkul' },
   rayon: { id: 'rayon-1', name: 'Rayon 1' }, // Phase 2C: Added rayon
   activity_type: { id: 'at-1', name: 'Penyiraman', code: 'WATERING' },
   created_at: '2026-01-25T08:00:00Z',

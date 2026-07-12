@@ -13,7 +13,7 @@ import { ProfileHeader } from '../../components/common/ProfileHeader';
 import { ProfileMenu } from '../../components/common/ProfileMenu';
 import { ProfileStatsRow } from '../../components/profile/ProfileStatsRow';
 import { SyncStatusCard } from '../../components/common/SyncStatusCard';
-import { AssignedAreaCard } from '../../components/profile/AssignedAreaCard';
+import { AssignedLocationCard } from '../../components/profile/AssignedLocationCard';
 import { AssignedKecamatanCard } from '../../components/profile/AssignedKecamatanCard';
 import { getRayons } from '../../services/api/rayonsApi';
 import { ChangePasswordModal } from '../../components/common';
@@ -156,7 +156,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
           onClearFailed={handleClearFailed}
         />
 
-        {isField && <AssignedAreaCard area={areaData} />}
+        {isField && <AssignedLocationCard location={areaData} />}
         {isStaffKecamatan && (
           <AssignedKecamatanCard
             rayonName={rayonName}

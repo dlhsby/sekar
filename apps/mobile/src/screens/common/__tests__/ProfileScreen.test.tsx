@@ -53,8 +53,8 @@ jest.mock('../../../components/profile/ProfileStatsRow', () => ({
 jest.mock('../../../components/common/SyncStatusCard', () => ({
   SyncStatusCard: () => null,
 }));
-jest.mock('../../../components/profile/AssignedAreaCard', () => ({
-  AssignedAreaCard: () => {
+jest.mock('../../../components/profile/AssignedLocationCard', () => ({
+  AssignedLocationCard: () => {
     const { Text: T } = require('react-native');
     return <T testID="assigned-area">area</T>;
   },

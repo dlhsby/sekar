@@ -27,7 +27,7 @@ describe('ShiftDetailModal', () => {
   const mockShift: Shift = {
     id: 'shift1',
     user_id: 'user1',
-    area_id: 'area1',
+    location_id: 'area1',
     clock_in_time: '2026-02-15T08:00:00Z',
     clock_in_gps_lat: -7.250445,
     clock_in_gps_lng: 112.768845,
@@ -37,10 +37,10 @@ describe('ShiftDetailModal', () => {
     clock_out_gps_lng: 112.768845,
     created_at: '2026-02-15T08:00:00Z',
     updated_at: '2026-02-15T17:00:00Z',
-    area: {
+    location: {
       id: 'area1',
       name: 'Taman Bungkul',
-      area_type_id: 'type1',
+      location_type_id: 'type1',
       rayon_id: 'rayon1',
       gps_lat: -7.250445,
       gps_lng: 112.768845,
@@ -48,7 +48,7 @@ describe('ShiftDetailModal', () => {
       address: 'Jl. Raya Darmo, Surabaya',
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
-      areaType: {
+      locationType: {
         id: 'type1',
         code: 'park' as const,
         name: 'Taman Kota',
@@ -203,7 +203,7 @@ describe('ShiftDetailModal', () => {
     it('should handle missing area gracefully', () => {
       const shiftWithoutArea: Shift = {
         ...mockShift,
-        area: undefined,
+        location: undefined,
       };
 
       const { getByText } = render(
@@ -281,8 +281,8 @@ describe('ShiftDetailModal', () => {
     it('should handle missing area GPS coordinates', () => {
       const shiftWithoutAreaGPS: Shift = {
         ...mockShift,
-        area: {
-          ...mockShift.area!,
+        location: {
+          ...mockShift.location!,
           gps_lat: null as any,
           gps_lng: null as any,
         },
@@ -302,8 +302,8 @@ describe('ShiftDetailModal', () => {
     it('should use specified radius', () => {
       const shiftWithSpecificRadius: Shift = {
         ...mockShift,
-        area: {
-          ...mockShift.area!,
+        location: {
+          ...mockShift.location!,
           radius_meters: 100,
         },
       };
@@ -373,9 +373,9 @@ describe('ShiftDetailModal', () => {
     it('should not display area type row when not available', () => {
       const shiftWithoutAreaType: Shift = {
         ...mockShift,
-        area: {
-          ...mockShift.area!,
-          areaType: undefined,
+        location: {
+          ...mockShift.location!,
+          locationType: undefined,
         },
       };
 
@@ -393,8 +393,8 @@ describe('ShiftDetailModal', () => {
     it('should not display area center subtext when GPS not available', () => {
       const shiftWithoutAreaGPS: Shift = {
         ...mockShift,
-        area: {
-          ...mockShift.area!,
+        location: {
+          ...mockShift.location!,
           // No area GPS — cast since Area types gps_* as number
           gps_lat: undefined as unknown as number,
           gps_lng: undefined as unknown as number,

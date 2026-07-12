@@ -39,7 +39,7 @@ const liveUser = (over: Record<string, unknown>) => ({
   role: 'satgas',
   phone: null,
   status: 'active',
-  area_id: 'a1',
+  location_id: 'a1',
   area_name: 'Zona A',
   rayon_id: 'r1',
   rayon_name: 'Pusat',

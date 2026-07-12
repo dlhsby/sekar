@@ -107,10 +107,10 @@ describe('websocketService', () => {
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
         'subscribe:area',
-        { area_id: 'area-123' },
+        { location_id: 'area-123' },
         expect.any(Function)
       );
-      expect(websocketService.getSubscribedRooms()).toContain('area:area-123');
+      expect(websocketService.getSubscribedRooms()).toContain('location:area-123');
     });
 
     it('unsubscribes from area', () => {
@@ -121,10 +121,10 @@ describe('websocketService', () => {
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
         'unsubscribe:area',
-        { area_id: 'area-123' },
+        { location_id: 'area-123' },
         expect.any(Function)
       );
-      expect(websocketService.getSubscribedRooms()).not.toContain('area:area-123');
+      expect(websocketService.getSubscribedRooms()).not.toContain('location:area-123');
     });
 
     it('subscribes to rayon', () => {
@@ -275,7 +275,7 @@ describe('websocketService', () => {
     });
 
     it('should not subscribe if already subscribed to area', () => {
-      (websocketService as any).subscribedRooms.add('area:area-123');
+      (websocketService as any).subscribedRooms.add('location:area-123');
       mockSocket.emit.mockClear();
 
       websocketService.subscribeToArea('area-123');
@@ -319,11 +319,11 @@ describe('websocketService', () => {
       websocketService.subscribeToArea('area-error');
 
       // Should log error but not add to subscribed rooms
-      expect(websocketService.getSubscribedRooms()).not.toContain('area:area-error');
+      expect(websocketService.getSubscribedRooms()).not.toContain('location:area-error');
     });
 
     it('should handle unsubscription failure', () => {
-      (websocketService as any).subscribedRooms.add('area:area-123');
+      (websocketService as any).subscribedRooms.add('location:area-123');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- socket.emit has flexible signature
       mockSocket.emit.mockImplementation((event: any, data: any, callback: any) => {
         if (callback && event === 'unsubscribe:area') {
@@ -334,7 +334,7 @@ describe('websocketService', () => {
       websocketService.unsubscribeFromArea('area-123');
 
       // Should still be in subscribed rooms after failure
-      expect(websocketService.getSubscribedRooms()).toContain('area:area-123');
+      expect(websocketService.getSubscribedRooms()).toContain('location:area-123');
     });
 
     it('should warn if subscribing while not connected', () => {
@@ -430,7 +430,7 @@ describe('websocketService', () => {
 
     it('should clear subscribed rooms on disconnect', () => {
       (websocketService as any).socket = mockSocket;
-      (websocketService as any).subscribedRooms.add('area:area-123');
+      (websocketService as any).subscribedRooms.add('location:area-123');
       (websocketService as any).subscribedRooms.add('rayon:rayon-456');
 
       websocketService.disconnect();

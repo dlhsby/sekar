@@ -125,7 +125,7 @@ describe('rayonsApi', () => {
     });
   });
 
-  describe('getAreasByRayonId', () => {
+  describe('getLocationsByRayonId', () => {
     it('gets all areas for a given rayon ID', async () => {
       const rayonId = 'rayon-1';
       const mockResponse = {
@@ -144,9 +144,9 @@ describe('rayonsApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getAreasByRayonId(rayonId);
+      const result = await rayonsApi.getLocationsByRayonId(rayonId);
 
-      expect(mockGet).toHaveBeenCalledWith(`/rayons/${rayonId}/areas`);
+      expect(mockGet).toHaveBeenCalledWith(`/rayons/${rayonId}/locations`);
       expect(result).toEqual(mockResponse);
     });
 
@@ -155,16 +155,16 @@ describe('rayonsApi', () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      await rayonsApi.getAreasByRayonId(rayonId);
+      await rayonsApi.getLocationsByRayonId(rayonId);
 
-      expect(mockGet).toHaveBeenCalledWith('/rayons/rayon-xyz/areas');
+      expect(mockGet).toHaveBeenCalledWith('/rayons/rayon-xyz/locations');
     });
 
     it('returns empty array when no areas in rayon', async () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getAreasByRayonId('rayon-empty');
+      const result = await rayonsApi.getLocationsByRayonId('rayon-empty');
 
       expect(result).toEqual({ data: [] });
     });
@@ -173,7 +173,7 @@ describe('rayonsApi', () => {
       const error = new Error('Server error');
       mockGet.mockRejectedValue(error);
 
-      await expect(rayonsApi.getAreasByRayonId('rayon-1')).rejects.toThrow('Server error');
+      await expect(rayonsApi.getLocationsByRayonId('rayon-1')).rejects.toThrow('Server error');
     });
 
     it('returns area list data', async () => {
@@ -182,7 +182,7 @@ describe('rayonsApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getAreasByRayonId('rayon-1');
+      const result = await rayonsApi.getLocationsByRayonId('rayon-1');
 
       expect(Array.isArray(result.data)).toBe(true);
       expect(result.data).toHaveLength(1);

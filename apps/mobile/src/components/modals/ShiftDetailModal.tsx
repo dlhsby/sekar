@@ -27,8 +27,8 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
 
   const locationStatus = React.useMemo(() => {
     if (
-      !shift?.area?.gps_lat ||
-      !shift?.area?.gps_lng ||
+      !shift?.location?.gps_lat ||
+      !shift?.location?.gps_lng ||
       shift.clock_in_gps_lat == null ||
       shift.clock_in_gps_lng == null
     ) {
@@ -37,10 +37,10 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
     const distance = calculateDistance(
       shift.clock_in_gps_lat,
       shift.clock_in_gps_lng,
-      shift.area.gps_lat,
-      shift.area.gps_lng,
+      shift.location.gps_lat,
+      shift.location.gps_lng,
     );
-    return { isInside: distance <= (shift.area.radius_meters ?? 100), distance };
+    return { isInside: distance <= (shift.location.radius_meters ?? 100), distance };
   }, [shift]);
 
   const { isInside, distance } = locationStatus;
@@ -63,23 +63,23 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
         <View>
           <InfoRow
             icon="map-marker"
-            label={tAttendance('shiftDetail.area')}
+            label={tAttendance('shiftDetail.location')}
             even
           >
-            <NBText variant="body" color="black">{shift.area?.name || tAttendance('shifts.unknown')}</NBText>
-            {!!shift.area?.address && (
-              <NBText variant="caption" color="gray600">{shift.area.address}</NBText>
+            <NBText variant="body" color="black">{shift.location?.name || tAttendance('shifts.unknown')}</NBText>
+            {!!shift.location?.address && (
+              <NBText variant="caption" color="gray600">{shift.location.address}</NBText>
             )}
-            {!!shift.area?.gps_lat && !!shift.area?.gps_lng && (
+            {!!shift.location?.gps_lat && !!shift.location?.gps_lng && (
               <NBText variant="mono-sm" color="gray600">
-                {`${Number(shift.area.gps_lat).toFixed(6)}, ${Number(shift.area.gps_lng).toFixed(6)}`}
+                {`${Number(shift.location.gps_lat).toFixed(6)}, ${Number(shift.location.gps_lng).toFixed(6)}`}
               </NBText>
             )}
           </InfoRow>
 
-          {!!shift.area?.areaType?.name && (
+          {!!shift.location?.locationType?.name && (
             <InfoRow icon="office-building" label={tAttendance('shiftDetail.areaType')}>
-              <NBText variant="body" color="black">{shift.area.areaType.name}</NBText>
+              <NBText variant="body" color="black">{shift.location.locationType.name}</NBText>
             </InfoRow>
           )}
 
@@ -143,7 +143,7 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
 
               <View style={styles.metricsRow}>
                 <MetricTile label={tAttendance('shiftDetail.distance')} value={`${Math.round(distance)}m`} />
-                <MetricTile label={tAttendance('shiftDetail.radius')} value={`${shift.area?.radius_meters || 100}m`} />
+                <MetricTile label={tAttendance('shiftDetail.radius')} value={`${shift.location?.radius_meters || 100}m`} />
               </View>
             </View>
           </View>

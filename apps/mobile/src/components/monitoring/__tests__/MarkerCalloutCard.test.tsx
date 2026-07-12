@@ -34,7 +34,7 @@ describe('MarkerCalloutCard', () => {
 
   it('renders only the type (no role) when roleText is omitted', () => {
     const { getByText, queryByText } = render(
-      <MarkerCalloutCard title="Taman Bungkul" typeText="Area" accent={nbColors.warning} icon="map-marker" />,
+      <MarkerCalloutCard title="Taman Bungkul" typeText="Location" accent={nbColors.warning} icon="map-marker" />,
     );
     expect(getByText('Taman Bungkul')).toBeTruthy();
     expect(getByText('Area')).toBeTruthy();

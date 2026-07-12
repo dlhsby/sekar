@@ -34,7 +34,7 @@ const makeWorker = (overrides: Partial<LiveUser> = {}): LiveUser => ({
   role: 'satgas',
   phone: null,
   status: 'active',
-  area_id: 'area-1',
+  location_id: 'area-1',
   area_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',

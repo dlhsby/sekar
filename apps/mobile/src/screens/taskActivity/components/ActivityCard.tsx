@@ -21,7 +21,7 @@ interface ActivityCardProps {
 
 function buildMeta(activity: Activity, t: ReturnType<typeof useTranslation>['t']): ListItemMeta[] {
   const meta: ListItemMeta[] = [];
-  if (activity.area) { meta.push({ icon: 'map-marker', label: activity.area.name }); }
+  if (activity.location) { meta.push({ icon: 'map-marker', label: activity.location.name }); }
   if (activity.photo_urls && activity.photo_urls.length > 0) {
     meta.push({ icon: 'camera', label: t('activities:card.photoCount', { count: activity.photo_urls.length }) });
   }

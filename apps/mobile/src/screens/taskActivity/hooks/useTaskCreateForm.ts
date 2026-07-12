@@ -42,11 +42,11 @@ const INITIAL_FORM_STATE: FormState = {
 /**
  * Hook to manage task creation form state and validation
  */
-export const useTaskCreateForm = (userAreaId?: string, userRayonId?: string) => {
+export const useTaskCreateForm = (userLocationId?: string, userRayonId?: string) => {
   const { t } = useTranslation('validation');
   const [form, setForm] = useState<FormState>({
     ...INITIAL_FORM_STATE,
-    areaId: userAreaId || '',
+    areaId: userLocationId || '',
     rayonId: userRayonId || '',
   });
 
@@ -70,11 +70,11 @@ export const useTaskCreateForm = (userAreaId?: string, userRayonId?: string) => 
   const resetForm = useCallback(() => {
     setForm({
       ...INITIAL_FORM_STATE,
-      areaId: userAreaId || '',
+      areaId: userLocationId || '',
       rayonId: userRayonId || '',
     });
     setErrors({});
-  }, [userAreaId, userRayonId]);
+  }, [userLocationId, userRayonId]);
 
   const updateField = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));

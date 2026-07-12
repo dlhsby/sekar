@@ -36,11 +36,11 @@ import type { LiveUser, RayonBoundary } from '../../types/models.types';
 
 const TYPE_META: Record<SearchResultType, { icon: string; accent: string }> = {
   petugas: { icon: 'account', accent: nbColors.primary },
-  area: { icon: 'map-marker', accent: nbColors.warning },
+  location: { icon: 'map-marker', accent: nbColors.warning },
   rayon: { icon: 'office-building', accent: nbColors.requestUnderReview },
 };
 
-type Tab = 'semua' | SearchResultType;
+type Tab = 'semua' | 'petugas' | 'location' | 'rayon';
 
 interface MonitoringSearchModalProps {
   visible: boolean;
@@ -109,7 +109,7 @@ export function MonitoringSearchModal({
   const searchLabels = useMemo(
     () => ({
       petugas: t('monitoring:layers.workers'),
-      area: t('monitoring:layers.areas'),
+      location: t('monitoring:layers.areas'),
       rayon: t('monitoring:layers.rayons'),
     }),
     [t],
@@ -138,7 +138,7 @@ export function MonitoringSearchModal({
     () => [
       { key: 'semua', label: t('monitoring:search.all'), count: results.total },
       { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
-      { key: 'area', label: t('monitoring:layers.areas'), count: results.area.length },
+      { key: 'location', label: t('monitoring:layers.areas'), count: results.location.length },
       { key: 'rayon', label: t('monitoring:layers.rayons'), count: results.rayon.length },
     ],
     [results, t],

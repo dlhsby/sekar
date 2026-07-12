@@ -55,7 +55,7 @@ function buildHistory(points: LocationHistoryPoint[]): LocationHistory {
     date: '2026-03-05',
     shift_id: 'shift-123',
     shift_name: 'Shift Pagi',
-    area_id: 'area-1',
+    location_id: 'area-1',
     area_name: 'Taman A',
     clock_in_time: '2026-03-05T07:00:00Z',
     clock_out_time: null,

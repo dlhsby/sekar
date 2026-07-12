@@ -35,12 +35,12 @@ import type {
   AreaPlant,
   NotablePlant,
 } from '../../types/models.types';
-import { listAreaPlants, listNotablePlants } from '../../services/api/plantsApi';
+import { listLocationPlants, listNotablePlants } from '../../services/api/plantsApi';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BoundaryDetailModalProps {
-  type: 'rayon' | 'area';
+  type: 'rayon' | 'location';
   data: RayonBoundary | AreaBoundary | null;
   visible: boolean;
   onClose: () => void;
@@ -81,7 +81,7 @@ export function BoundaryDetailModal({
     const areaId = areaData.id;
 
     setLoadingPlants(true);
-    Promise.all([listAreaPlants(areaId), listNotablePlants(areaId)])
+    Promise.all([listLocationPlants(areaId), listNotablePlants(areaId)])
       .then(([plantsRes, notableRes]) => {
         if (cancelled) { return; }
         setPlants(plantsRes.data ?? []);

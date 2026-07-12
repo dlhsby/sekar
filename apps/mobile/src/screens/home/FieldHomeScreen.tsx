@@ -286,7 +286,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // In-area pill tone/label for the active-shift hero. A worker with no assigned
   // area has no boundary to be inside/outside of — show a neutral "no area".
-  const hasArea = !!(currentShift?.area || assignedArea);
+  const hasArea = !!(currentShift?.location || assignedArea);
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
   const areaTone: StatusTone = !hasArea ? 'neutral' : locUnknown ? 'neutral' : homeLocation.isWithinArea ? 'ok' : 'bad';
   const areaLabel = !hasArea
@@ -296,7 +296,7 @@ export function FieldHomeScreen(): React.JSX.Element {
       : homeLocation.isWithinArea
         ? t('home:field.hero.location.inArea')
         : t('home:field.hero.location.outArea');
-  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? t('home:field.hero.location.noArea');
+  const heroAreaName = currentShift?.location?.name ?? assignedArea?.name ?? t('home:field.hero.location.noArea');
 
   return (
     <NBBackgroundPattern
@@ -542,7 +542,7 @@ export function FieldHomeScreen(): React.JSX.Element {
         visible={locationMapVisible}
         onClose={() => setLocationMapVisible(false)}
         location={homeLocation}
-        area={currentShift?.area ?? assignedArea ?? undefined}
+        area={currentShift?.location ?? assignedArea ?? undefined}
       />
     </NBBackgroundPattern>
   );

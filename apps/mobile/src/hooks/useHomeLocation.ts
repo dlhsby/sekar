@@ -37,7 +37,7 @@ export function useHomeLocation() {
   const hasActiveShift = !!currentShift;
   // During an active shift, check against the area actually clocked into; fall
   // back to the standing assigned area. Null for unscheduled/ad-hoc workers.
-  const boundaryArea = currentShift?.area ?? assignedArea ?? null;
+  const boundaryArea = currentShift?.location ?? assignedArea ?? null;
 
   const [location, setLocation] = useState<HomeLocationState>(INITIAL_STATE);
 

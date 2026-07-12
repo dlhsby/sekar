@@ -1,7 +1,7 @@
 /**
  * Overtime (Phase 2C: flat structure, datetime-based, overnight support).
  */
-import type { Area, User } from './user.types';
+import type { Location, User } from './user.types';
 import type { ActivityType } from './activity.types';
 
 // Overtime status — Phase 2E adds 'in_progress' for clock-in/out redesign
@@ -13,8 +13,8 @@ export interface Overtime {
   id: string;
   user_id: string;
   user?: User;
-  area_id?: string;
-  area?: Area;
+  location_id?: string;
+  location?: Location;
   shift_id?: string | null; // Phase 2E: linked shift when using clock-in/out flow
   shift?: {
     // Phase 2E: shift relation for selfie photo URLs

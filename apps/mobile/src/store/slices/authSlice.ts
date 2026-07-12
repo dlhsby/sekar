@@ -4,15 +4,14 @@
  */
 
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { User } from '../../types/models.types';
-import type { Area } from '../../types/models.types';
+import type { User, Location } from '../../types/models.types';
 
 interface AuthState {
   user: User | null;
-  /** Primary area (first assigned) — kept for backward compat. */
-  assignedArea: Area | null;
-  /** All permanent + task-based areas the worker is assigned to (ADR-013). */
-  assignedAreas: Area[];
+  /** Primary location (first assigned) — kept for backward compat. */
+  assignedArea: Location | null;
+  /** All permanent + task-based locations the worker is assigned to (ADR-013). */
+  assignedAreas: Location[];
   isAuthenticated: boolean;
   isLoading: boolean;
   isRestoring: boolean;
@@ -42,15 +41,15 @@ const authSlice = createSlice({
       state.isLoading = action.payload;
     },
 
-    setUser: (state, action: PayloadAction<{ user: User; area?: Area }>) => {
+    setUser: (state, action: PayloadAction<{ user: User; location?: Location }>) => {
       state.user = action.payload.user;
-      state.assignedArea = action.payload.area || null;
+      state.assignedArea = action.payload.location || null;
       state.isAuthenticated = true;
       state.error = null;
     },
 
-    /** Set the worker's full assigned-area list (fetched after auth). */
-    setAssignedAreas: (state, action: PayloadAction<Area[]>) => {
+    /** Set the worker's full assigned-location list (fetched after auth). */
+    setAssignedAreas: (state, action: PayloadAction<Location[]>) => {
       state.assignedAreas = action.payload;
       // Keep the single primary in sync (first area) when not already set.
       if (!state.assignedArea && action.payload.length > 0) {
@@ -87,10 +86,10 @@ const authSlice = createSlice({
 
     restoreAuth: (
       state,
-      action: PayloadAction<{ user: User; area: Area | null }>,
+      action: PayloadAction<{ user: User; location: Location | null }>,
     ) => {
       state.user = action.payload.user;
-      state.assignedArea = action.payload.area;
+      state.assignedArea = action.payload.location;
       state.isAuthenticated = true;
       state.isRestoring = false;
     },

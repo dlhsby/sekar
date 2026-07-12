@@ -187,7 +187,7 @@ export const fetchLocationHistory = createAsyncThunk(
 export const fetchStaffingSummary = createAsyncThunk(
   'monitoring/fetchStaffingSummary',
   async (
-    filters: { rayon_id?: string; area_id?: string } | undefined,
+    filters: { rayon_id?: string; location_id?: string } | undefined,
     { rejectWithValue },
   ) => {
     try {

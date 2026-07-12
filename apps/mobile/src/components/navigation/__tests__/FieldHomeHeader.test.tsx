@@ -11,7 +11,7 @@ import { render, fireEvent } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { FieldHomeHeader } from '../FieldHomeHeader';
-import type { UserRole, Area } from '../../../types/models.types';
+import type { Location, User, UserRole } from '../../../types/models.types';
 import authReducer from '../../../store/slices/authSlice';
 import offlineReducer from '../../../store/slices/offlineSlice';
 
@@ -37,7 +37,7 @@ describe('FieldHomeHeader', () => {
     isOnline: boolean = true,
     isSyncing: boolean = false,
     pendingCount: number = 0,
-    assignedArea: Area | null = null
+    assignedArea: Location | null = null
   ) => {
     return configureStore({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- test fixture type inference mismatch
@@ -294,12 +294,15 @@ describe('FieldHomeHeader', () => {
 
     it('should append the assigned area to the role label when present', () => {
       const area = {
-        id: 1,
+        id: '1',
         name: 'Taman Bungkul',
+        location_type_id: 'type1',
         gps_lat: -7.25,
         gps_lng: 112.75,
         radius_meters: 100,
-      } as unknown as Area;
+        created_at: '2026-01-01T00:00:00Z',
+        updated_at: '2026-01-01T00:00:00Z',
+      } as Location;
       const store = createMockStore('korlap', 'Ibu Marni', true, false, 0, area);
 
       const { getByText } = render(

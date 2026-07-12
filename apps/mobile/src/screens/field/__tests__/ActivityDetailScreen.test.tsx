@@ -113,7 +113,7 @@ describe('ActivityDetailScreen', () => {
         id: '1',
         name: 'Menyapu',
       },
-      area: {
+      location: {
         id: '1',
         name: 'Park A',
       },
@@ -266,7 +266,7 @@ describe('ActivityDetailScreen', () => {
         id: '1',
         full_name: 'John Doe',
       },
-      area: {
+      location: {
         id: '1',
         name: 'Park A',
       },

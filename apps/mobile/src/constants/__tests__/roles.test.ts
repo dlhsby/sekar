@@ -128,7 +128,7 @@ describe('Role Constants', () => {
     });
 
     it('should have correct area-level monitoring roles', () => {
-      expect(MONITORING_ROLES.area).toEqual(['korlap']);
+      expect(MONITORING_ROLES.location).toEqual(['korlap']);
     });
   });
 

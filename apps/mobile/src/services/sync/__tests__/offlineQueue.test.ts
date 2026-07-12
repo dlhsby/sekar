@@ -80,7 +80,7 @@ describe('offlineQueue', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue(null);
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
-      const id = await addToQueue('clock-in', { area_id: 1 });
+      const id = await addToQueue('clock-in', { location_id: 1 });
 
       expect(id).toBe('test-uuid-123');
       expect(AsyncStorage.setItem).toHaveBeenCalledWith(
@@ -93,7 +93,7 @@ describe('offlineQueue', () => {
       (AsyncStorage.getItem as jest.Mock).mockResolvedValue('[]');
       (AsyncStorage.setItem as jest.Mock).mockResolvedValue(undefined);
 
-      const mockData = { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 };
+      const mockData = { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 };
       await addToQueue('clock-in', mockData);
 
       const savedData = JSON.parse((AsyncStorage.setItem as jest.Mock).mock.calls[0][1]);

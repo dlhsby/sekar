@@ -34,17 +34,17 @@ export async function searchSpecies(
 }
 
 /**
- * Get all plants in an area with species details
+ * Get all plants in a location with species details
  */
-export async function listAreaPlants(areaId: string): Promise<ApiResponse<AreaPlant[]>> {
-  return get<AreaPlant[]>(`/areas/${areaId}/plants`);
+export async function listLocationPlants(locationId: string): Promise<ApiResponse<AreaPlant[]>> {
+  return get<AreaPlant[]>(`/locations/${locationId}/plants`);
 }
 
 /**
- * Get notable plants (heritage trees) in an area
+ * Get notable plants (heritage trees) in a location
  */
-export async function listNotablePlants(areaId: string): Promise<ApiResponse<NotablePlant[]>> {
-  return get<NotablePlant[]>(`/areas/${areaId}/notable-plants`);
+export async function listNotablePlants(locationId: string): Promise<ApiResponse<NotablePlant[]>> {
+  return get<NotablePlant[]>(`/locations/${locationId}/notable-plants`);
 }
 
 /**
@@ -52,7 +52,7 @@ export async function listNotablePlants(areaId: string): Promise<ApiResponse<Not
  * Restricted to admin_data, kepala_rayon, superadmin
  */
 export async function createNotablePlant(
-  areaId: string,
+  locationId: string,
   dto: {
     species_id: string;
     label?: string;
@@ -60,5 +60,5 @@ export async function createNotablePlant(
     notes?: string;
   },
 ): Promise<ApiResponse<NotablePlant>> {
-  return post<NotablePlant>(`/areas/${areaId}/notable-plants`, dto);
+  return post<NotablePlant>(`/locations/${locationId}/notable-plants`, dto);
 }

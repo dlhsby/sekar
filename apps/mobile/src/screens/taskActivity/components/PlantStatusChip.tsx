@@ -5,7 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { getAreaPlantStatus } from '../../../services/api/monitoringApi';
+import { getLocationPlantStatus } from '../../../services/api/monitoringApi';
 import { NBText } from '../../../components/nb';
 
 interface PlantStatusChipProps {
@@ -34,7 +34,7 @@ export function PlantStatusChip({ areaId, taskTitle }: PlantStatusChipProps): Re
     const fetchStatus = async () => {
       setLoading(true);
       try {
-        const response = await getAreaPlantStatus(areaId);
+        const response = await getLocationPlantStatus(areaId);
         if (mounted && response.data && response.data.totals) {
           // Show status summary: prioritize overdue > due_soon > ok > unknown
           const { ok, due_soon, overdue, unknown } = response.data.totals;

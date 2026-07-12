@@ -23,7 +23,7 @@ import {
 import { CLOCKABLE_ROLES } from '../constants/roles';
 import config from '../constants/config';
 import type { ActiveUserData } from '../types/api.types';
-import type { Area, UserRole } from '../types/models.types';
+import type { Location, UserRole } from '../types/models.types';
 
 const SURABAYA_CENTER = {
   latitude: SURABAYA_CITY_REGION.latitude,
@@ -34,7 +34,7 @@ const CLUSTER_THRESHOLD = 30;
 
 export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
   const [users, setUsers] = useState<ActiveUserData[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<Location[]>([]);
   const [selectedUser, setSelectedUser] = useState<ActiveUserData | null>(null);
   const [selectedAreaFilter, setSelectedAreaFilter] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -69,13 +69,13 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
     }
   }, []);
 
-  // Fetch areas
-  const fetchAreas = useCallback(async () => {
+  // Fetch locations
+  const fetchLocations = useCallback(async () => {
     try {
-      const response = await get<Area[]>('/areas');
+      const response = await get<Location[]>('/locations');
       if (response.data) { setAreas(Array.isArray(response.data) ? response.data : []); }
     } catch (err) {
-      console.error('Failed to fetch areas:', err);
+      console.error('Failed to fetch locations:', err);
     }
   }, []);
 
@@ -88,8 +88,8 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
   // Initial data fetch
   useEffect(() => {
     fetchUsers();
-    fetchAreas();
-  }, [fetchUsers, fetchAreas]);
+    fetchLocations();
+  }, [fetchUsers, fetchLocations]);
 
   // Auto-refresh timer
   const fetchUsersRef = useRef(fetchUsers);
@@ -231,6 +231,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
     visibleUsers,
     // Handlers
     fetchUsers,
+    fetchLocations,
     handleRefresh,
     handleMarkerPress,
     handleCloseInfoCard,

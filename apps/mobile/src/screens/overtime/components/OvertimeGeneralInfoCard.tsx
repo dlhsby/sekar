@@ -74,11 +74,11 @@ export const OvertimeGeneralInfoCard: React.FC<OvertimeGeneralInfoCardProps> = (
           value={`${overtime.user.role} - ${overtime.user.full_name}`}
         />
       )}
-      {overtime.area?.name && (
+      {overtime.location?.name && (
         <DetailRow
           label={t('overtime:components.areaLabel')}
-          value={overtime.area.name}
-          isLast={!overtime.area?.name}
+          value={overtime.location.name}
+          isLast={!overtime.location?.name}
         />
       )}
     </NBCardContent>

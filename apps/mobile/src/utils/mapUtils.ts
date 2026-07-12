@@ -149,7 +149,7 @@ export function filterUsersByArea(
   if (areaId === null) {
     return workers;
   }
-  return workers.filter(worker => worker.shift.area.id === areaId);
+  return workers.filter(worker => worker.shift.location.id === areaId);
 }
 
 /**

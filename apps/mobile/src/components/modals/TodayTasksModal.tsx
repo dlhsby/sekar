@@ -50,7 +50,7 @@ export function TodayTasksModal({
           {tasks.map((task) => {
             const p = taskPill(task.status);
             const meta: ListItemMeta[] = [];
-            if (task.area?.name) { meta.push({ icon: 'map-marker', label: task.area.name }); }
+            if (task.location?.name) { meta.push({ icon: 'map-marker', label: task.location.name }); }
             if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
             return (
               <ListItemCard

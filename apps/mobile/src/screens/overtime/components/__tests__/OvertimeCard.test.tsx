@@ -19,7 +19,7 @@ const BASE_OVERTIME: Overtime = {
   created_at: '2026-02-14T17:00:00.000Z',
   updated_at: '2026-02-14T17:00:00.000Z',
   activityType: { id: 'at-1', name: 'Pemeliharaan' } as any,
-  area: { id: 'area-1', name: 'Taman Bungkul' } as any,
+  location: { id: 'area-1', name: 'Taman Bungkul' } as any,
   user: { id: 'u-1', full_name: 'Budi Santoso', role: 'satgas' } as any,
   photo_urls: ['https://example.com/photo1.jpg'],
 } as unknown as Overtime;
@@ -100,7 +100,7 @@ describe('OvertimeCard', () => {
     });
 
     it('does not render area chip when area is null', () => {
-      const overtime = { ...BASE_OVERTIME, area: null };
+      const overtime = { ...BASE_OVERTIME, location: null };
       const { queryByText } = render(
         <OvertimeCard overtime={overtime as any} onPress={() => {}} />,
       );

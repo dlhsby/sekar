@@ -96,7 +96,7 @@ export const fetchAreaPlants = createAsyncThunk(
   'plants/fetchAreaPlants',
   async (areaId: string, { rejectWithValue }) => {
     try {
-      const response = await plantsApi.listAreaPlants(areaId);
+      const response = await plantsApi.listLocationPlants(areaId);
       if (response.error) {
         return rejectWithValue(response.error);
       }

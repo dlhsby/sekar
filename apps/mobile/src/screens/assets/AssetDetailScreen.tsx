@@ -191,13 +191,13 @@ export function AssetDetailScreen({ navigation, route }: Props): React.JSX.Eleme
                 </NBText>
               </View>
 
-              {asset.area && (
+              {asset.location && (
                 <View style={styles.infoRow}>
                   <NBText variant="caption" style={styles.label}>
-                    {t('assets:detail.fields.area')}
+                    {t('assets:detail.fields.location')}
                   </NBText>
                   <NBText variant="body-sm" style={styles.value}>
-                    {asset.area.name}
+                    {asset.location.name}
                   </NBText>
                 </View>
               )}

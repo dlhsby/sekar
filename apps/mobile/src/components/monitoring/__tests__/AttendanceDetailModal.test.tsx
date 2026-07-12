@@ -39,7 +39,7 @@ const response = {
         id: 'c1',
         username: 'satgas1',
         full_name: 'Clocked One',
-        area: { id: 'a1', name: 'Area C' },
+        location: { id: 'a1', name: 'Area C' },
         clock_in_time: '2026-06-04T08:00:00Z',
         clock_out_time: null,
       },
@@ -47,7 +47,7 @@ const response = {
     meta: meta(1),
   },
   not_clocked_in: {
-    data: [{ id: 'n1', username: 'satgas2', full_name: 'Belum One', area: { id: 'a2', name: 'Area N' } }],
+    data: [{ id: 'n1', username: 'satgas2', full_name: 'Belum One', location: { id: 'a2', name: 'Area N' } }],
     meta: meta(1),
   },
 };
@@ -57,7 +57,7 @@ describe('AttendanceDetailModal', () => {
     jest.clearAllMocks();
     mockGetAttendance.mockResolvedValue({ data: response } as any);
     mockGetUserDetail.mockResolvedValue({
-      data: { date: '2026-06-04', user: { id: 'n1', username: 'satgas2', full_name: 'Belum One', role: 'satgas', area: null }, clocked_in: false, shift: null },
+      data: { date: '2026-06-04', user: { id: 'n1', username: 'satgas2', full_name: 'Belum One', role: 'satgas', location: null }, clocked_in: false, shift: null },
     } as any);
   });
 

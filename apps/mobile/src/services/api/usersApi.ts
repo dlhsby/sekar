@@ -5,7 +5,7 @@
 
 import { get, patch } from './apiClient';
 import type { ApiResponse } from '../../types/api.types';
-import type { User, Area } from '../../types/models.types';
+import type { User, Location } from '../../types/models.types';
 import { getToken } from '../storage/secureStorage';
 import config from '../../constants/config';
 import i18n from '../../i18n/config';
@@ -49,11 +49,11 @@ export async function getUsers(limit = 100): Promise<ApiResponse<User[]>> {
 }
 
 /**
- * Get the authenticated worker's own assigned areas (permanent + task_based).
- * Backed by `GET /users/me/areas`; used for multi-area geofencing + Jadwal Saya.
+ * Get the authenticated worker's own assigned locations (permanent + task_based).
+ * Backed by `GET /users/me/locations`; used for multi-location geofencing + Jadwal Saya.
  */
-export async function getMyAreas(): Promise<ApiResponse<Area[]>> {
-  return get<Area[]>('/users/me/areas');
+export async function getMyLocations(): Promise<ApiResponse<Location[]>> {
+  return get<Location[]>('/users/me/locations');
 }
 
 /**

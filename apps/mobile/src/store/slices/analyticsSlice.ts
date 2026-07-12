@@ -82,7 +82,7 @@ export const fetchTeamAnalytics = createAsyncThunk(
       page: number;
       limit?: number;
       rayon_id?: string;
-      area_id?: string;
+      location_id?: string;
       reset?: boolean;
     },
     { rejectWithValue },
@@ -91,7 +91,7 @@ export const fetchTeamAnalytics = createAsyncThunk(
       page: params.page,
       limit: params.limit || 10,
       rayon_id: params.rayon_id,
-      area_id: params.area_id,
+      location_id: params.location_id,
       sort_by: 'performance_score',
       sort_dir: 'desc',
     });
@@ -103,15 +103,15 @@ export const fetchTeamAnalytics = createAsyncThunk(
 );
 
 /**
- * Thunk: Fetch area analytics
+ * Thunk: Fetch location analytics
  */
-export const fetchAreas = createAsyncThunk(
-  'analytics/fetchAreas',
+export const fetchLocations = createAsyncThunk(
+  'analytics/fetchLocations',
   async (
     params: { rayon_id?: string; limit?: number } | undefined,
     { rejectWithValue },
   ): Promise<AreaAnalytics[]> => {
-    const response = await analyticsApi.getAreaAnalytics({
+    const response = await analyticsApi.getLocationAnalytics({
       page: 1,
       limit: params?.limit || 20,
       rayon_id: params?.rayon_id,
@@ -217,15 +217,15 @@ const analyticsSlice = createSlice({
     });
 
     // Fetch Areas
-    builder.addCase(fetchAreas.pending, (state) => {
+    builder.addCase(fetchLocations.pending, (state) => {
       state.loading = true;
       state.error = null;
     });
-    builder.addCase(fetchAreas.fulfilled, (state, action) => {
+    builder.addCase(fetchLocations.fulfilled, (state, action) => {
       state.areas = action.payload;
       state.loading = false;
     });
-    builder.addCase(fetchAreas.rejected, (state, action) => {
+    builder.addCase(fetchLocations.rejected, (state, action) => {
       state.error = action.payload as string;
       state.loading = false;
     });

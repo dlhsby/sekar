@@ -46,7 +46,7 @@ function RosterRow({ roster, t }: { roster: Schedule; t: ReturnType<typeof useTr
   const pill = ROSTER_STATUS_PILL[roster.status];
   const shift = roster.shift_definition;
   const areasText =
-    roster.schedule_areas.map((a) => a.area.name).join(', ') || t('schedules:mySchedule.noAreasAssigned');
+    roster.schedule_areas.map((a) => a.location.name).join(', ') || t('schedules:mySchedule.noAreasAssigned');
 
   return (
     <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>

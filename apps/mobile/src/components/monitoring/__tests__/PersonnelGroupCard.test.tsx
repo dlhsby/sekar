@@ -23,7 +23,7 @@ const user = (id: string, status: LiveUser['status']): LiveUser => ({
   role: 'satgas',
   phone: null,
   status,
-  area_id: 'a1',
+  location_id: 'a1',
   area_name: 'Taman',
   rayon_id: 'r1',
   rayon_name: 'Rayon 1',

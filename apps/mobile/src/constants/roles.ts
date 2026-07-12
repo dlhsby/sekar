@@ -67,10 +67,10 @@ export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'a
 export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'top_management'];
 
 /** Monitoring access by scope */
-export const MONITORING_ROLES: Record<'city' | 'rayon' | 'area', UserRole[]> = {
+export const MONITORING_ROLES: Record<'city' | 'rayon' | 'location', UserRole[]> = {
   city: ['top_management', 'admin_system', 'superadmin'],
   rayon: ['kepala_rayon', 'admin_data'],
-  area: ['korlap'],
+  location: ['korlap'],
 };
 
 /** Hierarchical task assignment rules (mirrors backend VALID_TASK_ASSIGNMENTS).
@@ -106,12 +106,12 @@ export const canApproveOvertime = (role: UserRole): boolean =>
   OVERTIME_APPROVERS.includes(role);
 
 export const canMonitor = (role: UserRole): boolean =>
-  [...MONITORING_ROLES.city, ...MONITORING_ROLES.rayon, ...MONITORING_ROLES.area].includes(role);
+  [...MONITORING_ROLES.city, ...MONITORING_ROLES.rayon, ...MONITORING_ROLES.location].includes(role);
 
-export const getMonitoringScope = (role: UserRole): 'city' | 'rayon' | 'area' | null => {
+export const getMonitoringScope = (role: UserRole): 'city' | 'rayon' | 'location' | null => {
   if (MONITORING_ROLES.city.includes(role)) return 'city';
   if (MONITORING_ROLES.rayon.includes(role)) return 'rayon';
-  if (MONITORING_ROLES.area.includes(role)) return 'area';
+  if (MONITORING_ROLES.location.includes(role)) return 'location';
   return null;
 };
 
@@ -122,7 +122,7 @@ export const ROLES_WITH_RAYON: UserRole[] = [...MONITORING_ROLES.city];
 export const ROLES_WITH_FIXED_RAYON: UserRole[] = [...MONITORING_ROLES.rayon];
 
 /** Roles without rayon visibility in monitoring filter (area-scope) */
-export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.area];
+export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.location];
 
 /**
  * Maps each role to its direct subordinate roles for filter scoping

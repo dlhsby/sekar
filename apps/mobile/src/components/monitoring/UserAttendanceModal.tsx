@@ -71,7 +71,7 @@ export function UserAttendanceModal({
   const clockedIn = detail?.clocked_in ?? false;
   const headerName = detail?.user.full_name ?? userName ?? t('monitoring:userAttendance.defaultName');
   const roleArea = detail
-    ? `${ROLE_LABELS[detail.user.role as UserRole] ?? detail.user.role}${detail.user.area ? ` · ${detail.user.area.name}` : ''}`
+    ? `${ROLE_LABELS[detail.user.role as UserRole] ?? detail.user.role}${detail.user.location ? ` · ${detail.user.location.name}` : ''}`
     : null;
 
   return (

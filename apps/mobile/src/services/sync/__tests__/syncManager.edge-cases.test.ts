@@ -254,7 +254,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       const item: any = {
         id: 'item-1',
         type: 'clock-in',
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
@@ -368,7 +368,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
       const item: any = {
         id: 'item-1',
         type: 'clock-in',
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
         timestamp: Date.now(),
         retryCount: 0,
         status: 'pending',
@@ -637,7 +637,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
         {
           id: 'item-1',
           type: 'clock-in',
-          data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
+          data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75 },
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',

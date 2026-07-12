@@ -40,7 +40,7 @@ export async function getWorkers(params?: {
   page?: number;
   limit?: number;
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   sort_by?: string;
   sort_dir?: 'asc' | 'desc';
   date_from?: string;
@@ -50,17 +50,17 @@ export async function getWorkers(params?: {
 }
 
 /**
- * Get area analytics
- * GET /analytics/areas
+ * Get location analytics
+ * GET /analytics/locations
  */
-export async function getAreaAnalytics(params?: {
+export async function getLocationAnalytics(params?: {
   page?: number;
   limit?: number;
   rayon_id?: string;
   sort_by?: string;
   sort_dir?: 'asc' | 'desc';
 }): Promise<ApiResponse<{ data: AreaAnalytics[]; total: number; page: number; limit: number }>> {
-  return get<{ data: AreaAnalytics[]; total: number; page: number; limit: number }>('/analytics/areas', params);
+  return get<{ data: AreaAnalytics[]; total: number; page: number; limit: number }>('/analytics/locations', params);
 }
 
 /**
@@ -89,7 +89,7 @@ export default {
   getDashboard,
   getWorker,
   getWorkers,
-  getAreaAnalytics,
+  getLocationAnalytics,
   getOperational,
   getOperationalTrends,
 };

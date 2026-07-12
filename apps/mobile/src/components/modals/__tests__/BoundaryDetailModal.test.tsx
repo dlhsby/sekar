@@ -26,13 +26,13 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
 });
 
 jest.mock('../../../services/api/plantsApi', () => ({
-  listAreaPlants: jest.fn().mockResolvedValue({ data: [] }),
+  listLocationPlants: jest.fn().mockResolvedValue({ data: [] }),
   listNotablePlants: jest.fn().mockResolvedValue({ data: [] }),
 }));
 
-import { listAreaPlants, listNotablePlants } from '../../../services/api/plantsApi';
+import { listLocationPlants, listNotablePlants } from '../../../services/api/plantsApi';
 
-const mockListAreaPlants = listAreaPlants as jest.Mock;
+const mockListAreaPlants = listLocationPlants as jest.Mock;
 const mockListNotablePlants = listNotablePlants as jest.Mock;
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -216,7 +216,7 @@ describe('BoundaryDetailModal', () => {
   describe('area mode', () => {
     it('renders the hero (name + parent rayon sub-line + map-marker icon)', async () => {
       const { getByText, getByTestId } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       expect(getByText('Taman Bungkul')).toBeTruthy();
       expect(getByText('Rayon Selatan')).toBeTruthy(); // rayon_name sub-line
@@ -226,7 +226,7 @@ describe('BoundaryDetailModal', () => {
 
     it('renders the Aktif + Petugas KPI tiles', async () => {
       const { getByTestId, getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       expect(getByTestId('boundary-stat-active')).toBeTruthy();
       expect(getByTestId('boundary-stat-assigned')).toBeTruthy();
@@ -237,7 +237,7 @@ describe('BoundaryDetailModal', () => {
 
     it('renders a per-role staffing row with translated labels', async () => {
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       expect(getByText('Kebutuhan per Jabatan')).toBeTruthy();
       expect(getByText('Satgas')).toBeTruthy();
@@ -249,7 +249,7 @@ describe('BoundaryDetailModal', () => {
 
     it('shows a negative delta pill for understaffed roles', async () => {
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       expect(getByText('-2')).toBeTruthy(); // satgas: 1-3
       expect(getByText('-1')).toBeTruthy(); // linmas: 1-2
@@ -258,7 +258,7 @@ describe('BoundaryDetailModal', () => {
 
     it('shows positive / zero delta pills for adequately staffed roles', async () => {
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={adequateArea} {...baseProps} />,
       );
       expect(getByText('+1')).toBeTruthy(); // satgas: 3-2
       expect(getByText('+0')).toBeTruthy(); // linmas: 1-1
@@ -271,7 +271,7 @@ describe('BoundaryDetailModal', () => {
         staffing: [{ role: 'unknown_role' as any, required: 1, active: 0 }],
       };
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={unknownRoleArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={unknownRoleArea} {...baseProps} />,
       );
       expect(getByText('unknown_role')).toBeTruthy();
       await flushPlants();
@@ -284,7 +284,7 @@ describe('BoundaryDetailModal', () => {
         is_understaffed: false,
       };
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={emptyStaffingArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={emptyStaffingArea} {...baseProps} />,
       );
       expect(getByText('Belum ada kebutuhan jabatan')).toBeTruthy();
       await flushPlants();
@@ -296,7 +296,7 @@ describe('BoundaryDetailModal', () => {
   describe('reassign button', () => {
     it('shows Reassign for an understaffed area when onReassign is provided', async () => {
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} onReassign={jest.fn()} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} onReassign={jest.fn()} />,
       );
       expect(getByText('Reassign Petugas')).toBeTruthy();
       await flushPlants();
@@ -305,7 +305,7 @@ describe('BoundaryDetailModal', () => {
     it('calls onReassign with the full area object when pressed', async () => {
       const onReassign = jest.fn();
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} onReassign={onReassign} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} onReassign={onReassign} />,
       );
       fireEvent.press(getByText('Reassign Petugas'));
       expect(onReassign).toHaveBeenCalledTimes(1);
@@ -315,7 +315,7 @@ describe('BoundaryDetailModal', () => {
 
     it('hides Reassign when the area is adequately staffed', async () => {
       const { queryByText } = render(
-        <BoundaryDetailModal type="area" data={adequateArea} {...baseProps} onReassign={jest.fn()} />,
+        <BoundaryDetailModal type="location" data={adequateArea} {...baseProps} onReassign={jest.fn()} />,
       );
       expect(queryByText('Reassign Petugas')).toBeNull();
       await flushPlants();
@@ -323,7 +323,7 @@ describe('BoundaryDetailModal', () => {
 
     it('hides Reassign when no onReassign is provided', async () => {
       const { queryByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       expect(queryByText('Reassign Petugas')).toBeNull();
       await flushPlants();
@@ -335,7 +335,7 @@ describe('BoundaryDetailModal', () => {
   describe('tanaman sub-sheet', () => {
     it('renders the trigger and fetches plants on open (area mode)', async () => {
       const { getByTestId } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       expect(getByTestId('boundary-tanaman-trigger')).toBeTruthy();
       await waitFor(() => expect(mockListAreaPlants).toHaveBeenCalledWith('area-1'));
@@ -352,7 +352,7 @@ describe('BoundaryDetailModal', () => {
       mockListNotablePlants.mockResolvedValue({ data: notable });
 
       const { getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       await waitFor(() => expect(getByText('2 jenis · 1 heritage')).toBeTruthy());
     });
@@ -364,7 +364,7 @@ describe('BoundaryDetailModal', () => {
       mockListAreaPlants.mockResolvedValue({ data: plants });
 
       const { getByTestId, getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       await waitFor(() => expect(mockListAreaPlants).toHaveBeenCalled());
 
@@ -377,7 +377,7 @@ describe('BoundaryDetailModal', () => {
 
     it('shows the empty plant message when an area has no plants', async () => {
       const { getByTestId, getByText } = render(
-        <BoundaryDetailModal type="area" data={understaffedArea} {...baseProps} />,
+        <BoundaryDetailModal type="location" data={understaffedArea} {...baseProps} />,
       );
       await waitFor(() => expect(mockListAreaPlants).toHaveBeenCalled());
 

@@ -131,7 +131,7 @@ export function EditProfileScreen(): React.JSX.Element {
               ...user,
               profile_picture_url: response.data.profile_picture_url,
             },
-            area: assignedArea ?? undefined,
+            location: assignedArea ?? undefined,
           }),
         );
         NBToast.show({ level: 'success', title: t('profile:edit.toast.success'), body: t('profile:edit.uploadSuccess') });
