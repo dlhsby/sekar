@@ -11,6 +11,7 @@ import {
   Max,
   ValidateNested,
   ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -49,6 +50,7 @@ export class RecurrenceConfigDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
+  @ArrayMaxSize(120)
   @IsDateString({}, { each: true })
   dates?: string[];
 }
@@ -122,6 +124,7 @@ export class CreateScheduleEventDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(0)
+  @ArrayMaxSize(100)
   @IsUUID('all', { each: true })
   member_ids?: string[];
 

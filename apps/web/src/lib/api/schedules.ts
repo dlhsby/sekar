@@ -41,7 +41,7 @@ export interface Schedule {
     | 'off';
   replacement_user_id: string | null;
   original_user_id: string | null;
-  source: 'template' | 'manual';
+  source: 'template' | 'manual' | 'event';
   is_overtime: boolean;
   notes: string | null;
   user: {

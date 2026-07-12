@@ -56,7 +56,10 @@ export class SchedulesController {
   }
 
   @Get('my')
-  @ApiOperation({ summary: "Get the caller's roster for a day (defaults to today, WIB)" })
+  @ApiOperation({
+    summary:
+      "Get the caller's most relevant roster row for a day (defaults to today, WIB; with multiple shifts, the one covering/nearest to now)",
+  })
   @ApiQuery({
     name: 'date',
     required: false,
@@ -142,7 +145,7 @@ export class SchedulesController {
   @ApiOperation({
     summary: 'Add a single worker to a day (mid-day joiner / missed by generate)',
     description:
-      'Creates one roster row for the worker. Rejects (400) if the worker already has a schedule that day — one schedule per worker per day.',
+      'Creates one roster row for the worker. Multiple non-overlapping shifts per day are allowed (ADR-047); rejects (400) only when the shift time-window overlaps an existing schedule.',
   })
   @ApiResponse({ status: 201, type: Schedule })
   async addSchedule(@Body() dto: AddScheduleDto, @GetUser() user: User): Promise<Schedule> {

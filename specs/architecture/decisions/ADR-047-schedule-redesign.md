@@ -49,6 +49,12 @@ Team fan-out applies the guard per member; an already-booked member is flagged i
 
 Editing a recurring event offers **this occurrence** (rewrites one `schedules` row, detaching it as an override), **this-and-future** (re-materializes from the edit date forward), or **entire series** (re-materializes all in-horizon occurrences). Deletes mirror the same three scopes. Past occurrences are never rewritten. Changes are audited via `schedules.updated_by`/`updated_at` + the event's audit columns.
 
+*Implementation notes (Phase 4):* "this occurrence" edits go through the roster row API (`PATCH /schedules/...`, which sets `is_detached`); `DELETE /schedule-events/:id?scope=this&date=` soft-deletes that date's occurrence rows — the soft-deleted rows persist as tombstones so re-materialization never resurrects the day. `this_and_future` splits the series (original gets `end_date = from_date−1`, a new event continues; members carry over). Past dates are rejected with 400 on all this/this-and-future edits and deletes.
+
+### Single-row reads with multiple shifts
+
+Legacy single-row consumers (`GET /schedules/my`, clock-in shift/areas resolution, monitoring's rayon stamp) read the worker's **most relevant** row for the day: with multiple shifts, the shift whose window covers "now" (WIB, `crosses_midnight` honored), else the next upcoming shift, else the last of the day. Full-day consumers (calendar, counts) read every row; monitoring counts **distinct workers**, not rows.
+
 ### Teams
 
 A team schedule is created with a **PIC** (korlap or satgas/linmas) and **invited members** (korlap/satgas/linmas). Fan-out creates an occurrence for each member. Team type + marker come from the teams catalog ([ADR-048](./ADR-048-teams.md)); monitoring renders the team as a group bubble.

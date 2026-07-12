@@ -5,7 +5,8 @@ import { Button } from '@/components/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { formatISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isToday, startOfWeek, endOfWeek } from 'date-fns';
+import { formatISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { todayJakartaISODate } from '@/lib/utils/formatters';
 
 interface MonthGridProps {
   occurrences: ScheduleOccurrence[];
@@ -106,7 +107,9 @@ export function MonthGrid({
               const dateStr = formatISO(day, { representation: 'date' });
               const dayOccurrences = occurrencesByDate.get(dateStr) || [];
               const isDayInMonth = isSameMonth(day, currentMonth);
-              const isTodayDate = isToday(day);
+              // Roster days are WIB days — highlight WIB "today", not the
+              // browser's local today (they differ outside UTC+7).
+              const isTodayDate = dateStr === todayJakartaISODate();
 
               return (
                 <div

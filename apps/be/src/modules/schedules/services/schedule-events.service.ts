@@ -92,13 +92,14 @@ export class ScheduleEventsService {
       );
     }
 
-    // Apply optional filters
-    if (filters.from) {
-      query = query.andWhere('se.start_date <= :to', { to: filters.to || '9999-12-31' });
-    }
+    // Date-range intersection: an event overlaps [from, to] iff it starts on
+    // or before `to` AND ends on or after `from` (open-ended = no end).
     if (filters.to) {
-      query = query.andWhere('(se.end_date >= :from OR se.end_date IS NULL)', {
-        from: filters.from || '0000-01-01',
+      query = query.andWhere('se.start_date <= :rangeTo', { rangeTo: filters.to });
+    }
+    if (filters.from) {
+      query = query.andWhere('(se.end_date >= :rangeFrom OR se.end_date IS NULL)', {
+        rangeFrom: filters.from,
       });
     }
     if (filters.rayon_id) {
@@ -159,53 +160,22 @@ export class ScheduleEventsService {
     dto: CreateScheduleEventDto,
     actor: User,
   ): Promise<{ event: ScheduleEvent; materialization: any }> {
-    // Validate shift exists
-    const shift = await this.shiftRepo.findOne({ where: { id: dto.shift_definition_id } });
-    if (!shift) throw new NotFoundException('Shift definition not found');
+    // Shape/scope/recurrence validation shared with the update paths.
+    await this.validateEventShape(
+      {
+        shift_definition_id: dto.shift_definition_id,
+        scope: dto.scope,
+        location_id: dto.location_id ?? null,
+        region_id: dto.region_id ?? null,
+        start_date: dto.start_date,
+        end_date: dto.end_date ?? null,
+        recurrence_type: dto.recurrence_type,
+        recurrence_config: dto.recurrence_config ?? null,
+      },
+      actor,
+    );
 
-    // Validate scope/location/region coherency
-    if (dto.scope === ScheduleScope.STATIC) {
-      if (!dto.location_id) {
-        throw new BadRequestException('Static scope requires location_id');
-      }
-      if (dto.region_id) {
-        throw new BadRequestException('Static scope must not have region_id');
-      }
-      const loc = await this.locationRepo.findOne({ where: { id: dto.location_id } });
-      if (!loc) throw new NotFoundException('Location not found');
-
-      // Rayon scope check for non-city roles
-      if (!MONITORING_CITY.includes(actor.role)) {
-        if (!actor.rayon_id) {
-          throw new ForbiddenException('Your account is missing a rayon assignment');
-        }
-        if (loc.rayon_id !== actor.rayon_id) {
-          throw new ForbiddenException('This location is outside your rayon');
-        }
-      }
-    } else {
-      // MOBILE scope
-      if (!dto.region_id) {
-        throw new BadRequestException('Mobile scope requires region_id');
-      }
-      if (dto.location_id) {
-        throw new BadRequestException('Mobile scope must not have location_id');
-      }
-      const region = await this.regionRepo.findOne({ where: { id: dto.region_id } });
-      if (!region) throw new NotFoundException('Region not found');
-
-      // Rayon scope check
-      if (!MONITORING_CITY.includes(actor.role)) {
-        if (!actor.rayon_id) {
-          throw new ForbiddenException('Your account is missing a rayon assignment');
-        }
-        if (region.rayon_id !== actor.rayon_id) {
-          throw new ForbiddenException('This region is outside your rayon');
-        }
-      }
-    }
-
-    // Validate kind (individual vs team)
+    // Validate kind (individual vs team) — immutable after create.
     if (dto.is_team) {
       if (!dto.team_id || !dto.pic_user_id) {
         throw new BadRequestException('Team events require team_id and pic_user_id');
@@ -222,20 +192,10 @@ export class ScheduleEventsService {
       if (dto.team_id || dto.pic_user_id) {
         throw new BadRequestException('Individual events must not have team_id or pic_user_id');
       }
+      if (dto.member_ids && dto.member_ids.length > 0) {
+        throw new BadRequestException('Individual events must not have member_ids');
+      }
       await this.validateUserRoles([dto.user_id]);
-    }
-
-    // Validate dates
-    if (dto.end_date && dto.start_date > dto.end_date) {
-      throw new BadRequestException('end_date must be >= start_date');
-    }
-
-    // Validate recurrence config
-    if (
-      dto.recurrence_type === RecurrenceType.EVERY_N_DAYS &&
-      (!dto.recurrence_config?.interval_n || dto.recurrence_config.interval_n < 2)
-    ) {
-      throw new BadRequestException('every_n_days requires interval_n >= 2');
     }
 
     // Create event
@@ -300,31 +260,58 @@ export class ScheduleEventsService {
     actor: User,
   ): Promise<{ event: ScheduleEvent; new_event?: ScheduleEvent; materialization: any }> {
     const event = await this.findOne(id, actor);
+    const today = TimezoneUtil.jakartaDateString();
 
-    if (editScope === EditScope.THIS_AND_FUTURE && !fromDate) {
-      throw new BadRequestException('this_and_future scope requires from_date');
+    // Member edits must keep the eligibility rules of create.
+    if (dto.member_ids !== undefined) {
+      if (!event.is_team && dto.member_ids.length > 0) {
+        throw new BadRequestException('Individual events must not have member_ids');
+      }
+      if (dto.member_ids.length > 0) {
+        await this.validateUserRoles(dto.member_ids);
+      }
     }
 
     // If this_and_future, create a new event starting from fromDate with the changes
     if (editScope === EditScope.THIS_AND_FUTURE) {
+      if (!fromDate) {
+        throw new BadRequestException('this_and_future scope requires from_date');
+      }
+      // Past occurrences are never rewritten (ADR-047).
+      if (fromDate < today) {
+        throw new BadRequestException('from_date must not be in the past');
+      }
+      // Splitting before (or at) the series start would leave the original
+      // with end_date < start_date — that's a series edit, not a split.
+      if (fromDate <= event.start_date) {
+        throw new BadRequestException(
+          'from_date must be after the series start_date — use edit_scope=series instead',
+        );
+      }
       const prevEndDate = event.end_date;
 
+      // Validate the EFFECTIVE shape of the split-off event before mutating.
+      const effective = {
+        shift_definition_id: dto.shift_definition_id || event.shift_definition_id,
+        scope: dto.scope || event.scope,
+        location_id: dto.location_id !== undefined ? dto.location_id : event.location_id,
+        region_id: dto.region_id !== undefined ? dto.region_id : event.region_id,
+        start_date: fromDate,
+        end_date: dto.end_date !== undefined ? dto.end_date : prevEndDate,
+        recurrence_type: dto.recurrence_type || event.recurrence_type,
+        recurrence_config: dto.recurrence_config || event.recurrence_config,
+      };
+      await this.validateEventShape(effective, actor);
+
       // Set original event end_date to fromDate-1
-      event.end_date = this.addDays(fromDate!, -1);
+      event.end_date = this.addDays(fromDate, -1);
       event.updated_by = actor.id;
       await this.eventRepo.save(event);
 
       // Create new event with updated fields
       const newEvent = this.eventRepo.create({
         title: dto.title !== undefined ? dto.title : event.title,
-        recurrence_type: dto.recurrence_type || event.recurrence_type,
-        start_date: fromDate!,
-        end_date: dto.end_date !== undefined ? dto.end_date : prevEndDate,
-        recurrence_config: dto.recurrence_config || event.recurrence_config,
-        shift_definition_id: dto.shift_definition_id || event.shift_definition_id,
-        scope: dto.scope || event.scope,
-        location_id: dto.location_id !== undefined ? dto.location_id : event.location_id,
-        region_id: dto.region_id !== undefined ? dto.region_id : event.region_id,
+        ...effective,
         is_team: event.is_team,
         user_id: event.user_id,
         team_id: event.team_id,
@@ -337,15 +324,22 @@ export class ScheduleEventsService {
 
       const newSaved = await this.eventRepo.save(newEvent);
 
-      // Add members to new event if team
-      if (event.is_team && dto.member_ids) {
-        const members = dto.member_ids.map((userId) =>
-          this.memberRepo.create({
-            schedule_event_id: newSaved.id,
-            user_id: userId,
-          }),
-        );
-        await this.memberRepo.save(members);
+      // Members carry over to the split-off event (dto overrides when given —
+      // omitting member_ids must NOT silently drop the team).
+      if (event.is_team) {
+        const memberIds =
+          dto.member_ids !== undefined
+            ? dto.member_ids
+            : (event.members ?? []).map((m) => m.user_id);
+        if (memberIds.length > 0) {
+          const members = memberIds.map((userId) =>
+            this.memberRepo.create({
+              schedule_event_id: newSaved.id,
+              user_id: userId,
+            }),
+          );
+          await this.memberRepo.save(members);
+        }
       }
 
       // Hard-delete future occurrences of old event
@@ -387,6 +381,23 @@ export class ScheduleEventsService {
       if (dto.notes !== undefined) event.notes = dto.notes;
       event.updated_by = actor.id;
 
+      // Validate the EFFECTIVE post-update shape — a scope/location/recurrence
+      // change must satisfy the same rules as create (friendly 400s instead of
+      // DB CHECK 500s; rayon-scope enforced on the new location/region).
+      await this.validateEventShape(
+        {
+          shift_definition_id: event.shift_definition_id,
+          scope: event.scope,
+          location_id: event.location_id,
+          region_id: event.region_id,
+          start_date: event.start_date,
+          end_date: event.end_date,
+          recurrence_type: event.recurrence_type,
+          recurrence_config: event.recurrence_config,
+        },
+        actor,
+      );
+
       await this.eventRepo.save(event);
 
       // Update members if team
@@ -404,7 +415,6 @@ export class ScheduleEventsService {
       }
 
       // Re-materialize from today forward
-      const today = TimezoneUtil.jakartaDateString();
       const materialization = await this.materializer.rematerializeSeries(event, today);
 
       await this.recordAudit('update', event.id, actor.id, oldValue, {
@@ -421,23 +431,43 @@ export class ScheduleEventsService {
 
   /**
    * Delete a schedule event.
-   * Scope: 'series' soft-deletes the event + hard-deletes future non-detached rows.
-   * 'this_and_future' sets end_date and hard-deletes future rows.
+   * Scope: 'this' soft-deletes that date's occurrence rows (tombstones —
+   * never regenerated); 'series' soft-deletes the event + hard-deletes future
+   * non-detached rows; 'this_and_future' sets end_date and hard-deletes
+   * future rows. Past dates are never touched.
    */
   async delete(id: string, scope: EditScope, date: string | undefined, actor: User): Promise<void> {
     const event = await this.findOne(id, actor);
+    const today = TimezoneUtil.jakartaDateString();
 
     if ((scope === EditScope.THIS || scope === EditScope.THIS_AND_FUTURE) && !date) {
       throw new BadRequestException(`${scope} scope requires date`);
     }
+    // Past occurrences are never rewritten (ADR-047).
+    if ((scope === EditScope.THIS || scope === EditScope.THIS_AND_FUTURE) && date! < today) {
+      throw new BadRequestException('date must not be in the past');
+    }
 
-    if (scope === EditScope.SERIES) {
+    if (scope === EditScope.THIS) {
+      // Soft-delete this date's occurrences of the event — the soft-deleted
+      // rows stay behind as tombstones so re-materialization never resurrects
+      // the day.
+      const rows = await this.scheduleRepo.find({
+        where: { schedule_event_id: event.id, schedule_date: date! },
+      });
+      if (rows.length === 0) {
+        throw new NotFoundException('No occurrence of this event on that date');
+      }
+      for (const row of rows) {
+        row.deleted_by = actor.id;
+      }
+      await this.scheduleRepo.softRemove(rows);
+    } else if (scope === EditScope.SERIES) {
       // Soft-delete the event
       event.deleted_by = actor.id;
       await this.eventRepo.softRemove(event);
 
       // Hard-delete future non-detached occurrences
-      const today = TimezoneUtil.jakartaDateString();
       await this.scheduleRepo
         .createQueryBuilder()
         .delete()
@@ -469,16 +499,107 @@ export class ScheduleEventsService {
   }
 
   private async validateUserRoles(userIds: string[]): Promise<void> {
+    const unique = Array.from(new Set(userIds));
     const users = await this.userRepo.find({
-      where: { id: In(userIds) },
+      where: { id: In(unique) },
     });
+    // A missing row (unknown id or soft-deleted user) must fail too — a
+    // shorter result set would otherwise slip through silently.
+    if (users.length !== unique.length) {
+      throw new BadRequestException('One or more scheduled users do not exist');
+    }
     const validRoles = ['satgas', 'linmas', 'korlap'];
     for (const user of users) {
-      if (!validRoles.includes(user.role) || user.deleted_at) {
+      if (!validRoles.includes(user.role) || !user.is_active) {
         throw new BadRequestException(
-          `User ${user.id} is not eligible (must be satgas/linmas/korlap and active)`,
+          `User ${user.full_name ?? user.id} is not eligible (must be an active satgas/linmas/korlap)`,
         );
       }
+    }
+  }
+
+  /**
+   * Shared shape validation for create / series-edit / this-and-future split:
+   * shift existence, scope↔location/region coherency (+ rayon scoping for
+   * non-city actors), date ordering, and per-type recurrence_config rules.
+   * Mirrors the DB CHECKs so callers get 400s instead of constraint 500s.
+   */
+  private async validateEventShape(
+    e: {
+      shift_definition_id: string;
+      scope: ScheduleScope;
+      location_id: string | null;
+      region_id: string | null;
+      start_date: string;
+      end_date: string | null;
+      recurrence_type: RecurrenceType;
+      recurrence_config: { interval_n?: number; weekdays?: number[]; dates?: string[] } | null;
+    },
+    actor: User,
+  ): Promise<void> {
+    const shift = await this.shiftRepo.findOne({ where: { id: e.shift_definition_id } });
+    if (!shift) throw new NotFoundException('Shift definition not found');
+
+    if (e.scope === ScheduleScope.STATIC) {
+      if (!e.location_id) throw new BadRequestException('Static scope requires location_id');
+      if (e.region_id) throw new BadRequestException('Static scope must not have region_id');
+      const loc = await this.locationRepo.findOne({ where: { id: e.location_id } });
+      if (!loc) throw new NotFoundException('Location not found');
+      this.assertRayonScope(loc.rayon_id, actor, 'location');
+    } else {
+      if (!e.region_id) throw new BadRequestException('Mobile scope requires region_id');
+      if (e.location_id) throw new BadRequestException('Mobile scope must not have location_id');
+      const region = await this.regionRepo.findOne({ where: { id: e.region_id } });
+      if (!region) throw new NotFoundException('Region not found');
+      this.assertRayonScope(region.rayon_id, actor, 'region');
+    }
+
+    if (e.end_date && e.start_date > e.end_date) {
+      throw new BadRequestException('end_date must be >= start_date');
+    }
+
+    switch (e.recurrence_type) {
+      case RecurrenceType.EVERY_N_DAYS: {
+        const n = e.recurrence_config?.interval_n;
+        if (!n || n < 2 || n > 30) {
+          throw new BadRequestException('every_n_days requires interval_n between 2 and 30');
+        }
+        break;
+      }
+      case RecurrenceType.WEEKLY: {
+        const days = e.recurrence_config?.weekdays;
+        if (!days || days.length === 0) {
+          throw new BadRequestException('weekly recurrence requires at least one weekday');
+        }
+        break;
+      }
+      case RecurrenceType.SPECIFIC_DATES: {
+        const dates = e.recurrence_config?.dates;
+        if (!dates || dates.length === 0) {
+          throw new BadRequestException('specific_dates recurrence requires at least one date');
+        }
+        const outside = dates.filter(
+          (d) => d < e.start_date || (e.end_date != null && d > e.end_date),
+        );
+        if (outside.length > 0) {
+          throw new BadRequestException(
+            `specific dates must fall within [start_date, end_date]: ${outside.join(', ')}`,
+          );
+        }
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  private assertRayonScope(rayonId: string | null | undefined, actor: User, what: string): void {
+    if (MONITORING_CITY.includes(actor.role)) return;
+    if (!actor.rayon_id) {
+      throw new ForbiddenException('Your account is missing a rayon assignment');
+    }
+    if (rayonId !== actor.rayon_id) {
+      throw new ForbiddenException(`This ${what} is outside your rayon`);
     }
   }
 

@@ -11,9 +11,12 @@ import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
+import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
+import { ScheduleOverlapService } from './services/schedule-overlap.service';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
   canEditTargetRole,
   isGlobalRosterEditor,
@@ -63,9 +66,12 @@ export class SchedulesService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Location)
     private readonly locationRepo: Repository<Location>,
+    @InjectRepository(ShiftDefinition)
+    private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     private readonly userAreasService: UserLocationsService,
     private readonly auditLogService: AuditLogService,
     private readonly materializer: ScheduleMaterializerService,
+    private readonly overlapService: ScheduleOverlapService,
   ) {}
 
   // ---- Edit-permission hierarchy (ADR-013 addendum) ----
@@ -153,16 +159,30 @@ export class SchedulesService {
     }
     await this.assertCanScheduleUser(actor, target);
 
-    // One row per worker per day (also guarded by a partial unique index).
-    const existing = await this.findByUserAndDate(dto.user_id, dto.date);
-    if (existing) {
-      throw new BadRequestException('Worker already has a schedule for this day');
-    }
-
     const shiftId =
       dto.shift_definition_id !== undefined
         ? dto.shift_definition_id
         : (target.shift_definition_id ?? null);
+
+    // Multiple non-overlapping shifts per day are legal (ADR-047); reject only
+    // a true time-window overlap (the (user, date, shift) partial unique index
+    // backs the exact-duplicate case). A shiftless (OFF) row still uses the
+    // one-per-day rule — two OFF rows for the same day are meaningless.
+    if (shiftId) {
+      const shift = await this.shiftDefinitionRepo.findOne({ where: { id: shiftId } });
+      if (!shift) throw new NotFoundException('Shift definition not found');
+      const conflict = await this.overlapService.findConflict(dto.user_id, dto.date, shift);
+      if (conflict) {
+        throw new BadRequestException(
+          `Worker already has an overlapping schedule (${conflict.shift_name} on ${conflict.date})`,
+        );
+      }
+    } else {
+      const existing = await this.findAllByUserAndDate(dto.user_id, dto.date);
+      if (existing.length > 0) {
+        throw new BadRequestException('Worker already has a schedule for this day');
+      }
+    }
     const row = await this.rosterRepo.save(
       this.rosterRepo.create({
         user_id: dto.user_id,
@@ -200,10 +220,8 @@ export class SchedulesService {
   async generateRoster(date: string, actorId: string | null): Promise<number> {
     // Fetch all active, non-deleted schedule events
     const events = await this.eventRepo.find({
-      where: {
-        is_active: true,
-        deleted_at: null as any, // Use null for IS NULL check
-      },
+      // Soft-deleted events are excluded by the repository's default scope.
+      where: { is_active: true },
       relations: ['shift_definition', 'location', 'region', 'team', 'pic_user', 'user', 'members'],
     });
 
@@ -270,12 +288,57 @@ export class SchedulesService {
     return qb.orderBy('ds.status', 'ASC').addOrderBy('ds.created_at', 'ASC').getMany();
   }
 
-  /** A single worker's live roster row for a day (with areas/shift), or null. */
-  async findByUserAndDate(userId: string, date: string): Promise<Schedule | null> {
-    return this.rosterRepo.findOne({
-      where: { user_id: userId, schedule_date: date, deleted_at: IsNull() },
+  /**
+   * ALL of a worker's live roster rows for a day, ordered by shift start time.
+   * A worker may hold multiple non-overlapping shifts per day (ADR-047).
+   */
+  async findAllByUserAndDate(userId: string, date: string): Promise<Schedule[]> {
+    const rows = await this.rosterRepo.find({
+      where: { user_id: userId, schedule_date: date },
       relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'rayon'],
     });
+    return rows.sort((a, b) =>
+      (a.shift_definition?.start_time ?? '99:99:99').localeCompare(
+        b.shift_definition?.start_time ?? '99:99:99',
+      ),
+    );
+  }
+
+  /**
+   * The worker's MOST RELEVANT roster row for a day. With a single row this is
+   * simply that row; with multiple shifts it picks, in order: the shift whose
+   * time window covers "now" (WIB, honoring crosses_midnight) → the next
+   * upcoming shift today → the last shift of the day. Deterministic — callers
+   * that need every shift use findAllByUserAndDate.
+   */
+  async findByUserAndDate(userId: string, date: string): Promise<Schedule | null> {
+    const rows = await this.findAllByUserAndDate(userId, date);
+    if (rows.length <= 1) return rows[0] ?? null;
+
+    const now = TimezoneUtil.jakartaNow();
+    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    const minutesOf = (hms: string): number => {
+      const [h, m] = hms.split(':').map(Number);
+      return h * 60 + m;
+    };
+    // A crosses-midnight shift on THIS date covers from its start tonight into
+    // tomorrow — the after-midnight tail is served by the PREVIOUS day's row
+    // (callers querying yesterday's date), so coverage here is simply
+    // [start, end-possibly-past-1440) against today's clock.
+    const covering = rows.find((r) => {
+      const sd = r.shift_definition;
+      if (!sd) return false;
+      const start = minutesOf(sd.start_time);
+      const end = minutesOf(sd.end_time) + (sd.crosses_midnight ? 24 * 60 : 0);
+      return nowMin >= start && nowMin < end;
+    });
+    if (covering) return covering;
+
+    const upcoming = rows.find(
+      (r) => r.shift_definition && minutesOf(r.shift_definition.start_time) > nowMin,
+    );
+    return upcoming ?? rows[rows.length - 1];
   }
 
   /**
@@ -371,16 +434,24 @@ export class SchedulesService {
     original.updated_by = actorId;
     await this.rosterRepo.save(original);
 
-    // Upsert the covering worker's row for the same day. If they already have a
-    // committed row that day (their own shift or on leave) they can't cover —
-    // reject rather than silently overwriting it. An `off`/`replaced` row is
-    // free to take over.
-    const coverRow = await this.findByUserAndDate(replacementUserId, original.schedule_date);
-    if (coverRow && BUSY_STATUSES.includes(coverRow.status)) {
+    // Upsert the covering worker's row for the same day. If they already have
+    // ANY committed row that day (their own shift — even a different one — or
+    // leave) they can't cover; reject rather than silently overwriting.
+    // `off`/`replaced` rows are free to take over. Checks every row of the day
+    // since a worker may hold multiple shifts (ADR-047).
+    const coverRows = await this.findAllByUserAndDate(replacementUserId, original.schedule_date);
+    const busyRow = coverRows.find((r) => BUSY_STATUSES.includes(r.status));
+    if (busyRow) {
       throw new BadRequestException(
         'Replacement worker already has a schedule or is on leave today',
       );
     }
+    // Reuse the row keyed by the same shift when present (the (user, date,
+    // shift) unique index), else any free shiftless row.
+    const coverRow =
+      coverRows.find((r) => r.shift_definition_id === original.shift_definition_id) ??
+      coverRows.find((r) => r.shift_definition_id == null) ??
+      null;
     const coverStatus = original.shift_definition_id ? ScheduleStatus.PLANNED : ScheduleStatus.OFF;
     let coverRowId: string;
     if (!coverRow) {

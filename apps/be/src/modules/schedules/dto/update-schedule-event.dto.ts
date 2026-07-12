@@ -8,6 +8,7 @@ import {
   IsArray,
   ValidateNested,
   ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -77,6 +78,7 @@ export class UpdateScheduleEventDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(0)
+  @ArrayMaxSize(100)
   @IsUUID('all', { each: true })
   member_ids?: string[];
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { Schedule } from '../entities/schedule.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
@@ -50,19 +50,19 @@ export class ScheduleOverlapService {
     const prevDay = this.addDaysToDateStr(dateStr, -1);
     const nextDay = this.addDaysToDateStr(dateStr, 1);
 
+    // Bounded to the 3-day window in SQL (an unbounded >= would scan the
+    // user's whole future roster). Soft-deleted rows are excluded by the
+    // repository's default scope.
     const existingRows = await this.scheduleRepo.find({
       where: {
         user_id: userId,
-        schedule_date: MoreThanOrEqual(prevDay) as any,
+        schedule_date: Between(prevDay, nextDay),
       },
       relations: ['shift_definition'],
     });
 
     const relevant = existingRows.filter(
       (row) =>
-        row.schedule_date >= prevDay &&
-        row.schedule_date <= nextDay &&
-        row.deleted_at == null &&
         row.shift_definition_id != null &&
         (!opts?.excludeScheduleId || row.id !== opts.excludeScheduleId) &&
         (!opts?.excludeEventId || row.schedule_event_id !== opts.excludeEventId),

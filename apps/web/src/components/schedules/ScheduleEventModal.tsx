@@ -244,7 +244,11 @@ export function ScheduleEventModal({
         }),
       )
       .join('; ');
-    toast.warning(`${t('schedules:calendar.conflicts.message')} ${lines}`);
+    const more =
+      skipped.length > 5
+        ? ` ${t('schedules:calendar.conflicts.more', { count: skipped.length - 5 })}`
+        : '';
+    toast.warning(`${t('schedules:calendar.conflicts.message')} ${lines}${more}`);
     return true;
   };
 
@@ -282,7 +286,12 @@ export function ScheduleEventModal({
         const { is_team: _isTeam, user_id: _userId, team_id: _teamId, pic_user_id: _pic, ...updatable } = payload;
         const result = await updateMutation.mutateAsync({
           id: event.id,
-          input: { ...updatable, member_ids: payload.member_ids } as UpdateScheduleEventInput,
+          // member_ids only applies to team events — the backend rejects it
+          // on individual events.
+          input: {
+            ...updatable,
+            ...(event.is_team ? { member_ids: payload.member_ids } : {}),
+          } as UpdateScheduleEventInput,
           editScope,
           fromDate,
         });

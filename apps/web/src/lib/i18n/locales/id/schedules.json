@@ -196,7 +196,8 @@
     "conflicts": {
       "title": "Bentrok Jadwal",
       "message": "Beberapa anggota sudah terjadwal pada waktu ini. Jadwal tetap dibuat untuk anggota yang tersedia.",
-      "worker": "{{name}} sudah terjadwal pada {{date}}"
+      "worker": "{{name}} sudah terjadwal pada {{date}}",
+      "more": "… dan {{count}} konflik lainnya"
     },
     "empty": {
       "noEvents": "Tidak ada jadwal pada hari ini",
@@ -205,7 +206,8 @@
     "messages": {
       "createSuccess": "Jadwal berhasil dibuat",
       "updateSuccess": "Jadwal berhasil diperbarui",
-      "deleteSuccess": "Jadwal berhasil dihapus"
+      "deleteSuccess": "Jadwal berhasil dihapus",
+      "loadEventError": "Gagal memuat detail jadwal"
     },
     "validation": {
       "intervalRange": "Interval harus antara 2–30 hari",

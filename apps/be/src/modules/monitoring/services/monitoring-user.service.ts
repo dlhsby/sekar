@@ -192,31 +192,44 @@ export class MonitoringUserService {
     });
     const clockedIn = new Set(clockedRows.map((r) => r.user_id));
 
+    // Counts are DISTINCT WORKERS, not roster rows — a worker may hold two
+    // non-overlapping shifts a day (ADR-047) and must not be counted twice.
+    const distinctUsers = (rows: typeof roster): number => new Set(rows.map((r) => r.user_id)).size;
+
     const expected = roster.filter(
       (r) => r.status === ScheduleStatus.PLANNED || r.status === ScheduleStatus.PRESENT,
     );
-    const onLeave = roster.filter(
-      (r) =>
-        r.status === ScheduleStatus.LEAVE_SICK ||
-        r.status === ScheduleStatus.LEAVE_ANNUAL ||
-        r.status === ScheduleStatus.LEAVE_PERMIT,
-    ).length;
-    const offSchedule = roster.filter((r) => r.status === ScheduleStatus.OFF).length;
+    const expectedCount = distinctUsers(expected);
+    const onLeave = distinctUsers(
+      roster.filter(
+        (r) =>
+          r.status === ScheduleStatus.LEAVE_SICK ||
+          r.status === ScheduleStatus.LEAVE_ANNUAL ||
+          r.status === ScheduleStatus.LEAVE_PERMIT,
+      ),
+    );
+    const offSchedule = distinctUsers(roster.filter((r) => r.status === ScheduleStatus.OFF));
 
     const absentRows = expected.filter((r) => !clockedIn.has(r.user_id));
-    const absent_users: AbsentUserDto[] = absentRows.map((r) => ({
-      user_id: r.user_id,
-      full_name: r.user?.full_name ?? '',
-      role: r.user?.role ?? '',
-      rayon_id: r.rayon_id,
-      shift_definition_id: r.shift_definition_id,
-      shift_name: r.shift_definition?.name ?? null,
-    }));
+    const seenAbsent = new Set<string>();
+    const absent_users: AbsentUserDto[] = [];
+    for (const r of absentRows) {
+      if (seenAbsent.has(r.user_id)) continue;
+      seenAbsent.add(r.user_id);
+      absent_users.push({
+        user_id: r.user_id,
+        full_name: r.user?.full_name ?? '',
+        role: r.user?.role ?? '',
+        rayon_id: r.rayon_id,
+        shift_definition_id: r.shift_definition_id,
+        shift_name: r.shift_definition?.name ?? null,
+      });
+    }
 
     return {
-      expected_count: expected.length,
-      present_count: expected.length - absentRows.length,
-      absent_count: absentRows.length,
+      expected_count: expectedCount,
+      present_count: expectedCount - absent_users.length,
+      absent_count: absent_users.length,
       on_leave_count: onLeave,
       off_schedule_count: offSchedule,
       absent_users,

@@ -117,7 +117,8 @@ describe('ScheduleMaterializerService', () => {
         created_by: 'admin-1',
       };
 
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValueOnce(null); // No tombstone
+      // Batched query: find all existing rows of this event in the date range
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]); // No tombstones
       jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null); // No conflict
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({ id: 'sched-1' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({ id: 'sched-1' } as Schedule);
@@ -134,6 +135,17 @@ describe('ScheduleMaterializerService', () => {
       expect(result.skipped).toHaveLength(0);
       expect(scheduleRepo.save).toHaveBeenCalled();
       expect(scheduleLocationRepo.save).toHaveBeenCalled(); // Static scope adds location
+      // Verify batched query with In() and withDeleted: true
+      expect(scheduleRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            schedule_event_id: 'event-1',
+            schedule_date: expect.anything(), // In() operator
+          }),
+          withDeleted: true,
+          select: ['user_id', 'schedule_date'],
+        }),
+      );
     });
 
     it('should skip row with tombstone (existing soft-deleted row)', async () => {
@@ -152,11 +164,13 @@ describe('ScheduleMaterializerService', () => {
         members: [],
       };
 
-      // Tombstone exists (soft-deleted row)
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValueOnce({
-        id: 'sched-old',
-        deleted_at: new Date(),
-      } as Schedule);
+      // Tombstone exists (soft-deleted row) — batched query includes withDeleted: true
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([
+        {
+          user_id: 'user-1',
+          schedule_date: '2026-07-15',
+        } as Schedule,
+      ]);
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -185,12 +199,14 @@ describe('ScheduleMaterializerService', () => {
         members: [],
       };
 
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValueOnce(null); // No tombstone
+      // No tombstone exists for this (user, date) pair
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
+      // But overlapping shift exists
       jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce({
         schedule_id: 'conflict-sched',
         date: '2026-07-15',
         shift_name: 'Shift 2',
-      }); // Conflict
+      });
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -222,7 +238,7 @@ describe('ScheduleMaterializerService', () => {
       };
 
       // No tombstones or conflicts for any member
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValue(null);
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]); // Batched query returns empty
       jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
@@ -258,7 +274,7 @@ describe('ScheduleMaterializerService', () => {
         members: [{ user_id: 'pic-1' }, { user_id: 'member-2' }] as any,
       };
 
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValue(null);
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]);
       jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
@@ -291,7 +307,7 @@ describe('ScheduleMaterializerService', () => {
         members: [],
       };
 
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
       jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null);
 
       const createdSchedule = {} as Schedule;
@@ -324,7 +340,7 @@ describe('ScheduleMaterializerService', () => {
         members: [],
       };
 
-      jest.spyOn(scheduleRepo, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
       jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null);
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({ id: 'sched-1' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({ id: 'sched-1' } as Schedule);
@@ -347,6 +363,69 @@ describe('ScheduleMaterializerService', () => {
       jest.spyOn(configService, 'getNumber').mockReturnValueOnce(30);
       const horizon = service.horizonDays();
       expect(horizon).toBe(30);
+    });
+  });
+
+  describe('rematerializeSeries', () => {
+    it('should delete rows on MULTIPLE future dates (MoreThanOrEqual range), then re-materialize', async () => {
+      const event: Partial<ScheduleEvent> = {
+        id: 'event-1',
+        recurrence_type: RecurrenceType.NONE,
+        start_date: '2026-07-15',
+        end_date: null,
+        recurrence_config: null,
+        shift_definition: mockShiftDef as any,
+        shift_definition_id: mockShiftDef.id,
+        user_id: 'user-1',
+        is_team: false,
+        scope: ScheduleScope.STATIC,
+        location_id: mockLocation.id,
+        location: mockLocation as any,
+        members: [],
+        created_by: 'admin-1',
+      };
+
+      // The find() call to fetch rows to delete
+      jest
+        .spyOn(scheduleRepo, 'find')
+        .mockResolvedValueOnce([
+          { id: 'sched-1', schedule_date: '2026-07-15' } as Schedule,
+          { id: 'sched-2', schedule_date: '2026-07-16' } as Schedule,
+        ]);
+      // The createQueryBuilder().delete() for hard-delete
+      const qbDelete = {
+        delete: jest.fn().mockReturnThis(),
+        from: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      };
+      jest.spyOn(scheduleRepo, 'createQueryBuilder').mockReturnValueOnce(qbDelete as any);
+
+      // Then the re-materialize call
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]); // No new tombstones
+      jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
+      jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
+      jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
+      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValue({} as ScheduleLocation);
+      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValue({} as ScheduleLocation);
+
+      const result = await service.rematerializeSeries(event as ScheduleEvent, '2026-07-15');
+
+      // Verify the find() call used MoreThanOrEqual(from) with is_detached: false
+      expect(scheduleRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            schedule_event_id: 'event-1',
+            schedule_date: expect.any(Object), // MoreThanOrEqual
+            is_detached: false,
+          }),
+        }),
+      );
+      // Verify hard-delete was executed
+      expect(qbDelete.delete).toHaveBeenCalled();
+      expect(qbDelete.execute).toHaveBeenCalled();
+      // Verify re-materialization happened
+      expect(result.created).toBe(1);
     });
   });
 });
