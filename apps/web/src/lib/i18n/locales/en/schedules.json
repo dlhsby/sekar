@@ -34,6 +34,13 @@
     "placementRayon": "Rayon placement",
     "emptyRayon": "No kawasan or locations yet"
   },
+  "search": {
+    "placeholder": "Search worker, area, or date…",
+    "advanced": "Advanced",
+    "noResults": "No results for \"{{q}}\"",
+    "groupDate": "Date",
+    "dateRangeLabel": "Date range"
+  },
   "page": {
     "title": "Schedules",
     "dateLabel": "Date:",

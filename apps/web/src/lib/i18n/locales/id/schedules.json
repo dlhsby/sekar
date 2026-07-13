@@ -34,6 +34,13 @@
     "placementRayon": "Penempatan Rayon",
     "emptyRayon": "Belum ada kawasan atau lokasi"
   },
+  "search": {
+    "placeholder": "Cari petugas, area, atau tanggal…",
+    "advanced": "Lanjutan",
+    "noResults": "Tidak ada hasil untuk \"{{q}}\"",
+    "groupDate": "Tanggal",
+    "dateRangeLabel": "Rentang tanggal"
+  },
   "page": {
     "title": "Jadwal",
     "dateLabel": "Tanggal:",

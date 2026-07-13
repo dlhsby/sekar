@@ -24,7 +24,7 @@ import {
   startOfWeek,
 } from 'date-fns';
 import { Button, FormSelect, PageHeader, Skeleton } from '@/components/ui';
-import { CalendarFilters } from '@/components/schedules/CalendarFilters';
+import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard } from '@/components/schedules/DayBoard';
@@ -262,7 +262,15 @@ export default function SchedulesPage() {
         />
       </div>
 
-      <CalendarFilters value={filters} onChange={setFilters} lockRayon={lockRayon} />
+      <ScheduleSearch
+        filters={filters}
+        onChange={setFilters}
+        lockRayon={lockRayon}
+        onNavigateDate={(iso) => {
+          setAnchor(new Date(`${iso}T00:00:00`));
+          setCalendarView('day');
+        }}
+      />
 
       {calendarView === 'year' ? (
         <YearView
