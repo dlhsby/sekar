@@ -124,7 +124,19 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
 - **Positive:** Professional PDF output, flexible templates, maintainable
 - **Negative:** Chromium binary on server, higher memory during generation
 - **Mitigation:** Semaphore limits concurrency; generated reports cached in S3
+- **Disk-leak guard (2026-07-13):** each `puppeteer.launch()` creates a
+  `/tmp/puppeteer_dev_chrome_profile-*` dir (~82MB) that is only removed on a clean
+  `close()`. Ungraceful exits (OOM/crash/restart) orphan them; enough accumulate to
+  fill the disk and crash-loop the API (this caused a staging outage). Mitigations:
+  `PdfGeneratorService` now sweeps stale profile dirs on startup and force-kills a
+  hung browser (timeout → SIGKILL) on recycle/shutdown so the profile is released.
+  Follow-up hardening: mount the backend container `/tmp` as a size-limited tmpfs +
+  a disk >80% alarm. See `specs/deployment/operations.md` → "Disk Space Full".
+
+## Changelog
+- 2026-07-13 — Fixed Puppeteer temp-profile disk leak (startup sweep + guarded
+  close); root-caused a staging ENOSPC outage.
 
 ---
 
-**Last Updated:** 2026-03-13
+**Last Updated:** 2026-07-13
