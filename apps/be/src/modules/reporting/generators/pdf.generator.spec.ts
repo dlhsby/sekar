@@ -1,4 +1,107 @@
+// puppeteer-core ships ESM that jest does not transform (transformIgnorePatterns
+// excludes node_modules); a factory mock avoids loading the real module.
+jest.mock('puppeteer-core', () => ({ launch: jest.fn() }));
+// fs built-ins are non-configurable (can't jest.spyOn); mock the module instead.
+jest.mock('fs');
+
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
+import * as puppeteer from 'puppeteer-core';
 import { Semaphore } from './semaphore';
+import { PdfGeneratorService } from './pdf.generator';
+
+const mockReaddir = fs.readdirSync as jest.Mock;
+const mockRm = fs.rmSync as jest.Mock;
+
+describe('PdfGeneratorService', () => {
+  let service: PdfGeneratorService;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReaddir.mockReturnValue([]);
+    service = new PdfGeneratorService();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  describe('onModuleInit stale-profile sweep', () => {
+    it('removes leftover puppeteer profile dirs and ignores unrelated entries', async () => {
+      mockReaddir.mockReturnValue([
+        'puppeteer_dev_chrome_profile-aaa',
+        'puppeteer_dev_chrome_profile-bbb',
+        'some-other-file',
+        'systemd-private-xyz',
+      ]);
+      (puppeteer.launch as jest.Mock).mockResolvedValue({
+        close: jest.fn(),
+        process: jest.fn(),
+      });
+
+      await service.onModuleInit();
+
+      const tmpDir = os.tmpdir();
+      expect(mockRm).toHaveBeenCalledTimes(2);
+      expect(mockRm).toHaveBeenCalledWith(path.join(tmpDir, 'puppeteer_dev_chrome_profile-aaa'), {
+        recursive: true,
+        force: true,
+      });
+      expect(mockRm).not.toHaveBeenCalledWith(
+        path.join(tmpDir, 'some-other-file'),
+        expect.anything(),
+      );
+    });
+
+    it('does not throw if the temp dir cannot be read', async () => {
+      mockReaddir.mockImplementation(() => {
+        throw new Error('EACCES');
+      });
+      (puppeteer.launch as jest.Mock).mockResolvedValue({
+        close: jest.fn(),
+        process: jest.fn(),
+      });
+
+      await expect(service.onModuleInit()).resolves.not.toThrow();
+    });
+  });
+
+  describe('closeBrowserSafely', () => {
+    it('does not force-kill when close resolves cleanly', async () => {
+      const kill = jest.fn();
+      const browser = {
+        close: jest.fn().mockResolvedValue(undefined),
+        process: jest.fn(() => ({ kill })),
+      } as unknown as puppeteer.Browser;
+
+      await (
+        service as unknown as { closeBrowserSafely(b: puppeteer.Browser): Promise<void> }
+      ).closeBrowserSafely(browser);
+
+      expect(browser.close).toHaveBeenCalled();
+      expect(kill).not.toHaveBeenCalled();
+    });
+
+    it('force-kills the process when close hangs past the timeout', async () => {
+      jest.useFakeTimers();
+      const kill = jest.fn();
+      const browser = {
+        close: jest.fn(() => new Promise<void>(() => {})), // never resolves
+        process: jest.fn(() => ({ kill })),
+      } as unknown as puppeteer.Browser;
+
+      const pending = (
+        service as unknown as { closeBrowserSafely(b: puppeteer.Browser): Promise<void> }
+      ).closeBrowserSafely(browser);
+
+      await jest.advanceTimersByTimeAsync(6000);
+      await pending;
+
+      expect(kill).toHaveBeenCalledWith('SIGKILL');
+    });
+  });
+});
 
 describe('Semaphore', () => {
   describe('concurrent limit enforcement', () => {

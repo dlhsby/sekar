@@ -785,6 +785,28 @@ If still full:
 - Archive media to S3 and delete old MinIO data
 - Expand the EBS volume (AWS) or add a new disk (self-hosted)
 
+**Step 4 (if the backend writable layer is the hog): leaked Puppeteer profiles**
+
+`docker system df` showing `sekar-backend` with a multi-GB writable layer (while
+other containers are ~0) means leaked Chrome temp profiles from PDF report
+generation (`PdfGeneratorService`). Each ungraceful backend exit can orphan an
+~82MB `/tmp/puppeteer_dev_chrome_profile-*` dir; enough of them fill the disk and
+crash-loop the API (ENOSPC → login fails).
+
+```bash
+# Count / free them (safe: orphaned temp dirs)
+docker exec sekar-backend sh -c 'ls -d /tmp/puppeteer_dev_chrome_profile-* 2>/dev/null | wc -l'
+docker exec sekar-backend sh -c 'rm -rf /tmp/puppeteer_dev_chrome_profile-* /tmp/org.chromium.Chromium.*'
+docker restart sekar-backend    # clean start; restart keeps the now-emptied layer (no redeploy)
+df -h /                          # confirm freed
+```
+
+Staging has no SSH — run the above via **SSM Run Command** (`AWS-RunShellScript`,
+region `ap-southeast-3`, instance `i-08edccdc966c0985e`). Since v0.1.x+ the backend
+sweeps stale profiles on startup and force-kills hung Chrome on browser recycle, so
+this should no longer accumulate; a size-limited `/tmp` tmpfs mount + a disk >80%
+alarm are the recommended follow-up hardening.
+
 ---
 
 ### Issue: Phantom Migration Rows

@@ -9,6 +9,20 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /**
+ * Truncate a URL/string for safe logging.
+ *
+ * Guards against multi-MB `data:` URIs (base64 inline images) or otherwise huge
+ * values being written verbatim into logs. Keeps the head (enough to identify the
+ * value) and appends an elision marker with the original length.
+ */
+const LOG_URL_MAX_LEN = 120;
+function truncateForLog(value: string | null | undefined): string {
+  if (!value) return String(value);
+  if (value.length <= LOG_URL_MAX_LEN) return value;
+  return `${value.slice(0, LOG_URL_MAX_LEN)}… [truncated, ${value.length} chars]`;
+}
+
+/**
  * S3 Service
  *
  * Handles file uploads to AWS S3 bucket.
@@ -237,17 +251,28 @@ export class S3Service {
    * @returns Presigned URL or original URL if extraction fails
    */
   async convertToPresignedUrl(url: string, expiresIn: number = 3600): Promise<string> {
+    // `data:`/`blob:` URIs are inline content, not S3 objects. Return them as-is
+    // WITHOUT attempting extraction/logging — a base64 data URI can be many MB and
+    // logging it verbatim floods the logs (and burns CPU) for no benefit.
+    if (url && (url.startsWith('data:') || url.startsWith('blob:'))) {
+      return url;
+    }
+
     const key = this.extractKeyFromUrl(url);
 
     if (!key) {
-      this.logger.warn(`Could not extract key from URL: ${url}, returning original URL`);
+      this.logger.warn(
+        `Could not extract key from URL: ${truncateForLog(url)}, returning original URL`,
+      );
       return url;
     }
 
     try {
       return await this.getPresignedUrl(key, expiresIn);
     } catch (_error) {
-      this.logger.error(`Failed to generate presigned URL for ${url}, returning original URL`);
+      this.logger.error(
+        `Failed to generate presigned URL for ${truncateForLog(url)}, returning original URL`,
+      );
       return url;
     }
   }

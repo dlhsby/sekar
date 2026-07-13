@@ -529,5 +529,38 @@ describe('S3Service', () => {
 
       expect(result).toBe(mockPresignedUrl);
     });
+
+    it('should return data: URIs as-is without logging or presigning', async () => {
+      const dataUri = `data:image/jpeg;base64,${'A'.repeat(5_000_000)}`;
+      const warnSpy = jest.spyOn((service as any).logger, 'warn');
+
+      const result = await service.convertToPresignedUrl(dataUri);
+
+      expect(result).toBe(dataUri);
+      expect(getSignedUrl).not.toHaveBeenCalled();
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('should return blob: URIs as-is without presigning', async () => {
+      const blobUri = 'blob:https://sekar.example.com/abc-123';
+
+      const result = await service.convertToPresignedUrl(blobUri);
+
+      expect(result).toBe(blobUri);
+      expect(getSignedUrl).not.toHaveBeenCalled();
+    });
+
+    it('should truncate the URL in the warn log when key extraction fails', async () => {
+      const longUrl = `not-an-s3-url-${'x'.repeat(500)}`;
+      const warnSpy = jest.spyOn((service as any).logger, 'warn');
+
+      const result = await service.convertToPresignedUrl(longUrl);
+
+      expect(result).toBe(longUrl);
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      const logged = warnSpy.mock.calls[0][0] as string;
+      expect(logged).toContain('[truncated,');
+      expect(logged.length).toBeLessThan(longUrl.length);
+    });
   });
 });
