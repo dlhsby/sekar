@@ -136,7 +136,7 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     // Phase 2 modules
     RayonsModule, // Geographic sectors
     RegionsModule, // Kawasan — level between rayon and area (ADR-045)
-    TeamsModule, // Teams (crews) + team-type catalog (ADR-048)
+    TeamsModule, // Teams (crews) + team-category catalog (ADR-048)
     KecamatansModule, // Surabaya kecamatans (FK to rayon)
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering

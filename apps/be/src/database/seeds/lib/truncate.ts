@@ -18,7 +18,7 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'system_config',
   // Teams (ADR-048) — teams before their type catalog.
   'teams',
-  'team_types',
+  'team_categories',
   // Phase 3 (plants / pruning / seeds / capacity) — cleared first (deepest FKs).
   'seed_transactions',
   'plant_seeds',

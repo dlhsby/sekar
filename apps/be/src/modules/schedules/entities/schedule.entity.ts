@@ -15,7 +15,7 @@ import { User } from '../../users/entities/user.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Region } from '../../regions/entities/region.entity';
-import { TeamType } from '../../teams/entities/team-type.entity';
+import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { ScheduleEvent } from './schedule-event.entity';
 import { ScheduleLocation } from './schedule-area.entity';
 
@@ -119,7 +119,7 @@ export class Schedule {
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  team_type_id: string | null;
+  team_category_id: string | null;
 
   @ApiProperty({
     description: 'Is this occurrence detached (overridden from the event)',
@@ -179,9 +179,9 @@ export class Schedule {
   @JoinColumn({ name: 'region_id' })
   region?: Region | null;
 
-  @ManyToOne(() => TeamType, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'team_type_id' })
-  team_type?: TeamType | null;
+  @ManyToOne(() => TeamCategory, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'team_category_id' })
+  team_category?: TeamCategory | null;
 
   @OneToMany(() => ScheduleLocation, (dsa) => dsa.schedule, { cascade: true })
   schedule_areas: ScheduleLocation[];

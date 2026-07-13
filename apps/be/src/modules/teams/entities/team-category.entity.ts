@@ -8,13 +8,13 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * TeamType — the crew-type catalog (ADR-048, Phase 4): perawatan / penyiraman /
+ * TeamCategory — the crew-type catalog (ADR-048, Phase 4): perawatan / penyiraman /
  * penanaman / penyapuan, extensible at runtime. Managed with `team:manage`.
- * Concrete team (name, PIC, members, when) live on schedule_events; team_types
+ * Concrete team (name, PIC, members, when) live on schedule_events; team_categories
  * only define the type + marker.
  */
-@Entity('team_types')
-export class TeamType {
+@Entity('team_categories')
+export class TeamCategory {
   @ApiProperty()
   @PrimaryGeneratedColumn('uuid')
   id: string;

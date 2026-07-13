@@ -2,7 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { TeamsService } from './teams.service';
 
 /**
- * Phase 4: TeamsService only manages team types (crew-type catalog).
+ * Phase 4: TeamsService only manages team categories (crew-type catalog).
  * Concrete teams are managed via schedule_events, not here.
  */
 describe('TeamsService', () => {
@@ -36,7 +36,7 @@ describe('TeamsService', () => {
   });
 
   describe('createType', () => {
-    it('creates a team type', async () => {
+    it('creates a team category', async () => {
       const dto = { name: 'Penyiraman' };
       typeRepo.save.mockResolvedValue({ id: 'tt-1', ...dto });
       typeRepo.create.mockReturnValue(dto);

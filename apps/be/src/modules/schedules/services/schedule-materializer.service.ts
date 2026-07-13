@@ -122,7 +122,7 @@ export class ScheduleMaterializerService {
           source: 'event',
           schedule_event_id: event.id,
           region_id: event.scope === 'mobile' ? event.region_id : null,
-          team_type_id: event.is_team ? event.team_type_id : null,
+          team_category_id: event.is_team ? event.team_category_id : null,
           rayon_id,
           created_by: event.created_by,
         });

@@ -4,7 +4,7 @@ import { MARKER_IMAGE_PATTERN, MARKER_IMAGE_MESSAGE } from '../../../common/dto/
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
-export class CreateTeamTypeDto {
+export class CreateTeamCategoryDto {
   @ApiProperty({ example: 'Penyiraman' })
   @IsString()
   @MinLength(2)
@@ -32,7 +32,7 @@ export class CreateTeamTypeDto {
   marker_color?: string;
 }
 
-export class UpdateTeamTypeDto extends PartialType(CreateTeamTypeDto) {
+export class UpdateTeamCategoryDto extends PartialType(CreateTeamCategoryDto) {
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()

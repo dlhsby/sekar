@@ -481,28 +481,28 @@
       "markerColor": "Warna Penanda"
     }
   },
-  "teamTypes": {
-    "pageTitle": "Tipe Tim",
-    "description": "Kelola katalog tipe tim untuk penjadwalan",
-    "searchPlaceholder": "Cari nama tipe…",
+  "teamCategories": {
+    "pageTitle": "Kategori Tim",
+    "description": "Kelola katalog kategori tim untuk penjadwalan",
+    "searchPlaceholder": "Cari nama kategori…",
     "columnName": "Nama",
     "columnStatus": "Status",
     "columnMarker": "Penanda",
-    "buttonAdd": "Tambah Tipe Tim",
+    "buttonAdd": "Tambah Kategori Tim",
     "actionEdit": "Ubah",
-    "emptyTitle": "Belum ada tipe tim",
-    "denied": "Anda tidak memiliki akses ke tipe tim",
-    "deleteTitle": "Hapus Tipe Tim",
-    "deleteMessage": "Hapus tipe tim \"{{name}}\"?",
-    "successCreated": "Tipe tim \"{{name}}\" dibuat",
-    "successUpdated": "Tipe tim \"{{name}}\" diperbarui",
-    "successDeleted": "Tipe tim dihapus",
+    "emptyTitle": "Belum ada kategori tim",
+    "denied": "Anda tidak memiliki akses ke kategori tim",
+    "deleteTitle": "Hapus Kategori Tim",
+    "deleteMessage": "Hapus kategori tim \"{{name}}\"?",
+    "successCreated": "Kategori tim \"{{name}}\" dibuat",
+    "successUpdated": "Kategori tim \"{{name}}\" diperbarui",
+    "successDeleted": "Kategori tim dihapus",
     "statusActive": "Aktif",
     "statusInactive": "Nonaktif",
     "form": {
-      "name": "Nama Tipe Tim",
+      "name": "Nama Kategori Tim",
       "namePlaceholder": "mis. Tim Penyiraman",
-      "activeLabel": "Tipe aktif",
+      "activeLabel": "Kategori aktif",
       "markerColor": "Warna Penanda"
     }
   }

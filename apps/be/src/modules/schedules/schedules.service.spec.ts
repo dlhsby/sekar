@@ -121,14 +121,14 @@ describe('SchedulesService', () => {
       });
     });
 
-    it('joins user, shift_definition, schedule_areas, region, and team_type relations (Phase 4)', async () => {
+    it('joins user, shift_definition, schedule_areas, region, and team_category relations (Phase 4)', async () => {
       await service.findByDateRange('2026-06-30', '2026-07-05');
       const joinCalls = rosterRepo.qb.leftJoinAndSelect.mock.calls;
       expect(joinCalls.some((c) => c[0] === 'ds.user')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.shift_definition')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.schedule_areas')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.region')).toBe(true);
-      expect(joinCalls.some((c) => c[0] === 'ds.team_type')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.team_category')).toBe(true);
     });
 
     it('scopes to a rayon when one is given', async () => {

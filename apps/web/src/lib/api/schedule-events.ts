@@ -29,7 +29,7 @@ export interface CreateScheduleEventInput {
   region_id?: string | null;
   is_team: boolean;
   user_id?: string | null;
-  team_type_id?: string | null;
+  team_category_id?: string | null;
   pic_user_id?: string | null;
   member_ids?: string[];
   notes?: string;
@@ -61,7 +61,7 @@ export interface ScheduleEvent {
   location_id: string | null;
   region_id: string | null;
   is_team: boolean;
-  team_type_id: string | null;
+  team_category_id: string | null;
   pic_user_id: string | null;
   user_id: string | null;
   is_active: boolean;
@@ -85,7 +85,7 @@ export interface ScheduleEvent {
     id: string;
     name: string;
   } | null;
-  team_type?: {
+  team_category?: {
     id: string;
     name: string;
     marker_image_url?: string | null;
@@ -137,7 +137,7 @@ export interface ScheduleOccurrence {
     end_time: string;
     crosses_midnight?: boolean;
   } | null;
-  team_type?: {
+  team_category?: {
     id: string;
     name: string;
     marker_image_url?: string | null;
@@ -162,7 +162,7 @@ interface RawScheduleRangeRow {
   shift_definition_id: string | null;
   status: string;
   region_id?: string | null;
-  team_type_id?: string | null;
+  team_category_id?: string | null;
   schedule_event_id?: string | null;
   is_detached?: boolean;
   is_projected?: boolean;
@@ -170,7 +170,7 @@ interface RawScheduleRangeRow {
   shift_definition?: ScheduleOccurrence['shift_definition'];
   schedule_areas?: Array<{ location_id: string; area?: { id: string; name: string } | null }>;
   region?: ScheduleOccurrence['region'];
-  team_type?: ScheduleOccurrence['team_type'];
+  team_category?: ScheduleOccurrence['team_category'];
 }
 
 /** Normalize a raw roster row to the calendar's occurrence shape. */
@@ -190,7 +190,7 @@ function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
     is_projected: row.is_projected ?? false,
     user: row.user,
     shift_definition: row.shift_definition ?? null,
-    team_type: row.team_type ?? null,
+    team_category: row.team_category ?? null,
     location: firstArea?.area ?? null,
     region: row.region ?? null,
   };

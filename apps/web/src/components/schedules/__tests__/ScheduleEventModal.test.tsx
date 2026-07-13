@@ -43,7 +43,7 @@ jest.mock('@/lib/api/users', () => ({
 }));
 
 jest.mock('@/lib/api/teams', () => ({
-  useTeamTypes: () => ({ data: [] }),
+  useTeamCategories: () => ({ data: [] }),
 }));
 
 jest.mock('@/lib/api/rayons', () => ({

@@ -39,7 +39,7 @@ import {
 } from '@/lib/api/schedule-events';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useUsers } from '@/lib/api/users';
-import { useTeamTypes } from '@/lib/api/teams';
+import { useTeamCategories } from '@/lib/api/teams';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
 import { usePermissions } from '@/lib/auth/usePermissions';
@@ -78,7 +78,7 @@ function createSchema(t: TFn) {
       title: z.string().max(120).optional(),
       kind: z.enum(['individual', 'team']),
       user_id: z.string().optional(),
-      team_type_id: z.string().optional(),
+      team_category_id: z.string().optional(),
       pic_user_id: z.string().optional(),
       member_ids: z.array(z.string()),
       shift_definition_id: z.string().min(1, t('validation:required')),
@@ -100,8 +100,8 @@ function createSchema(t: TFn) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['user_id'], message: t('validation:required') });
       }
       if (data.kind === 'team') {
-        if (!data.team_type_id) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['team_type_id'], message: t('validation:required') });
+        if (!data.team_category_id) {
+          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['team_category_id'], message: t('validation:required') });
         }
         if (!data.pic_user_id) {
           ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pic_user_id'], message: t('validation:required') });
@@ -178,7 +178,7 @@ export function ScheduleEventModal({
       title: event?.title ?? '',
       kind: event?.is_team ? 'team' : 'individual',
       user_id: event?.user_id ?? '',
-      team_type_id: event?.team_type_id ?? '',
+      team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
       member_ids: event?.members?.map((m) => m.user_id) ?? [],
       shift_definition_id: event?.shift_definition_id ?? '',
@@ -200,7 +200,7 @@ export function ScheduleEventModal({
 
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: usersResp } = useUsers({ limit: 1000 });
-  const { data: teamTypes = [] } = useTeamTypes(can('schedule:create') || can('schedule:update'));
+  const { data: teamCategories = [] } = useTeamCategories(can('schedule:create') || can('schedule:update'));
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: regions = [] } = useRegions();
 
@@ -222,7 +222,7 @@ export function ScheduleEventModal({
 
   const shiftOptions = shifts.map((s) => ({ value: s.id, label: s.name }));
   const userOptions = schedulableUsers.map((u) => ({ value: u.id, label: u.full_name }));
-  const teamTypeOptions = teamTypes.filter((tt) => tt.is_active).map((tt) => ({ value: tt.id, label: tt.name }));
+  const teamCategoryOptions = teamCategories.filter((tt) => tt.is_active).map((tt) => ({ value: tt.id, label: tt.name }));
   const locationOptions = locations.map((l) => ({ value: l.id, label: l.name }));
   const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
   const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
@@ -288,7 +288,7 @@ export function ScheduleEventModal({
         region_id: data.scope === 'mobile' ? data.region_id : null,
         is_team: data.kind === 'team',
         user_id: data.kind === 'individual' ? data.user_id : null,
-        team_type_id: data.kind === 'team' ? data.team_type_id : null,
+        team_category_id: data.kind === 'team' ? data.team_category_id : null,
         pic_user_id: data.kind === 'team' ? data.pic_user_id : null,
         member_ids: data.kind === 'team' ? data.member_ids.filter((id) => id !== data.pic_user_id) : [],
         notes: data.notes || undefined,
@@ -297,7 +297,7 @@ export function ScheduleEventModal({
       if (isEditing && event) {
         // Kind (individual/team target) is immutable on the backend — strip it.
         // eslint-disable-next-line @typescript-eslint/no-unused-vars -- these are intentionally stripped from the payload
-        const { is_team: _, user_id: __, team_type_id: ___, pic_user_id: ____, ...updatable } = payload;
+        const { is_team: _, user_id: __, team_category_id: ___, pic_user_id: ____, ...updatable } = payload;
         const result = await updateMutation.mutateAsync({
           id: event.id,
           // member_ids only applies to team events — the backend rejects it
@@ -378,12 +378,12 @@ export function ScheduleEventModal({
             {formKind === 'team' && (
               <>
                 <FormCombobox
-                  label={t('schedules:calendar.event.teamTypeLabel')}
-                  options={teamTypeOptions}
-                  value={watch('team_type_id') || ''}
-                  onChange={(v) => setValue('team_type_id', v, { shouldValidate: true })}
-                  placeholder={t('schedules:calendar.event.teamTypePlaceholder')}
-                  error={errors.team_type_id?.message}
+                  label={t('schedules:calendar.event.teamCategoryLabel')}
+                  options={teamCategoryOptions}
+                  value={watch('team_category_id') || ''}
+                  onChange={(v) => setValue('team_category_id', v, { shouldValidate: true })}
+                  placeholder={t('schedules:calendar.event.teamCategoryPlaceholder')}
+                  error={errors.team_category_id?.message}
                   disabled={isEditing}
                 />
                 <FormCombobox

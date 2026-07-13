@@ -248,7 +248,7 @@ describe('ScheduleMaterializerService', () => {
         user_id: null,
         is_team: true,
         pic_user_id: 'pic-1',
-        team_type_id: 'team-1',
+        team_category_id: 'team-1',
         scope: ScheduleScope.STATIC,
         location_id: mockLocation.id,
         location: mockLocation as any,
@@ -285,7 +285,7 @@ describe('ScheduleMaterializerService', () => {
         user_id: null,
         is_team: true,
         pic_user_id: 'pic-1', // Also in members
-        team_type_id: 'team-1',
+        team_category_id: 'team-1',
         scope: ScheduleScope.STATIC,
         location_id: mockLocation.id,
         location: mockLocation as any,
