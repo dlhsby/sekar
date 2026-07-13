@@ -29,6 +29,7 @@ import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard } from '@/components/schedules/DayBoard';
 import { YearView } from '@/components/schedules/YearView';
+import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
 import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
@@ -123,8 +124,9 @@ export default function SchedulesPage() {
     setCreateOpen(true);
   };
 
-  // ── Occurrence click → edit/delete flows ─────────────────────────────────
+  // ── Occurrence click → detail → edit/delete flows ────────────────────────
   const [chosen, setChosen] = useState<ScheduleOccurrence | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [editChooserOpen, setEditChooserOpen] = useState(false);
   const [eventEdit, setEventEdit] = useState<{ scope: EditScope; fromDate?: string } | null>(null);
   const [rowEditOpen, setRowEditOpen] = useState(false);
@@ -133,7 +135,7 @@ export default function SchedulesPage() {
   // The full rule (event) behind the chosen occurrence, for series edits.
   const { data: chosenEvent, isError: chosenEventError } = useScheduleEvent(
     chosen?.schedule_event_id ?? '',
-    !!chosen?.schedule_event_id && !!eventEdit
+    !!chosen?.schedule_event_id && (!!eventEdit || detailOpen)
   );
   // If the event can't be loaded the edit flow would silently never open —
   // surface it and reset the flow.
@@ -189,14 +191,29 @@ export default function SchedulesPage() {
   const refreshCalendar = () =>
     queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
 
+  // Clicking a schedule opens a read-only detail first (Google-Calendar style),
+  // not the scope prompt. Ubah/Hapus route onward from there.
   const onOccurrenceClick = (occ: ScheduleOccurrence) => {
-    if (!can('schedule:update') && !can('schedule:delete')) return;
     setChosen(occ);
-    if (occ.schedule_event_id) {
+    setDetailOpen(true);
+  };
+
+  const onDetailEdit = () => {
+    setDetailOpen(false);
+    if (chosen?.schedule_event_id) {
       setEditChooserOpen(true);
     } else {
       // Manual/ad-hoc row — no rule behind it, edit the row directly.
       setRowEditOpen(true);
+    }
+  };
+
+  const onDetailDelete = () => {
+    setDetailOpen(false);
+    if (chosen?.schedule_event_id) {
+      setDeleteChooserOpen(true);
+    } else {
+      void onDeleteScope('this');
     }
   };
 
@@ -356,6 +373,22 @@ export default function SchedulesPage() {
           />
         </div>
       )}
+
+      {/* Read-only detail (shown first on click; Ubah/Hapus route onward) */}
+      <ScheduleDetailModal
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open && !editChooserOpen && !rowEditOpen && !deleteChooserOpen) setChosen(null);
+        }}
+        occurrence={chosen}
+        event={chosen?.schedule_event_id ? chosenEvent : null}
+        onEdit={onDetailEdit}
+        onDelete={onDetailDelete}
+        canEdit={can('schedule:update')}
+        canDelete={can('schedule:delete')}
+        localeCode={localeCode}
+      />
 
       {/* Create */}
       {createOpen && (

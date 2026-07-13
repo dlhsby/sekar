@@ -41,6 +41,13 @@
     "groupDate": "Tanggal",
     "dateRangeLabel": "Rentang tanggal"
   },
+  "detail": {
+    "placement": "Penempatan",
+    "endDate": "Berakhir",
+    "pic": "PIC",
+    "members": "Anggota",
+    "status": "Status"
+  },
   "page": {
     "title": "Jadwal",
     "dateLabel": "Tanggal:",

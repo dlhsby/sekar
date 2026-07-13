@@ -41,6 +41,13 @@
     "groupDate": "Date",
     "dateRangeLabel": "Date range"
   },
+  "detail": {
+    "placement": "Placement",
+    "endDate": "Ends",
+    "pic": "PIC",
+    "members": "Members",
+    "status": "Status"
+  },
   "page": {
     "title": "Schedules",
     "dateLabel": "Date:",
