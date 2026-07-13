@@ -2,8 +2,14 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import * as puppeteer from 'puppeteer-core';
 import * as Handlebars from 'handlebars';
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { Semaphore } from './semaphore';
+
+/** Prefix puppeteer uses for the temp Chrome user-data dir it creates per launch. */
+const PROFILE_PREFIX = 'puppeteer_dev_chrome_profile-';
+/** Hard cap on how long we wait for a graceful browser close before force-killing. */
+const CLOSE_TIMEOUT_MS = 5000;
 
 /**
  * PDF Generator Service
@@ -25,6 +31,12 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
   private readonly templatesDir = path.join(__dirname, 'templates');
 
   async onModuleInit(): Promise<void> {
+    // Sweep any Chrome profile dirs orphaned by a previous ungraceful exit
+    // (OOM/crash/restart). No browser of ours is running yet, so this is safe.
+    // Without it, each crash-loop restart leaves an ~82MB profile behind and the
+    // accumulation eventually fills the disk (ENOSPC → API down).
+    this.cleanupStaleProfiles();
+
     try {
       const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
       this.browser = await puppeteer.launch({
@@ -48,12 +60,9 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     if (this.browser) {
-      try {
-        await this.browser.close();
-        this.logger.log('PDF generator browser closed');
-      } catch (error) {
-        this.logger.error(`Failed to close browser: ${(error as Error).message}`);
-      }
+      await this.closeBrowserSafely(this.browser);
+      this.browser = null;
+      this.logger.log('PDF generator browser closed');
     }
   }
 
@@ -125,7 +134,10 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log(`Recycling browser after ${this.renderCount} renders`);
       if (this.browser) {
-        await this.browser.close();
+        // Guarded close ensures the old browser's temp profile dir is released even
+        // if Chrome hangs; a plain close() that times out would orphan an ~82MB dir.
+        await this.closeBrowserSafely(this.browser);
+        this.browser = null;
       }
 
       const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium-browser';
@@ -139,6 +151,69 @@ export class PdfGeneratorService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.error(`Failed to recycle browser: ${(error as Error).message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Close a browser, force-killing the underlying process if the graceful close
+   * does not complete within CLOSE_TIMEOUT_MS.
+   *
+   * A hung `browser.close()` leaves Chrome running and its temp profile dir on
+   * disk. Racing close() against a timeout and falling back to SIGKILL on the
+   * child process guarantees the process (and thus its profile dir) is released.
+   */
+  private async closeBrowserSafely(browser: puppeteer.Browser): Promise<void> {
+    const proc = browser.process();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      await Promise.race([
+        browser.close(),
+        new Promise<void>((_, reject) => {
+          timer = setTimeout(
+            () => reject(new Error('browser.close() timed out')),
+            CLOSE_TIMEOUT_MS,
+          );
+        }),
+      ]);
+    } catch (error) {
+      this.logger.warn(
+        `Graceful browser close failed (${(error as Error).message}); force-killing process`,
+      );
+      try {
+        proc?.kill('SIGKILL');
+      } catch (killError) {
+        this.logger.error(`Failed to force-kill browser process: ${(killError as Error).message}`);
+      }
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+  }
+
+  /**
+   * Remove leftover `puppeteer_dev_chrome_profile-*` dirs from the OS temp dir.
+   *
+   * Puppeteer normally removes the temp profile it created on a clean close(), so
+   * these only exist when a prior process died ungracefully. Called at startup
+   * (no browser running → safe to remove all matches).
+   */
+  private cleanupStaleProfiles(): void {
+    const tmpDir = os.tmpdir();
+    let removed = 0;
+    try {
+      for (const entry of fs.readdirSync(tmpDir)) {
+        if (!entry.startsWith(PROFILE_PREFIX)) continue;
+        try {
+          fs.rmSync(path.join(tmpDir, entry), { recursive: true, force: true });
+          removed++;
+        } catch (error) {
+          this.logger.warn(`Failed to remove stale profile ${entry}: ${(error as Error).message}`);
+        }
+      }
+      if (removed > 0) {
+        this.logger.log(`Cleaned ${removed} stale puppeteer profile dir(s) from ${tmpDir}`);
+      }
+    } catch (error) {
+      this.logger.warn(`Stale-profile sweep skipped: ${(error as Error).message}`);
     }
   }
 }
