@@ -85,7 +85,7 @@ export class ScheduleEventMaterializationCron implements OnApplicationBootstrap 
         'shift_definition',
         'location',
         'region',
-        'team_type',
+        'team_category',
         'pic_user',
         'user',
         'members',

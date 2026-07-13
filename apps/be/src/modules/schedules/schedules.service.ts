@@ -236,7 +236,7 @@ export class SchedulesService {
         'shift_definition',
         'location',
         'region',
-        'team_type',
+        'team_category',
         'pic_user',
         'user',
         'members',
@@ -361,7 +361,7 @@ export class SchedulesService {
 
   /**
    * All roster rows for a date range [from, to] inclusive, rayon-scoped.
-   * Relations: user, shift_definition, schedule_areas/locations, region, team_type.
+   * Relations: user, shift_definition, schedule_areas/locations, region, team_category.
    *
    * Phase 4 (ADR-047 amended): includes materialized rows + projected rows from
    * active events that expand beyond the materialization horizon. Projected rows
@@ -376,7 +376,7 @@ export class SchedulesService {
       .leftJoinAndSelect('ds.schedule_areas', 'dsa')
       .leftJoinAndSelect('dsa.area', 'area')
       .leftJoinAndSelect('ds.region', 'r')
-      .leftJoinAndSelect('ds.team_type', 'tt')
+      .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.user_id = :userId', { userId })
       .andWhere('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
@@ -400,7 +400,7 @@ export class SchedulesService {
         'shift_definition',
         'location',
         'region',
-        'team_type',
+        'team_category',
         'pic_user',
         'user',
         'members',
@@ -456,8 +456,8 @@ export class SchedulesService {
               projected.schedule_event_id = event.id;
               projected.region_id = event.scope === 'mobile' ? event.region_id : null;
               projected.region = event.scope === 'mobile' ? event.region : null;
-              projected.team_type_id = event.is_team ? event.team_type_id : null;
-              projected.team_type = event.is_team ? event.team_type : null;
+              projected.team_category_id = event.is_team ? event.team_category_id : null;
+              projected.team_category = event.is_team ? event.team_category : null;
 
               const rayon_id =
                 event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
@@ -516,7 +516,7 @@ export class SchedulesService {
       .leftJoinAndSelect('ds.schedule_areas', 'dsa')
       .leftJoinAndSelect('dsa.area', 'area')
       .leftJoinAndSelect('ds.region', 'r')
-      .leftJoinAndSelect('ds.team_type', 'tt')
+      .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL');
@@ -542,7 +542,7 @@ export class SchedulesService {
         'shift_definition',
         'location',
         'region',
-        'team_type',
+        'team_category',
         'pic_user',
         'user',
         'members',
@@ -601,8 +601,8 @@ export class SchedulesService {
                 projected.schedule_event_id = event.id;
                 projected.region_id = event.scope === 'mobile' ? event.region_id : null;
                 projected.region = event.scope === 'mobile' ? event.region : null;
-                projected.team_type_id = event.is_team ? event.team_type_id : null;
-                projected.team_type = event.is_team ? event.team_type : null;
+                projected.team_category_id = event.is_team ? event.team_category_id : null;
+                projected.team_category = event.is_team ? event.team_category : null;
                 projected.rayon_id = rayon_id ?? null;
                 projected.is_detached = false;
                 projected.is_projected = true;

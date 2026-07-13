@@ -15,7 +15,7 @@ import { User } from '../../users/entities/user.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
-import { TeamType } from '../../teams/entities/team-type.entity';
+import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
 import { ScheduleScope } from '../enums/schedule-scope.enum';
 import { ScheduleEventMember } from './schedule-event-member.entity';
@@ -35,13 +35,13 @@ export interface RecurrenceConfig {
 /**
  * ScheduleEvent — rule-based recurring schedule (ADR-047).
  * Materialized into concrete occurrences (schedules rows) by cron + on-demand.
- * Phase 4: team_type_id replaces team_id; concrete team (name, PIC, members)
+ * Phase 4: team_category_id replaces team_id; concrete team (name, PIC, members)
  * are defined per schedule event, not in a standing teams table.
  */
 @Entity('schedule_events')
 @Index('IDX_schedule_events_shift_definition', ['shift_definition_id'])
 @Index('IDX_schedule_events_user', ['user_id'])
-@Index('IDX_schedule_events_team_type', ['team_type_id'])
+@Index('IDX_schedule_events_team_category', ['team_category_id'])
 @Index('IDX_schedule_events_start_date', ['start_date'])
 export class ScheduleEvent {
   @ApiProperty({ description: 'Unique identifier' })
@@ -102,7 +102,7 @@ export class ScheduleEvent {
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  team_type_id: string | null;
+  team_category_id: string | null;
 
   @ApiProperty({
     description: 'PIC/owner for team events (required for team, null for individual)',
@@ -157,9 +157,9 @@ export class ScheduleEvent {
   @JoinColumn({ name: 'region_id' })
   region?: Region | null;
 
-  @ManyToOne(() => TeamType, { nullable: true, eager: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'team_type_id' })
-  team_type?: TeamType | null;
+  @ManyToOne(() => TeamCategory, { nullable: true, eager: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'team_category_id' })
+  team_category?: TeamCategory | null;
 
   @ManyToOne(() => User, { nullable: true, eager: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'pic_user_id' })

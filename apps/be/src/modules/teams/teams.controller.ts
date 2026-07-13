@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { TeamsService } from './teams.service';
-import { TeamType } from './entities/team-type.entity';
-import { CreateTeamTypeDto, UpdateTeamTypeDto } from './dto/team-type.dto';
+import { TeamCategory } from './entities/team-category.entity';
+import { CreateTeamCategoryDto, UpdateTeamCategoryDto } from './dto/team-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PermissionsGuard } from '../auth/guards/permissions.guard';
 import { RequirePermissions } from '../auth/decorators/require-permissions.decorator';
@@ -24,7 +24,7 @@ import { RequirePermissions } from '../auth/decorators/require-permissions.decor
  */
 @ApiTags('teams')
 @ApiBearerAuth('JWT-auth')
-@Controller('team-types')
+@Controller('team-categories')
 @UseGuards(JwtAuthGuard, PermissionsGuard)
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
@@ -33,30 +33,30 @@ export class TeamsController {
   @RequirePermissions('team:read')
   @ApiOperation({
     summary:
-      'List team types (crew-type catalog; active only by default). Phase 4: team types define markers; concrete teams live on schedule_events.',
+      'List team categories (crew-type catalog; active only by default). Phase 4: team categories define markers; concrete teams live on schedule_events.',
   })
   @ApiQuery({ name: 'include_inactive', required: false, type: Boolean })
-  @ApiResponse({ status: 200, type: [TeamType] })
-  listTypes(@Query('include_inactive') includeInactive?: string): Promise<TeamType[]> {
+  @ApiResponse({ status: 200, type: [TeamCategory] })
+  listTypes(@Query('include_inactive') includeInactive?: string): Promise<TeamCategory[]> {
     return this.teamsService.listTypes(includeInactive === 'true');
   }
 
   @Post()
   @RequirePermissions('team:manage')
-  @ApiOperation({ summary: 'Add a team type' })
-  @ApiResponse({ status: 201, type: TeamType })
-  createType(@Body() dto: CreateTeamTypeDto): Promise<TeamType> {
+  @ApiOperation({ summary: 'Add a team category' })
+  @ApiResponse({ status: 201, type: TeamCategory })
+  createType(@Body() dto: CreateTeamCategoryDto): Promise<TeamCategory> {
     return this.teamsService.createType(dto);
   }
 
   @Patch(':id')
   @RequirePermissions('team:manage')
-  @ApiOperation({ summary: 'Update a team type' })
-  @ApiResponse({ status: 200, type: TeamType })
+  @ApiOperation({ summary: 'Update a team category' })
+  @ApiResponse({ status: 200, type: TeamCategory })
   updateType(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateTeamTypeDto,
-  ): Promise<TeamType> {
+    @Body() dto: UpdateTeamCategoryDto,
+  ): Promise<TeamCategory> {
     return this.teamsService.updateType(id, dto);
   }
 }

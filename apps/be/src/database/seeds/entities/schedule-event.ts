@@ -29,7 +29,7 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
      (
        id, recurrence_type, start_date, end_date, recurrence_config,
        shift_definition_id, scope, location_id, region_id,
-       is_team, pic_user_id, team_type_id, user_id,
+       is_team, pic_user_id, team_category_id, user_id,
        is_active, notes, created_by, updated_by, created_at, updated_at, deleted_at
      )
      SELECT
@@ -105,7 +105,7 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
        INSERT INTO schedules
        (
          id, user_id, schedule_date, rayon_id, shift_definition_id,
-         status, source, schedule_event_id, region_id, team_type_id, is_detached,
+         status, source, schedule_event_id, region_id, team_category_id, is_detached,
          created_by, created_at, updated_at, deleted_at
        )
        SELECT
@@ -121,7 +121,7 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
          'event',
          se.id,
          CASE WHEN se.scope = 'mobile' THEN se.region_id ELSE NULL END,
-         CASE WHEN se.is_team THEN se.team_type_id ELSE NULL END,
+         CASE WHEN se.is_team THEN se.team_category_id ELSE NULL END,
          false,
          se.created_by,
          NOW(),

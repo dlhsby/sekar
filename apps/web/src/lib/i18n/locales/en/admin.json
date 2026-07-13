@@ -457,7 +457,7 @@
   },
   "teams": {
     "pageTitle": "Teams",
-    "description": "Manage teams (crews) and team types",
+    "description": "Manage teams (crews) and team categories",
     "searchPlaceholder": "Search team name…",
     "columnName": "Name",
     "columnType": "Type",
@@ -474,35 +474,35 @@
     "form": {
       "name": "Team Name",
       "namePlaceholder": "e.g. Watering Team East 1",
-      "type": "Team Type",
+      "type": "Team Category",
       "typePlaceholder": "Select type",
       "markerIcon": "Marker Icon",
       "markerIconPlaceholder": "e.g. droplets",
       "markerColor": "Marker Color"
     }
   },
-  "teamTypes": {
-    "pageTitle": "Team Types",
-    "description": "Manage team type catalog for scheduling",
-    "searchPlaceholder": "Search type name…",
+  "teamCategories": {
+    "pageTitle": "Team Categories",
+    "description": "Manage team category catalog for scheduling",
+    "searchPlaceholder": "Search category name…",
     "columnName": "Name",
     "columnStatus": "Status",
     "columnMarker": "Marker",
-    "buttonAdd": "Add Team Type",
+    "buttonAdd": "Add Team Category",
     "actionEdit": "Edit",
-    "emptyTitle": "No team types yet",
-    "denied": "You don't have access to team types",
-    "deleteTitle": "Delete Team Type",
-    "deleteMessage": "Delete team type \"{{name}}\"?",
-    "successCreated": "Team type \"{{name}}\" created",
-    "successUpdated": "Team type \"{{name}}\" updated",
-    "successDeleted": "Team type deleted",
+    "emptyTitle": "No team categories yet",
+    "denied": "You don't have access to team categories",
+    "deleteTitle": "Delete Team Category",
+    "deleteMessage": "Delete team category \"{{name}}\"?",
+    "successCreated": "Team category \"{{name}}\" created",
+    "successUpdated": "Team category \"{{name}}\" updated",
+    "successDeleted": "Team category deleted",
     "statusActive": "Active",
     "statusInactive": "Inactive",
     "form": {
-      "name": "Team Type Name",
+      "name": "Team Category Name",
       "namePlaceholder": "e.g. Watering Team",
-      "activeLabel": "Type is active",
+      "activeLabel": "Category is active",
       "markerColor": "Marker Color"
     }
   }

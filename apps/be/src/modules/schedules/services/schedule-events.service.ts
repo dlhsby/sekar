@@ -14,7 +14,7 @@ import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
-import { TeamType } from '../../teams/entities/team-type.entity';
+import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { CreateScheduleEventDto } from '../dto/create-schedule-event.dto';
 import { UpdateScheduleEventDto } from '../dto/update-schedule-event.dto';
 import { EditScope } from '../enums/edit-scope.enum';
@@ -48,8 +48,8 @@ export class ScheduleEventsService {
     private readonly regionRepo: Repository<Region>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftRepo: Repository<ShiftDefinition>,
-    @InjectRepository(TeamType)
-    private readonly teamTypeRepo: Repository<TeamType>,
+    @InjectRepository(TeamCategory)
+    private readonly teamCategoryRepo: Repository<TeamCategory>,
     private readonly materializer: ScheduleMaterializerService,
     private readonly auditLog: AuditLogService,
   ) {}
@@ -64,7 +64,7 @@ export class ScheduleEventsService {
       to?: string;
       rayon_id?: string;
       user_id?: string;
-      team_type_id?: string;
+      team_category_id?: string;
       shift_definition_id?: string;
       is_team?: boolean;
     },
@@ -75,7 +75,7 @@ export class ScheduleEventsService {
       .leftJoinAndSelect('se.shift_definition', 'sd')
       .leftJoinAndSelect('se.location', 'l')
       .leftJoinAndSelect('se.region', 'r')
-      .leftJoinAndSelect('se.team_type', 'tt')
+      .leftJoinAndSelect('se.team_category', 'tt')
       .leftJoinAndSelect('se.pic_user', 'pic')
       .leftJoinAndSelect('se.user', 'u')
       .leftJoinAndSelect('se.members', 'm')
@@ -111,8 +111,10 @@ export class ScheduleEventsService {
     if (filters.user_id) {
       query = query.andWhere('se.user_id = :userId', { userId: filters.user_id });
     }
-    if (filters.team_type_id) {
-      query = query.andWhere('se.team_type_id = :teamTypeId', { teamTypeId: filters.team_type_id });
+    if (filters.team_category_id) {
+      query = query.andWhere('se.team_category_id = :teamCategoryId', {
+        teamCategoryId: filters.team_category_id,
+      });
     }
     if (filters.shift_definition_id) {
       query = query.andWhere('se.shift_definition_id = :shiftId', {
@@ -136,7 +138,7 @@ export class ScheduleEventsService {
         'shift_definition',
         'location',
         'region',
-        'team_type',
+        'team_category',
         'pic_user',
         'user',
         'members',
@@ -185,23 +187,23 @@ export class ScheduleEventsService {
 
     // Validate kind (individual vs team) — immutable after create.
     if (dto.is_team) {
-      if (!dto.team_type_id || !dto.pic_user_id) {
-        throw new BadRequestException('Team events require team_type_id and pic_user_id');
+      if (!dto.team_category_id || !dto.pic_user_id) {
+        throw new BadRequestException('Team events require team_category_id and pic_user_id');
       }
       if (dto.user_id) {
         throw new BadRequestException('Team events must not have user_id');
       }
-      // Validate team type exists and is active
-      await this.assertTeamTypeExists(dto.team_type_id);
+      // Validate team category exists and is active
+      await this.assertTeamCategoryExists(dto.team_category_id);
       // Validate PIC and members have eligible roles
       await this.validateUserRoles([dto.pic_user_id, ...(dto.member_ids || [])]);
     } else {
       if (!dto.user_id) {
         throw new BadRequestException('Individual events require user_id');
       }
-      if (dto.team_type_id || dto.pic_user_id) {
+      if (dto.team_category_id || dto.pic_user_id) {
         throw new BadRequestException(
-          'Individual events must not have team_type_id or pic_user_id',
+          'Individual events must not have team_category_id or pic_user_id',
         );
       }
       if (dto.member_ids && dto.member_ids.length > 0) {
@@ -223,7 +225,7 @@ export class ScheduleEventsService {
       region_id: dto.region_id || null,
       is_team: dto.is_team,
       user_id: dto.user_id || null,
-      team_type_id: dto.team_type_id || null,
+      team_category_id: dto.team_category_id || null,
       pic_user_id: dto.pic_user_id || null,
       is_active: true,
       notes: dto.notes || null,
@@ -326,7 +328,7 @@ export class ScheduleEventsService {
         ...effective,
         is_team: event.is_team,
         user_id: event.user_id,
-        team_type_id: event.team_type_id,
+        team_category_id: event.team_category_id,
         pic_user_id: event.pic_user_id,
         is_active: event.is_active,
         notes: dto.notes !== undefined ? dto.notes : event.notes,
@@ -637,8 +639,8 @@ export class ScheduleEventsService {
     }
   }
 
-  private async assertTeamTypeExists(id: string): Promise<void> {
-    const type = await this.teamTypeRepo.findOne({
+  private async assertTeamCategoryExists(id: string): Promise<void> {
+    const type = await this.teamCategoryRepo.findOne({
       where: { id, is_active: true },
     });
     if (!type) {

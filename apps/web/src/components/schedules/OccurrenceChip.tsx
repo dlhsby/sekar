@@ -38,7 +38,7 @@ export function OccurrenceChip({
   const shiftIndex = parseInt(shiftName.match(/\d+/)?.[0] || '0', 10) - 1;
   const colors = SHIFT_COLORS[Math.min(Math.max(shiftIndex, 0), 3)] || SHIFT_COLORS[0];
 
-  const teamMarkerColor = occurrence.team_type?.marker_color;
+  const teamMarkerColor = occurrence.team_category?.marker_color;
   const displayName = isTeam && teamName ? `${teamName} (${memberCount || 0})` : occurrence.user.full_name;
   const isProjected = occurrence.is_projected ?? false;
 

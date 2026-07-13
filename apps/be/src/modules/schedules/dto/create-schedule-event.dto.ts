@@ -112,7 +112,7 @@ export class CreateScheduleEventDto {
   })
   @IsOptional()
   @IsUUID()
-  team_type_id?: string;
+  team_category_id?: string;
 
   @ApiPropertyOptional({ description: 'PIC user id (required for team events)' })
   @IsOptional()
