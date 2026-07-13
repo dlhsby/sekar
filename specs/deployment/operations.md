@@ -803,9 +803,15 @@ df -h /                          # confirm freed
 
 Staging has no SSH — run the above via **SSM Run Command** (`AWS-RunShellScript`,
 region `ap-southeast-3`, instance `i-08edccdc966c0985e`). Since v0.1.x+ the backend
-sweeps stale profiles on startup and force-kills hung Chrome on browser recycle, so
-this should no longer accumulate; a size-limited `/tmp` tmpfs mount + a disk >80%
-alarm are the recommended follow-up hardening.
+sweeps stale profiles on startup, force-kills hung Chrome on browser recycle, and
+runs a periodic (30-min) sweep, so this should no longer accumulate.
+
+**Early warning (LIVE):** the `SEKAR-Staging-RootDiskHigh` CloudWatch alarm emails
+`admin@wahyutrip.com` when root disk >80% for ~10 min — you should get this well
+before ENOSPC. A systemd timer (`sekar-disk-metric.timer`) on the box publishes the
+metric every 5 min. Provisioned by `scripts/ops/setup-staging-disk-alarm.sh`; see
+`specs/deployment/monitoring.md` → "Alarm 8". A RAM-backed `/tmp` tmpfs was
+deliberately **not** used (the shared t3.micro is RAM-saturated; it would OOM).
 
 ---
 
