@@ -390,10 +390,47 @@ Actions:
   - arn:aws:sns:ap-southeast-3:659828096624:sekar-warning-alerts
 ```
 
+#### Alarm 8: Root Disk Full (Staging) — ✅ LIVE (provisioned 2026-07-13)
+
+**Unlike Alarms 1–7 above (reference designs, mostly ALB-based which staging does
+not use), this alarm is actually deployed.** It exists because a Puppeteer temp-file
+leak filled the box's 30GB root disk and took the API down (see ADR-024).
+
+- **Metric:** custom `SEKAR/Staging` → `RootDiskUsedPercent` (dim `InstanceId=i-08edccdc966c0985e`).
+  Published every 5 min by a **systemd timer** `sekar-disk-metric.timer` on the box
+  (`/usr/local/bin/sekar-disk-metric.sh` → `df` → `cloudwatch put-metric-data`).
+  Chosen over the CloudWatch **agent** (which would add ~40MB resident RAM to a
+  RAM-saturated, already-swapping t3.micro).
+- **IAM:** inline policy `sekar-cloudwatch-metrics` on `dlhsby-ec2-role` grants
+  `cloudwatch:PutMetricData` scoped to namespace `SEKAR/Staging`.
+- **Notification:** SNS topic `sekar-staging-alerts` → email `admin@wahyutrip.com`
+  (⚠ subscription must be **confirmed** via the emailed link before alerts arrive).
+
+```yaml
+AlarmName: SEKAR-Staging-RootDiskHigh
+Namespace: SEKAR/Staging
+MetricName: RootDiskUsedPercent
+Dimensions:
+  - Name: InstanceId
+    Value: i-08edccdc966c0985e
+Statistic: Maximum
+Period: 300
+EvaluationPeriods: 2        # > 80% sustained ~10 min
+Threshold: 80
+ComparisonOperator: GreaterThanThreshold
+TreatMissingData: notBreaching
+AlarmActions: [arn:aws:sns:ap-southeast-3:659828096624:sekar-staging-alerts]
+OKActions:    [arn:aws:sns:ap-southeast-3:659828096624:sekar-staging-alerts]
+```
+
+Reproduce/verify: `scripts/ops/setup-staging-disk-alarm.sh` (idempotent). Runbook on
+fire: `specs/deployment/operations.md` → "Disk Space Full".
+
 ### Alarm Summary Table
 
 | Alarm | Priority | Threshold | Notification | Auto-Action |
 |-------|----------|-----------|--------------|-------------|
+| **Root Disk Full (LIVE)** | P1 | > 80% for 10 min | Email | None |
 | Unhealthy Hosts | P0 | > 0 for 2 min | Email + SMS + Slack | None |
 | 5xx Errors | P0 | > 10 in 5 min | Email + Slack | None |
 | DB CPU High | P1 | > 80% for 5 min | Email + Slack | Scale up (Phase 2+) |
