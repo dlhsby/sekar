@@ -153,6 +153,7 @@
   },
   "calendar": {
     "views": {
+      "year": "Tahun",
       "month": "Bulan",
       "week": "Minggu",
       "day": "Hari",

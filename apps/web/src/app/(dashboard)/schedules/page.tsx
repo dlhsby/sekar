@@ -1,8 +1,8 @@
 /**
- * Jadwal (Schedules) page — calendar-first (ADR-047): month/week/day views over
- * the materialized roster, with rule-based ScheduleEvents behind create/edit
- * (this / this-and-future / series semantics). The legacy daily-roster
- * datatable remains available as the "Tabel" view.
+ * Jadwal (Schedules) page — calendar-first (ADR-047), redesigned: a single
+ * range select (Tahun/Bulan/Minggu/Hari, default Hari) with drill-down; the day
+ * view is the Rayon▸Kawasan▸Lokasi coverage board. Rule-based ScheduleEvents sit
+ * behind create/edit (this / this-and-future / series semantics).
  */
 
 'use client';
@@ -16,25 +16,20 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  addYears,
   endOfMonth,
   endOfWeek,
   formatISO,
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { Button, PageHeader, Skeleton } from '@/components/ui';
-import {
-  ScheduleModeControls,
-  type ScheduleMode,
-  type CalendarView,
-} from '@/components/schedules/ScheduleModeControls';
+import { Button, FormSelect, PageHeader, Skeleton } from '@/components/ui';
 import { CalendarFilters } from '@/components/schedules/CalendarFilters';
-import { DayDetailModal } from '@/components/schedules/DayDetailModal';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard } from '@/components/schedules/DayBoard';
+import { YearView } from '@/components/schedules/YearView';
 import type { BoardMasterData } from '@/lib/schedules/dayBoard';
-import { RosterTableView } from '@/components/schedules/RosterTableView';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
 import { DeleteScopeChooser } from '@/components/schedules/DeleteScopeChooser';
@@ -63,6 +58,9 @@ import { useUser } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
+/** Calendar range, ordered highest → lowest; drilling zooms in a level. */
+type CalendarView = 'year' | 'month' | 'week' | 'day';
+
 /** Roles pinned to their own rayon server-side — they can't pick a rayon. */
 const RAYON_SCOPED_ROLES = ['kepala_rayon', 'admin_rayon'];
 
@@ -78,17 +76,16 @@ export default function SchedulesPage() {
   const user = useUser();
   const queryClient = useQueryClient();
 
-  // Display mode (Kalender / Tabel) is chosen first; the calendar view
-  // (Bulan / Minggu / Hari) only applies when the mode is Kalender.
-  const [mode, setMode] = useState<ScheduleMode>('calendar');
   // Default to the day view on both web and mobile (manager board + a worker's
   // own schedule both open on today's calendar).
   const [calendarView, setCalendarView] = useState<CalendarView>('day');
   const [anchor, setAnchor] = useState<Date>(() => wibTodayDate());
   const [filters, setFilters] = useState<ScheduleRangeFilters>({});
 
-  const isCalendar = mode === 'calendar';
   const lockRayon = !!user && RAYON_SCOPED_ROLES.includes(user.role);
+  // The Year view spans >62 days (the range API's cap) so it doesn't fetch
+  // occurrences — it's a month picker until an aggregate endpoint exists.
+  const fetchOccurrences = calendarView !== 'year';
 
   // Visible range per calendar view (month view spans the full Mon–Sun grid;
   // stays well under the API's 62-day cap).
@@ -99,7 +96,7 @@ export default function SchedulesPage() {
         to: isoDate(endOfWeek(anchor, { weekStartsOn: 1 })),
       };
     }
-    if (calendarView === 'day') {
+    if (calendarView === 'day' || calendarView === 'year') {
       const d = isoDate(anchor);
       return { from: d, to: d };
     }
@@ -109,7 +106,12 @@ export default function SchedulesPage() {
     };
   }, [calendarView, anchor]);
 
-  const { data: occurrences = [], isLoading } = useScheduleRange(from, to, filters, isCalendar);
+  const { data: occurrences = [], isLoading } = useScheduleRange(
+    from,
+    to,
+    filters,
+    fetchOccurrences
+  );
 
   // ── Create flow ──────────────────────────────────────────────────────────
   const [createOpen, setCreateOpen] = useState(false);
@@ -120,10 +122,6 @@ export default function SchedulesPage() {
     setCreateDate(date);
     setCreateOpen(true);
   };
-
-  // ── Day-detail flow ───────────────────────────────────────────────────────
-  // Clicking a day in Month/Week opens the day's roster first (ADR-047 UX).
-  const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
 
   // ── Occurrence click → edit/delete flows ─────────────────────────────────
   const [chosen, setChosen] = useState<ScheduleOccurrence | null>(null);
@@ -238,10 +236,7 @@ export default function SchedulesPage() {
     <div className="space-y-5">
       <PageHeader
         actions={
-          // The create button is calendar-only — Table mode has its own
-          // "Tambah Jadwal" (single-day roster add), so this avoids a confusing
-          // duplicate create button.
-          isCalendar && can('schedule:create') ? (
+          can('schedule:create') ? (
             <Button
               leftIcon={<Plus className="size-4" />}
               onClick={() => openCreate(isoDate(anchor))}
@@ -252,19 +247,36 @@ export default function SchedulesPage() {
         }
       />
 
-      <ScheduleModeControls
-        mode={mode}
-        onModeChange={setMode}
-        calendarView={calendarView}
-        onCalendarViewChange={setCalendarView}
-      />
+      <div className="flex flex-wrap items-end gap-3">
+        <FormSelect
+          label={t('schedules:controls.viewLabel')}
+          value={calendarView}
+          onChange={(v) => setCalendarView(v as CalendarView)}
+          className="w-40"
+          options={[
+            { value: 'year', label: t('schedules:calendar.views.year') },
+            { value: 'month', label: t('schedules:calendar.views.month') },
+            { value: 'week', label: t('schedules:calendar.views.week') },
+            { value: 'day', label: t('schedules:calendar.views.day') },
+          ]}
+        />
+      </div>
 
-      {isCalendar && (
-        <CalendarFilters value={filters} onChange={setFilters} lockRayon={lockRayon} />
-      )}
+      <CalendarFilters value={filters} onChange={setFilters} lockRayon={lockRayon} />
 
-      {!isCalendar ? (
-        <RosterTableView />
+      {calendarView === 'year' ? (
+        <YearView
+          year={anchor.getFullYear()}
+          today={wibTodayDate()}
+          onSelectMonth={(m) => {
+            setAnchor(new Date(anchor.getFullYear(), m, 1));
+            setCalendarView('month');
+          }}
+          onPrevYear={() => setAnchor((d) => addYears(d, -1))}
+          onNextYear={() => setAnchor((d) => addYears(d, 1))}
+          onToday={() => setAnchor(wibTodayDate())}
+          localeCode={localeCode}
+        />
       ) : isLoading ? (
         <Skeleton variant="card" />
       ) : calendarView === 'month' ? (
@@ -274,7 +286,10 @@ export default function SchedulesPage() {
           onPrevMonth={() => setAnchor((d) => addMonths(d, -1))}
           onNextMonth={() => setAnchor((d) => addMonths(d, 1))}
           onToday={() => setAnchor(wibTodayDate())}
-          onDayClick={(d) => setDayDetailDate(isoDate(d))}
+          onDayClick={(d) => {
+            setAnchor(d);
+            setCalendarView('day');
+          }}
           onOccurrenceClick={onOccurrenceClick}
           locale={{ code: localeCode }}
         />
@@ -285,7 +300,10 @@ export default function SchedulesPage() {
           onPrevWeek={() => setAnchor((d) => addWeeks(d, -1))}
           onNextWeek={() => setAnchor((d) => addWeeks(d, 1))}
           onToday={() => setAnchor(wibTodayDate())}
-          onDayClick={(d) => setDayDetailDate(isoDate(d))}
+          onDayClick={(d) => {
+            setAnchor(d);
+            setCalendarView('day');
+          }}
           onOccurrenceClick={onOccurrenceClick}
         />
       ) : (
@@ -330,26 +348,6 @@ export default function SchedulesPage() {
           />
         </div>
       )}
-
-      {/* Day detail — clicking a day shows its roster first, then offers add */}
-      <DayDetailModal
-        open={dayDetailDate !== null}
-        onOpenChange={(open) => {
-          if (!open) setDayDetailDate(null);
-        }}
-        date={dayDetailDate}
-        occurrences={occurrences}
-        onOccurrenceClick={(occ) => {
-          setDayDetailDate(null);
-          onOccurrenceClick(occ);
-        }}
-        onAdd={(dateStr) => {
-          setDayDetailDate(null);
-          openCreate(dateStr);
-        }}
-        canCreate={can('schedule:create')}
-        localeCode={localeCode}
-      />
 
       {/* Create */}
       {createOpen && (
