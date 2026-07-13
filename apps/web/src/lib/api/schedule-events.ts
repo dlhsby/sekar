@@ -246,23 +246,30 @@ export const scheduleOccurrenceKeys = {
 /**
  * Fetch schedule occurrences (materialized roster) for a date range
  */
+/** Calendar range filters (query-param names match the backend, camelCase). */
+export interface ScheduleRangeFilters {
+  rayonId?: string;
+  regionId?: string;
+  locationId?: string;
+  userId?: string;
+  shiftDefinitionId?: string;
+  teamCategoryId?: string;
+}
+
 async function fetchScheduleRange(
   from: string,
   to: string,
-  filters?: {
-    rayon_id?: string;
-    user_id?: string;
-    team_id?: string;
-    shift_definition_id?: string;
-  },
+  filters?: ScheduleRangeFilters,
 ): Promise<ScheduleOccurrence[]> {
   const params = new URLSearchParams();
   params.append('from', from);
   params.append('to', to);
-  if (filters?.rayon_id) params.append('rayon_id', filters.rayon_id);
-  if (filters?.user_id) params.append('user_id', filters.user_id);
-  if (filters?.team_id) params.append('team_id', filters.team_id);
-  if (filters?.shift_definition_id) params.append('shift_definition_id', filters.shift_definition_id);
+  if (filters?.rayonId) params.append('rayonId', filters.rayonId);
+  if (filters?.regionId) params.append('regionId', filters.regionId);
+  if (filters?.locationId) params.append('locationId', filters.locationId);
+  if (filters?.userId) params.append('userId', filters.userId);
+  if (filters?.shiftDefinitionId) params.append('shiftDefinitionId', filters.shiftDefinitionId);
+  if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
 
   const response = await apiClient.get<RawScheduleRangeRow[]>(
     `/schedules/range?${params.toString()}`,
@@ -358,16 +365,11 @@ async function deleteScheduleEvent(
 export function useScheduleRange(
   from: string,
   to: string,
-  filters?: {
-    rayon_id?: string;
-    user_id?: string;
-    team_id?: string;
-    shift_definition_id?: string;
-  },
+  filters?: ScheduleRangeFilters,
   enabled = true,
 ) {
   return useQuery({
-    queryKey: scheduleOccurrenceKeys.byRange(from, to),
+    queryKey: [...scheduleOccurrenceKeys.byRange(from, to), filters ?? {}],
     queryFn: () => fetchScheduleRange(from, to, filters),
     enabled,
     staleTime: 30_000,

@@ -1,4 +1,39 @@
 {
+  "controls": {
+    "modeLabel": "Display",
+    "modeCalendar": "Calendar",
+    "modeTable": "Table",
+    "viewLabel": "Range"
+  },
+  "filters": {
+    "userLabel": "Worker",
+    "allUsers": "All workers",
+    "rayonLabel": "Rayon",
+    "allRayons": "All rayons",
+    "regionLabel": "Kawasan",
+    "allRegions": "All kawasan",
+    "locationLabel": "Location",
+    "allLocations": "All locations",
+    "shiftLabel": "Shift",
+    "allShifts": "All shifts",
+    "teamCategoryLabel": "Team Category",
+    "allTeamCategories": "All categories",
+    "clear": "Clear filters"
+  },
+  "dayDetail": {
+    "empty": "No schedules for this day",
+    "noShift": "No shift"
+  },
+  "board": {
+    "assign": "Assign",
+    "team": "Team",
+    "petugasCount": "{{count}} workers",
+    "areaCount": "{{kawasan}} kawasan · {{lokasi}} locations",
+    "lokasiCount": "{{count}} locations",
+    "placementKawasan": "Kawasan placement",
+    "placementRayon": "Rayon placement",
+    "emptyRayon": "No kawasan or locations yet"
+  },
   "page": {
     "title": "Schedules",
     "dateLabel": "Date:",

@@ -1,4 +1,39 @@
 {
+  "controls": {
+    "modeLabel": "Tampilan",
+    "modeCalendar": "Kalender",
+    "modeTable": "Tabel",
+    "viewLabel": "Rentang"
+  },
+  "filters": {
+    "userLabel": "Petugas",
+    "allUsers": "Semua petugas",
+    "rayonLabel": "Rayon",
+    "allRayons": "Semua rayon",
+    "regionLabel": "Kawasan",
+    "allRegions": "Semua kawasan",
+    "locationLabel": "Lokasi",
+    "allLocations": "Semua lokasi",
+    "shiftLabel": "Shift",
+    "allShifts": "Semua shift",
+    "teamCategoryLabel": "Kategori Tim",
+    "allTeamCategories": "Semua kategori",
+    "clear": "Hapus filter"
+  },
+  "dayDetail": {
+    "empty": "Belum ada jadwal di hari ini",
+    "noShift": "Tanpa shift"
+  },
+  "board": {
+    "assign": "Tugaskan",
+    "team": "Tim",
+    "petugasCount": "{{count}} petugas",
+    "areaCount": "{{kawasan}} kawasan · {{lokasi}} lokasi",
+    "lokasiCount": "{{count}} lokasi",
+    "placementKawasan": "Penempatan Kawasan",
+    "placementRayon": "Penempatan Rayon",
+    "emptyRayon": "Belum ada kawasan atau lokasi"
+  },
   "page": {
     "title": "Jadwal",
     "dateLabel": "Tanggal:",
