@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   eachDayOfInterval,
   endOfMonth,
@@ -17,14 +18,45 @@ interface YearViewProps {
   onSelectMonth: (monthIndex: number) => void;
   onSelectDay: (isoDate: string) => void;
   localeCode: string;
+  /** isoDate → occupancy count, for the load heatmap. */
+  counts?: Map<string, number>;
 }
 
+const NO_COUNTS = new Map<string, number>();
+
+/** Heatmap bucket (0–4) for a day's count relative to the year's peak. */
+function bucketOf(count: number, max: number): number {
+  if (count <= 0 || max <= 0) return 0;
+  const r = count / max;
+  if (r <= 0.25) return 1;
+  if (r <= 0.5) return 2;
+  if (r <= 0.75) return 3;
+  return 4;
+}
+
+/** Token-based green ramp (light → dark); index = bucket. */
+const BUCKET_BG = [
+  '',
+  'bg-nb-success-light text-nb-black',
+  'bg-nb-primary text-nb-black',
+  'bg-nb-primary-hover text-white',
+  'bg-nb-primary-active text-white',
+];
+
 /**
- * Year overview — 12 mini month calendars (Google-Calendar style). Click a month
- * name to open the month view; click a day to open that day.
+ * Year overview — 12 mini month calendars (Google-Calendar style) with a load
+ * heatmap. Click a month name to open the month view; click a day to open it.
  */
-export function YearView({ year, onSelectMonth, onSelectDay, localeCode }: YearViewProps) {
+export function YearView({
+  year,
+  onSelectMonth,
+  onSelectDay,
+  localeCode,
+  counts = NO_COUNTS,
+}: YearViewProps) {
+  const { t } = useTranslation(['schedules']);
   const todayIso = todayJakartaISODate();
+  const maxCount = useMemo(() => Math.max(0, ...counts.values()), [counts]);
 
   // Monday-first single-letter weekday headers.
   const weekdays = useMemo(
@@ -80,17 +112,21 @@ export function YearView({ year, onSelectMonth, onSelectDay, localeCode }: YearV
               const iso = formatISO(d, { representation: 'date' });
               const inMonth = isSameMonth(d, month.monthStart);
               const isToday = iso === todayIso;
+              const count = inMonth ? (counts.get(iso) ?? 0) : 0;
+              const heat = inMonth ? BUCKET_BG[bucketOf(count, maxCount)] : '';
+              const base = heat
+                ? heat
+                : inMonth
+                  ? 'text-nb-black hover:bg-nb-gray-100'
+                  : 'text-nb-gray-400 hover:bg-nb-gray-50';
               return (
                 <button
                   key={iso}
                   type="button"
                   onClick={() => onSelectDay(iso)}
-                  className={`aspect-square rounded-full text-center text-[11px] font-medium tabular-nums transition-colors ${
-                    isToday
-                      ? 'bg-nb-primary font-bold text-white'
-                      : inMonth
-                        ? 'text-nb-black hover:bg-nb-gray-100'
-                        : 'text-nb-gray-400 hover:bg-nb-gray-50'
+                  title={count > 0 ? t('schedules:board.petugasCount', { count }) : undefined}
+                  className={`aspect-square rounded-full text-center text-[11px] font-medium tabular-nums transition-colors ${base} ${
+                    isToday ? 'font-bold outline outline-2 outline-nb-black' : ''
                   }`}
                 >
                   {d.getDate()}
@@ -100,6 +136,19 @@ export function YearView({ year, onSelectMonth, onSelectDay, localeCode }: YearV
           </div>
         </div>
       ))}
+      {maxCount > 0 && (
+        <div className="col-span-full flex items-center justify-end gap-2 text-nb-caption text-nb-gray-500">
+          <span>{t('schedules:year.legendLow')}</span>
+          {[1, 2, 3, 4].map((b) => (
+            <span
+              key={b}
+              className={`inline-block size-4 rounded-nb-sm border-2 border-nb-black ${BUCKET_BG[b].split(' ')[0]}`}
+              aria-hidden
+            />
+          ))}
+          <span>{t('schedules:year.legendHigh')}</span>
+        </div>
+      )}
     </div>
   );
 }

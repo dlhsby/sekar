@@ -228,8 +228,7 @@ export interface UpdateScheduleEventResponse {
 export const scheduleEventKeys = {
   all: ['schedule-events'] as const,
   lists: () => [...scheduleEventKeys.all, 'list'] as const,
-  byRange: (from: string, to: string) =>
-    [...scheduleEventKeys.lists(), { from, to }] as const,
+  byRange: (from: string, to: string) => [...scheduleEventKeys.lists(), { from, to }] as const,
   byId: (id: string) => [...scheduleEventKeys.all, 'detail', id] as const,
 };
 
@@ -239,8 +238,7 @@ export const scheduleEventKeys = {
 export const scheduleOccurrenceKeys = {
   all: ['schedule-occurrences'] as const,
   lists: () => [...scheduleOccurrenceKeys.all, 'list'] as const,
-  byRange: (from: string, to: string) =>
-    [...scheduleOccurrenceKeys.lists(), { from, to }] as const,
+  byRange: (from: string, to: string) => [...scheduleOccurrenceKeys.lists(), { from, to }] as const,
 };
 
 /**
@@ -259,7 +257,7 @@ export interface ScheduleRangeFilters {
 async function fetchScheduleRange(
   from: string,
   to: string,
-  filters?: ScheduleRangeFilters,
+  filters?: ScheduleRangeFilters
 ): Promise<ScheduleOccurrence[]> {
   const params = new URLSearchParams();
   params.append('from', from);
@@ -272,7 +270,7 @@ async function fetchScheduleRange(
   if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
 
   const response = await apiClient.get<RawScheduleRangeRow[]>(
-    `/schedules/range?${params.toString()}`,
+    `/schedules/range?${params.toString()}`
   );
   return (response.data || []).map(toOccurrence);
 }
@@ -280,29 +278,26 @@ async function fetchScheduleRange(
 /**
  * Fetch schedule events for a date range
  */
-async function fetchScheduleEvents(
-  filters?: {
-    from?: string;
-    to?: string;
-    rayon_id?: string;
-    user_id?: string;
-    team_id?: string;
-    shift_definition_id?: string;
-    is_team?: boolean;
-  },
-): Promise<ScheduleEvent[]> {
+async function fetchScheduleEvents(filters?: {
+  from?: string;
+  to?: string;
+  rayon_id?: string;
+  user_id?: string;
+  team_id?: string;
+  shift_definition_id?: string;
+  is_team?: boolean;
+}): Promise<ScheduleEvent[]> {
   const params = new URLSearchParams();
   if (filters?.from) params.append('from', filters.from);
   if (filters?.to) params.append('to', filters.to);
   if (filters?.rayon_id) params.append('rayon_id', filters.rayon_id);
   if (filters?.user_id) params.append('user_id', filters.user_id);
   if (filters?.team_id) params.append('team_id', filters.team_id);
-  if (filters?.shift_definition_id) params.append('shift_definition_id', filters.shift_definition_id);
+  if (filters?.shift_definition_id)
+    params.append('shift_definition_id', filters.shift_definition_id);
   if (filters?.is_team !== undefined) params.append('is_team', filters.is_team ? 'true' : 'false');
 
-  const response = await apiClient.get<ScheduleEvent[]>(
-    `/schedule-events?${params.toString()}`,
-  );
+  const response = await apiClient.get<ScheduleEvent[]>(`/schedule-events?${params.toString()}`);
   return response.data || [];
 }
 
@@ -318,7 +313,7 @@ async function fetchScheduleEvent(id: string): Promise<ScheduleEvent> {
  * Create a schedule event
  */
 async function createScheduleEvent(
-  input: CreateScheduleEventInput,
+  input: CreateScheduleEventInput
 ): Promise<CreateScheduleEventResponse> {
   const response = await apiClient.post<CreateScheduleEventResponse>('/schedule-events', input);
   return response.data;
@@ -331,7 +326,7 @@ async function updateScheduleEvent(
   id: string,
   input: UpdateScheduleEventInput,
   editScope?: EditScope,
-  fromDate?: string,
+  fromDate?: string
 ): Promise<UpdateScheduleEventResponse> {
   const params = new URLSearchParams();
   if (editScope) params.append('edit_scope', editScope);
@@ -339,7 +334,7 @@ async function updateScheduleEvent(
 
   const response = await apiClient.patch<UpdateScheduleEventResponse>(
     `/schedule-events/${id}?${params.toString()}`,
-    input,
+    input
   );
   return response.data;
 }
@@ -347,11 +342,7 @@ async function updateScheduleEvent(
 /**
  * Delete a schedule event
  */
-async function deleteScheduleEvent(
-  id: string,
-  scope?: EditScope,
-  date?: string,
-): Promise<void> {
+async function deleteScheduleEvent(id: string, scope?: EditScope, date?: string): Promise<void> {
   const params = new URLSearchParams();
   if (scope) params.append('scope', scope);
   if (date) params.append('date', date);
@@ -366,13 +357,54 @@ export function useScheduleRange(
   from: string,
   to: string,
   filters?: ScheduleRangeFilters,
-  enabled = true,
+  enabled = true
 ) {
   return useQuery({
     queryKey: [...scheduleOccurrenceKeys.byRange(from, to), filters ?? {}],
     queryFn: () => fetchScheduleRange(from, to, filters),
     enabled,
     staleTime: 30_000,
+  });
+}
+
+/** One day's occupancy count for the year heatmap. */
+export interface DayCount {
+  date: string;
+  count: number;
+}
+
+async function fetchYearSummary(
+  from: string,
+  to: string,
+  filters?: ScheduleRangeFilters
+): Promise<DayCount[]> {
+  const params = new URLSearchParams();
+  params.append('from', from);
+  params.append('to', to);
+  if (filters?.rayonId) params.append('rayonId', filters.rayonId);
+  if (filters?.regionId) params.append('regionId', filters.regionId);
+  if (filters?.locationId) params.append('locationId', filters.locationId);
+  if (filters?.userId) params.append('userId', filters.userId);
+  if (filters?.shiftDefinitionId) params.append('shiftDefinitionId', filters.shiftDefinitionId);
+  if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
+
+  const response = await apiClient.get<DayCount[]>(`/schedules/year-summary?${params.toString()}`);
+  return response.data || [];
+}
+
+/** Per-day occupancy counts across a year (the year heatmap). */
+export function useScheduleYearSummary(
+  year: number,
+  filters?: ScheduleRangeFilters,
+  enabled = true
+) {
+  const from = `${year}-01-01`;
+  const to = `${year}-12-31`;
+  return useQuery({
+    queryKey: [...scheduleOccurrenceKeys.all, 'year', year, filters ?? {}],
+    queryFn: () => fetchYearSummary(from, to, filters),
+    enabled,
+    staleTime: 60_000,
   });
 }
 
@@ -389,7 +421,7 @@ export function useScheduleEvents(
     shift_definition_id?: string;
     is_team?: boolean;
   },
-  enabled = true,
+  enabled = true
 ) {
   return useQuery({
     queryKey: filters ? [scheduleEventKeys.lists(), filters] : scheduleEventKeys.lists(),
