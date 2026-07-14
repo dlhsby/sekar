@@ -53,7 +53,8 @@
     "sortTooltip": "Klik untuk mengurutkan · Shift+klik untuk beberapa kolom",
     "openMapLink": "Buka di Google Maps",
     "fullscreen": "Layar Penuh",
-    "exitFullscreen": "Keluar Layar Penuh"
+    "exitFullscreen": "Keluar Layar Penuh",
+    "apply": "Terapkan"
   },
   "entities": {
     "user": "Pengguna",

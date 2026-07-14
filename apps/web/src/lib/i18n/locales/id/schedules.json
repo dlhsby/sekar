@@ -40,7 +40,9 @@
     "advanced": "Lanjutan",
     "noResults": "Tidak ada hasil untuk \"{{q}}\"",
     "groupDate": "Tanggal",
-    "dateRangeLabel": "Rentang tanggal"
+    "dateRangeLabel": "Rentang tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai"
   },
   "detail": {
     "placement": "Penempatan",

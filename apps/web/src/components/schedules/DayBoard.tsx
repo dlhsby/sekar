@@ -68,7 +68,7 @@ export function DayBoard({
             <button
               type="button"
               onClick={() => toggle(rayon.id)}
-              className="flex w-full flex-wrap items-center gap-3 border-b-2 border-nb-black bg-nb-sidebar-bg px-4 py-3 text-left text-white aria-expanded:border-b-2"
+              className="flex w-full flex-wrap items-center gap-3 border-b-2 border-nb-black bg-nb-sidebar px-4 py-3 text-left text-white aria-expanded:border-b-2"
               aria-expanded={open.has(rayon.id)}
             >
               <Chevron open={open.has(rayon.id)} />

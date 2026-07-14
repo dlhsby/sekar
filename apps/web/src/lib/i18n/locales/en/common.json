@@ -53,7 +53,8 @@
     "sortTooltip": "Click to sort · Shift+click for multiple columns",
     "openMapLink": "Open in Google Maps",
     "fullscreen": "Fullscreen",
-    "exitFullscreen": "Exit Fullscreen"
+    "exitFullscreen": "Exit Fullscreen",
+    "apply": "Apply"
   },
   "entities": {
     "user": "User",

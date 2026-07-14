@@ -40,7 +40,9 @@
     "advanced": "Advanced",
     "noResults": "No results for \"{{q}}\"",
     "groupDate": "Date",
-    "dateRangeLabel": "Date range"
+    "dateRangeLabel": "Date range",
+    "dateFrom": "From",
+    "dateTo": "To"
   },
   "detail": {
     "placement": "Placement",

@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, Search, X } from 'lucide-react';
 import { parse, isValid, format, type Locale } from 'date-fns';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
-import { DateRangePicker, type DateRangeValue } from '@/components/ui';
+import { Button, DatePicker } from '@/components/ui';
 import { CalendarFilters } from '@/components/schedules/CalendarFilters';
 import { useUsers } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
@@ -65,7 +65,8 @@ export function ScheduleSearch({
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState(false);
   const [advanced, setAdvanced] = useState(false);
-  const [range, setRange] = useState<DateRangeValue | null>(null);
+  const [fromDate, setFromDate] = useState<string | undefined>();
+  const [toDate, setToDate] = useState<string | undefined>();
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -213,20 +214,36 @@ export function ScheduleSearch({
                   {t('schedules:search.advanced')}
                 </p>
                 <CalendarFilters value={filters} onChange={onChange} lockRayon={lockRayon} />
-                <div className="mt-3 max-w-xs">
+                <div className="mt-3">
                   <span className="mb-1 block text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
                     {t('schedules:search.dateRangeLabel')}
                   </span>
-                  <DateRangePicker
-                    value={range ?? { from: '', to: '' }}
-                    onChange={(r) => {
-                      setRange(r);
-                      if (r.from) {
-                        onNavigateDate(r.from);
-                        collapse();
-                      }
-                    }}
-                  />
+                  <div className="flex flex-wrap items-end gap-2">
+                    <div className="min-w-[9rem] flex-1">
+                      <span className="mb-1 block text-nb-caption text-nb-gray-500">
+                        {t('schedules:search.dateFrom')}
+                      </span>
+                      <DatePicker value={fromDate} onValueChange={setFromDate} />
+                    </div>
+                    <div className="min-w-[9rem] flex-1">
+                      <span className="mb-1 block text-nb-caption text-nb-gray-500">
+                        {t('schedules:search.dateTo')}
+                      </span>
+                      <DatePicker value={toDate} onValueChange={setToDate} />
+                    </div>
+                    <Button
+                      variant="outline"
+                      disabled={!fromDate}
+                      onClick={() => {
+                        if (fromDate) {
+                          onNavigateDate(fromDate);
+                          collapse();
+                        }
+                      }}
+                    >
+                      {t('common:actions.apply', 'Apply')}
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (
