@@ -766,7 +766,7 @@ cd infra && docker-compose logs -f  # View logs
 | **API Docs** | http://localhost:3000/api/docs | Bearer JWT token |
 | **Health Check** | http://localhost:3000/api/health | Public |
 | **Database Admin** | http://localhost:8080 | postgres / postgres |
-| **Test Users** | See `npm run seed` | admin/Password123!, worker1/Password123! |
+| **Test Users** | See `npm run seed` | admin/12345678, worker1/12345678 |
 
 ---
 

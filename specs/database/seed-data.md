@@ -44,7 +44,7 @@ future Apps Script two-way sync can key on a stable id. `npm run seed:export-ids
 sheet columns to add for sync: `id`, `rayon_id`/`location_id`, and `gps_lat`/`gps_lng` (the Taman
 Aktif parks have no coordinates yet — seeded with a placeholder pin + no geofence until filled).
 
-**Login & passwords:** every seeded account uses **`Password123!`** with
+**Login & passwords:** every seeded account uses **`12345678`** with
 `password_must_change = true` (forced reset on first login — enforced client-side **and** by
 `JwtAuthGuard`, which 403s `AUTH_PASSWORD_CHANGE_REQUIRED` on protected routes until the user
 changes it). Real roster login is by **phone** where present, else by **username slug** derived
@@ -89,7 +89,7 @@ always win over geocoding and are never cleared by `seed:geocode`/`sheet:pull`.
 
 2. **User Data** (Authentication & Authorization)
    - 8 roles per ADR-009 (satgas, linmas, korlap, admin_rayon, kepala_rayon, management, admin_system, superadmin)
-   - Test users for each role (`satgas1`, `linmas1`, etc. password: `Password123!`)
+   - Test users for each role (`satgas1`, `linmas1`, etc. password: `12345678`)
    - Staging seed: 85 users (see `specs/COMPLETION_STATUS.md`)
 
 3. **Work Location Data**
@@ -156,7 +156,7 @@ Six test users covering all roles: 1 admin, 2 supervisors, 3 workers.
 
 ```sql
 -- Passwords are all bcrypt hashed with 10 rounds
--- All users: Password123!
+-- All users: 12345678
 
 INSERT INTO users (id, username, password_hash, full_name, role, is_active, created_at, updated_at) VALUES
   -- Admin
@@ -179,7 +179,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | admin |
-| Password | Password123! |
+| Password | 12345678 |
 | Full Name | System Administrator |
 | Role | admin |
 | Permissions | Full system access, user management, all endpoints |
@@ -188,7 +188,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | supervisor1 |
-| Password | Password123! |
+| Password | 12345678 |
 | Full Name | Supervisor Satu |
 | Role | supervisor |
 | Permissions | View all workers, review reports, view dashboards |
@@ -197,7 +197,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | supervisor2 |
-| Password | Password123! |
+| Password | 12345678 |
 | Full Name | Supervisor Dua |
 | Role | supervisor |
 | Permissions | View all workers, review reports, view dashboards |
@@ -206,7 +206,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker1 |
-| Password | Password123! |
+| Password | 12345678 |
 | Full Name | Pekerja Satu |
 | Role | worker |
 | Assignment | Taman Bungkul (Park) |
@@ -216,7 +216,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker2 |
-| Password | Password123! |
+| Password | 12345678 |
 | Full Name | Pekerja Dua |
 | Role | worker |
 | Assignment | Jalan Raya Darmo (Pedestrian) |
@@ -226,7 +226,7 @@ ON CONFLICT (username) DO NOTHING;
 | Field | Value |
 |-------|-------|
 | Username | worker3 |
-| Password | Password123! |
+| Password | 12345678 |
 | Full Name | Pekerja Tiga |
 | Role | worker |
 | Assignment | Taman Harmoni (Park) |
@@ -237,7 +237,7 @@ ON CONFLICT (username) DO NOTHING;
 // All passwords hashed with bcrypt (10 rounds)
 import * as bcrypt from 'bcrypt';
 
-const hash = await bcrypt.hash('Password123!', 10);
+const hash = await bcrypt.hash('12345678', 10);
 // $2b$10$ZQfzJQQ0J0YQX0JXQj0QXuJ0YQj0QXuJ0QX0JXQj0QXuJ0QX0JXQ
 ```
 
@@ -737,15 +737,15 @@ npm run seed
 # Test all user roles
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "Password123!"}'
+  -d '{"username": "admin", "password": "12345678"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "supervisor1", "password": "Password123!"}'
+  -d '{"username": "supervisor1", "password": "12345678"}'
 
 curl -X POST http://localhost:3000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username": "worker1", "password": "Password123!"}'
+  -d '{"username": "worker1", "password": "12345678"}'
 ```
 
 #### 2. Active Shifts Query
@@ -1525,21 +1525,21 @@ Phase 2C overhauled the role system. The seed data now uses the new role names:
 
 | Username | Role | Password | Seeder | Notes |
 |----------|------|----------|--------|-------|
-| admin | `superadmin` | Password123! | Phase 1 | Full system access |
-| korlap1 | `korlap` | Password123! | Phase 1 | Area coordinator |
-| korlap2 | `korlap` | Password123! | Phase 1 | Area coordinator |
-| satgas1 | `satgas` | Password123! | Phase 1 | Field worker |
-| satgas2 | `satgas` | Password123! | Phase 1 | Field worker |
-| satgas3 | `satgas` | Password123! | Phase 1 | Field worker |
-| admin_system1 | `admin_system` | Password123! | Phase 2 | System administration |
-| admin_rayon1 | `admin_rayon` | Password123! | Phase 2 | Data management |
-| management1 | `management` | Password123! | Phase 2 | City-wide view |
-| kepala_rayon_selatan | `kepala_rayon` | Password123! | Phase 2 | Rayon manager |
-| kepala_rayon_utara | `kepala_rayon` | Password123! | Phase 2 | Rayon manager |
-| korlap_bungkul | `korlap` | Password123! | Phase 2 | Area coordinator (Taman Bungkul) |
-| linmas1 | `linmas` | Password123! | Phase 2 | Security officer |
-| linmas2 | `linmas` | Password123! | Phase 2 | Security officer |
-| satgas4 | `satgas` | Password123! | Phase 2 | Field worker |
+| admin | `superadmin` | 12345678 | Phase 1 | Full system access |
+| korlap1 | `korlap` | 12345678 | Phase 1 | Area coordinator |
+| korlap2 | `korlap` | 12345678 | Phase 1 | Area coordinator |
+| satgas1 | `satgas` | 12345678 | Phase 1 | Field worker |
+| satgas2 | `satgas` | 12345678 | Phase 1 | Field worker |
+| satgas3 | `satgas` | 12345678 | Phase 1 | Field worker |
+| admin_system1 | `admin_system` | 12345678 | Phase 2 | System administration |
+| admin_rayon1 | `admin_rayon` | 12345678 | Phase 2 | Data management |
+| management1 | `management` | 12345678 | Phase 2 | City-wide view |
+| kepala_rayon_selatan | `kepala_rayon` | 12345678 | Phase 2 | Rayon manager |
+| kepala_rayon_utara | `kepala_rayon` | 12345678 | Phase 2 | Rayon manager |
+| korlap_bungkul | `korlap` | 12345678 | Phase 2 | Area coordinator (Taman Bungkul) |
+| linmas1 | `linmas` | 12345678 | Phase 2 | Security officer |
+| linmas2 | `linmas` | 12345678 | Phase 2 | Security officer |
+| satgas4 | `satgas` | 12345678 | Phase 2 | Field worker |
 
 ### Activity Types (Phase 2C — 20 types for 4 roles)
 

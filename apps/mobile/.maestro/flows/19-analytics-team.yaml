@@ -21,7 +21,7 @@ appId: com.wahyutrip.sekar
 
 - tapOn:
     id: password-input
-- inputText: password123
+- inputText: 12345678
 
 - tapOn:
     id: login-button

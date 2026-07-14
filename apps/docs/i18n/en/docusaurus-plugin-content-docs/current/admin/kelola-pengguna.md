@@ -85,8 +85,8 @@ Superadmin     | 081234567896| Superadmin    | ✓ Active  | Edit
 │ [ahmad@example.com          ]    │
 │                                 │
 │ PASSWORD *                      │
-│ [Password123!                ]    │
-│ [Recommended: Password123! ]     │
+│ [12345678                ]    │
+│ [Recommended: 12345678 ]     │
 │                                 │
 │ [CONTINUE TO ROLE]              │
 └──────────────────────────────────┘
@@ -96,7 +96,7 @@ Superadmin     | 081234567896| Superadmin    | ✓ Active  | Edit
 
 - **Full Name** — Name matching ID/official identity
 - **Phone Number** — Format: 081234567890
-- **Password** — Can use Password123! temporarily, user can change later
+- **Password** — Can use 12345678 temporarily, user can change later
 
 ### Step 3: Choose Role
 
@@ -157,7 +157,7 @@ Select rayon where user will work.
    Phone: 081234567890
    Role: Satgas
    Rayon: Rayon Pusat
-   Password: Password123!
+   Password: 12345678
    
    Share credentials with user.
    ```
@@ -202,15 +202,15 @@ If user forgot password:
 2. Tap **"Reset Password"** or **"Change Password"**
 3. Enter new password:
    ```
-   New Password: Password123!
-   Confirm: Password123!
+   New Password: 12345678
+   Confirm: 12345678
    ```
 4. Tap **"Save"**
 5. Password will be reset
 6. Tell user their new password
 
 :::note
-It's recommended to use "Password123!" temporarily for resets. User can change it again in their profile.
+It's recommended to use "12345678" temporarily for resets. User can change it again in their profile.
 :::
 
 ---
@@ -333,7 +333,7 @@ For security & compliance:
 
 :::tip
 **1. Standard Passwords**
-- For batch create, use standard password (Password123!)
+- For batch create, use standard password (12345678)
 - Users can change in their profile
 - Don't share password plaintext via chat
 

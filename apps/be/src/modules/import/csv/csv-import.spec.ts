@@ -43,7 +43,7 @@ describe('validateUsers', () => {
         full_name: 'Budi Worker',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(errors).toHaveLength(0);
@@ -95,7 +95,7 @@ describe('validateUsers', () => {
         username: 'topmgr',
         full_name: 'Top Manager',
         role: 'management',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(errors).toHaveLength(0);
@@ -108,14 +108,14 @@ describe('validateUsers', () => {
         full_name: 'First',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
       {
         username: 'duplicate',
         full_name: 'Second',
         phone_number: '+628123456780',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(valid).toHaveLength(1); // First occurrence is valid
@@ -133,14 +133,14 @@ describe('validateUsers', () => {
         full_name: 'User One',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
       {
         username: 'user2',
         full_name: 'User Two',
         phone_number: '+628123456789',
         role: 'satgas',
-        password: 'Password123!',
+        password: '12345678',
       },
     ]);
     expect(valid).toHaveLength(1);
@@ -235,7 +235,7 @@ describe('CsvImportService', () => {
 
   it('stores a session and returns its id when rows are valid', async () => {
     const file = asFile(
-      'username,full_name,phone_number,role,password\nsatgas9,Budi,+628123456789,satgas,Password123!',
+      'username,full_name,phone_number,role,password\nsatgas9,Budi,+628123456789,satgas,12345678',
     );
 
     const result = await service.validate('users', file, 'user-1');
@@ -267,9 +267,7 @@ describe('CsvImportService', () => {
     const session = {
       userId: 'user-1',
       entityType: 'users',
-      validRows: [
-        { username: 'satgas9', full_name: 'Budi', role: 'satgas', password: 'Password123!' },
-      ],
+      validRows: [{ username: 'satgas9', full_name: 'Budi', role: 'satgas', password: '12345678' }],
       createdAt: new Date().toISOString(),
     };
 

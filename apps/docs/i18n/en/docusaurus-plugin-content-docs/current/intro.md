@@ -65,7 +65,7 @@ Click the section below that matches your role for complete guidance.
 
 - **Mobile App**: Download from [sekar.wahyutrip.com/android](https://sekar.wahyutrip.com/android) for Android
 - **Web Dashboard**: Open [sekar.wahyutrip.com](https://sekar.wahyutrip.com) in a browser
-- **Default Password**: All user accounts use password `Password123!`
+- **Default Password**: All user accounts use password `12345678`
 
 ## Help Contact
 

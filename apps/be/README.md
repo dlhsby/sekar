@@ -48,7 +48,7 @@ npm run db:seed:prod       # First prod/staging boot (superadmin + reference)
 
 Full seeding guide: [`src/database/seeds/README.md`](src/database/seeds/README.md). **Never** run `db:seed` or `db:seed:phase1` in staging/prod — they wipe all data. Staging/production deploys use `:prod` scripts only.
 
-Test users (all `Password123!`): `admin` (superadmin), `satgas1`/`satgas2` (field workers), `korlap1` (coordinator), `linmas1` (security), `kepala_rayon_selatan` (rayon manager), `top_management1` (city view), `staff_kecamatan1` (external). Phone login works: `081200000006`. See [`src/database/seeds/README.md`](src/database/seeds/README.md).
+Test users (all `12345678`): `admin` (superadmin), `satgas1`/`satgas2` (field workers), `korlap1` (coordinator), `linmas1` (security), `kepala_rayon_selatan` (rayon manager), `top_management1` (city view), `staff_kecamatan1` (external). Phone login works: `081200000006`. See [`src/database/seeds/README.md`](src/database/seeds/README.md).
 
 ## API & Monitoring
 

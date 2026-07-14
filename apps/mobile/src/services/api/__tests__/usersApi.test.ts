@@ -49,11 +49,11 @@ describe('usersApi', () => {
         data: undefined,
       });
 
-      const result = await changePassword('oldPassword123', 'newPassword123');
+      const result = await changePassword('old12345678', 'new12345678');
 
       expect(mockPatch).toHaveBeenCalledWith('/users/me/change-password', {
-        current_password: 'oldPassword123',
-        new_password: 'newPassword123',
+        current_password: 'old12345678',
+        new_password: 'new12345678',
       });
 
       expect(result).toEqual({ data: undefined });
@@ -64,7 +64,7 @@ describe('usersApi', () => {
         error: 'Password saat ini salah',
       });
 
-      const result = await changePassword('wrongPassword', 'newPassword123');
+      const result = await changePassword('wrongPassword', 'new12345678');
 
       expect(result).toEqual({ error: 'Password saat ini salah' });
     });
@@ -78,7 +78,7 @@ describe('usersApi', () => {
         },
       });
 
-      const result = await changePassword('oldPassword123', 'newPassword123');
+      const result = await changePassword('old12345678', 'new12345678');
 
       expect(result).toEqual({ error: 'Network error' });
     });
@@ -86,7 +86,7 @@ describe('usersApi', () => {
     it('should handle unknown errors with fallback message', async () => {
       const mockPatch = jest.spyOn(apiClient, 'patch').mockRejectedValue(new Error('Unknown error'));
 
-      const result = await changePassword('oldPassword123', 'newPassword123');
+      const result = await changePassword('old12345678', 'new12345678');
 
       expect(result).toEqual({ error: 'Gagal mengubah password' });
     });

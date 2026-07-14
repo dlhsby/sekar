@@ -2,7 +2,7 @@ appId: com.wahyutrip.sekar
 ---
 # 02-login-success.yaml
 # Valid login flow — satgas1 logs in and reaches FieldHomeScreen (HOME-1)
-# Scenario: satgas1/password123 → valid credentials → role-aware home screen loads
+# Scenario: satgas1/12345678 → valid credentials → role-aware home screen loads
 
 - launchApp
 - assertVisible:
@@ -16,7 +16,7 @@ appId: com.wahyutrip.sekar
 # Tab to password field
 - tapOn:
     id: password-input
-- inputText: password123
+- inputText: 12345678
 
 # Tap login button
 - tapOn:

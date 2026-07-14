@@ -83,7 +83,7 @@ Then open:
 | API docs (Swagger) | http://localhost:3000/api/v1/docs |
 | Adminer (DB UI) | http://localhost:8080 |
 
-**Log in** with any seeded user — all passwords are `Password123!` (e.g. `admin`, `satgas1`; phone
+**Log in** with any seeded user — all passwords are `12345678` (e.g. `admin`, `satgas1`; phone
 login works too, e.g. `081200000006`). Full list: [`apps/be/src/database/seeds/README.md`](apps/be/src/database/seeds/README.md).
 
 **Two values you must fill** — `setup.sh` creates the files; edit these **before `start.sh`** (or

@@ -139,7 +139,7 @@ describe('UsersService', () => {
   describe('create', () => {
     const createUserDto: CreateUserDto = {
       username: 'newuser',
-      password: 'Password123!',
+      password: '12345678',
       full_name: 'New User',
       role: UserRole.SATGAS,
     };

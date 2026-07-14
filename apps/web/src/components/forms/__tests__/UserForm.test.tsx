@@ -295,7 +295,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Test User');
       await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'Password123!');
+      await user.type(screen.getByLabelText(/password/i), '12345678');
 
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Kepala Rayon'));
@@ -339,7 +339,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'New User');
       await user.type(screen.getByLabelText(/email/i), 'new@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'Password123!');
+      await user.type(screen.getByLabelText(/password/i), '12345678');
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Worker'));
 
@@ -349,7 +349,7 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith({
           name: 'New User',
           email: 'new@example.com',
-          password: 'Password123!',
+          password: '12345678',
           role: 'satgas',
         });
       });
@@ -479,7 +479,7 @@ describe('UserForm', () => {
 
       await user.type(screen.getByLabelText(/nama lengkap/i), 'Kepala User');
       await user.type(screen.getByLabelText(/email/i), 'kepala@example.com');
-      await user.type(screen.getByLabelText(/password/i), 'Password123!');
+      await user.type(screen.getByLabelText(/password/i), '12345678');
 
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Kepala Rayon'));
@@ -498,7 +498,7 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith({
           name: 'Kepala User',
           email: 'kepala@example.com',
-          password: 'Password123!',
+          password: '12345678',
           role: 'kepala_rayon',
           rayon_id: 'rayon-1',
         });

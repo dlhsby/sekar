@@ -17,9 +17,9 @@
  *     -e PING_INTERVAL=12 \
  *     -e DURATION=30m \
  *     -e WORKER_PREFIX=satgas \
- *     -e WORKER_PASSWORD=password123 \
+ *     -e WORKER_PASSWORD=12345678 \
  *     -e ADMIN_USERNAME=admin \
- *     -e ADMIN_PASSWORD=password123 \
+ *     -e ADMIN_PASSWORD=12345678 \
  *     infra/loadtest/monitoring-500w.js
  *
  * Notes:
@@ -42,9 +42,9 @@ const WORKER_COUNT = parseInt(__ENV.WORKER_COUNT || '500', 10);
 const PING_INTERVAL = parseInt(__ENV.PING_INTERVAL || '12', 10);
 const DURATION = __ENV.DURATION || '30m';
 const WORKER_PREFIX = __ENV.WORKER_PREFIX || 'satgas';
-const WORKER_PASSWORD = __ENV.WORKER_PASSWORD || 'password123';
+const WORKER_PASSWORD = __ENV.WORKER_PASSWORD || '12345678';
 const ADMIN_USERNAME = __ENV.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD = __ENV.ADMIN_PASSWORD || 'password123';
+const ADMIN_PASSWORD = __ENV.ADMIN_PASSWORD || '12345678';
 
 const wsLatency = new Trend('ws_broadcast_latency_ms', true);
 

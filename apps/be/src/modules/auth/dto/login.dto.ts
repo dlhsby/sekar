@@ -32,11 +32,11 @@ export class LoginDto {
    * User's password for authentication.
    * Must be at least 6 characters long.
    *
-   * @example 'Password123!'
+   * @example '12345678'
    */
   @ApiProperty({
     description: 'Password for authentication',
-    example: 'Password123!',
+    example: '12345678',
     minLength: ValidationConstants.PASSWORD_MIN_LENGTH,
   })
   @IsString()

@@ -4,14 +4,14 @@
 # have an ACTIVE SCHEDULE (the clock-in auto-detects the area from it).
 #
 # Usage:   ./scripts/dev-simulate-worker.sh <username> [password] [lat] [lng]
-# Example: ./scripts/dev-simulate-worker.sh satgas_baru password123
+# Example: ./scripts/dev-simulate-worker.sh satgas_baru 12345678
 #
 # If lat/lng are omitted, it uses the schedule's area centre (so is_within_area=true).
 set -euo pipefail
 
 API="${API:-http://localhost:3000/api/v1}"
 USERNAME="${1:?usage: dev-simulate-worker.sh <username> [password] [lat] [lng]}"
-PASSWORD="${2:-password123}"
+PASSWORD="${2:-12345678}"
 LAT_OVERRIDE="${3:-}"
 LNG_OVERRIDE="${4:-}"
 

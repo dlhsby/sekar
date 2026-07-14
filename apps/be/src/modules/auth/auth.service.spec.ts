@@ -81,7 +81,7 @@ describe('AuthService', () => {
   describe('login', () => {
     const loginDto: LoginDto = {
       identifier: 'testuser',
-      password: 'Password123!',
+      password: '12345678',
     };
 
     it('should successfully login and return JWT token', async () => {
@@ -147,7 +147,7 @@ describe('AuthService', () => {
 
   describe('hashPassword', () => {
     it('should hash password successfully', async () => {
-      const password = 'Password123!';
+      const password = '12345678';
       jest.spyOn(bcrypt, 'hash').mockImplementation(() => Promise.resolve('hashedpassword'));
 
       const result = await service.hashPassword(password);
