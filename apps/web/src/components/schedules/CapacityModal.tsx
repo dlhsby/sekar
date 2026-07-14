@@ -15,18 +15,19 @@ import {
 } from '@/components/ui';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import {
-  useLocationStaffRequirements,
-  useSetStaffRequirements,
+  useSubjectStaffRequirements,
+  useSetSubjectStaffRequirements,
   type DayType,
   type StaffRole,
+  type StaffSubject,
 } from '@/lib/api/location-staff-requirements';
 import { getErrorMessage } from '@/lib/api/client';
 
 interface CapacityModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  locationId: string | null;
-  locationName: string | null;
+  /** The subject whose requirements to edit — a location, kawasan, or rayon. */
+  subject: StaffSubject | null;
 }
 
 const ROLES: StaffRole[] = ['satgas', 'linmas'];
@@ -40,19 +41,14 @@ const emptyValues = (): Record<DayType, DayValues> => ({ WEEKDAY: {}, WEEKEND: {
  * type — the source monitoring also reads. The board flags understaffing against
  * the requirement for the day's type (weekday/weekend; holiday detection TBD).
  */
-export function CapacityModal({
-  open,
-  onOpenChange,
-  locationId,
-  locationName,
-}: CapacityModalProps) {
+export function CapacityModal({ open, onOpenChange, subject }: CapacityModalProps) {
   const { t } = useTranslation(['schedules', 'roles', 'common']);
   const { data: shifts = [] } = useShiftDefinitions();
   // Keep the raw query ref (do NOT default to `[]` here): a fresh `[]` each render
   // would change the effect's dependency identity while loading and loop setState
   // ("Maximum update depth exceeded"). React-query's `data` is referentially stable.
-  const { data: current } = useLocationStaffRequirements(locationId ?? '', open && !!locationId);
-  const setReq = useSetStaffRequirements();
+  const { data: current } = useSubjectStaffRequirements(subject, open);
+  const setReq = useSetSubjectStaffRequirements();
 
   const [dayType, setDayType] = useState<DayType>('WEEKDAY');
   // values[dayType][shiftId][role] = required count
@@ -87,7 +83,7 @@ export function CapacityModal({
     });
 
   const onSave = async () => {
-    if (!locationId) return;
+    if (!subject) return;
     try {
       const items = DAY_TYPES.flatMap((dt) =>
         shifts.flatMap((s) =>
@@ -99,7 +95,7 @@ export function CapacityModal({
           }))
         )
       );
-      await setReq.mutateAsync({ locationId, items });
+      await setReq.mutateAsync({ subject, items });
       toast.success(t('schedules:staffCapacity.saved'));
       onOpenChange(false);
     } catch (err) {
@@ -112,7 +108,7 @@ export function CapacityModal({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{t('schedules:staffCapacity.title')}</DialogTitle>
-          {locationName && <p className="text-nb-body-sm text-nb-gray-500">{locationName}</p>}
+          {subject?.name && <p className="text-nb-body-sm text-nb-gray-500">{subject.name}</p>}
         </DialogHeader>
         <DialogBody>
           <p className="mb-3 text-nb-body-sm text-nb-gray-600">

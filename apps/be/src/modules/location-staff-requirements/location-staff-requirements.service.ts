@@ -52,6 +52,92 @@ export class LocationStaffRequirementsService {
     return this.requirementRepository.find();
   }
 
+  /** Region (kawasan)-level requirements (for the region editor). */
+  findByRegionId(regionId: string): Promise<LocationStaffRequirement[]> {
+    return this.requirementRepository.find({
+      where: { region_id: regionId },
+      relations: ['shiftDefinition'],
+      order: { day_type: 'ASC', role: 'ASC' },
+    });
+  }
+
+  /** Rayon-level requirements (for the rayon editor). */
+  findByRayonId(rayonId: string): Promise<LocationStaffRequirement[]> {
+    return this.requirementRepository.find({
+      where: { rayon_id: rayonId },
+      relations: ['shiftDefinition'],
+      order: { day_type: 'ASC', role: 'ASC' },
+    });
+  }
+
+  /**
+   * Upsert a subject's per-(shift, role, day_type) targets — polymorphic over
+   * location / region / rayon. Only the items passed are written (find-or-update
+   * on the subject column), so a partial edit is safe.
+   */
+  private async bulkSetForSubject(
+    subjectColumn: 'location_id' | 'region_id' | 'rayon_id',
+    subjectId: string,
+    items: Array<{
+      shift_definition_id: string;
+      role: StaffRole;
+      day_type: DayType;
+      required_count: number;
+    }>,
+  ): Promise<LocationStaffRequirement[]> {
+    for (const it of items) {
+      const existing = await this.requirementRepository.findOne({
+        where: {
+          [subjectColumn]: subjectId,
+          shift_definition_id: it.shift_definition_id,
+          role: it.role,
+          day_type: it.day_type,
+        },
+      });
+      if (existing) {
+        existing.required_count = it.required_count;
+        await this.requirementRepository.save(existing);
+      } else {
+        await this.requirementRepository.save(
+          this.requirementRepository.create({
+            [subjectColumn]: subjectId,
+            shift_definition_id: it.shift_definition_id,
+            role: it.role,
+            day_type: it.day_type,
+            required_count: it.required_count,
+          }),
+        );
+      }
+    }
+    return this.requirementRepository.find({ where: { [subjectColumn]: subjectId } });
+  }
+
+  /** Upsert a region (kawasan)'s targets. */
+  async bulkSetForRegion(
+    regionId: string,
+    items: Array<{
+      shift_definition_id: string;
+      role: StaffRole;
+      day_type: DayType;
+      required_count: number;
+    }>,
+  ): Promise<LocationStaffRequirement[]> {
+    return this.bulkSetForSubject('region_id', regionId, items);
+  }
+
+  /** Upsert a rayon's targets. */
+  async bulkSetForRayon(
+    rayonId: string,
+    items: Array<{
+      shift_definition_id: string;
+      role: StaffRole;
+      day_type: DayType;
+      required_count: number;
+    }>,
+  ): Promise<LocationStaffRequirement[]> {
+    return this.bulkSetForSubject('rayon_id', rayonId, items);
+  }
+
   /**
    * Upsert a location's per-(shift, role, day_type) targets. Only the items
    * passed are written (find-or-update; the table has no unique constraint) —
