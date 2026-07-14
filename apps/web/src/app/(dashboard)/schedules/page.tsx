@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -26,6 +26,7 @@ import {
 import { Button, FormSelect, PageHeader, Skeleton } from '@/components/ui';
 import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
 import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips';
+import { DateNav } from '@/components/schedules/DateNav';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard } from '@/components/schedules/DayBoard';
@@ -259,6 +260,36 @@ export default function SchedulesPage() {
 
   const localeCode = i18n.language === 'en' ? 'en-US' : 'id-ID';
 
+  // Compact date-nav label + step, driven by the current range.
+  const dateLabel = useMemo(() => {
+    if (calendarView === 'year') return String(anchor.getFullYear());
+    if (calendarView === 'month')
+      return anchor.toLocaleDateString(localeCode, { month: 'long', year: 'numeric' });
+    if (calendarView === 'week') {
+      const ws = startOfWeek(anchor, { weekStartsOn: 1 });
+      const we = endOfWeek(anchor, { weekStartsOn: 1 });
+      const f = (d: Date) => d.toLocaleDateString(localeCode, { day: 'numeric', month: 'short' });
+      return `${f(ws)} – ${f(we)} ${we.getFullYear()}`;
+    }
+    return anchor.toLocaleDateString(localeCode, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [calendarView, anchor, localeCode]);
+
+  const navStep = (dir: 1 | -1) =>
+    setAnchor((d) =>
+      calendarView === 'year'
+        ? addYears(d, dir)
+        : calendarView === 'month'
+          ? addMonths(d, dir)
+          : calendarView === 'week'
+            ? addWeeks(d, dir)
+            : addDays(d, dir)
+    );
+
   return (
     <div className="space-y-5">
       <PageHeader
@@ -288,6 +319,12 @@ export default function SchedulesPage() {
             { value: 'day', label: t('schedules:calendar.views.day') },
           ]}
         />
+        <DateNav
+          label={dateLabel}
+          onPrev={() => navStep(-1)}
+          onNext={() => navStep(1)}
+          onToday={() => setAnchor(wibTodayDate())}
+        />
         <ScheduleSearch
           filters={filters}
           onChange={setFilters}
@@ -309,9 +346,6 @@ export default function SchedulesPage() {
             setAnchor(new Date(anchor.getFullYear(), m, 1));
             setCalendarView('month');
           }}
-          onPrevYear={() => setAnchor((d) => addYears(d, -1))}
-          onNextYear={() => setAnchor((d) => addYears(d, 1))}
-          onToday={() => setAnchor(wibTodayDate())}
           localeCode={localeCode}
         />
       ) : isLoading ? (
@@ -320,15 +354,11 @@ export default function SchedulesPage() {
         <MonthGrid
           occurrences={occurrences}
           currentMonth={anchor}
-          onPrevMonth={() => setAnchor((d) => addMonths(d, -1))}
-          onNextMonth={() => setAnchor((d) => addMonths(d, 1))}
-          onToday={() => setAnchor(wibTodayDate())}
           onDayClick={(d) => {
             setAnchor(d);
             setCalendarView('day');
           }}
           onOccurrenceClick={onOccurrenceClick}
-          locale={{ code: localeCode }}
           subjectFiltered={!!(filters.userId || filters.locationId)}
         />
       ) : calendarView === 'week' ? (
@@ -336,9 +366,6 @@ export default function SchedulesPage() {
           occurrences={occurrences}
           currentDate={anchor}
           master={boardMaster}
-          onPrevWeek={() => setAnchor((d) => addWeeks(d, -1))}
-          onNextWeek={() => setAnchor((d) => addWeeks(d, 1))}
-          onToday={() => setAnchor(wibTodayDate())}
           onDayClick={(d) => {
             setAnchor(d);
             setCalendarView('day');
@@ -347,50 +374,17 @@ export default function SchedulesPage() {
           subjectFiltered={!!(filters.userId || filters.locationId)}
         />
       ) : (
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-nb-base border-2 border-nb-black bg-nb-white px-4 py-2.5 shadow-nb-sm">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAnchor((d) => addDays(d, -1))}
-              aria-label={t('schedules:calendar.navigation.prev', 'Prev')}
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-nb-body font-bold">
-                {anchor.toLocaleDateString(localeCode, {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
-              </span>
-              <Button variant="outline" size="sm" onClick={() => setAnchor(wibTodayDate())}>
-                {t('schedules:calendar.navigation.today')}
-              </Button>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setAnchor((d) => addDays(d, 1))}
-              aria-label={t('schedules:calendar.navigation.next', 'Next')}
-            >
-              <ChevronRight className="size-4" />
-            </Button>
-          </div>
-          <DayBoard
-            occurrences={occurrences}
-            master={boardMaster}
-            capacities={capacities}
-            onOccurrenceClick={onOccurrenceClick}
-            canAssign={can('schedule:create')}
-            onAssign={() => openCreate(isoDate(anchor))}
-            onEditCapacity={
-              canManageCapacity ? (id, name) => setCapacityLoc({ id, name }) : undefined
-            }
-          />
-        </div>
+        <DayBoard
+          occurrences={occurrences}
+          master={boardMaster}
+          capacities={capacities}
+          onOccurrenceClick={onOccurrenceClick}
+          canAssign={can('schedule:create')}
+          onAssign={() => openCreate(isoDate(anchor))}
+          onEditCapacity={
+            canManageCapacity ? (id, name) => setCapacityLoc({ id, name }) : undefined
+          }
+        />
       )}
 
       {/* Read-only detail (shown first on click; Ubah/Hapus route onward) */}

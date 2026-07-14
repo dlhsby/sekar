@@ -1,8 +1,6 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import {
@@ -19,12 +17,8 @@ import { todayJakartaISODate } from '@/lib/utils/formatters';
 interface MonthGridProps {
   occurrences: ScheduleOccurrence[];
   currentMonth: Date;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-  onToday: () => void;
   onDayClick: (date: Date) => void;
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
-  locale: Locale;
   /** When a single subject (worker/location) is filtered, show chips (a personal
    * calendar); otherwise show per-day coverage density (counts + bar). */
   subjectFiltered?: boolean;
@@ -33,12 +27,8 @@ interface MonthGridProps {
 export function MonthGrid({
   occurrences,
   currentMonth,
-  onPrevMonth,
-  onNextMonth,
-  onToday,
   onDayClick,
   onOccurrenceClick,
-  locale,
   subjectFiltered = false,
 }: MonthGridProps) {
   const { t } = useTranslation();
@@ -78,29 +68,8 @@ export function MonthGrid({
     t('schedules:calendar.event.weekdaysSun'),
   ];
 
-  const monthName = new Intl.DateTimeFormat(locale.code || 'id-ID', {
-    month: 'long',
-    year: 'numeric',
-  }).format(currentMonth);
-
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between rounded-nb-base border-2 border-nb-black bg-nb-background p-4">
-        <Button variant="outline" size="sm" onClick={onPrevMonth}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex flex-1 items-center justify-center gap-4">
-          <h2 className="text-nb-h2 font-bold">{monthName}</h2>
-          <Button variant="outline" size="sm" onClick={onToday}>
-            {t('schedules:calendar.navigation.today')}
-          </Button>
-        </div>
-        <Button variant="outline" size="sm" onClick={onNextMonth}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Calendar Grid */}
       <div className="overflow-x-auto rounded-nb-base border-2 border-nb-black">
         <div className="inline-block w-full">

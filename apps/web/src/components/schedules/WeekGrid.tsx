@@ -2,8 +2,6 @@
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import { buildWeekCoverage, type BoardMasterData } from '@/lib/schedules/dayBoard';
@@ -14,9 +12,6 @@ interface WeekGridProps {
   occurrences: ScheduleOccurrence[];
   currentDate: Date;
   master: BoardMasterData;
-  onPrevWeek: () => void;
-  onNextWeek: () => void;
-  onToday: () => void;
   onDayClick: (date: Date) => void;
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
   /** Single subject filtered → chip strip; otherwise the coverage grid. */
@@ -27,9 +22,6 @@ export function WeekGrid({
   occurrences,
   currentDate,
   master,
-  onPrevWeek,
-  onNextWeek,
-  onToday,
   onDayClick,
   onOccurrenceClick,
   subjectFiltered = false,
@@ -67,27 +59,8 @@ export function WeekGrid({
     return m;
   }, [occurrences]);
 
-  const fmt = (d: Date) =>
-    new Intl.DateTimeFormat('id-ID', { month: 'short', day: 'numeric' }).format(d);
-  const weekStr = `${fmt(days[0])} – ${fmt(days[days.length - 1])}`;
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between rounded-nb-base border-2 border-nb-black bg-nb-background p-4">
-        <Button variant="outline" size="sm" onClick={onPrevWeek}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex flex-1 items-center justify-center gap-4">
-          <h2 className="text-nb-h2 font-bold">{weekStr}</h2>
-          <Button variant="outline" size="sm" onClick={onToday}>
-            {t('schedules:calendar.navigation.today')}
-          </Button>
-        </div>
-        <Button variant="outline" size="sm" onClick={onNextWeek}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
       {subjectFiltered ? (
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
           {days.map((day, i) => {
