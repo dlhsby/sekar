@@ -13,6 +13,9 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - ⚠️ The legacy `supervisor` module is **deprecated** — superseded by this feature; do not extend it.
 
 ## Revamp notes (post-UAT) — target model (ADR-046)
+> **Status: deferred (Phase 5).** Rollout tracking + the remaining checklist live in
+> [`../../REVAMP-STATUS.md`](../../REVAMP-STATUS.md). Understaffing on the map must use the polymorphic
+> staffing subject (region/location/rayon/city) from the Phase-4 consolidation, not location-only.
 - **Subject model** — *monitorable* (anyone clocked-in: satgas, linmas, korlap, kepala_rayon, admin_rayon) vs *scheduled/staffing-counted* (**only satgas + linmas**). Non-scheduled clock-ins surface only via daftar petugas / search.
 - **Supervisor visibility** (hierarchical, server-enforced) — management → all Surabaya; kepala_rayon/admin_rayon → their rayon; korlap → their region (+ optional location) incl. team members; satgas/linmas → none.
 - **Static vs mobile** — static geofenced to their location; mobile (e.g. penyiraman) geofenced to their region, same tolerance as locations ([ADR-045](../../architecture/decisions/ADR-045-four-level-location-hierarchy.md)). Drill visibility: rayon = all; region = mobile-of-region + static-in-its-locations; location = static-of-location.

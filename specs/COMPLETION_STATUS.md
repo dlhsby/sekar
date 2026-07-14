@@ -36,7 +36,7 @@ Legend: ✅ Active · 🅿️ Parked (built, hidden from web nav, revisit later)
 |---------|--------|-----|--------|
 | [Auth & roles](features/auth/README.md) | ✅ | ✅ | ✅ |
 | [Users & profile](features/users/README.md) | ✅ | ✅ | ✅ |
-| [Scheduling](features/scheduling/README.md) | ✅ | ✅ | ✅ (my-schedule) |
+| [Scheduling](features/scheduling/README.md) | ✅ | ✅ | ✅ (my-schedule, day view) |
 | [Attendance](features/attendance/README.md) | ✅ | ✅ (log) | ✅ |
 | [Work items](features/work/README.md) | ✅ | ✅ | ✅ |
 | [Overtime](features/overtime/README.md) | ✅ | ✅ | ✅ (submit) |
@@ -64,8 +64,13 @@ bottom-up, web before mobile:
 2. **Geography** — 4-level hierarchy: Region/Kawasan + per-level map styling (ADR-045) — ✅ **Merged to main** (PR #202 + #206): regions module + migrations, per-level styling, `locations.region_id`, `users.region_id`, web `/regions` + `MapStyleFields`, cross-rayon integrity guards, boundary validation, rayon-scoped listing. City styling + monitoring region-tier drill deferred to Phase 5. Not deployed.
 3. **Users & Teams** — role-driven scope inputs; teams CRUD (ADR-044/048) — ✅ **Merged to main** (PR #202 + #207): teams backend + web `/teams`; user form scope role-driven from monitoring_scope; backend role+scope validation; team-name uniqueness + active-type filtering. Not deployed.
 4. **Scheduling** — calendar + rule-based recurrence + team schedules (ADR-047) — ✅ **Merged to main** (PRs #218–223, Phase 4 engine + UX redesign): `schedule_events` rule layer + materializer engine (rolling horizon), time-based overlap guard (multi-shift days legal), team fan-out with per-member conflict reporting, this/this-and-future/series edit semantics, template→events data migration (template cron retired). **Jadwal UX redesign** on top: single range select (default Hari) with drill-down, Rayon▸Kawasan▸Lokasi day coverage board (per-tier accent), year mini-calendars, per-rayon month + per-shift/role week summaries, hybrid search + filter chips, capacity converged on `location_staff_requirements` (understaffing = satgas+linmas only), mobile day-nav. Verified live against a scratch DB. **P5 rayon-scope schedule model DONE** (ScheduleScope +`rayon`, migration + CHECK widened, materializer/projections/validation/day-board/event-form wired, tests + live-verified). Weekend/holiday capacity + year heatmap + holiday management also landed. **Deferred:** full mobile parity; dark-mode visual sign-off. Not merged/deployed.
-5. **Monitoring (web)** — subject model, drop Surabaya bubble, team bubbles, static/mobile, search (ADR-046) — 🚧 Planned
-6. **Mobile parity** — after web design ack.
+5. **Monitoring (web)** — subject model, drop Surabaya bubble, team bubbles, static/mobile, search (ADR-046) — 🚧 **Deferred** → checklist in [`REVAMP-STATUS.md`](REVAMP-STATUS.md).
+6. **Mobile parity** — after web design ack — ⏳ **Deferred** (incl. the worker week/month switcher + a read-only "Jadwal Petugas" supervisor viewer) → [`REVAMP-STATUS.md`](REVAMP-STATUS.md).
+
+> **Phase 4 consolidation (in progress):** closing scheduling model gaps before 5/6 — configurable
+> per-rayon `staffing_level` + polymorphic staff-requirements (seeded from the client workbook), a
+> city ("Seluruh Surabaya") schedule scope, web UX polish, backend hardening, comprehensive tests.
+> Rollout status: [`REVAMP-STATUS.md`](REVAMP-STATUS.md). **Staging stays undeployed until 5+6 land.**
 
 Then revisit the parked features above. Track work in each feature spec's `## Changelog`.
 

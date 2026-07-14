@@ -1,6 +1,16 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsNumber, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  MaxLength,
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MapStyleDto } from '../../../common/dto/map-style.dto';
+import { StaffingLevel } from '../entities/rayon.entity';
 
 /**
  * Data Transfer Object for creating a new rayon.
@@ -62,4 +72,13 @@ export class CreateRayonDto extends MapStyleDto {
   @Min(-180)
   @Max(180)
   center_lng?: number;
+
+  @ApiPropertyOptional({
+    description: 'Tier its staffing requirements attach to (defaults to region=kawasan)',
+    enum: StaffingLevel,
+    default: StaffingLevel.REGION,
+  })
+  @IsOptional()
+  @IsEnum(StaffingLevel)
+  staffing_level?: StaffingLevel;
 }

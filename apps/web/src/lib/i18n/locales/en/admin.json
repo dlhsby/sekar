@@ -287,7 +287,12 @@
       "longitude": "Longitude",
       "longitudePlaceholder": "Example: 112.75",
       "geometryRequired": "Set at least one: draw the district boundary or place a center pin.",
-      "mapUnavailable": "Map is not available — enter coordinates manually below."
+      "mapUnavailable": "Map is not available — enter coordinates manually below.",
+      "staffingLevel": "Staffing Requirement Level",
+      "staffingLevelHelp": "Where this rayon's staffing requirements are set: per Kawasan, per Location, or the whole Rayon.",
+      "staffingLevelRegion": "Per Kawasan",
+      "staffingLevelLocation": "Per Location",
+      "staffingLevelRayon": "Whole Rayon"
     },
     "stats": {
       "totalAreas": "Number of Areas",
