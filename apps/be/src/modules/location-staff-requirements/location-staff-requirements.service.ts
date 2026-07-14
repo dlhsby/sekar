@@ -214,10 +214,12 @@ export class LocationStaffRequirementsService {
 
     const requirement = await this.findOne(id);
 
-    // If changing role or day_type, check for uniqueness
+    // If changing role or day_type, check for uniqueness (location-level only —
+    // this legacy per-row endpoint targets location requirements).
     if (
-      (updateDto.role && updateDto.role !== requirement.role) ||
-      (updateDto.day_type && updateDto.day_type !== requirement.day_type)
+      requirement.location_id &&
+      ((updateDto.role && updateDto.role !== requirement.role) ||
+        (updateDto.day_type && updateDto.day_type !== requirement.day_type))
     ) {
       const existingRequirement = await this.requirementRepository.findOne({
         where: {

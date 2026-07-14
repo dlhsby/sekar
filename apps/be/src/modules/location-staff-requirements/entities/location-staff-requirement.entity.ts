@@ -24,12 +24,14 @@ export enum StaffRole {
 }
 
 /**
- * LocationStaffRequirement Entity
+ * LocationStaffRequirement Entity — a **polymorphic** staffing target.
  *
- * Defines the required number of staff (Satgas/Linmas) for each area
- * per shift and day type.
+ * A requirement attaches to exactly one subject: a location, a region (kawasan),
+ * or a rayon — decided by the parent rayon's `staffing_level` (ADR: grouped
+ * rayons define KEBUTUHAN per kawasan; Taman Aktif per park). All three ids
+ * nullable → a city-wide target (rare). The table keeps its historical name.
  *
- * Example: Taman Bungkul, Shift 1, Weekday needs 6 Satgas and 2 Linmas
+ * Example: Taman Bungkul, Shift 1, Weekday needs 6 Satgas and 2 Linmas.
  */
 @Entity('location_staff_requirements')
 export class LocationStaffRequirement {
@@ -41,11 +43,26 @@ export class LocationStaffRequirement {
   id: string;
 
   @ApiProperty({
-    description: 'Location ID',
+    description: 'Location ID (set when the requirement is location-level)',
     example: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
+    nullable: true,
   })
-  @Column({ type: 'uuid' })
-  location_id: string;
+  @Column({ type: 'uuid', nullable: true })
+  location_id: string | null;
+
+  @ApiProperty({
+    description: 'Region/Kawasan ID (set when the requirement is region-level)',
+    nullable: true,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  region_id?: string | null;
+
+  @ApiProperty({
+    description: 'Rayon ID (set when the requirement is rayon-level)',
+    nullable: true,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  rayon_id?: string | null;
 
   @ApiProperty({
     description: 'Shift definition ID',
@@ -99,10 +116,14 @@ export class LocationStaffRequirement {
   deleted_by?: string;
 
   // Relations
-  @ApiProperty({ type: () => Location, description: 'Location for this requirement' })
-  @ManyToOne(() => Location, { onDelete: 'CASCADE' })
+  @ApiProperty({
+    type: () => Location,
+    description: 'Location for this requirement',
+    nullable: true,
+  })
+  @ManyToOne(() => Location, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'location_id' })
-  area: Location;
+  area: Location | null;
 
   @ApiProperty({ type: () => ShiftDefinition, description: 'Shift definition' })
   @ManyToOne(() => ShiftDefinition, { onDelete: 'CASCADE' })
