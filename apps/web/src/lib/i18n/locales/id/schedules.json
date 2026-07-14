@@ -35,7 +35,8 @@
     "emptyRayon": "Belum ada kawasan atau lokasi",
     "petugasShort": "petugas",
     "shiftStaffTooltip": "{{shift}} — {{countable}} dari {{target}} Satgas+Linmas",
-    "shiftTotalTooltip": "{{shift}} — {{count}} petugas"
+    "shiftTotalTooltip": "{{shift}} — {{count}} petugas",
+    "emptyDay": "Belum ada jadwal untuk hari ini."
   },
   "search": {
     "placeholder": "Cari petugas, area, atau tanggal…",

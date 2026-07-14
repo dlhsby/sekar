@@ -1,8 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -50,9 +50,15 @@ export function HolidayManagerModal({
   canManage,
 }: HolidayManagerModalProps) {
   const { t } = useTranslation(['schedules', 'common']);
+  // In-panel year switcher so multi-year bulk entry doesn't need close/reopen.
+  // Resets to the calendar's year each time the panel opens.
+  const [selectedYear, setSelectedYear] = useState(year);
+  useEffect(() => {
+    if (open) setSelectedYear(year);
+  }, [open, year]);
   const { data: overrides = [], isLoading } = useSpecialDayOverrides(
-    `${year}-01-01`,
-    `${year}-12-31`,
+    `${selectedYear}-01-01`,
+    `${selectedYear}-12-31`,
     open
   );
   const create = useCreateSpecialDayOverride();
@@ -100,6 +106,27 @@ export function HolidayManagerModal({
         <SheetHeader>
           <SheetTitle>{t('schedules:holidays.title')}</SheetTitle>
           <p className="text-nb-body-sm text-nb-gray-500">{t('schedules:holidays.hint')}</p>
+          <div className="mt-2 flex items-center justify-center gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedYear((y) => y - 1)}
+              aria-label={t('schedules:calendar.navigation.prev')}
+              className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <span className="min-w-16 text-center text-nb-h3 font-bold tabular-nums">
+              {selectedYear}
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedYear((y) => y + 1)}
+              aria-label={t('schedules:calendar.navigation.next')}
+              className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
         </SheetHeader>
         <SheetBody>
           {canManage && (

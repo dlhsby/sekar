@@ -59,6 +59,11 @@ export function DayBoard({
 
   return (
     <div className="flex flex-col gap-3">
+      {occurrences.length === 0 && (
+        <p className="rounded-nb-base border-2 border-dashed border-nb-black bg-nb-gray-50 py-5 text-center text-nb-body-sm text-nb-gray-500">
+          {t('schedules:board.emptyDay')}
+        </p>
+      )}
       {tree.map((rayon) => {
         const locCount =
           rayon.regions.reduce((a, r) => a + r.locations.length, 0) + rayon.looseLocations.length;

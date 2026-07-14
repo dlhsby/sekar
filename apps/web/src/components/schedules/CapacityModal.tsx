@@ -47,7 +47,7 @@ export function CapacityModal({ open, onOpenChange, subject }: CapacityModalProp
   // Keep the raw query ref (do NOT default to `[]` here): a fresh `[]` each render
   // would change the effect's dependency identity while loading and loop setState
   // ("Maximum update depth exceeded"). React-query's `data` is referentially stable.
-  const { data: current } = useSubjectStaffRequirements(subject, open);
+  const { data: current, isLoading } = useSubjectStaffRequirements(subject, open);
   const setReq = useSetSubjectStaffRequirements();
 
   const [dayType, setDayType] = useState<DayType>('WEEKDAY');
@@ -136,7 +136,12 @@ export function CapacityModal({ open, onOpenChange, subject }: CapacityModalProp
               </button>
             ))}
           </div>
-          <div className="flex flex-col gap-2">
+          {isLoading && subject && (
+            <div className="py-8 text-center text-nb-body-sm text-nb-gray-500">
+              {t('common:loading', 'Loading…')}
+            </div>
+          )}
+          <div className={`flex flex-col gap-2 ${isLoading && subject ? 'hidden' : ''}`}>
             {shifts.map((s) => (
               <div
                 key={s.id}
