@@ -367,7 +367,7 @@ Content-Type: application/json
 {
   "name": "John Doe",
   "phone": "081234567890",
-  "password": "Password123!"
+  "password": "12345678"
 }
 ```
 

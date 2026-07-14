@@ -86,7 +86,7 @@ else
   if [ "$ASSUME_YES" = true ]; then
     DO_SEED=true
   elif [ -t 0 ]; then
-    print_warning "Seeding WIPES the database and recreates demo data (users: admin/password123 …)."
+    print_warning "Seeding WIPES the database and recreates demo data (users: admin/12345678 …)."
     read -r -p "Seed the database now? [y/N] " reply
     [[ "$reply" =~ ^[Yy]$ ]] && DO_SEED=true
   else

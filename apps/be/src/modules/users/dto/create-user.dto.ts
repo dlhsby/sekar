@@ -49,7 +49,7 @@ export class CreateUserDto {
    * User's password for authentication.
    * Will be hashed before storing in database.
    *
-   * @example 'securepassword123'
+   * @example '12345678'
    */
   /**
    * Optional. When omitted (the normal flow), the backend auto-generates a

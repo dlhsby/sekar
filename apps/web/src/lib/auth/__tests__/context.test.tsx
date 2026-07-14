@@ -376,7 +376,7 @@ describe('Auth Context', () => {
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       await act(async () => {
-        await result.current.login({ identifier: 'resettest', password: 'Password123!' });
+        await result.current.login({ identifier: 'resettest', password: '12345678' });
       });
 
       expect(mockPush).toHaveBeenCalledWith('/change-password');
