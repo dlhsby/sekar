@@ -697,6 +697,119 @@ export class SchedulesService {
     });
   }
 
+  /**
+   * Per-day occupancy counts for a (potentially long) date range — the year
+   * heatmap. Counts materialized roster rows plus projected event occurrences
+   * beyond the horizon, deduped against a single tombstone query (unlike
+   * findByDateRange, no per-event DB round-trip, no row hydration). Returns only
+   * days with count > 0. `userId` self-scopes for workers.
+   */
+  async getDailyCounts(
+    from: string,
+    to: string,
+    filters?: RangeFilters,
+  ): Promise<Array<{ date: string; count: number }>> {
+    const f: RangeFilters = filters ?? {};
+    const { rayonId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+
+    // getRawMany returns `date` columns as JS Date; normalize to YYYY-MM-DD so
+    // keys/sorting line up with the projection's string dates.
+    const toDay = (v: unknown): string =>
+      v instanceof Date ? v.toISOString().slice(0, 10) : String(v).slice(0, 10);
+
+    // Materialized rows (light select — no relations).
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .select(['ds.schedule_date', 'ds.user_id', 'ds.schedule_event_id'])
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL');
+    if (rayonId) qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
+    if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
+    if (userId) qb.andWhere('ds.user_id = :userId', { userId });
+    if (shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
+    if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
+    if (locationId)
+      qb.andWhere(
+        'EXISTS (SELECT 1 FROM schedule_locations sl WHERE sl.schedule_id = ds.id AND sl.location_id = :locationId)',
+        { locationId },
+      );
+    const materialized = await qb.getRawMany<{
+      ds_schedule_date: string;
+      ds_user_id: string;
+      ds_schedule_event_id: string | null;
+    }>();
+
+    const counts = new Map<string, number>();
+    const bump = (date: string) => counts.set(date, (counts.get(date) ?? 0) + 1);
+    for (const r of materialized) bump(toDay(r.ds_schedule_date));
+
+    // Every (event, user, date) key in the range, INCLUDING tombstones, so
+    // projection never double-counts a materialized/deleted occurrence.
+    const keyRows = await this.rosterRepo
+      .createQueryBuilder('ds')
+      .select(['ds.schedule_event_id', 'ds.user_id', 'ds.schedule_date'])
+      .withDeleted()
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.schedule_event_id IS NOT NULL')
+      .getRawMany<{
+        ds_schedule_event_id: string;
+        ds_user_id: string;
+        ds_schedule_date: string;
+      }>();
+    const existingKey = new Set(
+      keyRows.map((r) => `${r.ds_schedule_event_id}:${r.ds_user_id}:${toDay(r.ds_schedule_date)}`),
+    );
+
+    // Projection: expand active events across the range, adding only occurrences
+    // not already represented by a materialized/tombstoned row.
+    const events = await this.eventRepo.find({
+      where: { is_active: true },
+      relations: ['location', 'region', 'members'],
+    });
+    for (const event of events) {
+      if (shiftDefinitionId && event.shift_definition_id !== shiftDefinitionId) continue;
+      if (teamCategoryId && event.team_category_id !== teamCategoryId) continue;
+      if (locationId && event.location_id !== locationId) continue;
+      const eventRegionId =
+        event.scope === 'mobile' ? event.region_id : (event.location?.region_id ?? null);
+      if (regionId && eventRegionId !== regionId) continue;
+      const eventRayon =
+        event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+      if (rayonId && eventRayon !== rayonId) continue;
+
+      let memberIds = event.is_team
+        ? Array.from(
+            new Set(
+              [event.pic_user_id, ...(event.members?.map((m) => m.user_id) ?? [])].filter(
+                (id): id is string => id != null,
+              ),
+            ),
+          )
+        : event.user_id
+          ? [event.user_id]
+          : [];
+      if (userId) memberIds = memberIds.filter((id) => id === userId);
+      if (memberIds.length === 0) continue;
+
+      const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+      for (const rawDate of dates) {
+        // NONE-recurrence events push the entity's start_date (a Date) — normalize.
+        const dateStr = toDay(rawDate);
+        for (const memberId of memberIds) {
+          if (existingKey.has(`${event.id}:${memberId}:${dateStr}`)) continue;
+          bump(dateStr);
+        }
+      }
+    }
+
+    return Array.from(counts.entries())
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+
   async findOne(id: string): Promise<Schedule> {
     const row = await this.rosterRepo.findOne({
       where: { id },

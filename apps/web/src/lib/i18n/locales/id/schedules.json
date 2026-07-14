@@ -292,5 +292,9 @@
     "roleLinmas": "Linmas",
     "roleOther": "Lainnya",
     "roleTeam": "Tim"
+  },
+  "year": {
+    "legendLow": "Sedikit",
+    "legendHigh": "Banyak"
   }
 }

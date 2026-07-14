@@ -159,6 +159,60 @@ export class SchedulesController {
     return this.service.findByDateRange(from, to, { ...filters, rayonId });
   }
 
+  @Get('year-summary')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'Per-day occupancy counts for a date range (year heatmap). Lightweight aggregate — no row hydration. Workers are self-scoped; rayon-scoped roles pinned to their rayon.',
+  })
+  @ApiQuery({ name: 'from', example: '2026-01-01' })
+  @ApiQuery({ name: 'to', example: '2026-12-31' })
+  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiResponse({ status: 200, description: '[{ date, count }]' })
+  getYearSummary(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @GetUser() user: User,
+    @Query('rayonId') rayonId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+  ): Promise<Array<{ date: string; count: number }>> {
+    if (!from || !to) throw new BadRequestException('from and to are required');
+    if (from > to) throw new BadRequestException('from date must be <= to date');
+    const fromDate = new Date(from + 'T00:00:00Z');
+    const toDate = new Date(to + 'T00:00:00Z');
+    const days = Math.floor((toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+    if (days > 366) {
+      throw new BadRequestException(`Date range exceeds 366 days (${days} requested).`);
+    }
+
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
+
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.getDailyCounts(from, to, { userId: user.id });
+    }
+    if (this.isRayonScoped(user)) {
+      return user.rayon_id
+        ? this.service.getDailyCounts(from, to, { ...filters, rayonId: user.rayon_id })
+        : Promise.resolve([]);
+    }
+    return this.service.getDailyCounts(from, to, { ...filters, rayonId });
+  }
+
   @Post('generate')
   @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Generate/regenerate the roster for a day (idempotent)' })

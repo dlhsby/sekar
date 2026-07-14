@@ -292,5 +292,9 @@
     "roleLinmas": "Linmas",
     "roleOther": "Other",
     "roleTeam": "Team"
+  },
+  "year": {
+    "legendLow": "Fewer",
+    "legendHigh": "More"
   }
 }

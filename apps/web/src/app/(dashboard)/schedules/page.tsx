@@ -51,6 +51,7 @@ import {
   useDeleteScheduleEvent,
   useScheduleEvent,
   useScheduleRange,
+  useScheduleYearSummary,
   type EditScope,
   type ScheduleOccurrence,
   type ScheduleRangeFilters,
@@ -131,6 +132,17 @@ export default function SchedulesPage() {
     to,
     filters,
     fetchOccurrences
+  );
+
+  // Year view: per-day occupancy counts drive the load heatmap.
+  const { data: yearCounts = [] } = useScheduleYearSummary(
+    anchor.getFullYear(),
+    filters,
+    calendarView === 'year'
+  );
+  const yearCountMap = useMemo(
+    () => new Map(yearCounts.map((d) => [d.date, d.count])),
+    [yearCounts]
   );
 
   // ── Create flow ──────────────────────────────────────────────────────────
@@ -362,6 +374,7 @@ export default function SchedulesPage() {
             setCalendarView('day');
           }}
           localeCode={localeCode}
+          counts={yearCountMap}
         />
       ) : isLoading ? (
         <Skeleton variant="card" />
