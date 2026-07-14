@@ -94,7 +94,12 @@ export class ScheduleOverlapService {
    * Returns ISO strings in UTC, with midnight-crossing shifts extended to the next day.
    */
   private shiftWindow(dateStr: string, shift: ShiftDefinition): { start: string; end: string } {
-    // Parse YYYY-MM-DD as UTC noon to avoid timezone issues
+    // INVARIANT (do not "fix" this by subtracting the WIB offset): shift start/end
+    // are WIB civil times and are placed on the same UTC calendar day using
+    // setUTCHours. This shifts every window by the same +7h, so it is NOT the real
+    // UTC instant — but it is a *consistent* clock shared by all windows compared
+    // here, which is all `windowsOverlap` needs (relative ordering + midnight
+    // crossing are preserved). Overlap detection is comparison-only, never wall-clock.
     const date = new Date(dateStr + 'T12:00:00Z');
 
     // Parse HH:MM:SS

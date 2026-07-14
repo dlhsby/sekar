@@ -185,7 +185,9 @@
       "prevWeek": "Minggu Lalu",
       "nextWeek": "Minggu Depan",
       "prevDay": "Hari Lalu",
-      "nextDay": "Hari Depan"
+      "nextDay": "Hari Depan",
+      "prev": "Sebelumnya",
+      "next": "Berikutnya"
     },
     "event": {
       "createTitle": "Buat Jadwal",

@@ -101,6 +101,13 @@ function groupByShift(occs: ScheduleOccurrence[], shifts: BoardShiftDef[]): Boar
       }
     }
 
+    // Stable, human-friendly order: workers alphabetical within each role.
+    for (const role of Object.keys(byRole)) {
+      byRole[role].sort((a, b) =>
+        (a.user.full_name ?? '').localeCompare(b.user.full_name ?? '', undefined, { numeric: true })
+      );
+    }
+
     const countable = shiftOccs.filter(
       (o) => !isTeam(o) && COUNTABLE_ROLES.includes(o.user.role as string)
     ).length;
@@ -172,9 +179,12 @@ export function buildDayBoard(
         ]
       : [];
 
+  const byName = (a: { name: string }, b: { name: string }) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true });
+
   const rayonNodes = rayons.map((rayon) => {
-    const rayonRegions = regions.filter((r) => r.rayon_id === rayon.id);
-    const rayonLocations = locations.filter((l) => l.rayon_id === rayon.id);
+    const rayonRegions = regions.filter((r) => r.rayon_id === rayon.id).sort(byName);
+    const rayonLocations = locations.filter((l) => l.rayon_id === rayon.id).sort(byName);
 
     const regionNodes: BoardRegion[] = rayonRegions.map((region) => {
       const placement = groupByShift(byRegionMobile.get(region.id) ?? [], shifts);
