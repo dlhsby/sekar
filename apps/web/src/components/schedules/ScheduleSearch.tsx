@@ -158,7 +158,7 @@ export function ScheduleSearch({
   const placeholder = t('schedules:search.placeholder');
 
   return (
-    <div ref={rootRef} className="relative flex min-w-0 flex-1 justify-end">
+    <div ref={rootRef} className="flex items-center">
       {!expanded ? (
         <button
           type="button"
@@ -169,98 +169,102 @@ export function ScheduleSearch({
           <Search className="size-4" />
         </button>
       ) : (
-        <div className="relative w-full">
-          <div className="flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 shadow-nb-sm focus-within:outline focus-within:outline-[3px] focus-within:outline-nb-primary">
-            <Search className="size-4 shrink-0 text-nb-gray-500" aria-hidden />
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Escape' && collapse()}
-              placeholder={placeholder}
-              className="min-h-touch w-full bg-transparent py-2 text-nb-body-sm font-medium outline-none placeholder:text-nb-gray-500"
-              aria-label={placeholder}
-            />
-            <button
-              type="button"
-              onClick={() => (query ? setQuery('') : collapse())}
-              className="shrink-0 text-nb-gray-500 hover:text-nb-black"
-              aria-label={t('common:actions.clear', 'Clear')}
-            >
-              <X className="size-4" />
-            </button>
-            <span className="h-6 w-px shrink-0 bg-nb-black" />
-            <button
-              type="button"
-              onClick={() => setAdvanced((v) => !v)}
-              aria-expanded={advanced}
-              aria-label={t('schedules:search.advanced')}
-              title={t('schedules:search.advanced')}
-              className="shrink-0 text-nb-gray-600 hover:text-nb-black"
-            >
-              <ChevronDown
-                className={`size-4 transition-transform ${advanced ? 'rotate-180' : ''}`}
+        // Active search covers the whole toolbar row (parent is relative),
+        // hiding the other actions — Google-Calendar style.
+        <div className="absolute inset-0 z-30 flex items-center bg-nb-background">
+          <div className="relative w-full">
+            <div className="flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 shadow-nb-sm focus-within:outline focus-within:outline-[3px] focus-within:outline-nb-primary">
+              <Search className="size-4 shrink-0 text-nb-gray-500" aria-hidden />
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Escape' && collapse()}
+                placeholder={placeholder}
+                className="min-h-touch w-full bg-transparent py-2 text-nb-body-sm font-medium outline-none placeholder:text-nb-gray-500"
+                aria-label={placeholder}
               />
-            </button>
-          </div>
-
-          {advanced ? (
-            <div className="absolute right-0 top-full z-20 mt-1 w-[min(34rem,90vw)] rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-lg">
-              <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                {t('schedules:search.advanced')}
-              </p>
-              <CalendarFilters value={filters} onChange={onChange} lockRayon={lockRayon} />
-              <div className="mt-3 max-w-xs">
-                <span className="mb-1 block text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                  {t('schedules:search.dateRangeLabel')}
-                </span>
-                <DateRangePicker
-                  value={range ?? { from: '', to: '' }}
-                  onChange={(r) => {
-                    setRange(r);
-                    if (r.from) {
-                      onNavigateDate(r.from);
-                      collapse();
-                    }
-                  }}
+              <button
+                type="button"
+                onClick={() => (query ? setQuery('') : collapse())}
+                className="shrink-0 text-nb-gray-500 hover:text-nb-black"
+                aria-label={t('common:actions.clear', 'Clear')}
+              >
+                <X className="size-4" />
+              </button>
+              <span className="h-6 w-px shrink-0 bg-nb-black" />
+              <button
+                type="button"
+                onClick={() => setAdvanced((v) => !v)}
+                aria-expanded={advanced}
+                aria-label={t('schedules:search.advanced')}
+                title={t('schedules:search.advanced')}
+                className="shrink-0 text-nb-gray-600 hover:text-nb-black"
+              >
+                <ChevronDown
+                  className={`size-4 transition-transform ${advanced ? 'rotate-180' : ''}`}
                 />
-              </div>
+              </button>
             </div>
-          ) : (
-            q.length > 0 && (
-              <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-lg">
-                {hits.length === 0 ? (
-                  <p className="px-3 py-4 text-center text-nb-body-sm text-nb-gray-500">
-                    {t('schedules:search.noResults', { q: query })}
-                  </p>
-                ) : (
-                  Object.entries(grouped).map(([kind, list]) => (
-                    <div key={kind}>
-                      <p className="bg-nb-gray-50 px-3 py-1 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                        {groupLabel[kind]}
-                      </p>
-                      {list.map((hit) => (
-                        <button
-                          key={hit.kind === 'date' ? hit.iso : hit.id}
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => pick(hit)}
-                          className="flex w-full items-center gap-2 border-t border-nb-black px-3 py-2 text-left text-nb-body-sm hover:bg-nb-gray-50"
-                        >
-                          <span className="truncate font-medium">{hit.label}</span>
-                          {'meta' in hit && hit.meta && (
-                            <span className="ml-auto shrink-0 text-nb-caption text-nb-gray-500">
-                              {hit.meta}
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  ))
-                )}
+
+            {advanced ? (
+              <div className="absolute right-0 top-full z-20 mt-1 w-[min(34rem,90vw)] rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-lg">
+                <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+                  {t('schedules:search.advanced')}
+                </p>
+                <CalendarFilters value={filters} onChange={onChange} lockRayon={lockRayon} />
+                <div className="mt-3 max-w-xs">
+                  <span className="mb-1 block text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+                    {t('schedules:search.dateRangeLabel')}
+                  </span>
+                  <DateRangePicker
+                    value={range ?? { from: '', to: '' }}
+                    onChange={(r) => {
+                      setRange(r);
+                      if (r.from) {
+                        onNavigateDate(r.from);
+                        collapse();
+                      }
+                    }}
+                  />
+                </div>
               </div>
-            )
-          )}
+            ) : (
+              q.length > 0 && (
+                <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-lg">
+                  {hits.length === 0 ? (
+                    <p className="px-3 py-4 text-center text-nb-body-sm text-nb-gray-500">
+                      {t('schedules:search.noResults', { q: query })}
+                    </p>
+                  ) : (
+                    Object.entries(grouped).map(([kind, list]) => (
+                      <div key={kind}>
+                        <p className="bg-nb-gray-50 px-3 py-1 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+                          {groupLabel[kind]}
+                        </p>
+                        {list.map((hit) => (
+                          <button
+                            key={hit.kind === 'date' ? hit.iso : hit.id}
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => pick(hit)}
+                            className="flex w-full items-center gap-2 border-t border-nb-black px-3 py-2 text-left text-nb-body-sm hover:bg-nb-gray-50"
+                          >
+                            <span className="truncate font-medium">{hit.label}</span>
+                            {'meta' in hit && hit.meta && (
+                              <span className="ml-auto shrink-0 text-nb-caption text-nb-gray-500">
+                                {hit.meta}
+                              </span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    ))
+                  )}
+                </div>
+              )
+            )}
+          </div>
         </div>
       )}
     </div>

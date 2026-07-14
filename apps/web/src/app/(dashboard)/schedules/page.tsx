@@ -23,7 +23,15 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { Button, FormSelect, Skeleton } from '@/components/ui';
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+} from '@/components/ui';
 import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
 import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips';
 import { DateNav } from '@/components/schedules/DateNav';
@@ -299,43 +307,45 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Single action row: range · date nav · search · create */}
-      <div className="flex flex-wrap items-center gap-3">
-        <FormSelect
-          label={t('schedules:controls.viewLabel')}
-          value={calendarView}
-          onChange={(v) => setCalendarView(v as CalendarView)}
-          className="w-36"
-          options={[
-            { value: 'year', label: t('schedules:calendar.views.year') },
-            { value: 'month', label: t('schedules:calendar.views.month') },
-            { value: 'week', label: t('schedules:calendar.views.week') },
-            { value: 'day', label: t('schedules:calendar.views.day') },
-          ]}
-        />
+      {/* Single action row (Google-Calendar layout): date nav left; search ·
+          range select · create right. Active search overlays the whole row. */}
+      <div className="relative flex flex-wrap items-center gap-3">
         <DateNav
           label={dateLabel}
           onPrev={() => navStep(-1)}
           onNext={() => navStep(1)}
           onToday={() => setAnchor(wibTodayDate())}
         />
-        <ScheduleSearch
-          filters={filters}
-          onChange={setFilters}
-          lockRayon={lockRayon}
-          onNavigateDate={(iso) => {
-            setAnchor(new Date(`${iso}T00:00:00`));
-            setCalendarView('day');
-          }}
-        />
-        {can('schedule:create') && (
-          <Button
-            leftIcon={<Plus className="size-4" />}
-            onClick={() => openCreate(isoDate(anchor))}
-          >
-            {t('schedules:calendar.event.createTitle')}
-          </Button>
-        )}
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <ScheduleSearch
+            filters={filters}
+            onChange={setFilters}
+            lockRayon={lockRayon}
+            onNavigateDate={(iso) => {
+              setAnchor(new Date(`${iso}T00:00:00`));
+              setCalendarView('day');
+            }}
+          />
+          <Select value={calendarView} onValueChange={(v) => setCalendarView(v as CalendarView)}>
+            <SelectTrigger className="w-32" aria-label={t('schedules:controls.viewLabel')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="year">{t('schedules:calendar.views.year')}</SelectItem>
+              <SelectItem value="month">{t('schedules:calendar.views.month')}</SelectItem>
+              <SelectItem value="week">{t('schedules:calendar.views.week')}</SelectItem>
+              <SelectItem value="day">{t('schedules:calendar.views.day')}</SelectItem>
+            </SelectContent>
+          </Select>
+          {can('schedule:create') && (
+            <Button
+              leftIcon={<Plus className="size-4" />}
+              onClick={() => openCreate(isoDate(anchor))}
+            >
+              {t('schedules:calendar.event.createTitle')}
+            </Button>
+          )}
+        </div>
       </div>
 
       <ScheduleFilterChips filters={filters} onChange={setFilters} lockRayon={lockRayon} />
