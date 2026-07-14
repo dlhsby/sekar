@@ -111,6 +111,28 @@ export function loadAreaRegionMap(): Record<string, string> {
   return JSON.parse(fs.readFileSync(file, 'utf8')) as Record<string, string>;
 }
 
+/**
+ * A staffing requirement (KEBUTUHAN) extracted from the client workbook: satgas
+ * headcount per subject × shift × day_type. `subject_type` says which id column
+ * it fills (`region` for the 7 grouped rayons' kawasan, `location` for Taman
+ * Aktif parks). Deterministic id → idempotent seed + migration.
+ */
+export interface StaffingSnapshotRow {
+  id: string;
+  subject_type: 'region' | 'location' | 'rayon';
+  subject_id: string;
+  shift_definition_id: string;
+  role: 'satgas' | 'linmas';
+  day_type: 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
+  required_count: number;
+}
+
+/** Staffing requirements (satgas KEBUTUHAN) from the client workbook. */
+export function loadStaffingSnapshot(): StaffingSnapshotRow[] {
+  const file = path.join(DATA_DIR, 'staffing.snapshot.json');
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as StaffingSnapshotRow[];
+}
+
 export interface SeedUserRow {
   id: string;
   full_name: string;

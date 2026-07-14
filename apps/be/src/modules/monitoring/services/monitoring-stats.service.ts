@@ -1322,6 +1322,9 @@ export class MonitoringStatsService {
 
     const result = new Map<string, RoleStaffingItemDto[]>();
     for (const req of requirements) {
+      // Monitoring understaffing is location-level for now; region/rayon-level
+      // requirements (polymorphic) are consumed by the day board + Phase-5 map.
+      if (!req.location_id) continue;
       const areaStaffing = result.get(req.location_id) || [];
       areaStaffing.push({
         role: req.role,
