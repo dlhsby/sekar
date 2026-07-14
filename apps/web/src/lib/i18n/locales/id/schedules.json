@@ -244,7 +244,8 @@
       "regionScopeHint": "Kosongkan untuk cakupan Rayon (mobile se-rayon).",
       "locationScopeHint": "Kosongkan untuk cakupan Kawasan (mobile se-kawasan).",
       "cityWideLabel": "Seluruh Surabaya (Tim Patroli)",
-      "cityWideHint": "Tidak terikat rayon/kawasan/lokasi — mencakup seluruh kota."
+      "cityWideHint": "Tidak terikat rayon/kawasan/lokasi — mencakup seluruh kota.",
+      "placementUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penempatan."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",

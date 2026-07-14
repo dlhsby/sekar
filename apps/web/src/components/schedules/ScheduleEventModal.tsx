@@ -281,19 +281,31 @@ export function ScheduleEventModal({
     if (!event || backfilled.current) return;
     if (event.location_id) {
       const loc = locations.find((l) => l.id === event.location_id);
-      if (!loc) return;
+      if (!loc) {
+        // Still loading → retry next render. Loaded but genuinely missing →
+        // surface it (the cascade can't be resolved) instead of failing silent.
+        if (locations.length === 0) return;
+        backfilled.current = true;
+        toast.warning(t('schedules:calendar.event.placementUnresolved'));
+        return;
+      }
       if (loc.region_id) setValue('region_id', loc.region_id);
       setValue('rayon_id', loc.rayon_id);
       backfilled.current = true;
     } else if (event.region_id) {
       const reg = regions.find((r) => r.id === event.region_id);
-      if (!reg) return;
+      if (!reg) {
+        if (regions.length === 0) return;
+        backfilled.current = true;
+        toast.warning(t('schedules:calendar.event.placementUnresolved'));
+        return;
+      }
       setValue('rayon_id', reg.rayon_id);
       backfilled.current = true;
     } else {
-      backfilled.current = true; // rayon-scope / manual — defaults already suffice
+      backfilled.current = true; // rayon/city scope or manual — defaults already suffice
     }
-  }, [event, locations, regions, setValue]);
+  }, [event, locations, regions, setValue, t]);
   const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
     { value: 'none', label: t('schedules:calendar.event.recurrenceNone') },
     { value: 'daily', label: t('schedules:calendar.event.recurrenceDaily') },
