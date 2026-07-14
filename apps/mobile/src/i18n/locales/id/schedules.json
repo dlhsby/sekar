@@ -10,10 +10,7 @@
     "emptyTitle": "Belum ada jadwal hari ini",
     "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in.",
     "prevDay": "Hari sebelumnya",
-    "nextDay": "Hari berikutnya",
-    "viewDay": "Hari",
-    "viewWeek": "Minggu",
-    "viewMonth": "Bulan"
+    "nextDay": "Hari berikutnya"
   },
   "status": {
     "present": "Hadir",

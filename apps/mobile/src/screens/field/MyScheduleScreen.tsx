@@ -14,8 +14,7 @@ import {
   NBBackgroundPattern,
   NBText,
   NBSkeleton,
-  NBTab,
-  NBModal,
+  NBDatePicker,
 } from '../../components/nb';
 import {StatusPill} from '../../components/home/StatusPill';
 import {getMyRange} from '../../services/api/schedulesApi';
@@ -28,8 +27,6 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import type {Schedule} from '../../types/shift.types';
-
-type CalView = 'day' | 'week' | 'month';
 
 // ─── Date helpers (WIB-naive YYYY-MM-DD, matching the API's DATE columns) ─────
 
@@ -44,34 +41,12 @@ function todayKey(): string {
 function parseKey(k: string): Date {
   return new Date(`${k}T00:00:00`);
 }
-/** Monday-first weekday index (Mon=0 … Sun=6). */
-function mondayIndex(d: Date): number {
-  return (d.getDay() + 6) % 7;
-}
 function addDays(d: Date, n: number): Date {
   const r = new Date(d);
   r.setDate(r.getDate() + n);
   return r;
 }
 const hhmm = (t?: string): string => (t ? t.slice(0, 5) : '--:--');
-
-/** The visible [from, to] for a view around `dateKey`. */
-function rangeFor(view: CalView, dateKey: string): {from: string; to: string} {
-  const d = parseKey(dateKey);
-  if (view === 'day') {
-    return {from: dateKey, to: dateKey};
-  }
-  if (view === 'week') {
-    const mon = addDays(d, -mondayIndex(d));
-    return {from: keyOf(mon), to: keyOf(addDays(mon, 6))};
-  }
-  // month grid (full Mon–Sun weeks covering the month)
-  const first = new Date(d.getFullYear(), d.getMonth(), 1);
-  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  const gridStart = addDays(first, -mondayIndex(first));
-  const gridEnd = addDays(last, 6 - mondayIndex(last));
-  return {from: keyOf(gridStart), to: keyOf(gridEnd)};
-}
 
 const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
   present: {tone: 'ok' as const, label: t('schedules:status.present')},
@@ -86,16 +61,14 @@ const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
   off: {tone: 'neutral' as const, label: t('schedules:status.off')},
 });
 
-// ─── Roster card (tap → detail) ───────────────────────────────────────────────
+// ─── Roster card ──────────────────────────────────────────────────────────────
 
 function RosterRow({
   roster,
   t,
-  onPress,
 }: {
   roster: Schedule;
   t: ReturnType<typeof useTranslation>['t'];
-  onPress?: () => void;
 }): React.JSX.Element {
   const ROSTER_STATUS_PILL = getRosterStatusPill(t);
   const pill = ROSTER_STATUS_PILL[roster.status];
@@ -105,10 +78,7 @@ function RosterRow({
     t('schedules:mySchedule.noAreasAssigned');
 
   return (
-    <Pressable
-      onPress={onPress}
-      style={[styles.card, styles.rosterCard]}
-      testID={`roster-${roster.id}`}>
+    <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>
       <View style={styles.cardHeader}>
         <NBText variant="mono-sm" color="gray700" uppercase>
           {shift ? shift.name : t('schedules:mySchedule.noShiftDefined')}
@@ -152,218 +122,41 @@ function RosterRow({
           </NBText>
         </View>
       )}
-    </Pressable>
-  );
-}
-
-// ─── Detail modal row ─────────────────────────────────────────────────────────
-
-function DetailRow({
-  icon,
-  children,
-}: {
-  icon: string;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <View style={styles.detailRow}>
-      <MaterialCommunityIcons name={icon} size={18} color={nbColors.gray600} />
-      <NBText variant="body-sm" color="gray800" style={styles.shiftText}>
-        {children}
-      </NBText>
     </View>
   );
 }
 
-// ─── Week view ────────────────────────────────────────────────────────────────
-
-function WeekView({
-  weekDays,
-  byDate,
-  today,
-  localeCode,
-  t,
-  onPressItem,
-}: {
-  weekDays: string[];
-  byDate: Map<string, Schedule[]>;
-  today: string;
-  localeCode: string;
-  t: ReturnType<typeof useTranslation>['t'];
-  onPressItem: (s: Schedule) => void;
-}): React.JSX.Element {
-  return (
-    <View style={styles.weekWrap}>
-      {weekDays.map(dk => {
-        const rows = byDate.get(dk) ?? [];
-        const d = parseKey(dk);
-        const label = d.toLocaleDateString(localeCode, {
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-        });
-        const isToday = dk === today;
-        return (
-          <View key={dk} style={styles.weekDay}>
-            <NBText
-              variant="caption"
-              uppercase
-              color={isToday ? 'primary' : 'gray600'}
-              style={styles.weekDayLabel}>
-              {label}
-            </NBText>
-            {rows.length === 0 ? (
-              <NBText variant="body-sm" color="gray400" style={styles.weekOff}>
-                {t('schedules:status.off')}
-              </NBText>
-            ) : (
-              rows.map(r => (
-                <RosterRow
-                  key={r.id}
-                  roster={r}
-                  t={t}
-                  onPress={() => onPressItem(r)}
-                />
-              ))
-            )}
-          </View>
-        );
-      })}
-    </View>
-  );
-}
-
-// ─── Month view (mini calendar) ───────────────────────────────────────────────
-
-function MonthView({
-  cells,
-  monthDate,
-  byDate,
-  today,
-  weekdayHeaders,
-  onSelectDay,
-}: {
-  cells: string[];
-  monthDate: string;
-  byDate: Map<string, Schedule[]>;
-  today: string;
-  weekdayHeaders: string[];
-  onSelectDay: (dk: string) => void;
-}): React.JSX.Element {
-  const month = parseKey(monthDate).getMonth();
-  return (
-    <View style={styles.monthWrap}>
-      <View style={styles.monthHeaderRow}>
-        {weekdayHeaders.map((w, i) => (
-          <NBText
-            key={i}
-            variant="caption"
-            uppercase
-            color="gray500"
-            style={styles.monthHeaderCell}>
-            {w}
-          </NBText>
-        ))}
-      </View>
-      <View style={styles.monthGrid}>
-        {cells.map(dk => {
-          const d = parseKey(dk);
-          const inMonth = d.getMonth() === month;
-          const has = (byDate.get(dk)?.length ?? 0) > 0;
-          const isToday = dk === today;
-          return (
-            <Pressable
-              key={dk}
-              onPress={() => onSelectDay(dk)}
-              style={[styles.monthCell, isToday && styles.monthCellToday]}>
-              <NBText
-                variant="body-sm"
-                color={inMonth ? 'black' : 'gray400'}
-                style={styles.monthCellText}>
-                {String(d.getDate())}
-              </NBText>
-              <View
-                style={[styles.monthDot, has && inMonth && styles.monthDotOn]}
-              />
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
-
-// ─── Screen ─────────────────────────────────────────────────────────────────
+// ─── Screen — daily view with a date picker ───────────────────────────────────
 
 export function MyScheduleScreen(): React.JSX.Element {
   const {t, i18n} = useTranslation();
   const userId = useAppSelector(state => state.auth.user?.id);
   const localeCode = i18n.language?.startsWith('en') ? 'en-US' : 'id-ID';
 
-  const [view, setView] = useState<CalView>('day');
   const today = useMemo(() => todayKey(), []);
   const [selectedDate, setSelectedDate] = useState<string>(today);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [rows, setRows] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [detail, setDetail] = useState<Schedule | null>(null);
 
-  const {from, to} = useMemo(
-    () => rangeFor(view, selectedDate),
-    [view, selectedDate],
-  );
+  const stepDay = useCallback((dir: number) => {
+    setSelectedDate(cur => keyOf(addDays(parseKey(cur), dir)));
+  }, []);
 
-  const byDate = useMemo(() => {
-    const m = new Map<string, Schedule[]>();
-    for (const r of rows) {
-      const list = m.get(r.schedule_date);
-      if (list) {
-        list.push(r);
-      } else {
-        m.set(r.schedule_date, [r]);
-      }
-    }
-    return m;
-  }, [rows]);
-
-  // Navigation steps by the current view's period.
-  const step = useCallback(
-    (dir: number) => {
-      setSelectedDate(cur => {
-        const d = parseKey(cur);
-        if (view === 'day') {
-          return keyOf(addDays(d, dir));
-        }
-        if (view === 'week') {
-          return keyOf(addDays(d, dir * 7));
-        }
-        return keyOf(new Date(d.getFullYear(), d.getMonth() + dir, 1));
-      });
-    },
-    [view],
-  );
-
-  const periodLabel = useMemo(() => {
-    const d = parseKey(selectedDate);
-    if (view === 'day') {
-      return d.toLocaleDateString(localeCode, {
+  const dateLabel = useMemo(
+    () =>
+      parseKey(selectedDate).toLocaleDateString(localeCode, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
-      });
-    }
-    if (view === 'week') {
-      const mon = parseKey(from);
-      const sun = parseKey(to);
-      const f = (x: Date) =>
-        x.toLocaleDateString(localeCode, {day: 'numeric', month: 'short'});
-      return `${f(mon)} – ${f(sun)}`;
-    }
-    return d.toLocaleDateString(localeCode, {month: 'long', year: 'numeric'});
-  }, [view, selectedDate, from, to, localeCode]);
+        year: 'numeric',
+      }),
+    [selectedDate, localeCode],
+  );
 
-  const fetchRange = useCallback(async () => {
+  const fetchRoster = useCallback(async () => {
     if (!userId) {
       setError(t('schedules:mySchedule.invalidSession'));
       setIsLoading(false);
@@ -371,7 +164,8 @@ export function MyScheduleScreen(): React.JSX.Element {
     }
     try {
       setError(null);
-      const res = await getMyRange(from, to);
+      // A day range so a worker with multiple non-overlapping shifts sees all.
+      const res = await getMyRange(selectedDate, selectedDate);
       if (res.error) {
         setError(res.error);
         return;
@@ -387,93 +181,67 @@ export function MyScheduleScreen(): React.JSX.Element {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [userId, from, to, t]);
+  }, [userId, selectedDate, t]);
 
   useEffect(() => {
-    void fetchRange();
-  }, [fetchRange]);
+    void fetchRoster();
+  }, [fetchRoster]);
 
   const onRefresh = useCallback(() => {
     setIsRefreshing(true);
-    void fetchRange();
-  }, [fetchRange]);
-
-  const weekDays = useMemo(() => {
-    const mon = parseKey(from);
-    return Array.from({length: 7}, (_, i) => keyOf(addDays(mon, i)));
-  }, [from]);
-
-  const monthCells = useMemo(() => {
-    if (view !== 'month') {
-      return [];
-    }
-    const end = parseKey(to);
-    const out: string[] = [];
-    for (let d = parseKey(from); d <= end; d = addDays(d, 1)) {
-      out.push(keyOf(d));
-    }
-    return out;
-  }, [view, from, to]);
-
-  const weekdayHeaders = useMemo(
-    () =>
-      Array.from({length: 7}, (_, i) =>
-        new Date(2024, 0, 1 + i).toLocaleDateString(localeCode, {
-          weekday: 'short',
-        }),
-      ),
-    [localeCode],
-  );
-
-  const dayRows = byDate.get(selectedDate) ?? [];
-  const detailShift = detail?.shift_definition;
-  const detailPill = detail ? getRosterStatusPill(t)[detail.status] : undefined;
+    void fetchRoster();
+  }, [fetchRoster]);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <NBBackgroundPattern />
 
-      <View style={styles.switcher}>
-        <NBTab
-          tabs={[
-            {key: 'day', label: t('schedules:mySchedule.viewDay')},
-            {key: 'week', label: t('schedules:mySchedule.viewWeek')},
-            {key: 'month', label: t('schedules:mySchedule.viewMonth')},
-          ]}
-          activeTab={view}
-          onTabChange={k => setView(k as CalView)}
-        />
-      </View>
-
       <View style={styles.navRow}>
         <Pressable
-          onPress={() => step(-1)}
+          onPress={() => stepDay(-1)}
           accessibilityLabel={t('schedules:mySchedule.prevDay')}
           hitSlop={8}
-          style={styles.navBtn}>
+          style={styles.navBtn}
+          testID="prev-day">
           <MaterialCommunityIcons
             name="chevron-left"
             size={22}
             color={nbColors.black}
           />
         </Pressable>
+
         <View style={styles.navCenter}>
-          <NBText variant="body" style={styles.navDate}>
-            {periodLabel}
-          </NBText>
+          {/* Tap the date to jump to any day via the picker. */}
+          <Pressable
+            onPress={() => setPickerOpen(true)}
+            style={styles.dateBtn}
+            accessibilityRole="button"
+            testID="date-picker-trigger">
+            <MaterialCommunityIcons
+              name="calendar-month-outline"
+              size={16}
+              color={nbColors.gray700}
+            />
+            <NBText variant="body" style={styles.navDate}>
+              {dateLabel}
+            </NBText>
+          </Pressable>
           <Pressable
             onPress={() => setSelectedDate(today)}
-            style={styles.todayBtn}>
+            style={styles.todayBtn}
+            testID="today-btn">
             <NBText variant="caption" uppercase color="gray700">
               {t('schedules:mySchedule.today')}
             </NBText>
           </Pressable>
         </View>
+
         <Pressable
-          onPress={() => step(1)}
+          onPress={() => stepDay(1)}
           accessibilityLabel={t('schedules:mySchedule.nextDay')}
           hitSlop={8}
-          style={styles.navBtn}>
+          style={styles.navBtn}
+          testID="next-day">
           <MaterialCommunityIcons
             name="chevron-right"
             size={22}
@@ -503,6 +271,20 @@ export function MyScheduleScreen(): React.JSX.Element {
             onCTA={onRefresh}
           />
         </View>
+      ) : rows.length === 0 ? (
+        <View style={styles.stateWrap}>
+          <NBEmptyState
+            icon={
+              <MaterialCommunityIcons
+                name="calendar-blank-outline"
+                size={48}
+                color={nbColors.gray500}
+              />
+            }
+            title={t('schedules:mySchedule.emptyTitle')}
+            description={t('schedules:mySchedule.emptyDescription')}
+          />
+        </View>
       ) : (
         <ScrollView
           contentContainerStyle={styles.listContent}
@@ -513,100 +295,28 @@ export function MyScheduleScreen(): React.JSX.Element {
               tintColor={nbColors.primary}
             />
           }>
-          {view === 'day' &&
-            (dayRows.length === 0 ? (
-              <View style={styles.stateWrap}>
-                <NBEmptyState
-                  icon={
-                    <MaterialCommunityIcons
-                      name="calendar-blank-outline"
-                      size={48}
-                      color={nbColors.gray500}
-                    />
-                  }
-                  title={t('schedules:mySchedule.emptyTitle')}
-                  description={t('schedules:mySchedule.emptyDescription')}
-                />
-              </View>
-            ) : (
-              dayRows.map(r => (
-                <RosterRow
-                  key={r.id}
-                  roster={r}
-                  t={t}
-                  onPress={() => setDetail(r)}
-                />
-              ))
-            ))}
-
-          {view === 'week' && (
-            <WeekView
-              weekDays={weekDays}
-              byDate={byDate}
-              today={today}
-              localeCode={localeCode}
-              t={t}
-              onPressItem={setDetail}
-            />
-          )}
-
-          {view === 'month' && (
-            <MonthView
-              cells={monthCells}
-              monthDate={selectedDate}
-              byDate={byDate}
-              today={today}
-              weekdayHeaders={weekdayHeaders}
-              onSelectDay={dk => {
-                setSelectedDate(dk);
-                setView('day');
-              }}
-            />
-          )}
+          {rows.map(r => (
+            <RosterRow key={r.id} roster={r} t={t} />
+          ))}
         </ScrollView>
       )}
 
-      <NBModal
-        visible={detail !== null}
-        onClose={() => setDetail(null)}
-        title={
-          detail
-            ? parseKey(detail.schedule_date).toLocaleDateString(localeCode, {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-              })
-            : ''
-        }>
-        {detail && (
-          <View style={styles.detailBody}>
-            {detailPill && (
-              <StatusPill dot tone={detailPill.tone} label={detailPill.label} />
-            )}
-            <DetailRow icon="clock-outline">
-              {detailShift
-                ? `${detailShift.name} · ${hhmm(detailShift.start_time)}–${hhmm(
-                    detailShift.end_time,
-                  )}`
-                : t('schedules:mySchedule.noShiftDefined')}
-            </DetailRow>
-            <DetailRow icon="map-marker-outline">
-              {detail.schedule_areas.map(a => a.area.name).join(', ') ||
-                t('schedules:mySchedule.noAreasAssigned')}
-            </DetailRow>
-            {detail.rayon && (
-              <DetailRow icon="map-outline">{detail.rayon.name}</DetailRow>
-            )}
-          </View>
-        )}
-      </NBModal>
+      <NBDatePicker
+        triggerless
+        visible={pickerOpen}
+        value={parseKey(selectedDate)}
+        onChange={d => {
+          setSelectedDate(keyOf(d));
+          setPickerOpen(false);
+        }}
+        onRequestClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: nbColors.bgCanvas},
-  switcher: {paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm},
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -627,6 +337,18 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   navCenter: {flex: 1, alignItems: 'center', gap: nbSpacing.xs},
+  dateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.white,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    ...nbShadows.sm,
+  },
   navDate: {textAlign: 'center'},
   todayBtn: {
     borderWidth: nbBorders.widthBase,
@@ -665,34 +387,6 @@ const styles = StyleSheet.create({
   shiftRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
   shiftText: {flexShrink: 1},
   rayonRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
-  // Week
-  weekWrap: {gap: nbSpacing.md},
-  weekDay: {gap: nbSpacing.xs},
-  weekDayLabel: {marginBottom: 2},
-  weekOff: {fontStyle: 'italic', paddingVertical: nbSpacing.xs},
-  // Month
-  monthWrap: {gap: nbSpacing.xs},
-  monthHeaderRow: {flexDirection: 'row'},
-  monthHeaderCell: {flex: 1, textAlign: 'center', paddingVertical: 4},
-  monthGrid: {flexDirection: 'row', flexWrap: 'wrap'},
-  monthCell: {
-    width: `${100 / 7}%`,
-    aspectRatio: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 3,
-  },
-  monthCellToday: {
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.primary,
-    borderRadius: nbRadius.base,
-  },
-  monthCellText: {textAlign: 'center'},
-  monthDot: {width: 6, height: 6, borderRadius: 3},
-  monthDotOn: {backgroundColor: nbColors.primary},
-  // Detail
-  detailBody: {gap: nbSpacing.sm, paddingVertical: nbSpacing.xs},
-  detailRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.sm},
 });
 
 export default MyScheduleScreen;

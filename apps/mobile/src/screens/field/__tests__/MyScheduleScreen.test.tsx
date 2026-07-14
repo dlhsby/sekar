@@ -7,12 +7,6 @@ jest.mock('../../../components/nb/NBBackgroundPattern', () => ({
   NBBackgroundPattern: ({ children }: any) => children ?? null,
 }));
 
-// NBModal wraps @gorhom/bottom-sheet — render children only when visible so the
-// tests don't need the reanimated/gesture-handler runtime.
-jest.mock('../../../components/nb/NBModal', () => ({
-  NBModal: ({ visible, children }: any) => (visible ? children : null),
-}));
-
 const mockAuthState: { user: { id: string } } = {
   user: { id: 'user-1' },
 };
