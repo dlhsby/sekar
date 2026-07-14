@@ -98,6 +98,11 @@ export class CreateScheduleEventDto {
   @IsUUID()
   region_id?: string;
 
+  @ApiPropertyOptional({ description: 'Rayon id (required for rayon scope)' })
+  @IsOptional()
+  @IsUUID()
+  rayon_id?: string;
+
   @ApiProperty({ description: 'Is team event', default: false })
   @IsBoolean()
   is_team: boolean;

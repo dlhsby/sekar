@@ -234,7 +234,10 @@
       "notesPlaceholder": "Enter notes…",
       "submit": "Save",
       "cancel": "Cancel",
-      "datesLabel": "Selected dates"
+      "datesLabel": "Selected dates",
+      "scopeRayon": "Rayon",
+      "rayonLabel": "Rayon",
+      "rayonPlaceholder": "Select rayon…"
     },
     "editScope": {
       "title": "Edit What?",

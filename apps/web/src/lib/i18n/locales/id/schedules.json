@@ -234,7 +234,10 @@
       "notesPlaceholder": "Masukkan catatan…",
       "submit": "Simpan",
       "cancel": "Batal",
-      "datesLabel": "Tanggal terpilih"
+      "datesLabel": "Tanggal terpilih",
+      "scopeRayon": "Rayon",
+      "rayonLabel": "Rayon",
+      "rayonPlaceholder": "Pilih rayon…"
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
