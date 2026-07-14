@@ -4,7 +4,12 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { buildWeekCoverage, type BoardMasterData } from '@/lib/schedules/dayBoard';
+import {
+  buildWeekCoverage,
+  COUNTABLE_ROLES,
+  type BoardMasterData,
+  type WeekShiftBreakdown,
+} from '@/lib/schedules/dayBoard';
 import { eachDayOfInterval, startOfWeek, endOfWeek, formatISO } from 'date-fns';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
@@ -45,11 +50,11 @@ export function WeekGrid({
     t('schedules:calendar.event.weekdaysSun'),
   ];
 
+  // Show every rayon (even with no schedule) so gaps are visible.
   const coverage = useMemo(
-    () => buildWeekCoverage(occurrences, master, dateStrs).filter((r) => r.total > 0),
+    () => buildWeekCoverage(occurrences, master, dateStrs),
     [occurrences, master, dateStrs]
   );
-  const maxCount = useMemo(() => Math.max(1, ...coverage.flatMap((r) => r.counts)), [coverage]);
 
   // Chip strip (subject filtered): occurrences grouped by day.
   const byDate = useMemo(() => {
@@ -116,29 +121,26 @@ export function WeekGrid({
             <tbody>
               {coverage.map((row) => (
                 <tr key={row.rayonId}>
-                  <td className="sticky left-0 border-b border-r-2 border-nb-black bg-nb-white px-3 py-2 font-bold">
+                  <td className="sticky left-0 border-b border-r-2 border-nb-black bg-nb-white px-3 py-2 align-top font-bold">
                     {row.rayonName}
+                    <span className="mt-0.5 block text-nb-caption font-medium tabular-nums text-nb-gray-500">
+                      {t('schedules:board.petugasCount', { count: row.total })}
+                    </span>
                   </td>
-                  {row.counts.map((n, i) => (
+                  {row.cells.map((dayShifts, i) => (
                     <td
                       key={dateStrs[i]}
                       onClick={() => onDayClick(days[i])}
-                      className="cursor-pointer border-b border-r-2 border-nb-black bg-nb-white px-2 py-2 text-center align-top last:border-r-0 hover:bg-nb-gray-50"
+                      className="min-w-[7rem] cursor-pointer border-b border-r-2 border-nb-black bg-nb-white px-1.5 py-2 align-top last:border-r-0 hover:bg-nb-gray-50"
                     >
-                      {n > 0 ? (
-                        <div className="space-y-1">
-                          <div className="text-nb-body-sm font-bold tabular-nums leading-none">
-                            {n}
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full border border-nb-black bg-nb-gray-50">
-                            <div
-                              className="h-full bg-nb-primary"
-                              style={{ width: `${(n / maxCount) * 100}%` }}
-                            />
-                          </div>
+                      {dayShifts.length > 0 ? (
+                        <div className="flex flex-col gap-1.5">
+                          {dayShifts.map((s) => (
+                            <ShiftBreakdown key={s.shiftId} shift={s} />
+                          ))}
                         </div>
                       ) : (
-                        <span className="text-nb-gray-400">–</span>
+                        <span className="block text-center text-nb-gray-300">–</span>
                       )}
                     </td>
                   ))}
@@ -159,5 +161,60 @@ export function WeekGrid({
         </div>
       )}
     </div>
+  );
+}
+
+/** One shift's per-role summary inside a week cell: S{n} + satgas/linmas/others/team. */
+function ShiftBreakdown({ shift }: { shift: WeekShiftBreakdown }) {
+  const { t } = useTranslation(['schedules']);
+  const satgas = shift.roleCounts['satgas'] ?? 0;
+  const linmas = shift.roleCounts['linmas'] ?? 0;
+  const others = Object.entries(shift.roleCounts)
+    .filter(([role]) => !COUNTABLE_ROLES.includes(role))
+    .reduce((sum, [, n]) => sum + n, 0);
+
+  return (
+    <div className="flex flex-wrap items-center gap-1">
+      <span className="rounded-full border-2 border-nb-black bg-nb-gray-100 px-1.5 text-nb-caption font-bold tabular-nums">
+        S{shift.label}
+      </span>
+      {satgas > 0 && (
+        <RoleCount value={satgas} label={t('schedules:week.roleSatgas')} tone="primary" />
+      )}
+      {linmas > 0 && (
+        <RoleCount value={linmas} label={t('schedules:week.roleLinmas')} tone="info" />
+      )}
+      {others > 0 && (
+        <RoleCount value={others} label={t('schedules:week.roleOther')} tone="muted" />
+      )}
+      {shift.teams > 0 && (
+        <RoleCount value={shift.teams} label={t('schedules:week.roleTeam')} tone="secondary" />
+      )}
+    </div>
+  );
+}
+
+function RoleCount({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: 'primary' | 'info' | 'secondary' | 'muted';
+}) {
+  const cls = {
+    primary: 'bg-nb-success-light text-nb-success-dark',
+    info: 'bg-nb-info-light text-nb-black',
+    secondary: 'bg-nb-warning-light text-nb-black',
+    muted: 'bg-nb-gray-100 text-nb-gray-600',
+  }[tone];
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 text-nb-caption font-bold tabular-nums ${cls}`}
+    >
+      {value}
+      <span className="font-medium">{label}</span>
+    </span>
   );
 }

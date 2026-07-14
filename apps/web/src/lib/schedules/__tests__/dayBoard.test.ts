@@ -2,6 +2,7 @@
 import {
   buildDayBoard,
   buildWeekCoverage,
+  rayonCountsFor,
   COUNTABLE_ROLES,
   type BoardMasterData,
 } from '../dayBoard';
@@ -118,6 +119,52 @@ describe('buildDayBoard', () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ rayonId: 'ry1', counts: [2, 1], total: 3 });
+  });
+
+  it('breaks a week cell down by shift and role', () => {
+    const days = ['2026-07-13'];
+    const rows = buildWeekCoverage(
+      [
+        occ({ location_id: 'loc1', shift_definition_id: 's1', schedule_date: '2026-07-13' }),
+        occ({
+          location_id: 'loc1',
+          shift_definition_id: 's1',
+          schedule_date: '2026-07-13',
+          user: { id: 'u2', full_name: 'L', username: 'l', role: 'linmas' } as never,
+        }),
+        occ({ location_id: 'loc1', shift_definition_id: 's2', schedule_date: '2026-07-13' }),
+      ],
+      master,
+      days
+    );
+    const [cellS1, cellS2] = rows[0].cells[0];
+    expect(cellS1).toMatchObject({ label: '1', roleCounts: { satgas: 1, linmas: 1 }, total: 2 });
+    expect(cellS2).toMatchObject({ label: '2', roleCounts: { satgas: 1 }, total: 1 });
+  });
+
+  it('returns every rayon in week coverage (even with no schedule)', () => {
+    const twoRayon: BoardMasterData = {
+      ...master,
+      rayons: [
+        { id: 'ry1', name: 'Rayon Pusat' },
+        { id: 'ry2', name: 'Rayon Utara' },
+      ],
+    };
+    const rows = buildWeekCoverage([occ({ location_id: 'loc1' })], twoRayon, ['2026-07-13']);
+    expect(rows.map((r) => r.rayonId)).toEqual(['ry1', 'ry2']);
+    expect(rows[1].total).toBe(0);
+  });
+
+  it('groups a day into per-rayon counts (highest first, empties dropped)', () => {
+    const counts = rayonCountsFor(
+      [
+        occ({ location_id: 'loc1' }),
+        occ({ location_id: 'loc2' }),
+        occ({ region_id: 'kw1', location_id: null }),
+      ],
+      master
+    );
+    expect(counts).toEqual([{ rayonId: 'ry1', rayonName: 'Rayon Pusat', count: 3 }]);
   });
 
   it('places region-scoped (mobile, no location) occurrences into kawasan placement', () => {

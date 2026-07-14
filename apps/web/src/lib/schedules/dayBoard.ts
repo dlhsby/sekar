@@ -166,17 +166,72 @@ export function buildDayBoard(
   });
 }
 
+/** One shift's headcount inside a week cell, split by role + teams. */
+export interface WeekShiftBreakdown {
+  shiftId: string;
+  /** Short shift label (the digit in the name, e.g. "1"). */
+  label: string;
+  /** Individual (non-team) role code → count. */
+  roleCounts: Record<string, number>;
+  /** Team occurrences in this shift. */
+  teams: number;
+  total: number;
+}
+
 export interface WeekCoverageRow {
   rayonId: string;
   rayonName: string;
   /** Worker count per day, aligned to the `dateStrs` passed in. */
   counts: number[];
+  /** Per-day shift breakdown (only shifts with assignments), aligned to `dateStrs`. */
+  cells: WeekShiftBreakdown[][];
   total: number;
 }
 
+/** Short shift label: the digit in the name (matches the day board's pills). */
+export function shortShiftLabel(name: string): string {
+  return name.match(/\d+/)?.[0] ?? name;
+}
+
+export interface RayonCount {
+  rayonId: string;
+  rayonName: string;
+  count: number;
+}
+
 /**
- * Per-rayon × per-day coverage counts for the week view. Occurrences are mapped
- * to a rayon via their location or region (occurrences carry no rayon id).
+ * Group a day's occurrences by rayon (via their location/region), for the month
+ * view's per-day summary. Returns only rayons with assignments, highest first.
+ */
+export function rayonCountsFor(
+  occurrences: ScheduleOccurrence[],
+  master: BoardMasterData
+): RayonCount[] {
+  const locRayon = new Map(master.locations.map((l) => [l.id, l.rayon_id]));
+  const regRayon = new Map(master.regions.map((r) => [r.id, r.rayon_id]));
+  const counts = new Map<string, number>();
+
+  for (const o of occurrences) {
+    const rayonId = o.location_id
+      ? locRayon.get(o.location_id)
+      : o.region_id
+        ? regRayon.get(o.region_id)
+        : undefined;
+    if (!rayonId) continue;
+    counts.set(rayonId, (counts.get(rayonId) ?? 0) + 1);
+  }
+
+  return master.rayons
+    .map((r) => ({ rayonId: r.id, rayonName: r.name, count: counts.get(r.id) ?? 0 }))
+    .filter((r) => r.count > 0)
+    .sort((a, b) => b.count - a.count);
+}
+
+/**
+ * Per-rayon × per-day coverage for the week view. Every rayon in the master is
+ * returned (even with no schedule), each day carrying a per-shift, per-role
+ * breakdown. Occurrences are mapped to a rayon via their location or region
+ * (occurrences carry no rayon id).
  */
 export function buildWeekCoverage(
   occurrences: ScheduleOccurrence[],
@@ -185,9 +240,12 @@ export function buildWeekCoverage(
 ): WeekCoverageRow[] {
   const locRayon = new Map(master.locations.map((l) => [l.id, l.rayon_id]));
   const regRayon = new Map(master.regions.map((r) => [r.id, r.rayon_id]));
+  const shiftName = new Map(master.shifts.map((s) => [s.id, s.name]));
   const dayIndex = new Map(dateStrs.map((d, i) => [d, i]));
-  const rows = new Map<string, number[]>(
-    master.rayons.map((r) => [r.id, new Array(dateStrs.length).fill(0)])
+
+  // rayonId → dayIndex → shiftId → breakdown accumulator.
+  const acc = new Map<string, Map<string, WeekShiftBreakdown>[]>(
+    master.rayons.map((r) => [r.id, dateStrs.map(() => new Map<string, WeekShiftBreakdown>())])
   );
 
   for (const o of occurrences) {
@@ -199,16 +257,43 @@ export function buildWeekCoverage(
     if (!rayonId) continue;
     const di = dayIndex.get(o.schedule_date);
     if (di == null) continue;
-    const arr = rows.get(rayonId);
-    if (arr) arr[di] += 1;
+    const dayShifts = acc.get(rayonId)?.[di];
+    if (!dayShifts) continue;
+
+    const shiftId = o.shift_definition_id ?? 'none';
+    let cell = dayShifts.get(shiftId);
+    if (!cell) {
+      cell = {
+        shiftId,
+        label: shortShiftLabel(shiftName.get(shiftId) ?? shiftId),
+        roleCounts: {},
+        teams: 0,
+        total: 0,
+      };
+      dayShifts.set(shiftId, cell);
+    }
+    cell.total += 1;
+    if (isTeam(o)) {
+      cell.teams += 1;
+    } else {
+      const role = o.user.role as string;
+      cell.roleCounts[role] = (cell.roleCounts[role] ?? 0) + 1;
+    }
   }
 
   return master.rayons.map((r) => {
-    const counts = rows.get(r.id) ?? new Array(dateStrs.length).fill(0);
+    const perDay = acc.get(r.id) ?? dateStrs.map(() => new Map<string, WeekShiftBreakdown>());
+    const cells = perDay.map((m) =>
+      Array.from(m.values()).sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { numeric: true })
+      )
+    );
+    const counts = cells.map((day) => day.reduce((sum, s) => sum + s.total, 0));
     return {
       rayonId: r.id,
       rayonName: r.name,
       counts,
+      cells,
       total: counts.reduce((a, b) => a + b, 0),
     };
   });

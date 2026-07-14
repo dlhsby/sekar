@@ -278,5 +278,11 @@
     "title": "Atur Kapasitas",
     "hint": "Target petugas (satgas + linmas) per shift. 0 = tanpa syarat.",
     "saved": "Kapasitas disimpan"
+  },
+  "week": {
+    "roleSatgas": "Sg",
+    "roleLinmas": "Lm",
+    "roleOther": "Lain",
+    "roleTeam": "Tim"
   }
 }

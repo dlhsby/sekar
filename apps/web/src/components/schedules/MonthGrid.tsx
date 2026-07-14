@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
+import { rayonCountsFor, type BoardMasterData } from '@/lib/schedules/dayBoard';
 import {
   formatISO,
   startOfMonth,
@@ -17,16 +18,21 @@ import { todayJakartaISODate } from '@/lib/utils/formatters';
 interface MonthGridProps {
   occurrences: ScheduleOccurrence[];
   currentMonth: Date;
+  master: BoardMasterData;
   onDayClick: (date: Date) => void;
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
   /** When a single subject (worker/location) is filtered, show chips (a personal
-   * calendar); otherwise show per-day coverage density (counts + bar). */
+   * calendar); otherwise show a per-rayon coverage summary. */
   subjectFiltered?: boolean;
 }
+
+/** How many rayon rows fit in a day cell before collapsing to "+N". */
+const MAX_RAYON_ROWS = 3;
 
 export function MonthGrid({
   occurrences,
   currentMonth,
+  master,
   onDayClick,
   onOccurrenceClick,
   subjectFiltered = false,
@@ -53,9 +59,6 @@ export function MonthGrid({
     }
     occurrencesByDate.get(key)!.push(occ);
   });
-
-  // Peak day count (density-bar scale), min 1 to avoid divide-by-zero.
-  const maxCount = Math.max(1, ...Array.from(occurrencesByDate.values(), (list) => list.length));
 
   // Days of week header
   const dayNames = [
@@ -90,6 +93,7 @@ export function MonthGrid({
             {days.map((day) => {
               const dateStr = formatISO(day, { representation: 'date' });
               const dayOccurrences = occurrencesByDate.get(dateStr) || [];
+              const rayonCounts = subjectFiltered ? [] : rayonCountsFor(dayOccurrences, master);
               const isDayInMonth = isSameMonth(day, currentMonth);
               // Roster days are WIB days — highlight WIB "today", not the
               // browser's local today (they differ outside UTC+7).
@@ -138,12 +142,24 @@ export function MonthGrid({
                             {t('schedules:board.petugasShort')}
                           </span>
                         </div>
-                        <div className="h-1.5 overflow-hidden rounded-full border-2 border-nb-black bg-nb-gray-50">
-                          <div
-                            className="h-full bg-nb-primary"
-                            style={{ width: `${(dayOccurrences.length / maxCount) * 100}%` }}
-                          />
-                        </div>
+                        <ul className="space-y-0.5">
+                          {rayonCounts.slice(0, MAX_RAYON_ROWS).map((r) => (
+                            <li
+                              key={r.rayonId}
+                              className="flex items-center justify-between gap-1 rounded-nb-sm bg-nb-gray-50 px-1 text-nb-caption"
+                            >
+                              <span className="truncate">{r.rayonName}</span>
+                              <span className="shrink-0 font-bold tabular-nums">{r.count}</span>
+                            </li>
+                          ))}
+                          {rayonCounts.length > MAX_RAYON_ROWS && (
+                            <li className="text-nb-caption text-nb-gray-500">
+                              {t('schedules:calendar.moreCount', {
+                                count: rayonCounts.length - MAX_RAYON_ROWS,
+                              })}
+                            </li>
+                          )}
+                        </ul>
                       </div>
                     )
                   )}

@@ -353,10 +353,13 @@ export default function SchedulesPage() {
       {calendarView === 'year' ? (
         <YearView
           year={anchor.getFullYear()}
-          today={wibTodayDate()}
           onSelectMonth={(m) => {
             setAnchor(new Date(anchor.getFullYear(), m, 1));
             setCalendarView('month');
+          }}
+          onSelectDay={(iso) => {
+            setAnchor(new Date(`${iso}T00:00:00`));
+            setCalendarView('day');
           }}
           localeCode={localeCode}
         />
@@ -366,6 +369,7 @@ export default function SchedulesPage() {
         <MonthGrid
           occurrences={occurrences}
           currentMonth={anchor}
+          master={boardMaster}
           onDayClick={(d) => {
             setAnchor(d);
             setCalendarView('day');

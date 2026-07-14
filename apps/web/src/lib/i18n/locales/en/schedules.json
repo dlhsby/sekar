@@ -278,5 +278,11 @@
     "title": "Set Capacity",
     "hint": "Target workers (satgas + linmas) per shift. 0 = no requirement.",
     "saved": "Capacity saved"
+  },
+  "week": {
+    "roleSatgas": "Sg",
+    "roleLinmas": "Lm",
+    "roleOther": "Other",
+    "roleTeam": "Team"
   }
 }
