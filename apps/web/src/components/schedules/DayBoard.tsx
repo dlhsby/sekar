@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { ChevronDown, Settings2 } from 'lucide-react';
 import {
   buildDayBoard,
+  CITY_NODE_ID,
   type BoardLocation,
   type BoardMasterData,
   type BoardRegion,
@@ -72,7 +73,9 @@ export function DayBoard({
               aria-expanded={open.has(rayon.id)}
             >
               <Chevron open={open.has(rayon.id)} />
-              <span className="text-nb-h3 font-bold">{rayon.name}</span>
+              <span className="text-nb-h3 font-bold">
+                {rayon.id === CITY_NODE_ID ? t('schedules:calendar.board.cityLabel') : rayon.name}
+              </span>
               <span className="ml-auto flex flex-wrap items-center gap-2">
                 <Pill>{t('schedules:board.petugasCount', { count: rayon.total })}</Pill>
                 <Pill>

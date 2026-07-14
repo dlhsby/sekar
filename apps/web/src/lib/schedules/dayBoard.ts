@@ -68,6 +68,10 @@ export interface BoardMasterData {
 /** Only these roles count toward staffing/understaffing (ADR requirement). */
 export const COUNTABLE_ROLES = ['satgas', 'linmas'];
 
+/** Sentinel rayon id for the city-wide ("Seluruh Surabaya") board node — its
+ * label is localized in the component (this lib stays string-free). */
+export const CITY_NODE_ID = '__city__';
+
 const isTeam = (o: ScheduleOccurrence): boolean => o.team_category != null;
 
 /** Split a container's occurrences into per-shift role/team groups. */
@@ -125,10 +129,12 @@ export function buildDayBoard(
 ): BoardRayon[] {
   const { rayons, regions, locations, shifts } = master;
 
-  // Occurrences bucketed by container id (location, region, or rayon).
+  // Occurrences bucketed by container id (location, region, or rayon); those
+  // with no binding at all are city-wide (Seluruh Surabaya).
   const byLocation = new Map<string, ScheduleOccurrence[]>();
   const byRegionMobile = new Map<string, ScheduleOccurrence[]>();
   const byRayonMobile = new Map<string, ScheduleOccurrence[]>();
+  const cityOccs: ScheduleOccurrence[] = [];
   for (const o of occurrences) {
     if (o.location_id) {
       (byLocation.get(o.location_id) ?? byLocation.set(o.location_id, []).get(o.location_id)!).push(
@@ -140,6 +146,8 @@ export function buildDayBoard(
       ).push(o);
     } else if (o.rayon_id) {
       (byRayonMobile.get(o.rayon_id) ?? byRayonMobile.set(o.rayon_id, []).get(o.rayon_id)!).push(o);
+    } else {
+      cityOccs.push(o);
     }
   }
 
@@ -148,7 +156,23 @@ export function buildDayBoard(
     return { id: loc.id, name: loc.name, shifts: shiftGroups, total: sumTotal(shiftGroups) };
   };
 
-  return rayons.map((rayon) => {
+  // City-wide node first (only when there are city occurrences) — a placement-
+  // only rayon with the sentinel id; the component localizes its label.
+  const cityNode: BoardRayon[] =
+    cityOccs.length > 0
+      ? [
+          {
+            id: CITY_NODE_ID,
+            name: '',
+            regions: [],
+            looseLocations: [],
+            placement: groupByShift(cityOccs, shifts),
+            total: sumTotal(groupByShift(cityOccs, shifts)),
+          },
+        ]
+      : [];
+
+  const rayonNodes = rayons.map((rayon) => {
     const rayonRegions = regions.filter((r) => r.rayon_id === rayon.id);
     const rayonLocations = locations.filter((l) => l.rayon_id === rayon.id);
 
@@ -178,6 +202,8 @@ export function buildDayBoard(
       total,
     };
   });
+
+  return [...cityNode, ...rayonNodes];
 }
 
 /** One shift's headcount inside a week cell, split by role + teams. */

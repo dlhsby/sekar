@@ -4,6 +4,7 @@ import {
   buildWeekCoverage,
   rayonCountsFor,
   COUNTABLE_ROLES,
+  CITY_NODE_ID,
   type BoardMasterData,
 } from '../dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
@@ -53,6 +54,20 @@ describe('buildDayBoard', () => {
     const loc = tree[0].regions[0].locations[0];
     expect(loc.shifts.map((s) => s.shift.id)).toEqual(['s1', 's2']);
     expect(loc.shifts.every((s) => s.total === 0)).toBe(true);
+  });
+
+  it('adds a city-wide node first only when city occurrences exist', () => {
+    // No city node without city occurrences.
+    expect(buildDayBoard([], master).some((n) => n.id === CITY_NODE_ID)).toBe(false);
+
+    // A city occurrence (no location/region/rayon) surfaces as the first node.
+    const cityOcc = occ({ scope: 'city', location_id: null, region_id: null, rayon_id: null });
+    const tree = buildDayBoard([cityOcc], master);
+    expect(tree[0].id).toBe(CITY_NODE_ID);
+    expect(tree[0].total).toBe(1);
+    expect(tree[0].regions).toHaveLength(0);
+    // The real rayon still follows.
+    expect(tree.some((n) => n.id === 'ry1')).toBe(true);
   });
 
   it('groups individuals by role and counts only satgas+linmas', () => {

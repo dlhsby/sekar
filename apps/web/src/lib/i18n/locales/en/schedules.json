@@ -239,7 +239,9 @@
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Select rayon…",
       "regionScopeHint": "Leave empty for whole-Rayon coverage.",
-      "locationScopeHint": "Leave empty for whole-Kawasan coverage."
+      "locationScopeHint": "Leave empty for whole-Kawasan coverage.",
+      "cityWideLabel": "Whole City (Patrol Team)",
+      "cityWideHint": "Not tied to a rayon/kawasan/location — covers all of Surabaya."
     },
     "editScope": {
       "title": "Edit What?",
@@ -279,7 +281,10 @@
       "datesRequired": "Add at least one date",
       "endBeforeStart": "End date must be after the start date"
     },
-    "moreCount": "+{{count}} more"
+    "moreCount": "+{{count}} more",
+    "board": {
+      "cityLabel": "Whole City / Surabaya"
+    }
   },
   "staffCapacity": {
     "title": "Set Capacity",

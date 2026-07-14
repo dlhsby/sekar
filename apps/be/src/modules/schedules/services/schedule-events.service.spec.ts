@@ -331,6 +331,76 @@ describe('ScheduleEventsService', () => {
     });
   });
 
+  describe('city scope', () => {
+    it('rejects a city-scoped event that carries a rayon/region/location id', async () => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+
+      await expect(
+        service.create(
+          {
+            is_team: false,
+            user_id: 'user-1',
+            shift_definition_id: mockShift.id,
+            scope: ScheduleScope.CITY,
+            rayon_id: 'rayon-1',
+            start_date: '2026-07-10',
+            recurrence_type: RecurrenceType.NONE,
+          },
+          ADMIN,
+        ),
+      ).rejects.toThrow(/city scope must not have/i);
+    });
+
+    it('rejects a city-scoped event from a non-city role', async () => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+      userRepo.find.mockResolvedValue([{ id: 'user-1', role: 'satgas', is_active: true }]);
+      const korlap = { id: 'k', role: UserRole.KORLAP, rayon_id: 'rayon-1' } as User;
+
+      await expect(
+        service.create(
+          {
+            is_team: false,
+            user_id: 'user-1',
+            shift_definition_id: mockShift.id,
+            scope: ScheduleScope.CITY,
+            start_date: '2026-07-10',
+            recurrence_type: RecurrenceType.NONE,
+          },
+          korlap,
+        ),
+      ).rejects.toThrow(/city-scope roles/i);
+    });
+
+    it('accepts a valid city-scoped individual event (city role)', async () => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+      userRepo.find.mockResolvedValue([{ id: 'user-1', role: 'satgas', is_active: true }]);
+      eventRepo.findOne.mockResolvedValue({ id: 'event-1', scope: ScheduleScope.CITY });
+      materializer.materializeEvent.mockResolvedValue({ created: 0, skipped: [] });
+
+      const result = await service.create(
+        {
+          is_team: false,
+          user_id: 'user-1',
+          shift_definition_id: mockShift.id,
+          scope: ScheduleScope.CITY,
+          start_date: '2026-07-10',
+          recurrence_type: RecurrenceType.NONE,
+        },
+        ADMIN,
+      );
+
+      expect(result.event).toBeDefined();
+      expect(eventRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scope: ScheduleScope.CITY,
+          rayon_id: null,
+          region_id: null,
+          location_id: null,
+        }),
+      );
+    });
+  });
+
   describe('update - member_ids on individual event', () => {
     it('rejects updating member_ids on an individual event', async () => {
       const event = {
