@@ -23,4 +23,17 @@ export async function getMyRoster(date?: string): Promise<ApiResponse<Schedule |
   return get<Schedule | null>('/schedules/my', params);
 }
 
-export default { getMyRoster };
+/**
+ * The authenticated worker's own roster across a date range [from, to] (WIB
+ * days). The backend self-scopes workers to their own rows, so no user id is
+ * needed. Powers the week/month personal calendar. Includes virtual projected
+ * rows beyond the materialization horizon. Range is capped at 62 days server-side.
+ */
+export async function getMyRange(
+  from: string,
+  to: string,
+): Promise<ApiResponse<Schedule[]>> {
+  return get<Schedule[]>('/schedules/range', { from, to });
+}
+
+export default { getMyRoster, getMyRange };
