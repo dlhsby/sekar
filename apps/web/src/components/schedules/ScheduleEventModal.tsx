@@ -56,6 +56,12 @@ export interface ScheduleEventModalProps {
   editScope?: EditScope;
   fromDate?: string;
   initialDate?: string;
+  /** Pre-fill the placement cascade when created from a specific board row. */
+  initialRayonId?: string;
+  initialRegionId?: string;
+  initialLocationId?: string;
+  initialShiftId?: string;
+  initialCityWide?: boolean;
   onSuccess?: () => void;
 }
 
@@ -178,6 +184,11 @@ export function ScheduleEventModal({
   editScope = 'series',
   fromDate,
   initialDate,
+  initialRayonId,
+  initialRegionId,
+  initialLocationId,
+  initialShiftId,
+  initialCityWide,
   onSuccess,
 }: ScheduleEventModalProps) {
   const { t } = useTranslation(['schedules', 'common', 'validation']);
@@ -204,11 +215,11 @@ export function ScheduleEventModal({
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
       member_ids: event?.members?.map((m) => m.user_id) ?? [],
-      shift_definition_id: event?.shift_definition_id ?? '',
-      location_id: event?.location_id ?? '',
-      region_id: event?.region_id ?? '',
-      rayon_id: event?.rayon_id ?? '',
-      city_wide: event?.scope === 'city',
+      shift_definition_id: event?.shift_definition_id ?? initialShiftId ?? '',
+      location_id: event?.location_id ?? initialLocationId ?? '',
+      region_id: event?.region_id ?? initialRegionId ?? '',
+      rayon_id: event?.rayon_id ?? initialRayonId ?? '',
+      city_wide: event ? event.scope === 'city' : (initialCityWide ?? false),
       recurrence_type: event?.recurrence_type ?? 'none',
       interval_n: event?.recurrence_config?.interval_n ?? 2,
       weekdays: event?.recurrence_config?.weekdays ?? [],

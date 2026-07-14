@@ -17,11 +17,29 @@ import { ShiftRoleTable } from '@/components/schedules/ShiftRoleTable';
 
 const EMPTY_CAPACITIES = new Map<string, number>();
 
+/**
+ * Where a "+ Tugaskan" was clicked — the shift/role plus the container's
+ * geography, so the create modal opens pre-filled at that subject (no re-picking
+ * the Rayon▸Kawasan▸Lokasi cascade).
+ */
+export interface AssignContext {
+  shiftId: string;
+  role?: string;
+  rayon_id?: string;
+  region_id?: string;
+  location_id?: string;
+  /** City-wide placement (Seluruh Surabaya). */
+  city?: boolean;
+}
+
+/** Geography half of an AssignContext (the container it was clicked in). */
+type AssignSubject = Omit<AssignContext, 'shiftId' | 'role'>;
+
 interface DayBoardProps {
   occurrences: ScheduleOccurrence[];
   master: BoardMasterData;
   onOccurrenceClick: (occ: ScheduleOccurrence) => void;
-  onAssign?: (shiftId: string, role?: string) => void;
+  onAssign?: (ctx: AssignContext) => void;
   canAssign?: boolean;
   /** `${locationId}:${shiftId}` → target satgas+linmas headcount (understaffing). */
   capacities?: Map<string, number>;
@@ -55,7 +73,12 @@ export function DayBoard({
       return next;
     });
 
-  const tableProps = { onOccurrenceClick, onAssign, canAssign };
+  const tableProps = { onOccurrenceClick, canAssign };
+  // Bind a container's geography to a ShiftRoleTable's (shiftId, role) assign call.
+  const mkAssign = (subject: AssignSubject) =>
+    canAssign && onAssign
+      ? (shiftId: string, role?: string) => onAssign({ ...subject, shiftId, role })
+      : undefined;
 
   return (
     <div className="flex flex-col gap-3">
@@ -100,13 +123,21 @@ export function DayBoard({
                     <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
                       {t('schedules:board.placementRayon')}
                     </p>
-                    <ShiftRoleTable shifts={rayon.placement} {...tableProps} />
+                    <ShiftRoleTable
+                      shifts={rayon.placement}
+                      {...tableProps}
+                      onAssign={mkAssign(
+                        rayon.id === CITY_NODE_ID ? { city: true } : { rayon_id: rayon.id }
+                      )}
+                    />
                   </div>
                 )}
                 {rayon.regions.map((region) => (
                   <RegionCard
                     key={region.id}
                     region={region}
+                    rayonId={rayon.id}
+                    mkAssign={mkAssign}
                     open={open}
                     toggle={toggle}
                     tableProps={tableProps}
@@ -118,6 +149,7 @@ export function DayBoard({
                   <LocationCard
                     key={loc.id}
                     loc={loc}
+                    onAssign={mkAssign({ rayon_id: rayon.id, location_id: loc.id })}
                     open={open.has(loc.id)}
                     onToggle={() => toggle(loc.id)}
                     tableProps={tableProps}
@@ -144,12 +176,16 @@ export function DayBoard({
 
 interface TableProps {
   onOccurrenceClick: (occ: ScheduleOccurrence) => void;
-  onAssign?: (shiftId: string, role?: string) => void;
   canAssign: boolean;
 }
 
+/** Builds a container-bound (shiftId, role) assign handler for a ShiftRoleTable. */
+type MkAssign = (subject: AssignSubject) => ((shiftId: string, role?: string) => void) | undefined;
+
 function RegionCard({
   region,
+  rayonId,
+  mkAssign,
   open,
   toggle,
   tableProps,
@@ -157,6 +193,8 @@ function RegionCard({
   onEditCapacity,
 }: {
   region: BoardRegion;
+  rayonId: string;
+  mkAssign: MkAssign;
   open: Set<string>;
   toggle: (id: string) => void;
   tableProps: TableProps;
@@ -223,13 +261,18 @@ function RegionCard({
               <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
                 {t('schedules:board.placementKawasan')}
               </p>
-              <ShiftRoleTable shifts={region.placement} {...tableProps} />
+              <ShiftRoleTable
+                shifts={region.placement}
+                {...tableProps}
+                onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id })}
+              />
             </div>
           )}
           {region.locations.map((loc) => (
             <LocationCard
               key={loc.id}
               loc={loc}
+              onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id, location_id: loc.id })}
               open={open.has(loc.id)}
               onToggle={() => toggle(loc.id)}
               tableProps={tableProps}
@@ -245,6 +288,7 @@ function RegionCard({
 
 function LocationCard({
   loc,
+  onAssign,
   open,
   onToggle,
   tableProps,
@@ -253,6 +297,8 @@ function LocationCard({
   showCapacity = false,
 }: {
   loc: BoardLocation;
+  /** Container-bound assign (already carries this location's geography). */
+  onAssign?: (shiftId: string, role?: string) => void;
   open: boolean;
   onToggle: () => void;
   tableProps: TableProps;
@@ -298,7 +344,7 @@ function LocationCard({
       </div>
       {open && (
         <div className="border-t-2 border-dashed border-nb-black p-3">
-          <ShiftRoleTable shifts={loc.shifts} {...tableProps} />
+          <ShiftRoleTable shifts={loc.shifts} {...tableProps} onAssign={onAssign} />
         </div>
       )}
     </div>
