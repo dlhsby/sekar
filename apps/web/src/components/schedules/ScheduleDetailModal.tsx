@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui';
+import { useRayons } from '@/lib/api/rayons';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
 
 interface ScheduleDetailModalProps {
@@ -48,6 +49,7 @@ export function ScheduleDetailModal({
   localeCode,
 }: ScheduleDetailModalProps) {
   const { t } = useTranslation(['schedules', 'roles', 'status', 'common']);
+  const { data: rayons = [] } = useRayons();
   if (!occurrence) return null;
 
   const isTeam = occurrence.team_category != null;
@@ -63,11 +65,16 @@ export function ScheduleDetailModal({
     ? `${shift.name} · ${shift.start_time.slice(0, 5)}–${shift.end_time.slice(0, 5)}`
     : '—';
 
+  const rayonName = occurrence.rayon_id
+    ? (rayons.find((r) => r.id === occurrence.rayon_id)?.name ?? '')
+    : '';
   const placement = occurrence.location
     ? `${t('schedules:filters.locationLabel')} · ${occurrence.location.name}`
     : occurrence.region
       ? `${t('schedules:filters.regionLabel')} · ${occurrence.region.name}`
-      : '—';
+      : occurrence.rayon_id
+        ? `${t('schedules:filters.rayonLabel')} · ${rayonName}`
+        : '—';
 
   const recurrence = (() => {
     if (!event) return null;
