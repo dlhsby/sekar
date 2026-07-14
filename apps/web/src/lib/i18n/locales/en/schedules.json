@@ -35,7 +35,8 @@
     "emptyRayon": "No kawasan or locations yet",
     "petugasShort": "staff",
     "shiftStaffTooltip": "{{shift}} — {{countable}} of {{target}} Satgas+Linmas",
-    "shiftTotalTooltip": "{{shift}} — {{count}} staff"
+    "shiftTotalTooltip": "{{shift}} — {{count}} staff",
+    "emptyDay": "No schedule for this day yet."
   },
   "search": {
     "placeholder": "Search worker, area, or date…",
