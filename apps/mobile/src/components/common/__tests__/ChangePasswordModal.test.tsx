@@ -74,17 +74,8 @@ describe('ChangePasswordModal', () => {
     fireEvent.changeText(u.getByTestId('change-password-new-input'), 'ab1');
     fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'ab1');
     fireEvent.press(u.getByTestId('change-password-submit'));
-    expect(u.getByText('Password baru minimal 8 karakter')).toBeTruthy();
+    expect(u.getByText('Password baru minimal 6 karakter')).toBeTruthy();
     expect(rotate).not.toHaveBeenCalled();
-  });
-
-  it('requires letters and digits in the new password', () => {
-    const u = renderModal();
-    fireEvent.changeText(u.getByTestId('change-password-current-input'), 'oldpass12');
-    fireEvent.changeText(u.getByTestId('change-password-new-input'), 'abcdefgh');
-    fireEvent.changeText(u.getByTestId('change-password-confirm-input'), 'abcdefgh');
-    fireEvent.press(u.getByTestId('change-password-submit'));
-    expect(u.getByText('Password baru harus berisi huruf dan angka')).toBeTruthy();
   });
 
   it('rejects a new password equal to the current one', () => {

@@ -35,7 +35,7 @@ export default function ChangePasswordPage() {
     () =>
       z
         .object({
-          new_password: z.string().min(8, t('auth:changePassword.validationNewPasswordMin')),
+          new_password: z.string().min(6, t('auth:changePassword.validationNewPasswordMin')),
           confirm_password: z.string().min(1, t('auth:changePassword.validationConfirmRequired')),
         })
         .refine((data) => data.new_password === data.confirm_password, {

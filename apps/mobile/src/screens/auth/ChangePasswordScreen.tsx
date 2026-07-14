@@ -39,8 +39,7 @@ export function ChangePasswordScreen(): React.JSX.Element {
   // it); the server gates the forced change on the JWT + password_must_change flag
   // and rejects re-using the temp password.
   const rules = [
-    { label: t('profile:changePassword.rules.minLength'), met: newPassword.length >= 8 },
-    { label: t('profile:changePassword.rules.alphanumeric'), met: /[A-Za-z]/.test(newPassword) && /\d/.test(newPassword) },
+    { label: t('profile:changePassword.rules.minLength'), met: newPassword.length >= 6 },
     { label: t('profile:changePassword.rules.match'), met: confirmPassword.length > 0 && newPassword === confirmPassword },
   ];
   const allValid = rules.every((r) => r.met);
