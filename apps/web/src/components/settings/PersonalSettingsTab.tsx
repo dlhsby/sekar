@@ -454,7 +454,7 @@ function ChangePasswordModal({
       z
         .object({
           old_password: z.string().min(1, t('auth:changePassword.validationCurrentRequired')),
-          new_password: z.string().min(8, t('auth:changePassword.validationNewPasswordMin')),
+          new_password: z.string().min(6, t('auth:changePassword.validationNewPasswordMin')),
           confirm_password: z.string().min(1, t('auth:changePassword.validationConfirmRequired')),
         })
         .refine((d) => d.new_password === d.confirm_password, {

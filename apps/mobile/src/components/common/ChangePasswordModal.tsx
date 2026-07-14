@@ -12,8 +12,8 @@ import { useAppDispatch } from '../../store/hooks';
 import { setUser } from '../../store/slices/authSlice';
 import { nbColors, nbSpacing, nbBorders } from '../../constants/nbTokens';
 
-/** Backend (auth DTO) requires ≥ 8 chars; we additionally enforce letters + digits. */
-const MIN_PASSWORD_LENGTH = 8;
+/** Backend (auth DTO) requires ≥ 6 chars; no complexity requirement. */
+const MIN_PASSWORD_LENGTH = 6;
 
 interface ChangePasswordModalProps {
   visible: boolean;
@@ -66,8 +66,6 @@ export function ChangePasswordModal({
       errors.newPassword = t('profile:changePassword.validation.newPasswordRequired');
     } else if (newPassword.length < MIN_PASSWORD_LENGTH) {
       errors.newPassword = t('profile:changePassword.validation.newPasswordMinLength');
-    } else if (!(/[A-Za-z]/.test(newPassword) && /\d/.test(newPassword))) {
-      errors.newPassword = t('profile:changePassword.validation.newPasswordAlphanumeric');
     } else if (newPassword === currentPassword) {
       errors.newPassword = t('profile:changePassword.validation.newPasswordDifferent');
     }

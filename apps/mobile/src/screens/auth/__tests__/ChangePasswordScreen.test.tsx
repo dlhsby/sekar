@@ -48,8 +48,7 @@ describe('ChangePasswordScreen', () => {
 
   it('renders the live requirement checklist (no temporary-password field)', () => {
     const { getByText, queryByTestId } = renderWithStore();
-    expect(getByText('Minimal 8 karakter')).toBeTruthy();
-    expect(getByText('Berisi huruf dan angka')).toBeTruthy();
+    expect(getByText('Minimal 6 karakter')).toBeTruthy();
     expect(getByText('Konfirmasi cocok')).toBeTruthy();
     // Temporary-password field is gone — the user already authenticated with it.
     expect(queryByTestId('change-password-old')).toBeNull();

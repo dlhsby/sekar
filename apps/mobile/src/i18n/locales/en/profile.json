@@ -123,8 +123,7 @@
     "confirmPasswordPlaceholder": "Re-enter new password",
     "rules": {
       "title": "Password Requirements",
-      "minLength": "At least 8 characters",
-      "alphanumeric": "Contains letters and numbers",
+      "minLength": "At least 6 characters",
       "match": "Passwords match"
     },
     "submit": "Save & Log In",
@@ -137,8 +136,7 @@
     "validation": {
       "currentPasswordRequired": "Current password is required",
       "newPasswordRequired": "New password is required",
-      "newPasswordMinLength": "New password must be at least 8 characters",
-      "newPasswordAlphanumeric": "New password must contain letters and numbers",
+      "newPasswordMinLength": "New password must be at least 6 characters",
       "newPasswordDifferent": "New password must be different from old password",
       "confirmPasswordRequired": "Password confirmation is required",
       "confirmPasswordMatch": "Passwords do not match",
