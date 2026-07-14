@@ -296,5 +296,21 @@
   "year": {
     "legendLow": "Sedikit",
     "legendHigh": "Banyak"
+  },
+  "holidays": {
+    "title": "Hari Libur & Hari Khusus",
+    "manage": "Hari Libur",
+    "hint": "Tandai tanggal sebagai libur atau hari khusus. Ini mengubah jenis hari untuk target kebutuhan petugas di papan jadwal dan monitoring.",
+    "addTitle": "Tambah hari",
+    "typeLabel": "Jenis hari",
+    "namePlaceholder": "Nama (mis. Hari Kemerdekaan)",
+    "empty": "Belum ada hari libur untuk tahun ini",
+    "added": "Hari libur ditambahkan",
+    "deleted": "Hari libur dihapus",
+    "type": {
+      "HOLIDAY": "Hari Libur",
+      "WEEKEND": "Akhir Pekan",
+      "SPECIAL": "Hari Khusus"
+    }
   }
 }

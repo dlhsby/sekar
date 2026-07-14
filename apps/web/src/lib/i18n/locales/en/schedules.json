@@ -296,5 +296,21 @@
   "year": {
     "legendLow": "Fewer",
     "legendHigh": "More"
+  },
+  "holidays": {
+    "title": "Holidays & Special Days",
+    "manage": "Holidays",
+    "hint": "Mark dates as holidays or special days. This changes the day type used for staffing targets on the board and in monitoring.",
+    "addTitle": "Add day",
+    "typeLabel": "Day type",
+    "namePlaceholder": "Name (e.g. Independence Day)",
+    "empty": "No holidays yet for this year",
+    "added": "Holiday added",
+    "deleted": "Holiday removed",
+    "type": {
+      "HOLIDAY": "Holiday",
+      "WEEKEND": "Weekend",
+      "SPECIAL": "Special"
+    }
   }
 }

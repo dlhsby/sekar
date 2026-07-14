@@ -272,5 +272,6 @@
     "current": "Current marker",
     "usingDefault": "Using system default",
     "colorHint": "Pin/label color on the map — does not recolor the icon image."
-  }
+  },
+  "loading": "Loading…"
 }
