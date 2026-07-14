@@ -6,7 +6,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, IsNull, Repository } from 'typeorm';
+import {
+  In,
+  IsNull,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Repository,
+  type FindOptionsWhere,
+} from 'typeorm';
 import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User } from '../users/entities/user.entity';
@@ -232,6 +239,20 @@ export class SchedulesService {
   }
 
   /**
+   * `where` for active events that can contribute an occurrence in `[from, to]`.
+   * An event starting after `to`, or ending before `from`, expands to zero
+   * occurrences in the window (see `expandOccurrenceDates`), so it's excluded at
+   * the DB — the projections no longer load every active event into memory.
+   * (`end_date IS NULL` = open-ended, always a candidate.)
+   */
+  private activeEventsOverlapping(from: string, to: string): FindOptionsWhere<ScheduleEvent>[] {
+    return [
+      { is_active: true, start_date: LessThanOrEqual(to), end_date: MoreThanOrEqual(from) },
+      { is_active: true, start_date: LessThanOrEqual(to), end_date: IsNull() },
+    ];
+  }
+
+  /**
    * Generate (materialize) the roster for a WIB day from all active ScheduleEvents.
    * Materializes occurrences for any event whose recurrence includes the given date.
    * Idempotent: existing rows (including tombstones) are skipped, so re-running
@@ -244,8 +265,9 @@ export class SchedulesService {
   async generateRoster(date: string, actorId: string | null): Promise<number> {
     // Fetch all active, non-deleted schedule events
     const events = await this.eventRepo.find({
-      // Soft-deleted events are excluded by the repository's default scope.
-      where: { is_active: true },
+      // Soft-deleted events are excluded by the repository's default scope; only
+      // events that can occur on this date are loaded.
+      where: this.activeEventsOverlapping(date, date),
       relations: [
         'shift_definition',
         'location',
@@ -409,7 +431,7 @@ export class SchedulesService {
 
     // Projection: load active events that include this user and expand beyond the materialized window
     const events = await this.eventRepo.find({
-      where: { is_active: true },
+      where: this.activeEventsOverlapping(from, to),
       relations: [
         'shift_definition',
         'location',
@@ -572,7 +594,7 @@ export class SchedulesService {
 
     // Projection: load active events and expand beyond the materialized window
     const events = await this.eventRepo.find({
-      where: { is_active: true },
+      where: this.activeEventsOverlapping(from, to),
       relations: [
         'shift_definition',
         'location',
@@ -778,7 +800,7 @@ export class SchedulesService {
     // Projection: expand active events across the range, adding only occurrences
     // not already represented by a materialized/tombstoned row.
     const events = await this.eventRepo.find({
-      where: { is_active: true },
+      where: this.activeEventsOverlapping(from, to),
       relations: ['location', 'region', 'members'],
     });
     for (const event of events) {

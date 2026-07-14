@@ -151,9 +151,10 @@ describe('SchedulesService', () => {
       const created = await service.generateRoster('2026-06-30', 'admin');
 
       expect(created).toBe(8); // 5 + 3
+      // Events are now date-scoped: a where array of active + date-overlap branches.
       expect(eventRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ is_active: true }),
+          where: expect.arrayContaining([expect.objectContaining({ is_active: true })]),
         }),
       );
       expect(materializer.materializeEvent).toHaveBeenCalledTimes(2);
