@@ -282,13 +282,19 @@ function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number 
       </span>
     );
   }
+  // Empty shifts are de-emphasised (dashed, muted) so populated ones stand out.
+  const empty = group.total === 0;
   return (
     <span
       title={t('schedules:board.shiftTotalTooltip', {
         shift: group.shift.name,
         count: group.total,
       })}
-      className="inline-flex items-center gap-1 rounded-full border-2 border-nb-black bg-nb-gray-50 px-2 py-0.5 text-nb-caption font-bold tabular-nums text-nb-gray-600"
+      className={`inline-flex items-center gap-1 rounded-full border-2 px-2 py-0.5 text-nb-caption font-bold tabular-nums ${
+        empty
+          ? 'border-dashed border-nb-gray-300 text-nb-gray-400'
+          : 'border-nb-black bg-nb-gray-50 text-nb-gray-600'
+      }`}
     >
       S{short}·{group.total}
     </span>

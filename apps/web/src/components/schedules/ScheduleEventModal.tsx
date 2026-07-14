@@ -7,7 +7,7 @@
  * occurrences and reports per-member conflicts, surfaced here as a warning.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -23,10 +23,13 @@ import {
   DialogFooter,
   Button,
   Badge,
+  DatePicker,
   FormInput,
   FormSelect,
   FormCombobox,
+  Label,
 } from '@/components/ui';
+import { AsyncUserCombobox } from '@/components/forms/AsyncUserCombobox';
 import {
   useCreateScheduleEvent,
   useUpdateScheduleEvent,
@@ -83,7 +86,8 @@ function createSchema(t: TFn) {
       pic_user_id: z.string().optional(),
       member_ids: z.array(z.string()),
       shift_definition_id: z.string().min(1, t('validation:required')),
-      scope: z.enum(['static', 'mobile', 'rayon']),
+      // Geography cascade — rayon is required; kawasan/lokasi are optional and
+      // narrow the scope (lokasi → static, kawasan → mobile, rayon-only → rayon).
       location_id: z.string().optional(),
       region_id: z.string().optional(),
       rayon_id: z.string().optional(),
@@ -121,21 +125,9 @@ function createSchema(t: TFn) {
           });
         }
       }
-      if (data.scope === 'static' && !data.location_id) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['location_id'],
-          message: t('validation:required'),
-        });
-      }
-      if (data.scope === 'mobile' && !data.region_id) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          path: ['region_id'],
-          message: t('validation:required'),
-        });
-      }
-      if (data.scope === 'rayon' && !data.rayon_id) {
+      // Rayon is always required; kawasan/lokasi are optional (they only narrow
+      // the scope). The cascade UI keeps region/location consistent with rayon.
+      if (!data.rayon_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['rayon_id'],
@@ -211,7 +203,6 @@ export function ScheduleEventModal({
       pic_user_id: event?.pic_user_id ?? '',
       member_ids: event?.members?.map((m) => m.user_id) ?? [],
       shift_definition_id: event?.shift_definition_id ?? '',
-      scope: event?.scope ?? 'static',
       location_id: event?.location_id ?? '',
       region_id: event?.region_id ?? '',
       rayon_id: event?.rayon_id ?? '',
@@ -248,19 +239,46 @@ export function ScheduleEventModal({
   const locations = locationsResp?.data ?? [];
 
   const formKind = watch('kind');
-  const formScope = watch('scope');
+  const formRayon = watch('rayon_id');
+  const formRegion = watch('region_id');
   const formRecurrence = watch('recurrence_type');
   const formPic = watch('pic_user_id');
   const [dateDraft, setDateDraft] = useState('');
 
   const shiftOptions = shifts.map((s) => ({ value: s.id, label: s.name }));
-  const userOptions = schedulableUsers.map((u) => ({ value: u.id, label: u.full_name }));
   const teamCategoryOptions = teamCategories
     .filter((tt) => tt.is_active)
     .map((tt) => ({ value: tt.id, label: tt.name }));
-  const locationOptions = locations.map((l) => ({ value: l.id, label: l.name }));
-  const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
   const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
+  // Kawasan options cascade from the chosen rayon; lokasi from the chosen kawasan.
+  const regionOptions = regions
+    .filter((r) => r.rayon_id === formRayon)
+    .map((r) => ({ value: r.id, label: r.name }));
+  const locationOptions = locations
+    .filter((l) => l.region_id === formRegion)
+    .map((l) => ({ value: l.id, label: l.name }));
+
+  // Editing a static/mobile event: backfill the rayon → kawasan cascade from the
+  // event's location/region once master data is loaded, so the selects show the
+  // current placement (the event only carries the deepest id).
+  const backfilled = useRef(false);
+  useEffect(() => {
+    if (!event || backfilled.current) return;
+    if (event.location_id) {
+      const loc = locations.find((l) => l.id === event.location_id);
+      if (!loc) return;
+      if (loc.region_id) setValue('region_id', loc.region_id);
+      setValue('rayon_id', loc.rayon_id);
+      backfilled.current = true;
+    } else if (event.region_id) {
+      const reg = regions.find((r) => r.id === event.region_id);
+      if (!reg) return;
+      setValue('rayon_id', reg.rayon_id);
+      backfilled.current = true;
+    } else {
+      backfilled.current = true; // rayon-scope / manual — defaults already suffice
+    }
+  }, [event, locations, regions, setValue]);
   const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
     { value: 'none', label: t('schedules:calendar.event.recurrenceNone') },
     { value: 'daily', label: t('schedules:calendar.event.recurrenceDaily') },
@@ -323,6 +341,10 @@ export function ScheduleEventModal({
               ? { dates: [...data.dates].sort() }
               : undefined;
 
+      // Derive the scope from how deep the geography cascade is filled:
+      // lokasi → static, kawasan (no lokasi) → mobile, rayon-only → rayon.
+      const scope = data.location_id ? 'static' : data.region_id ? 'mobile' : 'rayon';
+
       const payload: CreateScheduleEventInput = {
         title: data.title || undefined,
         recurrence_type: data.recurrence_type,
@@ -330,10 +352,10 @@ export function ScheduleEventModal({
         end_date: data.end_date || null,
         recurrence_config: recurrenceConfig,
         shift_definition_id: data.shift_definition_id,
-        scope: data.scope,
-        location_id: data.scope === 'static' ? data.location_id : null,
-        region_id: data.scope === 'mobile' ? data.region_id : null,
-        rayon_id: data.scope === 'rayon' ? data.rayon_id : null,
+        scope,
+        location_id: scope === 'static' ? data.location_id : null,
+        region_id: scope === 'mobile' ? data.region_id : null,
+        rayon_id: scope === 'rayon' ? data.rayon_id : null,
         is_team: data.kind === 'team',
         user_id: data.kind === 'individual' ? data.user_id : null,
         team_category_id: data.kind === 'team' ? data.team_category_id : null,
@@ -345,7 +367,7 @@ export function ScheduleEventModal({
 
       if (isEditing && event) {
         // Kind (individual/team target) is immutable on the backend — strip it.
-         
+
         const {
           is_team: _,
           user_id: __,
@@ -397,33 +419,25 @@ export function ScheduleEventModal({
         <DialogBody>
           <form id="event-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             {/* Kind: individual vs team (immutable when editing) */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={formKind === 'individual' ? 'default' : 'outline'}
-                disabled={isEditing}
-                onClick={() => setValue('kind', 'individual')}
-                className="flex-1"
-              >
-                {t('schedules:calendar.event.kindIndividual')}
-              </Button>
-              <Button
-                type="button"
-                variant={formKind === 'team' ? 'default' : 'outline'}
-                disabled={isEditing}
-                onClick={() => setValue('kind', 'team')}
-                className="flex-1"
-              >
-                {t('schedules:calendar.event.kindTeam')}
-              </Button>
-            </div>
+            <FormSelect
+              label={t('schedules:calendar.event.kindLabel')}
+              options={[
+                { value: 'individual', label: t('schedules:calendar.event.kindIndividual') },
+                { value: 'team', label: t('schedules:calendar.event.kindTeam') },
+              ]}
+              value={formKind}
+              onChange={(v) => setValue('kind', v as 'individual' | 'team')}
+              disabled={isEditing}
+            />
 
             {formKind === 'individual' && (
-              <FormCombobox
+              <AsyncUserCombobox
                 label={t('schedules:calendar.event.workerLabel')}
-                options={userOptions}
+                required
+                roles={SCHEDULABLE_ROLES}
                 value={watch('user_id') || ''}
-                onChange={(v) => setValue('user_id', v, { shouldValidate: true })}
+                onValueChange={(v) => setValue('user_id', v, { shouldValidate: true })}
+                initialLabel={event?.user?.full_name}
                 placeholder={t('schedules:calendar.event.workerPlaceholder')}
                 error={errors.user_id?.message}
                 disabled={isEditing}
@@ -441,11 +455,13 @@ export function ScheduleEventModal({
                   error={errors.team_category_id?.message}
                   disabled={isEditing}
                 />
-                <FormCombobox
+                <AsyncUserCombobox
                   label={t('schedules:calendar.event.picLabel')}
-                  options={userOptions}
+                  required
+                  roles={SCHEDULABLE_ROLES}
                   value={formPic || ''}
-                  onChange={(v) => setValue('pic_user_id', v, { shouldValidate: true })}
+                  onValueChange={(v) => setValue('pic_user_id', v, { shouldValidate: true })}
+                  initialLabel={event?.pic_user?.full_name}
                   placeholder={t('schedules:calendar.event.picPlaceholder')}
                   error={errors.pic_user_id?.message}
                 />
@@ -493,64 +509,44 @@ export function ScheduleEventModal({
               required
             />
 
-            {/* Scope: static (location) vs mobile (region) vs rayon (rayon-wide) */}
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant={formScope === 'static' ? 'default' : 'outline'}
-                onClick={() => setValue('scope', 'static')}
-                className="flex-1"
-              >
-                {t('schedules:calendar.event.scopeStatic')}
-              </Button>
-              <Button
-                type="button"
-                variant={formScope === 'mobile' ? 'default' : 'outline'}
-                onClick={() => setValue('scope', 'mobile')}
-                className="flex-1"
-              >
-                {t('schedules:calendar.event.scopeMobile')}
-              </Button>
-              <Button
-                type="button"
-                variant={formScope === 'rayon' ? 'default' : 'outline'}
-                onClick={() => setValue('scope', 'rayon')}
-                className="flex-1"
-              >
-                {t('schedules:calendar.event.scopeRayon')}
-              </Button>
-            </div>
+            {/* Placement cascade: Rayon (required) → Kawasan (optional) → Lokasi.
+                The deepest level filled decides monitoring scope on save. */}
+            <FormCombobox
+              label={t('schedules:calendar.event.rayonLabel')}
+              options={rayonOptions}
+              value={formRayon || ''}
+              onChange={(v) => {
+                setValue('rayon_id', v, { shouldValidate: true });
+                setValue('region_id', '');
+                setValue('location_id', '');
+              }}
+              placeholder={t('schedules:calendar.event.rayonPlaceholder')}
+              error={errors.rayon_id?.message}
+              required
+            />
 
-            {formScope === 'static' && (
+            {formRayon && (
+              <FormCombobox
+                label={t('schedules:calendar.event.regionLabel')}
+                options={regionOptions}
+                value={formRegion || ''}
+                onChange={(v) => {
+                  setValue('region_id', v, { shouldValidate: true });
+                  setValue('location_id', '');
+                }}
+                placeholder={t('schedules:calendar.event.regionPlaceholder')}
+                helperText={t('schedules:calendar.event.regionScopeHint')}
+              />
+            )}
+
+            {formRegion && (
               <FormCombobox
                 label={t('schedules:calendar.event.locationLabel')}
                 options={locationOptions}
                 value={watch('location_id') || ''}
                 onChange={(v) => setValue('location_id', v, { shouldValidate: true })}
                 placeholder={t('schedules:calendar.event.locationPlaceholder')}
-                error={errors.location_id?.message}
-              />
-            )}
-
-            {formScope === 'mobile' && (
-              <FormCombobox
-                label={t('schedules:calendar.event.regionLabel')}
-                options={regionOptions}
-                value={watch('region_id') || ''}
-                onChange={(v) => setValue('region_id', v, { shouldValidate: true })}
-                placeholder={t('schedules:calendar.event.regionPlaceholder')}
-                error={errors.region_id?.message}
-              />
-            )}
-
-            {formScope === 'rayon' && (
-              <FormCombobox
-                label={t('schedules:calendar.event.rayonLabel')}
-                options={rayonOptions}
-                value={watch('rayon_id') || ''}
-                onChange={(v) => setValue('rayon_id', v, { shouldValidate: true })}
-                placeholder={t('schedules:calendar.event.rayonPlaceholder')}
-                error={errors.rayon_id?.message}
+                helperText={t('schedules:calendar.event.locationScopeHint')}
               />
             )}
 
@@ -614,13 +610,12 @@ export function ScheduleEventModal({
                       {t('schedules:calendar.event.datesLabel')}
                     </p>
                     <div className="flex gap-2">
-                      <input
-                        type="date"
-                        value={dateDraft}
-                        onChange={(e) => setDateDraft(e.target.value)}
-                        aria-label={t('schedules:calendar.event.datesLabel')}
-                        className="flex-1 rounded-nb-base border-2 border-nb-black px-3 py-2 text-nb-body-sm"
-                      />
+                      <div className="flex-1">
+                        <DatePicker
+                          value={dateDraft || undefined}
+                          onValueChange={(v) => setDateDraft(v ?? '')}
+                        />
+                      </div>
                       <Button
                         type="button"
                         variant="outline"
@@ -660,19 +655,50 @@ export function ScheduleEventModal({
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <FormInput
-                label={t('schedules:calendar.event.startDateLabel')}
-                type="date"
-                error={errors.start_date?.message}
-                required
-                {...register('start_date')}
+              <Controller
+                control={control}
+                name="start_date"
+                render={({ field }) => (
+                  <div className="space-y-1">
+                    <Label>
+                      {t('schedules:calendar.event.startDateLabel')}
+                      <span className="ml-1 text-nb-danger">*</span>
+                    </Label>
+                    <DatePicker
+                      value={field.value || undefined}
+                      onValueChange={(v) => field.onChange(v ?? '')}
+                      error={!!errors.start_date}
+                    />
+                    {errors.start_date && (
+                      <p className="text-nb-body-sm font-medium text-nb-danger" role="alert">
+                        {errors.start_date.message}
+                      </p>
+                    )}
+                  </div>
+                )}
               />
-              <FormInput
-                label={t('schedules:calendar.event.endDateLabel')}
-                type="date"
-                helperText={t('schedules:calendar.event.endDateOptional')}
-                error={errors.end_date?.message}
-                {...register('end_date')}
+              <Controller
+                control={control}
+                name="end_date"
+                render={({ field }) => (
+                  <div className="space-y-1">
+                    <Label>{t('schedules:calendar.event.endDateLabel')}</Label>
+                    <DatePicker
+                      value={field.value || undefined}
+                      onValueChange={(v) => field.onChange(v ?? '')}
+                      error={!!errors.end_date}
+                    />
+                    {errors.end_date ? (
+                      <p className="text-nb-body-sm font-medium text-nb-danger" role="alert">
+                        {errors.end_date.message}
+                      </p>
+                    ) : (
+                      <p className="text-nb-body-sm text-nb-gray-600">
+                        {t('schedules:calendar.event.endDateOptional')}
+                      </p>
+                    )}
+                  </div>
+                )}
               />
             </div>
 

@@ -6,7 +6,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User, UserRole } from './entities/user.entity';
 import { Role } from '../rbac/entities/role.entity';
@@ -264,8 +264,12 @@ export class UsersService {
     page: number = 1,
     limit: number = 50,
     requestingUser?: User,
+    filters?: { search?: string; roles?: string[] },
   ): Promise<PaginatedResponseDto<User>> {
     this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
+
+    const search = filters?.search?.trim();
+    const roles = filters?.roles?.filter(Boolean);
 
     // Rayon-scoped roles see only users in their rayon.
     // May 11, 2026 — switched from `area.rayon_id` (which required users to
@@ -305,8 +309,14 @@ export class UsersService {
         ])
         .where('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
           rayonId: requestingUser.rayon_id,
-        })
-        .orderBy('user.created_at', 'DESC')
+        });
+
+      if (roles?.length) qb.andWhere('user.role IN (:...roles)', { roles });
+      if (search) {
+        qb.andWhere('(user.full_name ILIKE :s OR user.username ILIKE :s)', { s: `%${search}%` });
+      }
+
+      qb.orderBy('user.created_at', 'DESC')
         .skip((page - 1) * limit)
         .take(limit);
 
@@ -314,7 +324,22 @@ export class UsersService {
       return new PaginatedResponseDto(await this.withAreaCounts(data), total, page, limit);
     }
 
+    // role IN (...) AND (full_name ILIKE OR username ILIKE). The OR needs an
+    // array of where-objects; each carries the role predicate so it ANDs. Only
+    // attach `where` when a filter is present (keeps the unfiltered path clean).
+    const base: FindOptionsWhere<User> = {};
+    if (roles?.length) base.role = In(roles) as unknown as FindOptionsWhere<User>['role'];
+    const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] | undefined = search
+      ? [
+          { ...base, full_name: ILike(`%${search}%`) },
+          { ...base, username: ILike(`%${search}%`) },
+        ]
+      : roles?.length
+        ? base
+        : undefined;
+
     const [data, total] = await this.userRepository.findAndCount({
+      ...(where ? { where } : {}),
       select: [
         'id',
         'username',

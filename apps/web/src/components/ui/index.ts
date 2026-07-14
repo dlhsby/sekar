@@ -118,6 +118,19 @@ export {
   DialogTitle,
   DialogDescription,
 } from './dialog';
+// Sheet (side panel / right drawer)
+export {
+  Sheet,
+  SheetTrigger,
+  SheetClose,
+  SheetOverlay,
+  SheetContent,
+  SheetHeader,
+  SheetBody,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from './sheet';
 export { ConfirmDialog, type ConfirmDialogProps } from './confirm-dialog';
 export { DetailModal, type DetailModalProps, type DetailModalRow } from './detail-modal';
 

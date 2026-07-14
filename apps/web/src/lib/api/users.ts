@@ -29,6 +29,7 @@ const buildUserParams = (filters: UserFilters, page: number): string => {
   const params = new URLSearchParams();
   if (filters.search) params.append('search', filters.search);
   if (filters.role) params.append('role', filters.role);
+  if (filters.roles?.length) params.append('roles', filters.roles.join(','));
   params.append('page', String(page));
   if (filters.limit) params.append('limit', String(filters.limit));
   return params.toString();
@@ -36,7 +37,7 @@ const buildUserParams = (filters: UserFilters, page: number): string => {
 
 const fetchUsersPage = async (
   filters: UserFilters,
-  page: number,
+  page: number
 ): Promise<PaginatedResponse<User>> =>
   (await apiClient.get<PaginatedResponse<User>>(`/users?${buildUserParams(filters, page)}`)).data;
 
@@ -68,7 +69,7 @@ const resetUserPassword = async (id: string): Promise<{ temp_password: string }>
 /** Live username availability check (create-user form). */
 export const checkUsername = async (username: string): Promise<boolean> => {
   const response = await apiClient.get<{ available: boolean }>(
-    `/users/check-username?username=${encodeURIComponent(username)}`,
+    `/users/check-username?username=${encodeURIComponent(username)}`
   );
   return response.data.available;
 };
@@ -76,7 +77,7 @@ export const checkUsername = async (username: string): Promise<boolean> => {
 /** Suggest a unique username from a full name. */
 export const suggestUsername = async (fullName: string): Promise<string> => {
   const response = await apiClient.get<{ username: string }>(
-    `/users/suggest-username?full_name=${encodeURIComponent(fullName)}`,
+    `/users/suggest-username?full_name=${encodeURIComponent(fullName)}`
   );
   return response.data.username;
 };
@@ -89,7 +90,7 @@ export const checkPhone = async (phone: string, excludeUserId?: string): Promise
   const params = new URLSearchParams({ phone });
   if (excludeUserId) params.set('excludeUserId', excludeUserId);
   const response = await apiClient.get<{ available: boolean }>(
-    `/users/check-phone?${params.toString()}`,
+    `/users/check-phone?${params.toString()}`
   );
   return response.data.available;
 };
@@ -207,7 +208,8 @@ export const useDeleteUser = userCrudHooks.useDelete;
 export function useDeactivateUser() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => apiClient.patch<User>(`/users/${id}/deactivate`).then((r) => r.data),
+    mutationFn: (id: string) =>
+      apiClient.patch<User>(`/users/${id}/deactivate`).then((r) => r.data),
     onSuccess: (user) => {
       queryClient.invalidateQueries({ queryKey: userKeys.lists() });
       queryClient.invalidateQueries({ queryKey: userKeys.detail(user.id) });
