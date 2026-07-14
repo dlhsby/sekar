@@ -37,7 +37,7 @@ import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips'
 import { DateNav } from '@/components/schedules/DateNav';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
-import { DayBoard } from '@/components/schedules/DayBoard';
+import { DayBoard, type AssignContext } from '@/components/schedules/DayBoard';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
@@ -151,10 +151,13 @@ export default function SchedulesPage() {
   // ── Create flow ──────────────────────────────────────────────────────────
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string | undefined>();
+  // Pre-fill context when "+ Tugaskan" is clicked on a specific board row.
+  const [createCtx, setCreateCtx] = useState<AssignContext | undefined>();
 
-  const openCreate = (date?: string) => {
+  const openCreate = (date?: string, ctx?: AssignContext) => {
     if (!can('schedule:create')) return;
     setCreateDate(date);
+    setCreateCtx(ctx);
     setCreateOpen(true);
   };
 
@@ -434,7 +437,7 @@ export default function SchedulesPage() {
           capacities={capacities}
           onOccurrenceClick={onOccurrenceClick}
           canAssign={can('schedule:create')}
-          onAssign={() => openCreate(isoDate(anchor))}
+          onAssign={(ctx) => openCreate(isoDate(anchor), ctx)}
           onEditCapacity={canManageCapacity ? (subject) => setCapacitySubject(subject) : undefined}
         />
       )}
@@ -478,6 +481,11 @@ export default function SchedulesPage() {
           open={createOpen}
           onOpenChange={setCreateOpen}
           initialDate={createDate}
+          initialRayonId={createCtx?.rayon_id}
+          initialRegionId={createCtx?.region_id}
+          initialLocationId={createCtx?.location_id}
+          initialShiftId={createCtx?.shiftId}
+          initialCityWide={createCtx?.city}
           onSuccess={refreshCalendar}
         />
       )}
