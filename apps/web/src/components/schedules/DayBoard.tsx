@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Settings2 } from 'lucide-react';
 import {
   buildDayBoard,
   type BoardLocation,
@@ -23,6 +23,8 @@ interface DayBoardProps {
   canAssign?: boolean;
   /** `${locationId}:${shiftId}` → target satgas+linmas headcount (understaffing). */
   capacities?: Map<string, number>;
+  /** When present, a gear on each location opens the capacity editor. */
+  onEditCapacity?: (locationId: string, name: string) => void;
 }
 
 /**
@@ -38,6 +40,7 @@ export function DayBoard({
   onAssign,
   canAssign = false,
   capacities = EMPTY_CAPACITIES,
+  onEditCapacity,
 }: DayBoardProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const tree = useMemo(() => buildDayBoard(occurrences, master), [occurrences, master]);
@@ -91,6 +94,7 @@ export function DayBoard({
                     toggle={toggle}
                     tableProps={tableProps}
                     capacities={capacities}
+                    onEditCapacity={onEditCapacity}
                   />
                 ))}
                 {rayon.looseLocations.map((loc) => (
@@ -101,6 +105,7 @@ export function DayBoard({
                     onToggle={() => toggle(loc.id)}
                     tableProps={tableProps}
                     capacities={capacities}
+                    onEditCapacity={onEditCapacity}
                   />
                 ))}
                 {rayon.regions.length === 0 && rayon.looseLocations.length === 0 && (
@@ -129,12 +134,14 @@ function RegionCard({
   toggle,
   tableProps,
   capacities,
+  onEditCapacity,
 }: {
   region: BoardRegion;
   open: Set<string>;
   toggle: (id: string) => void;
   tableProps: TableProps;
   capacities: Map<string, number>;
+  onEditCapacity?: (locationId: string, name: string) => void;
 }) {
   const { t } = useTranslation(['schedules']);
   const hasPlacement = region.placement.some((s) => s.total > 0);
@@ -171,6 +178,7 @@ function RegionCard({
               onToggle={() => toggle(loc.id)}
               tableProps={tableProps}
               capacities={capacities}
+              onEditCapacity={onEditCapacity}
             />
           ))}
         </div>
@@ -185,33 +193,49 @@ function LocationCard({
   onToggle,
   tableProps,
   capacities,
+  onEditCapacity,
 }: {
   loc: BoardLocation;
   open: boolean;
   onToggle: () => void;
   tableProps: TableProps;
   capacities: Map<string, number>;
+  onEditCapacity?: (locationId: string, name: string) => void;
 }) {
+  const { t } = useTranslation(['schedules']);
   return (
     <div className="overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white">
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex w-full flex-wrap items-center gap-2.5 px-3 py-2.5 text-left"
-        aria-expanded={open}
-      >
-        <Chevron open={open} />
-        <span className="font-bold">{loc.name}</span>
-        <span className="ml-auto flex flex-wrap items-center gap-1.5">
-          {loc.shifts.map((s) => (
-            <ShiftPill
-              key={s.shift.id}
-              group={s}
-              target={capacities.get(`${loc.id}:${s.shift.id}`)}
-            />
-          ))}
-        </span>
-      </button>
+      <div className="flex w-full flex-wrap items-center gap-2.5 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex flex-1 flex-wrap items-center gap-2.5 text-left"
+          aria-expanded={open}
+        >
+          <Chevron open={open} />
+          <span className="font-bold">{loc.name}</span>
+          <span className="ml-auto flex flex-wrap items-center gap-1.5">
+            {loc.shifts.map((s) => (
+              <ShiftPill
+                key={s.shift.id}
+                group={s}
+                target={capacities.get(`${loc.id}:${s.shift.id}`)}
+              />
+            ))}
+          </span>
+        </button>
+        {onEditCapacity && (
+          <button
+            type="button"
+            onClick={() => onEditCapacity(loc.id, loc.name)}
+            className="grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+            aria-label={t('schedules:staffCapacity.title')}
+            title={t('schedules:staffCapacity.title')}
+          >
+            <Settings2 className="size-4" />
+          </button>
+        )}
+      </div>
       {open && (
         <div className="border-t-2 border-dashed border-nb-black p-3">
           <ShiftRoleTable shifts={loc.shifts} {...tableProps} />

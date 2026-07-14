@@ -271,5 +271,10 @@
       "endBeforeStart": "Tanggal akhir harus setelah tanggal mulai"
     },
     "moreCount": "+{{count}} lagi"
+  },
+  "staffCapacity": {
+    "title": "Atur Kapasitas",
+    "hint": "Target petugas (satgas + linmas) per shift. 0 = tanpa syarat.",
+    "saved": "Kapasitas disimpan"
   }
 }

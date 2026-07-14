@@ -30,6 +30,7 @@ import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard } from '@/components/schedules/DayBoard';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
 import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
@@ -85,6 +86,9 @@ export default function SchedulesPage() {
   const [filters, setFilters] = useState<ScheduleRangeFilters>({});
 
   const lockRayon = !!user && RAYON_SCOPED_ROLES.includes(user.role);
+  // Only admin_system/superadmin can set capacity (matches the backend gate).
+  const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
+  const [capacityLoc, setCapacityLoc] = useState<{ id: string; name: string } | null>(null);
   // The Year view spans >62 days (the range API's cap) so it doesn't fetch
   // occurrences — it's a month picker until an aggregate endpoint exists.
   const fetchOccurrences = calendarView !== 'year';
@@ -379,6 +383,9 @@ export default function SchedulesPage() {
             onOccurrenceClick={onOccurrenceClick}
             canAssign={can('schedule:create')}
             onAssign={() => openCreate(isoDate(anchor))}
+            onEditCapacity={
+              canManageCapacity ? (id, name) => setCapacityLoc({ id, name }) : undefined
+            }
           />
         </div>
       )}
@@ -397,6 +404,16 @@ export default function SchedulesPage() {
         canEdit={can('schedule:update')}
         canDelete={can('schedule:delete')}
         localeCode={localeCode}
+      />
+
+      {/* Staffing capacity editor (admin_system/superadmin) */}
+      <CapacityModal
+        open={capacityLoc !== null}
+        onOpenChange={(open) => {
+          if (!open) setCapacityLoc(null);
+        }}
+        locationId={capacityLoc?.id ?? null}
+        locationName={capacityLoc?.name ?? null}
       />
 
       {/* Create */}

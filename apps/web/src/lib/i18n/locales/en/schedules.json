@@ -271,5 +271,10 @@
       "endBeforeStart": "End date must be after the start date"
     },
     "moreCount": "+{{count}} more"
+  },
+  "staffCapacity": {
+    "title": "Set Capacity",
+    "hint": "Target workers (satgas + linmas) per shift. 0 = no requirement.",
+    "saved": "Capacity saved"
   }
 }
