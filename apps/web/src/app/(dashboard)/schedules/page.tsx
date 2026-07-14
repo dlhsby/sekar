@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus } from 'lucide-react';
+import { CalendarOff, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -41,6 +41,7 @@ import { DayBoard } from '@/components/schedules/DayBoard';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
+import { HolidayManagerModal } from '@/components/schedules/HolidayManagerModal';
 import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
@@ -62,11 +63,8 @@ import {
   useUpdateRosterAreas,
   useUpdateRosterShift,
 } from '@/lib/api/schedules';
-import {
-  useStaffRequirements,
-  requirementTotalMap,
-  dayTypeOf,
-} from '@/lib/api/location-staff-requirements';
+import { useStaffRequirements, requirementTotalMap } from '@/lib/api/location-staff-requirements';
+import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
@@ -104,6 +102,7 @@ export default function SchedulesPage() {
   // Only admin_system/superadmin can set capacity (matches the backend gate).
   const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
   const [capacityLoc, setCapacityLoc] = useState<{ id: string; name: string } | null>(null);
+  const [holidayOpen, setHolidayOpen] = useState(false);
   // The Year view spans >62 days (the range API's cap) so it doesn't fetch
   // occurrences — it's a month picker until an aggregate endpoint exists.
   const fetchOccurrences = calendarView !== 'year';
@@ -193,11 +192,24 @@ export default function SchedulesPage() {
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const allLocations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
 
+  // Special-day overrides (holidays/days off) → the anchor's staffing day type,
+  // matching monitoring's DayTypeService (holiday requirements fire on holidays).
+  const year = anchor.getFullYear();
+  const { data: overrides = [] } = useSpecialDayOverrides(
+    `${year}-01-01`,
+    `${year}-12-31`,
+    calendarView === 'day'
+  );
+  const overrideMap = useMemo(
+    () => new Map(overrides.map((o) => [o.date, o.day_type])),
+    [overrides]
+  );
+
   // Staffing requirements → understaffing pills on the day board (per day type).
   const { data: requirementRows = [] } = useStaffRequirements(calendarView === 'day');
   const capacities = useMemo(
-    () => requirementTotalMap(requirementRows, dayTypeOf(isoDate(anchor))),
-    [requirementRows, anchor]
+    () => requirementTotalMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
+    [requirementRows, anchor, overrideMap]
   );
 
   // Master data for the day board's Rayon → Kawasan → Lokasi tree.
@@ -349,6 +361,15 @@ export default function SchedulesPage() {
               <SelectItem value="day">{t('schedules:calendar.views.day')}</SelectItem>
             </SelectContent>
           </Select>
+          <button
+            type="button"
+            onClick={() => setHolidayOpen(true)}
+            aria-label={t('schedules:holidays.manage')}
+            title={t('schedules:holidays.manage')}
+            className="grid size-10 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+          >
+            <CalendarOff className="size-4" />
+          </button>
           {can('schedule:create') && (
             <Button
               leftIcon={<Plus className="size-4" />}
@@ -430,6 +451,14 @@ export default function SchedulesPage() {
         canEdit={can('schedule:update')}
         canDelete={can('schedule:delete')}
         localeCode={localeCode}
+      />
+
+      {/* Holidays / days-off manager (reachable from the Jadwal page) */}
+      <HolidayManagerModal
+        open={holidayOpen}
+        onOpenChange={setHolidayOpen}
+        year={year}
+        canManage={can('schedule:create')}
       />
 
       {/* Staffing capacity editor (admin_system/superadmin) */}

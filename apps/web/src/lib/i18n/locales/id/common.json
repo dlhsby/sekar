@@ -272,5 +272,6 @@
     "current": "Penanda saat ini",
     "usingDefault": "Menggunakan bawaan sistem",
     "colorHint": "Warna pin/label di peta — tidak mewarnai ikon gambar."
-  }
+  },
+  "loading": "Memuat…"
 }
