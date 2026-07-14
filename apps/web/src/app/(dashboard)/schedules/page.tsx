@@ -63,7 +63,11 @@ import {
   useUpdateRosterAreas,
   useUpdateRosterShift,
 } from '@/lib/api/schedules';
-import { useStaffRequirements, requirementTotalMap } from '@/lib/api/location-staff-requirements';
+import {
+  useStaffRequirements,
+  requirementTotalMap,
+  type StaffSubject,
+} from '@/lib/api/location-staff-requirements';
 import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
@@ -101,7 +105,7 @@ export default function SchedulesPage() {
   const lockRayon = !!user && RAYON_SCOPED_ROLES.includes(user.role);
   // Only admin_system/superadmin can set capacity (matches the backend gate).
   const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
-  const [capacityLoc, setCapacityLoc] = useState<{ id: string; name: string } | null>(null);
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
   const [holidayOpen, setHolidayOpen] = useState(false);
   // The Year view spans >62 days (the range API's cap) so it doesn't fetch
   // occurrences — it's a month picker until an aggregate endpoint exists.
@@ -431,9 +435,7 @@ export default function SchedulesPage() {
           onOccurrenceClick={onOccurrenceClick}
           canAssign={can('schedule:create')}
           onAssign={() => openCreate(isoDate(anchor))}
-          onEditCapacity={
-            canManageCapacity ? (id, name) => setCapacityLoc({ id, name }) : undefined
-          }
+          onEditCapacity={canManageCapacity ? (subject) => setCapacitySubject(subject) : undefined}
         />
       )}
 
@@ -463,12 +465,11 @@ export default function SchedulesPage() {
 
       {/* Staffing capacity editor (admin_system/superadmin) */}
       <CapacityModal
-        open={capacityLoc !== null}
+        open={capacitySubject !== null}
         onOpenChange={(open) => {
-          if (!open) setCapacityLoc(null);
+          if (!open) setCapacitySubject(null);
         }}
-        locationId={capacityLoc?.id ?? null}
-        locationName={capacityLoc?.name ?? null}
+        subject={capacitySubject}
       />
 
       {/* Create */}

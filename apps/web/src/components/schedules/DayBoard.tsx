@@ -12,6 +12,7 @@ import {
   type BoardShiftGroup,
 } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
+import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import { ShiftRoleTable } from '@/components/schedules/ShiftRoleTable';
 
 const EMPTY_CAPACITIES = new Map<string, number>();
@@ -25,7 +26,7 @@ interface DayBoardProps {
   /** `${locationId}:${shiftId}` → target satgas+linmas headcount (understaffing). */
   capacities?: Map<string, number>;
   /** When present, a gear on each location opens the capacity editor. */
-  onEditCapacity?: (locationId: string, name: string) => void;
+  onEditCapacity?: (subject: StaffSubject) => void;
 }
 
 /**
@@ -117,6 +118,7 @@ export function DayBoard({
                     tableProps={tableProps}
                     capacities={capacities}
                     onEditCapacity={onEditCapacity}
+                    showCapacity
                   />
                 ))}
                 {rayon.regions.length === 0 &&
@@ -154,25 +156,61 @@ function RegionCard({
   toggle: (id: string) => void;
   tableProps: TableProps;
   capacities: Map<string, number>;
-  onEditCapacity?: (locationId: string, name: string) => void;
+  onEditCapacity?: (subject: StaffSubject) => void;
 }) {
   const { t } = useTranslation(['schedules']);
   const hasPlacement = region.placement.some((s) => s.total > 0);
+  // Kawasan-level understaffing: countable (satgas+linmas) across the region's
+  // own placement + all its locations, vs the kawasan target (grouped rayons
+  // define KEBUTUHAN at this level). Pills show only for shifts with a target.
+  const regionShifts = new Map<string, { shift: BoardShiftGroup['shift']; countable: number }>();
+  const accumulate = (g: BoardShiftGroup) => {
+    const e = regionShifts.get(g.shift.id) ?? { shift: g.shift, countable: 0 };
+    e.countable += g.countable;
+    regionShifts.set(g.shift.id, e);
+  };
+  region.placement.forEach(accumulate);
+  region.locations.forEach((loc) => loc.shifts.forEach(accumulate));
+  const capPills = [...regionShifts.values()]
+    .map((e) => ({ e, target: capacities.get(`reg:${region.id}:${e.shift.id}`) }))
+    .filter((x) => x.target != null);
   return (
     <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-info">
-      <button
-        type="button"
-        onClick={() => toggle(region.id)}
-        className="flex w-full flex-wrap items-center gap-2.5 border-b-2 border-nb-black bg-nb-gray-100 px-3 py-2.5 text-left"
-        aria-expanded={open.has(region.id)}
-      >
-        <Chevron open={open.has(region.id)} />
-        <span className="text-nb-caption font-bold uppercase tracking-wide">{region.name}</span>
-        <span className="ml-auto flex flex-wrap items-center gap-2">
-          <Pill>{t('schedules:board.petugasCount', { count: region.total })}</Pill>
-          <Pill>{t('schedules:board.lokasiCount', { count: region.locations.length })}</Pill>
-        </span>
-      </button>
+      <div className="flex w-full flex-wrap items-center gap-2.5 border-b-2 border-nb-black bg-nb-gray-100 px-3 py-2.5">
+        <button
+          type="button"
+          onClick={() => toggle(region.id)}
+          className="flex flex-1 flex-wrap items-center gap-2.5 text-left"
+          aria-expanded={open.has(region.id)}
+        >
+          <Chevron open={open.has(region.id)} />
+          <span className="text-nb-caption font-bold uppercase tracking-wide">{region.name}</span>
+          <span className="ml-auto flex flex-wrap items-center gap-1.5">
+            {capPills.map(({ e, target }) => (
+              <ShiftPill
+                key={e.shift.id}
+                group={
+                  { shift: e.shift, countable: e.countable, total: e.countable } as BoardShiftGroup
+                }
+                target={target}
+              />
+            ))}
+            <Pill>{t('schedules:board.petugasCount', { count: region.total })}</Pill>
+            <Pill>{t('schedules:board.lokasiCount', { count: region.locations.length })}</Pill>
+          </span>
+        </button>
+        {onEditCapacity && (
+          <button
+            type="button"
+            onClick={() => onEditCapacity({ type: 'region', id: region.id, name: region.name })}
+            className="grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+            aria-label={t('schedules:staffCapacity.title')}
+            title={t('schedules:staffCapacity.title')}
+          >
+            <Settings2 className="size-4" />
+          </button>
+        )}
+      </div>
       {open.has(region.id) && (
         <div className="flex flex-col gap-2 p-2.5">
           {hasPlacement && (
@@ -207,13 +245,17 @@ function LocationCard({
   tableProps,
   capacities,
   onEditCapacity,
+  showCapacity = false,
 }: {
   loc: BoardLocation;
   open: boolean;
   onToggle: () => void;
   tableProps: TableProps;
   capacities: Map<string, number>;
-  onEditCapacity?: (locationId: string, name: string) => void;
+  onEditCapacity?: (subject: StaffSubject) => void;
+  /** Location-level staffing lives here (Taman Aktif parks). When false (a
+   *  location under a kawasan), the target is on the kawasan — show counts only. */
+  showCapacity?: boolean;
 }) {
   const { t } = useTranslation(['schedules']);
   return (
@@ -232,15 +274,15 @@ function LocationCard({
               <ShiftPill
                 key={s.shift.id}
                 group={s}
-                target={capacities.get(`${loc.id}:${s.shift.id}`)}
+                target={showCapacity ? capacities.get(`loc:${loc.id}:${s.shift.id}`) : undefined}
               />
             ))}
           </span>
         </button>
-        {onEditCapacity && (
+        {showCapacity && onEditCapacity && (
           <button
             type="button"
-            onClick={() => onEditCapacity(loc.id, loc.name)}
+            onClick={() => onEditCapacity({ type: 'location', id: loc.id, name: loc.name })}
             className="grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
             aria-label={t('schedules:staffCapacity.title')}
             title={t('schedules:staffCapacity.title')}
