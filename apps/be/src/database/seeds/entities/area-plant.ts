@@ -33,7 +33,7 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
       status: 'ok',
     },
   ],
-  'Taman Pusat': [
+  'Taman Asahan': [
     {
       species: 'TABEBUYA KUNING',
       count: 14,
@@ -51,7 +51,7 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
     { species: 'MAHONI', count: 11, lastPrunedDaysAgo: 30, cycleDays: 180, status: 'ok' },
     { species: 'TANJUNG', count: 6, lastPrunedDaysAgo: 50, cycleDays: 365, status: 'ok' },
   ],
-  'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)': [
+  'Taman Bintoro': [
     {
       species: 'TABEBUYA PINK',
       count: 18,
@@ -91,7 +91,7 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
     { species: 'KAYU PUTIH', count: 7, lastPrunedDaysAgo: 30, cycleDays: 180, status: 'ok' },
     { species: 'TANJUNG', count: 4, lastPrunedDaysAgo: 20, cycleDays: 240, status: 'ok' },
   ],
-  'Taman Utara': [
+  'Taman Benteng': [
     {
       species: 'CEMARA UDANG',
       count: 10,
@@ -109,7 +109,7 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
     { species: 'WARU', count: 6, lastPrunedDaysAgo: 40, cycleDays: 200, status: 'ok' },
     { species: 'NYAMPLUNG', count: 5, lastPrunedDaysAgo: 28, cycleDays: 240, status: 'ok' },
   ],
-  'Taman Timur 1': [
+  'Taman Ex. Metro': [
     { species: 'JATI', count: 7, lastPrunedDaysAgo: 250, cycleDays: 200, status: 'overdue' },
     {
       species: 'KENANGGA',
@@ -120,7 +120,7 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
     },
     { species: 'KAMBOJA', count: 8, lastPrunedDaysAgo: 30, cycleDays: 240, status: 'ok' },
   ],
-  'Taman Buk Tong': [
+  'TAMAN BUK TONG': [
     {
       species: 'PALEM KIPAS',
       count: 10,
@@ -131,11 +131,11 @@ const AREA_PLANT_PLAN: Record<string, AreaPlantSeed[]> = {
     { species: 'SAWO KECIK', count: 6, lastPrunedDaysAgo: 25, cycleDays: 240, status: 'ok' },
     { species: 'GLODOKAN', count: 9, lastPrunedDaysAgo: 18, cycleDays: 180, status: 'ok' },
   ],
-  'Taman Barat 1': [
+  'Taman Underpass Mayjend Sisi Utara': [
     { species: 'AKASIA', count: 12, lastPrunedDaysAgo: 230, cycleDays: 180, status: 'overdue' },
     { species: 'SAPU TANGAN', count: 4, lastPrunedDaysAgo: 22, cycleDays: 240, status: 'ok' },
   ],
-  'Taman Barat 2': [
+  'Taman Fasum Darmo indah': [
     { species: 'BUNGUR', count: 8, lastPrunedDaysAgo: 35, cycleDays: 180, status: 'ok' },
     { species: 'KENANGGA', count: 5, lastPrunedDaysAgo: 28, cycleDays: 240, status: 'ok' },
   ],
