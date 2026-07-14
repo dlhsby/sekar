@@ -403,4 +403,77 @@ describe('LocationStaffRequirementsService', () => {
       expect(result.totalLinmas).toBe(2);
     });
   });
+
+  describe('polymorphic subjects (region / rayon)', () => {
+    const item = {
+      shift_definition_id: mockShiftDefinition.id,
+      role: StaffRole.SATGAS,
+      day_type: DayType.WEEKDAY,
+      required_count: 5,
+    };
+
+    it('findByRegionId queries by region_id', async () => {
+      mockRequirementRepository.find.mockResolvedValue([]);
+      await service.findByRegionId('region-1');
+      expect(mockRequirementRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { region_id: 'region-1' } }),
+      );
+    });
+
+    it('findByRayonId queries by rayon_id', async () => {
+      mockRequirementRepository.find.mockResolvedValue([]);
+      await service.findByRayonId('rayon-1');
+      expect(mockRequirementRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { rayon_id: 'rayon-1' } }),
+      );
+    });
+
+    it('bulkSetForRegion inserts a region-level row (create carries region_id, not location_id)', async () => {
+      mockRequirementRepository.findOne.mockResolvedValue(null);
+      mockRequirementRepository.create.mockImplementation(
+        (x: unknown) => x as LocationStaffRequirement,
+      );
+      mockRequirementRepository.save.mockResolvedValue({} as LocationStaffRequirement);
+      mockRequirementRepository.find.mockResolvedValue([]);
+
+      await service.bulkSetForRegion('region-1', [item]);
+
+      expect(mockRequirementRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ region_id: 'region-1', required_count: 5 }),
+      );
+      expect(mockRequirementRepository.create).toHaveBeenCalledWith(
+        expect.not.objectContaining({ location_id: expect.anything() }),
+      );
+      expect(mockRequirementRepository.save).toHaveBeenCalled();
+    });
+
+    it('bulkSetForRegion updates an existing row in place (no create)', async () => {
+      const existing = { ...mockRequirementWorker, region_id: 'region-1', required_count: 3 };
+      mockRequirementRepository.findOne.mockResolvedValue(existing);
+      mockRequirementRepository.save.mockResolvedValue(existing);
+      mockRequirementRepository.find.mockResolvedValue([existing]);
+
+      await service.bulkSetForRegion('region-1', [{ ...item, required_count: 9 }]);
+
+      expect(mockRequirementRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ required_count: 9 }),
+      );
+      expect(mockRequirementRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('bulkSetForRayon inserts a rayon-level row (create carries rayon_id)', async () => {
+      mockRequirementRepository.findOne.mockResolvedValue(null);
+      mockRequirementRepository.create.mockImplementation(
+        (x: unknown) => x as LocationStaffRequirement,
+      );
+      mockRequirementRepository.save.mockResolvedValue({} as LocationStaffRequirement);
+      mockRequirementRepository.find.mockResolvedValue([]);
+
+      await service.bulkSetForRayon('rayon-1', [{ ...item, required_count: 4 }]);
+
+      expect(mockRequirementRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({ rayon_id: 'rayon-1', required_count: 4 }),
+      );
+    });
+  });
 });
