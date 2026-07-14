@@ -244,7 +244,8 @@
       "regionScopeHint": "Leave empty for whole-Rayon coverage.",
       "locationScopeHint": "Leave empty for whole-Kawasan coverage.",
       "cityWideLabel": "Whole City (Patrol Team)",
-      "cityWideHint": "Not tied to a rayon/kawasan/location — covers all of Surabaya."
+      "cityWideHint": "Not tied to a rayon/kawasan/location — covers all of Surabaya.",
+      "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement."
     },
     "editScope": {
       "title": "Edit What?",
