@@ -34,14 +34,12 @@ function bucketOf(count: number, max: number): number {
   return 4;
 }
 
-/** Token-based green ramp (light → dark); index = bucket. */
-const BUCKET_BG = [
-  '',
-  'bg-nb-success-light text-nb-black',
-  'bg-nb-primary text-nb-black',
-  'bg-nb-primary-hover text-white',
-  'bg-nb-primary-active text-white',
-];
+/**
+ * Green ramp by bucket. Uses opacity tints of the (theme-flipping) nb-primary
+ * over the flipping card, with inherited (flipping) text — so contrast holds in
+ * both light and dark mode (a fixed ink on a non-flipping fill would not).
+ */
+const BUCKET_BG = ['', 'bg-nb-primary/25', 'bg-nb-primary/45', 'bg-nb-primary/70', 'bg-nb-primary'];
 
 /**
  * Year overview — 12 mini month calendars (Google-Calendar style) with a load
