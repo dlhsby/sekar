@@ -13,12 +13,16 @@ import {
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import { ShiftRoleTable } from '@/components/schedules/ShiftRoleTable';
 
+const EMPTY_CAPACITIES = new Map<string, number>();
+
 interface DayBoardProps {
   occurrences: ScheduleOccurrence[];
   master: BoardMasterData;
   onOccurrenceClick: (occ: ScheduleOccurrence) => void;
   onAssign?: (shiftId: string, role?: string) => void;
   canAssign?: boolean;
+  /** `${locationId}:${shiftId}` → target satgas+linmas headcount (understaffing). */
+  capacities?: Map<string, number>;
 }
 
 /**
@@ -33,6 +37,7 @@ export function DayBoard({
   onOccurrenceClick,
   onAssign,
   canAssign = false,
+  capacities = EMPTY_CAPACITIES,
 }: DayBoardProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const tree = useMemo(() => buildDayBoard(occurrences, master), [occurrences, master]);
@@ -85,6 +90,7 @@ export function DayBoard({
                     open={open}
                     toggle={toggle}
                     tableProps={tableProps}
+                    capacities={capacities}
                   />
                 ))}
                 {rayon.looseLocations.map((loc) => (
@@ -94,6 +100,7 @@ export function DayBoard({
                     open={open.has(loc.id)}
                     onToggle={() => toggle(loc.id)}
                     tableProps={tableProps}
+                    capacities={capacities}
                   />
                 ))}
                 {rayon.regions.length === 0 && rayon.looseLocations.length === 0 && (
@@ -121,11 +128,13 @@ function RegionCard({
   open,
   toggle,
   tableProps,
+  capacities,
 }: {
   region: BoardRegion;
   open: Set<string>;
   toggle: (id: string) => void;
   tableProps: TableProps;
+  capacities: Map<string, number>;
 }) {
   const { t } = useTranslation(['schedules']);
   const hasPlacement = region.placement.some((s) => s.total > 0);
@@ -161,6 +170,7 @@ function RegionCard({
               open={open.has(loc.id)}
               onToggle={() => toggle(loc.id)}
               tableProps={tableProps}
+              capacities={capacities}
             />
           ))}
         </div>
@@ -174,11 +184,13 @@ function LocationCard({
   open,
   onToggle,
   tableProps,
+  capacities,
 }: {
   loc: BoardLocation;
   open: boolean;
   onToggle: () => void;
   tableProps: TableProps;
+  capacities: Map<string, number>;
 }) {
   return (
     <div className="overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white">
@@ -192,7 +204,11 @@ function LocationCard({
         <span className="font-bold">{loc.name}</span>
         <span className="ml-auto flex flex-wrap items-center gap-1.5">
           {loc.shifts.map((s) => (
-            <ShiftPill key={s.shift.id} group={s} />
+            <ShiftPill
+              key={s.shift.id}
+              group={s}
+              target={capacities.get(`${loc.id}:${s.shift.id}`)}
+            />
           ))}
         </span>
       </button>
@@ -205,8 +221,24 @@ function LocationCard({
   );
 }
 
-function ShiftPill({ group }: { group: BoardShiftGroup }) {
+function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number }) {
   const short = group.shift.name.match(/\d+/)?.[0] ?? group.shift.name;
+  // With a capacity target, show countable (satgas+linmas) vs target and flag
+  // understaffing; otherwise just the scheduled total.
+  if (target != null && target > 0) {
+    const understaffed = group.countable < target;
+    const cls = understaffed
+      ? 'bg-nb-danger-light text-nb-danger-dark'
+      : 'bg-nb-success-light text-nb-success-dark';
+    return (
+      <span
+        className={`inline-flex items-center gap-1 rounded-full border-2 border-nb-black px-2 py-0.5 text-nb-caption font-bold tabular-nums ${cls}`}
+      >
+        S{short}·{group.countable}/{target}
+        {understaffed && <span aria-hidden>⚠</span>}
+      </span>
+    );
+  }
   return (
     <span className="inline-flex items-center gap-1 rounded-full border-2 border-nb-black bg-nb-gray-50 px-2 py-0.5 text-nb-caption font-bold tabular-nums text-nb-gray-600">
       S{short}·{group.total}

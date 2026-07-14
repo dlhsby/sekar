@@ -50,6 +50,7 @@ import {
   useUpdateRosterAreas,
   useUpdateRosterShift,
 } from '@/lib/api/schedules';
+import { useLocationCapacities, capacityMap } from '@/lib/api/location-capacity';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
@@ -161,6 +162,10 @@ export default function SchedulesPage() {
   const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const allLocations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
+
+  // Staffing targets → understaffing pills on the day board.
+  const { data: capacityRows = [] } = useLocationCapacities(calendarView === 'day');
+  const capacities = useMemo(() => capacityMap(capacityRows), [capacityRows]);
 
   // Master data for the day board's Rayon → Kawasan → Lokasi tree.
   const boardMaster = useMemo<BoardMasterData>(
@@ -370,6 +375,7 @@ export default function SchedulesPage() {
           <DayBoard
             occurrences={occurrences}
             master={boardMaster}
+            capacities={capacities}
             onOccurrenceClick={onOccurrenceClick}
             canAssign={can('schedule:create')}
             onAssign={() => openCreate(isoDate(anchor))}
