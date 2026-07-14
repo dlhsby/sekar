@@ -48,10 +48,10 @@ export function CapacityModal({
 }: CapacityModalProps) {
   const { t } = useTranslation(['schedules', 'roles', 'common']);
   const { data: shifts = [] } = useShiftDefinitions();
-  const { data: current = [] } = useLocationStaffRequirements(
-    locationId ?? '',
-    open && !!locationId
-  );
+  // Keep the raw query ref (do NOT default to `[]` here): a fresh `[]` each render
+  // would change the effect's dependency identity while loading and loop setState
+  // ("Maximum update depth exceeded"). React-query's `data` is referentially stable.
+  const { data: current } = useLocationStaffRequirements(locationId ?? '', open && !!locationId);
   const setReq = useSetStaffRequirements();
 
   const [dayType, setDayType] = useState<DayType>('WEEKDAY');
@@ -62,7 +62,7 @@ export function CapacityModal({
     if (!open) return;
     setDayType('WEEKDAY');
     const seed = emptyValues();
-    for (const row of current) {
+    for (const row of current ?? []) {
       const day = (seed[row.day_type] ??= {});
       (day[row.shift_definition_id] ??= { satgas: 0, linmas: 0 })[row.role] = row.required_count;
     }
