@@ -5,8 +5,8 @@ import {
   SHIFT_3_ID,
   RAYON_TAMAN_AKTIF_ID,
   RAYON_TIMUR2_ID,
+  DEMO_BUK_TONG_ID,
 } from '../lib/ids';
-import { TAMAN_BUK_TONG_ID } from '../kmz-locations';
 
 /**
  * Seed area staff requirements (mode-dependent):
@@ -84,9 +84,9 @@ export async function seedAreaStaffRequirements(ctx: SeedContext): Promise<void>
     // understaffing alerts have inputs.
     await ctx.qr.query(`
       INSERT INTO location_staff_requirements (location_id, shift_definition_id, role, required_count, day_type) VALUES
-        ('${TAMAN_BUK_TONG_ID}', '${SHIFT_1_ID}', 'satgas', 3, 'WEEKDAY'),
-        ('${TAMAN_BUK_TONG_ID}', '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY'),
-        ('${TAMAN_BUK_TONG_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY')
+        ('${DEMO_BUK_TONG_ID}', '${SHIFT_1_ID}', 'satgas', 3, 'WEEKDAY'),
+        ('${DEMO_BUK_TONG_ID}', '${SHIFT_1_ID}', 'linmas', 1, 'WEEKDAY'),
+        ('${DEMO_BUK_TONG_ID}', '${SHIFT_2_ID}', 'satgas', 3, 'WEEKDAY')
       ON CONFLICT DO NOTHING;
     `);
     ctx.log('  ✓ Added 3 staff requirements for Taman Buk Tong (Rayon Timur 2 anchor)');

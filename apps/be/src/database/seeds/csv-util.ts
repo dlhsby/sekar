@@ -1,9 +1,6 @@
 /**
  * Shared CSV + deterministic-id helpers for the seed-data tooling
- * (load-seed-data, sheet-sync, geocode-taman-aktif, export-seed-ids).
- *
- * The KMZ extractor (scripts/extract-kmz-seed-data.js) keeps its own copy of
- * `uuidv5` because it is a standalone CommonJS script.
+ * (load-seed-data, sheet-sync, export-seed-ids).
  */
 import * as crypto from 'crypto';
 

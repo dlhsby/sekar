@@ -1,15 +1,15 @@
 import type { SeedContext } from '../lib/context';
-import { RAYON_PUSAT_ID } from '../lib/ids';
 import {
-  DARMO_P1_AREA_ID,
-  DARMO_P2_AREA_ID,
-  DARMO_P3_AREA_ID,
-  DARMO_P4_AREA_ID,
-  DARMO_P5_AREA_ID,
+  RAYON_PUSAT_ID,
+  DEMO_PUSAT_AREA_1,
+  DEMO_PUSAT_AREA_2,
+  DEMO_PUSAT_AREA_3,
+  DEMO_PUSAT_AREA_4,
+  DEMO_PUSAT_AREA_5,
+  DEMO_BUK_TONG_ID,
   BUNGKUL_AREA_ID,
   TAMAN_FLORA_AREA_ID,
-  TAMAN_BUK_TONG_ID,
-} from '../kmz-locations';
+} from '../lib/ids';
 
 /**
  * Seed user_locations assignments (mode-dependent):
@@ -81,7 +81,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P3_AREA_ID}'
+    WHERE u.username = 'korlap_pusat_1' AND a.id = '${DEMO_PUSAT_AREA_3}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -90,7 +90,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'korlap_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
+    WHERE u.username = 'korlap_pusat_1' AND a.id = '${DEMO_PUSAT_AREA_1}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -99,7 +99,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'korlap_pusat_2' AND a.id = '${DARMO_P1_AREA_ID}'
+    WHERE u.username = 'korlap_pusat_2' AND a.id = '${DEMO_PUSAT_AREA_1}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -109,7 +109,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P1_AREA_ID}'
+    WHERE u.username = 'satgas_pusat_1' AND a.id = '${DEMO_PUSAT_AREA_1}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -117,7 +117,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'satgas_pusat_1' AND a.id = '${DARMO_P2_AREA_ID}'
+    WHERE u.username = 'satgas_pusat_1' AND a.id = '${DEMO_PUSAT_AREA_2}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -126,7 +126,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'satgas_pusat_3' AND a.id = '${DARMO_P4_AREA_ID}'
+    WHERE u.username = 'satgas_pusat_3' AND a.id = '${DEMO_PUSAT_AREA_4}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -172,7 +172,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P5_AREA_ID}'
+    WHERE u.username = 'satgas_pusat_4' AND a.id = '${DEMO_PUSAT_AREA_5}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -180,7 +180,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'satgas_pusat_4' AND a.id = '${DARMO_P1_AREA_ID}'
+    WHERE u.username = 'satgas_pusat_4' AND a.id = '${DEMO_PUSAT_AREA_1}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -190,7 +190,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'satgas_timur_1_2' AND a.id = '${TAMAN_BUK_TONG_ID}'
+    WHERE u.username = 'satgas_timur_1_2' AND a.id = '${DEMO_BUK_TONG_ID}'
     ON CONFLICT DO NOTHING;
   `);
 
@@ -210,7 +210,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
     FROM users u, locations a
-    WHERE u.username = 'korlap_timur_2_1' AND a.id = '${TAMAN_BUK_TONG_ID}'
+    WHERE u.username = 'korlap_timur_2_1' AND a.id = '${DEMO_BUK_TONG_ID}'
     ON CONFLICT DO NOTHING;
   `);
 

@@ -8,6 +8,7 @@ import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedAreas } from '../entities/area';
+import { seedRegions } from '../entities/region';
 import { seedSpecialDayOverrides } from '../entities/special-day';
 import { seedAreaStaffRequirements } from '../entities/area-staff-requirement';
 import { seedKecamatans } from '../entities/kecamatan';
@@ -27,7 +28,8 @@ import { seedServiceCapacity } from '../entities/service-capacity';
  *
  * **CRITICAL COUNTS (must match exactly):**
  *   - users 1075 (3 system + 1041 from CSV + 31 staff_kecamatan)
- *   - locations 937 (KMZ geographic + Taman Aktif parks)
+ *   - locations 953 (live-staging snapshot — data/areas.snapshot.json)
+ *   - regions 129 (kawasan from the client workbook — data/kawasan.snapshot.json)
  *   - monitoring_configs 9
  *   - location_staff_requirements 332
  *   - user_locations 717 (280 from CSV + 27 multi-area + korlap rayons)
@@ -60,6 +62,7 @@ async function seedStaging(ctx: SeedContext): Promise<void> {
 
   // Staging-specific data (937 locations, 1125 users, etc.).
   await seedAreas(ctx);
+  await seedRegions(ctx);
   await seedUsers(ctx);
   // Daily roster + phase 3 (plants, capacity).
   await seedUserTrackingStatus(ctx);

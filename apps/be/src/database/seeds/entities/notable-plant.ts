@@ -31,7 +31,7 @@ const NOTABLES: NotableSeed[] = [
     notes: 'Beringin tua dengan akar gantung, masuk daftar pohon dilindungi',
   },
   {
-    areaName: 'Jl. Raya Darmo Pulau 1 (Depan Taman Bungkul)',
+    areaName: 'Taman Flora',
     species: 'TABEBUYA PINK',
     lat: -7.2901,
     lng: 112.7405,

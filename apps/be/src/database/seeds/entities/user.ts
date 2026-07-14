@@ -14,20 +14,17 @@ import {
   SHIFT_1_ID,
   SHIFT_2_ID,
   SHIFT_3_ID,
+  DEMO_PUSAT_AREA_1,
+  DEMO_PUSAT_AREA_2,
+  DEMO_PUSAT_AREA_3,
+  DEMO_PUSAT_AREA_4,
+  DEMO_PUSAT_AREA_5,
+  DEMO_BUK_TONG_ID,
+  BUNGKUL_AREA_ID,
+  TAMAN_FLORA_AREA_ID,
 } from '../lib/ids';
 import { DEFAULT_PASSWORD_HASH, superadminPasswordHash } from '../constants';
 import { loadSeedUsers } from '../load-seed-data';
-import {
-  DARMO_P1_AREA_ID,
-  DARMO_P2_AREA_ID,
-  DARMO_P3_AREA_ID,
-  DARMO_P4_AREA_ID,
-  DARMO_P5_AREA_ID,
-  DARMO_BCA_AREA_ID,
-  BUNGKUL_AREA_ID,
-  TAMAN_FLORA_AREA_ID,
-  TAMAN_BUK_TONG_ID,
-} from '../kmz-locations';
 
 /**
  * Seed users (mode-dependent):
@@ -671,14 +668,14 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('${USER_PHASE2_1_ID}', 'management_1', '${passwordHash}', 'Management Satu', '081234567890', 'management', NULL, NULL, TRUE),
       ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan_1', '${passwordHash}', 'Kepala Rayon Selatan Satu', '081234567891', 'kepala_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('${USER_PHASE2_3_ID}', 'kepala_rayon_utara_1', '${passwordHash}', 'Kepala Rayon Utara Satu', '081234567892', 'kepala_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
-      ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${DARMO_P3_AREA_ID}', TRUE),
+      ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${DEMO_PUSAT_AREA_3}', TRUE),
       ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_pusat_1', '${passwordHash}', 'Linmas Pusat Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
       ('${USER_LINMAS_DARMO_1_ID}',   'linmas_pusat_2',   '${passwordHash}', 'Linmas Pusat Dua',   '081234567895', 'linmas', NULL, NULL, TRUE),
       ('${USER_KORLAP_DARMO_ID}',     'korlap_pusat_2',     '${passwordHash}', 'Korlap Pusat Dua',  '081234567896', 'korlap', NULL, NULL, TRUE),
       ('${USER_PHASE2_8_ID}', 'admin_rayon_pusat_1', '${passwordHash}', 'Admin Rayon Pusat Satu', '081234567897', 'admin_rayon', '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_PHASE2_9_ID}', 'admin_system_1', '${passwordHash}', 'Admin Sistem Satu', '081234567898', 'admin_system', NULL, NULL, TRUE),
-      ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_PUSAT_ID}', '${DARMO_P4_AREA_ID}', TRUE),
-      ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_PUSAT_ID}', '${DARMO_P5_AREA_ID}', TRUE),
+      ('${USER_SATGAS_BUNGKUL_1_ID}', 'satgas_pusat_3', '${passwordHash}', 'Satgas Pusat Tiga', '081300000016', 'satgas', '${RAYON_PUSAT_ID}', '${DEMO_PUSAT_AREA_4}', TRUE),
+      ('${USER_SATGAS_BUNGKUL_2_ID}', 'satgas_pusat_4', '${passwordHash}', 'Satgas Pusat Empat',  '081300000017', 'satgas', '${RAYON_PUSAT_ID}', '${DEMO_PUSAT_AREA_5}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000001', 'satgas_taman_bungkul_1', '${passwordHash}', 'Satgas Taman Bungkul Satu', '081300000040', 'satgas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000003', 'korlap_taman_aktif_1', '${passwordHash}', 'Korlap Taman Aktif Satu', '081300000041', 'korlap', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
       ('5a0b0001-0000-4002-8003-000000000004', 'linmas_taman_aktif_1', '${passwordHash}', 'Linmas Taman Aktif Satu', '081300000042', 'linmas', '${RAYON_TAMAN_AKTIF_ID}', '${BUNGKUL_AREA_ID}', TRUE),
@@ -741,7 +738,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('5a020003-0000-4002-8002-000000000003', 'linmas_selatan_1',  '${passwordHash}', 'Linmas Selatan Satu',  '081300000032', 'linmas', '${RAYON_SELATAN_ID}', NULL, TRUE),
       ('5a020004-0000-4002-8002-000000000004', 'linmas_utara_1',    '${passwordHash}', 'Linmas Utara Satu',    '081300000033', 'linmas', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('5a020005-0000-4002-8002-000000000005', 'linmas_timur_1_1',  '${passwordHash}', 'Linmas Timur 1 Satu',  '081300000034', 'linmas', '${RAYON_TIMUR1_ID}', NULL, TRUE),
-      ('5a020006-0000-4002-8002-000000000006', 'linmas_timur_2_1',  '${passwordHash}', 'Linmas Timur 2 Satu',  '081300000035', 'linmas', '${RAYON_TIMUR2_ID}', '${TAMAN_BUK_TONG_ID}', TRUE),
+      ('5a020006-0000-4002-8002-000000000006', 'linmas_timur_2_1',  '${passwordHash}', 'Linmas Timur 2 Satu',  '081300000035', 'linmas', '${RAYON_TIMUR2_ID}', '${DEMO_BUK_TONG_ID}', TRUE),
       ('5a020007-0000-4002-8002-000000000007', 'linmas_barat_1_1',  '${passwordHash}', 'Linmas Barat 1 Satu',  '081300000036', 'linmas', '${RAYON_BARAT1_ID}', NULL, TRUE),
       ('5a020008-0000-4002-8002-000000000008', 'linmas_barat_2_1',  '${passwordHash}', 'Linmas Barat 2 Satu',  '081300000037', 'linmas', '${RAYON_BARAT2_ID}', NULL, TRUE)
     ON CONFLICT (username) DO NOTHING;
@@ -834,13 +831,13 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // ==========================================
     ctx.log('🌳 Remapping legacy dev users onto KMZ locations...');
     await ctx.qr.query(
-      `UPDATE users SET location_id = '${DARMO_P1_AREA_ID}' WHERE username = 'satgas_pusat_1';`,
+      `UPDATE users SET location_id = '${DEMO_PUSAT_AREA_1}' WHERE username = 'satgas_pusat_1';`,
     );
     await ctx.qr.query(
-      `UPDATE users SET location_id = '${DARMO_P2_AREA_ID}' WHERE username = 'satgas_pusat_2';`,
+      `UPDATE users SET location_id = '${DEMO_PUSAT_AREA_2}' WHERE username = 'satgas_pusat_2';`,
     );
     await ctx.qr.query(`
-    UPDATE users SET rayon_id = '${RAYON_TIMUR2_ID}', location_id = '${TAMAN_BUK_TONG_ID}'
+    UPDATE users SET rayon_id = '${RAYON_TIMUR2_ID}', location_id = '${DEMO_BUK_TONG_ID}'
     WHERE username = 'satgas_timur_1_2';
   `);
     await ctx.qr.query(`
@@ -848,7 +845,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     WHERE username = 'satgas_timur_1_1';
   `);
     await ctx.qr.query(`
-    UPDATE users SET location_id = '${TAMAN_BUK_TONG_ID}'
+    UPDATE users SET location_id = '${DEMO_BUK_TONG_ID}'
     WHERE username IN ('satgas_timur_2_1', 'satgas_timur_2_2');
   `);
     ctx.log(
@@ -863,13 +860,13 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       `UPDATE users SET location_id = $1
      WHERE username IN ('korlap_pusat_1', 'linmas_pusat_1')
        AND location_id IS NULL`,
-      [DARMO_BCA_AREA_ID],
+      [DEMO_PUSAT_AREA_2],
     );
     await ctx.qr.query(
       `UPDATE users SET location_id = $1
      WHERE username IN ('korlap_pusat_2', 'linmas_pusat_2')
        AND location_id IS NULL`,
-      [DARMO_P1_AREA_ID],
+      [DEMO_PUSAT_AREA_1],
     );
     await ctx.qr.query(`
     UPDATE users u
@@ -882,7 +879,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     await ctx.qr.query(
       `UPDATE users SET location_id = $1
      WHERE username = 'korlap_timur_2_1' AND location_id IS NULL`,
-      [TAMAN_BUK_TONG_ID],
+      [DEMO_BUK_TONG_ID],
     );
     ctx.log('  ✓ Assigned location_id + rayon_id to field workers');
 
