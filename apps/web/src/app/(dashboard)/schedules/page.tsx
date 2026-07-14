@@ -23,7 +23,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { Button, FormSelect, PageHeader, Skeleton } from '@/components/ui';
+import { Button, FormSelect, Skeleton } from '@/components/ui';
 import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
 import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips';
 import { DateNav } from '@/components/schedules/DateNav';
@@ -299,20 +299,7 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      <PageHeader
-        actions={
-          can('schedule:create') ? (
-            <Button
-              leftIcon={<Plus className="size-4" />}
-              onClick={() => openCreate(isoDate(anchor))}
-            >
-              {t('schedules:calendar.event.createTitle')}
-            </Button>
-          ) : undefined
-        }
-      />
-
-      {/* Single controls row: range select + Google-Calendar-style search */}
+      {/* Single action row: range · date nav · search · create */}
       <div className="flex flex-wrap items-center gap-3">
         <FormSelect
           label={t('schedules:controls.viewLabel')}
@@ -341,6 +328,14 @@ export default function SchedulesPage() {
             setCalendarView('day');
           }}
         />
+        {can('schedule:create') && (
+          <Button
+            leftIcon={<Plus className="size-4" />}
+            onClick={() => openCreate(isoDate(anchor))}
+          >
+            {t('schedules:calendar.event.createTitle')}
+          </Button>
+        )}
       </div>
 
       <ScheduleFilterChips filters={filters} onChange={setFilters} lockRayon={lockRayon} />
