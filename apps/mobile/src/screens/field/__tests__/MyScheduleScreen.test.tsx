@@ -59,6 +59,21 @@ describe('MyScheduleScreen', () => {
     expect(schedulesApi.getMyRange).toHaveBeenCalled();
   });
 
+  it('shows team context and a projected tag when present', async () => {
+    const teamProjected = {
+      ...todayRoster,
+      id: 'roster-team',
+      is_projected: true,
+      team_category: { id: 'tc-1', name: 'Perawatan' },
+    };
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [teamProjected] } as any);
+
+    const { getByText } = render(<MyScheduleScreen />);
+
+    await waitFor(() => expect(getByText('Tim: Perawatan')).toBeTruthy());
+    expect(getByText('Rencana')).toBeTruthy();
+  });
+
   it('shows an empty state when there is no roster for today', async () => {
     jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [] } as any);
 

@@ -77,14 +77,37 @@ function RosterRow({
     roster.schedule_areas.map(a => a.area.name).join(', ') ||
     t('schedules:mySchedule.noAreasAssigned');
 
+  const team = roster.team_category;
   return (
     <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>
       <View style={styles.cardHeader}>
-        <NBText variant="mono-sm" color="gray700" uppercase>
-          {shift ? shift.name : t('schedules:mySchedule.noShiftDefined')}
-        </NBText>
+        <View style={styles.headerLeft}>
+          <NBText variant="mono-sm" color="gray700" uppercase>
+            {shift ? shift.name : t('schedules:mySchedule.noShiftDefined')}
+          </NBText>
+          {roster.is_projected && (
+            <View style={styles.projectedTag}>
+              <NBText variant="caption" uppercase color="gray600">
+                {t('schedules:mySchedule.projected')}
+              </NBText>
+            </View>
+          )}
+        </View>
         <StatusPill dot tone={pill.tone} label={pill.label} />
       </View>
+
+      {team && (
+        <View style={styles.rayonRow}>
+          <MaterialCommunityIcons
+            name="account-group-outline"
+            size={16}
+            color={nbColors.gray600}
+          />
+          <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
+            {t('schedules:mySchedule.team', {name: team.name})}
+          </NBText>
+        </View>
+      )}
 
       <View style={styles.shiftRow}>
         <MaterialCommunityIcons
@@ -377,6 +400,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: nbSpacing.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    flexShrink: 1,
+  },
+  projectedTag: {
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.gray300,
+    borderStyle: 'dashed',
+    borderRadius: nbRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
   },
   areaRow: {
     flexDirection: 'row',
