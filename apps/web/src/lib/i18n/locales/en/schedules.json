@@ -185,7 +185,9 @@
       "prevWeek": "Previous Week",
       "nextWeek": "Next Week",
       "prevDay": "Previous Day",
-      "nextDay": "Next Day"
+      "nextDay": "Next Day",
+      "prev": "Previous",
+      "next": "Next"
     },
     "event": {
       "createTitle": "Create Schedule",
