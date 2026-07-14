@@ -53,8 +53,9 @@ export class LocationStaffRequirementsService {
   }
 
   /**
-   * Replace a location's per-(shift, role, day_type) targets. Upserts each item
-   * (find-or-update — the table has no unique constraint).
+   * Upsert a location's per-(shift, role, day_type) targets. Only the items
+   * passed are written (find-or-update; the table has no unique constraint) —
+   * targets not in `items` are left unchanged, so a partial edit is safe.
    */
   async bulkSetForLocation(
     locationId: string,

@@ -1412,7 +1412,7 @@ describe('MonitoringService', () => {
       jest
         .spyOn(service['statsService'], 'getCurrentShiftDefinition')
         .mockResolvedValue(mockShiftDefinition);
-      staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
+      staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
 
       const result = await service.getSnapshot('area', 'area-1');
 
@@ -1613,13 +1613,17 @@ describe('MonitoringService', () => {
         .spyOn(service['statsService'], 'getCurrentShiftDefinition')
         .mockResolvedValue(mockShiftDefinition);
 
-      // Required count = 5, active count = 3 (all have ACTIVE status) → understaffed
-      staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
+      // Required = satgas 3 + linmas 2 = 5 (summed across roles), active = 3 → understaffed.
+      // Guards the per-role sum: a single-role findOne would have under-counted to 3.
+      staffRequirementRepository.find.mockResolvedValue([
+        { ...mockStaffRequirement, role: StaffRole.SATGAS, required_count: 3 },
+        { ...mockStaffRequirement, role: StaffRole.LINMAS, required_count: 2 },
+      ]);
 
       const result = await service.getSnapshot('area', 'area-1');
 
       expect(result.data.area_summaries[0].active_count).toBe(3); // 3 workers with ACTIVE status
-      expect(result.data.area_summaries[0].required_count).toBe(5);
+      expect(result.data.area_summaries[0].required_count).toBe(5); // 3 + 2 summed
       expect(result.data.area_summaries[0].is_understaffed).toBe(true);
     });
 
@@ -1668,7 +1672,7 @@ describe('MonitoringService', () => {
         .mockResolvedValue(mockShiftDefinition);
 
       // Required count = 5, active count = 5 → fully staffed
-      staffRequirementRepository.findOne.mockResolvedValue(mockStaffRequirement);
+      staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
 
       const result = await service.getSnapshot('area', 'area-1');
 

@@ -49,6 +49,7 @@ export interface SnapshotAreaSummary {
   rayon_id: string;
   rayon_name: string;
   active_count: number;
+  /** Total required staff summed across ALL roles (satgas + linmas) for the current shift + day type. */
   required_count: number;
   is_understaffed: boolean;
 }
@@ -255,14 +256,17 @@ export class MonitoringService {
       let requiredCount = 0;
 
       if (currentShift) {
-        const req = await this.staffRequirementRepository.findOne({
+        // Requirements are per-role (satgas + linmas) — sum across ALL roles for
+        // the shift/day-type, matching the staffing-summary path. findOne here
+        // would return a single role and under-count the target.
+        const reqs = await this.staffRequirementRepository.find({
           where: {
             location_id: locationId,
             shift_definition_id: currentShift.id,
             day_type: currentDayType,
           },
         });
-        requiredCount = req?.required_count ?? 0;
+        requiredCount = reqs.reduce((sum, r) => sum + r.required_count, 0);
       }
 
       summaries.push({

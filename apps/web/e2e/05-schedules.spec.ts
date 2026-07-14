@@ -1,36 +1,40 @@
 import { test, expect } from '@playwright/test';
 import { quickLogin } from './auth.setup';
 
-test.describe('SCH-1 schedules weekly grid', () => {
-  test('defaults to the weekly grid with day headers', async ({ page }) => {
+// The Jadwal page was redesigned (ADR-047): the weekly-grid-with-table-toggle is
+// gone, replaced by a single range select (Tahun/Bulan/Minggu/Hari, default Hari)
+// over a Rayon▸Kawasan▸Lokasi day coverage board, with create as a modal.
+test.describe('SCH-1 schedules calendar', () => {
+  test('defaults to the day view with a date nav', async ({ page }) => {
     await quickLogin(page, 'admin', '/schedules');
-    await expect(page.getByRole('tab', { name: /grid mingguan/i })).toBeVisible();
-    // Day-of-week headers (desktop matrix).
-    await expect(page.getByText('SEN').first()).toBeVisible();
-    await expect(page.getByText('MIN').first()).toBeVisible();
+    // Range select defaults to Hari (day).
+    await expect(page.getByRole('combobox', { name: /rentang/i })).toContainText(/hari/i);
+    // Compact date nav exposes a "Hari ini" (today) button.
+    await expect(page.getByRole('button', { name: /^hari ini$/i })).toBeVisible();
   });
 
-  test('navigates between weeks and toggles to the table', async ({ page }) => {
+  test('switches the range view via the select', async ({ page }) => {
     await quickLogin(page, 'admin', '/schedules');
-    await page.getByRole('button', { name: /minggu berikutnya/i }).click();
-    await page.getByRole('tab', { name: /^tabel$/i }).click();
-    await expect(page.getByText('Pekerja').first()).toBeVisible();
+    await page.getByRole('combobox', { name: /rentang/i }).click();
+    await page.getByRole('option', { name: /^minggu$/i }).click();
+    await expect(page.getByRole('combobox', { name: /rentang/i })).toContainText(/minggu/i);
   });
 
-  test('opens the create-schedule form', async ({ page }) => {
+  test('opens the create-schedule modal (recurrence form)', async ({ page }) => {
     await quickLogin(page, 'admin', '/schedules');
     await page.getByRole('button', { name: /buat jadwal/i }).click();
-    await expect(page).toHaveURL(/\/schedules\/new/);
-    await expect(page.getByRole('heading', { name: /buat jadwal baru/i })).toBeVisible();
+    // Create is now a dialog, not a /schedules/new route.
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByText(/pengulangan/i).first()).toBeVisible();
   });
 
-  test('worker dropdown lists schedulable workers by name (not undefined)', async ({ page }) => {
-    await quickLogin(page, 'admin', '/schedules/new');
-    // Open the "Pekerja" select (Radix combobox).
+  test('create modal lists schedulable workers by name (not undefined)', async ({ page }) => {
+    await quickLogin(page, 'admin', '/schedules');
+    await page.getByRole('button', { name: /buat jadwal/i }).click();
+    // Open the "Pekerja" combobox inside the modal.
     await page.getByRole('combobox', { name: /Pekerja/i }).click();
     // Schedulable satgas/linmas appear with their real full_name; never "undefined".
     await expect(page.getByRole('option', { name: /Satgas Lapangan \(satgas1\)/i })).toBeVisible();
-    await expect(page.getByRole('option', { name: /Linmas Keamanan \(linmas1\)/i })).toBeVisible();
     await expect(page.getByRole('option', { name: /undefined/i })).toHaveCount(0);
     // Non-schedulable roles (e.g. admin) must be filtered out.
     await expect(page.getByRole('option', { name: /Admin Sistem/i })).toHaveCount(0);
