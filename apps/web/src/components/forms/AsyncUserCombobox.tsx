@@ -79,7 +79,7 @@ export function AsyncUserCombobox({
     limit,
   });
   const raw = React.useMemo(() => data?.data ?? [], [data]);
-  const total = data?.meta.total ?? 0;
+  const total = data?.meta?.total ?? 0;
   const users = React.useMemo(
     () => raw.filter((u) => !(excludeIds?.includes(u.id) ?? false)),
     [raw, excludeIds]
