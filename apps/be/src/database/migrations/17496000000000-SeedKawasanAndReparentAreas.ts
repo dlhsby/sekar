@@ -16,6 +16,16 @@ export class SeedKawasanAndReparentAreas17496000000000 implements MigrationInter
   name = 'SeedKawasanAndReparentAreas17496000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // This is a DATA-ADOPTION migration: it only makes sense on a DB that already
+    // holds the base geography (rayons/locations) — i.e. an existing environment
+    // adopting the revamp. On a FRESH migration-built DB the seeder runs after
+    // migrations and populates kawasan/re-parenting itself, so skip here (the
+    // INSERT would otherwise violate the regions→rayons FK against empty rayons).
+    const rayonRows = (await queryRunner.query(
+      `SELECT count(*)::int AS n FROM "rayons"`,
+    )) as Array<{ n: number }>;
+    if (Number(rayonRows[0]?.n ?? 0) === 0) return;
+
     // 1) Kawasan (regions) — one per workbook "Kawasan …" entry, grouped by rayon.
     await queryRunner.query(`
       INSERT INTO "regions"
