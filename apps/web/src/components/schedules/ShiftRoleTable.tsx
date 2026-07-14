@@ -1,0 +1,170 @@
+'use client';
+
+import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Plus, Users } from 'lucide-react';
+import type { BoardShiftGroup } from '@/lib/schedules/dayBoard';
+import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
+
+/** Core scheduling roles always given a column so empty ones can be filled. */
+const CORE_ROLES = ['satgas', 'linmas', 'korlap'];
+
+/** Per-role header colour (fixed brand tokens; white ink, per OccurrenceChip). */
+const ROLE_HEADER: Record<string, string> = {
+  satgas: 'bg-nb-primary',
+  linmas: 'bg-nb-info',
+  korlap: 'bg-nb-warning',
+};
+const TEAM_HEADER = 'bg-nb-secondary';
+
+/** Shift accent swatch by the trailing number in the shift name (1/2/3). */
+function shiftSwatch(name: string): string {
+  const n = parseInt(name.match(/\d+/)?.[0] ?? '1', 10);
+  return n === 2 ? 'bg-nb-warning' : n === 3 ? 'bg-nb-info' : 'bg-nb-primary';
+}
+
+interface ShiftRoleTableProps {
+  shifts: BoardShiftGroup[];
+  onOccurrenceClick: (occ: ScheduleOccurrence) => void;
+  /** Assign into a specific shift (optionally a role). */
+  onAssign?: (shiftId: string, role?: string) => void;
+  canAssign?: boolean;
+}
+
+/**
+ * Renders one container's roster: a block per shift (all shifts shown, even
+ * empty), each split into a responsive row of role columns + a Tim column.
+ */
+export function ShiftRoleTable({
+  shifts,
+  onOccurrenceClick,
+  onAssign,
+  canAssign = false,
+}: ShiftRoleTableProps) {
+  const { t } = useTranslation(['schedules', 'roles']);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {shifts.map((group) => {
+        // Column set: core roles (always) + any extra roles present, in order.
+        const extraRoles = Object.keys(group.byRole).filter((r) => !CORE_ROLES.includes(r));
+        const roleCols = [...CORE_ROLES, ...extraRoles];
+        const timeLabel =
+          group.shift.start_time.slice(0, 5) + '–' + group.shift.end_time.slice(0, 5);
+
+        return (
+          <div key={group.shift.id}>
+            <div className="mb-2 flex items-center gap-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+              <span
+                className={`inline-block size-2.5 rounded-nb-sm border-2 border-nb-black ${shiftSwatch(group.shift.name)}`}
+              />
+              {group.shift.name} · {timeLabel}
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-[repeat(auto-fit,minmax(9.25rem,1fr))]">
+              {roleCols.map((role) => (
+                <RoleColumn
+                  key={role}
+                  label={t(`roles:${role}`, role)}
+                  headerClass={ROLE_HEADER[role] ?? 'bg-nb-gray-300'}
+                  occurrences={group.byRole[role] ?? []}
+                  onOccurrenceClick={onOccurrenceClick}
+                  onAssign={canAssign ? () => onAssign?.(group.shift.id, role) : undefined}
+                  addLabel={t('schedules:board.assign')}
+                />
+              ))}
+
+              {group.teams.length > 0 && (
+                <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
+                  <div
+                    className={`flex items-center justify-between border-b-2 border-nb-black px-2.5 py-1.5 text-nb-caption font-bold uppercase tracking-wide text-white ${TEAM_HEADER}`}
+                  >
+                    <span>{t('schedules:board.team')}</span>
+                    <span className="tabular-nums">{group.teams.length}</span>
+                  </div>
+                  {group.teams.map((team) => (
+                    <button
+                      key={team.eventId}
+                      type="button"
+                      className="flex items-center gap-2 border-b border-nb-black bg-nb-white px-2.5 py-1.5 text-left text-sm font-semibold last:border-b-0 hover:bg-nb-gray-50"
+                      style={
+                        team.markerColor
+                          ? { borderLeft: `4px solid ${team.markerColor}` }
+                          : undefined
+                      }
+                    >
+                      <Users className="size-3.5 shrink-0 text-nb-gray-500" aria-hidden />
+                      <span className="truncate">{team.name}</span>
+                      <span className="ml-auto shrink-0 tabular-nums text-nb-gray-500">
+                        {team.count}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+interface RoleColumnProps {
+  label: string;
+  headerClass: string;
+  occurrences: ScheduleOccurrence[];
+  onOccurrenceClick: (occ: ScheduleOccurrence) => void;
+  onAssign?: () => void;
+  addLabel: string;
+}
+
+function RoleColumn({
+  label,
+  headerClass,
+  occurrences,
+  onOccurrenceClick,
+  onAssign,
+  addLabel,
+}: RoleColumnProps) {
+  const sorted = useMemo(
+    () => [...occurrences].sort((a, b) => a.user.full_name.localeCompare(b.user.full_name)),
+    [occurrences]
+  );
+
+  return (
+    <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
+      <div
+        className={`flex items-center justify-between border-b-2 border-nb-black px-2.5 py-1.5 text-nb-caption font-bold uppercase tracking-wide text-white ${headerClass}`}
+      >
+        <span>{label}</span>
+        <span className="tabular-nums">{sorted.length}</span>
+      </div>
+      {sorted.map((occ) => (
+        <button
+          key={occ.id}
+          type="button"
+          onClick={() => onOccurrenceClick(occ)}
+          className={`flex items-center gap-2 border-b border-nb-black bg-nb-white px-2.5 py-1.5 text-left text-sm font-medium last:border-b-0 hover:bg-nb-gray-50 ${occ.is_projected ? 'opacity-60' : ''}`}
+        >
+          <span
+            className="size-2 shrink-0 rounded-full border border-nb-black bg-nb-success"
+            aria-hidden
+          />
+          <span className="truncate">{occ.user.full_name}</span>
+          {occ.is_detached && <span className="ml-auto shrink-0 text-nb-gray-500">✎</span>}
+        </button>
+      ))}
+      {onAssign && (
+        <button
+          type="button"
+          onClick={onAssign}
+          className="flex items-center justify-center gap-1.5 border-t border-dashed border-nb-black bg-nb-white px-2.5 py-1.5 text-nb-caption font-bold text-nb-gray-500 hover:bg-nb-gray-50"
+        >
+          <Plus className="size-3.5" aria-hidden />
+          {addLabel}
+        </button>
+      )}
+    </div>
+  );
+}

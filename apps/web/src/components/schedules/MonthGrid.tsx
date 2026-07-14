@@ -1,33 +1,41 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { formatISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, startOfWeek, endOfWeek } from 'date-fns';
+import { rayonCountsFor, type BoardMasterData } from '@/lib/schedules/dayBoard';
+import {
+  formatISO,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  startOfWeek,
+  endOfWeek,
+} from 'date-fns';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
 interface MonthGridProps {
   occurrences: ScheduleOccurrence[];
   currentMonth: Date;
-  onPrevMonth: () => void;
-  onNextMonth: () => void;
-  onToday: () => void;
+  master: BoardMasterData;
   onDayClick: (date: Date) => void;
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
-  locale: Locale;
+  /** When a single subject (worker/location) is filtered, show chips (a personal
+   * calendar); otherwise show a per-rayon coverage summary. */
+  subjectFiltered?: boolean;
 }
+
+/** How many rayon rows fit in a day cell before collapsing to "+N". */
+const MAX_RAYON_ROWS = 3;
 
 export function MonthGrid({
   occurrences,
   currentMonth,
-  onPrevMonth,
-  onNextMonth,
-  onToday,
+  master,
   onDayClick,
   onOccurrenceClick,
-  locale,
+  subjectFiltered = false,
 }: MonthGridProps) {
   const { t } = useTranslation();
 
@@ -63,29 +71,8 @@ export function MonthGrid({
     t('schedules:calendar.event.weekdaysSun'),
   ];
 
-  const monthName = new Intl.DateTimeFormat(locale.code || 'id-ID', {
-    month: 'long',
-    year: 'numeric',
-  }).format(currentMonth);
-
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between rounded-nb-base border-2 border-nb-black bg-nb-background p-4">
-        <Button variant="outline" size="sm" onClick={onPrevMonth}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex flex-1 items-center justify-center gap-4">
-          <h2 className="text-nb-h2 font-bold">{monthName}</h2>
-          <Button variant="outline" size="sm" onClick={onToday}>
-            {t('schedules:calendar.navigation.today')}
-          </Button>
-        </div>
-        <Button variant="outline" size="sm" onClick={onNextMonth}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-
       {/* Calendar Grid */}
       <div className="overflow-x-auto rounded-nb-base border-2 border-nb-black">
         <div className="inline-block w-full">
@@ -106,6 +93,7 @@ export function MonthGrid({
             {days.map((day) => {
               const dateStr = formatISO(day, { representation: 'date' });
               const dayOccurrences = occurrencesByDate.get(dateStr) || [];
+              const rayonCounts = subjectFiltered ? [] : rayonCountsFor(dayOccurrences, master);
               const isDayInMonth = isSameMonth(day, currentMonth);
               // Roster days are WIB days — highlight WIB "today", not the
               // browser's local today (they differ outside UTC+7).
@@ -126,24 +114,55 @@ export function MonthGrid({
                     {day.getDate()}
                   </div>
 
-                  {/* Occurrences */}
-                  <div className="space-y-1">
-                    {dayOccurrences.slice(0, 3).map((occ) => (
-                      <OccurrenceChip
-                        key={occ.id}
-                        occurrence={occ}
-                        onClick={() => {
-                          if (onOccurrenceClick) onOccurrenceClick(occ);
-                        }}
-                        className="w-full"
-                      />
-                    ))}
-                    {dayOccurrences.length > 3 && (
-                      <div className="text-nb-caption text-nb-gray-500">
-                        {t('schedules:calendar.moreCount', { count: dayOccurrences.length - 3 })}
+                  {/* Body: coverage density (default) or chips (subject filtered) */}
+                  {subjectFiltered ? (
+                    <div className="space-y-1">
+                      {dayOccurrences.slice(0, 3).map((occ) => (
+                        <OccurrenceChip
+                          key={occ.id}
+                          occurrence={occ}
+                          onClick={() => {
+                            if (onOccurrenceClick) onOccurrenceClick(occ);
+                          }}
+                          className="w-full"
+                        />
+                      ))}
+                      {dayOccurrences.length > 3 && (
+                        <div className="text-nb-caption text-nb-gray-500">
+                          {t('schedules:calendar.moreCount', { count: dayOccurrences.length - 3 })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    dayOccurrences.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-nb-body-sm font-bold tabular-nums leading-none">
+                          {dayOccurrences.length}
+                          <span className="ml-1 text-nb-caption font-medium text-nb-gray-500">
+                            {t('schedules:board.petugasShort')}
+                          </span>
+                        </div>
+                        <ul className="space-y-0.5">
+                          {rayonCounts.slice(0, MAX_RAYON_ROWS).map((r) => (
+                            <li
+                              key={r.rayonId}
+                              className="flex items-center justify-between gap-1 rounded-nb-sm bg-nb-gray-50 px-1 text-nb-caption"
+                            >
+                              <span className="truncate">{r.rayonName}</span>
+                              <span className="shrink-0 font-bold tabular-nums">{r.count}</span>
+                            </li>
+                          ))}
+                          {rayonCounts.length > MAX_RAYON_ROWS && (
+                            <li className="text-nb-caption text-nb-gray-500">
+                              {t('schedules:calendar.moreCount', {
+                                count: rayonCounts.length - MAX_RAYON_ROWS,
+                              })}
+                            </li>
+                          )}
+                        </ul>
                       </div>
-                    )}
-                  </div>
+                    )
+                  )}
                 </div>
               );
             })}

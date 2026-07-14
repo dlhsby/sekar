@@ -47,6 +47,20 @@ const BUSY_STATUSES = [
 ];
 
 /**
+ * Optional filters for the calendar range query (materialized + projected rows).
+ * All are ANDed; omitted fields don't filter. `locationId` matches static rows
+ * whose schedule_locations include it.
+ */
+export interface RangeFilters {
+  rayonId?: string | null;
+  regionId?: string | null;
+  locationId?: string | null;
+  userId?: string | null;
+  shiftDefinitionId?: string | null;
+  teamCategoryId?: string | null;
+}
+
+/**
  * Daily roster service — materializes each worker's standing template into one
  * editable row per WIB day and exposes the per-day edits ops needs (leave,
  * replacement, extra area, shift) plus read helpers for clock-in and monitoring.
@@ -507,7 +521,15 @@ export class SchedulesService {
     });
   }
 
-  async findByDateRange(from: string, to: string, rayonId?: string | null): Promise<Schedule[]> {
+  async findByDateRange(
+    from: string,
+    to: string,
+    filters?: RangeFilters | string | null,
+  ): Promise<Schedule[]> {
+    // Back-compat: a bare rayonId string is still accepted.
+    const f: RangeFilters = typeof filters === 'string' ? { rayonId: filters } : (filters ?? {});
+    const { rayonId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+
     // Fetch materialized rows for the range
     const qb = this.rosterRepo
       .createQueryBuilder('ds')
@@ -520,9 +542,18 @@ export class SchedulesService {
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL');
-    if (rayonId) {
-      qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
-    }
+    if (rayonId) qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
+    if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
+    if (userId) qb.andWhere('ds.user_id = :userId', { userId });
+    if (shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
+    if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
+    // A location filter matches static rows whose schedule_areas include it.
+    if (locationId)
+      qb.andWhere(
+        'EXISTS (SELECT 1 FROM schedule_locations sl WHERE sl.schedule_id = ds.id AND sl.location_id = :locationId)',
+        { locationId },
+      );
     const materialized = await qb
       .orderBy('ds.schedule_date', 'ASC')
       .addOrderBy('ds.status', 'ASC')
@@ -552,11 +583,23 @@ export class SchedulesService {
 
     const projectedRows: Schedule[] = [];
     for (const event of events) {
+      // Event-level filter gate — skip whole events that can't match, so we
+      // never expand their recurrence needlessly.
+      if (shiftDefinitionId && event.shift_definition_id !== shiftDefinitionId) continue;
+      if (teamCategoryId && event.team_category_id !== teamCategoryId) continue;
+      if (locationId && event.location_id !== locationId) continue;
+      const eventRegionId =
+        event.scope === 'mobile' ? event.region_id : (event.location?.region_id ?? null);
+      if (regionId && eventRegionId !== regionId) continue;
+      const eventRayonForFilter =
+        event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+      if (rayonId && eventRayonForFilter !== rayonId) continue;
+
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
 
       // Resolve member IDs (same logic as materializer)
-      const memberIds = event.is_team
+      let memberIds = event.is_team
         ? Array.from(
             new Set(
               [event.pic_user_id, ...(event.members?.map((m) => m.user_id) ?? [])].filter(
@@ -567,6 +610,8 @@ export class SchedulesService {
         : event.user_id
           ? [event.user_id]
           : [];
+      // A user filter narrows to just that member (and drops events they aren't on).
+      if (userId) memberIds = memberIds.filter((id) => id === userId);
 
       // Check which (member, date) pairs are already in DB with this event
       if (dates.length > 0) {

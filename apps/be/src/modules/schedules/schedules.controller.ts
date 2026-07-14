@@ -20,7 +20,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { SchedulesService } from './schedules.service';
+import { SchedulesService, type RangeFilters } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -103,12 +103,22 @@ export class SchedulesController {
   @ApiQuery({ name: 'from', example: '2026-06-30' })
   @ApiQuery({ name: 'to', example: '2026-07-31' })
   @ApiQuery({ name: 'rayonId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
   getByRange(
     @Query('from') from: string,
     @Query('to') to: string,
     @GetUser() user: User,
     @Query('rayonId') rayonId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
   ): Promise<Schedule[]> {
     // Validate from <= to
     if (from > to) {
@@ -125,20 +135,28 @@ export class SchedulesController {
       );
     }
 
-    // Rayon-scoped roles always see only their own rayon
-    if (this.isRayonScoped(user)) {
-      return user.rayon_id
-        ? this.service.findByDateRange(from, to, user.rayon_id)
-        : Promise.resolve([]);
-    }
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
 
-    // Phase 4: workers (satgas/linmas/korlap not in ROSTER_VIEWERS are self-scoped)
-    // Force user_id = caller.id filter when not in ROSTER_VIEWERS
+    // Phase 4: workers (satgas/linmas/korlap) not in ROSTER_VIEWERS are self-scoped
     if (!ROSTER_VIEWERS.includes(user.role)) {
       return this.service.findByDateRangeForUser(from, to, user.id);
     }
 
-    return this.service.findByDateRange(from, to, rayonId);
+    // Rayon-scoped roles (kepala_rayon / admin_rayon) are pinned to their own
+    // rayon; the requested rayonId is ignored, other filters still apply.
+    if (this.isRayonScoped(user)) {
+      return user.rayon_id
+        ? this.service.findByDateRange(from, to, { ...filters, rayonId: user.rayon_id })
+        : Promise.resolve([]);
+    }
+
+    return this.service.findByDateRange(from, to, { ...filters, rayonId });
   }
 
   @Post('generate')

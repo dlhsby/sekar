@@ -1,8 +1,8 @@
 /**
- * Jadwal (Schedules) page — calendar-first (ADR-047): month/week/day views over
- * the materialized roster, with rule-based ScheduleEvents behind create/edit
- * (this / this-and-future / series semantics). The legacy daily-roster
- * datatable remains available as the "Tabel" view.
+ * Jadwal (Schedules) page — calendar-first (ADR-047), redesigned: a single
+ * range select (Tahun/Bulan/Minggu/Hari, default Hari) with drill-down; the day
+ * view is the Rayon▸Kawasan▸Lokasi coverage board. Rule-based ScheduleEvents sit
+ * behind create/edit (this / this-and-future / series semantics).
  */
 
 'use client';
@@ -16,18 +16,32 @@ import {
   addDays,
   addMonths,
   addWeeks,
+  addYears,
   endOfMonth,
   endOfWeek,
   formatISO,
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { Button, PageHeader, Skeleton } from '@/components/ui';
-import { ViewSwitcher, type ViewType } from '@/components/schedules/ViewSwitcher';
+import {
+  Button,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Skeleton,
+} from '@/components/ui';
+import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
+import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips';
+import { DateNav } from '@/components/schedules/DateNav';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
-import { DayGrid } from '@/components/schedules/DayGrid';
-import { RosterTableView } from '@/components/schedules/RosterTableView';
+import { DayBoard } from '@/components/schedules/DayBoard';
+import { YearView } from '@/components/schedules/YearView';
+import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
 import { DeleteScopeChooser } from '@/components/schedules/DeleteScopeChooser';
@@ -39,6 +53,7 @@ import {
   useScheduleRange,
   type EditScope,
   type ScheduleOccurrence,
+  type ScheduleRangeFilters,
 } from '@/lib/api/schedule-events';
 import {
   useDailyRoster,
@@ -46,12 +61,25 @@ import {
   useUpdateRosterAreas,
   useUpdateRosterShift,
 } from '@/lib/api/schedules';
+import {
+  useStaffRequirements,
+  requirementTotalMap,
+  dayTypeOf,
+} from '@/lib/api/location-staff-requirements';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useRayons } from '@/lib/api/rayons';
+import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
 import { usePermissions } from '@/lib/auth/usePermissions';
+import { useUser } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
+
+/** Calendar range, ordered highest → lowest; drilling zooms in a level. */
+type CalendarView = 'year' | 'month' | 'week' | 'day';
+
+/** Roles pinned to their own rayon server-side — they can't pick a rayon. */
+const RAYON_SCOPED_ROLES = ['kepala_rayon', 'admin_rayon'];
 
 const isoDate = (d: Date): string => formatISO(d, { representation: 'date' });
 
@@ -62,21 +90,33 @@ const wibTodayDate = (): Date => new Date(`${todayJakartaISODate()}T00:00:00`);
 export default function SchedulesPage() {
   const { t, i18n } = useTranslation(['schedules', 'common']);
   const { can } = usePermissions();
+  const user = useUser();
   const queryClient = useQueryClient();
 
-  const [view, setView] = useState<ViewType>('month');
+  // Default to the day view on both web and mobile (manager board + a worker's
+  // own schedule both open on today's calendar).
+  const [calendarView, setCalendarView] = useState<CalendarView>('day');
   const [anchor, setAnchor] = useState<Date>(() => wibTodayDate());
+  const [filters, setFilters] = useState<ScheduleRangeFilters>({});
 
-  // Visible range per view (month view spans the full Mon–Sun grid; stays well
-  // under the API's 62-day cap).
+  const lockRayon = !!user && RAYON_SCOPED_ROLES.includes(user.role);
+  // Only admin_system/superadmin can set capacity (matches the backend gate).
+  const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
+  const [capacityLoc, setCapacityLoc] = useState<{ id: string; name: string } | null>(null);
+  // The Year view spans >62 days (the range API's cap) so it doesn't fetch
+  // occurrences — it's a month picker until an aggregate endpoint exists.
+  const fetchOccurrences = calendarView !== 'year';
+
+  // Visible range per calendar view (month view spans the full Mon–Sun grid;
+  // stays well under the API's 62-day cap).
   const { from, to } = useMemo(() => {
-    if (view === 'week') {
+    if (calendarView === 'week') {
       return {
         from: isoDate(startOfWeek(anchor, { weekStartsOn: 1 })),
         to: isoDate(endOfWeek(anchor, { weekStartsOn: 1 })),
       };
     }
-    if (view === 'day') {
+    if (calendarView === 'day' || calendarView === 'year') {
       const d = isoDate(anchor);
       return { from: d, to: d };
     }
@@ -84,27 +124,28 @@ export default function SchedulesPage() {
       from: isoDate(startOfWeek(startOfMonth(anchor), { weekStartsOn: 1 })),
       to: isoDate(endOfWeek(endOfMonth(anchor), { weekStartsOn: 1 })),
     };
-  }, [view, anchor]);
+  }, [calendarView, anchor]);
 
   const { data: occurrences = [], isLoading } = useScheduleRange(
     from,
     to,
-    undefined,
-    view !== 'table',
+    filters,
+    fetchOccurrences
   );
 
   // ── Create flow ──────────────────────────────────────────────────────────
   const [createOpen, setCreateOpen] = useState(false);
   const [createDate, setCreateDate] = useState<string | undefined>();
 
-  const openCreate = (date?: Date) => {
+  const openCreate = (date?: string) => {
     if (!can('schedule:create')) return;
-    setCreateDate(date ? isoDate(date) : undefined);
+    setCreateDate(date);
     setCreateOpen(true);
   };
 
-  // ── Occurrence click → edit/delete flows ─────────────────────────────────
+  // ── Occurrence click → detail → edit/delete flows ────────────────────────
   const [chosen, setChosen] = useState<ScheduleOccurrence | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [editChooserOpen, setEditChooserOpen] = useState(false);
   const [eventEdit, setEventEdit] = useState<{ scope: EditScope; fromDate?: string } | null>(null);
   const [rowEditOpen, setRowEditOpen] = useState(false);
@@ -113,7 +154,7 @@ export default function SchedulesPage() {
   // The full rule (event) behind the chosen occurrence, for series edits.
   const { data: chosenEvent, isError: chosenEventError } = useScheduleEvent(
     chosen?.schedule_event_id ?? '',
-    !!chosen?.schedule_event_id && !!eventEdit,
+    !!chosen?.schedule_event_id && (!!eventEdit || detailOpen)
   );
   // If the event can't be loaded the edit flow would silently never open —
   // surface it and reset the flow.
@@ -131,13 +172,42 @@ export default function SchedulesPage() {
   const { data: dayRoster } = useDailyRoster(rowEditOpen ? (chosen?.schedule_date ?? '') : '');
   const rowUnderEdit = useMemo(
     () => dayRoster?.find((r) => r.id === chosen?.id) ?? null,
-    [dayRoster, chosen],
+    [dayRoster, chosen]
   );
 
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: rayons = [] } = useRayons();
+  const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
-  const allLocations = locationsResp?.data ?? [];
+  const allLocations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
+
+  // Staffing requirements → understaffing pills on the day board (per day type).
+  const { data: requirementRows = [] } = useStaffRequirements(calendarView === 'day');
+  const capacities = useMemo(
+    () => requirementTotalMap(requirementRows, dayTypeOf(isoDate(anchor))),
+    [requirementRows, anchor]
+  );
+
+  // Master data for the day board's Rayon → Kawasan → Lokasi tree.
+  const boardMaster = useMemo<BoardMasterData>(
+    () => ({
+      rayons: rayons.map((r) => ({ id: r.id, name: r.name })),
+      regions: regions.map((r) => ({ id: r.id, name: r.name, rayon_id: r.rayon_id })),
+      locations: allLocations.map((l) => ({
+        id: l.id,
+        name: l.name,
+        rayon_id: l.rayon_id,
+        region_id: l.region_id ?? null,
+      })),
+      shifts: shifts.map((s) => ({
+        id: s.id,
+        name: s.name,
+        start_time: s.start_time,
+        end_time: s.end_time,
+      })),
+    }),
+    [rayons, regions, allLocations, shifts]
+  );
 
   const updateShift = useUpdateRosterShift();
   const updateAreas = useUpdateRosterAreas();
@@ -147,14 +217,29 @@ export default function SchedulesPage() {
   const refreshCalendar = () =>
     queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
 
+  // Clicking a schedule opens a read-only detail first (Google-Calendar style),
+  // not the scope prompt. Ubah/Hapus route onward from there.
   const onOccurrenceClick = (occ: ScheduleOccurrence) => {
-    if (!can('schedule:update') && !can('schedule:delete')) return;
     setChosen(occ);
-    if (occ.schedule_event_id) {
+    setDetailOpen(true);
+  };
+
+  const onDetailEdit = () => {
+    setDetailOpen(false);
+    if (chosen?.schedule_event_id) {
       setEditChooserOpen(true);
     } else {
       // Manual/ad-hoc row — no rule behind it, edit the row directly.
       setRowEditOpen(true);
+    }
+  };
+
+  const onDetailDelete = () => {
+    setDetailOpen(false);
+    if (chosen?.schedule_event_id) {
+      setDeleteChooserOpen(true);
+    } else {
+      void onDeleteScope('this');
     }
   };
 
@@ -190,56 +275,159 @@ export default function SchedulesPage() {
 
   const localeCode = i18n.language === 'en' ? 'en-US' : 'id-ID';
 
+  // Compact date-nav label + step, driven by the current range.
+  const dateLabel = useMemo(() => {
+    if (calendarView === 'year') return String(anchor.getFullYear());
+    if (calendarView === 'month')
+      return anchor.toLocaleDateString(localeCode, { month: 'long', year: 'numeric' });
+    if (calendarView === 'week') {
+      const ws = startOfWeek(anchor, { weekStartsOn: 1 });
+      const we = endOfWeek(anchor, { weekStartsOn: 1 });
+      const f = (d: Date) => d.toLocaleDateString(localeCode, { day: 'numeric', month: 'short' });
+      return `${f(ws)} – ${f(we)} ${we.getFullYear()}`;
+    }
+    return anchor.toLocaleDateString(localeCode, {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }, [calendarView, anchor, localeCode]);
+
+  const navStep = (dir: 1 | -1) =>
+    setAnchor((d) =>
+      calendarView === 'year'
+        ? addYears(d, dir)
+        : calendarView === 'month'
+          ? addMonths(d, dir)
+          : calendarView === 'week'
+            ? addWeeks(d, dir)
+            : addDays(d, dir)
+    );
+
   return (
     <div className="space-y-5">
-      <PageHeader
-        actions={
-          <div className="flex flex-wrap items-center gap-3">
-            <ViewSwitcher currentView={view} onViewChange={setView} />
-            {can('schedule:create') && (
-              <Button leftIcon={<Plus className="size-4" />} onClick={() => openCreate(anchor)}>
-                {t('schedules:calendar.event.createTitle')}
-              </Button>
-            )}
-          </div>
-        }
-      />
+      {/* Single action row (Google-Calendar layout): date nav left; search ·
+          range select · create right. Active search overlays the whole row. */}
+      <div className="relative flex flex-wrap items-center gap-3">
+        <DateNav
+          label={dateLabel}
+          onPrev={() => navStep(-1)}
+          onNext={() => navStep(1)}
+          onToday={() => setAnchor(wibTodayDate())}
+        />
+        <div className="ml-auto flex flex-wrap items-center gap-3">
+          <ScheduleSearch
+            filters={filters}
+            onChange={setFilters}
+            lockRayon={lockRayon}
+            onNavigateDate={(iso) => {
+              setAnchor(new Date(`${iso}T00:00:00`));
+              setCalendarView('day');
+            }}
+          />
+          <Select value={calendarView} onValueChange={(v) => setCalendarView(v as CalendarView)}>
+            <SelectTrigger className="w-32" aria-label={t('schedules:controls.viewLabel')}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="year">{t('schedules:calendar.views.year')}</SelectItem>
+              <SelectItem value="month">{t('schedules:calendar.views.month')}</SelectItem>
+              <SelectItem value="week">{t('schedules:calendar.views.week')}</SelectItem>
+              <SelectItem value="day">{t('schedules:calendar.views.day')}</SelectItem>
+            </SelectContent>
+          </Select>
+          {can('schedule:create') && (
+            <Button
+              leftIcon={<Plus className="size-4" />}
+              onClick={() => openCreate(isoDate(anchor))}
+            >
+              {t('schedules:calendar.event.createTitle')}
+            </Button>
+          )}
+        </div>
+      </div>
 
-      {view === 'table' ? (
-        <RosterTableView />
+      <ScheduleFilterChips filters={filters} onChange={setFilters} lockRayon={lockRayon} />
+
+      {calendarView === 'year' ? (
+        <YearView
+          year={anchor.getFullYear()}
+          onSelectMonth={(m) => {
+            setAnchor(new Date(anchor.getFullYear(), m, 1));
+            setCalendarView('month');
+          }}
+          onSelectDay={(iso) => {
+            setAnchor(new Date(`${iso}T00:00:00`));
+            setCalendarView('day');
+          }}
+          localeCode={localeCode}
+        />
       ) : isLoading ? (
         <Skeleton variant="card" />
-      ) : view === 'month' ? (
+      ) : calendarView === 'month' ? (
         <MonthGrid
           occurrences={occurrences}
           currentMonth={anchor}
-          onPrevMonth={() => setAnchor((d) => addMonths(d, -1))}
-          onNextMonth={() => setAnchor((d) => addMonths(d, 1))}
-          onToday={() => setAnchor(wibTodayDate())}
-          onDayClick={openCreate}
+          master={boardMaster}
+          onDayClick={(d) => {
+            setAnchor(d);
+            setCalendarView('day');
+          }}
           onOccurrenceClick={onOccurrenceClick}
-          locale={{ code: localeCode }}
+          subjectFiltered={!!(filters.userId || filters.locationId)}
         />
-      ) : view === 'week' ? (
+      ) : calendarView === 'week' ? (
         <WeekGrid
           occurrences={occurrences}
           currentDate={anchor}
-          onPrevWeek={() => setAnchor((d) => addWeeks(d, -1))}
-          onNextWeek={() => setAnchor((d) => addWeeks(d, 1))}
-          onToday={() => setAnchor(wibTodayDate())}
-          onDayClick={openCreate}
+          master={boardMaster}
+          onDayClick={(d) => {
+            setAnchor(d);
+            setCalendarView('day');
+          }}
           onOccurrenceClick={onOccurrenceClick}
+          subjectFiltered={!!(filters.userId || filters.locationId)}
         />
       ) : (
-        <DayGrid
+        <DayBoard
           occurrences={occurrences}
-          currentDate={anchor}
-          onPrevDay={() => setAnchor((d) => addDays(d, -1))}
-          onNextDay={() => setAnchor((d) => addDays(d, 1))}
-          onToday={() => setAnchor(wibTodayDate())}
+          master={boardMaster}
+          capacities={capacities}
           onOccurrenceClick={onOccurrenceClick}
+          canAssign={can('schedule:create')}
+          onAssign={() => openCreate(isoDate(anchor))}
+          onEditCapacity={
+            canManageCapacity ? (id, name) => setCapacityLoc({ id, name }) : undefined
+          }
         />
       )}
+
+      {/* Read-only detail (shown first on click; Ubah/Hapus route onward) */}
+      <ScheduleDetailModal
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open && !editChooserOpen && !rowEditOpen && !deleteChooserOpen) setChosen(null);
+        }}
+        occurrence={chosen}
+        event={chosen?.schedule_event_id ? chosenEvent : null}
+        onEdit={onDetailEdit}
+        onDelete={onDetailDelete}
+        canEdit={can('schedule:update')}
+        canDelete={can('schedule:delete')}
+        localeCode={localeCode}
+      />
+
+      {/* Staffing capacity editor (admin_system/superadmin) */}
+      <CapacityModal
+        open={capacityLoc !== null}
+        onOpenChange={(open) => {
+          if (!open) setCapacityLoc(null);
+        }}
+        locationId={capacityLoc?.id ?? null}
+        locationName={capacityLoc?.name ?? null}
+      />
 
       {/* Create */}
       {createOpen && (

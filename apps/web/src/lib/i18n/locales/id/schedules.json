@@ -1,4 +1,58 @@
 {
+  "controls": {
+    "modeLabel": "Tampilan",
+    "modeCalendar": "Kalender",
+    "modeTable": "Tabel",
+    "viewLabel": "Rentang"
+  },
+  "filters": {
+    "userLabel": "Petugas",
+    "allUsers": "Semua petugas",
+    "rayonLabel": "Rayon",
+    "allRayons": "Semua rayon",
+    "regionLabel": "Kawasan",
+    "allRegions": "Semua kawasan",
+    "locationLabel": "Lokasi",
+    "allLocations": "Semua lokasi",
+    "shiftLabel": "Shift",
+    "allShifts": "Semua shift",
+    "teamCategoryLabel": "Kategori Tim",
+    "allTeamCategories": "Semua kategori",
+    "clear": "Hapus filter"
+  },
+  "dayDetail": {
+    "empty": "Belum ada jadwal di hari ini",
+    "noShift": "Tanpa shift"
+  },
+  "board": {
+    "assign": "Tugaskan",
+    "team": "Tim",
+    "petugasCount": "{{count}} petugas",
+    "areaCount": "{{kawasan}} kawasan · {{lokasi}} lokasi",
+    "lokasiCount": "{{count}} lokasi",
+    "placementKawasan": "Penempatan Kawasan",
+    "placementRayon": "Penempatan Rayon",
+    "emptyRayon": "Belum ada kawasan atau lokasi",
+    "petugasShort": "petugas",
+    "shiftStaffTooltip": "{{shift}} — {{countable}} dari {{target}} Satgas+Linmas",
+    "shiftTotalTooltip": "{{shift}} — {{count}} petugas"
+  },
+  "search": {
+    "placeholder": "Cari petugas, area, atau tanggal…",
+    "advanced": "Lanjutan",
+    "noResults": "Tidak ada hasil untuk \"{{q}}\"",
+    "groupDate": "Tanggal",
+    "dateRangeLabel": "Rentang tanggal",
+    "dateFrom": "Dari",
+    "dateTo": "Sampai"
+  },
+  "detail": {
+    "placement": "Penempatan",
+    "endDate": "Berakhir",
+    "pic": "PIC",
+    "members": "Anggota",
+    "status": "Status"
+  },
   "page": {
     "title": "Jadwal",
     "dateLabel": "Tanggal:",
@@ -118,6 +172,7 @@
   },
   "calendar": {
     "views": {
+      "year": "Tahun",
       "month": "Bulan",
       "week": "Minggu",
       "day": "Hari",
@@ -220,5 +275,16 @@
       "endBeforeStart": "Tanggal akhir harus setelah tanggal mulai"
     },
     "moreCount": "+{{count}} lagi"
+  },
+  "staffCapacity": {
+    "title": "Atur Kapasitas",
+    "hint": "Target petugas (satgas + linmas) per shift. 0 = tanpa syarat.",
+    "saved": "Kapasitas disimpan"
+  },
+  "week": {
+    "roleSatgas": "Satgas",
+    "roleLinmas": "Linmas",
+    "roleOther": "Lainnya",
+    "roleTeam": "Tim"
   }
 }

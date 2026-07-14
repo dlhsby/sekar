@@ -1,4 +1,58 @@
 {
+  "controls": {
+    "modeLabel": "Display",
+    "modeCalendar": "Calendar",
+    "modeTable": "Table",
+    "viewLabel": "Range"
+  },
+  "filters": {
+    "userLabel": "Worker",
+    "allUsers": "All workers",
+    "rayonLabel": "Rayon",
+    "allRayons": "All rayons",
+    "regionLabel": "Kawasan",
+    "allRegions": "All kawasan",
+    "locationLabel": "Location",
+    "allLocations": "All locations",
+    "shiftLabel": "Shift",
+    "allShifts": "All shifts",
+    "teamCategoryLabel": "Team Category",
+    "allTeamCategories": "All categories",
+    "clear": "Clear filters"
+  },
+  "dayDetail": {
+    "empty": "No schedules for this day",
+    "noShift": "No shift"
+  },
+  "board": {
+    "assign": "Assign",
+    "team": "Team",
+    "petugasCount": "{{count}} workers",
+    "areaCount": "{{kawasan}} kawasan · {{lokasi}} locations",
+    "lokasiCount": "{{count}} locations",
+    "placementKawasan": "Kawasan placement",
+    "placementRayon": "Rayon placement",
+    "emptyRayon": "No kawasan or locations yet",
+    "petugasShort": "staff",
+    "shiftStaffTooltip": "{{shift}} — {{countable}} of {{target}} Satgas+Linmas",
+    "shiftTotalTooltip": "{{shift}} — {{count}} staff"
+  },
+  "search": {
+    "placeholder": "Search worker, area, or date…",
+    "advanced": "Advanced",
+    "noResults": "No results for \"{{q}}\"",
+    "groupDate": "Date",
+    "dateRangeLabel": "Date range",
+    "dateFrom": "From",
+    "dateTo": "To"
+  },
+  "detail": {
+    "placement": "Placement",
+    "endDate": "Ends",
+    "pic": "PIC",
+    "members": "Members",
+    "status": "Status"
+  },
   "page": {
     "title": "Schedules",
     "dateLabel": "Date:",
@@ -118,6 +172,7 @@
   },
   "calendar": {
     "views": {
+      "year": "Year",
       "month": "Month",
       "week": "Week",
       "day": "Day",
@@ -220,5 +275,16 @@
       "endBeforeStart": "End date must be after the start date"
     },
     "moreCount": "+{{count}} more"
+  },
+  "staffCapacity": {
+    "title": "Set Capacity",
+    "hint": "Target workers (satgas + linmas) per shift. 0 = no requirement.",
+    "saved": "Capacity saved"
+  },
+  "week": {
+    "roleSatgas": "Satgas",
+    "roleLinmas": "Linmas",
+    "roleOther": "Other",
+    "roleTeam": "Team"
   }
 }
