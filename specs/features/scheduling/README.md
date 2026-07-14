@@ -40,6 +40,7 @@
 - [monitoring](../monitoring/README.md)
 
 ## Changelog
+- 2026-07-14 — **City ("Seluruh Surabaya") schedule scope.** `ScheduleScope` gains **`city`** — a whole-Surabaya placement with no rayon/kawasan/lokasi, for a Tim Patroli (individual or team). Parallel to the rayon-scope addition: migration `17498000000000` widens `chk_schedule_events_scope` to accept city (all geo FKs null); `validateEventShape` city branch (rejects any geo id; requires a city-scope role); the materializer + both projections already fall through to a null subject. **Visibility:** city events cover every rayon, so they're visible to rayon-scoped users (added to the list/findOne scoping). Web: `ScheduleEventModal` gains a **"Seluruh Surabaya (Tim Patroli)"** toggle that hides the rayon/kawasan/lokasi cascade; the day board renders a top **"Seluruh Rayon / Surabaya"** node (`CITY_NODE_ID`, placement-only) above the rayons. Tests: +3 backend (city validation/accept) + a dayBoard city-node test; tsc/eslint/i18n green.
 - 2026-07-14 — **Correction:** an earlier line here (and commit `c3434c9d`) claimed a mobile
   **Hari/Minggu/Bulan** switcher; that was **never coded**. The worker `MyScheduleScreen` is **day-only** —
   a single-day roster with an `NBDatePicker` + prev/next/today navigation, fed by `getMyRange(date,date)`

@@ -8,7 +8,7 @@ import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
 
 export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
-export type ScheduleScope = 'static' | 'mobile' | 'rayon';
+export type ScheduleScope = 'static' | 'mobile' | 'rayon' | 'city';
 export type EditScope = 'this' | 'this_and_future' | 'series';
 
 export interface RecurrenceConfig {
@@ -186,14 +186,15 @@ interface RawScheduleRangeRow {
 function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
   const firstArea = row.schedule_areas?.[0];
   // Derive scope from the row's binding: region → mobile, a location →
-  // static, else a rayon-only row → rayon (roving crew, no fixed place).
+  // static, a rayon-only row → rayon (roving crew), else no binding at all →
+  // city (a Tim Patroli covering all Surabaya).
   const scope: ScheduleScope = row.region_id
     ? 'mobile'
     : firstArea
       ? 'static'
       : row.rayon_id
         ? 'rayon'
-        : 'static';
+        : 'city';
   return {
     id: row.id,
     user_id: row.user_id,

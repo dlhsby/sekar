@@ -90,11 +90,12 @@ export class ScheduleEventsService {
         throw new ForbiddenException('Your account is missing a rayon assignment');
       }
       query = query.andWhere(
-        '(se.scope = :static AND l.rayon_id = :rayon) OR (se.scope = :mobile AND r.rayon_id = :rayon) OR (se.scope = :rayonScope AND se.rayon_id = :rayon)',
+        '(se.scope = :static AND l.rayon_id = :rayon) OR (se.scope = :mobile AND r.rayon_id = :rayon) OR (se.scope = :rayonScope AND se.rayon_id = :rayon) OR se.scope = :cityScope',
         {
           static: ScheduleScope.STATIC,
           mobile: ScheduleScope.MOBILE,
           rayonScope: ScheduleScope.RAYON,
+          cityScope: ScheduleScope.CITY,
           rayon: actor.rayon_id,
         },
       );
@@ -112,11 +113,12 @@ export class ScheduleEventsService {
     }
     if (filters.rayon_id) {
       query = query.andWhere(
-        '(se.scope = :static AND l.rayon_id = :rayonId) OR (se.scope = :mobile AND r.rayon_id = :rayonId) OR (se.scope = :rayonScope AND se.rayon_id = :rayonId)',
+        '(se.scope = :static AND l.rayon_id = :rayonId) OR (se.scope = :mobile AND r.rayon_id = :rayonId) OR (se.scope = :rayonScope AND se.rayon_id = :rayonId) OR se.scope = :cityScope',
         {
           static: ScheduleScope.STATIC,
           mobile: ScheduleScope.MOBILE,
           rayonScope: ScheduleScope.RAYON,
+          cityScope: ScheduleScope.CITY,
           rayonId: filters.rayon_id,
         },
       );
@@ -165,14 +167,17 @@ export class ScheduleEventsService {
       if (!actor.rayon_id) {
         throw new ForbiddenException('Your account is missing a rayon assignment');
       }
-      const eventRayonId =
-        event.scope === ScheduleScope.STATIC
-          ? event.location?.rayon_id
-          : event.scope === ScheduleScope.MOBILE
-            ? event.region?.rayon_id
-            : event.rayon_id;
-      if (eventRayonId !== actor.rayon_id) {
-        throw new ForbiddenException('This event is outside your rayon');
+      // City-wide events cover every rayon, so they're visible to all.
+      if (event.scope !== ScheduleScope.CITY) {
+        const eventRayonId =
+          event.scope === ScheduleScope.STATIC
+            ? event.location?.rayon_id
+            : event.scope === ScheduleScope.MOBILE
+              ? event.region?.rayon_id
+              : event.rayon_id;
+        if (eventRayonId !== actor.rayon_id) {
+          throw new ForbiddenException('This event is outside your rayon');
+        }
       }
     }
 
@@ -592,7 +597,7 @@ export class ScheduleEventsService {
       const region = await this.regionRepo.findOne({ where: { id: e.region_id } });
       if (!region) throw new NotFoundException('Region not found');
       this.assertRayonScope(region.rayon_id, actor, 'region');
-    } else {
+    } else if (e.scope === ScheduleScope.RAYON) {
       // Rayon scope: rayon-wide placement, no location/region.
       if (!e.rayon_id) throw new BadRequestException('Rayon scope requires rayon_id');
       if (e.location_id || e.region_id)
@@ -600,6 +605,17 @@ export class ScheduleEventsService {
       const rayon = await this.rayonRepo.findOne({ where: { id: e.rayon_id } });
       if (!rayon) throw new NotFoundException('Rayon not found');
       this.assertRayonScope(rayon.id, actor, 'rayon');
+    } else {
+      // City scope: whole-Surabaya placement, no rayon/region/location.
+      if (e.location_id || e.region_id || e.rayon_id)
+        throw new BadRequestException(
+          'City scope must not have location_id, region_id or rayon_id',
+        );
+      if (!MONITORING_CITY.includes(actor.role)) {
+        throw new ForbiddenException(
+          'Only city-scope roles can place a city-wide (Seluruh Surabaya) schedule',
+        );
+      }
     }
 
     if (e.end_date && e.start_date > e.end_date) {

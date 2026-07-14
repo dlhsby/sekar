@@ -239,7 +239,9 @@
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Pilih rayon…",
       "regionScopeHint": "Kosongkan untuk cakupan Rayon (mobile se-rayon).",
-      "locationScopeHint": "Kosongkan untuk cakupan Kawasan (mobile se-kawasan)."
+      "locationScopeHint": "Kosongkan untuk cakupan Kawasan (mobile se-kawasan).",
+      "cityWideLabel": "Seluruh Surabaya (Tim Patroli)",
+      "cityWideHint": "Tidak terikat rayon/kawasan/lokasi — mencakup seluruh kota."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
@@ -279,7 +281,10 @@
       "datesRequired": "Tambahkan minimal satu tanggal",
       "endBeforeStart": "Tanggal akhir harus setelah tanggal mulai"
     },
-    "moreCount": "+{{count}} lagi"
+    "moreCount": "+{{count}} lagi",
+    "board": {
+      "cityLabel": "Seluruh Rayon / Surabaya"
+    }
   },
   "staffCapacity": {
     "title": "Atur Kapasitas",
