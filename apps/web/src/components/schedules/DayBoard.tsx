@@ -63,12 +63,12 @@ export function DayBoard({
         return (
           <section
             key={rayon.id}
-            className="overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm"
+            className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-primary bg-nb-white shadow-nb-sm"
           >
             <button
               type="button"
               onClick={() => toggle(rayon.id)}
-              className="flex w-full flex-wrap items-center gap-3 border-b-2 border-nb-black bg-nb-sidebar px-4 py-3 text-left text-white aria-expanded:border-b-2"
+              className="flex w-full flex-wrap items-center gap-3 border-b-2 border-nb-black bg-nb-gray-200 px-4 py-3 text-left text-nb-black aria-expanded:border-b-2"
               aria-expanded={open.has(rayon.id)}
             >
               <Chevron open={open.has(rayon.id)} />
@@ -146,11 +146,11 @@ function RegionCard({
   const { t } = useTranslation(['schedules']);
   const hasPlacement = region.placement.some((s) => s.total > 0);
   return (
-    <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-primary">
+    <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-info">
       <button
         type="button"
         onClick={() => toggle(region.id)}
-        className="flex w-full flex-wrap items-center gap-2.5 border-b-2 border-nb-black bg-nb-gray-200 px-3 py-2.5 text-left"
+        className="flex w-full flex-wrap items-center gap-2.5 border-b-2 border-nb-black bg-nb-gray-100 px-3 py-2.5 text-left"
         aria-expanded={open.has(region.id)}
       >
         <Chevron open={open.has(region.id)} />
@@ -204,7 +204,7 @@ function LocationCard({
 }) {
   const { t } = useTranslation(['schedules']);
   return (
-    <div className="overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white">
+    <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-warning bg-nb-white">
       <div className="flex w-full flex-wrap items-center gap-2.5 px-3 py-2.5">
         <button
           type="button"
