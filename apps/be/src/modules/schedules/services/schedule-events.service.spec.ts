@@ -8,6 +8,7 @@ import { Schedule } from '../entities/schedule.entity';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { ScheduleMaterializerService } from './schedule-materializer.service';
@@ -24,6 +25,7 @@ describe('ScheduleEventsService', () => {
   let userRepo: Record<string, jest.Mock>;
   let locationRepo: Record<string, jest.Mock>;
   let regionRepo: Record<string, jest.Mock>;
+  let rayonRepo: Record<string, jest.Mock>;
   let shiftRepo: Record<string, jest.Mock>;
   let teamCategoryRepo: Record<string, jest.Mock>;
   let materializer: Record<string, jest.Mock>;
@@ -84,6 +86,9 @@ describe('ScheduleEventsService', () => {
     regionRepo = {
       findOne: jest.fn(),
     };
+    rayonRepo = {
+      findOne: jest.fn(),
+    };
     shiftRepo = {
       findOne: jest.fn(),
     };
@@ -107,6 +112,7 @@ describe('ScheduleEventsService', () => {
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(Location), useValue: locationRepo },
         { provide: getRepositoryToken(Region), useValue: regionRepo },
+        { provide: getRepositoryToken(Rayon), useValue: rayonRepo },
         { provide: getRepositoryToken(ShiftDefinition), useValue: shiftRepo },
         { provide: getRepositoryToken(TeamCategory), useValue: teamCategoryRepo },
         { provide: ScheduleMaterializerService, useValue: materializer },
@@ -251,6 +257,77 @@ describe('ScheduleEventsService', () => {
           ADMIN,
         ),
       ).rejects.toThrow(/requires location_id/i);
+    });
+  });
+
+  describe('rayon scope', () => {
+    it('rejects a rayon-scoped event without rayon_id', async () => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+      userRepo.find.mockResolvedValue([{ id: 'user-1', role: 'satgas', is_active: true }]);
+
+      await expect(
+        service.create(
+          {
+            is_team: false,
+            user_id: 'user-1',
+            shift_definition_id: mockShift.id,
+            scope: ScheduleScope.RAYON,
+            start_date: '2026-07-10',
+            recurrence_type: RecurrenceType.NONE,
+          },
+          ADMIN,
+        ),
+      ).rejects.toThrow(/rayon scope requires rayon_id/i);
+    });
+
+    it('rejects a rayon-scoped event that also carries a location_id', async () => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+
+      await expect(
+        service.create(
+          {
+            is_team: false,
+            user_id: 'user-1',
+            shift_definition_id: mockShift.id,
+            scope: ScheduleScope.RAYON,
+            rayon_id: 'rayon-1',
+            location_id: mockLocation.id,
+            start_date: '2026-07-10',
+            recurrence_type: RecurrenceType.NONE,
+          },
+          ADMIN,
+        ),
+      ).rejects.toThrow(/must not have location_id or region_id/i);
+    });
+
+    it('accepts a valid rayon-scoped individual event', async () => {
+      shiftRepo.findOne.mockResolvedValue(mockShift);
+      rayonRepo.findOne.mockResolvedValue({ id: 'rayon-1', name: 'Rayon 1' });
+      userRepo.find.mockResolvedValue([{ id: 'user-1', role: 'satgas', is_active: true }]);
+      eventRepo.findOne.mockResolvedValue({
+        id: 'event-1',
+        scope: ScheduleScope.RAYON,
+        rayon_id: 'rayon-1',
+      });
+      materializer.materializeEvent.mockResolvedValue({ created: 0, skipped: [] });
+
+      const result = await service.create(
+        {
+          is_team: false,
+          user_id: 'user-1',
+          shift_definition_id: mockShift.id,
+          scope: ScheduleScope.RAYON,
+          rayon_id: 'rayon-1',
+          start_date: '2026-07-10',
+          recurrence_type: RecurrenceType.NONE,
+        },
+        ADMIN,
+      );
+
+      expect(result.event).toBeDefined();
+      expect(eventRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: ScheduleScope.RAYON, rayon_id: 'rayon-1' }),
+      );
     });
   });
 

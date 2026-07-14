@@ -42,6 +42,7 @@ import { useUsers } from '@/lib/api/users';
 import { useTeamCategories } from '@/lib/api/teams';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
+import { useRayons } from '@/lib/api/rayons';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -82,9 +83,10 @@ function createSchema(t: TFn) {
       pic_user_id: z.string().optional(),
       member_ids: z.array(z.string()),
       shift_definition_id: z.string().min(1, t('validation:required')),
-      scope: z.enum(['static', 'mobile']),
+      scope: z.enum(['static', 'mobile', 'rayon']),
       location_id: z.string().optional(),
       region_id: z.string().optional(),
+      rayon_id: z.string().optional(),
       recurrence_type: z.enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates']),
       // Registered with valueAsNumber (plain z.number keeps RHF input/output
       // types aligned — z.coerce diverges them and breaks the resolver types).
@@ -97,21 +99,48 @@ function createSchema(t: TFn) {
     })
     .superRefine((data, ctx) => {
       if (data.kind === 'individual' && !data.user_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['user_id'], message: t('validation:required') });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['user_id'],
+          message: t('validation:required'),
+        });
       }
       if (data.kind === 'team') {
         if (!data.team_category_id) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['team_category_id'], message: t('validation:required') });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['team_category_id'],
+            message: t('validation:required'),
+          });
         }
         if (!data.pic_user_id) {
-          ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['pic_user_id'], message: t('validation:required') });
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['pic_user_id'],
+            message: t('validation:required'),
+          });
         }
       }
       if (data.scope === 'static' && !data.location_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['location_id'], message: t('validation:required') });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['location_id'],
+          message: t('validation:required'),
+        });
       }
       if (data.scope === 'mobile' && !data.region_id) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['region_id'], message: t('validation:required') });
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['region_id'],
+          message: t('validation:required'),
+        });
+      }
+      if (data.scope === 'rayon' && !data.rayon_id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['rayon_id'],
+          message: t('validation:required'),
+        });
       }
       if (data.recurrence_type === 'every_n_days') {
         if (!data.interval_n || data.interval_n < 2 || data.interval_n > 30) {
@@ -185,6 +214,7 @@ export function ScheduleEventModal({
       scope: event?.scope ?? 'static',
       location_id: event?.location_id ?? '',
       region_id: event?.region_id ?? '',
+      rayon_id: event?.rayon_id ?? '',
       recurrence_type: event?.recurrence_type ?? 'none',
       interval_n: event?.recurrence_config?.interval_n ?? 2,
       weekdays: event?.recurrence_config?.weekdays ?? [],
@@ -200,17 +230,20 @@ export function ScheduleEventModal({
 
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: usersResp } = useUsers({ limit: 1000 });
-  const { data: teamCategories = [] } = useTeamCategories(can('schedule:create') || can('schedule:update'));
+  const { data: teamCategories = [] } = useTeamCategories(
+    can('schedule:create') || can('schedule:update')
+  );
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: regions = [] } = useRegions();
+  const { data: rayons = [] } = useRayons();
 
   const schedulableUsers = useMemo(
     () => (usersResp?.data ?? []).filter((u) => SCHEDULABLE_ROLES.includes(u.role)),
-    [usersResp],
+    [usersResp]
   );
   const userNameById = useMemo(
     () => new Map((usersResp?.data ?? []).map((u) => [u.id, u.full_name])),
-    [usersResp],
+    [usersResp]
   );
   const locations = locationsResp?.data ?? [];
 
@@ -222,9 +255,12 @@ export function ScheduleEventModal({
 
   const shiftOptions = shifts.map((s) => ({ value: s.id, label: s.name }));
   const userOptions = schedulableUsers.map((u) => ({ value: u.id, label: u.full_name }));
-  const teamCategoryOptions = teamCategories.filter((tt) => tt.is_active).map((tt) => ({ value: tt.id, label: tt.name }));
+  const teamCategoryOptions = teamCategories
+    .filter((tt) => tt.is_active)
+    .map((tt) => ({ value: tt.id, label: tt.name }));
   const locationOptions = locations.map((l) => ({ value: l.id, label: l.name }));
   const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
+  const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
   const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
     { value: 'none', label: t('schedules:calendar.event.recurrenceNone') },
     { value: 'daily', label: t('schedules:calendar.event.recurrenceDaily') },
@@ -233,7 +269,10 @@ export function ScheduleEventModal({
     { value: 'specific_dates', label: t('schedules:calendar.event.recurrenceSpecificDates') },
   ];
 
-  const warnConflicts = (result: { skipped?: MaterializationEntry[]; conflicts?: MaterializationEntry[] }) => {
+  const warnConflicts = (result: {
+    skipped?: MaterializationEntry[];
+    conflicts?: MaterializationEntry[];
+  }) => {
     const { skipped = [], conflicts = [] } = result;
     const hasWarnings = conflicts.length > 0 || skipped.length > 0;
     if (!hasWarnings) return false;
@@ -245,11 +284,16 @@ export function ScheduleEventModal({
         .slice(0, 3)
         .map(
           (c) =>
-            `${userNameById.get(c.user_id) ?? c.user_id} ${c.date}${c.conflicting_shift ? ` (${c.conflicting_shift})` : ''}`,
+            `${userNameById.get(c.user_id) ?? c.user_id} ${c.date}${c.conflicting_shift ? ` (${c.conflicting_shift})` : ''}`
         )
         .join('; ');
-      const conflictMore = conflicts.length > 3 ? ` ${t('schedules:calendar.conflicts.more', { count: conflicts.length - 3 })}` : '';
-      messages.push(`${t('schedules:calendar.conflicts.createdWarning')} ${conflictLines}${conflictMore}`);
+      const conflictMore =
+        conflicts.length > 3
+          ? ` ${t('schedules:calendar.conflicts.more', { count: conflicts.length - 3 })}`
+          : '';
+      messages.push(
+        `${t('schedules:calendar.conflicts.createdWarning')} ${conflictLines}${conflictMore}`
+      );
     }
 
     if (skipped.length > 0) {
@@ -257,7 +301,10 @@ export function ScheduleEventModal({
         .slice(0, 3)
         .map((s) => `${userNameById.get(s.user_id) ?? s.user_id} ${s.date}`)
         .join('; ');
-      const skipMore = skipped.length > 3 ? ` ${t('schedules:calendar.conflicts.more', { count: skipped.length - 3 })}` : '';
+      const skipMore =
+        skipped.length > 3
+          ? ` ${t('schedules:calendar.conflicts.more', { count: skipped.length - 3 })}`
+          : '';
       messages.push(`${t('schedules:calendar.conflicts.skipped')} ${skipLines}${skipMore}`);
     }
 
@@ -286,18 +333,26 @@ export function ScheduleEventModal({
         scope: data.scope,
         location_id: data.scope === 'static' ? data.location_id : null,
         region_id: data.scope === 'mobile' ? data.region_id : null,
+        rayon_id: data.scope === 'rayon' ? data.rayon_id : null,
         is_team: data.kind === 'team',
         user_id: data.kind === 'individual' ? data.user_id : null,
         team_category_id: data.kind === 'team' ? data.team_category_id : null,
         pic_user_id: data.kind === 'team' ? data.pic_user_id : null,
-        member_ids: data.kind === 'team' ? data.member_ids.filter((id) => id !== data.pic_user_id) : [],
+        member_ids:
+          data.kind === 'team' ? data.member_ids.filter((id) => id !== data.pic_user_id) : [],
         notes: data.notes || undefined,
       };
 
       if (isEditing && event) {
         // Kind (individual/team target) is immutable on the backend — strip it.
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- these are intentionally stripped from the payload
-        const { is_team: _, user_id: __, team_category_id: ___, pic_user_id: ____, ...updatable } = payload;
+         
+        const {
+          is_team: _,
+          user_id: __,
+          team_category_id: ___,
+          pic_user_id: ____,
+          ...updatable
+        } = payload;
         const result = await updateMutation.mutateAsync({
           id: event.id,
           // member_ids only applies to team events — the backend rejects it
@@ -414,7 +469,7 @@ export function ScheduleEventModal({
                                   field.onChange(
                                     field.value.includes(u.id)
                                       ? field.value.filter((id) => id !== u.id)
-                                      : [...field.value, u.id],
+                                      : [...field.value, u.id]
                                   )
                                 }
                               />
@@ -438,7 +493,7 @@ export function ScheduleEventModal({
               required
             />
 
-            {/* Scope: static location vs mobile region */}
+            {/* Scope: static (location) vs mobile (region) vs rayon (rayon-wide) */}
             <div className="flex gap-2">
               <Button
                 type="button"
@@ -455,6 +510,14 @@ export function ScheduleEventModal({
                 className="flex-1"
               >
                 {t('schedules:calendar.event.scopeMobile')}
+              </Button>
+              <Button
+                type="button"
+                variant={formScope === 'rayon' ? 'default' : 'outline'}
+                onClick={() => setValue('scope', 'rayon')}
+                className="flex-1"
+              >
+                {t('schedules:calendar.event.scopeRayon')}
               </Button>
             </div>
 
@@ -480,12 +543,25 @@ export function ScheduleEventModal({
               />
             )}
 
+            {formScope === 'rayon' && (
+              <FormCombobox
+                label={t('schedules:calendar.event.rayonLabel')}
+                options={rayonOptions}
+                value={watch('rayon_id') || ''}
+                onChange={(v) => setValue('rayon_id', v, { shouldValidate: true })}
+                placeholder={t('schedules:calendar.event.rayonPlaceholder')}
+                error={errors.rayon_id?.message}
+              />
+            )}
+
             {/* Recurrence */}
             <FormSelect
               label={t('schedules:calendar.event.recurrenceLabel')}
               options={recurrenceOptions}
               value={formRecurrence}
-              onChange={(v) => setValue('recurrence_type', v as RecurrenceType, { shouldValidate: true })}
+              onChange={(v) =>
+                setValue('recurrence_type', v as RecurrenceType, { shouldValidate: true })
+              }
             />
 
             {formRecurrence === 'every_n_days' && (

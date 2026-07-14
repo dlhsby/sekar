@@ -53,6 +53,8 @@ export interface BoardRayon {
   regions: BoardRegion[];
   /** locations under this rayon with no region parent */
   looseLocations: BoardLocation[];
+  /** rayon-wide (rayon-scope) assignments with no location/region */
+  placement: BoardShiftGroup[];
   total: number;
 }
 
@@ -114,8 +116,8 @@ const sumTotal = (groups: BoardShiftGroup[]): number => groups.reduce((acc, g) =
 /**
  * Build the day board tree. Occurrences are placed by their container:
  * `location_id` → that location; else `region_id` → that kawasan's mobile
- * placement. Empty locations/regions still render so operators can assign into
- * them. Rayon-scope placement is a later phase (not grouped here yet).
+ * placement; else `rayon_id` → that rayon's rayon-wide placement. Empty
+ * locations/regions still render so operators can assign into them.
  */
 export function buildDayBoard(
   occurrences: ScheduleOccurrence[],
@@ -123,9 +125,10 @@ export function buildDayBoard(
 ): BoardRayon[] {
   const { rayons, regions, locations, shifts } = master;
 
-  // Occurrences bucketed by container id (location or region).
+  // Occurrences bucketed by container id (location, region, or rayon).
   const byLocation = new Map<string, ScheduleOccurrence[]>();
   const byRegionMobile = new Map<string, ScheduleOccurrence[]>();
+  const byRayonMobile = new Map<string, ScheduleOccurrence[]>();
   for (const o of occurrences) {
     if (o.location_id) {
       (byLocation.get(o.location_id) ?? byLocation.set(o.location_id, []).get(o.location_id)!).push(
@@ -135,6 +138,8 @@ export function buildDayBoard(
       (
         byRegionMobile.get(o.region_id) ?? byRegionMobile.set(o.region_id, []).get(o.region_id)!
       ).push(o);
+    } else if (o.rayon_id) {
+      (byRayonMobile.get(o.rayon_id) ?? byRayonMobile.set(o.rayon_id, []).get(o.rayon_id)!).push(o);
     }
   }
 
@@ -157,12 +162,21 @@ export function buildDayBoard(
     });
 
     const looseLocations = rayonLocations.filter((l) => !l.region_id).map(buildLocation);
+    const placement = groupByShift(byRayonMobile.get(rayon.id) ?? [], shifts);
 
     const total =
       regionNodes.reduce((acc, r) => acc + r.total, 0) +
-      looseLocations.reduce((acc, l) => acc + l.total, 0);
+      looseLocations.reduce((acc, l) => acc + l.total, 0) +
+      sumTotal(placement);
 
-    return { id: rayon.id, name: rayon.name, regions: regionNodes, looseLocations, total };
+    return {
+      id: rayon.id,
+      name: rayon.name,
+      regions: regionNodes,
+      looseLocations,
+      placement,
+      total,
+    };
   });
 }
 
@@ -218,7 +232,7 @@ export function rayonCountsFor(
       ? locRayon.get(o.location_id)
       : o.region_id
         ? regRayon.get(o.region_id)
-        : undefined;
+        : (o.rayon_id ?? undefined);
     if (!rayonId) continue;
     counts.set(rayonId, (counts.get(rayonId) ?? 0) + 1);
   }
@@ -255,7 +269,7 @@ export function buildWeekCoverage(
       ? locRayon.get(o.location_id)
       : o.region_id
         ? regRayon.get(o.region_id)
-        : undefined;
+        : (o.rayon_id ?? undefined);
     if (!rayonId) continue;
     const di = dayIndex.get(o.schedule_date);
     if (di == null) continue;

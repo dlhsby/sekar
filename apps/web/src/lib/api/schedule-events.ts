@@ -8,7 +8,7 @@ import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
 
 export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
-export type ScheduleScope = 'static' | 'mobile';
+export type ScheduleScope = 'static' | 'mobile' | 'rayon';
 export type EditScope = 'this' | 'this_and_future' | 'series';
 
 export interface RecurrenceConfig {
@@ -27,6 +27,7 @@ export interface CreateScheduleEventInput {
   scope: ScheduleScope;
   location_id?: string | null;
   region_id?: string | null;
+  rayon_id?: string | null;
   is_team: boolean;
   user_id?: string | null;
   team_category_id?: string | null;
@@ -45,6 +46,7 @@ export interface UpdateScheduleEventInput {
   scope?: ScheduleScope;
   location_id?: string | null;
   region_id?: string | null;
+  rayon_id?: string | null;
   member_ids?: string[];
   notes?: string;
 }
@@ -60,6 +62,7 @@ export interface ScheduleEvent {
   scope: ScheduleScope;
   location_id: string | null;
   region_id: string | null;
+  rayon_id: string | null;
   is_team: boolean;
   team_category_id: string | null;
   pic_user_id: string | null;
@@ -82,6 +85,10 @@ export interface ScheduleEvent {
     name: string;
   } | null;
   region?: {
+    id: string;
+    name: string;
+  } | null;
+  rayon?: {
     id: string;
     name: string;
   } | null;
@@ -121,6 +128,7 @@ export interface ScheduleOccurrence {
   status: string;
   location_id?: string | null;
   region_id?: string | null;
+  rayon_id?: string | null;
   schedule_event_id?: string | null;
   is_detached: boolean;
   is_projected?: boolean;
@@ -162,6 +170,7 @@ interface RawScheduleRangeRow {
   shift_definition_id: string | null;
   status: string;
   region_id?: string | null;
+  rayon_id?: string | null;
   team_category_id?: string | null;
   schedule_event_id?: string | null;
   is_detached?: boolean;
@@ -176,15 +185,25 @@ interface RawScheduleRangeRow {
 /** Normalize a raw roster row to the calendar's occurrence shape. */
 function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
   const firstArea = row.schedule_areas?.[0];
+  // Derive scope from the row's binding: region → mobile, a location →
+  // static, else a rayon-only row → rayon (roving crew, no fixed place).
+  const scope: ScheduleScope = row.region_id
+    ? 'mobile'
+    : firstArea
+      ? 'static'
+      : row.rayon_id
+        ? 'rayon'
+        : 'static';
   return {
     id: row.id,
     user_id: row.user_id,
     schedule_date: row.schedule_date,
     shift_definition_id: row.shift_definition_id,
-    scope: row.region_id ? 'mobile' : 'static',
+    scope,
     status: row.status,
     location_id: firstArea?.location_id ?? null,
     region_id: row.region_id ?? null,
+    rayon_id: row.rayon_id ?? null,
     schedule_event_id: row.schedule_event_id ?? null,
     is_detached: row.is_detached ?? false,
     is_projected: row.is_projected ?? false,

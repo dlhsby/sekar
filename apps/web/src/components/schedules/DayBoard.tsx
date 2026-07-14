@@ -86,6 +86,14 @@ export function DayBoard({
 
             {open.has(rayon.id) && (
               <div className="flex flex-col gap-3 p-3">
+                {rayon.placement.some((s) => s.total > 0) && (
+                  <div className="rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-secondary bg-nb-gray-50 p-2.5">
+                    <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+                      {t('schedules:board.placementRayon')}
+                    </p>
+                    <ShiftRoleTable shifts={rayon.placement} {...tableProps} />
+                  </div>
+                )}
                 {rayon.regions.map((region) => (
                   <RegionCard
                     key={region.id}
@@ -108,11 +116,13 @@ export function DayBoard({
                     onEditCapacity={onEditCapacity}
                   />
                 ))}
-                {rayon.regions.length === 0 && rayon.looseLocations.length === 0 && (
-                  <p className="py-6 text-center text-nb-body-sm text-nb-gray-500">
-                    {t('schedules:board.emptyRayon')}
-                  </p>
-                )}
+                {rayon.regions.length === 0 &&
+                  rayon.looseLocations.length === 0 &&
+                  !rayon.placement.some((s) => s.total > 0) && (
+                    <p className="py-6 text-center text-nb-body-sm text-nb-gray-500">
+                      {t('schedules:board.emptyRayon')}
+                    </p>
+                  )}
               </div>
             )}
           </section>

@@ -13,6 +13,7 @@ import { Schedule } from '../entities/schedule.entity';
 import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
+import { Rayon } from '../../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { CreateScheduleEventDto } from '../dto/create-schedule-event.dto';
@@ -46,6 +47,8 @@ export class ScheduleEventsService {
     private readonly locationRepo: Repository<Location>,
     @InjectRepository(Region)
     private readonly regionRepo: Repository<Region>,
+    @InjectRepository(Rayon)
+    private readonly rayonRepo: Repository<Rayon>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftRepo: Repository<ShiftDefinition>,
     @InjectRepository(TeamCategory)
@@ -87,8 +90,13 @@ export class ScheduleEventsService {
         throw new ForbiddenException('Your account is missing a rayon assignment');
       }
       query = query.andWhere(
-        '(se.scope = :static AND l.rayon_id = :rayon) OR (se.scope = :mobile AND r.rayon_id = :rayon)',
-        { static: ScheduleScope.STATIC, mobile: ScheduleScope.MOBILE, rayon: actor.rayon_id },
+        '(se.scope = :static AND l.rayon_id = :rayon) OR (se.scope = :mobile AND r.rayon_id = :rayon) OR (se.scope = :rayonScope AND se.rayon_id = :rayon)',
+        {
+          static: ScheduleScope.STATIC,
+          mobile: ScheduleScope.MOBILE,
+          rayonScope: ScheduleScope.RAYON,
+          rayon: actor.rayon_id,
+        },
       );
     }
 
@@ -104,8 +112,13 @@ export class ScheduleEventsService {
     }
     if (filters.rayon_id) {
       query = query.andWhere(
-        '(se.scope = :static AND l.rayon_id = :rayonId) OR (se.scope = :mobile AND r.rayon_id = :rayonId)',
-        { static: ScheduleScope.STATIC, mobile: ScheduleScope.MOBILE, rayonId: filters.rayon_id },
+        '(se.scope = :static AND l.rayon_id = :rayonId) OR (se.scope = :mobile AND r.rayon_id = :rayonId) OR (se.scope = :rayonScope AND se.rayon_id = :rayonId)',
+        {
+          static: ScheduleScope.STATIC,
+          mobile: ScheduleScope.MOBILE,
+          rayonScope: ScheduleScope.RAYON,
+          rayonId: filters.rayon_id,
+        },
       );
     }
     if (filters.user_id) {
@@ -138,6 +151,7 @@ export class ScheduleEventsService {
         'shift_definition',
         'location',
         'region',
+        'rayon',
         'team_category',
         'pic_user',
         'user',
@@ -152,7 +166,11 @@ export class ScheduleEventsService {
         throw new ForbiddenException('Your account is missing a rayon assignment');
       }
       const eventRayonId =
-        event.scope === ScheduleScope.STATIC ? event.location?.rayon_id : event.region?.rayon_id;
+        event.scope === ScheduleScope.STATIC
+          ? event.location?.rayon_id
+          : event.scope === ScheduleScope.MOBILE
+            ? event.region?.rayon_id
+            : event.rayon_id;
       if (eventRayonId !== actor.rayon_id) {
         throw new ForbiddenException('This event is outside your rayon');
       }
@@ -177,6 +195,7 @@ export class ScheduleEventsService {
         scope: dto.scope,
         location_id: dto.location_id ?? null,
         region_id: dto.region_id ?? null,
+        rayon_id: dto.rayon_id ?? null,
         start_date: dto.start_date,
         end_date: dto.end_date ?? null,
         recurrence_type: dto.recurrence_type,
@@ -223,6 +242,7 @@ export class ScheduleEventsService {
       scope: dto.scope,
       location_id: dto.location_id || null,
       region_id: dto.region_id || null,
+      rayon_id: dto.rayon_id || null,
       is_team: dto.is_team,
       user_id: dto.user_id || null,
       team_category_id: dto.team_category_id || null,
@@ -310,6 +330,7 @@ export class ScheduleEventsService {
         scope: dto.scope || event.scope,
         location_id: dto.location_id !== undefined ? dto.location_id : event.location_id,
         region_id: dto.region_id !== undefined ? dto.region_id : event.region_id,
+        rayon_id: dto.rayon_id !== undefined ? dto.rayon_id : event.rayon_id,
         start_date: fromDate,
         end_date: dto.end_date !== undefined ? dto.end_date : prevEndDate,
         recurrence_type: dto.recurrence_type || event.recurrence_type,
@@ -392,6 +413,7 @@ export class ScheduleEventsService {
       if (dto.scope) event.scope = dto.scope;
       if (dto.location_id !== undefined) event.location_id = dto.location_id;
       if (dto.region_id !== undefined) event.region_id = dto.region_id;
+      if (dto.rayon_id !== undefined) event.rayon_id = dto.rayon_id;
       if (dto.notes !== undefined) event.notes = dto.notes;
       event.updated_by = actor.id;
 
@@ -404,6 +426,7 @@ export class ScheduleEventsService {
           scope: event.scope,
           location_id: event.location_id,
           region_id: event.region_id,
+          rayon_id: event.rayon_id,
           start_date: event.start_date,
           end_date: event.end_date,
           recurrence_type: event.recurrence_type,
@@ -544,6 +567,7 @@ export class ScheduleEventsService {
       scope: ScheduleScope;
       location_id: string | null;
       region_id: string | null;
+      rayon_id: string | null;
       start_date: string;
       end_date: string | null;
       recurrence_type: RecurrenceType;
@@ -556,16 +580,26 @@ export class ScheduleEventsService {
 
     if (e.scope === ScheduleScope.STATIC) {
       if (!e.location_id) throw new BadRequestException('Static scope requires location_id');
-      if (e.region_id) throw new BadRequestException('Static scope must not have region_id');
+      if (e.region_id || e.rayon_id)
+        throw new BadRequestException('Static scope must not have region_id or rayon_id');
       const loc = await this.locationRepo.findOne({ where: { id: e.location_id } });
       if (!loc) throw new NotFoundException('Location not found');
       this.assertRayonScope(loc.rayon_id, actor, 'location');
-    } else {
+    } else if (e.scope === ScheduleScope.MOBILE) {
       if (!e.region_id) throw new BadRequestException('Mobile scope requires region_id');
-      if (e.location_id) throw new BadRequestException('Mobile scope must not have location_id');
+      if (e.location_id || e.rayon_id)
+        throw new BadRequestException('Mobile scope must not have location_id or rayon_id');
       const region = await this.regionRepo.findOne({ where: { id: e.region_id } });
       if (!region) throw new NotFoundException('Region not found');
       this.assertRayonScope(region.rayon_id, actor, 'region');
+    } else {
+      // Rayon scope: rayon-wide placement, no location/region.
+      if (!e.rayon_id) throw new BadRequestException('Rayon scope requires rayon_id');
+      if (e.location_id || e.region_id)
+        throw new BadRequestException('Rayon scope must not have location_id or region_id');
+      const rayon = await this.rayonRepo.findOne({ where: { id: e.rayon_id } });
+      if (!rayon) throw new NotFoundException('Rayon not found');
+      this.assertRayonScope(rayon.id, actor, 'rayon');
     }
 
     if (e.end_date && e.start_date > e.end_date) {

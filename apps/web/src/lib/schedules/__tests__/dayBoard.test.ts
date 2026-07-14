@@ -167,6 +167,31 @@ describe('buildDayBoard', () => {
     expect(counts).toEqual([{ rayonId: 'ry1', rayonName: 'Rayon Pusat', count: 3 }]);
   });
 
+  it('places rayon-scoped occurrences (no location/region) into rayon placement', () => {
+    const tree = buildDayBoard(
+      [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
+      master
+    );
+    expect(tree[0].placement.reduce((a, s) => a + s.total, 0)).toBe(1);
+    expect(tree[0].total).toBe(1);
+    // Not double-counted into any region/location.
+    expect(tree[0].regions.every((r) => r.total === 0)).toBe(true);
+  });
+
+  it('maps rayon-scoped occurrences into week + per-rayon counts via rayon_id', () => {
+    const weekRows = buildWeekCoverage(
+      [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
+      master,
+      ['2026-07-13']
+    );
+    expect(weekRows[0].total).toBe(1);
+    const counts = rayonCountsFor(
+      [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
+      master
+    );
+    expect(counts).toEqual([{ rayonId: 'ry1', rayonName: 'Rayon Pusat', count: 1 }]);
+  });
+
   it('places region-scoped (mobile, no location) occurrences into kawasan placement', () => {
     const tree = buildDayBoard(
       [occ({ location_id: null, region_id: 'kw1', scope: 'mobile' })],

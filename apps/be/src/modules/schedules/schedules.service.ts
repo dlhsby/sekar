@@ -474,7 +474,11 @@ export class SchedulesService {
               projected.team_category = event.is_team ? event.team_category : null;
 
               const rayon_id =
-                event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+                event.scope === 'static'
+                  ? event.location?.rayon_id
+                  : event.scope === 'mobile'
+                    ? event.region?.rayon_id
+                    : event.rayon_id;
               projected.rayon_id = rayon_id ?? null;
               projected.is_detached = false;
               projected.is_projected = true;
@@ -592,7 +596,11 @@ export class SchedulesService {
         event.scope === 'mobile' ? event.region_id : (event.location?.region_id ?? null);
       if (regionId && eventRegionId !== regionId) continue;
       const eventRayonForFilter =
-        event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+        event.scope === 'static'
+          ? event.location?.rayon_id
+          : event.scope === 'mobile'
+            ? event.region?.rayon_id
+            : event.rayon_id;
       if (rayonId && eventRayonForFilter !== rayonId) continue;
 
       // Expand the event's recurrence into concrete dates
@@ -631,7 +639,11 @@ export class SchedulesService {
               if (!existingKey.has(`${memberId}:${dateStr}`)) {
                 // Filter by rayon if needed
                 const rayon_id =
-                  event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+                  event.scope === 'static'
+                    ? event.location?.rayon_id
+                    : event.scope === 'mobile'
+                      ? event.region?.rayon_id
+                      : event.rayon_id;
                 if (rayonId && rayon_id !== rayonId) continue;
 
                 // Emit a virtual projected row
@@ -777,7 +789,11 @@ export class SchedulesService {
         event.scope === 'mobile' ? event.region_id : (event.location?.region_id ?? null);
       if (regionId && eventRegionId !== regionId) continue;
       const eventRayon =
-        event.scope === 'static' ? event.location?.rayon_id : event.region?.rayon_id;
+        event.scope === 'static'
+          ? event.location?.rayon_id
+          : event.scope === 'mobile'
+            ? event.region?.rayon_id
+            : event.rayon_id;
       if (rayonId && eventRayon !== rayonId) continue;
 
       let memberIds = event.is_team
