@@ -37,7 +37,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { UserRole } from './entities/user.entity';
-import { PaginationDto, PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
+import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { normalizePhone, isValidIndonesianMobile } from '../../common/utils/phone.util';
 import { User } from './entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
@@ -208,6 +209,9 @@ export class UsersController {
   })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 50 })
+  @ApiQuery({ name: 'search', required: false, description: 'Filter by name or username (ILIKE)' })
+  @ApiQuery({ name: 'roles', required: false, description: 'Comma-separated role codes' })
+  @ApiQuery({ name: 'role', required: false, description: 'Single role code' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'List of users retrieved successfully with pagination.',
@@ -245,10 +249,23 @@ export class UsersController {
     description: 'Unauthorized. Admin or Korlap role required.',
   })
   findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() query: FindUsersQueryDto,
     @GetUser() user: User,
   ): Promise<PaginatedResponseDto<User>> {
-    return this.usersService.findAllPaginated(paginationDto.page, paginationDto.limit, user);
+    // `roles` (comma-separated) or a single `role`; used by dropdowns to load
+    // only relevant users (e.g. schedulable satgas/linmas/korlap).
+    const roleList = query.roles
+      ? query.roles
+          .split(',')
+          .map((r) => r.trim())
+          .filter(Boolean)
+      : query.role
+        ? [query.role]
+        : undefined;
+    return this.usersService.findAllPaginated(query.page, query.limit, user, {
+      search: query.search,
+      roles: roleList,
+    });
   }
 
   /**

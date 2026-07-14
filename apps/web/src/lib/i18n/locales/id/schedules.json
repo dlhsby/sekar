@@ -210,8 +210,8 @@
       "scopeMobile": "Mobile",
       "locationLabel": "Lokasi",
       "locationPlaceholder": "Pilih lokasi…",
-      "regionLabel": "Wilayah",
-      "regionPlaceholder": "Pilih wilayah…",
+      "regionLabel": "Kawasan",
+      "regionPlaceholder": "Pilih kawasan…",
       "recurrenceLabel": "Pengulangan",
       "recurrenceNone": "Sekali",
       "recurrenceDaily": "Harian",
@@ -237,7 +237,9 @@
       "datesLabel": "Tanggal terpilih",
       "scopeRayon": "Rayon",
       "rayonLabel": "Rayon",
-      "rayonPlaceholder": "Pilih rayon…"
+      "rayonPlaceholder": "Pilih rayon…",
+      "regionScopeHint": "Kosongkan untuk cakupan Rayon (mobile se-rayon).",
+      "locationScopeHint": "Kosongkan untuk cakupan Kawasan (mobile se-kawasan)."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
@@ -314,6 +316,7 @@
       "HOLIDAY": "Hari Libur",
       "WEEKEND": "Akhir Pekan",
       "SPECIAL": "Hari Khusus"
-    }
+    },
+    "typePlaceholder": "Pilih jenis hari…"
   }
 }

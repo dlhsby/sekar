@@ -97,6 +97,8 @@ export interface RayonStats {
 export interface UserFilters {
   search?: string;
   role?: UserRole;
+  /** Filter to any of these role codes (server-side, comma-joined). */
+  roles?: string[];
   page?: number;
   limit?: number;
 }

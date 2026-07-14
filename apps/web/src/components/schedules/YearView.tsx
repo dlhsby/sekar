@@ -56,11 +56,12 @@ export function YearView({
   const todayIso = todayJakartaISODate();
   const maxCount = useMemo(() => Math.max(0, ...counts.values()), [counts]);
 
-  // Monday-first single-letter weekday headers.
+  // Monday-first short weekday headers. 'short' (Sen/Sel/Rab…) not 'narrow' —
+  // Indonesian narrow initials collide (Sen/Sel/Sab all "S").
   const weekdays = useMemo(
     () =>
       Array.from({ length: 7 }, (_, i) =>
-        new Date(2024, 0, 1 + i).toLocaleDateString(localeCode, { weekday: 'narrow' })
+        new Date(2024, 0, 1 + i).toLocaleDateString(localeCode, { weekday: 'short' })
       ),
     [localeCode]
   );

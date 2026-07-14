@@ -7,17 +7,17 @@ import { toast } from 'sonner';
 import {
   Button,
   DatePicker,
-  Dialog,
-  DialogBody,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
   Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui';
 import {
   useCreateSpecialDayOverride,
@@ -39,9 +39,9 @@ interface HolidayManagerModalProps {
 const TYPES: SpecialDayType[] = ['HOLIDAY', 'WEEKEND', 'SPECIAL'];
 
 /**
- * Manage special-day overrides (holidays / days off) from the Jadwal page. These
- * flip a date's staffing day type (HOLIDAY/WEEKEND), which the board + monitoring
- * both read for their understaffing targets.
+ * Manage special-day overrides (holidays / days off) from the Jadwal page — a
+ * side panel so a long list of days has room. The add form starts blank (nothing
+ * preselected) so adding several in a row is quick.
  */
 export function HolidayManagerModal({
   open,
@@ -58,8 +58,9 @@ export function HolidayManagerModal({
   const create = useCreateSpecialDayOverride();
   const remove = useDeleteSpecialDayOverride();
 
+  // Nothing preselected — a blank form each time keeps bulk entry fast.
   const [date, setDate] = useState<string | undefined>();
-  const [type, setType] = useState<SpecialDayType>('HOLIDAY');
+  const [type, setType] = useState<SpecialDayType | ''>('');
   const [name, setName] = useState('');
 
   const sorted = useMemo(
@@ -70,13 +71,13 @@ export function HolidayManagerModal({
   const typeLabel = (ty: SpecialDayType) => t(`schedules:holidays.type.${ty}`);
 
   const onAdd = async () => {
-    if (!date) return;
+    if (!date || !type) return;
     try {
       await create.mutateAsync({ date, day_type: type, name: name.trim() || undefined });
       toast.success(t('schedules:holidays.added'));
       setDate(undefined);
       setName('');
-      setType('HOLIDAY');
+      setType('');
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -92,13 +93,15 @@ export function HolidayManagerModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{t('schedules:holidays.title')}</DialogTitle>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      {/* Don't auto-focus the first field — it would pop the date calendar open
+          on every open; the add form should start fully blank. */}
+      <SheetContent onOpenAutoFocus={(e) => e.preventDefault()}>
+        <SheetHeader>
+          <SheetTitle>{t('schedules:holidays.title')}</SheetTitle>
           <p className="text-nb-body-sm text-nb-gray-500">{t('schedules:holidays.hint')}</p>
-        </DialogHeader>
-        <DialogBody>
+        </SheetHeader>
+        <SheetBody>
           {canManage && (
             <div className="mb-4 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-3">
               <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
@@ -108,7 +111,7 @@ export function HolidayManagerModal({
                 <DatePicker value={date} onValueChange={setDate} />
                 <Select value={type} onValueChange={(v) => setType(v as SpecialDayType)}>
                   <SelectTrigger aria-label={t('schedules:holidays.typeLabel')}>
-                    <SelectValue />
+                    <SelectValue placeholder={t('schedules:holidays.typePlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {TYPES.map((ty) => (
@@ -124,7 +127,7 @@ export function HolidayManagerModal({
                   placeholder={t('schedules:holidays.namePlaceholder')}
                   maxLength={100}
                 />
-                <Button onClick={onAdd} disabled={!date} loading={create.isPending}>
+                <Button onClick={onAdd} disabled={!date || !type} loading={create.isPending}>
                   {t('common:actions.add')}
                 </Button>
               </div>
@@ -168,8 +171,8 @@ export function HolidayManagerModal({
               ))
             )}
           </div>
-        </DialogBody>
-      </DialogContent>
-    </Dialog>
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

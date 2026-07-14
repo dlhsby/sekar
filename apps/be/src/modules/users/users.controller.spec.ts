@@ -112,7 +112,10 @@ describe('UsersController', () => {
       const result = await controller.findAll({ page: 1, limit: 50 }, mockUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, mockUser);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, mockUser, {
+        search: undefined,
+        roles: undefined,
+      });
     });
 
     it('should pass admin_rayon user context for rayon filtering', async () => {
@@ -140,7 +143,10 @@ describe('UsersController', () => {
       const result = await controller.findAll({ page: 1, limit: 50 }, adminDataUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, adminDataUser);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, adminDataUser, {
+        search: undefined,
+        roles: undefined,
+      });
     });
 
     it('should pass kepala_rayon user context for rayon filtering', async () => {
@@ -168,7 +174,10 @@ describe('UsersController', () => {
       const result = await controller.findAll({ page: 1, limit: 50 }, kepalaRayonUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaRayonUser);
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaRayonUser, {
+        search: undefined,
+        roles: undefined,
+      });
     });
   });
 

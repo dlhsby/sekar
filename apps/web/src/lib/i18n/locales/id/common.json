@@ -128,7 +128,8 @@
       "placeholder": "Pilih…",
       "searchPlaceholder": "Cari…",
       "noResults": "Tidak ditemukan",
-      "clearSelection": "Hapus pilihan"
+      "clearSelection": "Hapus pilihan",
+      "loadMore": "Muat lebih banyak"
     },
     "timePicker": {
       "selectTime": "Pilih jam",

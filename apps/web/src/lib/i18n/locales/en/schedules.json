@@ -210,8 +210,8 @@
       "scopeMobile": "Mobile",
       "locationLabel": "Location",
       "locationPlaceholder": "Select location…",
-      "regionLabel": "Region",
-      "regionPlaceholder": "Select region…",
+      "regionLabel": "Kawasan",
+      "regionPlaceholder": "Select kawasan…",
       "recurrenceLabel": "Recurrence",
       "recurrenceNone": "Once",
       "recurrenceDaily": "Daily",
@@ -237,7 +237,9 @@
       "datesLabel": "Selected dates",
       "scopeRayon": "Rayon",
       "rayonLabel": "Rayon",
-      "rayonPlaceholder": "Select rayon…"
+      "rayonPlaceholder": "Select rayon…",
+      "regionScopeHint": "Leave empty for whole-Rayon coverage.",
+      "locationScopeHint": "Leave empty for whole-Kawasan coverage."
     },
     "editScope": {
       "title": "Edit What?",
@@ -314,6 +316,7 @@
       "HOLIDAY": "Holiday",
       "WEEKEND": "Weekend",
       "SPECIAL": "Special"
-    }
+    },
+    "typePlaceholder": "Select day type…"
   }
 }

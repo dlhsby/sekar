@@ -128,7 +128,8 @@
       "placeholder": "Select…",
       "searchPlaceholder": "Search…",
       "noResults": "Not found",
-      "clearSelection": "Clear selection"
+      "clearSelection": "Clear selection",
+      "loadMore": "Load more"
     },
     "timePicker": {
       "selectTime": "Select time",
