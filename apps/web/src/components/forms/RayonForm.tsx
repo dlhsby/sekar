@@ -10,7 +10,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
-import { FormInput, Textarea } from '@/components/ui';
+import { FormInput, FormSelect, Textarea } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
@@ -19,7 +19,7 @@ import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
-import type { Rayon, MapStyleFieldsDto } from '@/types/models';
+import type { Rayon, MapStyleFieldsDto, StaffingLevel } from '@/types/models';
 import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
 
 const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
@@ -41,6 +41,7 @@ const toNullableNumber = (v: unknown): number | null => {
 type RayonFormData = MapStyleFieldsDto & {
   name: string;
   description?: string | null;
+  staffing_level: StaffingLevel;
   center_lat?: number | null;
   center_lng?: number | null;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
@@ -76,6 +77,7 @@ export function RayonForm({
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
         description: z.string().optional().nullable(),
+        staffing_level: z.enum(['region', 'location', 'rayon']),
         center_lat: z
           .number()
           .min(-90, t('validation:latitudeInvalid'))
@@ -110,6 +112,7 @@ export function RayonForm({
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
+      staffing_level: initialData?.staffing_level ?? 'region',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
       boundary_polygon: initialData?.boundary_polygon ?? null,
@@ -175,6 +178,7 @@ export function RayonForm({
   const onSubmitForm = async (data: RayonFormData) => {
     const submitData: UpdateRayonDto = {
       name: data.name,
+      staffing_level: data.staffing_level,
       // Keep the legacy single `color` column mirroring the border colour so any
       // consumer still reading it stays consistent (the UI now only edits
       // border/fill via MapStyleFields).
@@ -228,6 +232,21 @@ export function RayonForm({
             {...register('description')}
           />
         </div>
+
+        <FormSelect
+          label={t('admin:rayons.form.staffingLevel')}
+          helperText={t('admin:rayons.form.staffingLevelHelp')}
+          value={watch('staffing_level')}
+          onChange={(v) =>
+            setValue('staffing_level', v as StaffingLevel, { shouldValidate: true })
+          }
+          disabled={readOnly}
+          options={[
+            { value: 'region', label: t('admin:rayons.form.staffingLevelRegion') },
+            { value: 'location', label: t('admin:rayons.form.staffingLevelLocation') },
+            { value: 'rayon', label: t('admin:rayons.form.staffingLevelRayon') },
+          ]}
+        />
       </div>
 
       <MapStyleFields

@@ -9,6 +9,18 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
+ * The tier a rayon's staffing requirements (and understaffing) attach to.
+ * Grouped rayons define KEBUTUHAN per kawasan (`region`); Taman Aktif defines it
+ * per park (`location`); a rayon may also carry a single whole-rayon target
+ * (`rayon`). Drives where the "Kebutuhan Petugas" editor + day-board pills sit.
+ */
+export enum StaffingLevel {
+  REGION = 'region',
+  LOCATION = 'location',
+  RAYON = 'rayon',
+}
+
+/**
  * Rayon Entity
  *
  * Represents geographic sectors/districts in Surabaya.
@@ -94,6 +106,14 @@ export class Rayon {
   })
   @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
   center_lng?: number;
+
+  @ApiProperty({
+    description: 'Tier its staffing requirements attach to (region=kawasan / location / rayon)',
+    enum: StaffingLevel,
+    default: StaffingLevel.REGION,
+  })
+  @Column({ type: 'varchar', length: 20, default: StaffingLevel.REGION })
+  staffing_level: StaffingLevel;
 
   @ApiProperty({
     description: 'Timestamp when the rayon was created',

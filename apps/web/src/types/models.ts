@@ -56,6 +56,9 @@ export interface User extends Record<string, unknown> {
 /**
  * Rayon Interface
  */
+/** The tier a rayon's staffing requirements attach to (region = kawasan). */
+export type StaffingLevel = 'region' | 'location' | 'rayon';
+
 export interface Rayon {
   id: string;
   name: string;
@@ -72,6 +75,8 @@ export interface Rayon {
   fill_opacity?: number | null;
   marker_icon?: string | null;
   marker_image_url?: string | null;
+  /** Tier its staffing requirements attach to (defaults to region = kawasan). */
+  staffing_level?: StaffingLevel;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */

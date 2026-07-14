@@ -21,15 +21,16 @@ export async function seedRayons(ctx: SeedContext): Promise<void> {
   for (const r of rayons) {
     await ctx.qr.query(
       `INSERT INTO rayons
-         (id, name, description, color, center_lat, center_lng, boundary_polygon)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+         (id, name, description, color, center_lat, center_lng, boundary_polygon, staffing_level)
+       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
          color = EXCLUDED.color,
          center_lat = EXCLUDED.center_lat,
          center_lng = EXCLUDED.center_lng,
-         boundary_polygon = EXCLUDED.boundary_polygon`,
+         boundary_polygon = EXCLUDED.boundary_polygon,
+         staffing_level = EXCLUDED.staffing_level`,
       [
         r.id,
         r.name,
@@ -38,6 +39,7 @@ export async function seedRayons(ctx: SeedContext): Promise<void> {
         r.center_lat,
         r.center_lng,
         JSON.stringify(r.boundary_polygon),
+        r.staffing_level || 'region',
       ],
     );
     if (r.rayon_code) ctx.maps.rayonIdByCode.set(r.rayon_code, r.id);

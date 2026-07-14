@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { RayonsController } from './rayons.controller';
 import { RayonsService } from './rayons.service';
-import { Rayon } from './entities/rayon.entity';
+import { Rayon, StaffingLevel } from './entities/rayon.entity';
 import { Location } from '../locations/entities/location.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
@@ -15,6 +15,7 @@ describe('RayonsController', () => {
     id: '11111111-1111-1111-1111-111111111101',
     name: 'Rayon Selatan',
     description: 'Covers southern Surabaya districts',
+    staffing_level: StaffingLevel.REGION,
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: new Date('2024-01-01T00:00:00Z'),
   };

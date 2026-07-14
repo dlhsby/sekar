@@ -12,6 +12,7 @@ import {
   LocationFilters,
   PaginatedResponse,
   MapStyleFieldsDto,
+  StaffingLevel,
 } from '@/types/models';
 import { makeCrudHooks } from './crud-hooks';
 
@@ -136,6 +137,7 @@ export interface CreateRayonDto extends MapStyleFieldsDto {
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
+  staffing_level?: StaffingLevel;
 }
 
 /**
@@ -147,6 +149,7 @@ export interface UpdateRayonDto extends MapStyleFieldsDto {
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
+  staffing_level?: StaffingLevel;
   /** Official KMZ outline (Polygon or MultiPolygon). Update-only — not on create. */
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 }
