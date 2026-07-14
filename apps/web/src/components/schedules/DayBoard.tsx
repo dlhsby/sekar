@@ -253,9 +253,11 @@ function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number 
   // form is explained in full via the tooltip.
   if (target != null && target > 0) {
     const understaffed = group.countable < target;
+    // danger is a constant fill+ink pair (dark-safe); the "ok" green uses a
+    // flipping ink (success-dark) so it stays legible in dark mode.
     const cls = understaffed
       ? 'bg-nb-danger-light text-nb-danger-dark'
-      : 'bg-nb-success-light text-nb-success-dark';
+      : 'bg-nb-primary/20 text-nb-success-dark';
     return (
       <span
         title={t('schedules:board.shiftStaffTooltip', {

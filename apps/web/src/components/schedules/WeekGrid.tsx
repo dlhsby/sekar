@@ -206,10 +206,12 @@ function RoleCount({
   label: string;
   tone: 'primary' | 'info' | 'secondary' | 'muted';
 }) {
+  // Opacity tints over the flipping card + inherited (flipping) text — dark-safe
+  // (a fixed ink on these non-flipping colored fills would drop out in dark mode).
   const cls = {
-    primary: 'bg-nb-success-light text-nb-success-dark',
-    info: 'bg-nb-info-light text-nb-black',
-    secondary: 'bg-nb-warning-light text-nb-black',
+    primary: 'bg-nb-primary/25',
+    info: 'bg-nb-info/25',
+    secondary: 'bg-nb-warning/30',
     muted: 'bg-nb-gray-100 text-nb-gray-600',
   }[tone];
   return (
