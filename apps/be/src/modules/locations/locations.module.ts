@@ -3,7 +3,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LocationsService } from './locations.service';
 import { LocationsController } from './locations.controller';
 import { Location } from './entities/location.entity';
-import { LocationShiftCapacity } from './entities/location-shift-capacity.entity';
 import { User } from '../users/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { LocationTypesModule } from '../location-types/location-types.module';
@@ -17,7 +16,7 @@ import { MonitoringModule } from '../monitoring/monitoring.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Location, LocationShiftCapacity, User]),
+    TypeOrmModule.forFeature([Location, User]),
     forwardRef(() => AuthModule),
     LocationTypesModule,
     forwardRef(() => MonitoringModule),

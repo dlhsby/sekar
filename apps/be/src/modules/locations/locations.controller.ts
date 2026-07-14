@@ -23,8 +23,6 @@ import { LocationsService } from './locations.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { Location } from './entities/location.entity';
-import { LocationShiftCapacity } from './entities/location-shift-capacity.entity';
-import { SetLocationCapacityDto } from './dto/location-capacity.dto';
 import {
   AreaBoundaryResponseDto,
   UpdateAreaBoundaryDto,
@@ -34,7 +32,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
-import { USER_MANAGERS, MONITORING_AREA, ROSTER_VIEWERS } from '../users/constants/role-groups';
+import { USER_MANAGERS, MONITORING_AREA } from '../users/constants/role-groups';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 
 /**
@@ -165,37 +163,6 @@ export class LocationsController {
    * @param id - Location UUID
    * @returns The area
    */
-  @Get('capacity')
-  @Roles(...ROSTER_VIEWERS)
-  @ApiOperation({
-    summary: 'All location staffing capacities (bulk; for the schedule board)',
-  })
-  @ApiResponse({ status: 200, type: [LocationShiftCapacity] })
-  getAllCapacities(): Promise<LocationShiftCapacity[]> {
-    return this.locationsService.getAllCapacities();
-  }
-
-  @Get(':id/capacity')
-  @Roles(...ROSTER_VIEWERS)
-  @ApiOperation({ summary: 'Per-shift staffing capacity targets for a location' })
-  @ApiParam({ name: 'id', description: 'Location UUID' })
-  @ApiResponse({ status: 200, type: [LocationShiftCapacity] })
-  getLocationCapacity(@Param('id') id: string): Promise<LocationShiftCapacity[]> {
-    return this.locationsService.getLocationCapacity(id);
-  }
-
-  @Put(':id/capacity')
-  @Roles(...USER_MANAGERS)
-  @ApiOperation({ summary: 'Set per-shift staffing capacity targets for a location' })
-  @ApiParam({ name: 'id', description: 'Location UUID' })
-  @ApiResponse({ status: 200, type: [LocationShiftCapacity] })
-  setLocationCapacity(
-    @Param('id') id: string,
-    @Body() dto: SetLocationCapacityDto,
-  ): Promise<LocationShiftCapacity[]> {
-    return this.locationsService.setLocationCapacity(id, dto.items);
-  }
-
   @Get(':id')
   @ApiOperation({
     summary: 'Get area by ID',

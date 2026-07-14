@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { LocationsService } from './locations.service';
 import { Location } from './entities/location.entity';
-import { LocationShiftCapacity } from './entities/location-shift-capacity.entity';
 import { User } from '../users/entities/user.entity';
 import { LocationTypesService } from '../location-types/location-types.service';
 import { CreateLocationDto } from './dto/create-location.dto';
@@ -72,10 +71,6 @@ describe('LocationsService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
-        },
-        {
-          provide: getRepositoryToken(LocationShiftCapacity),
-          useValue: { find: jest.fn(), upsert: jest.fn() },
         },
         {
           provide: LocationTypesService,

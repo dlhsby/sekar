@@ -2,8 +2,6 @@ import { Injectable, NotFoundException, BadRequestException, Logger } from '@nes
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Location } from './entities/location.entity';
-import { LocationShiftCapacity } from './entities/location-shift-capacity.entity';
-import { CapacityItemDto } from './dto/location-capacity.dto';
 import { User, UserRole } from '../users/entities/user.entity';
 import { MONITORING_CITY } from '../users/constants/role-groups';
 import { CreateLocationDto } from './dto/create-location.dto';
@@ -32,46 +30,8 @@ export class LocationsService {
     private readonly locationRepository: Repository<Location>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    @InjectRepository(LocationShiftCapacity)
-    private readonly capacityRepository: Repository<LocationShiftCapacity>,
     private readonly locationTypesService: LocationTypesService,
   ) {}
-
-  /** All location capacity rows (bulk read for the schedule board). */
-  getAllCapacities(): Promise<LocationShiftCapacity[]> {
-    return this.capacityRepository.find();
-  }
-
-  /** Per-shift capacity targets for a single location (detail page). */
-  async getLocationCapacity(locationId: string): Promise<LocationShiftCapacity[]> {
-    const location = await this.locationRepository.findOne({ where: { id: locationId } });
-    if (!location) throw new NotFoundException(`Location ${locationId} not found`);
-    return this.capacityRepository.find({ where: { location_id: locationId } });
-  }
-
-  /**
-   * Upsert the per-shift targets for a location. A target of 0 is kept (means
-   * "no requirement" — never understaffed).
-   */
-  async setLocationCapacity(
-    locationId: string,
-    items: CapacityItemDto[],
-  ): Promise<LocationShiftCapacity[]> {
-    const location = await this.locationRepository.findOne({ where: { id: locationId } });
-    if (!location) throw new NotFoundException(`Location ${locationId} not found`);
-
-    for (const item of items) {
-      await this.capacityRepository.upsert(
-        {
-          location_id: locationId,
-          shift_definition_id: item.shift_definition_id,
-          target_count: item.target_count,
-        },
-        ['location_id', 'shift_definition_id'],
-      );
-    }
-    return this.capacityRepository.find({ where: { location_id: locationId } });
-  }
 
   /**
    * Create a new area

@@ -47,6 +47,52 @@ export class LocationStaffRequirementsService {
     });
   }
 
+  /** All requirements (bulk read for the schedule board's understaffing). */
+  findAll(): Promise<LocationStaffRequirement[]> {
+    return this.requirementRepository.find();
+  }
+
+  /**
+   * Replace a location's per-(shift, role, day_type) targets. Upserts each item
+   * (find-or-update — the table has no unique constraint).
+   */
+  async bulkSetForLocation(
+    locationId: string,
+    items: Array<{
+      shift_definition_id: string;
+      role: StaffRole;
+      day_type: DayType;
+      required_count: number;
+    }>,
+  ): Promise<LocationStaffRequirement[]> {
+    await this.locationsService.findOne(locationId);
+    for (const it of items) {
+      const existing = await this.requirementRepository.findOne({
+        where: {
+          location_id: locationId,
+          shift_definition_id: it.shift_definition_id,
+          role: it.role,
+          day_type: it.day_type,
+        },
+      });
+      if (existing) {
+        existing.required_count = it.required_count;
+        await this.requirementRepository.save(existing);
+      } else {
+        await this.requirementRepository.save(
+          this.requirementRepository.create({
+            location_id: locationId,
+            shift_definition_id: it.shift_definition_id,
+            role: it.role,
+            day_type: it.day_type,
+            required_count: it.required_count,
+          }),
+        );
+      }
+    }
+    return this.requirementRepository.find({ where: { location_id: locationId } });
+  }
+
   /**
    * Get all staff requirements for a specific shift within an area
    *

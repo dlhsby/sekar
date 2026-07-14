@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Patch,
   Delete,
   Param,
@@ -23,6 +24,7 @@ import { LocationStaffRequirementsService } from './location-staff-requirements.
 import { LocationStaffRequirement, DayType } from './entities/location-staff-requirement.entity';
 import { CreateLocationStaffRequirementDto } from './dto/create-location-staff-requirement.dto';
 import { UpdateLocationStaffRequirementDto } from './dto/update-location-staff-requirement.dto';
+import { SetStaffRequirementsDto } from './dto/set-staff-requirements.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -75,6 +77,20 @@ export class LocationStaffRequirementsController {
   })
   findByArea(@Param('areaId') areaId: string): Promise<LocationStaffRequirement[]> {
     return this.staffRequirementsService.findByAreaId(areaId);
+  }
+
+  @Put()
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Bulk set a location’s staffing requirements (per shift/role/day-type)',
+  })
+  @ApiParam({ name: 'locationId', description: 'Location UUID' })
+  @ApiResponse({ status: 200, type: [LocationStaffRequirement] })
+  bulkSet(
+    @Param('locationId') locationId: string,
+    @Body() dto: SetStaffRequirementsDto,
+  ): Promise<LocationStaffRequirement[]> {
+    return this.staffRequirementsService.bulkSetForLocation(locationId, dto.items);
   }
 
   /**

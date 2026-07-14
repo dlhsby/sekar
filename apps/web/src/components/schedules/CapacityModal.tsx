@@ -14,7 +14,11 @@ import {
   DialogTitle,
 } from '@/components/ui';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useLocationCapacity, useSetLocationCapacity } from '@/lib/api/location-capacity';
+import {
+  useLocationStaffRequirements,
+  useSetStaffRequirements,
+  type StaffRole,
+} from '@/lib/api/location-staff-requirements';
 import { getErrorMessage } from '@/lib/api/client';
 
 interface CapacityModalProps {
@@ -24,41 +28,62 @@ interface CapacityModalProps {
   locationName: string | null;
 }
 
-/** Set the per-shift staffing target (satgas+linmas) for a location. */
+const ROLES: StaffRole[] = ['satgas', 'linmas'];
+
+/**
+ * Set a location's weekday staffing requirement (Satgas + Linmas per shift) —
+ * the source monitoring also reads. Weekend/holiday targets are a follow-up.
+ */
 export function CapacityModal({
   open,
   onOpenChange,
   locationId,
   locationName,
 }: CapacityModalProps) {
-  const { t } = useTranslation(['schedules', 'common']);
+  const { t } = useTranslation(['schedules', 'roles', 'common']);
   const { data: shifts = [] } = useShiftDefinitions();
-  const { data: current = [] } = useLocationCapacity(locationId ?? '', open && !!locationId);
-  const setCapacity = useSetLocationCapacity();
+  const { data: current = [] } = useLocationStaffRequirements(
+    locationId ?? '',
+    open && !!locationId
+  );
+  const setReq = useSetStaffRequirements();
 
-  const [values, setValues] = useState<Record<string, number>>({});
+  // values[shiftId][role] = required count (weekday)
+  const [values, setValues] = useState<Record<string, Record<StaffRole, number>>>({});
 
-  // Seed the steppers from the saved targets whenever the modal (re)opens.
   useEffect(() => {
     if (!open) return;
-    const seed: Record<string, number> = {};
-    for (const row of current) seed[row.shift_definition_id] = row.target_count;
+    const seed: Record<string, Record<StaffRole, number>> = {};
+    for (const row of current) {
+      if (row.day_type !== 'WEEKDAY') continue;
+      (seed[row.shift_definition_id] ??= { satgas: 0, linmas: 0 })[row.role] = row.required_count;
+    }
     setValues(seed);
   }, [open, current]);
 
-  const setVal = (shiftId: string, next: number) =>
-    setValues((v) => ({ ...v, [shiftId]: Math.max(0, Math.min(1000, next)) }));
+  const get = (shiftId: string, role: StaffRole) => values[shiftId]?.[role] ?? 0;
+  const set = (shiftId: string, role: StaffRole, next: number) =>
+    setValues((v) => ({
+      ...v,
+      [shiftId]: {
+        satgas: v[shiftId]?.satgas ?? 0,
+        linmas: v[shiftId]?.linmas ?? 0,
+        [role]: Math.max(0, Math.min(1000, next)),
+      },
+    }));
 
   const onSave = async () => {
     if (!locationId) return;
     try {
-      await setCapacity.mutateAsync({
-        locationId,
-        items: shifts.map((s) => ({
+      const items = shifts.flatMap((s) =>
+        ROLES.map((role) => ({
           shift_definition_id: s.id,
-          target_count: values[s.id] ?? 0,
-        })),
-      });
+          role,
+          day_type: 'WEEKDAY' as const,
+          required_count: get(s.id, role),
+        }))
+      );
+      await setReq.mutateAsync({ locationId, items });
       toast.success(t('schedules:staffCapacity.saved'));
       onOpenChange(false);
     } catch (err) {
@@ -78,51 +103,77 @@ export function CapacityModal({
             {t('schedules:staffCapacity.hint')}
           </p>
           <div className="flex flex-col gap-2">
-            {shifts.map((s) => {
-              const n = values[s.id] ?? 0;
-              return (
-                <div
-                  key={s.id}
-                  className="flex items-center gap-3 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 px-3 py-2"
-                >
+            {shifts.map((s) => (
+              <div
+                key={s.id}
+                className="rounded-nb-base border-2 border-nb-black bg-nb-gray-50 px-3 py-2"
+              >
+                <div className="mb-2 flex items-baseline gap-2">
                   <span className="font-bold">{s.name}</span>
                   <span className="text-nb-caption text-nb-gray-500">
                     {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
                   </span>
-                  <div className="ml-auto flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setVal(s.id, n - 1)}
-                      className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50 disabled:opacity-40"
-                      disabled={n <= 0}
-                      aria-label={t('common:actions.decrease', 'Decrease')}
-                    >
-                      <Minus className="size-4" />
-                    </button>
-                    <span className="w-8 text-center font-bold tabular-nums">{n}</span>
-                    <button
-                      type="button"
-                      onClick={() => setVal(s.id, n + 1)}
-                      className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50"
-                      aria-label={t('common:actions.increase', 'Increase')}
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  </div>
                 </div>
-              );
-            })}
+                <div className="flex flex-wrap gap-3">
+                  {ROLES.map((role) => (
+                    <RoleStepper
+                      key={role}
+                      label={t(`roles:${role}`, role)}
+                      value={get(s.id, role)}
+                      onChange={(n) => set(s.id, role, n)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             {t('common:actions.cancel')}
           </Button>
-          <Button onClick={onSave} loading={setCapacity.isPending}>
+          <Button onClick={onSave} loading={setReq.isPending}>
             {t('common:actions.save')}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function RoleStepper({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (n: number) => void;
+}) {
+  const { t } = useTranslation(['common']);
+  return (
+    <div className="flex items-center gap-2">
+      <span className="w-14 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-600">
+        {label}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(value - 1)}
+        disabled={value <= 0}
+        aria-label={t('common:actions.decrease', 'Decrease')}
+        className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50 disabled:opacity-40"
+      >
+        <Minus className="size-4" />
+      </button>
+      <span className="w-7 text-center font-bold tabular-nums">{value}</span>
+      <button
+        type="button"
+        onClick={() => onChange(value + 1)}
+        aria-label={t('common:actions.increase', 'Increase')}
+        className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50"
+      >
+        <Plus className="size-4" />
+      </button>
+    </div>
   );
 }
