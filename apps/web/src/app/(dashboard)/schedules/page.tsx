@@ -25,6 +25,7 @@ import {
 } from 'date-fns';
 import { Button, FormSelect, PageHeader, Skeleton } from '@/components/ui';
 import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
+import { ScheduleFilterChips } from '@/components/schedules/ScheduleFilterChips';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard } from '@/components/schedules/DayBoard';
@@ -273,12 +274,13 @@ export default function SchedulesPage() {
         }
       />
 
-      <div className="flex flex-wrap items-end gap-3">
+      {/* Single controls row: range select + Google-Calendar-style search */}
+      <div className="flex flex-wrap items-center gap-3">
         <FormSelect
           label={t('schedules:controls.viewLabel')}
           value={calendarView}
           onChange={(v) => setCalendarView(v as CalendarView)}
-          className="w-40"
+          className="w-36"
           options={[
             { value: 'year', label: t('schedules:calendar.views.year') },
             { value: 'month', label: t('schedules:calendar.views.month') },
@@ -286,17 +288,18 @@ export default function SchedulesPage() {
             { value: 'day', label: t('schedules:calendar.views.day') },
           ]}
         />
+        <ScheduleSearch
+          filters={filters}
+          onChange={setFilters}
+          lockRayon={lockRayon}
+          onNavigateDate={(iso) => {
+            setAnchor(new Date(`${iso}T00:00:00`));
+            setCalendarView('day');
+          }}
+        />
       </div>
 
-      <ScheduleSearch
-        filters={filters}
-        onChange={setFilters}
-        lockRayon={lockRayon}
-        onNavigateDate={(iso) => {
-          setAnchor(new Date(`${iso}T00:00:00`));
-          setCalendarView('day');
-        }}
-      />
+      <ScheduleFilterChips filters={filters} onChange={setFilters} lockRayon={lockRayon} />
 
       {calendarView === 'year' ? (
         <YearView
