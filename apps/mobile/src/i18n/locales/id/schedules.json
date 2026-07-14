@@ -8,7 +8,9 @@
     "loadFailed": "Gagal memuat jadwal",
     "retryLabel": "Coba Lagi",
     "emptyTitle": "Belum ada jadwal hari ini",
-    "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in."
+    "emptyDescription": "Anda belum memiliki jadwal untuk hari ini (mungkin bekerja ad-hoc sesuai penugasan). Anda tetap bisa melakukan clock-in.",
+    "prevDay": "Hari sebelumnya",
+    "nextDay": "Hari berikutnya"
   },
   "status": {
     "present": "Hadir",
