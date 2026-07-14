@@ -79,6 +79,13 @@ requirement. Seeded from the client "Kebutuhan Satgas" workbook (satgas-only; li
   clone first** (the Phase-4 Step-8 dress-rehearsal covers scheduling; extend to monitoring before deploy).
 - Caveat: some migration `down()` paths assume no multi-shift roster rows — forward-only deploy, so not a
   blocker; documented in the migration files.
+- **Verified (Step 8 dress-rehearsal, 2026-07-15):** the full 67-migration chain runs clean on an empty DB,
+  then the seeder populates (kawasan + areas + 195 staffing rows, 0 duplicates). The data-adoption
+  migrations (`17496` kawasan, `17500` staffing) **skip on a fresh DB** (seeder owns fresh) and run on an
+  existing DB (live adoption). `17500` is **authoritative** — it clears prior auto-seeded staffing (config
+  data, re-derivable) before inserting the workbook numbers, so it's not purely additive. `17499` drops the
+  incompatible pre-revamp `uq_area_staff_requirements`. The **local UI drive** (start app, log in, walk the
+  supervisor flows) is still pending — do it before the actual staging deploy.
 
 ## Also deferred (non-blocking)
 

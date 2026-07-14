@@ -12,6 +12,15 @@ export class PolymorphicStaffRequirements17499000000000 implements MigrationInte
   name = 'PolymorphicStaffRequirements17499000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Drop the pre-revamp location-only unique (location_id, shift, role, day_type):
+    // it is incompatible with the polymorphic model (region/rayon rows have a NULL
+    // location_id; PG14 treats those NULLs as distinct, so it neither dedups them
+    // nor allows a location that a kawasan-level row also covers). Uniqueness is now
+    // managed by deterministic ids + app-level find-or-update. Sync-built DBs never
+    // had this constraint, so this reconciles the migration path to match.
+    await queryRunner.query(
+      `ALTER TABLE "location_staff_requirements" DROP CONSTRAINT IF EXISTS "uq_area_staff_requirements"`,
+    );
     await queryRunner.query(
       `ALTER TABLE "location_staff_requirements" ADD COLUMN IF NOT EXISTS "region_id" uuid`,
     );

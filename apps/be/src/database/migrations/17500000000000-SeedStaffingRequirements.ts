@@ -12,6 +12,21 @@ export class SeedStaffingRequirements17500000000000 implements MigrationInterfac
   name = 'SeedStaffingRequirements17500000000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Data-adoption migration (see 17496): the rows reference regions/locations,
+    // which only exist on a DB that already holds the base geography. On a FRESH
+    // migration-built DB the seeder populates staffing itself, so skip here to
+    // avoid FK violations against empty parents.
+    const regionRows = (await queryRunner.query(
+      `SELECT count(*)::int AS n FROM "regions"`,
+    )) as Array<{ n: number }>;
+    if (Number(regionRows[0]?.n ?? 0) === 0) return;
+
+    // The workbook is now the authoritative staffing source, superseding the old
+    // ad-hoc per-area seeding. On live adoption, clear the prior auto-seeded
+    // requirements (config data, re-derivable) so kawasan/location targets aren't
+    // duplicated (and the retired location-level rows for grouped rayons go away).
+    await queryRunner.query(`DELETE FROM "location_staff_requirements"`);
+
     await queryRunner.query(`
       INSERT INTO "location_staff_requirements"
         (id, location_id, region_id, rayon_id, shift_definition_id, role, required_count, day_type)
