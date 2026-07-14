@@ -88,4 +88,12 @@ export interface Schedule {
     name: string;
   } | null;
   schedule_areas: ScheduleArea[];
+  // Team (regu) context when the assignment belongs to a crew (ADR-047/048).
+  team_category?: {
+    id: string;
+    name: string;
+  } | null;
+  // Virtual future occurrence expanded from an active event beyond the
+  // materialization horizon (not yet a persisted roster row).
+  is_projected?: boolean;
 }

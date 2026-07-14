@@ -14,10 +14,18 @@ jest.mock('../../../store/hooks', () => ({
   useAppSelector: (selector: any) => selector({ auth: mockAuthState }),
 }));
 
+// The day view defaults to "today", so the roster must be dated today to render.
+function todayKey(): string {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
 const todayRoster: any = {
   id: 'roster-today',
   user_id: 'user-1',
-  schedule_date: '2020-01-01',
+  schedule_date: todayKey(),
   status: 'present',
   shift_definition: {
     id: 'shift-1',
@@ -34,25 +42,40 @@ const todayRoster: any = {
 describe('MyScheduleScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.spyOn(schedulesApi, 'getMyRoster').mockResolvedValue({ data: null } as any);
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [] } as any);
   });
 
-  it('displays the daily roster (status, shift window, areas, rayon)', async () => {
-    jest.spyOn(schedulesApi, 'getMyRoster').mockResolvedValue({ data: todayRoster } as any);
+  it("displays today's roster (status, shift, time, areas, rayon)", async () => {
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [todayRoster] } as any);
 
     const { getByText } = render(<MyScheduleScreen />);
 
-    await waitFor(() => expect(getByText('Jadwal Hari Ini')).toBeTruthy());
+    await waitFor(() => expect(getByText('Shift Pagi')).toBeTruthy());
     expect(getByText('Hadir')).toBeTruthy();
     // Shift window is normalised to HH:MM.
-    expect(getByText('Shift Pagi · 06:00–15:00')).toBeTruthy();
+    expect(getByText('06:00–15:00')).toBeTruthy();
     expect(getByText('Taman Roster')).toBeTruthy();
     expect(getByText('Rayon 1')).toBeTruthy();
-    expect(schedulesApi.getMyRoster).toHaveBeenCalled();
+    expect(schedulesApi.getMyRange).toHaveBeenCalled();
+  });
+
+  it('shows team context and a projected tag when present', async () => {
+    const teamProjected = {
+      ...todayRoster,
+      id: 'roster-team',
+      is_projected: true,
+      team_category: { id: 'tc-1', name: 'Perawatan' },
+    };
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [teamProjected] } as any);
+
+    const { getByText } = render(<MyScheduleScreen />);
+
+    await waitFor(() => expect(getByText('Tim: Perawatan')).toBeTruthy());
+    expect(getByText('Rencana')).toBeTruthy();
   });
 
   it('shows an empty state when there is no roster for today', async () => {
-    jest.spyOn(schedulesApi, 'getMyRoster').mockResolvedValue({ data: null } as any);
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [] } as any);
 
     const { getByText } = render(<MyScheduleScreen />);
 
@@ -60,7 +83,7 @@ describe('MyScheduleScreen', () => {
   });
 
   it('surfaces an error state when the request fails', async () => {
-    jest.spyOn(schedulesApi, 'getMyRoster').mockResolvedValue({ error: 'Gagal memuat' } as any);
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ error: 'Gagal memuat' } as any);
 
     const { getByText } = render(<MyScheduleScreen />);
 

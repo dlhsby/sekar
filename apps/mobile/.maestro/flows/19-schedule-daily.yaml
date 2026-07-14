@@ -1,0 +1,58 @@
+appId: com.wahyutrip.sekar
+---
+# 19-schedule-daily.yaml
+# Worker's daily schedule view — day-only with a date picker (no week/month).
+# satgas1 logs in, opens Profil → Jadwal Saya, and checks the daily view + picker.
+
+- launchApp
+
+# Skip onboarding if this is a fresh install.
+- tapOn:
+    text: 'Lewati'
+    optional: true
+- waitForAnimationToEnd
+
+# Log in when the login screen is shown (local backend seed: satgas1 / 12345678).
+- runFlow:
+    when:
+      visible:
+        id: username-input
+    commands:
+      - tapOn:
+          id: username-input
+      - inputText: satgas1
+      - tapOn:
+          id: password-input
+      - inputText: '12345678'
+      - tapOn:
+          id: login-button
+      - extendedWaitUntil:
+          visible:
+            text: 'Profil'
+          timeout: 12000
+
+# Home → Profil → Jadwal Saya.
+- tapOn:
+    text: 'Profil'
+    optional: true
+- waitForAnimationToEnd
+- tapOn:
+    text: 'Jadwal Saya'
+- extendedWaitUntil:
+    visible:
+      id: date-picker-trigger
+    timeout: 10000
+
+# Daily view chrome.
+- assertVisible:
+    id: today-btn
+- assertVisible:
+    id: prev-day
+- assertVisible:
+    id: next-day
+
+# The date picker opens on tap.
+- tapOn:
+    id: date-picker-trigger
+- waitForAnimationToEnd
+- takeScreenshot: schedule-daily-picker

@@ -14,9 +14,10 @@ import {
   NBBackgroundPattern,
   NBText,
   NBSkeleton,
+  NBDatePicker,
 } from '../../components/nb';
 import {StatusPill} from '../../components/home/StatusPill';
-import {getMyRoster} from '../../services/api/schedulesApi';
+import {getMyRange} from '../../services/api/schedulesApi';
 import {useAppSelector} from '../../store/hooks';
 import {
   nbColors,
@@ -27,15 +28,25 @@ import {
 } from '../../constants/nbTokens';
 import type {Schedule} from '../../types/shift.types';
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
+// ─── Date helpers (WIB-naive YYYY-MM-DD, matching the API's DATE columns) ─────
 
-/** WIB-naive local YYYY-MM-DD (matches the DATE columns the API returns). */
-function todayKey(): string {
-  const d = new Date();
+function keyOf(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return `${d.getFullYear()}-${m}-${day}`;
 }
+function todayKey(): string {
+  return keyOf(new Date());
+}
+function parseKey(k: string): Date {
+  return new Date(`${k}T00:00:00`);
+}
+function addDays(d: Date, n: number): Date {
+  const r = new Date(d);
+  r.setDate(r.getDate() + n);
+  return r;
+}
+const hhmm = (t?: string): string => (t ? t.slice(0, 5) : '--:--');
 
 const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
   present: {tone: 'ok' as const, label: t('schedules:status.present')},
@@ -50,10 +61,7 @@ const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
   off: {tone: 'neutral' as const, label: t('schedules:status.off')},
 });
 
-/** Strip "HH:MM:SS" → "HH:MM". */
-const hhmm = (t?: string): string => (t ? t.slice(0, 5) : '--:--');
-
-// ─── Row ──────────────────────────────────────────────────────────────────────
+// ─── Roster card ──────────────────────────────────────────────────────────────
 
 function RosterRow({
   roster,
@@ -69,20 +77,37 @@ function RosterRow({
     roster.schedule_areas.map(a => a.area.name).join(', ') ||
     t('schedules:mySchedule.noAreasAssigned');
 
+  const team = roster.team_category;
   return (
-    <View
-      style={[styles.card, styles.rosterCard]}
-      testID={`roster-${roster.id}`}>
+    <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>
       <View style={styles.cardHeader}>
-        <NBText
-          variant="mono-sm"
-          color="gray700"
-          uppercase
-          style={styles.rosterLabel}>
-          {t('schedules:mySchedule.todayLabel')}
-        </NBText>
+        <View style={styles.headerLeft}>
+          <NBText variant="mono-sm" color="gray700" uppercase>
+            {shift ? shift.name : t('schedules:mySchedule.noShiftDefined')}
+          </NBText>
+          {roster.is_projected && (
+            <View style={styles.projectedTag}>
+              <NBText variant="caption" uppercase color="gray600">
+                {t('schedules:mySchedule.projected')}
+              </NBText>
+            </View>
+          )}
+        </View>
         <StatusPill dot tone={pill.tone} label={pill.label} />
       </View>
+
+      {team && (
+        <View style={styles.rayonRow}>
+          <MaterialCommunityIcons
+            name="account-group-outline"
+            size={16}
+            color={nbColors.gray600}
+          />
+          <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
+            {t('schedules:mySchedule.team', {name: team.name})}
+          </NBText>
+        </View>
+      )}
 
       <View style={styles.shiftRow}>
         <MaterialCommunityIcons
@@ -92,7 +117,7 @@ function RosterRow({
         />
         <NBText variant="body-sm" color="gray700" style={styles.shiftText}>
           {shift
-            ? `${shift.name} · ${hhmm(shift.start_time)}–${hhmm(shift.end_time)}`
+            ? `${hhmm(shift.start_time)}–${hhmm(shift.end_time)}`
             : t('schedules:mySchedule.noShiftDefined')}
         </NBText>
       </View>
@@ -124,41 +149,35 @@ function RosterRow({
   );
 }
 
-// ─── Screen ─────────────────────────────────────────────────────────────────
+// ─── Screen — daily view with a date picker ───────────────────────────────────
 
 export function MyScheduleScreen(): React.JSX.Element {
   const {t, i18n} = useTranslation();
   const userId = useAppSelector(state => state.auth.user?.id);
-  const [roster, setRoster] = useState<Schedule | null>(null);
+  const localeCode = i18n.language?.startsWith('en') ? 'en-US' : 'id-ID';
+
+  const today = useMemo(() => todayKey(), []);
+  const [selectedDate, setSelectedDate] = useState<string>(today);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [rows, setRows] = useState<Schedule[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const today = useMemo(() => todayKey(), []);
-  // Personal calendar: navigate to any day (defaults to today).
-  const [selectedDate, setSelectedDate] = useState<string>(today);
-
   const stepDay = useCallback((dir: number) => {
-    setSelectedDate(cur => {
-      const d = new Date(`${cur}T00:00:00`);
-      d.setDate(d.getDate() + dir);
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${d.getFullYear()}-${m}-${day}`;
-    });
+    setSelectedDate(cur => keyOf(addDays(parseKey(cur), dir)));
   }, []);
 
-  const dateLabel = useMemo(() => {
-    const d = new Date(`${selectedDate}T00:00:00`);
-    return d.toLocaleDateString(
-      i18n.language?.startsWith('en') ? 'en-US' : 'id-ID',
-      {
+  const dateLabel = useMemo(
+    () =>
+      parseKey(selectedDate).toLocaleDateString(localeCode, {
         weekday: 'long',
         day: 'numeric',
         month: 'long',
-      },
-    );
-  }, [selectedDate, i18n.language]);
+        year: 'numeric',
+      }),
+    [selectedDate, localeCode],
+  );
 
   const fetchRoster = useCallback(async () => {
     if (!userId) {
@@ -168,12 +187,13 @@ export function MyScheduleScreen(): React.JSX.Element {
     }
     try {
       setError(null);
-      const res = await getMyRoster(selectedDate);
+      // A day range so a worker with multiple non-overlapping shifts sees all.
+      const res = await getMyRange(selectedDate, selectedDate);
       if (res.error) {
         setError(res.error);
         return;
       }
-      setRoster(res.data ?? null);
+      setRows(res.data ?? []);
     } catch (err: unknown) {
       setError(
         err instanceof Error
@@ -198,35 +218,53 @@ export function MyScheduleScreen(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <NBBackgroundPattern />
+
       <View style={styles.navRow}>
         <Pressable
           onPress={() => stepDay(-1)}
           accessibilityLabel={t('schedules:mySchedule.prevDay')}
           hitSlop={8}
-          style={styles.navBtn}>
+          style={styles.navBtn}
+          testID="prev-day">
           <MaterialCommunityIcons
             name="chevron-left"
             size={22}
             color={nbColors.black}
           />
         </Pressable>
+
         <View style={styles.navCenter}>
-          <NBText variant="body" style={styles.navDate}>
-            {dateLabel}
-          </NBText>
+          {/* Tap the date to jump to any day via the picker. */}
+          <Pressable
+            onPress={() => setPickerOpen(true)}
+            style={styles.dateBtn}
+            accessibilityRole="button"
+            testID="date-picker-trigger">
+            <MaterialCommunityIcons
+              name="calendar-month-outline"
+              size={16}
+              color={nbColors.gray700}
+            />
+            <NBText variant="body" style={styles.navDate}>
+              {dateLabel}
+            </NBText>
+          </Pressable>
           <Pressable
             onPress={() => setSelectedDate(today)}
-            style={styles.todayBtn}>
+            style={styles.todayBtn}
+            testID="today-btn">
             <NBText variant="caption" uppercase color="gray700">
               {t('schedules:mySchedule.today')}
             </NBText>
           </Pressable>
         </View>
+
         <Pressable
           onPress={() => stepDay(1)}
           accessibilityLabel={t('schedules:mySchedule.nextDay')}
           hitSlop={8}
-          style={styles.navBtn}>
+          style={styles.navBtn}
+          testID="next-day">
           <MaterialCommunityIcons
             name="chevron-right"
             size={22}
@@ -234,6 +272,7 @@ export function MyScheduleScreen(): React.JSX.Element {
           />
         </Pressable>
       </View>
+
       {isLoading ? (
         <View style={styles.listContent}>
           <NBSkeleton height={96} style={styles.skeleton} />
@@ -255,7 +294,7 @@ export function MyScheduleScreen(): React.JSX.Element {
             onCTA={onRefresh}
           />
         </View>
-      ) : !roster ? (
+      ) : rows.length === 0 ? (
         <View style={styles.stateWrap}>
           <NBEmptyState
             icon={
@@ -279,9 +318,22 @@ export function MyScheduleScreen(): React.JSX.Element {
               tintColor={nbColors.primary}
             />
           }>
-          <RosterRow roster={roster} t={t} />
+          {rows.map(r => (
+            <RosterRow key={r.id} roster={r} t={t} />
+          ))}
         </ScrollView>
       )}
+
+      <NBDatePicker
+        triggerless
+        visible={pickerOpen}
+        value={parseKey(selectedDate)}
+        onChange={d => {
+          setSelectedDate(keyOf(d));
+          setPickerOpen(false);
+        }}
+        onRequestClose={() => setPickerOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -308,6 +360,18 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   navCenter: {flex: 1, alignItems: 'center', gap: nbSpacing.xs},
+  dateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.white,
+    paddingHorizontal: nbSpacing.sm,
+    paddingVertical: nbSpacing.xs,
+    ...nbShadows.sm,
+  },
   navDate: {textAlign: 'center'},
   todayBtn: {
     borderWidth: nbBorders.widthBase,
@@ -337,7 +401,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: nbSpacing.sm,
   },
-  rosterLabel: {color: nbColors.gray600},
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    flexShrink: 1,
+  },
+  projectedTag: {
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.gray300,
+    borderStyle: 'dashed',
+    borderRadius: nbRadius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
   areaRow: {
     flexDirection: 'row',
     alignItems: 'center',
