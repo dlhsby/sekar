@@ -246,9 +246,11 @@ function LocationCard({
 }
 
 function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number }) {
+  const { t } = useTranslation(['schedules']);
   const short = group.shift.name.match(/\d+/)?.[0] ?? group.shift.name;
   // With a capacity target, show countable (satgas+linmas) vs target and flag
-  // understaffing; otherwise just the scheduled total.
+  // understaffing; otherwise just the scheduled total. The compact "S1·2/3"
+  // form is explained in full via the tooltip.
   if (target != null && target > 0) {
     const understaffed = group.countable < target;
     const cls = understaffed
@@ -256,6 +258,11 @@ function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number 
       : 'bg-nb-success-light text-nb-success-dark';
     return (
       <span
+        title={t('schedules:board.shiftStaffTooltip', {
+          shift: group.shift.name,
+          countable: group.countable,
+          target,
+        })}
         className={`inline-flex items-center gap-1 rounded-full border-2 border-nb-black px-2 py-0.5 text-nb-caption font-bold tabular-nums ${cls}`}
       >
         S{short}·{group.countable}/{target}
@@ -264,7 +271,13 @@ function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number 
     );
   }
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border-2 border-nb-black bg-nb-gray-50 px-2 py-0.5 text-nb-caption font-bold tabular-nums text-nb-gray-600">
+    <span
+      title={t('schedules:board.shiftTotalTooltip', {
+        shift: group.shift.name,
+        count: group.total,
+      })}
+      className="inline-flex items-center gap-1 rounded-full border-2 border-nb-black bg-nb-gray-50 px-2 py-0.5 text-nb-caption font-bold tabular-nums text-nb-gray-600"
+    >
       S{short}·{group.total}
     </span>
   );

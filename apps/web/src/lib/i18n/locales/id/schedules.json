@@ -33,7 +33,9 @@
     "placementKawasan": "Penempatan Kawasan",
     "placementRayon": "Penempatan Rayon",
     "emptyRayon": "Belum ada kawasan atau lokasi",
-    "petugasShort": "ptg"
+    "petugasShort": "petugas",
+    "shiftStaffTooltip": "{{shift}} — {{countable}} dari {{target}} Satgas+Linmas",
+    "shiftTotalTooltip": "{{shift}} — {{count}} petugas"
   },
   "search": {
     "placeholder": "Cari petugas, area, atau tanggal…",
@@ -280,9 +282,9 @@
     "saved": "Kapasitas disimpan"
   },
   "week": {
-    "roleSatgas": "Sg",
-    "roleLinmas": "Lm",
-    "roleOther": "Lain",
+    "roleSatgas": "Satgas",
+    "roleLinmas": "Linmas",
+    "roleOther": "Lainnya",
     "roleTeam": "Tim"
   }
 }

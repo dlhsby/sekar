@@ -175,7 +175,10 @@ function ShiftBreakdown({ shift }: { shift: WeekShiftBreakdown }) {
 
   return (
     <div className="flex flex-wrap items-center gap-1">
-      <span className="rounded-full border-2 border-nb-black bg-nb-gray-100 px-1.5 text-nb-caption font-bold tabular-nums">
+      <span
+        title={shift.name}
+        className="rounded-full border-2 border-nb-black bg-nb-gray-100 px-1.5 text-nb-caption font-bold tabular-nums"
+      >
         S{shift.label}
       </span>
       {satgas > 0 && (

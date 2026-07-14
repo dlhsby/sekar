@@ -33,7 +33,9 @@
     "placementKawasan": "Kawasan placement",
     "placementRayon": "Rayon placement",
     "emptyRayon": "No kawasan or locations yet",
-    "petugasShort": "staff"
+    "petugasShort": "staff",
+    "shiftStaffTooltip": "{{shift}} — {{countable}} of {{target}} Satgas+Linmas",
+    "shiftTotalTooltip": "{{shift}} — {{count}} staff"
   },
   "search": {
     "placeholder": "Search worker, area, or date…",
@@ -280,8 +282,8 @@
     "saved": "Capacity saved"
   },
   "week": {
-    "roleSatgas": "Sg",
-    "roleLinmas": "Lm",
+    "roleSatgas": "Satgas",
+    "roleLinmas": "Linmas",
     "roleOther": "Other",
     "roleTeam": "Team"
   }

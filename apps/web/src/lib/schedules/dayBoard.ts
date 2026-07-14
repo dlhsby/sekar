@@ -169,6 +169,8 @@ export function buildDayBoard(
 /** One shift's headcount inside a week cell, split by role + teams. */
 export interface WeekShiftBreakdown {
   shiftId: string;
+  /** Full shift name (e.g. "Shift 1"), for tooltips. */
+  name: string;
   /** Short shift label (the digit in the name, e.g. "1"). */
   label: string;
   /** Individual (non-team) role code → count. */
@@ -263,9 +265,11 @@ export function buildWeekCoverage(
     const shiftId = o.shift_definition_id ?? 'none';
     let cell = dayShifts.get(shiftId);
     if (!cell) {
+      const fullName = shiftName.get(shiftId) ?? shiftId;
       cell = {
         shiftId,
-        label: shortShiftLabel(shiftName.get(shiftId) ?? shiftId),
+        name: fullName,
+        label: shortShiftLabel(fullName),
         roleCounts: {},
         teams: 0,
         total: 0,
