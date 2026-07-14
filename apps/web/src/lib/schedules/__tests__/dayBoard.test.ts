@@ -1,5 +1,10 @@
 /* eslint-disable sekar-design/no-inline-hex-colors -- test fixtures use literal marker colors */
-import { buildDayBoard, COUNTABLE_ROLES, type BoardMasterData } from '../dayBoard';
+import {
+  buildDayBoard,
+  buildWeekCoverage,
+  COUNTABLE_ROLES,
+  type BoardMasterData,
+} from '../dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 
 const shift = (id: string, name: string): BoardMasterData['shifts'][number] => ({
@@ -98,6 +103,21 @@ describe('buildDayBoard', () => {
     expect(s1.teams).toHaveLength(1);
     expect(s1.teams[0]).toMatchObject({ name: 'Perawatan', count: 2, markerColor: '#7FBC8C' });
     expect(Object.keys(s1.byRole)).toHaveLength(0); // team members not in role columns
+  });
+
+  it('counts week coverage per rayon per day via location/region mapping', () => {
+    const days = ['2026-07-13', '2026-07-14'];
+    const rows = buildWeekCoverage(
+      [
+        occ({ location_id: 'loc1', schedule_date: '2026-07-13' }),
+        occ({ location_id: 'loc2', schedule_date: '2026-07-13' }),
+        occ({ location_id: null, region_id: 'kw1', schedule_date: '2026-07-14', scope: 'mobile' }),
+      ],
+      master,
+      days
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ rayonId: 'ry1', counts: [2, 1], total: 3 });
   });
 
   it('places region-scoped (mobile, no location) occurrences into kawasan placement', () => {

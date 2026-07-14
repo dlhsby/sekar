@@ -323,6 +323,7 @@ export default function SchedulesPage() {
         <WeekGrid
           occurrences={occurrences}
           currentDate={anchor}
+          master={boardMaster}
           onPrevWeek={() => setAnchor((d) => addWeeks(d, -1))}
           onNextWeek={() => setAnchor((d) => addWeeks(d, 1))}
           onToday={() => setAnchor(wibTodayDate())}
@@ -331,6 +332,7 @@ export default function SchedulesPage() {
             setCalendarView('day');
           }}
           onOccurrenceClick={onOccurrenceClick}
+          subjectFiltered={!!(filters.userId || filters.locationId)}
         />
       ) : (
         <div className="space-y-4">

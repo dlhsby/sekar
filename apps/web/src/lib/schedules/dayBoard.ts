@@ -165,3 +165,51 @@ export function buildDayBoard(
     return { id: rayon.id, name: rayon.name, regions: regionNodes, looseLocations, total };
   });
 }
+
+export interface WeekCoverageRow {
+  rayonId: string;
+  rayonName: string;
+  /** Worker count per day, aligned to the `dateStrs` passed in. */
+  counts: number[];
+  total: number;
+}
+
+/**
+ * Per-rayon × per-day coverage counts for the week view. Occurrences are mapped
+ * to a rayon via their location or region (occurrences carry no rayon id).
+ */
+export function buildWeekCoverage(
+  occurrences: ScheduleOccurrence[],
+  master: BoardMasterData,
+  dateStrs: string[]
+): WeekCoverageRow[] {
+  const locRayon = new Map(master.locations.map((l) => [l.id, l.rayon_id]));
+  const regRayon = new Map(master.regions.map((r) => [r.id, r.rayon_id]));
+  const dayIndex = new Map(dateStrs.map((d, i) => [d, i]));
+  const rows = new Map<string, number[]>(
+    master.rayons.map((r) => [r.id, new Array(dateStrs.length).fill(0)])
+  );
+
+  for (const o of occurrences) {
+    const rayonId = o.location_id
+      ? locRayon.get(o.location_id)
+      : o.region_id
+        ? regRayon.get(o.region_id)
+        : undefined;
+    if (!rayonId) continue;
+    const di = dayIndex.get(o.schedule_date);
+    if (di == null) continue;
+    const arr = rows.get(rayonId);
+    if (arr) arr[di] += 1;
+  }
+
+  return master.rayons.map((r) => {
+    const counts = rows.get(r.id) ?? new Array(dateStrs.length).fill(0);
+    return {
+      rayonId: r.id,
+      rayonName: r.name,
+      counts,
+      total: counts.reduce((a, b) => a + b, 0),
+    };
+  });
+}
