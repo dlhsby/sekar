@@ -241,10 +241,13 @@
       "scopeRayon": "Rayon",
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Pilih rayon…",
-      "regionScopeHint": "Kosongkan untuk cakupan Rayon (mobile se-rayon).",
-      "locationScopeHint": "Kosongkan untuk cakupan Kawasan (mobile se-kawasan).",
-      "cityWideLabel": "Seluruh Surabaya (Tim Patroli)",
-      "cityWideHint": "Tidak terikat rayon/kawasan/lokasi — mencakup seluruh kota.",
+      "scopeLabel": "Ruang Lingkup",
+      "scopeHelp": "Cakupan jadwal — menentukan bidang penempatan yang perlu diisi.",
+      "scopeCity": "Seluruh Surabaya (Tim Patroli)",
+      "scopeKawasan": "Kawasan",
+      "scopeLokasi": "Lokasi",
+      "regionScopeHint": "Cakupan mobile se-kawasan (petugas berpindah dalam kawasan).",
+      "locationScopeHint": "Cakupan statis di satu lokasi.",
       "placementUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penempatan."
     },
     "editScope": {

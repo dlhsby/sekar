@@ -93,4 +93,18 @@ describe('ScheduleEventModal', () => {
     );
     expect(container).toBeInTheDocument();
   });
+
+  it('renders the scope ("Ruang Lingkup") selector', () => {
+    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+    // t() is mocked to echo keys, so the label text is the i18n key.
+    expect(screen.getByText('schedules:calendar.event.scopeLabel')).toBeInTheDocument();
+  });
+
+  it('defaults to rayon scope and shows the rayon field (no city prefill)', () => {
+    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+    // Rayon scope is the default → the rayon placement field is visible.
+    expect(screen.getByText('schedules:calendar.event.rayonLabel')).toBeInTheDocument();
+    // No kawasan/lokasi fields until the scope is widened to region/location.
+    expect(screen.queryByText('schedules:calendar.event.locationLabel')).not.toBeInTheDocument();
+  });
 });
