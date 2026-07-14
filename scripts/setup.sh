@@ -67,7 +67,14 @@ print_info "Installing backend dependencies..."
 ( cd "$ROOT/apps/be" && npm ci --no-audit --no-fund )
 print_info "Running database migrations..."
 if ! ( cd "$ROOT/apps/be" && npm run migration:run ); then
-  print_error "Database migrations failed — check DB connectivity (apps/be/.env.local DATABASE_* vs infra/.env POSTGRES_PORT). Aborting setup."
+  print_error "Database migrations failed. Two common causes:"
+  print_error "  1) Connectivity — check apps/be/.env.local DATABASE_* vs infra/.env POSTGRES_PORT."
+  print_error "  2) 'relation ... already exists' — the DB already has a schema that was NOT built by"
+  print_error "     migrations (a prior 'db:seed' or 'start.sh' auto-syncs the schema when the DB is"
+  print_error "     empty, leaving typeorm_migrations empty). Migrations can't run over that schema."
+  print_error "     Fix: drop and recreate the database, then re-run setup.sh, e.g."
+  print_error "       docker exec sekar-postgres psql -U postgres -c 'DROP DATABASE sekar_db; CREATE DATABASE sekar_db;'"
+  print_error "  Aborting setup."
   exit 1
 fi
 print_success "Backend ready (dependencies + migrations)"
