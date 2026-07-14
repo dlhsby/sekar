@@ -5,7 +5,15 @@ import { Button } from '@/components/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { formatISO, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, startOfWeek, endOfWeek } from 'date-fns';
+import {
+  formatISO,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
+  startOfWeek,
+  endOfWeek,
+} from 'date-fns';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
 
 interface MonthGridProps {
@@ -17,6 +25,9 @@ interface MonthGridProps {
   onDayClick: (date: Date) => void;
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
   locale: Locale;
+  /** When a single subject (worker/location) is filtered, show chips (a personal
+   * calendar); otherwise show per-day coverage density (counts + bar). */
+  subjectFiltered?: boolean;
 }
 
 export function MonthGrid({
@@ -28,6 +39,7 @@ export function MonthGrid({
   onDayClick,
   onOccurrenceClick,
   locale,
+  subjectFiltered = false,
 }: MonthGridProps) {
   const { t } = useTranslation();
 
@@ -51,6 +63,9 @@ export function MonthGrid({
     }
     occurrencesByDate.get(key)!.push(occ);
   });
+
+  // Peak day count (density-bar scale), min 1 to avoid divide-by-zero.
+  const maxCount = Math.max(1, ...Array.from(occurrencesByDate.values(), (list) => list.length));
 
   // Days of week header
   const dayNames = [
@@ -126,24 +141,43 @@ export function MonthGrid({
                     {day.getDate()}
                   </div>
 
-                  {/* Occurrences */}
-                  <div className="space-y-1">
-                    {dayOccurrences.slice(0, 3).map((occ) => (
-                      <OccurrenceChip
-                        key={occ.id}
-                        occurrence={occ}
-                        onClick={() => {
-                          if (onOccurrenceClick) onOccurrenceClick(occ);
-                        }}
-                        className="w-full"
-                      />
-                    ))}
-                    {dayOccurrences.length > 3 && (
-                      <div className="text-nb-caption text-nb-gray-500">
-                        {t('schedules:calendar.moreCount', { count: dayOccurrences.length - 3 })}
+                  {/* Body: coverage density (default) or chips (subject filtered) */}
+                  {subjectFiltered ? (
+                    <div className="space-y-1">
+                      {dayOccurrences.slice(0, 3).map((occ) => (
+                        <OccurrenceChip
+                          key={occ.id}
+                          occurrence={occ}
+                          onClick={() => {
+                            if (onOccurrenceClick) onOccurrenceClick(occ);
+                          }}
+                          className="w-full"
+                        />
+                      ))}
+                      {dayOccurrences.length > 3 && (
+                        <div className="text-nb-caption text-nb-gray-500">
+                          {t('schedules:calendar.moreCount', { count: dayOccurrences.length - 3 })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    dayOccurrences.length > 0 && (
+                      <div className="space-y-1">
+                        <div className="text-nb-body-sm font-bold tabular-nums leading-none">
+                          {dayOccurrences.length}
+                          <span className="ml-1 text-nb-caption font-medium text-nb-gray-500">
+                            {t('schedules:board.petugasShort')}
+                          </span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full border-2 border-nb-black bg-nb-gray-50">
+                          <div
+                            className="h-full bg-nb-primary"
+                            style={{ width: `${(dayOccurrences.length / maxCount) * 100}%` }}
+                          />
+                        </div>
                       </div>
-                    )}
-                  </div>
+                    )
+                  )}
                 </div>
               );
             })}

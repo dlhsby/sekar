@@ -32,7 +32,8 @@
     "lokasiCount": "{{count}} lokasi",
     "placementKawasan": "Penempatan Kawasan",
     "placementRayon": "Penempatan Rayon",
-    "emptyRayon": "Belum ada kawasan atau lokasi"
+    "emptyRayon": "Belum ada kawasan atau lokasi",
+    "petugasShort": "ptg"
   },
   "search": {
     "placeholder": "Cari petugas, area, atau tanggal…",

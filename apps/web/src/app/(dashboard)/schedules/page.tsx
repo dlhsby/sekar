@@ -317,6 +317,7 @@ export default function SchedulesPage() {
           }}
           onOccurrenceClick={onOccurrenceClick}
           locale={{ code: localeCode }}
+          subjectFiltered={!!(filters.userId || filters.locationId)}
         />
       ) : calendarView === 'week' ? (
         <WeekGrid
