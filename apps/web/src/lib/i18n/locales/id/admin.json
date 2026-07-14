@@ -287,7 +287,12 @@
       "longitude": "Longitude",
       "longitudePlaceholder": "Contoh: 112.75",
       "geometryRequired": "Tentukan minimal salah satu: gambar batas rayon atau tempatkan titik pusat.",
-      "mapUnavailable": "Peta tidak tersedia — masukkan koordinat secara manual di bawah."
+      "mapUnavailable": "Peta tidak tersedia — masukkan koordinat secara manual di bawah.",
+      "staffingLevel": "Tingkat Kebutuhan Petugas",
+      "staffingLevelHelp": "Menentukan di mana kebutuhan petugas rayon ini diatur: per Kawasan, per Lokasi, atau seluruh Rayon.",
+      "staffingLevelRegion": "Per Kawasan",
+      "staffingLevelLocation": "Per Lokasi",
+      "staffingLevelRayon": "Seluruh Rayon"
     },
     "stats": {
       "totalAreas": "Jumlah Area",

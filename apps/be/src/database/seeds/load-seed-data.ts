@@ -44,6 +44,8 @@ export interface RayonSnapshotRow extends SeedRayonRow {
   center_lat: number | null;
   center_lng: number | null;
   boundary_polygon: GeoJsonPolygon;
+  /** Tier its staffing requirements attach to: region (kawasan) | location | rayon. */
+  staffing_level: 'region' | 'location' | 'rayon';
 }
 
 /** The 8 rayons as they currently live in staging (master data + geometry). */

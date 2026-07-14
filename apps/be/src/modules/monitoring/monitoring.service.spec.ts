@@ -14,7 +14,7 @@ import { Shift } from '../shifts/entities/shift.entity';
 import { Task, TaskStatus, TaskPriority } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { Rayon, StaffingLevel } from '../rayons/entities/rayon.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import {
   LocationStaffRequirement,
@@ -42,6 +42,7 @@ describe('MonitoringService', () => {
     id: 'rayon-1',
     name: 'Rayon Selatan',
     description: 'Southern sector',
+    staffing_level: StaffingLevel.REGION,
     created_at: new Date(),
     updated_at: new Date(),
   };
