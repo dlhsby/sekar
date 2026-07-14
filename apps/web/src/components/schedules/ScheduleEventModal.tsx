@@ -92,13 +92,13 @@ function createSchema(t: TFn) {
       pic_user_id: z.string().optional(),
       member_ids: z.array(z.string()),
       shift_definition_id: z.string().min(1, t('validation:required')),
-      // Geography cascade — rayon is required; kawasan/lokasi are optional and
-      // narrow the scope (lokasi → static, kawasan → mobile, rayon-only → rayon).
+      // Explicit scope ("Ruang Lingkup") drives which geography selects show and
+      // which are required: city → none · rayon → rayon · region → rayon+kawasan ·
+      // location → rayon+kawasan+lokasi. Maps to the API scope on save.
+      scope: z.enum(['city', 'rayon', 'region', 'location']),
       location_id: z.string().optional(),
       region_id: z.string().optional(),
       rayon_id: z.string().optional(),
-      /** Seluruh Surabaya (Tim Patroli) — no rayon/kawasan/lokasi (city scope). */
-      city_wide: z.boolean(),
       recurrence_type: z.enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates']),
       // Registered with valueAsNumber (plain z.number keeps RHF input/output
       // types aligned — z.coerce diverges them and breaks the resolver types).
@@ -133,12 +133,25 @@ function createSchema(t: TFn) {
           });
         }
       }
-      // Rayon is required unless the event is city-wide (Seluruh Surabaya);
-      // kawasan/lokasi are optional (they only narrow the scope).
-      if (!data.city_wide && !data.rayon_id) {
+      // Each scope requires the geography down to its level.
+      if (data.scope !== 'city' && !data.rayon_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['rayon_id'],
+          message: t('validation:required'),
+        });
+      }
+      if ((data.scope === 'region' || data.scope === 'location') && !data.region_id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['region_id'],
+          message: t('validation:required'),
+        });
+      }
+      if (data.scope === 'location' && !data.location_id) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['location_id'],
           message: t('validation:required'),
         });
       }
@@ -176,6 +189,27 @@ function createSchema(t: TFn) {
 }
 
 type FormValues = z.infer<ReturnType<typeof createSchema>>;
+type ScopeValue = FormValues['scope'];
+
+/** Map an event's API scope (static/mobile/rayon/city) to the form scope. */
+function eventToFormScope(scope: ScheduleEvent['scope']): ScopeValue {
+  if (scope === 'static') return 'location';
+  if (scope === 'mobile') return 'region';
+  if (scope === 'city') return 'city';
+  return 'rayon';
+}
+
+/** Derive the initial form scope for a fresh event from the prefill context. */
+function initialFormScope(opts: {
+  cityWide?: boolean;
+  locationId?: string;
+  regionId?: string;
+}): ScopeValue {
+  if (opts.locationId) return 'location';
+  if (opts.regionId) return 'region';
+  if (opts.cityWide) return 'city';
+  return 'rayon';
+}
 
 export function ScheduleEventModal({
   open,
@@ -219,7 +253,13 @@ export function ScheduleEventModal({
       location_id: event?.location_id ?? initialLocationId ?? '',
       region_id: event?.region_id ?? initialRegionId ?? '',
       rayon_id: event?.rayon_id ?? initialRayonId ?? '',
-      city_wide: event ? event.scope === 'city' : (initialCityWide ?? false),
+      scope: event
+        ? eventToFormScope(event.scope)
+        : initialFormScope({
+            cityWide: initialCityWide,
+            locationId: initialLocationId,
+            regionId: initialRegionId,
+          }),
       recurrence_type: event?.recurrence_type ?? 'none',
       interval_n: event?.recurrence_config?.interval_n ?? 2,
       weekdays: event?.recurrence_config?.weekdays ?? [],
@@ -253,12 +293,39 @@ export function ScheduleEventModal({
   const locations = locationsResp?.data ?? [];
 
   const formKind = watch('kind');
-  const formCityWide = watch('city_wide');
+  const formScope = watch('scope');
   const formRayon = watch('rayon_id');
   const formRegion = watch('region_id');
   const formRecurrence = watch('recurrence_type');
   const formPic = watch('pic_user_id');
   const [dateDraft, setDateDraft] = useState('');
+
+  // Created from a specific rayon/kawasan/lokasi board row → the schedule belongs
+  // to that geography, so "Seluruh Surabaya" (city) isn't a sensible option.
+  const lockGeoScope = !isEditing && !!(initialRayonId || initialRegionId || initialLocationId);
+  const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
+    ...(lockGeoScope
+      ? []
+      : [{ value: 'city' as const, label: t('schedules:calendar.event.scopeCity') }]),
+    { value: 'rayon', label: t('schedules:calendar.event.scopeRayon') },
+    { value: 'region', label: t('schedules:calendar.event.scopeKawasan') },
+    { value: 'location', label: t('schedules:calendar.event.scopeLokasi') },
+  ];
+
+  const handleScopeChange = (v: ScopeValue) => {
+    setValue('scope', v, { shouldValidate: true });
+    // Clear geography deeper than the new scope so stale ids don't leak on save.
+    if (v === 'city') {
+      setValue('rayon_id', '');
+      setValue('region_id', '');
+      setValue('location_id', '');
+    } else if (v === 'rayon') {
+      setValue('region_id', '');
+      setValue('location_id', '');
+    } else if (v === 'region') {
+      setValue('location_id', '');
+    }
+  };
 
   const shiftOptions = shifts.map((s) => ({ value: s.id, label: s.name }));
   const teamCategoryOptions = teamCategories
@@ -368,16 +435,16 @@ export function ScheduleEventModal({
               ? { dates: [...data.dates].sort() }
               : undefined;
 
-      // Derive the scope: city-wide wins; else from how deep the geography
-      // cascade is filled: lokasi → static, kawasan (no lokasi) → mobile,
-      // rayon-only → rayon.
-      const scope = data.city_wide
-        ? 'city'
-        : data.location_id
+      // Map the explicit form scope to the API scope:
+      // location → static · region (kawasan) → mobile · rayon → rayon · city → city.
+      const scope =
+        data.scope === 'location'
           ? 'static'
-          : data.region_id
+          : data.scope === 'region'
             ? 'mobile'
-            : 'rayon';
+            : data.scope === 'city'
+              ? 'city'
+              : 'rayon';
 
       const payload: CreateScheduleEventInput = {
         title: data.title || undefined,
@@ -543,35 +610,18 @@ export function ScheduleEventModal({
               required
             />
 
-            {/* City-wide (Seluruh Surabaya / Tim Patroli): no rayon/kawasan/lokasi. */}
-            <label className="flex items-start gap-2 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-3">
-              <input
-                type="checkbox"
-                className="mt-0.5 h-4 w-4 accent-nb-primary"
-                checked={formCityWide}
-                onChange={(e) => {
-                  setValue('city_wide', e.target.checked, { shouldValidate: true });
-                  if (e.target.checked) {
-                    setValue('rayon_id', '');
-                    setValue('region_id', '');
-                    setValue('location_id', '');
-                  }
-                }}
-              />
-              <span>
-                <span className="block text-nb-body-sm font-bold">
-                  {t('schedules:calendar.event.cityWideLabel')}
-                </span>
-                <span className="block text-nb-caption text-nb-gray-500">
-                  {t('schedules:calendar.event.cityWideHint')}
-                </span>
-              </span>
-            </label>
+            {/* Ruang Lingkup (scope): decides which geography selects appear. */}
+            <FormSelect
+              label={t('schedules:calendar.event.scopeLabel')}
+              helperText={t('schedules:calendar.event.scopeHelp')}
+              options={scopeOptions}
+              value={formScope}
+              onChange={(v) => handleScopeChange(v as ScopeValue)}
+            />
 
-            {/* Placement cascade: Rayon (required) → Kawasan (optional) → Lokasi.
-                The deepest level filled decides monitoring scope on save. Hidden
-                for city-wide events. */}
-            {!formCityWide && (
+            {/* Placement cascade, gated by scope:
+                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi. */}
+            {formScope !== 'city' && (
               <FormCombobox
                 label={t('schedules:calendar.event.rayonLabel')}
                 options={rayonOptions}
@@ -587,7 +637,7 @@ export function ScheduleEventModal({
               />
             )}
 
-            {!formCityWide && formRayon && (
+            {(formScope === 'region' || formScope === 'location') && formRayon && (
               <FormCombobox
                 label={t('schedules:calendar.event.regionLabel')}
                 options={regionOptions}
@@ -598,10 +648,12 @@ export function ScheduleEventModal({
                 }}
                 placeholder={t('schedules:calendar.event.regionPlaceholder')}
                 helperText={t('schedules:calendar.event.regionScopeHint')}
+                error={errors.region_id?.message}
+                required
               />
             )}
 
-            {!formCityWide && formRegion && (
+            {formScope === 'location' && formRegion && (
               <FormCombobox
                 label={t('schedules:calendar.event.locationLabel')}
                 options={locationOptions}
@@ -609,6 +661,8 @@ export function ScheduleEventModal({
                 onChange={(v) => setValue('location_id', v, { shouldValidate: true })}
                 placeholder={t('schedules:calendar.event.locationPlaceholder')}
                 helperText={t('schedules:calendar.event.locationScopeHint')}
+                error={errors.location_id?.message}
+                required
               />
             )}
 

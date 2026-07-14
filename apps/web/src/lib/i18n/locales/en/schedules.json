@@ -241,10 +241,13 @@
       "scopeRayon": "Rayon",
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Select rayon…",
-      "regionScopeHint": "Leave empty for whole-Rayon coverage.",
-      "locationScopeHint": "Leave empty for whole-Kawasan coverage.",
-      "cityWideLabel": "Whole City (Patrol Team)",
-      "cityWideHint": "Not tied to a rayon/kawasan/location — covers all of Surabaya.",
+      "scopeLabel": "Scope",
+      "scopeHelp": "Schedule coverage — determines which placement fields are needed.",
+      "scopeCity": "Whole City (Patrol Team)",
+      "scopeKawasan": "Kawasan",
+      "scopeLokasi": "Location",
+      "regionScopeHint": "Mobile coverage across the whole kawasan (workers roam within it).",
+      "locationScopeHint": "Static coverage at a single location.",
       "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement."
     },
     "editScope": {
