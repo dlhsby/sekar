@@ -278,8 +278,14 @@
   },
   "staffCapacity": {
     "title": "Set Capacity",
-    "hint": "Target workers (satgas + linmas) per shift. 0 = no requirement.",
-    "saved": "Capacity saved"
+    "hint": "Target staff (satgas + linmas) per shift, per day type. 0 = no requirement.",
+    "saved": "Capacity saved",
+    "dayTypeLabel": "Day type",
+    "dayType": {
+      "WEEKDAY": "Weekday",
+      "WEEKEND": "Weekend",
+      "HOLIDAY": "Holiday"
+    }
   },
   "week": {
     "roleSatgas": "Satgas",

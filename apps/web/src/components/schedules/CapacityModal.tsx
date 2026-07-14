@@ -17,6 +17,7 @@ import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import {
   useLocationStaffRequirements,
   useSetStaffRequirements,
+  type DayType,
   type StaffRole,
 } from '@/lib/api/location-staff-requirements';
 import { getErrorMessage } from '@/lib/api/client';
@@ -29,10 +30,15 @@ interface CapacityModalProps {
 }
 
 const ROLES: StaffRole[] = ['satgas', 'linmas'];
+const DAY_TYPES: DayType[] = ['WEEKDAY', 'WEEKEND', 'HOLIDAY'];
+
+type DayValues = Record<string, Record<StaffRole, number>>;
+const emptyValues = (): Record<DayType, DayValues> => ({ WEEKDAY: {}, WEEKEND: {}, HOLIDAY: {} });
 
 /**
- * Set a location's weekday staffing requirement (Satgas + Linmas per shift) —
- * the source monitoring also reads. Weekend/holiday targets are a follow-up.
+ * Set a location's staffing requirement (Satgas + Linmas per shift) for each day
+ * type — the source monitoring also reads. The board flags understaffing against
+ * the requirement for the day's type (weekday/weekend; holiday detection TBD).
  */
 export function CapacityModal({
   open,
@@ -48,40 +54,50 @@ export function CapacityModal({
   );
   const setReq = useSetStaffRequirements();
 
-  // values[shiftId][role] = required count (weekday)
-  const [values, setValues] = useState<Record<string, Record<StaffRole, number>>>({});
+  const [dayType, setDayType] = useState<DayType>('WEEKDAY');
+  // values[dayType][shiftId][role] = required count
+  const [values, setValues] = useState<Record<DayType, DayValues>>(emptyValues);
 
   useEffect(() => {
     if (!open) return;
-    const seed: Record<string, Record<StaffRole, number>> = {};
+    setDayType('WEEKDAY');
+    const seed = emptyValues();
     for (const row of current) {
-      if (row.day_type !== 'WEEKDAY') continue;
-      (seed[row.shift_definition_id] ??= { satgas: 0, linmas: 0 })[row.role] = row.required_count;
+      const day = (seed[row.day_type] ??= {});
+      (day[row.shift_definition_id] ??= { satgas: 0, linmas: 0 })[row.role] = row.required_count;
     }
     setValues(seed);
   }, [open, current]);
 
-  const get = (shiftId: string, role: StaffRole) => values[shiftId]?.[role] ?? 0;
+  const get = (shiftId: string, role: StaffRole) => values[dayType]?.[shiftId]?.[role] ?? 0;
   const set = (shiftId: string, role: StaffRole, next: number) =>
-    setValues((v) => ({
-      ...v,
-      [shiftId]: {
-        satgas: v[shiftId]?.satgas ?? 0,
-        linmas: v[shiftId]?.linmas ?? 0,
-        [role]: Math.max(0, Math.min(1000, next)),
-      },
-    }));
+    setValues((v) => {
+      const day = v[dayType] ?? {};
+      return {
+        ...v,
+        [dayType]: {
+          ...day,
+          [shiftId]: {
+            satgas: day[shiftId]?.satgas ?? 0,
+            linmas: day[shiftId]?.linmas ?? 0,
+            [role]: Math.max(0, Math.min(1000, next)),
+          },
+        },
+      };
+    });
 
   const onSave = async () => {
     if (!locationId) return;
     try {
-      const items = shifts.flatMap((s) =>
-        ROLES.map((role) => ({
-          shift_definition_id: s.id,
-          role,
-          day_type: 'WEEKDAY' as const,
-          required_count: get(s.id, role),
-        }))
+      const items = DAY_TYPES.flatMap((dt) =>
+        shifts.flatMap((s) =>
+          ROLES.map((role) => ({
+            shift_definition_id: s.id,
+            role,
+            day_type: dt,
+            required_count: values[dt]?.[s.id]?.[role] ?? 0,
+          }))
+        )
       );
       await setReq.mutateAsync({ locationId, items });
       toast.success(t('schedules:staffCapacity.saved'));
@@ -102,6 +118,28 @@ export function CapacityModal({
           <p className="mb-3 text-nb-body-sm text-nb-gray-600">
             {t('schedules:staffCapacity.hint')}
           </p>
+          <div
+            role="tablist"
+            aria-label={t('schedules:staffCapacity.dayTypeLabel')}
+            className="mb-3 flex gap-1 rounded-nb-base border-2 border-nb-black bg-nb-gray-50 p-1"
+          >
+            {DAY_TYPES.map((dt) => (
+              <button
+                key={dt}
+                type="button"
+                role="tab"
+                aria-selected={dayType === dt}
+                onClick={() => setDayType(dt)}
+                className={`min-h-touch flex-1 rounded-nb-sm px-2 py-1.5 text-nb-body-sm font-bold transition-colors ${
+                  dayType === dt
+                    ? 'bg-nb-primary text-white shadow-nb-sm'
+                    : 'text-nb-gray-600 hover:bg-nb-gray-100'
+                }`}
+              >
+                {t(`schedules:staffCapacity.dayType.${dt}`)}
+              </button>
+            ))}
+          </div>
           <div className="flex flex-col gap-2">
             {shifts.map((s) => (
               <div
