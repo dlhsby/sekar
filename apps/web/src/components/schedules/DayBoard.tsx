@@ -892,8 +892,12 @@ function ShiftPill({
       if (roleTarget <= 0) return null;
       return t('schedules:board.shiftStaffRolePart', {
         role: t(`roles:${role}`, role),
+        // byRole holds individuals ONLY — a team's members are listed under Tim
+        // but still count toward the target, so falling back to it reported a
+        // team-staffed subject as empty (and contradicted this pill's own
+        // aggregate, which does count them).
         countable:
-          roleCounts?.get(`${group.shift.id}:${role}`) ?? group.byRole?.[role]?.length ?? 0,
+          roleCounts?.get(`${group.shift.id}:${role}`) ?? group.countableByRole?.[role] ?? 0,
         target: roleTarget,
       });
     })

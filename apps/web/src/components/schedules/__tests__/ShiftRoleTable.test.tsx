@@ -143,6 +143,47 @@ describe('ShiftRoleTable', () => {
   // Rendering it only once populated meant a team had nowhere to be assigned
   // FROM, so the column never appeared: the same chicken-and-egg the rayon and
   // kawasan assign tables had.
+  // A lokasi is handed roleTargets but NO roleCounts (its own group is the whole
+  // subject). Before the fix the column counted its own rows — individuals only —
+  // so a team-staffed lokasi read 0/10 while the pill above it read 5/10.
+  describe('team members count toward a role target', () => {
+    it('counts team members at a lokasi, which is handed no roleCounts', () => {
+      render(
+        <ShiftRoleTable
+          shifts={[
+            group({
+              byRole: {},
+              countableByRole: { satgas: 5 },
+              teams: [
+                { eventId: 'e1', name: 'Tim Patroli', count: 5, markerColor: null, occurrences: [] },
+              ],
+              countable: 5,
+              total: 5,
+            }),
+          ]}
+          onOccurrenceClick={jest.fn()}
+          roleTargets={new Map([['s1:satgas', 10]])}
+        />
+      );
+
+      expect(within(column(/satgas/i)).getByText('5/10')).toBeInTheDocument();
+    });
+
+    it('still lets a subtree roleCounts win, for a kawasan/rayon', () => {
+      render(
+        <ShiftRoleTable
+          shifts={[group({ countableByRole: { satgas: 2 } })]}
+          onOccurrenceClick={jest.fn()}
+          roleTargets={new Map([['s1:satgas', 10]])}
+          roleCounts={new Map([['s1:satgas', 8]])}
+        />
+      );
+
+      // 8 (the subtree) — not 2 (this container's own).
+      expect(within(column(/satgas/i)).getByText('8/10')).toBeInTheDocument();
+    });
+  });
+
   describe('Tim column', () => {
     const team = (o = {}) => ({
       eventId: 'e1',

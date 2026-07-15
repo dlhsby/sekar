@@ -13,7 +13,6 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { Plus, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,7 +21,6 @@ import {
   DialogBody,
   DialogFooter,
   Button,
-  Badge,
   DatePicker,
   FormInput,
   FormSelect,
@@ -30,6 +28,9 @@ import {
   Label,
 } from '@/components/ui';
 import { AsyncUserCombobox, type PickedUser } from '@/components/forms/AsyncUserCombobox';
+import { TeamFields } from '@/components/schedules/TeamFields';
+import { RecurrenceFields } from '@/components/schedules/RecurrenceFields';
+import { ScopeFields } from '@/components/schedules/ScopeFields';
 import {
   useCreateScheduleEvent,
   useUpdateScheduleEvent,
@@ -72,16 +73,6 @@ export interface ScheduleEventModalProps {
 const SCHEDULABLE_ROLES = ['satgas', 'linmas', 'korlap'];
 
 /** Display order Mon..Sun; values are JS getDay() (0=Sunday). */
-const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
-const WEEKDAY_KEYS: Record<number, string> = {
-  0: 'weekdaysSun',
-  1: 'weekdaysMon',
-  2: 'weekdaysTue',
-  3: 'weekdaysWed',
-  4: 'weekdaysThu',
-  5: 'weekdaysFri',
-  6: 'weekdaysSat',
-};
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -225,7 +216,9 @@ function createSchema(t: TFn) {
     });
 }
 
-type FormValues = z.infer<ReturnType<typeof createSchema>>;
+/** Exported so the extracted sub-forms type against the real shape rather than
+ *  `any` — a type-only import, so the cycle is erased at build. */
+export type FormValues = z.infer<ReturnType<typeof createSchema>>;
 type ScopeValue = FormValues['scope'];
 
 /** Map an event's API scope (static/mobile/rayon/city) to the form scope. */
@@ -609,9 +602,6 @@ export function ScheduleEventModal({
     }
   };
 
-  const toggleWeekday = (current: number[], day: number): number[] =>
-    current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -624,86 +614,24 @@ export function ScheduleEventModal({
         </DialogHeader>
         <DialogBody>
           <form id="event-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-            {/* Ruang Lingkup comes FIRST: the form reads where → who → when.
-                Scope decides which geography selects appear and which are
-                required, so it's the question every other answer hangs off —
-                asking "Individu or Tim?" before "where?" put the narrower
-                decision ahead of the one that frames it. */}
-            <FormSelect
-              label={t('schedules:calendar.event.scopeLabel')}
-              helperText={t('schedules:calendar.event.scopeHelp')}
-              options={scopeOptions}
-              value={formScope}
-              placeholder={t('schedules:calendar.event.scopePlaceholder')}
-              onChange={(v) => handleScopeChange(v as ScopeValue)}
-              error={errors.scope?.message}
-              required
-              disabled={lockScope}
+            <ScopeFields
+              t={t}
+              errors={errors}
+              setValue={setValue}
+              scope={formScope}
+              onScopeChange={handleScopeChange}
+              scopeOptions={scopeOptions}
+              rayonId={formRayon || ''}
+              regionId={formRegion || ''}
+              locationId={watch('location_id') || ''}
+              rayonOptions={rayonOptions}
+              regionOptions={regionOptions}
+              locationOptions={locationOptions}
+              lockScope={lockScope}
+              lockRayon={lockRayon}
+              lockRegion={lockRegion}
+              lockLocation={lockLocation}
             />
-
-            {/* Placement cascade, gated by scope:
-                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
-                `formScope &&` matters now that '' is the un-chosen state — without
-                it the rayon field appears before a scope has been picked. */}
-            {formScope && formScope !== 'city' && (
-              <FormCombobox
-                label={t('schedules:calendar.event.rayonLabel')}
-                options={rayonOptions}
-                value={formRayon || ''}
-                onChange={(v) => {
-                  setValue('rayon_id', v, { shouldValidate: true });
-                  setValue('region_id', '');
-                  setValue('location_id', '');
-                }}
-                placeholder={t('schedules:calendar.event.rayonPlaceholder')}
-                error={errors.rayon_id?.message}
-                required
-                disabled={lockRayon}
-              />
-            )}
-
-            {/* Under a Lokasi scope the kawasan is an optional NARROWING filter,
-                not a step: a lokasi belongs to a rayon and may have no kawasan at
-                all (Rayon Taman Aktif). Only the mobile (kawasan-wide) scope
-                actually needs one. */}
-            {(formScope === 'region' || formScope === 'location') && formRayon && (
-              <FormCombobox
-                label={t('schedules:calendar.event.regionLabel')}
-                options={regionOptions}
-                value={formRegion || ''}
-                onChange={(v) => {
-                  setValue('region_id', v, { shouldValidate: true });
-                  setValue('location_id', '');
-                }}
-                placeholder={
-                  formScope === 'location'
-                    ? t('schedules:calendar.event.regionFilterPlaceholder')
-                    : t('schedules:calendar.event.regionPlaceholder')
-                }
-                helperText={
-                  formScope === 'location'
-                    ? t('schedules:calendar.event.regionFilterHint')
-                    : t('schedules:calendar.event.regionScopeHint')
-                }
-                error={errors.region_id?.message}
-                required={formScope === 'region'}
-                disabled={lockRegion}
-              />
-            )}
-
-            {formScope === 'location' && formRayon && (
-              <FormCombobox
-                label={t('schedules:calendar.event.locationLabel')}
-                options={locationOptions}
-                value={watch('location_id') || ''}
-                onChange={(v) => setValue('location_id', v, { shouldValidate: true })}
-                placeholder={t('schedules:calendar.event.locationPlaceholder')}
-                helperText={t('schedules:calendar.event.locationScopeHint')}
-                error={errors.location_id?.message}
-                required
-                disabled={lockLocation}
-              />
-            )}
 
             {/* Kind: individual vs team (immutable when editing) */}
             <FormSelect
@@ -768,146 +696,25 @@ export function ScheduleEventModal({
             )}
 
             {formKind === 'team' && (
-              <>
-                <FormCombobox
-                  label={t('schedules:calendar.event.teamCategoryLabel')}
-                  options={teamCategoryOptions}
-                  value={watch('team_category_id') || ''}
-                  onChange={(v) => setValue('team_category_id', v, { shouldValidate: true })}
-                  placeholder={t('schedules:calendar.event.teamCategoryPlaceholder')}
-                  error={errors.team_category_id?.message}
-                  required
-                  disabled={isEditing}
-                />
-
-                {/* PIC picked the same way as an individual: role first, then the
-                    worker — one decision, one row. */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <FormSelect
-                    label={t('schedules:calendar.event.picRoleLabel')}
-                    options={SCHEDULABLE_ROLES.map((r) => ({ value: r, label: t(`roles:${r}`, r) }))}
-                    value={watch('pic_role') || ''}
-                    placeholder={t('schedules:calendar.event.rolePlaceholder')}
-                    onChange={(v) => {
-                      setValue('pic_role', v, { shouldValidate: true });
-                      setValue('pic_user_id', '', { shouldValidate: true });
-                    }}
-                    error={errors.pic_role?.message}
-                    required
-                  />
-                  <AsyncUserCombobox
-                    label={t('schedules:calendar.event.picLabel')}
-                    required
-                    roles={watch('pic_role') ? [watch('pic_role') as string] : undefined}
-                    value={formPic || ''}
-                    onValueChange={(v, u) => {
-                      setValue('pic_user_id', v, { shouldValidate: true });
-                      if (u) rememberUser(u);
-                    }}
-                    initialLabel={event?.pic_user?.full_name}
-                    placeholder={t('schedules:calendar.event.picPlaceholder')}
-                    error={errors.pic_user_id?.message}
-                    disabled={!watch('pic_role')}
-                  />
-                </div>
-
-                {/* Members: pick a role, pick a worker, add. The old control was a
-                    checkbox list of every schedulable user — fine at 20, unusable
-                    at 3000, and it preloaded them all just to render. Adding one at
-                    a time keeps the roster server-paged and mirrors how the PIC and
-                    an individual are picked. */}
-                <Controller
-                  control={control}
-                  name="member_ids"
-                  render={({ field }) => {
-                    const add = () => {
-                      if (!memberDraftId || field.value.includes(memberDraftId)) return;
-                      field.onChange([...field.value, memberDraftId]);
-                      setMemberDraftId('');
-                    };
-                    return (
-                      <div className="space-y-2">
-                        <p className="text-nb-body-sm font-medium">
-                          {t('schedules:calendar.event.memberLabel')}
-                        </p>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                          <FormSelect
-                            label={t('schedules:calendar.event.roleLabel')}
-                            options={SCHEDULABLE_ROLES.map((r) => ({
-                              value: r,
-                              label: t(`roles:${r}`, r),
-                            }))}
-                            value={memberRole}
-                            placeholder={t('schedules:calendar.event.rolePlaceholder')}
-                            onChange={(v) => {
-                              setMemberRole(v);
-                              setMemberDraftId('');
-                            }}
-                          />
-                          <AsyncUserCombobox
-                            label={t('schedules:calendar.event.workerLabel')}
-                            roles={memberRole ? [memberRole] : undefined}
-                            excludeIds={[...field.value, ...(formPic ? [formPic] : [])]}
-                            value={memberDraftId}
-                            onValueChange={(v, u) => {
-                              setMemberDraftId(v);
-                              if (u) rememberUser(u);
-                            }}
-                            placeholder={t('schedules:calendar.event.workerPlaceholder')}
-                            disabled={!memberRole}
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={add}
-                            disabled={!memberDraftId}
-                            leftIcon={<Plus className="size-4" />}
-                          >
-                            {t('common:actions.add')}
-                          </Button>
-                        </div>
-
-                        {field.value.length === 0 ? (
-                          <p className="rounded-nb-base border-2 border-dashed border-nb-black bg-nb-gray-50 py-3 text-center text-nb-body-sm text-nb-gray-500">
-                            {t('schedules:calendar.event.memberEmpty')}
-                          </p>
-                        ) : (
-                          <ul className="divide-y-2 divide-nb-black overflow-hidden rounded-nb-base border-2 border-nb-black">
-                            {field.value.map((id) => {
-                              const meta = userMeta[id];
-                              return (
-                                <li
-                                  key={id}
-                                  className="flex items-center gap-2 bg-nb-white px-3 py-2 text-nb-body-sm"
-                                >
-                                  <span className="truncate font-medium">
-                                    {meta?.full_name ?? id}
-                                  </span>
-                                  {meta?.role && (
-                                    <span className="shrink-0 rounded-full border-2 border-nb-black bg-nb-gray-100 px-2 text-nb-caption font-bold">
-                                      {t(`roles:${meta.role}`, meta.role)}
-                                    </span>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      field.onChange(field.value.filter((m) => m !== id))
-                                    }
-                                    aria-label={t('common:actions.delete')}
-                                    className="ml-auto grid size-7 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-danger hover:bg-nb-danger-light"
-                                  >
-                                    <X className="size-3.5" />
-                                  </button>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-                    );
-                  }}
-                />
-              </>
+              <TeamFields
+                control={control}
+                setValue={setValue}
+                errors={errors}
+                t={t}
+                isEditing={isEditing}
+                event={event}
+                teamCategoryOptions={teamCategoryOptions}
+                schedulableRoles={SCHEDULABLE_ROLES}
+                teamCategoryId={watch('team_category_id') || ''}
+                picRole={watch('pic_role') || ''}
+                picUserId={formPic || ''}
+                memberRole={memberRole}
+                setMemberRole={setMemberRole}
+                memberDraftId={memberDraftId}
+                setMemberDraftId={setMemberDraftId}
+                userMeta={userMeta}
+                rememberUser={rememberUser}
+              />
             )}
 
             <FormCombobox
@@ -922,114 +729,21 @@ export function ScheduleEventModal({
             />
 
 
-            {/* Recurrence */}
-            <FormSelect
-              label={t('schedules:calendar.event.recurrenceLabel')}
-              options={recurrenceOptions}
-              value={formRecurrence}
-              placeholder={t('schedules:calendar.event.recurrencePlaceholder')}
-              onChange={(v) =>
-                setValue('recurrence_type', v as RecurrenceType, { shouldValidate: true })
-              }
-              error={errors.recurrence_type?.message}
-              required
+            <RecurrenceFields
+              control={control}
+              register={register}
+              setValue={setValue}
+              errors={errors}
+              t={t}
+              recurrence={formRecurrence}
+              recurrenceOptions={recurrenceOptions}
+              dateDraft={dateDraft}
+              setDateDraft={setDateDraft}
             />
 
-            {formRecurrence === 'every_n_days' && (
-              <FormInput
-                label={t('schedules:calendar.event.recurrenceEveryNDaysLabel')}
-                type="number"
-                min={2}
-                max={30}
-                error={errors.interval_n?.message}
-                {...register('interval_n', { valueAsNumber: true })}
-              />
-            )}
-
-            {formRecurrence === 'weekly' && (
-              <Controller
-                control={control}
-                name="weekdays"
-                render={({ field }) => (
-                  <div>
-                    <div className="flex flex-wrap gap-1">
-                      {WEEKDAY_ORDER.map((day) => (
-                        <Button
-                          key={day}
-                          type="button"
-                          size="sm"
-                          variant={field.value.includes(day) ? 'default' : 'outline'}
-                          onClick={() => field.onChange(toggleWeekday(field.value, day))}
-                        >
-                          {t(`schedules:calendar.event.${WEEKDAY_KEYS[day]}`)}
-                        </Button>
-                      ))}
-                    </div>
-                    {errors.weekdays && (
-                      <p className="mt-1 text-nb-caption text-nb-danger-dark">
-                        {errors.weekdays.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-            )}
-
-            {formRecurrence === 'specific_dates' && (
-              <Controller
-                control={control}
-                name="dates"
-                render={({ field }) => (
-                  <div>
-                    <p className="mb-1 text-nb-body-sm font-medium">
-                      {t('schedules:calendar.event.datesLabel')}
-                    </p>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <DatePicker
-                          value={dateDraft || undefined}
-                          onValueChange={(v) => setDateDraft(v ?? '')}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={!dateDraft || field.value.includes(dateDraft)}
-                        onClick={() => {
-                          field.onChange([...field.value, dateDraft].sort());
-                          setDateDraft('');
-                        }}
-                      >
-                        {t('common:actions.add')}
-                      </Button>
-                    </div>
-                    {field.value.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {field.value.map((d) => (
-                          <Badge key={d} variant="secondary" className="gap-1">
-                            {d}
-                            <button
-                              type="button"
-                              aria-label={t('common:actions.delete')}
-                              onClick={() => field.onChange(field.value.filter((x) => x !== d))}
-                            >
-                              <X className="size-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {errors.dates && (
-                      <p className="mt-1 text-nb-caption text-nb-danger-dark">
-                        {errors.dates.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
+            {/* Stack on phones: two date pickers side by side leave ~150px each
+                on a 360px screen, which truncates the dd/mm/yyyy field. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
                 control={control}
                 name="start_date"

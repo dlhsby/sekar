@@ -40,10 +40,10 @@ interface ShiftRoleTableProps {
    */
   roleTargets?: Map<string, number>;
   /**
-   * `${shiftId}:${role}` → headcount counted toward the target. A kawasan/rayon
-   * target is met by everything inside it, so its coverage is the subtree's, not
-   * this table's own rows — pass it in rather than let the column count itself.
-   * Omit for a lokasi, whose own rows ARE the whole subject.
+   * `${shiftId}:${role}` → headcount counted toward the target, for a SUBTREE
+   * subject: a kawasan/rayon target is met by everything inside it, so its
+   * coverage is the subtree's, not this table's own rows. Omit for a lokasi —
+   * its own group already knows its countable-by-role (teams included).
    */
   roleCounts?: Map<string, number>;
 }
@@ -92,7 +92,15 @@ export function ShiftRoleTable({
                   onAssign={canAssign ? () => onAssign?.(group.shift.id, role) : undefined}
                   addLabel={t('schedules:board.assign')}
                   target={roleTargets?.get(`${group.shift.id}:${role}`)}
-                  covered={roleCounts?.get(`${group.shift.id}:${role}`)}
+                  // countableByRole, not the column's own rows: a team's members
+                  // are real satgas/linmas but are listed under Tim, so counting
+                  // rows would report a staffed lokasi as empty. `roleCounts`
+                  // only overrides it for a SUBTREE subject (kawasan/rayon).
+                  covered={
+                    roleCounts?.get(`${group.shift.id}:${role}`) ??
+                    group.countableByRole?.[role] ??
+                    (group.byRole[role] ?? []).length
+                  }
                   shortLabel={t('schedules:board.roleShort', {
                     shift: group.shift.name,
                     role: t(`roles:${role}`, role),
