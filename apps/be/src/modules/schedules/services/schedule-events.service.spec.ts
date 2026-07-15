@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { ScheduleEventsService } from './schedule-events.service';
 import { ScheduleEvent } from '../entities/schedule-event.entity';
 import { ScheduleEventMember } from '../entities/schedule-event-member.entity';
@@ -56,6 +56,25 @@ describe('ScheduleEventsService', () => {
     name: 'Region 1',
     rayon_id: 'rayon-1',
   } as any;
+
+  /**
+   * The past-date guards (`delete`, `update`, `from_date`) compare the fixture
+   * dates against the REAL WIB today, so every hardcoded date in this suite is a
+   * time bomb — `2026-07-15` started failing the moment that day passed, and
+   * `2026-07-20` would have gone the same way days later. Freeze the clock so
+   * "today" is a fixed point and the fixtures stay meaningful forever.
+   *
+   * 03:00Z is 10:00 WIB on the same date, so `jakartaDateString()` — which is
+   * what the guards call — resolves to 2026-07-15 without straddling a boundary.
+   */
+  beforeAll(() => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    jest.setSystemTime(new Date('2026-07-15T03:00:00Z'));
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
 
   beforeEach(async () => {
     eventRepo = {
