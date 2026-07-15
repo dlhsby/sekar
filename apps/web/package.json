@@ -3,7 +3,7 @@
   "version": "0.1.1",
   "private": true,
   "scripts": {
-    "dev": "next dev -p ${WEB_PORT:-3001}",
+    "dev": "dotenvx run -f .env.local -- sh -c 'next dev -p ${WEB_PORT:-3001}'",
     "build": "next build",
     "start": "next start -p ${WEB_PORT:-3001}",
     "env:encrypt": "dotenvx encrypt -f .env.staging -f .env.production",
