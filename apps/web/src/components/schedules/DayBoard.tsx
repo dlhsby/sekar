@@ -115,7 +115,12 @@ export function DayBoard({
           capacityLevel === 'rayon',
           // Not the owner → sum whichever tier below actually holds the targets.
           capacityLevel === 'region'
-            ? rollupTargets(capacities, 'reg', rayon.regions.map((r) => r.id), shiftIds)
+            ? rollupTargets(
+                capacities,
+                'reg',
+                rayon.regions.map((r) => r.id),
+                shiftIds
+              )
             : capacityLevel === 'location'
               ? rollupTargets(
                   capacities,
@@ -141,47 +146,47 @@ export function DayBoard({
             className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-primary bg-nb-white shadow-nb-sm"
           >
             <div className="flex items-center border-b-2 border-nb-black bg-nb-gray-200">
-            <button
-              type="button"
-              onClick={() => toggle(rayon.id)}
-              className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left text-nb-black"
-              aria-expanded={open.has(rayon.id)}
-            >
-              <Chevron open={open.has(rayon.id)} />
-              <span className="text-nb-h3 font-bold">
-                {rayon.id === CITY_NODE_ID ? t('schedules:calendar.board.cityLabel') : rayon.name}
-              </span>
-              <span className="ml-auto flex flex-wrap items-center gap-2">
-                {rayonCapPills.map(({ shift, countable, target, rolledUp }) => (
-                  <ShiftPill
-                    key={shift.id}
-                    group={{ shift, byRole: {}, teams: [], countable, total: countable }}
-                    target={target}
-                    rolledUp={rolledUp}
-                    roleTargets={rolledUp ? undefined : rayonRoleTargets}
-                    roleCounts={rayonRoleCounts}
-                  />
-                ))}
-                <Pill>{t('schedules:board.petugasCount', { count: rayon.total })}</Pill>
-                <Pill>
-                  {t('schedules:board.areaCount', {
-                    kawasan: rayon.regions.length,
-                    lokasi: locCount,
-                  })}
-                </Pill>
-              </span>
-            </button>
-            {onEditCapacity && capacityLevel === 'rayon' && rayon.id !== CITY_NODE_ID && (
               <button
                 type="button"
-                onClick={() => onEditCapacity({ type: 'rayon', id: rayon.id, name: rayon.name })}
-                className="mr-4 grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
-                aria-label={t('schedules:staffCapacity.title')}
-                title={t('schedules:staffCapacity.title')}
+                onClick={() => toggle(rayon.id)}
+                className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left text-nb-black"
+                aria-expanded={open.has(rayon.id)}
               >
-                <Settings2 className="size-4" />
+                <Chevron open={open.has(rayon.id)} />
+                <span className="text-nb-h3 font-bold">
+                  {rayon.id === CITY_NODE_ID ? t('schedules:calendar.board.cityLabel') : rayon.name}
+                </span>
+                <span className="ml-auto flex flex-wrap items-center gap-2">
+                  {rayonCapPills.map(({ shift, countable, target, rolledUp }) => (
+                    <ShiftPill
+                      key={shift.id}
+                      group={{ shift, byRole: {}, teams: [], countable, total: countable }}
+                      target={target}
+                      rolledUp={rolledUp}
+                      roleTargets={rolledUp ? undefined : rayonRoleTargets}
+                      roleCounts={rayonRoleCounts}
+                    />
+                  ))}
+                  <Pill>{t('schedules:board.petugasCount', { count: rayon.total })}</Pill>
+                  <Pill>
+                    {t('schedules:board.areaCount', {
+                      kawasan: rayon.regions.length,
+                      lokasi: locCount,
+                    })}
+                  </Pill>
+                </span>
               </button>
-            )}
+              {onEditCapacity && capacityLevel === 'rayon' && rayon.id !== CITY_NODE_ID && (
+                <button
+                  type="button"
+                  onClick={() => onEditCapacity({ type: 'rayon', id: rayon.id, name: rayon.name })}
+                  className="mr-4 grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+                  aria-label={t('schedules:staffCapacity.title')}
+                  title={t('schedules:staffCapacity.title')}
+                >
+                  <Settings2 className="size-4" />
+                </button>
+              )}
             </div>
 
             {open.has(rayon.id) && (
@@ -208,40 +213,48 @@ export function DayBoard({
                     />
                   </PlacementBlock>
                 )}
-                {rayon.regions.map((region) => (
-                  <RegionCard
-                    key={region.id}
-                    region={region}
-                    rayonId={rayon.id}
-                    mkAssign={mkAssign}
-                    open={open}
-                    toggle={toggle}
-                    tableProps={tableProps}
-                    capacities={capacities}
-                    roleCapacities={roleCapacities}
-                    onEditCapacity={onEditCapacity}
-                    capacityLevel={capacityLevel}
-                  />
-                ))}
-                {rayon.looseLocations.map((loc) => (
-                  <LocationCard
-                    key={loc.id}
-                    loc={loc}
-                    onAssign={mkAssign({ rayon_id: rayon.id, location_id: loc.id })}
-                    open={open.has(loc.id)}
-                    onToggle={() => toggle(loc.id)}
-                    tableProps={tableProps}
-                    capacities={capacities}
-                    roleTargets={
-                      capacityLevel === 'location'
-                        ? subjectRoleTargets(roleCapacities, `loc:${loc.id}:`)
-                        : undefined
-                    }
-                    onEditCapacity={onEditCapacity}
-                    showCapacity={capacityLevel === 'location'}
-                    indentClass="ml-8"
-                  />
-                ))}
+                {/* One continuous rail down the rayon's children, in the rayon's
+                    own accent: "these belong to that". A single 2px stroke per
+                    group rather than per-row elbows — hairline connectors would
+                    fight the NB language and duplicate each card's 6px accent. */}
+                {(rayon.regions.length > 0 || rayon.looseLocations.length > 0) && (
+                  <div className="flex flex-col gap-3 border-l-2 border-nb-primary/40">
+                    {rayon.regions.map((region) => (
+                      <RegionCard
+                        key={region.id}
+                        region={region}
+                        rayonId={rayon.id}
+                        mkAssign={mkAssign}
+                        open={open}
+                        toggle={toggle}
+                        tableProps={tableProps}
+                        capacities={capacities}
+                        roleCapacities={roleCapacities}
+                        onEditCapacity={onEditCapacity}
+                        capacityLevel={capacityLevel}
+                      />
+                    ))}
+                    {rayon.looseLocations.map((loc) => (
+                      <LocationCard
+                        key={loc.id}
+                        loc={loc}
+                        onAssign={mkAssign({ rayon_id: rayon.id, location_id: loc.id })}
+                        open={open.has(loc.id)}
+                        onToggle={() => toggle(loc.id)}
+                        tableProps={tableProps}
+                        capacities={capacities}
+                        roleTargets={
+                          capacityLevel === 'location'
+                            ? subjectRoleTargets(roleCapacities, `loc:${loc.id}:`)
+                            : undefined
+                        }
+                        onEditCapacity={onEditCapacity}
+                        showCapacity={capacityLevel === 'location'}
+                        indentClass="ml-8"
+                      />
+                    ))}
+                  </div>
+                )}
                 {rayon.regions.length === 0 &&
                   rayon.looseLocations.length === 0 &&
                   !rayon.placement.some((s) => s.total > 0) && (
@@ -423,7 +436,12 @@ function capacityPills(
   capacities: Map<string, number>,
   owned: boolean,
   rolled?: Map<string, number>
-): Array<{ shift: BoardShiftGroup['shift']; countable: number; target: number; rolledUp: boolean }> {
+): Array<{
+  shift: BoardShiftGroup['shift'];
+  countable: number;
+  target: number;
+  rolledUp: boolean;
+}> {
   const totals = shiftCountables(subtree);
   return [...totals.values()]
     .map((e) => {
@@ -558,25 +576,33 @@ function RegionCard({
               roleCounts={regionRoleCounts}
             />
           </PlacementBlock>
-          {region.locations.map((loc) => (
-            <LocationCard
-              key={loc.id}
-              loc={loc}
-              onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id, location_id: loc.id })}
-              open={open.has(loc.id)}
-              onToggle={() => toggle(loc.id)}
-              tableProps={tableProps}
-              capacities={capacities}
-              roleTargets={
-                capacityLevel === 'location'
-                  ? subjectRoleTargets(roleCapacities, `loc:${loc.id}:`)
-                  : undefined
-              }
-              onEditCapacity={onEditCapacity}
-              showCapacity={capacityLevel === 'location'}
-              indentClass="ml-4"
-            />
-          ))}
+          {region.locations.length > 0 && (
+            <div className="flex flex-col gap-2 border-l-2 border-nb-info/40">
+              {region.locations.map((loc) => (
+                <LocationCard
+                  key={loc.id}
+                  loc={loc}
+                  onAssign={mkAssign({
+                    rayon_id: rayonId,
+                    region_id: region.id,
+                    location_id: loc.id,
+                  })}
+                  open={open.has(loc.id)}
+                  onToggle={() => toggle(loc.id)}
+                  tableProps={tableProps}
+                  capacities={capacities}
+                  roleTargets={
+                    capacityLevel === 'location'
+                      ? subjectRoleTargets(roleCapacities, `loc:${loc.id}:`)
+                      : undefined
+                  }
+                  onEditCapacity={onEditCapacity}
+                  showCapacity={capacityLevel === 'location'}
+                  indentClass="ml-4"
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -725,7 +751,9 @@ function ShiftPill({
     return (
       <span
         title={t(
-          rolledUp ? 'schedules:board.shiftStaffRollupTooltip' : 'schedules:board.shiftStaffTooltip',
+          rolledUp
+            ? 'schedules:board.shiftStaffRollupTooltip'
+            : 'schedules:board.shiftStaffTooltip',
           { shift: group.shift.name, countable: group.countable, target, breakdown }
         )}
         className={`inline-flex items-center gap-1 rounded-full border-2 px-2 py-0.5 text-nb-caption font-bold tabular-nums ${border} ${cls}`}

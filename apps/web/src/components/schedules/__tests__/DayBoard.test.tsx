@@ -520,3 +520,41 @@ describe('hierarchy depth', () => {
     expect(lokasiCard('Taman Bungkul').className).not.toContain('ml-8');
   });
 });
+
+
+describe('group rail', () => {
+  /**
+   * One continuous 2px rail per children-group, in the container's own accent —
+   * "these belong to that". Chosen over per-row git-style elbows: hairline
+   * connectors fight NB's 2px/hard-shadow language and would sit right beside
+   * each card's existing 6px accent border, two strokes doing one job.
+   */
+  it('rails the rayon’s children in the rayon’s accent', async () => {
+    const user = userEvent.setup();
+    const { container } = renderBoard({ occurrences: [] });
+    await expand(user, /Rayon Pusat/);
+
+    expect(container.querySelector('.border-nb-primary\\/40')).toBeInTheDocument();
+  });
+
+  it('rails a kawasan’s lokasi in the kawasan’s accent', async () => {
+    const user = userEvent.setup();
+    const { container } = renderBoard({ occurrences: [] });
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    expect(container.querySelector('.border-nb-info\\/40')).toBeInTheDocument();
+  });
+
+  it('draws no rail when a container has no children to group', async () => {
+    const user = userEvent.setup();
+    // A rayon with only city-wide placement has neither kawasan nor lokasi.
+    const { container } = renderBoard({
+      master: { ...master, regions: [], locations: [] },
+      occurrences: [],
+    });
+    await expand(user, /Rayon Pusat/);
+
+    expect(container.querySelector('.border-nb-primary\\/40')).not.toBeInTheDocument();
+  });
+});
