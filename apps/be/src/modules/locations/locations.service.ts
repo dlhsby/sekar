@@ -126,7 +126,7 @@ export class LocationsService {
   private buildFindAllQuery(requester: User, areaType?: string, includeInactive = false) {
     const query = this.locationRepository
       .createQueryBuilder('area')
-      .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('area.locationType', 'locationType')
       .leftJoinAndSelect('area.rayon', 'rayon')
       .orderBy('area.id', 'ASC');
 
@@ -135,7 +135,7 @@ export class LocationsService {
     }
 
     if (areaType) {
-      query.andWhere('areaType.code = :areaType', { areaType });
+      query.andWhere('locationType.code = :areaType', { areaType });
     }
 
     const isCityRole = MONITORING_CITY.includes(requester.role as UserRole);

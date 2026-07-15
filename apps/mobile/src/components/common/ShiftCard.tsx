@@ -63,8 +63,8 @@ export function ShiftCard({
       <NBText variant="body" color="black" numberOfLines={1} style={styles.title}>
         {shift.area?.name || t('attendance:shiftCard.unknownArea')}
       </NBText>
-      {shift.area?.areaType?.name ? (
-        <NBText variant="body-sm" color="gray500" style={styles.areaType}>{shift.area.areaType.name}</NBText>
+      {shift.area?.locationType?.name ? (
+        <NBText variant="body-sm" color="gray500" style={styles.areaType}>{shift.area.locationType.name}</NBText>
       ) : null}
 
       {/* Time Row: 3 columns with dividers */}

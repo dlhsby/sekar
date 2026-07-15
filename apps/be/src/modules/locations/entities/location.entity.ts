@@ -43,7 +43,7 @@ export class Location {
 
   /**
    * Location type relationship
-   * onDelete: RESTRICT prevents deletion of area_types that are in use
+   * onDelete: RESTRICT prevents deletion of location_types that are in use
    */
   @ApiProperty({
     description: 'Location type details',
@@ -51,7 +51,7 @@ export class Location {
   })
   @ManyToOne(() => LocationType, { eager: true, onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'location_type_id' })
-  areaType: LocationType;
+  locationType: LocationType;
 
   @ApiProperty({
     description: 'GPS latitude of area center (-90 to 90)',

@@ -410,7 +410,7 @@ export class ShiftsService {
         clock_out_time: IsNull(),
       },
       // shift_definition carries the scheduled start_time used for the late check.
-      relations: ['area', 'area.areaType', 'user', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'user', 'shift_definition'],
     });
   }
 
@@ -424,7 +424,7 @@ export class ShiftsService {
   async findOne(id: string): Promise<Shift> {
     const shift = await this.shiftRepository.findOne({
       where: { id },
-      relations: ['area', 'area.areaType', 'user'],
+      relations: ['area', 'area.locationType', 'user'],
     });
 
     if (!shift) {
@@ -448,7 +448,7 @@ export class ShiftsService {
   async findByUserId(userId: string, limit = 50): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       take: limit,
     });
@@ -465,7 +465,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { user_id: userId },
-      relations: ['area', 'area.areaType', 'shift_definition'],
+      relations: ['area', 'area.locationType', 'shift_definition'],
       order: { clock_in_time: 'DESC' },
       skip: (page - 1) * limit,
       take: limit,
@@ -557,7 +557,7 @@ export class ShiftsService {
     return this.shiftRepository
       .createQueryBuilder('shift')
       .leftJoinAndSelect('shift.area', 'area')
-      .leftJoinAndSelect('area.areaType', 'areaType')
+      .leftJoinAndSelect('area.locationType', 'locationType')
       .leftJoinAndSelect('shift.shift_definition', 'shift_definition')
       .where('shift.user_id = :userId', { userId })
       .andWhere('shift.is_overtime = false')
@@ -651,7 +651,7 @@ export class ShiftsService {
   async findAllActiveShifts(): Promise<Shift[]> {
     return this.shiftRepository.find({
       where: { clock_out_time: IsNull() },
-      relations: ['user', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.locationType'],
       order: { clock_in_time: 'ASC' },
     });
   }
@@ -669,7 +669,7 @@ export class ShiftsService {
   ): Promise<PaginatedResponseDto<Shift>> {
     const [data, total] = await this.shiftRepository.findAndCount({
       where: { clock_out_time: IsNull() },
-      relations: ['user', 'area', 'area.areaType'],
+      relations: ['user', 'area', 'area.locationType'],
       order: { clock_in_time: 'ASC' },
       skip: (page - 1) * limit,
       take: limit,

@@ -38,14 +38,12 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   const updateMutation = useUpdateTeamCategory();
 
   const [name, setName] = useState('');
-  const [isActive, setIsActive] = useState(true);
   const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(null);
   const [markerColor, setMarkerColor] = useState<string | null>(null);
 
   // Revert the form to the loaded team category's values (also runs on open).
   const revert = () => {
     setName(teamCategory?.name ?? '');
-    setIsActive(teamCategory?.is_active ?? true);
     setMarkerImageUrl(teamCategory?.marker_image_url ?? null);
     setMarkerColor(teamCategory?.marker_color ?? null);
   };
@@ -61,20 +59,20 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   const canSave = name.trim().length >= 1;
   const isDirty =
     name !== (teamCategory?.name ?? '') ||
-    isActive !== (teamCategory?.is_active ?? true) ||
     (markerImageUrl ?? null) !== (teamCategory?.marker_image_url ?? null) ||
     (markerColor ?? null) !== (teamCategory?.marker_color ?? null);
 
   const handleSave = async () => {
+    // `is_active` is owned by the grid's activate/deactivate action, so an edit
+    // never sends it — only a new category needs the active default.
     const payload = {
       name: name.trim(),
-      is_active: isActive,
       marker_image_url: markerImageUrl,
       marker_color: markerColor,
     };
     try {
       if (isEdit && teamCategory) await updateMutation.mutateAsync({ id: teamCategory.id, data: payload });
-      else await createMutation.mutateAsync(payload);
+      else await createMutation.mutateAsync({ ...payload, is_active: true });
     } catch (err) {
       toast.error(getErrorMessage(err));
       return;
@@ -103,18 +101,6 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="is-active"
-              checked={isActive}
-              onChange={(e) => setIsActive(e.target.checked)}
-              className="size-4"
-            />
-            <label htmlFor="is-active" className="text-nb-body-sm font-medium">
-              {t('admin:teamCategories.form.activeLabel')}
-            </label>
-          </div>
           <MarkerImagePicker
             value={markerImageUrl}
             onChange={setMarkerImageUrl}

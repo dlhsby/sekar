@@ -64,7 +64,7 @@ export class MonitoringUserService {
       .leftJoinAndSelect('uts.shift', 'shift')
       .leftJoinAndSelect('uts.shift_definition', 'sd')
       .leftJoinAndSelect('uts.area', 'area')
-      .leftJoin('area.areaType', 'areaType')
+      .leftJoin('area.locationType', 'locationType')
       .where('uts.shift_id IS NOT NULL');
 
     if (filters?.location_id) {

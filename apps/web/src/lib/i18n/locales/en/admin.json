@@ -483,6 +483,8 @@
     "columnMarker": "Marker",
     "buttonAdd": "Add Team Category",
     "actionEdit": "Edit",
+    "actionActivate": "Activate",
+    "actionDeactivate": "Deactivate",
     "emptyTitle": "No team categories yet",
     "denied": "You don't have access to team categories",
     "deleteTitle": "Delete Team Category",
@@ -490,12 +492,13 @@
     "successCreated": "Team category \"{{name}}\" created",
     "successUpdated": "Team category \"{{name}}\" updated",
     "successDeleted": "Team category deleted",
+    "successActivated": "Team category activated",
+    "successDeactivated": "Team category deactivated",
     "statusActive": "Active",
     "statusInactive": "Inactive",
     "form": {
       "name": "Team Category Name",
       "namePlaceholder": "e.g. Watering Team",
-      "activeLabel": "Category is active",
       "markerColor": "Marker Color"
     }
   }

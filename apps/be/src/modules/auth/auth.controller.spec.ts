@@ -204,7 +204,7 @@ describe('AuthController', () => {
           });
           expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
             where: { id: 'area-123' },
-            relations: ['areaType'],
+            relations: ['locationType'],
           });
         });
 
@@ -259,7 +259,7 @@ describe('AuthController', () => {
           expect(mockUserAreasService.getEffectiveLocations).toHaveBeenCalledWith('satgas-123');
           expect(mockAreaRepository.findOne).toHaveBeenCalledWith({
             where: { id: 'area-456' },
-            relations: ['areaType'],
+            relations: ['locationType'],
           });
         });
 

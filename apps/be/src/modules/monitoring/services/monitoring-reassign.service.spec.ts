@@ -56,7 +56,7 @@ describe('MonitoringReassignService', () => {
       radius_meters: 100,
       is_active: true,
       location_type_id: 'type-uuid',
-      areaType: {} as any,
+      locationType: {} as any,
       address: 'Surabaya',
       created_at: new Date(),
       updated_at: new Date(),

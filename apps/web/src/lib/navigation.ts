@@ -156,8 +156,8 @@ export const navigationItems: NavItem[] = [
         roles: [...ADMIN_ROLES, 'management'],
       },
       {
-        id: 'areas',
-        label: 'common:nav.areas',
+        id: 'locations',
+        label: 'common:nav.locations',
         href: '/locations',
         icon: MapPinIcon,
         roles: [...ADMIN_ROLES, 'management'],

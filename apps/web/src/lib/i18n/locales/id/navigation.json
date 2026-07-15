@@ -2,14 +2,14 @@
   "pageTitle": {
     "dashboard": "Dashboard", "monitoring": "Monitoring", "tasks": "Tugas", "tasksNew": "Tugas Baru",
     "activities": "Aktivitas", "overtime": "Lembur", "schedules": "Jadwal", "users": "Pengguna",
-    "areas": "Area", "rayons": "Rayon", "plants": "Tanaman", "seeds": "Bibit", "assets": "Aset",
+    "locations": "Lokasi", "rayons": "Rayon", "plants": "Tanaman", "seeds": "Bibit", "assets": "Aset",
     "assetsNew": "Aset Baru", "assetsQr": "Generator QR", "assetsMaintenance": "Perawatan Aset",
     "reports": "Laporan", "reportsBuilder": "Buat Laporan", "reportsSchedules": "Jadwal Laporan",
     "reportsReporting": "Laporan", "database": "Data Base",
     "pruningRequests": "Permohonan Perantingan", "pruningSubmit": "Kirim Permintaan", "pruningMy": "Permintaan Saya",
     "settings": "Pengaturan", "profile": "Profil Saya", "notifications": "Notifikasi",
     "export": "Ekspor Data", "import": "Impor Data", "importCsv": "Impor CSV",
-    "analytics": "Analitik", "analyticsAreas": "Analitik Area", "analyticsWorkers": "Analitik Pekerja"
+    "analytics": "Analitik", "analyticsLocations": "Analitik Lokasi", "analyticsWorkers": "Analitik Pekerja"
   },
   "breadcrumb": {
     "work": "Pekerjaan", "access": "Pengguna & Hak Akses", "data": "Data Master", "kecamatan": "Kecamatan",

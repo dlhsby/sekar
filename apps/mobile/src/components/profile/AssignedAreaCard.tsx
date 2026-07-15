@@ -13,7 +13,7 @@ import { nbColors, nbSpacing, nbRadius, nbBorders, nbShadows } from '../../const
 interface AssignedAreaCardProps {
   area: {
     name?: string;
-    areaType?: { name?: string };
+    locationType?: { name?: string };
     radius_meters?: number;
     address?: string;
   } | null;
@@ -25,7 +25,7 @@ export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
   testID = 'assigned-area-card',
 }) => {
   const { t } = useTranslation();
-  const metaParts = [area?.areaType?.name, area?.radius_meters ? `${area.radius_meters}m ${t('profile:assignedArea.radiusSuffix')}` : null]
+  const metaParts = [area?.locationType?.name, area?.radius_meters ? `${area.radius_meters}m ${t('profile:assignedArea.radiusSuffix')}` : null]
     .filter(Boolean)
     .join(' · ');
 

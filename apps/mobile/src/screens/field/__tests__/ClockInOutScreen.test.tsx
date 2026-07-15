@@ -103,7 +103,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
             gps_lat: -7.250445,
             gps_lng: 112.768845,
             radius_meters: 100,
-            areaType: {
+            locationType: {
               name: 'Park',
             },
           },

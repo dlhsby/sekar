@@ -300,7 +300,7 @@ describe('RayonsService', () => {
       expect(result).toEqual(areas);
       expect(mockAreaRepository.find).toHaveBeenCalledWith({
         where: { rayon_id: mockRayon.id, is_active: true },
-        relations: ['areaType'],
+        relations: ['locationType'],
         order: { name: 'ASC' },
       });
     });

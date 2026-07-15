@@ -267,7 +267,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual(mockShift);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { user_id: mockUser.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.areaType', 'user', 'shift_definition'],
+        relations: ['area', 'area.locationType', 'user', 'shift_definition'],
       });
       expect(mockAreasService.findOne).toHaveBeenCalledWith(mockArea.id);
     });
@@ -427,7 +427,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual(mockShift);
       expect(mockRepository.findOne).toHaveBeenCalledWith({
         where: { user_id: mockUser.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.areaType', 'user', 'shift_definition'],
+        relations: ['area', 'area.locationType', 'user', 'shift_definition'],
       });
     });
 
@@ -472,7 +472,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual([mockShift]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: { user_id: mockUser.id },
-        relations: ['area', 'area.areaType', 'shift_definition'],
+        relations: ['area', 'area.locationType', 'shift_definition'],
         order: { clock_in_time: 'DESC' },
         take: 50,
       });
@@ -518,7 +518,7 @@ describe('ShiftsService', () => {
       expect(result).toEqual([mockShift]);
       expect(mockRepository.find).toHaveBeenCalledWith({
         where: { clock_out_time: IsNull() },
-        relations: ['user', 'area', 'area.areaType'],
+        relations: ['user', 'area', 'area.locationType'],
         order: { clock_in_time: 'ASC' },
       });
     });
@@ -536,7 +536,7 @@ describe('ShiftsService', () => {
       expect(result.meta.limit).toBe(50);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { clock_out_time: IsNull() },
-        relations: ['user', 'area', 'area.areaType'],
+        relations: ['user', 'area', 'area.locationType'],
         order: { clock_in_time: 'ASC' },
         skip: 0,
         take: 50,
@@ -553,7 +553,7 @@ describe('ShiftsService', () => {
       expect(result.meta.totalPages).toBe(2);
       expect(mockRepository.findAndCount).toHaveBeenCalledWith({
         where: { clock_out_time: IsNull() },
-        relations: ['user', 'area', 'area.areaType'],
+        relations: ['user', 'area', 'area.locationType'],
         order: { clock_in_time: 'ASC' },
         skip: 5,
         take: 5,

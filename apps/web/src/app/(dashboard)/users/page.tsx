@@ -281,7 +281,9 @@ export default function UsersPage() {
               {t('admin:users.statusYes')}
             </StatusPill>
           ) : (
-            <span className="text-nb-body-sm text-nb-gray-600">{t('admin:users.statusNo')}</span>
+            <StatusPill tone="neutral" dot>
+              {t('admin:users.statusNo')}
+            </StatusPill>
           ),
       },
       {

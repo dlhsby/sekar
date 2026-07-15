@@ -50,7 +50,7 @@ describe('MonitoringStatsService', () => {
     gps_lng: 112.75,
     coverage_area: 100,
     is_active: true,
-    areaType: { id: 'type-1', name: 'Park', category: 'active' } as any,
+    locationType: { id: 'type-1', name: 'Park', category: 'active' } as any,
   } as Location;
 
   const mockShift: Shift = {

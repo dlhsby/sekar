@@ -166,11 +166,16 @@ export default function LocationsPage() {
             { value: t('admin:locations.boundaryNo'), label: t('admin:locations.boundaryNo') },
           ],
         },
-        cell: ({ row }) => (
-          <span className="text-nb-body-sm text-nb-gray-600">
-            {row.original.boundary_polygon ? t('admin:locations.boundaryYes') : t('admin:locations.boundaryNo')}
-          </span>
-        ),
+        cell: ({ row }) =>
+          row.original.boundary_polygon ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:locations.boundaryYes')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:locations.boundaryNo')}
+            </StatusPill>
+          ),
       },
       {
         id: 'coverage_area',

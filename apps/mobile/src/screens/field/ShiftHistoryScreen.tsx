@@ -265,9 +265,9 @@ function ShiftRow({
         <NBText variant="body" color="black" style={styles.shiftRowTitle} numberOfLines={1}>
           {shift.area?.name ?? t('schedules:shiftHistory.unknownArea')}
         </NBText>
-        {shift.area?.areaType?.name ? (
+        {shift.area?.locationType?.name ? (
           <NBText variant="body-sm" color="gray500" style={styles.shiftRowAreaType}>
-            {shift.area.areaType.name}
+            {shift.area.locationType.name}
           </NBText>
         ) : null}
 

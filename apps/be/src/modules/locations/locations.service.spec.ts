@@ -30,7 +30,7 @@ describe('LocationsService', () => {
     id: 'c3d4e5f6-a7b8-9012-cdef-123456789012',
     name: 'Taman Bungkul',
     location_type_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-    areaType: mockAreaType,
+    locationType: mockAreaType,
     gps_lat: -7.2905,
     gps_lng: 112.7398,
     radius_meters: 100,
@@ -163,7 +163,9 @@ describe('LocationsService', () => {
       const result = await service.findAll(cityUser, 'park');
 
       expect(result).toEqual([mockArea]);
-      expect(qb.andWhere).toHaveBeenCalledWith('areaType.code = :areaType', { areaType: 'park' });
+      expect(qb.andWhere).toHaveBeenCalledWith('locationType.code = :areaType', {
+        areaType: 'park',
+      });
     });
 
     it('should include deactivated areas when includeInactive is true', async () => {

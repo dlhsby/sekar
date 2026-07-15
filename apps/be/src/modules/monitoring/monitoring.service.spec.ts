@@ -51,7 +51,7 @@ describe('MonitoringService', () => {
     id: 'area-1',
     name: 'Taman Bungkul',
     location_type_id: 'type-1',
-    areaType: {
+    locationType: {
       id: 'type-1',
       code: 'park',
       name: 'Taman',

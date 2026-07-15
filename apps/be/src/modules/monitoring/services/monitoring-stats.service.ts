@@ -136,7 +136,7 @@ export class MonitoringStatsService {
     const today = this.getTodayRange();
     const areas = await this.areaRepository.find({
       where: { rayon_id: rayonId },
-      relations: ['areaType'],
+      relations: ['locationType'],
     });
 
     const areaSummaries = await Promise.all(areas.map((area) => this.getAreaSummary(area)));
@@ -199,7 +199,7 @@ export class MonitoringStatsService {
 
     const area = await this.areaRepository.findOne({
       where: { id: locationId },
-      relations: ['areaType'],
+      relations: ['locationType'],
     });
     if (!area) {
       throw new NotFoundException(`Location with ID ${locationId} not found`);
@@ -273,8 +273,8 @@ export class MonitoringStatsService {
     return {
       id: area.id,
       name: area.name,
-      area_type: area.areaType?.name || 'Unknown',
-      area_type_category: area.areaType?.category || 'active',
+      area_type: area.locationType?.name || 'Unknown',
+      area_type_category: area.locationType?.category || 'active',
       rayon_id: area.rayon_id || '',
       rayon_name: rayonName,
       latitude: parseFloat(area.gps_lat?.toString() || '0'),
@@ -879,7 +879,7 @@ export class MonitoringStatsService {
     return {
       id: area.id,
       name: area.name,
-      area_type_category: area.areaType?.category || 'active',
+      area_type_category: area.locationType?.category || 'active',
       workers_required: workersRequired,
       workers_online: workersOnline,
       workers_offline: workersOffline,

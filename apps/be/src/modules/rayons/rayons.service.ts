@@ -208,7 +208,7 @@ export class RayonsService {
 
     return this.areaRepository.find({
       where: { rayon_id: id, is_active: true },
-      relations: ['areaType'],
+      relations: ['locationType'],
       order: { name: 'ASC' },
     });
   }
