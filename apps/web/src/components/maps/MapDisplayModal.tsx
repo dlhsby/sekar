@@ -10,7 +10,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { ExternalLink } from 'lucide-react';
-import { GoogleMap, Marker } from '@react-google-maps/api';
+import { GoogleMap } from '@react-google-maps/api';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,9 @@ import {
 } from '@/components/ui';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 import { formatLatLng, googleMapsUrl } from '@/lib/utils/geo';
+import { useMapId } from '@/lib/api/config';
 import { GoogleMapsGate } from './GoogleMapsGate';
+import { AdvancedMarker } from './AdvancedMarker';
 
 const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
@@ -63,6 +65,7 @@ export function MapDisplayModal({
   title,
 }: MapDisplayModalProps) {
   const { t } = useTranslation();
+  const mapId = useMapId();
   const position = { lat, lng };
   const modalTitle = title ?? t('components:mapDisplayModal.title');
 
@@ -88,9 +91,9 @@ export function MapDisplayModal({
                 mapContainerStyle={{ width: '100%', height: '360px' }}
                 center={position}
                 zoom={16}
-                options={MAP_OPTIONS}
+                options={{ ...MAP_OPTIONS, mapId: mapId ?? undefined }}
               >
-                <Marker position={position} />
+                <AdvancedMarker position={position} />
               </GoogleMap>
             </div>
           </GoogleMapsGate>
