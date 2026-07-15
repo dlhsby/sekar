@@ -43,6 +43,7 @@ describe('MonitoringService', () => {
     name: 'Rayon Selatan',
     description: 'Southern sector',
     staffing_level: StaffingLevel.REGION,
+    is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
   };

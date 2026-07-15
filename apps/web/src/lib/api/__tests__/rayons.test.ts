@@ -22,6 +22,7 @@ describe('Rayons API', () => {
     id: '1',
     name: 'Rayon Selatan',
     description: 'Covers southern area of Surabaya',
+    is_active: true,
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
   };

@@ -24,6 +24,33 @@ The organizational + spatial hierarchy. Being reworked (UAT) from 3 levels to **
 - [plants](../plants/README.md)
 - [teams](../teams/README.md)
 
+## Known gap — inactive rayon/kawasan vs monitoring (TODO, revisit)
+
+`is_active` now exists on all four levels (City is implicit; Rayon/Kawasan added 2026-07-15).
+Two decisions were deliberately deferred — **revisit during the Phase-5 monitoring revamp**:
+
+1. **Monitoring still shows deactivated rayon/kawasan, on purpose.** Hiding them would also hide the
+   **live workers** clocked in under them — a safety-visible change, not a cosmetic one. Web pins this
+   with `useRayons(true)` in `components/monitoring/HierarchyFilterPanel.tsx`; the backend monitoring
+   services query the `Rayon` repository directly and never call `rayonsService.findAll()`, so the
+   new active-only default does not reach them. **If monitoring is ever made to hide inactive
+   levels, pair it with the deactivate guard** (below) or a worker can silently vanish from the map.
+2. **Scope of "hide it" is master data + schedule only** (per the operator): grids, filters, pickers
+   and the schedule forms. Tasks/overtime/plants pickers inherit the active-only default via
+   `useRayons()`/`useRegions()` — not separately audited.
+
+**Guard, not cascade** (chosen over hiding children): deactivating is **refused with 409** while a
+rayon still has active kawasan/lokasi/petugas (`RAYON_DEACTIVATE_IN_USE`), or a kawasan still has
+active lokasi (`REGION_DEACTIVATE_IN_USE`). Nothing is ever hidden implicitly, so there is no
+"active lokasi under an inactive rayon" state to reason about. `activate()` is never guarded, and
+`findOne()` stays unfiltered — filtering it would 404 the very record being reactivated.
+
+**Open tension — delete guards are asymmetric.** Rayon `remove()` already refuses while lokasi
+reference it (`rayons.service.ts`), but Kawasan `remove()` deliberately does **not**: per ADR-045 it
+detaches children (`region_id = NULL`) and soft-removes. A delete guard on Kawasan was requested;
+it is **not implemented here** because it would contradict ADR-045. Resolve the ADR first if the
+guard is wanted — deactivate (guarded) and delete (detaches) intentionally differ today.
+
 ## Known gap — "Area" display strings not yet swept (TODO)
 
 The 2026-07-15 sweep fixed the **`/locations` page identity** (title/breadcrumb/nav keys) and the
@@ -50,6 +77,7 @@ mean a *Lokasi***. Inventoried, not yet renamed — deferred deliberately, sweep
 Prose examples (e.g. `tasks:form.titlePlaceholder` "Contoh: Penyiraman Area Timur") read as place names — judgement call, not a mechanical rename.
 
 ## Changelog
+- 2026-07-15 — **Rayon + Kawasan gain `is_active` (Nonaktif), closing the master-data gap.** Lokasi and Kategori Tim already had a reversible soft-retire; rayon/kawasan had nothing, so the four levels behaved differently for no reason. Migration `17502000000000` adds `is_active boolean NOT NULL DEFAULT true` to both and backfills — behaviour-preserving on its own (verified on the live local DB: **9/9 rayons + 130/130 kawasan** active, `down()` drops both cleanly). `findAll` is **active-only by default** on both (it previously had *no* filter at all), with `include_inactive` for the management grids; new `PATCH :id/{deactivate,activate}`. DTOs deliberately untouched — `is_active` is settable only via those endpoints, never the form, mirroring lokasi. **Guard, not cascade** (operator's call): deactivation is **refused with 409** while a rayon still has active kawasan/lokasi/petugas (`RAYON_DEACTIVATE_IN_USE`, reports *every* blocker, not just the first) or a kawasan still has active lokasi (`REGION_DEACTIVATE_IN_USE`) — so nothing is hidden implicitly and there is no "active lokasi under an inactive rayon" state. Codes added to `ApiErrorCode` + both platforms' `errors` namespace so the toast localizes by **code** (the API stays English-canonical) rather than matching message text — the fragile pattern the rayon *delete* path still uses. Web: `StatusPill` + enum Aktif/Nonaktif filter + `Power` rowAction on both grids, reusing `admin:shared.*`. **Caught while wiring it:** flipping the `useRayons()` default silently changed non-picker callers — `HierarchyFilterPanel` (monitoring) and the id→name resolvers (`ScheduleDetailModal`, `ScheduleFilterChips`, `UserAreasSheet`) would have lost deactivated records; those now pass `includeInactive` explicitly. See "Known gap — inactive rayon/kawasan vs monitoring" above. Verified: be 148 suites/**2387** (+15) · web 143/**1967** · tsc/eslint/i18n clean.
 - 2026-07-15 — **Koordinat + Batas Wilayah standardized across the rayon / kawasan / lokasi grids.** The three grids disagreed on both columns. **Koordinat** is now identical everywhere — **sort off, filter off** (raw lat/lng orders and filters meaninglessly), with an `accessorFn` returning `"lat, lng"` purely so global search can match a pasted coordinate. Fixes found on the way: **lokasi's Koordinat was still sortable** (it had `enableColumnFilter: false` but no `enableSorting: false`), **rayon's accessor returned a hardcoded `'Ada'`/`'—'`** (an untranslated literal, and inconsistent with lokasi's coordinate string), and **kawasan had no `accessorFn` at all**, so coordinate search silently never matched there. **Batas Wilayah** (`enum` filter + `StatusPill` Ada/Tidak ada) was lokasi-only and is now on **all three** — all three entities already carry `boundary_polygon`, so this is display-only. Labels moved to `admin:shared.{columnCoordinates,columnBoundary,boundaryYes,boundaryNo}` (the rayon/kawasan grids had been borrowing `admin:locations.columnCoordinates`, which read oddly for a rayon); the now-unused `admin:locations.*` duplicates were dropped. Verified: web tsc/eslint/i18n + full jest (1967).
 - 2026-07-15 — **`/locations` stopped calling itself "Area".** The page title + breadcrumb still read **"DATA MASTER · AREA"** over a body that said "953 lokasi": `usePageNavigation` and `layout.tsx` were pointing at stale i18n keys (`pageTitle.areas`, `pageMetadata('areas')`) — the *values* were the only thing ever updated, so the sidebar already said "Lokasi" while the page header didn't. Renamed the keys themselves: `pageTitle.areas` → `.locations`, `pageTitle.analyticsAreas` → `.analyticsLocations`, `common:nav.areas` → `.locations`, `PAGE_METADATA.areas` → `.locations` (+ "Manajemen Area" → "Manajemen Lokasi"), and the sidebar nav item id `areas` → `locations`. **Batas Wilayah** now renders the shared `StatusPill` (Ada = `tone="ok"`, Tidak ada = `tone="neutral"`) instead of bare text, matching the Status column beside it. Deliberately **not** renamed (real contracts, not leftovers): the `area_type` query param, monitoring `area_ids`, `coverage_area`, and the `/areas` import/export entity keys.
 - 2026-07-15 — **Renamed Location entity relation `areaType` → `locationType`.** Updated the TypeORM relation property and all eager-load paths in API responses (Location, Shift, Report). Db column `location_type_id` is unchanged — no migration. **Silent data bug fixed:** web's `Location` type and `/locations` grid already read `locationType`, so the mismatch meant **Tipe column rendered "—" for every row**. Mobile (ClockInOutScreen, ShiftHistoryScreen, AssignedAreaCard) updated in the same change; **APKs already in the field show "N/A" for area type until updated**. The separate snake_case `area_type` response field + query param, monitoring `area_ids`, `coverage_area` — all unchanged.

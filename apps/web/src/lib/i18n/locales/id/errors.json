@@ -7,7 +7,6 @@
   "AUTH_010": "Sesi Anda telah berakhir. Silakan masuk kembali.",
   "AUTH_011": "Sesi tidak valid. Silakan masuk kembali.",
   "AUTH_PASSWORD_CHANGE_REQUIRED": "Anda harus mengganti kata sandi sebelum melanjutkan.",
-
   "SHIFT_ALREADY_ACTIVE": "Anda sudah memulai shift dan belum mengakhirinya.",
   "SHIFT_NOT_FOUND": "Shift tidak ditemukan.",
   "SHIFT_NOT_ACTIVE": "Tidak ada shift yang sedang aktif.",
@@ -15,7 +14,6 @@
   "SHIFT_NOT_ASSIGNED": "Anda tidak ditugaskan ke area ini.",
   "SHIFT_PHOTO_UPLOAD_FAILED": "Gagal mengunggah foto. Silakan coba lagi.",
   "SHIFT_DURATION_TOO_SHORT": "Durasi shift terlalu singkat untuk diakhiri.",
-
   "ACTIVITY_SHIFT_REQUIRED": "Anda harus melakukan clock-in terlebih dahulu.",
   "ACTIVITY_SHIFT_NOT_FOUND": "Shift untuk aktivitas ini tidak ditemukan.",
   "ACTIVITY_EDIT_WINDOW_CLOSED": "Waktu untuk mengubah aktivitas ini telah berakhir.",
@@ -27,35 +25,29 @@
   "ACTIVITY_ROLE_MISMATCH": "Jenis aktivitas tidak sesuai dengan peran Anda.",
   "ACTIVITY_MAX_PHOTOS": "Jumlah foto melebihi batas maksimal.",
   "ACTIVITY_MIN_PHOTOS": "Jumlah foto kurang dari batas minimal.",
-
   "OVERTIME_SUBMIT_AUTH": "Anda tidak berhak mengajukan lembur ini.",
   "OVERTIME_ALREADY_PROCESSED": "Pengajuan lembur ini sudah diproses.",
   "OVERTIME_AREA_SCOPE": "Lembur di luar cakupan area Anda.",
   "OVERTIME_NOT_FOUND": "Data lembur tidak ditemukan.",
-
   "TASK_HIER_ROLE": "Peran Anda tidak berhak atas tugas ini.",
   "TASK_HIER_RAYON_SCOPE": "Tugas di luar cakupan rayon Anda.",
   "TASK_HIER_AREA_SCOPE": "Tugas di luar cakupan area Anda.",
-
   "MONITOR_RAYON_SCOPE": "Data di luar cakupan rayon Anda.",
   "MONITOR_AREA_SCOPE": "Data di luar cakupan area Anda.",
-
   "SYNC_CONFLICT": "Terjadi konflik data. Muat ulang dan coba lagi.",
   "SYNC_STALE_DATA": "Data sudah berubah. Muat ulang halaman.",
   "SYNC_PARTIAL_FAILURE": "Sebagian data gagal disinkronkan.",
-
   "AREA_NOT_FOUND": "Area tidak ditemukan.",
   "AREA_CODE_DUPLICATE": "Kode area sudah digunakan.",
-
+  "RAYON_DEACTIVATE_IN_USE": "Rayon masih memiliki kawasan, lokasi, atau petugas aktif. Nonaktifkan atau pindahkan dulu.",
+  "REGION_DEACTIVATE_IN_USE": "Kawasan masih memiliki lokasi aktif. Nonaktifkan atau pindahkan lokasi tersebut dulu.",
   "ASSIGNMENT_NOT_FOUND": "Anda belum ditugaskan ke area manapun.",
   "ASSIGNMENT_ALREADY_EXISTS": "Anda sudah ditugaskan ke area ini.",
-
   "VALIDATION_ERROR": "Data yang dikirim tidak valid. Periksa kembali isian Anda.",
   "NOT_FOUND": "Data tidak ditemukan.",
   "FORBIDDEN": "Anda tidak memiliki akses untuk tindakan ini.",
   "BAD_REQUEST": "Permintaan tidak valid. Periksa kembali isian Anda.",
   "INTERNAL_SERVER_ERROR": "Terjadi kesalahan pada server. Silakan coba lagi nanti.",
-
   "NETWORK_ERROR": "Gagal terhubung ke server. Periksa koneksi internet Anda.",
   "TIMEOUT_ERROR": "Permintaan melebihi batas waktu. Silakan coba lagi.",
   "UNKNOWN_ERROR": "Terjadi kesalahan. Silakan coba lagi.",

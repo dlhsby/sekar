@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
 import {
   Button,
   CoordinateLink,
@@ -22,16 +22,26 @@ import {
 } from '@/components/ui';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
-import { useRegions, useDeleteRegion, type Region } from '@/lib/api/regions';
+import {
+  useRegions,
+  useDeleteRegion,
+  useDeactivateRegion,
+  useActivateRegion,
+  type Region,
+} from '@/lib/api/regions';
 import { useRayons } from '@/lib/api/rayons';
 import { RegionFormModal } from '@/components/regions/RegionFormModal';
 
 export default function RegionsPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
-  const { data: regions = [], isLoading, error, refetch } = useRegions();
+  // Management grid shows deactivated kawasan too — pickers elsewhere keep the
+  // active-only default.
+  const { data: regions = [], isLoading, error, refetch } = useRegions(undefined, true);
   const { data: rayons = [] } = useRayons();
   const deleteRegion = useDeleteRegion();
+  const deactivateRegion = useDeactivateRegion();
+  const activateRegion = useActivateRegion();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Region | null>(null);
@@ -108,6 +118,30 @@ export default function RegionsPage() {
           ),
       },
       {
+        id: 'is_active',
+        accessorFn: (r) =>
+          r.is_active ? t('admin:shared.statusActive') : t('admin:shared.statusInactive'),
+        header: t('admin:shared.columnStatus'),
+        meta: {
+          label: t('admin:shared.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.statusActive'), label: t('admin:shared.statusActive') },
+            { value: t('admin:shared.statusInactive'), label: t('admin:shared.statusInactive') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.statusActive')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.statusInactive')}
+            </StatusPill>
+          ),
+      },
+      {
         id: 'description',
         accessorKey: 'description',
         header: t('admin:shared.description'),
@@ -120,6 +154,26 @@ export default function RegionsPage() {
     [t, rayonName, rayonFilterOptions],
   );
 
+  /**
+   * Toggle a kawasan's active flag. Deactivation is guarded server-side (409
+   * while active lokasi still reference it) — `getErrorMessage` localizes that
+   * by its error code, so the toast explains why it was refused.
+   */
+  const handleToggleActive = async (r: Region) => {
+    try {
+      if (r.is_active) {
+        await deactivateRegion.mutateAsync(r.id);
+        toast.success(t('admin:shared.successDeactivated', { name: r.name }));
+      } else {
+        await activateRegion.mutateAsync(r.id);
+        toast.success(t('admin:shared.successActivated', { name: r.name }));
+      }
+      refetch();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
   const rowActions = (r: Region): DataTableRowAction<Region>[] => [
     { key: 'view', label: t('common:actions.view'), icon: Eye, onClick: () => setViewing(r) },
     {
@@ -131,6 +185,15 @@ export default function RegionsPage() {
         setEditing(r);
         setFormOpen(true);
       },
+    },
+    {
+      key: 'toggle-active',
+      label: r.is_active
+        ? t('admin:shared.actionDeactivate')
+        : t('admin:shared.actionActivate'),
+      icon: Power,
+      hidden: !can('region:update'),
+      onClick: () => handleToggleActive(r),
     },
     {
       key: 'delete',

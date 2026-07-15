@@ -27,7 +27,9 @@ interface UserAreasSheetProps {
 export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
   const { t } = useTranslation();
   const { data: areas = [], isLoading, isError } = useUserAreas(user?.id);
-  const { data: rayons = [] } = useRayons();
+  // Resolves the rayon name for a user's existing locations — a deactivated
+  // rayon must still resolve.
+  const { data: rayons = [] } = useRayons(true);
   const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
 
   const items: LocationListSheetItem[] = useMemo(

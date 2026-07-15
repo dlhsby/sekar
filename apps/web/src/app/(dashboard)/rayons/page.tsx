@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -22,7 +22,12 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { RayonFormModal } from '@/components/rayons/RayonFormModal';
-import { useRayons, useDeleteRayon } from '@/lib/api/rayons';
+import {
+  useRayons,
+  useDeleteRayon,
+  useDeactivateRayon,
+  useActivateRayon,
+} from '@/lib/api/rayons';
 import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
@@ -36,7 +41,9 @@ export default function RayonsPage() {
   const { user } = useAuth();
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
-  const { data: rayonsData, isLoading, error, refetch } = useRayons();
+  // Management grid shows deactivated rayons too — pickers/filters elsewhere
+  // keep the active-only default.
+  const { data: rayonsData, isLoading, error, refetch } = useRayons(true);
   const rayons = useMemo(() => rayonsData || [], [rayonsData]);
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
@@ -66,6 +73,8 @@ export default function RayonsPage() {
   );
 
   const deleteRayon = useDeleteRayon();
+  const deactivateRayon = useDeactivateRayon();
+  const activateRayon = useActivateRayon();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingRayon, setEditingRayon] = useState<Rayon | null>(null);
@@ -151,6 +160,30 @@ export default function RayonsPage() {
           ),
       },
       {
+        id: 'is_active',
+        accessorFn: (r) =>
+          r.is_active ? t('admin:shared.statusActive') : t('admin:shared.statusInactive'),
+        header: t('admin:shared.columnStatus'),
+        meta: {
+          label: t('admin:shared.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.statusActive'), label: t('admin:shared.statusActive') },
+            { value: t('admin:shared.statusInactive'), label: t('admin:shared.statusInactive') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.statusActive')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.statusInactive')}
+            </StatusPill>
+          ),
+      },
+      {
         id: 'description',
         accessorKey: 'description',
         header: t('admin:shared.description'),
@@ -210,6 +243,29 @@ export default function RayonsPage() {
     [actorName, staffingLabel, t]
   );
 
+  /**
+   * Toggle a rayon's active flag. Deactivation is guarded server-side (409 while
+   * active kawasan/lokasi/petugas still reference it) — `getErrorMessage`
+   * localizes that by its error code, so the toast explains why it was refused.
+   */
+  const handleToggleActive = useCallback(
+    async (r: Rayon) => {
+      try {
+        if (r.is_active) {
+          await deactivateRayon.mutateAsync(r.id);
+          toast.success(t('admin:shared.successDeactivated', { name: r.name }));
+        } else {
+          await activateRayon.mutateAsync(r.id);
+          toast.success(t('admin:shared.successActivated', { name: r.name }));
+        }
+        refetch();
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [activateRayon, deactivateRayon, refetch, t]
+  );
+
   const rowActions = useCallback(
     (r: Rayon): DataTableRowAction<Rayon>[] => [
       {
@@ -231,6 +287,15 @@ export default function RayonsPage() {
         },
       },
       {
+        key: 'toggle-active',
+        label: r.is_active
+          ? t('admin:shared.actionDeactivate')
+          : t('admin:shared.actionActivate'),
+        icon: Power,
+        hidden: !isAdmin,
+        onClick: () => handleToggleActive(r),
+      },
+      {
         key: 'delete',
         label: t('admin:rayons.actionDelete'),
         icon: Trash2,
@@ -242,7 +307,7 @@ export default function RayonsPage() {
         },
       },
     ],
-    [isAdmin, view, t]
+    [handleToggleActive, isAdmin, view, t]
   );
 
   const handleDelete = async () => {

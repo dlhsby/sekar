@@ -3,7 +3,10 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  HttpStatus,
 } from '@nestjs/common';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { Region } from './entities/region.entity';
@@ -32,15 +35,20 @@ export class RegionsService {
   ) {}
 
   /** List regions; non-city-scope callers (kepala_rayon/admin_rayon/korlap)
-   * only ever see their own rayon's regions — mirroring the locations list. */
-  findAll(requester: User, rayonId?: string): Promise<Region[]> {
+   * only ever see their own rayon's regions — mirroring the locations list.
+   * Active-only by default (pickers/filters); the admin management grid passes
+   * `includeInactive` so a deactivated kawasan stays reactivatable. */
+  findAll(requester: User, rayonId?: string, includeInactive = false): Promise<Region[]> {
     let effectiveRayonId = rayonId;
     if (!MONITORING_CITY.includes(requester.role as UserRole)) {
       if (!requester.rayon_id) return Promise.resolve([]);
       effectiveRayonId = requester.rayon_id;
     }
     return this.regionRepo.find({
-      where: effectiveRayonId ? { rayon_id: effectiveRayonId } : {},
+      where: {
+        ...(effectiveRayonId ? { rayon_id: effectiveRayonId } : {}),
+        ...(includeInactive ? {} : { is_active: true }),
+      },
       order: { name: 'ASC' },
     });
   }
@@ -85,6 +93,45 @@ export class RegionsService {
       }
     }
     Object.assign(region, dto);
+    return this.regionRepo.save(region);
+  }
+
+  /**
+   * Deactivate a region (is_active=false) — reversible; distinct from delete.
+   *
+   * Guarded like the rayon: a kawasan with active lokasi under it would vanish
+   * from every picker while its children kept referencing it. Note this is
+   * deliberately stricter than `remove()`, which per ADR-045 detaches children
+   * (`region_id = NULL`) rather than refusing — delete re-parents, deactivate
+   * does not, so deactivate must not strand anything.
+   */
+  async deactivate(id: string): Promise<Region> {
+    const region = await this.findOne(id);
+    if (!region.is_active) return region;
+
+    const activeLocations = await this.locationRepo.count({
+      where: { region_id: id, is_active: true },
+    });
+    if (activeLocations > 0) {
+      // Coded so the frontends localize by `code` (the API stays
+      // English-canonical) instead of matching on this message text.
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ApiErrorCode.REGION_DEACTIVATE_IN_USE,
+        `Cannot deactivate region: it still has ${activeLocations} active location(s). ` +
+          'Deactivate or re-parent them first.',
+      );
+    }
+
+    region.is_active = false;
+    return this.regionRepo.save(region);
+  }
+
+  /** Reactivate a deactivated region (is_active=true). Never guarded. */
+  async activate(id: string): Promise<Region> {
+    const region = await this.findOne(id);
+    if (region.is_active) return region;
+    region.is_active = true;
     return this.regionRepo.save(region);
   }
 

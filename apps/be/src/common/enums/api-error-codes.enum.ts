@@ -79,6 +79,10 @@ export enum ApiErrorCode {
   // ==================== Location Errors ====================
   AREA_NOT_FOUND = 'AREA_NOT_FOUND',
   AREA_CODE_DUPLICATE = 'AREA_CODE_DUPLICATE',
+  /** Rayon still has active regions/locations/users — deactivate or re-parent them first */
+  RAYON_DEACTIVATE_IN_USE = 'RAYON_DEACTIVATE_IN_USE',
+  /** Region (Kawasan) still has active locations — deactivate or re-parent them first */
+  REGION_DEACTIVATE_IN_USE = 'REGION_DEACTIVATE_IN_USE',
 
   // ==================== General Errors ====================
   VALIDATION_ERROR = 'VALIDATION_ERROR',

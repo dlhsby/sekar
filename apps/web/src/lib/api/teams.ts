@@ -35,9 +35,9 @@ export function useTeamCategories(enabled = true, includeInactive = false) {
     queryKey: teamKeys.typesList(includeInactive),
     queryFn: async () =>
       (
-        await apiClient.get<TeamCategory[]>(
-          `/team-categories${includeInactive ? '?include_inactive=true' : ''}`,
-        )
+        await apiClient.get<TeamCategory[]>('/team-categories', {
+          params: includeInactive ? { include_inactive: 'true' } : undefined,
+        })
       ).data,
     enabled,
     staleTime: 30 * 60 * 1000, // catalog rarely changes

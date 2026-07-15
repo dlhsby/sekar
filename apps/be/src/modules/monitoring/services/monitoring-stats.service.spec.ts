@@ -38,6 +38,7 @@ describe('MonitoringStatsService', () => {
     code: 'R1',
     border_color: '#7FBC8C',
     staffing_level: StaffingLevel.REGION,
+    is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
   } as Rayon;

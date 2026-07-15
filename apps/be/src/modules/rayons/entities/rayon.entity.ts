@@ -59,6 +59,14 @@ export class Rayon {
   @Column({ type: 'jsonb', nullable: true })
   boundary_polygon?: object;
 
+  @ApiProperty({
+    description: 'Whether the rayon is active',
+    example: true,
+    default: true,
+  })
+  @Column({ default: true })
+  is_active: boolean;
+
   // ── Per-level map styling (ADR-045) ──
   @ApiPropertyOptional({ example: '#1C1917' })
   @Column({ length: 9, nullable: true })

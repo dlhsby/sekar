@@ -10,6 +10,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -54,7 +55,17 @@ export class RayonsController {
   @Get()
   @ApiOperation({
     summary: 'Get all rayons',
-    description: 'Returns all rayons (geographic sectors). Any authenticated user can access this.',
+    description:
+      'Returns rayons (geographic sectors), active-only by default. Any authenticated user can access this.',
+  })
+  @ApiQuery({
+    name: 'include_inactive',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, also return deactivated rayons — for the admin management grid, so a ' +
+      'deactivated rayon stays visible/reactivatable. Defaults to false everywhere else ' +
+      '(pickers, schedule forms), keeping deactivated rayons out of live ops.',
   })
   @ApiResponse({
     status: 200,
@@ -65,8 +76,40 @@ export class RayonsController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  findAll(): Promise<Rayon[]> {
-    return this.rayonsService.findAll();
+  findAll(@Query('include_inactive') includeInactive?: string): Promise<Rayon[]> {
+    return this.rayonsService.findAll(includeInactive === 'true');
+  }
+
+  /**
+   * Deactivate a rayon (is_active=false) — reversible; distinct from delete.
+   * @route PATCH /api/rayons/:id/deactivate
+   */
+  @Patch(':id/deactivate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Deactivate rayon',
+    description:
+      'Set is_active=false. Reversible. Refused with 409 while the rayon still has active ' +
+      'regions, locations or assigned users.',
+  })
+  @ApiParam({ name: 'id', description: 'Rayon UUID' })
+  @ApiResponse({ status: 200, description: 'Rayon deactivated.', type: Rayon })
+  @ApiResponse({ status: 409, description: 'Rayon still has active children or users.' })
+  deactivate(@Param('id', ParseUUIDPipe) id: string): Promise<Rayon> {
+    return this.rayonsService.deactivate(id);
+  }
+
+  /**
+   * Reactivate a deactivated rayon (is_active=true).
+   * @route PATCH /api/rayons/:id/activate
+   */
+  @Patch(':id/activate')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({ summary: 'Reactivate rayon', description: 'Set is_active=true.' })
+  @ApiParam({ name: 'id', description: 'Rayon UUID' })
+  @ApiResponse({ status: 200, description: 'Rayon reactivated.', type: Rayon })
+  activate(@Param('id', ParseUUIDPipe) id: string): Promise<Rayon> {
+    return this.rayonsService.activate(id);
   }
 
   /**
