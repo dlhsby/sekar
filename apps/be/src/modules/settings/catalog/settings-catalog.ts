@@ -188,6 +188,16 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     label: 'Google Maps browser key',
     help: 'Kunci Maps untuk web; disimpan terenkripsi',
   },
+  {
+    key: 'maps.map_id',
+    group: 'integrations',
+    subgroup: 'maps',
+    valueType: 'string',
+    isSecret: false,
+    envKey: 'GOOGLE_MAPS_MAP_ID',
+    label: 'Google Maps Map ID',
+    help: 'Map ID (vektor) dari Google Cloud — wajib untuk Advanced Markers',
+  },
 
   // ── Keamanan & Batas (limits) ─────────────────────────────────────────────
   {
