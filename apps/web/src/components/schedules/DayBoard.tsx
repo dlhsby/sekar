@@ -239,7 +239,7 @@ export function DayBoard({
                     }
                     onEditCapacity={onEditCapacity}
                     showCapacity={capacityLevel === 'location'}
-                    indent
+                    indentClass="ml-8"
                   />
                 ))}
                 {rayon.regions.length === 0 &&
@@ -501,7 +501,9 @@ function RegionCard({
       : undefined
   );
   return (
-    <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-info">
+    // ml-4: one step in from the rayon's own PENEMPATAN block, which sits at
+    // rayon depth. The kawasan is a child, so it reads as one level deeper.
+    <div className="ml-4 overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-info">
       <div className="flex w-full flex-wrap items-center gap-2.5 border-b-2 border-nb-black bg-nb-gray-100 px-3 py-2.5">
         <button
           type="button"
@@ -572,6 +574,7 @@ function RegionCard({
               }
               onEditCapacity={onEditCapacity}
               showCapacity={capacityLevel === 'location'}
+              indentClass="ml-4"
             />
           ))}
         </div>
@@ -590,7 +593,7 @@ function LocationCard({
   roleTargets,
   onEditCapacity,
   showCapacity = false,
-  indent = false,
+  indentClass = '',
 }: {
   loc: BoardLocation;
   /** Container-bound assign (already carries this location's geography). */
@@ -602,13 +605,13 @@ function LocationCard({
   /** `<shift>:<role>` targets when this lokasi owns its capacity. */
   roleTargets?: Map<string, number>;
   /**
-   * Nudge to lokasi depth. A lokasi under a kawasan is already inset by the
-   * kawasan's border+padding (6+10px); a loose one is a DOM sibling of the
-   * kawasan cards, so it needs the same 16px to read as one level deeper.
-   * Indent then encodes the LEVEL (rayon▸kawasan▸lokasi), not tree position —
-   * and the hierarchy stops depending on the border colour alone.
+   * Indent step for this card. Each container puts its own "Penempatan" block at
+   * depth 0 and steps its children in by 16px, so depth tracks the actual tree:
+   * a lokasi under a kawasan sits deeper than one hanging straight off the
+   * rayon. Gives the hierarchy a second channel besides the border colour
+   * (colour alone fails WCAG 2.1 AA).
    */
-  indent?: boolean;
+  indentClass?: string;
   onEditCapacity?: (subject: StaffSubject) => void;
   /** True only when the parent rayon's `staffing_level` is `location`, i.e. this
    *  lokasi owns its capacity. Never inferred from tree position — a lokasi under
@@ -618,9 +621,7 @@ function LocationCard({
   const { t } = useTranslation(['schedules']);
   return (
     <div
-      className={`overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-warning bg-nb-white ${
-        indent ? 'ml-4' : ''
-      }`}
+      className={`overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-warning bg-nb-white ${indentClass}`}
     >
       <div className="flex w-full flex-wrap items-center gap-2.5 px-3 py-2.5">
         <button

@@ -478,31 +478,45 @@ describe('roll-up pills on a parent tier', () => {
 
 describe('hierarchy depth', () => {
   /**
-   * Depth must encode the LEVEL (rayon > kawasan > lokasi), not DOM position.
-   * A loose lokasi is a sibling of the kawasan cards, so without a nudge it
-   * renders at kawasan depth and the tree reads as two levels. Colour alone
-   * carrying the hierarchy also fails anyone who can't separate the cyan/amber
-   * borders (WCAG 2.1 AA).
+   * Depth follows the tree, and every container reads the same way: its own
+   * "Penempatan" block sits at the container's level, its children step in by
+   * one. So a lokasi under a kawasan lands deeper than one hanging straight off
+   * the rayon — which is exactly what they are. This is also the hierarchy's
+   * only non-colour channel: the border hues (primary/info/warning) alone fail
+   * WCAG 2.1 AA.
    */
   const lokasiCard = (name: string) =>
     screen.getByText(name).closest('div[class*="border-l-nb-warning"]') as HTMLElement;
+  const kawasanCard = (name: RegExp) =>
+    screen.getByText(name).closest('div[class*="border-l-nb-info"]') as HTMLElement;
 
-  it('indents a loose lokasi to lokasi depth, not kawasan depth', async () => {
+  it('steps the kawasan in from the rayon’s own Penempatan block', async () => {
     const user = userEvent.setup();
     renderBoard({ occurrences: [] });
     await expand(user, /Rayon Pusat/);
 
-    // loc2 hangs off the rayon directly (no kawasan parent).
-    expect(lokasiCard('Taman Aktif Park').className).toContain('ml-4');
+    // PENEMPATAN RAYON is rayon-level (depth 0); its kawasan are children.
+    expect(kawasanCard(/Kawasan Pusat/).className).toContain('ml-4');
   });
 
-  it('does not double-indent a lokasi already nested in a kawasan', async () => {
+  it('steps a lokasi hanging off the rayon past the kawasan level', async () => {
+    const user = userEvent.setup();
+    renderBoard({ occurrences: [] });
+    await expand(user, /Rayon Pusat/);
+
+    // Two steps: past PENEMPATAN RAYON, then past the kawasan tier.
+    expect(lokasiCard('Taman Aktif Park').className).toContain('ml-8');
+  });
+
+  it('steps a lokasi inside a kawasan in from that kawasan’s Penempatan block', async () => {
     const user = userEvent.setup();
     renderBoard({ occurrences: [] });
     await expand(user, /Rayon Pusat/);
     await expand(user, /Kawasan Pusat/);
 
-    // loc1 sits inside kw1, already inset by the kawasan's border + padding.
-    expect(lokasiCard('Taman Bungkul').className).not.toContain('ml-4');
+    // One step inside its kawasan — which is itself already indented, so it
+    // ends up deeper than a loose lokasi. That is the real structure.
+    expect(lokasiCard('Taman Bungkul').className).toContain('ml-4');
+    expect(lokasiCard('Taman Bungkul').className).not.toContain('ml-8');
   });
 });
