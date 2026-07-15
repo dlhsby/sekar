@@ -135,8 +135,11 @@ export function RayonForm({
       boundary_polygon: initialData?.boundary_polygon ?? null,
       border_color: initialData?.border_color ?? undefined,
       fill_color: initialData?.fill_color ?? undefined,
-      border_opacity: initialData?.border_opacity ?? undefined,
-      fill_opacity: initialData?.fill_opacity ?? undefined,
+      // Opacities are DB `decimal` columns → the API returns them as STRINGS;
+      // coerce to Number so the `z.number()` schema doesn't silently reject an
+      // unchanged edit (mirrors center_lat/lng above).
+      border_opacity: initialData?.border_opacity != null ? Number(initialData.border_opacity) : undefined,
+      fill_opacity: initialData?.fill_opacity != null ? Number(initialData.fill_opacity) : undefined,
       marker_icon: initialData?.marker_icon ?? undefined,
       marker_image_url: initialData?.marker_image_url ?? undefined,
     },

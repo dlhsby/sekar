@@ -190,6 +190,35 @@ describe('RayonForm', () => {
     expect(payload.fill_opacity).toBe(0.5);
   });
 
+  it('submits an unchanged edit when the API returns STRING opacities (decimal columns)', async () => {
+    // TypeORM returns `decimal` columns as strings; the schema validates
+    // z.number(), so an unchanged edit must coerce them or it silently blocks.
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    const initialData = {
+      id: 'r1',
+      name: 'Rayon Lama',
+      staffing_level: 'rayon',
+      center_lat: -7.28,
+      center_lng: 112.74,
+      border_opacity: '0.80',
+      fill_opacity: '0.15',
+    } as never;
+    render(
+      <>
+        <RayonForm formId={FORM_ID} mode="edit" initialData={initialData} onSubmit={onSubmit} />
+        <ExternalSubmitButton />
+      </>
+    );
+
+    await user.click(screen.getByRole('button', { name: /buat rayon/i }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.border_opacity).toBe(0.8);
+    expect(payload.fill_opacity).toBe(0.15);
+  });
+
   it('does not preselect a staffing level on create and blocks submit until chosen', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();

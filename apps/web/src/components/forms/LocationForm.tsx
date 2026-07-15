@@ -162,8 +162,10 @@ export function LocationForm({
       boundary_polygon: initialData?.boundary_polygon,
       border_color: initialData?.border_color ?? undefined,
       fill_color: initialData?.fill_color ?? undefined,
-      border_opacity: initialData?.border_opacity ?? undefined,
-      fill_opacity: initialData?.fill_opacity ?? undefined,
+      // Opacities are DB `decimal` → API returns STRINGS; coerce to Number so the
+      // z.number() schema doesn't silently reject an unchanged edit.
+      border_opacity: initialData?.border_opacity != null ? Number(initialData.border_opacity) : undefined,
+      fill_opacity: initialData?.fill_opacity != null ? Number(initialData.fill_opacity) : undefined,
       marker_icon: initialData?.marker_icon ?? undefined,
       marker_image_url: initialData?.marker_image_url ?? undefined,
     },
