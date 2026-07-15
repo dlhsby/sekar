@@ -1342,6 +1342,71 @@ describe('MonitoringService', () => {
     });
   });
 
+  describe('getSnapshot — staffing counts only satgas+linmas (ADR-046)', () => {
+    it('ignores a clocked-in korlap when counting a lokasi as staffed', async () => {
+      // The defect: `active_count` counted every monitorable role while
+      // `required_count` sums satgas+linmas only — so a supervisor standing in a
+      // park masked a real shortfall. korlap/kepala_rayon/admin_rayon are
+      // monitorable (they render) but never staff a place.
+      const liveUsers = {
+        total_active: 2,
+        total_inactive: 0,
+        total_outside_area: 0,
+        total_missing: 0,
+        total_offline: 0,
+        total_online: 2,
+        users: [
+          {
+            id: 'u-satgas',
+            full_name: 'Satgas Satu',
+            role: 'satgas',
+            location_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Pusat',
+            status: TrackingStatus.ACTIVE,
+            lat: -7.2,
+            lng: 112.7,
+            last_update: new Date(),
+            is_within_area: true,
+          },
+          {
+            id: 'u-korlap',
+            full_name: 'Korlap Satu',
+            role: 'korlap',
+            location_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Pusat',
+            status: TrackingStatus.ACTIVE,
+            lat: -7.2,
+            lng: 112.7,
+            last_update: new Date(),
+            is_within_area: true,
+          },
+        ],
+        generated_at: new Date(),
+      };
+
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(liveUsers as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
+      // Target of 2 satgas at this lokasi.
+      staffRequirementRepository.find.mockResolvedValue([
+        { ...mockStaffRequirement, required_count: 2 },
+      ] as any);
+
+      const result = await service.getSnapshot({} as any);
+      const summary = result.data.area_summaries.find((a: any) => a.location_id === 'area-1');
+
+      // 2 people are standing there, but only ONE staffs it.
+      expect(summary?.active_count).toBe(1);
+      expect(summary?.required_count).toBe(2);
+      expect(summary?.is_understaffed).toBe(true);
+    });
+  });
+
   describe('getSnapshot', () => {
     it('should return snapshot with correct contract shape', async () => {
       const mockLiveUsersResult = {

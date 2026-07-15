@@ -41,6 +41,7 @@ import {
   AreaBoundaryDto,
   RoleStaffingItemDto,
 } from '../dto/boundaries.dto';
+import { STAFFING_COUNTED_ROLES } from '../../users/constants/role-groups';
 import { DayTypeService } from './day-type.service';
 import { simplifyGeometry } from '../../../common/utils/geojson-simplify.util';
 import { MonitoringCacheService } from './monitoring-cache.service';
@@ -394,31 +395,33 @@ export class MonitoringStatsService {
       if (a.rayon_id) areaCountByRayon.set(a.rayon_id, (areaCountByRayon.get(a.rayon_id) ?? 0) + 1);
     }
 
-    const [statusRows, roleRows, requiredMap, scheduledByRayon] = await Promise.all([
-      this.trackingRepository
-        .createQueryBuilder('uts')
-        .innerJoin('uts.area', 'area')
-        .select('area.rayon_id', 'group_id')
-        .addSelect('uts.status', 'status')
-        .addSelect('COUNT(*)', 'count')
-        .where('uts.shift_id IS NOT NULL')
-        .groupBy('area.rayon_id')
-        .addGroupBy('uts.status')
-        .getRawMany(),
-      this.trackingRepository
-        .createQueryBuilder('uts')
-        .innerJoin('uts.area', 'area')
-        .innerJoin('uts.user', 'user')
-        .select('area.rayon_id', 'group_id')
-        .addSelect('user.role', 'role')
-        .addSelect('COUNT(*)', 'count')
-        .where('uts.shift_id IS NOT NULL')
-        .groupBy('area.rayon_id')
-        .addGroupBy('user.role')
-        .getRawMany(),
-      this.requiredCountByGroup('rayon', shiftDefinitionId, dayType),
-      this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
-    ]);
+    const [statusRows, roleRows, requiredMap, scheduledByRayon, countableOnlineByRayon] =
+      await Promise.all([
+        this.trackingRepository
+          .createQueryBuilder('uts')
+          .innerJoin('uts.area', 'area')
+          .select('area.rayon_id', 'group_id')
+          .addSelect('uts.status', 'status')
+          .addSelect('COUNT(*)', 'count')
+          .where('uts.shift_id IS NOT NULL')
+          .groupBy('area.rayon_id')
+          .addGroupBy('uts.status')
+          .getRawMany(),
+        this.trackingRepository
+          .createQueryBuilder('uts')
+          .innerJoin('uts.area', 'area')
+          .innerJoin('uts.user', 'user')
+          .select('area.rayon_id', 'group_id')
+          .addSelect('user.role', 'role')
+          .addSelect('COUNT(*)', 'count')
+          .where('uts.shift_id IS NOT NULL')
+          .groupBy('area.rayon_id')
+          .addGroupBy('user.role')
+          .getRawMany(),
+        this.requiredCountByGroup('rayon', shiftDefinitionId, dayType),
+        this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
+        this.countableOnlineByGroup('rayon'),
+      ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
@@ -435,6 +438,7 @@ export class MonitoringStatsService {
         counts_by_status: statusByGroup.get(rayon.id),
         counts_by_role: roleByGroup.get(rayon.id),
         required: requiredMap.get(rayon.id) ?? 0,
+        countable_online: countableOnlineByRayon.get(rayon.id) ?? 0,
         roster: this.rosterCountsFor(scheduledByRayon.get(rayon.id), clockedInSet),
         presence: presenceByRayon.get(rayon.id) ?? this.emptyPresence(),
         area_count: areaCountByRayon.get(rayon.id) ?? 0,
@@ -460,36 +464,38 @@ export class MonitoringStatsService {
     if (areas.length === 0) return [];
 
     const locationIds = areas.map((a) => a.id);
-    const [statusRows, roleRows, requiredMap, scheduledByArea] = await Promise.all([
-      this.trackingRepository
-        .createQueryBuilder('uts')
-        .select('uts.location_id', 'group_id')
-        .addSelect('uts.status', 'status')
-        .addSelect('COUNT(*)', 'count')
-        .where('uts.shift_id IS NOT NULL')
-        .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
-          rayonId,
-          locationIds,
-        })
-        .groupBy('uts.location_id')
-        .addGroupBy('uts.status')
-        .getRawMany(),
-      this.trackingRepository
-        .createQueryBuilder('uts')
-        .innerJoin('uts.user', 'user')
-        .select('uts.location_id', 'group_id')
-        .addSelect('user.role', 'role')
-        .addSelect('COUNT(*)', 'count')
-        .where('uts.shift_id IS NOT NULL')
-        .andWhere('uts.location_id IN (:...locationIds)', {
-          locationIds,
-        })
-        .groupBy('uts.location_id')
-        .addGroupBy('user.role')
-        .getRawMany(),
-      this.requiredCountByGroup('area', shiftDefinitionId, dayType, locationIds),
-      this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { locationIds }),
-    ]);
+    const [statusRows, roleRows, requiredMap, scheduledByArea, countableOnlineByArea] =
+      await Promise.all([
+        this.trackingRepository
+          .createQueryBuilder('uts')
+          .select('uts.location_id', 'group_id')
+          .addSelect('uts.status', 'status')
+          .addSelect('COUNT(*)', 'count')
+          .where('uts.shift_id IS NOT NULL')
+          .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
+            rayonId,
+            locationIds,
+          })
+          .groupBy('uts.location_id')
+          .addGroupBy('uts.status')
+          .getRawMany(),
+        this.trackingRepository
+          .createQueryBuilder('uts')
+          .innerJoin('uts.user', 'user')
+          .select('uts.location_id', 'group_id')
+          .addSelect('user.role', 'role')
+          .addSelect('COUNT(*)', 'count')
+          .where('uts.shift_id IS NOT NULL')
+          .andWhere('uts.location_id IN (:...locationIds)', {
+            locationIds,
+          })
+          .groupBy('uts.location_id')
+          .addGroupBy('user.role')
+          .getRawMany(),
+        this.requiredCountByGroup('area', shiftDefinitionId, dayType, locationIds),
+        this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { locationIds }),
+        this.countableOnlineByGroup('area', locationIds),
+      ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
@@ -506,6 +512,7 @@ export class MonitoringStatsService {
         counts_by_status: statusByGroup.get(area.id),
         counts_by_role: roleByGroup.get(area.id),
         required: requiredMap.get(area.id) ?? 0,
+        countable_online: countableOnlineByArea.get(area.id) ?? 0,
         roster: this.rosterCountsFor(scheduledByArea.get(area.id), clockedInSet),
         presence: presenceByArea.get(area.id) ?? this.emptyPresence(),
         rayon_id: rayonId,
@@ -513,7 +520,26 @@ export class MonitoringStatsService {
     );
   }
 
-  /** Sum required_count grouped by rayon or area for the current shift + day type. */
+  /**
+   * Sum required_count grouped by rayon or area for the current shift + day type.
+   *
+   * Requirements are **polymorphic** (ADR-045/Phase 4): exactly one of
+   * `location_id` / `region_id` / `rayon_id` is set, decided by the rayon's
+   * `staffing_level`. A rayon's total is therefore the sum across all three
+   * tiers — its own rayon-level rows, its kawasan's rows, and its lokasi's rows.
+   *
+   * This used to `innerJoin('req.area')` and group by `area.rayon_id`, which
+   * silently dropped every requirement whose `location_id` is NULL. Once Phase 4
+   * moved the workbook targets to the **kawasan** tier, that join stopped seeing
+   * 147 of 195 rows: monitoring summed **245** of the city's **1033** required
+   * and reported `required: 0` for **8 of 9 rayons**, so their bubbles could
+   * never read understaffed.
+   *
+   * `area` grouping stays location-keyed on purpose: a lokasi under a
+   * kawasan-scoped rayon genuinely has no target of its own (the kawasan owns
+   * it), exactly as the day board renders it. The kawasan's own bubble is the
+   * region tier (Phase 5.5).
+   */
   private async requiredCountByGroup(
     groupBy: 'rayon' | 'area',
     shiftDefinitionId: string | undefined,
@@ -521,23 +547,77 @@ export class MonitoringStatsService {
     locationIds?: string[],
   ): Promise<Map<string, number>> {
     if (!shiftDefinitionId) return new Map();
-    const qb = this.staffRequirementRepository
-      .createQueryBuilder('req')
-      .addSelect('SUM(req.required_count)', 'total')
-      .where('req.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
-      .andWhere('req.day_type = :dayType', { dayType });
 
-    if (groupBy === 'rayon') {
-      qb.innerJoin('req.area', 'area').select('area.rayon_id', 'group_id').groupBy('area.rayon_id');
-    } else {
+    if (groupBy === 'area') {
       if (!locationIds || locationIds.length === 0) return new Map();
-      qb.select('req.location_id', 'group_id')
+      const rows = await this.staffRequirementRepository
+        .createQueryBuilder('req')
+        .select('req.location_id', 'group_id')
+        .addSelect('SUM(req.required_count)', 'total')
+        .where('req.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+        .andWhere('req.day_type = :dayType', { dayType })
         .andWhere('req.location_id IN (:...locationIds)', { locationIds })
-        .groupBy('req.location_id');
+        .groupBy('req.location_id')
+        .getRawMany();
+      return this.toCountMap(rows);
     }
 
-    const rows = await qb.getRawMany();
-    return new Map(rows.map((r: any) => [r.group_id, parseInt(r.total, 10) || 0]));
+    // Rayon total = its lokasi's + its kawasan's + its own rows. LEFT JOINs so a
+    // row on any single tier survives; COALESCE picks whichever tier resolved.
+    const rows = await this.staffRequirementRepository
+      .createQueryBuilder('req')
+      .leftJoin('locations', 'loc', 'loc.id = req.location_id')
+      .leftJoin('regions', 'reg', 'reg.id = req.region_id')
+      .select('COALESCE(loc.rayon_id, reg.rayon_id, req.rayon_id)', 'group_id')
+      .addSelect('SUM(req.required_count)', 'total')
+      .where('req.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('req.day_type = :dayType', { dayType })
+      .andWhere('COALESCE(loc.rayon_id, reg.rayon_id, req.rayon_id) IS NOT NULL')
+      .groupBy('COALESCE(loc.rayon_id, reg.rayon_id, req.rayon_id)')
+      .getRawMany();
+    return this.toCountMap(rows);
+  }
+
+  /**
+   * Online **satgas+linmas** per group — the only workforce staffing is measured
+   * on (ADR-046). Kept separate from `counts_by_status` on purpose: that stays
+   * all-roles because it is what the bubble displays; this narrows only the
+   * understaffing comparison.
+   *
+   * "Online" mirrors `assembleNode`: active + inactive + outside_area.
+   */
+  private async countableOnlineByGroup(
+    groupBy: 'rayon' | 'area',
+    locationIds?: string[],
+  ): Promise<Map<string, number>> {
+    const groupCol = groupBy === 'rayon' ? 'area.rayon_id' : 'uts.location_id';
+    const qb = this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoin('uts.area', 'area')
+      .innerJoin('uts.user', 'user')
+      .select(groupCol, 'group_id')
+      .addSelect('COUNT(*)', 'total')
+      .where('uts.shift_id IS NOT NULL')
+      .andWhere('user.role IN (:...countedRoles)', { countedRoles: STAFFING_COUNTED_ROLES })
+      .andWhere('uts.status IN (:...onlineStatuses)', {
+        onlineStatuses: [
+          TrackingStatus.ACTIVE,
+          TrackingStatus.INACTIVE,
+          TrackingStatus.OUTSIDE_AREA,
+        ],
+      })
+      .groupBy(groupCol);
+
+    if (groupBy === 'area') {
+      if (!locationIds || locationIds.length === 0) return new Map();
+      qb.andWhere('uts.location_id IN (:...locationIds)', { locationIds });
+    }
+
+    return this.toCountMap(await qb.getRawMany());
+  }
+
+  private toCountMap(rows: Array<{ group_id: string; total: string }>): Map<string, number> {
+    return new Map(rows.map((r) => [r.group_id, parseInt(r.total, 10) || 0]));
   }
 
   private indexStatusRows(rows: any[]): Map<string, AggregateStatusCountsDto> {
@@ -572,6 +652,8 @@ export class MonitoringStatsService {
     counts_by_status?: AggregateStatusCountsDto;
     counts_by_role?: Record<string, number>;
     required: number;
+    /** Online satgas+linmas only — the figure understaffing is measured on. */
+    countable_online?: number;
     roster: AggregateRosterCountsDto;
     presence: PresenceBreakdownDto;
     area_count?: number;
@@ -580,6 +662,12 @@ export class MonitoringStatsService {
     const counts = input.counts_by_status ?? this.emptyStatusCounts();
     const online = counts.active + counts.inactive + counts.outside_area;
     const worker_count = online + counts.missing + counts.offline;
+    // Understaffing weighs ONLY satgas+linmas against the target (ADR-046).
+    // `online` counts every monitorable role, so comparing it against a
+    // satgas+linmas requirement let a korlap or kepala_rayon standing in a park
+    // make it look staffed. `counts_by_status` stays all-roles — that is what the
+    // bubble displays; only the comparison narrows.
+    const countableOnline = input.countable_online ?? online;
     return {
       id: input.id,
       name: input.name,
@@ -591,7 +679,7 @@ export class MonitoringStatsService {
       worker_count,
       online_count: online,
       required: input.required,
-      is_understaffed: online < input.required,
+      is_understaffed: countableOnline < input.required,
       roster: input.roster,
       presence: input.presence,
       ...(input.type === 'rayon' ? { area_count: input.area_count ?? 0 } : {}),
