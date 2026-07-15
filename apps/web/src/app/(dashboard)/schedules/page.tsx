@@ -450,6 +450,8 @@ export default function SchedulesPage() {
           canAssign={can('schedule:create')}
           onAssign={(ctx) => openCreate(isoDate(anchor), ctx)}
           onEditCapacity={canManageCapacity ? (subject) => setCapacitySubject(subject) : undefined}
+          filters={filters}
+          onClearFilters={() => setFilters({})}
         />
       )}
 

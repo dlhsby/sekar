@@ -1,6 +1,8 @@
 /**
  * Unit tests: ScheduleSearch — the collapsed-icon search that expands over the
- * toolbar, with grouped autocomplete plus an Advanced panel.
+ * toolbar, with grouped autocomplete. The "Lanjutan" panel is gone; shift and
+ * team category are autocomplete groups now, so every criterion is reachable
+ * from the one box.
  *
  * Two behaviours carry the feature: a hit sets the FILTER for its own kind
  * (without disturbing the others), while a date hit NAVIGATES instead of
@@ -13,26 +15,15 @@ import { useUsers } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
+import { useShiftDefinitions } from '@/lib/api/shift-definitions';
+import { useTeamCategories } from '@/lib/api/teams';
 
 jest.mock('@/lib/api/users', () => ({ useUsers: jest.fn() }));
 jest.mock('@/lib/api/rayons', () => ({ useRayons: jest.fn() }));
 jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn() }));
 jest.mock('@/lib/api/locations', () => ({ useLocations: jest.fn() }));
-
-// The Advanced panel embeds CalendarFilters (covered by its own suite) and a
-// DatePicker; stub both so this suite stays on the search behaviour.
-jest.mock('@/components/schedules/CalendarFilters', () => ({
-  CalendarFilters: () => <div data-testid="calendar-filters" />,
-}));
-jest.mock('@/components/ui/date-picker', () => ({
-  DatePicker: ({ value, onValueChange }: { value?: string; onValueChange: (v: string) => void }) => (
-    <input
-      data-testid="date-picker"
-      value={value ?? ''}
-      onChange={(e) => onValueChange(e.target.value)}
-    />
-  ),
-}));
+jest.mock('@/lib/api/shift-definitions', () => ({ useShiftDefinitions: jest.fn() }));
+jest.mock('@/lib/api/teams', () => ({ useTeamCategories: jest.fn() }));
 
 const USERS = [
   { id: 'u1', full_name: 'Budi Santoso', username: 'budi', role: 'satgas' },
@@ -41,19 +32,28 @@ const USERS = [
 const RAYONS = [{ id: 'ry1', name: 'Rayon Pusat' }];
 const REGIONS = [{ id: 'kw1', name: 'Kawasan Tunjungan' }];
 const LOCATIONS = [{ id: 'loc1', name: 'Taman Bungkul' }];
+const SHIFTS = [{ id: 's1', name: 'Shift 1' }];
+const TEAMS = [{ id: 't1', name: 'Tim Bungkul' }];
 
 beforeEach(() => {
   (useUsers as jest.Mock).mockReturnValue({ data: { data: USERS } });
   (useRayons as jest.Mock).mockReturnValue({ data: RAYONS });
   (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
   (useLocations as jest.Mock).mockReturnValue({ data: { data: LOCATIONS } });
+  (useShiftDefinitions as jest.Mock).mockReturnValue({ data: SHIFTS });
+  (useTeamCategories as jest.Mock).mockReturnValue({ data: TEAMS });
 });
 
-function setup(filters = {}) {
+function setup(filters = {}, lockRayon = false) {
   const onChange = jest.fn();
   const onNavigateDate = jest.fn();
   render(
-    <ScheduleSearch filters={filters} onChange={onChange} onNavigateDate={onNavigateDate} />
+    <ScheduleSearch
+      filters={filters}
+      onChange={onChange}
+      onNavigateDate={onNavigateDate}
+      lockRayon={lockRayon}
+    />
   );
   return { onChange, onNavigateDate, user: userEvent.setup() };
 }
@@ -166,29 +166,44 @@ describe('ScheduleSearch', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
-  describe('advanced panel', () => {
-    it('opens the full filter set', async () => {
-      const { user } = setup();
-      await user.click(screen.getByRole('button', { name: /cari|search/i }));
+  // Shift + team used to live only behind the "Lanjutan" chevron, so deleting
+  // that panel would have dropped two filters had they not become groups here.
+  describe('criteria reachable from the one box', () => {
+    it('filters by shift from a shift hit', async () => {
+      const { user, onChange } = setup();
+      await search(user, 'Shift 1');
 
-      expect(screen.queryByTestId('calendar-filters')).not.toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: /lanjutan|advanced/i }));
+      await user.click(await screen.findByRole('button', { name: /Shift 1/ }));
 
-      expect(screen.getByTestId('calendar-filters')).toBeInTheDocument();
+      expect(onChange).toHaveBeenCalledWith({ shiftDefinitionId: 's1' });
     });
 
-    it('only allows applying a range once a start date is set', async () => {
-      const { user, onNavigateDate } = setup();
-      await user.click(screen.getByRole('button', { name: /cari|search/i }));
-      await user.click(screen.getByRole('button', { name: /lanjutan|advanced/i }));
+    it('filters by team category from a team hit', async () => {
+      const { user, onChange } = setup();
+      await search(user, 'Tim Bungkul');
 
-      const apply = screen.getByRole('button', { name: /terapkan|apply/i });
-      expect(apply).toBeDisabled();
+      await user.click(await screen.findByRole('button', { name: /Tim Bungkul/ }));
 
-      await user.type(screen.getAllByTestId('date-picker')[0], '2026-07-20');
-      await user.click(screen.getByRole('button', { name: /terapkan|apply/i }));
+      expect(onChange).toHaveBeenCalledWith({ teamCategoryId: 't1' });
+    });
 
-      expect(onNavigateDate).toHaveBeenCalledWith('2026-07-20');
+    it('groups one query hitting several kinds under their own headings', async () => {
+      const { user } = setup();
+      // "bungkul" hits a lokasi AND a team — the grouping is what disambiguates.
+      await search(user, 'Bungkul');
+
+      expect(await screen.findByText('Taman Bungkul')).toBeInTheDocument();
+      expect(screen.getByText('Tim Bungkul')).toBeInTheDocument();
+    });
+
+    it('never offers a rayon hit to a rayon-scoped role', async () => {
+      // The rayon is pinned server-side; offering it here let a scoped user
+      // filter to a rayon that is not theirs (the old panel hid its select but
+      // the autocomplete still listed them).
+      const { user } = setup({}, true);
+      await search(user, 'Rayon Pusat');
+
+      expect(screen.queryByText('Rayon Pusat')).not.toBeInTheDocument();
     });
   });
 });

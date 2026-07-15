@@ -3,9 +3,12 @@ import {
   buildDayBoard,
   buildWeekCoverage,
   rayonCountsFor,
+  pruneDayBoard,
+  autoExpandedIds,
   COUNTABLE_ROLES,
   CITY_NODE_ID,
   type BoardMasterData,
+  type BoardRayon,
 } from '../dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 
@@ -215,5 +218,158 @@ describe('buildDayBoard', () => {
     const region = tree[0].regions[0];
     expect(region.placement[0].total).toBe(1);
     expect(region.total).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// pruneDayBoard / autoExpandedIds — the search's effect on the board.
+//
+// The range query filters occurrences server-side, but the tree's skeleton comes
+// from master data: filtering alone removed the people and left every rayon
+// standing at "0 petugas". These pin the two pruning rules apart.
+// ---------------------------------------------------------------------------
+
+const twoRayonMaster: BoardMasterData = {
+  rayons: [
+    { id: 'ry1', name: 'Rayon Barat 1' },
+    { id: 'ry2', name: 'Rayon Pusat' },
+  ],
+  regions: [
+    { id: 'kw1', name: 'Kawasan Bungkul', rayon_id: 'ry1' },
+    { id: 'kw2', name: 'Kawasan Pusat', rayon_id: 'ry2' },
+  ],
+  locations: [
+    { id: 'loc1', name: 'Taman Bungkul', rayon_id: 'ry1', region_id: 'kw1' },
+    { id: 'loc2', name: 'Taman Loose', rayon_id: 'ry1', region_id: null },
+    { id: 'loc3', name: 'Taman Pusat', rayon_id: 'ry2', region_id: 'kw2' },
+  ],
+  shifts: [shift('s1', 'Shift 1')],
+};
+
+const names = (tree: BoardRayon[]) => tree.map((r) => r.name);
+
+describe('pruneDayBoard', () => {
+  it('returns the tree untouched when nothing is filtered', () => {
+    const tree = buildDayBoard([], twoRayonMaster);
+    expect(pruneDayBoard(tree, {})).toBe(tree);
+  });
+
+  it('drops rayons that cannot contain a filtered lokasi, even with no occurrences', () => {
+    // The reported bug: searching a lokasi left all rayons rendered at 0 petugas.
+    const tree = buildDayBoard([], twoRayonMaster);
+
+    const pruned = pruneDayBoard(tree, { locationId: 'loc1' });
+
+    expect(names(pruned)).toEqual(['Rayon Barat 1']);
+    expect(pruned[0].regions.map((r) => r.name)).toEqual(['Kawasan Bungkul']);
+    expect(pruned[0].regions[0].locations.map((l) => l.name)).toEqual(['Taman Bungkul']);
+    expect(pruned[0].looseLocations).toEqual([]);
+  });
+
+  it('keeps an empty lokasi that was named by a geography filter', () => {
+    // "Nobody is at Taman Bungkul today" is an answer, and it's where you'd assign.
+    const tree = buildDayBoard([], twoRayonMaster);
+
+    const pruned = pruneDayBoard(tree, { locationId: 'loc1' });
+
+    expect(pruned[0].regions[0].locations[0].total).toBe(0);
+  });
+
+  it('keeps only the named kawasan and its lokasi', () => {
+    const tree = buildDayBoard([], twoRayonMaster);
+
+    const pruned = pruneDayBoard(tree, { regionId: 'kw1' });
+
+    expect(names(pruned)).toEqual(['Rayon Barat 1']);
+    expect(pruned[0].regions.map((r) => r.name)).toEqual(['Kawasan Bungkul']);
+    // A kawasan filter is not asking about the rayon's loose lokasi.
+    expect(pruned[0].looseLocations).toEqual([]);
+  });
+
+  it('keeps a whole rayon when the rayon itself is the filter', () => {
+    const tree = buildDayBoard([], twoRayonMaster);
+
+    const pruned = pruneDayBoard(tree, { rayonId: 'ry1' });
+
+    expect(names(pruned)).toEqual(['Rayon Barat 1']);
+    expect(pruned[0].regions).toHaveLength(1);
+    expect(pruned[0].looseLocations).toHaveLength(1);
+  });
+
+  it('drops empty containers for a subject filter, keeping only where they are', () => {
+    // Searching a petugas: an empty lokasi is noise, not an answer.
+    const tree = buildDayBoard(
+      [occ({ location_id: 'loc3', user: { id: 'u9', full_name: 'Budi', username: 'b', role: 'satgas' } })],
+      twoRayonMaster
+    );
+
+    const pruned = pruneDayBoard(tree, { userId: 'u9' });
+
+    expect(names(pruned)).toEqual(['Rayon Pusat']);
+    expect(pruned[0].regions[0].locations.map((l) => l.name)).toEqual(['Taman Pusat']);
+  });
+
+  it('keeps a kawasan as the path to a matching lokasi under it', () => {
+    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+
+    const pruned = pruneDayBoard(tree, { userId: 'u' });
+
+    expect(pruned[0].regions.map((r) => r.name)).toEqual(['Kawasan Bungkul']);
+    expect(pruned[0].regions[0].total).toBe(1);
+  });
+
+  it('returns an empty tree when a subject filter matches nothing', () => {
+    const tree = buildDayBoard([], twoRayonMaster);
+
+    expect(pruneDayBoard(tree, { userId: 'nobody' })).toEqual([]);
+  });
+
+  it('keeps the city node for a subject filter but never for a geography one', () => {
+    const tree = buildDayBoard([occ({ user_id: 'u9' })], twoRayonMaster); // no location/region/rayon
+
+    expect(pruneDayBoard(tree, { userId: 'u9' })[0].id).toBe(CITY_NODE_ID);
+    expect(pruneDayBoard(tree, { rayonId: 'ry1' }).map((r) => r.id)).not.toContain(CITY_NODE_ID);
+  });
+});
+
+describe('autoExpandedIds', () => {
+  it('opens nothing when nothing is filtered', () => {
+    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+
+    expect(autoExpandedIds(tree, {})).toEqual(new Set());
+  });
+
+  it('opens the whole ancestor chain down to a matching lokasi', () => {
+    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+
+    const ids = autoExpandedIds(tree, { userId: 'u' });
+
+    expect(ids).toEqual(new Set(['ry1', 'kw1', 'loc1']));
+  });
+
+  it('opens a lokasi named by a geography filter even though it is empty', () => {
+    const tree = buildDayBoard([], twoRayonMaster);
+
+    expect(autoExpandedIds(tree, { locationId: 'loc1' })).toEqual(new Set(['ry1', 'kw1', 'loc1']));
+  });
+
+  it('does not open empty lokasi just because their rayon was filtered', () => {
+    // A rayon filter must not blow all 87 lokasi open — that is worse than none.
+    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+
+    const ids = autoExpandedIds(tree, { rayonId: 'ry1' });
+
+    expect(ids).toContain('ry1');
+    expect(ids).toContain('loc1');
+    expect(ids).not.toContain('loc2'); // empty loose lokasi stays shut
+  });
+
+  it('opens a placement block that holds a match', () => {
+    const tree = buildDayBoard([occ({ rayon_id: 'ry1' })], twoRayonMaster);
+
+    const ids = autoExpandedIds(tree, { userId: 'u' });
+
+    expect(ids).toContain('ry1:placement');
+    expect(ids).toContain('ry1');
   });
 });

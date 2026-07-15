@@ -2,15 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Search, X } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 import { parse, isValid, format, type Locale } from 'date-fns';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
-import { Button, DatePicker } from '@/components/ui';
-import { CalendarFilters } from '@/components/schedules/CalendarFilters';
 import { useUsers } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
+import { useShiftDefinitions } from '@/lib/api/shift-definitions';
+import { useTeamCategories } from '@/lib/api/teams';
 import type { ScheduleRangeFilters } from '@/lib/api/schedule-events';
 
 interface ScheduleSearchProps {
@@ -22,10 +22,28 @@ interface ScheduleSearchProps {
 }
 
 type Hit =
-  | { kind: 'user' | 'location' | 'region' | 'rayon'; id: string; label: string; meta?: string }
+  | {
+      kind: 'user' | 'location' | 'region' | 'rayon' | 'shift' | 'team';
+      id: string;
+      label: string;
+      meta?: string;
+    }
   | { kind: 'date'; iso: string; label: string; meta?: string };
 
 const MAX_PER_GROUP = 5;
+
+/** Each hit kind sets exactly one criterion; several criteria AND together. */
+const FILTER_KEY: Record<Exclude<Hit['kind'], 'date'>, keyof ScheduleRangeFilters> = {
+  user: 'userId',
+  location: 'locationId',
+  region: 'regionId',
+  rayon: 'rayonId',
+  shift: 'shiftDefinitionId',
+  team: 'teamCategoryId',
+};
+
+/** Group render order — people first, then geography narrowing outward. */
+const GROUP_ORDER: Hit['kind'][] = ['user', 'location', 'region', 'rayon', 'shift', 'team', 'date'];
 
 /** Try to read a date out of the query (ISO or a few day-month formats). */
 function parseQueryDate(query: string, locale: Locale): string | null {
@@ -51,9 +69,12 @@ function parseQueryDate(query: string, locale: Locale): string | null {
 }
 
 /**
- * Google-Calendar-style search: a collapsed icon that expands into a full bar
- * with grouped autocomplete and a chevron that opens the Advanced (Lanjutan)
- * panel. Sits in the toolbar row; active-filter chips render separately below.
+ * Search: a collapsed icon that expands into a bar with grouped autocomplete.
+ * Picking a hit adds one criterion; several AND together and render as removable
+ * chips below the toolbar (`ScheduleFilterChips`) — the chips ARE the
+ * multi-criteria UI, which is why the old "Lanjutan" panel is gone: it was a
+ * second control surface for the same six filters, duplicating the cascade state
+ * and hiding the shift/team filters behind a chevron. They're groups here now.
  */
 export function ScheduleSearch({
   filters,
@@ -64,9 +85,6 @@ export function ScheduleSearch({
   const { t } = useTranslation(['schedules', 'common']);
   const [query, setQuery] = useState('');
   const [expanded, setExpanded] = useState(false);
-  const [advanced, setAdvanced] = useState(false);
-  const [fromDate, setFromDate] = useState<string | undefined>();
-  const [toDate, setToDate] = useState<string | undefined>();
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -75,6 +93,8 @@ export function ScheduleSearch({
   const { data: rayons = [] } = useRayons();
   const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
+  const { data: shifts = [] } = useShiftDefinitions();
+  const { data: teamCategories = [] } = useTeamCategories();
 
   const users = useMemo(() => usersResp?.data ?? [], [usersResp]);
   const locations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
@@ -82,7 +102,6 @@ export function ScheduleSearch({
 
   const collapse = () => {
     setExpanded(false);
-    setAdvanced(false);
     setQuery('');
   };
 
@@ -91,7 +110,7 @@ export function ScheduleSearch({
     if (expanded) inputRef.current?.focus();
   }, [expanded]);
 
-  // Collapse on an outside click (filters set in Advanced are already applied).
+  // Collapse on an outside click.
   useEffect(() => {
     if (!expanded) return;
     const onDown = (e: MouseEvent) => {
@@ -118,10 +137,20 @@ export function ScheduleSearch({
       .filter((r) => match(r.name))
       .slice(0, MAX_PER_GROUP)
       .forEach((r) => out.push({ kind: 'region', id: r.id, label: r.name }));
-    rayons
-      .filter((r) => match(r.name))
+    if (!lockRayon) {
+      rayons
+        .filter((r) => match(r.name))
+        .slice(0, MAX_PER_GROUP)
+        .forEach((r) => out.push({ kind: 'rayon', id: r.id, label: r.name }));
+    }
+    shifts
+      .filter((s) => match(s.name))
       .slice(0, MAX_PER_GROUP)
-      .forEach((r) => out.push({ kind: 'rayon', id: r.id, label: r.name }));
+      .forEach((s) => out.push({ kind: 'shift', id: s.id, label: s.name }));
+    teamCategories
+      .filter((c) => match(c.name))
+      .slice(0, MAX_PER_GROUP)
+      .forEach((c) => out.push({ kind: 'team', id: c.id, label: c.name }));
     const iso = parseQueryDate(query, locale);
     if (iso) {
       out.push({
@@ -131,21 +160,18 @@ export function ScheduleSearch({
       });
     }
     return out;
-  }, [q, query, users, locations, regions, rayons, locale]);
+  }, [q, query, users, locations, regions, rayons, shifts, teamCategories, locale, lockRayon]);
 
   const grouped = useMemo(() => {
     const g: Record<string, Hit[]> = {};
     for (const h of hits) (g[h.kind] ??= []).push(h);
-    return g;
+    return GROUP_ORDER.filter((k) => g[k]?.length).map((k) => [k, g[k]] as const);
   }, [hits]);
 
   const pick = (hit: Hit) => {
     collapse();
     if (hit.kind === 'date') return onNavigateDate(hit.iso);
-    const key = { user: 'userId', location: 'locationId', region: 'regionId', rayon: 'rayonId' }[
-      hit.kind
-    ] as keyof ScheduleRangeFilters;
-    onChange({ ...filters, [key]: hit.id });
+    onChange({ ...filters, [FILTER_KEY[hit.kind]]: hit.id });
   };
 
   const groupLabel: Record<string, string> = {
@@ -153,6 +179,8 @@ export function ScheduleSearch({
     location: t('schedules:filters.locationLabel'),
     region: t('schedules:filters.regionLabel'),
     rayon: t('schedules:filters.rayonLabel'),
+    shift: t('schedules:filters.shiftLabel'),
+    team: t('schedules:filters.teamCategoryLabel'),
     date: t('schedules:search.groupDate'),
   };
 
@@ -193,93 +221,40 @@ export function ScheduleSearch({
               >
                 <X className="size-4" />
               </button>
-              <span className="h-6 w-px shrink-0 bg-nb-black" />
-              <button
-                type="button"
-                onClick={() => setAdvanced((v) => !v)}
-                aria-expanded={advanced}
-                aria-label={t('schedules:search.advanced')}
-                title={t('schedules:search.advanced')}
-                className="shrink-0 text-nb-gray-600 hover:text-nb-black"
-              >
-                <ChevronDown
-                  className={`size-4 transition-transform ${advanced ? 'rotate-180' : ''}`}
-                />
-              </button>
             </div>
 
-            {advanced ? (
-              <div className="absolute right-0 top-full z-20 mt-1 w-[min(34rem,90vw)] rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-lg">
-                <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                  {t('schedules:search.advanced')}
-                </p>
-                <CalendarFilters value={filters} onChange={onChange} lockRayon={lockRayon} />
-                <div className="mt-3">
-                  <span className="mb-1 block text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                    {t('schedules:search.dateRangeLabel')}
-                  </span>
-                  <div className="flex flex-wrap items-end gap-2">
-                    <div className="min-w-[9rem] flex-1">
-                      <span className="mb-1 block text-nb-caption text-nb-gray-500">
-                        {t('schedules:search.dateFrom')}
-                      </span>
-                      <DatePicker value={fromDate} onValueChange={setFromDate} />
+            {q.length > 0 && (
+              <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-lg">
+                {hits.length === 0 ? (
+                  <p className="px-3 py-4 text-center text-nb-body-sm text-nb-gray-500">
+                    {t('schedules:search.noResults', { q: query })}
+                  </p>
+                ) : (
+                  grouped.map(([kind, list]) => (
+                    <div key={kind}>
+                      <p className="bg-nb-gray-50 px-3 py-1 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+                        {groupLabel[kind]}
+                      </p>
+                      {list.map((hit) => (
+                        <button
+                          key={hit.kind === 'date' ? hit.iso : hit.id}
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => pick(hit)}
+                          className="flex w-full items-center gap-2 border-t border-nb-black px-3 py-2 text-left text-nb-body-sm hover:bg-nb-gray-50"
+                        >
+                          <span className="truncate font-medium">{hit.label}</span>
+                          {'meta' in hit && hit.meta && (
+                            <span className="ml-auto shrink-0 text-nb-caption text-nb-gray-500">
+                              {hit.meta}
+                            </span>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                    <div className="min-w-[9rem] flex-1">
-                      <span className="mb-1 block text-nb-caption text-nb-gray-500">
-                        {t('schedules:search.dateTo')}
-                      </span>
-                      <DatePicker value={toDate} onValueChange={setToDate} />
-                    </div>
-                    <Button
-                      variant="outline"
-                      disabled={!fromDate}
-                      onClick={() => {
-                        if (fromDate) {
-                          onNavigateDate(fromDate);
-                          collapse();
-                        }
-                      }}
-                    >
-                      {t('common:actions.apply', 'Apply')}
-                    </Button>
-                  </div>
-                </div>
+                  ))
+                )}
               </div>
-            ) : (
-              q.length > 0 && (
-                <div className="absolute left-0 top-full z-20 mt-1 w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-lg">
-                  {hits.length === 0 ? (
-                    <p className="px-3 py-4 text-center text-nb-body-sm text-nb-gray-500">
-                      {t('schedules:search.noResults', { q: query })}
-                    </p>
-                  ) : (
-                    Object.entries(grouped).map(([kind, list]) => (
-                      <div key={kind}>
-                        <p className="bg-nb-gray-50 px-3 py-1 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                          {groupLabel[kind]}
-                        </p>
-                        {list.map((hit) => (
-                          <button
-                            key={hit.kind === 'date' ? hit.iso : hit.id}
-                            type="button"
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => pick(hit)}
-                            className="flex w-full items-center gap-2 border-t border-nb-black px-3 py-2 text-left text-nb-body-sm hover:bg-nb-gray-50"
-                          >
-                            <span className="truncate font-medium">{hit.label}</span>
-                            {'meta' in hit && hit.meta && (
-                              <span className="ml-auto shrink-0 text-nb-caption text-nb-gray-500">
-                                {hit.meta}
-                              </span>
-                            )}
-                          </button>
-                        ))}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )
             )}
           </div>
         </div>

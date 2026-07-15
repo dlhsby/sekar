@@ -40,16 +40,14 @@
     "shiftStaffShortfall": "Kurang {{count}} {{role}}",
     "roleShort": "{{shift}} · {{role}}",
     "shiftTotalTooltip": "{{shift}} — {{count}} petugas",
-    "emptyDay": "Belum ada jadwal untuk hari ini."
+    "emptyDay": "Belum ada jadwal untuk hari ini.",
+    "noMatchTitle": "Tidak ada jadwal yang cocok",
+    "noMatchDesc": "Tidak ada jadwal pada hari ini yang cocok dengan semua kriteria pencarian. Ubah atau hapus sebagian kriteria, atau pilih tanggal lain."
   },
   "search": {
     "placeholder": "Cari petugas, area, atau tanggal…",
-    "advanced": "Lanjutan",
     "noResults": "Tidak ada hasil untuk \"{{q}}\"",
-    "groupDate": "Tanggal",
-    "dateRangeLabel": "Rentang tanggal",
-    "dateFrom": "Dari",
-    "dateTo": "Sampai"
+    "groupDate": "Tanggal"
   },
   "detail": {
     "placement": "Penempatan",
