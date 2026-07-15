@@ -53,7 +53,15 @@ type LocationFormData = MapStyleFieldsDto & {
   location_type_id: string;
   region_id?: string | null;
   address?: string | null;
+  radius_meters?: number | null;
   boundary_polygon?: BoundaryGeometry | null;
+};
+
+/** Coerce a number-input value to a number, or null when empty/invalid. */
+const toNullableNumber = (v: unknown): number | null => {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = Number(v);
+  return Number.isNaN(n) ? null : n;
 };
 
 export interface LocationFormProps {
@@ -88,6 +96,13 @@ export function LocationForm({
         rayon_id: z.string().uuid(t('validation:rayonRequired')),
         location_type_id: z.string().uuid(t('validation:locationTypeRequired')),
         address: z.string().optional().nullable(),
+        radius_meters: z
+          .number()
+          .int()
+          .min(1, t('validation:radiusRange'))
+          .max(10000, t('validation:radiusRange'))
+          .nullable()
+          .optional(),
         boundary_polygon: z
           .custom<BoundaryGeometry>((val) => val == null || isBoundaryGeometry(val), {
             message: t('validation:boundaryRequired'),
@@ -131,6 +146,7 @@ export function LocationForm({
       location_type_id: initialData?.location_type_id || '',
       region_id: initialData?.region_id || '',
       address: initialData?.address || '',
+      radius_meters: initialData?.radius_meters ?? undefined,
       boundary_polygon: initialData?.boundary_polygon,
       border_color: initialData?.border_color ?? undefined,
       fill_color: initialData?.fill_color ?? undefined,
@@ -204,6 +220,7 @@ export function LocationForm({
       location_type_id: data.location_type_id,
       region_id: data.region_id || null,
       address: data.address || undefined,
+      radius_meters: data.radius_meters ?? undefined,
       boundary_polygon: data.boundary_polygon ?? undefined,
       gps_lng: finalCenter.lng,
       gps_lat: finalCenter.lat,
@@ -285,6 +302,17 @@ export function LocationForm({
             {...register('address')}
           />
         </div>
+
+        <FormInput
+          label={t('admin:areas.form.radius')}
+          type="number"
+          min={1}
+          max={10000}
+          placeholder={t('admin:areas.form.radiusPlaceholder')}
+          error={errors.radius_meters?.message}
+          disabled={readOnly}
+          {...register('radius_meters', { setValueAs: toNullableNumber })}
+        />
       </div>
 
       <MapStyleFields

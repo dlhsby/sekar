@@ -102,6 +102,7 @@
     "columnBoundary": "Batas Wilayah",
     "columnArea": "Luas",
     "columnRadius": "Radius (m)",
+    "columnStyle": "Tampilan",
     "columnAddress": "Alamat",
     "columnStatus": "Status",
     "columnCreated": "Dibuat",
@@ -292,7 +293,8 @@
       "staffingLevelHelp": "Menentukan di mana kebutuhan petugas rayon ini diatur: per Kawasan, per Lokasi, atau seluruh Rayon.",
       "staffingLevelRegion": "Per Kawasan",
       "staffingLevelLocation": "Per Lokasi",
-      "staffingLevelRayon": "Seluruh Rayon"
+      "staffingLevelRayon": "Seluruh Rayon",
+      "staffingLevelPlaceholder": "Pilih tingkat kebutuhan…"
     },
     "stats": {
       "totalAreas": "Jumlah Area",
@@ -413,7 +415,7 @@
     "searchPlaceholder": "Cari nama kawasan…",
     "columnName": "Nama",
     "columnRayon": "Rayon",
-    "columnStyle": "Gaya",
+    "columnStyle": "Tampilan",
     "buttonAdd": "Tambah Kawasan",
     "actionEdit": "Ubah",
     "detailTitle": "Detail Kawasan",
@@ -448,17 +450,14 @@
     }
   },
   "mapStyle": {
-    "title": "Gaya Peta",
+    "title": "Tampilan Peta",
     "borderColor": "Warna Batas",
     "borderOpacity": "Opasitas Batas",
     "fillColor": "Warna Isi",
     "fillOpacity": "Opasitas Isi",
     "fillToggle": "Aktifkan warna isi",
     "fillNone": "Tidak diisi (transparan)",
-    "fillSameAsBorder": "Sama dengan warna batas",
-    "markerIcon": "Ikon Penanda",
-    "markerIconPlaceholder": "mis. trees",
-    "markerColor": "Warna Penanda"
+    "fillSameAsBorder": "Sama dengan warna batas"
   },
   "teams": {
     "pageTitle": "Tim",

@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Plus, Eye, Pencil, Trash2, MapPin } from 'lucide-react';
 import {
   Button,
+  CoordinateLink,
   DataTable,
   Dialog,
   DialogBody,
@@ -42,6 +43,10 @@ export default function RegionsPage() {
     () => new Map(rayons.map((r) => [r.id, r.name])),
     [rayons],
   );
+  const rayonFilterOptions = useMemo(
+    () => rayons.map((r) => ({ label: r.name, value: r.name })),
+    [rayons],
+  );
 
   const columns = useMemo<ColumnDef<Region>[]>(
     () => [
@@ -49,35 +54,62 @@ export default function RegionsPage() {
         id: 'name',
         accessorKey: 'name',
         header: t('admin:regions.columnName'),
+        meta: { label: t('admin:regions.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-bold text-nb-black">{row.original.name}</span>,
       },
       {
         id: 'rayon',
         accessorFn: (r) => rayonName.get(r.rayon_id) ?? r.rayon_id,
         header: t('admin:regions.columnRayon'),
+        meta: {
+          label: t('admin:regions.columnRayon'),
+          filterVariant: 'enum',
+          filterOptions: rayonFilterOptions,
+        },
       },
       {
         id: 'fill',
         header: t('admin:regions.columnStyle'),
         enableSorting: false,
         cell: ({ row }) => {
-          const c = row.original.fill_color;
-          return c ? (
+          const border = row.original.border_color ?? null;
+          const fill = row.original.fill_color ?? null;
+          const shown = fill ?? border;
+          return shown ? (
             <span className="inline-flex items-center gap-2">
               <span
-                className="h-4 w-4 border-2 border-nb-black"
-                style={{ backgroundColor: c }}
-                title={c}
+                className="h-4 w-4 border-2"
+                style={{ backgroundColor: fill ?? 'transparent', borderColor: border ?? 'var(--color-nb-black)' }}
+                title={shown}
               />
-              <span className="font-mono text-nb-body-sm text-nb-gray-600">{c}</span>
+              <span className="font-mono text-nb-body-sm text-nb-gray-600">{shown}</span>
             </span>
           ) : (
             <span className="text-nb-gray-500">—</span>
           );
         },
       },
+      {
+        id: 'coordinates',
+        header: t('admin:areas.columnCoordinates'),
+        enableSorting: false,
+        enableColumnFilter: false,
+        meta: { label: t('admin:areas.columnCoordinates') },
+        cell: ({ row }) => (
+          <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
+        ),
+      },
+      {
+        id: 'description',
+        accessorKey: 'description',
+        header: t('admin:shared.description'),
+        meta: { label: t('admin:shared.description'), defaultHidden: true, filterVariant: 'text' },
+        cell: ({ row }) => (
+          <span className="text-nb-body-sm text-nb-gray-600">{row.original.description ?? '—'}</span>
+        ),
+      },
     ],
-    [t, rayonName],
+    [t, rayonName, rayonFilterOptions],
   );
 
   const rowActions = (r: Region): DataTableRowAction<Region>[] => [

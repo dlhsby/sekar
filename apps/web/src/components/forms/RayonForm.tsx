@@ -41,11 +41,14 @@ const toNullableNumber = (v: unknown): number | null => {
 type RayonFormData = MapStyleFieldsDto & {
   name: string;
   description?: string | null;
-  staffing_level: StaffingLevel;
+  // '' = not-yet-chosen (no preselection on create); refined to a StaffingLevel on submit.
+  staffing_level: string;
   center_lat?: number | null;
   center_lng?: number | null;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 };
+
+const STAFFING_LEVELS: StaffingLevel[] = ['rayon', 'region', 'location'];
 
 export interface RayonFormProps {
   /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
@@ -77,7 +80,12 @@ export function RayonForm({
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
         description: z.string().optional().nullable(),
-        staffing_level: z.enum(['region', 'location', 'rayon']),
+        // Accept '' as the initial (unchosen) state but require a real choice on submit.
+        staffing_level: z
+          .string()
+          .refine((v) => STAFFING_LEVELS.includes(v as StaffingLevel), {
+            message: t('validation:required'),
+          }),
         center_lat: z
           .number()
           .min(-90, t('validation:latitudeInvalid'))
@@ -112,7 +120,7 @@ export function RayonForm({
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
-      staffing_level: initialData?.staffing_level ?? 'region',
+      staffing_level: initialData?.staffing_level ?? '',
       center_lat: initialData?.center_lat ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng ? Number(initialData.center_lng) : undefined,
       boundary_polygon: initialData?.boundary_polygon ?? null,
@@ -178,7 +186,7 @@ export function RayonForm({
   const onSubmitForm = async (data: RayonFormData) => {
     const submitData: UpdateRayonDto = {
       name: data.name,
-      staffing_level: data.staffing_level,
+      staffing_level: data.staffing_level as StaffingLevel,
       // Keep the legacy single `color` column mirroring the border colour so any
       // consumer still reading it stays consistent (the UI now only edits
       // border/fill via MapStyleFields).
@@ -236,15 +244,18 @@ export function RayonForm({
         <FormSelect
           label={t('admin:rayons.form.staffingLevel')}
           helperText={t('admin:rayons.form.staffingLevelHelp')}
+          placeholder={t('admin:rayons.form.staffingLevelPlaceholder')}
+          required
           value={watch('staffing_level')}
           onChange={(v) =>
             setValue('staffing_level', v as StaffingLevel, { shouldValidate: true })
           }
           disabled={readOnly}
+          error={errors.staffing_level?.message}
           options={[
+            { value: 'rayon', label: t('admin:rayons.form.staffingLevelRayon') },
             { value: 'region', label: t('admin:rayons.form.staffingLevelRegion') },
             { value: 'location', label: t('admin:rayons.form.staffingLevelLocation') },
-            { value: 'rayon', label: t('admin:rayons.form.staffingLevelRayon') },
           ]}
         />
       </div>

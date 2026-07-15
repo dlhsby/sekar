@@ -17,6 +17,7 @@
   "areaTypeRequired": "Tipe area wajib dipilih",
   "boundaryRequired": "Batas area wajib digambar di peta",
   "colorInvalid": "Format warna harus heksadesimal, mis. #RRGGBB",
+  "radiusRange": "Radius harus antara 1 dan 10000 meter",
   "latitudeInvalid": "Latitude harus antara -90 dan 90",
   "longitudeInvalid": "Longitude harus antara -180 dan 180",
   "checking": "Memeriksa ketersediaan…",
