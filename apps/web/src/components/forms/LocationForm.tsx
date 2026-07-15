@@ -5,10 +5,11 @@
  * Reusable form for creating and editing areas
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import { useTranslation } from 'react-i18next';
 import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
@@ -73,9 +74,6 @@ export interface LocationFormProps {
   mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
   readOnly?: boolean;
-  /** Reports whether the boundary/pin geometry required to submit is present —
-   *  the modal uses this to disable its (now external) submit button. */
-  onValidityChange?: (valid: boolean) => void;
 }
 
 export function LocationForm({
@@ -84,7 +82,6 @@ export function LocationForm({
   onSubmit,
   mode,
   readOnly = false,
-  onValidityChange,
 }: LocationFormProps) {
   const { t } = useTranslation();
 
@@ -213,20 +210,17 @@ export function LocationForm({
     setCenter({ lat: Number(lat.toFixed(7)), lng: Number(lng.toFixed(7)) });
   };
 
-  // At least one of {boundary, location pin} must be set to save.
-  const boundaryValue = watch('boundary_polygon');
-  const hasGeometry = !!center || !!boundaryValue;
-  useEffect(() => {
-    onValidityChange?.(hasGeometry);
-  }, [hasGeometry, onValidityChange]);
-
   // Handle form submission
   const onSubmitForm = async (data: LocationFormData) => {
-    // Areas require a GPS coordinate: use the pin, else fall back to the boundary
-    // centroid. Block when neither is set.
+    // A location REQUIRES a GPS coordinate: use the pin, else fall back to the
+    // boundary centroid. Surface a visible error when neither is set (rather than
+    // silently doing nothing) so the submit isn't a dead click.
     const finalCenter =
       center ?? (data.boundary_polygon ? boundaryCentroid(data.boundary_polygon) : null);
-    if (!finalCenter) return;
+    if (!finalCenter) {
+      toast.error(t('validation:locationPointRequired'));
+      return;
+    }
 
     const submitData: CreateLocationDto | UpdateLocationDto = {
       name: data.name,
@@ -384,14 +378,6 @@ export function LocationForm({
           }
         />
       </div>
-
-      {/* Submit/Cancel live in the modal's DialogFooter (formId links them to
-          this form); only the geometry hint stays here, next to the map. */}
-      {!readOnly && !hasGeometry && (
-        <p className="text-nb-body-sm text-nb-danger">
-          {t('admin:locations.form.geometryRequired')}
-        </p>
-      )}
     </form>
   );
 }

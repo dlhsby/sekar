@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -44,7 +44,6 @@ export interface RegionFormProps {
   onSubmit: (data: CreateRegionDto | UpdateRegionDto) => Promise<void>;
   mode: 'create' | 'edit';
   readOnly?: boolean;
-  onValidityChange?: (valid: boolean) => void;
 }
 
 export function RegionForm({
@@ -53,7 +52,6 @@ export function RegionForm({
   onSubmit,
   mode,
   readOnly = false,
-  onValidityChange,
 }: RegionFormProps) {
   const { t } = useTranslation();
   const { data: rayons = [] } = useRayons();
@@ -105,11 +103,6 @@ export function RegionForm({
 
   const centerLat = watch('center_lat');
   const centerLng = watch('center_lng');
-  const boundaryValue = watch('boundary_polygon');
-  const hasGeometry = (centerLat != null && centerLng != null) || !!boundaryValue;
-  useEffect(() => {
-    onValidityChange?.(hasGeometry);
-  }, [hasGeometry, onValidityChange]);
 
   const style: MapStyle = Object.fromEntries(STYLE_KEYS.map((k) => [k, watch(k)]));
 
@@ -233,10 +226,6 @@ export function RegionForm({
           />
         </div>
       </div>
-
-      {!readOnly && !hasGeometry && (
-        <p className="text-nb-body-sm text-nb-danger">{t('admin:regions.form.geometryRequired')}</p>
-      )}
     </form>
   );
 }

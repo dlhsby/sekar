@@ -113,25 +113,6 @@ describe('RayonForm', () => {
     });
   });
 
-  it('reports geometry validity via onValidityChange as the pin/boundary change', async () => {
-    const onSubmit = jest.fn().mockResolvedValue(undefined);
-    const onValidityChange = jest.fn();
-    const user = userEvent.setup();
-    render(
-      <RayonForm
-        formId={FORM_ID}
-        mode="create"
-        onSubmit={onSubmit}
-        onValidityChange={onValidityChange}
-      />
-    );
-
-    await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
-
-    await user.click(screen.getByTestId('place-pin'));
-
-    await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
-  });
 
   it('includes the drawn boundary_polygon on submit', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);

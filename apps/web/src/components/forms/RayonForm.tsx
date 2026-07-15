@@ -5,7 +5,7 @@
  * Reusable form for creating and editing rayons
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -59,9 +59,6 @@ export interface RayonFormProps {
   mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
   readOnly?: boolean;
-  /** Reports whether the boundary/pin geometry required to submit is present —
-   *  the modal uses this to disable its (now external) submit button. */
-  onValidityChange?: (valid: boolean) => void;
 }
 
 export function RayonForm({
@@ -70,7 +67,6 @@ export function RayonForm({
   onSubmit,
   mode,
   readOnly = false,
-  onValidityChange,
 }: RayonFormProps) {
   const { t } = useTranslation();
 
@@ -157,12 +153,6 @@ export function RayonForm({
 
   const centerLat = watch('center_lat');
   const centerLng = watch('center_lng');
-  const boundaryValue = watch('boundary_polygon');
-  // Require at least one of {boundary, location pin} to save.
-  const hasGeometry = (centerLat != null && centerLng != null) || !!boundaryValue;
-  useEffect(() => {
-    onValidityChange?.(hasGeometry);
-  }, [hasGeometry, onValidityChange]);
 
   const handlePinChange = ({ lat, lng }: { lat: number; lng: number }) => {
     setValue('center_lat', Number(lat.toFixed(7)), { shouldValidate: true });
@@ -350,13 +340,6 @@ export function RayonForm({
         </div>
       </div>
 
-      {/* Submit/Cancel live in the modal's DialogFooter (formId links them to
-          this form); only the geometry hint stays here, next to the map. */}
-      {!readOnly && !hasGeometry && (
-        <p className="text-nb-body-sm text-nb-danger">
-          {t('admin:rayons.form.geometryRequired')}
-        </p>
-      )}
     </form>
   );
 }

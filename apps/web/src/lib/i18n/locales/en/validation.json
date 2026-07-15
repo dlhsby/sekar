@@ -16,6 +16,7 @@
   "rayonRequired": "District is required",
   "areaTypeRequired": "Area type is required",
   "boundaryRequired": "Area boundary must be drawn on the map",
+  "locationPointRequired": "A location point is required — place a pin or draw a boundary on the map",
   "colorInvalid": "Color format must be hexadecimal, e.g. #RRGGBB",
   "radiusRange": "Radius must be between 1 and 10000 meters",
   "latitudeInvalid": "Latitude must be between -90 and 90",
