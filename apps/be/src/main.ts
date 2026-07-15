@@ -115,13 +115,30 @@ async function bootstrap() {
   app.use(bodyParser.json({ limit: '15mb' }));
   app.use(bodyParser.urlencoded({ limit: '15mb', extended: true }));
 
-  // Enable CORS with secure defaults
-  const corsOrigin = process.env.CORS_ORIGIN?.split(',');
-  if (!corsOrigin && process.env.NODE_ENV === 'production') {
+  // Enable CORS. Production: strict allowlist from CORS_ORIGIN (required).
+  // Development: allow any localhost / 127.0.0.1 origin on ANY port (so changing
+  // the web dev port via WEB_PORT never breaks cross-origin calls) plus any
+  // origins explicitly listed in CORS_ORIGIN.
+  const isProduction = process.env.NODE_ENV === 'production';
+  const configuredOrigins = process.env.CORS_ORIGIN?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (!configuredOrigins && isProduction) {
     throw new Error('CORS_ORIGIN must be set in production environment');
   }
+  const isLocalhostOrigin = (origin: string): boolean =>
+    /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
   app.enableCors({
-    origin: corsOrigin || ['http://localhost:3001', 'http://localhost:19006'],
+    origin: isProduction
+      ? configuredOrigins
+      : (origin, callback) => {
+          // No Origin header (curl / same-origin / mobile WebView) → allow.
+          if (!origin || isLocalhostOrigin(origin) || configuredOrigins?.includes(origin)) {
+            callback(null, true);
+            return;
+          }
+          callback(null, false);
+        },
     credentials: true,
   });
 
