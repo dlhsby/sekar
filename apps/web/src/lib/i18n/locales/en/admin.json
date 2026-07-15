@@ -102,6 +102,7 @@
     "columnBoundary": "Boundary",
     "columnArea": "Area",
     "columnRadius": "Radius (m)",
+    "columnStyle": "Display",
     "columnAddress": "Address",
     "columnStatus": "Status",
     "columnCreated": "Created",
@@ -292,7 +293,8 @@
       "staffingLevelHelp": "Where this rayon's staffing requirements are set: per Kawasan, per Location, or the whole Rayon.",
       "staffingLevelRegion": "Per Kawasan",
       "staffingLevelLocation": "Per Location",
-      "staffingLevelRayon": "Whole Rayon"
+      "staffingLevelRayon": "Whole Rayon",
+      "staffingLevelPlaceholder": "Select requirement level…"
     },
     "stats": {
       "totalAreas": "Number of Areas",
@@ -413,7 +415,7 @@
     "searchPlaceholder": "Search region name…",
     "columnName": "Name",
     "columnRayon": "District",
-    "columnStyle": "Style",
+    "columnStyle": "Display",
     "buttonAdd": "Add Region",
     "actionEdit": "Edit",
     "detailTitle": "Region Detail",
@@ -448,17 +450,14 @@
     }
   },
   "mapStyle": {
-    "title": "Map Style",
+    "title": "Map Display",
     "borderColor": "Border Color",
     "borderOpacity": "Border Opacity",
     "fillColor": "Fill Color",
     "fillOpacity": "Fill Opacity",
     "fillToggle": "Toggle fill",
     "fillNone": "No fill (transparent)",
-    "fillSameAsBorder": "Same as border colour",
-    "markerIcon": "Marker Icon",
-    "markerIconPlaceholder": "e.g. trees",
-    "markerColor": "Marker Color"
+    "fillSameAsBorder": "Same as border colour"
   },
   "teams": {
     "pageTitle": "Teams",

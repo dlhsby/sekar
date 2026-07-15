@@ -66,6 +66,12 @@ function ExternalSubmitButton() {
   );
 }
 
+/** Pick a "Tingkat Kebutuhan Petugas" option (no preselection on create). */
+async function selectStaffing(user: ReturnType<typeof userEvent.setup>, label: RegExp) {
+  await user.click(screen.getByRole('combobox', { name: /tingkat kebutuhan petugas/i }));
+  await user.click(await screen.findByRole('option', { name: label }));
+}
+
 describe('RayonForm', () => {
   it('renders name, map-style colours, description and the boundary editor', () => {
     render(
@@ -95,11 +101,16 @@ describe('RayonForm', () => {
     );
 
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
+    await selectStaffing(user, /seluruh rayon/i);
     await user.click(screen.getByTestId('place-pin')); // at least one geometry required
     await user.click(screen.getByRole('button', { name: /buat rayon/i }));
 
     await waitFor(() => expect(onSubmit).toHaveBeenCalled());
-    expect(onSubmit.mock.calls[0][0]).toMatchObject({ name: 'Rayon Baru', boundary_polygon: null });
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      name: 'Rayon Baru',
+      boundary_polygon: null,
+      staffing_level: 'rayon',
+    });
   });
 
   it('reports geometry validity via onValidityChange as the pin/boundary change', async () => {
@@ -133,6 +144,7 @@ describe('RayonForm', () => {
     );
 
     await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
+    await selectStaffing(user, /per kawasan/i);
     await user.click(screen.getByTestId('draw-polygon'));
     await user.click(screen.getByTestId('place-pin'));
     await user.click(screen.getByRole('button', { name: /buat rayon/i }));
@@ -142,5 +154,28 @@ describe('RayonForm', () => {
     expect(payload.boundary_polygon).toEqual(expect.objectContaining({ type: 'Polygon' }));
     expect(payload.center_lat).toBeCloseTo(-7.28);
     expect(payload.center_lng).toBeCloseTo(112.74);
+    expect(payload.staffing_level).toBe('region');
+  });
+
+  it('does not preselect a staffing level on create and blocks submit until chosen', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <>
+        <RayonForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
+        <ExternalSubmitButton />
+      </>
+    );
+
+    // Placeholder shown (no option preselected).
+    expect(screen.getByText(/pilih tingkat kebutuhan/i)).toBeInTheDocument();
+
+    await user.type(screen.getByLabelText(/nama rayon/i), 'Rayon Baru');
+    await user.click(screen.getByTestId('place-pin'));
+    await user.click(screen.getByRole('button', { name: /buat rayon/i }));
+
+    // Required staffing level not chosen → submit blocked.
+    await waitFor(() => expect(screen.getByText(/wajib/i)).toBeInTheDocument());
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 });

@@ -48,6 +48,21 @@ export default function RayonsPage() {
     [userNameById]
   );
 
+  const staffingLabel = useCallback(
+    (level?: string | null): string => {
+      const key =
+        level === 'rayon'
+          ? 'staffingLevelRayon'
+          : level === 'location'
+            ? 'staffingLevelLocation'
+            : level === 'region'
+              ? 'staffingLevelRegion'
+              : null;
+      return key ? t(`admin:rayons.form.${key}`) : '—';
+    },
+    [t]
+  );
+
   const deleteRayon = useDeleteRayon();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -78,28 +93,44 @@ export default function RayonsPage() {
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
+        id: 'staffing_level',
+        accessorKey: 'staffing_level',
+        header: t('admin:rayons.form.staffingLevel'),
+        enableSorting: false,
+        meta: {
+          label: t('admin:rayons.form.staffingLevel'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: 'rayon', label: t('admin:rayons.form.staffingLevelRayon') },
+            { value: 'region', label: t('admin:rayons.form.staffingLevelRegion') },
+            { value: 'location', label: t('admin:rayons.form.staffingLevelLocation') },
+          ],
+        },
+        cell: ({ row }) => <span className="text-nb-body-sm">{staffingLabel(row.original.staffing_level)}</span>,
+      },
+      {
         id: 'color',
-        accessorKey: 'color',
+        // Show the boundary appearance the form actually edits (per-level border +
+        // fill), falling back to the legacy single `color` for un-restyled rayons.
+        accessorFn: (r) => r.fill_color ?? r.border_color ?? r.color ?? '',
         header: t('admin:rayons.stats.color'),
         enableSorting: false,
         meta: { label: t('admin:rayons.stats.color'), filterVariant: 'text' },
         cell: ({ row }) => {
-          const color = row.original.color;
-          return (
+          const border = row.original.border_color ?? row.original.color ?? null;
+          const fill = row.original.fill_color ?? row.original.color ?? null;
+          const shown = fill ?? border;
+          return shown ? (
             <span className="inline-flex items-center gap-2">
-              {color ? (
-                <>
-                  <div
-                    className="h-4 w-4 border-2 border-nb-black"
-                    style={{ backgroundColor: color }}
-                    title={color}
-                  />
-                  <span className="font-mono text-nb-body-sm text-nb-gray-600">{color}</span>
-                </>
-              ) : (
-                <span className="text-nb-gray-500">—</span>
-              )}
+              <span
+                className="h-4 w-4 border-2"
+                style={{ backgroundColor: fill ?? 'transparent', borderColor: border ?? 'var(--color-nb-black)' }}
+                title={shown}
+              />
+              <span className="font-mono text-nb-body-sm text-nb-gray-600">{shown}</span>
             </span>
+          ) : (
+            <span className="text-nb-gray-500">—</span>
           );
         },
       },
@@ -171,7 +202,7 @@ export default function RayonsPage() {
         ),
       },
     ],
-    [actorName]
+    [actorName, staffingLabel, t]
   );
 
   const rowActions = useCallback(
