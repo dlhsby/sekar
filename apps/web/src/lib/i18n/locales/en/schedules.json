@@ -256,7 +256,9 @@
       "scopePlaceholder": "Select scope...",
       "recurrencePlaceholder": "Select recurrence...",
       "regionFilterPlaceholder": "All kawasan (optional)",
-      "regionFilterHint": "Optional — narrows the location list. Locations with no kawasan still appear."
+      "regionFilterHint": "Optional — narrows the location list. Locations with no kawasan still appear.",
+      "picRoleLabel": "PIC role",
+      "memberEmpty": "No members yet. Pick a role, then a worker, then Add."
     },
     "editScope": {
       "title": "Edit What?",

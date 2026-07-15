@@ -7,13 +7,13 @@
  * occurrences and reports per-member conflicts, surfaced here as a warning.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -29,7 +29,7 @@ import {
   FormCombobox,
   Label,
 } from '@/components/ui';
-import { AsyncUserCombobox } from '@/components/forms/AsyncUserCombobox';
+import { AsyncUserCombobox, type PickedUser } from '@/components/forms/AsyncUserCombobox';
 import {
   useCreateScheduleEvent,
   useUpdateScheduleEvent,
@@ -41,7 +41,6 @@ import {
   type ScheduleEvent,
 } from '@/lib/api/schedule-events';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useUsers } from '@/lib/api/users';
 import { useTeamCategories } from '@/lib/api/teams';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
@@ -95,6 +94,8 @@ function createSchema(t: TFn) {
       kind: z.enum(['individual', 'team']).or(z.literal('')),
       /** Narrows the worker list; not sent to the API (the user carries a role). */
       role: z.string().optional(),
+      /** Same, for the team's PIC. */
+      pic_role: z.string().optional(),
       user_id: z.string().optional(),
       team_category_id: z.string().optional(),
       pic_user_id: z.string().optional(),
@@ -148,6 +149,13 @@ function createSchema(t: TFn) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ['team_category_id'],
+            message: t('validation:required'),
+          });
+        }
+        if (!data.pic_role) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['pic_role'],
             message: t('validation:required'),
           });
         }
@@ -285,6 +293,7 @@ export function ScheduleEventModal({
       // that chooses for you — and then it's locked, not merely defaulted.
       kind: event ? (event.is_team ? 'team' : 'individual') : initialTeam ? 'team' : initialRole ? 'individual' : '',
       role: initialRole ?? '',
+      pic_role: event?.pic_user?.role ?? '',
       user_id: event?.user_id ?? '',
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
@@ -317,7 +326,6 @@ export function ScheduleEventModal({
   const updateMutation = useUpdateScheduleEvent();
 
   const { data: shifts = [] } = useShiftDefinitions();
-  const { data: usersResp } = useUsers({ limit: 1000 });
   const { data: teamCategories = [] } = useTeamCategories(
     can('schedule:create') || can('schedule:update')
   );
@@ -325,13 +333,42 @@ export function ScheduleEventModal({
   const { data: regions = [] } = useRegions();
   const { data: rayons = [] } = useRayons();
 
-  const schedulableUsers = useMemo(
-    () => (usersResp?.data ?? []).filter((u) => SCHEDULABLE_ROLES.includes(u.role)),
-    [usersResp]
-  );
+  /**
+   * Names/roles of users this form has actually touched — picked from a combobox
+   * or carried on the event being edited. The comboboxes are server-paged, so
+   * nothing else knows a user's name; keeping a small map here is what lets the
+   * member list render without preloading the whole roster (~3000 workers) just
+   * to resolve labels.
+   */
+  const [userMeta, setUserMeta] = useState<Record<string, PickedUser>>({});
+  const rememberUser = useCallback((u: PickedUser) => {
+    setUserMeta((prev) => (prev[u.id] ? prev : { ...prev, [u.id]: u }));
+  }, []);
+
+  // Member draft: role first, then the worker, then Add.
+  const [memberRole, setMemberRole] = useState('');
+  const [memberDraftId, setMemberDraftId] = useState('');
+
+  // Editing: the event carries its members' names/roles, so seed the map from it
+  // rather than looking 3000 users up.
+  useEffect(() => {
+    if (!event) return;
+    const seed: PickedUser[] = [
+      ...(event.members ?? []).map((m) => ({
+        id: m.user_id,
+        full_name: m.full_name,
+        role: m.role as string,
+      })),
+      ...(event.pic_user
+        ? [{ id: event.pic_user.id, full_name: event.pic_user.full_name, role: event.pic_user.role as string }]
+        : []),
+    ];
+    if (seed.length) setUserMeta((prev) => ({ ...Object.fromEntries(seed.map((u) => [u.id, u])), ...prev }));
+  }, [event]);
+
   const userNameById = useMemo(
-    () => new Map((usersResp?.data ?? []).map((u) => [u.id, u.full_name])),
-    [usersResp]
+    () => new Map(Object.values(userMeta).map((u) => [u.id, u.full_name])),
+    [userMeta]
   );
   const locations = locationsResp?.data ?? [];
 
@@ -735,48 +772,140 @@ export function ScheduleEventModal({
                   onChange={(v) => setValue('team_category_id', v, { shouldValidate: true })}
                   placeholder={t('schedules:calendar.event.teamCategoryPlaceholder')}
                   error={errors.team_category_id?.message}
+                  required
                   disabled={isEditing}
                 />
-                <AsyncUserCombobox
-                  label={t('schedules:calendar.event.picLabel')}
-                  required
-                  roles={SCHEDULABLE_ROLES}
-                  value={formPic || ''}
-                  onValueChange={(v) => setValue('pic_user_id', v, { shouldValidate: true })}
-                  initialLabel={event?.pic_user?.full_name}
-                  placeholder={t('schedules:calendar.event.picPlaceholder')}
-                  error={errors.pic_user_id?.message}
-                />
+
+                {/* PIC picked the same way as an individual: role first, then the
+                    worker — one decision, one row. */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormSelect
+                    label={t('schedules:calendar.event.picRoleLabel')}
+                    options={SCHEDULABLE_ROLES.map((r) => ({ value: r, label: t(`roles:${r}`, r) }))}
+                    value={watch('pic_role') || ''}
+                    placeholder={t('schedules:calendar.event.rolePlaceholder')}
+                    onChange={(v) => {
+                      setValue('pic_role', v, { shouldValidate: true });
+                      setValue('pic_user_id', '', { shouldValidate: true });
+                    }}
+                    error={errors.pic_role?.message}
+                    required
+                  />
+                  {!!watch('pic_role') && (
+                    <AsyncUserCombobox
+                      label={t('schedules:calendar.event.picLabel')}
+                      required
+                      roles={[watch('pic_role') as string]}
+                      value={formPic || ''}
+                      onValueChange={(v, u) => {
+                        setValue('pic_user_id', v, { shouldValidate: true });
+                        if (u) rememberUser(u);
+                      }}
+                      initialLabel={event?.pic_user?.full_name}
+                      placeholder={t('schedules:calendar.event.picPlaceholder')}
+                      error={errors.pic_user_id?.message}
+                    />
+                  )}
+                </div>
+
+                {/* Members: pick a role, pick a worker, add. The old control was a
+                    checkbox list of every schedulable user — fine at 20, unusable
+                    at 3000, and it preloaded them all just to render. Adding one at
+                    a time keeps the roster server-paged and mirrors how the PIC and
+                    an individual are picked. */}
                 <Controller
                   control={control}
                   name="member_ids"
-                  render={({ field }) => (
-                    <div>
-                      <p className="mb-1 text-nb-body-sm font-medium">
-                        {t('schedules:calendar.event.memberLabel')}
-                      </p>
-                      <div className="max-h-40 space-y-1 overflow-y-auto rounded-nb-base border-2 border-nb-black p-2">
-                        {schedulableUsers
-                          .filter((u) => u.id !== formPic)
-                          .map((u) => (
-                            <label key={u.id} className="flex items-center gap-2 text-nb-body-sm">
-                              <input
-                                type="checkbox"
-                                checked={field.value.includes(u.id)}
-                                onChange={() =>
-                                  field.onChange(
-                                    field.value.includes(u.id)
-                                      ? field.value.filter((id) => id !== u.id)
-                                      : [...field.value, u.id]
-                                  )
-                                }
-                              />
-                              <span className="truncate">{u.full_name}</span>
-                            </label>
-                          ))}
+                  render={({ field }) => {
+                    const add = () => {
+                      if (!memberDraftId || field.value.includes(memberDraftId)) return;
+                      field.onChange([...field.value, memberDraftId]);
+                      setMemberDraftId('');
+                    };
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-nb-body-sm font-medium">
+                          {t('schedules:calendar.event.memberLabel')}
+                        </p>
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                          <FormSelect
+                            label={t('schedules:calendar.event.roleLabel')}
+                            options={SCHEDULABLE_ROLES.map((r) => ({
+                              value: r,
+                              label: t(`roles:${r}`, r),
+                            }))}
+                            value={memberRole}
+                            placeholder={t('schedules:calendar.event.rolePlaceholder')}
+                            onChange={(v) => {
+                              setMemberRole(v);
+                              setMemberDraftId('');
+                            }}
+                          />
+                          {memberRole ? (
+                            <AsyncUserCombobox
+                              label={t('schedules:calendar.event.workerLabel')}
+                              roles={[memberRole]}
+                              excludeIds={[...field.value, ...(formPic ? [formPic] : [])]}
+                              value={memberDraftId}
+                              onValueChange={(v, u) => {
+                                setMemberDraftId(v);
+                                if (u) rememberUser(u);
+                              }}
+                              placeholder={t('schedules:calendar.event.workerPlaceholder')}
+                            />
+                          ) : (
+                            <div />
+                          )}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={add}
+                            disabled={!memberDraftId}
+                            leftIcon={<Plus className="size-4" />}
+                          >
+                            {t('common:actions.add')}
+                          </Button>
+                        </div>
+
+                        {field.value.length === 0 ? (
+                          <p className="rounded-nb-base border-2 border-dashed border-nb-black bg-nb-gray-50 py-3 text-center text-nb-body-sm text-nb-gray-500">
+                            {t('schedules:calendar.event.memberEmpty')}
+                          </p>
+                        ) : (
+                          <ul className="divide-y-2 divide-nb-black overflow-hidden rounded-nb-base border-2 border-nb-black">
+                            {field.value.map((id) => {
+                              const meta = userMeta[id];
+                              return (
+                                <li
+                                  key={id}
+                                  className="flex items-center gap-2 bg-nb-white px-3 py-2 text-nb-body-sm"
+                                >
+                                  <span className="truncate font-medium">
+                                    {meta?.full_name ?? id}
+                                  </span>
+                                  {meta?.role && (
+                                    <span className="shrink-0 rounded-full border-2 border-nb-black bg-nb-gray-100 px-2 text-nb-caption font-bold">
+                                      {t(`roles:${meta.role}`, meta.role)}
+                                    </span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      field.onChange(field.value.filter((m) => m !== id))
+                                    }
+                                    aria-label={t('common:actions.delete')}
+                                    className="ml-auto grid size-7 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white text-nb-danger hover:bg-nb-danger-light"
+                                  >
+                                    <X className="size-3.5" />
+                                  </button>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  }}
                 />
               </>
             )}

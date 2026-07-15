@@ -11,9 +11,17 @@ import { useUsers } from '@/lib/api/users';
 
 const PAGE = 10;
 
+/** The picked user, reported alongside the id so callers can render it without
+ *  refetching (or preloading the whole roster just to resolve a name). */
+export interface PickedUser {
+  id: string;
+  full_name: string;
+  role: string;
+}
+
 export interface AsyncUserComboboxProps {
   value?: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (value: string, user?: PickedUser) => void;
   placeholder?: string;
   /** Restrict to these role codes (client-side). */
   roles?: string[];
@@ -95,9 +103,9 @@ export function AsyncUserCombobox({
     }
   };
 
-  const pick = (userId: string, name: string): void => {
-    setLabelCache((prev) => ({ ...prev, [userId]: name }));
-    onValueChange(userId);
+  const pick = (user: PickedUser): void => {
+    setLabelCache((prev) => ({ ...prev, [user.id]: user.full_name }));
+    onValueChange(user.id, user);
     setOpen(false);
   };
 
@@ -168,7 +176,7 @@ export function AsyncUserCombobox({
                   key={u.id}
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => pick(u.id, u.full_name)}
+                  onClick={() => pick({ id: u.id, full_name: u.full_name, role: u.role })}
                   className={cn(
                     'flex cursor-pointer items-center justify-between gap-2 rounded-nb-sm px-3 py-2 text-nb-body-sm hover:bg-nb-gray-100',
                     isSelected && 'font-bold'

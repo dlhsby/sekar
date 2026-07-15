@@ -278,3 +278,69 @@ describe('ScheduleEventModal — Peran gates Pekerja', () => {
     expect(row).toContainElement(worker);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Team side. The member picker was a checkbox list of EVERY schedulable user —
+// fine at 20, unusable at 3000, and it preloaded the whole roster (useUsers with
+// limit 1000) just to render labels. Members are now added one at a time, role
+// first, exactly like the PIC and an individual.
+// ---------------------------------------------------------------------------
+
+describe('ScheduleEventModal — team', () => {
+  const props = { open: true, onOpenChange: jest.fn(), initialTeam: true };
+
+  beforeEach(() => {
+    userComboboxProps.length = 0;
+  });
+
+  it('marks Kategori Tim as required', () => {
+    render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
+
+    const label = screen.getByText('schedules:calendar.event.teamCategoryLabel');
+    expect(label.textContent).toContain('*');
+  });
+
+  it('asks for the PIC role before the PIC, like an individual', () => {
+    render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
+
+    expect(screen.getByText('schedules:calendar.event.picRoleLabel')).toBeInTheDocument();
+    // No PIC combobox until a role narrows it — nothing to fetch yet.
+    expect(screen.queryByText('schedules:calendar.event.picLabel')).not.toBeInTheDocument();
+  });
+
+  it('never renders the old "every schedulable user" checkbox list', () => {
+    render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
+
+    expect(screen.queryAllByRole('checkbox')).toHaveLength(0);
+    expect(screen.getByText('schedules:calendar.event.memberEmpty')).toBeInTheDocument();
+  });
+
+  it('gates the member worker picker behind a role, so no roster loads up front', () => {
+    render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
+
+    // Neither the PIC nor the member combobox is mounted before a role is chosen.
+    expect(userComboboxProps).toHaveLength(0);
+  });
+
+  it('seeds member names from the event being edited, not from a roster fetch', () => {
+    const event = {
+      id: 'ev1',
+      is_team: true,
+      team_category_id: 'tc1',
+      pic_user_id: 'u-pic',
+      pic_user: { id: 'u-pic', full_name: 'Budi PIC', username: 'budi', role: 'korlap' },
+      members: [{ id: 'm1', user_id: 'u-1', full_name: 'Sari Dewi', username: 'sari', role: 'satgas' }],
+      scope: 'city',
+      recurrence_type: 'none',
+      start_date: '2026-07-16',
+      shift_definition_id: 's1',
+    } as never;
+
+    render(<ScheduleEventModal open onOpenChange={jest.fn()} event={event} />, {
+      wrapper: Wrapper,
+    });
+
+    // The name comes off the event; nothing else in the form knows it.
+    expect(screen.getByText('Sari Dewi')).toBeInTheDocument();
+  });
+});

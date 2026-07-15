@@ -256,7 +256,9 @@
       "scopePlaceholder": "Pilih ruang lingkup...",
       "recurrencePlaceholder": "Pilih pengulangan...",
       "regionFilterPlaceholder": "Semua kawasan (opsional)",
-      "regionFilterHint": "Opsional — menyaring daftar lokasi. Lokasi tanpa kawasan tetap tampil."
+      "regionFilterHint": "Opsional — menyaring daftar lokasi. Lokasi tanpa kawasan tetap tampil.",
+      "picRoleLabel": "Peran PIC",
+      "memberEmpty": "Belum ada anggota. Pilih peran, lalu pekerja, lalu Tambah."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
