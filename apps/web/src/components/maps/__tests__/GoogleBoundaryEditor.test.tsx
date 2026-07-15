@@ -49,6 +49,17 @@ jest.mock('@react-google-maps/api', () => ({
   Polyline: () => <div data-testid="polyline" />,
 }));
 
+// The editor now renders our imperative AdvancedMarker (not the lib's <Marker>).
+// Mock it to a testable div that fires onDragEnd with a plain coord on click.
+jest.mock('@/components/maps/AdvancedMarker', () => ({
+  AdvancedMarker: ({ onDragEnd }: { onDragEnd?: (p: { lat: number; lng: number }) => void }) => (
+    <div data-testid="marker" onClick={() => onDragEnd?.({ lat: -7.31, lng: 112.81 })} />
+  ),
+}));
+
+// useMapId hits react-query/config; stub it (a Map ID isn't needed in unit tests).
+jest.mock('@/lib/api/config', () => ({ useMapId: () => null }));
+
 beforeAll(() => {
   (global as unknown as { google: unknown }).google = {
     maps: {
