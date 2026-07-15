@@ -64,6 +64,8 @@ export interface ScheduleEventModalProps {
   initialCityWide?: boolean;
   /** Open on the TEAM target (from the board's Tim column "+ Tugaskan"). */
   initialTeam?: boolean;
+  /** Role column the assign came from — pins kind=individual and the role. */
+  initialRole?: string;
   onSuccess?: () => void;
 }
 
@@ -88,7 +90,11 @@ function createSchema(t: TFn) {
   return z
     .object({
       title: z.string().max(120).optional(),
-      kind: z.enum(['individual', 'team']),
+      // '' is the un-chosen state: the form preselects nothing, so every select
+      // must tolerate it and be *required* rather than silently defaulted.
+      kind: z.enum(['individual', 'team']).or(z.literal('')),
+      /** Narrows the worker list; not sent to the API (the user carries a role). */
+      role: z.string().optional(),
       user_id: z.string().optional(),
       team_category_id: z.string().optional(),
       pic_user_id: z.string().optional(),
@@ -97,11 +103,13 @@ function createSchema(t: TFn) {
       // Explicit scope ("Ruang Lingkup") drives which geography selects show and
       // which are required: city → none · rayon → rayon · region → rayon+kawasan ·
       // location → rayon+kawasan+lokasi. Maps to the API scope on save.
-      scope: z.enum(['city', 'rayon', 'region', 'location']),
+      scope: z.enum(['city', 'rayon', 'region', 'location']).or(z.literal('')),
       location_id: z.string().optional(),
       region_id: z.string().optional(),
       rayon_id: z.string().optional(),
-      recurrence_type: z.enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates']),
+      recurrence_type: z
+        .enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates'])
+        .or(z.literal('')),
       // Registered with valueAsNumber (plain z.number keeps RHF input/output
       // types aligned — z.coerce diverges them and breaks the resolver types).
       interval_n: z.number().int().optional(),
@@ -112,6 +120,15 @@ function createSchema(t: TFn) {
       notes: z.string().optional(),
     })
     .superRefine((data, ctx) => {
+      for (const field of ['kind', 'scope', 'recurrence_type'] as const) {
+        if (!data[field]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: t('validation:required'),
+          });
+        }
+      }
       if (data.kind === 'individual' && !data.user_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -135,8 +152,9 @@ function createSchema(t: TFn) {
           });
         }
       }
-      // Each scope requires the geography down to its level.
-      if (data.scope !== 'city' && !data.rayon_id) {
+      // Each scope requires the geography down to its level. No scope chosen yet
+      // → the scope's own "required" above is the message; don't pile on.
+      if (data.scope && data.scope !== 'city' && !data.rayon_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['rayon_id'],
@@ -201,16 +219,22 @@ function eventToFormScope(scope: ScheduleEvent['scope']): ScopeValue {
   return 'rayon';
 }
 
-/** Derive the initial form scope for a fresh event from the prefill context. */
+/**
+ * The scope a fresh event starts on, derived from the board row it was created
+ * from. Returns '' when there is no prefill: the form preselects nothing, so an
+ * operator can't save a default they never looked at.
+ */
 function initialFormScope(opts: {
   cityWide?: boolean;
   locationId?: string;
   regionId?: string;
-}): ScopeValue {
+  rayonId?: string;
+}): ScopeValue | '' {
   if (opts.locationId) return 'location';
   if (opts.regionId) return 'region';
   if (opts.cityWide) return 'city';
-  return 'rayon';
+  if (opts.rayonId) return 'rayon';
+  return '';
 }
 
 export function ScheduleEventModal({
@@ -226,9 +250,10 @@ export function ScheduleEventModal({
   initialShiftId,
   initialCityWide,
   initialTeam,
+  initialRole,
   onSuccess,
 }: ScheduleEventModalProps) {
-  const { t } = useTranslation(['schedules', 'common', 'validation']);
+  const { t } = useTranslation(['schedules', 'common', 'validation', 'roles']);
   const { can } = usePermissions();
 
   const isEditing = !!event;
@@ -247,7 +272,10 @@ export function ScheduleEventModal({
     resolver: zodResolver(schema),
     defaultValues: {
       title: event?.title ?? '',
-      kind: event?.is_team || (!event && initialTeam) ? 'team' : 'individual',
+      // Nothing is preselected. A prefill from a board row is the only thing
+      // that chooses for you — and then it's locked, not merely defaulted.
+      kind: event ? (event.is_team ? 'team' : 'individual') : initialTeam ? 'team' : initialRole ? 'individual' : '',
+      role: initialRole ?? '',
       user_id: event?.user_id ?? '',
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
@@ -262,8 +290,11 @@ export function ScheduleEventModal({
             cityWide: initialCityWide,
             locationId: initialLocationId,
             regionId: initialRegionId,
+            rayonId: initialRayonId,
           }),
-      recurrence_type: event?.recurrence_type ?? 'none',
+      // 'Sekali' was preselected, so a one-off could be saved without the
+      // operator ever choosing the recurrence.
+      recurrence_type: event?.recurrence_type ?? '',
       interval_n: event?.recurrence_config?.interval_n ?? 2,
       weekdays: event?.recurrence_config?.weekdays ?? [],
       dates: event?.recurrence_config?.dates ?? [],
@@ -304,8 +335,23 @@ export function ScheduleEventModal({
   const [dateDraft, setDateDraft] = useState('');
 
   // Created from a specific rayon/kawasan/lokasi board row → the schedule belongs
-  // to that geography, so "Seluruh Surabaya" (city) isn't a sensible option.
+  // to that geography, so "Surabaya" (city) isn't a sensible option.
   const lockGeoScope = !isEditing && !!(initialRayonId || initialRegionId || initialLocationId);
+
+  /**
+   * Assigning from a board cell answers the where/when/who-kind already — the
+   * operator clicked "+ Tugaskan" in a specific shift, role and container. Those
+   * are facts, not defaults, so they are shown and DISABLED: leaving them
+   * editable invites a silent mismatch between the cell clicked and the schedule
+   * saved. Only the genuinely open fields stay fillable.
+   */
+  const lockShift = !isEditing && !!initialShiftId;
+  const lockKind = !isEditing && !!(initialTeam || initialRole);
+  const lockRole = !isEditing && !!initialRole;
+  const lockScope = !isEditing && !!(lockGeoScope || initialCityWide);
+  const lockRayon = !isEditing && !!initialRayonId;
+  const lockRegion = !isEditing && !!initialRegionId;
+  const lockLocation = !isEditing && !!initialLocationId;
   const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
     ...(lockGeoScope
       ? []
@@ -428,6 +474,9 @@ export function ScheduleEventModal({
   };
 
   const onSubmit = async (data: FormValues) => {
+    // The schema requires all three (nothing is preselected any more), so this
+    // is unreachable — it exists to narrow '' away for the payload below.
+    if (!data.kind || !data.scope || !data.recurrence_type) return;
     try {
       const recurrenceConfig =
         data.recurrence_type === 'every_n_days'
@@ -530,15 +579,42 @@ export function ScheduleEventModal({
                 { value: 'team', label: t('schedules:calendar.event.kindTeam') },
               ]}
               value={formKind}
-              onChange={(v) => setValue('kind', v as 'individual' | 'team')}
-              disabled={isEditing}
+              placeholder={t('schedules:calendar.event.kindPlaceholder')}
+              onChange={(v) => {
+                setValue('kind', v as 'individual' | 'team', { shouldValidate: true });
+                // Switching target clears the other side's picks so a hidden
+                // field can't ride along to the API.
+                setValue('role', '');
+                setValue('user_id', '');
+              }}
+              error={errors.kind?.message}
+              required
+              disabled={isEditing || lockKind}
             />
+
+            {/* Role narrows the worker list — "Pekerja" offered every schedulable
+                role at once, so finding one satgas meant reading past linmas and
+                korlap. Not sent to the API: the chosen user carries their role. */}
+            {formKind === 'individual' && (
+              <FormSelect
+                label={t('schedules:calendar.event.roleLabel')}
+                options={SCHEDULABLE_ROLES.map((r) => ({ value: r, label: t(`roles:${r}`, r) }))}
+                value={watch('role') || ''}
+                placeholder={t('schedules:calendar.event.rolePlaceholder')}
+                onChange={(v) => {
+                  setValue('role', v);
+                  // The current pick may not hold the new role.
+                  setValue('user_id', '', { shouldValidate: true });
+                }}
+                disabled={isEditing || lockRole}
+              />
+            )}
 
             {formKind === 'individual' && (
               <AsyncUserCombobox
                 label={t('schedules:calendar.event.workerLabel')}
                 required
-                roles={SCHEDULABLE_ROLES}
+                roles={watch('role') ? [watch('role') as string] : SCHEDULABLE_ROLES}
                 value={watch('user_id') || ''}
                 onValueChange={(v) => setValue('user_id', v, { shouldValidate: true })}
                 initialLabel={event?.user?.full_name}
@@ -611,6 +687,7 @@ export function ScheduleEventModal({
               placeholder={t('schedules:calendar.event.shiftPlaceholder')}
               error={errors.shift_definition_id?.message}
               required
+              disabled={lockShift}
             />
 
             {/* Ruang Lingkup (scope): decides which geography selects appear. */}
@@ -619,12 +696,18 @@ export function ScheduleEventModal({
               helperText={t('schedules:calendar.event.scopeHelp')}
               options={scopeOptions}
               value={formScope}
+              placeholder={t('schedules:calendar.event.scopePlaceholder')}
               onChange={(v) => handleScopeChange(v as ScopeValue)}
+              error={errors.scope?.message}
+              required
+              disabled={lockScope}
             />
 
             {/* Placement cascade, gated by scope:
-                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi. */}
-            {formScope !== 'city' && (
+                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
+                `formScope &&` matters now that '' is the un-chosen state — without
+                it the rayon field appears before a scope has been picked. */}
+            {formScope && formScope !== 'city' && (
               <FormCombobox
                 label={t('schedules:calendar.event.rayonLabel')}
                 options={rayonOptions}
@@ -637,6 +720,7 @@ export function ScheduleEventModal({
                 placeholder={t('schedules:calendar.event.rayonPlaceholder')}
                 error={errors.rayon_id?.message}
                 required
+                disabled={lockRayon}
               />
             )}
 
@@ -653,6 +737,7 @@ export function ScheduleEventModal({
                 helperText={t('schedules:calendar.event.regionScopeHint')}
                 error={errors.region_id?.message}
                 required
+                disabled={lockRegion}
               />
             )}
 
@@ -666,6 +751,7 @@ export function ScheduleEventModal({
                 helperText={t('schedules:calendar.event.locationScopeHint')}
                 error={errors.location_id?.message}
                 required
+                disabled={lockLocation}
               />
             )}
 
@@ -674,9 +760,12 @@ export function ScheduleEventModal({
               label={t('schedules:calendar.event.recurrenceLabel')}
               options={recurrenceOptions}
               value={formRecurrence}
+              placeholder={t('schedules:calendar.event.recurrencePlaceholder')}
               onChange={(v) =>
                 setValue('recurrence_type', v as RecurrenceType, { shouldValidate: true })
               }
+              error={errors.recurrence_type?.message}
+              required
             />
 
             {formRecurrence === 'every_n_days' && (

@@ -100,11 +100,72 @@ describe('ScheduleEventModal', () => {
     expect(screen.getByText('schedules:calendar.event.scopeLabel')).toBeInTheDocument();
   });
 
-  it('defaults to rayon scope and shows the rayon field (no city prefill)', () => {
-    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
-    // Rayon scope is the default → the rayon placement field is visible.
-    expect(screen.getByText('schedules:calendar.event.rayonLabel')).toBeInTheDocument();
-    // No kawasan/lokasi fields until the scope is widened to region/location.
-    expect(screen.queryByText('schedules:calendar.event.locationLabel')).not.toBeInTheDocument();
+  // Nothing is preselected. Jenis / Ruang Lingkup / Pengulangan used to arrive
+  // pre-filled ("Individu", "Rayon", "Sekali"), so an operator could save three
+  // decisions they never actually made.
+  describe('preselects nothing on a fresh event', () => {
+    it('shows no geography field, because no scope has been chosen', () => {
+      render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+      expect(screen.queryByText('schedules:calendar.event.rayonLabel')).not.toBeInTheDocument();
+      expect(screen.queryByText('schedules:calendar.event.locationLabel')).not.toBeInTheDocument();
+    });
+
+    it('shows no worker or team field, because no kind has been chosen', () => {
+      render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+      expect(screen.queryByText('schedules:calendar.event.workerLabel')).not.toBeInTheDocument();
+      expect(
+        screen.queryByText('schedules:calendar.event.teamCategoryLabel')
+      ).not.toBeInTheDocument();
+    });
+  });
+
+  // Assigning from a board cell already answers where/when/what — those are
+  // facts, not defaults. Leaving them editable invites a silent mismatch between
+  // the cell clicked and the schedule saved.
+  describe('prefilled from a board "+ Tugaskan"', () => {
+    const comboboxNamed = (key: string) =>
+      screen.getByText(key).closest('div')!.querySelector('button, select, [role="combobox"]');
+
+    it('pins the kind to Individu and shows the role, both locked', () => {
+      render(<ScheduleEventModal {...defaultProps} initialRole="satgas" initialShiftId="s1" />, {
+        wrapper: Wrapper,
+      });
+
+      // Kind resolved to individual → the worker field is the one on show.
+      expect(screen.getByText('schedules:calendar.event.workerLabel')).toBeInTheDocument();
+      expect(screen.getByText('schedules:calendar.event.roleLabel')).toBeInTheDocument();
+      expect(comboboxNamed('schedules:calendar.event.roleLabel')).toBeDisabled();
+    });
+
+    it('pins the kind to Tim when assigned from the Tim column', () => {
+      render(<ScheduleEventModal {...defaultProps} initialTeam initialShiftId="s1" />, {
+        wrapper: Wrapper,
+      });
+
+      expect(screen.getByText('schedules:calendar.event.teamCategoryLabel')).toBeInTheDocument();
+      expect(comboboxNamed('schedules:calendar.event.kindLabel')).toBeDisabled();
+    });
+
+    it('locks the shift it was assigned from', () => {
+      render(<ScheduleEventModal {...defaultProps} initialShiftId="s1" />, { wrapper: Wrapper });
+
+      expect(comboboxNamed('schedules:calendar.event.shiftLabel')).toBeDisabled();
+    });
+
+    it('locks the scope and the geography it was assigned from', () => {
+      render(<ScheduleEventModal {...defaultProps} initialRayonId="ry1" />, { wrapper: Wrapper });
+
+      expect(comboboxNamed('schedules:calendar.event.scopeLabel')).toBeDisabled();
+      // Rayon prefill resolves the scope to 'rayon', so the rayon field shows.
+      expect(screen.getByText('schedules:calendar.event.rayonLabel')).toBeInTheDocument();
+    });
+
+    it('leaves the shift open when it was NOT prefilled', () => {
+      render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+      expect(comboboxNamed('schedules:calendar.event.shiftLabel')).not.toBeDisabled();
+    });
   });
 });

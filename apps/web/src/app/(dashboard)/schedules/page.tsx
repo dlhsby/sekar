@@ -500,6 +500,7 @@ export default function SchedulesPage() {
           initialShiftId={createCtx?.shiftId}
           initialCityWide={createCtx?.city}
           initialTeam={createCtx?.team}
+          initialRole={createCtx?.role}
           onSuccess={refreshCalendar}
         />
       )}

@@ -244,12 +244,17 @@
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Pilih rayon…",
       "scopeHelp": "Cakupan jadwal — menentukan bidang penempatan yang perlu diisi.",
-      "scopeCity": "Seluruh Surabaya (Tim Patroli)",
+      "scopeCity": "Surabaya",
       "scopeKawasan": "Kawasan",
       "scopeLokasi": "Lokasi",
       "regionScopeHint": "Cakupan mobile se-kawasan (petugas berpindah dalam kawasan).",
       "locationScopeHint": "Cakupan statis di satu lokasi.",
-      "placementUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penempatan."
+      "placementUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penempatan.",
+      "kindPlaceholder": "Pilih jenis...",
+      "rolePlaceholder": "Semua peran",
+      "roleLabel": "Peran",
+      "scopePlaceholder": "Pilih ruang lingkup...",
+      "recurrencePlaceholder": "Pilih pengulangan..."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",

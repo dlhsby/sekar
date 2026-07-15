@@ -244,12 +244,17 @@
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Select rayon…",
       "scopeHelp": "Schedule coverage — determines which placement fields are needed.",
-      "scopeCity": "Whole City (Patrol Team)",
+      "scopeCity": "Surabaya",
       "scopeKawasan": "Kawasan",
       "scopeLokasi": "Location",
       "regionScopeHint": "Mobile coverage across the whole kawasan (workers roam within it).",
       "locationScopeHint": "Static coverage at a single location.",
-      "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement."
+      "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement.",
+      "kindPlaceholder": "Select type...",
+      "rolePlaceholder": "All roles",
+      "roleLabel": "Role",
+      "scopePlaceholder": "Select scope...",
+      "recurrencePlaceholder": "Select recurrence..."
     },
     "editScope": {
       "title": "Edit What?",
