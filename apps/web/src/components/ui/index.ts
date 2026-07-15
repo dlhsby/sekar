@@ -7,6 +7,7 @@
 
 // Core Components
 export { Button, buttonVariants, type ButtonProps } from './button';
+export { CreateButton, type CreateButtonProps } from './create-button';
 export {
   Card,
   CardHeader,

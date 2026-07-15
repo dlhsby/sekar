@@ -364,19 +364,14 @@ export default function LocationsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('admin:locations.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          isAdmin ? (
-            <Button
-              onClick={() => {
-                setEditingArea(null);
-                setFormOpen(true);
-              }}
-              leftIcon={<Plus className="h-5 w-5" />}
-            >
-              {t('admin:locations.buttonAdd')}
-            </Button>
-          ) : undefined
-        }
+        createAction={{
+          label: t('admin:locations.buttonAdd'),
+          hidden: !isAdmin,
+          onClick: () => {
+            setEditingArea(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('admin:locations.emptyTitle')}
         emptyDescription={t('admin:locations.emptyDescription')}
         emptyAction={

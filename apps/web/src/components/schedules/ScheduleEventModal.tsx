@@ -7,13 +7,12 @@
  * occurrences and reports per-member conflicts, surfaced here as a warning.
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
-import { X } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -22,14 +21,16 @@ import {
   DialogBody,
   DialogFooter,
   Button,
-  Badge,
   DatePicker,
   FormInput,
   FormSelect,
   FormCombobox,
   Label,
 } from '@/components/ui';
-import { AsyncUserCombobox } from '@/components/forms/AsyncUserCombobox';
+import { AsyncUserCombobox, type PickedUser } from '@/components/forms/AsyncUserCombobox';
+import { TeamFields } from '@/components/schedules/TeamFields';
+import { RecurrenceFields } from '@/components/schedules/RecurrenceFields';
+import { ScopeFields } from '@/components/schedules/ScopeFields';
 import {
   useCreateScheduleEvent,
   useUpdateScheduleEvent,
@@ -41,7 +42,6 @@ import {
   type ScheduleEvent,
 } from '@/lib/api/schedule-events';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useUsers } from '@/lib/api/users';
 import { useTeamCategories } from '@/lib/api/teams';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
@@ -62,6 +62,10 @@ export interface ScheduleEventModalProps {
   initialLocationId?: string;
   initialShiftId?: string;
   initialCityWide?: boolean;
+  /** Open on the TEAM target (from the board's Tim column "+ Tugaskan"). */
+  initialTeam?: boolean;
+  /** Role column the assign came from — pins kind=individual and the role. */
+  initialRole?: string;
   onSuccess?: () => void;
 }
 
@@ -69,16 +73,6 @@ export interface ScheduleEventModalProps {
 const SCHEDULABLE_ROLES = ['satgas', 'linmas', 'korlap'];
 
 /** Display order Mon..Sun; values are JS getDay() (0=Sunday). */
-const WEEKDAY_ORDER = [1, 2, 3, 4, 5, 6, 0] as const;
-const WEEKDAY_KEYS: Record<number, string> = {
-  0: 'weekdaysSun',
-  1: 'weekdaysMon',
-  2: 'weekdaysTue',
-  3: 'weekdaysWed',
-  4: 'weekdaysThu',
-  5: 'weekdaysFri',
-  6: 'weekdaysSat',
-};
 
 type TFn = (key: string, opts?: Record<string, unknown>) => string;
 
@@ -86,7 +80,13 @@ function createSchema(t: TFn) {
   return z
     .object({
       title: z.string().max(120).optional(),
-      kind: z.enum(['individual', 'team']),
+      // '' is the un-chosen state: the form preselects nothing, so every select
+      // must tolerate it and be *required* rather than silently defaulted.
+      kind: z.enum(['individual', 'team']).or(z.literal('')),
+      /** Narrows the worker list; not sent to the API (the user carries a role). */
+      role: z.string().optional(),
+      /** Same, for the team's PIC. */
+      pic_role: z.string().optional(),
       user_id: z.string().optional(),
       team_category_id: z.string().optional(),
       pic_user_id: z.string().optional(),
@@ -95,11 +95,13 @@ function createSchema(t: TFn) {
       // Explicit scope ("Ruang Lingkup") drives which geography selects show and
       // which are required: city → none · rayon → rayon · region → rayon+kawasan ·
       // location → rayon+kawasan+lokasi. Maps to the API scope on save.
-      scope: z.enum(['city', 'rayon', 'region', 'location']),
+      scope: z.enum(['city', 'rayon', 'region', 'location']).or(z.literal('')),
       location_id: z.string().optional(),
       region_id: z.string().optional(),
       rayon_id: z.string().optional(),
-      recurrence_type: z.enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates']),
+      recurrence_type: z
+        .enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates'])
+        .or(z.literal('')),
       // Registered with valueAsNumber (plain z.number keeps RHF input/output
       // types aligned — z.coerce diverges them and breaks the resolver types).
       interval_n: z.number().int().optional(),
@@ -110,6 +112,22 @@ function createSchema(t: TFn) {
       notes: z.string().optional(),
     })
     .superRefine((data, ctx) => {
+      for (const field of ['kind', 'scope', 'recurrence_type'] as const) {
+        if (!data[field]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [field],
+            message: t('validation:required'),
+          });
+        }
+      }
+      if (data.kind === 'individual' && !data.role) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['role'],
+          message: t('validation:required'),
+        });
+      }
       if (data.kind === 'individual' && !data.user_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -125,6 +143,13 @@ function createSchema(t: TFn) {
             message: t('validation:required'),
           });
         }
+        if (!data.pic_role) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['pic_role'],
+            message: t('validation:required'),
+          });
+        }
         if (!data.pic_user_id) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -133,15 +158,18 @@ function createSchema(t: TFn) {
           });
         }
       }
-      // Each scope requires the geography down to its level.
-      if (data.scope !== 'city' && !data.rayon_id) {
+      // Each scope requires the geography down to its level. No scope chosen yet
+      // → the scope's own "required" above is the message; don't pile on.
+      if (data.scope && data.scope !== 'city' && !data.rayon_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['rayon_id'],
           message: t('validation:required'),
         });
       }
-      if ((data.scope === 'region' || data.scope === 'location') && !data.region_id) {
+      // Only the mobile (kawasan-wide) scope needs a kawasan. For a lokasi scope
+      // it is just a filter — demanding it made rayon-direct lokasi impossible.
+      if (data.scope === 'region' && !data.region_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['region_id'],
@@ -188,7 +216,9 @@ function createSchema(t: TFn) {
     });
 }
 
-type FormValues = z.infer<ReturnType<typeof createSchema>>;
+/** Exported so the extracted sub-forms type against the real shape rather than
+ *  `any` — a type-only import, so the cycle is erased at build. */
+export type FormValues = z.infer<ReturnType<typeof createSchema>>;
 type ScopeValue = FormValues['scope'];
 
 /** Map an event's API scope (static/mobile/rayon/city) to the form scope. */
@@ -199,16 +229,22 @@ function eventToFormScope(scope: ScheduleEvent['scope']): ScopeValue {
   return 'rayon';
 }
 
-/** Derive the initial form scope for a fresh event from the prefill context. */
+/**
+ * The scope a fresh event starts on, derived from the board row it was created
+ * from. Returns '' when there is no prefill: the form preselects nothing, so an
+ * operator can't save a default they never looked at.
+ */
 function initialFormScope(opts: {
   cityWide?: boolean;
   locationId?: string;
   regionId?: string;
-}): ScopeValue {
+  rayonId?: string;
+}): ScopeValue | '' {
   if (opts.locationId) return 'location';
   if (opts.regionId) return 'region';
   if (opts.cityWide) return 'city';
-  return 'rayon';
+  if (opts.rayonId) return 'rayon';
+  return '';
 }
 
 export function ScheduleEventModal({
@@ -223,9 +259,11 @@ export function ScheduleEventModal({
   initialLocationId,
   initialShiftId,
   initialCityWide,
+  initialTeam,
+  initialRole,
   onSuccess,
 }: ScheduleEventModalProps) {
-  const { t } = useTranslation(['schedules', 'common', 'validation']);
+  const { t } = useTranslation(['schedules', 'common', 'validation', 'roles']);
   const { can } = usePermissions();
 
   const isEditing = !!event;
@@ -244,7 +282,11 @@ export function ScheduleEventModal({
     resolver: zodResolver(schema),
     defaultValues: {
       title: event?.title ?? '',
-      kind: event?.is_team ? 'team' : 'individual',
+      // Nothing is preselected. A prefill from a board row is the only thing
+      // that chooses for you — and then it's locked, not merely defaulted.
+      kind: event ? (event.is_team ? 'team' : 'individual') : initialTeam ? 'team' : initialRole ? 'individual' : '',
+      role: initialRole ?? '',
+      pic_role: event?.pic_user?.role ?? '',
       user_id: event?.user_id ?? '',
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
@@ -259,8 +301,11 @@ export function ScheduleEventModal({
             cityWide: initialCityWide,
             locationId: initialLocationId,
             regionId: initialRegionId,
+            rayonId: initialRayonId,
           }),
-      recurrence_type: event?.recurrence_type ?? 'none',
+      // 'Sekali' was preselected, so a one-off could be saved without the
+      // operator ever choosing the recurrence.
+      recurrence_type: event?.recurrence_type ?? '',
       interval_n: event?.recurrence_config?.interval_n ?? 2,
       weekdays: event?.recurrence_config?.weekdays ?? [],
       dates: event?.recurrence_config?.dates ?? [],
@@ -274,7 +319,6 @@ export function ScheduleEventModal({
   const updateMutation = useUpdateScheduleEvent();
 
   const { data: shifts = [] } = useShiftDefinitions();
-  const { data: usersResp } = useUsers({ limit: 1000 });
   const { data: teamCategories = [] } = useTeamCategories(
     can('schedule:create') || can('schedule:update')
   );
@@ -282,13 +326,42 @@ export function ScheduleEventModal({
   const { data: regions = [] } = useRegions();
   const { data: rayons = [] } = useRayons();
 
-  const schedulableUsers = useMemo(
-    () => (usersResp?.data ?? []).filter((u) => SCHEDULABLE_ROLES.includes(u.role)),
-    [usersResp]
-  );
+  /**
+   * Names/roles of users this form has actually touched — picked from a combobox
+   * or carried on the event being edited. The comboboxes are server-paged, so
+   * nothing else knows a user's name; keeping a small map here is what lets the
+   * member list render without preloading the whole roster (~3000 workers) just
+   * to resolve labels.
+   */
+  const [userMeta, setUserMeta] = useState<Record<string, PickedUser>>({});
+  const rememberUser = useCallback((u: PickedUser) => {
+    setUserMeta((prev) => (prev[u.id] ? prev : { ...prev, [u.id]: u }));
+  }, []);
+
+  // Member draft: role first, then the worker, then Add.
+  const [memberRole, setMemberRole] = useState('');
+  const [memberDraftId, setMemberDraftId] = useState('');
+
+  // Editing: the event carries its members' names/roles, so seed the map from it
+  // rather than looking 3000 users up.
+  useEffect(() => {
+    if (!event) return;
+    const seed: PickedUser[] = [
+      ...(event.members ?? []).map((m) => ({
+        id: m.user_id,
+        full_name: m.full_name,
+        role: m.role as string,
+      })),
+      ...(event.pic_user
+        ? [{ id: event.pic_user.id, full_name: event.pic_user.full_name, role: event.pic_user.role as string }]
+        : []),
+    ];
+    if (seed.length) setUserMeta((prev) => ({ ...Object.fromEntries(seed.map((u) => [u.id, u])), ...prev }));
+  }, [event]);
+
   const userNameById = useMemo(
-    () => new Map((usersResp?.data ?? []).map((u) => [u.id, u.full_name])),
-    [usersResp]
+    () => new Map(Object.values(userMeta).map((u) => [u.id, u.full_name])),
+    [userMeta]
   );
   const locations = locationsResp?.data ?? [];
 
@@ -301,8 +374,23 @@ export function ScheduleEventModal({
   const [dateDraft, setDateDraft] = useState('');
 
   // Created from a specific rayon/kawasan/lokasi board row → the schedule belongs
-  // to that geography, so "Seluruh Surabaya" (city) isn't a sensible option.
+  // to that geography, so "Surabaya" (city) isn't a sensible option.
   const lockGeoScope = !isEditing && !!(initialRayonId || initialRegionId || initialLocationId);
+
+  /**
+   * Assigning from a board cell answers the where/when/who-kind already — the
+   * operator clicked "+ Tugaskan" in a specific shift, role and container. Those
+   * are facts, not defaults, so they are shown and DISABLED: leaving them
+   * editable invites a silent mismatch between the cell clicked and the schedule
+   * saved. Only the genuinely open fields stay fillable.
+   */
+  const lockShift = !isEditing && !!initialShiftId;
+  const lockKind = !isEditing && !!(initialTeam || initialRole);
+  const lockRole = !isEditing && !!initialRole;
+  const lockScope = !isEditing && !!(lockGeoScope || initialCityWide);
+  const lockRayon = !isEditing && !!initialRayonId;
+  const lockRegion = !isEditing && !!initialRegionId;
+  const lockLocation = !isEditing && !!initialLocationId;
   const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
     ...(lockGeoScope
       ? []
@@ -336,8 +424,15 @@ export function ScheduleEventModal({
   const regionOptions = regions
     .filter((r) => r.rayon_id === formRayon)
     .map((r) => ({ value: r.id, label: r.name }));
+  // A lokasi belongs to a RAYON; a kawasan is an optional parent (ADR-045), so
+  // Rayon Taman Aktif hangs its lokasi straight off the rayon with region_id
+  // NULL. Filtering on `region_id === formRegion` therefore matched nothing for
+  // them and made every rayon-direct lokasi unreachable — the board renders them
+  // as `looseLocations`, but this form could not offer them at all.
+  // Kawasan is a NARROWING filter here, not a required step.
   const locationOptions = locations
-    .filter((l) => l.region_id === formRegion)
+    .filter((l) => l.rayon_id === formRayon)
+    .filter((l) => !formRegion || l.region_id === formRegion)
     .map((l) => ({ value: l.id, label: l.name }));
 
   // Editing a static/mobile event: backfill the rayon → kawasan cascade from the
@@ -425,6 +520,9 @@ export function ScheduleEventModal({
   };
 
   const onSubmit = async (data: FormValues) => {
+    // The schema requires all three (nothing is preselected any more), so this
+    // is unreachable — it exists to narrow '' away for the payload below.
+    if (!data.kind || !data.scope || !data.recurrence_type) return;
     try {
       const recurrenceConfig =
         data.recurrence_type === 'every_n_days'
@@ -504,9 +602,6 @@ export function ScheduleEventModal({
     }
   };
 
-  const toggleWeekday = (current: number[], day: number): number[] =>
-    current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -519,6 +614,25 @@ export function ScheduleEventModal({
         </DialogHeader>
         <DialogBody>
           <form id="event-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            <ScopeFields
+              t={t}
+              errors={errors}
+              setValue={setValue}
+              scope={formScope}
+              onScopeChange={handleScopeChange}
+              scopeOptions={scopeOptions}
+              rayonId={formRayon || ''}
+              regionId={formRegion || ''}
+              locationId={watch('location_id') || ''}
+              rayonOptions={rayonOptions}
+              regionOptions={regionOptions}
+              locationOptions={locationOptions}
+              lockScope={lockScope}
+              lockRayon={lockRayon}
+              lockRegion={lockRegion}
+              lockLocation={lockLocation}
+            />
+
             {/* Kind: individual vs team (immutable when editing) */}
             <FormSelect
               label={t('schedules:calendar.event.kindLabel')}
@@ -527,77 +641,80 @@ export function ScheduleEventModal({
                 { value: 'team', label: t('schedules:calendar.event.kindTeam') },
               ]}
               value={formKind}
-              onChange={(v) => setValue('kind', v as 'individual' | 'team')}
-              disabled={isEditing}
+              placeholder={t('schedules:calendar.event.kindPlaceholder')}
+              onChange={(v) => {
+                setValue('kind', v as 'individual' | 'team', { shouldValidate: true });
+                // Switching target clears the other side's picks so a hidden
+                // field can't ride along to the API.
+                setValue('role', '');
+                setValue('user_id', '');
+              }}
+              error={errors.kind?.message}
+              required
+              disabled={isEditing || lockKind}
             />
 
+            {/* Peran + Pekerja read as one decision — "which satgas?" — so they
+                sit on one row. Peran is REQUIRED and gates Pekerja: "Semua peran"
+                would fetch every schedulable user before the operator has said
+                what they want. Not sent to the API — the chosen user carries
+                their own role. */}
             {formKind === 'individual' && (
-              <AsyncUserCombobox
-                label={t('schedules:calendar.event.workerLabel')}
-                required
-                roles={SCHEDULABLE_ROLES}
-                value={watch('user_id') || ''}
-                onValueChange={(v) => setValue('user_id', v, { shouldValidate: true })}
-                initialLabel={event?.user?.full_name}
-                placeholder={t('schedules:calendar.event.workerPlaceholder')}
-                error={errors.user_id?.message}
-                disabled={isEditing}
-              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormSelect
+                  label={t('schedules:calendar.event.roleLabel')}
+                  options={SCHEDULABLE_ROLES.map((r) => ({ value: r, label: t(`roles:${r}`, r) }))}
+                  value={watch('role') || ''}
+                  placeholder={t('schedules:calendar.event.rolePlaceholder')}
+                  onChange={(v) => {
+                    setValue('role', v, { shouldValidate: true });
+                    // The current pick may not hold the new role.
+                    setValue('user_id', '', { shouldValidate: true });
+                  }}
+                  error={errors.role?.message}
+                  required
+                  disabled={isEditing || lockRole}
+                />
+                {/* Shown from the start, disabled until Peran narrows it: hiding
+                    it made the form jump as a role was picked. Disabled means it
+                    fetches nothing, so the roster still isn't pulled early. */}
+                <AsyncUserCombobox
+                  label={t('schedules:calendar.event.workerLabel')}
+                  required
+                  roles={watch('role') ? [watch('role') as string] : undefined}
+                  value={watch('user_id') || ''}
+                  onValueChange={(v, u) => {
+                    setValue('user_id', v, { shouldValidate: true });
+                    if (u) rememberUser(u);
+                  }}
+                  initialLabel={event?.user?.full_name}
+                  placeholder={t('schedules:calendar.event.workerPlaceholder')}
+                  error={errors.user_id?.message}
+                  disabled={isEditing || !watch('role')}
+                />
+              </div>
             )}
 
             {formKind === 'team' && (
-              <>
-                <FormCombobox
-                  label={t('schedules:calendar.event.teamCategoryLabel')}
-                  options={teamCategoryOptions}
-                  value={watch('team_category_id') || ''}
-                  onChange={(v) => setValue('team_category_id', v, { shouldValidate: true })}
-                  placeholder={t('schedules:calendar.event.teamCategoryPlaceholder')}
-                  error={errors.team_category_id?.message}
-                  disabled={isEditing}
-                />
-                <AsyncUserCombobox
-                  label={t('schedules:calendar.event.picLabel')}
-                  required
-                  roles={SCHEDULABLE_ROLES}
-                  value={formPic || ''}
-                  onValueChange={(v) => setValue('pic_user_id', v, { shouldValidate: true })}
-                  initialLabel={event?.pic_user?.full_name}
-                  placeholder={t('schedules:calendar.event.picPlaceholder')}
-                  error={errors.pic_user_id?.message}
-                />
-                <Controller
-                  control={control}
-                  name="member_ids"
-                  render={({ field }) => (
-                    <div>
-                      <p className="mb-1 text-nb-body-sm font-medium">
-                        {t('schedules:calendar.event.memberLabel')}
-                      </p>
-                      <div className="max-h-40 space-y-1 overflow-y-auto rounded-nb-base border-2 border-nb-black p-2">
-                        {schedulableUsers
-                          .filter((u) => u.id !== formPic)
-                          .map((u) => (
-                            <label key={u.id} className="flex items-center gap-2 text-nb-body-sm">
-                              <input
-                                type="checkbox"
-                                checked={field.value.includes(u.id)}
-                                onChange={() =>
-                                  field.onChange(
-                                    field.value.includes(u.id)
-                                      ? field.value.filter((id) => id !== u.id)
-                                      : [...field.value, u.id]
-                                  )
-                                }
-                              />
-                              <span className="truncate">{u.full_name}</span>
-                            </label>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-                />
-              </>
+              <TeamFields
+                control={control}
+                setValue={setValue}
+                errors={errors}
+                t={t}
+                isEditing={isEditing}
+                event={event}
+                teamCategoryOptions={teamCategoryOptions}
+                schedulableRoles={SCHEDULABLE_ROLES}
+                teamCategoryId={watch('team_category_id') || ''}
+                picRole={watch('pic_role') || ''}
+                picUserId={formPic || ''}
+                memberRole={memberRole}
+                setMemberRole={setMemberRole}
+                memberDraftId={memberDraftId}
+                setMemberDraftId={setMemberDraftId}
+                userMeta={userMeta}
+                rememberUser={rememberUser}
+              />
             )}
 
             <FormCombobox
@@ -608,169 +725,25 @@ export function ScheduleEventModal({
               placeholder={t('schedules:calendar.event.shiftPlaceholder')}
               error={errors.shift_definition_id?.message}
               required
+              disabled={lockShift}
             />
 
-            {/* Ruang Lingkup (scope): decides which geography selects appear. */}
-            <FormSelect
-              label={t('schedules:calendar.event.scopeLabel')}
-              helperText={t('schedules:calendar.event.scopeHelp')}
-              options={scopeOptions}
-              value={formScope}
-              onChange={(v) => handleScopeChange(v as ScopeValue)}
+
+            <RecurrenceFields
+              control={control}
+              register={register}
+              setValue={setValue}
+              errors={errors}
+              t={t}
+              recurrence={formRecurrence}
+              recurrenceOptions={recurrenceOptions}
+              dateDraft={dateDraft}
+              setDateDraft={setDateDraft}
             />
 
-            {/* Placement cascade, gated by scope:
-                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi. */}
-            {formScope !== 'city' && (
-              <FormCombobox
-                label={t('schedules:calendar.event.rayonLabel')}
-                options={rayonOptions}
-                value={formRayon || ''}
-                onChange={(v) => {
-                  setValue('rayon_id', v, { shouldValidate: true });
-                  setValue('region_id', '');
-                  setValue('location_id', '');
-                }}
-                placeholder={t('schedules:calendar.event.rayonPlaceholder')}
-                error={errors.rayon_id?.message}
-                required
-              />
-            )}
-
-            {(formScope === 'region' || formScope === 'location') && formRayon && (
-              <FormCombobox
-                label={t('schedules:calendar.event.regionLabel')}
-                options={regionOptions}
-                value={formRegion || ''}
-                onChange={(v) => {
-                  setValue('region_id', v, { shouldValidate: true });
-                  setValue('location_id', '');
-                }}
-                placeholder={t('schedules:calendar.event.regionPlaceholder')}
-                helperText={t('schedules:calendar.event.regionScopeHint')}
-                error={errors.region_id?.message}
-                required
-              />
-            )}
-
-            {formScope === 'location' && formRegion && (
-              <FormCombobox
-                label={t('schedules:calendar.event.locationLabel')}
-                options={locationOptions}
-                value={watch('location_id') || ''}
-                onChange={(v) => setValue('location_id', v, { shouldValidate: true })}
-                placeholder={t('schedules:calendar.event.locationPlaceholder')}
-                helperText={t('schedules:calendar.event.locationScopeHint')}
-                error={errors.location_id?.message}
-                required
-              />
-            )}
-
-            {/* Recurrence */}
-            <FormSelect
-              label={t('schedules:calendar.event.recurrenceLabel')}
-              options={recurrenceOptions}
-              value={formRecurrence}
-              onChange={(v) =>
-                setValue('recurrence_type', v as RecurrenceType, { shouldValidate: true })
-              }
-            />
-
-            {formRecurrence === 'every_n_days' && (
-              <FormInput
-                label={t('schedules:calendar.event.recurrenceEveryNDaysLabel')}
-                type="number"
-                min={2}
-                max={30}
-                error={errors.interval_n?.message}
-                {...register('interval_n', { valueAsNumber: true })}
-              />
-            )}
-
-            {formRecurrence === 'weekly' && (
-              <Controller
-                control={control}
-                name="weekdays"
-                render={({ field }) => (
-                  <div>
-                    <div className="flex flex-wrap gap-1">
-                      {WEEKDAY_ORDER.map((day) => (
-                        <Button
-                          key={day}
-                          type="button"
-                          size="sm"
-                          variant={field.value.includes(day) ? 'default' : 'outline'}
-                          onClick={() => field.onChange(toggleWeekday(field.value, day))}
-                        >
-                          {t(`schedules:calendar.event.${WEEKDAY_KEYS[day]}`)}
-                        </Button>
-                      ))}
-                    </div>
-                    {errors.weekdays && (
-                      <p className="mt-1 text-nb-caption text-nb-danger-dark">
-                        {errors.weekdays.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-            )}
-
-            {formRecurrence === 'specific_dates' && (
-              <Controller
-                control={control}
-                name="dates"
-                render={({ field }) => (
-                  <div>
-                    <p className="mb-1 text-nb-body-sm font-medium">
-                      {t('schedules:calendar.event.datesLabel')}
-                    </p>
-                    <div className="flex gap-2">
-                      <div className="flex-1">
-                        <DatePicker
-                          value={dateDraft || undefined}
-                          onValueChange={(v) => setDateDraft(v ?? '')}
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        disabled={!dateDraft || field.value.includes(dateDraft)}
-                        onClick={() => {
-                          field.onChange([...field.value, dateDraft].sort());
-                          setDateDraft('');
-                        }}
-                      >
-                        {t('common:actions.add')}
-                      </Button>
-                    </div>
-                    {field.value.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {field.value.map((d) => (
-                          <Badge key={d} variant="secondary" className="gap-1">
-                            {d}
-                            <button
-                              type="button"
-                              aria-label={t('common:actions.delete')}
-                              onClick={() => field.onChange(field.value.filter((x) => x !== d))}
-                            >
-                              <X className="size-3" />
-                            </button>
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-                    {errors.dates && (
-                      <p className="mt-1 text-nb-caption text-nb-danger-dark">
-                        {errors.dates.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-            )}
-
-            <div className="grid grid-cols-2 gap-3">
+            {/* Stack on phones: two date pickers side by side leave ~150px each
+                on a 360px screen, which truncates the dd/mm/yyyy field. */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Controller
                 control={control}
                 name="start_date"

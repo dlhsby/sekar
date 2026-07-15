@@ -217,7 +217,7 @@ export function ScheduleSearch({
                 type="button"
                 onClick={() => (query ? setQuery('') : collapse())}
                 className="shrink-0 text-nb-gray-500 hover:text-nb-black"
-                aria-label={t('common:actions.clear', 'Clear')}
+                aria-label={t('common:actions.clear')}
               >
                 <X className="size-4" />
               </button>

@@ -329,8 +329,9 @@ describe('DayBoard', () => {
       canAssign: true,
       onAssign,
     });
-    await expand(user, /Seluruh/);
-    await expand(user, /penempatan rayon/i);
+    // Surabaya's shift+role table IS its body — no "Penempatan" wrapper, since
+    // it has no kawasan/lokasi siblings to distinguish it from.
+    await expand(user, /Surabaya/);
 
     await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
     expect(onAssign).toHaveBeenCalledWith(
@@ -671,5 +672,81 @@ describe('DayBoard — search', () => {
     expect(
       screen.getByRole('button', { expanded: true, name: /Taman Aktif Park/ })
     ).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Surabaya (city-wide) node. It rendered only once city occurrences existed,
+// which made a city-scope schedule impossible to create from the board: no node
+// → no "+ Tugaskan" → no occurrence → no node.
+// ---------------------------------------------------------------------------
+
+describe('DayBoard — Surabaya node', () => {
+  it('renders at the very top even on a day with no city-wide schedule', () => {
+    renderBoard();
+
+    const headers = screen.getAllByRole('button', { expanded: false });
+    expect(headers[0]).toHaveAccessibleName(expect.stringContaining('Surabaya'));
+  });
+
+  it('shows the shift + role table directly, with no kawasan/lokasi furniture', async () => {
+    const user = userEvent.setup();
+    renderBoard({ canAssign: true, onAssign: jest.fn() });
+
+    await expand(user, /Surabaya/);
+
+    // Surabaya is city-wide by definition: "0 kawasan · 0 lokasi" would read as
+    // a defect, and "Belum ada kawasan atau lokasi" is simply untrue.
+    expect(screen.queryByText(/0 kawasan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/belum ada kawasan atau lokasi/i)).not.toBeInTheDocument();
+    // The table is the body — role columns are right there to assign into.
+    expect(screen.getAllByText(/satgas/i).length).toBeGreaterThan(0);
+  });
+});
+
+// The map button opens a boundary view per container. Surabaya is excluded: it
+// is a city-wide sentinel with no geography of its own.
+describe('DayBoard — map button', () => {
+  it('offers a map on the rayon, but never on Surabaya', () => {
+    renderBoard({ onShowMap: jest.fn() });
+
+    const mapButtons = screen.getAllByRole('button', { name: /lihat peta/i });
+    // One rayon in the fixture master → exactly one button, and the Surabaya
+    // header (which is tree[0]) contributes none.
+    expect(mapButtons).toHaveLength(1);
+  });
+
+  it('reports the container that was clicked', async () => {
+    const onShowMap = jest.fn();
+    const user = userEvent.setup();
+    renderBoard({ onShowMap });
+
+    await user.click(screen.getByRole('button', { name: /lihat peta/i }));
+
+    expect(onShowMap).toHaveBeenCalledWith({ level: 'rayon', id: 'ry1', name: 'Rayon Pusat' });
+  });
+
+  it('offers a map on a kawasan and a lokasi once opened', async () => {
+    const onShowMap = jest.fn();
+    const user = userEvent.setup();
+    renderBoard({ onShowMap });
+
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    const buttons = screen.getAllByRole('button', { name: /lihat peta/i });
+    // rayon + kawasan + its lokasi + the loose lokasi.
+    expect(buttons.length).toBeGreaterThan(1);
+
+    await user.click(buttons[1]);
+    expect(onShowMap).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'region', id: 'kw1' })
+    );
+  });
+
+  it('renders no map buttons when the board cannot open one', () => {
+    renderBoard();
+
+    expect(screen.queryByRole('button', { name: /lihat peta/i })).not.toBeInTheDocument();
   });
 });

@@ -28,6 +28,8 @@ interface ShiftRoleTableProps {
   onOccurrenceClick: (occ: ScheduleOccurrence) => void;
   /** Assign into a specific shift (optionally a role). */
   onAssign?: (shiftId: string, role?: string) => void;
+  /** Assign a TEAM into a shift — opens the event modal on its team target. */
+  onAssignTeam?: (shiftId: string) => void;
   canAssign?: boolean;
   /**
    * `${shiftId}:${role}` → target headcount, for the subject that OWNS this
@@ -38,10 +40,10 @@ interface ShiftRoleTableProps {
    */
   roleTargets?: Map<string, number>;
   /**
-   * `${shiftId}:${role}` → headcount counted toward the target. A kawasan/rayon
-   * target is met by everything inside it, so its coverage is the subtree's, not
-   * this table's own rows — pass it in rather than let the column count itself.
-   * Omit for a lokasi, whose own rows ARE the whole subject.
+   * `${shiftId}:${role}` → headcount counted toward the target, for a SUBTREE
+   * subject: a kawasan/rayon target is met by everything inside it, so its
+   * coverage is the subtree's, not this table's own rows. Omit for a lokasi —
+   * its own group already knows its countable-by-role (teams included).
    */
   roleCounts?: Map<string, number>;
 }
@@ -54,6 +56,7 @@ export function ShiftRoleTable({
   shifts,
   onOccurrenceClick,
   onAssign,
+  onAssignTeam,
   canAssign = false,
   roleTargets,
   roleCounts,
@@ -89,7 +92,15 @@ export function ShiftRoleTable({
                   onAssign={canAssign ? () => onAssign?.(group.shift.id, role) : undefined}
                   addLabel={t('schedules:board.assign')}
                   target={roleTargets?.get(`${group.shift.id}:${role}`)}
-                  covered={roleCounts?.get(`${group.shift.id}:${role}`)}
+                  // countableByRole, not the column's own rows: a team's members
+                  // are real satgas/linmas but are listed under Tim, so counting
+                  // rows would report a staffed lokasi as empty. `roleCounts`
+                  // only overrides it for a SUBTREE subject (kawasan/rayon).
+                  covered={
+                    roleCounts?.get(`${group.shift.id}:${role}`) ??
+                    group.countableByRole?.[role] ??
+                    (group.byRole[role] ?? []).length
+                  }
                   shortLabel={t('schedules:board.roleShort', {
                     shift: group.shift.name,
                     role: t(`roles:${role}`, role),
@@ -97,34 +108,55 @@ export function ShiftRoleTable({
                 />
               ))}
 
-              {group.teams.length > 0 && (
-                <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
-                  <div
-                    className={`flex items-center justify-between border-b-2 border-nb-black px-2.5 py-1.5 text-nb-caption font-bold uppercase tracking-wide text-white ${TEAM_HEADER}`}
-                  >
-                    <span>{t('schedules:board.team')}</span>
-                    <span className="tabular-nums">{group.teams.length}</span>
-                  </div>
-                  {group.teams.map((team) => (
-                    <button
-                      key={team.eventId}
-                      type="button"
-                      className="flex items-center gap-2 border-b border-nb-black bg-nb-white px-2.5 py-1.5 text-left text-sm font-semibold last:border-b-0 hover:bg-nb-gray-50"
-                      style={
-                        team.markerColor
-                          ? { borderLeft: `4px solid ${team.markerColor}` }
-                          : undefined
-                      }
-                    >
-                      <Users className="size-3.5 shrink-0 text-nb-gray-500" aria-hidden />
-                      <span className="truncate">{team.name}</span>
-                      <span className="ml-auto shrink-0 tabular-nums text-nb-gray-500">
-                        {team.count}
-                      </span>
-                    </button>
-                  ))}
+              {/* Tim is a column in its own right, always rendered like the core
+                  roles. A team is a COMBINATION of roles, so it can't be filed
+                  under satgas or linmas — and rendering it only once populated
+                  meant a team had nowhere to be assigned from, so the column
+                  never appeared (the same chicken-and-egg the rayon/kawasan
+                  assign tables had). Its members still count toward the role
+                  targets; see `countableByRole`. */}
+              <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
+                <div
+                  className={`flex items-center justify-between border-b-2 border-nb-black px-2.5 py-1.5 text-nb-caption font-bold uppercase tracking-wide text-white ${TEAM_HEADER}`}
+                >
+                  <span>{t('schedules:board.team')}</span>
+                  <span className="tabular-nums">{group.teams.length}</span>
                 </div>
-              )}
+                {group.teams.map((team) => (
+                  <button
+                    key={team.eventId}
+                    type="button"
+                    // Any member resolves the same team event, so the detail
+                    // modal opens on the team exactly as a name opens on a
+                    // person. This row used to be a dead button.
+                    onClick={
+                      team.occurrences[0]
+                        ? () => onOccurrenceClick(team.occurrences[0])
+                        : undefined
+                    }
+                    className="flex items-center gap-2 border-b border-nb-black bg-nb-white px-2.5 py-1.5 text-left text-sm font-semibold last:border-b-0 hover:bg-nb-gray-50"
+                    style={
+                      team.markerColor ? { borderLeft: `4px solid ${team.markerColor}` } : undefined
+                    }
+                  >
+                    <Users className="size-3.5 shrink-0 text-nb-gray-500" aria-hidden />
+                    <span className="truncate">{team.name}</span>
+                    <span className="ml-auto shrink-0 tabular-nums text-nb-gray-500">
+                      {team.count}
+                    </span>
+                  </button>
+                ))}
+                {canAssign && onAssignTeam && (
+                  <button
+                    type="button"
+                    onClick={() => onAssignTeam(group.shift.id)}
+                    className="flex items-center justify-center gap-1.5 border-t border-dashed border-nb-black bg-nb-white px-2.5 py-1.5 text-nb-caption font-bold text-nb-gray-500 hover:bg-nb-gray-50"
+                  >
+                    <Plus className="size-3.5" aria-hidden />
+                    {t('schedules:board.assign')}
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         );

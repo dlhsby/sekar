@@ -14,6 +14,7 @@
   "overdue": "Overdue",
   "recorded": "Recorded",
   "priority": {
+    "_label": "PRIORITY",
     "low": "Low",
     "medium": "Medium",
     "high": "High",

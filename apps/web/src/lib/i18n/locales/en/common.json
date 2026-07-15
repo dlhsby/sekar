@@ -54,7 +54,9 @@
     "openMapLink": "Open in Google Maps",
     "fullscreen": "Fullscreen",
     "exitFullscreen": "Exit Fullscreen",
-    "apply": "Apply"
+    "apply": "Apply",
+    "decrease": "Decrease",
+    "increase": "Increase"
   },
   "entities": {
     "user": "User",

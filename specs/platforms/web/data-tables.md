@@ -547,6 +547,85 @@ export default function UsersPage() {
 
 ## Table Toolbar
 
+### The primary create action — use `createAction`, not `actions` (2026-07-16)
+
+`DataTable` takes a **`createAction`** prop for the page's `[+ Tambah X]` button:
+
+```tsx
+createAction={{
+  label: t('admin:rayons.buttonAdd'),
+  hidden: !isAdmin,          // permission gating lives HERE, not in a call-site ternary
+  onClick: () => { setEditing(null); setFormOpen(true); },
+}}
+```
+
+**Why a prop rather than passing your own `<Button>` through `actions`:** the
+toolbar's filter / columns / refresh buttons already collapse to **icon-only
+below `sm`** (`hidden sm:inline`). A hand-rolled create button didn't, so its
+label made it wide enough to **wrap onto its own line on a phone** — every list
+page stacked *search / tools / create* as three rows. Putting the rule in the
+table means it holds for every page instead of being re-decided at 18 call sites.
+
+The button itself is **`<CreateButton>`** (`components/ui/create-button.tsx`),
+shared rather than inlined because a create action lives in two places:
+
+- **the table toolbar** (via `createAction`) — the default for list pages;
+- **`PageHeader.actions`** — for pages whose default view has no table. **Tugas
+  is kanban-first**, so a toolbar button would simply vanish in kanban view;
+  its create action stays in the masthead and uses `<CreateButton>` directly.
+
+The label is kept as `aria-label` + `title`, so the icon-only form stays
+announced and hoverable. `actions` remains as an escape hatch for bespoke
+toolbar content.
+
+### Toolbar rows
+
+The toolbar is **two slots**, not one line:
+
+- **Left slot** (`w-full` below `sm`, `sm:w-auto`) — search, plus any future
+  left-hand tools. Full width on a phone puts it on a **row of its own**, so the
+  right-hand group lands underneath rather than sharing the line: the search
+  grows to full width when focused and would otherwise shove the buttons around,
+  and the slot has to leave room for more than just search.
+- **Right group** (`ml-auto`) — filter · columns · refresh · create.
+
+From `sm` up both fit on one line, as before.
+
+`CreateButton` is `size="sm"` (h-10) to match the filter/columns/refresh buttons
+it sits beside — the default size is h-12 and stood a notch taller than its own
+group.
+
+### Coverage
+
+**Every** create action goes through one of two paths — verified by sweeping all
+18 pages that pass `actions`:
+
+- **`createAction`** (9): activities, locations, overtime, plants,
+  pruning-requests, rayons, regions, team-categories, users.
+- **`<CreateButton>` in `PageHeader`** (3): tasks and reports/schedules (their
+  default view is kanban / has no table toolbar), reports (create-by-navigation —
+  the button is wrapped in a `<Link>`, so `onClick` is optional).
+
+Found during the sweep: **`plants` passed `actions` twice on the same element**,
+so JSX silently kept the last one and its area-picker Combobox had been dead.
+Moving the button to `createAction` freed the slot and restored it.
+
+**Jadwal** isn't a `DataTable` (it's a calendar) but follows the same shape by
+hand: date nav → left slot (search) → right group (range select · Hari Libur ·
+create). Its search previously sat *inside* the right cluster, furthest from the
+edge it belongs on, and its Hari Libur control was a hand-rolled `<button>` with
+its own size and border rather than the standard outline icon Button.
+
+### Mobile cards
+
+A card row is `flex` with a label `<dt>` and a value `<dd>`. Both need explicit
+overflow handling: **a flex item defaults to `min-width: auto`**, so it refuses
+to shrink below its content and one long unbroken value (a username like
+`staff_kecamatan_karang_pilang_satu`) pushed the whole card past the viewport.
+The value carries `min-w-0 break-words`; the label carries `shrink-0` so it
+holds its width instead of being crushed.
+
+
 ```typescript
 // components/users/toolbar.tsx
 interface UsersToolbarProps {

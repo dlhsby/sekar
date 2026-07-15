@@ -53,7 +53,7 @@ export function getActivityColor(activity: PresenceActivity): string {
  * Get localized display label for a tracking status.
  */
 export function getStatusLabel(status: TrackingStatus): string {
-  return i18n.t(`status:tracking.${status}`, { defaultValue: 'Unknown' });
+  return i18n.t(`status:tracking.${status}`);
 }
 
 /**

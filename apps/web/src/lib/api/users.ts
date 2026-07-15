@@ -108,10 +108,16 @@ export const checkPhone = async (phone: string, excludeUserId?: string): Promise
  * });
  * ```
  */
-export function useUsers(filters: UserFilters = {}) {
+/**
+ * `enabled: false` defers the request without unmounting the caller — used by
+ * pickers that stay on screen (disabled) until a role narrows them, so the
+ * roster (~3000 workers) is never fetched speculatively.
+ */
+export function useUsers(filters: UserFilters = {}, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: userKeys.list(filters),
     queryFn: () => fetchUsers(filters),
+    enabled: options?.enabled ?? true,
   });
 }
 

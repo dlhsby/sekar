@@ -67,10 +67,24 @@ bottom-up, web before mobile:
 5. **Monitoring (web)** — subject model, drop Surabaya bubble, team bubbles, static/mobile, search (ADR-046) — 🚧 **Deferred** → checklist in [`REVAMP-STATUS.md`](REVAMP-STATUS.md).
 6. **Mobile parity** — after web design ack — ⏳ **Deferred** (incl. the worker week/month switcher + a read-only "Jadwal Petugas" supervisor viewer) → [`REVAMP-STATUS.md`](REVAMP-STATUS.md).
 
-> **Phase 4 consolidation (in progress):** closing scheduling model gaps before 5/6 — configurable
-> per-rayon `staffing_level` + polymorphic staff-requirements (seeded from the client workbook), a
-> city ("Seluruh Surabaya") schedule scope, web UX polish, backend hardening, comprehensive tests.
-> Rollout status: [`REVAMP-STATUS.md`](REVAMP-STATUS.md). **Staging stays undeployed until 5+6 land.**
+> **Phase 4 consolidation — ✅ complete (2026-07-16, PRs #268–#272).** Closed the scheduling model
+> gaps before 5/6: configurable per-rayon `staffing_level` + polymorphic staff-requirements (seeded
+> from the client workbook), the city ("Surabaya") scope now a permanent board node, capacity
+> editable from master data **and** from the tier that owns it, teams counted toward staffing with a
+> first-class Tim column, search that actually prunes/expands the board, day-type resolved in **WIB**,
+> and a per-container boundary map. Web UX + backend hardening + comprehensive tests throughout.
+> Final state: web **145 suites / 2065**, be **148 / 2403**, production build green, tsc/eslint/i18n
+> clean on both. Detail: [`features/scheduling/README.md`](features/scheduling/README.md) `## Changelog`
+> (2026-07-15/16). Rollout status: [`REVAMP-STATUS.md`](REVAMP-STATUS.md).
+>
+> **Carried into Phase 5 (known, not regressions):** monitoring still shows inactive rayon/kawasan
+> (hiding them would drop live clocked-in workers off the map — must pair with the deactivate guard);
+> lokasi `is_active` is **not enforced at clock-in** (`shifts.service.ts` → unfiltered
+> `locationsService.findOne`); the kawasan delete guard contradicts ADR-045 (resolve the ADR first);
+> ~70 "Area" display strings still mean *lokasi*; Year view ignores search filters; `toPaths` is
+> duplicated between `AreaBoundaryMap` and `SimpleMonitoringMap`; `DayBoard` is 951 lines (over the
+> 800 ceiling). **Staging stays undeployed until 5+6 land** — note `main` now carries an unapplied
+> `is_active` migration and the `areaType`→`locationType` rename (field APKs read "N/A" until updated).
 
 Then revisit the parked features above. Track work in each feature spec's `## Changelog`.
 

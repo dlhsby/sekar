@@ -41,7 +41,7 @@ export const PrioritySection: React.FC<PrioritySectionProps> = ({
           <MaterialCommunityIcons name="flag-outline" size={16} color={nbColors.black} />
           <NBText variant="mono-sm" uppercase style={styles.sectionTitleStyle}>
             {' '}
-            {t('priority._label', { defaultValue: 'PRIORITAS' })}
+            {t('priority._label')}
           </NBText>
         </View>
       </NBCardHeader>

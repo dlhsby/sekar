@@ -42,7 +42,10 @@
     "shiftTotalTooltip": "{{shift}} — {{count}} staff",
     "emptyDay": "No schedule for this day yet.",
     "noMatchTitle": "No matching schedule",
-    "noMatchDesc": "No schedule on this day matches all of the search criteria. Change or remove some criteria, or pick another date."
+    "noMatchDesc": "No schedule on this day matches all of the search criteria. Change or remove some criteria, or pick another date.",
+    "showMap": "View map",
+    "mapNoGeometry": "No boundary or coordinates set yet.",
+    "mapUnavailable": "Map unavailable."
   },
   "search": {
     "placeholder": "Search worker, area, or date…",
@@ -244,12 +247,21 @@
       "rayonLabel": "Rayon",
       "rayonPlaceholder": "Select rayon…",
       "scopeHelp": "Schedule coverage — determines which placement fields are needed.",
-      "scopeCity": "Whole City (Patrol Team)",
+      "scopeCity": "Surabaya",
       "scopeKawasan": "Kawasan",
       "scopeLokasi": "Location",
       "regionScopeHint": "Mobile coverage across the whole kawasan (workers roam within it).",
       "locationScopeHint": "Static coverage at a single location.",
-      "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement."
+      "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement.",
+      "kindPlaceholder": "Select type...",
+      "rolePlaceholder": "Select role...",
+      "roleLabel": "Role",
+      "scopePlaceholder": "Select scope...",
+      "recurrencePlaceholder": "Select recurrence...",
+      "regionFilterPlaceholder": "All kawasan (optional)",
+      "regionFilterHint": "Optional — narrows the location list. Locations with no kawasan still appear.",
+      "picRoleLabel": "PIC role",
+      "memberEmpty": "No members yet. Pick a role, then a worker, then Add."
     },
     "editScope": {
       "title": "Edit What?",
@@ -291,7 +303,7 @@
     },
     "moreCount": "+{{count}} more",
     "board": {
-      "cityLabel": "Whole City / Surabaya"
+      "cityLabel": "Surabaya"
     }
   },
   "staffCapacity": {
@@ -316,9 +328,9 @@
     "legendHigh": "More"
   },
   "holidays": {
-    "title": "Holidays & Special Days",
+    "title": "Holidays",
     "manage": "Holidays",
-    "hint": "Mark dates as holidays or special days. This changes the day type used for staffing targets on the board and in monitoring.",
+    "hint": "Mark dates as a holiday or a weekend. This changes the day type used for staffing targets on the board and in monitoring.",
     "addTitle": "Add day",
     "typeLabel": "Day type",
     "namePlaceholder": "Name (e.g. Independence Day)",

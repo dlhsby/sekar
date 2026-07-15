@@ -13,6 +13,7 @@ import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
+import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
@@ -94,18 +95,6 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 const DEFAULT_ZOOM = 11;
 // Alpha for the rayon fill when tinted with its configured color.
 const RAYON_FILL_ALPHA = 0.18;
-
-/** GeoJSON Polygon/MultiPolygon → array of Google outer-ring paths. */
-function geometryToPaths(geom: GeoJSON.Geometry | null): google.maps.LatLngLiteral[][] {
-  if (!geom) return [];
-  if (geom.type === 'Polygon') {
-    return [geom.coordinates[0].map(([lng, lat]) => ({ lat, lng }))];
-  }
-  if (geom.type === 'MultiPolygon') {
-    return geom.coordinates.map((poly) => poly[0].map(([lng, lat]) => ({ lat, lng })));
-  }
-  return [];
-}
 
 interface AreaPin {
   id: string;

@@ -8,6 +8,8 @@
  *  - rn-no-shadow-radius: React Native — forbid shadowRadius > 0 (NB stamp invariant).
  *  - no-untranslated-literal: forbid hardcoded user-facing UI strings; use react-i18next
  *    t()/i18n.t() with id/en keys (CLAUDE.md §Internationalization).
+ *  - no-i18n-literal-fallback: forbid t(key, 'English') — i18n:check compares KEY SETS,
+ *    so a fallback renders English to id users with the check still green.
  *
  * See specs/architecture/decisions/ADR-036-design-tokens-single-source.md
  * and specs/design-system/design-tokens.md §Layer 2 emitter rules.
@@ -19,6 +21,7 @@ const noTailwindShadowClassesWithBlur = require('./rules/no-tailwind-shadow-clas
 const preferNbShadowUtility = require('./rules/prefer-nb-shadow-utility');
 const rnNoShadowRadius = require('./rules/rn-no-shadow-radius');
 const noUntranslatedLiteral = require('./rules/no-untranslated-literal');
+const noI18nLiteralFallback = require('./rules/no-i18n-literal-fallback');
 
 module.exports = {
   meta: {
@@ -31,5 +34,6 @@ module.exports = {
     'prefer-nb-shadow-utility': preferNbShadowUtility,
     'rn-no-shadow-radius': rnNoShadowRadius,
     'no-untranslated-literal': noUntranslatedLiteral,
+    'no-i18n-literal-fallback': noI18nLiteralFallback,
   },
 };

@@ -11,9 +11,18 @@ import { useUsers } from '@/lib/api/users';
 
 const PAGE = 10;
 
+/** The picked user, reported alongside the id so callers can render it without
+ *  refetching (or preloading the whole roster just to resolve a name). */
+export interface PickedUser {
+  id: string;
+  full_name: string;
+  role: string;
+  phone_number?: string;
+}
+
 export interface AsyncUserComboboxProps {
   value?: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (value: string, user?: PickedUser) => void;
   placeholder?: string;
   /** Restrict to these role codes (client-side). */
   roles?: string[];
@@ -72,12 +81,14 @@ export function AsyncUserCombobox({
 
   // Role filtering is server-side (so pagination + "load more" stay correct even
   // when the first page has no matching roles); excludeIds is a small client tweak.
-  const { data, isFetching } = useUsers({
-    search: debounced || undefined,
-    roles,
-    page: 1,
-    limit,
-  });
+  //
+  // A disabled picker fetches NOTHING. It stays mounted so the form doesn't
+  // reflow as a role is chosen, but an un-narrowed query would pull the whole
+  // roster — the exact cost the role step exists to avoid.
+  const { data, isFetching } = useUsers(
+    { search: debounced || undefined, roles, page: 1, limit },
+    { enabled: !disabled }
+  );
   const raw = React.useMemo(() => data?.data ?? [], [data]);
   const total = data?.meta?.total ?? 0;
   const users = React.useMemo(
@@ -95,9 +106,9 @@ export function AsyncUserCombobox({
     }
   };
 
-  const pick = (userId: string, name: string): void => {
-    setLabelCache((prev) => ({ ...prev, [userId]: name }));
-    onValueChange(userId);
+  const pick = (user: PickedUser): void => {
+    setLabelCache((prev) => ({ ...prev, [user.id]: user.full_name }));
+    onValueChange(user.id, user);
     setOpen(false);
   };
 
@@ -168,15 +179,28 @@ export function AsyncUserCombobox({
                   key={u.id}
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => pick(u.id, u.full_name)}
+                  onClick={() =>
+                    pick({
+                      id: u.id,
+                      full_name: u.full_name,
+                      role: u.role,
+                      phone_number: u.phone_number,
+                    })
+                  }
                   className={cn(
                     'flex cursor-pointer items-center justify-between gap-2 rounded-nb-sm px-3 py-2 text-nb-body-sm hover:bg-nb-gray-100',
                     isSelected && 'font-bold'
                   )}
                 >
+                  {/* The role is already chosen upstream, so repeating it here
+                      says nothing. The phone number is what tells two workers
+                      with the same name apart — fall back to the username when a
+                      worker has no phone on file. */}
                   <span className="truncate">
                     {u.full_name}
-                    <span className="ml-1 text-nb-caption text-nb-gray-500">({u.username})</span>
+                    <span className="ml-1 text-nb-caption text-nb-gray-500">
+                      {u.phone_number ? `— ${u.phone_number}` : `(${u.username})`}
+                    </span>
                   </span>
                   {isSelected ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
                 </li>
@@ -185,7 +209,7 @@ export function AsyncUserCombobox({
           )}
           {isFetching ? (
             <li className="px-3 py-2 text-center text-nb-caption text-nb-gray-500">
-              {t('common:loading', 'Loading…')}
+              {t('common:loading')}
             </li>
           ) : hasMore ? (
             <li className="p-1">
@@ -197,7 +221,7 @@ export function AsyncUserCombobox({
                   nbFocusRing
                 )}
               >
-                {t('common:ui.combobox.loadMore', 'Load more')}
+                {t('common:ui.combobox.loadMore')}
               </button>
             </li>
           ) : null}

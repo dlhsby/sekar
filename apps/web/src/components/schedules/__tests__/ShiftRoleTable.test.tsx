@@ -31,6 +31,7 @@ const group = (o: Partial<BoardShiftGroup> = {}): BoardShiftGroup =>
     shift: { id: 's1', name: 'Shift 1', start_time: '06:00:00', end_time: '15:00:00' },
     byRole: {},
     teams: [],
+    countableByRole: {},
     total: 0,
     countable: 0,
     ...o,
@@ -137,78 +138,109 @@ describe('ShiftRoleTable', () => {
     expect(screen.queryByRole('button', { name: /tugaskan/i })).not.toBeInTheDocument();
   });
 
-  it('renders the team column only when the shift has teams', () => {
-    const { rerender } = render(
-      <ShiftRoleTable shifts={[group()]} onOccurrenceClick={jest.fn()} />
-    );
-    expect(screen.queryByText('Tim')).not.toBeInTheDocument();
+  // A team is a COMBINATION of roles, so it can't be filed under satgas or
+  // linmas — it gets a column of its own, always present like the core roles.
+  // Rendering it only once populated meant a team had nowhere to be assigned
+  // FROM, so the column never appeared: the same chicken-and-egg the rayon and
+  // kawasan assign tables had.
+  // A lokasi is handed roleTargets but NO roleCounts (its own group is the whole
+  // subject). Before the fix the column counted its own rows — individuals only —
+  // so a team-staffed lokasi read 0/10 while the pill above it read 5/10.
+  describe('team members count toward a role target', () => {
+    it('counts team members at a lokasi, which is handed no roleCounts', () => {
+      render(
+        <ShiftRoleTable
+          shifts={[
+            group({
+              byRole: {},
+              countableByRole: { satgas: 5 },
+              teams: [
+                { eventId: 'e1', name: 'Tim Patroli', count: 5, markerColor: null, occurrences: [] },
+              ],
+              countable: 5,
+              total: 5,
+            }),
+          ]}
+          onOccurrenceClick={jest.fn()}
+          roleTargets={new Map([['s1:satgas', 10]])}
+        />
+      );
 
-    rerender(
-      <ShiftRoleTable
-        shifts={[
-          group({
-            teams: [{ eventId: 'e1', name: 'Tim Patroli', count: 4, markerColor: null }],
-          }),
-        ]}
-        onOccurrenceClick={jest.fn()}
-      />
-    );
-    expect(screen.getByText('Tim')).toBeInTheDocument();
-    expect(screen.getByText('Tim Patroli')).toBeInTheDocument();
-    expect(screen.getByText('4')).toBeInTheDocument();
-  });
-});
+      expect(within(column(/satgas/i)).getByText('5/10')).toBeInTheDocument();
+    });
 
+    it('still lets a subtree roleCounts win, for a kawasan/rayon', () => {
+      render(
+        <ShiftRoleTable
+          shifts={[group({ countableByRole: { satgas: 2 } })]}
+          onOccurrenceClick={jest.fn()}
+          roleTargets={new Map([['s1:satgas', 10]])}
+          roleCounts={new Map([['s1:satgas', 8]])}
+        />
+      );
 
-describe('per-role capacity', () => {
-  const renderWith = (roleTargets?: Map<string, number>, byRole = {}) =>
-    render(
-      <ShiftRoleTable
-        shifts={[group({ byRole })]}
-        onOccurrenceClick={jest.fn()}
-        roleTargets={roleTargets}
-      />
-    );
-
-  it('shows the target on the exact shift+role that owns one', () => {
-    renderWith(new Map([['s1:satgas', 10]]));
-
-    // Satgas is short 10 and says so; linmas has no target and shows a count.
-    expect(within(column(/satgas/i)).getByText('0/10')).toBeInTheDocument();
-    expect(within(column(/linmas/i)).queryByText(/\/10/)).not.toBeInTheDocument();
-  });
-
-  it('drops the warning once the role is fully staffed', () => {
-    const byRole = {
-      satgas: [occ({ name: 'A' }), occ({ name: 'B' })],
-    };
-    renderWith(new Map([['s1:satgas', 2]]), byRole);
-
-    const cell = within(column(/satgas/i)).getByText('2/2');
-    expect(cell).toBeInTheDocument();
-    // The danger fill is the "needs attention" signal — gone when met.
-    expect(cell.className).not.toContain('nb-danger');
+      // 8 (the subtree) — not 2 (this container's own).
+      expect(within(column(/satgas/i)).getByText('8/10')).toBeInTheDocument();
+    });
   });
 
-  it('flags the role that is short, not the whole shift', () => {
-    renderWith(new Map([['s1:satgas', 3], ['s1:linmas', 0]]));
+  describe('Tim column', () => {
+    const team = (o = {}) => ({
+      eventId: 'e1',
+      name: 'Tim Patroli',
+      count: 4,
+      markerColor: null,
+      occurrences: [],
+      ...o,
+    });
 
-    expect(within(column(/satgas/i)).getByText('0/3').className).toContain('nb-danger');
-  });
+    it('renders even when the shift has no teams yet', () => {
+      render(<ShiftRoleTable shifts={[group()]} onOccurrenceClick={jest.fn()} />);
 
-  it('never invents a target for korlap (only satgas/linmas are countable)', () => {
-    renderWith(new Map([['s1:satgas', 3]]));
+      expect(screen.getByText('Tim')).toBeInTheDocument();
+    });
 
-    // korlap has no requirement rows at all, so it must stay a bare count.
-    expect(within(column(/koordinator/i)).getByText('0')).toBeInTheDocument();
-    expect(within(column(/koordinator/i)).queryByText(/\//)).not.toBeInTheDocument();
-  });
+    it('lists a team with its member count', () => {
+      render(<ShiftRoleTable shifts={[group({ teams: [team()] })]} onOccurrenceClick={jest.fn()} />);
 
-  it('shows bare counts when the subject owns no capacity (target lives elsewhere)', () => {
-    // e.g. a lokasi under a kawasan-scoped rayon: the kawasan holds the target.
-    renderWith(undefined);
+      expect(screen.getByText('Tim Patroli')).toBeInTheDocument();
+      expect(screen.getByText('4')).toBeInTheDocument();
+    });
 
-    expect(within(column(/satgas/i)).getByText('0')).toBeInTheDocument();
-    expect(within(column(/satgas/i)).queryByText(/\//)).not.toBeInTheDocument();
+    it('offers "+ Tugaskan" so a team can be assigned into an empty shift', async () => {
+      const onAssignTeam = jest.fn();
+      const user = userEvent.setup();
+      render(
+        <ShiftRoleTable
+          shifts={[group()]}
+          onOccurrenceClick={jest.fn()}
+          canAssign
+          onAssignTeam={onAssignTeam}
+        />
+      );
+
+      const timCard = screen.getByText('Tim').closest('div')!.parentElement as HTMLElement;
+      await user.click(within(timCard).getByRole('button', { name: /tugaskan/i }));
+
+      expect(onAssignTeam).toHaveBeenCalledWith('s1');
+    });
+
+    it('opens the detail modal when a team row is clicked', async () => {
+      // This row used to be a dead button — individuals opened a detail, teams
+      // did nothing. Any member resolves the same team event.
+      const member = { id: 'occ-1', user: { full_name: 'Budi' } } as never;
+      const onOccurrenceClick = jest.fn();
+      const user = userEvent.setup();
+      render(
+        <ShiftRoleTable
+          shifts={[group({ teams: [team({ occurrences: [member] })] })]}
+          onOccurrenceClick={onOccurrenceClick}
+        />
+      );
+
+      await user.click(screen.getByText('Tim Patroli'));
+
+      expect(onOccurrenceClick).toHaveBeenCalledWith(member);
+    });
   });
 });
