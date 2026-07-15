@@ -102,7 +102,6 @@
     "columnBoundary": "Boundary",
     "columnArea": "Area",
     "columnRadius": "Radius (m)",
-    "columnStyle": "Display",
     "columnAddress": "Address",
     "columnStatus": "Status",
     "columnCreated": "Created",
@@ -415,7 +414,6 @@
     "searchPlaceholder": "Search region name…",
     "columnName": "Name",
     "columnRayon": "District",
-    "columnStyle": "Display",
     "buttonAdd": "Add Region",
     "actionEdit": "Edit",
     "detailTitle": "Region Detail",
@@ -438,15 +436,6 @@
       "geometryRequired": "A boundary or center pin is required",
       "submit": "Save Changes",
       "submitNew": "Create Region"
-    },
-    "assignAreas": {
-      "action": "Manage Areas",
-      "title": "Areas for {{name}}",
-      "help": "Pick the areas (within this Kawasan's district) that belong to it. Unselected areas are un-parented.",
-      "label": "Areas in this Kawasan",
-      "placeholder": "Select areas…",
-      "empty": "No areas in this Kawasan's district",
-      "success": "Areas for \"{{name}}\" updated"
     }
   },
   "mapStyle": {

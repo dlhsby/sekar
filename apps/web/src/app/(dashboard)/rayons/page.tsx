@@ -16,6 +16,7 @@ import {
   PageHeader,
   CoordinateLink,
   ConfirmDialog,
+  mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -108,31 +109,7 @@ export default function RayonsPage() {
         },
         cell: ({ row }) => <span className="text-nb-body-sm">{staffingLabel(row.original.staffing_level)}</span>,
       },
-      {
-        id: 'color',
-        // Boundary appearance the form edits (per-level border + fill, ADR-045).
-        accessorFn: (r) => r.fill_color ?? r.border_color ?? '',
-        header: t('admin:rayons.stats.color'),
-        enableSorting: false,
-        meta: { label: t('admin:rayons.stats.color'), filterVariant: 'text' },
-        cell: ({ row }) => {
-          const border = row.original.border_color ?? null;
-          const fill = row.original.fill_color ?? null;
-          const shown = fill ?? border;
-          return shown ? (
-            <span className="inline-flex items-center gap-2">
-              <span
-                className="h-4 w-4 border-2"
-                style={{ backgroundColor: fill ?? 'transparent', borderColor: border ?? 'var(--color-nb-black)' }}
-                title={shown}
-              />
-              <span className="font-mono text-nb-body-sm text-nb-gray-600">{shown}</span>
-            </span>
-          ) : (
-            <span className="text-nb-gray-500">—</span>
-          );
-        },
-      },
+      mapStyleColorColumn<Rayon>(t('common:color')),
       {
         id: 'coordinates',
         accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),

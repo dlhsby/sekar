@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Eye, Pencil, Trash2, MapPin } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Button,
   CoordinateLink,
@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   EmptyState,
+  mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -23,7 +24,6 @@ import { getErrorMessage } from '@/lib/api/client';
 import { useRegions, useDeleteRegion, type Region } from '@/lib/api/regions';
 import { useRayons } from '@/lib/api/rayons';
 import { RegionFormModal } from '@/components/regions/RegionFormModal';
-import { AssignAreasModal } from '@/components/regions/AssignAreasModal';
 
 export default function RegionsPage() {
   const { t } = useTranslation();
@@ -34,7 +34,6 @@ export default function RegionsPage() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Region | null>(null);
-  const [assigning, setAssigning] = useState<Region | null>(null);
   const [viewing, setViewing] = useState<Region | null>(null);
   const [toDelete, setToDelete] = useState<Region | null>(null);
 
@@ -67,28 +66,7 @@ export default function RegionsPage() {
           filterOptions: rayonFilterOptions,
         },
       },
-      {
-        id: 'fill',
-        header: t('admin:regions.columnStyle'),
-        enableSorting: false,
-        cell: ({ row }) => {
-          const border = row.original.border_color ?? null;
-          const fill = row.original.fill_color ?? null;
-          const shown = fill ?? border;
-          return shown ? (
-            <span className="inline-flex items-center gap-2">
-              <span
-                className="h-4 w-4 border-2"
-                style={{ backgroundColor: fill ?? 'transparent', borderColor: border ?? 'var(--color-nb-black)' }}
-                title={shown}
-              />
-              <span className="font-mono text-nb-body-sm text-nb-gray-600">{shown}</span>
-            </span>
-          ) : (
-            <span className="text-nb-gray-500">—</span>
-          );
-        },
-      },
+      mapStyleColorColumn<Region>(t('common:color')),
       {
         id: 'coordinates',
         header: t('admin:areas.columnCoordinates'),
@@ -123,13 +101,6 @@ export default function RegionsPage() {
         setEditing(r);
         setFormOpen(true);
       },
-    },
-    {
-      key: 'assign-areas',
-      label: t('admin:regions.assignAreas.action'),
-      icon: MapPin,
-      hidden: !can('region:update'),
-      onClick: () => setAssigning(r),
     },
     {
       key: 'delete',
@@ -206,12 +177,6 @@ export default function RegionsPage() {
           readOnly
         />
       )}
-      <AssignAreasModal
-        open={!!assigning}
-        onOpenChange={(o) => !o && setAssigning(null)}
-        region={assigning}
-        onSuccess={() => refetch()}
-      />
 
       <Dialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <DialogContent size="sm">

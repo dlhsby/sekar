@@ -102,7 +102,6 @@
     "columnBoundary": "Batas Wilayah",
     "columnArea": "Luas",
     "columnRadius": "Radius (m)",
-    "columnStyle": "Tampilan",
     "columnAddress": "Alamat",
     "columnStatus": "Status",
     "columnCreated": "Dibuat",
@@ -415,7 +414,6 @@
     "searchPlaceholder": "Cari nama kawasan…",
     "columnName": "Nama",
     "columnRayon": "Rayon",
-    "columnStyle": "Tampilan",
     "buttonAdd": "Tambah Kawasan",
     "actionEdit": "Ubah",
     "detailTitle": "Detail Kawasan",
@@ -438,15 +436,6 @@
       "geometryRequired": "Perlu batas wilayah atau titik pusat",
       "submit": "Simpan Perubahan",
       "submitNew": "Buat Kawasan"
-    },
-    "assignAreas": {
-      "action": "Kelola Area",
-      "title": "Area untuk {{name}}",
-      "help": "Pilih area (dalam rayon kawasan ini) yang termasuk dalam kawasan. Area yang tidak dipilih akan dilepas.",
-      "label": "Area dalam kawasan",
-      "placeholder": "Pilih area…",
-      "empty": "Tidak ada area pada rayon kawasan ini",
-      "success": "Area untuk \"{{name}}\" diperbarui"
     }
   },
   "mapStyle": {

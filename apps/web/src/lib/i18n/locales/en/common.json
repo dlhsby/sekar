@@ -257,6 +257,7 @@
       "short": "Access denied"
     }
   },
+  "color": "Color",
   "marker": {
     "label": "Map Marker",
     "upload": "Upload image",

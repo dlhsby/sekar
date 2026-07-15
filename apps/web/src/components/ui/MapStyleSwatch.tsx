@@ -1,0 +1,97 @@
+'use client';
+
+import type { ColumnDef } from '@tanstack/react-table';
+
+/**
+ * Shared colour rendering for the map-style grids (rayon / kawasan / lokasi) and
+ * anywhere a per-level colour is shown. Renders a swatch that reflects the border
+ * + fill colours AT their opacities, plus a compact hex · opacity readout so the
+ * grid "Warna" column is identical everywhere. See `mapStyleColorColumn` for the
+ * standardized (unfilterable) column.
+ */
+
+export interface MapStyleColors {
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+}
+
+/** Parse a #rgb / #rrggbb hex to an `rgba(...)` string at the given alpha (0–1). */
+function hexToRgba(hex: string, alpha: number): string | null {
+  let h = hex.trim().replace('#', '');
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('');
+  if (h.length !== 6 || /[^0-9a-fA-F]/.test(h)) return null;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const a = Math.max(0, Math.min(1, alpha));
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+const pct = (o?: number | null): number => Math.round((o ?? 1) * 100);
+
+/** Compact "#hex · 80%" line, or a dash when the colour is unset. */
+function ColorLine({ label, hex, opacity }: { label: string; hex?: string | null; opacity?: number | null }) {
+  return (
+    <span className="flex items-center gap-1 whitespace-nowrap font-mono text-nb-caption text-nb-gray-600">
+      <span className="text-nb-gray-400">{label}</span>
+      {hex ? (
+        <>
+          <span>{hex}</span>
+          <span className="text-nb-gray-400">· {pct(opacity)}%</span>
+        </>
+      ) : (
+        <span className="text-nb-gray-400">—</span>
+      )}
+    </span>
+  );
+}
+
+export function MapStyleSwatch({
+  border_color,
+  fill_color,
+  border_opacity,
+  fill_opacity,
+}: MapStyleColors) {
+  const borderCss =
+    (border_color && hexToRgba(border_color, border_opacity ?? 1)) ?? 'var(--color-nb-black)';
+  const fillCss = (fill_color && hexToRgba(fill_color, fill_opacity ?? 1)) ?? 'transparent';
+  const hasAny = !!(border_color || fill_color);
+
+  if (!hasAny) return <span className="text-nb-gray-500">—</span>;
+
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span
+        className="h-5 w-5 shrink-0 rounded-nb-sm border-2"
+        style={{ backgroundColor: fillCss, borderColor: borderCss }}
+        aria-hidden
+      />
+      <span className="flex flex-col leading-tight">
+        <ColorLine label="B" hex={border_color} opacity={border_opacity} />
+        <ColorLine label="F" hex={fill_color} opacity={fill_opacity} />
+      </span>
+    </span>
+  );
+}
+
+/**
+ * Standardized "Warna" column for a map-style grid: swatch + hex · opacity, no
+ * sort, NO filter (a hex-text filter is useless). Same behaviour across rayon,
+ * kawasan and lokasi grids. `get` extracts the four colour fields from a row
+ * (defaults to identity for entities that already carry them).
+ */
+export function mapStyleColorColumn<T extends MapStyleColors>(
+  colorLabel: string,
+  get: (row: T) => MapStyleColors = (row) => row,
+): ColumnDef<T> {
+  return {
+    id: 'color',
+    header: colorLabel,
+    enableSorting: false,
+    enableColumnFilter: false,
+    meta: { label: colorLabel },
+    cell: ({ row }) => <MapStyleSwatch {...get(row.original)} />,
+  };
+}

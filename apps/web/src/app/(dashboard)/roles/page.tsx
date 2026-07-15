@@ -202,6 +202,14 @@ export default function RolesPage() {
                 >
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="size-4 shrink-0" aria-hidden />
+                    {role.marker_color && (
+                      <span
+                        className="size-3 shrink-0 rounded-nb-sm border-2 border-nb-black"
+                        style={{ backgroundColor: role.marker_color }}
+                        title={role.marker_color}
+                        aria-hidden
+                      />
+                    )}
                     <span className="min-w-0 flex-1 truncate font-bold text-nb-black">
                       {role.name}
                     </span>
