@@ -3,6 +3,10 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { LocationStaffRequirementsService } from './location-staff-requirements.service';
+import { Rayon, StaffingLevel } from '../rayons/entities/rayon.entity';
+import { Region } from '../regions/entities/region.entity';
+import { Location } from '../locations/entities/location.entity';
+import { ApiException } from '../../common/exceptions/api.exception';
 import {
   LocationStaffRequirement,
   DayType,
@@ -78,6 +82,21 @@ describe('LocationStaffRequirementsService', () => {
     findOne: jest.fn(),
   };
 
+  const mockRayonRepository = { findOne: jest.fn() };
+  const mockRegionRepository = { findOne: jest.fn() };
+  const mockLocationRepository = { findOne: jest.fn() };
+
+  /** Point every subject at one rayon with the given staffing level. */
+  const rayonAt = (level: StaffingLevel) => {
+    mockRayonRepository.findOne.mockResolvedValue({
+      id: 'ry1',
+      name: 'Rayon Pusat',
+      staffing_level: level,
+    });
+    mockRegionRepository.findOne.mockResolvedValue({ id: 'kw1', rayon_id: 'ry1' });
+    mockLocationRepository.findOne.mockResolvedValue({ id: 'loc1', rayon_id: 'ry1' });
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -86,6 +105,11 @@ describe('LocationStaffRequirementsService', () => {
           provide: getRepositoryToken(LocationStaffRequirement),
           useValue: mockRequirementRepository,
         },
+        // A write must land at the tier the parent rayon nominates, so the
+        // service resolves subject -> rayon -> staffing_level.
+        { provide: getRepositoryToken(Rayon), useValue: mockRayonRepository },
+        { provide: getRepositoryToken(Region), useValue: mockRegionRepository },
+        { provide: getRepositoryToken(Location), useValue: mockLocationRepository },
         {
           provide: LocationsService,
           useValue: mockAreasService,
@@ -426,6 +450,101 @@ describe('LocationStaffRequirementsService', () => {
       expect(mockRequirementRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({ where: { rayon_id: 'rayon-1' } }),
       );
+    });
+
+    /**
+     * A rayon nominates exactly one tier for its staffing requirements. Writing
+     * at any other tier would let two tiers each carry a target, which the board
+     * would double-count — so the write is refused rather than silently stored.
+     */
+    describe('staffing-level guard', () => {
+      // `jest.clearAllMocks()` clears call data but keeps mockResolvedValue, so a
+      // resolvable rayon would leak into the sibling tests and trip the guard.
+      afterEach(() => {
+        mockRayonRepository.findOne.mockReset();
+        mockRegionRepository.findOne.mockReset();
+        mockLocationRepository.findOne.mockReset();
+      });
+
+      const arrangeWrite = () => {
+        mockRequirementRepository.findOne.mockResolvedValue(null);
+        mockRequirementRepository.create.mockImplementation(
+          (x: unknown) => x as LocationStaffRequirement,
+        );
+        mockRequirementRepository.save.mockResolvedValue({} as LocationStaffRequirement);
+        mockRequirementRepository.find.mockResolvedValue([]);
+      };
+
+      it.each([
+        ['rayon-scoped rayon rejects a kawasan write', StaffingLevel.RAYON, 'region'],
+        ['rayon-scoped rayon rejects a lokasi write', StaffingLevel.RAYON, 'location'],
+        ['kawasan-scoped rayon rejects a rayon write', StaffingLevel.REGION, 'rayon'],
+        ['kawasan-scoped rayon rejects a lokasi write', StaffingLevel.REGION, 'location'],
+        ['lokasi-scoped rayon rejects a rayon write', StaffingLevel.LOCATION, 'rayon'],
+        ['lokasi-scoped rayon rejects a kawasan write', StaffingLevel.LOCATION, 'region'],
+      ])('%s', async (_label, level, writeAt) => {
+        arrangeWrite();
+        rayonAt(level);
+
+        const call =
+          writeAt === 'rayon'
+            ? service.bulkSetForRayon('ry1', [item])
+            : writeAt === 'region'
+              ? service.bulkSetForRegion('kw1', [item])
+              : service.bulkSetForLocation('loc1', [item]);
+
+        await expect(call).rejects.toBeInstanceOf(ApiException);
+        expect(mockRequirementRepository.save).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ['rayon', StaffingLevel.RAYON],
+        ['region', StaffingLevel.REGION],
+        ['location', StaffingLevel.LOCATION],
+      ])('allows the write at the rayon’s own %s level', async (writeAt, level) => {
+        arrangeWrite();
+        rayonAt(level);
+
+        const call =
+          writeAt === 'rayon'
+            ? service.bulkSetForRayon('ry1', [item])
+            : writeAt === 'region'
+              ? service.bulkSetForRegion('kw1', [item])
+              : service.bulkSetForLocation('loc1', [item]);
+
+        await expect(call).resolves.toBeDefined();
+        expect(mockRequirementRepository.save).toHaveBeenCalled();
+      });
+
+      it('carries the code the frontends localize on', async () => {
+        arrangeWrite();
+        rayonAt(StaffingLevel.REGION);
+
+        await expect(service.bulkSetForRayon('ry1', [item])).rejects.toMatchObject({
+          code: 'CAPACITY_WRONG_LEVEL',
+        });
+      });
+
+      it('treats a rayon with no staffing_level as kawasan-scoped (the column default)', async () => {
+        arrangeWrite();
+        mockRayonRepository.findOne.mockResolvedValue({
+          id: 'ry1',
+          name: 'R',
+          staffing_level: null,
+        });
+        mockRegionRepository.findOne.mockResolvedValue({ id: 'kw1', rayon_id: 'ry1' });
+
+        await expect(service.bulkSetForRegion('kw1', [item])).resolves.toBeDefined();
+      });
+
+      it('does not block a read — a wrong-level row stays inspectable', async () => {
+        rayonAt(StaffingLevel.RAYON);
+        mockRequirementRepository.find.mockResolvedValue([]);
+
+        // Reads are deliberately unguarded: existing wrong-level rows are left in
+        // place (not migrated away) so they survive a rayon changing level back.
+        await expect(service.findByRegionId('kw1')).resolves.toEqual([]);
+      });
     });
 
     it('bulkSetForRegion inserts a region-level row (create carries region_id, not location_id)', async () => {

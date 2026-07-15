@@ -41,6 +41,7 @@
   "AREA_CODE_DUPLICATE": "Kode area sudah digunakan.",
   "RAYON_DEACTIVATE_IN_USE": "Rayon masih memiliki kawasan, lokasi, atau petugas aktif. Nonaktifkan atau pindahkan dulu.",
   "REGION_DEACTIVATE_IN_USE": "Kawasan masih memiliki lokasi aktif. Nonaktifkan atau pindahkan lokasi tersebut dulu.",
+  "CAPACITY_WRONG_LEVEL": "Kapasitas hanya bisa diatur pada tingkat yang dipilih rayon (rayon / kawasan / lokasi). Ubah tingkat kebutuhan satgas di rayon jika ingin mengaturnya di tingkat lain.",
   "ASSIGNMENT_NOT_FOUND": "Anda belum ditugaskan ke area manapun.",
   "ASSIGNMENT_ALREADY_EXISTS": "Anda sudah ditugaskan ke area ini.",
   "VALIDATION_ERROR": "Data yang dikirim tidak valid. Periksa kembali isian Anda.",

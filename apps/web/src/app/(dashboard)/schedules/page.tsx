@@ -222,7 +222,10 @@ export default function SchedulesPage() {
   // Master data for the day board's Rayon → Kawasan → Lokasi tree.
   const boardMaster = useMemo<BoardMasterData>(
     () => ({
-      rayons: rayons.map((r) => ({ id: r.id, name: r.name })),
+      // staffing_level must survive this mapping: it decides which single tier
+      // (rayon / kawasan / lokasi) may edit capacity. Dropping it here is what
+      // made the board offer the capacity control on every tier but the rayon.
+      rayons: rayons.map((r) => ({ id: r.id, name: r.name, staffing_level: r.staffing_level })),
       regions: regions.map((r) => ({ id: r.id, name: r.name, rayon_id: r.rayon_id })),
       locations: allLocations.map((l) => ({
         id: l.id,

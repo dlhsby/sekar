@@ -12,6 +12,7 @@ import userEvent from '@testing-library/user-event';
 import { DayBoard } from '../DayBoard';
 import { CITY_NODE_ID, type BoardMasterData } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
+import type { StaffingLevel } from '@/types/models';
 
 const shift = (id: string, name: string) => ({
   id,
@@ -20,7 +21,17 @@ const shift = (id: string, name: string) => ({
   end_time: '15:00:00',
 });
 
+/**
+ * The rayon's `staffing_level` decides which single tier owns capacity. Build a
+ * master for a given level — the board must never infer it from tree position.
+ */
+const masterAt = (level: StaffingLevel): BoardMasterData => ({
+  ...master,
+  rayons: [{ id: 'ry1', name: 'Rayon Pusat', staffing_level: level }],
+});
+
 const master: BoardMasterData = {
+  // No staffing_level → falls back to the entity default (`region`).
   rayons: [{ id: 'ry1', name: 'Rayon Pusat' }],
   regions: [{ id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry1' }],
   locations: [
@@ -98,12 +109,27 @@ describe('DayBoard', () => {
   it('flags park (location-level) understaffing against the loc: target', async () => {
     const user = userEvent.setup();
     renderBoard({
+      master: masterAt('location'),
       occurrences: [occ({ location_id: 'loc2' })], // loose location = Taman Aktif park
       capacities: new Map([['loc:loc2:s1', 2]]),
     });
     await expand(user, /Rayon Pusat/);
 
     expect(screen.getByText(/S1·1\/2/)).toBeInTheDocument();
+  });
+
+  it('ignores a lokasi target when the rayon is kawasan-scoped', async () => {
+    // A stale loc-level row can exist (the API used to accept any level); it must
+    // not surface once the rayon says the kawasan owns capacity.
+    const user = userEvent.setup();
+    renderBoard({
+      master: masterAt('region'),
+      occurrences: [occ({ location_id: 'loc2' })],
+      capacities: new Map([['loc:loc2:s1', 2]]),
+    });
+    await expand(user, /Rayon Pusat/);
+
+    expect(screen.queryByText(/S1·1\/2/)).not.toBeInTheDocument();
   });
 
   it('does not show a target pill on a location nested under a kawasan', async () => {
@@ -120,30 +146,85 @@ describe('DayBoard', () => {
     expect(screen.queryByText(/S1·1\/5/)).not.toBeInTheDocument();
   });
 
-  it('opens the capacity editor with the right subject (kawasan vs park)', async () => {
+  it('offers the capacity gear on exactly one tier — the kawasan — when rayon is kawasan-scoped', async () => {
     const user = userEvent.setup();
     const onEditCapacity = jest.fn();
     renderBoard({
+      master: masterAt('region'),
       occurrences: [occ({ location_id: 'loc1' }), occ({ location_id: 'loc2' })],
       onEditCapacity,
     });
     await expand(user, /Rayon Pusat/);
 
     const gears = screen.getAllByRole('button', { name: /atur kapasitas/i });
-    await user.click(gears[0]); // kawasan gear
+    expect(gears).toHaveLength(1);
+
+    await user.click(gears[0]);
     expect(onEditCapacity).toHaveBeenCalledWith({
       type: 'region',
       id: 'kw1',
       name: 'Kawasan Pusat',
     });
+  });
 
-    onEditCapacity.mockClear();
-    await user.click(gears[1]); // park gear
+  it('offers the gear on the lokasi — including one nested under a kawasan — when rayon is lokasi-scoped', async () => {
+    const user = userEvent.setup();
+    const onEditCapacity = jest.fn();
+    renderBoard({
+      master: masterAt('location'),
+      occurrences: [occ({ location_id: 'loc1' }), occ({ location_id: 'loc2' })],
+      onEditCapacity,
+    });
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    // No kawasan gear at lokasi scope...
+    const gears = screen.getAllByRole('button', { name: /atur kapasitas/i });
+    expect(gears).toHaveLength(2); // the nested lokasi + the loose park
+
+    await user.click(gears[0]);
+    // ...and a lokasi under a kawasan still owns its capacity (it previously
+    // never got a gear at all, because the level was inferred from nesting).
     expect(onEditCapacity).toHaveBeenCalledWith({
       type: 'location',
-      id: 'loc2',
-      name: 'Taman Aktif Park',
+      id: 'loc1',
+      name: 'Taman Bungkul',
     });
+  });
+
+  it('offers the gear on the rayon itself when rayon-scoped, and nowhere below', async () => {
+    const user = userEvent.setup();
+    const onEditCapacity = jest.fn();
+    renderBoard({
+      master: masterAt('rayon'),
+      occurrences: [occ({ location_id: 'loc1' }), occ({ location_id: 'loc2' })],
+      onEditCapacity,
+    });
+
+    // Visible before expanding: the gear sits on the rayon header itself.
+    const gears = screen.getAllByRole('button', { name: /atur kapasitas/i });
+    expect(gears).toHaveLength(1);
+
+    await user.click(gears[0]);
+    expect(onEditCapacity).toHaveBeenCalledWith({
+      type: 'rayon',
+      id: 'ry1',
+      name: 'Rayon Pusat',
+    });
+
+    // Nothing below the rayon offers one.
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+    expect(screen.getAllByRole('button', { name: /atur kapasitas/i })).toHaveLength(1);
+  });
+
+  it('never offers capacity on the city node (a sentinel, not a rayon)', async () => {
+    renderBoard({
+      occurrences: [occ({})], // no geography → city-wide
+      onEditCapacity: jest.fn(),
+    });
+
+    expect(screen.queryByRole('button', { name: /atur kapasitas/i })).not.toBeInTheDocument();
   });
 
   it('"+ Tugaskan" reports the clicked container’s geography (pre-fill contract)', async () => {

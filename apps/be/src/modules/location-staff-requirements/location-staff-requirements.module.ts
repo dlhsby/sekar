@@ -8,6 +8,9 @@ import {
 } from './subject-staff-requirements.controller';
 import { LocationStaffRequirementsService } from './location-staff-requirements.service';
 import { LocationStaffRequirement } from './entities/location-staff-requirement.entity';
+import { Rayon } from '../rayons/entities/rayon.entity';
+import { Region } from '../regions/entities/region.entity';
+import { Location } from '../locations/entities/location.entity';
 import { LocationsModule } from '../locations/locations.module';
 import { ShiftDefinitionsModule } from '../shift-definitions/shift-definitions.module';
 
@@ -19,7 +22,9 @@ import { ShiftDefinitionsModule } from '../shift-definitions/shift-definitions.m
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([LocationStaffRequirement]),
+    // Rayon/Region/Location are needed to resolve a subject's parent rayon and
+    // enforce that a requirement is written at that rayon's staffing_level.
+    TypeOrmModule.forFeature([LocationStaffRequirement, Rayon, Region, Location]),
     forwardRef(() => LocationsModule),
     ShiftDefinitionsModule,
   ],

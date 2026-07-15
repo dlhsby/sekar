@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
 import {
   Button,
   CoordinateLink,
@@ -31,14 +31,18 @@ import {
 } from '@/lib/api/regions';
 import { useRayons } from '@/lib/api/rayons';
 import { RegionFormModal } from '@/components/regions/RegionFormModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 
 export default function RegionsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
   const { can } = usePermissions();
   // Management grid shows deactivated kawasan too — pickers elsewhere keep the
   // active-only default.
   const { data: regions = [], isLoading, error, refetch } = useRegions(undefined, true);
-  const { data: rayons = [] } = useRayons();
+  // Resolver, not a picker: include deactivated rayons or a kawasan under one
+  // would show a raw id and lose its staffing level.
+  const { data: rayons = [] } = useRayons(true);
   const deleteRegion = useDeleteRegion();
   const deactivateRegion = useDeactivateRegion();
   const activateRegion = useActivateRegion();
@@ -47,6 +51,7 @@ export default function RegionsPage() {
   const [editing, setEditing] = useState<Region | null>(null);
   const [viewing, setViewing] = useState<Region | null>(null);
   const [toDelete, setToDelete] = useState<Region | null>(null);
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const canManage = can('region:create') || can('region:update') || can('region:delete');
   const rayonName = useMemo(
@@ -55,6 +60,11 @@ export default function RegionsPage() {
   );
   const rayonFilterOptions = useMemo(
     () => rayons.map((r) => ({ label: r.name, value: r.name })),
+    [rayons],
+  );
+  // Which tier owns capacity is the parent RAYON's call, not the kawasan's.
+  const rayonLevel = useMemo(
+    () => new Map(rayons.map((r) => [r.id, r.staffing_level ?? 'region'])),
     [rayons],
   );
 
@@ -187,6 +197,13 @@ export default function RegionsPage() {
       },
     },
     {
+      key: 'capacity',
+      label: t('schedules:staffCapacity.title'),
+      icon: Settings2,
+      hidden: !can('region:update') || rayonLevel.get(r.rayon_id) !== 'region',
+      onClick: () => setCapacitySubject({ type: 'region', id: r.id, name: r.name }),
+    },
+    {
       key: 'toggle-active',
       label: r.is_active
         ? t('admin:shared.actionDeactivate')
@@ -252,6 +269,13 @@ export default function RegionsPage() {
           ) : undefined
         }
         emptyTitle={t('admin:regions.emptyTitle')}
+      />
+
+      {/* Same editor the Jadwal board uses — capacity is one concept, one modal. */}
+      <CapacityModal
+        open={capacitySubject !== null}
+        onOpenChange={(o) => !o && setCapacitySubject(null)}
+        subject={capacitySubject}
       />
 
       {canManage && (

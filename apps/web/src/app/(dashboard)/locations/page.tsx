@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
 import {
   Badge,
   Button,
@@ -22,6 +22,8 @@ import {
 } from '@/components/ui';
 import { DeleteLocationModal } from '@/components/locations/DeleteLocationModal';
 import { LocationFormModal } from '@/components/locations/LocationFormModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import { useLocations, useDeactivateLocation, useActivateLocation } from '@/lib/api/locations';
 import { useUsers } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
@@ -33,7 +35,7 @@ import { formatDate } from '@/lib/utils/time';
 import type { Location } from '@/types/models';
 
 export default function LocationsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
   const { user } = useAuth();
   const isAdmin =
     user?.role === 'admin_system' || user?.role === 'superadmin' || user?.role === 'management';
@@ -50,9 +52,16 @@ export default function LocationsPage() {
   // Full master-data lists so the enum column filters can list every possible
   // value (incl. ones with zero matching areas) instead of only values that
   // happen to appear in the currently loaded rows.
-  const { data: allRayons } = useRayons();
+  // Resolver, not a picker: a lokasi under a deactivated rayon must still
+  // resolve its rayon's staffing level.
+  const { data: allRayons } = useRayons(true);
   const rayonFilterOptions = useMemo(
     () => (allRayons ?? []).map((r) => ({ value: r.name, label: r.name })),
+    [allRayons]
+  );
+  // Which tier owns capacity is the parent RAYON's call, not the lokasi's.
+  const rayonLevel = useMemo(
+    () => new Map((allRayons ?? []).map((r) => [r.id, r.staffing_level ?? 'region'])),
     [allRayons]
   );
   const { data: allAreaTypes } = useLocationTypes();
@@ -82,6 +91,7 @@ export default function LocationsPage() {
     isOpen: false,
     area: null,
   });
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const columns = useMemo<ColumnDef<Location>[]>(
     () => [
@@ -306,6 +316,15 @@ export default function LocationsPage() {
         },
       },
       {
+        key: 'capacity',
+        label: t('schedules:staffCapacity.title'),
+        icon: Settings2,
+        // Capacity belongs to whichever tier the parent RAYON nominates — a
+        // lokasi only owns it when that rayon is lokasi-scoped.
+        hidden: !isAdmin || rayonLevel.get(a.rayon_id ?? '') !== 'location',
+        onClick: () => setCapacitySubject({ type: 'location', id: a.id, name: a.name }),
+      },
+      {
         key: 'toggle-active',
         label: a.is_active === false ? t('admin:locations.actionActivate') : t('admin:locations.actionDeactivate'),
         icon: Power,
@@ -322,7 +341,7 @@ export default function LocationsPage() {
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [isAdmin, deactivateArea, activateArea, view, t]
+    [isAdmin, deactivateArea, activateArea, rayonLevel, view, t]
   );
 
   return (
@@ -373,6 +392,12 @@ export default function LocationsPage() {
             </Button>
           ) : undefined
         }
+      />
+
+      <CapacityModal
+        open={capacitySubject !== null}
+        onOpenChange={(o) => !o && setCapacitySubject(null)}
+        subject={capacitySubject}
       />
 
       <LocationFormModal

@@ -8,7 +8,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -22,6 +22,8 @@ import {
   type DataTableRowAction,
 } from '@/components/ui';
 import { RayonFormModal } from '@/components/rayons/RayonFormModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import {
   useRayons,
   useDeleteRayon,
@@ -37,7 +39,7 @@ import { formatDate } from '@/lib/utils/time';
 import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
   const { user } = useAuth();
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
@@ -82,6 +84,7 @@ export default function RayonsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingRayon, setDeletingRayon] = useState<Rayon | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const columns = useMemo<ColumnDef<Rayon>[]>(
     () => [
@@ -287,6 +290,15 @@ export default function RayonsPage() {
         },
       },
       {
+        key: 'capacity',
+        label: t('schedules:staffCapacity.title'),
+        icon: Settings2,
+        // Capacity lives on exactly the tier this rayon nominates; `region` is
+        // the column default when unset.
+        hidden: !isAdmin || (r.staffing_level ?? 'region') !== 'rayon',
+        onClick: () => setCapacitySubject({ type: 'rayon', id: r.id, name: r.name }),
+      },
+      {
         key: 'toggle-active',
         label: r.is_active
           ? t('admin:shared.actionDeactivate')
@@ -386,6 +398,13 @@ export default function RayonsPage() {
 
       {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
       <RayonFormModal open={view.open} onOpenChange={view.onOpenChange} rayon={view.item} readOnly />
+
+      {/* Same editor the Jadwal board uses — capacity is one concept, one modal. */}
+      <CapacityModal
+        open={capacitySubject !== null}
+        onOpenChange={(o) => !o && setCapacitySubject(null)}
+        subject={capacitySubject}
+      />
 
       <ConfirmDialog
         open={deleteOpen}
