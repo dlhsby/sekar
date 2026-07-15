@@ -8,9 +8,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
 
+/** Build-time Map ID (inlined by Next); overridden at runtime by /config/maps. */
+const BUILD_TIME_MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || null;
+
 export interface MapsConfig {
   /** Google Maps JS API key (browser/referer-restricted) — null when unset. */
   googleMapsApiKey: string | null;
+  /** Vector-map Map ID (required for Advanced Markers) — null when unset. */
+  googleMapsMapId: string | null;
 }
 
 async function fetchMapsConfig(): Promise<MapsConfig> {
@@ -36,4 +41,16 @@ export function useMapsConfig(options?: { enabled?: boolean }) {
     retry: 1,
     refetchOnWindowFocus: false,
   });
+}
+
+/**
+ * Resolve the vector-map Map ID (required by Advanced Markers): the build-time
+ * `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`, else the backend-served value (settings key
+ * `maps.map_id`, editable in System Settings), else null. Deduped with
+ * `useMapsConfig` via the shared query key.
+ */
+export function useMapId(): string | null {
+  const needConfig = !BUILD_TIME_MAP_ID;
+  const { data } = useMapsConfig({ enabled: needConfig });
+  return BUILD_TIME_MAP_ID ?? data?.googleMapsMapId ?? null;
 }
