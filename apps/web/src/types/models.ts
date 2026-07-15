@@ -62,7 +62,6 @@ export type StaffingLevel = 'region' | 'location' | 'rayon';
 export interface Rayon {
   id: string;
   name: string;
-  color?: string | null;
   description?: string | null;
   center_lat?: number | string | null;
   center_lng?: number | string | null;

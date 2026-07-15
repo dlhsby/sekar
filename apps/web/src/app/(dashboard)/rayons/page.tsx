@@ -110,15 +110,14 @@ export default function RayonsPage() {
       },
       {
         id: 'color',
-        // Show the boundary appearance the form actually edits (per-level border +
-        // fill), falling back to the legacy single `color` for un-restyled rayons.
-        accessorFn: (r) => r.fill_color ?? r.border_color ?? r.color ?? '',
+        // Boundary appearance the form edits (per-level border + fill, ADR-045).
+        accessorFn: (r) => r.fill_color ?? r.border_color ?? '',
         header: t('admin:rayons.stats.color'),
         enableSorting: false,
         meta: { label: t('admin:rayons.stats.color'), filterVariant: 'text' },
         cell: ({ row }) => {
-          const border = row.original.border_color ?? row.original.color ?? null;
-          const fill = row.original.fill_color ?? row.original.color ?? null;
+          const border = row.original.border_color ?? null;
+          const fill = row.original.fill_color ?? null;
           const shown = fill ?? border;
           return shown ? (
             <span className="inline-flex items-center gap-2">

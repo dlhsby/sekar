@@ -44,13 +44,6 @@ export class Rayon {
   @Column({ length: 100, unique: true })
   name: string;
 
-  @ApiPropertyOptional({
-    description: 'Hex color for the rayon boundary on the monitoring map',
-    example: '#7FBC8C',
-  })
-  @Column({ length: 9, nullable: true })
-  color?: string;
-
   @ApiProperty({
     description: 'Description of the rayon',
     example: 'Covers southern Surabaya districts',
@@ -66,7 +59,7 @@ export class Rayon {
   @Column({ type: 'jsonb', nullable: true })
   boundary_polygon?: object;
 
-  // ── Per-level map styling (ADR-045) — legacy `color` above is the fallback ──
+  // ── Per-level map styling (ADR-045) ──
   @ApiPropertyOptional({ example: '#1C1917' })
   @Column({ length: 9, nullable: true })
   border_color?: string;

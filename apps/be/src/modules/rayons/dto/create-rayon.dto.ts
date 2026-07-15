@@ -16,7 +16,7 @@ import { StaffingLevel } from '../entities/rayon.entity';
  * Data Transfer Object for creating a new rayon.
  *
  * Validates incoming request data for rayon creation endpoint.
- * Name is required. Description/color/center coords + per-level styling
+ * Name is required. Description/center coords + per-level styling
  * (ADR-045, inherited from MapStyleDto) are optional.
  */
 export class CreateRayonDto extends MapStyleDto {
@@ -49,15 +49,6 @@ export class CreateRayonDto extends MapStyleDto {
   @IsOptional()
   @MaxLength(1000)
   description?: string;
-
-  @ApiPropertyOptional({
-    description: 'Hex color for the rayon boundary on the monitoring map',
-    example: '#7FBC8C',
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(9)
-  color?: string;
 
   @ApiPropertyOptional({ description: 'Center latitude', example: -7.2575 })
   @IsOptional()

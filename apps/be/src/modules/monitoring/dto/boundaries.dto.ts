@@ -53,6 +53,8 @@ export class RayonBoundaryDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
+  /** Boundary tint for the monitoring map — derived from the rayon's per-level
+   *  styling (`border_color`, falling back to `fill_color`). */
   @ApiPropertyOptional({ example: '#7FBC8C' })
   color: string | null;
 

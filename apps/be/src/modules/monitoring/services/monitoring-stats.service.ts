@@ -1177,7 +1177,7 @@ export class MonitoringStatsService {
           return {
             id: rayon.id,
             name: rayon.name,
-            color: (rayon as any).color ?? null,
+            color: (rayon as any).border_color ?? (rayon as any).fill_color ?? null,
             boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
             center_lat: rayonCenterLat,
             center_lng: rayonCenterLng,
@@ -1199,7 +1199,7 @@ export class MonitoringStatsService {
             return {
               id: rayon.id,
               name: rayon.name,
-              color: (rayon as any).color ?? null,
+              color: (rayon as any).border_color ?? (rayon as any).fill_color ?? null,
               boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
               center_lat: rayonCenterLat,
               center_lng: rayonCenterLng,
@@ -1260,7 +1260,7 @@ export class MonitoringStatsService {
         return {
           id: rayon.id,
           name: rayon.name,
-          color: (rayon as any).color ?? null,
+          color: (rayon as any).border_color ?? (rayon as any).fill_color ?? null,
           boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
           center_lat: rayonCenterLat,
           center_lng: rayonCenterLng,
