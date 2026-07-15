@@ -26,7 +26,7 @@ export function DateNav({ label, onPrev, onNext, onToday }: DateNavProps) {
       <button
         type="button"
         onClick={onPrev}
-        aria-label={t('schedules:calendar.navigation.prev', 'Prev')}
+        aria-label={t('schedules:calendar.navigation.prev')}
         className="grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
       >
         <ChevronLeft className="size-4" />
@@ -34,7 +34,7 @@ export function DateNav({ label, onPrev, onNext, onToday }: DateNavProps) {
       <button
         type="button"
         onClick={onNext}
-        aria-label={t('schedules:calendar.navigation.next', 'Next')}
+        aria-label={t('schedules:calendar.navigation.next')}
         className="grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
       >
         <ChevronRight className="size-4" />

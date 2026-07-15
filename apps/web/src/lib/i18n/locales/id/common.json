@@ -54,7 +54,9 @@
     "openMapLink": "Buka di Google Maps",
     "fullscreen": "Layar Penuh",
     "exitFullscreen": "Keluar Layar Penuh",
-    "apply": "Terapkan"
+    "apply": "Terapkan",
+    "decrease": "Kurangi",
+    "increase": "Tambah"
   },
   "entities": {
     "user": "Pengguna",

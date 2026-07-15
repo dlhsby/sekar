@@ -67,6 +67,9 @@ module.exports = [
       'sekar-design/rn-no-shadow-radius': 'error',
       // i18n discipline — no hardcoded user-facing strings (CLAUDE.md §Internationalization)
       'sekar-design/no-untranslated-literal': 'error',
+      // ...and no t(key, 'English') fallback: i18n:check compares key SETS, so a
+      // fallback renders English to id users with the check still green.
+      'sekar-design/no-i18n-literal-fallback': 'error',
       // React Hooks discipline (registered 2026-06-09). rules-of-hooks is a hard
       // error (real bugs); exhaustive-deps is a warning (advisory — some omissions
       // are intentional and carry an inline disable).

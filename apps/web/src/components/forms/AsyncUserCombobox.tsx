@@ -17,6 +17,7 @@ export interface PickedUser {
   id: string;
   full_name: string;
   role: string;
+  phone_number?: string;
 }
 
 export interface AsyncUserComboboxProps {
@@ -176,15 +177,28 @@ export function AsyncUserCombobox({
                   key={u.id}
                   role="option"
                   aria-selected={isSelected}
-                  onClick={() => pick({ id: u.id, full_name: u.full_name, role: u.role })}
+                  onClick={() =>
+                    pick({
+                      id: u.id,
+                      full_name: u.full_name,
+                      role: u.role,
+                      phone_number: u.phone_number,
+                    })
+                  }
                   className={cn(
                     'flex cursor-pointer items-center justify-between gap-2 rounded-nb-sm px-3 py-2 text-nb-body-sm hover:bg-nb-gray-100',
                     isSelected && 'font-bold'
                   )}
                 >
+                  {/* The role is already chosen upstream, so repeating it here
+                      says nothing. The phone number is what tells two workers
+                      with the same name apart — fall back to the username when a
+                      worker has no phone on file. */}
                   <span className="truncate">
                     {u.full_name}
-                    <span className="ml-1 text-nb-caption text-nb-gray-500">({u.username})</span>
+                    <span className="ml-1 text-nb-caption text-nb-gray-500">
+                      {u.phone_number ? `— ${u.phone_number}` : `(${u.username})`}
+                    </span>
                   </span>
                   {isSelected ? <Check className="h-4 w-4 shrink-0" aria-hidden /> : null}
                 </li>
@@ -193,7 +207,7 @@ export function AsyncUserCombobox({
           )}
           {isFetching ? (
             <li className="px-3 py-2 text-center text-nb-caption text-nb-gray-500">
-              {t('common:loading', 'Loading…')}
+              {t('common:loading')}
             </li>
           ) : hasMore ? (
             <li className="p-1">
@@ -205,7 +219,7 @@ export function AsyncUserCombobox({
                   nbFocusRing
                 )}
               >
-                {t('common:ui.combobox.loadMore', 'Load more')}
+                {t('common:ui.combobox.loadMore')}
               </button>
             </li>
           ) : null}

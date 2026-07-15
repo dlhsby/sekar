@@ -140,7 +140,7 @@ export function CapacityModal({ open, onOpenChange, subject }: CapacityModalProp
           </div>
           {isLoading && subject && (
             <div className="py-8 text-center text-nb-body-sm text-nb-gray-500">
-              {t('common:loading', 'Loading…')}
+              {t('common:loading')}
             </div>
           )}
           <div className={`flex flex-col gap-2 ${isLoading && subject ? 'hidden' : ''}`}>
@@ -205,7 +205,7 @@ function RoleStepper({
           onClick={() => onChange(value - 1)}
           disabled={value <= 0}
           // Name the role: with a row per role, a bare "Decrease" is ambiguous.
-          aria-label={`${t('common:actions.decrease', 'Decrease')} ${label}`}
+          aria-label={`${t('common:actions.decrease')} ${label}`}
           className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50 disabled:opacity-40"
         >
           <Minus className="size-4" />
@@ -214,7 +214,7 @@ function RoleStepper({
         <button
           type="button"
           onClick={() => onChange(value + 1)}
-          aria-label={`${t('common:actions.increase', 'Increase')} ${label}`}
+          aria-label={`${t('common:actions.increase')} ${label}`}
           className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50"
         >
           <Plus className="size-4" />

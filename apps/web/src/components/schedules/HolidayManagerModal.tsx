@@ -171,7 +171,7 @@ export function HolidayManagerModal({
           <div className="flex flex-col gap-1.5">
             {isLoading ? (
               <p className="py-4 text-center text-nb-body-sm text-nb-gray-500">
-                {t('common:loading', 'Loading…')}
+                {t('common:loading')}
               </p>
             ) : sorted.length === 0 ? (
               <p className="py-4 text-center text-nb-body-sm text-nb-gray-500">
