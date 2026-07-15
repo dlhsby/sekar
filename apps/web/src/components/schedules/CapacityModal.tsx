@@ -37,9 +37,11 @@ type DayValues = Record<string, Record<StaffRole, number>>;
 const emptyValues = (): Record<DayType, DayValues> => ({ WEEKDAY: {}, WEEKEND: {}, HOLIDAY: {} });
 
 /**
- * Set a location's staffing requirement (Satgas + Linmas per shift) for each day
- * type — the source monitoring also reads. The board flags understaffing against
- * the requirement for the day's type (weekday/weekend; holiday detection TBD).
+ * Set a subject's staffing requirement (Satgas + Linmas per shift) for each day
+ * type — the source monitoring also reads. A requirement is stored per
+ * (subject, shift, role, day_type), so each tab is independent. The board flags
+ * understaffing against the requirement for the day's resolved type, where
+ * holiday/special days come from `resolveDayType` (special_day_overrides).
  */
 export function CapacityModal({ open, onOpenChange, subject }: CapacityModalProps) {
   const { t } = useTranslation(['schedules', 'roles', 'common']);
