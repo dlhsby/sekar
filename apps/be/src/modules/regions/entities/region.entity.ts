@@ -35,6 +35,14 @@ export class Region {
   @Column({ type: 'jsonb', nullable: true })
   boundary_polygon?: object;
 
+  @ApiProperty({
+    description: 'Whether the region (Kawasan) is active',
+    example: true,
+    default: true,
+  })
+  @Column({ default: true })
+  is_active: boolean;
+
   @ApiPropertyOptional()
   @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
   center_lat?: number;

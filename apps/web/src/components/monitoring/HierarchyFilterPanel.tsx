@@ -45,7 +45,10 @@ export function HierarchyFilterPanel({
   className,
 }: HierarchyFilterPanelProps) {
   const { t } = useTranslation(['monitoring']);
-  const { data: rayons } = useRayons();
+  // Monitoring deliberately still sees deactivated rayons: hiding one here
+  // would remove its live workers from the map. Revisit in the Phase-5
+  // monitoring revamp.
+  const { data: rayons } = useRayons(true);
   const { data: areasData } = useLocations({
     rayon_id: value.rayonId,
   });

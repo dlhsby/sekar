@@ -21,14 +21,24 @@ export type UpdateTeamCategoryDto = Partial<CreateTeamCategoryDto>;
 export const teamKeys = {
   all: ['teams'] as const,
   types: ['team-categories'] as const,
-  typesList: () => [...teamKeys.types, 'list'] as const,
+  typesList: (includeInactive = false) =>
+    [...teamKeys.types, 'list', { includeInactive }] as const,
   typesDetail: (id: string) => [...teamKeys.types, 'detail', id] as const,
 };
 
-export function useTeamCategories(enabled = true) {
+/**
+ * Team-category catalog. Active-only by default so pickers never offer a
+ * deactivated category; the catalog-management grid opts in to see them all.
+ */
+export function useTeamCategories(enabled = true, includeInactive = false) {
   return useQuery({
-    queryKey: teamKeys.typesList(),
-    queryFn: async () => (await apiClient.get<TeamCategory[]>('/team-categories')).data,
+    queryKey: teamKeys.typesList(includeInactive),
+    queryFn: async () =>
+      (
+        await apiClient.get<TeamCategory[]>('/team-categories', {
+          params: includeInactive ? { include_inactive: 'true' } : undefined,
+        })
+      ).data,
     enabled,
     staleTime: 30 * 60 * 1000, // catalog rarely changes
   });
@@ -36,7 +46,10 @@ export function useTeamCategories(enabled = true) {
 
 const teamCategoryCrudHooks = makeCrudHooks<TeamCategory, CreateTeamCategoryDto, UpdateTeamCategoryDto>({
   resource: 'team-categories',
-  listKey: teamKeys.typesList(),
+  // Invalidate the whole catalog prefix: the list key is parameterized by
+  // `includeInactive`, so the narrower key would leave the management grid
+  // (includeInactive: true) stale after a mutation.
+  listKey: teamKeys.types,
   detailKeyFn: (id) => teamKeys.typesDetail(id),
 });
 

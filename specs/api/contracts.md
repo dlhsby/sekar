@@ -863,7 +863,7 @@ Content-Type: application/json
   "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
   "name": "Taman Bungkul",
   "location_type_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "areaType": {
+  "locationType": {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "code": "park",
     "name": "Taman",
@@ -882,7 +882,7 @@ Content-Type: application/json
 **Notes:**
 - GPS coordinates stored as DECIMAL(10,8) and DECIMAL(11,8)
 - Returned as strings in JSON (PostgreSQL DECIMAL handling)
-- `areaType` relation eager loaded
+- `locationType` relation eager loaded
 - `radius_meters` defines clock-in boundary (default ±100m)
 
 ---
@@ -912,7 +912,7 @@ Authorization: Bearer {token}
     "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
     "name": "Taman Bungkul",
     "location_type_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "areaType": {
+    "locationType": {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "code": "park",
       "name": "Taman",
@@ -948,7 +948,7 @@ Authorization: Bearer {token}
   "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
   "name": "Taman Bungkul",
   "location_type_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "areaType": {
+  "locationType": {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "code": "park",
     "name": "Taman",
@@ -1442,7 +1442,7 @@ Authorization: Bearer {worker_token}
 }
 ```
 
-Shifts are newest-first and eager-load `area`, `area.areaType`, `shift_definition`.
+Shifts are newest-first and eager-load `area`, `area.locationType`, `shift_definition`.
 
 ---
 
@@ -1624,7 +1624,7 @@ Authorization: Bearer {token}
     "area": {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "name": "Taman Bungkul",
-      "areaType": {
+      "locationType": {
         "code": "park",
         "name": "Taman"
       }
@@ -1635,7 +1635,7 @@ Authorization: Bearer {token}
       "area": {
         "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         "name": "Taman Bungkul",
-        "areaType": {
+        "locationType": {
           "code": "park",
           "name": "Taman"
         }
@@ -1695,7 +1695,7 @@ Authorization: Bearer {worker_token}
     "area": {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "name": "Taman Bungkul",
-      "areaType": {
+      "locationType": {
         "code": "park",
         "name": "Taman"
       }
@@ -1706,7 +1706,7 @@ Authorization: Bearer {worker_token}
       "area": {
         "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
         "name": "Taman Bungkul",
-        "areaType": {
+        "locationType": {
           "code": "park",
           "name": "Taman"
         }
@@ -1765,7 +1765,7 @@ Authorization: Bearer {token}
   "area": {
     "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "name": "Taman Bungkul",
-    "areaType": {
+    "locationType": {
       "code": "park",
       "name": "Taman"
     }
@@ -1776,7 +1776,7 @@ Authorization: Bearer {token}
     "area": {
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "name": "Taman Bungkul",
-      "areaType": {
+      "locationType": {
         "code": "park",
         "name": "Taman"
       }

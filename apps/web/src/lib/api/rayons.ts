@@ -3,7 +3,7 @@
  * TanStack Query hooks for rayon data fetching, creation, updating, and deletion
  */
 
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import {
   Rayon,
@@ -23,7 +23,7 @@ import { makeCrudHooks } from './crud-hooks';
 export const rayonKeys = {
   all: ['rayons'] as const,
   lists: () => [...rayonKeys.all, 'list'] as const,
-  list: () => [...rayonKeys.lists()] as const,
+  list: (includeInactive = false) => [...rayonKeys.lists(), { includeInactive }] as const,
   details: () => [...rayonKeys.all, 'detail'] as const,
   detail: (id: string) => [...rayonKeys.details(), id] as const,
   stats: (id: string) => [...rayonKeys.detail(id), 'stats'] as const,
@@ -32,14 +32,19 @@ export const rayonKeys = {
 };
 
 /**
- * Fetch all rayons
- * Returns list of 7 rayons with basic info
+ * Fetch rayons.
+ *
+ * Active-only by default so a deactivated rayon never reaches a picker or
+ * filter; the admin management grid opts in to keep it visible and
+ * reactivatable.
  */
-export function useRayons() {
+export function useRayons(includeInactive = false) {
   return useQuery({
-    queryKey: rayonKeys.list(),
+    queryKey: rayonKeys.list(includeInactive),
     queryFn: async () => {
-      const response = await apiClient.get<Rayon[]>('/rayons');
+      const response = await apiClient.get<Rayon[]>('/rayons', {
+        params: includeInactive ? { include_inactive: 'true' } : undefined,
+      });
       return response.data;
     },
     staleTime: 10 * 60 * 1000, // 10 minutes - rayons rarely change
@@ -174,6 +179,32 @@ const rayonCrudHooks = makeCrudHooks<Rayon, CreateRayonDto, UpdateRayonDto>({
   listKey: rayonKeys.lists(),
   detailKeyFn: (id) => rayonKeys.detail(id),
 });
+
+/** Deactivate a rayon (is_active=false) — 409s while children/users still reference it. */
+export function useDeactivateRayon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.patch<Rayon>(`/rayons/${id}/deactivate`).then((r) => r.data),
+    onSuccess: (rayon) => {
+      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: rayonKeys.detail(rayon.id) });
+    },
+  });
+}
+
+/** Reactivate a deactivated rayon (is_active=true). */
+export function useActivateRayon() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.patch<Rayon>(`/rayons/${id}/activate`).then((r) => r.data),
+    onSuccess: (rayon) => {
+      queryClient.invalidateQueries({ queryKey: rayonKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: rayonKeys.detail(rayon.id) });
+    },
+  });
+}
 
 /**
  * Hook to create a new rayon

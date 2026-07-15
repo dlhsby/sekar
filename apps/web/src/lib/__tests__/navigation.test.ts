@@ -60,7 +60,7 @@ describe('Navigation Utilities', () => {
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
         'rayons',
         'regions',
-        'areas',
+        'locations',
         'team-categories',
         'plants',
         'database',
@@ -143,7 +143,7 @@ describe('Navigation Utilities', () => {
       ]);
 
       const dataItem = filtered.find((item) => item.id === 'data');
-      expect(dataItem?.children?.find((child) => child.id === 'areas')).toBeDefined();
+      expect(dataItem?.children?.find((child) => child.id === 'locations')).toBeDefined();
       expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeDefined();
       // Users is admin/admin_rayon only — hidden from management.
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();

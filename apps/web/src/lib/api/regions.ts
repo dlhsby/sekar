@@ -20,6 +20,8 @@ export interface Region extends MapStyle {
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   center_lat?: number | null;
   center_lng?: number | null;
+  /** Reversible soft-retire: hidden from pickers/filters, kept and reactivatable. */
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -39,21 +41,56 @@ export interface UpdateRegionDto extends Partial<CreateRegionDto> {
 export const regionKeys = {
   all: ['regions'] as const,
   lists: () => [...regionKeys.all, 'list'] as const,
-  list: (rayonId?: string) => [...regionKeys.lists(), rayonId ?? 'all'] as const,
+  list: (rayonId?: string, includeInactive = false) =>
+    [...regionKeys.lists(), rayonId ?? 'all', { includeInactive }] as const,
   detail: (id: string) => [...regionKeys.all, 'detail', id] as const,
 };
 
-/** List regions, optionally filtered by rayon (for cascade selects). */
-export function useRegions(rayonId?: string) {
+/**
+ * List regions, optionally filtered by rayon (for cascade selects).
+ *
+ * Active-only by default so a deactivated kawasan never reaches a picker; the
+ * admin management grid opts in to keep it visible and reactivatable.
+ */
+export function useRegions(rayonId?: string, includeInactive = false) {
   return useQuery({
-    queryKey: regionKeys.list(rayonId),
+    queryKey: regionKeys.list(rayonId, includeInactive),
     queryFn: async () =>
       (
         await apiClient.get<Region[]>('/regions', {
-          params: rayonId ? { rayon_id: rayonId } : undefined,
+          params: {
+            ...(rayonId ? { rayon_id: rayonId } : {}),
+            ...(includeInactive ? { include_inactive: 'true' } : {}),
+          },
         })
       ).data,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** Deactivate a region (is_active=false) — 409s while it still has active locations. */
+export function useDeactivateRegion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.patch<Region>(`/regions/${id}/deactivate`).then((r) => r.data),
+    onSuccess: (region) => {
+      queryClient.invalidateQueries({ queryKey: regionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: regionKeys.detail(region.id) });
+    },
+  });
+}
+
+/** Reactivate a deactivated region (is_active=true). */
+export function useActivateRegion() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      apiClient.patch<Region>(`/regions/${id}/activate`).then((r) => r.data),
+    onSuccess: (region) => {
+      queryClient.invalidateQueries({ queryKey: regionKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: regionKeys.detail(region.id) });
+    },
   });
 }
 

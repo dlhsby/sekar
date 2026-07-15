@@ -49,7 +49,9 @@ export function ScheduleDetailModal({
   localeCode,
 }: ScheduleDetailModalProps) {
   const { t } = useTranslation(['schedules', 'roles', 'status', 'common']);
-  const { data: rayons = [] } = useRayons();
+  // Resolves an existing schedule's rayon id -> name, so it must still find a
+  // deactivated rayon or the name silently blanks.
+  const { data: rayons = [] } = useRayons(true);
   if (!occurrence) return null;
 
   const isTeam = occurrence.team_category != null;

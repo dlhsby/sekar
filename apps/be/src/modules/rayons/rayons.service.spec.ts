@@ -2,9 +2,12 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ApiException } from '../../common/exceptions/api.exception';
 import { RayonsService } from './rayons.service';
 import { Rayon, StaffingLevel } from './entities/rayon.entity';
 import { Location } from '../locations/entities/location.entity';
+import { Region } from '../regions/entities/region.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 
@@ -19,6 +22,7 @@ describe('RayonsService', () => {
     name: 'Rayon Selatan',
     description: 'Covers southern Surabaya districts',
     staffing_level: StaffingLevel.REGION,
+    is_active: true,
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: new Date('2024-01-01T00:00:00Z'),
   };
@@ -46,6 +50,10 @@ describe('RayonsService', () => {
     count: jest.fn(),
   };
 
+  // deactivate() guards on active children/users before flipping the flag.
+  const mockRegionRepository = { count: jest.fn() };
+  const mockUserRepository = { count: jest.fn() };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -53,6 +61,14 @@ describe('RayonsService', () => {
         {
           provide: getRepositoryToken(Rayon),
           useValue: mockRayonRepository,
+        },
+        {
+          provide: getRepositoryToken(Region),
+          useValue: mockRegionRepository,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepository,
         },
         {
           provide: getRepositoryToken(Location),
@@ -84,7 +100,21 @@ describe('RayonsService', () => {
       const result = await service.findAll();
 
       expect(result).toEqual(rayons);
+      // Active-only by default: pickers and filters must not offer a
+      // deactivated rayon.
       expect(mockRayonRepository.find).toHaveBeenCalledWith({
+        where: { is_active: true },
+        order: { name: 'ASC' },
+      });
+    });
+
+    it('should include deactivated rayons when asked (admin management grid)', async () => {
+      mockRayonRepository.find.mockResolvedValue([mockRayon]);
+
+      await service.findAll(true);
+
+      expect(mockRayonRepository.find).toHaveBeenCalledWith({
+        where: {},
         order: { name: 'ASC' },
       });
     });
@@ -300,7 +330,7 @@ describe('RayonsService', () => {
       expect(result).toEqual(areas);
       expect(mockAreaRepository.find).toHaveBeenCalledWith({
         where: { rayon_id: mockRayon.id, is_active: true },
-        relations: ['areaType'],
+        relations: ['locationType'],
         order: { name: 'ASC' },
       });
     });
@@ -360,6 +390,100 @@ describe('RayonsService', () => {
 
       expect(result.areaCount).toBe(0);
       expect(result.activeAreaCount).toBe(0);
+    });
+  });
+
+  describe('deactivate', () => {
+    /** No active children and no assigned staff — safe to retire. */
+    const noBlockers = () => {
+      mockRegionRepository.count.mockResolvedValue(0);
+      mockAreaRepository.count.mockResolvedValue(0);
+      mockUserRepository.count.mockResolvedValue(0);
+    };
+
+    beforeEach(() => {
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon, is_active: true });
+      mockRayonRepository.save.mockImplementation((r: Rayon) => Promise.resolve(r));
+    });
+
+    it('deactivates a rayon that nothing still depends on', async () => {
+      noBlockers();
+
+      const result = await service.deactivate(mockRayon.id);
+
+      expect(result.is_active).toBe(false);
+      expect(mockRayonRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_active: false }),
+      );
+    });
+
+    it.each([
+      ['region', () => mockRegionRepository.count.mockResolvedValue(2), /2 active region/],
+      ['location', () => mockAreaRepository.count.mockResolvedValue(3), /3 active location/],
+      ['user', () => mockUserRepository.count.mockResolvedValue(4), /4 active user/],
+    ])(
+      'refuses while an active %s still references it, and says how many',
+      async (_label, arrange, message) => {
+        noBlockers();
+        arrange();
+
+        await expect(service.deactivate(mockRayon.id)).rejects.toThrow(ApiException);
+        await expect(service.deactivate(mockRayon.id)).rejects.toThrow(message);
+        // The flag must survive a refused deactivation.
+        expect(mockRayonRepository.save).not.toHaveBeenCalled();
+      },
+    );
+
+    it('reports every blocker at once, not just the first', async () => {
+      mockRegionRepository.count.mockResolvedValue(1);
+      mockAreaRepository.count.mockResolvedValue(1);
+      mockUserRepository.count.mockResolvedValue(1);
+
+      await expect(service.deactivate(mockRayon.id)).rejects.toThrow(
+        /1 active region\(s\), 1 active location\(s\), 1 active user\(s\)/,
+      );
+    });
+
+    it('carries the error code the frontends localize on (not just prose)', async () => {
+      noBlockers();
+      mockRegionRepository.count.mockResolvedValue(1);
+
+      // The message stays English-canonical; `code` is the contract.
+      await expect(service.deactivate(mockRayon.id)).rejects.toMatchObject({
+        code: 'RAYON_DEACTIVATE_IN_USE',
+      });
+    });
+
+    it('is a no-op on an already-deactivated rayon (no guard, no write)', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon, is_active: false });
+
+      const result = await service.deactivate(mockRayon.id);
+
+      expect(result.is_active).toBe(false);
+      expect(mockRegionRepository.count).not.toHaveBeenCalled();
+      expect(mockRayonRepository.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('activate', () => {
+    it('reactivates a deactivated rayon without any guard', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon, is_active: false });
+      mockRayonRepository.save.mockImplementation((r: Rayon) => Promise.resolve(r));
+
+      const result = await service.activate(mockRayon.id);
+
+      expect(result.is_active).toBe(true);
+      // Reactivating must never be blocked by children — that would strand the
+      // rayon in the deactivated state.
+      expect(mockRegionRepository.count).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op on an already-active rayon', async () => {
+      mockRayonRepository.findOne.mockResolvedValue({ ...mockRayon, is_active: true });
+
+      await service.activate(mockRayon.id);
+
+      expect(mockRayonRepository.save).not.toHaveBeenCalled();
     });
   });
 });

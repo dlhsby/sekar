@@ -3,12 +3,17 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
+  HttpStatus,
   Logger,
 } from '@nestjs/common';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Rayon } from './entities/rayon.entity';
 import { Location } from '../locations/entities/location.entity';
+import { Region } from '../regions/entities/region.entity';
+import { User } from '../users/entities/user.entity';
 import { CreateRayonDto } from './dto/create-rayon.dto';
 import { UpdateRayonDto } from './dto/update-rayon.dto';
 import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-validator.util';
@@ -28,18 +33,74 @@ export class RayonsService {
     private readonly rayonRepository: Repository<Rayon>,
     @InjectRepository(Location)
     private readonly areaRepository: Repository<Location>,
+    @InjectRepository(Region)
+    private readonly regionRepository: Repository<Region>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   /**
-   * Get all rayons
+   * Get all rayons.
    *
-   * @returns Array of all rayons ordered by name
+   * Active-only by default so deactivated rayons drop out of pickers and
+   * filters; the admin management grid passes `includeInactive` so a
+   * deactivated rayon stays visible and reactivatable.
+   *
+   * @returns Array of rayons ordered by name
    */
-  async findAll(): Promise<Rayon[]> {
-    this.logger.log('Fetching all rayons');
+  async findAll(includeInactive = false): Promise<Rayon[]> {
+    this.logger.log(`Fetching rayons${includeInactive ? ' (incl. inactive)' : ''}`);
     return this.rayonRepository.find({
+      where: includeInactive ? {} : { is_active: true },
       order: { name: 'ASC' },
     });
+  }
+
+  /**
+   * Deactivate a rayon (is_active=false) — reversible; distinct from delete.
+   *
+   * Guarded: a rayon is the parent of kawasan, lokasi and staff, so
+   * deactivating one while it is still in use would hide it from every picker
+   * while its children carried on referencing it. Refuse instead, and say what
+   * is still attached — the operator re-parents or deactivates those first.
+   */
+  async deactivate(id: string): Promise<Rayon> {
+    const rayon = await this.findOne(id);
+    if (!rayon.is_active) return rayon;
+
+    const [activeRegions, activeLocations, activeUsers] = await Promise.all([
+      this.regionRepository.count({ where: { rayon_id: id, is_active: true } }),
+      this.areaRepository.count({ where: { rayon_id: id, is_active: true } }),
+      this.userRepository.count({ where: { rayon_id: id, is_active: true } }),
+    ]);
+
+    const blockers: string[] = [];
+    if (activeRegions > 0) blockers.push(`${activeRegions} active region(s)`);
+    if (activeLocations > 0) blockers.push(`${activeLocations} active location(s)`);
+    if (activeUsers > 0) blockers.push(`${activeUsers} active user(s)`);
+
+    if (blockers.length > 0) {
+      this.logger.warn(`Cannot deactivate rayon ${id}: still has ${blockers.join(', ')}`);
+      // Coded so the frontends localize by `code` (the API stays
+      // English-canonical) instead of matching on this message text.
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ApiErrorCode.RAYON_DEACTIVATE_IN_USE,
+        `Cannot deactivate rayon: it still has ${blockers.join(', ')}. ` +
+          'Deactivate or re-parent them first.',
+      );
+    }
+
+    rayon.is_active = false;
+    return this.rayonRepository.save(rayon);
+  }
+
+  /** Reactivate a deactivated rayon (is_active=true). Never guarded. */
+  async activate(id: string): Promise<Rayon> {
+    const rayon = await this.findOne(id);
+    if (rayon.is_active) return rayon;
+    rayon.is_active = true;
+    return this.rayonRepository.save(rayon);
   }
 
   /**
@@ -208,7 +269,7 @@ export class RayonsService {
 
     return this.areaRepository.find({
       where: { rayon_id: id, is_active: true },
-      relations: ['areaType'],
+      relations: ['locationType'],
       order: { name: 'ASC' },
     });
   }

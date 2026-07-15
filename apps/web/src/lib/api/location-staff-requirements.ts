@@ -125,6 +125,17 @@ export function useSetSubjectStaffRequirements() {
  * board, so grouped rayons flag understaffing on the kawasan row and Taman Aktif
  * on the park row.
  */
+/** `reg:|ray:|loc:` + subject id + shift — the subject/shift half of a key. */
+function subjectShiftKey(r: StaffRequirement): string | null {
+  return r.region_id
+    ? `reg:${r.region_id}:${r.shift_definition_id}`
+    : r.rayon_id
+      ? `ray:${r.rayon_id}:${r.shift_definition_id}`
+      : r.location_id
+        ? `loc:${r.location_id}:${r.shift_definition_id}`
+        : null;
+}
+
 export function requirementTotalMap(
   rows: StaffRequirement[],
   dayType: DayType
@@ -132,15 +143,31 @@ export function requirementTotalMap(
   const m = new Map<string, number>();
   for (const r of rows) {
     if (r.day_type !== dayType) continue;
-    const key = r.region_id
-      ? `reg:${r.region_id}:${r.shift_definition_id}`
-      : r.rayon_id
-        ? `ray:${r.rayon_id}:${r.shift_definition_id}`
-        : r.location_id
-          ? `loc:${r.location_id}:${r.shift_definition_id}`
-          : null;
+    const key = subjectShiftKey(r);
     if (!key) continue;
     m.set(key, (m.get(key) ?? 0) + r.required_count);
+  }
+  return m;
+}
+
+/**
+ * Per-ROLE targets: `<subject>:<shift>:<role>` → required_count.
+ *
+ * Requirements are stored per role, but `requirementTotalMap` sums them into one
+ * number per shift — which is why a shift could only ever say "N of M
+ * Satgas+Linmas" and never which role was actually short. Keep the role so the
+ * board can point at the exact shift+role that needs staffing.
+ */
+export function requirementRoleMap(
+  rows: StaffRequirement[],
+  dayType: DayType
+): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const r of rows) {
+    if (r.day_type !== dayType) continue;
+    const key = subjectShiftKey(r);
+    if (!key) continue;
+    m.set(`${key}:${r.role}`, (m.get(`${key}:${r.role}`) ?? 0) + r.required_count);
   }
   return m;
 }

@@ -27,7 +27,7 @@ export class UserLocationsService {
   }
 
   async getPermanentLocations(userId: string): Promise<UserLocation[]> {
-    // `area.areaType` is eager on Location, so it loads automatically. The rayon name
+    // `area.locationType` is eager on Location, so it loads automatically. The rayon name
     // is resolved client-side from `area.rayon_id` (8 rayons, cached) rather than
     // eager-joined here.
     return this.userLocationRepo.find({

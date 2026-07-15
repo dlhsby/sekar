@@ -13,7 +13,7 @@ describe('ImportService', () => {
     id: 'area-1',
     name: 'Test Location',
     location_type_id: 'type-1',
-    areaType: {
+    locationType: {
       id: 'type-1',
       code: 'park',
       name: 'Taman',

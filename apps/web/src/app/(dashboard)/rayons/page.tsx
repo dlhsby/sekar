@@ -8,20 +8,28 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
   DataTable,
   PageHeader,
   CoordinateLink,
+  StatusPill,
   ConfirmDialog,
   mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
 import { RayonFormModal } from '@/components/rayons/RayonFormModal';
-import { useRayons, useDeleteRayon } from '@/lib/api/rayons';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import type { StaffSubject } from '@/lib/api/location-staff-requirements';
+import {
+  useRayons,
+  useDeleteRayon,
+  useDeactivateRayon,
+  useActivateRayon,
+} from '@/lib/api/rayons';
 import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
@@ -31,11 +39,13 @@ import { formatDate } from '@/lib/utils/time';
 import type { Rayon } from '@/types/models';
 
 export default function RayonsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
   const { user } = useAuth();
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
-  const { data: rayonsData, isLoading, error, refetch } = useRayons();
+  // Management grid shows deactivated rayons too — pickers/filters elsewhere
+  // keep the active-only default.
+  const { data: rayonsData, isLoading, error, refetch } = useRayons(true);
   const rayons = useMemo(() => rayonsData || [], [rayonsData]);
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
@@ -65,6 +75,8 @@ export default function RayonsPage() {
   );
 
   const deleteRayon = useDeleteRayon();
+  const deactivateRayon = useDeactivateRayon();
+  const activateRayon = useActivateRayon();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingRayon, setEditingRayon] = useState<Rayon | null>(null);
@@ -72,6 +84,7 @@ export default function RayonsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletingRayon, setDeletingRayon] = useState<Rayon | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const columns = useMemo<ColumnDef<Rayon>[]>(
     () => [
@@ -112,14 +125,66 @@ export default function RayonsPage() {
       mapStyleColorColumn<Rayon>(t('common:color')),
       {
         id: 'coordinates',
-        accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
-        header: t('admin:locations.columnCoordinates'),
+        accessorFn: (r) =>
+          r.center_lat && r.center_lng
+            ? `${Number(r.center_lat).toFixed(6)}, ${Number(r.center_lng).toFixed(6)}`
+            : '',
+        header: t('admin:shared.columnCoordinates'),
+        // Raw lat/lng sorts and filters meaninglessly — the accessor exists only
+        // so global search can match a pasted coordinate.
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: t('admin:locations.columnCoordinates') },
+        meta: { label: t('admin:shared.columnCoordinates') },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),
+      },
+      {
+        id: 'boundary_polygon',
+        accessorFn: (r) => (r.boundary_polygon ? t('admin:shared.boundaryYes') : t('admin:shared.boundaryNo')),
+        header: t('admin:shared.columnBoundary'),
+        meta: {
+          label: t('admin:shared.columnBoundary'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.boundaryYes'), label: t('admin:shared.boundaryYes') },
+            { value: t('admin:shared.boundaryNo'), label: t('admin:shared.boundaryNo') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.boundary_polygon ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.boundaryYes')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.boundaryNo')}
+            </StatusPill>
+          ),
+      },
+      {
+        id: 'is_active',
+        accessorFn: (r) =>
+          r.is_active ? t('admin:shared.statusActive') : t('admin:shared.statusInactive'),
+        header: t('admin:shared.columnStatus'),
+        meta: {
+          label: t('admin:shared.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.statusActive'), label: t('admin:shared.statusActive') },
+            { value: t('admin:shared.statusInactive'), label: t('admin:shared.statusInactive') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.statusActive')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.statusInactive')}
+            </StatusPill>
+          ),
       },
       {
         id: 'description',
@@ -181,6 +246,29 @@ export default function RayonsPage() {
     [actorName, staffingLabel, t]
   );
 
+  /**
+   * Toggle a rayon's active flag. Deactivation is guarded server-side (409 while
+   * active kawasan/lokasi/petugas still reference it) — `getErrorMessage`
+   * localizes that by its error code, so the toast explains why it was refused.
+   */
+  const handleToggleActive = useCallback(
+    async (r: Rayon) => {
+      try {
+        if (r.is_active) {
+          await deactivateRayon.mutateAsync(r.id);
+          toast.success(t('admin:shared.successDeactivated', { name: r.name }));
+        } else {
+          await activateRayon.mutateAsync(r.id);
+          toast.success(t('admin:shared.successActivated', { name: r.name }));
+        }
+        refetch();
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [activateRayon, deactivateRayon, refetch, t]
+  );
+
   const rowActions = useCallback(
     (r: Rayon): DataTableRowAction<Rayon>[] => [
       {
@@ -202,6 +290,24 @@ export default function RayonsPage() {
         },
       },
       {
+        key: 'capacity',
+        label: t('schedules:staffCapacity.title'),
+        icon: Settings2,
+        // Capacity lives on exactly the tier this rayon nominates; `region` is
+        // the column default when unset.
+        hidden: !isAdmin || (r.staffing_level ?? 'region') !== 'rayon',
+        onClick: () => setCapacitySubject({ type: 'rayon', id: r.id, name: r.name }),
+      },
+      {
+        key: 'toggle-active',
+        label: r.is_active
+          ? t('admin:shared.actionDeactivate')
+          : t('admin:shared.actionActivate'),
+        icon: Power,
+        hidden: !isAdmin,
+        onClick: () => handleToggleActive(r),
+      },
+      {
         key: 'delete',
         label: t('admin:rayons.actionDelete'),
         icon: Trash2,
@@ -213,7 +319,7 @@ export default function RayonsPage() {
         },
       },
     ],
-    [isAdmin, view, t]
+    [handleToggleActive, isAdmin, view, t]
   );
 
   const handleDelete = async () => {
@@ -292,6 +398,13 @@ export default function RayonsPage() {
 
       {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
       <RayonFormModal open={view.open} onOpenChange={view.onOpenChange} rayon={view.item} readOnly />
+
+      {/* Same editor the Jadwal board uses — capacity is one concept, one modal. */}
+      <CapacityModal
+        open={capacitySubject !== null}
+        onOpenChange={(o) => !o && setCapacitySubject(null)}
+        subject={capacitySubject}
+      />
 
       <ConfirmDialog
         open={deleteOpen}

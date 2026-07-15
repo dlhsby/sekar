@@ -27,7 +27,7 @@ describe('AreaPlantStatusService', () => {
     id: 'area-1',
     name: 'Taman Bungkul',
     location_type_id: 'area-type-1',
-    areaType: mockAreaType,
+    locationType: mockAreaType,
     gps_lat: -7.25,
     gps_lng: 112.75,
     radius_meters: 100,
@@ -142,7 +142,7 @@ describe('AreaPlantStatusService', () => {
       );
     });
 
-    it('should load area with areaType relation', async () => {
+    it('should load area with locationType relation', async () => {
       areaRepository.findOne.mockResolvedValue(mockArea);
       areaPlantRepository.find.mockResolvedValue([]);
 
@@ -150,7 +150,7 @@ describe('AreaPlantStatusService', () => {
 
       expect(areaRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'area-1' },
-        relations: ['areaType'],
+        relations: ['locationType'],
       });
     });
 
@@ -376,19 +376,19 @@ describe('AreaPlantStatusService', () => {
       id: 'area-a1',
       name: 'Taman Bungkul',
       rayon_id: RAYON_A,
-      areaType: {},
+      locationType: {},
     } as unknown as Location;
     const areaA2 = {
       id: 'area-a2',
       name: 'Taman Flora',
       rayon_id: RAYON_A,
-      areaType: {},
+      locationType: {},
     } as unknown as Location;
     const areaB1 = {
       id: 'area-b1',
       name: 'Taman Apsari',
       rayon_id: RAYON_B,
-      areaType: {},
+      locationType: {},
     } as unknown as Location;
 
     function plantRow(locationId: string, speciesId: string): LocationPlant {

@@ -8,7 +8,7 @@
     "overtime": "Overtime",
     "schedules": "Schedules",
     "users": "Users",
-    "areas": "Areas",
+    "locations": "Locations",
     "rayons": "Districts",
     "plants": "Plants",
     "seeds": "Seeds",
@@ -31,7 +31,7 @@
     "import": "Import Data",
     "importCsv": "Import CSV",
     "analytics": "Analytics",
-    "analyticsAreas": "Area Analytics",
+    "analyticsLocations": "Location Analytics",
     "analyticsWorkers": "Worker Analytics"
   },
   "breadcrumb": {

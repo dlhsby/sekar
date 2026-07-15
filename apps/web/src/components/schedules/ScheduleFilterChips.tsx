@@ -23,7 +23,9 @@ export function ScheduleFilterChips({ filters, onChange, lockRayon }: ScheduleFi
   const hasAny = Object.values(filters).some(Boolean);
 
   const { data: usersResp } = useUsers({ limit: 1000 });
-  const { data: rayons = [] } = useRayons();
+  // Resolves an active filter's rayon id -> name; a stale filter may point at a
+  // deactivated rayon, which should still render as a chip.
+  const { data: rayons = [] } = useRayons(true);
   const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: shifts = [] } = useShiftDefinitions();

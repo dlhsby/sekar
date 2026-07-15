@@ -26,6 +26,7 @@ describe('DeleteLocationModal', () => {
       id: 'rayon-1',
       name: 'Rayon Utara',
       code: 'RU',
+      is_active: true,
       created_at: '2026-01-01',
       updated_at: '2026-01-01',
     },

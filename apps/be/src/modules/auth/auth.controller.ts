@@ -317,7 +317,7 @@ export class AuthController {
       // Fetch full area details for clock-in/out
       const area = await this.areaRepository.findOne({
         where: { id: user.location_id },
-        relations: ['areaType'],
+        relations: ['locationType'],
       });
       if (area) {
         userData.assigned_area = {
@@ -327,7 +327,9 @@ export class AuthController {
           gps_lng: area.gps_lng,
           radius_meters: area.radius_meters,
           boundary_polygon: area.boundary_polygon || null,
-          area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+          area_type: area.locationType
+            ? { id: area.locationType.id, name: area.locationType.name }
+            : null,
         };
       }
     } else {
@@ -339,7 +341,7 @@ export class AuthController {
       if (primary) {
         const area = await this.areaRepository.findOne({
           where: { id: primary.id },
-          relations: ['areaType'],
+          relations: ['locationType'],
         });
         if (area) {
           userData.location_id = area.id;
@@ -350,7 +352,9 @@ export class AuthController {
             gps_lng: area.gps_lng,
             radius_meters: area.radius_meters,
             boundary_polygon: area.boundary_polygon || null,
-            area_type: area.areaType ? { id: area.areaType.id, name: area.areaType.name } : null,
+            area_type: area.locationType
+              ? { id: area.locationType.id, name: area.locationType.name }
+              : null,
           };
         }
       }

@@ -12,7 +12,14 @@ import {
   HttpStatus,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { RegionsService } from './regions.service';
 import { Region } from './entities/region.entity';
 import { CreateRegionDto } from './dto/create-region.dto';
@@ -37,11 +44,47 @@ export class RegionsController {
 
   @Get()
   @RequirePermissions('region:read')
-  @ApiOperation({ summary: 'List regions (optionally filtered by rayon)' })
+  @ApiOperation({ summary: 'List regions (optionally filtered by rayon); active-only by default' })
   @ApiQuery({ name: 'rayon_id', required: false })
+  @ApiQuery({
+    name: 'include_inactive',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, also return deactivated regions — for the admin management grid, so a ' +
+      'deactivated kawasan stays visible/reactivatable. Defaults to false everywhere else ' +
+      '(pickers, schedule forms), keeping deactivated kawasan out of live ops.',
+  })
   @ApiResponse({ status: 200, type: [Region] })
-  findAll(@GetUser() user: User, @Query('rayon_id') rayonId?: string): Promise<Region[]> {
-    return this.regionsService.findAll(user, rayonId);
+  findAll(
+    @GetUser() user: User,
+    @Query('rayon_id') rayonId?: string,
+    @Query('include_inactive') includeInactive?: string,
+  ): Promise<Region[]> {
+    return this.regionsService.findAll(user, rayonId, includeInactive === 'true');
+  }
+
+  @Patch(':id/deactivate')
+  @RequirePermissions('region:manage')
+  @ApiOperation({
+    summary: 'Deactivate region (Kawasan)',
+    description:
+      'Set is_active=false. Reversible. Refused with 409 while the region still has active locations.',
+  })
+  @ApiParam({ name: 'id', description: 'Region UUID' })
+  @ApiResponse({ status: 200, type: Region })
+  @ApiResponse({ status: 409, description: 'Region still has active locations.' })
+  deactivate(@Param('id', ParseUUIDPipe) id: string): Promise<Region> {
+    return this.regionsService.deactivate(id);
+  }
+
+  @Patch(':id/activate')
+  @RequirePermissions('region:manage')
+  @ApiOperation({ summary: 'Reactivate region (Kawasan)', description: 'Set is_active=true.' })
+  @ApiParam({ name: 'id', description: 'Region UUID' })
+  @ApiResponse({ status: 200, type: Region })
+  activate(@Param('id', ParseUUIDPipe) id: string): Promise<Region> {
+    return this.regionsService.activate(id);
   }
 
   @Get(':id')

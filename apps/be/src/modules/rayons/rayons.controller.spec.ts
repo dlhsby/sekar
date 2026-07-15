@@ -16,6 +16,7 @@ describe('RayonsController', () => {
     name: 'Rayon Selatan',
     description: 'Covers southern Surabaya districts',
     staffing_level: StaffingLevel.REGION,
+    is_active: true,
     created_at: new Date('2024-01-01T00:00:00Z'),
     updated_at: new Date('2024-01-01T00:00:00Z'),
   };

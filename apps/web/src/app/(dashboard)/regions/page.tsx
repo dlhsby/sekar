@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
 import {
   Button,
   CoordinateLink,
@@ -15,27 +15,43 @@ import {
   DialogHeader,
   DialogTitle,
   EmptyState,
+  StatusPill,
   mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
-import { useRegions, useDeleteRegion, type Region } from '@/lib/api/regions';
+import {
+  useRegions,
+  useDeleteRegion,
+  useDeactivateRegion,
+  useActivateRegion,
+  type Region,
+} from '@/lib/api/regions';
 import { useRayons } from '@/lib/api/rayons';
 import { RegionFormModal } from '@/components/regions/RegionFormModal';
+import { CapacityModal } from '@/components/schedules/CapacityModal';
+import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 
 export default function RegionsPage() {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
   const { can } = usePermissions();
-  const { data: regions = [], isLoading, error, refetch } = useRegions();
-  const { data: rayons = [] } = useRayons();
+  // Management grid shows deactivated kawasan too — pickers elsewhere keep the
+  // active-only default.
+  const { data: regions = [], isLoading, error, refetch } = useRegions(undefined, true);
+  // Resolver, not a picker: include deactivated rayons or a kawasan under one
+  // would show a raw id and lose its staffing level.
+  const { data: rayons = [] } = useRayons(true);
   const deleteRegion = useDeleteRegion();
+  const deactivateRegion = useDeactivateRegion();
+  const activateRegion = useActivateRegion();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Region | null>(null);
   const [viewing, setViewing] = useState<Region | null>(null);
   const [toDelete, setToDelete] = useState<Region | null>(null);
+  const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const canManage = can('region:create') || can('region:update') || can('region:delete');
   const rayonName = useMemo(
@@ -44,6 +60,11 @@ export default function RegionsPage() {
   );
   const rayonFilterOptions = useMemo(
     () => rayons.map((r) => ({ label: r.name, value: r.name })),
+    [rayons],
+  );
+  // Which tier owns capacity is the parent RAYON's call, not the kawasan's.
+  const rayonLevel = useMemo(
+    () => new Map(rayons.map((r) => [r.id, r.staffing_level ?? 'region'])),
     [rayons],
   );
 
@@ -69,13 +90,66 @@ export default function RegionsPage() {
       mapStyleColorColumn<Region>(t('common:color')),
       {
         id: 'coordinates',
-        header: t('admin:locations.columnCoordinates'),
+        accessorFn: (r) =>
+          r.center_lat && r.center_lng
+            ? `${Number(r.center_lat).toFixed(6)}, ${Number(r.center_lng).toFixed(6)}`
+            : '',
+        header: t('admin:shared.columnCoordinates'),
+        // Raw lat/lng sorts and filters meaninglessly — the accessor exists only
+        // so global search can match a pasted coordinate.
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: t('admin:locations.columnCoordinates') },
+        meta: { label: t('admin:shared.columnCoordinates') },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),
+      },
+      {
+        id: 'boundary_polygon',
+        accessorFn: (r) => (r.boundary_polygon ? t('admin:shared.boundaryYes') : t('admin:shared.boundaryNo')),
+        header: t('admin:shared.columnBoundary'),
+        meta: {
+          label: t('admin:shared.columnBoundary'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.boundaryYes'), label: t('admin:shared.boundaryYes') },
+            { value: t('admin:shared.boundaryNo'), label: t('admin:shared.boundaryNo') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.boundary_polygon ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.boundaryYes')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.boundaryNo')}
+            </StatusPill>
+          ),
+      },
+      {
+        id: 'is_active',
+        accessorFn: (r) =>
+          r.is_active ? t('admin:shared.statusActive') : t('admin:shared.statusInactive'),
+        header: t('admin:shared.columnStatus'),
+        meta: {
+          label: t('admin:shared.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.statusActive'), label: t('admin:shared.statusActive') },
+            { value: t('admin:shared.statusInactive'), label: t('admin:shared.statusInactive') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.statusActive')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.statusInactive')}
+            </StatusPill>
+          ),
       },
       {
         id: 'description',
@@ -90,6 +164,26 @@ export default function RegionsPage() {
     [t, rayonName, rayonFilterOptions],
   );
 
+  /**
+   * Toggle a kawasan's active flag. Deactivation is guarded server-side (409
+   * while active lokasi still reference it) — `getErrorMessage` localizes that
+   * by its error code, so the toast explains why it was refused.
+   */
+  const handleToggleActive = async (r: Region) => {
+    try {
+      if (r.is_active) {
+        await deactivateRegion.mutateAsync(r.id);
+        toast.success(t('admin:shared.successDeactivated', { name: r.name }));
+      } else {
+        await activateRegion.mutateAsync(r.id);
+        toast.success(t('admin:shared.successActivated', { name: r.name }));
+      }
+      refetch();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
   const rowActions = (r: Region): DataTableRowAction<Region>[] => [
     { key: 'view', label: t('common:actions.view'), icon: Eye, onClick: () => setViewing(r) },
     {
@@ -101,6 +195,22 @@ export default function RegionsPage() {
         setEditing(r);
         setFormOpen(true);
       },
+    },
+    {
+      key: 'capacity',
+      label: t('schedules:staffCapacity.title'),
+      icon: Settings2,
+      hidden: !can('region:update') || rayonLevel.get(r.rayon_id) !== 'region',
+      onClick: () => setCapacitySubject({ type: 'region', id: r.id, name: r.name }),
+    },
+    {
+      key: 'toggle-active',
+      label: r.is_active
+        ? t('admin:shared.actionDeactivate')
+        : t('admin:shared.actionActivate'),
+      icon: Power,
+      hidden: !can('region:update'),
+      onClick: () => handleToggleActive(r),
     },
     {
       key: 'delete',
@@ -159,6 +269,13 @@ export default function RegionsPage() {
           ) : undefined
         }
         emptyTitle={t('admin:regions.emptyTitle')}
+      />
+
+      {/* Same editor the Jadwal board uses — capacity is one concept, one modal. */}
+      <CapacityModal
+        open={capacitySubject !== null}
+        onOpenChange={(o) => !o && setCapacitySubject(null)}
+        subject={capacitySubject}
       />
 
       {canManage && (

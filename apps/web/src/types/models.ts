@@ -76,6 +76,8 @@ export interface Rayon {
   marker_image_url?: string | null;
   /** Tier its staffing requirements attach to (defaults to region = kawasan). */
   staffing_level?: StaffingLevel;
+  /** Reversible soft-retire: hidden from pickers/filters, kept and reactivatable. */
+  is_active: boolean;
   created_at: string;
   updated_at: string;
   /** Actor audit — ids of the users who created/updated/soft-deleted the row. */

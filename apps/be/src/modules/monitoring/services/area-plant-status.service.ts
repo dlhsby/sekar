@@ -90,7 +90,7 @@ export class AreaPlantStatusService {
     // Verify area exists
     const area = await this.areaRepository.findOne({
       where: { id: locationId },
-      relations: ['areaType'],
+      relations: ['locationType'],
     });
 
     if (!area) {
@@ -108,7 +108,7 @@ export class AreaPlantStatusService {
       const { nextDueAt, status } = this.plantDueDateService.recomputeAreaPlant(
         plant,
         plant.species,
-        area.areaType,
+        area.locationType,
       );
 
       return {
@@ -151,7 +151,7 @@ export class AreaPlantStatusService {
   async getSummary(rayonId?: string): Promise<PlantStatusSummaryResponse> {
     const areas = await this.areaRepository.find({
       where: rayonId ? { rayon_id: rayonId } : {},
-      relations: ['areaType'],
+      relations: ['locationType'],
     });
     const areaById = new Map(areas.map((a) => [a.id, a]));
     const rayons = await this.rayonRepository.find({ select: ['id', 'name'] });
@@ -169,7 +169,7 @@ export class AreaPlantStatusService {
       const { status } = this.plantDueDateService.recomputeAreaPlant(
         plant,
         plant.species,
-        area.areaType,
+        area.locationType,
       );
 
       const key = area.rayon_id ?? 'none';

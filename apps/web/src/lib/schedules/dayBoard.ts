@@ -5,6 +5,7 @@
  * fully unit-testable.
  */
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
+import type { StaffingLevel } from '@/types/models';
 
 export interface BoardShiftDef {
   id: string;
@@ -56,10 +57,22 @@ export interface BoardRayon {
   /** rayon-wide (rayon-scope) assignments with no location/region */
   placement: BoardShiftGroup[];
   total: number;
+  /**
+   * Tier this rayon's staffing requirements attach to — decides which single
+   * level may edit capacity (rayon / kawasan / lokasi, never several).
+   * Real rayons always carry a concrete value (falling back to the entity's
+   * `region` column default). Left undefined ONLY on the synthetic city node,
+   * which has no rayon record and therefore no capacity to edit.
+   */
+  staffing_level?: StaffingLevel;
 }
 
 export interface BoardMasterData {
-  rayons: Array<{ id: string; name: string }>;
+  /**
+   * `staffing_level` decides which tier may edit capacity. It must be carried
+   * here — the board can't gate the capacity control without it.
+   */
+  rayons: Array<{ id: string; name: string; staffing_level?: StaffingLevel }>;
   regions: Array<{ id: string; name: string; rayon_id: string }>;
   locations: Array<{ id: string; name: string; rayon_id: string; region_id?: string | null }>;
   shifts: BoardShiftDef[];
@@ -175,6 +188,8 @@ export function buildDayBoard(
             looseLocations: [],
             placement: groupByShift(cityOccs, shifts),
             total: sumTotal(groupByShift(cityOccs, shifts)),
+            // No staffing_level: the city node is a sentinel, not a rayon —
+            // there is nothing to attach a capacity to.
           },
         ]
       : [];
@@ -210,6 +225,10 @@ export function buildDayBoard(
       looseLocations,
       placement,
       total,
+      // Mirror the entity's column default so a rayon whose level the API
+      // omitted still resolves to exactly one editable tier (kawasan) rather
+      // than none.
+      staffing_level: rayon.staffing_level ?? 'region',
     };
   });
 

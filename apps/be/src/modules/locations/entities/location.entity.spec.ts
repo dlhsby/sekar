@@ -33,7 +33,7 @@ describe('Location Entity', () => {
     expect(area.updated_at).toBeInstanceOf(Date);
   });
 
-  it('should support areaType relation', () => {
+  it('should support locationType relation', () => {
     const area = new Location();
     const mockAreaType: LocationType = {
       id: 'type-uuid-456',
@@ -46,10 +46,10 @@ describe('Location Entity', () => {
       deleted_at: undefined,
     };
 
-    area.areaType = mockAreaType;
-    expect(area.areaType).toBe(mockAreaType);
-    expect(area.areaType.code).toBe('park');
-    expect(area.areaType.name).toBe('Taman');
+    area.locationType = mockAreaType;
+    expect(area.locationType).toBe(mockAreaType);
+    expect(area.locationType.code).toBe('park');
+    expect(area.locationType.name).toBe('Taman');
   });
 
   it('should create area with all properties and relation', () => {
@@ -68,7 +68,7 @@ describe('Location Entity', () => {
     area.id = 'area-uuid-123';
     area.name = 'Taman Bungkul';
     area.location_type_id = mockAreaType.id;
-    area.areaType = mockAreaType;
+    area.locationType = mockAreaType;
     area.gps_lat = -7.2905;
     area.gps_lng = 112.7398;
     area.radius_meters = 150;
@@ -80,7 +80,7 @@ describe('Location Entity', () => {
     expect(area.id).toBe('area-uuid-123');
     expect(area.name).toBe('Taman Bungkul');
     expect(area.location_type_id).toBe(mockAreaType.id);
-    expect(area.areaType).toBe(mockAreaType);
+    expect(area.locationType).toBe(mockAreaType);
     expect(area.gps_lat).toBe(-7.2905);
     expect(area.gps_lng).toBe(112.7398);
     expect(area.radius_meters).toBe(150);

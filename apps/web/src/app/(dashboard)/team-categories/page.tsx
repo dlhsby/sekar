@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Power } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -14,21 +14,29 @@ import {
   DialogHeader,
   DialogTitle,
   EmptyState,
-  Badge,
+  StatusPill,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
-import { useTeamCategories, useDeleteTeamCategory, type TeamCategory } from '@/lib/api/teams';
+import {
+  useTeamCategories,
+  useDeleteTeamCategory,
+  useUpdateTeamCategory,
+  type TeamCategory,
+} from '@/lib/api/teams';
 import { TeamCategoryFormModal } from '@/components/teams/TeamCategoryFormModal';
 
 export default function TeamsPage() {
   const { t } = useTranslation();
   const { can } = usePermissions();
-  const { data: teamCategories = [], isLoading, error, refetch } = useTeamCategories();
+  // Catalog management shows deactivated categories too — pickers elsewhere keep
+  // the active-only default.
+  const { data: teamCategories = [], isLoading, error, refetch } = useTeamCategories(true, true);
   const deleteTeamCategory = useDeleteTeamCategory();
+  const updateTeamCategory = useUpdateTeamCategory();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TeamCategory | null>(null);
@@ -44,13 +52,35 @@ export default function TeamsPage() {
       },
       {
         id: 'active',
-        accessorKey: 'is_active',
+        accessorFn: (c) =>
+          c.is_active
+            ? t('admin:teamCategories.statusActive')
+            : t('admin:teamCategories.statusInactive'),
         header: t('admin:teamCategories.columnStatus'),
-        cell: ({ row }) => (
-          <Badge variant={row.original.is_active ? 'secondary' : 'outline'}>
-            {row.original.is_active ? t('admin:teamCategories.statusActive') : t('admin:teamCategories.statusInactive')}
-          </Badge>
-        ),
+        meta: {
+          label: t('admin:teamCategories.columnStatus'),
+          filterVariant: 'enum',
+          filterOptions: [
+            {
+              value: t('admin:teamCategories.statusActive'),
+              label: t('admin:teamCategories.statusActive'),
+            },
+            {
+              value: t('admin:teamCategories.statusInactive'),
+              label: t('admin:teamCategories.statusInactive'),
+            },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:teamCategories.statusActive')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:teamCategories.statusInactive')}
+            </StatusPill>
+          ),
       },
       {
         id: 'marker',
@@ -74,6 +104,23 @@ export default function TeamsPage() {
     [t],
   );
 
+  const handleToggleActive = async (category: TeamCategory) => {
+    try {
+      await updateTeamCategory.mutateAsync({
+        id: category.id,
+        data: { is_active: !category.is_active },
+      });
+      toast.success(
+        category.is_active
+          ? t('admin:teamCategories.successDeactivated')
+          : t('admin:teamCategories.successActivated'),
+      );
+      refetch();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
   const rowActions = (r: TeamCategory): DataTableRowAction<TeamCategory>[] => [
     {
       key: 'edit',
@@ -84,6 +131,15 @@ export default function TeamsPage() {
         setEditing(r);
         setFormOpen(true);
       },
+    },
+    {
+      key: 'toggle-active',
+      label: r.is_active
+        ? t('admin:teamCategories.actionDeactivate')
+        : t('admin:teamCategories.actionActivate'),
+      icon: Power,
+      hidden: !can('team:manage'),
+      onClick: () => handleToggleActive(r),
     },
     {
       key: 'delete',

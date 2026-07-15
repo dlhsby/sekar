@@ -43,6 +43,7 @@ describe('MonitoringService', () => {
     name: 'Rayon Selatan',
     description: 'Southern sector',
     staffing_level: StaffingLevel.REGION,
+    is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
   };
@@ -51,7 +52,7 @@ describe('MonitoringService', () => {
     id: 'area-1',
     name: 'Taman Bungkul',
     location_type_id: 'type-1',
-    areaType: {
+    locationType: {
       id: 'type-1',
       code: 'park',
       name: 'Taman',

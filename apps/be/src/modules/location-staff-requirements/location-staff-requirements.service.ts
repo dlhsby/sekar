@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  HttpStatus,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
@@ -6,6 +12,11 @@ import {
   DayType,
   StaffRole,
 } from './entities/location-staff-requirement.entity';
+import { Rayon, StaffingLevel } from '../rayons/entities/rayon.entity';
+import { Region } from '../regions/entities/region.entity';
+import { Location } from '../locations/entities/location.entity';
+import { ApiException } from '../../common/exceptions/api.exception';
+import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { LocationsService } from '../locations/locations.service';
 import { ShiftDefinitionsService } from '../shift-definitions/shift-definitions.service';
 import { CreateLocationStaffRequirementDto } from './dto/create-location-staff-requirement.dto';
@@ -24,9 +35,58 @@ export class LocationStaffRequirementsService {
   constructor(
     @InjectRepository(LocationStaffRequirement)
     private readonly requirementRepository: Repository<LocationStaffRequirement>,
+    @InjectRepository(Rayon)
+    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(Region)
+    private readonly regionRepository: Repository<Region>,
+    @InjectRepository(Location)
+    private readonly locationRepository: Repository<Location>,
     private readonly locationsService: LocationsService,
     private readonly shiftDefinitionsService: ShiftDefinitionsService,
   ) {}
+
+  /**
+   * A requirement may only be written at the tier its parent rayon nominates
+   * (`rayon.staffing_level`) — otherwise two tiers could each carry a target and
+   * the board would double-count. The write endpoints are the only guard: reads
+   * stay open so an existing wrong-level row remains inspectable/recoverable if
+   * the rayon's level changes back.
+   */
+  private async assertSubjectMatchesStaffingLevel(
+    subjectColumn: 'location_id' | 'region_id' | 'rayon_id',
+    subjectId: string,
+  ): Promise<void> {
+    const expected: Record<typeof subjectColumn, StaffingLevel> = {
+      rayon_id: StaffingLevel.RAYON,
+      region_id: StaffingLevel.REGION,
+      location_id: StaffingLevel.LOCATION,
+    };
+
+    let rayonId: string | null | undefined;
+    if (subjectColumn === 'rayon_id') {
+      rayonId = subjectId;
+    } else if (subjectColumn === 'region_id') {
+      rayonId = (await this.regionRepository.findOne({ where: { id: subjectId } }))?.rayon_id;
+    } else {
+      rayonId = (await this.locationRepository.findOne({ where: { id: subjectId } }))?.rayon_id;
+    }
+    // No resolvable parent rayon (e.g. a lokasi not yet assigned one) — there is
+    // no staffing_level to check against, so leave it to the existing checks.
+    if (!rayonId) return;
+
+    const rayon = await this.rayonRepository.findOne({ where: { id: rayonId } });
+    if (!rayon) return;
+
+    const level = rayon.staffing_level ?? StaffingLevel.REGION;
+    if (level !== expected[subjectColumn]) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        ApiErrorCode.CAPACITY_WRONG_LEVEL,
+        `Cannot set capacity at '${expected[subjectColumn]}' level: rayon '${rayon.name}' ` +
+          `attaches staffing requirements at '${level}' level.`,
+      );
+    }
+  }
 
   /**
    * Get all staff requirements for an area
@@ -85,6 +145,8 @@ export class LocationStaffRequirementsService {
       required_count: number;
     }>,
   ): Promise<LocationStaffRequirement[]> {
+    await this.assertSubjectMatchesStaffingLevel(subjectColumn, subjectId);
+
     for (const it of items) {
       const existing = await this.requirementRepository.findOne({
         where: {
@@ -152,32 +214,12 @@ export class LocationStaffRequirementsService {
       required_count: number;
     }>,
   ): Promise<LocationStaffRequirement[]> {
+    // Existence check first (404 beats 409 for a location that isn't there),
+    // then the shared upsert — which also applies the staffing-level guard. This
+    // used to inline its own copy of the upsert loop and so silently bypassed
+    // every check `bulkSetForSubject` gained.
     await this.locationsService.findOne(locationId);
-    for (const it of items) {
-      const existing = await this.requirementRepository.findOne({
-        where: {
-          location_id: locationId,
-          shift_definition_id: it.shift_definition_id,
-          role: it.role,
-          day_type: it.day_type,
-        },
-      });
-      if (existing) {
-        existing.required_count = it.required_count;
-        await this.requirementRepository.save(existing);
-      } else {
-        await this.requirementRepository.save(
-          this.requirementRepository.create({
-            location_id: locationId,
-            shift_definition_id: it.shift_definition_id,
-            role: it.role,
-            day_type: it.day_type,
-            required_count: it.required_count,
-          }),
-        );
-      }
-    }
-    return this.requirementRepository.find({ where: { location_id: locationId } });
+    return this.bulkSetForSubject('location_id', locationId, items);
   }
 
   /**

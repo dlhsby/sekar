@@ -66,6 +66,7 @@ import {
 import {
   useStaffRequirements,
   requirementTotalMap,
+  requirementRoleMap,
   type StaffSubject,
 } from '@/lib/api/location-staff-requirements';
 import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
@@ -218,11 +219,20 @@ export default function SchedulesPage() {
     () => requirementTotalMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
     [requirementRows, anchor, overrideMap]
   );
+  // Per-role targets: the aggregate above can't say which role is short, which
+  // is what the hint and the shift+role cards need.
+  const roleCapacities = useMemo(
+    () => requirementRoleMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
+    [requirementRows, anchor, overrideMap]
+  );
 
   // Master data for the day board's Rayon → Kawasan → Lokasi tree.
   const boardMaster = useMemo<BoardMasterData>(
     () => ({
-      rayons: rayons.map((r) => ({ id: r.id, name: r.name })),
+      // staffing_level must survive this mapping: it decides which single tier
+      // (rayon / kawasan / lokasi) may edit capacity. Dropping it here is what
+      // made the board offer the capacity control on every tier but the rayon.
+      rayons: rayons.map((r) => ({ id: r.id, name: r.name, staffing_level: r.staffing_level })),
       regions: regions.map((r) => ({ id: r.id, name: r.name, rayon_id: r.rayon_id })),
       locations: allLocations.map((l) => ({
         id: l.id,
@@ -435,6 +445,7 @@ export default function SchedulesPage() {
           occurrences={occurrences}
           master={boardMaster}
           capacities={capacities}
+          roleCapacities={roleCapacities}
           onOccurrenceClick={onOccurrenceClick}
           canAssign={can('schedule:create')}
           onAssign={(ctx) => openCreate(isoDate(anchor), ctx)}

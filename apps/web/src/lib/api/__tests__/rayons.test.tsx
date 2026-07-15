@@ -94,7 +94,10 @@ describe('Rayons API', () => {
     it('should generate correct query keys', () => {
       expect(rayonKeys.all).toEqual(['rayons']);
       expect(rayonKeys.lists()).toEqual(['rayons', 'list']);
-      expect(rayonKeys.list()).toEqual(['rayons', 'list']);
+      // The list key carries the include-inactive flag: the admin grid and the
+      // pickers must not share one cache entry.
+      expect(rayonKeys.list()).toEqual(['rayons', 'list', { includeInactive: false }]);
+      expect(rayonKeys.list(true)).toEqual(['rayons', 'list', { includeInactive: true }]);
       expect(rayonKeys.details()).toEqual(['rayons', 'detail']);
       expect(rayonKeys.detail('1')).toEqual(['rayons', 'detail', '1']);
       expect(rayonKeys.stats('1')).toEqual(['rayons', 'detail', '1', 'stats']);

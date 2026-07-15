@@ -77,9 +77,9 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             )}
           </InfoRow>
 
-          {!!shift.area?.areaType?.name && (
+          {!!shift.area?.locationType?.name && (
             <InfoRow icon="office-building" label={tAttendance('shiftDetail.areaType')}>
-              <NBText variant="body" color="black">{shift.area.areaType.name}</NBText>
+              <NBText variant="body" color="black">{shift.area.locationType.name}</NBText>
             </InfoRow>
           )}
 

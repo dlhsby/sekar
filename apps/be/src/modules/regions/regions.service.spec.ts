@@ -1,4 +1,5 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ApiException } from '../../common/exceptions/api.exception';
 import { RegionsService } from './regions.service';
 
 describe('RegionsService', () => {
@@ -46,7 +47,7 @@ describe('RegionsService', () => {
     it('forces district-scoped callers onto their own rayon', async () => {
       await service.findAll({ role: 'kepala_rayon', rayon_id: 'rayon-mine' } as any, 'rayon-other');
       expect(regionRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { rayon_id: 'rayon-mine' } }),
+        expect.objectContaining({ where: { rayon_id: 'rayon-mine', is_active: true } }),
       );
     });
 
@@ -59,8 +60,20 @@ describe('RegionsService', () => {
     it('lets city-scope callers filter any rayon', async () => {
       await service.findAll({ role: 'admin_system', rayon_id: null } as any, 'rayon-2');
       expect(regionRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { rayon_id: 'rayon-2' } }),
+        expect.objectContaining({ where: { rayon_id: 'rayon-2', is_active: true } }),
       );
+    });
+
+    it('hides deactivated kawasan by default, so pickers never offer one', async () => {
+      await service.findAll({ role: 'admin_system', rayon_id: null } as any);
+      expect(regionRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { is_active: true } }),
+      );
+    });
+
+    it('includes deactivated kawasan for the admin management grid', async () => {
+      await service.findAll({ role: 'admin_system', rayon_id: null } as any, undefined, true);
+      expect(regionRepo.find).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
     });
   });
 
@@ -132,6 +145,37 @@ describe('RegionsService', () => {
       expect(locationRepo._qb.where).toHaveBeenCalledWith('region_id = :id', { id: 'reg-1' });
       expect(locationRepo._qb.andWhere).not.toHaveBeenCalled();
       expect(locationRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('deactivate / activate', () => {
+    it('deactivates a kawasan with no active lokasi under it', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', is_active: true });
+      locationRepo.count.mockResolvedValue(0);
+      regionRepo.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      const result = await service.deactivate('reg-1');
+
+      expect(result.is_active).toBe(false);
+    });
+
+    it('refuses while active lokasi still reference it', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', is_active: true });
+      locationRepo.count.mockResolvedValue(2);
+
+      await expect(service.deactivate('reg-1')).rejects.toBeInstanceOf(ApiException);
+      await expect(service.deactivate('reg-1')).rejects.toThrow(/2 active location/);
+      expect(regionRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('reactivates without any guard', async () => {
+      regionRepo.findOne.mockResolvedValue({ id: 'reg-1', is_active: false });
+      regionRepo.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      const result = await service.activate('reg-1');
+
+      expect(result.is_active).toBe(true);
+      expect(locationRepo.count).not.toHaveBeenCalled();
     });
   });
 });
