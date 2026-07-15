@@ -332,44 +332,67 @@ describe('pruneDayBoard', () => {
   });
 });
 
+/** Real usage: the board prunes first, then asks what to open. */
+const expandFor = (occs: ScheduleOccurrence[], filters: Parameters<typeof pruneDayBoard>[1]) =>
+  autoExpandedIds(pruneDayBoard(buildDayBoard(occs, twoRayonMaster), filters), filters);
+
 describe('autoExpandedIds', () => {
   it('opens nothing when nothing is filtered', () => {
-    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
-
-    expect(autoExpandedIds(tree, {})).toEqual(new Set());
+    expect(expandFor([occ({ location_id: 'loc1' })], {})).toEqual(new Set());
   });
 
-  it('opens the whole ancestor chain down to a matching lokasi', () => {
-    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+  // Geography names the destination: open the chain down to it and stop. What is
+  // inside the named container is the answer's contents, not more search results.
+  describe('geography search — opens down to the named level, no further', () => {
+    it('stops at the rayon when a rayon was named', () => {
+      // Searching "Rayon Barat 1" is a request to focus on it, not to unfurl its
+      // 11 kawasan and 87 lokasi.
+      const ids = expandFor([occ({ location_id: 'loc1' })], { rayonId: 'ry1' });
 
-    const ids = autoExpandedIds(tree, { userId: 'u' });
+      expect(ids).toEqual(new Set(['ry1']));
+    });
 
-    expect(ids).toEqual(new Set(['ry1', 'kw1', 'loc1']));
+    it('stops at the kawasan when a kawasan was named, leaving its lokasi shut', () => {
+      // Even a lokasi that HAS a roster stays closed — it was not what was asked for.
+      const ids = expandFor([occ({ location_id: 'loc1' })], { regionId: 'kw1' });
+
+      expect(ids).toEqual(new Set(['ry1', 'kw1']));
+      expect(ids).not.toContain('loc1');
+    });
+
+    it('opens the full chain to a lokasi when a lokasi was named, even if empty', () => {
+      expect(expandFor([], { locationId: 'loc1' })).toEqual(new Set(['ry1', 'kw1', 'loc1']));
+    });
   });
 
-  it('opens a lokasi named by a geography filter even though it is empty', () => {
-    const tree = buildDayBoard([], twoRayonMaster);
+  // A subject is somewhere unknown, so the board has to go and find it.
+  describe('subject search — opens all the way to the match', () => {
+    it('opens the whole ancestor chain down to the matching lokasi', () => {
+      expect(expandFor([occ({ location_id: 'loc1' })], { userId: 'u' })).toEqual(
+        new Set(['ry1', 'kw1', 'loc1'])
+      );
+    });
 
-    expect(autoExpandedIds(tree, { locationId: 'loc1' })).toEqual(new Set(['ry1', 'kw1', 'loc1']));
-  });
+    it('leaves containers without a match shut', () => {
+      const ids = expandFor([occ({ location_id: 'loc1' })], { userId: 'u' });
 
-  it('does not open empty lokasi just because their rayon was filtered', () => {
-    // A rayon filter must not blow all 87 lokasi open — that is worse than none.
-    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+      expect(ids).not.toContain('loc2'); // empty loose lokasi
+      expect(ids).not.toContain('ry2');
+    });
 
-    const ids = autoExpandedIds(tree, { rayonId: 'ry1' });
+    it('opens a placement block that holds a match', () => {
+      const ids = expandFor([occ({ rayon_id: 'ry1' })], { userId: 'u' });
 
-    expect(ids).toContain('ry1');
-    expect(ids).toContain('loc1');
-    expect(ids).not.toContain('loc2'); // empty loose lokasi stays shut
-  });
+      expect(ids).toContain('ry1:placement');
+      expect(ids).toContain('ry1');
+    });
 
-  it('opens a placement block that holds a match', () => {
-    const tree = buildDayBoard([occ({ rayon_id: 'ry1' })], twoRayonMaster);
+    it('still reaches the worker when a geography filter is combined with it', () => {
+      // "Budi, in Rayon Barat 1" still has to reach Budi — the subject wins the
+      // depth question, or the combination would be less useful than either half.
+      const ids = expandFor([occ({ location_id: 'loc1' })], { rayonId: 'ry1', userId: 'u' });
 
-    const ids = autoExpandedIds(tree, { userId: 'u' });
-
-    expect(ids).toContain('ry1:placement');
-    expect(ids).toContain('ry1');
+      expect(ids).toEqual(new Set(['ry1', 'kw1', 'loc1']));
+    });
   });
 });

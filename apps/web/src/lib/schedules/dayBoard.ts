@@ -354,15 +354,47 @@ export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardR
 /**
  * Container ids the board should open so a match is visible without clicking.
  *
- * Only nodes that actually hold something are opened — with a broad filter
- * (a whole rayon) opening all 87 lokasi would be worse than opening none. The
- * exception is the deepest *geography* match, which opens even when empty: it's
- * the thing the operator named, so it should be on screen either way.
+ * Takes the tree ALREADY pruned by `pruneDayBoard` with the same filters — the
+ * geography branch opens what survived rather than re-testing each id.
+ *
+ * How deep to open depends on WHAT was named, not on where the rosters are:
+ *
+ * - **Geography** — the named container IS the destination, so open the chain
+ *   down to it and **stop**. Searching *Kawasan Ambengan* opens Rayon Pusat then
+ *   Ambengan and leaves its lokasi shut; what's inside is the answer's contents,
+ *   not more search results. (Opening every lokasi with a roster under it turned
+ *   a kawasan search into a wall of expanded cards.)
+ * - **Subject** (petugas/shift/tim) — the person is somewhere *unknown*, so open
+ *   every container on the path to each match. That is the whole point of the
+ *   search: "display all until found the specific worker".
+ *
+ * A subject criterion therefore always wins the depth question, even combined
+ * with a geography one ("Budi, in Rayon Pusat" still has to reach Budi).
  */
 export function autoExpandedIds(tree: BoardRayon[], filters: BoardFilters): Set<string> {
   const ids = new Set<string>();
   if (!hasAnyBoardFilter(filters)) return ids;
 
+  // Geography-only: the tree is already pruned to the named subtree, so opening
+  // the chain means opening what survived — down to the named level, no further.
+  if (!hasSubjectFilter(filters)) {
+    const deepest = filters.locationId ? 'location' : filters.regionId ? 'region' : 'rayon';
+
+    for (const rayon of tree) {
+      ids.add(rayon.id);
+      if (deepest === 'rayon') continue;
+
+      for (const region of rayon.regions) {
+        ids.add(region.id);
+        if (deepest === 'region') continue;
+        for (const loc of region.locations) ids.add(loc.id);
+      }
+      for (const loc of rayon.looseLocations) ids.add(loc.id);
+    }
+    return ids;
+  }
+
+  // Subject search: walk to every match and open its ancestors.
   for (const rayon of tree) {
     let rayonHit = false;
 
@@ -378,25 +410,25 @@ export function autoExpandedIds(tree: BoardRayon[], filters: BoardFilters): Set<
         regionHit = true;
       }
       for (const loc of region.locations) {
-        if (loc.total > 0 || filters.locationId === loc.id) {
+        if (loc.total > 0) {
           ids.add(loc.id);
           regionHit = true;
         }
       }
-      if (regionHit || filters.regionId === region.id) {
+      if (regionHit) {
         ids.add(region.id);
         rayonHit = true;
       }
     }
 
     for (const loc of rayon.looseLocations) {
-      if (loc.total > 0 || filters.locationId === loc.id) {
+      if (loc.total > 0) {
         ids.add(loc.id);
         rayonHit = true;
       }
     }
 
-    if (rayonHit || filters.rayonId === rayon.id) ids.add(rayon.id);
+    if (rayonHit) ids.add(rayon.id);
   }
 
   return ids;
