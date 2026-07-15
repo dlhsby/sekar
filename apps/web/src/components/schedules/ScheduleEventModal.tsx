@@ -571,6 +571,75 @@ export function ScheduleEventModal({
         </DialogHeader>
         <DialogBody>
           <form id="event-form" className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
+            {/* Ruang Lingkup comes FIRST: the form reads where → who → when.
+                Scope decides which geography selects appear and which are
+                required, so it's the question every other answer hangs off —
+                asking "Individu or Tim?" before "where?" put the narrower
+                decision ahead of the one that frames it. */}
+            <FormSelect
+              label={t('schedules:calendar.event.scopeLabel')}
+              helperText={t('schedules:calendar.event.scopeHelp')}
+              options={scopeOptions}
+              value={formScope}
+              placeholder={t('schedules:calendar.event.scopePlaceholder')}
+              onChange={(v) => handleScopeChange(v as ScopeValue)}
+              error={errors.scope?.message}
+              required
+              disabled={lockScope}
+            />
+
+            {/* Placement cascade, gated by scope:
+                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
+                `formScope &&` matters now that '' is the un-chosen state — without
+                it the rayon field appears before a scope has been picked. */}
+            {formScope && formScope !== 'city' && (
+              <FormCombobox
+                label={t('schedules:calendar.event.rayonLabel')}
+                options={rayonOptions}
+                value={formRayon || ''}
+                onChange={(v) => {
+                  setValue('rayon_id', v, { shouldValidate: true });
+                  setValue('region_id', '');
+                  setValue('location_id', '');
+                }}
+                placeholder={t('schedules:calendar.event.rayonPlaceholder')}
+                error={errors.rayon_id?.message}
+                required
+                disabled={lockRayon}
+              />
+            )}
+
+            {(formScope === 'region' || formScope === 'location') && formRayon && (
+              <FormCombobox
+                label={t('schedules:calendar.event.regionLabel')}
+                options={regionOptions}
+                value={formRegion || ''}
+                onChange={(v) => {
+                  setValue('region_id', v, { shouldValidate: true });
+                  setValue('location_id', '');
+                }}
+                placeholder={t('schedules:calendar.event.regionPlaceholder')}
+                helperText={t('schedules:calendar.event.regionScopeHint')}
+                error={errors.region_id?.message}
+                required
+                disabled={lockRegion}
+              />
+            )}
+
+            {formScope === 'location' && formRegion && (
+              <FormCombobox
+                label={t('schedules:calendar.event.locationLabel')}
+                options={locationOptions}
+                value={watch('location_id') || ''}
+                onChange={(v) => setValue('location_id', v, { shouldValidate: true })}
+                placeholder={t('schedules:calendar.event.locationPlaceholder')}
+                helperText={t('schedules:calendar.event.locationScopeHint')}
+                error={errors.location_id?.message}
+                required
+                disabled={lockLocation}
+              />
+            )}
+
             {/* Kind: individual vs team (immutable when editing) */}
             <FormSelect
               label={t('schedules:calendar.event.kindLabel')}
@@ -690,70 +759,6 @@ export function ScheduleEventModal({
               disabled={lockShift}
             />
 
-            {/* Ruang Lingkup (scope): decides which geography selects appear. */}
-            <FormSelect
-              label={t('schedules:calendar.event.scopeLabel')}
-              helperText={t('schedules:calendar.event.scopeHelp')}
-              options={scopeOptions}
-              value={formScope}
-              placeholder={t('schedules:calendar.event.scopePlaceholder')}
-              onChange={(v) => handleScopeChange(v as ScopeValue)}
-              error={errors.scope?.message}
-              required
-              disabled={lockScope}
-            />
-
-            {/* Placement cascade, gated by scope:
-                rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
-                `formScope &&` matters now that '' is the un-chosen state — without
-                it the rayon field appears before a scope has been picked. */}
-            {formScope && formScope !== 'city' && (
-              <FormCombobox
-                label={t('schedules:calendar.event.rayonLabel')}
-                options={rayonOptions}
-                value={formRayon || ''}
-                onChange={(v) => {
-                  setValue('rayon_id', v, { shouldValidate: true });
-                  setValue('region_id', '');
-                  setValue('location_id', '');
-                }}
-                placeholder={t('schedules:calendar.event.rayonPlaceholder')}
-                error={errors.rayon_id?.message}
-                required
-                disabled={lockRayon}
-              />
-            )}
-
-            {(formScope === 'region' || formScope === 'location') && formRayon && (
-              <FormCombobox
-                label={t('schedules:calendar.event.regionLabel')}
-                options={regionOptions}
-                value={formRegion || ''}
-                onChange={(v) => {
-                  setValue('region_id', v, { shouldValidate: true });
-                  setValue('location_id', '');
-                }}
-                placeholder={t('schedules:calendar.event.regionPlaceholder')}
-                helperText={t('schedules:calendar.event.regionScopeHint')}
-                error={errors.region_id?.message}
-                required
-                disabled={lockRegion}
-              />
-            )}
-
-            {formScope === 'location' && formRegion && (
-              <FormCombobox
-                label={t('schedules:calendar.event.locationLabel')}
-                options={locationOptions}
-                value={watch('location_id') || ''}
-                onChange={(v) => setValue('location_id', v, { shouldValidate: true })}
-                placeholder={t('schedules:calendar.event.locationPlaceholder')}
-                helperText={t('schedules:calendar.event.locationScopeHint')}
-                error={errors.location_id?.message}
-                required
-                disabled={lockLocation}
-              />
-            )}
 
             {/* Recurrence */}
             <FormSelect

@@ -100,6 +100,17 @@ describe('ScheduleEventModal', () => {
     expect(screen.getByText('schedules:calendar.event.scopeLabel')).toBeInTheDocument();
   });
 
+  it('asks for Ruang Lingkup before Jenis (where -> who -> when)', () => {
+    // Scope frames every other answer — it decides which geography fields exist
+    // and which are required — so it leads. DOM order is the reading order.
+    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+    const scope = screen.getByText('schedules:calendar.event.scopeLabel');
+    const kind = screen.getByText('schedules:calendar.event.kindLabel');
+
+    expect(scope.compareDocumentPosition(kind) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   // Nothing is preselected. Jenis / Ruang Lingkup / Pengulangan used to arrive
   // pre-filled ("Individu", "Rayon", "Sekali"), so an operator could save three
   // decisions they never actually made.
