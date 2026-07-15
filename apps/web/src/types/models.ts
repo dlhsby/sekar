@@ -299,9 +299,6 @@ export interface Schedule extends Record<string, unknown> {
   updated_at: string;
 }
 
-/** @deprecated Use Schedule instead */
-export type WorkerSchedule = Schedule;
-
 /**
  * Schedule Filter Options
  */
