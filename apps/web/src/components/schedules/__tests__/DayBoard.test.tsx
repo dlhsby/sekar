@@ -600,6 +600,32 @@ describe('DayBoard — search', () => {
     expect(screen.getByRole('button', { expanded: true, name: /Taman Bungkul/ })).toBeInTheDocument();
   });
 
+  it('stops opening at the searched kawasan and leaves its lokasi shut', () => {
+    // Searching a kawasan is a request to focus on it — unfurling every lokasi
+    // under it (even ones with a roster) buries the thing that was asked for.
+    renderBoard({
+      master: twoRayon,
+      occurrences: [occ({ location_id: 'loc1' })],
+      filters: { regionId: 'kw1' },
+    });
+
+    expect(screen.getByRole('button', { expanded: true, name: /Kawasan Pusat/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { expanded: false, name: /Taman Bungkul/ })
+    ).toBeInTheDocument();
+  });
+
+  it('opens all the way to a searched worker, wherever they are', () => {
+    renderBoard({
+      master: twoRayon,
+      occurrences: [occ({ location_id: 'loc1' })],
+      filters: { userId: 'u' },
+    });
+
+    expect(screen.getByRole('button', { expanded: true, name: /Taman Bungkul/ })).toBeInTheDocument();
+    expect(screen.getByText('Budi')).toBeInTheDocument();
+  });
+
   it('shows an explicit not-found state, not the empty-day message, when nothing matches', async () => {
     const onClearFilters = jest.fn();
     const user = userEvent.setup();
