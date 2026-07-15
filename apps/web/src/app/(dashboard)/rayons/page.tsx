@@ -113,10 +113,10 @@ export default function RayonsPage() {
       {
         id: 'coordinates',
         accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
-        header: t('admin:areas.columnCoordinates'),
+        header: t('admin:locations.columnCoordinates'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: t('admin:areas.columnCoordinates') },
+        meta: { label: t('admin:locations.columnCoordinates') },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),

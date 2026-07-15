@@ -251,11 +251,11 @@ export function LocationForm({
     <form id={formId} onSubmit={handleSubmit(onSubmitForm)} onReset={handleReset} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">{t('admin:areas.form.basicInfoTitle')}</h3>
+        <h3 className="font-bold text-lg">{t('admin:locations.form.basicInfoTitle')}</h3>
 
         <FormInput
-          label={t('admin:areas.form.name')}
-          placeholder={t('admin:areas.form.namePlaceholder')}
+          label={t('admin:locations.form.name')}
+          placeholder={t('admin:locations.form.namePlaceholder')}
           error={errors.name?.message}
           required
           disabled={readOnly}
@@ -263,7 +263,7 @@ export function LocationForm({
         />
 
         <FormCombobox
-          label={t('admin:areas.form.rayon')}
+          label={t('admin:locations.form.rayon')}
           options={(rayonsData ?? []).map((rayon) => ({ value: rayon.id, label: rayon.name }))}
           value={watch('rayon_id') || ''}
           onChange={(value) => {
@@ -271,8 +271,8 @@ export function LocationForm({
             // Region belongs to a rayon — clear it when the rayon changes.
             setValue('region_id', '', { shouldValidate: false });
           }}
-          placeholder={loadingRayons ? t('admin:shared.loading') : t('admin:areas.form.rayonPlaceholder')}
-          searchPlaceholder={t('admin:areas.form.rayonSearchPlaceholder')}
+          placeholder={loadingRayons ? t('admin:shared.loading') : t('admin:locations.form.rayonPlaceholder')}
+          searchPlaceholder={t('admin:locations.form.rayonSearchPlaceholder')}
           error={errors.rayon_id?.message}
           required
           clearable={false}
@@ -280,24 +280,24 @@ export function LocationForm({
         />
 
         <FormCombobox
-          label={t('admin:areas.form.region')}
+          label={t('admin:locations.form.region')}
           options={regions.map((r) => ({ value: r.id, label: r.name }))}
           value={watch('region_id') || ''}
           onChange={(value) => setValue('region_id', value, { shouldValidate: false })}
-          placeholder={t('admin:areas.form.regionPlaceholder')}
+          placeholder={t('admin:locations.form.regionPlaceholder')}
           disabled={!selectedRayon || readOnly}
         />
 
         <FormCombobox
-          label={t('admin:areas.form.type')}
+          label={t('admin:locations.form.type')}
           options={(locationTypes ?? []).map((type) => ({
             value: type.id,
             label: `${type.name} (${type.category})`,
           }))}
           value={watch('location_type_id') || ''}
           onChange={(value) => setValue('location_type_id', value, { shouldValidate: true })}
-          placeholder={loadingAreaTypes ? t('admin:shared.loading') : t('admin:areas.form.typePlaceholder')}
-          searchPlaceholder={t('admin:areas.form.typeSearchPlaceholder')}
+          placeholder={loadingAreaTypes ? t('admin:shared.loading') : t('admin:locations.form.typePlaceholder')}
+          searchPlaceholder={t('admin:locations.form.typeSearchPlaceholder')}
           error={errors.location_type_id?.message}
           required
           clearable={false}
@@ -305,9 +305,9 @@ export function LocationForm({
         />
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">{t('admin:areas.form.address')}</label>
+          <label className="text-sm font-bold leading-none">{t('admin:locations.form.address')}</label>
           <Textarea
-            placeholder={t('admin:areas.form.addressPlaceholder')}
+            placeholder={t('admin:locations.form.addressPlaceholder')}
             rows={3}
             error={errors.address?.message}
             disabled={readOnly}
@@ -316,11 +316,11 @@ export function LocationForm({
         </div>
 
         <FormInput
-          label={t('admin:areas.form.radius')}
+          label={t('admin:locations.form.radius')}
           type="number"
           min={1}
           max={10000}
-          placeholder={t('admin:areas.form.radiusPlaceholder')}
+          placeholder={t('admin:locations.form.radiusPlaceholder')}
           error={errors.radius_meters?.message}
           disabled={readOnly}
           {...register('radius_meters', { setValueAs: toNullableNumber })}
@@ -341,12 +341,12 @@ export function LocationForm({
       {/* Boundary + location pin on a single Google map (two separate settings) */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-bold text-lg">{t('admin:areas.form.boundaryTitle')}</h3>
+          <h3 className="font-bold text-lg">{t('admin:locations.form.boundaryTitle')}</h3>
           {!readOnly && <ImportBoundaryButton onImport={handleImportBoundary} />}
         </div>
         {!readOnly && (
           <p className="text-nb-body-sm text-nb-gray-500">
-            {t('admin:areas.form.boundaryDescription')}
+            {t('admin:locations.form.boundaryDescription')}
           </p>
         )}
 
@@ -369,13 +369,13 @@ export function LocationForm({
           manualFallback={
             center ? (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
-                <div className="font-bold mb-2">{t('admin:areas.form.coordinatesTitle')}</div>
+                <div className="font-bold mb-2">{t('admin:locations.form.coordinatesTitle')}</div>
                 <div className="font-mono text-sm">{formatCoordinates(center.lng, center.lat)}</div>
               </div>
             ) : (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">
                 <p className="text-nb-body-sm text-nb-gray-700">
-                  {t('admin:areas.form.mapUnavailable')}
+                  {t('admin:locations.form.mapUnavailable')}
                 </p>
               </div>
             )
@@ -387,7 +387,7 @@ export function LocationForm({
           this form); only the geometry hint stays here, next to the map. */}
       {!readOnly && !hasGeometry && (
         <p className="text-nb-body-sm text-nb-danger">
-          {t('admin:areas.form.geometryRequired')}
+          {t('admin:locations.form.geometryRequired')}
         </p>
       )}
     </form>

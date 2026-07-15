@@ -89,7 +89,7 @@
     "columnRegion": "Kawasan",
     "columnArea": "Lokasi"
   },
-  "areas": {
+  "locations": {
     "pageTitle": "Lokasi",
     "description": "Kelola lokasi kerja dan batas wilayah",
     "totalCount": "{{count}} lokasi",

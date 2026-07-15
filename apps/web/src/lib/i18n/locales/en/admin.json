@@ -89,7 +89,7 @@
     "columnRegion": "Region",
     "columnArea": "Location"
   },
-  "areas": {
+  "locations": {
     "pageTitle": "Locations",
     "description": "Manage work locations and boundaries",
     "totalCount": "{{count}} locations",

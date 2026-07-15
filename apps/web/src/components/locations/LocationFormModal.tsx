@@ -79,8 +79,8 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
     }
     toast.success(
       isEdit
-        ? t('admin:areas.successUpdated', { name: data.name })
-        : t('admin:areas.successCreated', { name: data.name })
+        ? t('admin:locations.successUpdated', { name: data.name })
+        : t('admin:locations.successCreated', { name: data.name })
     );
     onSuccess?.();
     onOpenChange(false);
@@ -96,8 +96,8 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
     (failedMutation.error instanceof Error
       ? failedMutation.error.message
       : isEdit
-        ? t('admin:areas.updateErrorMessage')
-        : t('admin:areas.createErrorMessage'));
+        ? t('admin:locations.updateErrorMessage')
+        : t('admin:locations.createErrorMessage'));
   const isPending = scalarMutation.isPending || boundaryMutation.isPending;
 
   return (
@@ -106,10 +106,10 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
         <DialogHeader>
           <DialogTitle>
             {readOnly
-              ? t('admin:areas.detailTitle')
+              ? t('admin:locations.detailTitle')
               : isEdit
-                ? t('admin:areas.actionEdit')
-                : t('admin:areas.buttonAdd')}
+                ? t('admin:locations.actionEdit')
+                : t('admin:locations.buttonAdd')}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
@@ -144,8 +144,8 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
                     ? t('admin:shared.updating')
                     : t('admin:shared.creating')
                   : isEdit
-                    ? t('admin:areas.form.submit')
-                    : t('admin:areas.form.submitNew')
+                    ? t('admin:locations.form.submit')
+                    : t('admin:locations.form.submitNew')
               }
               loading={isPending}
               disabled={!hasGeometry}

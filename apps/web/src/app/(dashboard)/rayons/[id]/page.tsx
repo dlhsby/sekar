@@ -77,10 +77,10 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   const columns: ColumnDef<Location>[] = [
     {
       id: 'name',
-      header: t('admin:areas.columnName'),
+      header: t('admin:locations.columnName'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: t('admin:areas.columnName') },
+      meta: { label: t('admin:locations.columnName') },
       cell: ({ row }) => (
         <Link href={`/locations/${row.original.id}`} className="font-semibold text-nb-primary hover:underline">
           {row.original.name}
@@ -89,10 +89,10 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     },
     {
       id: 'area_type',
-      header: t('admin:areas.columnType'),
+      header: t('admin:locations.columnType'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: t('admin:areas.columnType') },
+      meta: { label: t('admin:locations.columnType') },
       cell: ({ row }) => <span className="text-nb-body-sm">{row.original.locationType?.name || '—'}</span>,
     },
     {
@@ -109,13 +109,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     },
     {
       id: 'status',
-      header: t('admin:areas.columnStatus'),
+      header: t('admin:locations.columnStatus'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: t('admin:areas.columnStatus') },
+      meta: { label: t('admin:locations.columnStatus') },
       cell: () => (
         <StatusPill tone="ok" dot>
-          {t('admin:areas.statusActive')}
+          {t('admin:locations.statusActive')}
         </StatusPill>
       ),
     },
@@ -150,9 +150,9 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
         <CardContent className="p-4">
           <div className="mb-4">
             <FormInput
-              label={t('admin:areas.form.name')}
+              label={t('admin:locations.form.name')}
               type="text"
-              placeholder={t('admin:areas.form.namePlaceholder')}
+              placeholder={t('admin:locations.form.namePlaceholder')}
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
