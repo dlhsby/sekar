@@ -547,6 +547,41 @@ export default function UsersPage() {
 
 ## Table Toolbar
 
+### The primary create action — use `createAction`, not `actions` (2026-07-16)
+
+`DataTable` takes a **`createAction`** prop for the page's `[+ Tambah X]` button:
+
+```tsx
+createAction={{
+  label: t('admin:rayons.buttonAdd'),
+  hidden: !isAdmin,          // permission gating lives HERE, not in a call-site ternary
+  onClick: () => { setEditing(null); setFormOpen(true); },
+}}
+```
+
+**Why a prop rather than passing your own `<Button>` through `actions`:** the
+toolbar's filter / columns / refresh buttons already collapse to **icon-only
+below `sm`** (`hidden sm:inline`). A hand-rolled create button didn't, so its
+label made it wide enough to **wrap onto its own line on a phone** — every list
+page stacked *search / tools / create* as three rows. Putting the rule in the
+table means it holds for every page instead of being re-decided at 18 call sites.
+
+The button itself is **`<CreateButton>`** (`components/ui/create-button.tsx`),
+shared rather than inlined because a create action lives in two places:
+
+- **the table toolbar** (via `createAction`) — the default for list pages;
+- **`PageHeader.actions`** — for pages whose default view has no table. **Tugas
+  is kanban-first**, so a toolbar button would simply vanish in kanban view;
+  its create action stays in the masthead and uses `<CreateButton>` directly.
+
+The label is kept as `aria-label` + `title`, so the icon-only form stays
+announced and hoverable. `actions` remains as an escape hatch for bespoke
+toolbar content.
+
+Migrated: rayons, regions, users (`createAction`) · tasks (`PageHeader` +
+`CreateButton`). Search keeps its own row on the left, as before.
+
+
 ```typescript
 // components/users/toolbar.tsx
 interface UsersToolbarProps {
