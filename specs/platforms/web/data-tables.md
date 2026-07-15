@@ -610,6 +610,21 @@ Found during the sweep: **`plants` passed `actions` twice on the same element**,
 so JSX silently kept the last one and its area-picker Combobox had been dead.
 Moving the button to `createAction` freed the slot and restored it.
 
+**Jadwal** isn't a `DataTable` (it's a calendar) but follows the same shape by
+hand: date nav → left slot (search) → right group (range select · Hari Libur ·
+create). Its search previously sat *inside* the right cluster, furthest from the
+edge it belongs on, and its Hari Libur control was a hand-rolled `<button>` with
+its own size and border rather than the standard outline icon Button.
+
+### Mobile cards
+
+A card row is `flex` with a label `<dt>` and a value `<dd>`. Both need explicit
+overflow handling: **a flex item defaults to `min-width: auto`**, so it refuses
+to shrink below its content and one long unbroken value (a username like
+`staff_kecamatan_karang_pilang_satu`) pushed the whole card past the viewport.
+The value carries `min-w-0 break-words`; the label carries `shrink-0` so it
+holds its width instead of being crushed.
+
 
 ```typescript
 // components/users/toolbar.tsx

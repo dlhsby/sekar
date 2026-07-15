@@ -686,10 +686,16 @@ export function DataTable<TData, TValue>({
                     key={cell.id}
                     className="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0"
                   >
-                    <dt className="text-nb-caption font-bold uppercase text-nb-gray-500">
+                    {/* A flex item defaults to min-width:auto, so it refuses to
+                        shrink below its content — one long unbroken value (a
+                        username like `staff_kecamatan_karang_pilang_satu`) pushed
+                        the whole card past the viewport. min-w-0 lets the value
+                        shrink, break-words lets it wrap, and the label holds its
+                        width instead of being crushed. */}
+                    <dt className="shrink-0 text-nb-caption font-bold uppercase text-nb-gray-500">
                       {String(cell.column.columnDef.meta?.label ?? cell.column.id)}
                     </dt>
-                    <dd className="text-right text-nb-body-sm text-nb-black">
+                    <dd className="min-w-0 break-words text-right text-nb-body-sm text-nb-black">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </dd>
                   </div>

@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarOff, Plus } from 'lucide-react';
+import { CalendarOff, } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -30,6 +30,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  CreateButton,
   Skeleton,
 } from '@/components/ui';
 import { ScheduleSearch } from '@/components/schedules/ScheduleSearch';
@@ -352,8 +353,12 @@ export default function SchedulesPage() {
 
   return (
     <div className="space-y-5">
-      {/* Single action row (Google-Calendar layout): date nav left; search ·
-          range select · create right. Active search overlays the whole row. */}
+      {/* Same toolbar shape as every list page (see specs/platforms/web/data-tables.md):
+          date nav, then a LEFT slot holding search, then the right-hand group.
+          Search used to sit inside the right cluster, which put it furthest from
+          the edge it belongs on. `w-full` below `sm` keeps it on a row of its own
+          so the group wraps underneath. The parent stays `relative` — an active
+          search overlays the whole row. */}
       <div className="relative flex flex-wrap items-center gap-3">
         <DateNav
           label={dateLabel}
@@ -361,7 +366,7 @@ export default function SchedulesPage() {
           onNext={() => navStep(1)}
           onToday={() => setAnchor(wibTodayDate())}
         />
-        <div className="ml-auto flex flex-wrap items-center gap-3">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <ScheduleSearch
             filters={filters}
             onChange={setFilters}
@@ -371,6 +376,8 @@ export default function SchedulesPage() {
               setCalendarView('day');
             }}
           />
+        </div>
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           <Select value={calendarView} onValueChange={(v) => setCalendarView(v as CalendarView)}>
             <SelectTrigger className="w-32" aria-label={t('schedules:controls.viewLabel')}>
               <SelectValue />
@@ -382,22 +389,26 @@ export default function SchedulesPage() {
               <SelectItem value="day">{t('schedules:calendar.views.day')}</SelectItem>
             </SelectContent>
           </Select>
-          <button
-            type="button"
+          {/* The standard toolbar icon button — this was a hand-rolled <button>
+              with its own size/border, so it didn't match the filter/refresh
+              buttons it sits beside on every other page. */}
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setHolidayOpen(true)}
             aria-label={t('schedules:holidays.manage')}
             title={t('schedules:holidays.manage')}
-            className="grid size-10 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
           >
-            <CalendarOff className="size-4" />
-          </button>
+            <CalendarOff className="h-4 w-4" aria-hidden />
+            {/* `manage` ("Hari Libur"), not `title` ("Hari Libur & Hari Khusus")
+                — the latter is the panel's heading and is far too long here. */}
+            <span className="ml-1.5 hidden sm:inline">{t('schedules:holidays.manage')}</span>
+          </Button>
           {can('schedule:create') && (
-            <Button
-              leftIcon={<Plus className="size-4" />}
+            <CreateButton
+              label={t('schedules:calendar.event.createTitle')}
               onClick={() => openCreate(isoDate(anchor))}
-            >
-              {t('schedules:calendar.event.createTitle')}
-            </Button>
+            />
           )}
         </div>
       </div>
