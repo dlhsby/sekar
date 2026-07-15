@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
@@ -29,7 +29,6 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
   const isEdit = !!rayon;
   const createMutation = useCreateRayon();
   const updateMutation = useUpdateRayon();
-  const [hasGeometry, setHasGeometry] = useState(true);
 
   const handleSubmit = async (data: CreateRayonDto | UpdateRayonDto): Promise<void> => {
     // `boundary_polygon` is update-only on the backend (not accepted on create),
@@ -107,7 +106,6 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
             initialData={rayon ?? undefined}
             onSubmit={handleSubmit}
             readOnly={readOnly}
-            onValidityChange={setHasGeometry}
           />
         </DialogBody>
         <DialogFooter>
@@ -126,7 +124,6 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
                     : t('admin:rayons.form.submitNew')
               }
               loading={isPending}
-              disabled={!hasGeometry}
               showReset={isEdit}
               onCancel={() => onOpenChange(false)}
             />

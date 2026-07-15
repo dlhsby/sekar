@@ -275,24 +275,4 @@ describe('LocationForm', () => {
     });
   });
 
-  describe('Geometry validity reporting', () => {
-    it('reports invalid until a pin or boundary is set, then valid', async () => {
-      const onValidityChange = jest.fn();
-      render(
-        <LocationForm
-          formId={FORM_ID}
-          mode="create"
-          onSubmit={mockOnSubmit}
-          onValidityChange={onValidityChange}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(false));
-
-      fireEvent.click(screen.getByTestId('place-pin'));
-
-      await waitFor(() => expect(onValidityChange).toHaveBeenLastCalledWith(true));
-    });
-  });
 });

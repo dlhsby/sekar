@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import {
@@ -43,7 +43,6 @@ export function RegionFormModal({
   const isEdit = !!region;
   const createMutation = useCreateRegion();
   const updateMutation = useUpdateRegion();
-  const [hasGeometry, setHasGeometry] = useState(true);
 
   const handleSubmit = async (data: CreateRegionDto | UpdateRegionDto): Promise<void> => {
     // boundary_polygon is update-only on the backend → two-step create.
@@ -95,7 +94,6 @@ export function RegionFormModal({
             initialData={region ?? undefined}
             onSubmit={handleSubmit}
             readOnly={readOnly}
-            onValidityChange={setHasGeometry}
           />
         </DialogBody>
         <DialogFooter>
@@ -112,7 +110,6 @@ export function RegionFormModal({
                     : t('admin:regions.form.submitNew')
               }
               loading={isPending}
-              disabled={!hasGeometry}
               showReset={isEdit}
               onCancel={() => onOpenChange(false)}
             />

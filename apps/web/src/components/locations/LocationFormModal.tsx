@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
@@ -32,7 +32,6 @@ interface LocationFormModalProps {
 export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnly = false }: LocationFormModalProps) {
   const { t } = useTranslation();
   const formId = useId();
-  const [hasGeometry, setHasGeometry] = useState(true);
   const isEdit = !!area;
   const createMutation = useCreateLocation();
   const updateMutation = useUpdateLocation();
@@ -129,7 +128,6 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
             initialData={area ?? undefined}
             onSubmit={handleSubmit}
             readOnly={readOnly}
-            onValidityChange={setHasGeometry}
           />
         </DialogBody>
         <DialogFooter>
@@ -148,7 +146,6 @@ export function LocationFormModal({ open, onOpenChange, area, onSuccess, readOnl
                     : t('admin:locations.form.submitNew')
               }
               loading={isPending}
-              disabled={!hasGeometry}
               showReset={isEdit}
               onCancel={() => onOpenChange(false)}
             />
