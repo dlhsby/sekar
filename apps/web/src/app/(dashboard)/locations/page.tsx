@@ -88,9 +88,9 @@ export default function LocationsPage() {
       {
         id: 'id',
         accessorKey: 'id',
-        header: t('admin:areas.columnId'),
+        header: t('admin:locations.columnId'),
         enableSorting: false,
-        meta: { label: t('admin:areas.columnId'), defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:locations.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -98,16 +98,16 @@ export default function LocationsPage() {
       {
         id: 'name',
         accessorKey: 'name',
-        header: t('admin:areas.columnName'),
-        meta: { label: t('admin:areas.columnName'), filterVariant: 'text' },
+        header: t('admin:locations.columnName'),
+        meta: { label: t('admin:locations.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
         id: 'rayon',
         accessorFn: (a) => a.rayon?.name ?? '',
-        header: t('admin:areas.columnRayon'),
+        header: t('admin:locations.columnRayon'),
         meta: {
-          label: t('admin:areas.columnRayon'),
+          label: t('admin:locations.columnRayon'),
           filterVariant: 'enum',
           filterOptions: rayonFilterOptions,
         },
@@ -116,9 +116,9 @@ export default function LocationsPage() {
       {
         id: 'area_type',
         accessorFn: (a) => a.locationType?.name ?? '',
-        header: t('admin:areas.columnType'),
+        header: t('admin:locations.columnType'),
         meta: {
-          label: t('admin:areas.columnType'),
+          label: t('admin:locations.columnType'),
           filterVariant: 'enum',
           filterOptions: locationTypeFilterOptions,
         },
@@ -140,9 +140,9 @@ export default function LocationsPage() {
           a.gps_lat && a.gps_lng
             ? `${Number(a.gps_lat).toFixed(6)}, ${Number(a.gps_lng).toFixed(6)}`
             : '',
-        header: t('admin:areas.columnCoordinates'),
+        header: t('admin:locations.columnCoordinates'),
         enableColumnFilter: false,
-        meta: { label: t('admin:areas.columnCoordinates') },
+        meta: { label: t('admin:locations.columnCoordinates') },
         cell: ({ row }) =>
           row.original.gps_lat && row.original.gps_lng ? (
             <CoordinateLink
@@ -156,27 +156,27 @@ export default function LocationsPage() {
       },
       {
         id: 'boundary_polygon',
-        accessorFn: (a) => (a.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo')),
-        header: t('admin:areas.columnBoundary'),
+        accessorFn: (a) => (a.boundary_polygon ? t('admin:locations.boundaryYes') : t('admin:locations.boundaryNo')),
+        header: t('admin:locations.columnBoundary'),
         meta: {
-          label: t('admin:areas.columnBoundary'),
+          label: t('admin:locations.columnBoundary'),
           filterVariant: 'enum',
           filterOptions: [
-            { value: t('admin:areas.boundaryYes'), label: t('admin:areas.boundaryYes') },
-            { value: t('admin:areas.boundaryNo'), label: t('admin:areas.boundaryNo') },
+            { value: t('admin:locations.boundaryYes'), label: t('admin:locations.boundaryYes') },
+            { value: t('admin:locations.boundaryNo'), label: t('admin:locations.boundaryNo') },
           ],
         },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
-            {row.original.boundary_polygon ? t('admin:areas.boundaryYes') : t('admin:areas.boundaryNo')}
+            {row.original.boundary_polygon ? t('admin:locations.boundaryYes') : t('admin:locations.boundaryNo')}
           </span>
         ),
       },
       {
         id: 'coverage_area',
         accessorKey: 'coverage_area',
-        header: t('admin:areas.columnArea'),
-        meta: { label: t('admin:areas.columnArea'), defaultHidden: true, filterVariant: 'number', align: 'right' },
+        header: t('admin:locations.columnArea'),
+        meta: { label: t('admin:locations.columnArea'), defaultHidden: true, filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
@@ -186,8 +186,8 @@ export default function LocationsPage() {
       {
         id: 'radius_meters',
         accessorKey: 'radius_meters',
-        header: t('admin:areas.columnRadius'),
-        meta: { label: t('admin:areas.columnRadius'), defaultHidden: true, filterVariant: 'number', align: 'right' },
+        header: t('admin:locations.columnRadius'),
+        meta: { label: t('admin:locations.columnRadius'), defaultHidden: true, filterVariant: 'number', align: 'right' },
         cell: ({ row }) => (
           <span className="tabular-nums text-nb-gray-600">
             {row.original.radius_meters ?? '—'}
@@ -198,8 +198,8 @@ export default function LocationsPage() {
       {
         id: 'address',
         accessorKey: 'address',
-        header: t('admin:areas.columnAddress'),
-        meta: { label: t('admin:areas.columnAddress'), defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:locations.columnAddress'),
+        meta: { label: t('admin:locations.columnAddress'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600 max-w-xs truncate">
             {row.original.address ?? '—'}
@@ -208,32 +208,32 @@ export default function LocationsPage() {
       },
       {
         id: 'is_active',
-        accessorFn: (a) => (a.is_active ? t('admin:areas.statusActive') : t('admin:areas.statusInactive')),
-        header: t('admin:areas.columnStatus'),
+        accessorFn: (a) => (a.is_active ? t('admin:locations.statusActive') : t('admin:locations.statusInactive')),
+        header: t('admin:locations.columnStatus'),
         meta: {
-          label: t('admin:areas.columnStatus'),
+          label: t('admin:locations.columnStatus'),
           filterVariant: 'enum',
           filterOptions: [
-            { value: t('admin:areas.statusActive'), label: t('admin:areas.statusActive') },
-            { value: t('admin:areas.statusInactive'), label: t('admin:areas.statusInactive') },
+            { value: t('admin:locations.statusActive'), label: t('admin:locations.statusActive') },
+            { value: t('admin:locations.statusInactive'), label: t('admin:locations.statusInactive') },
           ],
         },
         cell: ({ row }) =>
           row.original.is_active ? (
             <StatusPill tone="ok" dot>
-              {t('admin:areas.statusActive')}
+              {t('admin:locations.statusActive')}
             </StatusPill>
           ) : (
             <StatusPill tone="neutral" dot>
-              {t('admin:areas.statusInactive')}
+              {t('admin:locations.statusInactive')}
             </StatusPill>
           ),
       },
       {
         id: 'created_by',
         accessorFn: (a) => actorName(a.created_by),
-        header: t('admin:areas.columnCreatedBy'),
-        meta: { label: t('admin:areas.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:locations.columnCreatedBy'),
+        meta: { label: t('admin:locations.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -243,8 +243,8 @@ export default function LocationsPage() {
       {
         id: 'created_at',
         accessorKey: 'created_at',
-        header: t('admin:areas.columnCreated'),
-        meta: { label: t('admin:areas.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:locations.columnCreated'),
+        meta: { label: t('admin:locations.columnCreated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.created_at)}
@@ -254,8 +254,8 @@ export default function LocationsPage() {
       {
         id: 'updated_by',
         accessorFn: (a) => actorName(a.updated_by),
-        header: t('admin:areas.columnUpdatedBy'),
-        meta: { label: t('admin:areas.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:locations.columnUpdatedBy'),
+        meta: { label: t('admin:locations.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -265,8 +265,8 @@ export default function LocationsPage() {
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
-        header: t('admin:areas.columnUpdated'),
-        meta: { label: t('admin:areas.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:locations.columnUpdated'),
+        meta: { label: t('admin:locations.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updated_at)}
@@ -281,7 +281,7 @@ export default function LocationsPage() {
     (a: Location): DataTableRowAction<Location>[] => [
       {
         key: 'view',
-        label: t('admin:areas.actionView'),
+        label: t('admin:locations.actionView'),
         icon: Eye,
         onClick: () => {
           view.openWith(a);
@@ -289,7 +289,7 @@ export default function LocationsPage() {
       },
       {
         key: 'edit',
-        label: t('admin:areas.actionEdit'),
+        label: t('admin:locations.actionEdit'),
         icon: Pencil,
         disabled: !isAdmin,
         onClick: () => {
@@ -299,7 +299,7 @@ export default function LocationsPage() {
       },
       {
         key: 'toggle-active',
-        label: a.is_active === false ? t('admin:areas.actionActivate') : t('admin:areas.actionDeactivate'),
+        label: a.is_active === false ? t('admin:locations.actionActivate') : t('admin:locations.actionDeactivate'),
         icon: Power,
         hidden: !isAdmin,
         onClick: () =>
@@ -307,7 +307,7 @@ export default function LocationsPage() {
       },
       {
         key: 'delete',
-        label: t('admin:areas.actionDelete'),
+        label: t('admin:locations.actionDelete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !isAdmin,
@@ -322,7 +322,7 @@ export default function LocationsPage() {
       <PageHeader
         description={
           areasData?.meta.total
-            ? t('admin:areas.totalCount', { count: areasData.meta.total })
+            ? t('admin:locations.totalCount', { count: areasData.meta.total })
             : undefined
         }
       />
@@ -335,7 +335,7 @@ export default function LocationsPage() {
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder={t('admin:areas.searchPlaceholder')}
+        searchPlaceholder={t('admin:locations.searchPlaceholder')}
         rowActions={rowActions}
         actions={
           isAdmin ? (
@@ -346,12 +346,12 @@ export default function LocationsPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              {t('admin:areas.buttonAdd')}
+              {t('admin:locations.buttonAdd')}
             </Button>
           ) : undefined
         }
-        emptyTitle={t('admin:areas.emptyTitle')}
-        emptyDescription={t('admin:areas.emptyDescription')}
+        emptyTitle={t('admin:locations.emptyTitle')}
+        emptyDescription={t('admin:locations.emptyDescription')}
         emptyAction={
           isAdmin ? (
             <Button
@@ -361,7 +361,7 @@ export default function LocationsPage() {
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              {t('admin:areas.buttonAddFirst')}
+              {t('admin:locations.buttonAddFirst')}
             </Button>
           ) : undefined
         }

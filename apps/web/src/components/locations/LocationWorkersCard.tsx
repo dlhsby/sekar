@@ -65,7 +65,7 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
     if (selectedUserId === 'none') return;
     try {
       await assignMutation.mutateAsync({ userId: selectedUserId, locationIds: [areaId] });
-      toast.success(t('admin:areas.assignAction'));
+      toast.success(t('admin:locations.assignAction'));
       setAssignOpen(false);
       setSelectedUserId('none');
     } catch (error) {
@@ -88,13 +88,13 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
         <div className="flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <Users className="size-5" />
-            {t('admin:areas.workersTitle')}
+            {t('admin:locations.workersTitle')}
           </h2>
           {canManage && (
             <div className="flex gap-2">
               <Link href={`/schedules/new`}>
                 <Button variant="ghost" size="sm" leftIcon={<Plus className="size-4" />}>
-                  {t('admin:areas.createSchedule')}
+                  {t('admin:locations.createSchedule')}
                 </Button>
               </Link>
               <Button
@@ -102,7 +102,7 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
                 leftIcon={<UserPlus className="size-4" />}
                 onClick={() => setAssignOpen(true)}
               >
-                {t('admin:areas.assignWorker')}
+                {t('admin:locations.assignWorker')}
               </Button>
             </div>
           )}
@@ -114,11 +114,11 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
         ) : !workers || workers.length === 0 ? (
           <EmptyState
             variant="noData"
-            title={t('admin:areas.noWorkersTitle')}
+            title={t('admin:locations.noWorkersTitle')}
             description={
               canManage
-                ? t('admin:areas.noWorkersManageDescription')
-                : t('admin:areas.noWorkersDescription')
+                ? t('admin:locations.noWorkersManageDescription')
+                : t('admin:locations.noWorkersDescription')
             }
           />
         ) : (
@@ -135,7 +135,7 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
                     <Button
                       variant="destructive"
                       size="sm"
-                      aria-label={t('admin:areas.removeWorkerAriaLabel', { name: w.full_name })}
+                      aria-label={t('admin:locations.removeWorkerAriaLabel', { name: w.full_name })}
                       loading={removeMutation.isPending && removeMutation.variables?.userId === w.id}
                       onClick={() => handleRemove(w.id, w.full_name)}
                     >
@@ -161,15 +161,15 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
       >
         <DialogContent className="sm:max-w-md" aria-labelledby="assign-worker-title">
           <DialogHeader>
-            <DialogTitle id="assign-worker-title">{t('admin:areas.assignWorkerTitle')}</DialogTitle>
+            <DialogTitle id="assign-worker-title">{t('admin:locations.assignWorkerTitle')}</DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-4">
             <FormSelect
-              label={t('admin:areas.workerLabel')}
+              label={t('admin:locations.workerLabel')}
               value={selectedUserId}
               onChange={(value) => setSelectedUserId(value as string)}
               options={[
-                { value: 'none', label: t('admin:areas.selectWorkerPlaceholder') },
+                { value: 'none', label: t('admin:locations.selectWorkerPlaceholder') },
                 ...candidates.map((u) => ({
                   value: u.id,
                   label: `${u.full_name} (${u.username}) · ${ROLE_LABELS[u.role]}`,
@@ -177,7 +177,7 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
               ]}
               helperText={
                 <span className="text-nb-gray-600">
-                  {t('admin:areas.assignWorkerHelper')}
+                  {t('admin:locations.assignWorkerHelper')}
                 </span>
               }
             />
@@ -197,7 +197,7 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
               disabled={selectedUserId === 'none'}
               loading={assignMutation.isPending}
             >
-              {t('admin:areas.assignAction')}
+              {t('admin:locations.assignAction')}
             </Button>
           </DialogFooter>
         </DialogContent>

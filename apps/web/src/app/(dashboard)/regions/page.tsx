@@ -69,10 +69,10 @@ export default function RegionsPage() {
       mapStyleColorColumn<Region>(t('common:color')),
       {
         id: 'coordinates',
-        header: t('admin:areas.columnCoordinates'),
+        header: t('admin:locations.columnCoordinates'),
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: t('admin:areas.columnCoordinates') },
+        meta: { label: t('admin:locations.columnCoordinates') },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),

@@ -82,9 +82,9 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         <Card className="border-nb-danger">
           <CardContent className="p-8 text-center max-w-md">
             <div className="text-4xl mb-4">⚠️</div>
-            <h3 className="font-bold text-lg mb-2">{t('admin:areas.detailTitle')}</h3>
+            <h3 className="font-bold text-lg mb-2">{t('admin:locations.detailTitle')}</h3>
             <p className="text-sm text-nb-gray-600 mb-4">
-              {t('admin:areas.detailNotFound')}
+              {t('admin:locations.detailNotFound')}
             </p>
             <Button onClick={() => router.push('/locations')}>{t('common:actions.back')}</Button>
           </CardContent>
@@ -143,7 +143,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
       {/* Map */}
       <Card variant="elevated" className="overflow-hidden">
         <CardHeader className="bg-nb-gray-100">
-          <h2 className="font-bold text-lg">{t('admin:areas.mapTitle')}</h2>
+          <h2 className="font-bold text-lg">{t('admin:locations.mapTitle')}</h2>
         </CardHeader>
         <CardContent className="p-4">
           <div aria-label={t('monitoring:map.areaMapAriaLabel')}>
@@ -154,7 +154,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               height={480}
               manualFallback={
                 <div className="border-2 border-nb-black bg-nb-gray-100 p-6 text-center">
-                  <p className="text-nb-body-sm text-nb-gray-700">{t('admin:areas.mapUnavailable')}</p>
+                  <p className="text-nb-body-sm text-nb-gray-700">{t('admin:locations.mapUnavailable')}</p>
                 </div>
               }
             />
@@ -167,24 +167,24 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         {/* Basic Info */}
         <Card variant="elevated">
           <CardHeader className="bg-nb-gray-100">
-            <h2 className="font-bold text-lg">{t('admin:areas.basicInfoTitle')}</h2>
+            <h2 className="font-bold text-lg">{t('admin:locations.basicInfoTitle')}</h2>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex justify-between">
-              <span className="font-bold text-nb-gray-700">{t('admin:areas.detailName')}:</span>
+              <span className="font-bold text-nb-gray-700">{t('admin:locations.detailName')}:</span>
               <span>{area.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-nb-gray-700">{t('admin:areas.detailRayon')}:</span>
+              <span className="font-bold text-nb-gray-700">{t('admin:locations.detailRayon')}:</span>
               <span>{area.rayon?.name || '-'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-nb-gray-700">{t('admin:areas.detailType')}:</span>
+              <span className="font-bold text-nb-gray-700">{t('admin:locations.detailType')}:</span>
               <span>{area.locationType?.name || '-'}</span>
             </div>
             {area.address && (
               <div>
-                <div className="font-bold text-nb-gray-700 mb-1">{t('admin:areas.detailAddress')}:</div>
+                <div className="font-bold text-nb-gray-700 mb-1">{t('admin:locations.detailAddress')}:</div>
                 <p className="text-sm text-nb-gray-600">{area.address}</p>
               </div>
             )}
@@ -194,13 +194,13 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
         {/* Coverage Info */}
         <Card variant="elevated">
           <CardHeader className="bg-nb-gray-100">
-            <h2 className="font-bold text-lg">{t('admin:areas.coverageInfoTitle')}</h2>
+            <h2 className="font-bold text-lg">{t('admin:locations.coverageInfoTitle')}</h2>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Coverage Area */}
             {area.coverage_area && (
               <div className="bg-nb-warning/20 border-2 border-nb-black p-4">
-                <div className="text-sm font-bold text-nb-gray-700 mb-1">{t('admin:areas.coverageLabel')}</div>
+                <div className="text-sm font-bold text-nb-gray-700 mb-1">{t('admin:locations.coverageLabel')}</div>
                 <div className="text-3xl font-black">{formatArea(area.coverage_area)}</div>
               </div>
             )}
@@ -208,7 +208,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             {/* Center Coordinates */}
             {area.gps_lat && area.gps_lng && (
               <div>
-                <div className="font-bold text-nb-gray-700 mb-2">{t('admin:areas.coordinatesTitle')}</div>
+                <div className="font-bold text-nb-gray-700 mb-2">{t('admin:locations.coordinatesTitle')}</div>
                 <div className="bg-nb-gray-100 border-2 border-nb-black p-3 font-mono text-sm">
                   {formatCoordinates(Number(area.gps_lng), Number(area.gps_lat))}
                 </div>
@@ -218,8 +218,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
             {/* Radius (if applicable) */}
             {area.radius_meters && (
               <div className="flex justify-between">
-                <span className="font-bold text-nb-gray-700">{t('admin:areas.radiusLabel')}:</span>
-                <span>{area.radius_meters} {t('admin:areas.meterUnit')}</span>
+                <span className="font-bold text-nb-gray-700">{t('admin:locations.radiusLabel')}:</span>
+                <span>{area.radius_meters} {t('admin:locations.meterUnit')}</span>
               </div>
             )}
           </CardContent>
@@ -235,7 +235,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-lg flex items-center gap-2">
               <MapIcon className="w-5 h-5" />
-              {t('admin:areas.boundaryTitle')}
+              {t('admin:locations.boundaryTitle')}
             </h2>
             {isAdmin && !editingBoundary && (
               <Button
@@ -247,7 +247,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
                   setEditingBoundary(true);
                 }}
               >
-                {boundaryData?.boundary_polygon ? t('admin:areas.editBoundaryBtn') : t('admin:areas.addBoundaryBtn')}
+                {boundaryData?.boundary_polygon ? t('admin:locations.editBoundaryBtn') : t('admin:locations.addBoundaryBtn')}
               </Button>
             )}
           </div>
@@ -263,7 +263,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
                 manualFallback={
                   <div className="border-2 border-nb-black bg-nb-gray-100 p-6 text-center">
                     <p className="text-nb-body-sm text-nb-gray-700">
-                      {t('admin:areas.boundaryMapUnavailable')}
+                      {t('admin:locations.boundaryMapUnavailable')}
                     </p>
                   </div>
                 }
@@ -274,7 +274,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
                   loading={isSavingBoundary}
                   disabled={isSavingBoundary}
                 >
-                  {t('admin:areas.saveBoundary')}
+                  {t('admin:locations.saveBoundary')}
                 </Button>
                 <Button
                   variant="secondary"
@@ -291,11 +291,11 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
           ) : boundaryData?.boundary_polygon ? (
             <div className="flex items-center gap-3 text-sm text-nb-gray-600">
               <span>
-                {t('admin:areas.polygonActive')}{' '}
-                <strong>{boundaryData.boundary_polygon.coordinates[0].length - 1} {t('admin:areas.pointsUnit')}</strong>
+                {t('admin:locations.polygonActive')}{' '}
+                <strong>{boundaryData.boundary_polygon.coordinates[0].length - 1} {t('admin:locations.pointsUnit')}</strong>
               </span>
               {boundaryData.coverage_area && (
-                <span>· {t('admin:areas.coverageLabel')}: {formatArea(boundaryData.coverage_area)}</span>
+                <span>· {t('admin:locations.coverageLabel')}: {formatArea(boundaryData.coverage_area)}</span>
               )}
             </div>
           ) : (
@@ -304,8 +304,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               <p className="font-semibold">{t('common:empty.noBoundary')}</p>
               <p className="text-sm mt-1">
                 {isAdmin
-                  ? t('admin:areas.addBoundaryHelper')
-                  : t('admin:areas.boundaryNotConfigured')}
+                  ? t('admin:locations.addBoundaryHelper')
+                  : t('admin:locations.boundaryNotConfigured')}
               </p>
             </div>
           )}

@@ -125,13 +125,13 @@ export function LocationListSheet({
         <div className="px-4 pt-3 pb-2 flex-shrink-0">
           <Input
             leftIcon={<Search className="w-4 h-4" />}
-            placeholder={t('admin:areas.listSheet.searchPlaceholder')}
+            placeholder={t('admin:locations.listSheet.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            aria-label={t('admin:areas.listSheet.searchLabel')}
+            aria-label={t('admin:locations.listSheet.searchLabel')}
           />
           <p className="mt-2 text-nb-caption text-nb-gray-600" aria-live="polite">
-            {isLoading ? t('admin:shared.loading') : t('admin:areas.listSheet.count', { count: filtered.length, total: items.length, query })}
+            {isLoading ? t('admin:shared.loading') : t('admin:locations.listSheet.count', { count: filtered.length, total: items.length, query })}
           </p>
         </div>
 
@@ -143,7 +143,7 @@ export function LocationListSheet({
             <p className="text-nb-body-sm text-nb-danger-dark py-6 text-center">{t('common:empty.loadError')}</p>
           ) : filtered.length === 0 ? (
             <p className="text-nb-body-sm text-nb-gray-600 py-6 text-center">
-              {items.length === 0 ? (emptyText ?? t('admin:areas.emptyShort')) : t('admin:areas.listSheet.noMatch')}
+              {items.length === 0 ? (emptyText ?? t('admin:locations.emptyShort')) : t('admin:locations.listSheet.noMatch')}
             </p>
           ) : (
             filtered.map((area) => (

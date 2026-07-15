@@ -33,7 +33,7 @@ export function DeleteLocationModal({ area, isOpen, onClose, onSuccess }: Delete
     try {
       const name = area.name;
       await deleteArea.mutateAsync(area.id);
-      toast.success(t('admin:areas.successDeleted', { name }));
+      toast.success(t('admin:locations.successDeleted', { name }));
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
@@ -52,10 +52,10 @@ export function DeleteLocationModal({ area, isOpen, onClose, onSuccess }: Delete
           onClose();
         }
       }}
-      title={t('admin:areas.deleteTitle')}
+      title={t('admin:locations.deleteTitle')}
       description={
         <>
-          {t('admin:areas.deleteConfirmation', { areaName: area?.name })}
+          {t('admin:locations.deleteConfirmation', { areaName: area?.name })}
         </>
       }
       confirmLabel={t('admin:shared.delete')}
@@ -67,16 +67,16 @@ export function DeleteLocationModal({ area, isOpen, onClose, onSuccess }: Delete
       <div className="space-y-2">
         <div className="bg-nb-gray-100 border-2 border-nb-black p-4 space-y-2">
           <div className="flex justify-between">
-            <span className="font-bold">{t('admin:areas.detailName')}:</span>
+            <span className="font-bold">{t('admin:locations.detailName')}:</span>
             <span>{area?.name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="font-bold">{t('admin:areas.detailType')}:</span>
+            <span className="font-bold">{t('admin:locations.detailType')}:</span>
             <span>{area?.locationType?.name ?? '—'}</span>
           </div>
           {area?.rayon && (
             <div className="flex justify-between">
-              <span className="font-bold">{t('admin:areas.detailRayon')}:</span>
+              <span className="font-bold">{t('admin:locations.detailRayon')}:</span>
               <span>{area.rayon.name}</span>
             </div>
           )}
