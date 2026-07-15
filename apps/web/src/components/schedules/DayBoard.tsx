@@ -112,6 +112,16 @@ export function DayBoard({
           capacityLevel === 'rayon'
             ? subjectRoleTargets(roleCapacities, `ray:${rayon.id}:`)
             : undefined;
+        // The rayon's target is met by its whole subtree, so the coverage shown
+        // on its own assign table counts kawasan + lokasi rosters too.
+        const rayonRoleCounts =
+          capacityLevel === 'rayon'
+            ? subtreeRoleCounts([
+                rayon.placement,
+                ...rayon.looseLocations.map((l) => l.shifts),
+                ...rayon.regions.flatMap((r) => [r.placement, ...r.locations.map((l) => l.shifts)]),
+              ])
+            : undefined;
         return (
           <section
             key={rayon.id}
@@ -161,7 +171,7 @@ export function DayBoard({
 
             {open.has(rayon.id) && (
               <div className="flex flex-col gap-3 p-3">
-                {rayon.placement.some((s) => s.total > 0) && (
+                {(rayon.placement.some((s) => s.total > 0) || capacityLevel === 'rayon') && (
                   <div className="rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-secondary bg-nb-gray-50 p-2.5">
                     <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
                       {t('schedules:board.placementRayon')}
@@ -173,6 +183,7 @@ export function DayBoard({
                         rayon.id === CITY_NODE_ID ? { city: true } : { rayon_id: rayon.id }
                       )}
                       roleTargets={rayonRoleTargets}
+                      roleCounts={rayonRoleCounts}
                     />
                   </div>
                 )}
@@ -232,6 +243,27 @@ interface TableProps {
 
 /** Builds a container-bound (shiftId, role) assign handler for a ShiftRoleTable. */
 type MkAssign = (subject: AssignSubject) => ((shiftId: string, role?: string) => void) | undefined;
+
+/**
+ * Per-role countable headcount across a whole subject's subtree, keyed
+ * `<shift>:<role>`. A kawasan/rayon target is met by everything inside it (its
+ * own placement PLUS its lokasi), so the coverage number must be the subtree's,
+ * not just the rows of the table it is rendered above.
+ */
+function subtreeRoleCounts(groups: BoardShiftGroup[][]): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const list of groups) {
+    for (const g of list) {
+      for (const role of COUNTABLE_ROLES) {
+        const n = g.byRole[role]?.length ?? 0;
+        if (n === 0) continue;
+        const key = `${g.shift.id}:${role}`;
+        m.set(key, (m.get(key) ?? 0) + n);
+      }
+    }
+  }
+  return m;
+}
 
 /**
  * Slice the global `<subject>:<shift>:<role>` map down to one subject, re-keyed
@@ -316,6 +348,11 @@ function RegionCard({
     capacityLevel === 'region'
       ? subjectRoleTargets(roleCapacities, `reg:${region.id}:`)
       : undefined;
+  // A kawasan's target is met by its own placement PLUS its lokasi.
+  const regionRoleCounts =
+    capacityLevel === 'region'
+      ? subtreeRoleCounts([region.placement, ...region.locations.map((l) => l.shifts)])
+      : undefined;
   const capPills =
     capacityLevel === 'region'
       ? [...regionShifts.values()]
@@ -362,7 +399,7 @@ function RegionCard({
       </div>
       {open.has(region.id) && (
         <div className="flex flex-col gap-2 p-2.5">
-          {hasPlacement && (
+          {(hasPlacement || capacityLevel === 'region') && (
             <div className="rounded-nb-base border-2 border-nb-black border-l-[6px] border-l-nb-secondary bg-nb-gray-50 p-2.5">
               <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
                 {t('schedules:board.placementKawasan')}
@@ -372,6 +409,7 @@ function RegionCard({
                 {...tableProps}
                 onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id })}
                 roleTargets={regionRoleTargets}
+                roleCounts={regionRoleCounts}
               />
             </div>
           )}

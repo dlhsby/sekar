@@ -37,6 +37,13 @@ interface ShiftRoleTableProps {
    * ever have targets, so korlap simply never matches.
    */
   roleTargets?: Map<string, number>;
+  /**
+   * `${shiftId}:${role}` → headcount counted toward the target. A kawasan/rayon
+   * target is met by everything inside it, so its coverage is the subtree's, not
+   * this table's own rows — pass it in rather than let the column count itself.
+   * Omit for a lokasi, whose own rows ARE the whole subject.
+   */
+  roleCounts?: Map<string, number>;
 }
 
 /**
@@ -49,6 +56,7 @@ export function ShiftRoleTable({
   onAssign,
   canAssign = false,
   roleTargets,
+  roleCounts,
 }: ShiftRoleTableProps) {
   const { t } = useTranslation(['schedules', 'roles']);
 
@@ -81,6 +89,7 @@ export function ShiftRoleTable({
                   onAssign={canAssign ? () => onAssign?.(group.shift.id, role) : undefined}
                   addLabel={t('schedules:board.assign')}
                   target={roleTargets?.get(`${group.shift.id}:${role}`)}
+                  covered={roleCounts?.get(`${group.shift.id}:${role}`)}
                   shortLabel={t('schedules:board.roleShort', {
                     shift: group.shift.name,
                     role: t(`roles:${role}`, role),
@@ -133,6 +142,9 @@ interface RoleColumnProps {
   addLabel: string;
   /** Target headcount for this shift+role; absent when nothing is required. */
   target?: number;
+  /** Headcount counted toward `target` when it differs from this column's own
+   *  rows (a kawasan/rayon counts its whole subtree). Defaults to the rows. */
+  covered?: number;
   /** Spelled-out "Shift 1 · Satgas" for the understaffed title/aria text. */
   shortLabel?: string;
 }
@@ -145,13 +157,17 @@ function RoleColumn({
   onAssign,
   addLabel,
   target,
+  covered,
   shortLabel,
 }: RoleColumnProps) {
   const sorted = useMemo(
     () => [...occurrences].sort((a, b) => a.user.full_name.localeCompare(b.user.full_name)),
     [occurrences]
   );
-  const understaffed = target != null && target > 0 && sorted.length < target;
+  // Coverage defaults to this column's own rows; a kawasan/rayon passes its
+  // subtree total, which is what its target is measured against.
+  const countedToward = covered ?? sorted.length;
+  const understaffed = target != null && target > 0 && countedToward < target;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
@@ -169,7 +185,7 @@ function RoleColumn({
             title={shortLabel}
           >
             {understaffed && <AlertTriangle className="size-3" aria-hidden />}
-            {sorted.length}/{target}
+            {countedToward}/{target}
           </span>
         ) : (
           <span className="tabular-nums">{sorted.length}</span>

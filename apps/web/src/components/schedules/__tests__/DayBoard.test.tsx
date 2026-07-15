@@ -230,7 +230,10 @@ describe('DayBoard', () => {
   it('"+ Tugaskan" reports the clicked container’s geography (pre-fill contract)', async () => {
     const user = userEvent.setup();
     const onAssign = jest.fn();
+    // Lokasi-scoped: the kawasan has no assign table of its own here, so the
+    // first "+ Tugaskan" is unambiguously the lokasi's.
     renderBoard({
+      master: masterAt('location'),
       occurrences: [occ({ location_id: 'loc1' })],
       canAssign: true,
       onAssign,
@@ -249,6 +252,63 @@ describe('DayBoard', () => {
         shiftId: 's1',
       })
     );
+  });
+
+  it('offers an assign table on the kawasan itself when kawasan-scoped, even with nobody on it yet', async () => {
+    const user = userEvent.setup();
+    const onAssign = jest.fn();
+    // Previously the kawasan's table only rendered once it already had someone,
+    // so a kawasan target could never be staffed at the kawasan — the only
+    // "+ Tugaskan" was on a lokasi.
+    renderBoard({
+      master: masterAt('region'),
+      occurrences: [],
+      canAssign: true,
+      onAssign,
+    });
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
+
+    expect(onAssign).toHaveBeenCalledWith(
+      expect.objectContaining({ rayon_id: 'ry1', region_id: 'kw1', shiftId: 's1' })
+    );
+    expect(onAssign.mock.calls[0][0]).not.toHaveProperty('location_id');
+  });
+
+  it('offers an assign table on the rayon itself when rayon-scoped, even when empty', async () => {
+    const user = userEvent.setup();
+    const onAssign = jest.fn();
+    renderBoard({
+      master: masterAt('rayon'),
+      occurrences: [],
+      canAssign: true,
+      onAssign,
+    });
+    await expand(user, /Rayon Pusat/);
+
+    await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
+
+    expect(onAssign).toHaveBeenCalledWith(
+      expect.objectContaining({ rayon_id: 'ry1', shiftId: 's1' })
+    );
+    expect(onAssign.mock.calls[0][0]).not.toHaveProperty('region_id');
+  });
+
+  it('counts lokasi workers toward a kawasan target (everything inside counts)', async () => {
+    const user = userEvent.setup();
+    renderBoard({
+      master: masterAt('region'),
+      // Nobody assigned at the kawasan itself — one satgas on its lokasi.
+      occurrences: [occ({ location_id: 'loc1' })],
+      roleCapacities: new Map([['reg:kw1:s1:satgas', 1]]),
+    });
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    // The kawasan's own table lists nobody, but its target is met by the lokasi.
+    expect(screen.getByText('1/1')).toBeInTheDocument();
   });
 
   it('marks a city-wide node as city in the assign context', async () => {
