@@ -107,21 +107,34 @@ export function DayBoard({
         // Rayon-level understaffing: countable (satgas+linmas) across the whole
         // subtree vs the rayon target. Only for rayon-scope, else the target
         // belongs to a kawasan/lokasi and showing it here would double-count.
-        const rayonCapPills = capacityLevel === 'rayon' ? rayonShiftTotals(rayon, capacities) : [];
+        const shiftIds = rayon.placement.map((g) => g.shift.id);
+        const rayonCapPills = capacityPills(
+          rayonSubtree(rayon),
+          `ray:${rayon.id}:`,
+          capacities,
+          capacityLevel === 'rayon',
+          // Not the owner → sum whichever tier below actually holds the targets.
+          capacityLevel === 'region'
+            ? rollupTargets(capacities, 'reg', rayon.regions.map((r) => r.id), shiftIds)
+            : capacityLevel === 'location'
+              ? rollupTargets(
+                  capacities,
+                  'loc',
+                  [
+                    ...rayon.looseLocations.map((l) => l.id),
+                    ...rayon.regions.flatMap((r) => r.locations.map((l) => l.id)),
+                  ],
+                  shiftIds
+                )
+              : undefined
+        );
         const rayonRoleTargets =
           capacityLevel === 'rayon'
             ? subjectRoleTargets(roleCapacities, `ray:${rayon.id}:`)
             : undefined;
         // The rayon's target is met by its whole subtree, so the coverage shown
         // on its own assign table counts kawasan + lokasi rosters too.
-        const rayonRoleCounts =
-          capacityLevel === 'rayon'
-            ? subtreeRoleCounts([
-                rayon.placement,
-                ...rayon.looseLocations.map((l) => l.shifts),
-                ...rayon.regions.flatMap((r) => [r.placement, ...r.locations.map((l) => l.shifts)]),
-              ])
-            : undefined;
+        const rayonRoleCounts = subtreeRoleCounts(rayonSubtree(rayon));
         return (
           <section
             key={rayon.id}
@@ -139,12 +152,13 @@ export function DayBoard({
                 {rayon.id === CITY_NODE_ID ? t('schedules:calendar.board.cityLabel') : rayon.name}
               </span>
               <span className="ml-auto flex flex-wrap items-center gap-2">
-                {rayonCapPills.map(({ shift, countable, target }) => (
+                {rayonCapPills.map(({ shift, countable, target, rolledUp }) => (
                   <ShiftPill
                     key={shift.id}
                     group={{ shift, byRole: {}, teams: [], countable, total: countable }}
                     target={target}
-                    roleTargets={rayonRoleTargets}
+                    rolledUp={rolledUp}
+                    roleTargets={rolledUp ? undefined : rayonRoleTargets}
                     roleCounts={rayonRoleCounts}
                   />
                 ))}
@@ -172,11 +186,17 @@ export function DayBoard({
 
             {open.has(rayon.id) && (
               <div className="flex flex-col gap-3 p-3">
-                {(rayon.placement.some((s) => s.total > 0) || capacityLevel === 'rayon') && (
-                  <div className="rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-secondary bg-nb-gray-50 p-2.5">
-                    <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                      {t('schedules:board.placementRayon')}
-                    </p>
+                {/* Assign at any tier: scheduling is allowed everywhere, only the
+                    TARGET is scope-bound. The city node is a sentinel, so it only
+                    shows a table when it actually holds city-wide placements. */}
+                {(rayon.id !== CITY_NODE_ID || rayon.placement.some((s) => s.total > 0)) && (
+                  <PlacementBlock
+                    id={`${rayon.id}-placement`}
+                    title={t('schedules:board.placementRayon')}
+                    count={sumTotals(rayon.placement)}
+                    open={open.has(`${rayon.id}:placement`)}
+                    onToggle={() => toggle(`${rayon.id}:placement`)}
+                  >
                     <ShiftRoleTable
                       shifts={rayon.placement}
                       {...tableProps}
@@ -186,7 +206,7 @@ export function DayBoard({
                       roleTargets={rayonRoleTargets}
                       roleCounts={rayonRoleCounts}
                     />
-                  </div>
+                  </PlacementBlock>
                 )}
                 {rayon.regions.map((region) => (
                   <RegionCard
@@ -233,6 +253,53 @@ export function DayBoard({
           </section>
         );
       })}
+    </div>
+  );
+}
+
+/**
+ * The rayon/kawasan "Penempatan" block. It renders on every tier now (assigning
+ * is allowed anywhere), so it collapses by default to keep the board scannable —
+ * an empty one shouldn't push the kawasan list off screen.
+ */
+function PlacementBlock({
+  id,
+  title,
+  count,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  title: string;
+  count: number;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  const { t } = useTranslation(['schedules']);
+  return (
+    <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-secondary bg-nb-gray-50">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${id}-body`}
+        className="flex w-full items-center gap-2 px-2.5 py-2 text-left"
+      >
+        <Chevron open={open} />
+        <span className="text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
+          {title}
+        </span>
+        <span className="ml-auto">
+          <Pill>{t('schedules:board.petugasCount', { count })}</Pill>
+        </span>
+      </button>
+      {open && (
+        <div id={`${id}-body`} className="border-t-2 border-dashed border-nb-black p-2.5">
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -284,27 +351,95 @@ function subjectRoleTargets(all: Map<string, number>, prefix: string): Map<strin
  * kawasan placement + every location), paired with the rayon-level target.
  * Only shifts that actually have a target produce a pill.
  */
-function rayonShiftTotals(
-  rayon: BoardRayon,
-  capacities: Map<string, number>
-): Array<{ shift: BoardShiftGroup['shift']; countable: number; target: number }> {
-  const totals = new Map<string, { shift: BoardShiftGroup['shift']; countable: number }>();
-  const accumulate = (g: BoardShiftGroup) => {
-    const e = totals.get(g.shift.id) ?? { shift: g.shift, countable: 0 };
-    e.countable += g.countable;
-    totals.set(g.shift.id, e);
-  };
-  rayon.placement.forEach(accumulate);
-  rayon.looseLocations.forEach((l) => l.shifts.forEach(accumulate));
-  rayon.regions.forEach((r) => {
-    r.placement.forEach(accumulate);
-    r.locations.forEach((l) => l.shifts.forEach(accumulate));
-  });
+const sumTotals = (groups: BoardShiftGroup[]): number => groups.reduce((a, g) => a + g.total, 0);
 
+/** Per-shift countable totals across a subtree (its own placement + descendants). */
+function shiftCountables(
+  groups: BoardShiftGroup[][]
+): Map<string, { shift: BoardShiftGroup['shift']; countable: number }> {
+  const totals = new Map<string, { shift: BoardShiftGroup['shift']; countable: number }>();
+  for (const list of groups) {
+    for (const g of list) {
+      const e = totals.get(g.shift.id) ?? { shift: g.shift, countable: 0 };
+      e.countable += g.countable;
+      totals.set(g.shift.id, e);
+    }
+  }
+  return totals;
+}
+
+/** Every shift-group list under a rayon (itself, its kawasan, every lokasi). */
+const rayonSubtree = (r: BoardRayon): BoardShiftGroup[][] => [
+  r.placement,
+  ...r.looseLocations.map((l) => l.shifts),
+  ...r.regions.flatMap((g) => [g.placement, ...g.locations.map((l) => l.shifts)]),
+];
+
+/** Every shift-group list under a kawasan (itself + its lokasi). */
+const regionSubtree = (r: BoardRegion): BoardShiftGroup[][] => [
+  r.placement,
+  ...r.locations.map((l) => l.shifts),
+];
+
+/**
+ * Sum the targets of the tier that OWNS them beneath a subject, per shift.
+ *
+ * A parent tier carries no target of its own, but operators need to spot which
+ * rayon/kawasan needs staffing without expanding every one. So a parent shows
+ * the roll-up of its children's targets — rendered `rolledUp` (dashed) since it
+ * is summed from below, not set here, and has no gear.
+ */
+function rollupTargets(
+  capacities: Map<string, number>,
+  prefix: 'reg' | 'loc',
+  ids: string[],
+  shiftIds: string[]
+): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const shiftId of shiftIds) {
+    let sum = 0;
+    let found = false;
+    for (const id of ids) {
+      const v = capacities.get(`${prefix}:${id}:${shiftId}`);
+      if (v != null) {
+        sum += v;
+        found = true;
+      }
+    }
+    if (found && sum > 0) out.set(shiftId, sum);
+  }
+  return out;
+}
+
+/**
+ * The capacity pills for a subject: coverage is always its whole subtree; the
+ * target is either its own (it owns the tier) or the sum of the owning tier
+ * below it (`rolledUp`). Shifts with no target anywhere produce no pill.
+ */
+function capacityPills(
+  subtree: BoardShiftGroup[][],
+  ownKeyPrefix: string,
+  capacities: Map<string, number>,
+  owned: boolean,
+  rolled?: Map<string, number>
+): Array<{ shift: BoardShiftGroup['shift']; countable: number; target: number; rolledUp: boolean }> {
+  const totals = shiftCountables(subtree);
   return [...totals.values()]
-    .map((e) => ({ ...e, target: capacities.get(`ray:${rayon.id}:${e.shift.id}`) }))
-    .filter((x): x is { shift: BoardShiftGroup['shift']; countable: number; target: number } =>
-      x.target != null
+    .map((e) => {
+      const target = owned
+        ? capacities.get(`${ownKeyPrefix}${e.shift.id}`)
+        : rolled?.get(e.shift.id);
+      return { ...e, target, rolledUp: !owned };
+    })
+    .filter(
+      (
+        x
+      ): x is {
+        shift: BoardShiftGroup['shift'];
+        countable: number;
+        target: number;
+        rolledUp: boolean;
+      } => x.target != null
     );
 }
 
@@ -333,7 +468,6 @@ function RegionCard({
   capacityLevel?: StaffingLevel;
 }) {
   const { t } = useTranslation(['schedules']);
-  const hasPlacement = region.placement.some((s) => s.total > 0);
   // Kawasan-level understaffing: countable (satgas+linmas) across the region's
   // own placement + all its locations, vs the kawasan target (grouped rayons
   // define KEBUTUHAN at this level). Pills show only for shifts with a target.
@@ -350,16 +484,21 @@ function RegionCard({
       ? subjectRoleTargets(roleCapacities, `reg:${region.id}:`)
       : undefined;
   // A kawasan's target is met by its own placement PLUS its lokasi.
-  const regionRoleCounts =
-    capacityLevel === 'region'
-      ? subtreeRoleCounts([region.placement, ...region.locations.map((l) => l.shifts)])
-      : undefined;
-  const capPills =
-    capacityLevel === 'region'
-      ? [...regionShifts.values()]
-          .map((e) => ({ e, target: capacities.get(`reg:${region.id}:${e.shift.id}`) }))
-          .filter((x) => x.target != null)
-      : [];
+  const regionRoleCounts = subtreeRoleCounts(regionSubtree(region));
+  const capPills = capacityPills(
+    regionSubtree(region),
+    `reg:${region.id}:`,
+    capacities,
+    capacityLevel === 'region',
+    capacityLevel === 'location'
+      ? rollupTargets(
+          capacities,
+          'loc',
+          region.locations.map((l) => l.id),
+          region.placement.map((g) => g.shift.id)
+        )
+      : undefined
+  );
   return (
     <div className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-info">
       <div className="flex w-full flex-wrap items-center gap-2.5 border-b-2 border-nb-black bg-nb-gray-100 px-3 py-2.5">
@@ -372,18 +511,13 @@ function RegionCard({
           <Chevron open={open.has(region.id)} />
           <span className="text-nb-caption font-bold uppercase tracking-wide">{region.name}</span>
           <span className="ml-auto flex flex-wrap items-center gap-1.5">
-            {capPills.map(({ e, target }) => (
+            {capPills.map(({ shift, countable, target, rolledUp }) => (
               <ShiftPill
-                key={e.shift.id}
-                group={{
-                  shift: e.shift,
-                  byRole: {},
-                  teams: [],
-                  countable: e.countable,
-                  total: e.countable,
-                }}
+                key={shift.id}
+                group={{ shift, byRole: {}, teams: [], countable, total: countable }}
                 target={target}
-                roleTargets={regionRoleTargets}
+                rolledUp={rolledUp}
+                roleTargets={rolledUp ? undefined : regionRoleTargets}
                 roleCounts={regionRoleCounts}
               />
             ))}
@@ -405,20 +539,22 @@ function RegionCard({
       </div>
       {open.has(region.id) && (
         <div className="flex flex-col gap-2 p-2.5">
-          {(hasPlacement || capacityLevel === 'region') && (
-            <div className="rounded-nb-base border-2 border-nb-black border-l-[6px] border-l-nb-secondary bg-nb-gray-50 p-2.5">
-              <p className="mb-2 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                {t('schedules:board.placementKawasan')}
-              </p>
-              <ShiftRoleTable
-                shifts={region.placement}
-                {...tableProps}
-                onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id })}
-                roleTargets={regionRoleTargets}
-                roleCounts={regionRoleCounts}
-              />
-            </div>
-          )}
+          {/* Assign at the kawasan regardless of scope; only the target is scope-bound. */}
+          <PlacementBlock
+            id={`${region.id}-placement`}
+            title={t('schedules:board.placementKawasan')}
+            count={sumTotals(region.placement)}
+            open={open.has(`${region.id}:placement`)}
+            onToggle={() => toggle(`${region.id}:placement`)}
+          >
+            <ShiftRoleTable
+              shifts={region.placement}
+              {...tableProps}
+              onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id })}
+              roleTargets={regionRoleTargets}
+              roleCounts={regionRoleCounts}
+            />
+          </PlacementBlock>
           {region.locations.map((loc) => (
             <LocationCard
               key={loc.id}
@@ -521,11 +657,18 @@ function LocationCard({
 function ShiftPill({
   group,
   target,
+  rolledUp = false,
   roleTargets,
   roleCounts,
 }: {
   group: BoardShiftGroup;
   target?: number;
+  /**
+   * The target was summed from the tier below, not set on this subject. Rendered
+   * dashed + muted so it reads as a roll-up: there is no gear here, and clicking
+   * through to the owning tier is what actually changes it.
+   */
+  rolledUp?: boolean;
   /** `${shiftId}:${role}` → target, so the hint can name the short role. */
   roleTargets?: Map<string, number>;
   /**
@@ -548,6 +691,8 @@ function ShiftPill({
     const cls = understaffed
       ? 'bg-nb-danger-light text-nb-danger-dark'
       : 'bg-nb-primary/20 text-nb-success-dark';
+    // Dashed + lighter border = "summed from below"; solid = "set right here".
+    const border = rolledUp ? 'border-dashed border-nb-gray-500' : 'border-nb-black';
     // Spell out the per-role split — "0 of 10" alone never said WHICH role to
     // staff, which was the whole point of the hint.
     const breakdown = COUNTABLE_ROLES.map((role) => {
@@ -564,13 +709,11 @@ function ShiftPill({
       .join(' · ');
     return (
       <span
-        title={t('schedules:board.shiftStaffTooltip', {
-          shift: group.shift.name,
-          countable: group.countable,
-          target,
-          breakdown,
-        })}
-        className={`inline-flex items-center gap-1 rounded-full border-2 border-nb-black px-2 py-0.5 text-nb-caption font-bold tabular-nums ${cls}`}
+        title={t(
+          rolledUp ? 'schedules:board.shiftStaffRollupTooltip' : 'schedules:board.shiftStaffTooltip',
+          { shift: group.shift.name, countable: group.countable, target, breakdown }
+        )}
+        className={`inline-flex items-center gap-1 rounded-full border-2 px-2 py-0.5 text-nb-caption font-bold tabular-nums ${border} ${cls}`}
       >
         S{short}·{group.countable}/{target}
         {understaffed && <span aria-hidden>⚠</span>}

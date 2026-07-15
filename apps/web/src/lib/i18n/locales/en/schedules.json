@@ -35,6 +35,7 @@
     "emptyRayon": "No kawasan or locations yet",
     "petugasShort": "staff",
     "shiftStaffTooltip": "{{shift}} — {{countable}} of {{target}} staff ({{breakdown}})",
+    "shiftStaffRollupTooltip": "{{shift}} — {{countable}} of {{target}} staff (total required inside)",
     "shiftStaffRolePart": "{{role}} {{countable}}/{{target}}",
     "shiftStaffShortfall": "Short {{count}} {{role}}",
     "roleShort": "{{shift}} · {{role}}",

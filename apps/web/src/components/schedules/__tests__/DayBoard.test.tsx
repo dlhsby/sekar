@@ -66,6 +66,10 @@ function renderBoard(props: Partial<React.ComponentProps<typeof DayBoard>> = {})
   );
 }
 
+/** The card/section whose header shows `label` — scopes pill queries to one tier. */
+const card = (label: RegExp) =>
+  screen.getByRole('button', { name: label }).closest('section, div') as HTMLElement;
+
 /** Expand a collapsed node by its visible label. */
 async function expand(user: ReturnType<typeof userEvent.setup>, label: RegExp | string) {
   await user.click(screen.getByRole('button', { expanded: false, name: label }));
@@ -103,7 +107,9 @@ describe('DayBoard', () => {
     await expand(user, /Rayon Pusat/);
 
     // 1 of 3 → understaffed pill on the kawasan row.
-    expect(screen.getByText(/S1·1\/3/)).toBeInTheDocument();
+    // The kawasan owns the target; the rayon rolls the same 3 up, so both pills
+    // read 1/3 — assert on the count rather than a single match.
+    expect(screen.getAllByText(/S1·1\/3/)).toHaveLength(2);
   });
 
   it('flags park (location-level) understaffing against the loc: target', async () => {
@@ -115,7 +121,8 @@ describe('DayBoard', () => {
     });
     await expand(user, /Rayon Pusat/);
 
-    expect(screen.getByText(/S1·1\/2/)).toBeInTheDocument();
+    // Lokasi owns it; the rayon rolls it up → two pills with the same numbers.
+    expect(screen.getAllByText(/S1·1\/2/)).toHaveLength(2);
   });
 
   it('ignores a lokasi target when the rayon is kawasan-scoped', async () => {
@@ -268,6 +275,7 @@ describe('DayBoard', () => {
     });
     await expand(user, /Rayon Pusat/);
     await expand(user, /Kawasan Pusat/);
+    await expand(user, /penempatan kawasan/i);
 
     await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
 
@@ -287,6 +295,7 @@ describe('DayBoard', () => {
       onAssign,
     });
     await expand(user, /Rayon Pusat/);
+    await expand(user, /penempatan rayon/i);
 
     await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
 
@@ -308,7 +317,8 @@ describe('DayBoard', () => {
     await expand(user, /Kawasan Pusat/);
 
     // The kawasan's own table lists nobody, but its target is met by the lokasi.
-    expect(screen.getByText('1/1')).toBeInTheDocument();
+    await expand(user, /penempatan kawasan/i);
+    expect(screen.getAllByText('1/1').length).toBeGreaterThan(0);
   });
 
   it('marks a city-wide node as city in the assign context', async () => {
@@ -320,6 +330,7 @@ describe('DayBoard', () => {
       onAssign,
     });
     await expand(user, /Seluruh/);
+    await expand(user, /penempatan rayon/i);
 
     await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
     expect(onAssign).toHaveBeenCalledWith(
@@ -361,7 +372,8 @@ describe('subject pills (rayon / kawasan)', () => {
     });
     await expand(user, /Rayon Pusat/);
 
-    expect(screen.getByText(/S1·1\/3/)).toBeInTheDocument();
+    // Both the kawasan (owner) and the rayon (roll-up) render it.
+    expect(screen.getAllByText(/S1·1\/3/)).toHaveLength(2);
   });
 
   it('names the short role in the kawasan hint, counting the whole subtree', async () => {
@@ -390,5 +402,75 @@ describe('subject pills (rayon / kawasan)', () => {
     // Rayon pills sit on the header, visible before expanding.
     expect(screen.getByText(/S1·1\/2/)).toBeInTheDocument();
     expect(screen.getByTitle(/Satgas 1\/2/)).toBeInTheDocument();
+  });
+});
+
+
+describe('roll-up pills on a parent tier', () => {
+  /**
+   * A parent carries no target of its own, but an operator must be able to scan
+   * rayons and see which needs staffing without expanding all 11 kawasan. So a
+   * parent sums the targets of whichever tier owns them below it — rendered
+   * dashed, since it is summed from below and has no gear.
+   */
+  const twoKawasan: BoardMasterData = {
+    ...master,
+    rayons: [{ id: 'ry1', name: 'Rayon Pusat', staffing_level: 'region' }],
+    regions: [
+      { id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry1' },
+      { id: 'kw2', name: 'Kawasan Dua', rayon_id: 'ry1' },
+    ],
+  };
+
+  it('sums the kawasan targets onto the rayon header', () => {
+    renderBoard({
+      master: twoKawasan,
+      occurrences: [],
+      capacities: new Map([
+        ['reg:kw1:s1', 10],
+        ['reg:kw2:s1', 5],
+      ]),
+    });
+
+    // 10 + 5 — visible without expanding, which is the whole point.
+    expect(screen.getByText(/S1·0\/15/)).toBeInTheDocument();
+  });
+
+  it('marks the rolled-up pill as summed, not settable', () => {
+    renderBoard({
+      master: twoKawasan,
+      occurrences: [],
+      capacities: new Map([['reg:kw1:s1', 10]]),
+    });
+
+    // Dashed border distinguishes "summed from below" from an owned target.
+    expect(screen.getByText(/S1·0\/10/).className).toContain('border-dashed');
+  });
+
+  it('does not mark an OWNED target as rolled up', () => {
+    renderBoard({
+      master: masterAt('rayon'),
+      occurrences: [],
+      capacities: new Map([['ray:ry1:s1', 4]]),
+    });
+
+    expect(screen.getByText(/S1·0\/4/).className).not.toContain('border-dashed');
+  });
+
+  it('climbs as lokasi under the kawasan get staffed', () => {
+    renderBoard({
+      master: twoKawasan,
+      occurrences: [occ({ location_id: 'loc1' })], // one satgas on a kawasan's lokasi
+      capacities: new Map([['reg:kw1:s1', 10]]),
+    });
+
+    // The rayon roll-up counts the whole subtree, so staffing anywhere shows here.
+    expect(screen.getByText(/S1·1\/10/)).toBeInTheDocument();
+  });
+
+  it('shows no rayon pill when nothing below defines a target', () => {
+    renderBoard({ master: twoKawasan, occurrences: [], capacities: new Map() });
+
+    expect(screen.queryByText(/S1·\d+\//)).not.toBeInTheDocument();
   });
 });

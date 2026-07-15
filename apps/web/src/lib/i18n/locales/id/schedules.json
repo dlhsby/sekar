@@ -35,6 +35,7 @@
     "emptyRayon": "Belum ada kawasan atau lokasi",
     "petugasShort": "petugas",
     "shiftStaffTooltip": "{{shift}} — {{countable}} dari {{target}} petugas ({{breakdown}})",
+    "shiftStaffRollupTooltip": "{{shift}} — {{countable}} dari {{target}} petugas (total kebutuhan di dalamnya)",
     "shiftStaffRolePart": "{{role}} {{countable}}/{{target}}",
     "shiftStaffShortfall": "Kurang {{count}} {{role}}",
     "roleShort": "{{shift}} · {{role}}",
