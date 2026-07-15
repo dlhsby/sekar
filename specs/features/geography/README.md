@@ -24,6 +24,31 @@ The organizational + spatial hierarchy. Being reworked (UAT) from 3 levels to **
 - [plants](../plants/README.md)
 - [teams](../teams/README.md)
 
+## Known gap — "Area" display strings not yet swept (TODO)
+
+The 2026-07-15 sweep fixed the **`/locations` page identity** (title/breadcrumb/nav keys) and the
+**`areaType` → `locationType`** relation, but **~70 user-facing strings still read "Area" where they
+mean a *Lokasi***. Inventoried, not yet renamed — deferred deliberately, sweep in a later pass:
+
+| Namespace | Count | Examples |
+|---|---|---|
+| `schedules` | 17 | `modals.areas.title` "Ubah Area" · `modals.areaList.title` "Area Jadwal" · `buttons.areaCount` "{{count}} Area" |
+| `admin` | 16 | `users.form.areaAssignment` "Area Penugasan" · `rayons.columnAreas`/`stats.totalAreas` "Jumlah Area" · `rayons.areaDetail.areaName` "Nama Area" |
+| `tasks` | 12 | `list.tableHeaderArea` "Area / Rayon" · `form.areaLabel` "Area (Opsional)" · `form.areaPlaceholder` "Pilih Area" |
+| `import` | 12 | `kmz.areaTypeLabel` "Tipe Area" · `kmz.columns.name` "Nama Area" · `export.allAreas` "Semua Area" |
+| `plants` | 5 | `catalog.description` "…per area" · `areaDetail.notFound` "Area tidak ditemukan" |
+| `activities` | 4 | `list.filters.area`/`allAreas` · `list.table.columns.area` |
+| `common` | 4 | `entities.area` "Area" · `empty.noAreas` · `stats.totalArea` "Total Area" (renders `total_areas`, a **count** — not m²) |
+| `overtime` | 2 | `list.table.columns.area` · `detail.fields.area` |
+
+**Out of scope — do NOT rename:**
+- **`monitoring` (49 strings)** — "Batas Area", "Dalam area", "Titik Area", `sidebar.tabAreas` etc. are **correct**: a *monitoring area* legitimately = rayon/kawasan/lokasi. Also gated behind the Phase-5 monitoring revamp. Renaming these is a regression.
+- **Area-as-size:** `admin:locations.coverageLabel` "Luas Area", `rayons.stats.totalCoverageArea` "Luas Tutupan", `coverage_area`.
+- **Geofence state:** `common:ui.withinArea`/`outsideArea`, `home:statusSection.outsideArea`.
+- **Wire contracts:** `area_type` (response field + query param), monitoring `area_ids`, `/areas` import/export entity keys, `AreaType`/`areaTypesService` (= the *LocationType* service/repo, not the relation).
+
+Prose examples (e.g. `tasks:form.titlePlaceholder` "Contoh: Penyiraman Area Timur") read as place names — judgement call, not a mechanical rename.
+
 ## Changelog
 - 2026-07-15 — **`/locations` stopped calling itself "Area".** The page title + breadcrumb still read **"DATA MASTER · AREA"** over a body that said "953 lokasi": `usePageNavigation` and `layout.tsx` were pointing at stale i18n keys (`pageTitle.areas`, `pageMetadata('areas')`) — the *values* were the only thing ever updated, so the sidebar already said "Lokasi" while the page header didn't. Renamed the keys themselves: `pageTitle.areas` → `.locations`, `pageTitle.analyticsAreas` → `.analyticsLocations`, `common:nav.areas` → `.locations`, `PAGE_METADATA.areas` → `.locations` (+ "Manajemen Area" → "Manajemen Lokasi"), and the sidebar nav item id `areas` → `locations`. **Batas Wilayah** now renders the shared `StatusPill` (Ada = `tone="ok"`, Tidak ada = `tone="neutral"`) instead of bare text, matching the Status column beside it. Deliberately **not** renamed (real contracts, not leftovers): the `area_type` query param, monitoring `area_ids`, `coverage_area`, and the `/areas` import/export entity keys.
 - 2026-07-15 — **Renamed Location entity relation `areaType` → `locationType`.** Updated the TypeORM relation property and all eager-load paths in API responses (Location, Shift, Report). Db column `location_type_id` is unchanged — no migration. **Silent data bug fixed:** web's `Location` type and `/locations` grid already read `locationType`, so the mismatch meant **Tipe column rendered "—" for every row**. Mobile (ClockInOutScreen, ShiftHistoryScreen, AssignedAreaCard) updated in the same change; **APKs already in the field show "N/A" for area type until updated**. The separate snake_case `area_type` response field + query param, monitoring `area_ids`, `coverage_area` — all unchanged.
