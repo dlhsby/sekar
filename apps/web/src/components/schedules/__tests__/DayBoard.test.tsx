@@ -474,3 +474,35 @@ describe('roll-up pills on a parent tier', () => {
     expect(screen.queryByText(/S1·\d+\//)).not.toBeInTheDocument();
   });
 });
+
+
+describe('hierarchy depth', () => {
+  /**
+   * Depth must encode the LEVEL (rayon > kawasan > lokasi), not DOM position.
+   * A loose lokasi is a sibling of the kawasan cards, so without a nudge it
+   * renders at kawasan depth and the tree reads as two levels. Colour alone
+   * carrying the hierarchy also fails anyone who can't separate the cyan/amber
+   * borders (WCAG 2.1 AA).
+   */
+  const lokasiCard = (name: string) =>
+    screen.getByText(name).closest('div[class*="border-l-nb-warning"]') as HTMLElement;
+
+  it('indents a loose lokasi to lokasi depth, not kawasan depth', async () => {
+    const user = userEvent.setup();
+    renderBoard({ occurrences: [] });
+    await expand(user, /Rayon Pusat/);
+
+    // loc2 hangs off the rayon directly (no kawasan parent).
+    expect(lokasiCard('Taman Aktif Park').className).toContain('ml-4');
+  });
+
+  it('does not double-indent a lokasi already nested in a kawasan', async () => {
+    const user = userEvent.setup();
+    renderBoard({ occurrences: [] });
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    // loc1 sits inside kw1, already inset by the kawasan's border + padding.
+    expect(lokasiCard('Taman Bungkul').className).not.toContain('ml-4');
+  });
+});
