@@ -1,14 +1,13 @@
 /**
- * Unit tests: CalendarFilters + ScheduleFilterChips — the calendar's active
- * filter slice.
+ * Unit tests: ScheduleFilterChips — the calendar's active filter slice.
  *
- * The load-bearing logic is the Rayon → Kawasan → Lokasi cascade: picking a
- * broader level must CLEAR the narrower ones, or the query keeps a stale
- * location that contradicts the new rayon and the board comes back empty.
+ * The chips ARE the multi-criteria UI: each hit picked in ScheduleSearch adds
+ * one, they AND together, and each removes in isolation. (CalendarFilters and
+ * its Rayon▸Kawasan▸Lokasi cascade were deleted with the "Lanjutan" panel — the
+ * cascade only existed to keep that panel's own selects consistent.)
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CalendarFilters } from '../CalendarFilters';
 import { ScheduleFilterChips } from '../ScheduleFilterChips';
 import { useUsers } from '@/lib/api/users';
 import { useRayons } from '@/lib/api/rayons';
@@ -44,76 +43,6 @@ beforeEach(() => {
   (useLocations as jest.Mock).mockReturnValue({ data: { data: LOCATIONS } });
   (useShiftDefinitions as jest.Mock).mockReturnValue({ data: SHIFTS });
   (useTeamCategories as jest.Mock).mockReturnValue({ data: TEAMS });
-});
-
-/** Open a combobox by its label and choose an option. */
-async function pickCombobox(user: ReturnType<typeof userEvent.setup>, label: RegExp, option: string) {
-  await user.click(screen.getByRole('combobox', { name: label }));
-  await user.click(await screen.findByRole('option', { name: option }));
-}
-
-describe('CalendarFilters', () => {
-  const setup = (value = {}, lockRayon = false) => {
-    const onChange = jest.fn();
-    render(<CalendarFilters value={value} onChange={onChange} lockRayon={lockRayon} />);
-    return { onChange };
-  };
-
-  it('narrows by rayon and clears the narrower levels with it', async () => {
-    const user = userEvent.setup();
-    const { onChange } = setup({ rayonId: 'ry1', regionId: 'kw1', locationId: 'loc1' });
-
-    await pickCombobox(user, /rayon/i, 'Rayon Timur');
-
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ rayonId: 'ry2', regionId: undefined, locationId: undefined })
-    );
-  });
-
-  it('clears the location when the kawasan changes', async () => {
-    const user = userEvent.setup();
-    const { onChange } = setup({ rayonId: 'ry1', locationId: 'loc1' });
-
-    await pickCombobox(user, /kawasan/i, 'Kawasan Tunjungan');
-
-    expect(onChange).toHaveBeenCalledWith(
-      expect.objectContaining({ regionId: 'kw1', locationId: undefined })
-    );
-  });
-
-  it('offers only the locations inside the chosen kawasan', async () => {
-    const user = userEvent.setup();
-    setup({ rayonId: 'ry1', regionId: 'kw1' });
-
-    await user.click(screen.getByRole('combobox', { name: /lokasi/i }));
-
-    expect(await screen.findByRole('option', { name: 'Taman Bungkul' })).toBeInTheDocument();
-    // Taman Apsari sits outside kw1.
-    expect(screen.queryByRole('option', { name: 'Taman Apsari' })).not.toBeInTheDocument();
-  });
-
-  it('scopes the kawasan query to the chosen rayon', () => {
-    setup({ rayonId: 'ry1' });
-    expect(useRegions).toHaveBeenCalledWith('ry1');
-  });
-
-  it('hides the rayon filter for a rayon-scoped role', () => {
-    setup({}, true);
-    expect(screen.queryByRole('combobox', { name: /rayon/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('combobox', { name: /kawasan/i })).toBeInTheDocument();
-  });
-
-  it('offers a reset only once something is filtered', async () => {
-    const user = userEvent.setup();
-    const { rerender } = render(<CalendarFilters value={{}} onChange={jest.fn()} />);
-    expect(screen.queryByRole('button', { name: /hapus filter|reset|clear/i })).not.toBeInTheDocument();
-
-    const onChange = jest.fn();
-    rerender(<CalendarFilters value={{ userId: 'u1' }} onChange={onChange} />);
-    await user.click(screen.getByRole('button', { name: /hapus filter|reset|clear/i }));
-
-    expect(onChange).toHaveBeenCalledWith({});
-  });
 });
 
 describe('ScheduleFilterChips', () => {

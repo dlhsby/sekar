@@ -558,3 +558,92 @@ describe('group rail', () => {
     expect(container.querySelector('.border-nb-primary\\/40')).not.toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Search integration — the reported bug: filtering narrowed the OCCURRENCES
+// server-side but the tree's skeleton came from `master`, so every rayon stayed
+// on screen at "0 petugas" and nothing opened. (The prune/expand rules
+// themselves are unit-tested in lib/schedules/__tests__.)
+// ---------------------------------------------------------------------------
+
+describe('DayBoard — search', () => {
+  const twoRayon: BoardMasterData = {
+    ...master,
+    rayons: [
+      { id: 'ry1', name: 'Rayon Pusat' },
+      { id: 'ry2', name: 'Rayon Barat' },
+    ],
+  };
+
+  it('renders every rayon when nothing is filtered', () => {
+    renderBoard({ master: twoRayon });
+
+    expect(screen.getByRole('button', { name: /Rayon Pusat/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Rayon Barat/ })).toBeInTheDocument();
+  });
+
+  it('drops rayons that cannot hold the searched lokasi', () => {
+    renderBoard({ master: twoRayon, filters: { locationId: 'loc1' } });
+
+    expect(screen.getByRole('button', { name: /Rayon Pusat/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Rayon Barat/ })).not.toBeInTheDocument();
+  });
+
+  it('opens the path to the searched lokasi instead of leaving it collapsed', () => {
+    // The old board made you open Rayon ▸ Kawasan ▸ Lokasi by hand to find it.
+    renderBoard({ master: twoRayon, filters: { locationId: 'loc1' } });
+
+    expect(screen.getByRole('button', { expanded: true, name: /Rayon Pusat/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { expanded: true, name: /Kawasan Pusat/ })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { expanded: true, name: /Taman Bungkul/ })).toBeInTheDocument();
+  });
+
+  it('shows an explicit not-found state, not the empty-day message, when nothing matches', async () => {
+    const onClearFilters = jest.fn();
+    const user = userEvent.setup();
+    renderBoard({ master: twoRayon, filters: { userId: 'ghost' }, onClearFilters });
+
+    expect(screen.getByText(/tidak ada jadwal yang cocok/i)).toBeInTheDocument();
+    expect(screen.queryByText(/belum ada jadwal untuk hari ini/i)).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /hapus filter/i }));
+    expect(onClearFilters).toHaveBeenCalled();
+  });
+
+  it('shows the matched lokasi rather than "no schedule today" when it is simply empty', () => {
+    // An empty geography match is an answer ("nobody is here"), so emptyDay
+    // would be a lie — and this is exactly where an operator wants to assign.
+    renderBoard({ master: twoRayon, filters: { locationId: 'loc1' } });
+
+    expect(screen.queryByText(/belum ada jadwal untuk hari ini/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Taman Bungkul/ })).toBeInTheDocument();
+  });
+
+  it('re-seeds the open containers when the criteria change', () => {
+    const { rerender } = render(
+      <DayBoard
+        occurrences={[]}
+        master={twoRayon}
+        onOccurrenceClick={jest.fn()}
+        filters={{ locationId: 'loc1' }}
+      />
+    );
+    expect(screen.getByRole('button', { expanded: true, name: /Taman Bungkul/ })).toBeInTheDocument();
+
+    rerender(
+      <DayBoard
+        occurrences={[]}
+        master={twoRayon}
+        onOccurrenceClick={jest.fn()}
+        filters={{ locationId: 'loc2' }}
+      />
+    );
+
+    expect(screen.queryByRole('button', { name: /Taman Bungkul/ })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { expanded: true, name: /Taman Aktif Park/ })
+    ).toBeInTheDocument();
+  });
+});

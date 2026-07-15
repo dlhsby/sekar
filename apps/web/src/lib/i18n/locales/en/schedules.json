@@ -40,16 +40,14 @@
     "shiftStaffShortfall": "Short {{count}} {{role}}",
     "roleShort": "{{shift}} · {{role}}",
     "shiftTotalTooltip": "{{shift}} — {{count}} staff",
-    "emptyDay": "No schedule for this day yet."
+    "emptyDay": "No schedule for this day yet.",
+    "noMatchTitle": "No matching schedule",
+    "noMatchDesc": "No schedule on this day matches all of the search criteria. Change or remove some criteria, or pick another date."
   },
   "search": {
     "placeholder": "Search worker, area, or date…",
-    "advanced": "Advanced",
     "noResults": "No results for \"{{q}}\"",
-    "groupDate": "Date",
-    "dateRangeLabel": "Date range",
-    "dateFrom": "From",
-    "dateTo": "To"
+    "groupDate": "Date"
   },
   "detail": {
     "placement": "Placement",

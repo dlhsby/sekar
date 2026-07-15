@@ -4,9 +4,13 @@ import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Settings2 } from 'lucide-react';
 import {
+  autoExpandedIds,
   buildDayBoard,
+  hasAnyBoardFilter,
+  pruneDayBoard,
   CITY_NODE_ID,
   COUNTABLE_ROLES,
+  type BoardFilters,
   type BoardLocation,
   type BoardMasterData,
   type BoardRayon,
@@ -16,6 +20,7 @@ import {
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import type { StaffingLevel } from '@/types/models';
+import { EmptyState } from '@/components/ui';
 import { ShiftRoleTable } from '@/components/schedules/ShiftRoleTable';
 
 const EMPTY_CAPACITIES = new Map<string, number>();
@@ -54,7 +59,24 @@ interface DayBoardProps {
   roleCapacities?: Map<string, number>;
   /** When present, a gear on each location opens the capacity editor. */
   onEditCapacity?: (subject: StaffSubject) => void;
+  /**
+   * Active search criteria. The range query already filters occurrences
+   * server-side, but the tree's skeleton comes from `master` — so without this
+   * the board kept every rayon standing at "0 petugas". Drives both the prune
+   * and which containers open on their own.
+   */
+  filters?: BoardFilters;
+  /** Clears every criterion — offered from the "nothing matched" state. */
+  onClearFilters?: () => void;
 }
+
+const NO_FILTERS: BoardFilters = {};
+
+/** Stable identity for a criteria set — re-seeds the open containers when it changes. */
+const filterSignature = (f: BoardFilters): string =>
+  [f.rayonId, f.regionId, f.locationId, f.userId, f.shiftDefinitionId, f.teamCategoryId]
+    .map((v) => v ?? '')
+    .join('|');
 
 /**
  * Day coverage board (Jadwal redesign P1): Rayon ▸ Kawasan ▸ Lokasi tree, one
@@ -71,10 +93,33 @@ export function DayBoard({
   capacities = EMPTY_CAPACITIES,
   roleCapacities = EMPTY_CAPACITIES,
   onEditCapacity,
+  filters = NO_FILTERS,
+  onClearFilters,
 }: DayBoardProps) {
   const { t } = useTranslation(['schedules', 'common']);
-  const tree = useMemo(() => buildDayBoard(occurrences, master), [occurrences, master]);
-  const [open, setOpen] = useState<Set<string>>(new Set());
+  const tree = useMemo(
+    () => pruneDayBoard(buildDayBoard(occurrences, master), filters),
+    [occurrences, master, filters]
+  );
+  const filtered = hasAnyBoardFilter(filters);
+
+  // Seeded from the criteria present on mount — landing on the page with a
+  // filter already set (or re-mounting) must open the match too, not only a
+  // later change to it.
+  const [open, setOpen] = useState<Set<string>>(() => autoExpandedIds(tree, filters));
+
+  // Re-seed the open containers whenever the criteria change, so a match is on
+  // screen without hunting for it. Adjusting state during render (rather than in
+  // an effect) is React's documented pattern for deriving from a prop, and it
+  // avoids rendering the collapsed tree for a frame first. A manual toggle still
+  // wins afterwards — this only fires when the signature actually changes.
+  const signature = filterSignature(filters);
+  const [seenSignature, setSeenSignature] = useState(signature);
+  if (seenSignature !== signature) {
+    setSeenSignature(signature);
+    setOpen(autoExpandedIds(tree, filters));
+  }
+
   const toggle = (id: string) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -92,11 +137,28 @@ export function DayBoard({
 
   return (
     <div className="flex flex-col gap-3">
-      {occurrences.length === 0 && (
+      {/* "Nothing matched" and "nobody works today" are different answers, and
+          conflating them left the operator unable to tell a bad search from an
+          empty day. When filtering, the pruned tree IS the answer — an empty
+          matched lokasi still renders, so emptyDay would be a lie. */}
+      {filtered ? (
+        tree.length === 0 && (
+          <EmptyState
+            variant="noResults"
+            title={t('schedules:board.noMatchTitle')}
+            description={t('schedules:board.noMatchDesc')}
+            action={
+              onClearFilters
+                ? { label: t('schedules:filters.clear'), onClick: onClearFilters }
+                : undefined
+            }
+          />
+        )
+      ) : occurrences.length === 0 ? (
         <p className="rounded-nb-base border-2 border-dashed border-nb-black bg-nb-gray-50 py-5 text-center text-nb-body-sm text-nb-gray-500">
           {t('schedules:board.emptyDay')}
         </p>
-      )}
+      ) : null}
       {tree.map((rayon) => {
         const locCount =
           rayon.regions.reduce((a, r) => a + r.locations.length, 0) + rayon.looseLocations.length;

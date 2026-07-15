@@ -235,6 +235,173 @@ export function buildDayBoard(
   return [...cityNode, ...rayonNodes];
 }
 
+/**
+ * The active search criteria, as far as the board cares. Mirrors the geography +
+ * subject halves of `ScheduleRangeFilters` (which is what the range query sends).
+ */
+export interface BoardFilters {
+  rayonId?: string;
+  regionId?: string;
+  locationId?: string;
+  userId?: string;
+  shiftDefinitionId?: string;
+  teamCategoryId?: string;
+}
+
+/** A geography criterion names a container; it prunes the tree structurally. */
+const hasGeographyFilter = (f: BoardFilters): boolean =>
+  !!(f.rayonId || f.regionId || f.locationId);
+
+/** A subject criterion names people/shifts; it only shows where they actually are. */
+const hasSubjectFilter = (f: BoardFilters): boolean =>
+  !!(f.userId || f.shiftDefinitionId || f.teamCategoryId);
+
+export const hasAnyBoardFilter = (f: BoardFilters): boolean =>
+  hasGeographyFilter(f) || hasSubjectFilter(f);
+
+/**
+ * Narrow the built tree to what the search actually asked for.
+ *
+ * The range query already filters *occurrences* server-side, but the tree's
+ * skeleton comes from master data — so filtering alone removed the people and
+ * left every rayon standing at "0 petugas". This prunes the skeleton to match.
+ *
+ * The two kinds of criteria prune differently, on purpose:
+ * - **Geography** (rayon/kawasan/lokasi) names a container, so the matching
+ *   subtree is kept **even when empty** — an empty match is a real answer
+ *   ("nobody is here today") and is exactly where an operator wants to assign.
+ * - **Subject** (petugas/shift/tim) names something that is either present or
+ *   not, so containers holding none of it are dropped — an empty container is
+ *   noise when you asked "where is Budi".
+ *
+ * The city node is left to the caller's structural rules: it is kept only when a
+ * subject filter matches it, since it belongs to no rayon/kawasan/lokasi.
+ */
+export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardRayon[] {
+  if (!hasAnyBoardFilter(filters)) return tree;
+
+  const dropEmpty = hasSubjectFilter(filters);
+  const keepNode = (total: number) => !dropEmpty || total > 0;
+
+  const rayons = filters.rayonId ? tree.filter((r) => r.id === filters.rayonId) : tree;
+
+  return rayons
+    .map((rayon) => {
+      // The city node is a sentinel with no geography; a geography filter can
+      // never match it, so it only survives a pure subject search.
+      if (rayon.id === CITY_NODE_ID) {
+        return hasGeographyFilter(filters) ? null : keepNode(rayon.total) ? rayon : null;
+      }
+
+      const regions = (
+        filters.regionId ? rayon.regions.filter((r) => r.id === filters.regionId) : rayon.regions
+      )
+        .map((region) => {
+          const locations = (
+            filters.locationId
+              ? region.locations.filter((l) => l.id === filters.locationId)
+              : region.locations
+          ).filter((l) => keepNode(l.total));
+
+          // A kawasan that cannot hold the named lokasi is not on the path to it,
+          // so it goes — otherwise every rayon survives at "0 petugas", which is
+          // the bug this whole function exists to fix. Being named outright
+          // (`regionId`) always wins.
+          if (filters.locationId && filters.regionId !== region.id && locations.length === 0) {
+            return null;
+          }
+
+          // A kawasan whose only match is a lokasi under it must survive as the
+          // path to that lokasi, so weigh its subtree, not just its own placement.
+          const subtreeTotal =
+            sumTotal(region.placement) + locations.reduce((a, l) => a + l.total, 0);
+          if (!keepNode(subtreeTotal) && locations.length === 0) return null;
+          return { ...region, locations, total: subtreeTotal };
+        })
+        .filter((r): r is BoardRegion => r !== null);
+
+      // A loose lokasi has no kawasan by definition, so a kawasan filter can
+      // never be asking about one.
+      const looseLocations = filters.regionId
+        ? []
+        : (filters.locationId
+            ? rayon.looseLocations.filter((l) => l.id === filters.locationId)
+            : rayon.looseLocations
+          ).filter((l) => keepNode(l.total));
+
+      // A lokasi/kawasan filter is asking about a container, not about the
+      // rayon's own mobile placement — don't let placement smuggle it back in.
+      const placement =
+        filters.locationId || filters.regionId
+          ? []
+          : keepNode(sumTotal(rayon.placement))
+            ? rayon.placement
+            : [];
+
+      const total =
+        regions.reduce((a, r) => a + r.total, 0) +
+        looseLocations.reduce((a, l) => a + l.total, 0) +
+        sumTotal(placement);
+
+      // Nothing left under this rayon at all → it isn't an answer to the query.
+      if (regions.length === 0 && looseLocations.length === 0 && placement.length === 0) return null;
+
+      return { ...rayon, regions, looseLocations, placement, total };
+    })
+    .filter((r): r is BoardRayon => r !== null);
+}
+
+/**
+ * Container ids the board should open so a match is visible without clicking.
+ *
+ * Only nodes that actually hold something are opened — with a broad filter
+ * (a whole rayon) opening all 87 lokasi would be worse than opening none. The
+ * exception is the deepest *geography* match, which opens even when empty: it's
+ * the thing the operator named, so it should be on screen either way.
+ */
+export function autoExpandedIds(tree: BoardRayon[], filters: BoardFilters): Set<string> {
+  const ids = new Set<string>();
+  if (!hasAnyBoardFilter(filters)) return ids;
+
+  for (const rayon of tree) {
+    let rayonHit = false;
+
+    if (sumTotal(rayon.placement) > 0) {
+      ids.add(`${rayon.id}:placement`);
+      rayonHit = true;
+    }
+
+    for (const region of rayon.regions) {
+      let regionHit = false;
+      if (sumTotal(region.placement) > 0) {
+        ids.add(`${region.id}:placement`);
+        regionHit = true;
+      }
+      for (const loc of region.locations) {
+        if (loc.total > 0 || filters.locationId === loc.id) {
+          ids.add(loc.id);
+          regionHit = true;
+        }
+      }
+      if (regionHit || filters.regionId === region.id) {
+        ids.add(region.id);
+        rayonHit = true;
+      }
+    }
+
+    for (const loc of rayon.looseLocations) {
+      if (loc.total > 0 || filters.locationId === loc.id) {
+        ids.add(loc.id);
+        rayonHit = true;
+      }
+    }
+
+    if (rayonHit || filters.rayonId === rayon.id) ids.add(rayon.id);
+  }
+
+  return ids;
+}
+
 /** One shift's headcount inside a week cell, split by role + teams. */
 export interface WeekShiftBreakdown {
   shiftId: string;
