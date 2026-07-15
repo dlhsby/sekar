@@ -50,6 +50,19 @@ requirement. Seeded from the client "Kebutuhan Satgas" workbook (satgas-only; li
 - **WS/refresh hardening** under load (no map remounts, no lag).
 - **Understaffing on the map must use the polymorphic subject** (region/location/rayon/city), reusing the
   Phase-4 helper — not location-only.
+- **Advanced Markers (deferred here on purpose, 2026-07-15).** `google.maps.Marker` is deprecated (warning
+  only — still supported, 12+ months' notice). The **foundation is already in `main`**: a configurable Map ID
+  (System Settings key `maps.map_id` + `GOOGLE_MAPS_MAP_ID` / `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`, served via
+  `GET /config/maps`, resolved by `useMapId()`), the `marker` library is loaded in `GoogleMapsGate`, and a
+  reusable imperative `components/maps/AdvancedMarker.tsx` wrapper exists. **Already migrated:**
+  `GoogleBoundaryEditor` (#257, verified in-browser) + `MapDisplayModal` (#258).
+  **Still on legacy `Marker` → do them as part of this revamp:** `SimpleMonitoringMap`, `NodeMarkerLayer`,
+  `WorkerClusterLayer`. Deferred deliberately because (a) `AdvancedMarkerElement` renders **DOM nodes** vs the
+  legacy marker's optimized layer, so hundreds of worker pins risk a **pan/zoom perf regression** that needs
+  in-browser profiling, and (b) the icon layer here is a real rewrite (SVG-string pins + `SymbolPath.CIRCLE`
+  cluster/area circles + hover). Build them with Advanced Markers **from the start** in this revamp and
+  perf-test. Note `@react-google-maps/api` has **no** `AdvancedMarker` component — use the imperative wrapper
+  (or evaluate `@vis.gl/react-google-maps`).
 
 ## Phase 6 — Mobile parity (after web design ack)
 
