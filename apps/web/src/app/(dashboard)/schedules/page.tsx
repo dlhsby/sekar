@@ -40,6 +40,7 @@ import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard, type AssignContext } from '@/components/schedules/DayBoard';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
+import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMapModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import { HolidayManagerModal } from '@/components/schedules/HolidayManagerModal';
 import type { BoardMasterData } from '@/lib/schedules/dayBoard';
@@ -154,6 +155,9 @@ export default function SchedulesPage() {
   const [createDate, setCreateDate] = useState<string | undefined>();
   // Pre-fill context when "+ Tugaskan" is clicked on a specific board row.
   const [createCtx, setCreateCtx] = useState<AssignContext | undefined>();
+  // Boundary map for a board container — fetched (and its map bundle loaded)
+  // only once one is actually asked for.
+  const [mapSubject, setMapSubject] = useState<AreaMapSubject | null>(null);
 
   const openCreate = (date?: string, ctx?: AssignContext) => {
     if (!can('schedule:create')) return;
@@ -452,8 +456,11 @@ export default function SchedulesPage() {
           onEditCapacity={canManageCapacity ? (subject) => setCapacitySubject(subject) : undefined}
           filters={filters}
           onClearFilters={() => setFilters({})}
+          onShowMap={setMapSubject}
         />
       )}
+
+      <AreaMapModal subject={mapSubject} onOpenChange={(o) => !o && setMapSubject(null)} />
 
       {/* Read-only detail (shown first on click; Ubah/Hapus route onward) */}
       <ScheduleDetailModal

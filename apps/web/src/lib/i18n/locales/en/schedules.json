@@ -42,7 +42,10 @@
     "shiftTotalTooltip": "{{shift}} — {{count}} staff",
     "emptyDay": "No schedule for this day yet.",
     "noMatchTitle": "No matching schedule",
-    "noMatchDesc": "No schedule on this day matches all of the search criteria. Change or remove some criteria, or pick another date."
+    "noMatchDesc": "No schedule on this day matches all of the search criteria. Change or remove some criteria, or pick another date.",
+    "showMap": "View map",
+    "mapNoGeometry": "No boundary or coordinates set yet.",
+    "mapUnavailable": "Map unavailable."
   },
   "search": {
     "placeholder": "Search worker, area, or date…",

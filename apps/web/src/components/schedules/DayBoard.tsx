@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronDown, Settings2 } from 'lucide-react';
+import { ChevronDown, Map as MapIcon, Settings2 } from 'lucide-react';
 import {
   autoExpandedIds,
   buildDayBoard,
@@ -22,6 +22,7 @@ import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import type { StaffingLevel } from '@/types/models';
 import { EmptyState } from '@/components/ui';
 import { ShiftRoleTable } from '@/components/schedules/ShiftRoleTable';
+import type { AreaMapSubject } from '@/components/schedules/AreaMapModal';
 
 const EMPTY_CAPACITIES = new Map<string, number>();
 
@@ -70,6 +71,24 @@ interface DayBoardProps {
   filters?: BoardFilters;
   /** Clears every criterion — offered from the "nothing matched" state. */
   onClearFilters?: () => void;
+  /** Opens the boundary map for a container. Surabaya is never offered one — it
+   *  is a city-wide sentinel with no geography of its own. */
+  onShowMap?: (subject: AreaMapSubject) => void;
+}
+
+/** Title-bar map button, shared by every tier that HAS a boundary. */
+function MapButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50"
+      aria-label={label}
+      title={label}
+    >
+      <MapIcon className="size-4" />
+    </button>
+  );
 }
 
 const NO_FILTERS: BoardFilters = {};
@@ -97,6 +116,7 @@ export function DayBoard({
   onEditCapacity,
   filters = NO_FILTERS,
   onClearFilters,
+  onShowMap,
 }: DayBoardProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const tree = useMemo(
@@ -249,6 +269,15 @@ export function DayBoard({
                   )}
                 </span>
               </button>
+              {/* Surabaya has no boundary of its own — it IS the city. */}
+              {onShowMap && rayon.id !== CITY_NODE_ID && (
+                <span className="mr-2">
+                  <MapButton
+                    label={t('schedules:board.showMap')}
+                    onClick={() => onShowMap({ level: 'rayon', id: rayon.id, name: rayon.name })}
+                  />
+                </span>
+              )}
               {onEditCapacity && capacityLevel === 'rayon' && rayon.id !== CITY_NODE_ID && (
                 <button
                   type="button"
@@ -307,6 +336,7 @@ export function DayBoard({
                         rayonId={rayon.id}
                         mkAssign={mkAssign}
                         mkAssignTeam={mkAssignTeam}
+                        onShowMap={onShowMap}
                         open={open}
                         toggle={toggle}
                         tableProps={tableProps}
@@ -322,6 +352,7 @@ export function DayBoard({
                         loc={loc}
                         onAssign={mkAssign({ rayon_id: rayon.id, location_id: loc.id })}
                         onAssignTeam={mkAssignTeam({ rayon_id: rayon.id, location_id: loc.id })}
+                        onShowMap={onShowMap}
                         open={open.has(loc.id)}
                         onToggle={() => toggle(loc.id)}
                         tableProps={tableProps}
@@ -555,6 +586,7 @@ function RegionCard({
   rayonId,
   mkAssign,
   mkAssignTeam,
+  onShowMap,
   open,
   toggle,
   tableProps,
@@ -567,6 +599,7 @@ function RegionCard({
   rayonId: string;
   mkAssign: MkAssign;
   mkAssignTeam: MkAssignTeam;
+  onShowMap?: (subject: AreaMapSubject) => void;
   open: Set<string>;
   toggle: (id: string) => void;
   tableProps: TableProps;
@@ -636,6 +669,14 @@ function RegionCard({
             <Pill>{t('schedules:board.lokasiCount', { count: region.locations.length })}</Pill>
           </span>
         </button>
+        {onShowMap && (
+          <span className="mr-2">
+            <MapButton
+              label={t('schedules:board.showMap')}
+              onClick={() => onShowMap({ level: 'region', id: region.id, name: region.name })}
+            />
+          </span>
+        )}
         {onEditCapacity && capacityLevel === 'region' && (
           <button
             type="button"
@@ -683,6 +724,7 @@ function RegionCard({
                     region_id: region.id,
                     location_id: loc.id,
                   })}
+                  onShowMap={onShowMap}
                   open={open.has(loc.id)}
                   onToggle={() => toggle(loc.id)}
                   tableProps={tableProps}
@@ -709,6 +751,7 @@ function LocationCard({
   loc,
   onAssign,
   onAssignTeam,
+  onShowMap,
   open,
   onToggle,
   tableProps,
@@ -722,6 +765,7 @@ function LocationCard({
   /** Container-bound assign (already carries this location's geography). */
   onAssign?: (shiftId: string, role?: string) => void;
   onAssignTeam?: (shiftId: string) => void;
+  onShowMap?: (subject: AreaMapSubject) => void;
   open: boolean;
   onToggle: () => void;
   tableProps: TableProps;
@@ -767,6 +811,14 @@ function LocationCard({
             ))}
           </span>
         </button>
+        {onShowMap && (
+          <span className="mr-2">
+            <MapButton
+              label={t('schedules:board.showMap')}
+              onClick={() => onShowMap({ level: 'location', id: loc.id, name: loc.name })}
+            />
+          </span>
+        )}
         {showCapacity && onEditCapacity && (
           <button
             type="button"

@@ -703,3 +703,50 @@ describe('DayBoard — Surabaya node', () => {
     expect(screen.getAllByText(/satgas/i).length).toBeGreaterThan(0);
   });
 });
+
+// The map button opens a boundary view per container. Surabaya is excluded: it
+// is a city-wide sentinel with no geography of its own.
+describe('DayBoard — map button', () => {
+  it('offers a map on the rayon, but never on Surabaya', () => {
+    renderBoard({ onShowMap: jest.fn() });
+
+    const mapButtons = screen.getAllByRole('button', { name: /lihat peta/i });
+    // One rayon in the fixture master → exactly one button, and the Surabaya
+    // header (which is tree[0]) contributes none.
+    expect(mapButtons).toHaveLength(1);
+  });
+
+  it('reports the container that was clicked', async () => {
+    const onShowMap = jest.fn();
+    const user = userEvent.setup();
+    renderBoard({ onShowMap });
+
+    await user.click(screen.getByRole('button', { name: /lihat peta/i }));
+
+    expect(onShowMap).toHaveBeenCalledWith({ level: 'rayon', id: 'ry1', name: 'Rayon Pusat' });
+  });
+
+  it('offers a map on a kawasan and a lokasi once opened', async () => {
+    const onShowMap = jest.fn();
+    const user = userEvent.setup();
+    renderBoard({ onShowMap });
+
+    await expand(user, /Rayon Pusat/);
+    await expand(user, /Kawasan Pusat/);
+
+    const buttons = screen.getAllByRole('button', { name: /lihat peta/i });
+    // rayon + kawasan + its lokasi + the loose lokasi.
+    expect(buttons.length).toBeGreaterThan(1);
+
+    await user.click(buttons[1]);
+    expect(onShowMap).toHaveBeenCalledWith(
+      expect.objectContaining({ level: 'region', id: 'kw1' })
+    );
+  });
+
+  it('renders no map buttons when the board cannot open one', () => {
+    renderBoard();
+
+    expect(screen.queryByRole('button', { name: /lihat peta/i })).not.toBeInTheDocument();
+  });
+});

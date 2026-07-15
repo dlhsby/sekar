@@ -42,7 +42,10 @@
     "shiftTotalTooltip": "{{shift}} — {{count}} petugas",
     "emptyDay": "Belum ada jadwal untuk hari ini.",
     "noMatchTitle": "Tidak ada jadwal yang cocok",
-    "noMatchDesc": "Tidak ada jadwal pada hari ini yang cocok dengan semua kriteria pencarian. Ubah atau hapus sebagian kriteria, atau pilih tanggal lain."
+    "noMatchDesc": "Tidak ada jadwal pada hari ini yang cocok dengan semua kriteria pencarian. Ubah atau hapus sebagian kriteria, atau pilih tanggal lain.",
+    "showMap": "Lihat peta",
+    "mapNoGeometry": "Belum ada batas wilayah atau titik koordinat.",
+    "mapUnavailable": "Peta tidak tersedia."
   },
   "search": {
     "placeholder": "Cari petugas, area, atau tanggal…",

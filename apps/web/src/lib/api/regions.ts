@@ -68,6 +68,20 @@ export function useRegions(rayonId?: string, includeInactive = false) {
   });
 }
 
+/**
+ * One region, fetched on demand. `enabled` lets a caller defer the request until
+ * it is actually needed — the day board's map button uses it so ~130 kawasan
+ * boundaries never ride along with the board itself.
+ */
+export function useRegion(id: string, enabled = true) {
+  return useQuery({
+    queryKey: regionKeys.detail(id),
+    queryFn: async () => (await apiClient.get<Region>(`/regions/${id}`)).data,
+    enabled: enabled && !!id,
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 /** Deactivate a region (is_active=false) — 409s while it still has active locations. */
 export function useDeactivateRegion() {
   const queryClient = useQueryClient();
