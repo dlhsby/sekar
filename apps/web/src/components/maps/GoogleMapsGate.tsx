@@ -12,12 +12,16 @@
 
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useJsApiLoader } from '@react-google-maps/api';
+import { useJsApiLoader, type Libraries } from '@react-google-maps/api';
 import { Spinner } from '@/components/ui';
 import { useMapsConfig } from '@/lib/api/config';
 
 /** Build-time Google Maps key (inlined by Next). */
 const BUILD_TIME_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || null;
+
+/** `marker` powers AdvancedMarkerElement. Stable ref — useJsApiLoader warns if it
+ *  changes between renders. */
+const MAPS_LIBRARIES: Libraries = ['marker'];
 
 export interface GoogleMapsGateProps {
   children: ReactNode;
@@ -40,6 +44,7 @@ function ScriptGate({ apiKey, children, fallback, loading }: { apiKey: string } 
   const { isLoaded, loadError } = useJsApiLoader({
     id: 'sekar-google-maps-script',
     googleMapsApiKey: apiKey,
+    libraries: MAPS_LIBRARIES,
   });
 
   if (loadError) return <>{fallback}</>;

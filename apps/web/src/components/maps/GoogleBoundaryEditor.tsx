@@ -24,11 +24,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GoogleMap, Marker, Polygon, Polyline } from '@react-google-maps/api';
+import { GoogleMap, Polygon, Polyline } from '@react-google-maps/api';
 import { Search, X, Loader2, Pencil, Trash2, Check, MapPin } from 'lucide-react';
 import { Button, Input } from '@/components/ui';
 import { GoogleMapsGate } from './GoogleMapsGate';
+import { AdvancedMarker } from './AdvancedMarker';
+import { useMapId } from '@/lib/api/config';
 import { calculatePolygonArea, formatArea } from '@/lib/utils/geo';
+
+/** Small white circle DOM node for a draft-boundary vertex (AdvancedMarker content). */
+function createVertexDot(): HTMLDivElement {
+  const el = document.createElement('div');
+  el.style.cssText =
+    'width:10px;height:10px;border-radius:9999px;background:var(--color-nb-white);border:2px solid var(--color-nb-black);';
+  return el;
+}
 
 /** Surabaya city center — sensible default when nothing is set yet. */
 const SURABAYA_CENTER = { lat: -7.2575, lng: 112.7521 };
@@ -53,15 +63,6 @@ const DRAFT_LINE_OPTIONS: google.maps.PolylineOptions = {
   strokeWeight: 2,
   clickable: false,
   icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 }, offset: '0', repeat: '10px' }],
-};
-
-const VERTEX_ICON: google.maps.Symbol = {
-  path: 0 /* google.maps.SymbolPath.CIRCLE — literal so it's defined before the SDK loads */,
-  scale: 5,
-  fillColor: BOUNDARY_FILL,
-  fillOpacity: 1,
-  strokeColor: BOUNDARY_STROKE,
-  strokeWeight: 2,
 };
 
 type LatLng = { lat: number; lng: number };
@@ -171,6 +172,7 @@ function BoundaryMap({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
 
+  const mapId = useMapId();
   const mapRef = useRef<google.maps.Map | null>(null);
   const polygonRef = useRef<google.maps.Polygon | null>(null);
   const pathListeners = useRef<google.maps.MapsEventListener[]>([]);
@@ -356,9 +358,9 @@ function BoundaryMap({
   }, []);
 
   const handlePinDrag = useCallback(
-    (e: google.maps.MapMouseEvent) => {
-      if (!editablePin || !e.latLng) return;
-      onPinChange?.({ lat: e.latLng.lat(), lng: e.latLng.lng() });
+    (coords: LatLng) => {
+      if (!editablePin) return;
+      onPinChange?.(coords);
     },
     [editablePin, onPinChange]
   );
@@ -539,6 +541,8 @@ function BoundaryMap({
           onClick={handleMapClick}
           onDblClick={drawing ? finishDrawing : undefined}
           options={{
+            // Vector map + Map ID → required for AdvancedMarkerElement.
+            mapId: mapId ?? undefined,
             // Keep Google's native controls (zoom, map type, fullscreen) visible.
             streetViewControl: false,
             mapTypeControl: true,
@@ -574,13 +578,18 @@ function BoundaryMap({
             <>
               <Polyline path={draft} options={DRAFT_LINE_OPTIONS} />
               {draft.map((v, i) => (
-                <Marker key={`draft-${i}`} position={v} icon={VERTEX_ICON} clickable={false} />
+                <AdvancedMarker
+                  key={`draft-${i}`}
+                  position={v}
+                  clickable={false}
+                  content={createVertexDot()}
+                />
               ))}
             </>
           )}
 
           {point && (
-            <Marker
+            <AdvancedMarker
               position={point}
               draggable={editablePin && !drawing}
               onDragEnd={handlePinDrag}
