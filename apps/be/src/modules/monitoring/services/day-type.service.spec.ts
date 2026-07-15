@@ -145,6 +145,64 @@ describe('DayTypeService', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // WIB boundary — the business day is Asia/Jakarta (UTC+7), never server-local.
+  // Containers set no TZ, so they run UTC; every instant below falls on a
+  // different UTC day than its WIB day. Reading server-local fields resolved the
+  // PREVIOUS day between 00:00 and 07:00 WIB.
+  // ---------------------------------------------------------------------------
+
+  describe('resolveDayType — WIB day boundary', () => {
+    it('should look up the WIB date, not the UTC date, for an instant before 07:00 WIB', async () => {
+      // 2026-08-16T20:00Z === 2026-08-17 03:00 WIB (Hari Kemerdekaan)
+      const earlyMorningWib = new Date('2026-08-16T20:00:00Z');
+      specialDayOverrideRepo.findOne.mockResolvedValue(null);
+
+      await service.getCurrentDayType(earlyMorningWib);
+
+      const callArg = specialDayOverrideRepo.findOne.mock.calls[0][0];
+      expect(callArg).toEqual({ where: { date: '2026-08-17' } });
+    });
+
+    it('should return HOLIDAY at 03:00 WIB on a holiday whose UTC date is the day before', async () => {
+      // The bug: monitoring graded the 03:00-07:00 WIB shift against 16 Aug's
+      // targets because the server's UTC date was still 2026-08-16.
+      const earlyMorningWib = new Date('2026-08-16T20:00:00Z');
+      specialDayOverrideRepo.findOne.mockImplementation(({ where }: { where: { date: string } }) =>
+        Promise.resolve(
+          where.date === '2026-08-17'
+            ? ({
+                id: 'override-wib',
+                date: new Date('2026-08-17'),
+                day_type: SpecialDayType.HOLIDAY,
+                name: 'Hari Kemerdekaan',
+                created_at: new Date(),
+              } as SpecialDayOverride)
+            : null,
+        ),
+      );
+
+      expect(await service.getCurrentDayType(earlyMorningWib)).toBe(DayType.HOLIDAY);
+    });
+
+    it('should treat 02:00 WIB Saturday as WEEKEND though the UTC day is still Friday', async () => {
+      // 2026-03-06T19:00Z === 2026-03-07 02:00 WIB (Saturday)
+      const saturdayEarlyWib = new Date('2026-03-06T19:00:00Z');
+      specialDayOverrideRepo.findOne.mockResolvedValue(null);
+
+      expect(await service.getCurrentDayType(saturdayEarlyWib)).toBe(DayType.WEEKEND);
+    });
+
+    it('should treat 02:00 WIB Monday as WEEKDAY though the UTC day is still Sunday', async () => {
+      // 2026-03-08T19:00Z === 2026-03-09 02:00 WIB (Monday); UTC is still Sun 08th,
+      // so server-local resolution wrongly returned WEEKEND for a working Monday.
+      const mondayEarlyWib = new Date('2026-03-08T19:00:00Z');
+      specialDayOverrideRepo.findOne.mockResolvedValue(null);
+
+      expect(await service.getCurrentDayType(mondayEarlyWib)).toBe(DayType.WEEKDAY);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Cache path — no date argument
   // ---------------------------------------------------------------------------
 

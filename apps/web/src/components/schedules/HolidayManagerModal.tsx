@@ -36,7 +36,14 @@ interface HolidayManagerModalProps {
   canManage: boolean;
 }
 
-const TYPES: SpecialDayType[] = ['HOLIDAY', 'WEEKEND', 'SPECIAL'];
+/**
+ * Selectable types. `SPECIAL` is deliberately absent: it resolves to
+ * `DayType.HOLIDAY` exactly like `HOLIDAY` (backend `mapSpecialDayType`, web
+ * `toDayType`) and there is no SPECIAL capacity tab, so picking it changed
+ * nothing an operator could observe. The enum and `typeLabel` still handle it so
+ * pre-existing SPECIAL rows keep rendering — this only stops new ones.
+ */
+const TYPES: SpecialDayType[] = ['HOLIDAY', 'WEEKEND'];
 
 /**
  * Manage special-day overrides (holidays / days off) from the Jadwal page — a

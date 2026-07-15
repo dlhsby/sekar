@@ -122,15 +122,38 @@ describe('HolidayManagerModal', () => {
 
     await user.type(screen.getByTestId('date-picker'), '2026-12-25');
     await user.click(screen.getByRole('combobox'));
-    await user.click(await screen.findByRole('option', { name: 'Hari Khusus' }));
+    await user.click(await screen.findByRole('option', { name: 'Akhir Pekan' }));
     await user.click(screen.getByRole('button', { name: /^tambah$/i }));
 
     await waitFor(() => expect(createMutate).toHaveBeenCalled());
     expect(createMutate).toHaveBeenCalledWith({
       date: '2026-12-25',
-      day_type: 'SPECIAL',
+      day_type: 'WEEKEND',
       name: undefined,
     });
+  });
+
+  // `SPECIAL` resolves to DayType.HOLIDAY exactly like `HOLIDAY` and has no
+  // capacity tab of its own, so offering it was a choice that silently did
+  // nothing. It stays readable (old rows) but is no longer creatable.
+  it('does not offer Hari Khusus as a selectable type', async () => {
+    const user = userEvent.setup();
+    setup();
+
+    await user.click(screen.getByRole('combobox'));
+
+    expect(await screen.findByRole('option', { name: 'Hari Libur' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'Akhir Pekan' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Hari Khusus' })).not.toBeInTheDocument();
+  });
+
+  it('still renders the label of a pre-existing SPECIAL entry', async () => {
+    setup({
+      rows: [{ id: 'h-3', date: '2026-05-31', day_type: 'SPECIAL', name: 'Hari Jadi Surabaya' }],
+    });
+
+    expect(screen.getByText('Hari Jadi Surabaya')).toBeInTheDocument();
+    expect(screen.getByText('Hari Khusus')).toBeInTheDocument();
   });
 
   it('deletes an entry by id', async () => {
