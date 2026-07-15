@@ -20,6 +20,9 @@ jest.mock('@/lib/api/rayons', () => ({
 jest.mock('@/lib/api/location-types', () => ({
   useLocationTypes: jest.fn(),
 }));
+jest.mock('@/lib/api/regions', () => ({
+  useRegions: jest.fn(() => ({ data: [] })),
+}));
 
 // Mock GoogleBoundaryEditor — Google Maps JS needs an API key + WebGL, cannot
 // run in jsdom. Expose buttons to drive polygon/pin changes and render the
@@ -229,6 +232,31 @@ describe('LocationForm', () => {
       });
 
       expect(screen.getByText(/koordinat pusat/i)).toBeInTheDocument();
+    });
+
+    it('keeps region_id (Kawasan) in the submit payload — zod must not strip it', async () => {
+      const user = userEvent.setup();
+      const withRegion: Location = {
+        ...mockArea,
+        id: '11111111-1111-4111-8111-111111111111',
+        rayon_id: '22222222-2222-4222-8222-222222222222',
+        location_type_id: '33333333-3333-4333-8333-333333333333',
+        region_id: '44444444-4444-4444-4444-444444444444',
+      };
+      render(
+        <>
+          <LocationForm formId={FORM_ID} mode="edit" initialData={withRegion} onSubmit={mockOnSubmit} />
+          <ExternalSubmitButton />
+        </>,
+        { wrapper: createWrapper() }
+      );
+
+      await user.click(screen.getByRole('button', { name: /buat area/i }));
+
+      await waitFor(() => expect(mockOnSubmit).toHaveBeenCalled());
+      expect(mockOnSubmit.mock.calls[0][0].region_id).toBe(
+        '44444444-4444-4444-4444-444444444444'
+      );
     });
   });
 
