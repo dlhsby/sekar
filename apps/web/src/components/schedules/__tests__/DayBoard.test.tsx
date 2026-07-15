@@ -340,3 +340,55 @@ describe('DayBoard', () => {
     expect(screen.queryByRole('button', { name: /tugaskan/i })).not.toBeInTheDocument();
   });
 });
+
+
+describe('subject pills (rayon / kawasan)', () => {
+  /**
+   * Regression: these pills are built from a SYNTHETIC per-shift group that has
+   * no `byRole` — an `as BoardShiftGroup` cast hid that from tsc, and reading
+   * `group.byRole[role]` for the hint's breakdown crashed the whole accordion
+   * with "Cannot read properties of undefined (reading 'satgas')". They only
+   * render when the aggregate `capacities` map has a target, which is why a
+   * roleCapacities-only test never reached the crash.
+   */
+  it('renders a kawasan pill with a per-role hint without crashing', async () => {
+    const user = userEvent.setup();
+    renderBoard({
+      master: masterAt('region'),
+      occurrences: [occ({ location_id: 'loc1' })],
+      capacities: new Map([['reg:kw1:s1', 3]]),
+      roleCapacities: new Map([['reg:kw1:s1:satgas', 3]]),
+    });
+    await expand(user, /Rayon Pusat/);
+
+    expect(screen.getByText(/S1·1\/3/)).toBeInTheDocument();
+  });
+
+  it('names the short role in the kawasan hint, counting the whole subtree', async () => {
+    const user = userEvent.setup();
+    renderBoard({
+      master: masterAt('region'),
+      occurrences: [occ({ location_id: 'loc1' })], // one satgas, on a lokasi
+      capacities: new Map([['reg:kw1:s1', 3]]),
+      roleCapacities: new Map([['reg:kw1:s1:satgas', 3]]),
+    });
+    await expand(user, /Rayon Pusat/);
+
+    // The hint must say WHICH role, and count the lokasi worker toward the
+    // kawasan — a synthetic group's own byRole would have said 0.
+    expect(screen.getByTitle(/Satgas 1\/3/)).toBeInTheDocument();
+  });
+
+  it('renders a rayon pill with a per-role hint without crashing', async () => {
+    renderBoard({
+      master: masterAt('rayon'),
+      occurrences: [occ({ location_id: 'loc1' })],
+      capacities: new Map([['ray:ry1:s1', 2]]),
+      roleCapacities: new Map([['ray:ry1:s1:satgas', 2]]),
+    });
+
+    // Rayon pills sit on the header, visible before expanding.
+    expect(screen.getByText(/S1·1\/2/)).toBeInTheDocument();
+    expect(screen.getByTitle(/Satgas 1\/2/)).toBeInTheDocument();
+  });
+});

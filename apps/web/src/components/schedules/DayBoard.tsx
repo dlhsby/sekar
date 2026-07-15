@@ -142,9 +142,10 @@ export function DayBoard({
                 {rayonCapPills.map(({ shift, countable, target }) => (
                   <ShiftPill
                     key={shift.id}
-                    group={{ shift, countable, total: countable } as BoardShiftGroup}
+                    group={{ shift, byRole: {}, teams: [], countable, total: countable }}
                     target={target}
                     roleTargets={rayonRoleTargets}
+                    roleCounts={rayonRoleCounts}
                   />
                 ))}
                 <Pill>{t('schedules:board.petugasCount', { count: rayon.total })}</Pill>
@@ -255,7 +256,7 @@ function subtreeRoleCounts(groups: BoardShiftGroup[][]): Map<string, number> {
   for (const list of groups) {
     for (const g of list) {
       for (const role of COUNTABLE_ROLES) {
-        const n = g.byRole[role]?.length ?? 0;
+        const n = g.byRole?.[role]?.length ?? 0;
         if (n === 0) continue;
         const key = `${g.shift.id}:${role}`;
         m.set(key, (m.get(key) ?? 0) + n);
@@ -374,11 +375,16 @@ function RegionCard({
             {capPills.map(({ e, target }) => (
               <ShiftPill
                 key={e.shift.id}
-                group={
-                  { shift: e.shift, countable: e.countable, total: e.countable } as BoardShiftGroup
-                }
+                group={{
+                  shift: e.shift,
+                  byRole: {},
+                  teams: [],
+                  countable: e.countable,
+                  total: e.countable,
+                }}
                 target={target}
                 roleTargets={regionRoleTargets}
+                roleCounts={regionRoleCounts}
               />
             ))}
             <Pill>{t('schedules:board.petugasCount', { count: region.total })}</Pill>
@@ -516,11 +522,19 @@ function ShiftPill({
   group,
   target,
   roleTargets,
+  roleCounts,
 }: {
   group: BoardShiftGroup;
   target?: number;
   /** `${shiftId}:${role}` → target, so the hint can name the short role. */
   roleTargets?: Map<string, number>;
+  /**
+   * `${shiftId}:${role}` → coverage counted toward the target. Required for the
+   * rayon/kawasan pills: their `group` is a synthetic per-shift total with no
+   * `byRole`, and their coverage is the subtree's anyway. A lokasi omits it and
+   * falls back to its own rows.
+   */
+  roleCounts?: Map<string, number>;
 }) {
   const { t } = useTranslation(['schedules', 'roles']);
   const short = group.shift.name.match(/\d+/)?.[0] ?? group.shift.name;
@@ -541,7 +555,8 @@ function ShiftPill({
       if (roleTarget <= 0) return null;
       return t('schedules:board.shiftStaffRolePart', {
         role: t(`roles:${role}`, role),
-        countable: group.byRole[role]?.length ?? 0,
+        countable:
+          roleCounts?.get(`${group.shift.id}:${role}`) ?? group.byRole?.[role]?.length ?? 0,
         target: roleTarget,
       });
     })
