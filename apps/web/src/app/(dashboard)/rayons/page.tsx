@@ -15,6 +15,7 @@ import {
   DataTable,
   PageHeader,
   CoordinateLink,
+  StatusPill,
   ConfirmDialog,
   mapStyleColorColumn,
   type ColumnDef,
@@ -112,14 +113,42 @@ export default function RayonsPage() {
       mapStyleColorColumn<Rayon>(t('common:color')),
       {
         id: 'coordinates',
-        accessorFn: (r) => (r.center_lat && r.center_lng ? 'Ada' : '—'),
-        header: t('admin:locations.columnCoordinates'),
+        accessorFn: (r) =>
+          r.center_lat && r.center_lng
+            ? `${Number(r.center_lat).toFixed(6)}, ${Number(r.center_lng).toFixed(6)}`
+            : '',
+        header: t('admin:shared.columnCoordinates'),
+        // Raw lat/lng sorts and filters meaninglessly — the accessor exists only
+        // so global search can match a pasted coordinate.
         enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: t('admin:locations.columnCoordinates') },
+        meta: { label: t('admin:shared.columnCoordinates') },
         cell: ({ row }) => (
           <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
         ),
+      },
+      {
+        id: 'boundary_polygon',
+        accessorFn: (r) => (r.boundary_polygon ? t('admin:shared.boundaryYes') : t('admin:shared.boundaryNo')),
+        header: t('admin:shared.columnBoundary'),
+        meta: {
+          label: t('admin:shared.columnBoundary'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { value: t('admin:shared.boundaryYes'), label: t('admin:shared.boundaryYes') },
+            { value: t('admin:shared.boundaryNo'), label: t('admin:shared.boundaryNo') },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.boundary_polygon ? (
+            <StatusPill tone="ok" dot>
+              {t('admin:shared.boundaryYes')}
+            </StatusPill>
+          ) : (
+            <StatusPill tone="neutral" dot>
+              {t('admin:shared.boundaryNo')}
+            </StatusPill>
+          ),
       },
       {
         id: 'description',

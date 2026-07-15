@@ -140,9 +140,12 @@ export default function LocationsPage() {
           a.gps_lat && a.gps_lng
             ? `${Number(a.gps_lat).toFixed(6)}, ${Number(a.gps_lng).toFixed(6)}`
             : '',
-        header: t('admin:locations.columnCoordinates'),
+        header: t('admin:shared.columnCoordinates'),
+        // Raw lat/lng sorts and filters meaninglessly — the accessor exists only
+        // so global search can match a pasted coordinate.
+        enableSorting: false,
         enableColumnFilter: false,
-        meta: { label: t('admin:locations.columnCoordinates') },
+        meta: { label: t('admin:shared.columnCoordinates') },
         cell: ({ row }) =>
           row.original.gps_lat && row.original.gps_lng ? (
             <CoordinateLink
@@ -156,24 +159,24 @@ export default function LocationsPage() {
       },
       {
         id: 'boundary_polygon',
-        accessorFn: (a) => (a.boundary_polygon ? t('admin:locations.boundaryYes') : t('admin:locations.boundaryNo')),
-        header: t('admin:locations.columnBoundary'),
+        accessorFn: (a) => (a.boundary_polygon ? t('admin:shared.boundaryYes') : t('admin:shared.boundaryNo')),
+        header: t('admin:shared.columnBoundary'),
         meta: {
-          label: t('admin:locations.columnBoundary'),
+          label: t('admin:shared.columnBoundary'),
           filterVariant: 'enum',
           filterOptions: [
-            { value: t('admin:locations.boundaryYes'), label: t('admin:locations.boundaryYes') },
-            { value: t('admin:locations.boundaryNo'), label: t('admin:locations.boundaryNo') },
+            { value: t('admin:shared.boundaryYes'), label: t('admin:shared.boundaryYes') },
+            { value: t('admin:shared.boundaryNo'), label: t('admin:shared.boundaryNo') },
           ],
         },
         cell: ({ row }) =>
           row.original.boundary_polygon ? (
             <StatusPill tone="ok" dot>
-              {t('admin:locations.boundaryYes')}
+              {t('admin:shared.boundaryYes')}
             </StatusPill>
           ) : (
             <StatusPill tone="neutral" dot>
-              {t('admin:locations.boundaryNo')}
+              {t('admin:shared.boundaryNo')}
             </StatusPill>
           ),
       },
