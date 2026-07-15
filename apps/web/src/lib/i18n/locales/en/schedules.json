@@ -328,9 +328,9 @@
     "legendHigh": "More"
   },
   "holidays": {
-    "title": "Holidays & Special Days",
+    "title": "Holidays",
     "manage": "Holidays",
-    "hint": "Mark dates as holidays or special days. This changes the day type used for staffing targets on the board and in monitoring.",
+    "hint": "Mark dates as a holiday or a weekend. This changes the day type used for staffing targets on the board and in monitoring.",
     "addTitle": "Add day",
     "typeLabel": "Day type",
     "namePlaceholder": "Name (e.g. Independence Day)",

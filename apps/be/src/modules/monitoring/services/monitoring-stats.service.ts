@@ -274,7 +274,12 @@ export class MonitoringStatsService {
       id: area.id,
       name: area.name,
       area_type: area.locationType?.name || 'Unknown',
-      area_type_category: area.locationType?.category || 'active',
+      // 'ACTIVE', not 'active': the column stores upper-case and every consumer
+      // compares against it (web: `category === 'ACTIVE'`), so the lower-case
+      // fallback emitted a value nothing could match — a lokasi with no type read
+      // as neither ACTIVE nor PASSIVE. Harmless while the field is decorative;
+      // a trap the moment anything branches on it.
+      area_type_category: area.locationType?.category || 'ACTIVE',
       rayon_id: area.rayon_id || '',
       rayon_name: rayonName,
       latitude: parseFloat(area.gps_lat?.toString() || '0'),
@@ -879,7 +884,12 @@ export class MonitoringStatsService {
     return {
       id: area.id,
       name: area.name,
-      area_type_category: area.locationType?.category || 'active',
+      // 'ACTIVE', not 'active': the column stores upper-case and every consumer
+      // compares against it (web: `category === 'ACTIVE'`), so the lower-case
+      // fallback emitted a value nothing could match — a lokasi with no type read
+      // as neither ACTIVE nor PASSIVE. Harmless while the field is decorative;
+      // a trap the moment anything branches on it.
+      area_type_category: area.locationType?.category || 'ACTIVE',
       workers_required: workersRequired,
       workers_online: workersOnline,
       workers_offline: workersOffline,

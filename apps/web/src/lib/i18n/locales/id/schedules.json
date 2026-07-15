@@ -328,9 +328,9 @@
     "legendHigh": "Banyak"
   },
   "holidays": {
-    "title": "Hari Libur & Hari Khusus",
+    "title": "Hari Libur",
     "manage": "Hari Libur",
-    "hint": "Tandai tanggal sebagai libur atau hari khusus. Ini mengubah jenis hari untuk target kebutuhan petugas di papan jadwal dan monitoring.",
+    "hint": "Tandai tanggal sebagai hari libur atau akhir pekan. Ini mengubah jenis hari yang dipakai target kebutuhan petugas di papan jadwal dan monitoring.",
     "addTitle": "Tambah hari",
     "typeLabel": "Jenis hari",
     "namePlaceholder": "Nama (mis. Hari Kemerdekaan)",

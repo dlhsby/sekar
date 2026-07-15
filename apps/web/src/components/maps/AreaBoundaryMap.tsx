@@ -6,6 +6,7 @@ import { GoogleMap, Marker, Polygon } from '@react-google-maps/api';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { useMapId } from '@/lib/api/config';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
+import { geometryToPaths } from '@/lib/maps/geometry';
 
 /** The tier being shown — decides the fallback styling when nothing is set. */
 export type AreaLevel = 'rayon' | 'region' | 'location';
@@ -37,15 +38,6 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   clickableIcons: false,
 };
 
-/** GeoJSON Polygon/MultiPolygon → Google outer-ring paths (mirrors the monitoring map). */
-function toPaths(
-  geom: GeoJSON.Polygon | GeoJSON.MultiPolygon
-): Array<Array<{ lat: number; lng: number }>> {
-  const ring = (r: GeoJSON.Position[]) => r.map(([lng, lat]) => ({ lat, lng }));
-  if (geom.type === 'Polygon') return [ring(geom.coordinates[0])];
-  return geom.coordinates.map((poly) => ring(poly[0]));
-}
-
 /**
  * A single area's boundary + centre pin, drawn in ITS OWN colours (ADR-045),
  * matching how the monitoring map renders the same geography.
@@ -68,7 +60,7 @@ export function AreaBoundaryMap({
   mapsFallback,
 }: AreaBoundaryMapProps) {
   const mapId = useMapId();
-  const paths = useMemo(() => (boundary ? toPaths(boundary) : []), [boundary]);
+  const paths = useMemo(() => (geometryToPaths(boundary)), [boundary]);
 
   // Frame the boundary; fall back to the pin, then to Surabaya.
   const center = useMemo(() => {
