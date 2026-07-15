@@ -5,7 +5,7 @@
  * areas (name + optional secondary line) with a search box and a count. The
  * data is passed in (no fetching), so it's reused wherever a cell summarizes
  * several areas: the user grid (permanent assignments) and the schedule grid
- * (that day's roster areas). Chrome mirrors AreaDetailDrawer.
+ * (that day's roster areas).
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';

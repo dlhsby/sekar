@@ -1,7 +1,6 @@
 /**
  * Plants & Pruning API Hooks (Phase 3)
- * Read hooks consumed by AreaDetailDrawer to show plant + pruning context
- * for an area.
+ * Read hooks for plant + pruning context on a location (plants feature — parked).
  */
 
 import { useQuery } from '@tanstack/react-query';
