@@ -94,6 +94,9 @@ export function LocationForm({
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
         rayon_id: z.string().uuid(t('validation:rayonRequired')),
+        // Optional Kawasan (ADR-045) — set via the cascade select; must be in the
+        // schema or zodResolver strips it and the assignment silently won't save.
+        region_id: z.string().optional().nullable(),
         location_type_id: z.string().uuid(t('validation:locationTypeRequired')),
         address: z.string().optional().nullable(),
         radius_meters: z
