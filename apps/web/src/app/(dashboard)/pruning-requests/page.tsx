@@ -243,17 +243,13 @@ export default function PruningRequestsPage() {
         enablePagination={false}
         searchPlaceholder={t('pruning:page.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          <Button
-            onClick={() => {
-              setEditingRequest(null);
-              setFormOpen(true);
-            }}
-            leftIcon={<Plus className="h-5 w-5" />}
-          >
-            {t('pruning:page.buttonCreate')}
-          </Button>
-        }
+        createAction={{
+          label: t('pruning:page.buttonCreate'),
+          onClick: () => {
+            setEditingRequest(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('pruning:page.emptyTitle')}
         emptyDescription={t('pruning:page.emptyDescription')}
         emptyAction={

@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 
 export interface CreateButtonProps {
   label: string;
-  onClick: () => void;
+  /** Omit when the button is wrapped in a <Link> (create-by-navigation). */
+  onClick?: () => void;
   /** Defaults to a Plus. */
   icon?: React.ReactNode;
   disabled?: boolean;
@@ -29,8 +30,17 @@ export interface CreateButtonProps {
  */
 export function CreateButton({ label, onClick, icon, disabled }: CreateButtonProps) {
   return (
-    <Button onClick={onClick} disabled={disabled} aria-label={label} title={label}>
-      {icon ?? <Plus className="size-5" aria-hidden />}
+    <Button
+      // size="sm" (h-10), matching the toolbar's filter/columns/refresh buttons —
+      // the default size is h-12 and stood a notch taller than the group it sits
+      // in. Variant stays `default` so it reads as the primary action.
+      size="sm"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+    >
+      {icon ?? <Plus className="h-4 w-4" aria-hidden />}
       <span className="ml-1.5 hidden sm:inline">{label}</span>
     </Button>
   );

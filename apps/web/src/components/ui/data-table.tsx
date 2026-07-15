@@ -374,6 +374,13 @@ export function DataTable<TData, TValue>({
     <div className={cn('space-y-3', className)}>
       {showToolbar ? (
         <div className="flex flex-wrap items-center gap-2">
+          {/* Left slot — search plus any future left-hand tools. `w-full` below
+              `sm` keeps it on a ROW OF ITS OWN, so the right-hand group lands
+              underneath instead of sharing the line: the search grows to full
+              width when focused and would otherwise shove the buttons around,
+              and the slot needs room for more tools than just search. From `sm`
+              up both fit on one line. */}
+          <div className="flex w-full items-center gap-2 sm:w-auto">
           {hasSearch ? (
             <div
               className={cn(
@@ -395,6 +402,7 @@ export function DataTable<TData, TValue>({
             </div>
           ) : null}
           {toolbar}
+          </div>
           {enableColumnToggle ||
           actions ||
           (createAction && !createAction.hidden) ||

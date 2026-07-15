@@ -268,6 +268,27 @@ describe('DataTable — createAction', () => {
     expect(screen.queryByRole('button', { name: 'Tambah Rayon' })).not.toBeInTheDocument();
   });
 
+  it('keeps search on a row of its own above the right-hand group on mobile', () => {
+    // The left slot is w-full below sm, so the button group wraps underneath
+    // rather than sharing the line — the search grows to full width when focused
+    // and would otherwise shove the buttons around, and the slot has to leave
+    // room for more left-hand tools than just search.
+    const { container } = render(
+      <DataTable
+        columns={cols}
+        data={[]}
+        searchPlaceholder="Cari…"
+        createAction={{ label: 'Tambah', onClick: jest.fn() }}
+      />
+    );
+
+    const leftSlot = container.querySelector('div.flex.w-full.items-center.sm\\:w-auto');
+    expect(leftSlot).not.toBeNull();
+    expect(leftSlot).toContainElement(screen.getByRole('textbox'));
+    // ...and the create button is NOT in that slot — it belongs to the right group.
+    expect(leftSlot).not.toContainElement(screen.getByRole('button', { name: 'Tambah' }));
+  });
+
   it('shows the toolbar for a createAction alone, with no search or filters', () => {
     render(<DataTable columns={cols} data={[]} createAction={{ label: 'Tambah', onClick: jest.fn() }} />);
 

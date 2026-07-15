@@ -222,14 +222,13 @@ export default function PlantsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('plants:catalog.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          <Button onClick={() => {
+        createAction={{
+          label: t('plants:buttonAdd'),
+          onClick: () => {
             setEditingPlant(null);
             setFormOpen(true);
-          }} leftIcon={<Plus className="h-5 w-5" />}>
-            {t('plants:buttonAdd')}
-          </Button>
-        }
+          },
+        }}
         emptyTitle={t('plants:catalog.emptyTitle')}
         emptyDescription={t('plants:catalog.emptyDescription')}
         emptyAction={

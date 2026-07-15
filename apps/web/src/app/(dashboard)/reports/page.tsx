@@ -30,6 +30,7 @@ import {
   useToast,
   type ColumnDef,
   type DataTableRowAction,
+  CreateButton,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
@@ -254,8 +255,11 @@ export default function ReportsPage() {
             : undefined
         }
         actions={
+          // Create-by-navigation (the builder is its own route), so the button is
+          // wrapped rather than given an onClick — same shape as every other
+          // create action.
           <Link href="/reports/builder">
-            <Button leftIcon={<Plus className="h-4 w-4" />}>{t('reports:list.actions.create')}</Button>
+            <CreateButton label={t('reports:list.actions.create')} />
           </Link>
         }
       />

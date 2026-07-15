@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Power } from 'lucide-react';
+import { Pencil, Trash2, Power } from 'lucide-react';
 import {
   Button,
   DataTable,
@@ -184,19 +184,14 @@ export default function TeamsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('admin:teamCategories.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          can('team:manage') ? (
-            <Button
-              leftIcon={<Plus className="size-4" />}
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
-            >
-              {t('admin:teamCategories.buttonAdd')}
-            </Button>
-          ) : undefined
-        }
+        createAction={{
+          label: t('admin:teamCategories.buttonAdd'),
+          hidden: !can('team:manage'),
+          onClick: () => {
+            setEditing(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('admin:teamCategories.emptyTitle')}
       />
 

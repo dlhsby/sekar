@@ -31,7 +31,7 @@ import { ActivityFormModal } from '@/components/activities/ActivityFormModal';
 import { DeleteActivityModal } from '@/components/activities/DeleteActivityModal';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, X, Eye, Pencil, Trash2 } from 'lucide-react';
 import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
@@ -421,19 +421,14 @@ export default function ActivitiesPage() {
             enablePagination={false}
             getRowId={(r) => r.id}
             rowActions={rowActions}
-            actions={
-              isAdmin ? (
-                <Button
-                  onClick={() => {
-                    setEditingActivity(null);
-                    setFormOpen(true);
-                  }}
-                  leftIcon={<Plus className="h-5 w-5" />}
-                >
-                  {t('activities:createButton')}
-                </Button>
-              ) : undefined
-            }
+            createAction={{
+              label: t('activities:createButton'),
+              hidden: !isAdmin,
+              onClick: () => {
+                setEditingActivity(null);
+                setFormOpen(true);
+              },
+            }}
             emptyTitle={t('activities:list.empty.noActivities')}
           />
 

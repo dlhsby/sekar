@@ -578,8 +578,37 @@ The label is kept as `aria-label` + `title`, so the icon-only form stays
 announced and hoverable. `actions` remains as an escape hatch for bespoke
 toolbar content.
 
-Migrated: rayons, regions, users (`createAction`) · tasks (`PageHeader` +
-`CreateButton`). Search keeps its own row on the left, as before.
+### Toolbar rows
+
+The toolbar is **two slots**, not one line:
+
+- **Left slot** (`w-full` below `sm`, `sm:w-auto`) — search, plus any future
+  left-hand tools. Full width on a phone puts it on a **row of its own**, so the
+  right-hand group lands underneath rather than sharing the line: the search
+  grows to full width when focused and would otherwise shove the buttons around,
+  and the slot has to leave room for more than just search.
+- **Right group** (`ml-auto`) — filter · columns · refresh · create.
+
+From `sm` up both fit on one line, as before.
+
+`CreateButton` is `size="sm"` (h-10) to match the filter/columns/refresh buttons
+it sits beside — the default size is h-12 and stood a notch taller than its own
+group.
+
+### Coverage
+
+**Every** create action goes through one of two paths — verified by sweeping all
+18 pages that pass `actions`:
+
+- **`createAction`** (9): activities, locations, overtime, plants,
+  pruning-requests, rayons, regions, team-categories, users.
+- **`<CreateButton>` in `PageHeader`** (3): tasks and reports/schedules (their
+  default view is kanban / has no table toolbar), reports (create-by-navigation —
+  the button is wrapped in a `<Link>`, so `onClick` is optional).
+
+Found during the sweep: **`plants` passed `actions` twice on the same element**,
+so JSX silently kept the last one and its area-picker Combobox had been dead.
+Moving the button to `createAction` freed the slot and restored it.
 
 
 ```typescript

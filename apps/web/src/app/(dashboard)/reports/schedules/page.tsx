@@ -34,10 +34,11 @@ import {
   type FormSelectOption,
   type ColumnDef,
   type DataTableRowAction,
+  CreateButton,
 } from '@/components/ui';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Trash2, Pencil, Power } from 'lucide-react';
+import { Trash2, Pencil, Power } from 'lucide-react';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
 
@@ -327,11 +328,7 @@ export default function SchedulesPage() {
             ? t('schedules.page.totalCount', { count: schedulesList.length })
             : undefined
         }
-        actions={
-          <Button leftIcon={<Plus className="h-4 w-4" />} onClick={handleOpenCreate}>
-            {t('schedules.actions.create')}
-          </Button>
-        }
+        actions={<CreateButton label={t('schedules.actions.create')} onClick={handleOpenCreate} />}
       />
 
       <Card>
