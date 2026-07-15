@@ -16,6 +16,7 @@ import {
   PageHeader,
   StatusPill,
   CoordinateLink,
+  mapStyleColorColumn,
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
@@ -193,30 +194,7 @@ export default function LocationsPage() {
           </span>
         ),
       },
-      {
-        id: 'style',
-        header: t('admin:areas.columnStyle'),
-        enableSorting: false,
-        enableColumnFilter: false,
-        meta: { label: t('admin:areas.columnStyle'), defaultHidden: true },
-        cell: ({ row }) => {
-          const border = row.original.border_color ?? null;
-          const fill = row.original.fill_color ?? null;
-          const shown = fill ?? border;
-          return shown ? (
-            <span className="inline-flex items-center gap-2">
-              <span
-                className="h-4 w-4 border-2"
-                style={{ backgroundColor: fill ?? 'transparent', borderColor: border ?? 'var(--color-nb-black)' }}
-                title={shown}
-              />
-              <span className="font-mono text-nb-body-sm text-nb-gray-600">{shown}</span>
-            </span>
-          ) : (
-            <span className="text-nb-gray-500">—</span>
-          );
-        },
-      },
+      mapStyleColorColumn<Location>(t('common:color')),
       {
         id: 'address',
         accessorKey: 'address',
@@ -296,7 +274,7 @@ export default function LocationsPage() {
         ),
       },
     ],
-    [actorName, rayonFilterOptions, locationTypeFilterOptions]
+    [t, actorName, rayonFilterOptions, locationTypeFilterOptions]
   );
 
   const rowActions = useCallback(

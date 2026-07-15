@@ -43,6 +43,7 @@ export { NotificationBell, NotificationPanel, type NotificationPanelProps } from
 // Form Components
 export { FormInput, type FormInputProps } from './form-input';
 export { FormSelect, type FormSelectOption, type FormSelectProps } from './form-select';
+export { MapStyleSwatch, mapStyleColorColumn, type MapStyleColors } from './MapStyleSwatch';
 export { FormCombobox, type FormComboboxProps } from './form-combobox';
 export { FormMultiCombobox, type FormMultiComboboxProps } from './form-multi-combobox';
 export { CoordinateLink } from './coordinate-link';
