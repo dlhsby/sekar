@@ -157,6 +157,39 @@ describe('RayonForm', () => {
     expect(payload.staffing_level).toBe('region');
   });
 
+  it('keeps map-style colours in the submit payload (zod must not strip them)', async () => {
+    const onSubmit = jest.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    const initialData = {
+      id: 'r1',
+      name: 'Rayon Lama',
+      staffing_level: 'region',
+      center_lat: -7.28,
+      center_lng: 112.74,
+      // Sentinel strings (not real hex) — the lint rule forbids hex literals and
+      // the schema only needs a string; we assert the value round-trips.
+      border_color: 'border-sentinel',
+      fill_color: 'fill-sentinel',
+      border_opacity: 0.8,
+      fill_opacity: 0.5,
+    } as never;
+    render(
+      <>
+        <RayonForm formId={FORM_ID} mode="edit" initialData={initialData} onSubmit={onSubmit} />
+        <ExternalSubmitButton />
+      </>
+    );
+
+    await user.click(screen.getByRole('button', { name: /buat rayon/i }));
+
+    await waitFor(() => expect(onSubmit).toHaveBeenCalled());
+    const payload = onSubmit.mock.calls[0][0];
+    expect(payload.border_color).toBe('border-sentinel');
+    expect(payload.fill_color).toBe('fill-sentinel');
+    expect(payload.border_opacity).toBe(0.8);
+    expect(payload.fill_opacity).toBe(0.5);
+  });
+
   it('does not preselect a staffing level on create and blocks submit until chosen', async () => {
     const onSubmit = jest.fn().mockResolvedValue(undefined);
     const user = userEvent.setup();
