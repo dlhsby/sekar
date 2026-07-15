@@ -251,10 +251,12 @@
       "locationScopeHint": "Static coverage at a single location.",
       "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement.",
       "kindPlaceholder": "Select type...",
-      "rolePlaceholder": "All roles",
+      "rolePlaceholder": "Select role...",
       "roleLabel": "Role",
       "scopePlaceholder": "Select scope...",
-      "recurrencePlaceholder": "Select recurrence..."
+      "recurrencePlaceholder": "Select recurrence...",
+      "regionFilterPlaceholder": "All kawasan (optional)",
+      "regionFilterHint": "Optional — narrows the location list. Locations with no kawasan still appear."
     },
     "editScope": {
       "title": "Edit What?",

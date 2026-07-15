@@ -129,6 +129,13 @@ function createSchema(t: TFn) {
           });
         }
       }
+      if (data.kind === 'individual' && !data.role) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['role'],
+          message: t('validation:required'),
+        });
+      }
       if (data.kind === 'individual' && !data.user_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -161,7 +168,9 @@ function createSchema(t: TFn) {
           message: t('validation:required'),
         });
       }
-      if ((data.scope === 'region' || data.scope === 'location') && !data.region_id) {
+      // Only the mobile (kawasan-wide) scope needs a kawasan. For a lokasi scope
+      // it is just a filter — demanding it made rayon-direct lokasi impossible.
+      if (data.scope === 'region' && !data.region_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ['region_id'],
@@ -385,8 +394,15 @@ export function ScheduleEventModal({
   const regionOptions = regions
     .filter((r) => r.rayon_id === formRayon)
     .map((r) => ({ value: r.id, label: r.name }));
+  // A lokasi belongs to a RAYON; a kawasan is an optional parent (ADR-045), so
+  // Rayon Taman Aktif hangs its lokasi straight off the rayon with region_id
+  // NULL. Filtering on `region_id === formRegion` therefore matched nothing for
+  // them and made every rayon-direct lokasi unreachable — the board renders them
+  // as `looseLocations`, but this form could not offer them at all.
+  // Kawasan is a NARROWING filter here, not a required step.
   const locationOptions = locations
-    .filter((l) => l.region_id === formRegion)
+    .filter((l) => l.rayon_id === formRayon)
+    .filter((l) => !formRegion || l.region_id === formRegion)
     .map((l) => ({ value: l.id, label: l.name }));
 
   // Editing a static/mobile event: backfill the rayon → kawasan cascade from the
@@ -609,6 +625,10 @@ export function ScheduleEventModal({
               />
             )}
 
+            {/* Under a Lokasi scope the kawasan is an optional NARROWING filter,
+                not a step: a lokasi belongs to a rayon and may have no kawasan at
+                all (Rayon Taman Aktif). Only the mobile (kawasan-wide) scope
+                actually needs one. */}
             {(formScope === 'region' || formScope === 'location') && formRayon && (
               <FormCombobox
                 label={t('schedules:calendar.event.regionLabel')}
@@ -618,15 +638,23 @@ export function ScheduleEventModal({
                   setValue('region_id', v, { shouldValidate: true });
                   setValue('location_id', '');
                 }}
-                placeholder={t('schedules:calendar.event.regionPlaceholder')}
-                helperText={t('schedules:calendar.event.regionScopeHint')}
+                placeholder={
+                  formScope === 'location'
+                    ? t('schedules:calendar.event.regionFilterPlaceholder')
+                    : t('schedules:calendar.event.regionPlaceholder')
+                }
+                helperText={
+                  formScope === 'location'
+                    ? t('schedules:calendar.event.regionFilterHint')
+                    : t('schedules:calendar.event.regionScopeHint')
+                }
                 error={errors.region_id?.message}
-                required
+                required={formScope === 'region'}
                 disabled={lockRegion}
               />
             )}
 
-            {formScope === 'location' && formRegion && (
+            {formScope === 'location' && formRayon && (
               <FormCombobox
                 label={t('schedules:calendar.event.locationLabel')}
                 options={locationOptions}
@@ -661,36 +689,41 @@ export function ScheduleEventModal({
               disabled={isEditing || lockKind}
             />
 
-            {/* Role narrows the worker list — "Pekerja" offered every schedulable
-                role at once, so finding one satgas meant reading past linmas and
-                korlap. Not sent to the API: the chosen user carries their role. */}
+            {/* Peran + Pekerja read as one decision — "which satgas?" — so they
+                sit on one row. Peran is REQUIRED and gates Pekerja: "Semua peran"
+                would fetch every schedulable user before the operator has said
+                what they want. Not sent to the API — the chosen user carries
+                their own role. */}
             {formKind === 'individual' && (
-              <FormSelect
-                label={t('schedules:calendar.event.roleLabel')}
-                options={SCHEDULABLE_ROLES.map((r) => ({ value: r, label: t(`roles:${r}`, r) }))}
-                value={watch('role') || ''}
-                placeholder={t('schedules:calendar.event.rolePlaceholder')}
-                onChange={(v) => {
-                  setValue('role', v);
-                  // The current pick may not hold the new role.
-                  setValue('user_id', '', { shouldValidate: true });
-                }}
-                disabled={isEditing || lockRole}
-              />
-            )}
-
-            {formKind === 'individual' && (
-              <AsyncUserCombobox
-                label={t('schedules:calendar.event.workerLabel')}
-                required
-                roles={watch('role') ? [watch('role') as string] : SCHEDULABLE_ROLES}
-                value={watch('user_id') || ''}
-                onValueChange={(v) => setValue('user_id', v, { shouldValidate: true })}
-                initialLabel={event?.user?.full_name}
-                placeholder={t('schedules:calendar.event.workerPlaceholder')}
-                error={errors.user_id?.message}
-                disabled={isEditing}
-              />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FormSelect
+                  label={t('schedules:calendar.event.roleLabel')}
+                  options={SCHEDULABLE_ROLES.map((r) => ({ value: r, label: t(`roles:${r}`, r) }))}
+                  value={watch('role') || ''}
+                  placeholder={t('schedules:calendar.event.rolePlaceholder')}
+                  onChange={(v) => {
+                    setValue('role', v, { shouldValidate: true });
+                    // The current pick may not hold the new role.
+                    setValue('user_id', '', { shouldValidate: true });
+                  }}
+                  error={errors.role?.message}
+                  required
+                  disabled={isEditing || lockRole}
+                />
+                {!!watch('role') && (
+                  <AsyncUserCombobox
+                    label={t('schedules:calendar.event.workerLabel')}
+                    required
+                    roles={[watch('role') as string]}
+                    value={watch('user_id') || ''}
+                    onValueChange={(v) => setValue('user_id', v, { shouldValidate: true })}
+                    initialLabel={event?.user?.full_name}
+                    placeholder={t('schedules:calendar.event.workerPlaceholder')}
+                    error={errors.user_id?.message}
+                    disabled={isEditing}
+                  />
+                )}
+              </div>
             )}
 
             {formKind === 'team' && (

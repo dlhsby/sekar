@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ScheduleEventModal } from '../ScheduleEventModal';
+import { useRayons } from '@/lib/api/rayons';
+import { useRegions } from '@/lib/api/regions';
+import { useLocations } from '@/lib/api/locations';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -46,17 +49,19 @@ jest.mock('@/lib/api/teams', () => ({
   useTeamCategories: () => ({ data: [] }),
 }));
 
-jest.mock('@/lib/api/rayons', () => ({
-  useRayons: () => ({ data: [] }),
+// Capture the worker combobox's props: the load-bearing contract is WHICH roles
+// it is asked to fetch, which no amount of DOM assertion can see.
+const userComboboxProps: Array<{ roles?: string[] }> = [];
+jest.mock('@/components/forms/AsyncUserCombobox', () => ({
+  AsyncUserCombobox: (props: { roles?: string[]; label: string }) => {
+    userComboboxProps.push(props);
+    return <div data-testid="user-combobox">{props.label}</div>;
+  },
 }));
 
-jest.mock('@/lib/api/locations', () => ({
-  useLocations: () => ({ data: { data: [] } }),
-}));
-
-jest.mock('@/lib/api/regions', () => ({
-  useRegions: () => ({ data: [] }),
-}));
+jest.mock('@/lib/api/rayons', () => ({ useRayons: jest.fn(() => ({ data: [] })) }));
+jest.mock('@/lib/api/locations', () => ({ useLocations: jest.fn(() => ({ data: { data: [] } })) }));
+jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn(() => ({ data: [] })) }));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +72,22 @@ const queryClient = new QueryClient({
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
 );
+
+/**
+ * Rayon Taman Aktif is the shape that broke: a kawasan is an OPTIONAL parent
+ * (ADR-045), so its lokasi hang straight off the rayon with region_id null.
+ */
+const RAYONS = [{ id: 'ry-aktif', name: 'Rayon Taman Aktif' }];
+const REGIONS = [{ id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry-other' }];
+const LOCATIONS = [
+  { id: 'loc-direct', name: 'Taman Bungkul', rayon_id: 'ry-aktif', region_id: null },
+];
+
+function withGeography() {
+  (useRayons as jest.Mock).mockReturnValue({ data: RAYONS });
+  (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
+  (useLocations as jest.Mock).mockReturnValue({ data: { data: LOCATIONS } });
+}
 
 describe('ScheduleEventModal', () => {
   const defaultProps = {
@@ -178,5 +199,82 @@ describe('ScheduleEventModal', () => {
 
       expect(comboboxNamed('schedules:calendar.event.shiftLabel')).not.toBeDisabled();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// A kawasan is an OPTIONAL parent (ADR-045). Rayon Taman Aktif hangs its lokasi
+// straight off the rayon (region_id null), and the form demanded a kawasan
+// before showing any lokasi — so those lokasi were unreachable, on create AND
+// on edit. The board always rendered them (`looseLocations`); only this form
+// couldn't.
+// ---------------------------------------------------------------------------
+
+describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
+  const props = { open: true, onOpenChange: jest.fn() };
+
+  beforeEach(() => withGeography());
+
+  it('offers a lokasi that has no kawasan, without one being chosen', () => {
+    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+      wrapper: Wrapper,
+    });
+
+    // Lokasi scope resolves from the prefill and the field renders off the
+    // RAYON — it used to be gated on a kawasan that will never exist here.
+    expect(screen.getByText('schedules:calendar.event.locationLabel')).toBeInTheDocument();
+  });
+
+  it('treats kawasan as an optional filter under a lokasi scope', () => {
+    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+      wrapper: Wrapper,
+    });
+
+    // The optional-filter copy, not the mobile-scope copy.
+    expect(screen.getByText('schedules:calendar.event.regionFilterHint')).toBeInTheDocument();
+    expect(screen.queryByText('schedules:calendar.event.regionScopeHint')).not.toBeInTheDocument();
+  });
+
+  it('still calls kawasan a required step under the mobile (kawasan) scope', () => {
+    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialRegionId="kw1" />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText('schedules:calendar.event.regionScopeHint')).toBeInTheDocument();
+  });
+});
+
+// A role must be chosen before any worker is fetched — "Semua peran" pulled the
+// whole schedulable list before the operator had said what they wanted.
+describe('ScheduleEventModal — Peran gates Pekerja', () => {
+  const props = { open: true, onOpenChange: jest.fn() };
+
+  beforeEach(() => {
+    userComboboxProps.length = 0;
+  });
+
+  it('does not mount the worker combobox at all before a role is picked', () => {
+    render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
+
+    expect(screen.queryByTestId('user-combobox')).not.toBeInTheDocument();
+    expect(userComboboxProps).toHaveLength(0);
+  });
+
+  it('fetches ONLY the chosen role, never the whole schedulable list', () => {
+    render(<ScheduleEventModal {...props} initialRole="satgas" />, { wrapper: Wrapper });
+
+    expect(screen.getByTestId('user-combobox')).toBeInTheDocument();
+    expect(userComboboxProps.at(-1)?.roles).toEqual(['satgas']);
+  });
+
+  it('puts Peran and Pekerja on one row — they are one decision', () => {
+    render(<ScheduleEventModal {...props} initialRole="satgas" />, { wrapper: Wrapper });
+
+    const role = screen.getByText('schedules:calendar.event.roleLabel');
+    const worker = screen.getByTestId('user-combobox');
+    const row = role.closest('div.grid');
+
+    expect(row).not.toBeNull();
+    expect(row).toContainElement(worker);
   });
 });

@@ -251,10 +251,12 @@
       "locationScopeHint": "Cakupan statis di satu lokasi.",
       "placementUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penempatan.",
       "kindPlaceholder": "Pilih jenis...",
-      "rolePlaceholder": "Semua peran",
+      "rolePlaceholder": "Pilih peran...",
       "roleLabel": "Peran",
       "scopePlaceholder": "Pilih ruang lingkup...",
-      "recurrencePlaceholder": "Pilih pengulangan..."
+      "recurrencePlaceholder": "Pilih pengulangan...",
+      "regionFilterPlaceholder": "Semua kawasan (opsional)",
+      "regionFilterHint": "Opsional — menyaring daftar lokasi. Lokasi tanpa kawasan tetap tampil."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
