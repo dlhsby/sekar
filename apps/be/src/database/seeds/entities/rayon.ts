@@ -19,14 +19,18 @@ export async function seedRayons(ctx: SeedContext): Promise<void> {
 
   const rayons = loadRayonSnapshot();
   for (const r of rayons) {
+    // The snapshot's single boundary `color` maps onto the per-level styling
+    // (ADR-045) — the legacy `color` column was retired; monitoring derives the
+    // boundary tint from border_color/fill_color.
     await ctx.qr.query(
       `INSERT INTO rayons
-         (id, name, description, color, center_lat, center_lng, boundary_polygon, staffing_level)
-       VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8)
+         (id, name, description, border_color, fill_color, center_lat, center_lng, boundary_polygon, staffing_level)
+       VALUES ($1, $2, $3, $4, $4, $5, $6, $7::jsonb, $8)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
-         color = EXCLUDED.color,
+         border_color = EXCLUDED.border_color,
+         fill_color = EXCLUDED.fill_color,
          center_lat = EXCLUDED.center_lat,
          center_lng = EXCLUDED.center_lng,
          boundary_polygon = EXCLUDED.boundary_polygon,

@@ -133,7 +133,6 @@ export function useRayonsWithStats() {
  */
 export interface CreateRayonDto extends MapStyleFieldsDto {
   name: string;
-  color?: string | null;
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
@@ -145,7 +144,6 @@ export interface CreateRayonDto extends MapStyleFieldsDto {
  */
 export interface UpdateRayonDto extends MapStyleFieldsDto {
   name?: string;
-  color?: string | null;
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;

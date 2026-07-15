@@ -36,7 +36,7 @@ describe('MonitoringStatsService', () => {
     id: 'rayon-1',
     name: 'Rayon 1',
     code: 'R1',
-    color: '#7FBC8C',
+    border_color: '#7FBC8C',
     staffing_level: StaffingLevel.REGION,
     created_at: new Date(),
     updated_at: new Date(),

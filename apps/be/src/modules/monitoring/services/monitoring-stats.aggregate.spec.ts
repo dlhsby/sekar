@@ -266,7 +266,7 @@ describe('MonitoringStatsService.getAggregate', () => {
         {
           id: 'rayon-1',
           name: 'Rayon Selatan',
-          color: '#7FBC8C',
+          border_color: '#7FBC8C',
           center_lat: -7.3,
           center_lng: 112.7,
           // A ring with collinear points that should get simplified away.

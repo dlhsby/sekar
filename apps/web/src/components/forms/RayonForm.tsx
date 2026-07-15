@@ -187,10 +187,6 @@ export function RayonForm({
     const submitData: UpdateRayonDto = {
       name: data.name,
       staffing_level: data.staffing_level as StaffingLevel,
-      // Keep the legacy single `color` column mirroring the border colour so any
-      // consumer still reading it stays consistent (the UI now only edits
-      // border/fill via MapStyleFields).
-      color: data.border_color || null,
       description: data.description || null,
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
