@@ -43,12 +43,6 @@ export const staffRequirementKeys = {
   subject: (type: StaffSubjectType, id: string) => ['staff-requirements', type, id] as const,
 };
 
-/** WEEKEND on Sat/Sun, else WEEKDAY (holiday detection is a follow-up). */
-export function dayTypeOf(isoDate: string): DayType {
-  const d = new Date(`${isoDate}T00:00:00`).getDay();
-  return d === 0 || d === 6 ? 'WEEKEND' : 'WEEKDAY';
-}
-
 /** All staffing requirements (bulk) — feeds the board's understaffing pills. */
 export function useStaffRequirements(enabled = true) {
   return useQuery({
