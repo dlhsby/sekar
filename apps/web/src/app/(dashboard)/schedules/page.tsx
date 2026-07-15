@@ -66,6 +66,7 @@ import {
 import {
   useStaffRequirements,
   requirementTotalMap,
+  requirementRoleMap,
   type StaffSubject,
 } from '@/lib/api/location-staff-requirements';
 import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
@@ -216,6 +217,12 @@ export default function SchedulesPage() {
   const { data: requirementRows = [] } = useStaffRequirements(calendarView === 'day');
   const capacities = useMemo(
     () => requirementTotalMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
+    [requirementRows, anchor, overrideMap]
+  );
+  // Per-role targets: the aggregate above can't say which role is short, which
+  // is what the hint and the shift+role cards need.
+  const roleCapacities = useMemo(
+    () => requirementRoleMap(requirementRows, resolveDayType(isoDate(anchor), overrideMap)),
     [requirementRows, anchor, overrideMap]
   );
 
@@ -438,6 +445,7 @@ export default function SchedulesPage() {
           occurrences={occurrences}
           master={boardMaster}
           capacities={capacities}
+          roleCapacities={roleCapacities}
           onOccurrenceClick={onOccurrenceClick}
           canAssign={can('schedule:create')}
           onAssign={(ctx) => openCreate(isoDate(anchor), ctx)}

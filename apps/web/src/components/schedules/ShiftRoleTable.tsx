@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Plus, Users } from 'lucide-react';
+import { AlertTriangle, Plus, Users } from 'lucide-react';
 import type { BoardShiftGroup } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 
@@ -29,6 +29,14 @@ interface ShiftRoleTableProps {
   /** Assign into a specific shift (optionally a role). */
   onAssign?: (shiftId: string, role?: string) => void;
   canAssign?: boolean;
+  /**
+   * `${shiftId}:${role}` → target headcount, for the subject that OWNS this
+   * capacity (the tier the rayon's `staffing_level` names). Absent for every
+   * other container — a lokasi under a kawasan-scoped rayon has no target of its
+   * own, and inventing one would show a number nobody set. Only satgas/linmas
+   * ever have targets, so korlap simply never matches.
+   */
+  roleTargets?: Map<string, number>;
 }
 
 /**
@@ -40,6 +48,7 @@ export function ShiftRoleTable({
   onOccurrenceClick,
   onAssign,
   canAssign = false,
+  roleTargets,
 }: ShiftRoleTableProps) {
   const { t } = useTranslation(['schedules', 'roles']);
 
@@ -71,6 +80,11 @@ export function ShiftRoleTable({
                   onOccurrenceClick={onOccurrenceClick}
                   onAssign={canAssign ? () => onAssign?.(group.shift.id, role) : undefined}
                   addLabel={t('schedules:board.assign')}
+                  target={roleTargets?.get(`${group.shift.id}:${role}`)}
+                  shortLabel={t('schedules:board.roleShort', {
+                    shift: group.shift.name,
+                    role: t(`roles:${role}`, role),
+                  })}
                 />
               ))}
 
@@ -117,6 +131,10 @@ interface RoleColumnProps {
   onOccurrenceClick: (occ: ScheduleOccurrence) => void;
   onAssign?: () => void;
   addLabel: string;
+  /** Target headcount for this shift+role; absent when nothing is required. */
+  target?: number;
+  /** Spelled-out "Shift 1 · Satgas" for the understaffed title/aria text. */
+  shortLabel?: string;
 }
 
 function RoleColumn({
@@ -126,11 +144,14 @@ function RoleColumn({
   onOccurrenceClick,
   onAssign,
   addLabel,
+  target,
+  shortLabel,
 }: RoleColumnProps) {
   const sorted = useMemo(
     () => [...occurrences].sort((a, b) => a.user.full_name.localeCompare(b.user.full_name)),
     [occurrences]
   );
+  const understaffed = target != null && target > 0 && sorted.length < target;
 
   return (
     <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
@@ -138,7 +159,21 @@ function RoleColumn({
         className={`flex items-center justify-between border-b-2 border-nb-black px-2.5 py-1.5 text-nb-caption font-bold uppercase tracking-wide text-white ${headerClass}`}
       >
         <span>{label}</span>
-        <span className="tabular-nums">{sorted.length}</span>
+        {/* With a target, this role reads "n/target" and flags its own shortfall,
+            so the operator sees WHICH role of WHICH shift needs staffing. */}
+        {target != null && target > 0 ? (
+          <span
+            className={`inline-flex items-center gap-1 rounded-full border-2 border-nb-black px-1.5 tabular-nums ${
+              understaffed ? 'bg-nb-danger-light text-nb-danger-dark' : 'bg-nb-white text-nb-black'
+            }`}
+            title={shortLabel}
+          >
+            {understaffed && <AlertTriangle className="size-3" aria-hidden />}
+            {sorted.length}/{target}
+          </span>
+        ) : (
+          <span className="tabular-nums">{sorted.length}</span>
+        )}
       </div>
       {sorted.map((occ) => (
         <button

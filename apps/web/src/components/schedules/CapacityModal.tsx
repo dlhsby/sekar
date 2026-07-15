@@ -155,7 +155,9 @@ export function CapacityModal({ open, onOpenChange, subject }: CapacityModalProp
                     {s.start_time.slice(0, 5)}–{s.end_time.slice(0, 5)}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-3">
+                {/* One row per role (Satgas, then Linmas): side-by-side steppers
+                    made it ambiguous which number belonged to which role. */}
+                <div className="flex flex-col gap-1.5">
                   {ROLES.map((role) => (
                     <RoleStepper
                       key={role}
@@ -193,28 +195,31 @@ function RoleStepper({
 }) {
   const { t } = useTranslation(['common']);
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-14 text-nb-caption font-bold uppercase tracking-wide text-nb-gray-600">
+    <div className="flex items-center justify-between gap-2 rounded-nb-base bg-nb-white px-2 py-1.5">
+      <span className="text-nb-caption font-bold uppercase tracking-wide text-nb-gray-600">
         {label}
       </span>
-      <button
-        type="button"
-        onClick={() => onChange(value - 1)}
-        disabled={value <= 0}
-        aria-label={t('common:actions.decrease', 'Decrease')}
-        className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50 disabled:opacity-40"
-      >
-        <Minus className="size-4" />
-      </button>
-      <span className="w-7 text-center font-bold tabular-nums">{value}</span>
-      <button
-        type="button"
-        onClick={() => onChange(value + 1)}
-        aria-label={t('common:actions.increase', 'Increase')}
-        className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50"
-      >
-        <Plus className="size-4" />
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onChange(value - 1)}
+          disabled={value <= 0}
+          // Name the role: with a row per role, a bare "Decrease" is ambiguous.
+          aria-label={`${t('common:actions.decrease', 'Decrease')} ${label}`}
+          className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50 disabled:opacity-40"
+        >
+          <Minus className="size-4" />
+        </button>
+        <span className="w-7 text-center font-bold tabular-nums">{value}</span>
+        <button
+          type="button"
+          onClick={() => onChange(value + 1)}
+          aria-label={`${t('common:actions.increase', 'Increase')} ${label}`}
+          className="grid size-8 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white font-bold shadow-nb-sm hover:bg-nb-gray-50"
+        >
+          <Plus className="size-4" />
+        </button>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { ChevronDown, Settings2 } from 'lucide-react';
 import {
   buildDayBoard,
   CITY_NODE_ID,
+  COUNTABLE_ROLES,
   type BoardLocation,
   type BoardMasterData,
   type BoardRayon,
@@ -43,8 +44,14 @@ interface DayBoardProps {
   onOccurrenceClick: (occ: ScheduleOccurrence) => void;
   onAssign?: (ctx: AssignContext) => void;
   canAssign?: boolean;
-  /** `${locationId}:${shiftId}` → target satgas+linmas headcount (understaffing). */
+  /** `<subject>:<shiftId>` → total satgas+linmas target (the subject pill). */
   capacities?: Map<string, number>;
+  /**
+   * `<subject>:<shiftId>:<role>` → per-role target. The aggregate above cannot
+   * say WHICH role is short; this drives the hint's breakdown and the per-role
+   * warning on the owning subject's shift+role cards.
+   */
+  roleCapacities?: Map<string, number>;
   /** When present, a gear on each location opens the capacity editor. */
   onEditCapacity?: (subject: StaffSubject) => void;
 }
@@ -62,6 +69,7 @@ export function DayBoard({
   onAssign,
   canAssign = false,
   capacities = EMPTY_CAPACITIES,
+  roleCapacities = EMPTY_CAPACITIES,
   onEditCapacity,
 }: DayBoardProps) {
   const { t } = useTranslation(['schedules', 'common']);
@@ -100,6 +108,10 @@ export function DayBoard({
         // subtree vs the rayon target. Only for rayon-scope, else the target
         // belongs to a kawasan/lokasi and showing it here would double-count.
         const rayonCapPills = capacityLevel === 'rayon' ? rayonShiftTotals(rayon, capacities) : [];
+        const rayonRoleTargets =
+          capacityLevel === 'rayon'
+            ? subjectRoleTargets(roleCapacities, `ray:${rayon.id}:`)
+            : undefined;
         return (
           <section
             key={rayon.id}
@@ -122,6 +134,7 @@ export function DayBoard({
                     key={shift.id}
                     group={{ shift, countable, total: countable } as BoardShiftGroup}
                     target={target}
+                    roleTargets={rayonRoleTargets}
                   />
                 ))}
                 <Pill>{t('schedules:board.petugasCount', { count: rayon.total })}</Pill>
@@ -159,6 +172,7 @@ export function DayBoard({
                       onAssign={mkAssign(
                         rayon.id === CITY_NODE_ID ? { city: true } : { rayon_id: rayon.id }
                       )}
+                      roleTargets={rayonRoleTargets}
                     />
                   </div>
                 )}
@@ -172,6 +186,7 @@ export function DayBoard({
                     toggle={toggle}
                     tableProps={tableProps}
                     capacities={capacities}
+                    roleCapacities={roleCapacities}
                     onEditCapacity={onEditCapacity}
                     capacityLevel={capacityLevel}
                   />
@@ -185,6 +200,11 @@ export function DayBoard({
                     onToggle={() => toggle(loc.id)}
                     tableProps={tableProps}
                     capacities={capacities}
+                    roleTargets={
+                      capacityLevel === 'location'
+                        ? subjectRoleTargets(roleCapacities, `loc:${loc.id}:`)
+                        : undefined
+                    }
                     onEditCapacity={onEditCapacity}
                     showCapacity={capacityLevel === 'location'}
                   />
@@ -212,6 +232,19 @@ interface TableProps {
 
 /** Builds a container-bound (shiftId, role) assign handler for a ShiftRoleTable. */
 type MkAssign = (subject: AssignSubject) => ((shiftId: string, role?: string) => void) | undefined;
+
+/**
+ * Slice the global `<subject>:<shift>:<role>` map down to one subject, re-keyed
+ * `<shift>:<role>` for the components. Returns empty when the subject doesn't
+ * own capacity — so a lokasi under a kawasan-scoped rayon shows counts only.
+ */
+function subjectRoleTargets(all: Map<string, number>, prefix: string): Map<string, number> {
+  const m = new Map<string, number>();
+  for (const [k, v] of all) {
+    if (k.startsWith(prefix)) m.set(k.slice(prefix.length), v);
+  }
+  return m;
+}
 
 /**
  * Per-shift countable totals for a whole rayon subtree (its own placement + every
@@ -250,6 +283,7 @@ function RegionCard({
   toggle,
   tableProps,
   capacities,
+  roleCapacities,
   onEditCapacity,
   capacityLevel,
 }: {
@@ -260,6 +294,7 @@ function RegionCard({
   toggle: (id: string) => void;
   tableProps: TableProps;
   capacities: Map<string, number>;
+  roleCapacities: Map<string, number>;
   onEditCapacity?: (subject: StaffSubject) => void;
   /** Which tier the parent rayon says owns capacity (undefined = the city node). */
   capacityLevel?: StaffingLevel;
@@ -277,6 +312,10 @@ function RegionCard({
   };
   region.placement.forEach(accumulate);
   region.locations.forEach((loc) => loc.shifts.forEach(accumulate));
+  const regionRoleTargets =
+    capacityLevel === 'region'
+      ? subjectRoleTargets(roleCapacities, `reg:${region.id}:`)
+      : undefined;
   const capPills =
     capacityLevel === 'region'
       ? [...regionShifts.values()]
@@ -302,6 +341,7 @@ function RegionCard({
                   { shift: e.shift, countable: e.countable, total: e.countable } as BoardShiftGroup
                 }
                 target={target}
+                roleTargets={regionRoleTargets}
               />
             ))}
             <Pill>{t('schedules:board.petugasCount', { count: region.total })}</Pill>
@@ -331,6 +371,7 @@ function RegionCard({
                 shifts={region.placement}
                 {...tableProps}
                 onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id })}
+                roleTargets={regionRoleTargets}
               />
             </div>
           )}
@@ -343,6 +384,11 @@ function RegionCard({
               onToggle={() => toggle(loc.id)}
               tableProps={tableProps}
               capacities={capacities}
+              roleTargets={
+                capacityLevel === 'location'
+                  ? subjectRoleTargets(roleCapacities, `loc:${loc.id}:`)
+                  : undefined
+              }
               onEditCapacity={onEditCapacity}
               showCapacity={capacityLevel === 'location'}
             />
@@ -360,6 +406,7 @@ function LocationCard({
   onToggle,
   tableProps,
   capacities,
+  roleTargets,
   onEditCapacity,
   showCapacity = false,
 }: {
@@ -370,6 +417,8 @@ function LocationCard({
   onToggle: () => void;
   tableProps: TableProps;
   capacities: Map<string, number>;
+  /** `<shift>:<role>` targets when this lokasi owns its capacity. */
+  roleTargets?: Map<string, number>;
   onEditCapacity?: (subject: StaffSubject) => void;
   /** True only when the parent rayon's `staffing_level` is `location`, i.e. this
    *  lokasi owns its capacity. Never inferred from tree position — a lokasi under
@@ -394,6 +443,7 @@ function LocationCard({
                 key={s.shift.id}
                 group={s}
                 target={showCapacity ? capacities.get(`loc:${loc.id}:${s.shift.id}`) : undefined}
+                roleTargets={roleTargets}
               />
             ))}
           </span>
@@ -412,15 +462,29 @@ function LocationCard({
       </div>
       {open && (
         <div className="border-t-2 border-dashed border-nb-black p-3">
-          <ShiftRoleTable shifts={loc.shifts} {...tableProps} onAssign={onAssign} />
+          <ShiftRoleTable
+            shifts={loc.shifts}
+            {...tableProps}
+            onAssign={onAssign}
+            roleTargets={roleTargets}
+          />
         </div>
       )}
     </div>
   );
 }
 
-function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number }) {
-  const { t } = useTranslation(['schedules']);
+function ShiftPill({
+  group,
+  target,
+  roleTargets,
+}: {
+  group: BoardShiftGroup;
+  target?: number;
+  /** `${shiftId}:${role}` → target, so the hint can name the short role. */
+  roleTargets?: Map<string, number>;
+}) {
+  const { t } = useTranslation(['schedules', 'roles']);
   const short = group.shift.name.match(/\d+/)?.[0] ?? group.shift.name;
   // With a capacity target, show countable (satgas+linmas) vs target and flag
   // understaffing; otherwise just the scheduled total. The compact "S1·2/3"
@@ -432,12 +496,26 @@ function ShiftPill({ group, target }: { group: BoardShiftGroup; target?: number 
     const cls = understaffed
       ? 'bg-nb-danger-light text-nb-danger-dark'
       : 'bg-nb-primary/20 text-nb-success-dark';
+    // Spell out the per-role split — "0 of 10" alone never said WHICH role to
+    // staff, which was the whole point of the hint.
+    const breakdown = COUNTABLE_ROLES.map((role) => {
+      const roleTarget = roleTargets?.get(`${group.shift.id}:${role}`) ?? 0;
+      if (roleTarget <= 0) return null;
+      return t('schedules:board.shiftStaffRolePart', {
+        role: t(`roles:${role}`, role),
+        countable: group.byRole[role]?.length ?? 0,
+        target: roleTarget,
+      });
+    })
+      .filter(Boolean)
+      .join(' · ');
     return (
       <span
         title={t('schedules:board.shiftStaffTooltip', {
           shift: group.shift.name,
           countable: group.countable,
           target,
+          breakdown,
         })}
         className={`inline-flex items-center gap-1 rounded-full border-2 border-nb-black px-2 py-0.5 text-nb-caption font-bold tabular-nums ${cls}`}
       >

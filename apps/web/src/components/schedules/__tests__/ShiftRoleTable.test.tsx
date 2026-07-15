@@ -158,3 +158,57 @@ describe('ShiftRoleTable', () => {
     expect(screen.getByText('4')).toBeInTheDocument();
   });
 });
+
+
+describe('per-role capacity', () => {
+  const renderWith = (roleTargets?: Map<string, number>, byRole = {}) =>
+    render(
+      <ShiftRoleTable
+        shifts={[group({ byRole })]}
+        onOccurrenceClick={jest.fn()}
+        roleTargets={roleTargets}
+      />
+    );
+
+  it('shows the target on the exact shift+role that owns one', () => {
+    renderWith(new Map([['s1:satgas', 10]]));
+
+    // Satgas is short 10 and says so; linmas has no target and shows a count.
+    expect(within(column(/satgas/i)).getByText('0/10')).toBeInTheDocument();
+    expect(within(column(/linmas/i)).queryByText(/\/10/)).not.toBeInTheDocument();
+  });
+
+  it('drops the warning once the role is fully staffed', () => {
+    const byRole = {
+      satgas: [occ({ name: 'A' }), occ({ name: 'B' })],
+    };
+    renderWith(new Map([['s1:satgas', 2]]), byRole);
+
+    const cell = within(column(/satgas/i)).getByText('2/2');
+    expect(cell).toBeInTheDocument();
+    // The danger fill is the "needs attention" signal — gone when met.
+    expect(cell.className).not.toContain('nb-danger');
+  });
+
+  it('flags the role that is short, not the whole shift', () => {
+    renderWith(new Map([['s1:satgas', 3], ['s1:linmas', 0]]));
+
+    expect(within(column(/satgas/i)).getByText('0/3').className).toContain('nb-danger');
+  });
+
+  it('never invents a target for korlap (only satgas/linmas are countable)', () => {
+    renderWith(new Map([['s1:satgas', 3]]));
+
+    // korlap has no requirement rows at all, so it must stay a bare count.
+    expect(within(column(/koordinator/i)).getByText('0')).toBeInTheDocument();
+    expect(within(column(/koordinator/i)).queryByText(/\//)).not.toBeInTheDocument();
+  });
+
+  it('shows bare counts when the subject owns no capacity (target lives elsewhere)', () => {
+    // e.g. a lokasi under a kawasan-scoped rayon: the kawasan holds the target.
+    renderWith(undefined);
+
+    expect(within(column(/satgas/i)).getByText('0')).toBeInTheDocument();
+    expect(within(column(/satgas/i)).queryByText(/\//)).not.toBeInTheDocument();
+  });
+});
