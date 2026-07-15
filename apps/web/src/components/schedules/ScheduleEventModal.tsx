@@ -747,19 +747,23 @@ export function ScheduleEventModal({
                   required
                   disabled={isEditing || lockRole}
                 />
-                {!!watch('role') && (
-                  <AsyncUserCombobox
-                    label={t('schedules:calendar.event.workerLabel')}
-                    required
-                    roles={[watch('role') as string]}
-                    value={watch('user_id') || ''}
-                    onValueChange={(v) => setValue('user_id', v, { shouldValidate: true })}
-                    initialLabel={event?.user?.full_name}
-                    placeholder={t('schedules:calendar.event.workerPlaceholder')}
-                    error={errors.user_id?.message}
-                    disabled={isEditing}
-                  />
-                )}
+                {/* Shown from the start, disabled until Peran narrows it: hiding
+                    it made the form jump as a role was picked. Disabled means it
+                    fetches nothing, so the roster still isn't pulled early. */}
+                <AsyncUserCombobox
+                  label={t('schedules:calendar.event.workerLabel')}
+                  required
+                  roles={watch('role') ? [watch('role') as string] : undefined}
+                  value={watch('user_id') || ''}
+                  onValueChange={(v, u) => {
+                    setValue('user_id', v, { shouldValidate: true });
+                    if (u) rememberUser(u);
+                  }}
+                  initialLabel={event?.user?.full_name}
+                  placeholder={t('schedules:calendar.event.workerPlaceholder')}
+                  error={errors.user_id?.message}
+                  disabled={isEditing || !watch('role')}
+                />
               </div>
             )}
 
@@ -791,21 +795,20 @@ export function ScheduleEventModal({
                     error={errors.pic_role?.message}
                     required
                   />
-                  {!!watch('pic_role') && (
-                    <AsyncUserCombobox
-                      label={t('schedules:calendar.event.picLabel')}
-                      required
-                      roles={[watch('pic_role') as string]}
-                      value={formPic || ''}
-                      onValueChange={(v, u) => {
-                        setValue('pic_user_id', v, { shouldValidate: true });
-                        if (u) rememberUser(u);
-                      }}
-                      initialLabel={event?.pic_user?.full_name}
-                      placeholder={t('schedules:calendar.event.picPlaceholder')}
-                      error={errors.pic_user_id?.message}
-                    />
-                  )}
+                  <AsyncUserCombobox
+                    label={t('schedules:calendar.event.picLabel')}
+                    required
+                    roles={watch('pic_role') ? [watch('pic_role') as string] : undefined}
+                    value={formPic || ''}
+                    onValueChange={(v, u) => {
+                      setValue('pic_user_id', v, { shouldValidate: true });
+                      if (u) rememberUser(u);
+                    }}
+                    initialLabel={event?.pic_user?.full_name}
+                    placeholder={t('schedules:calendar.event.picPlaceholder')}
+                    error={errors.pic_user_id?.message}
+                    disabled={!watch('pic_role')}
+                  />
                 </div>
 
                 {/* Members: pick a role, pick a worker, add. The old control was a
@@ -841,21 +844,18 @@ export function ScheduleEventModal({
                               setMemberDraftId('');
                             }}
                           />
-                          {memberRole ? (
-                            <AsyncUserCombobox
-                              label={t('schedules:calendar.event.workerLabel')}
-                              roles={[memberRole]}
-                              excludeIds={[...field.value, ...(formPic ? [formPic] : [])]}
-                              value={memberDraftId}
-                              onValueChange={(v, u) => {
-                                setMemberDraftId(v);
-                                if (u) rememberUser(u);
-                              }}
-                              placeholder={t('schedules:calendar.event.workerPlaceholder')}
-                            />
-                          ) : (
-                            <div />
-                          )}
+                          <AsyncUserCombobox
+                            label={t('schedules:calendar.event.workerLabel')}
+                            roles={memberRole ? [memberRole] : undefined}
+                            excludeIds={[...field.value, ...(formPic ? [formPic] : [])]}
+                            value={memberDraftId}
+                            onValueChange={(v, u) => {
+                              setMemberDraftId(v);
+                              if (u) rememberUser(u);
+                            }}
+                            placeholder={t('schedules:calendar.event.workerPlaceholder')}
+                            disabled={!memberRole}
+                          />
                           <Button
                             type="button"
                             variant="outline"

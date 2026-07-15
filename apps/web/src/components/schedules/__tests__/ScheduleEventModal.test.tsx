@@ -51,9 +51,9 @@ jest.mock('@/lib/api/teams', () => ({
 
 // Capture the worker combobox's props: the load-bearing contract is WHICH roles
 // it is asked to fetch, which no amount of DOM assertion can see.
-const userComboboxProps: Array<{ roles?: string[] }> = [];
+const userComboboxProps: Array<{ roles?: string[]; disabled?: boolean }> = [];
 jest.mock('@/components/forms/AsyncUserCombobox', () => ({
-  AsyncUserCombobox: (props: { roles?: string[]; label: string }) => {
+  AsyncUserCombobox: (props: { roles?: string[]; disabled?: boolean; label: string }) => {
     userComboboxProps.push(props);
     return <div data-testid="user-combobox">{props.label}</div>;
   },
@@ -244,8 +244,11 @@ describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
   });
 });
 
-// A role must be chosen before any worker is fetched — "Semua peran" pulled the
-// whole schedulable list before the operator had said what they wanted.
+// A role must be chosen before any worker is FETCHED — "Semua peran" pulled the
+// whole schedulable list before the operator had said what they wanted. But the
+// field stays on SCREEN (disabled) rather than appearing: hiding it made the form
+// jump as a role was picked. Disabled ⇒ AsyncUserCombobox fetches nothing, so
+// both properties hold at once.
 describe('ScheduleEventModal — Peran gates Pekerja', () => {
   const props = { open: true, onOpenChange: jest.fn() };
 
@@ -253,18 +256,22 @@ describe('ScheduleEventModal — Peran gates Pekerja', () => {
     userComboboxProps.length = 0;
   });
 
-  it('does not mount the worker combobox at all before a role is picked', () => {
-    render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
+  it('shows the PIC field from the start, disabled and role-less, when no role is picked', () => {
+    render(<ScheduleEventModal {...props} initialTeam />, { wrapper: Wrapper });
 
-    expect(screen.queryByTestId('user-combobox')).not.toBeInTheDocument();
-    expect(userComboboxProps).toHaveLength(0);
+    const pic = userComboboxProps.at(-1);
+    expect(screen.getAllByTestId('user-combobox').length).toBeGreaterThan(0);
+    // Disabled AND un-narrowed: the combobox must not fetch in this state.
+    expect(pic?.disabled).toBe(true);
+    expect(pic?.roles).toBeUndefined();
   });
 
   it('fetches ONLY the chosen role, never the whole schedulable list', () => {
     render(<ScheduleEventModal {...props} initialRole="satgas" />, { wrapper: Wrapper });
 
-    expect(screen.getByTestId('user-combobox')).toBeInTheDocument();
-    expect(userComboboxProps.at(-1)?.roles).toEqual(['satgas']);
+    const worker = userComboboxProps.at(-1);
+    expect(worker?.roles).toEqual(['satgas']);
+    expect(worker?.disabled).toBe(false);
   });
 
   it('puts Peran and Pekerja on one row — they are one decision', () => {
@@ -278,6 +285,41 @@ describe('ScheduleEventModal — Peran gates Pekerja', () => {
     expect(row).toContainElement(worker);
   });
 });
+
+describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
+  const props = { open: true, onOpenChange: jest.fn() };
+
+  beforeEach(() => withGeography());
+
+  it('offers a lokasi that has no kawasan, without one being chosen', () => {
+    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+      wrapper: Wrapper,
+    });
+
+    // Lokasi scope resolves from the prefill and the field renders off the
+    // RAYON — it used to be gated on a kawasan that will never exist here.
+    expect(screen.getByText('schedules:calendar.event.locationLabel')).toBeInTheDocument();
+  });
+
+  it('treats kawasan as an optional filter under a lokasi scope', () => {
+    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+      wrapper: Wrapper,
+    });
+
+    // The optional-filter copy, not the mobile-scope copy.
+    expect(screen.getByText('schedules:calendar.event.regionFilterHint')).toBeInTheDocument();
+    expect(screen.queryByText('schedules:calendar.event.regionScopeHint')).not.toBeInTheDocument();
+  });
+
+  it('still calls kawasan a required step under the mobile (kawasan) scope', () => {
+    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialRegionId="kw1" />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText('schedules:calendar.event.regionScopeHint')).toBeInTheDocument();
+  });
+});
+
 
 // ---------------------------------------------------------------------------
 // Team side. The member picker was a checkbox list of EVERY schedulable user —
@@ -303,9 +345,9 @@ describe('ScheduleEventModal — team', () => {
   it('asks for the PIC role before the PIC, like an individual', () => {
     render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
 
+    // Both on screen from the start; the PIC is simply inert until narrowed.
     expect(screen.getByText('schedules:calendar.event.picRoleLabel')).toBeInTheDocument();
-    // No PIC combobox until a role narrows it — nothing to fetch yet.
-    expect(screen.queryByText('schedules:calendar.event.picLabel')).not.toBeInTheDocument();
+    expect(userComboboxProps.some((p) => p.disabled === true)).toBe(true);
   });
 
   it('never renders the old "every schedulable user" checkbox list', () => {
@@ -315,11 +357,14 @@ describe('ScheduleEventModal — team', () => {
     expect(screen.getByText('schedules:calendar.event.memberEmpty')).toBeInTheDocument();
   });
 
-  it('gates the member worker picker behind a role, so no roster loads up front', () => {
+  it('gates every worker picker behind a role, so no roster loads up front', () => {
     render(<ScheduleEventModal {...props} />, { wrapper: Wrapper });
 
-    // Neither the PIC nor the member combobox is mounted before a role is chosen.
-    expect(userComboboxProps).toHaveLength(0);
+    // PIC + member draft are both mounted (no layout jump) but neither is
+    // narrowed or enabled — so neither fetches.
+    expect(userComboboxProps.length).toBeGreaterThan(0);
+    expect(userComboboxProps.every((p) => p.disabled === true)).toBe(true);
+    expect(userComboboxProps.every((p) => p.roles === undefined)).toBe(true);
   });
 
   it('seeds member names from the event being edited, not from a roster fetch', () => {

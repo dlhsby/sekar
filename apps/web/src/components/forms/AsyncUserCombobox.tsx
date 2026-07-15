@@ -81,12 +81,14 @@ export function AsyncUserCombobox({
 
   // Role filtering is server-side (so pagination + "load more" stay correct even
   // when the first page has no matching roles); excludeIds is a small client tweak.
-  const { data, isFetching } = useUsers({
-    search: debounced || undefined,
-    roles,
-    page: 1,
-    limit,
-  });
+  //
+  // A disabled picker fetches NOTHING. It stays mounted so the form doesn't
+  // reflow as a role is chosen, but an un-narrowed query would pull the whole
+  // roster — the exact cost the role step exists to avoid.
+  const { data, isFetching } = useUsers(
+    { search: debounced || undefined, roles, page: 1, limit },
+    { enabled: !disabled }
+  );
   const raw = React.useMemo(() => data?.data ?? [], [data]);
   const total = data?.meta?.total ?? 0;
   const users = React.useMemo(

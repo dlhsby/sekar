@@ -26,13 +26,28 @@ type TestUser = {
   phone_number?: string;
 };
 
-function setup(opts: { users?: TestUser[]; onValueChange?: jest.Mock; value?: string } = {}) {
-  const { users = [], onValueChange = jest.fn(), value } = opts;
+function setup(
+  opts: {
+    users?: TestUser[];
+    onValueChange?: jest.Mock;
+    value?: string;
+    roles?: string[];
+    disabled?: boolean;
+  } = {}
+) {
+  const { users = [], onValueChange = jest.fn(), value, roles = ['satgas'], disabled } = opts;
   (useUsers as jest.Mock).mockReturnValue({
     data: { data: users, meta: { total: users.length } },
     isFetching: false,
   });
-  render(<AsyncUserCombobox value={value} onValueChange={onValueChange} roles={['satgas']} />);
+  render(
+    <AsyncUserCombobox
+      value={value}
+      onValueChange={onValueChange}
+      roles={roles}
+      disabled={disabled}
+    />
+  );
   return { onValueChange };
 }
 
@@ -100,7 +115,20 @@ describe('AsyncUserCombobox — never loads the roster', () => {
     setup({ users: [] });
 
     expect(useUsers).toHaveBeenCalledWith(
-      expect.objectContaining({ roles: ['satgas'], page: 1, limit: 10 })
+      expect.objectContaining({ roles: ['satgas'], page: 1, limit: 10 }),
+      expect.objectContaining({ enabled: true })
+    );
+  });
+
+  it('fetches NOTHING while disabled', () => {
+    // A form can keep this on screen (disabled) so the layout does not jump as a
+    // role is chosen — but an un-narrowed query here would pull the whole roster,
+    // which is the exact cost the role step exists to avoid.
+    setup({ disabled: true, roles: undefined });
+
+    expect(useUsers).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ enabled: false })
     );
   });
 });
