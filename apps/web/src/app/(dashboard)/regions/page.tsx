@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Plus, Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
+import { Eye, Pencil, Trash2, Power, Settings2 } from 'lucide-react';
 import {
   Button,
   CoordinateLink,
@@ -255,19 +255,14 @@ export default function RegionsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('admin:regions.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          can('region:create') ? (
-            <Button
-              leftIcon={<Plus className="size-4" />}
-              onClick={() => {
-                setEditing(null);
-                setFormOpen(true);
-              }}
-            >
-              {t('admin:regions.buttonAdd')}
-            </Button>
-          ) : undefined
-        }
+        createAction={{
+          label: t('admin:regions.buttonAdd'),
+          hidden: !can('region:create'),
+          onClick: () => {
+            setEditing(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('admin:regions.emptyTitle')}
       />
 

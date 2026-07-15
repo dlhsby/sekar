@@ -24,6 +24,7 @@ import {
   DataTable,
   FormSelect,
   Button,
+  CreateButton,
   PageHeader,
   StatusPill,
   Tabs,
@@ -36,7 +37,7 @@ import type { ColumnDef } from '@/components/ui/data-table';
 import { TaskKanban } from '@/components/tasks/TaskKanban';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
-import { Plus, Eye, Trash2 } from 'lucide-react';
+import { Eye, Trash2 } from 'lucide-react';
 import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
@@ -279,10 +280,11 @@ export default function TasksPage() {
             ? t('tasks:list.totalCount', { count: activeQuery.data.meta.total })
             : t('tasks:list.pageHeader')
         }
+        // Stays in the masthead, not the table toolbar: Tugas is kanban-first and
+        // the table is one of two views, so a toolbar button would vanish in
+        // kanban. Same responsive shape as every list page's create action.
         actions={
-          <Button onClick={() => setFormOpen(true)} leftIcon={<Plus className="size-5" />}>
-            {t('tasks:list.createButton')}
-          </Button>
+          <CreateButton label={t('tasks:list.createButton')} onClick={() => setFormOpen(true)} />
         }
       />
 

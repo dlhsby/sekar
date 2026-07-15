@@ -238,58 +238,13 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
        (SELECT id FROM team_categories WHERE is_active ORDER BY name LIMIT 1) AS team_id`,
   )) as Array<Record<string, string | null>>;
 
-  const { region_id, team_id } = anchors;
-  let { rayon_id } = anchors;
+  const { rayon_id, region_id, team_id } = anchors;
   if (!rayon_id || !region_id || !team_id || shifts.length < 2 || korlaps.length < 5) {
     // Loud, not silent: a half-seeded variant set is worse than none, because it
     // looks like coverage.
     ctx.log('  ⚠ skipped — needs a rayon, a kawasan, a team category, 2+ shifts and 5+ korlap');
     return;
   }
-
-  // The workbook rayons are real client data and only ever use `region` or
-  // `location` staffing — so nothing seeded exercises the THIRD tier, `rayon`,
-  // even though rayon-level capacity is a Phase-4 feature (the rayon header's
-  // gear + roll-up pills). Rather than fabricate a level onto a real rayon, add a
-  // dedicated test rayon that owns its capacity, and hang the rayon-scope
-  // variants off it so scope AND capacity are both covered.
-  const [testRayon] = (await ctx.qr.query(
-    `INSERT INTO rayons (id, name, description, staffing_level, is_active)
-     SELECT gen_random_uuid(), $1::varchar, 'Seeded: exercises rayon-level staffing (the third tier)', 'rayon', true
-     WHERE NOT EXISTS (SELECT 1 FROM rayons WHERE name = $1::varchar AND deleted_at IS NULL)
-     RETURNING id`,
-    ['Tes Rayon (staffing per rayon)'],
-  )) as Array<{ id: string }>;
-  const testRayonId =
-    testRayon?.id ??
-    (
-      (await ctx.qr.query(`SELECT id FROM rayons WHERE name = $1 AND deleted_at IS NULL`, [
-        'Tes Rayon (staffing per rayon)',
-      ])) as Array<{ id: string }>
-    )[0].id;
-  rayon_id = testRayonId;
-
-  // Rayon-level targets, so the header pills have something to measure against.
-  // Satgas + linmas on purpose: those are the only countable roles.
-  for (const shift of shifts) {
-    for (const [role, count] of [
-      ['satgas', 4],
-      ['linmas', 2],
-    ] as const) {
-      await ctx.qr.query(
-        `INSERT INTO location_staff_requirements
-           (id, location_id, region_id, rayon_id, shift_definition_id, role, required_count, day_type)
-         SELECT gen_random_uuid(), NULL, NULL, $1::uuid, $2::uuid, $3::varchar, $4::int, 'WEEKDAY'
-         WHERE NOT EXISTS (
-           SELECT 1 FROM location_staff_requirements
-            WHERE rayon_id = $1::uuid AND shift_definition_id = $2::uuid
-              AND role = $3::varchar AND day_type = 'WEEKDAY'
-         )`,
-        [testRayonId, shift.id, role, count],
-      );
-    }
-  }
-  ctx.log(`  ✓ test rayon (staffing_level=rayon) + ${shifts.length * 2} rayon-level targets`);
 
   /** Countable members free on `shiftId` — i.e. whose own daily event is elsewhere. */
   const usedMembers = new Set<string>();

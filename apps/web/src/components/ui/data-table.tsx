@@ -29,6 +29,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { cn } from '@/lib/utils/cn';
+import { CreateButton } from '@/components/ui/create-button';
 
 import { Button } from './button';
 import { ColumnFilter, type FilterVariant, filterFnForVariant } from './column-filter';
@@ -115,7 +116,25 @@ export interface DataTableProps<TData, TValue> {
   onRefresh?: () => void;
   /** Spins the refresh button while a reload is in flight. */
   refreshing?: boolean;
-  /** Primary action(s) (e.g. [Buat Baru]) shown at the toolbar's right edge. */
+  /**
+   * The page's primary "create" action. Prefer this over `actions` for a plain
+   * [+ Tambah X] button: the table renders it in the SAME toolbar row as the
+   * filter/columns/refresh tools and collapses it to an icon below `sm`, exactly
+   * as those already do. Passing your own <Button> through `actions` instead
+   * leaves a full-width label that wraps onto its own line on a phone.
+   *
+   * Omit (or pass `hidden`) to render nothing — permission gating lives here
+   * rather than in a ternary at the call site.
+   */
+  createAction?: {
+    label: string;
+    onClick: () => void;
+    /** Defaults to a Plus. */
+    icon?: React.ReactNode;
+    hidden?: boolean;
+    disabled?: boolean;
+  };
+  /** Escape hatch for bespoke toolbar content. For a create button use `createAction`. */
   actions?: React.ReactNode;
   /** Row click handler (whole row). */
   onRowClick?: (row: TData) => void;
@@ -189,6 +208,7 @@ export function DataTable<TData, TValue>({
   onRefresh,
   refreshing = false,
   actions,
+  createAction,
   onRowClick,
   getRowId,
   rowActions,
@@ -333,6 +353,7 @@ export function DataTable<TData, TValue>({
   const showToolbar =
     hasSearch ||
     Boolean(toolbar) ||
+    Boolean(createAction && !createAction.hidden) ||
     enableColumnToggle ||
     Boolean(onRefresh) ||
     Boolean(actions) ||
@@ -374,7 +395,11 @@ export function DataTable<TData, TValue>({
             </div>
           ) : null}
           {toolbar}
-          {enableColumnToggle || actions || onRefresh || hasFilterableColumns ? (
+          {enableColumnToggle ||
+          actions ||
+          (createAction && !createAction.hidden) ||
+          onRefresh ||
+          hasFilterableColumns ? (
             <div className="ml-auto flex flex-wrap items-center justify-end gap-2">
               {hasFilterableColumns ? (
                 <Button
@@ -455,6 +480,14 @@ export function DataTable<TData, TValue>({
                 </Button>
               ) : null}
               {actions}
+              {createAction && !createAction.hidden ? (
+                <CreateButton
+                  label={createAction.label}
+                  onClick={createAction.onClick}
+                  icon={createAction.icon}
+                  disabled={createAction.disabled}
+                />
+              ) : null}
             </div>
           ) : null}
         </div>

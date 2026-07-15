@@ -247,3 +247,30 @@ describe('DataTable', () => {
     expect(screen.getByText(/Menampilkan 1–5 dari 12/)).toBeInTheDocument();
   });
 });
+
+// The create action belongs in the SAME toolbar row as filter/columns/refresh —
+// a full-width labelled button wrapped onto its own line on a phone, stacking
+// every list page into three rows.
+describe('DataTable — createAction', () => {
+  const cols = [{ accessorKey: 'name', header: 'Nama' }];
+
+  it('renders the create button inside the toolbar row', () => {
+    render(<DataTable columns={cols} data={[]} createAction={{ label: 'Tambah Rayon', onClick: jest.fn() }} />);
+
+    expect(screen.getByRole('button', { name: 'Tambah Rayon' })).toBeInTheDocument();
+  });
+
+  it('renders nothing when hidden (permission gating lives in the prop)', () => {
+    render(
+      <DataTable columns={cols} data={[]} createAction={{ label: 'Tambah Rayon', onClick: jest.fn(), hidden: true }} />
+    );
+
+    expect(screen.queryByRole('button', { name: 'Tambah Rayon' })).not.toBeInTheDocument();
+  });
+
+  it('shows the toolbar for a createAction alone, with no search or filters', () => {
+    render(<DataTable columns={cols} data={[]} createAction={{ label: 'Tambah', onClick: jest.fn() }} />);
+
+    expect(screen.getByRole('button', { name: 'Tambah' })).toBeInTheDocument();
+  });
+});

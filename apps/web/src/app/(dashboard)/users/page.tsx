@@ -9,11 +9,10 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { FilterFn } from '@tanstack/react-table';
 import { useTranslation } from 'react-i18next';
-import { Plus, Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
+import { Eye, Pencil, Trash2, Power, KeyRound, MapPin } from 'lucide-react';
 import { UserAreasSheet, type UserAreasSheetTarget } from '@/components/users/UserAreasSheet';
 import { toast } from 'sonner';
 import {
-  Button,
   ConfirmDialog,
   DataTable,
   PageHeader,
@@ -429,19 +428,14 @@ export default function UsersPage() {
         getRowId={(u) => u.id}
         searchPlaceholder={t('admin:users.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          canManage ? (
-            <Button
-              onClick={() => {
-                setEditingUser(null);
-                setFormOpen(true);
-              }}
-              leftIcon={<Plus className="h-5 w-5" />}
-            >
-              {t('admin:users.buttonAdd')}
-            </Button>
-          ) : undefined
-        }
+        createAction={{
+          label: t('admin:users.buttonAdd'),
+          hidden: !canManage,
+          onClick: () => {
+            setEditingUser(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('admin:users.emptyTitle')}
         emptyDescription={
           canManage ? t('admin:users.emptyDescription') : undefined

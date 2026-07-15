@@ -359,19 +359,14 @@ export default function RayonsPage() {
         getRowId={(r) => r.id}
         searchPlaceholder={t('admin:rayons.searchPlaceholder')}
         rowActions={rowActions}
-        actions={
-          isAdmin ? (
-            <Button
-              onClick={() => {
-                setEditingRayon(null);
-                setFormOpen(true);
-              }}
-              leftIcon={<Plus className="h-5 w-5" />}
-            >
-              {t('admin:rayons.buttonAdd')}
-            </Button>
-          ) : undefined
-        }
+        createAction={{
+          label: t('admin:rayons.buttonAdd'),
+          hidden: !isAdmin,
+          onClick: () => {
+            setEditingRayon(null);
+            setFormOpen(true);
+          },
+        }}
         emptyTitle={t('admin:rayons.emptyTitle')}
         emptyDescription={t('admin:rayons.emptyDescription')}
         emptyAction={
