@@ -499,6 +499,7 @@ export default function SchedulesPage() {
           initialLocationId={createCtx?.location_id}
           initialShiftId={createCtx?.shiftId}
           initialCityWide={createCtx?.city}
+          initialTeam={createCtx?.team}
           onSuccess={refreshCalendar}
         />
       )}

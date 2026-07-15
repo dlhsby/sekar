@@ -38,6 +38,8 @@ export interface AssignContext {
   location_id?: string;
   /** City-wide placement (Seluruh Surabaya). */
   city?: boolean;
+  /** Assigning a TEAM rather than an individual — opens the modal's team target. */
+  team?: boolean;
 }
 
 /** Geography half of an AssignContext (the container it was clicked in). */
@@ -134,6 +136,11 @@ export function DayBoard({
     canAssign && onAssign
       ? (shiftId: string, role?: string) => onAssign({ ...subject, shiftId, role })
       : undefined;
+  // A team carries no single role — the modal opens on its team target instead.
+  const mkAssignTeam = (subject: AssignSubject) =>
+    canAssign && onAssign
+      ? (shiftId: string) => onAssign({ ...subject, shiftId, team: true })
+      : undefined;
 
   return (
     <div className="flex flex-col gap-3">
@@ -222,7 +229,7 @@ export function DayBoard({
                   {rayonCapPills.map(({ shift, countable, target, rolledUp }) => (
                     <ShiftPill
                       key={shift.id}
-                      group={{ shift, byRole: {}, teams: [], countable, total: countable }}
+                      group={{ shift, byRole: {}, teams: [], countableByRole: {}, countable, total: countable }}
                       target={target}
                       rolledUp={rolledUp}
                       roleTargets={rolledUp ? undefined : rayonRoleTargets}
@@ -230,12 +237,16 @@ export function DayBoard({
                     />
                   ))}
                   <Pill>{t('schedules:board.petugasCount', { count: rayon.total })}</Pill>
-                  <Pill>
-                    {t('schedules:board.areaCount', {
-                      kawasan: rayon.regions.length,
-                      lokasi: locCount,
-                    })}
-                  </Pill>
+                  {/* Surabaya is city-wide by definition — it has no kawasan or
+                      lokasi, so "0 kawasan · 0 lokasi" would read as a defect. */}
+                  {rayon.id !== CITY_NODE_ID && (
+                    <Pill>
+                      {t('schedules:board.areaCount', {
+                        kawasan: rayon.regions.length,
+                        lokasi: locCount,
+                      })}
+                    </Pill>
+                  )}
                 </span>
               </button>
               {onEditCapacity && capacityLevel === 'rayon' && rayon.id !== CITY_NODE_ID && (
@@ -253,10 +264,19 @@ export function DayBoard({
 
             {open.has(rayon.id) && (
               <div className="flex flex-col gap-3 p-3">
-                {/* Assign at any tier: scheduling is allowed everywhere, only the
-                    TARGET is scope-bound. The city node is a sentinel, so it only
-                    shows a table when it actually holds city-wide placements. */}
-                {(rayon.id !== CITY_NODE_ID || rayon.placement.some((s) => s.total > 0)) && (
+                {/* Surabaya holds nothing but city-wide placements, so its shift
+                    + role table IS its body — no "Penempatan" wrapper to
+                    distinguish it from siblings it doesn't have. Gating it on
+                    already-having-content made a city-wide schedule impossible to
+                    assign: no table, so no way in, so the table never appeared. */}
+                {rayon.id === CITY_NODE_ID ? (
+                  <ShiftRoleTable
+                    shifts={rayon.placement}
+                    {...tableProps}
+                    onAssign={mkAssign({ city: true })}
+                    onAssignTeam={mkAssignTeam({ city: true })}
+                  />
+                ) : (
                   <PlacementBlock
                     id={`${rayon.id}-placement`}
                     title={t('schedules:board.placementRayon')}
@@ -267,9 +287,8 @@ export function DayBoard({
                     <ShiftRoleTable
                       shifts={rayon.placement}
                       {...tableProps}
-                      onAssign={mkAssign(
-                        rayon.id === CITY_NODE_ID ? { city: true } : { rayon_id: rayon.id }
-                      )}
+                      onAssign={mkAssign({ rayon_id: rayon.id })}
+                      onAssignTeam={mkAssignTeam({ rayon_id: rayon.id })}
                       roleTargets={rayonRoleTargets}
                       roleCounts={rayonRoleCounts}
                     />
@@ -287,6 +306,7 @@ export function DayBoard({
                         region={region}
                         rayonId={rayon.id}
                         mkAssign={mkAssign}
+                        mkAssignTeam={mkAssignTeam}
                         open={open}
                         toggle={toggle}
                         tableProps={tableProps}
@@ -301,6 +321,7 @@ export function DayBoard({
                         key={loc.id}
                         loc={loc}
                         onAssign={mkAssign({ rayon_id: rayon.id, location_id: loc.id })}
+                        onAssignTeam={mkAssignTeam({ rayon_id: rayon.id, location_id: loc.id })}
                         open={open.has(loc.id)}
                         onToggle={() => toggle(loc.id)}
                         tableProps={tableProps}
@@ -317,7 +338,8 @@ export function DayBoard({
                     ))}
                   </div>
                 )}
-                {rayon.regions.length === 0 &&
+                {rayon.id !== CITY_NODE_ID &&
+                  rayon.regions.length === 0 &&
                   rayon.looseLocations.length === 0 &&
                   !rayon.placement.some((s) => s.total > 0) && (
                     <p className="py-6 text-center text-nb-body-sm text-nb-gray-500">
@@ -387,6 +409,7 @@ interface TableProps {
 
 /** Builds a container-bound (shiftId, role) assign handler for a ShiftRoleTable. */
 type MkAssign = (subject: AssignSubject) => ((shiftId: string, role?: string) => void) | undefined;
+type MkAssignTeam = (subject: AssignSubject) => ((shiftId: string) => void) | undefined;
 
 /**
  * Per-role countable headcount across a whole subject's subtree, keyed
@@ -399,7 +422,10 @@ function subtreeRoleCounts(groups: BoardShiftGroup[][]): Map<string, number> {
   for (const list of groups) {
     for (const g of list) {
       for (const role of COUNTABLE_ROLES) {
-        const n = g.byRole?.[role]?.length ?? 0;
+        // countableByRole, not byRole: a team's members are real satgas/linmas
+        // and must count toward the target even though the Tim column, not the
+        // role column, is what LISTS them.
+        const n = g.countableByRole?.[role] ?? 0;
         if (n === 0) continue;
         const key = `${g.shift.id}:${role}`;
         m.set(key, (m.get(key) ?? 0) + n);
@@ -528,6 +554,7 @@ function RegionCard({
   region,
   rayonId,
   mkAssign,
+  mkAssignTeam,
   open,
   toggle,
   tableProps,
@@ -539,6 +566,7 @@ function RegionCard({
   region: BoardRegion;
   rayonId: string;
   mkAssign: MkAssign;
+  mkAssignTeam: MkAssignTeam;
   open: Set<string>;
   toggle: (id: string) => void;
   tableProps: TableProps;
@@ -597,7 +625,7 @@ function RegionCard({
             {capPills.map(({ shift, countable, target, rolledUp }) => (
               <ShiftPill
                 key={shift.id}
-                group={{ shift, byRole: {}, teams: [], countable, total: countable }}
+                group={{ shift, byRole: {}, teams: [], countableByRole: {}, countable, total: countable }}
                 target={target}
                 rolledUp={rolledUp}
                 roleTargets={rolledUp ? undefined : regionRoleTargets}
@@ -634,6 +662,7 @@ function RegionCard({
               shifts={region.placement}
               {...tableProps}
               onAssign={mkAssign({ rayon_id: rayonId, region_id: region.id })}
+              onAssignTeam={mkAssignTeam({ rayon_id: rayonId, region_id: region.id })}
               roleTargets={regionRoleTargets}
               roleCounts={regionRoleCounts}
             />
@@ -645,6 +674,11 @@ function RegionCard({
                   key={loc.id}
                   loc={loc}
                   onAssign={mkAssign({
+                    rayon_id: rayonId,
+                    region_id: region.id,
+                    location_id: loc.id,
+                  })}
+                  onAssignTeam={mkAssignTeam({
                     rayon_id: rayonId,
                     region_id: region.id,
                     location_id: loc.id,
@@ -674,6 +708,7 @@ function RegionCard({
 function LocationCard({
   loc,
   onAssign,
+  onAssignTeam,
   open,
   onToggle,
   tableProps,
@@ -686,6 +721,7 @@ function LocationCard({
   loc: BoardLocation;
   /** Container-bound assign (already carries this location's geography). */
   onAssign?: (shiftId: string, role?: string) => void;
+  onAssignTeam?: (shiftId: string) => void;
   open: boolean;
   onToggle: () => void;
   tableProps: TableProps;
@@ -749,6 +785,7 @@ function LocationCard({
             shifts={loc.shifts}
             {...tableProps}
             onAssign={onAssign}
+            onAssignTeam={onAssignTeam}
             roleTargets={roleTargets}
           />
         </div>

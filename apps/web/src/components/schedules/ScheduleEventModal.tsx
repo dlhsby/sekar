@@ -62,6 +62,8 @@ export interface ScheduleEventModalProps {
   initialLocationId?: string;
   initialShiftId?: string;
   initialCityWide?: boolean;
+  /** Open on the TEAM target (from the board's Tim column "+ Tugaskan"). */
+  initialTeam?: boolean;
   onSuccess?: () => void;
 }
 
@@ -223,6 +225,7 @@ export function ScheduleEventModal({
   initialLocationId,
   initialShiftId,
   initialCityWide,
+  initialTeam,
   onSuccess,
 }: ScheduleEventModalProps) {
   const { t } = useTranslation(['schedules', 'common', 'validation']);
@@ -244,7 +247,7 @@ export function ScheduleEventModal({
     resolver: zodResolver(schema),
     defaultValues: {
       title: event?.title ?? '',
-      kind: event?.is_team ? 'team' : 'individual',
+      kind: event?.is_team || (!event && initialTeam) ? 'team' : 'individual',
       user_id: event?.user_id ?? '',
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',

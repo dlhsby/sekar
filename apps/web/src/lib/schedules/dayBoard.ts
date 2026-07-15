@@ -20,6 +20,14 @@ export interface BoardTeam {
   name: string;
   markerColor: string | null;
   count: number;
+  /**
+   * The member occurrences this entry collapses, so the Tim row can open the
+   * detail modal like an individual row does (any member resolves the same team
+   * event via `schedule_event_id`). Members stay OUT of `byRole` — a team is a
+   * combination of roles and can't be filed under one — but they still count
+   * toward staffing (see `countable`).
+   */
+  occurrences: ScheduleOccurrence[];
 }
 
 /** One shift's roster inside a container, grouped by role + teams. */
@@ -28,7 +36,15 @@ export interface BoardShiftGroup {
   /** role code → individual (non-team) occurrences for this shift */
   byRole: Record<string, ScheduleOccurrence[]>;
   teams: BoardTeam[];
-  /** counted subjects (satgas + linmas only) for understaffing */
+  /**
+   * role code → headcount INCLUDING team members, for staffing only.
+   * `byRole` deliberately holds individuals alone (a team is a combination of
+   * roles and is displayed as one Tim entry), but a team's members are real
+   * satgas/linmas on the ground — so the targets must count them. Keep the two
+   * apart: `byRole` is what a column LISTS, this is what it COUNTS.
+   */
+  countableByRole: Record<string, number>;
+  /** counted subjects (satgas + linmas, teams included) for understaffing */
   countable: number;
   /** total occurrences across all roles + teams */
   total: number;
@@ -100,12 +116,14 @@ function groupByShift(occs: ScheduleOccurrence[], shifts: BoardShiftDef[]): Boar
         const existing = teamMap.get(key);
         if (existing) {
           existing.count += 1;
+          existing.occurrences.push(o);
         } else {
           teamMap.set(key, {
             eventId: key,
             name: o.team_category!.name,
             markerColor: o.team_category!.marker_color ?? null,
             count: 1,
+            occurrences: [o],
           });
         }
       } else {
@@ -121,15 +139,23 @@ function groupByShift(occs: ScheduleOccurrence[], shifts: BoardShiftDef[]): Boar
       );
     }
 
-    const countable = shiftOccs.filter(
-      (o) => !isTeam(o) && COUNTABLE_ROLES.includes(o.user.role as string)
-    ).length;
+    // A team fans out to one occurrence PER MEMBER, each carrying that member's
+    // real role — so a team of 5 satgas IS 5 satgas on the ground and must count
+    // toward the target exactly like individuals. Excluding them left a kawasan
+    // reading 0/10 with ten people standing in it.
+    const countableOccs = shiftOccs.filter((o) => COUNTABLE_ROLES.includes(o.user.role as string));
+    const countableByRole: Record<string, number> = {};
+    for (const o of countableOccs) {
+      const role = o.user.role as string;
+      countableByRole[role] = (countableByRole[role] ?? 0) + 1;
+    }
 
     return {
       shift,
       byRole,
       teams: Array.from(teamMap.values()),
-      countable,
+      countableByRole,
+      countable: countableOccs.length,
       total: shiftOccs.length,
     };
   });
@@ -176,23 +202,27 @@ export function buildDayBoard(
     return { id: loc.id, name: loc.name, shifts: shiftGroups, total: sumTotal(shiftGroups) };
   };
 
-  // City-wide node first (only when there are city occurrences) — a placement-
-  // only rayon with the sentinel id; the component localizes its label.
-  const cityNode: BoardRayon[] =
-    cityOccs.length > 0
-      ? [
-          {
-            id: CITY_NODE_ID,
-            name: '',
-            regions: [],
-            looseLocations: [],
-            placement: groupByShift(cityOccs, shifts),
-            total: sumTotal(groupByShift(cityOccs, shifts)),
-            // No staffing_level: the city node is a sentinel, not a rayon —
-            // there is nothing to attach a capacity to.
-          },
-        ]
-      : [];
+  // City-wide ("Seluruh Surabaya") node, always first — a placement-only rayon
+  // with the sentinel id; the component localizes its label.
+  //
+  // It used to render only once city occurrences existed, which made it
+  // unreachable: a city-scope schedule had nowhere to be assigned FROM, so the
+  // node never appeared, so you could never assign one. Same chicken-and-egg the
+  // rayon/kawasan assign tables had. It is now always present, like every other
+  // empty container on the board.
+  const cityPlacement = groupByShift(cityOccs, shifts);
+  const cityNode: BoardRayon[] = [
+    {
+      id: CITY_NODE_ID,
+      name: '',
+      regions: [],
+      looseLocations: [],
+      placement: cityPlacement,
+      total: sumTotal(cityPlacement),
+      // No staffing_level: the city node is a sentinel, not a rayon — there is
+      // nothing to attach a capacity to.
+    },
+  ];
 
   const byName = (a: { name: string }, b: { name: string }) =>
     a.name.localeCompare(b.name, undefined, { numeric: true });

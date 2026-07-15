@@ -43,34 +43,52 @@ const occ = (o: Partial<ScheduleOccurrence>): ScheduleOccurrence =>
     ...o,
   }) as ScheduleOccurrence;
 
+/**
+ * The city ("Surabaya") node is always tree[0] — it is a placement-only sentinel
+ * that must render even when empty, or a city-wide schedule has nowhere to be
+ * assigned from. Rayons follow it.
+ */
+const rayonOf = (tree: BoardRayon[], id = 'ry1') => tree.find((r) => r.id === id)!;
+
 describe('buildDayBoard', () => {
   it('nests region locations under rayon and keeps loose locations separate', () => {
     const tree = buildDayBoard([], master);
-    expect(tree).toHaveLength(1);
-    expect(tree[0].regions).toHaveLength(1);
-    expect(tree[0].regions[0].locations.map((l) => l.id)).toEqual(['loc1']);
-    expect(tree[0].looseLocations.map((l) => l.id)).toEqual(['loc2']);
+    const rayon = rayonOf(tree);
+    expect(rayon.regions).toHaveLength(1);
+    expect(rayon.regions[0].locations.map((l) => l.id)).toEqual(['loc1']);
+    expect(rayon.looseLocations.map((l) => l.id)).toEqual(['loc2']);
   });
 
   it('renders every shift even when empty', () => {
     const tree = buildDayBoard([], master);
-    const loc = tree[0].regions[0].locations[0];
+    const loc = rayonOf(tree).regions[0].locations[0];
     expect(loc.shifts.map((s) => s.shift.id)).toEqual(['s1', 's2']);
     expect(loc.shifts.every((s) => s.total === 0)).toBe(true);
   });
 
-  it('adds a city-wide node first only when city occurrences exist', () => {
-    // No city node without city occurrences.
-    expect(buildDayBoard([], master).some((n) => n.id === CITY_NODE_ID)).toBe(false);
+  // Surabaya renders ALWAYS, empty or not. Gating it on already-having-city
+  // occurrences made a city-wide schedule impossible to create from the board:
+  // no node, so no "+ Tugaskan", so no occurrence, so no node.
+  it('puts an empty city-wide node first even with no city occurrences', () => {
+    const tree = buildDayBoard([], master);
 
-    // A city occurrence (no location/region/rayon) surfaces as the first node.
+    expect(tree[0].id).toBe(CITY_NODE_ID);
+    expect(tree[0].total).toBe(0);
+    // It is city-wide by definition — never any kawasan or lokasi under it.
+    expect(tree[0].regions).toEqual([]);
+    expect(tree[0].looseLocations).toEqual([]);
+    // Every shift is present so each can be assigned into.
+    expect(tree[0].placement.map((g) => g.shift.id)).toEqual(['s1', 's2']);
+  });
+
+  it('collects unbound occurrences into the city node', () => {
     const cityOcc = occ({ scope: 'city', location_id: null, region_id: null, rayon_id: null });
     const tree = buildDayBoard([cityOcc], master);
+
     expect(tree[0].id).toBe(CITY_NODE_ID);
     expect(tree[0].total).toBe(1);
-    expect(tree[0].regions).toHaveLength(0);
-    // The real rayon still follows.
-    expect(tree.some((n) => n.id === 'ry1')).toBe(true);
+    // A sentinel, not a rayon — nothing to attach a capacity to.
+    expect(tree[0].staffing_level).toBeUndefined();
   });
 
   it('groups individuals by role and counts only satgas+linmas', () => {
@@ -91,7 +109,7 @@ describe('buildDayBoard', () => {
       ],
       master
     );
-    const s1 = tree[0].regions[0].locations[0].shifts[0];
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
     expect(Object.keys(s1.byRole).sort()).toEqual(['korlap', 'linmas', 'satgas']);
     expect(s1.total).toBe(3);
     expect(s1.countable).toBe(2); // korlap excluded
@@ -118,7 +136,7 @@ describe('buildDayBoard', () => {
       ],
       master
     );
-    const s1 = tree[0].regions[0].locations[0].shifts[0];
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
     expect(s1.teams).toHaveLength(1);
     expect(s1.teams[0]).toMatchObject({ name: 'Perawatan', count: 2, markerColor: '#7FBC8C' });
     expect(Object.keys(s1.byRole)).toHaveLength(0); // team members not in role columns
@@ -190,10 +208,10 @@ describe('buildDayBoard', () => {
       [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
       master
     );
-    expect(tree[0].placement.reduce((a, s) => a + s.total, 0)).toBe(1);
-    expect(tree[0].total).toBe(1);
+    expect(rayonOf(tree).placement.reduce((a, s) => a + s.total, 0)).toBe(1);
+    expect(rayonOf(tree).total).toBe(1);
     // Not double-counted into any region/location.
-    expect(tree[0].regions.every((r) => r.total === 0)).toBe(true);
+    expect(rayonOf(tree).regions.every((r) => r.total === 0)).toBe(true);
   });
 
   it('maps rayon-scoped occurrences into week + per-rayon counts via rayon_id', () => {
@@ -215,7 +233,7 @@ describe('buildDayBoard', () => {
       [occ({ location_id: null, region_id: 'kw1', scope: 'mobile' })],
       master
     );
-    const region = tree[0].regions[0];
+    const region = rayonOf(tree).regions[0];
     expect(region.placement[0].total).toBe(1);
     expect(region.total).toBe(1);
   });
@@ -394,5 +412,80 @@ describe('autoExpandedIds', () => {
 
       expect(ids).toEqual(new Set(['ry1', 'kw1', 'loc1']));
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Teams and staffing. A team event fans out to one occurrence PER MEMBER, each
+// carrying that member's real role — so a team of 5 satgas IS 5 satgas on the
+// ground. They were excluded from `countable`, leaving a kawasan reading 0/10
+// with ten people standing in it.
+// ---------------------------------------------------------------------------
+
+describe('buildDayBoard — teams count toward staffing', () => {
+  const teamOcc = (role: string, name: string) =>
+    occ({
+      location_id: 'loc1',
+      user: { id: name, full_name: name, username: name, role },
+      schedule_event_id: 'ev-team',
+      team_category: { id: 'tc1', name: 'Tim Patroli', marker_color: null },
+    } as Partial<ScheduleOccurrence>);
+
+  it('counts team members toward countable, like individuals', () => {
+    const tree = buildDayBoard([teamOcc('satgas', 'A'), teamOcc('linmas', 'B')], master);
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+
+    expect(s1.countable).toBe(2);
+  });
+
+  it('counts team members per role, so a role target sees them', () => {
+    const tree = buildDayBoard(
+      [teamOcc('satgas', 'A'), teamOcc('satgas', 'B'), teamOcc('linmas', 'C')],
+      master
+    );
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+
+    expect(s1.countableByRole).toEqual({ satgas: 2, linmas: 1 });
+  });
+
+  it('still excludes a team member whose role is not countable', () => {
+    const tree = buildDayBoard([teamOcc('korlap', 'A')], master);
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+
+    expect(s1.countable).toBe(0);
+    expect(s1.countableByRole).toEqual({});
+  });
+
+  it('keeps team members OUT of byRole — a team is displayed as one Tim entry', () => {
+    // The Tim column lists them; the role columns only COUNT them. Filing a team
+    // under one role is what we cannot do — it is a combination of roles.
+    const tree = buildDayBoard([teamOcc('satgas', 'A'), teamOcc('linmas', 'B')], master);
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+
+    expect(s1.byRole).toEqual({});
+    expect(s1.teams).toHaveLength(1);
+    expect(s1.teams[0].count).toBe(2);
+  });
+
+  it('carries the member occurrences so the Tim row can open a detail', () => {
+    const tree = buildDayBoard([teamOcc('satgas', 'A'), teamOcc('satgas', 'B')], master);
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+
+    expect(s1.teams[0].occurrences).toHaveLength(2);
+    expect(s1.teams[0].occurrences[0].user.full_name).toBe('A');
+  });
+
+  it('sums individuals and team members together', () => {
+    const tree = buildDayBoard(
+      [
+        occ({ location_id: 'loc1', user: { id: 'x', full_name: 'X', username: 'x', role: 'satgas' } }),
+        teamOcc('satgas', 'A'),
+      ],
+      master
+    );
+    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+
+    expect(s1.countable).toBe(2);
+    expect(s1.countableByRole.satgas).toBe(2);
   });
 });
