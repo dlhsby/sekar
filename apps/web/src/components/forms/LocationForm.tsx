@@ -109,6 +109,15 @@ export function LocationForm({
           })
           .nullable()
           .optional(),
+        // Map-style fields are set via MapStyleFields/setValue — they must be in
+        // the schema or zodResolver strips them from the submitted data (the
+        // colours would silently not save).
+        border_color: z.string().nullable().optional(),
+        fill_color: z.string().nullable().optional(),
+        border_opacity: z.number().nullable().optional(),
+        fill_opacity: z.number().nullable().optional(),
+        marker_icon: z.string().nullable().optional(),
+        marker_image_url: z.string().nullable().optional(),
       }),
     [t],
   );
