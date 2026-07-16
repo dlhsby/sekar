@@ -325,9 +325,12 @@ describe('statusHelpers', () => {
       expect(deriveAxes('active', true)).toEqual({ activity: 'aktif', location: 'dalam_area' });
       expect(deriveAxes('active', false)).toEqual({ activity: 'aktif', location: 'luar_area' });
     });
-    it('maps offline → offline/unknown location regardless of is_within_area', () => {
-      expect(deriveAxes('offline', true)).toEqual({ activity: 'offline', location: 'unknown' });
-      expect(deriveAxes('offline', false)).toEqual({ activity: 'offline', location: 'unknown' });
+    it('maps offline → offline, still reporting the LAST KNOWN inside/outside', () => {
+      // Both aktif and offline carry the location axis (mirrors the backend's
+      // calculateAxes). An unreachable worker's last known position is the whole
+      // point — without it, offline would be indistinguishable from absent.
+      expect(deriveAxes('offline', true)).toEqual({ activity: 'offline', location: 'dalam_area' });
+      expect(deriveAxes('offline', false)).toEqual({ activity: 'offline', location: 'luar_area' });
     });
     it('maps absent → absent/unknown location regardless of is_within_area', () => {
       expect(deriveAxes('absent', true)).toEqual({ activity: 'absent', location: 'unknown' });

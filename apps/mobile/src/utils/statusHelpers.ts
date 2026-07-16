@@ -193,18 +193,24 @@ export function presencePill(status: TrackingStatus): { tone: StatusTone; label:
 
 // Mapper: derive the activity + location axes from the three-state `status` +
 // `is_within_area`. Fresh GPS → `aktif`; clocked in but unreachable → `offline`;
-// not clocked in → `absent`. Location is always derived from is_within_area.
+// not clocked in → `absent`.
+//
+// BOTH aktif and offline report inside/outside — for offline it is the LAST KNOWN
+// fix, which is exactly what a supervisor needs ("unreachable, and last we saw they
+// were outside their park"). Dropping it would make offline indistinguishable from
+// absent on the one axis still carrying information. Must mirror the backend's
+// `calculateAxes`; `unknown` is only for someone who never reported.
 export function deriveAxes(
   status: TrackingStatus,
   isWithinArea: boolean,
 ): { activity: PresenceActivity; location: PresenceLocation } {
   switch (status) {
-    // Active = clocked in + fresh GPS (≤5min). Location from is_within_area.
+    // Active = clocked in + fresh GPS (≤5min).
     case 'active':
       return { activity: 'aktif', location: isWithinArea ? 'dalam_area' : 'luar_area' };
-    // Offline = clocked in but no recent GPS (>5min). Location unknown.
+    // Offline = clocked in but no recent GPS (>5min) — last known position stands.
     case 'offline':
-      return { activity: 'offline', location: 'unknown' };
+      return { activity: 'offline', location: isWithinArea ? 'dalam_area' : 'luar_area' };
     // Absent = not clocked in. Location unknown.
     case 'absent':
       return { activity: 'absent', location: 'unknown' };
