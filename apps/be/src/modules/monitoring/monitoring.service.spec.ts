@@ -1585,9 +1585,9 @@ describe('MonitoringService', () => {
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
-        active_count: 1, // Only user-1 has status ACTIVE
+        active_count: 2, // active + offline = clocked in (both satgas staff the park)
         required_count: 5, // From mockStaffRequirement
-        is_understaffed: true, // 1 active < 5 required
+        is_understaffed: true, // 2 clocked-in < 5 required
       });
     });
 

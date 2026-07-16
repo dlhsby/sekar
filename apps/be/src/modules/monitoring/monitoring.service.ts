@@ -1,6 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
@@ -280,42 +280,51 @@ export class MonitoringService {
       if (!STAFFING_COUNTED_ROLES.includes(w.role as UserRole)) continue;
 
       const existing = areaMap.get(w.location_id);
-      const activeCount = w.status === TrackingStatus.ACTIVE ? 1 : 0;
+      // Staffing counts whoever CLOCKED IN — active + offline — matching the
+      // aggregate (`assembleNode`/`countableOnlineByGroup`) and the model: a park
+      // is no less staffed because a phone lost GPS. Counting ACTIVE only reported
+      // a fully-present park as understaffed the moment signals went stale.
+      const clockedIn =
+        w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OFFLINE ? 1 : 0;
 
       if (existing) {
-        existing.activeCount += activeCount;
+        existing.activeCount += clockedIn;
       } else {
         areaMap.set(w.location_id, {
           name: w.area_name ?? 'Unknown',
           rayon_id: w.rayon_id ?? '',
           rayon_name: w.rayon_name ?? 'Unknown',
-          activeCount,
+          activeCount: clockedIn,
         });
       }
     }
 
-    // For each area, fetch required_count and build summary
-    const summaries: SnapshotAreaSummary[] = [];
-
-    for (const [locationId, areaData] of areaMap.entries()) {
-      // Query required_count for this area + current shift + current day type
-      // If no current shift, required_count defaults to 0 (understaffed = activeCount < 0 = false)
-      let requiredCount = 0;
-
-      if (currentShift) {
-        // Requirements are per-role (satgas + linmas) — sum across ALL roles for
-        // the shift/day-type, matching the staffing-summary path. findOne here
-        // would return a single role and under-count the target.
-        const reqs = await this.staffRequirementRepository.find({
-          where: {
-            location_id: locationId,
-            shift_definition_id: currentShift.id,
-            day_type: currentDayType,
-          },
-        });
-        requiredCount = reqs.reduce((sum, r) => sum + r.required_count, 0);
+    // Batch the requirement lookup for every area in ONE query (was a per-area
+    // find → N+1: a 100-area city snapshot fired 100 queries). Requirements are
+    // per-role (satgas + linmas); sum across roles per location. Stays
+    // location-keyed on purpose — a lokasi under a kawasan-scoped rayon has no
+    // location-tier target (the kawasan owns it), matching the aggregate.
+    const requiredByLocation = new Map<string, number>();
+    if (currentShift && areaMap.size > 0) {
+      const reqs = await this.staffRequirementRepository.find({
+        where: {
+          location_id: In([...areaMap.keys()]),
+          shift_definition_id: currentShift.id,
+          day_type: currentDayType,
+        },
+      });
+      for (const r of reqs) {
+        if (!r.location_id) continue;
+        requiredByLocation.set(
+          r.location_id,
+          (requiredByLocation.get(r.location_id) ?? 0) + r.required_count,
+        );
       }
+    }
 
+    const summaries: SnapshotAreaSummary[] = [];
+    for (const [locationId, areaData] of areaMap.entries()) {
+      const requiredCount = requiredByLocation.get(locationId) ?? 0;
       summaries.push({
         location_id: locationId,
         area_name: areaData.name,
