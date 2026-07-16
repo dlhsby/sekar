@@ -111,10 +111,13 @@ export class MonitoringUserService {
     const locationIds = [...new Set(trackingRecords.map((r) => r.location_id).filter(Boolean))];
     const userIds = trackingRecords.map((r) => r.user_id);
 
-    const [rayonMap, taskMap, thresholds] = await Promise.all([
+    const [rayonMap, taskMap, thresholds, teamMap] = await Promise.all([
       this.buildRayonMap(locationIds as string[]),
       this.buildCurrentTaskMap(userIds),
       this.cacheService.getThresholds(),
+      this.dailySchedulesService
+        ? this.dailySchedulesService.getTeamMembership(userIds, TimezoneUtil.jakartaDateString())
+        : Promise.resolve(new Map()),
     ]);
 
     const users: LiveUserDto[] = trackingRecords.map((uts) => {
@@ -156,6 +159,9 @@ export class MonitoringUserService {
         shift_definition_id: uts.shift_definition_id ?? null,
         current_task_status: taskMap.get(uts.user_id)?.status || null,
         current_task_title: taskMap.get(uts.user_id)?.title || null,
+        team_id: teamMap.get(uts.user_id)?.team_id ?? null,
+        team_name: teamMap.get(uts.user_id)?.team_name ?? null,
+        team_color: teamMap.get(uts.user_id)?.team_color ?? null,
       };
     });
 

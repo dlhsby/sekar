@@ -994,4 +994,152 @@ describe('SchedulesService', () => {
       expect(created).toBe(7); // 2 + 4 + 1
     });
   });
+
+  describe('getTeamMembership (Phase 5.7)', () => {
+    it('returns an empty Map when userIds is empty', async () => {
+      const result = await service.getTeamMembership([], '2026-07-01');
+      expect(result).toEqual(new Map());
+    });
+
+    it('queries schedules with team_category_id IS NOT NULL for the given date and user IDs', async () => {
+      const result = await service.getTeamMembership(['u1', 'u2'], '2026-07-01');
+
+      // Verify the query builder was called correctly
+      expect(rosterRepo.qb.leftJoinAndSelect).toHaveBeenCalledWith('ds.team_category', 'tc');
+      expect(rosterRepo.qb.where).toHaveBeenCalledWith('ds.user_id IN (:...userIds)', {
+        userIds: ['u1', 'u2'],
+      });
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.schedule_date = :date', {
+        date: '2026-07-01',
+      });
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.deleted_at IS NULL');
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.team_category_id IS NOT NULL');
+    });
+
+    it('returns team_id = schedule_event_id when schedule_event_id is present (ADR-048 grouping key)', async () => {
+      const scheduleRow = {
+        user_id: 'u1',
+        schedule_event_id: 'event-123',
+        team_category_id: 'cat-456',
+        team_category: { name: 'Penyiraman', marker_color: '#22C55E' },
+      };
+      rosterRepo.qb.getMany.mockResolvedValue([scheduleRow]);
+
+      const result = await service.getTeamMembership(['u1'], '2026-07-01');
+
+      expect(result.get('u1')).toEqual({
+        team_id: 'event-123',
+        team_name: 'Penyiraman',
+        team_color: '#22C55E',
+      });
+    });
+
+    it('returns team_id = team_category_id when schedule_event_id is null (fallback)', async () => {
+      const scheduleRow = {
+        user_id: 'u1',
+        schedule_event_id: null,
+        team_category_id: 'cat-456',
+        team_category: { name: 'Perawatan', marker_color: '#FF6B6B' },
+      };
+      rosterRepo.qb.getMany.mockResolvedValue([scheduleRow]);
+
+      const result = await service.getTeamMembership(['u1'], '2026-07-01');
+
+      expect(result.get('u1')).toEqual({
+        team_id: 'cat-456',
+        team_name: 'Perawatan',
+        team_color: '#FF6B6B',
+      });
+    });
+
+    it('maps team_color to null when marker_color is null', async () => {
+      const scheduleRow = {
+        user_id: 'u1',
+        schedule_event_id: 'event-123',
+        team_category_id: 'cat-456',
+        team_category: { name: 'Penyapuan', marker_color: null },
+      };
+      rosterRepo.qb.getMany.mockResolvedValue([scheduleRow]);
+
+      const result = await service.getTeamMembership(['u1'], '2026-07-01');
+
+      expect(result.get('u1')).toEqual({
+        team_id: 'event-123',
+        team_name: 'Penyapuan',
+        team_color: null,
+      });
+    });
+
+    it('handles multiple users and returns first match per user (created_at order)', async () => {
+      const scheduleRows = [
+        {
+          user_id: 'u1',
+          schedule_event_id: 'event-1',
+          team_category_id: 'cat-1',
+          team_category: { name: 'Team A', marker_color: '#22C55E' },
+        },
+        {
+          user_id: 'u1',
+          schedule_event_id: 'event-2',
+          team_category_id: 'cat-2',
+          team_category: { name: 'Team B', marker_color: '#FF6B6B' },
+        },
+        {
+          user_id: 'u2',
+          schedule_event_id: 'event-3',
+          team_category_id: 'cat-3',
+          team_category: { name: 'Team C', marker_color: '#69D2E7' },
+        },
+      ];
+      rosterRepo.qb.getMany.mockResolvedValue(scheduleRows);
+
+      const result = await service.getTeamMembership(['u1', 'u2'], '2026-07-01');
+
+      // u1: first win (event-1, Team A)
+      expect(result.get('u1')).toEqual({
+        team_id: 'event-1',
+        team_name: 'Team A',
+        team_color: '#22C55E',
+      });
+      // u2: only one (event-3, Team C)
+      expect(result.get('u2')).toEqual({
+        team_id: 'event-3',
+        team_name: 'Team C',
+        team_color: '#69D2E7',
+      });
+      expect(result.size).toBe(2);
+    });
+
+    it('skips rows where team_category is missing', async () => {
+      const scheduleRows = [
+        {
+          user_id: 'u1',
+          schedule_event_id: 'event-1',
+          team_category_id: 'cat-1',
+          team_category: null, // Missing relation
+        },
+      ];
+      rosterRepo.qb.getMany.mockResolvedValue(scheduleRows);
+
+      const result = await service.getTeamMembership(['u1'], '2026-07-01');
+
+      expect(result.size).toBe(0);
+    });
+
+    it('skips rows where both schedule_event_id and team_category_id would be null', async () => {
+      const scheduleRows = [
+        {
+          user_id: 'u1',
+          schedule_event_id: null,
+          team_category_id: null,
+          team_category: { name: 'Team A', marker_color: '#22C55E' },
+        },
+      ];
+      rosterRepo.qb.getMany.mockResolvedValue(scheduleRows);
+
+      const result = await service.getTeamMembership(['u1'], '2026-07-01');
+
+      expect(result.size).toBe(0);
+    });
+  });
 });

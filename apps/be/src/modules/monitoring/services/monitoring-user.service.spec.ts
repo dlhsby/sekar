@@ -363,6 +363,7 @@ describe('MonitoringUserService', () => {
             shift_definition: null,
           },
         ]),
+        getTeamMembership: jest.fn().mockResolvedValue(new Map()), // Empty team map for this test
       };
       trackingRepository.find = jest.fn().mockResolvedValue([{ user_id: 'u1' }]); // only u1 clocked in
 
@@ -442,6 +443,124 @@ describe('MonitoringUserService', () => {
       await service.getLiveUsers({ status: TrackingStatus.ACTIVE });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
+    });
+
+    it('attaches team_id, team_name, team_color when getTeamMembership returns a mapping (Phase 5.7)', async () => {
+      const mockTracking: UserTrackingStatus = {
+        id: 'tracking-1',
+        user_id: 'user-1',
+        user: mockUser,
+        location_id: 'area-1',
+        area: mockArea,
+        shift_id: 'shift-1',
+        shift: mockShift,
+        shift_definition_id: 'shift-def-1',
+        shift_definition: mockShiftDef,
+        status: TrackingStatus.ACTIVE,
+        last_latitude: -7.25,
+        last_longitude: 112.75,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        is_within_area: true,
+      } as unknown as UserTrackingStatus;
+
+      const mockQueryBuilder = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockTracking]),
+      };
+
+      trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      taskRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      areaRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockArea]),
+      } as any);
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+
+      // Mock dailySchedulesService with team membership
+      const mockTeamMap = new Map([
+        [
+          'user-1',
+          {
+            team_id: 'event-123',
+            team_name: 'Penyiraman',
+            team_color: '#22C55E',
+          },
+        ],
+      ]);
+      (service as any).dailySchedulesService = {
+        getTeamMembership: jest.fn().mockResolvedValue(mockTeamMap),
+        getRosterForMonitoring: jest.fn().mockResolvedValue([]),
+      };
+
+      const result = await service.getLiveUsers();
+
+      expect(result.users[0].team_id).toBe('event-123');
+      expect(result.users[0].team_name).toBe('Penyiraman');
+      expect(result.users[0].team_color).toBe('#22C55E');
+      expect((service as any).dailySchedulesService.getTeamMembership).toHaveBeenCalled();
+    });
+
+    it('sets team fields to null when dailySchedulesService is not wired (optional dependency)', async () => {
+      const mockTracking: UserTrackingStatus = {
+        id: 'tracking-1',
+        user_id: 'user-1',
+        user: mockUser,
+        location_id: 'area-1',
+        area: mockArea,
+        shift_id: 'shift-1',
+        shift: mockShift,
+        shift_definition_id: 'shift-def-1',
+        shift_definition: mockShiftDef,
+        status: TrackingStatus.ACTIVE,
+        last_latitude: -7.25,
+        last_longitude: 112.75,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        is_within_area: true,
+      } as unknown as UserTrackingStatus;
+
+      const mockQueryBuilder = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockTracking]),
+      };
+
+      trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      taskRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      areaRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([mockArea]),
+      } as any);
+      rayonRepository.find.mockResolvedValue([mockRayon]);
+
+      // Don't mock dailySchedulesService — leave it undefined
+      (service as any).dailySchedulesService = undefined;
+
+      const result = await service.getLiveUsers();
+
+      expect(result.users[0].team_id).toBeNull();
+      expect(result.users[0].team_name).toBeNull();
+      expect(result.users[0].team_color).toBeNull();
     });
   });
 

@@ -1136,6 +1136,62 @@ export class SchedulesService {
     });
   }
 
+  /**
+   * Team membership lookup for live (clocked-in) workers on a date.
+   * Returns a Map of user_id → { team_id, team_name, team_color } where:
+   * - team_id = schedule_event_id ?? team_category_id (ADR-048 grouping key)
+   * - team_name = team_category.name
+   * - team_color = team_category.marker_color ?? null
+   *
+   * Single batch query (no N+1): schedules where user_id IN (...) AND
+   * schedule_date = date AND deleted_at IS NULL AND team_category_id IS NOT NULL,
+   * left-joining team_category for name + marker_color.
+   *
+   * If a user has multiple team schedules on the same day, the first one wins.
+   * Empty userIds returns an empty Map.
+   */
+  async getTeamMembership(
+    userIds: string[],
+    date: string,
+  ): Promise<Map<string, { team_id: string; team_name: string; team_color: string | null }>> {
+    const map = new Map<
+      string,
+      { team_id: string; team_name: string; team_color: string | null }
+    >();
+    if (userIds.length === 0) return map;
+
+    const rows = await this.rosterRepo
+      .createQueryBuilder('ds')
+      .leftJoinAndSelect('ds.team_category', 'tc')
+      .where('ds.user_id IN (:...userIds)', { userIds })
+      .andWhere('ds.schedule_date = :date', { date })
+      .andWhere('ds.deleted_at IS NULL')
+      .andWhere('ds.team_category_id IS NOT NULL')
+      // Only a live team assignment counts — a worker who is off/replaced/on-leave
+      // for a team schedule isn't on that team's bubble today.
+      .andWhere('ds.status IN (:...statuses)', {
+        statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
+      })
+      .orderBy('ds.created_at', 'ASC')
+      .getMany();
+
+    for (const row of rows) {
+      if (!row.user_id || map.has(row.user_id)) continue;
+      if (!row.team_category) continue;
+
+      const teamId = row.schedule_event_id ?? row.team_category_id;
+      if (!teamId) continue;
+
+      map.set(row.user_id, {
+        team_id: teamId,
+        team_name: row.team_category.name,
+        team_color: row.team_category.marker_color ?? null,
+      });
+    }
+
+    return map;
+  }
+
   // ---- internals ----
 
   /** Reconcile a row's area set to exactly `locationIds`. */
