@@ -1,5 +1,9 @@
 import { UserRole } from '../entities/user.entity';
 
+/**
+ * Everyone who clocks in and streams a location — ADR-046 calls these
+ * **monitorable**: they appear on the map/roster whenever they are clocked in.
+ */
 export const CLOCKABLE_ROLES = [
   UserRole.SATGAS,
   UserRole.LINMAS,
@@ -7,6 +11,18 @@ export const CLOCKABLE_ROLES = [
   UserRole.ADMIN_RAYON,
   UserRole.KEPALA_RAYON,
 ];
+
+/**
+ * The workforce staffing is measured against — **only** satgas + linmas
+ * (ADR-046). Supervisory/coordinator roles are monitorable (see
+ * `CLOCKABLE_ROLES`) but must never move an understaffing number: a korlap
+ * standing in a park does not staff it.
+ *
+ * The single source of truth for "who counts", mirroring the web day board's
+ * `COUNTABLE_ROLES` (`apps/web/src/lib/schedules/dayBoard.ts`). The board and the
+ * monitoring map must report the same number for the same place.
+ */
+export const STAFFING_COUNTED_ROLES = [UserRole.SATGAS, UserRole.LINMAS];
 
 export const ACTIVITY_SUBMITTERS = [
   UserRole.SATGAS,

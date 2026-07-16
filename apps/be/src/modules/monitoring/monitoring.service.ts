@@ -21,6 +21,8 @@ import {
 } from './dto/staffing-summary.dto';
 import { MonitoringStatsService } from './services/monitoring-stats.service';
 import { MonitoringUserService } from './services/monitoring-user.service';
+import { UserRole } from '../users/entities/user.entity';
+import { STAFFING_COUNTED_ROLES } from '../users/constants/role-groups';
 import { DayTypeService } from './services/day-type.service';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
 
@@ -231,6 +233,11 @@ export class MonitoringService {
 
     for (const w of workers) {
       if (!w.location_id) continue; // Skip workers without area assignment
+      // Only satgas+linmas staff a place (ADR-046). korlap / kepala_rayon /
+      // admin_rayon are monitorable — they render on the map — but counting them
+      // here let a supervisor standing in a park mask a real shortfall, since
+      // `required_count` below sums satgas+linmas requirements only.
+      if (!STAFFING_COUNTED_ROLES.includes(w.role as UserRole)) continue;
 
       const existing = areaMap.get(w.location_id);
       const activeCount = w.status === TrackingStatus.ACTIVE ? 1 : 0;

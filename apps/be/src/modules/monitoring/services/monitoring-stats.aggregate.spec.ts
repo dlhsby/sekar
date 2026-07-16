@@ -29,6 +29,7 @@ describe('MonitoringStatsService.getAggregate', () => {
     let call = 0;
     const qb: any = {
       innerJoin: () => qb,
+      leftJoin: () => qb,
       select: () => qb,
       addSelect: () => qb,
       where: () => qb,
@@ -94,7 +95,9 @@ describe('MonitoringStatsService.getAggregate', () => {
       { id: 'area-2', rayon_id: 'rayon-1' },
       { id: 'area-3', rayon_id: 'rayon-2' },
     ]);
-    // trackingRepo.createQueryBuilder: 1st status, 2nd role, 3rd presence.
+    // trackingRepo.createQueryBuilder order: 1st status, 2nd role,
+    // 3rd countable-online (satgas+linmas only — what understaffing is measured
+    // on), 4th presence.
     trackingRepo.createQueryBuilder
       .mockReturnValueOnce(
         makeQb([
@@ -111,6 +114,16 @@ describe('MonitoringStatsService.getAggregate', () => {
             { group_id: 'rayon-1', role: 'satgas', count: '4' },
             { group_id: 'rayon-1', role: 'linmas', count: '2' },
             { group_id: 'rayon-2', role: 'satgas', count: '2' },
+          ],
+        ]),
+      )
+      .mockReturnValueOnce(
+        // countable-online: rayon-1 has 6 online satgas+linmas vs required 8 →
+        // understaffed; rayon-2 has 2 and no requirement.
+        makeQb([
+          [
+            { group_id: 'rayon-1', total: '6' },
+            { group_id: 'rayon-2', total: '2' },
           ],
         ]),
       )
@@ -158,7 +171,9 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(r1.online_count).toBe(5); // active only (no inactive/outside)
     expect(r1.worker_count).toBe(6); // 5 active + 1 missing
     expect(r1.required).toBe(8);
-    expect(r1.is_understaffed).toBe(true); // 5 online < 8 required
+    // Measured on countable-online (6 satgas+linmas), NOT online_count (5, all
+    // roles): supervisors are monitorable but never staff a place (ADR-046).
+    expect(r1.is_understaffed).toBe(true); // 6 countable-online < 8 required
     expect(r1.area_count).toBe(2);
 
     // Roster trio: 3 scheduled, 2 clocked in (u1,u2), 1 not clocked in.
@@ -197,6 +212,7 @@ describe('MonitoringStatsService.getAggregate', () => {
     trackingRepo.createQueryBuilder
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', status: 'inactive', count: '3' }]]))
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', role: 'satgas', count: '3' }]]))
+      .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', total: '3' }]])) // countable-online
       .mockReturnValueOnce(
         // presence: u1 clocked in & inactive & inside → tidak_aktif/dalam
         makeQb([[{ group_id: 'area-1', status: 'inactive', within: true, count: '1' }]]),
@@ -299,5 +315,78 @@ describe('MonitoringStatsService.getAggregate', () => {
       // areaRepository.count used, not find (no geometry load).
       expect(locationRepo.count).toHaveBeenCalled();
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Staffing correctness (Phase 5.0). Two defects lived here, both invisible to a
+// green suite because the fixtures never crossed a role with a requirement, and
+// never put a requirement anywhere but a lokasi.
+// ---------------------------------------------------------------------------
+
+describe('MonitoringStatsService — staffing correctness', () => {
+  it('measures understaffing on satgas+linmas, not on every monitorable role', () => {
+    // A korlap standing in a park is monitorable but does not staff it. Before
+    // the fix, `is_understaffed` compared ALL online roles against a
+    // satgas+linmas requirement, so a supervisor could mask a real shortfall.
+    const assemble = (
+      MonitoringStatsService.prototype as unknown as {
+        assembleNode: (i: Record<string, unknown>) => { is_understaffed: boolean };
+      }
+    ).assembleNode;
+
+    const node = assemble.call(
+      {
+        emptyStatusCounts: () => ({
+          active: 0,
+          inactive: 0,
+          outside_area: 0,
+          missing: 0,
+          offline: 0,
+        }),
+      },
+      {
+        id: 'area-1',
+        name: 'Taman Bungkul',
+        type: 'area',
+        counts_by_status: { active: 5, inactive: 0, outside_area: 0, missing: 0, offline: 0 },
+        required: 4,
+        // 5 online, but only 2 of them are satgas/linmas → still short of 4.
+        countable_online: 2,
+      },
+    );
+
+    expect(node.is_understaffed).toBe(true);
+  });
+
+  it('falls back to all-roles online only when no countable figure is supplied', () => {
+    // Defensive: a caller that has not been migrated must not silently report
+    // everything as understaffed.
+    const assemble = (
+      MonitoringStatsService.prototype as unknown as {
+        assembleNode: (i: Record<string, unknown>) => { is_understaffed: boolean };
+      }
+    ).assembleNode;
+
+    const node = assemble.call(
+      {
+        emptyStatusCounts: () => ({
+          active: 0,
+          inactive: 0,
+          outside_area: 0,
+          missing: 0,
+          offline: 0,
+        }),
+      },
+      {
+        id: 'area-1',
+        name: 'Taman Bungkul',
+        type: 'area',
+        counts_by_status: { active: 5, inactive: 0, outside_area: 0, missing: 0, offline: 0 },
+        required: 4,
+      },
+    );
+
+    expect(node.is_understaffed).toBe(false);
   });
 });
