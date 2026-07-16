@@ -49,8 +49,9 @@ retired — ADR-046 amended). Per-item detail in `specs/features/monitoring/READ
 splits the flat status into three *derived* axes (attendance lifecycle · live presence · counting) so it
 answers management's twelve questions and can't drift like the 5.3 enum. Four policies locked (per-shift
 grace · forgotten clock-out never auto-closed · cuti/sakit/izin/libur reasons · 10-min offline paged at
-threshold). Guardrails: service-day scoping + cross-midnight (shift 3). Companion needs: raise
-`active_max_age_sec` catalog max, and a supervisor "close & stamp" affordance for dangling shifts.
+threshold). Guardrails: service-day scoping + cross-midnight (shift 3). Companion need: a supervisor
+"close & stamp" affordance for dangling shifts. (5.4a already shipped the 10-min offline default; the
+settings catalog already allowed ample headroom, so no catalog-max change was needed.)
 
 **Remaining:**
 

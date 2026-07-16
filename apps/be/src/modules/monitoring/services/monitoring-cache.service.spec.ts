@@ -15,7 +15,7 @@ describe('MonitoringCacheService', () => {
   describe('getThresholds', () => {
     it('should return defaults when no loader set', async () => {
       const result = await service.getThresholds();
-      expect(result.active_max_age_seconds).toBe(300);
+      expect(result.active_max_age_seconds).toBe(600);
       expect(result.location_ping_interval_seconds).toBe(60);
     });
 
@@ -61,7 +61,7 @@ describe('MonitoringCacheService', () => {
       });
 
       const result = await service.getThresholds();
-      expect(result.active_max_age_seconds).toBe(300);
+      expect(result.active_max_age_seconds).toBe(600);
     });
   });
 

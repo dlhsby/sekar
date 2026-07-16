@@ -5,7 +5,7 @@ export class MonitoringConfigDto {
   @ApiProperty({ example: 'status_thresholds' })
   key: string;
 
-  @ApiProperty({ example: { active_max_age_seconds: 300 } })
+  @ApiProperty({ example: { active_max_age_seconds: 600 } })
   value: Record<string, any>;
 
   @ApiProperty({ example: 'Status calculation thresholds' })
@@ -23,7 +23,7 @@ export class MonitoringConfigResponseDto {
 export class UpdateMonitoringConfigDto {
   @ApiProperty({
     description: 'Configuration value object. Validated by Zod schema per key.',
-    example: { active_max_age_seconds: 300, location_ping_interval_seconds: 60 },
+    example: { active_max_age_seconds: 600, location_ping_interval_seconds: 60 },
   })
   @IsObject()
   value: Record<string, any>;
