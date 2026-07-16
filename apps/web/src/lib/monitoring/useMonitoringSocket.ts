@@ -159,6 +159,8 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
 
     socket.on('area:staffing-changed', () => {
       // Bubble counts are derived server-side; refetch the light aggregate.
+      // TODO(5.6b): emit subscribe:region on region drill for direct room patches
+      // (currently region aggregates refresh via the invalidation above).
       queryClient.invalidateQueries({ queryKey: aggregateKeys.all });
     });
 

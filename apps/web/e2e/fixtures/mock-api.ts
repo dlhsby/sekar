@@ -388,6 +388,137 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
   // 8) Monitoring
   await page.route('**/api/v1/monitoring/snapshot**', (route) => json(route, mockData.snapshot));
   await page.route('**/api/v1/monitoring/boundaries**', (route) => json(route, mockData.boundaries));
+  await page.route('**/api/v1/monitoring/aggregate**', async (route) => {
+    const url = new URL(route.request().url());
+    const scope = url.searchParams.get('scope');
+    const id = url.searchParams.get('id');
+
+    // Return mock aggregate by scope
+    if (scope === 'region' && id) {
+      return json(route, {
+        scope: 'region',
+        scope_id: id,
+        nodes: [
+          {
+            id: 'region-1',
+            name: 'Kawasan Utara',
+            type: 'region',
+            center_lat: -7.28,
+            center_lng: 112.75,
+            counts_by_status: { active: 2, offline: 1, absent: 0, outside_area: 0 },
+            counts_by_role: { satgas: 2, linmas: 1 },
+            worker_count: 3,
+            online_count: 2,
+            required: 3,
+            is_understaffed: false,
+            roster: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+            presence: {
+              aktif: { dalam: 2, luar: 0 },
+              tidak_aktif: { dalam: 0, luar: 1 },
+            },
+            location_count: 2,
+          },
+        ],
+        totals: { active: 2, offline: 1, absent: 0, outside_area: 0 },
+        roster_totals: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+        presence_totals: {
+          aktif: { dalam: 2, luar: 0 },
+          tidak_aktif: { dalam: 0, luar: 1 },
+        },
+        generated_at: '2026-06-10T08:00:00.000Z',
+      });
+    }
+
+    // Rayon scope: return both regions and areas (with region_id)
+    if (scope === 'rayon' && id) {
+      return json(route, {
+        scope: 'rayon',
+        scope_id: id,
+        nodes: [
+          {
+            id: 'region-1',
+            name: 'Kawasan Utara',
+            type: 'region',
+            center_lat: -7.28,
+            center_lng: 112.75,
+            counts_by_status: { active: 2, offline: 1, absent: 0, outside_area: 0 },
+            counts_by_role: { satgas: 2, linmas: 1 },
+            worker_count: 3,
+            online_count: 2,
+            required: 3,
+            is_understaffed: false,
+            roster: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+            presence: {
+              aktif: { dalam: 2, luar: 0 },
+              tidak_aktif: { dalam: 0, luar: 1 },
+            },
+            location_count: 2,
+          },
+          {
+            id: AREA.id,
+            name: AREA.name,
+            type: 'area',
+            center_lat: -7.2915,
+            center_lng: 112.7395,
+            counts_by_status: { active: 1, offline: 0, absent: 0, outside_area: 0 },
+            counts_by_role: { satgas: 1 },
+            worker_count: 1,
+            online_count: 1,
+            required: 2,
+            is_understaffed: true,
+            roster: { scheduled: 2, clocked_in: 1, not_clocked_in: 1 },
+            presence: {
+              aktif: { dalam: 1, luar: 0 },
+              tidak_aktif: { dalam: 0, luar: 0 },
+            },
+            rayon_id: id,
+            region_id: 'region-1',
+          },
+        ],
+        totals: { active: 3, offline: 1, absent: 0, outside_area: 0 },
+        roster_totals: { scheduled: 5, clocked_in: 4, not_clocked_in: 1 },
+        presence_totals: {
+          aktif: { dalam: 3, luar: 0 },
+          tidak_aktif: { dalam: 0, luar: 1 },
+        },
+        generated_at: '2026-06-10T08:00:00.000Z',
+      });
+    }
+
+    // City scope: return rayons
+    return json(route, {
+      scope: 'city',
+      scope_id: null,
+      nodes: [
+        {
+          id: RAYON.id,
+          name: RAYON.name,
+          type: 'rayon',
+          center_lat: -7.29,
+          center_lng: 112.74,
+          counts_by_status: { active: 3, offline: 1, absent: 0, outside_area: 0 },
+          counts_by_role: { satgas: 3, linmas: 1 },
+          worker_count: 4,
+          online_count: 3,
+          required: 5,
+          is_understaffed: true,
+          roster: { scheduled: 5, clocked_in: 4, not_clocked_in: 1 },
+          presence: {
+            aktif: { dalam: 3, luar: 0 },
+            tidak_aktif: { dalam: 0, luar: 1 },
+          },
+          area_count: 1,
+        },
+      ],
+      totals: { active: 3, offline: 1, absent: 0, outside_area: 0 },
+      roster_totals: { scheduled: 5, clocked_in: 4, not_clocked_in: 1 },
+      presence_totals: {
+        aktif: { dalam: 3, luar: 0 },
+        tidak_aktif: { dalam: 0, luar: 1 },
+      },
+      generated_at: '2026-06-10T08:00:00.000Z',
+    });
+  });
 
   // 9) Notifications
   await page.route('**/api/v1/notifications/unread-count', (route) => json(route, { count: 1 }));

@@ -100,7 +100,7 @@ export interface PresenceBreakdown {
 export interface AggregateNode {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'rayon' | 'area' | 'region';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;
@@ -112,11 +112,13 @@ export interface AggregateNode {
   roster: AggregateRosterCounts;
   presence: PresenceBreakdown;
   area_count?: number;
+  location_count?: number;
   rayon_id?: string | null;
+  region_id?: string | null;
 }
 
 export interface AggregateResponse {
-  scope: 'city' | 'rayon';
+  scope: 'city' | 'rayon' | 'region';
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;
@@ -132,13 +134,13 @@ export const aggregateKeys = {
 };
 
 /**
- * useMonitoringAggregate — rayon rollups (city scope) or area rollups (rayon
- * scope) for the map's "Ringkasan" bubbles. No worker coordinates, so it stays
- * light even city-wide. WS staffing events invalidate it; a slow poll is the
+ * useMonitoringAggregate — rayon rollups (city scope), region rollups (rayon scope),
+ * or area rollups (region scope) for the map's "Ringkasan" bubbles. No worker coordinates,
+ * so it stays light even city-wide. WS staffing events invalidate it; a slow poll is the
  * safety net.
  */
 export function useMonitoringAggregate(
-  scope: 'city' | 'rayon',
+  scope: 'city' | 'rayon' | 'region',
   id?: string,
   enabled = true
 ) {
