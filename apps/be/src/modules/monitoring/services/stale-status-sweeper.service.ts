@@ -12,15 +12,14 @@ const BATCH_SIZE = 50;
  * StaleStatusSweeperService
  *
  * Runs every 5 minutes and flips ACTIVE workers whose last_location_at is older
- * than the offline threshold (monitoring.active_max_age_sec, default 300 s /
- * 5 min — the same value the status calculator uses) to OFFLINE.
+ * than the offline threshold (monitoring.active_max_age_sec, default 600 s /
+ * 10 min — the same value the status calculator uses) to OFFLINE.
  *
- * ⚠️ The sweep interval (5 min) now EQUALS the threshold it enforces, where it
- * used to be 12× shorter than it (5 min vs the 1 h `missing` threshold). A worker
- * can therefore sit stale for up to ~10 minutes before this net catches them.
- * That is only a backstop delay — the calculator still flips them the instant any
- * ping arrives — but if the sweep is meant to be the authority, its interval has
- * to drop below the threshold.
+ * The 5-min sweep interval now sits safely BELOW the 10-min threshold (ADR-050),
+ * so a silent device is caught within ~5 min of crossing it — the backstop lag
+ * the 5.3 collapse briefly introduced (interval == threshold) is resolved. The
+ * calculator still flips a worker the instant any ping arrives; this only nets
+ * devices that go quiet without a clean clock-out.
  *
  * This is a safety net for workers whose devices stop sending pings without
  * going through a clean clock-out — e.g. device battery death, network loss,
@@ -47,7 +46,7 @@ export class StaleStatusSweeperService {
   /** Resolved at use-time (DB → env → default) so overrides apply without restart.
    *  Unified with the status calculator's missing threshold (ADR-049). */
   private get staleSecs(): number {
-    return this.systemConfig.getNumber('monitoring.active_max_age_sec', 300);
+    return this.systemConfig.getNumber('monitoring.active_max_age_sec', 600);
   }
 
   @Cron('*/5 * * * *')

@@ -16,8 +16,9 @@ const statusThresholdsSchema = z.object({
   // The single surviving boundary: past this a clocked-in worker is OFFLINE.
   // `inactive_threshold_seconds` + `missing_threshold_seconds` were retired with
   // the 5→3 status collapse — with idle and missing both folding into offline,
-  // nothing could ever read them.
-  active_max_age_seconds: z.number().int().min(60).max(600),
+  // nothing could ever read them. Default 600 s / 10 min (ADR-050); ceiling
+  // raised above the default so the value is tunable upward, not pinned to it.
+  active_max_age_seconds: z.number().int().min(60).max(1800),
   location_ping_interval_seconds: z.number().int().min(30).max(300),
 });
 
@@ -68,7 +69,7 @@ export class MonitoringConfigService {
     this.cacheService.setLoaders({
       thresholds: () =>
         Promise.resolve({
-          active_max_age_seconds: this.systemConfig.getNumber('monitoring.active_max_age_sec', 300),
+          active_max_age_seconds: this.systemConfig.getNumber('monitoring.active_max_age_sec', 600),
           location_ping_interval_seconds: this.systemConfig.getNumber(
             'monitoring.location_ping_interval_sec',
             60,

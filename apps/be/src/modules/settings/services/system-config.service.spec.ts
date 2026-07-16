@@ -28,7 +28,7 @@ describe('SystemConfigService', () => {
     it('returns the code default when no override and no env', async () => {
       delete process.env.MONITORING_ACTIVE_MAX_AGE_SEC;
       await service.onModuleInit();
-      expect(service.resolve('monitoring.active_max_age_sec')).toBe(300);
+      expect(service.resolve('monitoring.active_max_age_sec')).toBe(600);
     });
 
     it('prefers env over default (coerced to the value type)', async () => {

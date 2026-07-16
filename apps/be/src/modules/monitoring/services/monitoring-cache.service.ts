@@ -24,7 +24,7 @@ export interface GeofencingConfig {
 }
 
 const DEFAULT_THRESHOLDS: StatusThresholds = {
-  active_max_age_seconds: 300,
+  active_max_age_seconds: 600,
   location_ping_interval_seconds: 60,
 };
 

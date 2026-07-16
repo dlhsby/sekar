@@ -12,7 +12,7 @@ export async function seedMonitoringConfigs(ctx: SeedContext): Promise<void> {
     {
       key: 'status_thresholds',
       value: JSON.stringify({
-        active_max_age_seconds: 300,
+        active_max_age_seconds: 600,
         location_ping_interval_seconds: 60,
       }),
       description: 'Status calculation thresholds',

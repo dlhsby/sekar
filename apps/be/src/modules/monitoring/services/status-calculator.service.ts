@@ -268,10 +268,12 @@ export class StatusCalculatorService {
       // Phase 4-3 (M2): alert korlap + kepala_rayon when a clocked-in worker goes
       // unreachable. Fire-and-forget; never block the status calculation on dispatch.
       //
-      // ⚠️ This alert used to fire on MISSING (1 h of silence). MISSING is gone and
-      // OFFLINE fires after `active_max_age_sec` (5 min), so the SAME alert now
-      // triggers 12× sooner — patchy signal in a park will page a korlap. Flagged
-      // for the user: this wants either a dwell timer or retiring the alert.
+      // The alert rides OFFLINE (was MISSING). With `active_max_age_sec` now 10 min
+      // (ADR-050) it fires after 10 min of silence, and `notifyMissingWorker`
+      // de-dupes to once per worker per Jakarta day, so patchy signal can't spam a
+      // korlap. Suppressing the page once a worker is past his shift end (an
+      // expected departure) is a lifecycle-phase refinement — it needs the resolved
+      // shift window, which this path does not yet carry.
       if (newStatus === TrackingStatus.OFFLINE && previousStatus !== TrackingStatus.OFFLINE) {
         void this.notifyMissingWorker(userId, existing.location_id, existing.rayon_id);
       }
