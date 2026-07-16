@@ -828,6 +828,16 @@ describe('MonitoringController', () => {
       await controller.getAggregate(mockSuperadmin, 'rayon', 'rayon-9');
       expect(statsService.getAggregate).toHaveBeenCalledWith('rayon', 'rayon-9');
     });
+
+    it('region scope forces a rayon-scoped role to its own rayon (5.5c)', async () => {
+      await controller.getAggregate(mockKepalaRayon, 'region', 'rayon-other');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'rayon-1');
+    });
+
+    it('region scope lets a city role target any rayon', async () => {
+      await controller.getAggregate(mockSuperadmin, 'region', 'rayon-9');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'rayon-9');
+    });
   });
 
   describe('getSnapshot', () => {

@@ -304,17 +304,22 @@ export class MonitoringController {
   @Get('aggregate')
   @Roles(...MONITORING_CITY, ...MONITORING_RAYON)
   @ApiOperation({
-    summary: 'Aggregate map summary (Ringkasan mode) — rayon or area rollups, no worker coords',
+    summary: 'Aggregate map summary (Ringkasan mode) — rayon/region/area rollups, no worker coords',
     description:
-      'scope=city → one node per rayon; scope=rayon → one node per area in the rayon. Returns ' +
-      'grouped status/role counts + centers only, for lightweight drill-down bubbles.',
+      'scope=city → one node per rayon; scope=rayon → one node per area in the rayon; ' +
+      'scope=region → one node per kawasan in the rayon. Returns grouped status/role counts + ' +
+      'centers only, for lightweight drill-down bubbles.',
   })
-  @ApiQuery({ name: 'scope', enum: ['city', 'rayon'], required: false })
-  @ApiQuery({ name: 'id', required: false, description: 'Rayon UUID (required for rayon scope)' })
+  @ApiQuery({ name: 'scope', enum: ['city', 'rayon', 'region'], required: false })
+  @ApiQuery({
+    name: 'id',
+    required: false,
+    description: 'Rayon UUID (required for rayon + region scope)',
+  })
   @ApiResponse({ status: 200, type: AggregateResponseDto })
   async getAggregate(
     @GetUser() user: User,
-    @Query('scope') scope: 'city' | 'rayon' = 'city',
+    @Query('scope') scope: 'city' | 'rayon' | 'region' = 'city',
     @Query('id') id?: string,
   ): Promise<AggregateResponseDto> {
     // City-scope aggregate is city-role only; rayon-scoped roles are forced to
@@ -323,8 +328,9 @@ export class MonitoringController {
       throw new ForbiddenException('City-scope aggregate requires city-level role');
     }
     let rayonId = id;
-    if (scope === 'rayon') {
-      // Rayon-scoped roles always resolve to their own rayon regardless of query.
+    // `region` scope is rayon-parametrised (kawasan of a rayon), so it enforces
+    // identically to `rayon`: a district role only ever sees its own rayon.
+    if (scope === 'rayon' || scope === 'region') {
       const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
       rayonId = isCityRole ? id : (user.rayon_id ?? undefined);
       if (rayonId) this.enforceScopeRayon(user, rayonId);
