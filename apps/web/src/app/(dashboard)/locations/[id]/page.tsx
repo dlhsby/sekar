@@ -215,13 +215,6 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
 
-            {/* Radius (if applicable) */}
-            {area.radius_meters && (
-              <div className="flex justify-between">
-                <span className="font-bold text-nb-gray-700">{t('admin:locations.radiusLabel')}:</span>
-                <span>{area.radius_meters} {t('admin:locations.meterUnit')}</span>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

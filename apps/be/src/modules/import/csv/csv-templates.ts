@@ -19,15 +19,7 @@ export const CSV_TEMPLATES: Record<CsvImportEntity, string[]> = {
     'rayon_id',
     'employee_id',
   ],
-  areas: [
-    'name',
-    'location_type_id',
-    'rayon_id',
-    'address',
-    'latitude',
-    'longitude',
-    'radius_meters',
-  ],
+  areas: ['name', 'location_type_id', 'rayon_id', 'address', 'latitude', 'longitude'],
 };
 
 export const CSV_IMPORT_ENTITIES: CsvImportEntity[] = ['users', 'areas'];

@@ -170,7 +170,6 @@ describe('AuthController', () => {
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: {
               type: 'Polygon',
               coordinates: [
@@ -198,7 +197,6 @@ describe('AuthController', () => {
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: mockArea.boundary_polygon,
             area_type: null,
           });
@@ -240,7 +238,6 @@ describe('AuthController', () => {
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: null,
           });
 
@@ -252,7 +249,6 @@ describe('AuthController', () => {
             name: 'Taman Bungkul',
             gps_lat: -7.281234,
             gps_lng: 112.734567,
-            radius_meters: 100,
             boundary_polygon: null,
             area_type: null,
           });
@@ -308,7 +304,6 @@ describe('AuthController', () => {
             name: 'Taman Mayangkara',
             gps_lat: -7.285678,
             gps_lng: 112.738901,
-            radius_meters: 150,
             boundary_polygon: null,
           });
 

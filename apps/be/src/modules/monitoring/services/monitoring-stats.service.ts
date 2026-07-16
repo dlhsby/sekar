@@ -1346,7 +1346,6 @@ export class MonitoringStatsService {
             center_lng: parseFloat(area.gps_lng?.toString() || '0'),
             rayon_id: rayon.id,
             rayon_name: rayon.name,
-            radius_meters: area.radius_meters ?? null,
             assigned_count: assigned,
             is_understaffed: assigned < required,
             staffing_summary: staffingByArea.get(area.id) || [],

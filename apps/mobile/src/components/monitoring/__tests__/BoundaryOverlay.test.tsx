@@ -1,7 +1,7 @@
 /**
  * BoundaryOverlay Component Tests
  * Phase 2D: Rayon + area boundary polygon/circle overlays with center markers.
- * Covers polygon rendering, circle fallback, marker styling, understaffed states,
+ * Covers polygon rendering, marker styling, understaffed states,
  * press callbacks, and edge cases (empty rayons, insufficient coordinates).
  */
 
@@ -110,7 +110,6 @@ function buildArea(overrides?: Partial<AreaBoundary>): AreaBoundary {
     center_lat: -7.2888,
     center_lng: 112.7378,
     boundary_polygon: TRIANGLE_GEOJSON,
-    radius_meters: 150,
     rayon_id: 'rayon-1',
     rayon_name: 'Rayon Selatan',
     assigned_count: 3,
@@ -275,26 +274,29 @@ describe('BoundaryOverlay', () => {
       expect(polygons.length).toBeGreaterThanOrEqual(2);
     });
 
-    it('renders a circle fallback when area has no boundary_polygon', () => {
+    // The circle fallback is retired with `radius_meters`: drawing one would
+    // invent a geofence the server does not share. No usable ring → draw nothing.
+    it('draws nothing for an area with no boundary_polygon', () => {
       const area = buildArea({ boundary_polygon: null });
-      const { getByTestId } = render(
+      const { queryAllByTestId } = render(
         <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} />,
       );
 
-      expect(getByTestId('circle')).toBeTruthy();
+      // (the rayon's own polygon still draws — this is about the AREA)
+      expect(queryAllByTestId('circle')).toHaveLength(0);
     });
 
-    it('renders a circle fallback when boundary_polygon has fewer than 3 coordinates', () => {
+    it('draws nothing when boundary_polygon has fewer than 3 coordinates', () => {
       const oneCoord = {
         type: 'Polygon' as const,
         coordinates: [[[112.768, -7.250] as [number, number]]],
       };
       const area = buildArea({ boundary_polygon: oneCoord });
-      const { getByTestId } = render(
+      const { queryAllByTestId } = render(
         <BoundaryOverlay rayons={[buildRayon([area])]} {...defaultProps} />,
       );
 
-      expect(getByTestId('circle')).toBeTruthy();
+      expect(queryAllByTestId('circle')).toHaveLength(0);
     });
 
     it('does not render a circle when a valid area polygon exists', () => {

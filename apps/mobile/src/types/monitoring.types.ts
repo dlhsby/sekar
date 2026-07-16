@@ -291,7 +291,6 @@ export interface AreaBoundary {
   center_lat: number;
   center_lng: number;
   boundary_polygon: GeoJsonGeometry | null;
-  radius_meters: number;
   rayon_id: string;
   rayon_name: string;
   assigned_count: number;

@@ -40,7 +40,6 @@ describe('TodayActivitiesModal', () => {
         rayon_id: 'rayon1',
         gps_lat: -7.250445,
         gps_lng: 112.768845,
-        radius_meters: 100,
         address: 'Jl. Raya Darmo',
         created_at: '2026-01-01T00:00:00Z',
         updated_at: '2026-01-01T00:00:00Z',

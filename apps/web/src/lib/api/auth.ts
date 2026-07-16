@@ -37,7 +37,6 @@ export interface User {
     location_type_id: string;
     gps_lat: number;
     gps_lng: number;
-    radius_meters: number;
     address?: string;
   };
 }

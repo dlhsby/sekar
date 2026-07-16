@@ -43,7 +43,6 @@ export function areasDataset(rows: Location[]): Dataset {
     { header: 'rayon_id', value: (a) => a.rayon_id ?? '' },
     { header: 'gps_lat', value: (a) => a.gps_lat },
     { header: 'gps_lng', value: (a) => a.gps_lng },
-    { header: 'radius_meters', value: (a) => a.radius_meters },
     { header: 'address', value: (a) => a.address ?? '' },
     { header: 'coverage_area', value: (a) => a.coverage_area ?? '' },
     { header: 'is_active', value: (a) => a.is_active },

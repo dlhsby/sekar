@@ -30,7 +30,6 @@ describe('AreaPlantStatusService', () => {
     locationType: mockAreaType,
     gps_lat: -7.25,
     gps_lng: 112.75,
-    radius_meters: 100,
     is_active: true,
   } as Location;
 

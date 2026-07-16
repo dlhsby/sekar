@@ -308,7 +308,6 @@ export interface AreaBoundary {
   center_lng: number;
   rayon_id: string | null;
   rayon_name: string;
-  radius_meters: number | null;
   assigned_count: number;
   is_understaffed: boolean;
   staffing_summary: RoleStaffingItem[];

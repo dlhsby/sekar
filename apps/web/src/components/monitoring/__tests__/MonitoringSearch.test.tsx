@@ -41,7 +41,6 @@ const rayons: RayonBoundary[] = [
         center_lng: 112.74,
         rayon_id: 'r1',
         rayon_name: 'Rayon Pusat',
-        radius_meters: null,
         assigned_count: 3,
         is_understaffed: false,
         staffing_summary: [],

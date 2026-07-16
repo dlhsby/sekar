@@ -13,16 +13,16 @@ describe('AssignedAreaCard', () => {
 
   it('renders the area name', () => {
     const { getByText } = render(
-      <AssignedAreaCard area={{ name: 'Taman Bungkul', locationType: { name: 'Taman Kota' }, radius_meters: 100 }} />,
+      <AssignedAreaCard area={{ name: 'Taman Bungkul', locationType: { name: 'Taman Kota' } }} />,
     );
     expect(getByText('Taman Bungkul')).toBeTruthy();
   });
 
-  it('joins type and radius with a middot', () => {
+  it('shows the lokasi type', () => {
     const { getByText } = render(
-      <AssignedAreaCard area={{ name: 'Taman Bungkul', locationType: { name: 'Taman Kota' }, radius_meters: 100 }} />,
+      <AssignedAreaCard area={{ name: 'Taman Bungkul', locationType: { name: 'Taman Kota' } }} />,
     );
-    expect(getByText('Taman Kota · 100m radius')).toBeTruthy();
+    expect(getByText('Taman Kota')).toBeTruthy();
   });
 
   it('renders the address when present', () => {

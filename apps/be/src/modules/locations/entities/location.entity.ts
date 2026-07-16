@@ -72,16 +72,6 @@ export class Location {
   gps_lng: number;
 
   @ApiProperty({
-    description: 'Boundary radius in meters (1 to 10000)',
-    example: 100,
-    default: 100,
-    minimum: 1,
-    maximum: 10000,
-  })
-  @Column({ default: 100 })
-  radius_meters: number;
-
-  @ApiProperty({
     description: 'Physical address of the area',
     example: 'Jl. Taman Bungkul, Darmo, Surabaya',
     required: false,

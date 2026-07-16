@@ -71,7 +71,6 @@ export interface Area {
   rayon?: Rayon;
   gps_lat: number;
   gps_lng: number;
-  radius_meters: number;
   boundary_polygon?: GeoJsonGeometry;
   address?: string;
   created_at: string;

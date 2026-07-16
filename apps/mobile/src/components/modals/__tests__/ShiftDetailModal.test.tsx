@@ -11,7 +11,12 @@ import type { Shift } from '../../../types/models.types';
 import '../../../i18n/config';
 
 // Mock gpsUtils
+import { isWithinAreaBoundary } from '../../../utils/gpsUtils';
+
 jest.mock('../../../utils/gpsUtils', () => ({
+  // Containment is polygon-based now (the radius arm is retired), so the modal
+  // asks the shared helper instead of doing its own distance <= radius maths.
+  isWithinAreaBoundary: jest.fn((lat: number) => lat === -7.250445),
   calculateDistance: jest.fn((lat1, lng1, lat2, lng2) => {
     // Mock distance: return 50m for valid coords, 150m for outside
     if (lat1 === -7.250445 && lng1 === 112.768845) {
@@ -44,7 +49,6 @@ describe('ShiftDetailModal', () => {
       rayon_id: 'rayon1',
       gps_lat: -7.250445,
       gps_lng: 112.768845,
-      radius_meters: 100,
       address: 'Jl. Raya Darmo, Surabaya',
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
@@ -263,7 +267,7 @@ describe('ShiftDetailModal', () => {
     });
 
     it('should display distance and radius', () => {
-      const { getByText } = render(
+      const { getByText, queryByText } = render(
         <ShiftDetailModal
           visible={true}
           onClose={mockOnClose}
@@ -271,11 +275,13 @@ describe('ShiftDetailModal', () => {
         />
       );
 
-      // MetricTile renders labels via toUpperCase()
+      // MetricTile renders labels via toUpperCase(). Distance survives — it is
+      // still what the UI reports — but RADIUS is gone: `radius_meters` is
+      // retired, and the tile showed `radius_meters || 100`, i.e. a number the
+      // server had already stopped believing in.
       expect(getByText('JARAK')).toBeTruthy();
       expect(getByText('50m')).toBeTruthy();
-      expect(getByText('RADIUS')).toBeTruthy();
-      expect(getByText('100m')).toBeTruthy();
+      expect(queryByText('RADIUS')).toBeNull();
     });
 
     it('should handle missing area GPS coordinates', () => {
@@ -299,24 +305,20 @@ describe('ShiftDetailModal', () => {
       expect(getByText('0m')).toBeTruthy(); // Distance is 0 when coordinates missing
     });
 
-    it('should use specified radius', () => {
-      const shiftWithSpecificRadius: Shift = {
-        ...mockShift,
-        area: {
-          ...mockShift.area!,
-          radius_meters: 100,
-        },
-      };
-
+    it('reports inside/outside from the polygon, not a radius', () => {
+      // The old rule was `distance <= (radius_meters ?? 100)`. With the column
+      // retired that `?? 100` would have invented a geofence the server does not
+      // share, so containment comes from the shared helper the backend mirrors.
       const { getByText } = render(
-        <ShiftDetailModal
-          visible={true}
-          onClose={mockOnClose}
-          shift={shiftWithSpecificRadius}
-        />
+        <ShiftDetailModal visible={true} onClose={mockOnClose} shift={mockShift} />
       );
 
-      expect(getByText('100m')).toBeTruthy();
+      expect(isWithinAreaBoundary).toHaveBeenCalledWith(
+        mockShift.clock_in_gps_lat,
+        mockShift.clock_in_gps_lng,
+        mockShift.area,
+      );
+      expect(getByText('50m')).toBeTruthy();
     });
   });
 

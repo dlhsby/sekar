@@ -88,6 +88,7 @@ export interface AreaSnapshotRow {
   area_type_code: string;
   gps_lat: number | null;
   gps_lng: number | null;
+  /** Snapshot-only: retired as a column, still the source for a derived ring. */
   radius_meters: number | null;
   address: string | null;
   is_active: boolean;

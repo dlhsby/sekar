@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import MapView, { Circle, Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { NBText } from '../nb/NBText';
@@ -28,7 +28,6 @@ import type { GeoJsonGeometry } from '../../types/models.types';
 interface AreaBoundary {
   gps_lat: number;
   gps_lng: number;
-  radius_meters: number;
   boundary_polygon?: GeoJsonGeometry | null;
   name?: string;
 }
@@ -180,18 +179,10 @@ export function LocationMapModal({
       // Polygon available → use all vertices for precise bounding box
       points.push(...polygonCoords);
     } else if (area) {
-      // Radius fallback → expand bounding box to circle's cardinal edges
-      const lat = Number(area.gps_lat);
-      const lng = Number(area.gps_lng);
-      const radius = Number(area.radius_meters);
-      const latDeg = radius / 111320;
-      const lngDeg = radius / (111320 * Math.cos((lat * Math.PI) / 180));
-      points.push(
-        { latitude: lat + latDeg, longitude: lng },
-        { latitude: lat - latDeg, longitude: lng },
-        { latitude: lat, longitude: lng + lngDeg },
-        { latitude: lat, longitude: lng - lngDeg },
-      );
+      // No polygon → the centre point is all we can frame. The radius circle
+      // that used to stand in here is retired (`radius_meters` is gone); drawing
+      // one would invent a geofence the server does not share.
+      points.push({ latitude: Number(area.gps_lat), longitude: Number(area.gps_lng) });
     }
 
     if (points.length === 0) return undefined;
@@ -242,18 +233,12 @@ export function LocationMapModal({
             pitchEnabled={false}
             rotateEnabled={false}
           >
-            {/* Area boundary — polygon if available, circle as fallback */}
+            {/* Area boundary. Polygon or nothing: the radius circle that used to
+                stand in as a fallback is retired (`radius_meters` is gone), and
+                drawing one would invent a geofence the server does not share. */}
             {polygonCoords ? (
               <Polygon
                 coordinates={polygonCoords}
-                fillColor={AREA_FILL}
-                strokeColor={AREA_STROKE}
-                strokeWidth={2}
-              />
-            ) : area ? (
-              <Circle
-                center={{ latitude: Number(area.gps_lat), longitude: Number(area.gps_lng) }}
-                radius={Number(area.radius_meters)}
                 fillColor={AREA_FILL}
                 strokeColor={AREA_STROKE}
                 strokeWidth={2}

@@ -95,7 +95,6 @@
     "address": "Address",
     "areaType": "Area Type",
     "gpsCoordinates": "GPS Coordinates",
-    "boundaryRadius": "Boundary Radius",
     "rayonCoverage": "Rayon Coverage",
     "noSpecificArea": "No specific area",
     "inBoundary": "IN AREA",
@@ -152,8 +151,7 @@
     "validation": "Clock In Location Validation",
     "withinArea": "Within Area",
     "outsideArea": "Outside Area",
-    "distance": "Distance",
-    "radius": "Radius"
+    "distance": "Distance"
   },
   "shiftCard": {
     "unknownArea": "Unknown area",

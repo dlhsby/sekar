@@ -500,7 +500,6 @@ export class ImportService {
     area.coverage_area = parsedArea.coverage_area;
     area.location_type_id = selection.location_type_id;
     area.rayon_id = selection.rayon_id;
-    area.radius_meters = 100; // Default radius
     area.is_active = true;
 
     return this.areaRepository.save(area);

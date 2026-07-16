@@ -181,9 +181,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                       value={`${Number(assignedArea.gps_lat).toFixed(6)}, ${Number(assignedArea.gps_lng).toFixed(6)}`}
                     />
                   )}
-                  {assignedArea.radius_meters != null && (
-                    <InfoTableRow label={t('attendance:clockInOut.boundaryRadius')} value={`${assignedArea.radius_meters}m`} />
-                  )}
                 </>
               ) : isRayonScoped ? (
                 <InfoTableRow label={t('attendance:clockInOut.rayonCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />

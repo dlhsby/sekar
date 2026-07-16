@@ -201,17 +201,6 @@ export default function LocationsPage() {
           </span>
         ),
       },
-      {
-        id: 'radius_meters',
-        accessorKey: 'radius_meters',
-        header: t('admin:locations.columnRadius'),
-        meta: { label: t('admin:locations.columnRadius'), defaultHidden: true, filterVariant: 'number', align: 'right' },
-        cell: ({ row }) => (
-          <span className="tabular-nums text-nb-gray-600">
-            {row.original.radius_meters ?? '—'}
-          </span>
-        ),
-      },
       mapStyleColorColumn<Location>(t('common:color')),
       {
         id: 'address',

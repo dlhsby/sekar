@@ -12,7 +12,7 @@ import {
   nbShadows,
 } from '../../constants/nbTokens';
 import { formatDateTime } from '../../utils/dateUtils';
-import { calculateDistance } from '../../utils/gpsUtils';
+import { calculateDistance, isWithinAreaBoundary } from '../../utils/gpsUtils';
 import type { Shift } from '../../types/models.types';
 
 interface ShiftDetailModalProps {
@@ -34,13 +34,22 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
     ) {
       return { isInside: false, distance: 0 };
     }
+    // Distance is still to the centre — that is what the UI reports. But
+    // containment now uses the lokasi's POLYGON, via the same helper the backend
+    // mirrors. It used to be `distance <= (radius_meters ?? 100)`, which was a
+    // circle the server had already stopped believing in: `radius_meters` is
+    // retired, so that `?? 100` would have silently invented a geofence the
+    // server does not share.
     const distance = calculateDistance(
       shift.clock_in_gps_lat,
       shift.clock_in_gps_lng,
       shift.area.gps_lat,
       shift.area.gps_lng,
     );
-    return { isInside: distance <= (shift.area.radius_meters ?? 100), distance };
+    return {
+      isInside: isWithinAreaBoundary(shift.clock_in_gps_lat, shift.clock_in_gps_lng, shift.area),
+      distance,
+    };
   }, [shift]);
 
   const { isInside, distance } = locationStatus;
@@ -143,7 +152,6 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
 
               <View style={styles.metricsRow}>
                 <MetricTile label={tAttendance('shiftDetail.distance')} value={`${Math.round(distance)}m`} />
-                <MetricTile label={tAttendance('shiftDetail.radius')} value={`${shift.area?.radius_meters || 100}m`} />
               </View>
             </View>
           </View>

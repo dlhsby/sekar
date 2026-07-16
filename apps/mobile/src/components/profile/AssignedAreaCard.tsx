@@ -14,7 +14,6 @@ interface AssignedAreaCardProps {
   area: {
     name?: string;
     locationType?: { name?: string };
-    radius_meters?: number;
     address?: string;
   } | null;
   testID?: string;
@@ -25,7 +24,7 @@ export const AssignedAreaCard: React.FC<AssignedAreaCardProps> = ({
   testID = 'assigned-area-card',
 }) => {
   const { t } = useTranslation();
-  const metaParts = [area?.locationType?.name, area?.radius_meters ? `${area.radius_meters}m ${t('profile:assignedArea.radiusSuffix')}` : null]
+  const metaParts = [area?.locationType?.name]
     .filter(Boolean)
     .join(' · ');
 

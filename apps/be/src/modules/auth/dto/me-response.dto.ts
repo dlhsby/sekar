@@ -22,9 +22,6 @@ class AssignedAreaDto {
   @ApiProperty({ example: 112.7383 })
   gps_lng: number;
 
-  @ApiProperty({ example: 200 })
-  radius_meters: number;
-
   @ApiPropertyOptional({
     description: 'GeoJSON Polygon boundary for polygon-based geofencing',
     nullable: true,

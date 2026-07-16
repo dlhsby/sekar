@@ -72,19 +72,6 @@ export class CreateLocationDto extends MapStyleDto {
   gps_lng: number;
 
   @ApiPropertyOptional({
-    description: 'Boundary radius in meters (defaults to 100m, max 10000m / 10km)',
-    example: 100,
-    default: 100,
-    minimum: 1,
-    maximum: 10000,
-  })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10000)
-  radius_meters?: number;
-
-  @ApiPropertyOptional({
     description: 'Physical address of the area',
     example: 'Jl. Taman Bungkul, Darmo, Surabaya',
   })
