@@ -536,6 +536,9 @@ export default function MonitoringPage() {
         role: w.role,
         is_within_area: w.is_within_area,
         is_scheduled: w.is_scheduled ?? true,
+        team_id: w.team_id ?? null,
+        team_name: w.team_name ?? null,
+        team_color: w.team_color ?? null,
       })),
     [filteredWorkers]
   );
