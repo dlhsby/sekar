@@ -33,6 +33,12 @@ export interface SnapshotWorker {
   lifecycle_flags?: string[];
   /** True if on the current shift's roster; false = ad-hoc / off-schedule. */
   is_scheduled?: boolean;
+  /** Team membership for grouping into team bubbles (ADR-048). team_id = schedule_event_id ?? team_category_id. */
+  team_id?: string | null;
+  /** Team name (from team_category.name). */
+  team_name?: string | null;
+  /** Marker color in hex format (from team_category.marker_color). */
+  team_color?: string | null;
 }
 
 export interface SnapshotAreaSummary {

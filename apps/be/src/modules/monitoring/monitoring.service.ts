@@ -50,6 +50,12 @@ export interface SnapshotWorker {
   lifecycle_flags: LifecycleFlag[];
   /** True if this worker is on the current shift's roster (not ad-hoc). */
   is_scheduled: boolean;
+  /** Team membership for grouping into team bubbles (ADR-048). team_id = schedule_event_id ?? team_category_id. */
+  team_id: string | null;
+  /** Team name (from team_category.name). */
+  team_name: string | null;
+  /** Marker color in hex format (from team_category.marker_color). */
+  team_color: string | null;
 }
 
 export interface SnapshotAreaSummary {
@@ -217,6 +223,9 @@ export class MonitoringService {
         is_late: u.is_late ?? false,
         lifecycle_flags: flags,
         is_scheduled: isScheduled,
+        team_id: u.team_id ?? null,
+        team_name: u.team_name ?? null,
+        team_color: u.team_color ?? null,
       };
     });
 

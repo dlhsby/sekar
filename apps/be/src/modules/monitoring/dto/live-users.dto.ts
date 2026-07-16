@@ -105,6 +105,15 @@ export class LiveUserDto {
 
   @ApiProperty({ example: 'Clean fountain area' })
   current_task_title: string | null;
+
+  @ApiPropertyOptional({ example: 'team-or-event-uuid', nullable: true })
+  team_id: string | null;
+
+  @ApiPropertyOptional({ example: 'Penyiraman', nullable: true })
+  team_name: string | null;
+
+  @ApiPropertyOptional({ example: '#22C55E', nullable: true })
+  team_color: string | null;
 }
 
 export class LiveUsersFilterDto {

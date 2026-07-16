@@ -105,6 +105,12 @@ export interface LiveUser {
   clock_in_time: string;
   current_task_status: string | null;
   current_task_title: string | null;
+  /** Team membership for grouping into team bubbles (ADR-048). team_id = schedule_event_id ?? team_category_id. */
+  team_id?: string | null;
+  /** Team name (from team_category.name). */
+  team_name?: string | null;
+  /** Marker color in hex format (from team_category.marker_color). */
+  team_color?: string | null;
 }
 
 // Absent User for daily roster monitoring — Phase 3 (roster monitoring)
