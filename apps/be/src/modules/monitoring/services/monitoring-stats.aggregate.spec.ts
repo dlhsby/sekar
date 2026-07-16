@@ -118,12 +118,20 @@ describe('MonitoringStatsService.getAggregate', () => {
         ]),
       )
       .mockReturnValueOnce(
-        // countable-online: rayon-1 has 6 online satgas+linmas vs required 8 →
-        // understaffed; rayon-2 has 2 and no requirement.
+        // countable-online: online satgas+linmas user ids. rayon-1 has 6 online,
+        // but only u1/u2/u3 are on today's roster — u5/u6/u7 are ad-hoc and must
+        // NOT count (ADR-050 / Q12). So scheduled-online = 3 < 8 → understaffed.
+        // rayon-2: u4 scheduled + u8 ad-hoc, no requirement.
         makeQb([
           [
-            { group_id: 'rayon-1', total: '6' },
-            { group_id: 'rayon-2', total: '2' },
+            { group_id: 'rayon-1', user_id: 'u1' },
+            { group_id: 'rayon-1', user_id: 'u2' },
+            { group_id: 'rayon-1', user_id: 'u3' },
+            { group_id: 'rayon-1', user_id: 'u5' },
+            { group_id: 'rayon-1', user_id: 'u6' },
+            { group_id: 'rayon-1', user_id: 'u7' },
+            { group_id: 'rayon-2', user_id: 'u4' },
+            { group_id: 'rayon-2', user_id: 'u8' },
           ],
         ]),
       )
@@ -171,9 +179,10 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(r1.online_count).toBe(6); // active + offline (clocked-in)
     expect(r1.worker_count).toBe(6); // 5 active + 1 offline (all clocked-in)
     expect(r1.required).toBe(8);
-    // Measured on countable-online (6 satgas+linmas), NOT online_count (5, all
-    // roles): supervisors are monitorable but never staff a place (ADR-046).
-    expect(r1.is_understaffed).toBe(true); // 6 countable-online < 8 required
+    // Measured on scheduled-online satgas+linmas — 3 of the 6 online are ad-hoc
+    // (not rostered) and excluded (ADR-050 / Q12); supervisors never staff a
+    // place either (ADR-046). So 3 scheduled-online < 8 required → understaffed.
+    expect(r1.is_understaffed).toBe(true);
     expect(r1.area_count).toBe(2);
 
     // Roster trio: 3 scheduled, 2 clocked in (u1,u2), 1 not clocked in.
@@ -212,7 +221,17 @@ describe('MonitoringStatsService.getAggregate', () => {
     trackingRepo.createQueryBuilder
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', status: 'offline', count: '3' }]]))
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', role: 'satgas', count: '3' }]]))
-      .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', total: '3' }]])) // countable-online
+      .mockReturnValueOnce(
+        // countable-online: online satgas+linmas user ids (intersected with the
+        // scheduled set below → 3 scheduled-online ≥ 2 required, not understaffed).
+        makeQb([
+          [
+            { group_id: 'area-1', user_id: 'u1' },
+            { group_id: 'area-1', user_id: 'u2' },
+            { group_id: 'area-1', user_id: 'u3' },
+          ],
+        ]),
+      )
       .mockReturnValueOnce(
         // presence: u1 clocked in & offline & inside → tidak_aktif/dalam
         makeQb([[{ group_id: 'area-1', status: 'offline', within: true, count: '1' }]]),
