@@ -492,6 +492,7 @@ export class StatusCalculatorService {
       location_id: tracking.location_id,
       area_name: context.area?.name || null,
       rayon_id: context.area?.rayon_id || null,
+      region_id: context.area?.region_id || null,
       previous_status: previousStatus,
       new_status: newStatus,
       latitude: tracking.last_latitude,
@@ -525,6 +526,7 @@ export class StatusCalculatorService {
       location_id: tracking.location_id,
       area_name: context.area.name,
       rayon_id: context.area.rayon_id || null,
+      region_id: context.area.region_id || null,
       latitude: lat,
       longitude: lng,
       timestamp,
@@ -574,6 +576,7 @@ export class StatusCalculatorService {
       location_id: tracking.location_id,
       area_name: context.area?.name || 'Unknown',
       rayon_id: context.area?.rayon_id || null,
+      region_id: context.area?.region_id || null,
       latitude: lat,
       longitude: lng,
       accuracy,
@@ -628,12 +631,13 @@ export class StatusCalculatorService {
 
     const area = await this.areaRepository.findOne({
       where: { id: locationId },
-      select: ['id', 'rayon_id'],
+      select: ['id', 'rayon_id', 'region_id'],
     });
 
     const event: AreaStaffingChangedEvent = {
       location_id: locationId,
       rayon_id: area?.rayon_id || null,
+      region_id: area?.region_id || null,
       active_count: activeCount,
       required_count: requiredCount,
       is_met: activeCount >= requiredCount,
@@ -663,7 +667,7 @@ export class StatusCalculatorService {
     const area = locationId
       ? await this.areaRepository.findOne({
           where: { id: locationId },
-          select: ['id', 'name', 'rayon_id'],
+          select: ['id', 'name', 'rayon_id', 'region_id'],
         })
       : null;
 

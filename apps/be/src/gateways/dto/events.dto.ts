@@ -39,6 +39,22 @@ export class UnsubscribeRayonDto {
 }
 
 /**
+ * Subscribe to region events (Phase 5.5b)
+ */
+export class SubscribeRegionDto {
+  @IsUUID()
+  region_id: string;
+}
+
+/**
+ * Unsubscribe from region events (Phase 5.5b)
+ */
+export class UnsubscribeRegionDto {
+  @IsUUID()
+  region_id: string;
+}
+
+/**
  * User location update event (Phase 2D enhanced)
  *
  * New fields: status, is_within_area, shift_name
@@ -67,7 +83,11 @@ export class UserLocationEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   latitude: number;
@@ -77,11 +97,11 @@ export class UserLocationEvent {
 
   @IsNumber()
   @IsOptional()
-  accuracy: number | null;
+  accuracy?: number | null;
 
   @IsNumber()
   @IsOptional()
-  battery_level: number | null;
+  battery_level?: number | null;
 
   @IsEnum(TrackingStatus)
   status: TrackingStatus;
@@ -122,7 +142,11 @@ export class UserClockInEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   latitude: number;
@@ -154,7 +178,11 @@ export class UserClockOutEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   timestamp: Date;
 
@@ -252,7 +280,7 @@ export class TaskCompletedEvent {
  * User status changed event (Phase 2D)
  *
  * Emitted when a user's tracking status transitions between states.
- * Broadcast to: area room, rayon room, city room
+ * Broadcast to: area room, rayon room, region room, city room
  */
 export class UserStatusChangedEvent {
   @IsUUID()
@@ -266,15 +294,19 @@ export class UserStatusChangedEvent {
 
   @IsUUID()
   @IsOptional()
-  location_id: string | null;
+  location_id?: string | null;
 
   @IsString()
   @IsOptional()
-  area_name: string | null;
+  area_name?: string | null;
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsEnum(TrackingStatus)
   previous_status: TrackingStatus;
@@ -284,11 +316,11 @@ export class UserStatusChangedEvent {
 
   @IsNumber()
   @IsOptional()
-  latitude: number | null;
+  latitude?: number | null;
 
   @IsNumber()
   @IsOptional()
-  longitude: number | null;
+  longitude?: number | null;
 
   @IsString()
   activity: ActivityStatus;
@@ -303,7 +335,7 @@ export class UserStatusChangedEvent {
  * User left area / entered area event (Phase 2D)
  *
  * Emitted when boundary crossing is detected.
- * Broadcast to: area room, rayon room, city room
+ * Broadcast to: area room, rayon room, region room, city room
  */
 export class UserAreaEvent {
   @IsUUID()
@@ -323,7 +355,11 @@ export class UserAreaEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   latitude: number;
@@ -349,11 +385,11 @@ export class UserReassignedEvent {
 
   @IsUUID()
   @IsOptional()
-  previous_area_id: string | null;
+  previous_area_id?: string | null;
 
   @IsString()
   @IsOptional()
-  previous_area_name: string | null;
+  previous_area_name?: string | null;
 
   @IsUUID()
   new_area_id: string;
@@ -363,7 +399,11 @@ export class UserReassignedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   timestamp: Date;
 }
@@ -374,7 +414,11 @@ export class AreaStaffingChangedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  rayon_id?: string | null;
+
+  @IsUUID()
+  @IsOptional()
+  region_id?: string | null;
 
   @IsNumber()
   active_count: number;

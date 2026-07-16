@@ -51,7 +51,7 @@ export class RoomJoinService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'rayon_id', 'location_id'],
+        select: ['id', 'rayon_id', 'location_id', 'region_id'],
       });
 
       if (!user) return rooms;
@@ -59,6 +59,8 @@ export class RoomJoinService {
       if (RAYON_ROLES.includes(role) && user.rayon_id) {
         rooms.push(`monitoring:rayon:${user.rayon_id}`);
       }
+
+      // TODO (Phase 5.5c): when a REGION-scope role is introduced, push monitoring:region:${user.region_id} here
 
       if (role === UserRole.KORLAP) {
         // Multi-area: all assigned area rooms, falling back to the legacy single area

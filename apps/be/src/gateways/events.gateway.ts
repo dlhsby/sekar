@@ -21,6 +21,8 @@ import {
   UnsubscribeAreaDto,
   SubscribeRayonDto,
   UnsubscribeRayonDto,
+  SubscribeRegionDto,
+  UnsubscribeRegionDto,
   UserLocationEvent,
   UserClockInEvent,
   UserClockOutEvent,
@@ -38,7 +40,7 @@ import {
  * WebSocket Gateway for real-time events
  *
  * Handles:
- * - Client subscriptions to areas/rayons
+ * - Client subscriptions to areas/rayons/regions
  * - Broadcasting location updates
  * - Broadcasting shift events (clock-in/out)
  * - Broadcasting staffing changes
@@ -47,6 +49,7 @@ import {
  * Rooms:
  * - area:{areaId} - Subscribers to specific area
  * - rayon:{rayonId} - Subscribers to specific rayon
+ * - region:{regionId} - Subscribers to specific region (Phase 5.5b)
  * - city - City-wide subscribers (Admin/TopManagement)
  */
 @WebSocketGateway({
@@ -212,6 +215,38 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   }
 
   /**
+   * Subscribe to region events (Phase 5.5b)
+   */
+  @SubscribeMessage('subscribe:region')
+  handleSubscribeRegion(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() dto: SubscribeRegionDto,
+  ): { success: boolean; room: string } {
+    const room = `monitoring:region:${dto.region_id}`;
+    client.join(room);
+
+    this.logger.log(`Client ${client.id} subscribed to ${room}`);
+
+    return { success: true, room };
+  }
+
+  /**
+   * Unsubscribe from region events (Phase 5.5b)
+   */
+  @SubscribeMessage('unsubscribe:region')
+  handleUnsubscribeRegion(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() dto: UnsubscribeRegionDto,
+  ): { success: boolean; room: string } {
+    const room = `monitoring:region:${dto.region_id}`;
+    client.leave(room);
+
+    this.logger.log(`Client ${client.id} unsubscribed from ${room}`);
+
+    return { success: true, room };
+  }
+
+  /**
    * Emit user location update
    */
   emitUserLocation(event: UserLocationEvent): void {
@@ -223,6 +258,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     // Emit to rayon subscribers
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_LOCATION, event);
+    }
+
+    // Emit to region subscribers (Phase 5.5b)
+    if (event.region_id) {
+      this.server.to(`monitoring:region:${event.region_id}`).emit(EventType.USER_LOCATION, event);
     }
 
     // WS-3: City room does NOT receive high-frequency USER_LOCATION pings
@@ -238,6 +278,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_IN, event);
     }
+    if (event.region_id) {
+      this.server.to(`monitoring:region:${event.region_id}`).emit(EventType.USER_CLOCK_IN, event);
+    }
     this.server.to('monitoring:city').emit(EventType.USER_CLOCK_IN, event);
   }
 
@@ -250,6 +293,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_CLOCK_OUT, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_CLOCK_OUT, event);
+    }
+    if (event.region_id) {
+      this.server.to(`monitoring:region:${event.region_id}`).emit(EventType.USER_CLOCK_OUT, event);
     }
     this.server.to('monitoring:city').emit(EventType.USER_CLOCK_OUT, event);
   }
@@ -301,7 +347,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   /**
    * Emit user status changed event (Phase 2D)
    *
-   * Broadcasts to the user's area, rayon, and city rooms.
+   * Broadcasts to the user's area, rayon, region, and city rooms.
    */
   emitUserStatusChanged(event: UserStatusChangedEvent): void {
     this.logger.log(
@@ -318,6 +364,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
         .to(`monitoring:rayon:${event.rayon_id}`)
         .emit(EventType.USER_STATUS_CHANGED, event);
     }
+    if (event.region_id) {
+      this.server
+        .to(`monitoring:region:${event.region_id}`)
+        .emit(EventType.USER_STATUS_CHANGED, event);
+    }
     this.server.to('monitoring:city').emit(EventType.USER_STATUS_CHANGED, event);
   }
 
@@ -331,6 +382,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_LEFT_AREA, event);
     }
+    if (event.region_id) {
+      this.server.to(`monitoring:region:${event.region_id}`).emit(EventType.USER_LEFT_AREA, event);
+    }
     this.server.to('monitoring:city').emit(EventType.USER_LEFT_AREA, event);
   }
 
@@ -343,6 +397,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_ENTERED_AREA, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_ENTERED_AREA, event);
+    }
+    if (event.region_id) {
+      this.server
+        .to(`monitoring:region:${event.region_id}`)
+        .emit(EventType.USER_ENTERED_AREA, event);
     }
     this.server.to('monitoring:city').emit(EventType.USER_ENTERED_AREA, event);
   }
@@ -361,6 +420,9 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.server.to(`monitoring:area:${event.new_area_id}`).emit(EventType.USER_REASSIGNED, event);
     if (event.rayon_id) {
       this.server.to(`monitoring:rayon:${event.rayon_id}`).emit(EventType.USER_REASSIGNED, event);
+    }
+    if (event.region_id) {
+      this.server.to(`monitoring:region:${event.region_id}`).emit(EventType.USER_REASSIGNED, event);
     }
     this.server.to('monitoring:city').emit(EventType.USER_REASSIGNED, event);
   }
@@ -381,6 +443,11 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     if (event.rayon_id) {
       this.server
         .to(`monitoring:rayon:${event.rayon_id}`)
+        .emit(EventType.AREA_STAFFING_CHANGED, event);
+    }
+    if (event.region_id) {
+      this.server
+        .to(`monitoring:region:${event.region_id}`)
         .emit(EventType.AREA_STAFFING_CHANGED, event);
     }
     this.server.to('monitoring:city').emit(EventType.AREA_STAFFING_CHANGED, event);
