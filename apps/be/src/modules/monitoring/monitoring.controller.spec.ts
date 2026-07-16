@@ -507,6 +507,21 @@ describe('MonitoringController', () => {
       expect(service.getLiveUsers).toHaveBeenCalledWith(filters);
     });
 
+    describe('searchMonitoring (5.7a)', () => {
+      it('returns an empty result and does NOT query when the term is blank', async () => {
+        const result = await controller.searchMonitoring({ q: '   ' }, mockSuperadmin);
+        expect(service.getLiveUsers).not.toHaveBeenCalled();
+        expect(result.users).toEqual([]);
+        expect(result.total_active).toBe(0);
+      });
+
+      it('delegates a real term to getLiveUsers (scope-filtered)', async () => {
+        service.getLiveUsers.mockResolvedValue(mockLiveUsers);
+        await controller.searchMonitoring({ q: 'John' }, mockSuperadmin);
+        expect(service.getLiveUsers).toHaveBeenCalledWith(expect.objectContaining({ q: 'John' }));
+      });
+    });
+
     it('should return user positions with location data', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
 

@@ -116,6 +116,41 @@ export class MonitoringController {
     return this.monitoringService.getLiveUsers(filters);
   }
 
+  @Get('search')
+  @Roles(...MONITORING_AREA)
+  @ApiOperation({
+    summary:
+      'Server-side monitoring search — workers clocked in with a fix in the last 24h whose name ' +
+      'or lokasi matches, scope-filtered. Surfaces monitorable-but-unscheduled clock-ins too.',
+  })
+  @ApiQuery({ name: 'q', description: 'Search term (worker or lokasi name)' })
+  @ApiResponse({ status: 200, type: LiveUsersResponseDto })
+  async searchMonitoring(
+    @Query() filters: LiveUsersFilterDto,
+    @GetUser() user: User,
+  ): Promise<LiveUsersResponseDto> {
+    // Empty query returns nothing rather than the whole scoped fleet.
+    if (!filters.q || !filters.q.trim()) {
+      return {
+        total_active: 0,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        total_online: 0,
+        users: [],
+        expected_count: 0,
+        present_count: 0,
+        absent_count: 0,
+        on_leave_count: 0,
+        off_schedule_count: 0,
+        absent_users: [],
+        generated_at: new Date(),
+      };
+    }
+    await this.applyScopeFilters(user, filters);
+    return this.monitoringService.getLiveUsers(filters);
+  }
+
   @Get('users/:userId/location-history')
   @Roles(...MONITORING_AREA)
   @ApiOperation({ summary: 'Get user location history for a date' })

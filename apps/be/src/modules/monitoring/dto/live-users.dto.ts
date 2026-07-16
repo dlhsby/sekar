@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsUUID, IsEnum } from 'class-validator';
+import { IsOptional, IsUUID, IsEnum, IsString } from 'class-validator';
 import { CLOCKABLE_ROLES } from '../../users/constants/role-groups';
 import {
   TrackingStatus,
@@ -127,6 +127,15 @@ export class LiveUsersFilterDto {
   @IsEnum(TrackingStatus)
   @IsOptional()
   status?: TrackingStatus;
+
+  @ApiPropertyOptional({
+    description:
+      'Server-side search (5.7a): matches worker name or lokasi name among workers clocked in ' +
+      'with a location fix in the last 24h — including monitorable-but-unscheduled clock-ins.',
+  })
+  @IsString()
+  @IsOptional()
+  q?: string;
 }
 
 /**

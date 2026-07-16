@@ -228,6 +228,38 @@ describe('MonitoringUserService', () => {
       expect(Array.isArray(result.users[0].lifecycle_flags)).toBe(true);
     });
 
+    it('applies a name/lokasi ILIKE + 24h freshness filter when a search term is given (5.7a)', async () => {
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+      taskRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      areaRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      } as any);
+      rayonRepository.find.mockResolvedValue([]);
+
+      await service.getLiveUsers({ q: 'John' } as any);
+
+      // The ILIKE match escapes the term and is paired with the 24h freshness bound.
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        expect.stringContaining('ILIKE'),
+        expect.objectContaining({ q: '%John%' }),
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('24 hours'));
+    });
+
     it('flags is_late for a late clock-in, and lupa_clock_out only past the shift end', async () => {
       // Freeze "now" so the derivation is deterministic. Noon WIB, inside the
       // 06:00–14:00 window → is_late (clocked in 07:00 > 06:15) but not past end.
