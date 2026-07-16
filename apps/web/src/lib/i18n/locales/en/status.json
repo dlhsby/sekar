@@ -20,10 +20,11 @@
   },
   "tracking": {
     "active": "Active",
-    "inactive": "Inactive",
+    "offline": "Offline",
+    "absent": "Absent",
     "outside_area": "Outside Area",
-    "missing": "Not Detected",
-    "offline": "Offline"
+    "inside_area": "Inside Area",
+    "unknown_area": "Location Unknown"
   },
   "dayType": {
     "weekday": "Weekday",

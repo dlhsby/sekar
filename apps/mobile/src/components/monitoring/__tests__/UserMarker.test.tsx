@@ -229,7 +229,7 @@ describe('UserMarker', () => {
     });
 
     it('should render for inactive status', () => {
-      const user = createMockUser({ status: 'inactive' });
+      const user = createMockUser({ status: 'absent' });
       const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
@@ -237,7 +237,7 @@ describe('UserMarker', () => {
     });
 
     it('should render for outside_area status', () => {
-      const user = createMockUser({ status: 'outside_area' });
+      const user = createMockUser({ status: 'absent' });
       const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
@@ -245,7 +245,7 @@ describe('UserMarker', () => {
     });
 
     it('should render for missing status', () => {
-      const user = createMockUser({ status: 'missing' });
+      const user = createMockUser({ status: 'absent' });
       const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );
@@ -395,7 +395,7 @@ describe('UserMarker', () => {
     });
 
     it('should render when outside_boundary is true', () => {
-      const user = createMockUser({ outside_boundary: true, status: 'outside_area' });
+      const user = createMockUser({ outside_boundary: true, status: 'absent' });
       const { getByTestId } = render(
         <UserMarker user={user} onPress={mockOnPress} labelMode="none" />
       );

@@ -171,7 +171,7 @@ describe('WorkerListVirtual', () => {
         user_id: 'w1',
         full_name: 'Caca',
         role: 'satgas',
-        status: 'missing',
+        status: 'absent',
         area_id: 'area-1',
         area_name: 'Taman A',
         last_update: new Date().toISOString(),
@@ -183,7 +183,8 @@ describe('WorkerListVirtual', () => {
         onSelect={jest.fn()}
       />
     );
-    // STATUS_LABELS['missing'] = 'Tidak Terdeteksi'
-    expect(screen.getByText('Tidak Terdeteksi')).toBeInTheDocument();
+    // 'Tidak Terdeteksi' was the label for the retired `missing` status. `absent`
+    // means "never clocked in" — tidak hadir — which is a different claim.
+    expect(screen.getByText('Tidak Hadir')).toBeInTheDocument();
   });
 });

@@ -146,10 +146,9 @@ export class MonitoringUserService {
 
     return {
       total_active: statusCounts.active,
-      total_inactive: statusCounts.inactive,
-      total_outside_area: statusCounts.outside_area,
-      total_missing: statusCounts.missing,
       total_offline: statusCounts.offline,
+      total_absent: statusCounts.absent,
+      total_outside_area: statusCounts.outside_area,
       total_online: statusCounts.active,
       users,
       ...rosterSummary,
@@ -328,16 +327,28 @@ export class MonitoringUserService {
 
   // ---- Private helpers ----
 
+  /**
+   * Tallies for the snapshot. The three statuses partition the workforce;
+   * `outside_area` is an AXIS that overlaps them, so the four do NOT sum to a
+   * headcount — a worker outside their boundary is counted under their status
+   * AND under `outside_area`.
+   */
   private countByStatus(records: UserTrackingStatus[]): Record<string, number> {
     const counts: Record<string, number> = {
       active: 0,
-      inactive: 0,
-      outside_area: 0,
-      missing: 0,
       offline: 0,
+      absent: 0,
+      outside_area: 0,
     };
     for (const r of records) {
-      counts[r.status] = (counts[r.status] || 0) + 1;
+      if (r.status in counts) counts[r.status] = counts[r.status] + 1;
+      // Inside/outside stopped being a status, so it can no longer be read off
+      // the status column — it has to come from the flag. ABSENT rows are skipped:
+      // their `is_within_area` is a leftover from whenever they last reported, and
+      // counting it would report people who are at home as "outside their area".
+      if (r.is_within_area === false && r.status !== TrackingStatus.ABSENT) {
+        counts.outside_area += 1;
+      }
     }
     return counts;
   }

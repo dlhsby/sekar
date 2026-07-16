@@ -34,7 +34,7 @@ describe('StaleStatusSweeperService', () => {
           provide: SystemConfigService,
           useValue: {
             getNumber: jest.fn((key: string, def?: number) =>
-              key === 'monitoring.missing_threshold_sec' ? 900 : def,
+              key === 'monitoring.active_max_age_sec' ? 300 : def,
             ),
           },
         },
@@ -55,7 +55,7 @@ describe('StaleStatusSweeperService', () => {
       expect(mockSave).not.toHaveBeenCalled();
     });
 
-    it('should flip ACTIVE workers older than threshold to MISSING', async () => {
+    it('should flip ACTIVE workers older than threshold to OFFLINE', async () => {
       const staleWorker = {
         user_id: 'user-1',
         status: TrackingStatus.ACTIVE,
@@ -68,7 +68,7 @@ describe('StaleStatusSweeperService', () => {
 
       await service.sweep();
 
-      expect(staleWorker.status).toBe(TrackingStatus.MISSING);
+      expect(staleWorker.status).toBe(TrackingStatus.OFFLINE);
       expect(mockSave).toHaveBeenCalledWith([staleWorker]);
     });
 
@@ -111,7 +111,7 @@ describe('StaleStatusSweeperService', () => {
       await service.sweep();
 
       expect(mockSave).toHaveBeenCalledTimes(1);
-      staleWorkers.forEach((w) => expect(w.status).toBe(TrackingStatus.MISSING));
+      staleWorkers.forEach((w) => expect(w.status).toBe(TrackingStatus.OFFLINE));
     });
 
     it('should set updated_at on each flipped worker to a current timestamp', async () => {
@@ -154,8 +154,8 @@ describe('StaleStatusSweeperService', () => {
       // Two find calls and two save calls
       expect(mockFind).toHaveBeenCalledTimes(2);
       expect(mockSave).toHaveBeenCalledTimes(2);
-      batch1.forEach((w) => expect(w.status).toBe(TrackingStatus.MISSING));
-      batch2.forEach((w) => expect(w.status).toBe(TrackingStatus.MISSING));
+      batch1.forEach((w) => expect(w.status).toBe(TrackingStatus.OFFLINE));
+      batch2.forEach((w) => expect(w.status).toBe(TrackingStatus.OFFLINE));
     });
   });
 });

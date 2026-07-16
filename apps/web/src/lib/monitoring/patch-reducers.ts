@@ -28,10 +28,8 @@ export interface WorkerPatch {
 
 const STATUS_KEYS: TrackingStatus[] = [
   'active',
-  'inactive',
-  'outside_area',
-  'missing',
   'offline',
+  'absent',
 ];
 
 /** Recompute the status totals from the current worker list. */
@@ -40,27 +38,31 @@ export function recomputeTotals(
 ): Pick<
   MonitoringSnapshotData,
   | 'total_active'
-  | 'total_inactive'
-  | 'total_outside_area'
-  | 'total_missing'
   | 'total_offline'
+  | 'total_absent'
+  | 'total_outside_area'
 > {
   const counts: Record<TrackingStatus, number> = {
     active: 0,
-    inactive: 0,
-    outside_area: 0,
-    missing: 0,
     offline: 0,
+    absent: 0,
   };
+  // `outside_area` is an AXIS, not a status, so it comes from `is_within_area`
+  // rather than the status column. It OVERLAPS active/offline — a worker outside
+  // their boundary is counted under their status AND here — so these four totals
+  // must never be summed into a headcount.
+  let outsideArea = 0;
   for (const w of workers) {
     if (STATUS_KEYS.includes(w.status)) counts[w.status] += 1;
+    // Skip ABSENT: their `is_within_area` is a leftover from whenever they last
+    // reported, so counting it would report people at home as outside their area.
+    if (w.is_within_area === false && w.status !== 'absent') outsideArea += 1;
   }
   return {
     total_active: counts.active,
-    total_inactive: counts.inactive,
-    total_outside_area: counts.outside_area,
-    total_missing: counts.missing,
     total_offline: counts.offline,
+    total_absent: counts.absent,
+    total_outside_area: outsideArea,
   };
 }
 

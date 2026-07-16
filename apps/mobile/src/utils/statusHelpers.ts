@@ -178,43 +178,46 @@ export function overtimePill(status: OvertimeStatus): { tone: StatusTone; label:
   }
 }
 
-// Maps the 5 TrackingStatus values to the StatusPill tone + shortened pill
+// Maps the 3 TrackingStatus values to the StatusPill tone + shortened pill
 // vocabulary used across Monitoring (MON-1/2 pill surfaces). Labels stay aligned
-// with the canonical `getStatusLabel` vocab in utils/mapUtils.ts (which backs
-// markers + overlays); the pill versions are just trimmed to fit the chip.
+// with the canonical status vocab; the pill versions are trimmed to fit the chip.
 export function presencePill(status: TrackingStatus): { tone: StatusTone; label: string } {
   switch (status) {
-    case 'active':       return { tone: 'ok', label: i18n.t('status:presence.active') };
-    case 'inactive':     return { tone: 'warn', label: i18n.t('status:presence.inactive') };
-    case 'outside_area': return { tone: 'bad', label: i18n.t('status:presence.outside_area') };
-    case 'missing':      return { tone: 'bad', label: i18n.t('status:presence.missing') };
-    case 'offline':      return { tone: 'neutral', label: i18n.t('status:presence.offline') };
+    case 'active':   return { tone: 'ok', label: i18n.t('status:tracking.active') };
+    case 'offline':  return { tone: 'neutral', label: i18n.t('status:tracking.offline') };
+    case 'absent':   return { tone: 'bad', label: i18n.t('status:tracking.absent') };
   }
 }
 
 // ─── Two-axis presence (CP6) ────────────────────────────────────────────────
 
-// Compatibility mapper: derive the activity + location axes from the legacy
-// flattened `status` + `is_within_area`, for payloads that predate the backend
-// two-axis change. `active`/`outside_area` are both fresh GPS → `aktif`;
-// `inactive` → `idle`; `missing`/`offline` have no usable fix → `unknown` location.
+// Mapper: derive the activity + location axes from the three-state `status` +
+// `is_within_area`. Fresh GPS → `aktif`; clocked in but unreachable → `offline`;
+// not clocked in → `absent`.
+//
+// BOTH aktif and offline report inside/outside — for offline it is the LAST KNOWN
+// fix, which is exactly what a supervisor needs ("unreachable, and last we saw they
+// were outside their park"). Dropping it would make offline indistinguishable from
+// absent on the one axis still carrying information. Must mirror the backend's
+// `calculateAxes`; `unknown` is only for someone who never reported.
 export function deriveAxes(
   status: TrackingStatus,
   isWithinArea: boolean,
 ): { activity: PresenceActivity; location: PresenceLocation } {
   switch (status) {
-    // `active`/`outside_area` encode the location directly (fresh fix inside vs
-    // outside) — trust the status, not a possibly-stale is_within_area flag.
-    case 'active':       return { activity: 'aktif', location: 'dalam_area' };
-    case 'outside_area': return { activity: 'aktif', location: 'luar_area' };
-    // `inactive` (idle) keeps its last-known location from is_within_area.
-    case 'inactive':     return { activity: 'idle', location: isWithinArea ? 'dalam_area' : 'luar_area' };
-    // No usable fix → location unknown.
-    case 'missing':      return { activity: 'missing', location: 'unknown' };
-    case 'offline':      return { activity: 'offline', location: 'unknown' };
+    // Active = clocked in + fresh GPS (≤5min).
+    case 'active':
+      return { activity: 'aktif', location: isWithinArea ? 'dalam_area' : 'luar_area' };
+    // Offline = clocked in but no recent GPS (>5min) — last known position stands.
+    case 'offline':
+      return { activity: 'offline', location: isWithinArea ? 'dalam_area' : 'luar_area' };
+    // Absent = not clocked in. Location unknown.
+    case 'absent':
+      return { activity: 'absent', location: 'unknown' };
     // Defensive: runtime data can carry an unexpected/missing status; never
     // return undefined (callers destructure the result).
-    default:             return { activity: 'offline', location: 'unknown' };
+    default:
+      return { activity: 'absent', location: 'unknown' };
   }
 }
 
@@ -233,15 +236,13 @@ export function userAxes(user: {
   return deriveAxes(user.status, user.is_within_area);
 }
 
-// Activity axis → StatusPill tone + label (mirrors presencePill for the 3 shown
-// activity states + offline). Named presence* to avoid the existing activityPill
-// (activity-submission status) above.
+// Activity axis → StatusPill tone + label (maps three-state activity model).
+// Named presence* to avoid the existing activityPill (activity-submission status).
 export function presenceActivityPill(activity: PresenceActivity): { tone: StatusTone; label: string } {
   switch (activity) {
-    case 'aktif':   return { tone: 'ok', label: i18n.t('status:presence.active') };
-    case 'idle':    return { tone: 'warn', label: i18n.t('status:presence.inactive') };
-    case 'missing': return { tone: 'bad', label: i18n.t('status:presence.missing') };
-    case 'offline': return { tone: 'neutral', label: i18n.t('status:presence.offline') };
+    case 'aktif':   return { tone: 'ok', label: i18n.t('status:tracking.active') };
+    case 'offline': return { tone: 'neutral', label: i18n.t('status:tracking.offline') };
+    case 'absent':  return { tone: 'bad', label: i18n.t('status:tracking.absent') };
   }
 }
 

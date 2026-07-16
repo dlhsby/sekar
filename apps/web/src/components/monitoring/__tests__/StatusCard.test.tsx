@@ -50,21 +50,17 @@ describe('StatusCard', () => {
   describe('Status-specific styles', () => {
     it.each<[TrackingStatus, string]>([
       ['active', 'bg-[var(--color-status-active-bg)]'],
-      ['inactive', 'bg-[var(--color-status-idle-bg)]'],
-      ['outside_area', 'bg-[var(--color-status-outside-bg)]'],
-      ['missing', 'bg-[var(--color-status-missing-bg)]'],
-      ['offline', 'bg-[var(--color-status-offline-bg)]'],
-    ])('should apply inactive background class for status "%s"', (status, expectedClass) => {
+      ['offline', 'bg-[var(--color-status-idle-bg)]'],
+      ['absent', 'bg-[var(--color-status-missing-bg)]'],
+    ])('should apply the resting background class for status "%s"', (status, expectedClass) => {
       render(<StatusCard {...defaultProps} status={status} isActive={false} />);
       expect(screen.getByRole('button')).toHaveClass(expectedClass);
     });
 
     it.each<[TrackingStatus, string]>([
       ['active', 'bg-[var(--color-status-active)]'],
-      ['inactive', 'bg-[var(--color-status-idle)]'],
-      ['outside_area', 'bg-[var(--color-status-outside)]'],
-      ['missing', 'bg-[var(--color-status-missing)]'],
-      ['offline', 'bg-[var(--color-status-offline)]'],
+      ['offline', 'bg-[var(--color-status-idle)]'],
+      ['absent', 'bg-[var(--color-status-missing)]'],
     ])(
       'should apply active background class for status "%s" when isActive is true',
       (status, expectedClass) => {
@@ -75,10 +71,9 @@ describe('StatusCard', () => {
 
     it.each<[TrackingStatus, string]>([
       ['active', 'bg-[var(--color-status-active)]'],
-      ['inactive', 'bg-[var(--color-status-idle)]'],
-      ['outside_area', 'bg-[var(--color-status-outside)]'],
-      ['missing', 'bg-[var(--color-status-missing)]'],
-      ['offline', 'bg-[var(--color-status-offline)]'],
+      ['offline', 'bg-[var(--color-status-idle)]'],
+      ['absent', 'bg-[var(--color-status-missing)]'],
+      ['offline', 'bg-[var(--color-status-idle)]'],
     ])(
       'should render status dot with correct color for status "%s"',
       (status, expectedDotClass) => {

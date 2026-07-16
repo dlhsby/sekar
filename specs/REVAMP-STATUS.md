@@ -39,6 +39,14 @@ requirement. Seeded from the client "Kebutuhan Satgas" workbook (satgas-only; li
 
 ## Phase 5 — Monitoring revamp (web), ADR-046 — remaining checklist
 
+**Landed so far (backend/data groundwork, no staging deploy):** 5.0 staffing correctness (the live
+regression — monitoring was blind to 76% of the city's target) · 5.1 `radius_meters` retired (geofencing
+is polygon-only) · 5.2 kawasan geometry seeded · **5.3 status model collapsed 5 → 3** (`active` /
+`offline` / `absent`; `offline` **inverted meaning**, inside/outside became an axis, two thresholds
+retired — ADR-046 amended). Per-item detail in `specs/features/monitoring/README.md`.
+
+**Remaining:**
+
 - **Drop the Surabaya bubble**; draw all rayon boundaries on first load with per-rayon bubbles; no workers
   at top level.
 - **Region (Kawasan) tier in the drill:** Rayon → Kawasan → Location → workers (now has data from #227),

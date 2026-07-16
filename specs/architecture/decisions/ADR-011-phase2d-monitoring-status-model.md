@@ -1,5 +1,7 @@
 # ADR-011: Phase 2D Materialized Status Tracking with Configurable Thresholds
 
+> ⚠️ **The five-status enum described below is gone.** Superseded by [ADR-029](./ADR-029-monitoring-v2-event-sourced-redis.md), then collapsed 5 → 3 (`active` / `offline` / `absent`, inside-outside becomes an axis) by the [ADR-046](./ADR-046-monitoring-subject-model.md) amendment of 2026-07-16. Note `offline` **inverted meaning** in that change. Kept for history only.
+
 ## Status
 
 Accepted

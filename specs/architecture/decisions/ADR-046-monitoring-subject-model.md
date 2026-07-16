@@ -44,7 +44,32 @@ Each subject's scope for the current shift comes from their schedule occurrence 
 - **Static** → bound to a `location_id`; geofenced against the location polygon/circle.
 - **Mobile** → bound to a `region_id` (Kawasan); geofenced against the region boundary; expected to roam.
 
-Mobile geofencing reuses the **same tolerance** as location geofencing (ADR-010 soft polygon, ADR-005 tolerance) — the only difference is the polygon (region vs location). **No new status code**: status color rings (active / inactive / outside-area / missing / offline) are unchanged; "outside-area" for a mobile subject means outside its **region**.
+Mobile geofencing reuses the **same tolerance** as location geofencing (ADR-010 soft polygon, ADR-005 tolerance) — the only difference is the polygon (region vs location). "Outside-area" for a mobile subject means outside its **region**.
+
+> **Amended 2026-07-16 (phase 5.3) — the status model collapsed 5 → 3.** This ADR
+> originally said *"No new status code: status color rings (active / inactive /
+> outside-area / missing / offline) are unchanged."* That no longer holds. The five
+> statuses are now **three**, with inside/outside promoted to an independent axis:
+>
+> | was | is |
+> |---|---|
+> | `active` | `active` — clocked in, fix fresher than `active_max_age_sec` |
+> | `inactive` (idle) | `offline` |
+> | `missing` | `offline` |
+> | `outside_area` | **not a status** — an axis (`is_within_area`) shown *alongside* active/offline |
+> | `offline` (*not clocked in*) | `absent` — reads as *tidak hadir* where a schedule exists |
+>
+> **`offline` inverted meaning**: it meant *not clocked in*, and now means *clocked in
+> but unreachable*. Because `outside_area` now **overlaps** active/offline instead of
+> partitioning them, it must never be summed into a headcount.
+>
+> Consequences: `monitoring.inactive_threshold_sec` and `monitoring.missing_threshold_sec`
+> are retired (nothing could reach them once idle and missing both fold into offline);
+> `monitoring.active_max_age_sec` is the single surviving boundary. Staffing counts
+> whoever **clocked in** (active + offline) — a park is no less staffed because a phone
+> lost signal. A monitorable-but-unscheduled worker stores `absent` and is simply not
+> rendered; if that ever needs its own value, use `off_duty` (*tidak bertugas*), since
+> `absent` is an accusation and `off_duty` is neutral.
 
 **Visibility per drill level** (which subjects render at each tier):
 - **Rayon** → all monitorable workers in the rayon (static + mobile).

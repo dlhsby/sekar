@@ -227,7 +227,7 @@ const mockLiveUser2: LiveUser = {
   full_name: 'Worker Two',
   area_id: 'area-2',
   area_name: 'Taman Jayengrono',
-  status: 'inactive' as any,
+  status: 'absent' as any,
 };
 
 // ─── Tests ───────────────────────────────────────────────────────────────────

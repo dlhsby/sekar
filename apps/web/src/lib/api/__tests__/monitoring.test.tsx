@@ -95,10 +95,9 @@ describe('Monitoring API', () => {
 
   const mockLiveUsers: LiveUsersResponse = {
     total_active: 10,
-    total_inactive: 5,
+    total_offline: 5,
+    total_absent: 1,
     total_outside_area: 3,
-    total_missing: 1,
-    total_offline: 6,
     users: [
       {
         id: 'user-1',
@@ -278,7 +277,7 @@ describe('Monitoring API', () => {
   // -------------------------------------------------------------------------
 
   describe('useLiveUsers', () => {
-    it('should fetch live users with Phase 2D LiveUsersResponse shape', async () => {
+    it('should fetch live users with the three-state LiveUsersResponse shape', async () => {
       mockAxios.onGet('/monitoring/live-users').reply(200, mockLiveUsers);
 
       const { result } = renderHook(() => useLiveUsers(), { wrapper: createWrapper() });
@@ -286,10 +285,9 @@ describe('Monitoring API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data?.total_active).toBe(10);
-      expect(result.current.data?.total_inactive).toBe(5);
+      expect(result.current.data?.total_offline).toBe(5);
       expect(result.current.data?.total_outside_area).toBe(3);
-      expect(result.current.data?.total_missing).toBe(1);
-      expect(result.current.data?.total_offline).toBe(6);
+      expect(result.current.data?.total_absent).toBe(1);
       expect(result.current.data?.users).toHaveLength(1);
       expect(result.current.data?.generated_at).toBe('2026-03-05T08:30:00Z');
     });
@@ -319,10 +317,9 @@ describe('Monitoring API', () => {
     it('should fetch live users with rayon_id filter', async () => {
       const filteredResponse: LiveUsersResponse = {
         total_active: 3,
-        total_inactive: 1,
-        total_outside_area: 0,
-        total_missing: 0,
         total_offline: 2,
+        total_absent: 1,
+        total_outside_area: 0,
         users: [],
         generated_at: '2026-03-05T08:30:00Z',
       };

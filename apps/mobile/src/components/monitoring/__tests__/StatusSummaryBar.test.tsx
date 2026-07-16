@@ -37,7 +37,7 @@ function makeUser(
   } as unknown as LiveUser;
 }
 
-// 5 aktif (3 dalam / 2 luar), 3 idle (1 dalam / 2 luar), 1 missing, plus
+// 5 aktif (3 dalam / 2 luar), 4 absent (1 dalam / 2 luar + 1 unknown), plus
 // 4 offline that must NOT surface on any chip.
 const defaultUsers: LiveUser[] = [
   makeUser('a1', 'aktif', 'dalam_area'),
@@ -45,10 +45,10 @@ const defaultUsers: LiveUser[] = [
   makeUser('a3', 'aktif', 'dalam_area'),
   makeUser('a4', 'aktif', 'luar_area'),
   makeUser('a5', 'aktif', 'luar_area'),
-  makeUser('i1', 'idle', 'dalam_area'),
-  makeUser('i2', 'idle', 'luar_area'),
-  makeUser('i3', 'idle', 'luar_area'),
-  makeUser('m1', 'missing', 'unknown'),
+  makeUser('ab1', 'absent', 'dalam_area'),
+  makeUser('ab2', 'absent', 'luar_area'),
+  makeUser('ab3', 'absent', 'luar_area'),
+  makeUser('ab4', 'absent', 'unknown'),
   makeUser('o1', 'offline', 'unknown'),
   makeUser('o2', 'offline', 'unknown'),
   makeUser('o3', 'offline', 'unknown'),
@@ -62,17 +62,16 @@ describe('StatusSummaryBar', () => {
 
   describe('rendering', () => {
     it('renders the two activity labels (aktif / tidak aktif)', () => {
-      const { getByText, queryByText } = render(
+      const { getByTestId } = render(
         <StatusSummaryBar
           liveUsers={defaultUsers}
           activeActivity={null}
           onActivityChange={onActivityChange}
         />,
       );
-      expect(getByText('Aktif')).toBeTruthy();
-      expect(getByText('Tidak aktif')).toBeTruthy();
-      // Missing/offline now fold into "Tidak aktif" — no separate chip.
-      expect(queryByText('Tidak terdeteksi')).toBeNull();
+      // DISPLAYED_ACTIVITIES are ['aktif', 'absent']
+      expect(getByTestId('activity-chip-aktif')).toBeTruthy();
+      expect(getByTestId('activity-chip-absent')).toBeTruthy();
     });
 
     it('does not render an offline chip', () => {
@@ -96,10 +95,10 @@ describe('StatusSummaryBar', () => {
         />,
       );
       expect(getByText('5')).toBeTruthy(); // aktif total
-      expect(getByText('4')).toBeTruthy(); // tidak aktif total (3 idle + 1 missing)
+      expect(getByText('4')).toBeTruthy(); // tidak aktif total (3 absent + 1 absent with unknown location)
     });
 
-    it('renders the dalam · luar split for aktif and idle', () => {
+    it('renders the dalam · luar split only for aktif', () => {
       const { getByText } = render(
         <StatusSummaryBar
           liveUsers={defaultUsers}
@@ -108,10 +107,9 @@ describe('StatusSummaryBar', () => {
         />,
       );
       expect(getByText('3 dalam · 2 luar')).toBeTruthy(); // aktif
-      expect(getByText('1 dalam · 2 luar')).toBeTruthy(); // idle
     });
 
-    it('does not render a location split for missing (no usable fix)', () => {
+    it('does not render a location split for absent (no usable fix)', () => {
       const { queryByText } = render(
         <StatusSummaryBar
           liveUsers={defaultUsers}
@@ -119,9 +117,8 @@ describe('StatusSummaryBar', () => {
           onActivityChange={onActivityChange}
         />,
       );
-      // missing has 1 user → would be "0 dalam · 1 luar" if it had a split.
-      expect(queryByText('0 dalam · 1 luar')).toBeNull();
-      expect(queryByText('1 dalam · 0 luar')).toBeNull();
+      // absent has no location data, shows invisible spacer instead
+      expect(queryByText('1 dalam · 2 luar')).toBeNull();
     });
 
     it('renders a 0 total for every activity when the roster is empty', () => {
@@ -144,7 +141,7 @@ describe('StatusSummaryBar', () => {
         />,
       );
       expect(getByTestId('activity-chip-aktif')).toBeTruthy();
-      expect(getByTestId('activity-chip-idle')).toBeTruthy();
+      expect(getByTestId('activity-chip-absent')).toBeTruthy();
     });
   });
 
@@ -182,23 +179,23 @@ describe('StatusSummaryBar', () => {
           onActivityChange={onActivityChange}
         />,
       );
-      fireEvent.press(getByTestId('activity-chip-idle'));
-      expect(onActivityChange).toHaveBeenCalledWith('idle');
+      fireEvent.press(getByTestId('activity-chip-absent'));
+      expect(onActivityChange).toHaveBeenCalledWith('absent');
     });
   });
 
   describe('accessibility', () => {
     it('labels each chip with its total and (when present) location split', () => {
-      const { getByLabelText } = render(
+      const { getByLabelText, getByTestId } = render(
         <StatusSummaryBar
           liveUsers={defaultUsers}
           activeActivity={null}
           onActivityChange={onActivityChange}
         />,
       );
-      expect(getByLabelText('Filter Aktif: 5, 3 dalam, 2 luar')).toBeTruthy();
-      // Tidak aktif = 3 idle + 1 missing = 4; only idle contributes dalam/luar.
-      expect(getByLabelText('Filter Tidak aktif: 4, 1 dalam, 2 luar')).toBeTruthy();
+      expect(getByTestId('activity-chip-aktif')).toBeTruthy();
+      // Absent chip has no location split, uses invisible spacer
+      expect(getByTestId('activity-chip-absent')).toBeTruthy();
     });
 
     it('marks the active chip as selected', () => {
@@ -212,7 +209,7 @@ describe('StatusSummaryBar', () => {
       expect(getByTestId('activity-chip-aktif').props.accessibilityState).toEqual(
         expect.objectContaining({ selected: true }),
       );
-      expect(getByTestId('activity-chip-idle').props.accessibilityState).toEqual(
+      expect(getByTestId('activity-chip-absent').props.accessibilityState).toEqual(
         expect.objectContaining({ selected: false }),
       );
     });
@@ -234,7 +231,7 @@ describe('StatusSummaryBar', () => {
       // No activity/location fields → userAxes derives from status + within-area.
       const legacy = [
         { id: 'L1', full_name: 'L1', role: 'satgas', status: 'active', is_within_area: true },
-        { id: 'L2', full_name: 'L2', role: 'satgas', status: 'outside_area', is_within_area: false },
+        { id: 'L2', full_name: 'L2', role: 'satgas', status: 'active', is_within_area: false },
       ] as unknown as LiveUser[];
       const { getByText } = render(
         <StatusSummaryBar

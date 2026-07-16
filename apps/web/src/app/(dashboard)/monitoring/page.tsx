@@ -74,10 +74,8 @@ const ZOOM_CITY = 11;
 
 const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
   active: 0,
-  inactive: 0,
-  outside_area: 0,
-  missing: 0,
   offline: 0,
+  absent: 0,
 };
 
 function aggregateToStatusCounts(
@@ -86,10 +84,8 @@ function aggregateToStatusCounts(
   if (!totals) return { ...EMPTY_STATUS_COUNTS };
   return {
     active: totals.active,
-    inactive: totals.inactive,
-    outside_area: totals.outside_area,
-    missing: totals.missing,
     offline: totals.offline,
+    absent: totals.absent,
   };
 }
 
@@ -118,7 +114,7 @@ export default function MonitoringPage() {
   type PresenceKey = 'aktif' | 'tidak_aktif' | 'tidak_hadir' | 'adhoc';
   const PRESENCE_PILLS: { key: PresenceKey; label: string; color: string }[] = [
     { key: 'aktif', label: t('monitoring:status.active'), color: 'var(--color-status-active)' },
-    { key: 'tidak_aktif', label: t('monitoring:status.inactive'), color: 'var(--color-status-idle)' },
+    { key: 'tidak_aktif', label: t('monitoring:status.offline'), color: 'var(--color-status-idle)' },
     { key: 'tidak_hadir', label: t('monitoring:status.absent'), color: 'var(--color-status-missing)' },
     { key: 'adhoc', label: t('monitoring:status.adhoc'), color: 'var(--color-status-offline)' },
   ];

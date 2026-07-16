@@ -656,9 +656,9 @@ describe('MonitoringService', () => {
       const result = await service.getLiveUsers();
 
       expect(result).toHaveProperty('total_active');
-      expect(result).toHaveProperty('total_inactive');
+      expect(result).toHaveProperty('total_offline');
       expect(result).toHaveProperty('total_outside_area');
-      expect(result).toHaveProperty('total_missing');
+      expect(result).toHaveProperty('total_absent');
       expect(result).toHaveProperty('total_offline');
       expect(result).toHaveProperty('users');
       expect(result).toHaveProperty('generated_at');
@@ -742,7 +742,7 @@ describe('MonitoringService', () => {
       const outsideRecord = {
         ...mockTrackingRecord,
         is_within_area: false,
-        status: TrackingStatus.OUTSIDE_AREA,
+        status: TrackingStatus.ACTIVE,
       };
       const qb = createMockQueryBuilder([outsideRecord], 1);
       trackingRepository.createQueryBuilder = jest.fn(() => qb as any);
@@ -753,8 +753,13 @@ describe('MonitoringService', () => {
       const result = await service.getLiveUsers();
 
       expect(result.users[0].is_within_area).toBe(false);
-      expect(result.users[0].status).toBe(TrackingStatus.OUTSIDE_AREA);
+      expect(result.users[0].status).toBe(TrackingStatus.ACTIVE);
+      // The axis is counted ALONGSIDE the status, not instead of it: outside_area
+      // stopped being a status value, so reading it off the status column (as
+      // countByStatus used to) left this permanently 0 — invisible to tsc and to
+      // any test that only asserted the three statuses.
       expect(result.total_outside_area).toBe(1);
+      expect(result.total_active).toBe(1);
     });
 
     it('should include phone number', async () => {
@@ -1349,9 +1354,8 @@ describe('MonitoringService', () => {
       // monitorable (they render) but never staff a place.
       const liveUsers = {
         total_active: 2,
-        total_inactive: 0,
+        total_absent: 0,
         total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
         total_online: 2,
         users: [
@@ -1410,10 +1414,9 @@ describe('MonitoringService', () => {
     it('should return snapshot with correct contract shape', async () => {
       const mockLiveUsersResult = {
         total_active: 2,
-        total_inactive: 1,
-        total_outside_area: 0,
-        total_missing: 0,
         total_offline: 1,
+        total_absent: 0,
+        total_outside_area: 0,
         total_online: 2,
         users: [
           {
@@ -1456,8 +1459,8 @@ describe('MonitoringService', () => {
             accuracy: 15,
             battery_level: 65,
             last_update: new Date(),
-            status: TrackingStatus.INACTIVE,
-            activity: 'idle',
+            status: TrackingStatus.OFFLINE,
+            activity: 'offline',
             location: 'dalam_area',
             is_within_area: true,
             outside_boundary: false,
@@ -1490,10 +1493,9 @@ describe('MonitoringService', () => {
 
       // Validate aggregated counts
       expect(result.data.total_active).toBe(2);
-      expect(result.data.total_inactive).toBe(1);
-      expect(result.data.total_outside_area).toBe(0);
-      expect(result.data.total_missing).toBe(0);
       expect(result.data.total_offline).toBe(1);
+      expect(result.data.total_absent).toBe(0);
+      expect(result.data.total_outside_area).toBe(0);
       expect(result.data.generated_at).toBeDefined();
       expect(typeof result.data.generated_at).toBe('string');
 
@@ -1531,9 +1533,8 @@ describe('MonitoringService', () => {
     it('should handle workers without area assignment in area_summaries', async () => {
       const mockLiveUsersResult = {
         total_active: 1,
-        total_inactive: 0,
+        total_absent: 0,
         total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
         total_online: 1,
         users: [
@@ -1584,9 +1585,8 @@ describe('MonitoringService', () => {
     it('should compute is_understaffed correctly', async () => {
       const mockLiveUsersResult = {
         total_active: 3,
-        total_inactive: 0,
+        total_absent: 0,
         total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
         total_online: 3,
         users: [
@@ -1696,9 +1696,8 @@ describe('MonitoringService', () => {
     it('should set is_understaffed false when fully staffed', async () => {
       const mockLiveUsersResult = {
         total_active: 5,
-        total_inactive: 0,
+        total_absent: 0,
         total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
         total_online: 5,
         users: Array.from({ length: 5 }, (_, i) => ({
@@ -1750,9 +1749,8 @@ describe('MonitoringService', () => {
     it('should handle no shift definition gracefully', async () => {
       const mockLiveUsersResult = {
         total_active: 2,
-        total_inactive: 0,
+        total_absent: 0,
         total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
         total_online: 2,
         users: [

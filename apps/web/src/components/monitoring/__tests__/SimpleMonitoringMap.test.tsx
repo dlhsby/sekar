@@ -140,7 +140,7 @@ const boundaries: BoundariesResponse = {
 // Far apart so supercluster keeps them as separate leaves at the test zoom.
 const workers: SimpleWorker[] = [
   { user_id: 'w1', full_name: 'Budi', lat: -7.1, lng: 112.6, status: 'active', role: 'satgas', is_within_area: true, is_scheduled: true },
-  { user_id: 'w2', full_name: 'Sari', lat: -7.45, lng: 112.95, status: 'missing', role: 'linmas', is_within_area: false, is_scheduled: false },
+  { user_id: 'w2', full_name: 'Sari', lat: -7.45, lng: 112.95, status: 'absent', role: 'linmas', is_within_area: false, is_scheduled: false },
 ];
 
 const nodeMarkers = [

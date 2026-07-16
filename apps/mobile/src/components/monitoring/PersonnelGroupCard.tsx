@@ -25,9 +25,9 @@ const ROLE_ICON: Record<string, string> = {
   admin_rayon: 'account-cog',
 };
 
-// Activity buckets shown in the compact breakdown row (CP6). Offline is omitted
-// (no fix ever); location (luar area) is a separate axis, not shown here.
-const BREAKDOWN_ACTIVITIES: PresenceActivity[] = ['aktif', 'idle', 'missing'];
+// Activity buckets shown in the compact breakdown row (CP6). All three presence
+// activities are shown as colored dots for status breakdown visibility.
+const BREAKDOWN_ACTIVITIES: PresenceActivity[] = ['aktif', 'offline', 'absent'];
 
 export interface PersonnelGroup {
   role: string;

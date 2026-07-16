@@ -9,8 +9,6 @@ import { SystemConfigService } from '../../settings/services/system-config.servi
 // Canonical monitoring values now live in SystemConfigService (ADR-049 unify).
 const SYSTEM_VALUES: Record<string, number> = {
   'monitoring.active_max_age_sec': 300,
-  'monitoring.inactive_threshold_sec': 900,
-  'monitoring.missing_threshold_sec': 3600,
   'monitoring.location_ping_interval_sec': 60,
   'geofence.tolerance_m': 50,
   'geofence.outside_area_grace_sec': 120,
@@ -126,8 +124,6 @@ describe('MonitoringConfigService', () => {
       const loaders = cacheService.setLoaders.mock.calls[0][0];
       expect(await loaders.thresholds()).toEqual({
         active_max_age_seconds: 300,
-        inactive_threshold_seconds: 900,
-        missing_threshold_seconds: 3600,
         location_ping_interval_seconds: 60,
       });
     });

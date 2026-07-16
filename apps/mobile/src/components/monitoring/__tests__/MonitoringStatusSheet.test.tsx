@@ -57,7 +57,7 @@ const user = (id: string, role: string, status: LiveUser['status']): LiveUser =>
 
 const liveUsers: LiveUser[] = [
   user('1', 'satgas', 'active'),
-  user('2', 'satgas', 'inactive'),
+  user('2', 'satgas', 'absent'),
   user('3', 'linmas', 'active'),
 ];
 
@@ -92,7 +92,7 @@ describe('MonitoringStatusSheet', () => {
   it('renders the merged activity chips', () => {
     const { getByTestId } = renderSheet();
     expect(getByTestId('activity-chip-aktif')).toBeTruthy();
-    expect(getByTestId('activity-chip-idle')).toBeTruthy();
+    expect(getByTestId('activity-chip-absent')).toBeTruthy();
   });
 
   it('renders the Operasional card with total + area coverage', () => {

@@ -53,11 +53,7 @@
   },
   "status": {
     "active": "Active",
-    "inactive": "Inactive",
-    "outside_area": "Outside",
-    "missing": "Missing",
     "offline": "Offline",
-    "notDetected": "Not detected",
     "absent": "Absent",
     "adhoc": "Off-schedule"
   },
@@ -263,16 +259,6 @@
     "noWorkers": "No staff found",
     "resetFilter": "Reset filter",
     "count": "{{count}} staff displayed"
-  },
-  "statusBar": {
-    "ariaLabel": "Officer status",
-    "todaysSchedule": "Today's schedule",
-    "scheduled": "scheduled",
-    "present": "Present",
-    "absent": "Absent",
-    "leave": "Leave",
-    "notScheduled": "Not scheduled",
-    "outsideAreaLabel": "Outside area"
   },
   "staffing": {
     "staffingLabel": "Staff Availability",

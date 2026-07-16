@@ -52,14 +52,14 @@ describe('MonitoringSchedulerService', () => {
     it('should recalculate each stale user', async () => {
       const staleUsers = [
         { user_id: 'user-1', status: TrackingStatus.ACTIVE },
-        { user_id: 'user-2', status: TrackingStatus.INACTIVE },
+        { user_id: 'user-2', status: TrackingStatus.OFFLINE },
       ];
       trackingRepository.find.mockResolvedValue(staleUsers);
 
       statusCalculator.recalculate.mockImplementation((userId: string) =>
         Promise.resolve({
           user_id: userId,
-          status: userId === 'user-1' ? TrackingStatus.INACTIVE : TrackingStatus.INACTIVE,
+          status: userId === 'user-1' ? TrackingStatus.OFFLINE : TrackingStatus.OFFLINE,
         }),
       );
 

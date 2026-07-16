@@ -46,7 +46,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [043](./ADR-043-production-gap-closure.md) | Production gap-closure decisions — offline sync / push / background location / message broker | Proposed |
 | [044](./ADR-044-dynamic-rbac.md) | Dynamic RBAC — data-driven roles, permissions, monitoring scope | Active · amends 009/032/033 |
 | [045](./ADR-045-four-level-location-hierarchy.md) | Four-Level Location Hierarchy — Region (Kawasan) + per-level styling | Active · amends 010/013 |
-| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 |
+| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 · **amended 2026-07-16**: status model collapsed 5 → 3 (`active`/`offline`/`absent`; `offline` inverted meaning), inside/outside becomes an axis |
 | [047](./ADR-047-schedule-redesign.md) | Schedule Redesign — rule-based recurrence + occurrences, calendar, teams | Active · amends 013 |
 | [048](./ADR-048-teams.md) | Teams — grouped monitoring subjects with typed markers | Active |
 | [049](./ADR-049-settings-architecture.md) | Settings Architecture — personal preferences vs system settings | Active |
@@ -74,5 +74,6 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **010 & 013 amended by 045** — 3-level spatial model gains a Region (Kawasan) tier + per-level styling.
 - **013 amended by 047** — template-derived roster → rule-based recurring events materialized into occurrences.
 - **029 extended by 046** — event-sourced status gains the monitorable-vs-scheduled subject model + static/mobile.
+- **046 amended (2026-07-16)** — status model collapsed 5 → 3; retires `inactive`/`missing` + their thresholds, and `outside_area` stops being a status.
 
 **Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)

@@ -192,10 +192,9 @@ describe('Monitoring API', () => {
   describe('GET /monitoring/live-users', () => {
     const mockLiveUsersResponse = {
       total_active: 10,
-      total_inactive: 5,
+      total_offline: 5,
+      total_absent: 1,
       total_outside_area: 3,
-      total_missing: 1,
-      total_offline: 6,
       users: [
         {
           id: 'user-1',
@@ -231,10 +230,9 @@ describe('Monitoring API', () => {
 
       expect(response.status).toBe(200);
       expect(response.data.total_active).toBe(10);
-      expect(response.data.total_inactive).toBe(5);
+      expect(response.data.total_offline).toBe(5);
+      expect(response.data.total_absent).toBe(1);
       expect(response.data.total_outside_area).toBe(3);
-      expect(response.data.total_missing).toBe(1);
-      expect(response.data.total_offline).toBe(6);
       expect(response.data.users).toHaveLength(1);
       expect(response.data.generated_at).toBe('2026-03-05T08:30:00Z');
     });
@@ -269,10 +267,9 @@ describe('Monitoring API', () => {
     it('should support rayon_id filter as query param', async () => {
       mockAxios.onGet(/\/monitoring\/live-users\?rayon_id=rayon-1/).reply(200, {
         total_active: 3,
-        total_inactive: 1,
+        total_offline: 1,
+        total_absent: 0,
         total_outside_area: 0,
-        total_missing: 0,
-        total_offline: 2,
         users: [],
         generated_at: '2026-03-05T08:30:00Z',
       });
@@ -479,19 +476,17 @@ describe('Monitoring API', () => {
               {
                 role: 'satgas',
                 active: 8,
-                idle: 2,
-                outside_area: 1,
-                missing: 0,
                 offline: 3,
+                absent: 2,
+                outside_area: 1,
                 total_assigned: 14,
                 total_required: 15,
               },
             ],
             total_active: 8,
-            total_idle: 2,
-            total_outside_area: 1,
-            total_missing: 0,
             total_offline: 3,
+            total_absent: 2,
+            total_outside_area: 1,
             is_fully_staffed: false,
           },
         ],

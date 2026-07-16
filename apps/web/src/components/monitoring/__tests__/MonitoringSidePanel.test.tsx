@@ -40,17 +40,16 @@ const MOCK_USER_2: LiveUser = {
   id: 'user-2',
   full_name: 'Siti Rahayu',
   role: 'korlap',
-  status: 'inactive',
+  status: 'offline',
   area_name: 'Taman Flora',
   area_id: 'area-2',
 };
 
 const MOCK_DATA: LiveUsersResponse = {
   total_active: 1,
-  total_inactive: 1,
+  total_offline: 1,
+  total_absent: 0,
   total_outside_area: 0,
-  total_missing: 0,
-  total_offline: 0,
   users: [MOCK_USER_1, MOCK_USER_2],
   generated_at: new Date().toISOString(),
 };
@@ -74,12 +73,11 @@ describe('MonitoringSidePanel', () => {
       expect(screen.getByText(/2 aktif \/ 2 total/i)).toBeInTheDocument();
     });
 
-    it('should render all four status cards', () => {
+    it('should render all three status cards', () => {
       render(<MonitoringSidePanel {...defaultProps} />);
       expect(screen.getByRole('button', { name: /saring aktif/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /saring tidak aktif/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /saring di luar area/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /saring tidak terdeteksi/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /saring offline/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /saring tidak hadir/i })).toBeInTheDocument();
     });
 
     it('should render the search input', () => {
@@ -196,11 +194,11 @@ describe('MonitoringSidePanel', () => {
       expect(screen.queryByText('Siti Rahayu')).not.toBeInTheDocument();
     });
 
-    it('should filter list to inactive users when idle status card is clicked', async () => {
+    it('should filter list to offline users when offline status card is clicked', async () => {
       const user = userEvent.setup();
       render(<MonitoringSidePanel {...defaultProps} />);
 
-      await user.click(screen.getByRole('button', { name: /saring tidak aktif/i }));
+      await user.click(screen.getByRole('button', { name: /saring offline/i }));
 
       expect(screen.getByText('Siti Rahayu')).toBeInTheDocument();
       expect(screen.queryByText('Budi Santoso')).not.toBeInTheDocument();
@@ -232,8 +230,8 @@ describe('MonitoringSidePanel', () => {
       const user = userEvent.setup();
       render(<MonitoringSidePanel {...defaultProps} />);
 
-      // Filter to missing — no users with that status exist in mock data
-      await user.click(screen.getByRole('button', { name: /saring tidak terdeteksi/i }));
+      // Filter to absent — no users with that status exist in mock data
+      await user.click(screen.getByRole('button', { name: /saring tidak hadir/i }));
 
       expect(screen.getByRole('button', { name: /reset filter/i })).toBeInTheDocument();
     });
@@ -284,10 +282,10 @@ describe('MonitoringSidePanel', () => {
     it('should sort users by severity with missing first', () => {
       const dataWithMissing: LiveUsersResponse = {
         ...MOCK_DATA,
-        total_missing: 1,
+        total_absent: 1,
         users: [
           { ...MOCK_USER_1, status: 'active' },
-          { ...MOCK_USER_2, id: 'user-missing', full_name: 'Missing User', status: 'missing' },
+          { ...MOCK_USER_2, id: 'user-missing', full_name: 'Missing User', status: 'absent' },
         ],
       };
       render(<MonitoringSidePanel {...defaultProps} data={dataWithMissing} />);

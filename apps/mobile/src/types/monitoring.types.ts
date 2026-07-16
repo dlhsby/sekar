@@ -5,15 +5,15 @@ import type { GeoJsonGeometry } from './geo.types';
 import type { Area, UserRole } from './user.types';
 import type { Shift } from './shift.types';
 
-// Tracking status — Phase 2D: server-computed five-status model
-export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
+// Tracking status — three-state model with is_within_area axis
+export type TrackingStatus = 'active' | 'offline' | 'absent';
 
-// Phase 4 M3 (CP6): two-axis presence model. `status` (above) is the legacy
-// flattened enum kept for back-compat; these are the independent axes. Named
-// Presence* to avoid clashing with the activity-submission `ActivityStatus`.
-// - Activity (GPS recency): aktif ≤5min · idle 5min–1hr · missing >1hr/never · offline (no shift)
+// Two-axis presence model — independent axes. Named Presence* to avoid clashing
+// with the activity-submission `ActivityStatus`.
+// - Activity (GPS recency): aktif ≤5min · offline (clocked in but unreachable)
+//   · absent (not clocked in)
 // - Location (geofence): dalam_area · luar_area · unknown (no usable fix)
-export type PresenceActivity = 'aktif' | 'idle' | 'missing' | 'offline';
+export type PresenceActivity = 'aktif' | 'offline' | 'absent';
 export type PresenceLocation = 'dalam_area' | 'luar_area' | 'unknown';
 
 // Active User (for supervisor map, was ActiveWorker)
@@ -105,18 +105,17 @@ export interface AbsentUser {
   shift_name: string | null;
 }
 
-// Live Users Response — Phase 2D + Phase 3 (roster monitoring fields)
+// Live Users Response — three-state status model with roster monitoring fields
 export interface LiveUsersResponse {
   total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   /** @deprecated Use total_active */
   total_online: number;
   users: LiveUser[];
   generated_at: string;
-  // Phase 3: Daily roster monitoring fields (optional during rollout)
+  // Roster monitoring fields (optional during rollout)
   expected_count?: number;
   present_count?: number;
   absent_count?: number;
@@ -202,7 +201,7 @@ export interface LocationHistory {
   generated_at: string;
 }
 
-// Staffing Summary Item — Phase 2D
+// Staffing Summary Item — three-state status model
 export interface StaffingSummaryItem {
   id: string;
   name: string;
@@ -210,18 +209,16 @@ export interface StaffingSummaryItem {
   roles: {
     role: string;
     active: number;
-    idle: number;
-    outside_area: number;
-    missing: number;
     offline: number;
+    absent: number;
+    outside_area: number;
     total_assigned: number;
     total_required: number;
   }[];
   total_active: number;
-  total_idle: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   is_fully_staffed: boolean;
 }
 
@@ -323,10 +320,9 @@ export interface BoundariesResponse {
 // bubbles for the monitoring map (no individual worker coordinates).
 export interface AggregateStatusCounts {
   active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
 }
 
 /** Roster attendance trio for a node (or the whole scope), for today. */

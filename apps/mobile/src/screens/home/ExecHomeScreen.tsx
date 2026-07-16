@@ -121,7 +121,7 @@ export function ExecHomeScreen(): React.JSX.Element {
             <HomeStatTile label={t('home:exec.kpi.outOfArea')} value={statusCounts.outside_area} variant="bad" testID="city-outside" />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label={t('home:exec.kpi.absent')} value={statusCounts.missing} variant="warn" testID="city-missing" />
+            <HomeStatTile label={t('home:exec.kpi.absent')} value={statusCounts.absent} variant="warn" testID="city-absent" />
             <HomeStatTile label={t('home:exec.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="city-offline" />
           </View>
 

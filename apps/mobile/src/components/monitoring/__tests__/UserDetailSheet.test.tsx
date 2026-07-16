@@ -233,16 +233,15 @@ describe('UserDetailSheet (CP1)', () => {
     });
 
     it.each([
-      ['active',       'Aktif'],
-      ['inactive',     'Tidak aktif'],
-      ['outside_area', 'Luar area'],
-      ['missing',      'Tidak terdeteksi'],
-      ['offline',      'Offline'],
+      ['active',   'Aktif'],
+      ['offline',  'Offline'],
+      ['absent',   'Tidak Hadir'],
     ] as const)('renders the presencePill label "%s" → "%s"', async (status, label) => {
       const { getByText } = render(
-        <UserDetailSheet {...defaultProps()} user={createUser({ status })} />
+        <UserDetailSheet {...defaultProps()} user={createUser({ status: status as any })} />
       );
       await flushAll();
+      // The label is from presenceActivityPill which maps to i18n keys
       expect(getByText(label)).toBeTruthy();
     });
 
