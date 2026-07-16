@@ -45,7 +45,17 @@ is polygon-only) · 5.2 kawasan geometry seeded · **5.3 status model collapsed 
 `offline` / `absent`; `offline` **inverted meaning**, inside/outside became an axis, two thresholds
 retired — ADR-046 amended). Per-item detail in `specs/features/monitoring/README.md`.
 
+**Presence model standardised (design, feeds 5.4):** [ADR-050](./architecture/decisions/ADR-050-presence-attendance-model.md)
+splits the flat status into three *derived* axes (attendance lifecycle · live presence · counting) so it
+answers management's twelve questions and can't drift like the 5.3 enum. Four policies locked (per-shift
+grace · forgotten clock-out never auto-closed · cuti/sakit/izin/libur reasons · 10-min offline paged at
+threshold). Guardrails: service-day scoping + cross-midnight (shift 3). Companion needs: raise
+`active_max_age_sec` catalog max, and a supervisor "close & stamp" affordance for dangling shifts.
+
 **Remaining:**
+
+- **Implement the presence/attendance model** (ADR-050) — derive the six-state lifecycle from roster + shift
+  record, surface `is_late` / `clock_out_time`, gate ad-hoc out of staffing counts. Belongs with 5.4.
 
 - **Drop the Surabaya bubble**; draw all rayon boundaries on first load with per-rayon bubbles; no workers
   at top level.

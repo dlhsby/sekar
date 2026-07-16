@@ -46,10 +46,11 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [043](./ADR-043-production-gap-closure.md) | Production gap-closure decisions — offline sync / push / background location / message broker | Proposed |
 | [044](./ADR-044-dynamic-rbac.md) | Dynamic RBAC — data-driven roles, permissions, monitoring scope | Active · amends 009/032/033 |
 | [045](./ADR-045-four-level-location-hierarchy.md) | Four-Level Location Hierarchy — Region (Kawasan) + per-level styling | Active · amends 010/013 |
-| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 · **amended 2026-07-16**: status model collapsed 5 → 3 (`active`/`offline`/`absent`; `offline` inverted meaning), inside/outside becomes an axis |
+| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 · **amended 2026-07-16** (5 → 3 status); **status portion superseded by [050](./ADR-050-presence-attendance-model.md)** |
 | [047](./ADR-047-schedule-redesign.md) | Schedule Redesign — rule-based recurrence + occurrences, calendar, teams | Active · amends 013 |
 | [048](./ADR-048-teams.md) | Teams — grouped monitoring subjects with typed markers | Active |
 | [049](./ADR-049-settings-architecture.md) | Settings Architecture — personal preferences vs system settings | Active |
+| [050](./ADR-050-presence-attendance-model.md) | Presence & Attendance Model — lifecycle · live presence · counting axes | Accepted (impl. Phase 5.4) · supersedes 046's status model · extends 046 · depends on 047/013 |
 
 ## By domain
 
@@ -58,7 +59,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **Location, scheduling & teams:** [045](./ADR-045-four-level-location-hierarchy.md) · [047](./ADR-047-schedule-redesign.md) · [048](./ADR-048-teams.md)
 - **Settings & config:** [049](./ADR-049-settings-architecture.md)
 - **Mobile & offline:** [002](./ADR-002-offline-first-mobile.md) · [003](./ADR-003-asyncstorage-phase1.md) · [007](./ADR-007-react-native-over-flutter.md) · [017](./ADR-017-maestro-mobile-e2e.md) · [019](./ADR-019-offline-connectivity-model.md) · [027](./ADR-027-ios-build-distribution.md)
-- **Realtime & monitoring:** [011](./ADR-011-phase2d-monitoring-status-model.md) · [016](./ADR-016-redis-websocket-scaling.md) · [029](./ADR-029-monitoring-v2-event-sourced-redis.md) · [046](./ADR-046-monitoring-subject-model.md)
+- **Realtime & monitoring:** [011](./ADR-011-phase2d-monitoring-status-model.md) · [016](./ADR-016-redis-websocket-scaling.md) · [029](./ADR-029-monitoring-v2-event-sourced-redis.md) · [046](./ADR-046-monitoring-subject-model.md) · [050](./ADR-050-presence-attendance-model.md)
 - **Attendance & geo:** [005](./ADR-005-gps-boundary-tolerance.md) · [006](./ADR-006-postgresql-partitioning.md)
 - **Work, pruning & capacity:** [010](./ADR-010-phase2c-terminology-cleanup.md) · [014](./ADR-014-overtime-clock-in-flow.md) · [015](./ADR-015-audit-trail.md) · [018](./ADR-018-export-format-strategy.md) · [024](./ADR-024-pdf-report-generation.md) · [026](./ADR-026-asset-qr-code-strategy.md) · [031](./ADR-031-task-typing-and-custom-fields.md) · [034](./ADR-034-pruning-cycle-prediction.md) · [035](./ADR-035-service-capacity-model.md) · [038](./ADR-038-pruning-workflow-entry-points.md)
 - **Platform & infra:** [008](./ADR-008-modular-monolith.md) · [028](./ADR-028-staging-environment.md) · [037](./ADR-037-web-pwa.md) · [043](./ADR-043-production-gap-closure.md)
@@ -75,5 +76,6 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **013 amended by 047** — template-derived roster → rule-based recurring events materialized into occurrences.
 - **029 extended by 046** — event-sourced status gains the monitorable-vs-scheduled subject model + static/mobile.
 - **046 amended (2026-07-16)** — status model collapsed 5 → 3; retires `inactive`/`missing` + their thresholds, and `outside_area` stops being a status.
+- **046 status model superseded by 050 (2026-07-16)** — the flat status enum splits into three axes (attendance lifecycle · live presence · counting); the six-state lifecycle is *derived*, not stored, so it can't drift the way the 5.3 enum did.
 
 **Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)
