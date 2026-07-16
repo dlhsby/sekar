@@ -3,6 +3,14 @@ import { MonitoringSearch } from '../MonitoringSearch';
 import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
 import type { RayonBoundary } from '@/lib/api/monitoring-types';
 
+// 5.7b: the component queries the server for petugas via useQuery; stub it empty
+// so these tests exercise the client-side (props-driven) search without needing a
+// QueryClientProvider. Keep the rest of the module real (types, other hooks).
+jest.mock('@/lib/api/monitoring-v2', () => ({
+  ...jest.requireActual('@/lib/api/monitoring-v2'),
+  useMonitoringSearchQuery: () => ({ data: { users: [] } }),
+}));
+
 const workers: SnapshotWorker[] = [
   {
     user_id: 'w1',
