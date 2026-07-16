@@ -95,6 +95,17 @@ export class MonitoringUserService {
       qb.andWhere('uts.status = :status', { status: filters.status });
     }
 
+    // Server-side search (5.7a): match worker or lokasi name among workers with a
+    // fresh (≤24h) fix. Escape LIKE metacharacters in the term so a stray % / _
+    // can't turn into a wildcard. `shift_id IS NOT NULL` above already limits this
+    // to clocked-in workers, so ad-hoc (unscheduled) clock-ins surface too.
+    if (filters?.q && filters.q.trim()) {
+      const term = `%${filters.q.trim().replace(/[\\%_]/g, '\\$&')}%`;
+      qb.andWhere('(user.full_name ILIKE :q OR area.name ILIKE :q)', { q: term }).andWhere(
+        "uts.last_location_at >= NOW() - INTERVAL '24 hours'",
+      );
+    }
+
     const trackingRecords = await qb.getMany();
 
     const locationIds = [...new Set(trackingRecords.map((r) => r.location_id).filter(Boolean))];
