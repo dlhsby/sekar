@@ -85,8 +85,8 @@ export class AggregateNodeDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ enum: ['rayon', 'area'], example: 'rayon' })
-  type: 'rayon' | 'area';
+  @ApiProperty({ enum: ['rayon', 'area', 'region'], example: 'rayon' })
+  type: 'rayon' | 'area' | 'region';
 
   @ApiPropertyOptional({ example: -7.2575, nullable: true })
   center_lat: number | null;
@@ -130,8 +130,14 @@ export class AggregateNodeDto {
   @ApiPropertyOptional({ description: 'Number of areas (rayon nodes only)', example: 15 })
   area_count?: number;
 
+  @ApiPropertyOptional({ description: 'Number of locations (region nodes only)', example: 8 })
+  location_count?: number;
+
   @ApiPropertyOptional({ description: 'Rayon id (area nodes only)', example: 'rayon-uuid' })
   rayon_id?: string | null;
+
+  @ApiPropertyOptional({ description: 'Region id (area nodes only)', example: 'region-uuid' })
+  region_id?: string | null;
 }
 
 /**
@@ -139,8 +145,8 @@ export class AggregateNodeDto {
  * `nodes` are rayons when `scope=city`, or areas when `scope=rayon`.
  */
 export class AggregateResponseDto {
-  @ApiProperty({ enum: ['city', 'rayon'], example: 'city' })
-  scope: 'city' | 'rayon';
+  @ApiProperty({ enum: ['city', 'rayon', 'region'], example: 'city' })
+  scope: 'city' | 'rayon' | 'region';
 
   @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
   scope_id: string | null;

@@ -10,6 +10,7 @@ import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon, StaffingLevel } from '../../rayons/entities/rayon.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
   LocationStaffRequirement,
@@ -27,6 +28,7 @@ describe('MonitoringStatsService', () => {
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
   let staffRequirementRepository: jest.Mocked<Repository<LocationStaffRequirement>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
@@ -132,6 +134,14 @@ describe('MonitoringStatsService', () => {
           },
         },
         {
+          provide: getRepositoryToken(Region),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            createQueryBuilder: jest.fn(),
+          },
+        },
+        {
           provide: getRepositoryToken(ShiftDefinition),
           useValue: {
             find: jest.fn(),
@@ -183,6 +193,7 @@ describe('MonitoringStatsService', () => {
       getRepositoryToken(LocationLog),
     );
     rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
+    regionRepository = module.get<jest.Mocked<Repository<Region>>>(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
     );
