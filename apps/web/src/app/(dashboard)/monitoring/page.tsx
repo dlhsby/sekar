@@ -1,9 +1,9 @@
 /**
  * Monitoring — unified hierarchical drill-down.
  *
- * One flow, no modes: the map opens on a single Surabaya summary node
- * (today's scheduled / clocked-in / not-clocked-in). Tapping it reveals the 7
- * rayons; tapping a rayon reveals its areas; tapping an area focuses its bounds
+ * One flow, no modes: the map opens directly on the 7 rayons (ADR-046 — no
+ * Surabaya bubble). Tapping a rayon reveals its kawasan (or areas if it has
+ * none); tapping an area focuses its bounds
  * and shows the individual workers. Each non-worker level carries the same
  * attendance trio. Worker positions arrive incrementally over WebSocket;
  * boundaries load progressively per scope. Native Google Maps controls.
@@ -22,7 +22,6 @@ import {
   useMonitoringAggregate,
   type AggregateNode,
   type AggregateStatusCounts,
-  type AggregateRosterCounts,
 } from '@/lib/api/monitoring-v2';
 import { useBoundaries } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
@@ -38,7 +37,6 @@ import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
 import { AggregateNodeList } from '@/components/monitoring/AggregateNodeList';
-import { SurabayaSummaryCard } from '@/components/monitoring/SurabayaSummaryCard';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import { usePlantStatusSummary } from '@/lib/api/plants';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
@@ -51,11 +49,10 @@ import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
-// Surabaya-wide drill above the rayon list; workers only render at area scope.
-type Scope = 'surabaya' | 'city' | 'rayon' | 'region' | 'area';
+// Drill: rayon (top) -> kawasan -> lokasi -> workers. Workers only at area scope.
+type Scope = 'city' | 'rayon' | 'region' | 'area';
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
-const EMPTY_ROSTER: AggregateRosterCounts = { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
 
 interface MonitoringView {
   scope: Scope;
@@ -135,7 +132,8 @@ export default function MonitoringPage() {
         floor: 'rayon',
       };
     }
-    return { view: { scope: 'surabaya' }, floor: 'surabaya' };
+    // Top level opens directly on the rayons (ADR-046: no Surabaya bubble).
+    return { view: { scope: 'city' }, floor: 'city' };
   }, [user]);
 
   const [view, setView] = useState<MonitoringView>(roleView.view);
@@ -175,7 +173,7 @@ export default function MonitoringPage() {
   const cityAgg = useMonitoringAggregate(
     'city',
     undefined,
-    canMonitor && (scope === 'surabaya' || scope === 'city')
+    canMonitor && scope === 'city'
   );
   // `view.id` is the rayon id only at rayon scope. At region/area scope the rayon
   // aggregate is fetched by `view.rayonId` via `regionAreasAgg` below.
@@ -199,15 +197,15 @@ export default function MonitoringPage() {
   // can find people at any level. Surabaya maps to the city snapshot scope.
   // Region scope shows areas, so snapshot is still at the parent rayon.
   const snapshotScope: 'city' | 'rayon' | 'area' =
-    scope === 'surabaya' ? 'city' : scope === 'region' ? 'rayon' : scope;
-  const snapshotId = scope === 'surabaya' ? undefined : scope === 'region' ? view.rayonId : view.id;
+    scope === 'region' ? 'rayon' : scope;
+  const snapshotId = scope === 'region' ? view.rayonId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
   const areaSummaries = useMemo(() => snapshot.data?.data?.area_summaries ?? [], [snapshot.data]);
 
   // Progressive boundaries: rayon outlines at the top, that rayon's areas deeper.
   const boundaryLevel: 'rayon' | 'area' =
-    scope === 'surabaya' || scope === 'city' ? 'rayon' : 'area';
+    scope === 'city' ? 'rayon' : 'area';
   const boundaryRayonId =
     scope === 'rayon' || scope === 'region' || scope === 'area' ? view.rayonId ?? view.id : undefined;
   const {
@@ -242,11 +240,6 @@ export default function MonitoringPage() {
     setFocusTarget((cur) => ({ lat, lng, zoom, exact, key: cur ? cur.key + 1 : 1 }));
 
   // ---- Drill navigation (scope only; no modes) ----------------------------
-  const drillToCity = () => {
-    setView({ scope: 'city' });
-    setSelectedId(null);
-    focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
-  };
   const drillToRayon = (id: string, name: string, lat?: number | null, lng?: number | null) => {
     const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
     setView({ scope: 'rayon', id, rayonId: id, name, ...coord });
@@ -284,8 +277,7 @@ export default function MonitoringPage() {
 
   // Map marker tapped.
   const onDrillMarker = (node: NodeMarker) => {
-    if (node.variant === 'surabaya') drillToCity();
-    else if (node.variant === 'rayon') drillToRayon(node.id, node.name, node.lat, node.lng);
+    if (node.variant === 'rayon') drillToRayon(node.id, node.name, node.lat, node.lng);
     else if (node.variant === 'region') drillToRegion(node.id, node.name, view.id, node.lat, node.lng);
     else if (scope === 'region')
       drillToArea(node.id, node.name, view.rayonId, node.lat, node.lng, view.id);
@@ -356,10 +348,8 @@ export default function MonitoringPage() {
       if (roleView.floor === 'rayon') return;
       setView({ scope: 'city' });
       focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
-    } else if (scope === 'city') {
-      setView({ scope: 'surabaya' });
-      focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
     }
+    // city is the top level — no drill-up above the rayons.
   };
 
   // The current node's own pin (rayon at rayon scope / area at area scope) — the
@@ -415,33 +405,15 @@ export default function MonitoringPage() {
       }
       return rayonAgg.data?.nodes ?? [];
     }
-    if (scope === 'surabaya' || scope === 'city') return cityAgg.data?.nodes ?? [];
+    if (scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
   }, [scope, view.id, regionAgg.data, regionAreasAgg.data, rayonAgg.data, cityAgg.data]);
 
-  const cityRosterTotals = cityAgg.data?.roster_totals ?? EMPTY_ROSTER;
-  const cityActiveInside = cityAgg.data?.presence_totals?.aktif.dalam ?? 0;
-
   // Map markers for the current scope.
   const nodeMarkers = useMemo<NodeMarker[]>(() => {
-    if (scope === 'surabaya') {
-      return [
-        {
-          id: 'surabaya',
-          name: 'Surabaya',
-          variant: 'surabaya',
-          lat: SURABAYA.lat,
-          lng: SURABAYA.lng,
-          scheduled: cityRosterTotals.scheduled,
-          clocked_in: cityRosterTotals.clocked_in,
-          not_clocked_in: cityRosterTotals.not_clocked_in,
-          active_inside: cityActiveInside,
-        },
-      ];
-    }
     if (scope === 'area' || scope === 'region') return [];
     return listNodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
-  }, [scope, listNodes, cityRosterTotals, cityActiveInside]);
+  }, [scope, listNodes]);
 
   const statusCounts = useMemo(() => {
     if (showWorkers) {
@@ -684,15 +656,6 @@ export default function MonitoringPage() {
             {updatedLabel}
           </span>
         </div>
-
-        {/* Surabaya summary card (top level only) */}
-        {scope === 'surabaya' && (
-          <SurabayaSummaryCard
-            roster={cityRosterTotals}
-            onDrill={drillToCity}
-            className="max-w-md"
-          />
-        )}
       </div>
 
       {/* Filter panel */}
