@@ -5,16 +5,23 @@
  * that opens a dropdown showing recent searches (when empty) or grouped results
  * (Petugas / Area / Rayon). Selecting a result reports it to the page, which
  * pans/drills to its location; the selection is also stored as a recent.
+ *
+ * Phase 5.7b: petugas search now reaches the server via useMonitoringSearchQuery,
+ * so clocked-in workers not in the current snapshot appear in results (ad-hoc,
+ * off-screen, or in another drill scope).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X, History, MapPin, Building2, User } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
+import { useDebounce } from '@/lib/hooks/useDebounce';
+import { roleLabel } from '@/lib/constants/roles';
 import {
   useMonitoringSearch,
   type MonitoringSearchResult,
   type SearchResultType,
 } from '@/lib/monitoring/useMonitoringSearch';
+import { useMonitoringSearchQuery } from '@/lib/api/monitoring-v2';
 import { getRecentSearches, addRecentSearch, clearRecentSearches } from '@/lib/monitoring/recentSearches';
 import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
 import type { RayonBoundary } from '@/lib/api/monitoring-types';
@@ -66,6 +73,15 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
   const [recents, setRecents] = useState<MonitoringSearchResult[]>([]);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  // Debounce query for server search (250ms).
+  const debouncedQuery = useDebounce(query, 250);
+
+  // Server-side worker search: enabled only when dropdown is open.
+  const { data: serverSearchResult = { users: [] } } = useMonitoringSearchQuery(
+    debouncedQuery,
+    open && debouncedQuery.trim().length >= 2
+  );
+
   const labels = useMemo(
     () => ({
       petugas: t('monitoring:search.personnelLabel'),
@@ -75,7 +91,54 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
     [t]
   );
 
-  const results = useMonitoringSearch(workers, rayons, query, labels);
+  // Client-side search (area + rayon) and local petugas from snapshot.
+  const clientResults = useMonitoringSearch(workers, rayons, query, labels);
+
+  // Merge server petugas with client petugas, deduped by id (server wins).
+  const mergedResults = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: MonitoringSearchResult[] = [];
+
+    // Server petugas first (wins if duplicate).
+    if (serverSearchResult?.users) {
+      for (const user of serverSearchResult.users) {
+        merged.push({
+          id: user.id,
+          type: 'petugas',
+          name: user.full_name,
+          subtitle: [roleLabel(user.role), user.area_name].filter(Boolean).join(' · '),
+          latitude: user.latitude,
+          longitude: user.longitude,
+          role: user.role,
+          rayonId: user.rayon_id,
+        });
+        seen.add(user.id);
+      }
+    }
+
+    // Client petugas (skip if already in server results).
+    for (const result of clientResults.petugas) {
+      if (!seen.has(result.id)) {
+        merged.push(result);
+        seen.add(result.id);
+      }
+    }
+
+    // Area and rayon sections (client-side only).
+    const sections = [
+      { title: labels.petugas, type: 'petugas' as const, data: merged },
+      { title: labels.area, type: 'area' as const, data: clientResults.area },
+      { title: labels.rayon, type: 'rayon' as const, data: clientResults.rayon },
+    ].filter((s) => s.data.length > 0);
+
+    return {
+      petugas: merged,
+      area: clientResults.area,
+      rayon: clientResults.rayon,
+      sections,
+      total: merged.length + clientResults.area.length + clientResults.rayon.length,
+    };
+  }, [serverSearchResult, clientResults, labels]);
 
   // Load recents when the dropdown opens with an empty query.
   useEffect(() => {
@@ -100,7 +163,7 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
   };
 
   const showRecents = !query.trim();
-  const hasResults = results.total > 0;
+  const hasResults = mergedResults.total > 0;
 
   return (
     <div ref={rootRef} className={cn('pointer-events-auto relative', className)}>
@@ -165,7 +228,7 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
               </p>
             )
           ) : hasResults ? (
-            results.sections.map((section) => (
+            mergedResults.sections.map((section) => (
               <div key={section.type}>
                 <div className="bg-nb-gray-50 px-3 py-1 text-xs font-bold uppercase text-nb-gray-500">
                   {section.title} · {section.data.length}

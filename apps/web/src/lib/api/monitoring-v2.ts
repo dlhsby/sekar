@@ -5,7 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from './client';
-import type { TrackingStatus } from './monitoring-types';
+import type { TrackingStatus, LiveUsersResponse } from './monitoring-types';
 
 // ---------------------------------------------------------------------------
 // Snapshot Types
@@ -214,5 +214,34 @@ export function useMonitoringSnapshot(
     refetchInterval: 120_000,
     staleTime: 30_000,
     enabled,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Search Query
+// ---------------------------------------------------------------------------
+
+export const searchKeys = {
+  all: ['monitoring', 'search'] as const,
+  byTerm: (term: string) => [...searchKeys.all, term] as const,
+};
+
+/**
+ * useMonitoringSearchQuery — server-side worker search via GET /monitoring/search?q=<term>.
+ * Returns clocked-in workers who match the search term (name or area).
+ * Debouncing is left to the caller; this hook enables the query only if q.trim().length >= 2.
+ */
+export function useMonitoringSearchQuery(q: string, enabled = true) {
+  return useQuery({
+    queryKey: searchKeys.byTerm(q),
+    queryFn: async () => {
+      const response = await apiClient.get<LiveUsersResponse>('/monitoring/search', {
+        params: { q },
+      });
+      return response.data;
+    },
+    staleTime: 10_000,
+    gcTime: 30_000,
+    enabled: enabled && q.trim().length >= 2,
   });
 }

@@ -25,6 +25,8 @@ const mockAggregate = jest.fn(() => ({
 jest.mock('@/lib/api/monitoring-v2', () => ({
   useMonitoringSnapshot: () => mockSnapshot(),
   useMonitoringAggregate: () => mockAggregate(),
+  // 5.7b: MonitoringSearch queries the server for petugas; stub it empty here.
+  useMonitoringSearchQuery: () => ({ data: { users: [] } }),
 }));
 
 const mockBoundaries = jest.fn();

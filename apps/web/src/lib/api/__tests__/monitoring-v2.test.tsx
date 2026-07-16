@@ -13,13 +13,16 @@ import { ReactNode } from 'react';
 import { apiClient } from '../client';
 import {
   snapshotKeys,
+  searchKeys,
   useMonitoringSnapshot,
   useMonitoringAggregate,
+  useMonitoringSearchQuery,
   type MonitoringSnapshotResponse,
   type SnapshotWorker,
   type SnapshotAreaSummary,
   type StatusV2Event,
 } from '../monitoring-v2';
+import type { LiveUsersResponse } from '../monitoring-types';
 
 describe('Monitoring v2 API', () => {
   let mockAxios: MockAdapter;
@@ -266,6 +269,137 @@ describe('Monitoring v2 API', () => {
       // Compile-time check; runtime assertion just confirms shape.
       expect(withCoords.lat).toBe(-7.29);
       expect(withoutCoords.lat).toBeUndefined();
+    });
+  });
+
+  describe('searchKeys', () => {
+    it('exposes a stable base key', () => {
+      expect(searchKeys.all).toEqual(['monitoring', 'search']);
+    });
+
+    it('byTerm appends the search term deterministically', () => {
+      expect(searchKeys.byTerm('john')).toEqual(['monitoring', 'search', 'john']);
+      expect(searchKeys.byTerm('area a')).toEqual(['monitoring', 'search', 'area a']);
+    });
+  });
+
+  describe('useMonitoringSearchQuery', () => {
+    it('fetches workers matching a search term', async () => {
+      const mockResponse: LiveUsersResponse = {
+        total_active: 1,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        users: [
+          {
+            id: 'u-1',
+            full_name: 'John Satgas',
+            role: 'satgas',
+            phone: '081234567890',
+            status: 'active',
+            area_id: 'a-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'r-1',
+            rayon_name: 'Rayon Pusat',
+            latitude: -7.29,
+            longitude: 112.74,
+            accuracy: 10,
+            battery_level: 85,
+            last_update: '2026-05-23T08:00:00Z',
+            is_within_area: true,
+            outside_boundary: false,
+            shift_id: 's-1',
+            shift_name: 'Pagi',
+            clock_in_time: '2026-05-23T06:00:00Z',
+            current_task_status: null,
+            current_task_title: null,
+          },
+        ],
+        generated_at: '2026-05-23T08:00:00Z',
+      };
+
+      mockAxios.onGet('/monitoring/search').reply((config) => {
+        expect(config.params).toEqual({ q: 'john' });
+        return [200, mockResponse];
+      });
+
+      const { result } = renderHook(() => useMonitoringSearchQuery('john', true), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.users).toHaveLength(1);
+      expect(result.current.data?.users[0].full_name).toBe('John Satgas');
+    });
+
+    it('is disabled when term length < 2 characters', async () => {
+      mockAxios.onGet('/monitoring/search').reply(200, {
+        total_active: 0,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        users: [],
+        generated_at: '2026-05-23T08:00:00Z',
+      });
+
+      const { result } = renderHook(() => useMonitoringSearchQuery('a', true), {
+        wrapper: createWrapper(),
+      });
+
+      // Query should not have fired (isLoading stays false, no isSuccess)
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.data).toBeUndefined();
+    });
+
+    it('is disabled when enabled=false', async () => {
+      mockAxios.onGet('/monitoring/search').reply(200, {
+        total_active: 0,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        users: [],
+        generated_at: '2026-05-23T08:00:00Z',
+      });
+
+      const { result } = renderHook(() => useMonitoringSearchQuery('john', false), {
+        wrapper: createWrapper(),
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(result.current.isLoading).toBe(false);
+      expect(result.current.data).toBeUndefined();
+    });
+
+    it('returns empty users when no matches found', async () => {
+      mockAxios.onGet('/monitoring/search').reply(200, {
+        total_active: 0,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        users: [],
+        generated_at: '2026-05-23T08:00:00Z',
+      });
+
+      const { result } = renderHook(() => useMonitoringSearchQuery('xyz', true), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.users).toHaveLength(0);
+    });
+
+    it('surfaces fetch errors to the caller', async () => {
+      mockAxios.onGet('/monitoring/search').reply(500, {
+        success: false,
+        error: 'server error',
+      });
+
+      const { result } = renderHook(() => useMonitoringSearchQuery('john', true), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
     });
   });
 });
