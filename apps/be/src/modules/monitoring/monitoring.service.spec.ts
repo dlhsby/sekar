@@ -15,6 +15,7 @@ import { Task, TaskStatus, TaskPriority } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon, StaffingLevel } from '../rayons/entities/rayon.entity';
+import { Region } from '../regions/entities/region.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import {
   LocationStaffRequirement,
@@ -34,6 +35,7 @@ describe('MonitoringService', () => {
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
   let staffRequirementRepository: jest.Mocked<Repository<LocationStaffRequirement>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
@@ -278,6 +280,15 @@ describe('MonitoringService', () => {
           },
         },
         {
+          provide: getRepositoryToken(Region),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            count: jest.fn(),
+            createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+          },
+        },
+        {
           provide: getRepositoryToken(ShiftDefinition),
           useValue: {
             find: jest.fn(),
@@ -353,6 +364,7 @@ describe('MonitoringService', () => {
     activityRepository = module.get(getRepositoryToken(Activity));
     locationRepository = module.get(getRepositoryToken(LocationLog));
     rayonRepository = module.get(getRepositoryToken(Rayon));
+    regionRepository = module.get(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get(getRepositoryToken(ShiftDefinition));
     staffRequirementRepository = module.get(getRepositoryToken(LocationStaffRequirement));
     trackingRepository = module.get(getRepositoryToken(UserTrackingStatus));

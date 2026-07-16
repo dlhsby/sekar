@@ -9,6 +9,7 @@ import { Task } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
   LocationStaffRequirement,
@@ -45,6 +46,7 @@ describe('MonitoringStatsService.getAggregate', () => {
   const staffRepo: any = { createQueryBuilder: jest.fn() };
   const locationRepo: any = { find: jest.fn(), count: jest.fn() };
   const rayonRepo: any = { find: jest.fn() };
+  const regionRepo: any = { find: jest.fn() };
   const scheduleRepo: any = { createQueryBuilder: jest.fn() };
   const scheduleAreaRepo: any = { createQueryBuilder: jest.fn() };
 
@@ -63,6 +65,7 @@ describe('MonitoringStatsService.getAggregate', () => {
         { provide: getRepositoryToken(Activity), useValue: {} },
         { provide: getRepositoryToken(LocationLog), useValue: {} },
         { provide: getRepositoryToken(Rayon), useValue: rayonRepo },
+        { provide: getRepositoryToken(Region), useValue: regionRepo },
         { provide: getRepositoryToken(ShiftDefinition), useValue: {} },
         { provide: getRepositoryToken(LocationStaffRequirement), useValue: staffRepo },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepo },
@@ -292,6 +295,152 @@ describe('MonitoringStatsService.getAggregate', () => {
       tidak_aktif: { dalam: 0, luar: 0 },
     });
     // No tracking/staff queries issued when there are no areas.
+    expect(trackingRepo.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
+  it('region scope: builds one node per region (kawasan) in the rayon', async () => {
+    regionRepo.find.mockResolvedValue([
+      { id: 'region-1', name: 'Kawasan Darmo', center_lat: -7.25, center_lng: 112.75 },
+      { id: 'region-2', name: 'Kawasan Pusat', center_lat: null, center_lng: null },
+    ]);
+    locationRepo.find.mockResolvedValue([
+      { id: 'area-1', region_id: 'region-1' },
+      { id: 'area-2', region_id: 'region-1' },
+      { id: 'area-3', region_id: 'region-2' },
+    ]);
+    // trackingRepo.createQueryBuilder order: 1st status, 2nd role,
+    // 3rd countable-online (satgas+linmas only), 4th presence.
+    trackingRepo.createQueryBuilder
+      .mockReturnValueOnce(
+        makeQb([
+          [
+            { group_id: 'region-1', status: 'active', is_within_area: true, count: '3' },
+            { group_id: 'region-1', status: 'offline', is_within_area: false, count: '1' },
+            { group_id: 'region-2', status: 'active', is_within_area: true, count: '2' },
+          ],
+        ]),
+      )
+      .mockReturnValueOnce(
+        makeQb([
+          [
+            { group_id: 'region-1', role: 'satgas', count: '3' },
+            { group_id: 'region-1', role: 'linmas', count: '1' },
+            { group_id: 'region-2', role: 'satgas', count: '2' },
+          ],
+        ]),
+      )
+      .mockReturnValueOnce(
+        // countable-online: online satgas+linmas user ids. region-1 has 4 online,
+        // and r1, r2, r3 are on today's roster (all 3 scheduled-online ≥ 3 required).
+        // region-2: r4 scheduled + r5 ad-hoc, no requirement.
+        makeQb([
+          [
+            { group_id: 'region-1', user_id: 'r1' },
+            { group_id: 'region-1', user_id: 'r2' },
+            { group_id: 'region-1', user_id: 'r3' },
+            { group_id: 'region-1', user_id: 'r4' },
+            { group_id: 'region-2', user_id: 'r5' },
+            { group_id: 'region-2', user_id: 'r6' },
+          ],
+        ]),
+      )
+      .mockReturnValueOnce(
+        // presence (scheduled+clocked-in workers by status × within-area)
+        makeQb([
+          [
+            { group_id: 'region-1', status: 'active', within: true, count: '2' },
+            { group_id: 'region-1', status: 'offline', within: false, count: '1' },
+          ],
+        ]),
+      );
+    staffRepo.createQueryBuilder.mockReturnValue(
+      makeQb([
+        [
+          { group_id: 'region-1', total: '3' },
+          { group_id: 'region-2', total: '4' },
+        ],
+      ]),
+    );
+    // Roster grouped by region: region-1 has r1,r2,r3; region-2 has r5.
+    scheduleRepo.createQueryBuilder
+      .mockReturnValueOnce(
+        makeQb([
+          [
+            { group_id: 'region-1', user_id: 'r1' },
+            { group_id: 'region-1', user_id: 'r2' },
+            { group_id: 'region-1', user_id: 'r3' },
+            { group_id: 'region-2', user_id: 'r5' },
+          ],
+        ]),
+      )
+      .mockReturnValueOnce(
+        makeQb([[{ user_id: 'r1' }, { user_id: 'r2' }, { user_id: 'r3' }, { user_id: 'r5' }]]),
+      );
+    trackingRepo.find.mockResolvedValue([{ user_id: 'r1' }, { user_id: 'r2' }]);
+
+    const res = await service.getAggregate('region', 'rayon-1');
+
+    expect(res.scope).toBe('region');
+    expect(res.scope_id).toBe('rayon-1');
+    expect(res.nodes).toHaveLength(2);
+
+    const rg1 = res.nodes.find((n) => n.id === 'region-1')!;
+    expect(rg1.type).toBe('region');
+    expect(rg1.center_lat).toBe(-7.25);
+    expect(rg1.counts_by_status.active).toBe(3);
+    expect(rg1.counts_by_status.offline).toBe(1);
+    expect(rg1.counts_by_role).toEqual({ satgas: 3, linmas: 1 });
+    expect(rg1.online_count).toBe(4); // active + offline (clocked-in)
+    expect(rg1.worker_count).toBe(4);
+    expect(rg1.required).toBe(3);
+    // Measured on scheduled-online satgas+linmas — r1,r2,r3 are all rostered
+    // so 3 scheduled-online >= 3 required → not understaffed.
+    expect(rg1.is_understaffed).toBe(false);
+    expect(rg1.location_count).toBe(2);
+
+    // Roster trio: 3 scheduled, 2 clocked in (r1,r2), 1 not clocked in.
+    expect(rg1.roster).toEqual({ scheduled: 3, clocked_in: 2, not_clocked_in: 1 });
+    // Presence breakdown of the clocked-in workers.
+    expect(rg1.presence).toEqual({
+      aktif: { dalam: 2, luar: 0 },
+      tidak_aktif: { dalam: 0, luar: 1 },
+    });
+
+    const rg2 = res.nodes.find((n) => n.id === 'region-2')!;
+    expect(rg2.required).toBe(4);
+    expect(rg2.is_understaffed).toBe(true); // 2 online < 4 required (r4/r5 only, r5 is ad-hoc)
+    expect(rg2.location_count).toBe(1);
+    // r5 scheduled, nobody from region-2 clocked in.
+    expect(rg2.roster).toEqual({ scheduled: 1, clocked_in: 0, not_clocked_in: 1 });
+
+    // Totals sum across regions.
+    expect(res.totals.active).toBe(5);
+    expect(res.totals.offline).toBe(1);
+    // Roster totals are scope-wide distinct (r1..r5), not Σ nodes.
+    expect(res.roster_totals).toEqual({ scheduled: 4, clocked_in: 2, not_clocked_in: 2 });
+    // Presence totals sum across nodes (only region-1 has hadir workers).
+    expect(res.presence_totals).toEqual({
+      aktif: { dalam: 2, luar: 0 },
+      tidak_aktif: { dalam: 0, luar: 1 },
+    });
+  });
+
+  it('region scope without id throws NotFound', async () => {
+    await expect(service.getAggregate('region')).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('region scope with zero regions returns no nodes (no empty-IN query)', async () => {
+    regionRepo.find.mockResolvedValue([]); // rayon has no active regions
+    const res = await service.getAggregate('region', 'rayon-empty');
+    expect(res.scope).toBe('region');
+    expect(res.nodes).toEqual([]);
+    expect(res.totals).toEqual({ active: 0, offline: 0, absent: 0, outside_area: 0 });
+    expect(res.roster_totals).toEqual({ scheduled: 0, clocked_in: 0, not_clocked_in: 0 });
+    expect(res.presence_totals).toEqual({
+      aktif: { dalam: 0, luar: 0 },
+      tidak_aktif: { dalam: 0, luar: 0 },
+    });
+    // No tracking/staff queries issued when there are no regions.
     expect(trackingRepo.createQueryBuilder).not.toHaveBeenCalled();
   });
 
