@@ -6,6 +6,7 @@ import {
   ActivityStatus,
   LocationStatus,
 } from '../entities/user-tracking-status.entity';
+import type { LifecycleState, LifecycleFlag } from '../lib/presence-lifecycle';
 
 export class LiveUserDto {
   @ApiProperty({ example: 'user-uuid' })
@@ -61,6 +62,22 @@ export class LiveUserDto {
 
   @ApiProperty({ example: true })
   is_within_area: boolean;
+
+  @ApiProperty({
+    example: 'bertugas',
+    description: 'Attendance lifecycle (ADR-050). Live workers are always bertugas.',
+  })
+  lifecycle_state: LifecycleState;
+
+  @ApiProperty({ example: false, description: 'Clocked in after the shift start + grace' })
+  is_late: boolean;
+
+  @ApiProperty({
+    example: [],
+    description: 'Lifecycle flags: is_late | ad_hoc | lupa_clock_out | lembur | early | excused',
+    type: [String],
+  })
+  lifecycle_flags: LifecycleFlag[];
 
   @ApiProperty({
     example: true,

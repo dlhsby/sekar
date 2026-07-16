@@ -144,6 +144,7 @@ describe('MonitoringUserService', () => {
               inactive_threshold_seconds: 900,
               missing_threshold_seconds: 3600,
               location_ping_interval_seconds: 60,
+              late_grace_seconds: 900,
             }),
           },
         },
@@ -222,6 +223,66 @@ describe('MonitoringUserService', () => {
       expect(result).toBeDefined();
       expect(result.users).toHaveLength(1);
       expect(result.users[0].id).toBe('user-1');
+      // Wiring (5.4c): a live worker is always bertugas and carries the flags array.
+      expect(result.users[0].lifecycle_state).toBe('bertugas');
+      expect(Array.isArray(result.users[0].lifecycle_flags)).toBe(true);
+    });
+
+    it('flags is_late for a late clock-in, and lupa_clock_out only past the shift end', async () => {
+      // Freeze "now" so the derivation is deterministic. Noon WIB, inside the
+      // 06:00–14:00 window → is_late (clocked in 07:00 > 06:15) but not past end.
+      jest.useFakeTimers().setSystemTime(new Date('2026-07-16T12:00:00+07:00'));
+      try {
+        const lateTracking = {
+          ...({
+            id: 'tracking-2',
+            user_id: 'user-1',
+            user: mockUser,
+            location_id: 'area-1',
+            area: mockArea,
+            shift_id: 'shift-1',
+            shift: { ...mockShift, clock_in_time: new Date('2026-07-16T07:00:00+07:00') },
+            shift_definition_id: 'shift-def-1',
+            shift_definition: { ...mockShiftDef, crosses_midnight: false },
+            status: TrackingStatus.ACTIVE,
+            last_latitude: -7.25,
+            last_longitude: 112.75,
+            last_accuracy_meters: 10,
+            last_battery_level: 85,
+            last_location_at: new Date('2026-07-16T11:59:00+07:00'),
+            is_within_area: true,
+          } as unknown as UserTrackingStatus),
+        };
+        const qb = {
+          innerJoinAndSelect: jest.fn().mockReturnThis(),
+          leftJoinAndSelect: jest.fn().mockReturnThis(),
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue([lateTracking]),
+        };
+        trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+        taskRepository.createQueryBuilder.mockReturnValue({
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue([]),
+        } as any);
+        areaRepository.createQueryBuilder.mockReturnValue({
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          getMany: jest.fn().mockResolvedValue([mockArea]),
+        } as any);
+        rayonRepository.find.mockResolvedValue([mockRayon]);
+
+        const result = await service.getLiveUsers();
+
+        expect(result.users[0].is_late).toBe(true);
+        expect(result.users[0].lifecycle_flags).toContain('is_late');
+        // Noon is before the 14:00 end → not a forgotten clock-out.
+        expect(result.users[0].lifecycle_flags).not.toContain('lupa_clock_out');
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it("derives expected/present/absent/on-leave from today's roster (ADR-013)", async () => {

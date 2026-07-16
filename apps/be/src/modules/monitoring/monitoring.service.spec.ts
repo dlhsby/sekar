@@ -332,6 +332,7 @@ describe('MonitoringService', () => {
               inactive_threshold_seconds: 900,
               missing_threshold_seconds: 3600,
               location_ping_interval_seconds: 60,
+              late_grace_seconds: 900,
             }),
           },
         },
@@ -1407,6 +1408,54 @@ describe('MonitoringService', () => {
       expect(summary?.active_count).toBe(1);
       expect(summary?.required_count).toBe(2);
       expect(summary?.is_understaffed).toBe(true);
+    });
+
+    it('appends ad_hoc to a worker who is not on the current-shift roster (5.4c)', async () => {
+      const liveUsers = {
+        total_active: 1,
+        total_absent: 0,
+        total_outside_area: 0,
+        total_offline: 0,
+        total_online: 1,
+        users: [
+          {
+            id: 'u-adhoc',
+            full_name: 'Satgas Adhoc',
+            role: 'satgas',
+            location_id: 'area-1',
+            area_name: 'Taman Bungkul',
+            rayon_id: 'rayon-1',
+            rayon_name: 'Rayon Pusat',
+            status: TrackingStatus.ACTIVE,
+            lat: -7.2,
+            lng: 112.7,
+            last_update: new Date(),
+            is_within_area: true,
+            lifecycle_state: 'bertugas',
+            is_late: false,
+            lifecycle_flags: [],
+          },
+        ],
+        generated_at: new Date(),
+      };
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(liveUsers as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
+      staffRequirementRepository.find.mockResolvedValue([] as any);
+      // Roster is empty (default mock) → this clock-in is ad-hoc.
+      const result = await service.getSnapshot({} as any);
+      const worker = result.data.workers.find((w: any) => w.user_id === 'u-adhoc');
+
+      expect(worker?.is_scheduled).toBe(false);
+      expect(worker?.lifecycle_flags).toContain('ad_hoc');
+      // A scheduled worker (roster includes them) must NOT get ad_hoc.
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue(new Set<string>(['u-adhoc']));
+      const scheduled = await service.getSnapshot({} as any);
+      const w2 = scheduled.data.workers.find((w: any) => w.user_id === 'u-adhoc');
+      expect(w2?.lifecycle_flags).not.toContain('ad_hoc');
     });
   });
 

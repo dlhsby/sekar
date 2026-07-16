@@ -23,7 +23,13 @@ import { LocationHistoryResponseDto, LocationHistoryPointDto } from '../dto/loca
 import { UserDaySummaryDto } from '../dto/user-day-summary.dto';
 import { GpsUtil } from '../../../common/utils/gps.util';
 import { StatusCalculatorService } from './status-calculator.service';
-import { MonitoringCacheService } from './monitoring-cache.service';
+import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
+import {
+  derivePresenceState,
+  resolveShiftWindow,
+  type LifecycleState,
+  type LifecycleFlag,
+} from '../lib/presence-lifecycle';
 
 @Injectable()
 export class MonitoringUserService {
@@ -128,6 +134,7 @@ export class MonitoringUserService {
         activity: axes.activity,
         location: axes.location,
         is_within_area: uts.is_within_area,
+        ...this.computeLiveLifecycle(uts, thresholds),
         // Overridden by the callers (getLiveUsers / getSnapshot) with the
         // current-shift roster check; default false keeps the type satisfied.
         is_scheduled: false,
@@ -326,6 +333,51 @@ export class MonitoringUserService {
   }
 
   // ---- Private helpers ----
+
+  /**
+   * Lifecycle facets for a LIVE (bertugas) worker — every row here is clocked in
+   * and not out, so the state is always `bertugas`; what varies is the flags
+   * (is_late / lupa_clock_out / lembur). `ad_hoc` is NOT decided here — it needs
+   * the current-shift roster check the caller owns, so the snapshot appends it.
+   * Resolves the shift window on the clock-in's WIB service day, which keeps
+   * shift 3 (crosses midnight) correct. Falls back to a bare `bertugas` when the
+   * shift/definition rows are missing, never throwing.
+   */
+  private computeLiveLifecycle(
+    uts: UserTrackingStatus,
+    thresholds: StatusThresholds,
+  ): { lifecycle_state: LifecycleState; is_late: boolean; lifecycle_flags: LifecycleFlag[] } {
+    const clockIn = uts.shift?.clock_in_time ?? null;
+    const sd = uts.shift_definition;
+    if (!clockIn || !sd?.start_time || !sd?.end_time) {
+      return { lifecycle_state: 'bertugas', is_late: false, lifecycle_flags: [] };
+    }
+    const serviceDate = TimezoneUtil.jakartaDateOf(clockIn);
+    const window = resolveShiftWindow(
+      serviceDate,
+      sd.start_time,
+      sd.end_time,
+      sd.crosses_midnight ?? false,
+    );
+    const result = derivePresenceState(
+      {
+        scheduled: true, // placeholder — ad_hoc is appended by the snapshot caller
+        clockIn,
+        clockOut: null,
+        shiftStart: window.start,
+        shiftEnd: window.end,
+        graceMs: thresholds.late_grace_seconds * 1000,
+        overtimeApproved: !!uts.shift?.is_overtime,
+        leave: 'none',
+      },
+      new Date(),
+    );
+    return {
+      lifecycle_state: result.state,
+      is_late: result.flags.includes('is_late'),
+      lifecycle_flags: result.flags,
+    };
+  }
 
   /**
    * Tallies for the snapshot. The three statuses partition the workforce;
