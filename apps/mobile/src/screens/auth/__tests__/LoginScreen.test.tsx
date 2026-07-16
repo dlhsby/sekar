@@ -211,7 +211,6 @@ describe('LoginScreen', () => {
         if (state.assignedArea) {
           expect(typeof state.assignedArea.gps_lat).toBe('number');
           expect(typeof state.assignedArea.gps_lng).toBe('number');
-          expect(typeof state.assignedArea.radius_meters).toBe('number');
         }
       });
     });

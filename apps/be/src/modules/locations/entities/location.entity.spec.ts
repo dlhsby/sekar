@@ -15,7 +15,6 @@ describe('Location Entity', () => {
     area.location_type_id = 'type-uuid-456';
     area.gps_lat = -7.2905;
     area.gps_lng = 112.7398;
-    area.radius_meters = 100;
     area.address = 'Test Address';
     area.is_active = true;
     area.created_at = new Date();
@@ -26,7 +25,6 @@ describe('Location Entity', () => {
     expect(area.location_type_id).toBe('type-uuid-456');
     expect(area.gps_lat).toBe(-7.2905);
     expect(area.gps_lng).toBe(112.7398);
-    expect(area.radius_meters).toBe(100);
     expect(area.address).toBe('Test Address');
     expect(area.is_active).toBe(true);
     expect(area.created_at).toBeInstanceOf(Date);
@@ -71,7 +69,6 @@ describe('Location Entity', () => {
     area.locationType = mockAreaType;
     area.gps_lat = -7.2905;
     area.gps_lng = 112.7398;
-    area.radius_meters = 150;
     area.address = 'Jl. Taman Bungkul, Darmo, Surabaya';
     area.is_active = true;
     area.created_at = new Date();
@@ -83,7 +80,6 @@ describe('Location Entity', () => {
     expect(area.locationType).toBe(mockAreaType);
     expect(area.gps_lat).toBe(-7.2905);
     expect(area.gps_lng).toBe(112.7398);
-    expect(area.radius_meters).toBe(150);
     expect(area.is_active).toBe(true);
   });
 

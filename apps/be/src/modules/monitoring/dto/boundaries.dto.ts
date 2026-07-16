@@ -33,9 +33,6 @@ export class AreaBoundaryDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   rayon_name: string;
 
-  @ApiPropertyOptional({ example: 200 })
-  radius_meters: number | null;
-
   @ApiProperty({ example: 6 })
   assigned_count: number;
 

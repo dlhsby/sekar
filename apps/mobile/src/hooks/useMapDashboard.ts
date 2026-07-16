@@ -14,7 +14,6 @@ import {
   calculateMapRegion,
   filterUsersByArea,
   filterUsersByRegion,
-  getAreaCircles,
   clusterUsers,
   shouldCluster,
   isValidRegion,
@@ -177,8 +176,6 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
     return counts;
   }, [filteredUsers]);
 
-  const areaCircles = useMemo(() => getAreaCircles(areas), [areas]);
-
   const initialRegion = useMemo(
     () => calculateMapRegion(filteredUsers, SURABAYA_CENTER),
     [filteredUsers]
@@ -223,7 +220,6 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
     filteredUsers,
     statusSummary,
     roleCounts,
-    areaCircles,
     initialRegion,
     regionForClustering,
     useClustering,

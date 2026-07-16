@@ -212,16 +212,9 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
               />
             ));
           }
-          return [
-            <Circle
-              key={`area-circle-${area.id}`}
-              center={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
-              radius={Number(area.radius_meters)}
-              strokeColor={nbColors.black}
-              fillColor={withAlpha(nbColors.warningLight, 0.15)}
-              strokeWidth={2}
-            />,
-          ];
+          // No polygon → draw nothing. The radius circle that used to stand in
+          // here is retired; drawing one would invent a geofence.
+          return [];
         }),
       )}
 

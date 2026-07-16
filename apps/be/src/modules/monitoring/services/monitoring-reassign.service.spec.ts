@@ -53,7 +53,6 @@ describe('MonitoringReassignService', () => {
       rayon_id: RAYON_A,
       gps_lat: -7.29,
       gps_lng: 112.74,
-      radius_meters: 100,
       is_active: true,
       location_type_id: 'type-uuid',
       locationType: {} as any,

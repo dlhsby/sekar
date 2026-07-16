@@ -176,7 +176,6 @@ export interface LocationBoundaryResponse {
   boundary_polygon: GeoJSON.Polygon | null;
   gps_lat: number;
   gps_lng: number;
-  radius_meters: number;
   coverage_area: number | null;
 }
 

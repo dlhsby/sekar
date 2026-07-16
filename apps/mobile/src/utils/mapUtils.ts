@@ -153,27 +153,6 @@ export function filterUsersByArea(
 }
 
 /**
- * Format area circle overlay data
- * Ensures coordinates are numbers (API may return strings)
- */
-export function getAreaCircles(
-  areas: Array<{ id: string | number; name: string; gps_lat: number | string; gps_lng: number | string; radius_meters: number | string }>
-): Array<{
-  center: { latitude: number; longitude: number };
-  radius: number;
-  key: string;
-}> {
-  return areas.map(area => ({
-    center: {
-      latitude: typeof area.gps_lat === 'string' ? parseFloat(area.gps_lat) : area.gps_lat,
-      longitude: typeof area.gps_lng === 'string' ? parseFloat(area.gps_lng) : area.gps_lng,
-    },
-    radius: typeof area.radius_meters === 'string' ? parseFloat(area.radius_meters) : area.radius_meters,
-    key: `area-${area.id}`,
-  }));
-}
-
-/**
  * Cluster definition for map marker grouping
  */
 export interface UserCluster {

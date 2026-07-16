@@ -191,7 +191,6 @@ export interface Location extends Record<string, unknown> {
   locationType?: LocationType;
   gps_lat?: number | string;
   gps_lng?: number | string;
-  radius_meters?: number;
   // Stored boundaries can be Polygon OR MultiPolygon (KMZ/shapefile imports).
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   coverage_area?: number;
@@ -246,7 +245,6 @@ export interface CreateLocationDto extends MapStyleFieldsDto {
   location_type_id: string;
   gps_lat?: number;
   gps_lng?: number;
-  radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
   region_id?: string | null;
@@ -261,7 +259,6 @@ export interface UpdateLocationDto extends MapStyleFieldsDto {
   location_type_id?: string;
   gps_lat?: number;
   gps_lng?: number;
-  radius_meters?: number;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon;
   address?: string | null;
   region_id?: string | null;

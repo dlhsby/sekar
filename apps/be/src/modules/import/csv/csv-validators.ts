@@ -27,7 +27,6 @@ export interface ValidatedAreaRow {
   address?: string;
   latitude: number;
   longitude: number;
-  radius_meters?: number;
 }
 
 export interface ValidationOutcome<T> {
@@ -206,16 +205,6 @@ function validateAreaRow(
     fail('longitude', 'longitude must be a decimal between -180 and 180');
   }
 
-  let radius: number | undefined;
-  if (row.radius_meters) {
-    const r = Number(row.radius_meters);
-    if (!Number.isInteger(r) || r < 10 || r > 10000) {
-      fail('radius_meters', 'radius_meters must be an integer between 10 and 10000');
-    } else {
-      radius = r;
-    }
-  }
-
   if (row.address && row.address.length > 500) {
     fail('address', 'address must be at most 500 characters');
   }
@@ -230,7 +219,6 @@ function validateAreaRow(
     address: row.address || undefined,
     latitude,
     longitude,
-    radius_meters: radius,
   };
 }
 

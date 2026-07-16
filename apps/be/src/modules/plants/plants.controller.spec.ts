@@ -35,7 +35,6 @@ describe('PlantsController', () => {
     address: 'Jalan Darmo',
     gps_lat: -7.25,
     gps_lng: 112.75,
-    radius_meters: 100,
     is_active: true,
     location_type_id: '33333333-3333-3333-3333-333333333301',
     rayon_id: '44444444-4444-4444-4444-444444444401',

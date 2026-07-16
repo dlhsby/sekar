@@ -325,7 +325,6 @@ export class AuthController {
           name: area.name,
           gps_lat: area.gps_lat,
           gps_lng: area.gps_lng,
-          radius_meters: area.radius_meters,
           boundary_polygon: area.boundary_polygon || null,
           area_type: area.locationType
             ? { id: area.locationType.id, name: area.locationType.name }
@@ -350,7 +349,6 @@ export class AuthController {
             name: area.name,
             gps_lat: area.gps_lat,
             gps_lng: area.gps_lng,
-            radius_meters: area.radius_meters,
             boundary_polygon: area.boundary_polygon || null,
             area_type: area.locationType
               ? { id: area.locationType.id, name: area.locationType.name }

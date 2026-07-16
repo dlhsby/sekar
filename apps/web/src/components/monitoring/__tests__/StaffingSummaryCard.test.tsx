@@ -57,7 +57,6 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           center_lng: 112.739208,
           rayon_id: 'rayon-1',
           rayon_name: 'Rayon Pusat',
-          radius_meters: 200,
           assigned_count: 5,
           is_understaffed: true,
           staffing_summary: [
@@ -73,7 +72,6 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           center_lng: 112.74,
           rayon_id: 'rayon-1',
           rayon_name: 'Rayon Pusat',
-          radius_meters: 150,
           assigned_count: 3,
           is_understaffed: false,
           staffing_summary: [
@@ -101,7 +99,6 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           center_lng: 112.73,
           rayon_id: 'rayon-2',
           rayon_name: 'Rayon Selatan',
-          radius_meters: 300,
           assigned_count: 4,
           is_understaffed: false,
           staffing_summary: [

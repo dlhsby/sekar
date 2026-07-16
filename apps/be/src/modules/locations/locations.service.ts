@@ -276,7 +276,6 @@ export class LocationsService {
       boundary_polygon: (area.boundary_polygon as GeoJsonPolygon) || null,
       gps_lat: parseFloat(area.gps_lat?.toString() || '0'),
       gps_lng: parseFloat(area.gps_lng?.toString() || '0'),
-      radius_meters: area.radius_meters,
       coverage_area: area.coverage_area ? parseFloat(area.coverage_area.toString()) : null,
     };
   }
@@ -309,7 +308,6 @@ export class LocationsService {
       boundary_polygon: (saved.boundary_polygon as GeoJsonPolygon) || null,
       gps_lat: parseFloat(saved.gps_lat?.toString() || '0'),
       gps_lng: parseFloat(saved.gps_lng?.toString() || '0'),
-      radius_meters: saved.radius_meters,
       coverage_area: saved.coverage_area ? parseFloat(saved.coverage_area.toString()) : null,
     };
   }

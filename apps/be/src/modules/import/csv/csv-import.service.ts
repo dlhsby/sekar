@@ -165,7 +165,6 @@ export class CsvImportService {
           address: row.address,
           gps_lat: row.latitude,
           gps_lng: row.longitude,
-          radius_meters: row.radius_meters,
         });
         // CreateLocationDto carries no rayon_id — assign it directly post-create.
         await this.areaRepository.update(area.id, { rayon_id: row.rayon_id });

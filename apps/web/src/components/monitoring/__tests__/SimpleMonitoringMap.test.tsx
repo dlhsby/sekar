@@ -128,7 +128,6 @@ const boundaries: BoundariesResponse = {
           center_lng: 112.747,
           rayon_id: 'r1',
           rayon_name: 'Rayon 1',
-          radius_meters: 100,
           assigned_count: 2,
           is_understaffed: false,
           staffing_summary: [],

@@ -100,7 +100,6 @@
   },
   "assignedArea": {
     "title": "Assigned Area",
-    "radiusSuffix": "radius",
     "noArea": "No area assigned"
   },
   "assignedKecamatan": {

@@ -134,7 +134,6 @@ function LoginScreen(): React.JSX.Element {
                 ...meResponse.data.assigned_area,
                 gps_lat: Number(meResponse.data.assigned_area.gps_lat),
                 gps_lng: Number(meResponse.data.assigned_area.gps_lng),
-                radius_meters: Number(meResponse.data.assigned_area.radius_meters),
                 boundary_polygon: rawPolygon?.coordinates?.[0] ?? undefined,
               };
             }

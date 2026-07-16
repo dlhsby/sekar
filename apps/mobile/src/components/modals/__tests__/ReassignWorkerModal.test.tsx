@@ -72,7 +72,6 @@ const targetArea: AreaBoundary = {
   center_lat: -7.2,
   center_lng: 112.7,
   boundary_polygon: null,
-  radius_meters: 200,
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   assigned_count: 3,

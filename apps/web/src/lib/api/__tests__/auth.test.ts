@@ -218,7 +218,6 @@ describe('Auth API', () => {
           location_type_id: 'type-1',
           gps_lat: -7.289659,
           gps_lng: 112.739208,
-          radius_meters: 100,
           address: 'Jl. Raya Darmo',
         },
       };

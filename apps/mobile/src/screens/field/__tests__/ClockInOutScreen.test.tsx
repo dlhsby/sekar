@@ -102,7 +102,18 @@ describe('ClockInOutScreen Location Watcher Management', () => {
             name: 'Park A',
             gps_lat: -7.250445,
             gps_lng: 112.768845,
-            radius_meters: 100,
+            boundary_polygon: {
+              type: 'Polygon',
+              coordinates: [
+                [
+                  [112.7678, -7.2494],
+                  [112.7698, -7.2494],
+                  [112.7698, -7.2514],
+                  [112.7678, -7.2514],
+                  [112.7678, -7.2494],
+                ],
+              ],
+            },
             locationType: {
               name: 'Park',
             },

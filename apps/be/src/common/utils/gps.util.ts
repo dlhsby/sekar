@@ -140,53 +140,36 @@ export class GpsUtil {
   }
 
   /**
-   * Check if a point is within an area boundary.
+   * Is a point inside a lokasi's boundary?
    *
-   * Strategy: polygon-first, radius fallback.
-   * - If the area has a `boundary_polygon` (GeoJSON Polygon), use ray casting.
-   * - Otherwise fall back to radius-based check using gps_lat/gps_lng/radius_meters.
-   * - If neither is available, returns true (no boundary defined).
+   * Polygon only. The radius fallback is retired (`radius_meters` was never data
+   * — every row carried the same hardcoded 100 — and migration
+   * `17504000000000` converted the handful of radius-only lokasi into real
+   * polygons, so nothing lost its geofence).
+   *
+   * **Fails OPEN by design:** a lokasi with no polygon returns `true`. That is
+   * deliberate and long-standing — an un-mapped lokasi must not mark every
+   * worker standing in it as outside-area. It does mean "no polygon" is silently
+   * ungeofenced, so boundary coverage is worth watching (948/953 today).
    *
    * @param lat Latitude of the point
    * @param lng Longitude of the point
-   * @param area Location with optional boundary_polygon, gps_lat, gps_lng, radius_meters
-   * @returns true if within boundary (or no boundary defined), false if outside
+   * @param area Location with an optional `boundary_polygon`
+   * @returns true if inside the polygon, or if the lokasi has none
    */
   static isWithinAreaBoundary(
     lat: number,
     lng: number,
     area: {
       boundary_polygon?: { type?: string; coordinates?: number[][][] };
-      gps_lat?: number;
-      gps_lng?: number;
-      radius_meters?: number;
     },
   ): boolean {
-    // 1. Polygon check (preferred)
     if (area.boundary_polygon?.coordinates && area.boundary_polygon.coordinates.length > 0) {
       const outerRing = area.boundary_polygon.coordinates[0];
       if (outerRing && outerRing.length >= 3) {
         return this.isPointInPolygon(lat, lng, outerRing);
       }
     }
-
-    // 2. Radius fallback
-    if (
-      area.gps_lat != null &&
-      area.gps_lng != null &&
-      area.radius_meters != null &&
-      area.radius_meters > 0
-    ) {
-      return this.isWithinBoundary(
-        lat,
-        lng,
-        Number(area.gps_lat),
-        Number(area.gps_lng),
-        Number(area.radius_meters),
-      );
-    }
-
-    // 3. No boundary defined — allow
     return true;
   }
 }

@@ -42,7 +42,6 @@ describe('entity dataset builders', () => {
         location_type_id: 't1',
         gps_lat: -7.2,
         gps_lng: 112.7,
-        radius_meters: 100,
         is_active: true,
       } as Location,
     ]);

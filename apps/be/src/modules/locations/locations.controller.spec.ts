@@ -33,7 +33,6 @@ describe('LocationsController', () => {
     locationType: mockAreaType,
     gps_lat: -7.2905,
     gps_lng: 112.7398,
-    radius_meters: 100,
     address: 'Jl. Taman Bungkul, Darmo, Surabaya',
     is_active: true,
     created_at: new Date(),
@@ -57,7 +56,6 @@ describe('LocationsController', () => {
     },
     gps_lat: -7.2905,
     gps_lng: 112.7398,
-    radius_meters: 100,
     coverage_area: 4250.5,
   };
 
@@ -98,7 +96,6 @@ describe('LocationsController', () => {
       location_type_id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
       gps_lat: -7.2905,
       gps_lng: 112.7398,
-      radius_meters: 100,
       address: 'Jl. Taman Bungkul, Darmo, Surabaya',
     };
 

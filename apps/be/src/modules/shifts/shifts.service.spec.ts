@@ -39,7 +39,6 @@ describe('ShiftsService', () => {
     name: 'Taman Bungkul',
     gps_lat: -7.2905,
     gps_lng: 112.7398,
-    radius_meters: 150,
     is_active: true,
   };
 
@@ -169,8 +168,8 @@ describe('ShiftsService', () => {
     });
 
     it('should pick the GPS-containing area among several candidates', async () => {
-      const near = { id: 'near', gps_lat: -7.29, gps_lng: 112.74, radius_meters: 100 };
-      const far = { id: 'far', gps_lat: -7.9, gps_lng: 112.9, radius_meters: 100 };
+      const near = { id: 'near', gps_lat: -7.29, gps_lng: 112.74 };
+      const far = { id: 'far', gps_lat: -7.9, gps_lng: 112.9 };
       mockUserAreasService.getEffectiveLocations.mockResolvedValue([near as any, far as any]);
 
       const result = await service.getActiveArea(mockUser.id, -7.29, 112.74);

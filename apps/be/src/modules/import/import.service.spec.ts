@@ -24,7 +24,6 @@ describe('ImportService', () => {
     },
     gps_lat: -7.2905,
     gps_lng: 112.7398,
-    radius_meters: 100,
     address: 'Test Address',
     is_active: true,
     rayon_id: 'rayon-1',

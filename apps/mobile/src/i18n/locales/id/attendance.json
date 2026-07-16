@@ -95,7 +95,6 @@
     "address": "Alamat",
     "areaType": "Tipe Area",
     "gpsCoordinates": "Koordinat GPS",
-    "boundaryRadius": "Radius Batas",
     "rayonCoverage": "Cakupan Rayon",
     "noSpecificArea": "Tanpa area spesifik",
     "inBoundary": "DI AREA",
@@ -152,8 +151,7 @@
     "validation": "Validasi Lokasi Clock In",
     "withinArea": "Dalam Area",
     "outsideArea": "Luar Area",
-    "distance": "Jarak",
-    "radius": "Radius"
+    "distance": "Jarak"
   },
   "shiftCard": {
     "unknownArea": "Area tidak diketahui",
