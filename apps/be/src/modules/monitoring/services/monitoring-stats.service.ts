@@ -441,7 +441,10 @@ export class MonitoringStatsService {
         counts_by_status: statusByGroup.get(rayon.id),
         counts_by_role: roleByGroup.get(rayon.id),
         required: requiredMap.get(rayon.id) ?? 0,
-        countable_online: countableOnlineByRayon.get(rayon.id) ?? 0,
+        countable_online: this.countScheduledOnline(
+          countableOnlineByRayon.get(rayon.id),
+          scheduledByRayon.get(rayon.id),
+        ),
         roster: this.rosterCountsFor(scheduledByRayon.get(rayon.id), clockedInSet),
         presence: presenceByRayon.get(rayon.id) ?? this.emptyPresence(),
         area_count: areaCountByRayon.get(rayon.id) ?? 0,
@@ -517,7 +520,10 @@ export class MonitoringStatsService {
         counts_by_status: statusByGroup.get(area.id),
         counts_by_role: roleByGroup.get(area.id),
         required: requiredMap.get(area.id) ?? 0,
-        countable_online: countableOnlineByArea.get(area.id) ?? 0,
+        countable_online: this.countScheduledOnline(
+          countableOnlineByArea.get(area.id),
+          scheduledByArea.get(area.id),
+        ),
         roster: this.rosterCountsFor(scheduledByArea.get(area.id), clockedInSet),
         presence: presenceByArea.get(area.id) ?? this.emptyPresence(),
         rayon_id: rayonId,
@@ -584,44 +590,52 @@ export class MonitoringStatsService {
   }
 
   /**
-   * Online **satgas+linmas** per group — the only workforce staffing is measured
-   * on (ADR-046). Kept separate from `counts_by_status` on purpose: that stays
-   * all-roles because it is what the bubble displays; this narrows only the
-   * understaffing comparison.
+   * Online **satgas+linmas** user ids per group — the only workforce staffing is
+   * measured on (ADR-046). Returns SETS (not counts) so the caller can intersect
+   * with the scheduled set: staffing counts only workers who are **scheduled for
+   * this subject** (ADR-050 counting / Q12). A satgas who clocks in ad-hoc, with
+   * no occurrence here today, is on the map but must not fill the requirement.
    *
-   * "Online" mirrors `assembleNode`: active + inactive + outside_area.
+   * Kept separate from `counts_by_status` on purpose: that stays all-roles
+   * because it is what the bubble displays; this narrows only the understaffing
+   * comparison. "Online" is simply clocked in (ACTIVE or OFFLINE) — `shift_id IS
+   * NOT NULL` is the test; OFFLINE still counts, since a park is no less staffed
+   * because a phone lost GPS. ABSENT cannot appear (it requires no shift).
    */
   private async countableOnlineByGroup(
     groupBy: 'rayon' | 'area',
     locationIds?: string[],
-  ): Promise<Map<string, number>> {
+  ): Promise<Map<string, Set<string>>> {
     const groupCol = groupBy === 'rayon' ? 'area.rayon_id' : 'uts.location_id';
     const qb = this.trackingRepository
       .createQueryBuilder('uts')
       .innerJoin('uts.area', 'area')
       .innerJoin('uts.user', 'user')
       .select(groupCol, 'group_id')
-      .addSelect('COUNT(*)', 'total')
-      // `shift_id IS NOT NULL` IS the "clocked in" test, and clocking in is what
-      // staffs a place — so no status filter. Under the three-state model a
-      // clocked-in worker is ACTIVE or OFFLINE; OFFLINE means their phone is
-      // unreachable, not that they went home. ABSENT cannot appear here at all
-      // (it requires no shift).
-      //
-      // This is a deliberate behaviour change: the old model counted `inactive`
-      // but NOT `missing`, which are now the same value. Excluding OFFLINE would
-      // mean a worker's staffing contribution blinks out when their signal drops
-      // — the park is no less staffed because a phone lost GPS.
+      .addSelect('uts.user_id', 'user_id')
       .where('uts.shift_id IS NOT NULL')
-      .andWhere('user.role IN (:...countedRoles)', { countedRoles: STAFFING_COUNTED_ROLES })
-      .groupBy(groupCol);
+      .andWhere('user.role IN (:...countedRoles)', { countedRoles: STAFFING_COUNTED_ROLES });
 
     if (groupBy === 'area') {
       if (!locationIds || locationIds.length === 0) return new Map();
       qb.andWhere('uts.location_id IN (:...locationIds)', { locationIds });
     }
 
-    return this.toCountMap(await qb.getRawMany());
+    const rows = (await qb.getRawMany()) as Array<{ group_id: string; user_id: string }>;
+    const map = new Map<string, Set<string>>();
+    for (const r of rows) {
+      if (r.group_id) this.addToSetMap(map, r.group_id, r.user_id);
+    }
+    return map;
+  }
+
+  /** How many members of `online` are also in `scheduled` — online ∩ scheduled. */
+  private countScheduledOnline(online?: Set<string>, scheduled?: Set<string>): number {
+    if (!online || !scheduled || online.size === 0 || scheduled.size === 0) return 0;
+    const [small, big] = online.size <= scheduled.size ? [online, scheduled] : [scheduled, online];
+    let n = 0;
+    for (const id of small) if (big.has(id)) n += 1;
+    return n;
   }
 
   private toCountMap(rows: Array<{ group_id: string; total: string }>): Map<string, number> {
