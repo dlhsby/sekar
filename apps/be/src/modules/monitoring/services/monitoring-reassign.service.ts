@@ -105,6 +105,7 @@ export class MonitoringReassignService {
       new_area_id: targetArea.id,
       new_area_name: targetArea.name,
       rayon_id: targetArea.rayon_id ?? null,
+      region_id: targetArea.region_id ?? null,
       timestamp: now,
     });
 

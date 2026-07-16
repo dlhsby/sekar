@@ -290,6 +290,28 @@ describe('EventsGateway', () => {
     });
   });
 
+  describe('subscribe:region', () => {
+    it('should subscribe client to region room', () => {
+      const result = gateway.handleSubscribeRegion(mockClient, {
+        region_id: 'region-1',
+      });
+
+      expect(mockClient.join).toHaveBeenCalledWith('monitoring:region:region-1');
+      expect(result).toEqual({ success: true, room: 'monitoring:region:region-1' });
+    });
+  });
+
+  describe('unsubscribe:region', () => {
+    it('should unsubscribe client from region room', () => {
+      const result = gateway.handleUnsubscribeRegion(mockClient, {
+        region_id: 'region-1',
+      });
+
+      expect(mockClient.leave).toHaveBeenCalledWith('monitoring:region:region-1');
+      expect(result).toEqual({ success: true, room: 'monitoring:region:region-1' });
+    });
+  });
+
   describe('emitUserLocation', () => {
     const locationEvent: UserLocationEvent = {
       user_id: 'worker-1',
@@ -300,6 +322,7 @@ describe('EventsGateway', () => {
       location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
+      region_id: null,
       latitude: -7.2905,
       longitude: 112.7398,
       accuracy: 10,
@@ -356,6 +379,7 @@ describe('EventsGateway', () => {
       location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
+      region_id: null,
       latitude: -7.2905,
       longitude: 112.7398,
       timestamp: new Date(),
@@ -391,6 +415,7 @@ describe('EventsGateway', () => {
       location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
+      region_id: null,
       timestamp: new Date(),
       duration_minutes: 480,
     };
@@ -622,6 +647,7 @@ describe('EventsGateway', () => {
       location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
+      region_id: null,
       previous_status: TrackingStatus.ACTIVE,
       new_status: TrackingStatus.OFFLINE,
       latitude: -7.29,
@@ -663,6 +689,28 @@ describe('EventsGateway', () => {
       );
       expect(rayonCalls.length).toBe(0);
     });
+
+    it('should emit to region room when region_id is present', () => {
+      const regionEvent = { ...statusEvent, region_id: 'region-1' };
+      mockServer.to.mockClear();
+
+      gateway.emitUserStatusChanged(regionEvent);
+
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:region:region-1');
+      expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_STATUS_CHANGED, regionEvent);
+    });
+
+    it('should skip region room when region_id is null', () => {
+      const noRegionEvent = { ...statusEvent, region_id: null };
+      mockServer.to.mockClear();
+
+      gateway.emitUserStatusChanged(noRegionEvent);
+
+      const regionCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:region:'),
+      );
+      expect(regionCalls.length).toBe(0);
+    });
   });
 
   describe('emitUserLeftArea', () => {
@@ -673,6 +721,7 @@ describe('EventsGateway', () => {
       location_id: 'area-1',
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
+      region_id: null,
       latitude: -7.5,
       longitude: 112.9,
       timestamp: new Date(),
@@ -733,6 +782,7 @@ describe('EventsGateway', () => {
       new_area_id: 'area-new',
       new_area_name: 'New Location',
       rayon_id: 'rayon-1',
+      region_id: null,
       timestamp: new Date(),
     };
 
@@ -777,6 +827,7 @@ describe('EventsGateway', () => {
     const staffingChangedEvent: AreaStaffingChangedEvent = {
       location_id: 'area-1',
       rayon_id: 'rayon-1',
+      region_id: null,
       active_count: 3,
       required_count: 5,
       is_met: false,
