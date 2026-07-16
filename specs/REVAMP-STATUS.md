@@ -53,22 +53,26 @@ threshold). Guardrails: service-day scoping + cross-midnight (shift 3). Companio
 "close & stamp" affordance for dangling shifts. (5.4a already shipped the 10-min offline default; the
 settings catalog already allowed ample headroom, so no catalog-max change was needed.)
 
-**Remaining:**
+**Implemented so far — 11 PRs merged 2026-07-16 (#279–289), all medium-reviewed + CI-green:**
+- ✅ **Presence/attendance model (ADR-050)** — 5.4a offline 5→10 min · 5.4b pure lifecycle engine ·
+  5.4c lifecycle on the snapshot (`is_late`, ad-hoc marker) · 5.4d ad-hoc excluded from staffing ·
+  5.4e mobile crews geofence against their kawasan.
+- ✅ **Region (Kawasan) tier** — 5.5a aggregate (`getAggregate('region')` + `region_id` on area nodes) ·
+  5.5b `monitoring:region:{id}` WS room · 5.5c region-scope enforcement.
+- ✅ **Web region drill** — 5.6a Rayon → Kawasan → Lokasi with the region-less fallback.
+- ✅ **Server-backed search** — 5.7a `GET /monitoring/search` (name/lokasi + last-24h, incl.
+  monitorable-but-unscheduled) · 5.7b web search box wired to it.
+- ✅ **Understaffing uses the polymorphic subject** (landed in 5.0, refined in 5.4d/5.5a).
 
-- **Implement the presence/attendance model** (ADR-050) — derive the six-state lifecycle from roster + shift
-  record, surface `is_late` / `clock_out_time`, gate ad-hoc out of staffing counts. Belongs with 5.4.
-
-- **Drop the Surabaya bubble**; draw all rayon boundaries on first load with per-rayon bubbles; no workers
-  at top level.
-- **Region (Kawasan) tier in the drill:** Rayon → Kawasan → Location → workers (now has data from #227),
-  handling the region-less bucket (Rayon → Location) for Taman Aktif.
-- **Static vs mobile subjects:** static geofenced to their location; mobile (e.g. penyiraman) geofenced to
-  their region.
-- **Team bubbles** — group marker that expands to members on click/zoom.
-- **Server-backed, scope-filtered search** (worker / location / team; incl. non-scheduled clock-ins).
-- **WS/refresh hardening** under load (no map remounts, no lag).
-- **Understaffing on the map must use the polymorphic subject** (region/location/rayon/city), reusing the
-  Phase-4 helper — not location-only.
+**Remaining — browser-verification-dependent frontend (needs a real browser, not runnable headless here):**
+- **Drop the Surabaya bubble** + draw all rayon boundaries on first load (partly covered by the drill; the
+  top-level bubble rework is visual).
+- **Team bubbles** — group marker that expands to members on click/zoom (needs a team-node aggregation on the
+  backend first, then the visual bubble). Team-keyword search also lands here.
+- **Advanced Markers** rewrite — `AdvancedMarker` migration whose acceptance is **pan/zoom perf with
+  hundreds of pins in a real browser** (the explicit reason it was deferred). Implementable + tsc/unit-green
+  but NOT perf-verifiable without a browser.
+- **WS/refresh hardening** under load (no remounts) — verify in a browser.
 - **Advanced Markers (deferred here on purpose, 2026-07-15).** `google.maps.Marker` is deprecated (warning
   only — still supported, 12+ months' notice). The **foundation is already in `main`**: a configurable Map ID
   (System Settings key `maps.map_id` + `GOOGLE_MAPS_MAP_ID` / `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`, served via
