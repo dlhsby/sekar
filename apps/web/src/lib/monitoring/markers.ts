@@ -108,9 +108,10 @@ export function workerPinIcon(
  * A node marker showing the attendance ratio `hadir/terjadwal`, colored by
  * staffing health — a white rounded bubble with a health-colored border, exactly
  * matching the mobile node bubbles. Surabaya is a wider bubble with a label.
+ * Region markers use the same 76×44 size as rayon/area.
  */
 export function nodeRatioIcon(
-  variant: 'rayon' | 'area' | 'surabaya',
+  variant: 'rayon' | 'area' | 'region' | 'surabaya',
   scheduled: number,
   clockedIn: number
 ): google.maps.Icon {

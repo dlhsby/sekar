@@ -14,6 +14,7 @@ import { apiClient } from '../client';
 import {
   snapshotKeys,
   useMonitoringSnapshot,
+  useMonitoringAggregate,
   type MonitoringSnapshotResponse,
   type SnapshotWorker,
   type SnapshotAreaSummary,
@@ -109,6 +110,82 @@ describe('Monitoring v2 API', () => {
         'area',
         'a-1',
       ]);
+    });
+  });
+
+  describe('useMonitoringAggregate', () => {
+    it('fetches city aggregate at city scope', async () => {
+      const mockAgg = {
+        scope: 'city' as const,
+        scope_id: null,
+        nodes: [],
+        totals: { active: 0, offline: 0, absent: 0, outside_area: 0 },
+        roster_totals: { scheduled: 0, clocked_in: 0, not_clocked_in: 0 },
+        presence_totals: {
+          aktif: { dalam: 0, luar: 0 },
+          tidak_aktif: { dalam: 0, luar: 0 },
+        },
+        generated_at: '2026-05-23T08:00:00Z',
+      };
+      mockAxios.onGet('/monitoring/aggregate').reply((config) => {
+        expect(config.params).toEqual({ scope: 'city' });
+        return [200, mockAgg];
+      });
+
+      const { result } = renderHook(() => useMonitoringAggregate('city'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.scope).toBe('city');
+    });
+
+    it('fetches region aggregate at region scope with id', async () => {
+      const mockAgg = {
+        scope: 'region' as const,
+        scope_id: 'r-1',
+        nodes: [
+          {
+            id: 'region-1',
+            name: 'Kawasan Utara',
+            type: 'region' as const,
+            center_lat: -7.28,
+            center_lng: 112.75,
+            counts_by_status: { active: 2, offline: 1, absent: 0, outside_area: 0 },
+            counts_by_role: { satgas: 2, linmas: 1 },
+            worker_count: 3,
+            online_count: 2,
+            required: 3,
+            is_understaffed: false,
+            roster: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+            presence: {
+              aktif: { dalam: 2, luar: 0 },
+              tidak_aktif: { dalam: 0, luar: 1 },
+            },
+            location_count: 2,
+          },
+        ],
+        totals: { active: 2, offline: 1, absent: 0, outside_area: 0 },
+        roster_totals: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+        presence_totals: {
+          aktif: { dalam: 2, luar: 0 },
+          tidak_aktif: { dalam: 0, luar: 1 },
+        },
+        generated_at: '2026-05-23T08:00:00Z',
+      };
+      mockAxios.onGet('/monitoring/aggregate').reply((config) => {
+        expect(config.params).toEqual({ scope: 'region', id: 'r-1' });
+        return [200, mockAgg];
+      });
+
+      const { result } = renderHook(() => useMonitoringAggregate('region', 'r-1'), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data?.scope).toBe('region');
+      expect(result.current.data?.nodes[0].type).toBe('region');
+      expect(result.current.data?.nodes[0].location_count).toBe(2);
     });
   });
 

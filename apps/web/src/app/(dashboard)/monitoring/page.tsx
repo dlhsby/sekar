@@ -52,7 +52,7 @@ import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
 // Surabaya-wide drill above the rayon list; workers only render at area scope.
-type Scope = 'surabaya' | 'city' | 'rayon' | 'area';
+type Scope = 'surabaya' | 'city' | 'rayon' | 'region' | 'area';
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 const EMPTY_ROSTER: AggregateRosterCounts = { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
@@ -61,6 +61,7 @@ interface MonitoringView {
   scope: Scope;
   id?: string;
   rayonId?: string;
+  regionId?: string;
   name?: string;
   /** Center of the drilled node — anchors the current-node pin + drill-back zoom. */
   lat?: number;
@@ -69,6 +70,7 @@ interface MonitoringView {
 
 // Zoom levels per scope (drill-in tightens; drill-back uses these to zoom out).
 const ZOOM_RAYON = 13;
+const ZOOM_REGION = 14;
 const ZOOM_AREA = 15;
 const ZOOM_CITY = 11;
 
@@ -166,22 +168,39 @@ export default function MonitoringPage() {
   }, [roleView]);
 
   const scope = view.scope;
-  const showWorkers = scope === 'area';
+  const showWorkers = scope === 'area';  // Workers only at area scope, not region.
 
   // City aggregate feeds BOTH the Surabaya summary (roster_totals) and the rayon
-  // list/markers (nodes) — one fetch. Rayon aggregate feeds the area level.
+  // list/markers (nodes) — one fetch. Rayon aggregate feeds the region/area level.
   const cityAgg = useMonitoringAggregate(
     'city',
     undefined,
     canMonitor && (scope === 'surabaya' || scope === 'city')
   );
+  // `view.id` is the rayon id only at rayon scope. At region/area scope the rayon
+  // aggregate is fetched by `view.rayonId` via `regionAreasAgg` below.
   const rayonAgg = useMonitoringAggregate('rayon', view.id, canMonitor && scope === 'rayon');
-  const activeAgg = scope === 'rayon' ? rayonAgg : cityAgg;
+  // At rayon scope, fetch region aggregate to check if this rayon has regions.
+  const regionAgg = useMonitoringAggregate(
+    'region',
+    view.id,
+    canMonitor && scope === 'rayon'
+  );
+  // At region scope, fetch the rayon aggregate to filter areas by region_id.
+  const regionAreasAgg = useMonitoringAggregate(
+    'rayon',
+    view.rayonId,
+    canMonitor && scope === 'region'
+  );
+
+  const activeAgg = scope === 'region' ? regionAreasAgg : scope === 'rayon' ? rayonAgg : cityAgg;
 
   // Snapshot (workers) — rendered only at area scope, but kept loaded so search
   // can find people at any level. Surabaya maps to the city snapshot scope.
-  const snapshotScope: 'city' | 'rayon' | 'area' = scope === 'surabaya' ? 'city' : scope;
-  const snapshotId = scope === 'surabaya' ? undefined : view.id;
+  // Region scope shows areas, so snapshot is still at the parent rayon.
+  const snapshotScope: 'city' | 'rayon' | 'area' =
+    scope === 'surabaya' ? 'city' : scope === 'region' ? 'rayon' : scope;
+  const snapshotId = scope === 'surabaya' ? undefined : scope === 'region' ? view.rayonId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
   const areaSummaries = useMemo(() => snapshot.data?.data?.area_summaries ?? [], [snapshot.data]);
@@ -190,7 +209,7 @@ export default function MonitoringPage() {
   const boundaryLevel: 'rayon' | 'area' =
     scope === 'surabaya' || scope === 'city' ? 'rayon' : 'area';
   const boundaryRayonId =
-    scope === 'rayon' || scope === 'area' ? view.rayonId ?? view.id : undefined;
+    scope === 'rayon' || scope === 'region' || scope === 'area' ? view.rayonId ?? view.id : undefined;
   const {
     data: boundaries,
     isFetching: boundariesFetching,
@@ -234,7 +253,7 @@ export default function MonitoringPage() {
     setSelectedId(null);
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_RAYON);
   };
-  const drillToArea = (
+  const drillToRegion = (
     id: string,
     name: string,
     rayonId?: string,
@@ -242,7 +261,23 @@ export default function MonitoringPage() {
     lng?: number | null
   ) => {
     const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
-    setView({ scope: 'area', id, rayonId, name, ...coord });
+    setView({ scope: 'region', id, rayonId, regionId: id, name, ...coord });
+    setSelectedId(null);
+    if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_REGION);
+  };
+
+  const drillToArea = (
+    id: string,
+    name: string,
+    rayonId?: string,
+    lat?: number | null,
+    lng?: number | null,
+    regionId?: string
+  ) => {
+    const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
+    // Carry regionId so back-from-area returns to the kawasan tier (not straight
+    // to the rayon) when the area was reached via a region.
+    setView({ scope: 'area', id, rayonId, regionId, name, ...coord });
     setSelectedId(null);
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_AREA);
   };
@@ -251,12 +286,24 @@ export default function MonitoringPage() {
   const onDrillMarker = (node: NodeMarker) => {
     if (node.variant === 'surabaya') drillToCity();
     else if (node.variant === 'rayon') drillToRayon(node.id, node.name, node.lat, node.lng);
+    else if (node.variant === 'region') drillToRegion(node.id, node.name, view.id, node.lat, node.lng);
+    else if (scope === 'region')
+      drillToArea(node.id, node.name, view.rayonId, node.lat, node.lng, view.id);
     else drillToArea(node.id, node.name, view.id, node.lat, node.lng);
   };
   // List row tapped (an AggregateNode).
   const onDrillListNode = (node: AggregateNode) => {
     if (node.type === 'rayon') drillToRayon(node.id, node.name, node.center_lat, node.center_lng);
-    else drillToArea(node.id, node.name, node.rayon_id ?? view.id, node.center_lat, node.center_lng);
+    else if (node.type === 'region') drillToRegion(node.id, node.name, view.id, node.center_lat, node.center_lng);
+    else
+      drillToArea(
+        node.id,
+        node.name,
+        node.rayon_id ?? view.rayonId ?? view.id,
+        node.center_lat,
+        node.center_lng,
+        node.region_id ?? undefined
+      );
   };
 
   const handleSearchSelect = (result: MonitoringSearchResult) => {
@@ -287,6 +334,20 @@ export default function MonitoringPage() {
     setSelectedId(null);
     if (scope === 'area') {
       if (roleView.floor === 'area') return;
+      // From area: go back to region (if regionId exists) or rayon.
+      if (view.regionId && view.rayonId) {
+        setView({ scope: 'region', id: view.regionId, rayonId: view.rayonId });
+        if (typeof view.lat === 'number' && typeof view.lng === 'number') {
+          focusOn(view.lat, view.lng, ZOOM_REGION, true);
+        }
+      } else {
+        setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
+        if (typeof view.lat === 'number' && typeof view.lng === 'number') {
+          focusOn(view.lat, view.lng, ZOOM_RAYON, true);
+        }
+      }
+    } else if (scope === 'region') {
+      if (roleView.floor === 'rayon') return;
       setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
       if (typeof view.lat === 'number' && typeof view.lng === 'number') {
         focusOn(view.lat, view.lng, ZOOM_RAYON, true);
@@ -339,12 +400,24 @@ export default function MonitoringPage() {
     setListOpen(true);
   };
 
-  // Rayons list (surabaya + city) or areas list (rayon), for the side panel.
+  // Rayons list (surabaya + city), regions list (rayon), or areas list (region or rayon-without-regions),
+  // for the side panel.
   const listNodes = useMemo<AggregateNode[]>(() => {
-    if (scope === 'rayon') return rayonAgg.data?.nodes ?? [];
+    if (scope === 'region') {
+      // At region scope: filter the rayon's area nodes by region_id.
+      const areas = regionAreasAgg.data?.nodes ?? [];
+      return areas.filter((n) => n.region_id === view.id);
+    }
+    if (scope === 'rayon') {
+      // At rayon scope: show region nodes if available (≥1), otherwise show area nodes (region-less fallback).
+      if (regionAgg.data && regionAgg.data.nodes.length > 0) {
+        return regionAgg.data.nodes;
+      }
+      return rayonAgg.data?.nodes ?? [];
+    }
     if (scope === 'surabaya' || scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
-  }, [scope, rayonAgg.data, cityAgg.data]);
+  }, [scope, view.id, regionAgg.data, regionAreasAgg.data, rayonAgg.data, cityAgg.data]);
 
   const cityRosterTotals = cityAgg.data?.roster_totals ?? EMPTY_ROSTER;
   const cityActiveInside = cityAgg.data?.presence_totals?.aktif.dalam ?? 0;
@@ -366,7 +439,7 @@ export default function MonitoringPage() {
         },
       ];
     }
-    if (scope === 'area') return [];
+    if (scope === 'area' || scope === 'region') return [];
     return listNodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
   }, [scope, listNodes, cityRosterTotals, cityActiveInside]);
 

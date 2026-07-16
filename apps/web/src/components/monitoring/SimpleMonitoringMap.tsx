@@ -43,11 +43,11 @@ export interface SimpleWorker {
 export interface SimpleMonitoringMapProps {
   /**
    * `true` (area scope) → cluster individual worker pins. `false` → draw the
-   * drill-down node markers (Surabaya / rayons / areas) from `nodeMarkers`.
+   * drill-down node markers (Surabaya / rayons / regions / areas) from `nodeMarkers`.
    */
   showWorkers: boolean;
   /** Current drill scope — gates which boundary layers draw. */
-  scope?: 'surabaya' | 'city' | 'rayon' | 'area';
+  scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'area';
   nodeMarkers?: NodeMarker[];
   onDrillNode?: (node: NodeMarker) => void;
   /** The current node's own pin (rayon/area) — opens detail on click, no drill. */

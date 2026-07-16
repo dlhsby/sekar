@@ -15,7 +15,7 @@ import { nodeRatioIcon } from '@/lib/monitoring/markers';
 export interface NodeMarker {
   id: string;
   name: string;
-  variant: 'rayon' | 'area' | 'surabaya';
+  variant: 'rayon' | 'area' | 'region' | 'surabaya';
   lat: number;
   lng: number;
   scheduled: number;
