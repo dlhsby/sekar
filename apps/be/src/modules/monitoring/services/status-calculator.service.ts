@@ -347,14 +347,19 @@ export class StatusCalculatorService {
         shift_definition_id: null,
         location_id: null,
         rayon_id: null,
-        status: TrackingStatus.OFFLINE,
+        // Not clocked in is ABSENT, not OFFLINE. Under the 5→3 collapse OFFLINE
+        // inverted to mean "clocked in but unreachable"; a clocked-out worker is
+        // simply not on shift, which is exactly what calculateStatus returns for
+        // !hasActiveShift. Writing OFFLINE here contradicted the calculator and
+        // read as "unreachable" in any query that isn't gated on shift_id.
+        status: TrackingStatus.ABSENT,
         is_within_area: true,
         updated_at: now,
       },
       ['user_id'],
     );
 
-    this.logger.log(`User ${userId} clocked out → OFFLINE`);
+    this.logger.log(`User ${userId} clocked out → ABSENT`);
   }
 
   async onLocationPing(

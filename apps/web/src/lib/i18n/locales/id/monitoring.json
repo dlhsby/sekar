@@ -270,9 +270,9 @@
     "rayonDataUnavailable": "Data rayon tidak tersedia.",
     "cityDataUnavailable": "Data wilayah tidak tersedia.",
     "activeStatus": "Aktif",
-    "idleStatus": "Idle",
-    "outsideStatus": "Di Luar",
-    "missingStatus": "Tidak Terdeteksi"
+    "offlineStatus": "Offline",
+    "absentStatus": "Tidak Hadir",
+    "outsideStatus": "Di Luar"
   },
   "config": {
     "pageTitle": "Konfigurasi Monitoring",

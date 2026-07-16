@@ -70,7 +70,11 @@ export class UserTrackingStatus {
   @Column({
     type: 'varchar',
     length: 20,
-    default: TrackingStatus.OFFLINE,
+    // A row with no explicit status is a worker who has not clocked in → ABSENT.
+    // NOT OFFLINE: after the 5→3 collapse OFFLINE means "clocked in but
+    // unreachable", so defaulting to it would mislabel a not-clocked-in worker
+    // as clocked-in and count them toward online/staffing.
+    default: TrackingStatus.ABSENT,
   })
   status: TrackingStatus;
 

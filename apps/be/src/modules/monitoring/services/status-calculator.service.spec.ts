@@ -315,7 +315,10 @@ describe('StatusCalculatorService', () => {
   });
 
   describe('onClockOut', () => {
-    it('should set status to OFFLINE', async () => {
+    it('should set status to ABSENT (not clocked in), not OFFLINE', async () => {
+      // Guards the 5→3 inversion: OFFLINE now means "clocked in but unreachable",
+      // so a clocked-out worker must be ABSENT — the same value calculateStatus
+      // returns for !hasActiveShift. Writing OFFLINE here read as "unreachable".
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
         status: TrackingStatus.ACTIVE,
@@ -328,7 +331,7 @@ describe('StatusCalculatorService', () => {
         expect.objectContaining({
           user_id: 'user-1',
           shift_id: null,
-          status: TrackingStatus.OFFLINE,
+          status: TrackingStatus.ABSENT,
         }),
         ['user_id'],
       );
