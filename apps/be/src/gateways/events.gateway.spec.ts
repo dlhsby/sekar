@@ -623,10 +623,10 @@ describe('EventsGateway', () => {
       area_name: 'Taman Bungkul',
       rayon_id: 'rayon-1',
       previous_status: TrackingStatus.ACTIVE,
-      new_status: TrackingStatus.INACTIVE,
+      new_status: TrackingStatus.OFFLINE,
       latitude: -7.29,
       longitude: 112.74,
-      activity: 'idle',
+      activity: 'offline',
       location: 'dalam_area',
       timestamp: new Date(),
     };

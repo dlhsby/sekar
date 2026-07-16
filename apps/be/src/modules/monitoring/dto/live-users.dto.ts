@@ -50,7 +50,7 @@ export class LiveUserDto {
   @ApiProperty({ enum: TrackingStatus, example: 'active' })
   status: TrackingStatus;
 
-  @ApiProperty({ example: 'aktif', description: 'Activity axis: aktif|idle|missing|offline' })
+  @ApiProperty({ example: 'aktif', description: 'Activity axis: aktif|offline|absent' })
   activity: ActivityStatus;
 
   @ApiProperty({
@@ -138,20 +138,24 @@ export class AbsentUserDto {
 }
 
 export class LiveUsersResponseDto {
-  @ApiProperty({ example: 30 })
+  @ApiProperty({ example: 30, description: 'Clocked in, location fresher than the threshold' })
   total_active: number;
 
-  @ApiProperty({ example: 10 })
-  total_inactive: number;
-
-  @ApiProperty({ example: 3 })
-  total_outside_area: number;
-
-  @ApiProperty({ example: 2 })
-  total_missing: number;
-
-  @ApiProperty({ example: 5 })
+  @ApiProperty({ example: 10, description: 'Clocked in but unreachable past the threshold' })
   total_offline: number;
+
+  @ApiProperty({
+    example: 5,
+    description: 'Not clocked in. Reads as "tidak hadir" only where a schedule exists',
+  })
+  total_absent: number;
+
+  @ApiProperty({
+    example: 3,
+    description:
+      'Axis, NOT a status: how many of the above are outside their boundary. Overlaps active/offline, so these four do not sum to a headcount',
+  })
+  total_outside_area: number;
 
   @ApiProperty({ example: 30, description: 'Deprecated alias for total_active', deprecated: true })
   total_online: number;

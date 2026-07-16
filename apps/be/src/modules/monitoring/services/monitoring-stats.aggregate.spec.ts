@@ -103,7 +103,7 @@ describe('MonitoringStatsService.getAggregate', () => {
         makeQb([
           [
             { group_id: 'rayon-1', status: 'active', count: '5' },
-            { group_id: 'rayon-1', status: 'missing', count: '1' },
+            { group_id: 'rayon-1', status: 'offline', count: '1' },
             { group_id: 'rayon-2', status: 'active', count: '2' },
           ],
         ]),
@@ -132,8 +132,8 @@ describe('MonitoringStatsService.getAggregate', () => {
         makeQb([
           [
             { group_id: 'rayon-1', status: 'active', within: true, count: '2' },
-            { group_id: 'rayon-1', status: 'outside_area', within: false, count: '1' },
-            { group_id: 'rayon-1', status: 'inactive', within: true, count: '1' },
+            { group_id: 'rayon-1', status: 'active', within: false, count: '1' },
+            { group_id: 'rayon-1', status: 'offline', within: true, count: '1' },
           ],
         ]),
       );
@@ -166,10 +166,10 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(r1.type).toBe('rayon');
     expect(r1.center_lat).toBe(-7.3);
     expect(r1.counts_by_status.active).toBe(5);
-    expect(r1.counts_by_status.missing).toBe(1);
+    expect(r1.counts_by_status.offline).toBe(1);
     expect(r1.counts_by_role).toEqual({ satgas: 4, linmas: 2 });
-    expect(r1.online_count).toBe(5); // active only (no inactive/outside)
-    expect(r1.worker_count).toBe(6); // 5 active + 1 missing
+    expect(r1.online_count).toBe(6); // active + offline (clocked-in)
+    expect(r1.worker_count).toBe(6); // 5 active + 1 offline (all clocked-in)
     expect(r1.required).toBe(8);
     // Measured on countable-online (6 satgas+linmas), NOT online_count (5, all
     // roles): supervisors are monitorable but never staff a place (ADR-046).
@@ -178,8 +178,8 @@ describe('MonitoringStatsService.getAggregate', () => {
 
     // Roster trio: 3 scheduled, 2 clocked in (u1,u2), 1 not clocked in.
     expect(r1.roster).toEqual({ scheduled: 3, clocked_in: 2, not_clocked_in: 1 });
-    // Presence breakdown of the hadir workers (active→aktif/dalam,
-    // outside_area→aktif/luar, inactive→tidak_aktif/dalam).
+    // Presence breakdown of the clocked-in workers (active→aktif, offline→tidak_aktif;
+    // within/outside is the is_within_area axis).
     expect(r1.presence).toEqual({
       aktif: { dalam: 2, luar: 1 },
       tidak_aktif: { dalam: 1, luar: 0 },
@@ -194,7 +194,7 @@ describe('MonitoringStatsService.getAggregate', () => {
 
     // Totals sum across rayons.
     expect(res.totals.active).toBe(7);
-    expect(res.totals.missing).toBe(1);
+    expect(res.totals.offline).toBe(1);
     // Roster totals are scope-wide distinct (u1..u4), not Σ nodes — so a
     // rayon-less rostered worker would still be counted here.
     expect(res.roster_totals).toEqual({ scheduled: 4, clocked_in: 2, not_clocked_in: 2 });
@@ -210,12 +210,12 @@ describe('MonitoringStatsService.getAggregate', () => {
       { id: 'area-1', name: 'Taman Bungkul', gps_lat: -7.29, gps_lng: 112.73 },
     ]);
     trackingRepo.createQueryBuilder
-      .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', status: 'inactive', count: '3' }]]))
+      .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', status: 'offline', count: '3' }]]))
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', role: 'satgas', count: '3' }]]))
       .mockReturnValueOnce(makeQb([[{ group_id: 'area-1', total: '3' }]])) // countable-online
       .mockReturnValueOnce(
-        // presence: u1 clocked in & inactive & inside → tidak_aktif/dalam
-        makeQb([[{ group_id: 'area-1', status: 'inactive', within: true, count: '1' }]]),
+        // presence: u1 clocked in & offline & inside → tidak_aktif/dalam
+        makeQb([[{ group_id: 'area-1', status: 'offline', within: true, count: '1' }]]),
       );
     staffRepo.createQueryBuilder.mockReturnValue(makeQb([[{ group_id: 'area-1', total: '2' }]]));
     // Roster grouped by area: area-1 has u1,u2,u3 scheduled; only u1 clocked in.
@@ -242,13 +242,13 @@ describe('MonitoringStatsService.getAggregate', () => {
     const a1 = res.nodes[0];
     expect(a1.type).toBe('area');
     expect(a1.rayon_id).toBe('rayon-1');
-    expect(a1.counts_by_status.inactive).toBe(3);
-    expect(a1.online_count).toBe(3); // inactive counts as online
+    expect(a1.counts_by_status.offline).toBe(3);
+    expect(a1.online_count).toBe(3); // offline counts as online (clocked-in)
     expect(a1.is_understaffed).toBe(false); // 3 online >= 2 required
     expect(a1.center_lat).toBe(-7.29);
     // 3 scheduled, 1 clocked in (u1), 2 not clocked in.
     expect(a1.roster).toEqual({ scheduled: 3, clocked_in: 1, not_clocked_in: 2 });
-    // u1 is inactive & inside → tidak_aktif/dalam.
+    // u1 is offline & inside → tidak_aktif/dalam.
     expect(a1.presence).toEqual({
       aktif: { dalam: 0, luar: 0 },
       tidak_aktif: { dalam: 1, luar: 0 },
@@ -266,7 +266,7 @@ describe('MonitoringStatsService.getAggregate', () => {
     const res = await service.getAggregate('rayon', 'rayon-empty');
     expect(res.scope).toBe('rayon');
     expect(res.nodes).toEqual([]);
-    expect(res.totals).toEqual({ active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 });
+    expect(res.totals).toEqual({ active: 0, offline: 0, absent: 0, outside_area: 0 });
     expect(res.roster_totals).toEqual({ scheduled: 0, clocked_in: 0, not_clocked_in: 0 });
     expect(res.presence_totals).toEqual({
       aktif: { dalam: 0, luar: 0 },

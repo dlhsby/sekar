@@ -62,10 +62,10 @@ export interface SnapshotData {
   workers: SnapshotWorker[];
   area_summaries: SnapshotAreaSummary[];
   total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  /** Axis, not a status — overlaps active/offline; never sum it into a headcount. */
+  total_outside_area: number;
   // Roster-derived "expected vs actual" for today (ADR-013).
   expected_count: number;
   present_count: number;
@@ -215,10 +215,9 @@ export class MonitoringService {
         workers,
         area_summaries: areaSummaries,
         total_active: result?.total_active ?? 0,
-        total_inactive: result?.total_inactive ?? 0,
-        total_outside_area: result?.total_outside_area ?? 0,
-        total_missing: result?.total_missing ?? 0,
         total_offline: result?.total_offline ?? 0,
+        total_absent: result?.total_absent ?? 0,
+        total_outside_area: result?.total_outside_area ?? 0,
         expected_count: result?.expected_count ?? 0,
         present_count: result?.present_count ?? 0,
         absent_count: result?.absent_count ?? 0,

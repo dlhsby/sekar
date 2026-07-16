@@ -403,10 +403,12 @@ export class MonitoringStatsService {
           .innerJoin('uts.area', 'area')
           .select('area.rayon_id', 'group_id')
           .addSelect('uts.status', 'status')
+          .addSelect('uts.is_within_area', 'is_within_area')
           .addSelect('COUNT(*)', 'count')
           .where('uts.shift_id IS NOT NULL')
           .groupBy('area.rayon_id')
           .addGroupBy('uts.status')
+          .addGroupBy('uts.is_within_area')
           .getRawMany(),
         this.trackingRepository
           .createQueryBuilder('uts')
@@ -471,6 +473,7 @@ export class MonitoringStatsService {
           .createQueryBuilder('uts')
           .select('uts.location_id', 'group_id')
           .addSelect('uts.status', 'status')
+          .addSelect('uts.is_within_area', 'is_within_area')
           .addSelect('COUNT(*)', 'count')
           .where('uts.shift_id IS NOT NULL')
           .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
@@ -479,6 +482,7 @@ export class MonitoringStatsService {
           })
           .groupBy('uts.location_id')
           .addGroupBy('uts.status')
+          .addGroupBy('uts.is_within_area')
           .getRawMany(),
         this.trackingRepository
           .createQueryBuilder('uts')
@@ -629,8 +633,20 @@ export class MonitoringStatsService {
     for (const row of rows) {
       if (!row.group_id) continue;
       const counts = map.get(row.group_id) ?? this.emptyStatusCounts();
+      const n = parseInt(row.count, 10) || 0;
       const status = row.status as keyof AggregateStatusCountsDto;
-      if (status in counts) counts[status] += parseInt(row.count, 10) || 0;
+      if (status in counts) counts[status] += n;
+
+      // `outside_area` is an AXIS, not a status, so it can no longer be read off
+      // the status column — the rows have to be grouped by `is_within_area` too.
+      // Without this the field silently stays 0 forever: nothing type-checks it
+      // and no test that only asserts the three statuses would ever notice.
+      // It OVERLAPS active/offline (a worker is counted under their status AND
+      // here), so these four fields must never be summed into a headcount.
+      const within = row.is_within_area;
+      if ((within === false || within === 'f') && status !== 'absent') {
+        counts.outside_area += n;
+      }
       map.set(row.group_id, counts);
     }
     return map;

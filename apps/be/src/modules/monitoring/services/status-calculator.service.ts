@@ -217,11 +217,15 @@ export class StatusCalculatorService {
       activity = ageSeconds <= thresholds.active_max_age_seconds ? 'aktif' : 'offline';
     }
 
-    // Location is only knowable while we are hearing from them. An absent worker
-    // never reported; an offline one's last fix is too old to claim they are
-    // still there.
+    // Inside/outside is reported for BOTH aktif and offline — an offline worker's
+    // last known fix is exactly what a supervisor needs ("unreachable, and the last
+    // we saw they were outside their park"). Throwing it away would make offline
+    // indistinguishable from absent on the one axis that still carries information.
+    //
+    // 'unknown' is reserved for the two cases with genuinely nothing to report:
+    // never clocked in, or clocked in and no fix has EVER arrived.
     const location: LocationStatus =
-      activity === 'absent' || activity === 'offline'
+      activity === 'absent' || !input.lastLocationAt
         ? 'unknown'
         : input.isWithinArea
           ? 'dalam_area'

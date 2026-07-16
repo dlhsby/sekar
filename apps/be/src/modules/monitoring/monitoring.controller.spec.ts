@@ -157,9 +157,7 @@ describe('MonitoringController', () => {
         delta: -1,
         is_met: false,
         active_count: 3,
-        inactive_count: 1,
-        outside_area_count: 1,
-        missing_count: 0,
+        offline_count: 2,
       },
     ],
     users: [
@@ -192,10 +190,9 @@ describe('MonitoringController', () => {
 
   const mockLiveUsers: LiveUsersResponseDto = {
     total_active: 100,
-    total_inactive: 30,
-    total_outside_area: 10,
-    total_missing: 10,
     total_offline: 50,
+    total_absent: 40,
+    total_outside_area: 10,
     total_online: 100,
     users: [
       {
@@ -525,17 +522,12 @@ describe('MonitoringController', () => {
       const result = await controller.getLiveUsers({}, mockSuperadmin);
 
       expect(result.total_active).toBeDefined();
-      expect(result.total_inactive).toBeDefined();
-      expect(result.total_outside_area).toBeDefined();
-      expect(result.total_missing).toBeDefined();
       expect(result.total_offline).toBeDefined();
-      expect(
-        result.total_active +
-          result.total_inactive +
-          result.total_outside_area +
-          result.total_missing +
-          result.total_offline,
-      ).toBe(200);
+      expect(result.total_absent).toBeDefined();
+      expect(result.total_outside_area).toBeDefined();
+      // Sum of clocked-in workers (active + offline), not including absent or outside_area
+      // (outside_area overlaps active+offline, so don't double-count it)
+      expect(result.total_active + result.total_offline).toBe(150);
     });
 
     it('should return user task information', async () => {
