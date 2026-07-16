@@ -8,7 +8,7 @@ import { seedRayons } from '../entities/rayon';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedAreas } from '../entities/area';
-import { seedRegions } from '../entities/region';
+import { seedRegions, seedRegionGeometry } from '../entities/region';
 import { seedSpecialDayOverrides } from '../entities/special-day';
 import { seedStaffingRequirements } from '../entities/staffing-requirement';
 import { seedKecamatans } from '../entities/kecamatan';
@@ -53,6 +53,9 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await seedActivityTypes(ctx);
   await seedAreas(ctx);
   await seedRegions(ctx);
+  // After seedRegions, because it derives each kawasan's shape from the lokasi
+  // that seedRegions has just re-parented under it.
+  await seedRegionGeometry(ctx);
   await seedSpecialDayOverrides(ctx);
   await seedStaffingRequirements(ctx);
   await seedKecamatans(ctx);
