@@ -270,9 +270,9 @@
     "rayonDataUnavailable": "District data not available.",
     "cityDataUnavailable": "City data not available.",
     "activeStatus": "Active",
-    "idleStatus": "Idle",
-    "outsideStatus": "Outside",
-    "missingStatus": "Missing"
+    "offlineStatus": "Offline",
+    "absentStatus": "Absent",
+    "outsideStatus": "Outside"
   },
   "config": {
     "pageTitle": "Monitoring Configuration",
