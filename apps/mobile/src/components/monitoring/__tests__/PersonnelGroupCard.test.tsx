@@ -49,7 +49,7 @@ const group: PersonnelGroup = {
     user('1', 'active'),
     user('2', 'active'),
     user('3', 'active'),
-    user('4', 'inactive'),
+    user('4', 'absent'),
   ],
 };
 

@@ -38,9 +38,8 @@ export function MonitoringSidePanel({
   const statusLabels = getStatusLabels();
   const STATUS_CARDS: Array<{ status: TrackingStatus; label: string }> = [
     { status: 'active', label: statusLabels.active },
-    { status: 'inactive', label: statusLabels.inactive },
-    { status: 'outside_area', label: statusLabels.outside_area },
-    { status: 'missing', label: statusLabels.missing },
+    { status: 'offline', label: statusLabels.offline },
+    { status: 'absent', label: statusLabels.absent },
   ];
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TrackingStatus | null>(null);
@@ -87,13 +86,11 @@ export function MonitoringSidePanel({
     });
   }, [data?.users, debouncedSearch, statusFilter, roleFilters]);
 
-  const totalOnline = (data?.total_active ?? 0) + (data?.total_inactive ?? 0);
+  const totalClocked = (data?.total_active ?? 0) + (data?.total_offline ?? 0);
   const totalAll =
     (data?.total_active ?? 0) +
-    (data?.total_inactive ?? 0) +
-    (data?.total_outside_area ?? 0) +
-    (data?.total_missing ?? 0) +
-    (data?.total_offline ?? 0);
+    (data?.total_offline ?? 0) +
+    (data?.total_absent ?? 0);
 
   const hasActiveFilters = !!search || !!statusFilter || roleFilters.size > 0;
 
@@ -106,7 +103,7 @@ export function MonitoringSidePanel({
             {t('monitoring:sidePanel.title')}
           </span>
           <span className="text-xs text-nb-gray-500">
-            {t('monitoring:sidePanel.summary', { totalOnline, totalAll })}
+            {t('monitoring:sidePanel.summary', { totalOnline: totalClocked, totalAll })}
           </span>
         </div>
 
@@ -115,10 +112,8 @@ export function MonitoringSidePanel({
           {STATUS_CARDS.map(({ status, label }) => {
             const countMap: Record<TrackingStatus, number> = {
               active: data?.total_active ?? 0,
-              inactive: data?.total_inactive ?? 0,
-              outside_area: data?.total_outside_area ?? 0,
-              missing: data?.total_missing ?? 0,
               offline: data?.total_offline ?? 0,
+              absent: data?.total_absent ?? 0,
             };
             return (
               <StatusCard

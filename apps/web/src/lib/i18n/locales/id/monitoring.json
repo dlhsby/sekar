@@ -53,11 +53,7 @@
   },
   "status": {
     "active": "Aktif",
-    "inactive": "Tidak aktif",
-    "outside_area": "Luar",
-    "missing": "Hilang",
     "offline": "Offline",
-    "notDetected": "Tidak terdeteksi",
     "absent": "Tidak hadir",
     "adhoc": "Luar jadwal"
   },
@@ -263,16 +259,6 @@
     "noWorkers": "Tidak ada petugas",
     "resetFilter": "Reset filter",
     "count": "{{count}} petugas ditampilkan"
-  },
-  "statusBar": {
-    "ariaLabel": "Status petugas",
-    "todaysSchedule": "Jadwal hari ini",
-    "scheduled": "dijadwalkan",
-    "present": "Hadir",
-    "absent": "Tidak hadir",
-    "leave": "Cuti",
-    "notScheduled": "Belum dijadwalkan",
-    "outsideAreaLabel": "Di luar area"
   },
   "staffing": {
     "staffingLabel": "Ketersediaan Petugas",

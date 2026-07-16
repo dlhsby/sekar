@@ -28,10 +28,9 @@ import i18n from '../../i18n/config';
 
 interface StatusCounts {
   active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
 }
 
 interface RosterCounts {
@@ -68,10 +67,9 @@ interface MonitoringState {
 
 const initialStatusCounts: StatusCounts = {
   active: 0,
-  inactive: 0,
-  outside_area: 0,
-  missing: 0,
   offline: 0,
+  absent: 0,
+  outside_area: 0,
 };
 
 const initialRosterCounts: RosterCounts = {
@@ -344,10 +342,9 @@ const monitoringSlice = createSlice({
         state.liveUsers = action.payload.users;
         state.statusCounts = {
           active: action.payload.total_active ?? 0,
-          inactive: action.payload.total_inactive ?? 0,
-          outside_area: action.payload.total_outside_area ?? 0,
-          missing: action.payload.total_missing ?? 0,
           offline: action.payload.total_offline ?? 0,
+          absent: action.payload.total_absent ?? 0,
+          outside_area: action.payload.total_outside_area ?? 0,
         };
         // Phase 3: Extract roster counts from the response
         state.rosterCounts = {

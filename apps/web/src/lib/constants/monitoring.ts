@@ -7,50 +7,42 @@
 import i18n from '@/lib/i18n/config';
 import type { TrackingStatus } from '@/lib/api/monitoring';
 
-// Canonical tracking-status colors (specs/ui-ux/tokens.json → status.*), kept in
+// Canonical tracking-status colors (specs/design-system/tokens.json → status.*), kept in
 // sync with mobile's nbColors.status* so map markers read identically on both
 // platforms. Used for Google map marker fills (which can't read CSS vars).
+// Status: active (clocked in + GPS fresh) | offline (clocked in but unreachable)
+// | absent (not clocked in). Axis: is_within_area (inside/outside area bounds).
 export const STATUS_COLORS: Record<TrackingStatus, string> = {
   active: '#15803D',
-  inactive: '#92400E',
-  outside_area: '#9333EA',
-  missing: '#B91C1C',
   offline: '#4B5563',
+  absent: '#B91C1C',
 };
 
 export const STATUS_BG_COLORS: Record<TrackingStatus, string> = {
   active: '#DCFCE7',
-  inactive: '#FEF3C7',
-  outside_area: '#F3E8FF',
-  missing: '#FEE2E2',
   offline: '#F3F4F6',
+  absent: '#FEE2E2',
 };
 
 export const STATUS_TEXT_COLORS: Record<TrackingStatus, string> = {
   active: '#14532D',
-  inactive: '#78350F',
-  outside_area: '#581C87',
-  missing: '#7F1D1D',
   offline: '#374151',
+  absent: '#7F1D1D',
 };
 
 export function getStatusLabels(): Record<TrackingStatus, string> {
   return {
     active: i18n.t('status:tracking.active'),
-    inactive: i18n.t('status:tracking.inactive'),
-    outside_area: i18n.t('status:tracking.outside_area'),
-    missing: i18n.t('status:tracking.missing'),
     offline: i18n.t('status:tracking.offline'),
+    absent: i18n.t('status:tracking.absent'),
   };
 }
 
 // Lucide icon names per status for color-blind accessibility
 export const STATUS_ICON_NAMES: Record<TrackingStatus, string> = {
   active: 'check-circle',
-  inactive: 'pause-circle',
-  outside_area: 'arrow-up-right',
-  missing: 'alert-triangle',
   offline: 'circle-off',
+  absent: 'alert-triangle',
 };
 
 // Role marker icon mapping
@@ -83,39 +75,29 @@ export const STATUS_CARD_STYLES: Record<
     text: 'text-white',
     dot: 'bg-[var(--color-status-active)]',
   },
-  inactive: {
+  // `offline` now means "clocked in but unreachable" — an attention state — so it
+  // takes the amber `idle` token. The grey `offline` token used to mean "not on
+  // shift"; that meaning moved to `absent`, which reuses the red `missing` token.
+  // No `--color-status-absent*` token exists and none was invented here.
+  offline: {
     bg: 'bg-[var(--color-status-idle-bg)] hover:bg-[var(--color-status-idle)]/20',
     activeBg: 'bg-[var(--color-status-idle)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-idle)]',
   },
-  outside_area: {
-    bg: 'bg-[var(--color-status-outside-bg)] hover:bg-[var(--color-status-outside)]/20',
-    activeBg: 'bg-[var(--color-status-outside)]',
-    text: 'text-white',
-    dot: 'bg-[var(--color-status-outside)]',
-  },
-  missing: {
+  absent: {
     bg: 'bg-[var(--color-status-missing-bg)] hover:bg-[var(--color-status-missing)]/20',
     activeBg: 'bg-[var(--color-status-missing)]',
     text: 'text-white',
     dot: 'bg-[var(--color-status-missing)]',
-  },
-  offline: {
-    bg: 'bg-[var(--color-status-offline-bg)] hover:bg-[var(--color-status-offline)]/20',
-    activeBg: 'bg-[var(--color-status-offline)]',
-    text: 'text-white',
-    dot: 'bg-[var(--color-status-offline)]',
   },
 };
 
 // Tailwind class for status dot in user list
 export const STATUS_DOT_CLASSES: Record<TrackingStatus, string> = {
   active: 'bg-[var(--color-status-active)]',
-  inactive: 'bg-[var(--color-status-idle)]',
-  outside_area: 'bg-[var(--color-status-outside)]',
-  missing: 'bg-[var(--color-status-missing)] animate-pulse',
-  offline: 'bg-[var(--color-status-offline)]',
+  offline: 'bg-[var(--color-status-idle)] animate-pulse',
+  absent: 'bg-[var(--color-status-missing)]',
 };
 
 // Tailwind classes for status badges.
@@ -124,14 +106,10 @@ export const STATUS_DOT_CLASSES: Record<TrackingStatus, string> = {
 export const STATUS_BADGE_CLASSES: Record<TrackingStatus, string> = {
   active:
     'bg-[var(--color-status-active-bg)] text-[var(--color-status-active)] border-[var(--color-status-active)]',
-  inactive:
-    'bg-[var(--color-status-idle-bg)] text-[var(--color-status-idle)] border-[var(--color-status-idle)]',
-  outside_area:
-    'bg-[var(--color-status-outside-bg)] text-[var(--color-status-outside)] border-[var(--color-status-outside)]',
-  missing:
-    'bg-[var(--color-status-missing-bg)] text-[var(--color-status-missing)] border-[var(--color-status-missing)]',
   offline:
-    'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]',
+    'bg-[var(--color-status-idle-bg)] text-[var(--color-status-idle)] border-[var(--color-status-idle)]',
+  absent:
+    'bg-[var(--color-status-missing-bg)] text-[var(--color-status-missing)] border-[var(--color-status-missing)]',
 };
 
 // ---------------------------------------------------------------------------
@@ -178,11 +156,9 @@ export function getDayTypeLabels(): Record<string, { label: string; color: strin
 
 // Status severity order (most severe first) for sorting
 export const STATUS_SEVERITY_ORDER: TrackingStatus[] = [
-  'missing',
-  'outside_area',
-  'inactive',
-  'active',
+  'absent',
   'offline',
+  'active',
 ];
 
 // Map zoom breakpoints for marker labels
@@ -194,8 +170,8 @@ export const ZOOM_BREAKPOINTS = {
 
 // Cluster color thresholds
 export const CLUSTER_COLORS = {
-  critical: '#DC2626', // Has missing users
-  warning: '#D97706', // Has outside_area users
-  normal: '#15803D', // All active/inactive
-  neutral: '#6B7280', // All offline
+  critical: '#DC2626', // Has absent users (most severe)
+  warning: '#4B5563', // Has offline users
+  normal: '#15803D', // All active
+  neutral: '#6B7280', // Edge case
 } as const;

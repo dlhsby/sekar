@@ -27,9 +27,9 @@ interface RoleRowProps {
 
 function RoleRow({ role }: RoleRowProps) {
   const { t } = useTranslation(['monitoring']);
-  const present = role.active + role.idle + role.outside_area;
+  const clocked = role.active + role.offline;
   const required = role.total_required > 0 ? role.total_required : role.total_assigned;
-  const isFullyStaffed = present >= required;
+  const isFullyStaffed = clocked >= required;
   const roleLabel = ROLE_LABELS[role.role as UserRole] ?? role.role;
 
   return (
@@ -39,29 +39,29 @@ function RoleRow({ role }: RoleRowProps) {
         <div
           className={cn(
             'h-full rounded-full transition-all duration-300',
-            isFullyStaffed ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-idle)]'
+            isFullyStaffed ? 'bg-[var(--color-status-active)]' : 'bg-[var(--color-status-offline)]'
           )}
-          style={{ width: `${required > 0 ? Math.min((present / required) * 100, 100) : 0}%` }}
+          style={{ width: `${required > 0 ? Math.min((clocked / required) * 100, 100) : 0}%` }}
         />
       </div>
       <span className="w-10 text-right font-mono text-nb-gray-500 tabular-nums">
-        {present}/{required}
+        {clocked}/{required}
       </span>
       <div className="flex gap-1 text-[10px] text-nb-gray-400">
         <span title={t('monitoring:staffing.activeStatus')} className="text-[var(--color-status-active)]">
           {role.active}
         </span>
         <span>/</span>
-        <span title={t('monitoring:staffing.idleStatus')} className="text-[var(--color-status-idle)]">
-          {role.idle}
+        <span title={t('monitoring:staffing.offlineStatus')} className="text-[var(--color-status-offline)]">
+          {role.offline}
+        </span>
+        <span>/</span>
+        <span title={t('monitoring:staffing.absentStatus')} className="text-[var(--color-status-missing)]">
+          {role.absent}
         </span>
         <span>/</span>
         <span title={t('monitoring:staffing.outsideStatus')} className="text-[var(--color-status-outside)]">
           {role.outside_area}
-        </span>
-        <span>/</span>
-        <span title={t('monitoring:staffing.missingStatus')} className="text-[var(--color-status-missing)]">
-          {role.missing}
         </span>
       </div>
     </div>
@@ -102,12 +102,12 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
   const areaItem = data?.items?.find((item) => item.id === areaId);
   if (!areaItem) return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.dataUnavailable')}</p>;
 
-  const totalPresent = areaItem.total_active + areaItem.total_idle + areaItem.total_outside_area;
-  const totalAll = totalPresent + areaItem.total_missing + areaItem.total_offline;
+  const totalClocked = areaItem.total_active + areaItem.total_offline;
+  const totalAll = areaItem.total_active + areaItem.total_offline + areaItem.total_absent;
   const shortage = areaItem.roles.reduce((acc, r) => {
-    const present = r.active + r.idle + r.outside_area;
+    const clocked = r.active + r.offline;
     const required = r.total_required > 0 ? r.total_required : r.total_assigned;
-    return acc + Math.max(0, required - present);
+    return acc + Math.max(0, required - clocked);
   }, 0);
 
   return (
@@ -116,16 +116,16 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
       <div>
         <div className="flex items-center justify-between text-xs mb-1">
           <span className="font-semibold text-nb-black">
-            {totalPresent} / {totalAll} {t('monitoring:staffing.presentLabel')}
+            {totalClocked} / {totalAll} {t('monitoring:staffing.presentLabel')}
           </span>
           <span className="text-nb-gray-500">
-            {totalAll > 0 ? Math.round((totalPresent / totalAll) * 100) : 0}%
+            {totalAll > 0 ? Math.round((totalClocked / totalAll) * 100) : 0}%
           </span>
         </div>
         <div className="h-2 bg-nb-gray-200 border border-nb-black rounded-full overflow-hidden">
           <div
             className="h-full bg-[var(--color-status-active)] transition-all duration-300"
-            style={{ width: `${totalAll > 0 ? (totalPresent / totalAll) * 100 : 0}%` }}
+            style={{ width: `${totalAll > 0 ? (totalClocked / totalAll) * 100 : 0}%` }}
           />
         </div>
       </div>

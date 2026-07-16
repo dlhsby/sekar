@@ -16,18 +16,14 @@ import type { UserRole } from '@/types/models';
 
 const STATUS_VAR: Record<TrackingStatus, string> = {
   active: 'var(--color-status-active)',
-  inactive: 'var(--color-status-idle)',
-  outside_area: 'var(--color-status-outside)',
-  missing: 'var(--color-status-missing)',
-  offline: 'var(--color-status-offline)',
+  offline: 'var(--color-status-idle)',
+  absent: 'var(--color-status-missing)',
 };
 
 const STATUS_ORDER: TrackingStatus[] = [
   'active',
-  'inactive',
-  'outside_area',
-  'missing',
   'offline',
+  'absent',
 ];
 
 export interface MonitoringFilterState {

@@ -80,34 +80,34 @@ const mockLiveUser: LiveUser = {
   current_task_title: null,
 };
 
-const mockLiveUserInactive: LiveUser = {
+const mockLiveUserOffline: LiveUser = {
   ...mockLiveUser,
   id: 'user-456',
   full_name: 'Budi Linmas',
   role: 'linmas',
-  status: 'inactive',
+  status: 'offline',
 };
 
-const mockLiveUserOutsideArea: LiveUser = {
+const mockLiveUserOutsideAreaActive: LiveUser = {
   ...mockLiveUser,
   id: 'user-789',
   full_name: 'Citra Korlap',
   role: 'korlap',
-  status: 'outside_area',
+  status: 'active',
   is_within_area: false,
 };
 
-const mockLiveUserMissing: LiveUser = {
+const mockLiveUserAbsent: LiveUser = {
   ...mockLiveUser,
-  id: 'user-missing',
+  id: 'user-absent',
   full_name: 'Dodi Satgas',
   role: 'satgas',
-  status: 'missing',
+  status: 'absent',
 };
 
-const mockLiveUserOffline: LiveUser = {
+const mockLiveUserOffline2: LiveUser = {
   ...mockLiveUser,
-  id: 'user-offline',
+  id: 'user-offline-2',
   full_name: 'Eko Satgas',
   role: 'satgas',
   status: 'offline',
@@ -184,19 +184,17 @@ const mockStaffingItem: StaffingSummaryItem = {
     {
       role: 'satgas',
       active: 3,
-      idle: 1,
-      outside_area: 0,
-      missing: 0,
       offline: 1,
+      absent: 1,
+      outside_area: 0,
       total_assigned: 5,
       total_required: 6,
     },
   ],
   total_active: 3,
-  total_idle: 1,
-  total_outside_area: 0,
-  total_missing: 0,
   total_offline: 1,
+  total_absent: 1,
+  total_outside_area: 0,
   is_fully_staffed: false,
 };
 
@@ -218,10 +216,9 @@ const initialState = {
   currentDayTypeLabel: null,
   statusCounts: {
     active: 0,
-    inactive: 0,
-    outside_area: 0,
-    missing: 0,
     offline: 0,
+    absent: 0,
+    outside_area: 0,
   },
   rosterCounts: {
     expected_count: 0,
@@ -292,10 +289,9 @@ describe('monitoringSlice', () => {
       );
       expect(state.statusCounts).toEqual({
         active: 1,
-        inactive: 0,
-        outside_area: 0,
-        missing: 0,
         offline: 0,
+        absent: 0,
+        outside_area: 0,
       });
     });
 
@@ -303,18 +299,17 @@ describe('monitoringSlice', () => {
       const users: LiveUser[] = [
         mockLiveUser,
         { ...mockLiveUser, id: 'u2', status: 'active' },
-        mockLiveUserInactive,
-        mockLiveUserOutsideArea,
-        mockLiveUserMissing,
-        mockLiveUserOffline,
+        mockLiveUserOffline2,
+        mockLiveUserOutsideAreaActive,
+        mockLiveUserAbsent,
+        mockLiveUserOffline2,
       ];
       const state = monitoringReducer(initialState, setLiveUsers(users));
       expect(state.statusCounts).toEqual({
-        active: 2,
-        inactive: 1,
-        outside_area: 1,
-        missing: 1,
-        offline: 1,
+        active: 3,
+        offline: 2,
+        absent: 1,
+        outside_area: 0,
       });
     });
 
@@ -322,10 +317,9 @@ describe('monitoringSlice', () => {
       const state = monitoringReducer(initialState, setLiveUsers([]));
       expect(state.statusCounts).toEqual({
         active: 0,
-        inactive: 0,
-        outside_area: 0,
-        missing: 0,
         offline: 0,
+        absent: 0,
+        outside_area: 0,
       });
     });
 
@@ -341,8 +335,8 @@ describe('monitoringSlice', () => {
       );
       // 'unknown_status' is not a key in StatusCounts — count stays at 0 for all except active
       expect(state.statusCounts.active).toBe(1);
-      expect(state.statusCounts.inactive).toBe(0);
       expect(state.statusCounts.offline).toBe(0);
+      expect(state.statusCounts.absent).toBe(0);
     });
   });
 
@@ -352,40 +346,40 @@ describe('monitoringSlice', () => {
     it('should update the matching user in liveUsers', () => {
       const stateWithUsers = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
       };
       const state = monitoringReducer(
         stateWithUsers,
-        updateLiveUser({ id: 'user-123', status: 'inactive' }),
+        updateLiveUser({ id: 'user-123', status: 'offline' }),
       );
-      expect(state.liveUsers[0].status).toBe('inactive');
+      expect(state.liveUsers[0].status).toBe('offline');
     });
 
     it('should not modify other users', () => {
       const stateWithUsers = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
       };
       const state = monitoringReducer(
         stateWithUsers,
         updateLiveUser({ id: 'user-123', battery_level: 50 }),
       );
-      expect(state.liveUsers[1]).toEqual(mockLiveUserInactive);
+      expect(state.liveUsers[1]).toEqual(mockLiveUserOffline);
     });
 
     it('should recompute statusCounts after update', () => {
       const stateWithUsers = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
-        statusCounts: { active: 1, inactive: 1, outside_area: 0, missing: 0, offline: 0 },
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
+        statusCounts: { active: 1, offline: 1, absent: 0, outside_area: 0 },
       };
       const state = monitoringReducer(
         stateWithUsers,
         updateLiveUser({ id: 'user-123', status: 'offline' }),
       );
       expect(state.statusCounts.active).toBe(0);
-      expect(state.statusCounts.offline).toBe(1);
-      expect(state.statusCounts.inactive).toBe(1);
+      expect(state.statusCounts.offline).toBe(2);
+      expect(state.statusCounts.absent).toBe(0);
     });
 
     it('should update selectedUser when ids match', () => {
@@ -396,16 +390,16 @@ describe('monitoringSlice', () => {
       };
       const state = monitoringReducer(
         stateWithSelected,
-        updateLiveUser({ id: 'user-123', battery_level: 20, status: 'inactive' }),
+        updateLiveUser({ id: 'user-123', battery_level: 20, status: 'absent' }),
       );
       expect(state.selectedUser?.battery_level).toBe(20);
-      expect(state.selectedUser?.status).toBe('inactive');
+      expect(state.selectedUser?.status).toBe('absent');
     });
 
     it('should not change selectedUser when ids do not match', () => {
       const stateWithSelected = {
         ...initialState,
-        liveUsers: [mockLiveUser, mockLiveUserInactive],
+        liveUsers: [mockLiveUser, mockLiveUserOffline],
         selectedUser: mockLiveUser,
       };
       const state = monitoringReducer(
@@ -423,7 +417,7 @@ describe('monitoringSlice', () => {
       };
       const state = monitoringReducer(
         stateWithUsers,
-        updateLiveUser({ id: 'user-123', status: 'inactive' }),
+        updateLiveUser({ id: 'user-123', status: 'absent' }),
       );
       expect(state.selectedUser).toBeNull();
     });
@@ -610,7 +604,7 @@ describe('monitoringSlice', () => {
 
   describe('setStatusCounts', () => {
     it('should set status counts directly', () => {
-      const counts = { active: 5, inactive: 2, outside_area: 1, missing: 0, offline: 3 };
+      const counts = { active: 5, offline: 3, absent: 2, outside_area: 1 };
       const state = monitoringReducer(initialState, setStatusCounts(counts));
       expect(state.statusCounts).toEqual(counts);
     });
@@ -666,12 +660,11 @@ describe('monitoringSlice', () => {
 
     it('should populate liveUsers and statusCounts from API response on fulfilled', () => {
       const apiPayload = {
-        users: [mockLiveUser, mockLiveUserInactive],
+        users: [mockLiveUser, mockLiveUserOffline],
         total_active: 1,
-        total_inactive: 1,
-        total_outside_area: 0,
-        total_missing: 0,
         total_offline: 0,
+        total_absent: 1,
+        total_outside_area: 0,
         total_online: 1,
         generated_at: '2026-02-15T08:00:00Z',
       };
@@ -680,13 +673,12 @@ describe('monitoringSlice', () => {
         fetchLiveUsers.fulfilled(apiPayload, 'req-id', undefined),
       );
       expect(state.isLoading).toBe(false);
-      expect(state.liveUsers).toEqual([mockLiveUser, mockLiveUserInactive]);
+      expect(state.liveUsers).toEqual([mockLiveUser, mockLiveUserOffline]);
       expect(state.statusCounts).toEqual({
         active: 1,
-        inactive: 1,
-        outside_area: 0,
-        missing: 0,
         offline: 0,
+        absent: 1,
+        outside_area: 0,
       });
     });
 
@@ -719,10 +711,9 @@ describe('monitoringSlice', () => {
         data: {
           users: [],
           total_active: 0,
-          total_inactive: 0,
-          total_outside_area: 0,
-          total_missing: 0,
           total_offline: 0,
+          total_absent: 0,
+          total_outside_area: 0,
           total_online: 0,
           generated_at: '2026-02-15T08:00:00Z',
         },

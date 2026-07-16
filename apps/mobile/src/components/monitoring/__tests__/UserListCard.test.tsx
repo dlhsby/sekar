@@ -114,7 +114,7 @@ describe('UserListCard', () => {
 
     it('should render a status dot with the correct color for missing status', () => {
       // Arrange — missing status color is '#DC2626'
-      const user = createMockUser({ status: 'missing' });
+      const user = createMockUser({ status: 'absent' });
 
       // Act
       const { getByTestId } = render(
@@ -132,7 +132,7 @@ describe('UserListCard', () => {
       // CP6: the dot now reflects the activity axis. outside_area = fresh fix
       // outside the area → activity 'aktif' → statusActive green (#15803D).
       // (The "outside" location is shown via the marker ring, not this dot.)
-      const user = createMockUser({ status: 'outside_area' });
+      const user = createMockUser({ status: 'absent' });
 
       const { getByTestId } = render(
         <UserListCard user={user} onPress={mockOnPress} />

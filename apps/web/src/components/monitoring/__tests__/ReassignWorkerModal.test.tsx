@@ -141,15 +141,14 @@ const MOCK_WORKER_2: LiveUser = {
   id: 'user-2',
   full_name: 'Siti Rahayu',
   role: 'korlap',
-  status: 'inactive',
+  status: 'offline',
 };
 
 const MOCK_LIVE_USERS_RESPONSE: LiveUsersResponse = {
   total_active: 1,
-  total_inactive: 1,
+  total_offline: 1,
+  total_absent: 0,
   total_outside_area: 0,
-  total_missing: 0,
-  total_offline: 0,
   users: [MOCK_WORKER_1, MOCK_WORKER_2],
   generated_at: new Date().toISOString(),
 };

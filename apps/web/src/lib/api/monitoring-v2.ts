@@ -43,10 +43,9 @@ export interface MonitoringSnapshotData {
   workers: SnapshotWorker[];
   area_summaries: SnapshotAreaSummary[];
   total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   // Roster-derived "expected vs actual" for today (ADR-013) — optional; 0 until
   // the daily roster is generated.
   expected_count?: number;
@@ -68,10 +67,9 @@ export interface MonitoringSnapshotResponse {
 
 export interface AggregateStatusCounts {
   active: number;
-  inactive: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
 }
 
 /** Roster attendance trio for a node (or the whole scope), for today. */

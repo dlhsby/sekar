@@ -161,10 +161,10 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
   const total = liveUsers.length;
   const active = statusCounts.active;
 
-  // Derived alerts: out-of-area + missing personnel (no SLA feed on mobile).
+  // Derived alerts: out-of-area + absent personnel (no SLA feed on mobile).
   const alerts = useMemo<TeamAlert[]>(() => {
     const out = liveUsers
-      .filter((u) => u.status === 'outside_area' || u.outside_boundary)
+      .filter((u) => u.outside_boundary)
       .map((u) => ({
         id: `out-${u.id}`,
         tone: 'bad' as StatusTone,
@@ -173,23 +173,23 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
         meta: formatRelativeTime(u.last_update),
         sub: u.area_name || undefined,
       }));
-    const missing = liveUsers
-      .filter((u) => u.status === 'missing')
+    const absent = liveUsers
+      .filter((u) => u.status === 'absent')
       .map((u) => ({
-        id: `miss-${u.id}`,
+        id: `abs-${u.id}`,
         tone: 'warn' as StatusTone,
         pill: t('home:coordinator.alerts.absent'),
         title: t('home:coordinator.alerts.absentTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
         sub: u.area_name || undefined,
       }));
-    return [...out, ...missing];
+    return [...out, ...absent];
   }, [liveUsers, t]);
 
   const outsideNames = useMemo(
     () =>
       liveUsers
-        .filter((u) => u.status === 'outside_area' || u.outside_boundary)
+        .filter((u) => u.outside_boundary)
         .map((u) => u.full_name.split(/\s+/)[0])
         .slice(0, 2)
         .join(' · '),
@@ -414,7 +414,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
             />
           </View>
           <View style={styles.tilesRow}>
-            <HomeStatTile label={t('home:coordinator.kpi.absent')} value={statusCounts.missing} variant="warn" testID="kpi-missing" />
+            <HomeStatTile label={t('home:coordinator.kpi.absent')} value={statusCounts.absent} variant="warn" testID="kpi-absent" />
             <HomeStatTile label={t('home:coordinator.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="kpi-offline" />
           </View>
 

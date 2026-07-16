@@ -55,7 +55,7 @@ const makeWorker = (overrides: Partial<LiveUser> = {}): LiveUser => ({
 });
 
 const workerA = makeWorker({ id: 'worker-A', status: 'active', battery_level: 90 });
-const workerB = makeWorker({ id: 'worker-B', status: 'inactive', battery_level: 50 });
+const workerB = makeWorker({ id: 'worker-B', status: 'absent', battery_level: 50 });
 
 const initialSnapshot: MonitoringV2Snapshot = {
   scope: 'city',
@@ -134,11 +134,11 @@ describe('monitoringV2Slice', () => {
       const state = stateWithWorkers();
       const patched = monitoringV2Reducer(
         state,
-        applyPatch({ id: 'worker-A', battery_level: 20, status: 'missing' }),
+        applyPatch({ id: 'worker-A', battery_level: 20, status: 'absent' }),
       );
       const workerAUpdated = patched.snapshot.workers.find(w => w.id === 'worker-A');
       expect(workerAUpdated?.battery_level).toBe(20);
-      expect(workerAUpdated?.status).toBe('missing');
+      expect(workerAUpdated?.status).toBe('absent');
     });
 
     it('does not mutate other workers when patching one', () => {
@@ -149,7 +149,7 @@ describe('monitoringV2Slice', () => {
       );
       const workerBUnchanged = patched.snapshot.workers.find(w => w.id === 'worker-B');
       expect(workerBUnchanged?.battery_level).toBe(50);
-      expect(workerBUnchanged?.status).toBe('inactive');
+      expect(workerBUnchanged?.status).toBe('absent');
     });
 
     it('preserves array length when patching', () => {

@@ -85,9 +85,8 @@ describe('UserListItem', () => {
   describe('Status dot colors', () => {
     it.each([
       ['active', 'bg-[var(--color-status-active)]'],
-      ['inactive', 'bg-[var(--color-status-idle)]'],
-      ['outside_area', 'bg-[var(--color-status-outside)]'],
-      ['offline', 'bg-[var(--color-status-offline)]'],
+      ['offline', 'bg-[var(--color-status-idle)]'],
+      ['absent', 'bg-[var(--color-status-missing)]'],
     ] as const)(
       'should render status dot with correct color class for status "%s"',
       (status, expectedClass) => {
@@ -99,12 +98,12 @@ describe('UserListItem', () => {
       }
     );
 
-    it('should add animate-pulse class to missing status dot', () => {
+    it('should add animate-pulse class to offline status dot', () => {
       const { container } = render(
-        <UserListItem {...defaultProps} user={{ ...BASE_USER, status: 'missing' }} />
+        <UserListItem {...defaultProps} user={{ ...BASE_USER, status: 'offline' }} />
       );
       const dot = container.querySelector('.rounded-full.flex-shrink-0');
-      expect(dot).toHaveClass('bg-[var(--color-status-missing)]', 'animate-pulse');
+      expect(dot).toHaveClass('bg-[var(--color-status-idle)]', 'animate-pulse');
     });
   });
 

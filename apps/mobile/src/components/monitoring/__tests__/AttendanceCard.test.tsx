@@ -29,7 +29,7 @@ describe('AttendanceCard', () => {
     const { getByText } = render(
       <AttendanceCard workerName="Jane Smith" status="not_clocked_in" areaName="Taman Harmoni" />,
     );
-    expect(getByText('Tidak aktif')).toBeTruthy();
+    expect(getByText('Tidak Hadir')).toBeTruthy();
     expect(getByText('Belum clock in')).toBeTruthy();
   });
 

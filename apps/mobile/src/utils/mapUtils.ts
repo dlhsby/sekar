@@ -21,30 +21,27 @@ export function getStatusFromUser(user: LiveUser): TrackingStatus {
 }
 
 /**
- * Get hex color for a tracking status.
+ * Get hex color for a tracking status (three-state model).
  */
 export function getStatusColor(status: TrackingStatus): string {
   const colors: Record<TrackingStatus, string> = {
     active: nbColors.statusActive,
-    inactive: nbColors.statusIdle,
-    outside_area: nbColors.statusOutside,
-    missing: nbColors.statusMissing,
     offline: nbColors.statusOffline,
+    absent: nbColors.statusMissing,
   };
   return colors[status] ?? nbColors.statusOffline;
 }
 
 /**
- * Get hex color for the activity axis (CP6). Reuses the status tokens:
- * aktif→green, idle→amber, missing→red, offline→gray. Location (luar_area) is
+ * Get hex color for the activity axis (CP6, three-state presence model).
+ * aktif→green, offline→gray, absent→red. Location (luar_area) is
  * shown as a ring on the marker, not via this fill color.
  */
 export function getActivityColor(activity: PresenceActivity): string {
   const colors: Record<PresenceActivity, string> = {
     aktif: nbColors.statusActive,
-    idle: nbColors.statusIdle,
-    missing: nbColors.statusMissing,
     offline: nbColors.statusOffline,
+    absent: nbColors.statusMissing,
   };
   return colors[activity] ?? nbColors.statusOffline;
 }

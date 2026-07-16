@@ -95,16 +95,15 @@ describe('ExecHomeScreen', () => {
     (monitoringApi.getLiveUsers as jest.Mock).mockResolvedValue({
       data: {
         total_active: 2,
-        total_inactive: 0,
-        total_outside_area: 1,
-        total_missing: 0,
         total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 1,
         total_online: 2,
         generated_at: new Date().toISOString(),
         users: [
           liveUser({ id: 'u1', status: 'active', rayon_id: 'r1', rayon_name: 'Rayon Pusat' }),
           liveUser({ id: 'u2', status: 'active', rayon_id: 'r1', rayon_name: 'Rayon Pusat' }),
-          liveUser({ id: 'u3', status: 'outside_area', rayon_id: 'r2', rayon_name: 'Rayon Timur', outside_boundary: true }),
+          liveUser({ id: 'u3', status: 'absent', rayon_id: 'r2', rayon_name: 'Rayon Timur', outside_boundary: true }),
         ],
       },
     });
@@ -127,7 +126,7 @@ describe('ExecHomeScreen', () => {
     await waitFor(() => {
       expect(getByTestId('city-active')).toBeTruthy();
       expect(getByTestId('city-outside')).toBeTruthy();
-      expect(getByTestId('city-missing')).toBeTruthy();
+      expect(getByTestId('city-absent')).toBeTruthy();
       expect(getByTestId('city-offline')).toBeTruthy();
     });
   });

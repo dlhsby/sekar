@@ -65,9 +65,10 @@
   },
   "tracking": {
     "active": "Active",
-    "inactive": "Idle",
+    "offline": "Offline",
+    "absent": "Absent",
     "outside_area": "Outside Area",
-    "missing": "Not Detected",
-    "offline": "Offline"
+    "inside_area": "Inside Area",
+    "unknown_area": "Location Unknown"
   }
 }

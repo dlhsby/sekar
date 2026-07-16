@@ -9,7 +9,7 @@ import type { UserRole } from '@/types/models';
 // Status
 // ---------------------------------------------------------------------------
 
-export type TrackingStatus = 'active' | 'inactive' | 'outside_area' | 'missing' | 'offline';
+export type TrackingStatus = 'active' | 'offline' | 'absent';
 
 // ---------------------------------------------------------------------------
 // City / Rayon / Area Stats (Phase 2C - unchanged)
@@ -104,10 +104,9 @@ export interface AbsentUser {
 
 export interface LiveUsersResponse {
   total_active: number;
-  total_inactive: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   users: LiveUser[];
   // Roster-derived "expected vs actual" for today (optional — present once the
   // daily roster is generated; defaults to 0 otherwise).
@@ -214,10 +213,9 @@ export interface LocationHistory {
 export interface StaffingRoleBreakdown {
   role: string;
   active: number;
-  idle: number;
-  outside_area: number;
-  missing: number;
   offline: number;
+  absent: number;
+  outside_area: number;
   total_assigned: number;
   total_required: number;
 }
@@ -228,10 +226,9 @@ export interface StaffingSummaryItem {
   type: 'rayon' | 'area';
   roles: StaffingRoleBreakdown[];
   total_active: number;
-  total_idle: number;
-  total_outside_area: number;
-  total_missing: number;
   total_offline: number;
+  total_absent: number;
+  total_outside_area: number;
   is_fully_staffed: boolean;
 }
 

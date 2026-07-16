@@ -50,10 +50,10 @@ describe('MarkerCalloutCard', () => {
         roleText="Satgas"
         accent={nbColors.primary}
         icon="account"
-        presence={{ activity: 'idle', location: 'luar_area' }}
+        presence={{ activity: 'absent', location: 'luar_area' }}
       />,
     );
-    expect(getByText('Tidak aktif')).toBeTruthy();
+    expect(getByText('Tidak Hadir')).toBeTruthy();
     expect(getByText(/Luar area/)).toBeTruthy();
   });
 
@@ -63,10 +63,10 @@ describe('MarkerCalloutCard', () => {
         title="Budi"
         typeText="Petugas"
         accent={nbColors.primary}
-        presence={{ activity: 'missing', location: 'unknown' }}
+        presence={{ activity: 'absent', location: 'unknown' }}
       />,
     );
-    expect(getByText('Tidak terdeteksi')).toBeTruthy();
+    expect(getByText('Tidak Hadir')).toBeTruthy();
     expect(queryByText(/Dalam area|Luar area/)).toBeNull();
   });
 });

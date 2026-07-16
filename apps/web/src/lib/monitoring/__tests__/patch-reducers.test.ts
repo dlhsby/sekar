@@ -38,30 +38,55 @@ describe('patch-reducers', () => {
     const totals = recomputeTotals([
       worker({ user_id: 'a', status: 'active' }),
       worker({ user_id: 'b', status: 'active' }),
-      worker({ user_id: 'c', status: 'missing' }),
+      worker({ user_id: 'c', status: 'offline' }),
     ]);
     expect(totals.total_active).toBe(2);
-    expect(totals.total_missing).toBe(1);
-    expect(totals.total_offline).toBe(0);
+    expect(totals.total_offline).toBe(1);
+    expect(totals.total_absent).toBe(0);
+  });
+
+  it('recomputeTotals counts outside_area from the is_within_area AXIS, overlapping the statuses', () => {
+    const totals = recomputeTotals([
+      worker({ user_id: 'a', status: 'active', is_within_area: true }),
+      worker({ user_id: 'b', status: 'active', is_within_area: false }),
+      worker({ user_id: 'c', status: 'offline', is_within_area: false }),
+    ]);
+
+    // outside_area stopped being a status value, so reading it off the status
+    // column leaves it 0 forever — invisible to tsc and to any test that only
+    // asserts the three statuses. It OVERLAPS them: 'b' is counted as active AND
+    // as outside, so the four fields deliberately do not sum to 3.
+    expect(totals.total_active).toBe(2);
+    expect(totals.total_offline).toBe(1);
+    expect(totals.total_outside_area).toBe(2);
+  });
+
+  it('recomputeTotals never counts an ABSENT worker as outside their area', () => {
+    // An absent worker's is_within_area is a leftover from whenever they last
+    // reported; counting it would report someone at home as "outside their area".
+    const totals = recomputeTotals([worker({ user_id: 'a', status: 'absent', is_within_area: false })]);
+
+    expect(totals.total_absent).toBe(1);
+    expect(totals.total_outside_area).toBe(0);
   });
 
   it('updates an existing worker in place without mutating input', () => {
     const data = snapshot([worker({ user_id: 'u1', status: 'active' })]);
-    const next = applyWorkerPatch(data, { user_id: 'u1', status: 'missing', lat: -7.3, lng: 112.8 });
+    const next = applyWorkerPatch(data, { user_id: 'u1', status: 'offline', lat: -7.3, lng: 112.8 });
 
     expect(next).not.toBe(data);
     expect(data.workers[0].status).toBe('active'); // original untouched
-    expect(next.workers[0].status).toBe('missing');
+    expect(next.workers[0].status).toBe('offline');
     expect(next.workers[0].lat).toBe(-7.3);
     expect(next.total_active).toBe(0);
-    expect(next.total_missing).toBe(1);
+    expect(next.total_offline).toBe(1);
   });
 
   it('does not overwrite existing fields with undefined', () => {
     const data = snapshot([worker({ user_id: 'u1', area_name: 'Area 1' })]);
-    const next = applyWorkerPatch(data, { user_id: 'u1', status: 'inactive' });
+    const next = applyWorkerPatch(data, { user_id: 'u1', status: 'offline' });
     expect(next.workers[0].area_name).toBe('Area 1'); // preserved
-    expect(next.workers[0].status).toBe('inactive');
+    expect(next.workers[0].status).toBe('offline');
   });
 
   it('inserts a new worker when the patch carries coordinates', () => {

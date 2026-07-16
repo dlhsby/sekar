@@ -65,9 +65,10 @@
   },
   "tracking": {
     "active": "Aktif",
-    "inactive": "Idle",
+    "offline": "Offline",
+    "absent": "Tidak Hadir",
     "outside_area": "Di Luar Area",
-    "missing": "Tidak Terdeteksi",
-    "offline": "Offline"
+    "inside_area": "Di Dalam Area",
+    "unknown_area": "Lokasi Tidak Diketahui"
   }
 }

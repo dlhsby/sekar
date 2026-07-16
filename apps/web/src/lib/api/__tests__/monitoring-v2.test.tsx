@@ -70,10 +70,9 @@ describe('Monitoring v2 API', () => {
       workers: [mockWorker],
       area_summaries: [mockArea],
       total_active: 1,
-      total_inactive: 0,
-      total_outside_area: 0,
-      total_missing: 0,
       total_offline: 0,
+      total_absent: 0,
+      total_outside_area: 0,
       generated_at: '2026-05-23T08:00:00Z',
     },
   };
@@ -176,15 +175,15 @@ describe('Monitoring v2 API', () => {
       const withCoords: StatusV2Event = {
         user_id: 'u-1',
         prev: 'active',
-        next: 'inactive',
+        next: 'offline',
         lat: -7.29,
         lng: 112.74,
         timestamp: '2026-05-23T08:00:00Z',
       };
       const withoutCoords: StatusV2Event = {
         user_id: 'u-1',
-        prev: 'inactive',
-        next: 'missing',
+        prev: 'offline',
+        next: 'absent',
         timestamp: '2026-05-23T08:05:00Z',
       };
       // Compile-time check; runtime assertion just confirms shape.
