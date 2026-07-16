@@ -13,6 +13,9 @@ export interface StatusThresholds {
   late_grace_seconds: number;
 }
 
+/** A geofence subject tier — the table a boundary polygon is loaded from. */
+export type BoundaryScope = 'location' | 'region' | 'rayon';
+
 export enum DayTypeEnum {
   WEEKDAY = 'WEEKDAY',
   WEEKEND = 'WEEKEND',
@@ -57,13 +60,15 @@ export class MonitoringCacheService {
 
   private thresholdsLoader: (() => Promise<StatusThresholds>) | null = null;
   private geofencingLoader: (() => Promise<GeofencingConfig>) | null = null;
-  private boundaryLoader: ((locationId: string) => Promise<number[][][] | null>) | null = null;
+  private boundaryLoader:
+    | ((scope: BoundaryScope, id: string) => Promise<number[][][] | null>)
+    | null = null;
   private dayTypeLoader: (() => Promise<DayTypeEnum>) | null = null;
 
   setLoaders(loaders: {
     thresholds?: () => Promise<StatusThresholds>;
     geofencing?: () => Promise<GeofencingConfig>;
-    boundary?: (locationId: string) => Promise<number[][][] | null>;
+    boundary?: (scope: BoundaryScope, id: string) => Promise<number[][][] | null>;
     dayType?: () => Promise<DayTypeEnum>;
   }): void {
     if (loaders.thresholds) this.thresholdsLoader = loaders.thresholds;
@@ -110,20 +115,31 @@ export class MonitoringCacheService {
     return DEFAULT_GEOFENCING;
   }
 
+  /** Location boundary (back-compat alias for `getBoundary('location', id)`). */
   async getAreaBoundary(locationId: string): Promise<number[][][] | null> {
+    return this.getBoundary('location', locationId);
+  }
+
+  /**
+   * Boundary polygon coordinates for a geofence subject — a lokasi, a kawasan
+   * (region) or a rayon (ADR-050 / 5.4e). Cached per `scope:id` so region/rayon
+   * ids never collide with location ids in the shared cache.
+   */
+  async getBoundary(scope: BoundaryScope, id: string): Promise<number[][][] | null> {
     const now = Date.now();
-    const cached = this.areaBoundaryCache.get(locationId);
+    const key = `${scope}:${id}`;
+    const cached = this.areaBoundaryCache.get(key);
     if (cached && cached.expiresAt > now) {
       return cached.data;
     }
 
     if (this.boundaryLoader) {
       try {
-        const data = await this.boundaryLoader(locationId);
-        this.areaBoundaryCache.set(locationId, { data, expiresAt: now + this.BOUNDARY_TTL_MS });
+        const data = await this.boundaryLoader(scope, id);
+        this.areaBoundaryCache.set(key, { data, expiresAt: now + this.BOUNDARY_TTL_MS });
         return data;
       } catch (error) {
-        this.logger.warn(`Failed to load boundary for area ${locationId}: ${error.message}`);
+        this.logger.warn(`Failed to load ${scope} boundary for ${id}: ${error.message}`);
       }
     }
 
@@ -143,10 +159,11 @@ export class MonitoringCacheService {
     if (payload?.group === 'monitoring') this.invalidateThresholds();
   }
 
-  invalidateAreaBoundary(locationId?: string): void {
+  invalidateAreaBoundary(locationId?: string, scope: BoundaryScope = 'location'): void {
     if (locationId) {
-      this.areaBoundaryCache.delete(locationId);
-      this.logger.debug(`Invalidated boundary cache for area ${locationId}`);
+      // Keys are `scope:id` (5.4e); default scope keeps the existing lokasi callers working.
+      this.areaBoundaryCache.delete(`${scope}:${locationId}`);
+      this.logger.debug(`Invalidated ${scope} boundary cache for ${locationId}`);
     } else {
       this.areaBoundaryCache.clear();
       this.logger.debug('Invalidated all boundary caches');

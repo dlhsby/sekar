@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { z } from 'zod';
 import { MonitoringConfig } from '../entities/monitoring-config.entity';
-import { MonitoringCacheService } from './monitoring-cache.service';
+import { MonitoringCacheService, type BoundaryScope } from './monitoring-cache.service';
 import { SystemConfigService } from '../../settings/services/system-config.service';
 
 /**
@@ -85,7 +85,7 @@ export class MonitoringConfigService {
             120,
           ),
         }),
-      boundary: (locationId: string) => this.loadAreaBoundary(locationId),
+      boundary: (scope, id) => this.loadBoundary(scope, id),
     });
   }
 
@@ -125,11 +125,16 @@ export class MonitoringConfigService {
     return saved;
   }
 
-  private async loadAreaBoundary(locationId: string): Promise<number[][][] | null> {
-    const area = await this.configRepository.manager.query(
-      'SELECT boundary_polygon FROM locations WHERE id = $1',
-      [locationId],
+  /**
+   * Boundary polygon coordinates for a geofence subject. The table is chosen from
+   * a fixed allowlist keyed by scope (never interpolate a caller string into SQL).
+   */
+  private async loadBoundary(scope: BoundaryScope, id: string): Promise<number[][][] | null> {
+    const table = { location: 'locations', region: 'regions', rayon: 'rayons' }[scope];
+    const rows = await this.configRepository.manager.query(
+      `SELECT boundary_polygon FROM ${table} WHERE id = $1`,
+      [id],
     );
-    return area?.[0]?.boundary_polygon?.coordinates || null;
+    return rows?.[0]?.boundary_polygon?.coordinates || null;
   }
 }
