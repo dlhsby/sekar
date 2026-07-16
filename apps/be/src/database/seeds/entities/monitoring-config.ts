@@ -13,8 +13,6 @@ export async function seedMonitoringConfigs(ctx: SeedContext): Promise<void> {
       key: 'status_thresholds',
       value: JSON.stringify({
         active_max_age_seconds: 300,
-        inactive_threshold_seconds: 900,
-        missing_threshold_seconds: 3600,
         location_ping_interval_seconds: 60,
       }),
       description: 'Status calculation thresholds',

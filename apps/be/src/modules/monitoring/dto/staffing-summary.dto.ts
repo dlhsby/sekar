@@ -28,20 +28,27 @@ export class RoleStaffingDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
 
-  @ApiProperty({ example: 3 })
+  @ApiProperty({ example: 3, description: 'Clocked in, location fresher than the threshold' })
   active: number;
 
-  @ApiProperty({ example: 1 })
-  idle: number;
-
-  @ApiProperty({ example: 0 })
-  outside_area: number;
-
-  @ApiProperty({ example: 0 })
-  missing: number;
-
-  @ApiProperty({ example: 2 })
+  @ApiProperty({
+    example: 1,
+    description: 'Clocked in but unreachable — location older than the threshold, or none at all',
+  })
   offline: number;
+
+  @ApiProperty({
+    example: 2,
+    description: 'Not clocked in. Reads as "tidak hadir" only where a schedule exists for today',
+  })
+  absent: number;
+
+  @ApiProperty({
+    example: 0,
+    description:
+      'Axis, NOT a status: how many of the above are outside their assigned boundary. Overlaps active/offline rather than partitioning them',
+  })
+  outside_area: number;
 
   @ApiProperty({ example: 6 })
   total_assigned: number;
@@ -70,16 +77,14 @@ export class StaffingSummaryItemDto {
   total_active: number;
 
   @ApiProperty({ example: 1 })
-  total_idle: number;
-
-  @ApiProperty({ example: 0 })
-  total_outside_area: number;
-
-  @ApiProperty({ example: 0 })
-  total_missing: number;
+  total_offline: number;
 
   @ApiProperty({ example: 2 })
-  total_offline: number;
+  total_absent: number;
+
+  /** Axis, not a status — see {@link RoleStaffingDto.outside_area}. */
+  @ApiProperty({ example: 0 })
+  total_outside_area: number;
 
   @ApiProperty({ example: true })
   is_fully_staffed: boolean;

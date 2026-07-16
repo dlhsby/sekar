@@ -168,38 +168,38 @@ export class StatusCalculatorService {
     }
   }
 
+  /**
+   * Three states, one threshold (ADR-046 amendment):
+   *   not clocked in            → ABSENT   (*tidak hadir* when a schedule exists)
+   *   clocked in, fresh fix     → ACTIVE
+   *   clocked in, stale/no fix  → OFFLINE
+   *
+   * Inside/outside the area is **not** decided here — `is_within_area` carries it
+   * as an independent axis, so a worker can be ACTIVE and outside. The old
+   * `OUTSIDE_AREA` status conflated the two, which meant a worker outside their
+   * area had no reportable activity state at all.
+   *
+   * Only `active_max_age_seconds` matters now: `idle` folded into OFFLINE, so
+   * everything past the first boundary is offline and the old `inactive`/`missing`
+   * thresholds became unreachable (they are retired from the settings catalog).
+   */
   calculateStatus(
     input: StatusInput,
     thresholds: StatusThresholds,
     now: Date = new Date(),
   ): TrackingStatus {
     if (!input.hasActiveShift) {
-      return TrackingStatus.OFFLINE;
+      return TrackingStatus.ABSENT;
     }
 
     if (!input.lastLocationAt) {
-      return TrackingStatus.MISSING;
+      return TrackingStatus.OFFLINE;
     }
 
     const ageSeconds = (now.getTime() - input.lastLocationAt.getTime()) / 1000;
-
-    if (ageSeconds > thresholds.missing_threshold_seconds) {
-      return TrackingStatus.MISSING;
-    }
-
-    if (ageSeconds > thresholds.inactive_threshold_seconds) {
-      return TrackingStatus.INACTIVE;
-    }
-
-    if (!input.isWithinArea && ageSeconds <= thresholds.active_max_age_seconds) {
-      return TrackingStatus.OUTSIDE_AREA;
-    }
-
-    if (ageSeconds <= thresholds.active_max_age_seconds) {
-      return TrackingStatus.ACTIVE;
-    }
-
-    return TrackingStatus.INACTIVE;
+    return ageSeconds <= thresholds.active_max_age_seconds
+      ? TrackingStatus.ACTIVE
+      : TrackingStatus.OFFLINE;
   }
 
   calculateAxes(
@@ -209,22 +209,19 @@ export class StatusCalculatorService {
   ): { activity: ActivityStatus; location: LocationStatus } {
     let activity: ActivityStatus;
     if (!input.hasActiveShift) {
-      activity = 'offline';
+      activity = 'absent';
     } else if (!input.lastLocationAt) {
-      activity = 'missing';
+      activity = 'offline';
     } else {
       const ageSeconds = (now.getTime() - input.lastLocationAt.getTime()) / 1000;
-      if (ageSeconds > thresholds.missing_threshold_seconds) {
-        activity = 'missing';
-      } else if (ageSeconds > thresholds.active_max_age_seconds) {
-        activity = 'idle';
-      } else {
-        activity = 'aktif';
-      }
+      activity = ageSeconds <= thresholds.active_max_age_seconds ? 'aktif' : 'offline';
     }
 
+    // Location is only knowable while we are hearing from them. An absent worker
+    // never reported; an offline one's last fix is too old to claim they are
+    // still there.
     const location: LocationStatus =
-      activity === 'offline' || activity === 'missing'
+      activity === 'absent' || activity === 'offline'
         ? 'unknown'
         : input.isWithinArea
           ? 'dalam_area'
@@ -264,9 +261,14 @@ export class StatusCalculatorService {
       await this.broadcastStatusChanged(existing, previousStatus, newStatus, now);
       await this.emitStaffingChangedIfNeeded(existing.location_id, previousStatus, newStatus, now);
 
-      // Phase 4-3 (M2): alert korlap + kepala_rayon on transition into MISSING.
-      // Fire-and-forget; do not block the status calculation if dispatch fails.
-      if (newStatus === TrackingStatus.MISSING && previousStatus !== TrackingStatus.MISSING) {
+      // Phase 4-3 (M2): alert korlap + kepala_rayon when a clocked-in worker goes
+      // unreachable. Fire-and-forget; never block the status calculation on dispatch.
+      //
+      // ⚠️ This alert used to fire on MISSING (1 h of silence). MISSING is gone and
+      // OFFLINE fires after `active_max_age_sec` (5 min), so the SAME alert now
+      // triggers 12× sooner — patchy signal in a park will page a korlap. Flagged
+      // for the user: this wants either a dwell timer or retiring the alert.
+      if (newStatus === TrackingStatus.OFFLINE && previousStatus !== TrackingStatus.OFFLINE) {
         void this.notifyMissingWorker(userId, existing.location_id, existing.rayon_id);
       }
 
@@ -571,12 +573,13 @@ export class StatusCalculatorService {
     this.eventsGateway.emitUserLocation(event);
   }
 
+  /**
+   * Whether this status contributes to a place's staffing — i.e. the worker is
+   * clocked in. OFFLINE counts: they are at work, their phone just isn't
+   * reporting. Only ABSENT (never clocked in) does not.
+   */
   private isActiveStatus(status: TrackingStatus): boolean {
-    return (
-      status === TrackingStatus.ACTIVE ||
-      status === TrackingStatus.INACTIVE ||
-      status === TrackingStatus.OUTSIDE_AREA
-    );
+    return status === TrackingStatus.ACTIVE || status === TrackingStatus.OFFLINE;
   }
 
   private async emitStaffingChangedIfNeeded(
@@ -595,7 +598,7 @@ export class StatusCalculatorService {
       .createQueryBuilder('uts')
       .where('uts.location_id = :locationId', { locationId })
       .andWhere('uts.status IN (:...statuses)', {
-        statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
+        statuses: [TrackingStatus.ACTIVE, TrackingStatus.OFFLINE],
       })
       .getCount();
 

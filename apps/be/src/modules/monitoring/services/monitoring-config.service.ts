@@ -13,9 +13,11 @@ import { SystemConfigService } from '../../settings/services/system-config.servi
 const MOVED_TO_SETTINGS = new Set(['status_thresholds', 'geofencing']);
 
 const statusThresholdsSchema = z.object({
+  // The single surviving boundary: past this a clocked-in worker is OFFLINE.
+  // `inactive_threshold_seconds` + `missing_threshold_seconds` were retired with
+  // the 5→3 status collapse — with idle and missing both folding into offline,
+  // nothing could ever read them.
   active_max_age_seconds: z.number().int().min(60).max(600),
-  inactive_threshold_seconds: z.number().int().min(300).max(3600),
-  missing_threshold_seconds: z.number().int().min(1800).max(7200),
   location_ping_interval_seconds: z.number().int().min(30).max(300),
 });
 
@@ -67,14 +69,6 @@ export class MonitoringConfigService {
       thresholds: () =>
         Promise.resolve({
           active_max_age_seconds: this.systemConfig.getNumber('monitoring.active_max_age_sec', 300),
-          inactive_threshold_seconds: this.systemConfig.getNumber(
-            'monitoring.inactive_threshold_sec',
-            900,
-          ),
-          missing_threshold_seconds: this.systemConfig.getNumber(
-            'monitoring.missing_threshold_sec',
-            3600,
-          ),
           location_ping_interval_seconds: this.systemConfig.getNumber(
             'monitoring.location_ping_interval_sec',
             60,

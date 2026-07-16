@@ -9,8 +9,6 @@ interface CacheEntry<T> {
 
 export interface StatusThresholds {
   active_max_age_seconds: number;
-  inactive_threshold_seconds: number;
-  missing_threshold_seconds: number;
   location_ping_interval_seconds: number;
 }
 
@@ -27,8 +25,6 @@ export interface GeofencingConfig {
 
 const DEFAULT_THRESHOLDS: StatusThresholds = {
   active_max_age_seconds: 300,
-  inactive_threshold_seconds: 900,
-  missing_threshold_seconds: 3600,
   location_ping_interval_seconds: 60,
 };
 

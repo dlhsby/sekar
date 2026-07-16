@@ -215,12 +215,13 @@ export class MonitoringStatsService {
     const today = this.getTodayRange();
     const workers = await this.getAreaWorkers(locationId);
 
-    const workersOnline = workers.filter(
-      (w) => w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OUTSIDE_AREA,
-    ).length;
-    const workersOffline = workers.filter(
-      (w) => w.status === TrackingStatus.OFFLINE || w.status === TrackingStatus.MISSING,
-    ).length;
+    // This pair is a DISPLAY breakdown, so it must partition: online = reachable
+    // now, offline = clocked in but unreachable. Note this is a NARROWER "online"
+    // than staffing uses — `countableOnlineByGroup` counts offline workers too,
+    // because a park is no less staffed when a phone loses signal. Same word, two
+    // jobs, deliberately: one answers "can I reach them", the other "did they turn up".
+    const workersOnline = workers.filter((w) => w.status === TrackingStatus.ACTIVE).length;
+    const workersOffline = workers.filter((w) => w.status === TrackingStatus.OFFLINE).length;
 
     const staffRequirements = await this.getAreaStaffRequirements(locationId);
     const isFullyStaffed = staffRequirements.every((r) => r.is_met);
@@ -597,15 +598,18 @@ export class MonitoringStatsService {
       .innerJoin('uts.user', 'user')
       .select(groupCol, 'group_id')
       .addSelect('COUNT(*)', 'total')
+      // `shift_id IS NOT NULL` IS the "clocked in" test, and clocking in is what
+      // staffs a place — so no status filter. Under the three-state model a
+      // clocked-in worker is ACTIVE or OFFLINE; OFFLINE means their phone is
+      // unreachable, not that they went home. ABSENT cannot appear here at all
+      // (it requires no shift).
+      //
+      // This is a deliberate behaviour change: the old model counted `inactive`
+      // but NOT `missing`, which are now the same value. Excluding OFFLINE would
+      // mean a worker's staffing contribution blinks out when their signal drops
+      // — the park is no less staffed because a phone lost GPS.
       .where('uts.shift_id IS NOT NULL')
       .andWhere('user.role IN (:...countedRoles)', { countedRoles: STAFFING_COUNTED_ROLES })
-      .andWhere('uts.status IN (:...onlineStatuses)', {
-        onlineStatuses: [
-          TrackingStatus.ACTIVE,
-          TrackingStatus.INACTIVE,
-          TrackingStatus.OUTSIDE_AREA,
-        ],
-      })
       .groupBy(groupCol);
 
     if (groupBy === 'area') {
@@ -660,8 +664,11 @@ export class MonitoringStatsService {
     rayon_id?: string | null;
   }): AggregateNodeDto {
     const counts = input.counts_by_status ?? this.emptyStatusCounts();
-    const online = counts.active + counts.inactive + counts.outside_area;
-    const worker_count = online + counts.missing + counts.offline;
+    // active + offline = clocked in. `outside_area` is an AXIS overlapping both,
+    // not a fourth bucket, so it must never be summed in here — doing so would
+    // count anyone outside their boundary twice and inflate the bubble.
+    const online = counts.active + counts.offline;
+    const worker_count = online + counts.absent;
     // Understaffing weighs ONLY satgas+linmas against the target (ADR-046).
     // `online` counts every monitorable role, so comparing it against a
     // satgas+linmas requirement let a korlap or kepala_rayon standing in a park
@@ -688,7 +695,7 @@ export class MonitoringStatsService {
   }
 
   private emptyStatusCounts(): AggregateStatusCountsDto {
-    return { active: 0, inactive: 0, outside_area: 0, missing: 0, offline: 0 };
+    return { active: 0, offline: 0, absent: 0, outside_area: 0 };
   }
 
   private emptyRosterCounts(): AggregateRosterCountsDto {
@@ -757,20 +764,21 @@ export class MonitoringStatsService {
       const bucket = map.get(r.group_id) ?? this.emptyPresence();
       const n = parseInt(r.count, 10) || 0;
       const within = r.within === true || r.within === 'true' || r.within === 't';
+      // This breakdown was already status × inside/outside; the collapse just
+      // makes it uniform. `within` now decides dalam/luar for BOTH rows, where
+      // before `aktif.luar` came from the outside_area status and only the
+      // inactive/missing row consulted the flag.
       switch (r.status as TrackingStatus) {
         case TrackingStatus.ACTIVE:
-          bucket.aktif.dalam += n;
+          if (within) bucket.aktif.dalam += n;
+          else bucket.aktif.luar += n;
           break;
-        case TrackingStatus.OUTSIDE_AREA:
-          bucket.aktif.luar += n;
-          break;
-        case TrackingStatus.INACTIVE:
-        case TrackingStatus.MISSING:
+        case TrackingStatus.OFFLINE:
           if (within) bucket.tidak_aktif.dalam += n;
           else bucket.tidak_aktif.luar += n;
           break;
         default:
-          break; // OFFLINE can't have an active shift → skip
+          break; // ABSENT = not clocked in → no place to attribute them to
       }
       map.set(r.group_id, bucket);
     }
@@ -884,10 +892,9 @@ export class MonitoringStatsService {
   private sumStatusCounts(nodes: AggregateNodeDto[]): AggregateStatusCountsDto {
     return nodes.reduce((acc, n) => {
       acc.active += n.counts_by_status.active;
-      acc.inactive += n.counts_by_status.inactive;
-      acc.outside_area += n.counts_by_status.outside_area;
-      acc.missing += n.counts_by_status.missing;
       acc.offline += n.counts_by_status.offline;
+      acc.absent += n.counts_by_status.absent;
+      acc.outside_area += n.counts_by_status.outside_area;
       return acc;
     }, this.emptyStatusCounts());
   }
@@ -1103,10 +1110,9 @@ export class MonitoringStatsService {
     return requirements.map((req) => {
       const statuses = roleStatusMap.get(req.role) || {};
       const activeCount = statuses[TrackingStatus.ACTIVE] || 0;
-      const inactiveCount = statuses[TrackingStatus.INACTIVE] || 0;
-      const outsideAreaCount = statuses[TrackingStatus.OUTSIDE_AREA] || 0;
-      const missingCount = statuses[TrackingStatus.MISSING] || 0;
-      const currentCount = activeCount + inactiveCount + outsideAreaCount;
+      const offlineCount = statuses[TrackingStatus.OFFLINE] || 0;
+      // Staffing counts whoever clocked in — see `countableOnlineByGroup`.
+      const currentCount = activeCount + offlineCount;
       const delta = currentCount - req.required_count;
       return {
         id: req.id,
@@ -1116,9 +1122,7 @@ export class MonitoringStatsService {
         delta,
         is_met: delta >= 0,
         active_count: activeCount,
-        inactive_count: inactiveCount,
-        outside_area_count: outsideAreaCount,
-        missing_count: missingCount,
+        offline_count: offlineCount,
       };
     });
   }
@@ -1160,9 +1164,7 @@ export class MonitoringStatsService {
       .createQueryBuilder('uts')
       .where('uts.location_id IN (:...locationIds)', { locationIds })
       .andWhere('uts.shift_id IS NOT NULL')
-      .andWhere('uts.status IN (:...statuses)', {
-        statuses: [TrackingStatus.ACTIVE, TrackingStatus.INACTIVE, TrackingStatus.OUTSIDE_AREA],
-      })
+      .andWhere('uts.status = :status', { status: TrackingStatus.ACTIVE })
       .getCount();
   }
 
@@ -1172,9 +1174,7 @@ export class MonitoringStatsService {
       .createQueryBuilder('uts')
       .where('uts.location_id IN (:...locationIds)', { locationIds })
       .andWhere('uts.shift_id IS NOT NULL')
-      .andWhere('uts.status IN (:...statuses)', {
-        statuses: [TrackingStatus.MISSING, TrackingStatus.OFFLINE],
-      })
+      .andWhere('uts.status = :status', { status: TrackingStatus.OFFLINE })
       .getCount();
   }
 

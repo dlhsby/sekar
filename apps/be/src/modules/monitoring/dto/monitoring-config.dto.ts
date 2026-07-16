@@ -23,7 +23,7 @@ export class MonitoringConfigResponseDto {
 export class UpdateMonitoringConfigDto {
   @ApiProperty({
     description: 'Configuration value object. Validated by Zod schema per key.',
-    example: { active_max_age_seconds: 300, inactive_threshold_seconds: 900 },
+    example: { active_max_age_seconds: 300, location_ping_interval_seconds: 60 },
   })
   @IsObject()
   value: Record<string, any>;

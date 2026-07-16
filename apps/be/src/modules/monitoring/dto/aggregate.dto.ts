@@ -4,21 +4,31 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
  * Per-status worker counts for an aggregate node (rayon or area).
  * Mirrors the five-status model (ADR-011).
  */
+/**
+ * Per-status headcount for a bubble. Three values (ADR-046 amendment):
+ * `inactive` / `missing` folded into **offline**, and `outside_area` is no longer
+ * a status at all — inside/outside is an independent axis (`outside_area` below
+ * counts it *alongside* active/offline rather than instead of them).
+ *
+ * ⚠️ `offline` changed meaning: it was *not clocked in* (now `absent`), it is now
+ * *clocked in but unreachable*.
+ */
 export class AggregateStatusCountsDto {
-  @ApiProperty({ example: 12 })
+  @ApiProperty({ example: 12, description: 'Clocked in, fix newer than the threshold' })
   active: number;
 
-  @ApiProperty({ example: 3 })
-  inactive: number;
-
-  @ApiProperty({ example: 1 })
-  outside_area: number;
-
-  @ApiProperty({ example: 2 })
-  missing: number;
-
-  @ApiProperty({ example: 4 })
+  @ApiProperty({ example: 4, description: 'Clocked in, no fix or stale beyond the threshold' })
   offline: number;
+
+  @ApiProperty({ example: 2, description: 'Not clocked in (tidak hadir where a schedule exists)' })
+  absent: number;
+
+  @ApiProperty({
+    example: 1,
+    description:
+      'Of the active+offline above, how many are outside their area — an AXIS, not a status',
+  })
+  outside_area: number;
 }
 
 /**

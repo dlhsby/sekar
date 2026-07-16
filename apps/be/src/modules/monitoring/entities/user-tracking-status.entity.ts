@@ -6,15 +6,38 @@ import { ShiftDefinition } from '../../shift-definitions/entities/shift-definiti
 import { Location } from '../../locations/entities/location.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
 
+/**
+ * A monitored worker's state — three values (ADR-046 amendment, 2026-07-16).
+ *
+ * Inside/outside an area is **not** a status: it is an orthogonal axis carried by
+ * `is_within_area` and shown alongside `ACTIVE`/`OFFLINE`. A worker can be active
+ * and outside their area; those are two different facts.
+ *
+ * ⚠️ `OFFLINE` changed meaning. It used to mean *not clocked in* (that is now
+ * `ABSENT`); it means *clocked in but unreachable*. Read older code, data dumps
+ * and issue reports with that in mind — migration `17505000000000` remapped the
+ * rows, but prose predating it uses the old sense.
+ */
 export enum TrackingStatus {
+  /** Clocked in, location fix newer than `monitoring.active_max_age_sec`. */
   ACTIVE = 'active',
-  INACTIVE = 'inactive',
-  OUTSIDE_AREA = 'outside_area',
-  MISSING = 'missing',
+  /** Clocked in, but no fix or one older than the threshold — unreachable. */
   OFFLINE = 'offline',
+  /**
+   * Not clocked in. *Tidak hadir* when a schedule exists — which is the only case
+   * that is rendered. A monitorable-but-unscheduled worker (a korlap on their day
+   * off) also stores `ABSENT` but is never drawn: ADR-046 says "monitorable but
+   * not scheduled" subjects are not rendered by default. Keeping the schedule
+   * check in the renderer rather than the calculator is what lets this stay three
+   * values; if the stored state ever needs to distinguish them, the value is
+   * `off_duty` (*tidak bertugas*) — cf. `schedule-actions.dto.ts`, where `libur`
+   * → off is already "a deliberate day off; not counted as absent/expected".
+   */
+  ABSENT = 'absent',
 }
 
-export type ActivityStatus = 'aktif' | 'idle' | 'missing' | 'offline';
+/** The activity half of the two-axis model (see `calculateAxes`). */
+export type ActivityStatus = 'aktif' | 'offline' | 'absent';
 export type LocationStatus = 'dalam_area' | 'luar_area' | 'unknown';
 
 @Entity('user_tracking_status')

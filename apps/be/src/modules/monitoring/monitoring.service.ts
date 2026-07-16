@@ -75,6 +75,20 @@ export interface SnapshotData {
   generated_at: string;
 }
 
+/**
+ * Per-role tallies for one place. The three statuses partition the workforce;
+ * `outside_area` is an independent axis that overlaps them (see
+ * `getTrackingRoleCounts`), so the four fields do NOT sum to a headcount.
+ */
+type RoleStatusCounts = Record<TrackingStatus, number> & { outside_area: number };
+
+const EMPTY_ROLE_STATUS_COUNTS: Readonly<RoleStatusCounts> = Object.freeze({
+  active: 0,
+  offline: 0,
+  absent: 0,
+  outside_area: 0,
+});
+
 @Injectable()
 export class MonitoringService {
   constructor(
@@ -376,7 +390,11 @@ export class MonitoringService {
       type: 'area',
       roles,
       ...totals,
-      is_fully_staffed: roles.every((r) => r.active + r.idle + r.outside_area >= r.total_required),
+      // active + offline = clocked in, which is what staffs a place; `outside_area`
+      // is deliberately NOT added — it now OVERLAPS both statuses rather than being
+      // a third one, so adding it would count anyone outside their boundary twice
+      // and report a short-staffed park as fully staffed.
+      is_fully_staffed: roles.every((r) => r.active + r.offline >= r.total_required),
     };
   }
 
@@ -406,24 +424,38 @@ export class MonitoringService {
     return map;
   }
 
-  private async getTrackingRoleCounts(
-    locationId: string,
-  ): Promise<Map<string, Record<string, number>>> {
+  private async getTrackingRoleCounts(locationId: string): Promise<Map<string, RoleStatusCounts>> {
     const rows = await this.trackingRepository
       .createQueryBuilder('uts')
       .innerJoin('uts.user', 'user')
       .select('user.role', 'role')
       .addSelect('uts.status', 'status')
+      .addSelect('uts.is_within_area', 'is_within_area')
       .addSelect('COUNT(*)', 'count')
       .where('uts.location_id = :locationId', { locationId })
       .groupBy('user.role')
       .addGroupBy('uts.status')
+      .addGroupBy('uts.is_within_area')
       .getRawMany();
 
-    const map = new Map<string, Record<string, number>>();
+    // Inside/outside is an AXIS now, not a status, so it can no longer come from
+    // the status column — it has to be grouped alongside it. `outside_area`
+    // therefore OVERLAPS active/offline instead of partitioning them: a worker
+    // outside their boundary is counted once under their status and again here.
+    // Summing active+offline+absent+outside_area would double-count.
+    const map = new Map<string, RoleStatusCounts>();
     for (const row of rows) {
-      const existing = map.get(row.role) || {};
-      existing[row.status] = parseInt(row.count);
+      const existing = map.get(row.role) ?? { active: 0, offline: 0, absent: 0, outside_area: 0 };
+      const count = parseInt(row.count, 10) || 0;
+      if (row.status in existing) {
+        existing[row.status as TrackingStatus] += count;
+      }
+      // Only a clocked-in worker has a meaningful location. ABSENT rows carry a
+      // stale `is_within_area` from whenever they last reported, so counting
+      // them here would report people who are at home as "outside their area".
+      if (row.is_within_area === false && row.status !== TrackingStatus.ABSENT) {
+        existing.outside_area += count;
+      }
       map.set(row.role, existing);
     }
     return map;
@@ -443,7 +475,7 @@ export class MonitoringService {
   }
 
   private buildRoleStaffing(
-    roleCounts: Map<string, Record<string, number>>,
+    roleCounts: Map<string, RoleStatusCounts>,
     assignedCounts: Map<string, number>,
     reqMap: Map<string, number>,
     requirementsByDayType: Map<string, DayTypeRequirementsDto>,
@@ -451,14 +483,13 @@ export class MonitoringService {
     const allRoles = new Set([...roleCounts.keys(), ...assignedCounts.keys(), ...reqMap.keys()]);
 
     return Array.from(allRoles).map((role) => {
-      const statuses = roleCounts.get(role) || {};
+      const counts = roleCounts.get(role) ?? EMPTY_ROLE_STATUS_COUNTS;
       return {
         role,
-        active: statuses[TrackingStatus.ACTIVE] || 0,
-        idle: statuses[TrackingStatus.INACTIVE] || 0,
-        outside_area: statuses[TrackingStatus.OUTSIDE_AREA] || 0,
-        missing: statuses[TrackingStatus.MISSING] || 0,
-        offline: statuses[TrackingStatus.OFFLINE] || 0,
+        active: counts.active,
+        offline: counts.offline,
+        absent: counts.absent,
+        outside_area: counts.outside_area,
         total_assigned: assignedCounts.get(role) || 0,
         total_required: reqMap.get(role) || 0,
         requirements_by_day_type: requirementsByDayType.get(role) ?? {
@@ -472,17 +503,15 @@ export class MonitoringService {
 
   private sumRoleTotals(roles: RoleStaffingDto[]): {
     total_active: number;
-    total_idle: number;
-    total_outside_area: number;
-    total_missing: number;
     total_offline: number;
+    total_absent: number;
+    total_outside_area: number;
   } {
     return {
       total_active: roles.reduce((s, r) => s + r.active, 0),
-      total_idle: roles.reduce((s, r) => s + r.idle, 0),
-      total_outside_area: roles.reduce((s, r) => s + r.outside_area, 0),
-      total_missing: roles.reduce((s, r) => s + r.missing, 0),
       total_offline: roles.reduce((s, r) => s + r.offline, 0),
+      total_absent: roles.reduce((s, r) => s + r.absent, 0),
+      total_outside_area: roles.reduce((s, r) => s + r.outside_area, 0),
     };
   }
 }
