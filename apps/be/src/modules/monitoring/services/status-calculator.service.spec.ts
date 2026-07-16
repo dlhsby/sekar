@@ -41,6 +41,14 @@ describe('StatusCalculatorService', () => {
         .fn()
         .mockResolvedValue({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
       getAreaBoundary: jest.fn().mockResolvedValue(null),
+      // 5.4e: geofence is scope-generic. Route 'location' to the existing
+      // getAreaBoundary mock so its per-test overrides still drive lokasi checks;
+      // region/rayon boundaries default to null (fail-open) unless a test sets them.
+      getBoundary: jest.fn((scope: string, id: string) =>
+        scope === 'location'
+          ? (cacheService.getAreaBoundary as jest.Mock)(id)
+          : Promise.resolve(null),
+      ),
     };
 
     eventsGateway = {
@@ -463,6 +471,62 @@ describe('StatusCalculatorService', () => {
         ),
       );
       userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'T', role: 'satgas' });
+      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', rayon_id: 'r1' });
+
+      await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
+
+      expect(trackingRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ is_within_area: true }),
+      );
+      expect(eventsGateway.emitUserLeftArea).not.toHaveBeenCalled();
+    });
+
+    it('a MOBILE crew outside its clock-in lokasi but inside its kawasan stays within-area (5.4e)', async () => {
+      // No lokasi assignment (empty roster + no user_areas); the occurrence is
+      // region-scoped, so the geofence is the KAWASAN polygon, not the lokasi.
+      (service as unknown as { userAreasService: unknown }).userAreasService = undefined;
+      (service as unknown as { dailySchedulesService: unknown }).dailySchedulesService = {
+        getActiveAreasForDay: jest.fn().mockResolvedValue([]),
+        findByUserAndDate: jest.fn().mockResolvedValue({ region_id: 'region-1' }),
+      };
+      trackingRepository.findOne.mockResolvedValue({
+        user_id: 'user-1',
+        shift_id: 'shift-1',
+        location_id: 'area-1',
+        status: TrackingStatus.ACTIVE,
+        is_within_area: true,
+        last_latitude: -7.29,
+        last_longitude: 112.74,
+        last_accuracy_meters: 10,
+        last_battery_level: 85,
+        last_location_at: new Date(),
+        updated_at: new Date(),
+      });
+      // area-1 (clock-in lokasi) excludes the ping; region-1 (kawasan) contains it.
+      cacheService.getBoundary.mockImplementation((scope: string, id: string) =>
+        Promise.resolve(
+          scope === 'region' && id === 'region-1'
+            ? [
+                [
+                  [112.8, -7.4],
+                  [113.0, -7.4],
+                  [113.0, -7.6],
+                  [112.8, -7.6],
+                  [112.8, -7.4],
+                ],
+              ]
+            : [
+                [
+                  [112.73, -7.28],
+                  [112.735, -7.28],
+                  [112.735, -7.285],
+                  [112.73, -7.285],
+                  [112.73, -7.28],
+                ],
+              ],
+        ),
+      );
+      userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'M', role: 'satgas' });
       areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', rayon_id: 'r1' });
 
       await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());

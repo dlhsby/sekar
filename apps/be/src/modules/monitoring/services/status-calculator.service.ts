@@ -7,7 +7,11 @@ import {
   ActivityStatus,
   LocationStatus,
 } from '../entities/user-tracking-status.entity';
-import { MonitoringCacheService, StatusThresholds } from './monitoring-cache.service';
+import {
+  MonitoringCacheService,
+  StatusThresholds,
+  type BoundaryScope,
+} from './monitoring-cache.service';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { EventsGateway } from '../../../gateways/events.gateway';
@@ -666,8 +670,22 @@ export class StatusCalculatorService {
     return { user, area };
   }
 
-  private async checkWithinArea(locationId: string, lat: number, lng: number): Promise<boolean> {
-    const boundary = await this.cacheService.getAreaBoundary(locationId);
+  private checkWithinArea(locationId: string, lat: number, lng: number): Promise<boolean> {
+    return this.checkWithinBoundary('location', locationId, lat, lng);
+  }
+
+  /**
+   * Is a point inside a geofence subject's polygon (lokasi, kawasan or rayon)?
+   * Fails OPEN when the subject has no polygon — an un-mapped area must not mark
+   * everyone in it as outside. The tolerance math is scope-agnostic (5.4e).
+   */
+  private async checkWithinBoundary(
+    scope: BoundaryScope,
+    id: string,
+    lat: number,
+    lng: number,
+  ): Promise<boolean> {
+    const boundary = await this.cacheService.getBoundary(scope, id);
     if (!boundary || boundary.length === 0) {
       return true;
     }
@@ -725,6 +743,38 @@ export class StatusCalculatorService {
         return true;
       }
     }
+
+    // A worker bound to lokasi (roster or user_areas) who is outside every one is
+    // simply outside. Only when there is NO lokasi assignment does the occurrence's
+    // wider scope apply: a MOBILE crew (region occurrence, no lokasi) roams its
+    // KAWASAN, so geofence against the region polygon — "outside area" for a mobile
+    // subject means outside its kawasan (ADR-046, 5.4e). Static workers keep the
+    // lokasi-only rule above; rayon-scoped + supervisor (kepala_rayon/admin_rayon)
+    // rayon-geofencing is a documented follow-up.
+    if (candidates.length > 0) {
+      return false;
+    }
+    const regionId = await this.resolveMobileRegion(userId);
+    if (regionId) {
+      return this.checkWithinBoundary('region', regionId, lat, lng);
+    }
     return false;
+  }
+
+  /**
+   * The kawasan a mobile worker roams today, from their schedule occurrence's
+   * `region_id` — or null when they aren't region-scoped (static / no occurrence).
+   * Today's row is preferred; yesterday's covers a Shift-3 crew still out after
+   * WIB midnight. Only reached when the worker has no lokasi assignment.
+   */
+  private async resolveMobileRegion(userId: string): Promise<string | null> {
+    const svc = this.dailySchedulesService;
+    if (!svc?.findByUserAndDate) return null;
+    const today = TimezoneUtil.jakartaDateString();
+    const yesterday = TimezoneUtil.jakartaDateString(new Date(Date.now() - 24 * 60 * 60 * 1000));
+    const occ =
+      (await svc.findByUserAndDate(userId, today)) ??
+      (await svc.findByUserAndDate(userId, yesterday));
+    return occ?.region_id ?? null;
   }
 }
