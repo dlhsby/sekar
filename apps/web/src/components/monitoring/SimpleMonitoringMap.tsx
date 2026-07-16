@@ -38,6 +38,9 @@ export interface SimpleWorker {
   role: string;
   is_within_area: boolean;
   is_scheduled: boolean;
+  team_id?: string | null;
+  team_name?: string | null;
+  team_color?: string | null;
 }
 
 export interface SimpleMonitoringMapProps {

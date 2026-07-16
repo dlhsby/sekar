@@ -1,16 +1,17 @@
 'use client';
 
 /**
- * WorkerClusterLayer — renders individual worker pins clustered with
- * supercluster ("Semua Petugas" mode). Zoomed out, dense workers collapse into
- * count bubbles; zooming in (or clicking a cluster) splits them into pins. This
- * keeps the map responsive even when hundreds of workers are on screen — the old
- * map rendered one Google overlay per worker with no clustering.
+ * WorkerClusterLayer — renders individual worker pins + team bubbles clustered
+ * with supercluster ("Semua Petugas" mode). Zoomed out, dense workers collapse
+ * into count bubbles; team bubbles group ≥2-member teams. Zooming in (or
+ * clicking a cluster) splits them into pins and individual team members.
+ * This keeps the map responsive even when hundreds of workers are on screen.
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
 import Supercluster from 'supercluster';
-import { workerPinIcon, statusToActivity } from '@/lib/monitoring/markers';
+import { workerPinIcon, statusToActivity, teamBubbleIcon } from '@/lib/monitoring/markers';
+import { groupWorkersByTeam, type TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { SimpleWorker } from './SimpleMonitoringMap';
 
 /* eslint-disable sekar-design/no-inline-hex-colors -- Google overlay options, not rendered style tokens */
@@ -36,6 +37,7 @@ export interface WorkerClusterLayerProps {
 }
 
 type WorkerProps = {
+  kind?: 'worker';
   workerId: string;
   status: string;
   role: string;
@@ -43,6 +45,17 @@ type WorkerProps = {
   within: boolean;
   scheduled: boolean;
 };
+
+type TeamProps = {
+  kind: 'team';
+  team_id: string;
+  team_name: string;
+  team_color: string | null;
+  member_count: number;
+  member_ids: string[];
+};
+
+type FeatureProps = WorkerProps | TeamProps;
 
 function clusterSymbol(pointCount: number): google.maps.Symbol {
   return {
@@ -63,27 +76,49 @@ export function WorkerClusterLayer({
   onSelect,
   onClusterClick,
 }: WorkerClusterLayerProps) {
-  // Build the supercluster index from workers with valid coordinates.
+  // Group workers by team (collapses ≥2-member teams into bubbles below expansionZoom).
+  const renderables = useMemo(() => groupWorkersByTeam(workers, zoom, 17), [workers, zoom]);
+
+  // Build the supercluster index from workers + team groups with valid coordinates.
   const index = useMemo(() => {
-    const sc = new Supercluster<WorkerProps>({ radius: 60, maxZoom: 18 });
+    const sc = new Supercluster<FeatureProps>({ radius: 60, maxZoom: 18 });
     sc.load(
-      workers
-        .filter((w) => Number.isFinite(w.lat) && Number.isFinite(w.lng))
-        .map((w) => ({
-          type: 'Feature' as const,
-          properties: {
-            workerId: w.user_id,
-            status: w.status,
-            role: w.role,
-            full_name: w.full_name,
-            within: w.is_within_area,
-            scheduled: w.is_scheduled,
-          },
-          geometry: { type: 'Point' as const, coordinates: [w.lng, w.lat] },
-        }))
+      renderables
+        .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
+        .map((r) => {
+          if ('kind' in r && r.kind === 'team') {
+            const team = r as TeamGroup;
+            return {
+              type: 'Feature' as const,
+              properties: {
+                kind: 'team' as const,
+                team_id: team.team_id,
+                team_name: team.team_name,
+                team_color: team.team_color,
+                member_count: team.member_count,
+                member_ids: team.member_ids,
+              },
+              geometry: { type: 'Point' as const, coordinates: [team.lng, team.lat] },
+            };
+          }
+          const worker = r as SimpleWorker;
+          return {
+            type: 'Feature' as const,
+            properties: {
+              kind: 'worker' as const,
+              workerId: worker.user_id,
+              status: worker.status,
+              role: worker.role,
+              full_name: worker.full_name,
+              within: worker.is_within_area,
+              scheduled: worker.is_scheduled,
+            },
+            geometry: { type: 'Point' as const, coordinates: [worker.lng, worker.lat] },
+          };
+        })
     );
     return sc;
-  }, [workers]);
+  }, [renderables]);
 
   const clusters = useMemo(() => {
     const bbox: [number, number, number, number] = bounds
@@ -97,9 +132,10 @@ export function WorkerClusterLayer({
       {clusters.map((feature) => {
         const [lng, lat] = feature.geometry.coordinates;
         const props = feature.properties as
-          | (WorkerProps & { cluster?: false })
+          | (FeatureProps & { cluster?: false })
           | { cluster: true; cluster_id: number; point_count: number };
 
+        // Supercluster cluster (count bubble).
         if ('cluster' in props && props.cluster) {
           return (
             <Marker
@@ -121,6 +157,24 @@ export function WorkerClusterLayer({
           );
         }
 
+        // Team bubble (≥2-member team).
+        if ('kind' in props && props.kind === 'team') {
+          const team = props as TeamProps;
+          return (
+            <Marker
+              key={`team-${team.team_id}`}
+              position={{ lat, lng }}
+              icon={teamBubbleIcon(team.team_color, team.member_count, team.team_name)}
+              onClick={() => {
+                // Zoom to expand and reveal individual team members.
+                onClusterClick?.(lat, lng, 17);
+              }}
+              zIndex={5}
+            />
+          );
+        }
+
+        // Individual worker pin.
         const leaf = props as WorkerProps;
         const selected = leaf.workerId === selectedId;
         return (

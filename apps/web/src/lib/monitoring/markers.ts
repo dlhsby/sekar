@@ -38,6 +38,10 @@ export const HEALTH_COLORS = {
 } as const;
 /* eslint-enable sekar-design/no-inline-hex-colors */
 
+/* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays */
+// Team bubble default border when a team has no color (gray-500).
+const TEAM_DEFAULT = '#78716C';
+
 export type HealthLevel = keyof typeof HEALTH_COLORS;
 
 /** Pick a health level from the roster trio. */
@@ -187,3 +191,33 @@ export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
     anchor: new google.maps.Point(c, c),
   };
 }
+
+/**
+ * A team bubble — a rounded white bubble with a team-colored border, displaying
+ * the member count prominently and the team name as a smaller label.
+ *
+ * Dimensions: 90×46 px (landscape-friendly for readability).
+ */
+export function teamBubbleIcon(
+  teamColor: string | null,
+  memberCount: number,
+  teamName: string
+): google.maps.Icon {
+  const color = teamColor ?? TEAM_DEFAULT;
+  const w = 90;
+  const h = 46;
+
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
+    `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="12" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
+    `<text x="50%" y="18" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="800" fill="${color}" letter-spacing="0.5">${memberCount}</text>` +
+    `<text x="50%" y="40" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="600" fill="${BLACK}">${teamName}</text>` +
+    `</svg>`;
+
+  return {
+    url: svgUrl(svg),
+    scaledSize: new google.maps.Size(w, h),
+    anchor: new google.maps.Point(w / 2, h / 2),
+  };
+}
+ 
