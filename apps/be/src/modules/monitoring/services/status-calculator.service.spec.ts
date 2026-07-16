@@ -20,6 +20,7 @@ describe('StatusCalculatorService', () => {
   const defaultThresholds: StatusThresholds = {
     active_max_age_seconds: 300,
     location_ping_interval_seconds: 60,
+    late_grace_seconds: 900,
   };
 
   beforeEach(async () => {
@@ -231,6 +232,7 @@ describe('StatusCalculatorService', () => {
       const customThresholds: StatusThresholds = {
         active_max_age_seconds: 60,
         location_ping_interval_seconds: 60,
+        late_grace_seconds: 900,
       };
       const input: StatusInput = {
         hasActiveShift: true,

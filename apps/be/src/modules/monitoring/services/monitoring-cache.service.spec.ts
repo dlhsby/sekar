@@ -23,6 +23,7 @@ describe('MonitoringCacheService', () => {
       const custom = {
         active_max_age_seconds: 120,
         location_ping_interval_seconds: 60,
+        late_grace_seconds: 900,
       };
       service.setLoaders({
         thresholds: async () => custom,
@@ -38,6 +39,7 @@ describe('MonitoringCacheService', () => {
       const loader = jest.fn().mockResolvedValue({
         active_max_age_seconds: 120,
         location_ping_interval_seconds: 60,
+        late_grace_seconds: 900,
       });
       service.setLoaders({
         thresholds: loader,
@@ -92,6 +94,7 @@ describe('MonitoringCacheService', () => {
         thresholds: async () => ({
           active_max_age_seconds: 300,
           location_ping_interval_seconds: 60,
+          late_grace_seconds: 900,
         }),
         geofencing: async () => ({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
         boundary: loader,
@@ -198,6 +201,7 @@ describe('MonitoringCacheService', () => {
       const loader = jest.fn().mockResolvedValue({
         active_max_age_seconds: 120,
         location_ping_interval_seconds: 60,
+        late_grace_seconds: 900,
       });
       service.setLoaders({
         thresholds: loader,
@@ -225,6 +229,7 @@ describe('MonitoringCacheService', () => {
         thresholds: async () => ({
           active_max_age_seconds: 300,
           location_ping_interval_seconds: 60,
+          late_grace_seconds: 900,
         }),
         geofencing: async () => ({ tolerance_meters: 50, outside_area_grace_seconds: 120 }),
         boundary: loader,

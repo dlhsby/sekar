@@ -10,6 +10,7 @@ interface CacheEntry<T> {
 export interface StatusThresholds {
   active_max_age_seconds: number;
   location_ping_interval_seconds: number;
+  late_grace_seconds: number;
 }
 
 export enum DayTypeEnum {
@@ -26,6 +27,7 @@ export interface GeofencingConfig {
 const DEFAULT_THRESHOLDS: StatusThresholds = {
   active_max_age_seconds: 600,
   location_ping_interval_seconds: 60,
+  late_grace_seconds: 900,
 };
 
 const DEFAULT_GEOFENCING: GeofencingConfig = {

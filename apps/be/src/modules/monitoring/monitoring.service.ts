@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import type { LifecycleState, LifecycleFlag } from './lib/presence-lifecycle';
 import { LocationStaffRequirement } from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { DayType } from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
@@ -41,6 +42,12 @@ export interface SnapshotWorker {
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
+  /** Attendance lifecycle (ADR-050). A live pin is always `bertugas`. */
+  lifecycle_state: LifecycleState;
+  /** Clocked in after start + grace. */
+  is_late: boolean;
+  /** Lifecycle flags: is_late | ad_hoc | lupa_clock_out | lembur | early | excused. */
+  lifecycle_flags: LifecycleFlag[];
   /** True if this worker is on the current shift's roster (not ad-hoc). */
   is_scheduled: boolean;
 }
@@ -185,22 +192,33 @@ export class MonitoringService {
     const scheduledIds = await this.statsService.scheduledUserIdsForCurrentShift(currentShift?.id);
 
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
-    const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => ({
-      user_id: u.id,
-      full_name: u.full_name,
-      role: u.role,
-      lat: u.latitude,
-      lng: u.longitude,
-      status: u.status,
-      location_id: u.location_id,
-      area_name: u.area_name,
-      rayon_id: u.rayon_id,
-      rayon_name: u.rayon_name,
-      last_update: u.last_update.toISOString(),
-      is_within_area: u.is_within_area,
-      battery_level: u.battery_level,
-      is_scheduled: scheduledIds.has(u.id),
-    }));
+    const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => {
+      const isScheduled = scheduledIds.has(u.id);
+      // `ad_hoc` is decided here, where the roster check lives — the per-worker
+      // lifecycle computed in getLiveUsers used a `scheduled: true` placeholder.
+      // `?? []` guards partial payloads during rollout.
+      const baseFlags = u.lifecycle_flags ?? [];
+      const flags: LifecycleFlag[] = isScheduled ? baseFlags : [...baseFlags, 'ad_hoc'];
+      return {
+        user_id: u.id,
+        full_name: u.full_name,
+        role: u.role,
+        lat: u.latitude,
+        lng: u.longitude,
+        status: u.status,
+        location_id: u.location_id,
+        area_name: u.area_name,
+        rayon_id: u.rayon_id,
+        rayon_name: u.rayon_name,
+        last_update: u.last_update.toISOString(),
+        is_within_area: u.is_within_area,
+        battery_level: u.battery_level,
+        lifecycle_state: u.lifecycle_state ?? 'bertugas',
+        is_late: u.is_late ?? false,
+        lifecycle_flags: flags,
+        is_scheduled: isScheduled,
+      };
+    });
 
     // Build area_summaries from distinct areas present in workers
     const areaSummaries = await this.buildAreaSummaries(workers, currentShift, currentDayType);

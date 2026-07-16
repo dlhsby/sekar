@@ -84,6 +84,18 @@ export interface LiveUser {
   battery_level: number | null;
   last_update: string;
   is_within_area: boolean;
+  /** Attendance lifecycle (ADR-050). A live pin is always `bertugas`. */
+  lifecycle_state?:
+    | 'tidak_bertugas'
+    | 'belum_hadir'
+    | 'terlambat'
+    | 'bertugas'
+    | 'pulang'
+    | 'tidak_hadir';
+  /** Clocked in after start + grace. */
+  is_late?: boolean;
+  /** Lifecycle flags: is_late | ad_hoc | lupa_clock_out | lembur | early | excused. */
+  lifecycle_flags?: string[];
   /** True if on the current shift roster; false = ad-hoc / off-schedule. */
   is_scheduled?: boolean;
   outside_boundary: boolean;

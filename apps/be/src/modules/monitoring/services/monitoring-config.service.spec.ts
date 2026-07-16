@@ -125,6 +125,7 @@ describe('MonitoringConfigService', () => {
       expect(await loaders.thresholds()).toEqual({
         active_max_age_seconds: 300,
         location_ping_interval_seconds: 60,
+        late_grace_seconds: 900,
       });
     });
 

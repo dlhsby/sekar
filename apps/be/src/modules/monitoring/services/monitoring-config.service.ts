@@ -20,6 +20,7 @@ const statusThresholdsSchema = z.object({
   // raised above the default so the value is tunable upward, not pinned to it.
   active_max_age_seconds: z.number().int().min(60).max(1800),
   location_ping_interval_seconds: z.number().int().min(30).max(300),
+  late_grace_seconds: z.number().int().min(0).max(7200),
 });
 
 const geofencingSchema = z.object({
@@ -74,6 +75,7 @@ export class MonitoringConfigService {
             'monitoring.location_ping_interval_sec',
             60,
           ),
+          late_grace_seconds: this.systemConfig.getNumber('monitoring.late_grace_sec', 900),
         }),
       geofencing: () =>
         Promise.resolve({
