@@ -74,6 +74,22 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     max: 3600,
   },
   {
+    // Global fallback grace after a shift's scheduled start before a clock-in
+    // reads as late / a no-show is declared (ADR-050 policy 1). A shift
+    // definition may override it per shift; this is the default when it doesn't.
+    key: 'monitoring.late_grace_sec',
+    group: 'monitoring',
+    subgroup: 'thresholds',
+    valueType: 'number',
+    isSecret: false,
+    envKey: 'MONITORING_LATE_GRACE_SEC',
+    label: 'Toleransi keterlambatan (detik)',
+    help: 'Tenggang setelah jam mulai shift sebelum absen dianggap terlambat (default 900 dtk / 15 mnt)',
+    default: 900,
+    min: 0,
+    max: 7200,
+  },
+  {
     key: 'monitoring.staffing_debounce_sec',
     group: 'monitoring',
     subgroup: 'thresholds',
