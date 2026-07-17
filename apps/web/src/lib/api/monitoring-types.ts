@@ -301,6 +301,8 @@ export interface AreaBoundary {
   id: string;
   name: string;
   boundary_polygon: GeoJSON.Geometry | null;
+  /** Hex color configured for the lokasi (border_color → fill_color); drives the map tint. */
+  color?: string | null;
   center_lat: number;
   center_lng: number;
   rayon_id: string | null;
@@ -308,6 +310,16 @@ export interface AreaBoundary {
   assigned_count: number;
   is_understaffed: boolean;
   staffing_summary: RoleStaffingItem[];
+}
+
+/** Kawasan (region) outline within a rayon — drawn tinted at rayon zoom. */
+export interface RegionBoundary {
+  id: string;
+  name: string;
+  color?: string | null;
+  boundary_polygon: GeoJSON.Geometry | null;
+  center_lat: number | null;
+  center_lng: number | null;
 }
 
 export interface RayonBoundary {
@@ -321,6 +333,7 @@ export interface RayonBoundary {
   area_count: number;
   is_understaffed: boolean;
   understaffed_area_count: number;
+  regions: RegionBoundary[];
   areas: AreaBoundary[];
 }
 

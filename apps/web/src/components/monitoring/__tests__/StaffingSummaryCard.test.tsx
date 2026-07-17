@@ -48,6 +48,7 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
       area_count: 2,
       is_understaffed: true,
       understaffed_area_count: 1,
+      regions: [],
       areas: [
         {
           id: 'area-1',
@@ -90,6 +91,7 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
       area_count: 1,
       is_understaffed: false,
       understaffed_area_count: 0,
+      regions: [],
       areas: [
         {
           id: 'area-3',
