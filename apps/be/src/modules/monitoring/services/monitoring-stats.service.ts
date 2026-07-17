@@ -1520,9 +1520,8 @@ export class MonitoringStatsService {
         const areas = await this.areaRepository.find({ where: areaWhere });
 
         // Kawasan (region) outlines within this rayon — drawn tinted at rayon zoom.
-        const regionEntities = await this.regionRepository.find({
-          where: { rayon_id: rayon.id },
-        });
+        const regionEntities =
+          (await this.regionRepository.find({ where: { rayon_id: rayon.id } })) ?? [];
         const regionBoundaries: RegionBoundaryDto[] = regionEntities.map((rg) => ({
           id: rg.id,
           name: rg.name,
