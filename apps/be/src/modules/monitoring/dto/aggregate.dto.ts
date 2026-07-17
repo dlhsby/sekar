@@ -169,6 +169,12 @@ export class AggregateResponseDto {
   })
   presence_totals: PresenceBreakdownDto;
 
+  @ApiProperty({
+    example: 1,
+    description: 'Ad-hoc workers: clocked in but not on the current shift roster (Luar jadwal).',
+  })
+  off_schedule_count: number;
+
   @ApiProperty({ example: '2026-07-04T10:30:00Z' })
   generated_at: Date;
 }

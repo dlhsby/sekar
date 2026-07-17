@@ -258,6 +258,13 @@ describe('MonitoringUserService', () => {
         expect.objectContaining({ q: '%John%' }),
       );
       expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('24 hours'));
+      // The search also matches a TEAM name via an EXISTS subquery on today's
+      // roster, keyed by teamDate (so a worker found only by team surfaces too).
+      const matchCall = qb.andWhere.mock.calls.find(
+        (c: unknown[]) => typeof c[0] === 'string' && (c[0] as string).includes('team_categories'),
+      );
+      expect(matchCall).toBeDefined();
+      expect(matchCall?.[1]).toEqual(expect.objectContaining({ teamDate: expect.any(String) }));
     });
 
     it('flags is_late for a late clock-in, and lupa_clock_out only past the shift end', async () => {

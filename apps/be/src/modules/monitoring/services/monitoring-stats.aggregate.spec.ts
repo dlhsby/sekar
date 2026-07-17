@@ -86,6 +86,9 @@ describe('MonitoringStatsService.getAggregate', () => {
     jest.spyOn(service, 'getCurrentShiftDefinition').mockResolvedValue({
       id: 'shift-def-1',
     } as ShiftDefinition);
+    // The off-schedule (Luar jadwal) count calls this; stub it so it doesn't
+    // consume a sequenced scheduleRepo query-builder mock.
+    jest.spyOn(service, 'scheduledUserIdsForCurrentShift').mockResolvedValue(new Set());
   });
 
   it('city scope: builds one node per rayon with grouped status + role counts', async () => {
@@ -172,6 +175,8 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(res.scope).toBe('city');
     expect(res.scope_id).toBeNull();
     expect(res.nodes).toHaveLength(2);
+    // Ad-hoc (Luar jadwal) count is present on the aggregate response.
+    expect(typeof res.off_schedule_count).toBe('number');
 
     const r1 = res.nodes.find((n) => n.id === 'rayon-1')!;
     expect(r1.type).toBe('rayon');
