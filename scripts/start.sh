@@ -54,23 +54,6 @@ USAGE
   shift
 done
 
-is_wsl() { grep -qiE "microsoft|wsl" /proc/version 2>/dev/null; }
-
-# The address a phone connects to. Under WSL that's the Windows host's LAN IP;
-# natively it's this machine's LAN IP. Skip loopback + the WSL/Docker virtual
-# 172.x ranges so we advertise the real home-network address.
-detect_lan_ip() {
-  local ip=""
-  if is_wsl; then
-    local ipconfig="/mnt/c/Windows/System32/ipconfig.exe"
-    command -v ipconfig.exe >/dev/null 2>&1 && ipconfig="ipconfig.exe"
-    ip="$("$ipconfig" 2>/dev/null | grep -aiE "IPv4" \
-      | grep -oE "[0-9]+(\.[0-9]+){3}" | grep -vE "^(127\.|172\.)" | head -1 || true)"
-  fi
-  [ -z "$ip" ] && ip="$(hostname -I 2>/dev/null | tr ' ' '\n' | grep -vE "^(127\.|172\.)" | head -1 || true)"
-  echo "$ip"
-}
-
 echo -e "${GREEN}══ SEKAR dev stack ══${NC}"
 load_ports
 # Clean any prior instance FIRST (stale PID files + orphaned `--watch` parents),
@@ -85,33 +68,16 @@ free_port "$WEB_PORT" "web"
 ensure_infra
 
 # ── LAN exposure (default): same-origin proxy, safe for localhost ─────────────
-# These env vars override apps/*/.env.local for the child processes only (Next +
-# dotenvx both leave already-set env vars untouched) — .env.local is unchanged.
-WEB_ARGS=()
-LAN_IP=""
+# setup_web_lan_env exports NEXT_PUBLIC_API_URL=""/WS + SEKAR_LAN_PROXY +
+# SEKAR_ALLOWED_DEV_ORIGINS for the child processes only (Next + dotenvx leave
+# already-set env vars untouched) — .env.local is unchanged. `next dev` binds
+# 0.0.0.0 by default, so no -H flag is needed.
 if [ "$LAN" = true ]; then
-  LAN_IP="${LAN_IP_ARG:-$(detect_lan_ip)}"
-  # Empty API/WS URL = same origin: the browser talks to whatever origin served
-  # the page (localhost OR the LAN IP), and the web dev server proxies /api +
-  # /socket.io to the backend (next.config rewrites, gated by SEKAR_LAN_PROXY).
-  # One build works everywhere — no baked IP, no CORS, nothing breaks offline.
-  export NEXT_PUBLIC_API_URL=""
-  export NEXT_PUBLIC_WS_URL=""
-  export SEKAR_LAN_PROXY=1
-  export SEKAR_API_PORT="$BE_PORT"
-  # Next 16 blocks cross-origin dev resources (/_next/*); allow the LAN host so a
-  # phone can load the JS bundle. Harmless on localhost (always allowed).
-  [ -n "$LAN_IP" ] && export SEKAR_ALLOWED_DEV_ORIGINS="$LAN_IP"
-  WEB_ARGS=(-- -H 0.0.0.0) # reachable on the LAN; localhost is unaffected
-  if [ -n "$LAN_IP" ]; then
-    print_info "LAN: also reachable at http://$LAN_IP:$WEB_PORT (same-origin proxy; localhost unaffected)"
-  else
-    print_info "LAN: web bound to 0.0.0.0 (no LAN IP auto-detected; pass one to advertise it, or --local to disable)"
-  fi
+  setup_web_lan_env "$LAN_IP_ARG"
 fi
 
 start_bg backend "$ROOT/apps/be" npm run start:dev
-start_bg web "$ROOT/apps/web" npm run dev "${WEB_ARGS[@]}"
+start_bg web "$ROOT/apps/web" npm run dev
 
 print_info "Waiting for services (backend :$BE_PORT · web :$WEB_PORT)..."
 wait_for_http "http://localhost:$BE_PORT/api/v1/health/live" 120 "Backend API" || true
@@ -126,25 +92,9 @@ echo -e "  • Logs:         ${GREEN}logs/backend.log${NC} · ${GREEN}logs/web.l
 echo -e "  • Ports:        ${GREEN}apps/be/.env.local${NC} (PORT) · ${GREEN}apps/web/.env.local${NC} (WEB_PORT) · ${GREEN}apps/mobile/.env.local${NC} (METRO_PORT=$METRO_PORT)"
 
 # ── Phone URL + one-time WSL2 Windows port-forward / firewall ─────────────────
-if [ "$LAN" = true ] && [ -n "$LAN_IP" ]; then
-  WSL_IP="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1 || true)"
+if [ "$LAN" = true ]; then
   echo ""
-  echo -e "${BLUE}On your phone (same Wi-Fi), open:${NC}  ${GREEN}http://$LAN_IP:$WEB_PORT${NC}"
-  if is_wsl && [ -n "$WSL_IP" ]; then
-    PS1_FILE="$LOG_DIR/windows-lan-setup.ps1"
-    cat >"$PS1_FILE" <<PS
-# SEKAR — expose the WSL2 web port on the Windows LAN so your phone can reach it.
-# (The API is proxied through the web server, so only the web port is needed.)
-# Run ONCE in an ELEVATED PowerShell (right-click > Run as administrator).
-# Re-run only if the WSL IP changes (after a full WSL/PC restart).
-netsh interface portproxy add v4tov4 listenport=$WEB_PORT listenaddress=0.0.0.0 connectport=$WEB_PORT connectaddress=$WSL_IP
-New-NetFirewallRule -DisplayName "SEKAR LAN ($WEB_PORT)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $WEB_PORT -ErrorAction SilentlyContinue
-# To UNDO: netsh interface portproxy delete v4tov4 listenport=$WEB_PORT listenaddress=0.0.0.0 ; Remove-NetFirewallRule -DisplayName "SEKAR LAN ($WEB_PORT)"
-PS
-    print_warning "WSL2 — the phone can't reach WSL ($WSL_IP) directly. If it can't connect, run ONCE in an elevated PowerShell (saved to logs/windows-lan-setup.ps1):"
-    echo -e "    ${GREEN}netsh interface portproxy add v4tov4 listenport=$WEB_PORT listenaddress=0.0.0.0 connectport=$WEB_PORT connectaddress=$WSL_IP${NC}"
-    echo -e "    ${GREEN}New-NetFirewallRule -DisplayName \"SEKAR LAN ($WEB_PORT)\" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $WEB_PORT${NC}"
-  fi
+  print_web_lan_help
 fi
 echo ""
 
