@@ -87,6 +87,13 @@ describe('NodeMarkerLayer count marker', () => {
     expect(svg).not.toContain('width="12"'); // not the muted dot
   });
 
+  it('renders the system-default glyph per kind when no marker_icon is set (rayon → building)', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon', marker_icon: null, active: 2 })]} />);
+    const svg = iconSvg();
+    expect(svg).toContain('<path'); // building glyph, not a bare number
+    expect(svg).toContain('>2<'); // active count badge
+  });
+
   it('renders an empty lokasi as a muted dot with no count', () => {
     render(
       <NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 0, clocked_in: 0, active: 0 })]} />
