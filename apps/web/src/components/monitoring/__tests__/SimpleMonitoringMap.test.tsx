@@ -199,6 +199,37 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(1);
   });
 
+  it('reveals worker pins at deep zoom inside a rayon (not only at area scope)', () => {
+    // The map mock's getZoom() returns 16 (>= WORKER_REVEAL_ZOOM). At rayon
+    // scope this should flip from node markers to worker pins by zoom alone,
+    // without drilling to area scope (showWorkers stays false).
+    render(
+      <SimpleMonitoringMap
+        showWorkers={false}
+        scope="rayon"
+        nodeMarkers={nodeMarkers}
+        workers={workers}
+        boundaries={boundaries}
+      />
+    );
+    // Two workers render as pins; the single node marker does not.
+    expect(screen.getAllByTestId('marker')).toHaveLength(workers.length);
+  });
+
+  it('keeps node markers (no worker reveal) at city scope even when zoomed in', () => {
+    render(
+      <SimpleMonitoringMap
+        showWorkers={false}
+        scope="city"
+        nodeMarkers={nodeMarkers}
+        workers={workers}
+        boundaries={boundaries}
+      />
+    );
+    // City scope never reveals workers by zoom — the node marker stays.
+    expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length);
+  });
+
   it('drills when a node marker is clicked', () => {
     const onDrillNode = jest.fn();
     render(

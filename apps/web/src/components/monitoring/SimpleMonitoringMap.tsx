@@ -96,6 +96,9 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 };
 
 const DEFAULT_ZOOM = 11;
+// Zoom at which individual worker pins take over from node markers inside a
+// rayon/kawasan (matches the page's ZOOM_AREA drill target).
+const WORKER_REVEAL_ZOOM = 15;
 // Alpha for the rayon fill when tinted with its configured color.
 const RAYON_FILL_ALPHA = 0.18;
 
@@ -172,6 +175,13 @@ function MonitoringMapInner({
   const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
+
+  // Workers reveal by ZOOM, not only by clicking into an area (ADR-046: "workers
+  // render only at deeper zoom"). Once you zoom past the area threshold inside a
+  // rayon/kawasan, individual worker pins take over from the node markers.
+  const renderWorkers =
+    showWorkers ||
+    (zoom >= WORKER_REVEAL_ZOOM && (scope === 'rayon' || scope === 'region'));
 
   // Track viewport zoom + bounds so supercluster recomputes on pan/zoom.
   const syncViewport = useCallback((map: google.maps.Map) => {
@@ -296,7 +306,7 @@ function MonitoringMapInner({
   }, [focusTarget]);
 
   const selectedWorker =
-    showWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
+    renderWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
   const hoverArea = hoverAreaId ? areaPins.find((a) => a.id === hoverAreaId) : null;
   // Area centre pins only clutter the node view (node markers already carry
   // counts); keep them for the drilled worker view or when the plant overlay is
@@ -436,7 +446,7 @@ function MonitoringMapInner({
         })}
 
         {/* Drill-down node markers (Surabaya / rayon / area) or clustered worker pins. */}
-        {!showWorkers ? (
+        {!renderWorkers ? (
           <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} />
         ) : layers.petugas ? (
           <WorkerClusterLayer
