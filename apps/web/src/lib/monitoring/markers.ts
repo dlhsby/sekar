@@ -109,6 +109,50 @@ export function workerPinIcon(
 }
 
 /**
+ * A compact node marker (rayon / region / lokasi): a white dot with a
+ * status-tinted ring and the **active worker count** — ADR-046's replacement for
+ * the disliked attendance-ratio bubble. Empty nodes (nothing scheduled, nobody
+ * active) render as a small muted dot so a rayon's many idle lokasi don't clutter
+ * the map. The ring color comes from the roster (clocked_in vs scheduled), so a
+ * fully-attended node reads green even when a worker's signal has gone stale.
+ */
+export function nodeCountIcon(
+  variant: 'rayon' | 'area' | 'region' | 'surabaya',
+  active: number,
+  health: HealthLevel
+): google.maps.Icon {
+  const color = HEALTH_COLORS[health];
+  // Nothing scheduled + nobody active → a small muted dot (dense rayons stay legible).
+  if (health === 'empty' && active <= 0) {
+    const s = 12;
+    const svg =
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
+      `<circle cx="${s / 2}" cy="${s / 2}" r="${s / 2 - 1}" fill="${WHITE}" stroke="${color}" stroke-width="2"/>` +
+      `</svg>`;
+    return {
+      url: svgUrl(svg),
+      scaledSize: new google.maps.Size(s, s),
+      anchor: new google.maps.Point(s / 2, s / 2),
+    };
+  }
+  // Kawasan/rayon a touch larger than lokasi so tiers read at a glance.
+  const big = variant === 'rayon' || variant === 'region';
+  const d = big ? 40 : 30;
+  const r = d / 2 - 2;
+  const fs = big ? 16 : 13;
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${d}" height="${d}" viewBox="0 0 ${d} ${d}">` +
+    `<circle cx="${d / 2}" cy="${d / 2}" r="${r}" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
+    `<text x="${d / 2}" y="${d / 2 + fs / 3}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="${fs}" font-weight="800" fill="${color}">${active}</text>` +
+    `</svg>`;
+  return {
+    url: svgUrl(svg),
+    scaledSize: new google.maps.Size(d, d),
+    anchor: new google.maps.Point(d / 2, d / 2),
+  };
+}
+
+/**
  * A node marker showing the attendance ratio `hadir/terjadwal`, colored by
  * staffing health — a white rounded bubble with a health-colored border, exactly
  * matching the mobile node bubbles. Surabaya is a wider bubble with a label.

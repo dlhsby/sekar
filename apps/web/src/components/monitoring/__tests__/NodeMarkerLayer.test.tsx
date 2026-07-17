@@ -1,11 +1,13 @@
 /**
- * Unit tests: NodeMarkerLayer bubble ratio. Guards the wiring that the drill
- * bubble renders the attendance ratio `clocked_in / scheduled` (hadir/terjadwal)
- * — NOT `active_inside` (a regression that made staffed areas render as
- * understaffed because offline/outside-area workers dropped out of the numerator).
+ * Unit tests: NodeMarkerLayer node markers (ADR-046). The rayon/kawasan/lokasi
+ * markers render a status-tinted count marker (active worker count + health ring)
+ * — NOT the old attendance-ratio bubble. The ring health still derives from the
+ * roster (clocked_in vs scheduled), so an area whose workers went offline still
+ * reads green, and empty lokasi collapse to a muted dot to fight clutter.
  */
 import { render } from '@testing-library/react';
 import { NodeMarkerLayer, type NodeMarker } from '../NodeMarkerLayer';
+import { HEALTH_COLORS } from '@/lib/monitoring/markers';
 
 const mockIcons: Array<{ url: string }> = [];
 jest.mock('@react-google-maps/api', () => ({
@@ -39,29 +41,38 @@ const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
   scheduled: 2,
   clocked_in: 2,
   not_clocked_in: 0,
+  active: 2,
   active_inside: 1,
   ...over,
 });
 
 const iconSvg = () => decodeURIComponent(mockIcons[0].url);
 
-describe('NodeMarkerLayer bubble ratio', () => {
-  it('renders clocked_in / scheduled (hadir/terjadwal), not active_inside', () => {
-    // Both workers present (clocked in) but only 1 active-and-inside.
-    render(<NodeMarkerLayer nodes={[makeNode({ clocked_in: 2, scheduled: 2, active_inside: 1 })]} />);
+describe('NodeMarkerLayer count marker', () => {
+  it('shows the active worker count, not an attendance ratio', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ active: 3, scheduled: 4, clocked_in: 4 })]} />);
     const svg = iconSvg();
-    expect(svg).toContain('>2/2<'); // clocked_in / scheduled
-    expect(svg).not.toContain('>1/2<'); // the old active_inside / scheduled bug
+    expect(svg).toContain('>3<'); // active count
+    expect(svg).not.toMatch(/>\d+\/\d+</); // no ratio "3/4"
   });
 
-  it('shows a fully-attended area as scheduled==clocked_in even when workers are offline/outside', () => {
-    // A satgas clocked in but offline (GPS dropped) still counts as present.
-    render(<NodeMarkerLayer nodes={[makeNode({ clocked_in: 3, scheduled: 3, active_inside: 0 })]} />);
-    expect(iconSvg()).toContain('>3/3<');
+  it('colors the ring by roster health (green when clocked_in >= scheduled, even if offline)', () => {
+    // Two scheduled, both clocked in but only 1 active-inside → still fully attended.
+    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2, active: 1 })]} />);
+    expect(iconSvg()).toContain(HEALTH_COLORS.ok);
   });
 
-  it('shows a genuinely understaffed area as clocked_in below scheduled', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ clocked_in: 1, scheduled: 3, active_inside: 1 })]} />);
-    expect(iconSvg()).toContain('>1/3<');
+  it('colors the ring red (none) when nobody clocked in for a scheduled area', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 3, clocked_in: 0, active: 0 })]} />);
+    expect(iconSvg()).toContain(HEALTH_COLORS.none);
+  });
+
+  it('renders an empty lokasi as a muted dot with no count', () => {
+    render(
+      <NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 0, clocked_in: 0, active: 0 })]} />
+    );
+    const svg = iconSvg();
+    expect(svg).toContain('width="12"'); // small dot
+    expect(svg).not.toContain('<text'); // no number
   });
 });

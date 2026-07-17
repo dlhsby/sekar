@@ -153,6 +153,7 @@ const nodeMarkers = [
     scheduled: 6,
     clocked_in: 4,
     not_clocked_in: 2,
+    active: 3,
     active_inside: 3,
   },
 ];

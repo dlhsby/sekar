@@ -100,6 +100,7 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     scheduled: n.roster.scheduled,
     clocked_in: n.roster.clocked_in,
     not_clocked_in: n.roster.not_clocked_in,
+    active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
   };
 }
@@ -409,11 +410,28 @@ export default function MonitoringPage() {
     return [];
   }, [scope, view.id, regionAgg.data, regionAreasAgg.data, rayonAgg.data, cityAgg.data]);
 
-  // Map markers for the current scope.
+  // Map markers for the current scope (ADR-046 count+ring markers, not ratio
+  // bubbles). Zoom-gated tiers keep dense rayons legible:
+  //   city   → rayon markers
+  //   rayon  → kawasan markers + the lokasi that belong to NO kawasan
+  //            (region-less); a kawasan's own lokasi appear when you drill/zoom
+  //            into that kawasan.
+  //   region → that kawasan's lokasi markers
+  //   area   → no node markers (worker pins render instead)
   const nodeMarkers = useMemo<NodeMarker[]>(() => {
-    if (scope === 'area' || scope === 'region') return [];
-    return listNodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
-  }, [scope, listNodes]);
+    const toMarkers = (nodes: AggregateNode[]) =>
+      nodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
+    if (scope === 'area') return [];
+    if (scope === 'region') {
+      return toMarkers((regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id));
+    }
+    if (scope === 'rayon') {
+      const kawasan = regionAgg.data?.nodes ?? [];
+      const regionlessLokasi = (rayonAgg.data?.nodes ?? []).filter((n) => !n.region_id);
+      return toMarkers([...kawasan, ...regionlessLokasi]);
+    }
+    return toMarkers(listNodes); // city → rayon markers
+  }, [scope, view.id, regionAgg.data, rayonAgg.data, regionAreasAgg.data, listNodes]);
 
   const statusCounts = useMemo(() => {
     if (showWorkers) {
