@@ -433,6 +433,31 @@ export default function MonitoringPage() {
     return toMarkers(listNodes); // city → rayon markers
   }, [scope, view.id, regionAgg.data, rayonAgg.data, regionAreasAgg.data, listNodes]);
 
+  // At region (kawasan) scope the aggregate's top-level totals cover the whole
+  // parent rayon; sum just this kawasan's lokasi nodes so the stats pills match
+  // the selected kawasan (the roster panel already lists only its lokasi).
+  const regionTotals = useMemo(() => {
+    if (scope !== 'region') return null;
+    const nodes = (regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id);
+    const totals = { active: 0, offline: 0, absent: 0, outside_area: 0 };
+    const presence_totals = { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } };
+    const roster_totals = { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+    for (const n of nodes) {
+      totals.active += n.counts_by_status.active;
+      totals.offline += n.counts_by_status.offline;
+      totals.absent += n.counts_by_status.absent;
+      totals.outside_area += n.counts_by_status.outside_area;
+      presence_totals.aktif.dalam += n.presence.aktif.dalam;
+      presence_totals.aktif.luar += n.presence.aktif.luar;
+      presence_totals.tidak_aktif.dalam += n.presence.tidak_aktif.dalam;
+      presence_totals.tidak_aktif.luar += n.presence.tidak_aktif.luar;
+      roster_totals.scheduled += n.roster.scheduled;
+      roster_totals.clocked_in += n.roster.clocked_in;
+      roster_totals.not_clocked_in += n.roster.not_clocked_in;
+    }
+    return { totals, presence_totals, roster_totals };
+  }, [scope, view.id, regionAreasAgg.data]);
+
   const statusCounts = useMemo(() => {
     if (showWorkers) {
       const counts = { ...EMPTY_STATUS_COUNTS };
@@ -442,8 +467,8 @@ export default function MonitoringPage() {
       }
       return counts;
     }
-    return aggregateToStatusCounts(activeAgg.data?.totals);
-  }, [showWorkers, activeAgg.data, workers]);
+    return aggregateToStatusCounts(regionTotals?.totals ?? activeAgg.data?.totals);
+  }, [showWorkers, regionTotals, activeAgg.data, workers]);
 
   // Presence-model counts for the top pills. At area scope, derive from the
   // worker list (scheduled → aktif/tidak-aktif; unscheduled → ad-hoc); above
@@ -463,16 +488,16 @@ export default function MonitoringPage() {
       }
       return { aktif, tidak_aktif, tidak_hadir: 0, adhoc };
     }
-    const p = activeAgg.data?.presence_totals;
-    const r = activeAgg.data?.roster_totals;
+    const p = regionTotals?.presence_totals ?? activeAgg.data?.presence_totals;
+    const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
     return {
       aktif: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
       tidak_aktif: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
       tidak_hadir: r?.not_clocked_in ?? 0,
       adhoc: 0,
     };
-     
-  }, [showWorkers, workers, activeAgg.data]);
+
+  }, [showWorkers, workers, regionTotals, activeAgg.data]);
 
   const rayonOptions = useMemo<RayonOption[]>(() => {
     const map = new Map<string, string>();
