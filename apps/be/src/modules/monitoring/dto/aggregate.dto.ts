@@ -138,6 +138,15 @@ export class AggregateNodeDto {
 
   @ApiPropertyOptional({ description: 'Region id (area nodes only)', example: 'region-uuid' })
   region_id?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Named marker glyph configured for the area',
+    example: 'trees',
+  })
+  marker_icon?: string | null;
+
+  @ApiPropertyOptional({ description: 'Custom marker image (PNG/SVG) configured for the area' })
+  marker_image_url?: string | null;
 }
 
 /**

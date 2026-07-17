@@ -67,6 +67,26 @@ describe('NodeMarkerLayer count marker', () => {
     expect(iconSvg()).toContain(HEALTH_COLORS.none);
   });
 
+  it('renders a configured marker_icon (glyph) with the active count as a badge', () => {
+    render(
+      <NodeMarkerLayer nodes={[makeNode({ variant: 'region', marker_icon: 'trees', active: 3 })]} />
+    );
+    const svg = iconSvg();
+    expect(svg).toContain('<path'); // the glyph is drawn
+    expect(svg).toContain('>3<'); // active count rides a badge
+  });
+
+  it('renders a configured icon even when nothing is scheduled (no muted dot)', () => {
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ variant: 'region', marker_icon: 'trees', scheduled: 0, active: 0 })]}
+      />
+    );
+    const svg = iconSvg();
+    expect(svg).toContain('<path');
+    expect(svg).not.toContain('width="12"'); // not the muted dot
+  });
+
   it('renders an empty lokasi as a muted dot with no count', () => {
     render(
       <NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 0, clocked_in: 0, active: 0 })]} />

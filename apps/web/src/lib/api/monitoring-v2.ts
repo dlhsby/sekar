@@ -103,7 +103,14 @@ export interface PresenceBreakdown {
   tidak_aktif: PresenceLocationCounts;
 }
 
-export interface AggregateNode {
+export interface AggregateNodeMarker {
+  /** Named marker glyph configured for the area (e.g. "trees"). */
+  marker_icon?: string | null;
+  /** Custom marker image (PNG/SVG) configured for the area. */
+  marker_image_url?: string | null;
+}
+
+export interface AggregateNode extends AggregateNodeMarker {
   id: string;
   name: string;
   type: 'rayon' | 'area' | 'region';

@@ -102,6 +102,7 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     not_clocked_in: n.roster.not_clocked_in,
     active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
+    marker_icon: n.marker_icon ?? null,
   };
 }
 
