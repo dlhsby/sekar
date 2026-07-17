@@ -21,7 +21,7 @@ export interface NodeMarker {
   scheduled: number;
   clocked_in: number;
   not_clocked_in: number;
-  /** Active (fresh ping) AND inside their area — the bubble's ratio numerator. */
+  /** Active (fresh ping) AND inside their area — a hover-tooltip detail only. */
   active_inside: number;
 }
 
@@ -49,7 +49,7 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           onClick={() => onDrill?.(node)}
           onMouseOver={() => setHoverId(node.id)}
           onMouseOut={() => setHoverId((cur) => (cur === node.id ? null : cur))}
-          icon={nodeRatioIcon(node.variant, node.scheduled, node.active_inside)}
+          icon={nodeRatioIcon(node.variant, node.scheduled, node.clocked_in)}
           zIndex={node.variant === 'surabaya' ? 8 : 5}
         />
       ))}
