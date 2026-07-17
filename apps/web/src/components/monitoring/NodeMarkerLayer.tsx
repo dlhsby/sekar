@@ -10,7 +10,7 @@
 import { useMemo, useState } from 'react';
 import { Marker, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
-import { nodeRatioIcon } from '@/lib/monitoring/markers';
+import { nodeCountIcon, rosterHealth } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
   id: string;
@@ -21,6 +21,8 @@ export interface NodeMarker {
   scheduled: number;
   clocked_in: number;
   not_clocked_in: number;
+  /** Active workers in scope — the number shown on the count marker. */
+  active: number;
   /** Active (fresh ping) AND inside their area — a hover-tooltip detail only. */
   active_inside: number;
 }
@@ -49,7 +51,7 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           onClick={() => onDrill?.(node)}
           onMouseOver={() => setHoverId(node.id)}
           onMouseOut={() => setHoverId((cur) => (cur === node.id ? null : cur))}
-          icon={nodeRatioIcon(node.variant, node.scheduled, node.clocked_in)}
+          icon={nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in))}
           zIndex={node.variant === 'surabaya' ? 8 : 5}
         />
       ))}
