@@ -7,9 +7,8 @@
  * attendance ratio `hadir/terjadwal` colored by staffing health; clicking drills
  * one level deeper. Replaces the old status-only "Ringkasan" bubbles.
  */
-import { useMemo, useState } from 'react';
-import { Marker, InfoWindow } from '@react-google-maps/api';
-import { useTranslation } from 'react-i18next';
+import { useMemo } from 'react';
+import { Marker } from '@react-google-maps/api';
 import { nodeCountIcon, rosterHealth } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
@@ -23,8 +22,10 @@ export interface NodeMarker {
   not_clocked_in: number;
   /** Active workers in scope — the number shown on the count marker. */
   active: number;
-  /** Active (fresh ping) AND inside their area — a hover-tooltip detail only. */
+  /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */
   active_inside: number;
+  /** Configured marker glyph for this area (e.g. "trees"); falls back to a plain dot. */
+  marker_icon?: string | null;
 }
 
 export interface NodeMarkerLayerProps {
@@ -33,15 +34,14 @@ export interface NodeMarkerLayerProps {
 }
 
 export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
-  const { t } = useTranslation();
-  const [hoverId, setHoverId] = useState<string | null>(null);
-
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
   );
-  const hovered = hoverId ? placed.find((n) => n.id === hoverId) : null;
 
+  // Tap = drill in. No hover-stats tooltip (touch has no hover) — a node's stats
+  // are read from the re-scoping status bar + the tappable current-node marker.
+  // The native `title` gives just a name hint on desktop hover.
   return (
     <>
       {placed.map((node) => (
@@ -49,42 +49,13 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           key={`node-${node.id}`}
           position={{ lat: node.lat, lng: node.lng }}
           onClick={() => onDrill?.(node)}
-          onMouseOver={() => setHoverId(node.id)}
-          onMouseOut={() => setHoverId((cur) => (cur === node.id ? null : cur))}
-          icon={nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in))}
+          icon={nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in), {
+            icon: node.marker_icon,
+          })}
+          title={node.name}
           zIndex={node.variant === 'surabaya' ? 8 : 5}
         />
       ))}
-
-      {hovered && (
-        <InfoWindow
-          position={{ lat: hovered.lat, lng: hovered.lng }}
-          onCloseClick={() => setHoverId(null)}
-          options={{ disableAutoPan: true, pixelOffset: new google.maps.Size(0, -12) }}
-        >
-          <div className="text-xs text-nb-black">
-            <div className="font-bold">{hovered.name}</div>
-            <div className="mt-1 flex flex-col gap-0.5">
-              <span>
-                {t('monitoring:aggregate.activeInsideLabel')}:{' '}
-                <span className="font-mono font-bold tabular-nums">{hovered.active_inside}</span>
-              </span>
-              <span>
-                {t('monitoring:aggregate.scheduledLabel')}:{' '}
-                <span className="font-mono font-bold tabular-nums">{hovered.scheduled}</span>
-              </span>
-              <span>
-                {t('monitoring:aggregate.clockedInLabel')}:{' '}
-                <span className="font-mono font-bold tabular-nums">{hovered.clocked_in}</span>
-              </span>
-              <span>
-                {t('monitoring:aggregate.notClockedInLabel')}:{' '}
-                <span className="font-mono font-bold tabular-nums">{hovered.not_clocked_in}</span>
-              </span>
-            </div>
-          </div>
-        </InfoWindow>
-      )}
     </>
   );
 }

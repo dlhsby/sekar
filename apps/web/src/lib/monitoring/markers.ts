@@ -116,14 +116,25 @@ export function workerPinIcon(
  * the map. The ring color comes from the roster (clocked_in vs scheduled), so a
  * fully-attended node reads green even when a worker's signal has gone stale.
  */
+// Named marker glyphs (an area's configured `marker_icon`), drawn as stroked
+// white-on-color paths in a 24×24 box. Extend as settings expose more icons.
+const NODE_GLYPHS: Record<string, string> = {
+  trees:
+    '<path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/>',
+  tree: '<path d="M12 3l5 7h-3v5h-4v-5H7z"/><path d="M12 15v6"/>',
+};
+
 export function nodeCountIcon(
   variant: 'rayon' | 'area' | 'region' | 'surabaya',
   active: number,
-  health: HealthLevel
+  health: HealthLevel,
+  opts?: { icon?: string | null }
 ): google.maps.Icon {
   const color = HEALTH_COLORS[health];
-  // Nothing scheduled + nobody active → a small muted dot (dense rayons stay legible).
-  if (health === 'empty' && active <= 0) {
+  const glyph = opts?.icon ? (NODE_GLYPHS[opts.icon] ?? null) : null;
+  // Nothing scheduled + nobody active + no configured icon → a small muted dot
+  // (dense rayons stay legible). A configured icon always renders.
+  if (health === 'empty' && active <= 0 && !glyph) {
     const s = 12;
     const svg =
       `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
@@ -140,10 +151,19 @@ export function nodeCountIcon(
   const d = big ? 40 : 30;
   const r = d / 2 - 2;
   const fs = big ? 16 : 13;
+  // Configured marker: the glyph fills the pin; the active count rides a small
+  // health-colored badge at the top-right so status still reads at a glance.
+  const center = glyph
+    ? `<g transform="translate(${d / 2} ${d / 2}) scale(${(d * 0.55) / 24}) translate(-12 -12)" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
+      (active > 0
+        ? `<circle cx="${d - 8}" cy="8" r="8" fill="${color}"/>` +
+          `<text x="${d - 8}" y="${8 + fs / 3}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="800" fill="${WHITE}">${active}</text>`
+        : '')
+    : `<text x="${d / 2}" y="${d / 2 + fs / 3}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="${fs}" font-weight="800" fill="${color}">${active}</text>`;
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${d}" height="${d}" viewBox="0 0 ${d} ${d}">` +
     `<circle cx="${d / 2}" cy="${d / 2}" r="${r}" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-    `<text x="${d / 2}" y="${d / 2 + fs / 3}" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="${fs}" font-weight="800" fill="${color}">${active}</text>` +
+    center +
     `</svg>`;
   return {
     url: svgUrl(svg),
