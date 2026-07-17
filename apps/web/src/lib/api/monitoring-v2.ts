@@ -130,6 +130,8 @@ export interface AggregateResponse {
   totals: AggregateStatusCounts;
   roster_totals: AggregateRosterCounts;
   presence_totals: PresenceBreakdown;
+  /** Ad-hoc workers: clocked in but off the current-shift roster (Luar jadwal). */
+  off_schedule_count?: number;
   generated_at: string;
 }
 

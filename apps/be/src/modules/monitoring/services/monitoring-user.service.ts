@@ -95,15 +95,24 @@ export class MonitoringUserService {
       qb.andWhere('uts.status = :status', { status: filters.status });
     }
 
-    // Server-side search (5.7a): match worker or lokasi name among workers with a
-    // fresh (≤24h) fix. Escape LIKE metacharacters in the term so a stray % / _
-    // can't turn into a wildcard. `shift_id IS NOT NULL` above already limits this
-    // to clocked-in workers, so ad-hoc (unscheduled) clock-ins surface too.
+    // Server-side search (5.7a): match worker, lokasi, or TEAM name among workers
+    // with a fresh (≤24h) fix. Escape LIKE metacharacters in the term so a stray
+    // % / _ can't turn into a wildcard. `shift_id IS NOT NULL` above already limits
+    // this to clocked-in workers, so ad-hoc (unscheduled) clock-ins surface too.
+    // Team match uses an EXISTS subquery on today's roster (no row duplication).
     if (filters?.q && filters.q.trim()) {
       const term = `%${filters.q.trim().replace(/[\\%_]/g, '\\$&')}%`;
-      qb.andWhere('(user.full_name ILIKE :q OR area.name ILIKE :q)', { q: term }).andWhere(
-        "uts.last_location_at >= NOW() - INTERVAL '24 hours'",
-      );
+      qb.andWhere(
+        `(user.full_name ILIKE :q OR area.name ILIKE :q OR EXISTS (
+            SELECT 1 FROM schedules s
+            JOIN team_categories tc ON tc.id = s.team_category_id
+            WHERE s.user_id = uts.user_id
+              AND s.schedule_date = :teamDate
+              AND s.deleted_at IS NULL
+              AND tc.name ILIKE :q
+          ))`,
+        { q: term, teamDate: TimezoneUtil.jakartaDateString() },
+      ).andWhere("uts.last_location_at >= NOW() - INTERVAL '24 hours'");
     }
 
     const trackingRecords = await qb.getMany();

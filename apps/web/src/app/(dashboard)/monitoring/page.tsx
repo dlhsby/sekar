@@ -467,7 +467,17 @@ export default function MonitoringPage() {
       }
       return counts;
     }
-    return aggregateToStatusCounts(regionTotals?.totals ?? activeAgg.data?.totals);
+    // Above area scope, derive the filter chips from the SAME presence/roster
+    // model as the status-bar pills (scheduled-active / scheduled-offline /
+    // roster not-clocked-in) so the two never disagree for the same label.
+    const p = regionTotals?.presence_totals ?? activeAgg.data?.presence_totals;
+    const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
+    return aggregateToStatusCounts({
+      active: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
+      offline: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
+      absent: r?.not_clocked_in ?? 0,
+      outside_area: (p?.aktif.luar ?? 0) + (p?.tidak_aktif.luar ?? 0),
+    });
   }, [showWorkers, regionTotals, activeAgg.data, workers]);
 
   // Presence-model counts for the top pills. At area scope, derive from the
@@ -494,7 +504,9 @@ export default function MonitoringPage() {
       aktif: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
       tidak_aktif: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
       tidak_hadir: r?.not_clocked_in ?? 0,
-      adhoc: 0,
+      // Ad-hoc (Luar jadwal): clocked in but off the current-shift roster — now
+      // surfaced above area scope from the aggregate (was hard-0, hiding them).
+      adhoc: activeAgg.data?.off_schedule_count ?? 0,
     };
 
   }, [showWorkers, workers, regionTotals, activeAgg.data]);

@@ -335,6 +335,15 @@ export class MonitoringStatsService {
     const currentShift = await this.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
     const today = TimezoneUtil.jakartaDateString();
+    // Ad-hoc (off-schedule) workers: clocked in but not on the current shift's
+    // roster. Surfaced as the "Luar jadwal" pill at every scope so they aren't
+    // invisible above area scope (they're excluded from the scheduled presence).
+    const scheduledIds = await this.scheduledUserIdsForCurrentShift(currentShift?.id);
+    const offScheduleCount = (clockedIn: Set<string>): number => {
+      let n = 0;
+      for (const id of clockedIn) if (!scheduledIds.has(id)) n++;
+      return n;
+    };
 
     if (scope === 'rayon') {
       if (!rayonId) throw new NotFoundException('rayon id is required for rayon scope');
@@ -361,6 +370,7 @@ export class MonitoringStatsService {
           clockedInSet,
         ),
         presence_totals: this.sumPresence(nodes),
+        off_schedule_count: offScheduleCount(clockedInSet),
         generated_at: new Date(),
       };
     }
@@ -388,6 +398,7 @@ export class MonitoringStatsService {
           clockedInSet,
         ),
         presence_totals: this.sumPresence(nodes),
+        off_schedule_count: offScheduleCount(clockedInSet),
         generated_at: new Date(),
       };
     }
@@ -409,6 +420,7 @@ export class MonitoringStatsService {
         clockedInSet,
       ),
       presence_totals: this.sumPresence(nodes),
+      off_schedule_count: offScheduleCount(clockedInSet),
       generated_at: new Date(),
     };
   }
