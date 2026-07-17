@@ -9,7 +9,7 @@
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
-import { nodeCountIcon, rosterHealth, KIND_DEFAULT_GLYPH } from '@/lib/monitoring/markers';
+import { nodeCountIcon, nodeImageIcon, rosterHealth, KIND_DEFAULT_GLYPH } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
   id: string;
@@ -30,12 +30,22 @@ export interface NodeMarker {
   marker_image_url?: string | null;
 }
 
+/**
+ * Zoom at which dense area/kawasan labels reveal. Rayon labels always show (few,
+ * well-spaced); kawasan/lokasi labels would collide at the drill-in fit zoom, so
+ * they appear only once the user zooms in and they spread out — mirroring how
+ * Google reveals place labels progressively (legacy markers have no collision).
+ */
+const AREA_LABEL_REVEAL_ZOOM = 14;
+
 export interface NodeMarkerLayerProps {
   nodes: NodeMarker[];
   onDrill?: (node: NodeMarker) => void;
+  /** Current map zoom — gates when dense area/kawasan labels appear. */
+  zoom?: number;
 }
 
-export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
+export function NodeMarkerLayer({ nodes, onDrill, zoom }: NodeMarkerLayerProps) {
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
@@ -46,18 +56,42 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
   // The native `title` gives just a name hint on desktop hover.
   return (
     <>
-      {placed.map((node) => (
-        <Marker
-          key={`node-${node.id}`}
-          position={{ lat: node.lat, lng: node.lng }}
-          onClick={() => onDrill?.(node)}
-          icon={nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in), {
-            icon: glyphFor(node),
-          })}
-          title={node.name}
-          zIndex={node.variant === 'surabaya' ? 8 : 5}
-        />
-      ))}
+      {placed.map((node) => {
+        const glyph = glyphFor(node);
+        // Custom-uploaded image → render it literally; otherwise the composited
+        // glyph + count + health-ring marker (glyph null = a muted empty dot).
+        const icon = node.marker_image_url
+          ? nodeImageIcon(node.marker_image_url, node.variant)
+          : nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in), {
+              icon: glyph,
+            });
+        // Google-style place label under the marker — not on muted empty dots
+        // (a rayon's idle lokasi stay clean), and dense kawasan/lokasi labels
+        // only once zoomed in enough that they don't collide. Rayons (few,
+        // spread out) are always labeled.
+        const hasMarker = node.marker_image_url != null || glyph !== null;
+        const zoomedForArea =
+          node.variant === 'rayon' ||
+          node.variant === 'surabaya' ||
+          zoom == null ||
+          zoom >= AREA_LABEL_REVEAL_ZOOM;
+        const showLabel = hasMarker && zoomedForArea;
+        return (
+          <Marker
+            key={`node-${node.id}`}
+            position={{ lat: node.lat, lng: node.lng }}
+            onClick={() => onDrill?.(node)}
+            icon={icon}
+            label={
+              showLabel
+                ? { text: node.name, className: 'node-marker-label', fontSize: '12px', fontWeight: '600' }
+                : undefined
+            }
+            title={node.name}
+            zIndex={node.variant === 'surabaya' ? 8 : 5}
+          />
+        );
+      })}
     </>
   );
 }

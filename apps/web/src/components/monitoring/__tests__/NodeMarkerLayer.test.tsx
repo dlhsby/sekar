@@ -10,9 +10,19 @@ import { NodeMarkerLayer, type NodeMarker } from '../NodeMarkerLayer';
 import { HEALTH_COLORS } from '@/lib/monitoring/markers';
 
 const mockIcons: Array<{ url: string }> = [];
+const mockLabels: Array<{ text: string } | undefined> = [];
 jest.mock('@react-google-maps/api', () => ({
-  Marker: ({ icon, onClick }: { icon: { url: string }; onClick?: () => void }) => {
+  Marker: ({
+    icon,
+    label,
+    onClick,
+  }: {
+    icon: { url: string };
+    label?: { text: string };
+    onClick?: () => void;
+  }) => {
     mockIcons.push(icon);
+    mockLabels.push(label);
     return <button data-testid="marker" onClick={() => onClick?.()} />;
   },
   InfoWindow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -30,6 +40,7 @@ beforeAll(() => {
 
 beforeEach(() => {
   mockIcons.length = 0;
+  mockLabels.length = 0;
 });
 
 const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
@@ -92,6 +103,37 @@ describe('NodeMarkerLayer count marker', () => {
     const svg = iconSvg();
     expect(svg).toContain('<path'); // building glyph, not a bare number
     expect(svg).toContain('>2<'); // active count badge
+  });
+
+  it('labels a rayon marker with its name (always, regardless of zoom)', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon', name: 'Rayon Timur 2' })]} zoom={11} />);
+    expect(mockLabels[0]?.text).toBe('Rayon Timur 2');
+  });
+
+  it('hides a kawasan label at drill-fit zoom and reveals it when zoomed in', () => {
+    const kawasan = makeNode({ variant: 'region', name: 'Kawasan Mulyosari', marker_icon: 'trees', active: 1 });
+    const { rerender } = render(<NodeMarkerLayer nodes={[kawasan]} zoom={13} />);
+    expect(mockLabels[0]).toBeUndefined(); // collides at fit zoom → hidden
+    mockLabels.length = 0;
+    rerender(<NodeMarkerLayer nodes={[kawasan]} zoom={15} />);
+    expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari'); // spread out → shown
+  });
+
+  it('never labels an empty muted-dot lokasi', () => {
+    render(
+      <NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 0, clocked_in: 0, active: 0 })]} zoom={16} />
+    );
+    expect(mockLabels[0]).toBeUndefined();
+  });
+
+  it('renders a custom marker_image_url literally as the pin icon', () => {
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ variant: 'area', marker_image_url: 'https://cdn.example/park.png', active: 0 })]}
+        zoom={16}
+      />
+    );
+    expect(mockIcons[0].url).toBe('https://cdn.example/park.png');
   });
 
   it('renders an empty lokasi as a muted dot with no count', () => {
