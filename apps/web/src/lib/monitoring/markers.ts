@@ -122,6 +122,21 @@ const NODE_GLYPHS: Record<string, string> = {
   trees:
     '<path d="M8 19a4 4 0 0 1-2.24-7.32A3.5 3.5 0 0 1 9 6.03V6a3 3 0 1 1 6 0v.04a3.5 3.5 0 0 1 3.24 5.65A4 4 0 0 1 16 19Z"/><path d="M12 19v3"/>',
   tree: '<path d="M12 3l5 7h-3v5h-4v-5H7z"/><path d="M12 15v6"/>',
+  building:
+    '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/><path d="M10 18h4"/>',
+};
+
+/**
+ * System-default glyph per node kind (ADR-046 "bawaan sistem" marker), mirroring
+ * the default pin images (rayon → orange building, kawasan/lokasi → green tree).
+ * Used when an area has no explicit `marker_icon`, so every node carries a
+ * kind-appropriate marker instead of a bare dot.
+ */
+export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'area' | 'region' | 'surabaya', string> = {
+  rayon: 'building',
+  region: 'trees',
+  area: 'trees',
+  surabaya: 'building',
 };
 
 export function nodeCountIcon(

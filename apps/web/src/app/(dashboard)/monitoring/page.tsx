@@ -103,6 +103,7 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
     marker_icon: n.marker_icon ?? null,
+    marker_image_url: n.marker_image_url ?? null,
   };
 }
 

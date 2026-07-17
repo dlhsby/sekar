@@ -9,7 +9,7 @@
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
-import { nodeCountIcon, rosterHealth } from '@/lib/monitoring/markers';
+import { nodeCountIcon, rosterHealth, KIND_DEFAULT_GLYPH } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
   id: string;
@@ -26,6 +26,8 @@ export interface NodeMarker {
   active_inside: number;
   /** Configured marker glyph for this area (e.g. "trees"); falls back to a plain dot. */
   marker_icon?: string | null;
+  /** Configured map-marker image (penanda peta); null → the per-kind system default. */
+  marker_image_url?: string | null;
 }
 
 export interface NodeMarkerLayerProps {
@@ -50,7 +52,7 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           position={{ lat: node.lat, lng: node.lng }}
           onClick={() => onDrill?.(node)}
           icon={nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in), {
-            icon: node.marker_icon,
+            icon: glyphFor(node),
           })}
           title={node.name}
           zIndex={node.variant === 'surabaya' ? 8 : 5}
@@ -58,4 +60,18 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
       ))}
     </>
   );
+}
+
+/**
+ * The glyph a node renders: its explicit `marker_icon`, else the system default
+ * for its kind ("bawaan sistem" — rayon → building, kawasan/lokasi → tree). An
+ * empty lokasi (nothing scheduled, nobody active, no explicit icon) opts out so
+ * it stays a muted dot and dense rayons don't clutter.
+ */
+function glyphFor(node: NodeMarker): string | null {
+  const explicit = node.marker_icon ?? null;
+  const isEmptyArea =
+    node.variant === 'area' && node.scheduled <= 0 && node.active <= 0 && !explicit;
+  if (isEmptyArea) return null;
+  return explicit ?? KIND_DEFAULT_GLYPH[node.variant] ?? null;
 }
