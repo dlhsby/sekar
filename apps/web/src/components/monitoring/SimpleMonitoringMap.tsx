@@ -85,6 +85,21 @@ const AREA_MARKER_OVERDUE = '#DC2626';
 // Native Google Maps gesture UX: greedy scroll/pinch zoom + drag pan (the camera
 // controls are enough, so the +/- zoom buttons are off). The only on-map control
 // is a single My-Location button (added natively in createLocateControl).
+// Declutter the base map: hide third-party POIs (businesses, restaurants,
+// buildings) and transit so only our own area markers + labels stand out. Park
+// geometry stays visible (green context matters for a parks dept); only its
+// labels/icons are muted.
+const DECLUTTER_STYLES: google.maps.MapTypeStyle[] = [
+  { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.attraction', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.medical', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.place_of_worship', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.school', stylers: [{ visibility: 'off' }] },
+  { featureType: 'poi.sports_complex', stylers: [{ visibility: 'off' }] },
+  { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+];
+
 const MAP_OPTIONS: google.maps.MapOptions = {
   streetViewControl: false,
   fullscreenControl: false,
@@ -93,6 +108,7 @@ const MAP_OPTIONS: google.maps.MapOptions = {
   gestureHandling: 'greedy',
   clickableIcons: false,
   mapTypeId: 'roadmap',
+  styles: DECLUTTER_STYLES,
 };
 
 const DEFAULT_ZOOM = 11;
@@ -484,7 +500,7 @@ function MonitoringMapInner({
 
         {/* Drill-down node markers (Surabaya / rayon / area) or clustered worker pins. */}
         {!renderWorkers ? (
-          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} />
+          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} />
         ) : layers.petugas ? (
           <WorkerClusterLayer
             workers={workers}
