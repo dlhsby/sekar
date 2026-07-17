@@ -197,16 +197,24 @@ function MonitoringMapInner({
 
   // Flatten boundary geometry into renderable pieces. Rayon polygons keep their
   // configured color so the map can tint the fill/border per rayon.
-  const { rayonPolys, areaPaths, areaPins } = useMemo(() => {
+  const { rayonPolys, regionPolys, areaPaths, areaPins } = useMemo(() => {
     const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
-    const areaPaths: { id: string; paths: google.maps.LatLngLiteral[] }[] = [];
+    const regionPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
+    const areaPaths: { id: string; paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     const areaPins: AreaPin[] = [];
     for (const rayon of boundaries?.rayons ?? []) {
       geometryToPaths(rayon.boundary_polygon).forEach((p) =>
         rayonPolys.push({ paths: p, color: rayon.color ?? null })
       );
+      for (const region of rayon.regions ?? []) {
+        geometryToPaths(region.boundary_polygon).forEach((p) =>
+          regionPolys.push({ paths: p, color: region.color ?? null })
+        );
+      }
       for (const area of rayon.areas) {
-        geometryToPaths(area.boundary_polygon).forEach((p) => areaPaths.push({ id: area.id, paths: p }));
+        geometryToPaths(area.boundary_polygon).forEach((p) =>
+          areaPaths.push({ id: area.id, paths: p, color: area.color ?? null })
+        );
         if (typeof area.center_lat === 'number' && typeof area.center_lng === 'number') {
           areaPins.push({
             id: area.id,
@@ -218,7 +226,7 @@ function MonitoringMapInner({
         }
       }
     }
-    return { rayonPolys, areaPaths, areaPins };
+    return { rayonPolys, regionPolys, areaPaths, areaPins };
   }, [boundaries]);
 
   // Fit the map to the served region once geometry/markers are available.
@@ -320,6 +328,8 @@ function MonitoringMapInner({
   // outlines only once inside a rayon. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
   const showRayonPolys = scope !== 'surabaya';
+  // Kawasan outlines are drawn tinted once you're inside a rayon (rayon/region scope).
+  const showRegionPolys = scope === 'rayon' || scope === 'region';
   // Area outlines are on-demand: only at area scope, and only the SELECTED area's
   // polygon (mirrors mobile — never all of a rayon's areas at once).
   const showAreaBorders = scope === 'area';
@@ -396,21 +406,48 @@ function MonitoringMapInner({
             );
           })}
 
-        {/* Area boundaries — outline + fill (one `area` toggle); only the
-            selected area at area scope (on-demand). */}
+        {/* Kawasan (region) boundaries — outline + light tint in the kawasan's
+            own color; drawn once you're inside a rayon. */}
+        {layers.rayon && showRegionPolys &&
+          regionPolys.map((poly, i) => {
+            const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
+            const fill =
+              (poly.color && hexToRgba(poly.color, RAYON_FILL_ALPHA * 0.6)) ??
+              POLYGON_STYLES.rayon.fill;
+            return (
+              <Polygon
+                key={`region-${i}`}
+                paths={poly.paths}
+                options={{
+                  strokeColor: stroke,
+                  strokeWeight: 1.5,
+                  strokeOpacity: 0.85,
+                  fillColor: fill,
+                  fillOpacity: RAYON_FILL_ALPHA * 0.6,
+                  clickable: false,
+                  zIndex: 2,
+                }}
+              />
+            );
+          })}
+
+        {/* Area boundaries — outline + fill in the lokasi's own color when set
+            (one `area` toggle); only the selected area at area scope (on-demand). */}
         {layers.area && showAreaBorders &&
           visibleAreaPaths.map((area, i) => (
             <Polygon
               key={`area-${area.id}-${i}`}
               paths={area.paths}
               options={{
-                strokeColor: POLYGON_STYLES.area.stroke,
+                strokeColor: area.color ?? POLYGON_STYLES.area.stroke,
                 strokeWeight: POLYGON_STYLES.area.strokeWidth,
                 strokeOpacity: 1,
-                fillColor: POLYGON_STYLES.area.fill,
+                fillColor:
+                  (area.color && hexToRgba(area.color, POLYGON_STYLES.area.fillOpacity)) ??
+                  POLYGON_STYLES.area.fill,
                 fillOpacity: POLYGON_STYLES.area.fillOpacity,
                 clickable: false,
-                zIndex: 2,
+                zIndex: 3,
               }}
             />
           ))}

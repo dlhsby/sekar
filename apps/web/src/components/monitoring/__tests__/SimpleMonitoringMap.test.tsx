@@ -109,6 +109,7 @@ const boundaries: BoundariesResponse = {
       area_count: 1,
       is_understaffed: false,
       understaffed_area_count: 0,
+      regions: [],
       areas: [
         {
           id: 'a1',

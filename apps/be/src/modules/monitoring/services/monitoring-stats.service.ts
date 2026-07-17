@@ -39,6 +39,7 @@ import {
 import {
   BoundariesResponseDto,
   RayonBoundaryDto,
+  RegionBoundaryDto,
   AreaBoundaryDto,
   RoleStaffingItemDto,
 } from '../dto/boundaries.dto';
@@ -1487,6 +1488,7 @@ export class MonitoringStatsService {
             area_count,
             is_understaffed: false,
             understaffed_area_count: 0,
+            regions: [],
             areas: [],
           } as RayonBoundaryDto;
         }
@@ -1509,12 +1511,25 @@ export class MonitoringStatsService {
               area_count: 0,
               is_understaffed: false,
               understaffed_area_count: 0,
+              regions: [],
               areas: [],
             } as RayonBoundaryDto;
           }
           areaWhere.id = In(filters.area_ids);
         }
         const areas = await this.areaRepository.find({ where: areaWhere });
+
+        // Kawasan (region) outlines within this rayon — drawn tinted at rayon zoom.
+        const regionEntities =
+          (await this.regionRepository.find({ where: { rayon_id: rayon.id } })) ?? [];
+        const regionBoundaries: RegionBoundaryDto[] = regionEntities.map((rg) => ({
+          id: rg.id,
+          name: rg.name,
+          color: (rg as any).border_color ?? (rg as any).fill_color ?? null,
+          boundary_polygon: simplifyGeometry((rg as any).boundary_polygon) || null,
+          center_lat: (rg as any).center_lat ? parseFloat((rg as any).center_lat.toString()) : null,
+          center_lng: (rg as any).center_lng ? parseFloat((rg as any).center_lng.toString()) : null,
+        }));
 
         const locationIds = areas.map((a) => a.id);
         const assignedCounts =
@@ -1547,6 +1562,7 @@ export class MonitoringStatsService {
             id: area.id,
             name: area.name,
             boundary_polygon: simplifyGeometry(area.boundary_polygon) || null,
+            color: (area as any).border_color ?? (area as any).fill_color ?? null,
             center_lat: parseFloat(area.gps_lat?.toString() || '0'),
             center_lng: parseFloat(area.gps_lng?.toString() || '0'),
             rayon_id: rayon.id,
@@ -1569,6 +1585,7 @@ export class MonitoringStatsService {
           area_count: areas.length,
           is_understaffed: understaffedCount > 0,
           understaffed_area_count: understaffedCount,
+          regions: regionBoundaries,
           areas: areaBoundaries,
         };
       }),

@@ -21,6 +21,10 @@ export class AreaBoundaryDto {
   @ApiPropertyOptional()
   boundary_polygon: object | null;
 
+  /** Boundary tint (border_color, falling back to fill_color); null when unset. */
+  @ApiPropertyOptional({ example: '#7FBC8C' })
+  color: string | null;
+
   @ApiProperty({ example: -7.2575 })
   center_lat: number;
 
@@ -41,6 +45,27 @@ export class AreaBoundaryDto {
 
   @ApiProperty({ type: [RoleStaffingItemDto] })
   staffing_summary: RoleStaffingItemDto[];
+}
+
+export class RegionBoundaryDto {
+  @ApiProperty({ example: 'region-uuid' })
+  id: string;
+
+  @ApiProperty({ example: 'Kawasan Menur dan Manyar' })
+  name: string;
+
+  /** Boundary tint (border_color, falling back to fill_color); null when unset. */
+  @ApiPropertyOptional({ example: '#1C1917' })
+  color: string | null;
+
+  @ApiPropertyOptional()
+  boundary_polygon: object | null;
+
+  @ApiProperty({ example: -7.2575 })
+  center_lat: number | null;
+
+  @ApiProperty({ example: 112.7521 })
+  center_lng: number | null;
 }
 
 export class RayonBoundaryDto {
@@ -72,6 +97,10 @@ export class RayonBoundaryDto {
 
   @ApiProperty({ example: 1 })
   understaffed_area_count: number;
+
+  /** Kawasan (region) outlines within the rayon — drawn tinted at rayon zoom. */
+  @ApiProperty({ type: [RegionBoundaryDto] })
+  regions: RegionBoundaryDto[];
 
   @ApiProperty({ type: [AreaBoundaryDto] })
   areas: AreaBoundaryDto[];

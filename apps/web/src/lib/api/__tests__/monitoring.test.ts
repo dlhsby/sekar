@@ -615,6 +615,7 @@ describe('Monitoring API', () => {
             area_count: 2,
             is_understaffed: false,
             understaffed_area_count: 0,
+            regions: [],
             areas: [
               {
                 id: 'area-1',
