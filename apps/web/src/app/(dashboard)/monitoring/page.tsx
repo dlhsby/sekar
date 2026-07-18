@@ -563,6 +563,7 @@ export default function MonitoringPage() {
         lng: w.lng,
         status: w.status,
         role: w.role,
+        role_marker_icon: w.role_marker_icon ?? null,
         is_within_area: w.is_within_area,
         is_scheduled: w.is_scheduled ?? true,
         team_id: w.team_id ?? null,

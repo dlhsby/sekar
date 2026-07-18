@@ -15,6 +15,8 @@ export interface SnapshotWorker {
   user_id: string;
   full_name: string;
   role: string;
+  /** The role's configured marker icon (null → the client default glyph for the role). */
+  role_marker_icon?: string | null;
   lat: number;
   lng: number;
   status: TrackingStatus;

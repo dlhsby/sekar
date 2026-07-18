@@ -199,6 +199,7 @@ describe('MonitoringController', () => {
         id: 'user-1',
         full_name: 'Worker One',
         role: UserRole.SATGAS,
+        role_marker_icon: null,
         phone: '081234567890',
         status: TrackingStatus.ACTIVE,
         activity: 'aktif',
