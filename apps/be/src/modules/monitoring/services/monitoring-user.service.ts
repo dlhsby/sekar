@@ -8,6 +8,7 @@ import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
+import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 import {
@@ -50,6 +51,8 @@ export class MonitoringUserService {
     private readonly locationRepository: Repository<LocationLog>,
     @InjectRepository(Rayon)
     private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepository: Repository<ShiftDefinition>,
     @InjectRepository(UserTrackingStatus)
@@ -120,13 +123,14 @@ export class MonitoringUserService {
     const locationIds = [...new Set(trackingRecords.map((r) => r.location_id).filter(Boolean))];
     const userIds = trackingRecords.map((r) => r.user_id);
 
-    const [rayonMap, taskMap, thresholds, teamMap] = await Promise.all([
+    const [rayonMap, taskMap, thresholds, teamMap, roleMarkerMap] = await Promise.all([
       this.buildRayonMap(locationIds as string[]),
       this.buildCurrentTaskMap(userIds),
       this.cacheService.getThresholds(),
       this.dailySchedulesService
         ? this.dailySchedulesService.getTeamMembership(userIds, TimezoneUtil.jakartaDateString())
         : Promise.resolve(new Map()),
+      this.buildRoleMarkerMap(),
     ]);
 
     const users: LiveUserDto[] = trackingRecords.map((uts) => {
@@ -144,6 +148,7 @@ export class MonitoringUserService {
         full_name: uts.user.full_name,
         phone: uts.user.phone_number || null,
         role: uts.user.role,
+        role_marker_icon: roleMarkerMap.get(uts.user.role) ?? null,
         location_id: uts.location_id,
         area_name: uts.area?.name || 'Unknown',
         rayon_id: rayonId,
@@ -448,6 +453,18 @@ export class MonitoringUserService {
     });
 
     return new Map(rayons.map((r) => [r.id, r.name]));
+  }
+
+  /**
+   * Map each role `code` → its configured `marker_icon` (only rows that set one).
+   * A worker's role glyph on the map falls back to a client-side default when the
+   * role leaves this null, so custom roles / overrides still get their icon.
+   */
+  private async buildRoleMarkerMap(): Promise<Map<string, string>> {
+    const roles = await this.roleRepository.find({ select: ['code', 'marker_icon'] });
+    return new Map(
+      roles.filter((r) => r.marker_icon).map((r) => [r.code, r.marker_icon as string]),
+    );
   }
 
   private async buildCurrentTaskMap(

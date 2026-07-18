@@ -12,6 +12,8 @@
  * inside (satgas=hard-hat, linmas=shield, korlap=clipboard). Node markers show
  * the attendance ratio `hadir/terjadwal` colored by staffing health.
  */
+import { ROLE_MARKER_ICONS } from '@/lib/constants/monitoring';
+
 /* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays, not rendered style tokens */
 const BLACK = '#1C1917';
 const WHITE = '#FFFFFF';
@@ -53,6 +55,8 @@ export function rosterHealth(scheduled: number, clockedIn: number): HealthLevel 
 }
 
 // White role glyphs, drawn as stroked paths inside a 24×24 box centered at (12,12).
+// Keyed by role CODE — the built-in look for the three field roles that keep a
+// bespoke glyph (hard-hat / shield / clipboard) unless a role overrides its icon.
 const ROLE_GLYPHS: Record<string, string> = {
   satgas:
     '<path d="M4 17h16"/><path d="M6 17v-2a6 6 0 0 1 12 0v2"/><path d="M10 6.5V4h4v2.5"/>',
@@ -60,7 +64,45 @@ const ROLE_GLYPHS: Record<string, string> = {
   korlap:
     '<rect x="6" y="5" width="12" height="15" rx="1.5"/><path d="M9 5V4a3 3 0 0 1 6 0v1"/><path d="M9 11h6"/><path d="M9 14h6"/>',
 };
+
+// Named marker glyphs (a role's configured `marker_icon`, e.g. "shield"/"crown"),
+// so a custom role or an overridden icon renders its own glyph on the worker pin.
+// Covers the seeded role marker names (ROLE_MARKER_ICONS); unknown names fall back.
+const ICON_GLYPHS: Record<string, string> = {
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'hard-hat': '<path d="M4 17h16"/><path d="M6 17v-2a6 6 0 0 1 12 0v2"/><path d="M10 6.5V4h4v2.5"/>',
+  clipboard:
+    '<rect x="6" y="5" width="12" height="15" rx="1.5"/><path d="M9 5V4a3 3 0 0 1 6 0v1"/><path d="M9 11h6"/><path d="M9 14h6"/>',
+  briefcase:
+    '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
+  shield: '<path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/>',
+  star: '<path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.4L12 16.9 6 19.8l1.5-6.4-5-4.3 6.6-.6z"/>',
+  database:
+    '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
+  crown: '<path d="M2 18h20l-2-9-5 4-3-7-3 7-5-4z"/>',
+  building:
+    '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M10 6h4"/><path d="M10 10h4"/><path d="M10 14h4"/>',
+  settings:
+    '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l7-7 2 2-2 2 2 2-2 2-2-2-2 2"/>',
+  droplets: '<path d="M12 3s6 6 6 11a6 6 0 0 1-12 0c0-5 6-11 6-11z"/>',
+};
 const FALLBACK_GLYPH = '<circle cx="12" cy="9" r="3.2"/><path d="M6 19a6 6 0 0 1 12 0"/>';
+
+/**
+ * The glyph a worker pin draws, in priority order:
+ *  1. the role's explicitly-configured `marker_icon` (custom role / override),
+ *  2. the built-in bespoke glyph for satgas/linmas/korlap,
+ *  3. the seeded default icon for the role code (crown, building, …),
+ *  4. a generic person.
+ */
+function resolveWorkerGlyph(role: string, markerIcon?: string | null): string {
+  if (markerIcon && ICON_GLYPHS[markerIcon]) return ICON_GLYPHS[markerIcon];
+  if (ROLE_GLYPHS[role]) return ROLE_GLYPHS[role];
+  const named = ROLE_MARKER_ICONS[role];
+  if (named && ICON_GLYPHS[named]) return ICON_GLYPHS[named];
+  return FALLBACK_GLYPH;
+}
 
 function svgUrl(svg: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
@@ -79,9 +121,11 @@ export function workerPinIcon(
     outside?: boolean;
     adHoc?: boolean;
     selected?: boolean;
+    /** The role's configured marker icon; overrides the built-in role glyph. */
+    markerIcon?: string | null;
   }
 ): google.maps.Icon {
-  const glyph = ROLE_GLYPHS[role] ?? FALLBACK_GLYPH;
+  const glyph = resolveWorkerGlyph(role, opts.markerIcon);
   const solid = ACTIVITY_COLORS[opts.activity];
   // Ad-hoc: white fill + gray outline + gray glyph (hollow). Scheduled: colored
   // fill + white glyph (solid).

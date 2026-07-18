@@ -16,6 +16,7 @@ import { Activity } from '../activities/entities/activity.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { Rayon, StaffingLevel } from '../rayons/entities/rayon.entity';
 import { Region } from '../regions/entities/region.entity';
+import { Role } from '../rbac/entities/role.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import {
   LocationStaffRequirement,
@@ -277,6 +278,12 @@ describe('MonitoringService', () => {
             findOne: jest.fn(),
             count: jest.fn(),
             createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
+          },
+        },
+        {
+          provide: getRepositoryToken(Role),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
           },
         },
         {

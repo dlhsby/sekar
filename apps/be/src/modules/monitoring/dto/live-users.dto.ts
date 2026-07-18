@@ -21,6 +21,14 @@ export class LiveUserDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
 
+  @ApiPropertyOptional({
+    description:
+      "The role's configured marker icon (null → use the client default glyph for the role)",
+    example: 'shield',
+    nullable: true,
+  })
+  role_marker_icon: string | null;
+
   @ApiProperty({ example: 'area-uuid', nullable: true })
   location_id: string | null;
 

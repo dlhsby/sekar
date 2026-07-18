@@ -12,6 +12,7 @@ import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
+import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
 
@@ -115,6 +116,12 @@ describe('MonitoringUserService', () => {
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Role),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
           },
         },
         {

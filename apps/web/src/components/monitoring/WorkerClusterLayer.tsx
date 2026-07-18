@@ -41,6 +41,7 @@ type WorkerProps = {
   workerId: string;
   status: string;
   role: string;
+  roleMarkerIcon: string | null;
   full_name: string;
   within: boolean;
   scheduled: boolean;
@@ -109,6 +110,7 @@ export function WorkerClusterLayer({
               workerId: worker.user_id,
               status: worker.status,
               role: worker.role,
+              roleMarkerIcon: worker.role_marker_icon ?? null,
               full_name: worker.full_name,
               within: worker.is_within_area,
               scheduled: worker.is_scheduled,
@@ -186,6 +188,7 @@ export function WorkerClusterLayer({
               outside: !leaf.within,
               adHoc: !leaf.scheduled,
               selected,
+              markerIcon: leaf.roleMarkerIcon,
             })}
             onClick={() => onSelect?.(leaf.workerId)}
             zIndex={selected ? 10 : 4}

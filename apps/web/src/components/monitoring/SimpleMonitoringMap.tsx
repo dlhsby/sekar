@@ -36,6 +36,8 @@ export interface SimpleWorker {
   lng: number;
   status: string;
   role: string;
+  /** The role's configured marker icon (null → the client default glyph for the role). */
+  role_marker_icon?: string | null;
   is_within_area: boolean;
   is_scheduled: boolean;
   team_id?: string | null;
