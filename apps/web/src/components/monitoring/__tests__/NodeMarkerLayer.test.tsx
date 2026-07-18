@@ -91,10 +91,10 @@ describe('NodeMarkerLayer marker image', () => {
     expect(mockLabels[0]?.color).toBe(HEALTH_COLORS.none);
   });
 
-  it('hides a kawasan label at drill-fit zoom and reveals it when zoomed in', () => {
+  it('labels kawasan at every zoom, just like rayon', () => {
     const kawasan = makeNode({ variant: 'region', name: 'Kawasan Mulyosari', active: 1 });
     const { rerender } = render(<NodeMarkerLayer nodes={[kawasan]} zoom={13} />);
-    expect(mockLabels[0]).toBeUndefined();
+    expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari');
     mockLabels.length = 0;
     rerender(<NodeMarkerLayer nodes={[kawasan]} zoom={15} />);
     expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari');

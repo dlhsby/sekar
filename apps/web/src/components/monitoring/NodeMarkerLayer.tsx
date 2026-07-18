@@ -31,22 +31,14 @@ export interface NodeMarker {
   marker_image_url?: string | null;
 }
 
-/**
- * Zoom at which dense area/kawasan labels reveal. Rayon labels always show (few,
- * well-spaced); kawasan/lokasi labels would collide at the drill-in fit zoom, so
- * they appear only once the user zooms in and they spread out — mirroring how
- * Google reveals place labels progressively (legacy markers have no collision).
- */
-const AREA_LABEL_REVEAL_ZOOM = 14;
-
 export interface NodeMarkerLayerProps {
   nodes: NodeMarker[];
   onDrill?: (node: NodeMarker) => void;
-  /** Current map zoom — gates when dense area/kawasan labels appear. */
+  /** Accepted for API compatibility; labels now show at every zoom. */
   zoom?: number;
 }
 
-export function NodeMarkerLayer({ nodes, onDrill, zoom }: NodeMarkerLayerProps) {
+export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
@@ -75,16 +67,11 @@ export function NodeMarkerLayer({ nodes, onDrill, zoom }: NodeMarkerLayerProps) 
               node.marker_image_url ?? entityMarkerDefault(kindOf(node.variant)),
               node.variant
             );
-        // Google-style place label, colored by staffing health (green ok / amber
-        // short / red none) so per-node status still reads at a glance now that
-        // the pin shows identity. Dense kawasan/lokasi labels reveal only once
-        // zoomed in enough that they don't collide; rayons are always labeled.
-        const zoomedForArea =
-          node.variant === 'rayon' ||
-          node.variant === 'surabaya' ||
-          zoom == null ||
-          zoom >= AREA_LABEL_REVEAL_ZOOM;
-        const showLabel = !isEmptyArea && zoomedForArea;
+        // Google-style place label under every marker (rayon / kawasan / lokasi),
+        // colored by staffing health (green ok / amber short / red none) so
+        // per-node status still reads at a glance now that the pin shows identity.
+        // Empty muted-dot lokasi stay unlabeled to keep dense rayons clean.
+        const showLabel = !isEmptyArea;
         return (
           <Marker
             key={`node-${node.id}`}
