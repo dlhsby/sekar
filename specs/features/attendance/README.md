@@ -21,5 +21,6 @@ Clock-in / clock-out with mandatory photo evidence and GPS validation against th
 - [work](../work/README.md)
 
 ## Changelog
+- 2026-07-17 — **Fix ad-hoc clock-in 500 (`shifts.location_id` NOT NULL drift).** The `Shift` entity declares `location_id` nullable and `clockIn` explicitly allows an **ad-hoc clock-in with no area** (worker with no schedule + no assigned area; GPS still recorded), but the DB column was created `NOT NULL`, so that path threw a raw not-null constraint error (HTTP 500) instead of recording the shift. Migration `MakeShiftLocationNullable` drops the constraint to match the entity + intent. Behaviour-preserving (all existing shifts have a location); only the previously-impossible ad-hoc insert now succeeds (verified: `POST /shifts/clock-in` for an unassigned worker → 201 with `location_id: null`).
 - 2026-07-12 — **Area→Location terminology sweep.** Renamed "assigned location's polygon".
 - 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
