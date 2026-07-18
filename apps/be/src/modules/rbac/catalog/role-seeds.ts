@@ -147,7 +147,8 @@ export const ROLE_SEEDS: RoleSeed[] = [
     name: 'Satgas',
     description: 'Petugas lapangan; clock-in, aktivitas, tugas, lembur',
     monitoring_scope: MonitoringScope.NONE,
-    marker_icon: 'shield',
+    // Field worker → hard-hat, distinct from linmas' shield (both were 'shield').
+    marker_icon: 'hard-hat',
     marker_color: '#7FBC8C',
     permissions: ['activity:create', 'task:read', 'overtime:submit', 'schedule:read'],
   },

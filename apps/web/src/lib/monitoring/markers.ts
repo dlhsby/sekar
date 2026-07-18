@@ -70,6 +70,11 @@ const ROLE_GLYPHS: Record<string, string> = {
 // Covers the seeded role marker names (ROLE_MARKER_ICONS); unknown names fall back.
 const ICON_GLYPHS: Record<string, string> = {
   user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  'hard-hat': '<path d="M4 17h16"/><path d="M6 17v-2a6 6 0 0 1 12 0v2"/><path d="M10 6.5V4h4v2.5"/>',
+  clipboard:
+    '<rect x="6" y="5" width="12" height="15" rx="1.5"/><path d="M9 5V4a3 3 0 0 1 6 0v1"/><path d="M9 11h6"/><path d="M9 14h6"/>',
+  briefcase:
+    '<rect x="3" y="8" width="18" height="12" rx="2"/><path d="M8 8V6a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 13h18"/>',
   shield: '<path d="M12 3l7 3v5c0 4-3 7-7 8-4-1-7-4-7-8V6z"/>',
   star: '<path d="M12 2.5l2.9 6 6.6.6-5 4.3 1.5 6.4L12 16.9 6 19.8l1.5-6.4-5-4.3 6.6-.6z"/>',
   database:
