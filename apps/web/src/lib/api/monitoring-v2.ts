@@ -110,6 +110,8 @@ export interface AggregateNodeMarker {
   marker_icon?: string | null;
   /** Custom marker image (PNG/SVG) configured for the area. */
   marker_image_url?: string | null;
+  /** The area's identity color (border_color) — fills the marker pin. */
+  marker_color?: string | null;
 }
 
 export interface AggregateNode extends AggregateNodeMarker {
