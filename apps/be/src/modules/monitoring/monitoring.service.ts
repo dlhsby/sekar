@@ -252,7 +252,11 @@ export class MonitoringService {
         present_count: result?.present_count ?? 0,
         absent_count: result?.absent_count ?? 0,
         on_leave_count: result?.on_leave_count ?? 0,
-        off_schedule_count: result?.off_schedule_count ?? 0,
+        // "Luar jadwal" = clocked in but NOT on the CURRENT shift's roster — the
+        // same current-shift definition used per-worker (`is_scheduled`) above and
+        // by the aggregate, so the status bar and the worker list always agree.
+        // (getLiveUsers' looser "no schedule today at all" count is not used here.)
+        off_schedule_count: workers.filter((w) => !w.is_scheduled).length,
         generated_at: generatedAt,
       },
     };
