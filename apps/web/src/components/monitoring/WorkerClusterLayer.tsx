@@ -190,6 +190,12 @@ export function WorkerClusterLayer({
               selected,
               markerIcon: leaf.roleMarkerIcon,
             })}
+            label={{
+              text: leaf.full_name,
+              className: 'worker-marker-label',
+              fontSize: '11px',
+              fontWeight: '600',
+            }}
             onClick={() => onSelect?.(leaf.workerId)}
             zIndex={selected ? 10 : 4}
           />

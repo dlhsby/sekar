@@ -483,6 +483,18 @@ body {
       1px 0 2px var(--color-nb-white),
       -1px 0 2px var(--color-nb-white);
   }
+  /* Worker name under a pin: neutral dark (the pin color already carries
+     status) with the same white halo so it reads over any base-map color. */
+  .worker-marker-label {
+    color: var(--color-nb-black) !important;
+    font-family: var(--font-body), Inter, sans-serif !important;
+    white-space: nowrap;
+    text-shadow:
+      0 1px 2px var(--color-nb-white),
+      0 -1px 2px var(--color-nb-white),
+      1px 0 2px var(--color-nb-white),
+      -1px 0 2px var(--color-nb-white);
+  }
   .text-nb-display-xl {
     font-family: var(--type-display-xl-family);
     font-weight: var(--type-display-xl-weight);

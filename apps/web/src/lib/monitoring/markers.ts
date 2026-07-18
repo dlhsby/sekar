@@ -149,6 +149,8 @@ export function workerPinIcon(
     url: svgUrl(svg),
     scaledSize: new google.maps.Size(size, h),
     anchor: new google.maps.Point(size / 2, size * 0.5),
+    // Name label sits just below the teardrop tip.
+    labelOrigin: new google.maps.Point(size / 2, h + 2),
   };
 }
 
