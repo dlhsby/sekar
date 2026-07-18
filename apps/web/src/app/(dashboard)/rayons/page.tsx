@@ -136,7 +136,17 @@ export default function RayonsPage() {
         enableColumnFilter: false,
         meta: { label: t('admin:shared.columnCoordinates') },
         cell: ({ row }) => (
-          <CoordinateLink lat={row.original.center_lat} lng={row.original.center_lng} />
+          <CoordinateLink
+            lat={row.original.center_lat}
+            lng={row.original.center_lng}
+            label={row.original.name}
+            boundary={row.original.boundary_polygon}
+            borderColor={row.original.border_color}
+            fillColor={row.original.fill_color}
+            fillOpacity={row.original.fill_opacity}
+            markerImageUrl={row.original.marker_image_url}
+            entityKind="rayon"
+          />
         ),
       },
       {
