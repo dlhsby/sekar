@@ -157,7 +157,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               strokeOpacity={area.border_opacity}
               fillColor={area.fill_color}
               fillOpacity={area.fill_opacity}
-              markerImageUrl={area.marker_image_url ?? entityMarkerDefault('area')}
+              markerIcon={area.marker_icon}
+              markerColor={area.border_color}
               manualFallback={
                 <div className="border-2 border-nb-black bg-nb-gray-100 p-6 text-center">
                   <p className="text-nb-body-sm text-nb-gray-700">{t('admin:locations.mapUnavailable')}</p>

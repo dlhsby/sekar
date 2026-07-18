@@ -15,7 +15,6 @@ import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
-import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { checkRayonName } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
@@ -260,7 +259,6 @@ export function RayonForm({
 
       <MapStyleFields
         value={style}
-        markerDefaultUrl={entityMarkerDefault('rayon')}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
             setValue(k as keyof RayonFormData, v as never, { shouldValidate: false }),
@@ -311,7 +309,8 @@ export function RayonForm({
           strokeOpacity={style.border_opacity}
           fillColor={style.fill_color}
           fillOpacity={style.fill_opacity}
-          markerImageUrl={style.marker_image_url ?? entityMarkerDefault('rayon')}
+          markerIcon={style.marker_icon}
+          markerColor={style.border_color}
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">

@@ -26,7 +26,8 @@ import {
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 import { formatLatLng, googleMapsUrl } from '@/lib/utils/geo';
 import { geometryToPaths } from '@/lib/maps/geometry';
-import { entityMarkerDefault, type MarkerEntityKind } from '@/lib/constants/markerDefaults';
+import type { MarkerEntityKind } from '@/lib/constants/markerDefaults';
+import { pinMarker, entityDefaultGlyph, DEFAULT_MARKER_COLOR } from '@/lib/monitoring/markers';
 import { useMapId } from '@/lib/api/config';
 import { GoogleMapsGate } from './GoogleMapsGate';
 import { AdvancedMarker } from './AdvancedMarker';
@@ -57,8 +58,10 @@ export interface MapDisplayModalProps {
   fillColor?: string | null;
   /** Fill opacity 0–1 (entity's `fill_opacity`); defaults to a light tint. */
   fillOpacity?: number | null;
-  /** Configured marker image; null → the per-kind system default (`entityKind`). */
-  markerImageUrl?: string | null;
+  /** Configured marker glyph; null → the per-kind default (`entityKind`). */
+  markerIcon?: string | null;
+  /** The entity's identity color (border_color) — fills the marker pin. */
+  markerColor?: string | null;
   /** Entity kind, so an unset marker previews its system default pin. */
   entityKind?: MarkerEntityKind;
 }
@@ -91,7 +94,8 @@ export function MapDisplayModal({
   borderColor,
   fillColor,
   fillOpacity,
-  markerImageUrl,
+  markerIcon,
+  markerColor,
   entityKind,
 }: MapDisplayModalProps) {
   const { t } = useTranslation();
@@ -105,20 +109,19 @@ export function MapDisplayModal({
   // Stored 0–1. A light tint by default so the base map stays readable.
   const opacity = fillOpacity == null ? 0.25 : fillOpacity;
 
-  // The entity's configured marker image, or its per-kind system default; null
-  // keeps Google's generic pin (callers that pass neither).
+  // Preview the entity's unified pin (glyph + identity color); null keeps
+  // Google's generic pin (callers that pass no entityKind).
   const markerContent = useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    const url = markerImageUrl ?? (entityKind ? entityMarkerDefault(entityKind) : null);
-    if (!url) return null;
+    if (typeof document === 'undefined' || !entityKind) return null;
+    const glyph = markerIcon ?? entityDefaultGlyph(entityKind);
     const img = document.createElement('img');
-    img.src = url;
+    img.src = pinMarker(glyph, markerColor ?? DEFAULT_MARKER_COLOR, { big: true }).url;
     img.alt = '';
     img.style.width = '38px';
     img.style.height = '47px';
     img.style.objectFit = 'contain';
     return img;
-  }, [markerImageUrl, entityKind]);
+  }, [markerIcon, markerColor, entityKind]);
 
   // Frame the map to the boundary when present (overrides center/zoom on load).
   const handleLoad = useCallback(

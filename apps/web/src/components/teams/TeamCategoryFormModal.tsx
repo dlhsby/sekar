@@ -19,9 +19,7 @@ import {
   useUpdateTeamCategory,
   type TeamCategory,
 } from '@/lib/api/teams';
-import { MarkerImagePicker } from '@/components/forms/MarkerImagePicker';
 import { ColorField } from '@/components/forms/ColorField';
-import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 
 interface TeamCategoryFormModalProps {
   open: boolean;
@@ -38,13 +36,11 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   const updateMutation = useUpdateTeamCategory();
 
   const [name, setName] = useState('');
-  const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(null);
   const [markerColor, setMarkerColor] = useState<string | null>(null);
 
   // Revert the form to the loaded team category's values (also runs on open).
   const revert = () => {
     setName(teamCategory?.name ?? '');
-    setMarkerImageUrl(teamCategory?.marker_image_url ?? null);
     setMarkerColor(teamCategory?.marker_color ?? null);
   };
 
@@ -59,7 +55,6 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   const canSave = name.trim().length >= 1;
   const isDirty =
     name !== (teamCategory?.name ?? '') ||
-    (markerImageUrl ?? null) !== (teamCategory?.marker_image_url ?? null) ||
     (markerColor ?? null) !== (teamCategory?.marker_color ?? null);
 
   const handleSave = async () => {
@@ -67,7 +62,6 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
     // never sends it — only a new category needs the active default.
     const payload = {
       name: name.trim(),
-      marker_image_url: markerImageUrl,
       marker_color: markerColor,
     };
     try {
@@ -100,11 +94,6 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
             placeholder={t('admin:teamCategories.form.namePlaceholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
-          />
-          <MarkerImagePicker
-            value={markerImageUrl}
-            onChange={setMarkerImageUrl}
-            defaultUrl={entityMarkerDefault('team')}
           />
           <ColorField
             label={t('admin:teamCategories.form.markerColor')}
