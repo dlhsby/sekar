@@ -77,21 +77,13 @@ describe('MapDisplayModal preview', () => {
     expect(src).toContain('M6 22V4'); // building glyph (rayon default)
   });
 
-  it('previews the configured glyph + identity color over the default', () => {
+  it('previews the configured glyph over the default (white pin, glyph identifies type)', () => {
     render(
-      <MapDisplayModal
-        open
-        onOpenChange={() => {}}
-        lat={-7.26}
-        lng={112.74}
-        entityKind="rayon"
-        markerIcon="star"
-        markerColor="#9333EA"
-      />
+      <MapDisplayModal open onOpenChange={() => {}} lat={-7.26} lng={112.74} entityKind="rayon" markerIcon="star" />
     );
     const src = decodeURIComponent(screen.getByTestId('marker').getAttribute('data-src') ?? '');
     expect(src).toContain('M12 2.5l2.9'); // star glyph
-    expect(src).toContain('fill="#9333EA"'); // identity color fills the pin
+    expect(src).toContain('fill="#FFFFFF"'); // pin fill is white
   });
 
   it('renders no polygon when no boundary is given', () => {

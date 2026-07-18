@@ -306,7 +306,6 @@ export function RayonForm({
           fillColor={style.fill_color}
           fillOpacity={style.fill_opacity}
           markerIcon={style.marker_icon}
-          markerColor={style.border_color}
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">

@@ -58,11 +58,16 @@ const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
 const svg = () => decodeURIComponent(mockIcons[0].url);
 
 describe('NodeMarkerLayer unified pin', () => {
-  it('fills the pin with the area identity color and its default glyph (rayon → building)', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon', marker_color: '#1b6f1c' })]} />);
+  it('draws a white pin whose glyph identifies the type (rayon → building)', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon' })]} />);
     const s = svg();
-    expect(s).toContain('fill="#1b6f1c"'); // teardrop filled with identity color
-    expect(s).toContain('M6 22V4'); // building glyph
+    expect(s).toContain('fill="#FFFFFF"'); // fill is white for all area types
+    expect(s).toContain('M6 22V4'); // building glyph identifies rayon
+  });
+
+  it('puts staffing health on the outline ring, not the fill', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2 })]} />);
+    expect(svg()).toContain(`stroke="${HEALTH_COLORS.ok}"`); // health = outline
   });
 
   it('draws the configured glyph over the default (marker_icon = star)', () => {

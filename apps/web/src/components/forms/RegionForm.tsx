@@ -207,7 +207,6 @@ export function RegionForm({
           fillColor={style.fill_color}
           fillOpacity={style.fill_opacity}
           markerIcon={style.marker_icon}
-          markerColor={style.border_color}
         />
         <div className="space-y-4">
           <FormInput
