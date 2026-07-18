@@ -473,7 +473,8 @@ body {
   /* Google-style place label under a monitoring node marker: dark text with a
      white halo so an area's name reads over any base-map color. */
   .node-marker-label {
-    color: var(--color-nb-black) !important;
+    /* color comes from the marker's label (staffing-health tinted); keep only
+       the white halo + font so the name reads over any base-map color. */
     font-family: var(--font-body), Inter, sans-serif !important;
     white-space: nowrap;
     text-shadow:

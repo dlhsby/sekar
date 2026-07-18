@@ -9,7 +9,8 @@
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
-import { nodeCountIcon, nodeImageIcon, rosterHealth, KIND_DEFAULT_GLYPH } from '@/lib/monitoring/markers';
+import { nodeCountIcon, nodeImageIcon, rosterHealth, HEALTH_COLORS } from '@/lib/monitoring/markers';
+import { entityMarkerDefault, type MarkerEntityKind } from '@/lib/constants/markerDefaults';
 
 export interface NodeMarker {
   id: string;
@@ -57,25 +58,33 @@ export function NodeMarkerLayer({ nodes, onDrill, zoom }: NodeMarkerLayerProps) 
   return (
     <>
       {placed.map((node) => {
-        const glyph = glyphFor(node);
-        // Custom-uploaded image → render it literally; otherwise the composited
-        // glyph + count + health-ring marker (glyph null = a muted empty dot).
-        const icon = node.marker_image_url
-          ? nodeImageIcon(node.marker_image_url, node.variant)
-          : nodeCountIcon(node.variant, node.active, rosterHealth(node.scheduled, node.clocked_in), {
-              icon: glyph,
-            });
-        // Google-style place label under the marker — not on muted empty dots
-        // (a rayon's idle lokasi stay clean), and dense kawasan/lokasi labels
-        // only once zoomed in enough that they don't collide. Rayons (few,
-        // spread out) are always labeled.
-        const hasMarker = node.marker_image_url != null || glyph !== null;
+        // Render the SAME marker the settings/edit screens show: the configured
+        // `marker_image_url`, or the per-kind system default pin — so the map and
+        // the editor agree (no more building-glyph-vs-pin split). Empty lokasi
+        // (nothing scheduled) stay a muted dot so a rayon's many idle locations
+        // don't clutter the map.
+        const isEmptyArea =
+          node.variant === 'area' &&
+          node.scheduled <= 0 &&
+          node.active <= 0 &&
+          !node.marker_image_url;
+        const health = rosterHealth(node.scheduled, node.clocked_in);
+        const icon = isEmptyArea
+          ? nodeCountIcon(node.variant, 0, 'empty', { icon: null })
+          : nodeImageIcon(
+              node.marker_image_url ?? entityMarkerDefault(kindOf(node.variant)),
+              node.variant
+            );
+        // Google-style place label, colored by staffing health (green ok / amber
+        // short / red none) so per-node status still reads at a glance now that
+        // the pin shows identity. Dense kawasan/lokasi labels reveal only once
+        // zoomed in enough that they don't collide; rayons are always labeled.
         const zoomedForArea =
           node.variant === 'rayon' ||
           node.variant === 'surabaya' ||
           zoom == null ||
           zoom >= AREA_LABEL_REVEAL_ZOOM;
-        const showLabel = hasMarker && zoomedForArea;
+        const showLabel = !isEmptyArea && zoomedForArea;
         return (
           <Marker
             key={`node-${node.id}`}
@@ -84,7 +93,13 @@ export function NodeMarkerLayer({ nodes, onDrill, zoom }: NodeMarkerLayerProps) 
             icon={icon}
             label={
               showLabel
-                ? { text: node.name, className: 'node-marker-label', fontSize: '12px', fontWeight: '600' }
+                ? {
+                    text: node.name,
+                    className: 'node-marker-label',
+                    color: HEALTH_COLORS[health],
+                    fontSize: '12px',
+                    fontWeight: '700',
+                  }
                 : undefined
             }
             title={node.name}
@@ -96,16 +111,9 @@ export function NodeMarkerLayer({ nodes, onDrill, zoom }: NodeMarkerLayerProps) 
   );
 }
 
-/**
- * The glyph a node renders: its explicit `marker_icon`, else the system default
- * for its kind ("bawaan sistem" — rayon → building, kawasan/lokasi → tree). An
- * empty lokasi (nothing scheduled, nobody active, no explicit icon) opts out so
- * it stays a muted dot and dense rayons don't clutter.
- */
-function glyphFor(node: NodeMarker): string | null {
-  const explicit = node.marker_icon ?? null;
-  const isEmptyArea =
-    node.variant === 'area' && node.scheduled <= 0 && node.active <= 0 && !explicit;
-  if (isEmptyArea) return null;
-  return explicit ?? KIND_DEFAULT_GLYPH[node.variant] ?? null;
+/** Node variant → the marker-entity kind used to resolve its default pin. */
+function kindOf(variant: NodeMarker['variant']): MarkerEntityKind {
+  if (variant === 'region') return 'region';
+  if (variant === 'area') return 'area';
+  return 'rayon';
 }
