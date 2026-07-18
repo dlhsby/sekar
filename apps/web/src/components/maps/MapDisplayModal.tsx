@@ -112,13 +112,18 @@ export function MapDisplayModal({
     if (typeof document === 'undefined' || !entityKind) return null;
     const glyph = markerIcon ?? entityDefaultGlyph(entityKind);
     const img = document.createElement('img');
-    img.src = pinMarker(glyph, { outline: MARKER_NEUTRAL_OUTLINE, big: true }).url;
+    img.src = pinMarker(glyph, {
+      outline: MARKER_NEUTRAL_OUTLINE,
+      fill: fillColor ?? undefined,
+      fillOpacity: fillOpacity ?? undefined,
+      big: true,
+    }).url;
     img.alt = '';
     img.style.width = '38px';
     img.style.height = '47px';
     img.style.objectFit = 'contain';
     return img;
-  }, [markerIcon, entityKind]);
+  }, [markerIcon, entityKind, fillColor, fillOpacity]);
 
   // Frame the map to the boundary when present (overrides center/zoom on load).
   const handleLoad = useCallback(

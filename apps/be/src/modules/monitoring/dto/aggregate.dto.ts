@@ -146,11 +146,18 @@ export class AggregateNodeDto {
   marker_icon?: string | null;
 
   @ApiPropertyOptional({
-    description: "The area's identity color (border_color) — fills the marker pin",
+    description: "The area's fill_color — fills the marker pin",
     example: '#1b6f1c',
     nullable: true,
   })
-  marker_color?: string | null;
+  fill_color?: string | null;
+
+  @ApiPropertyOptional({
+    description: "The area's fill_opacity 0–1",
+    example: 0.25,
+    nullable: true,
+  })
+  fill_opacity?: number | null;
 }
 
 /**

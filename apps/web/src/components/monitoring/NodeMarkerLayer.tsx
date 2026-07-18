@@ -32,8 +32,10 @@ export interface NodeMarker {
   active_inside: number;
   /** Configured marker glyph for this area (e.g. "trees"); null → per-kind default. */
   marker_icon?: string | null;
-  /** The area's identity color (border_color) — fills the marker pin. */
-  marker_color?: string | null;
+  /** The area's fill_color — fills the marker pin (null → white). */
+  fill_color?: string | null;
+  /** The area's fill_opacity 0–1. */
+  fill_opacity?: number | null;
 }
 
 export interface NodeMarkerLayerProps {
@@ -71,6 +73,8 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
           ? nodeCountIcon(node.variant, 0, 'empty', { icon: null })
           : pinMarker(node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null, {
               outline: HEALTH_COLORS[health],
+              fill: node.fill_color ?? undefined,
+              fillOpacity: node.fill_opacity ?? undefined,
               count: node.active,
               big,
             });
