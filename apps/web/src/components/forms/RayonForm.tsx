@@ -307,6 +307,11 @@ export function RayonForm({
           }
           readonly={readOnly}
           autoLocateOnMount={mode === 'create' && !seedPolygon && !readOnly}
+          strokeColor={style.border_color}
+          strokeOpacity={style.border_opacity}
+          fillColor={style.fill_color}
+          fillOpacity={style.fill_opacity}
+          markerImageUrl={style.marker_image_url ?? entityMarkerDefault('rayon')}
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">

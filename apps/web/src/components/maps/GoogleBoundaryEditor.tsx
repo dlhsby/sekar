@@ -89,6 +89,19 @@ export interface GoogleBoundaryEditorProps {
   readonly?: boolean;
   /** Map height in pixels. */
   height?: number;
+  // ── Live style preview (ADR-045): draw the boundary + pin as the entity is
+  //    configured, so editing colors/marker updates the map immediately. All
+  //    optional — omit to keep the neutral Neo-Brutalism default styling.
+  /** Boundary stroke color (`border_color`). */
+  strokeColor?: string | null;
+  /** Boundary stroke opacity 0–1 (`border_opacity`); defaults opaque. */
+  strokeOpacity?: number | null;
+  /** Boundary fill color (`fill_color`); null/empty → unfilled. */
+  fillColor?: string | null;
+  /** Boundary fill opacity 0–1 (`fill_opacity`). */
+  fillOpacity?: number | null;
+  /** Center-pin marker image (`marker_image_url` or the per-kind default). */
+  markerImageUrl?: string | null;
   /** Rendered when Google Maps is unavailable (no key / load error). */
   manualFallback?: React.ReactNode;
 }
@@ -157,10 +170,41 @@ function BoundaryMap({
   autoLocateOnMount = false,
   readonly = false,
   height = 420,
+  strokeColor,
+  strokeOpacity,
+  fillColor,
+  fillOpacity,
+  markerImageUrl,
 }: Omit<GoogleBoundaryEditorProps, 'manualFallback'>) {
   const { t } = useTranslation();
   const editablePolygon = !readonly && !!onPolygonChange;
   const editablePin = !readonly && !!onPinChange;
+
+  // Merge the entity's configured style over the neutral default so the preview
+  // reflects the form live; an unset/empty fill color draws no fill.
+  const polygonOptions = useMemo<google.maps.PolygonOptions>(() => {
+    const hasFill = !!fillColor;
+    return {
+      ...POLYGON_OPTIONS,
+      strokeColor: strokeColor || POLYGON_OPTIONS.strokeColor,
+      strokeOpacity: strokeOpacity ?? 1,
+      fillColor: hasFill ? (fillColor as string) : POLYGON_OPTIONS.fillColor,
+      fillOpacity: hasFill ? (fillOpacity ?? 0.25) : 0,
+    };
+  }, [strokeColor, strokeOpacity, fillColor, fillOpacity]);
+
+  // Center-pin visual = the configured marker image (or per-kind default),
+  // rebuilt when the URL changes; null → Google's default pin.
+  const pinContent = useMemo(() => {
+    if (typeof document === 'undefined' || !markerImageUrl) return null;
+    const img = document.createElement('img');
+    img.src = markerImageUrl;
+    img.alt = '';
+    img.style.width = '34px';
+    img.style.height = '42px';
+    img.style.objectFit = 'contain';
+    return img;
+  }, [markerImageUrl]);
 
   const [paths, setPaths] = useState<LatLng[][]>(() => geometryToPaths(initialPolygon));
   const [drawing, setDrawing] = useState(false);
@@ -568,7 +612,7 @@ function BoundaryMap({
                   onLoad={editable ? attachPolygon : undefined}
                   onUnmount={editable ? detachPolygon : undefined}
                   onMouseUp={editable ? syncFromPolygon : undefined}
-                  options={POLYGON_OPTIONS}
+                  options={polygonOptions}
                 />
               );
             })}
@@ -591,6 +635,7 @@ function BoundaryMap({
           {point && (
             <AdvancedMarker
               position={point}
+              content={pinContent}
               draggable={editablePin && !drawing}
               onDragEnd={handlePinDrag}
             />
