@@ -6,6 +6,7 @@ import { MapPin } from 'lucide-react';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
 import { formatLatLng } from '@/lib/utils/geo';
 import { MapDisplayModal } from '@/components/maps/MapDisplayModal';
+import type { MarkerEntityKind } from '@/lib/constants/markerDefaults';
 
 interface CoordinateLinkProps {
   lat?: number | string | null;
@@ -13,6 +14,13 @@ interface CoordinateLinkProps {
   className?: string;
   /** Title for the display modal (e.g. the rayon/area name). */
   label?: string;
+  /** Optional boundary + styling to preview the entity, not just a bare pin. */
+  boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+  borderColor?: string | null;
+  fillColor?: string | null;
+  fillOpacity?: number | null;
+  markerImageUrl?: string | null;
+  entityKind?: MarkerEntityKind;
 }
 
 /**
@@ -21,7 +29,18 @@ interface CoordinateLinkProps {
  * no Maps key is configured). Falls back to an em dash when either coordinate
  * is missing. Reused by the Area + Rayon datatables / detail modals.
  */
-export function CoordinateLink({ lat, lng, className, label }: CoordinateLinkProps) {
+export function CoordinateLink({
+  lat,
+  lng,
+  className,
+  label,
+  boundary,
+  borderColor,
+  fillColor,
+  fillOpacity,
+  markerImageUrl,
+  entityKind,
+}: CoordinateLinkProps) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
@@ -52,6 +71,12 @@ export function CoordinateLink({ lat, lng, className, label }: CoordinateLinkPro
         lat={latNum}
         lng={lngNum}
         title={label ?? t('components:coordinateLink.defaultLabel')}
+        boundary={boundary}
+        borderColor={borderColor}
+        fillColor={fillColor}
+        fillOpacity={fillOpacity}
+        markerImageUrl={markerImageUrl}
+        entityKind={entityKind}
       />
     </span>
   );

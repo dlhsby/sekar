@@ -68,10 +68,15 @@ export interface RangeFilters {
 }
 
 /**
- * Daily roster service — materializes each worker's standing template into one
- * editable row per WIB day and exposes the per-day edits ops needs (leave,
- * replacement, extra area, shift) plus read helpers for clock-in and monitoring.
- * See ADR-013 (materialized daily-roster model).
+ * Daily roster service — materializes recurring **ScheduleEvents** (the
+ * calendar-like recurrence rules) into one concrete, editable `schedules`
+ * (occurrence) row per worker per WIB day, and exposes the per-day edits ops
+ * needs (leave, replacement, extra area, shift) plus read helpers for clock-in
+ * and monitoring. Materialization is driven by the event-materialization cron
+ * (ADR-047); `generateRoster` is the same expansion triggered on demand
+ * (idempotent) — it reads active ScheduleEvents, not standing user assignments.
+ * See ADR-047 (occurrences from events); ADR-013 is the earlier daily-roster
+ * model it superseded.
  */
 @Injectable()
 export class SchedulesService {
