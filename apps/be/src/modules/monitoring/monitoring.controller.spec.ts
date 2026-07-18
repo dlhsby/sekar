@@ -208,6 +208,8 @@ describe('MonitoringController', () => {
         area_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
+        region_id: 'region-1',
+        region_name: 'Kawasan Bungkul',
         latitude: -7.2905,
         longitude: 112.7398,
         accuracy: 10,

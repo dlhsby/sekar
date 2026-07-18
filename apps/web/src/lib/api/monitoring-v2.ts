@@ -20,10 +20,14 @@ export interface SnapshotWorker {
   lat: number;
   lng: number;
   status: TrackingStatus;
-  area_id: string | null;
+  /** The worker's location (lokasi) id — the backend field is `location_id`. */
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
+  /** The worker's kawasan (region) id + name, for the Kawasan filter. */
+  region_id?: string | null;
+  region_name?: string | null;
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
@@ -44,7 +48,7 @@ export interface SnapshotWorker {
 }
 
 export interface SnapshotAreaSummary {
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string;
   rayon_name: string;

@@ -41,6 +41,12 @@ export class LiveUserDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   rayon_name: string | null;
 
+  @ApiProperty({ example: 'region-uuid', nullable: true })
+  region_id: string | null;
+
+  @ApiProperty({ example: 'Kawasan Bungkul', nullable: true })
+  region_name: string | null;
+
   @ApiProperty({ example: -7.2575 })
   latitude: number;
 

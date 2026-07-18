@@ -41,6 +41,8 @@ export interface SnapshotWorker {
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
+  region_id: string | null;
+  region_name: string | null;
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
@@ -219,6 +221,8 @@ export class MonitoringService {
         area_name: u.area_name,
         rayon_id: u.rayon_id,
         rayon_name: u.rayon_name,
+        region_id: u.region_id,
+        region_name: u.region_name,
         last_update: u.last_update.toISOString(),
         is_within_area: u.is_within_area,
         battery_level: u.battery_level,

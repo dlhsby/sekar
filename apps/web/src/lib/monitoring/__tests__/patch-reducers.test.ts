@@ -13,7 +13,7 @@ function worker(over: Partial<SnapshotWorker>): SnapshotWorker {
     lat: -7.25,
     lng: 112.75,
     status: 'active',
-    area_id: 'area-1',
+    location_id: 'area-1',
     area_name: 'Area 1',
     rayon_id: 'rayon-1',
     rayon_name: 'Rayon 1',

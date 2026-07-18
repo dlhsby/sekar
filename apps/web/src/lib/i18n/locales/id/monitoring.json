@@ -63,6 +63,8 @@
     "statusLabel": "Status",
     "rayonLabel": "Rayon",
     "rayonAllOption": "Semua Rayon",
+    "kawasanLabel": "Kawasan",
+    "kawasanAllOption": "Semua Kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "Semua Lokasi",
     "roleLabel": "Peran",

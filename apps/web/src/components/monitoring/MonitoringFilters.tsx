@@ -30,7 +30,8 @@ export interface MonitoringFilterState {
   search: string;
   statuses: Set<TrackingStatus>;
   rayonId: string; // 'all' or a rayon id
-  areaId: string; // 'all' or a lokasi (area) id
+  regionId: string; // 'all' or a kawasan (region) id
+  locationId: string; // 'all' or a lokasi (location) id
   role: string; // 'all' or a role value
   teamId: string; // 'all' or a team id
 }
@@ -40,7 +41,7 @@ export interface RayonOption {
   name: string;
 }
 
-/** A selectable id/name option (lokasi, team, …). */
+/** A selectable id/name option (kawasan, lokasi, team, …). */
 export type FilterOption = RayonOption;
 
 export interface MonitoringFiltersProps {
@@ -48,7 +49,8 @@ export interface MonitoringFiltersProps {
   onChange: (next: MonitoringFilterState) => void;
   statusCounts: Record<TrackingStatus, number>;
   rayonOptions: RayonOption[];
-  areaOptions: FilterOption[];
+  regionOptions: FilterOption[];
+  locationOptions: FilterOption[];
   roleOptions: UserRole[];
   teamOptions: FilterOption[];
   total: number;
@@ -63,7 +65,8 @@ export function MonitoringFilters({
   onChange,
   statusCounts,
   rayonOptions,
-  areaOptions,
+  regionOptions,
+  locationOptions,
   roleOptions,
   teamOptions,
   total,
@@ -85,7 +88,8 @@ export function MonitoringFilters({
     filters.search !== '' ||
     filters.statuses.size > 0 ||
     filters.rayonId !== 'all' ||
-    filters.areaId !== 'all' ||
+    filters.regionId !== 'all' ||
+    filters.locationId !== 'all' ||
     filters.role !== 'all' ||
     filters.teamId !== 'all';
 
@@ -94,7 +98,8 @@ export function MonitoringFilters({
       search: '',
       statuses: new Set(),
       rayonId: 'all',
-      areaId: 'all',
+      regionId: 'all',
+      locationId: 'all',
       role: 'all',
       teamId: 'all',
     });
@@ -165,7 +170,9 @@ export function MonitoringFilters({
           <select
             id="mon-rayon"
             value={filters.rayonId}
-            onChange={(e) => onChange({ ...filters, rayonId: e.target.value, areaId: 'all' })}
+            onChange={(e) =>
+              onChange({ ...filters, rayonId: e.target.value, regionId: 'all', locationId: 'all' })
+            }
             className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
           >
             <option value="all">{t('monitoring:filters.rayonAllOption')}</option>
@@ -178,20 +185,42 @@ export function MonitoringFilters({
         </div>
       )}
 
-      {/* Lokasi (area) */}
-      {areaOptions.length > 0 && (
+      {/* Kawasan (region) */}
+      {regionOptions.length > 0 && (
         <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-area">
+          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-region">
+            {t('monitoring:filters.kawasanLabel')}
+          </label>
+          <select
+            id="mon-region"
+            value={filters.regionId}
+            onChange={(e) => onChange({ ...filters, regionId: e.target.value, locationId: 'all' })}
+            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+          >
+            <option value="all">{t('monitoring:filters.kawasanAllOption')}</option>
+            {regionOptions.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Lokasi (location) */}
+      {locationOptions.length > 0 && (
+        <div>
+          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-location">
             {t('monitoring:filters.lokasiLabel')}
           </label>
           <select
-            id="mon-area"
-            value={filters.areaId}
-            onChange={(e) => onChange({ ...filters, areaId: e.target.value })}
+            id="mon-location"
+            value={filters.locationId}
+            onChange={(e) => onChange({ ...filters, locationId: e.target.value })}
             className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
           >
             <option value="all">{t('monitoring:filters.lokasiAllOption')}</option>
-            {areaOptions.map((a) => (
+            {locationOptions.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}
               </option>

@@ -144,7 +144,8 @@ export default function MonitoringPage() {
     search: '',
     statuses: new Set(),
     rayonId: 'all',
-    areaId: 'all',
+    regionId: 'all',
+    locationId: 'all',
     role: 'all',
     teamId: 'all',
   });
@@ -296,10 +297,10 @@ export default function MonitoringPage() {
     if (result.type === 'petugas') {
       // Drill into the worker's area so the pin renders, then select + focus.
       const w = workers.find((x) => x.user_id === result.id);
-      if (w?.area_id) {
+      if (w?.location_id) {
         setView({
           scope: 'area',
-          id: w.area_id,
+          id: w.location_id,
           rayonId: w.rayon_id ?? result.rayonId ?? undefined,
           name: w.area_name ?? undefined,
         });
@@ -517,17 +518,30 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, boundaries]);
 
-  // Lokasi options, narrowed to the selected rayon so the two selects cascade.
-  const areaOptions = useMemo<RayonOption[]>(() => {
+  // Kawasan options, narrowed to the selected rayon (cascade: rayon → kawasan).
+  const regionOptions = useMemo<RayonOption[]>(() => {
     const map = new Map<string, string>();
     for (const w of workers) {
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
-      if (w.area_id && w.area_name && !map.has(w.area_id)) map.set(w.area_id, w.area_name);
+      if (w.region_id && w.region_name && !map.has(w.region_id)) map.set(w.region_id, w.region_name);
     }
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, filters.rayonId]);
+
+  // Lokasi options, narrowed to the selected rayon + kawasan (cascade tail).
+  const locationOptions = useMemo<RayonOption[]>(() => {
+    const map = new Map<string, string>();
+    for (const w of workers) {
+      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
+      if (filters.regionId !== 'all' && w.region_id !== filters.regionId) continue;
+      if (w.location_id && w.area_name && !map.has(w.location_id)) map.set(w.location_id, w.area_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [workers, filters.rayonId, filters.regionId]);
 
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
@@ -550,7 +564,8 @@ export default function MonitoringPage() {
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
-      if (filters.areaId !== 'all' && w.area_id !== filters.areaId) return false;
+      if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
+      if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (filters.role !== 'all' && w.role !== filters.role) return false;
       if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
@@ -749,7 +764,8 @@ export default function MonitoringPage() {
             onChange={setFilters}
             statusCounts={statusCounts}
             rayonOptions={rayonOptions}
-            areaOptions={areaOptions}
+            regionOptions={regionOptions}
+            locationOptions={locationOptions}
             roleOptions={roleOptions}
             teamOptions={teamOptions}
             total={showWorkers ? workers.length : listNodes.length}
@@ -825,7 +841,7 @@ export default function MonitoringPage() {
           onOpenChange={(open) => {
             if (!open) setBulkTarget(null);
           }}
-          targetAreaId={bulkTarget.area_id}
+          targetAreaId={bulkTarget.location_id}
           targetAreaName={bulkTarget.area_name}
           boundaries={boundaries}
         />

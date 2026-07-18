@@ -63,6 +63,8 @@
     "statusLabel": "Status",
     "rayonLabel": "District",
     "rayonAllOption": "All Districts",
+    "kawasanLabel": "Kawasan",
+    "kawasanAllOption": "All Kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "All Lokasi",
     "roleLabel": "Role",
