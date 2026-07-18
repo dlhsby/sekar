@@ -1,6 +1,5 @@
 import { IsString, IsOptional, IsBoolean, MinLength, MaxLength, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { MARKER_IMAGE_PATTERN, MARKER_IMAGE_MESSAGE } from '../../../common/dto/map-style.dto';
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
@@ -10,16 +9,6 @@ export class CreateTeamCategoryDto {
   @MinLength(2)
   @MaxLength(60)
   name: string;
-
-  @ApiPropertyOptional({
-    description: 'Marker image: a preset path (/markers/*.svg) or a base64 data-URI',
-    example: '/markers/pin-teal.svg',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(600000)
-  @Matches(MARKER_IMAGE_PATTERN, { message: MARKER_IMAGE_MESSAGE })
-  marker_image_url?: string;
 
   @ApiPropertyOptional({
     description: 'Marker color in hex format (#RRGGBB)',

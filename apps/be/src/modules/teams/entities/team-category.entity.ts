@@ -23,10 +23,6 @@ export class TeamCategory {
   @Column({ length: 60, unique: true })
   name: string;
 
-  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
-  @Column({ type: 'text', nullable: true })
-  marker_image_url?: string | null;
-
   @ApiPropertyOptional({
     description: 'Marker color in hex format (#RRGGBB)',
     example: '#22C55E',

@@ -6,14 +6,12 @@ export interface TeamCategory {
   id: string;
   name: string;
   is_active: boolean;
-  marker_image_url?: string | null;
   marker_color?: string | null;
 }
 
 export interface CreateTeamCategoryDto {
   name: string;
   is_active: boolean;
-  marker_image_url?: string | null;
   marker_color?: string | null;
 }
 export type UpdateTeamCategoryDto = Partial<CreateTeamCategoryDto>;
