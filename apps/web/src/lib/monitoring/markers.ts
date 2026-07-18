@@ -215,9 +215,9 @@ export function pinMarker(
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 48 60">` +
     `<path d="${PIN_PATH}" fill="${color}" stroke="${outline}" stroke-width="3" stroke-linejoin="round"/>` +
-    `<circle cx="24" cy="22" r="11" fill="${WHITE}" stroke="${outline}" stroke-width="2.5"/>` +
+    `<circle cx="24" cy="22" r="13" fill="${WHITE}" stroke="${outline}" stroke-width="2.5"/>` +
     (g
-      ? `<g transform="translate(24 22) scale(0.62) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${g}</g>`
+      ? `<g transform="translate(24 22) scale(0.9) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${g}</g>`
       : '') +
     (count > 0
       ? `<circle cx="39" cy="10" r="9" fill="${outline}" stroke="${WHITE}" stroke-width="1.5"/>` +
