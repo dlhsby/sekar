@@ -342,6 +342,11 @@ export function LocationForm({
           onPinChange={readOnly ? undefined : handlePinChange}
           readonly={readOnly}
           autoLocateOnMount={mode === 'create' && !seedPolygon && !readOnly}
+          strokeColor={style.border_color}
+          strokeOpacity={style.border_opacity}
+          fillColor={style.fill_color}
+          fillOpacity={style.fill_opacity}
+          markerImageUrl={style.marker_image_url ?? entityMarkerDefault('area')}
           manualFallback={
             center ? (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">

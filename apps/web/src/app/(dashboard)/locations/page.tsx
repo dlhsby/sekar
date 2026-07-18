@@ -162,6 +162,12 @@ export default function LocationsPage() {
               lat={Number(row.original.gps_lat)}
               lng={Number(row.original.gps_lng)}
               label={row.original.name}
+              boundary={row.original.boundary_polygon}
+              borderColor={row.original.border_color}
+              fillColor={row.original.fill_color}
+              fillOpacity={row.original.fill_opacity}
+              markerImageUrl={row.original.marker_image_url}
+              entityKind="area"
             />
           ) : (
             <span className="text-nb-gray-500">—</span>

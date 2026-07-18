@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
+import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { DeleteLocationModal } from '@/components/locations/DeleteLocationModal';
 import { LocationFormModal } from '@/components/locations/LocationFormModal';
 import { LocationWorkersCard } from '@/components/locations/LocationWorkersCard';
@@ -152,6 +153,11 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               initialPolygon={area.boundary_polygon}
               pin={areaCenter}
               height={480}
+              strokeColor={area.border_color}
+              strokeOpacity={area.border_opacity}
+              fillColor={area.fill_color}
+              fillOpacity={area.fill_opacity}
+              markerImageUrl={area.marker_image_url ?? entityMarkerDefault('area')}
               manualFallback={
                 <div className="border-2 border-nb-black bg-nb-gray-100 p-6 text-center">
                   <p className="text-nb-body-sm text-nb-gray-700">{t('admin:locations.mapUnavailable')}</p>
