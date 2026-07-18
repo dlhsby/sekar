@@ -14,6 +14,8 @@ import {
   Droplets,
   Clipboard,
   Briefcase,
+  Trees,
+  TreePine,
   type LucideIcon,
 } from 'lucide-react';
 import { cn, nbFocusRing } from '@/lib/utils/cn';
@@ -33,6 +35,8 @@ const GLYPHS: { name: string; Icon: LucideIcon }[] = [
   { name: 'database', Icon: Database },
   { name: 'crown', Icon: Crown },
   { name: 'building', Icon: Building2 },
+  { name: 'trees', Icon: Trees },
+  { name: 'tree', Icon: TreePine },
   { name: 'droplets', Icon: Droplets },
   { name: 'settings', Icon: Settings },
   { name: 'key', Icon: Key },
