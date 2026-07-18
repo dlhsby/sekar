@@ -27,7 +27,7 @@ import { cn, nbFocusRing } from '@/lib/utils/cn';
 import { formatLatLng, googleMapsUrl } from '@/lib/utils/geo';
 import { geometryToPaths } from '@/lib/maps/geometry';
 import type { MarkerEntityKind } from '@/lib/constants/markerDefaults';
-import { pinMarker, entityDefaultGlyph, DEFAULT_MARKER_COLOR } from '@/lib/monitoring/markers';
+import { pinMarker, entityDefaultGlyph, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 import { useMapId } from '@/lib/api/config';
 import { GoogleMapsGate } from './GoogleMapsGate';
 import { AdvancedMarker } from './AdvancedMarker';
@@ -60,8 +60,6 @@ export interface MapDisplayModalProps {
   fillOpacity?: number | null;
   /** Configured marker glyph; null → the per-kind default (`entityKind`). */
   markerIcon?: string | null;
-  /** The entity's identity color (border_color) — fills the marker pin. */
-  markerColor?: string | null;
   /** Entity kind, so an unset marker previews its system default pin. */
   entityKind?: MarkerEntityKind;
 }
@@ -95,7 +93,6 @@ export function MapDisplayModal({
   fillColor,
   fillOpacity,
   markerIcon,
-  markerColor,
   entityKind,
 }: MapDisplayModalProps) {
   const { t } = useTranslation();
@@ -115,13 +112,13 @@ export function MapDisplayModal({
     if (typeof document === 'undefined' || !entityKind) return null;
     const glyph = markerIcon ?? entityDefaultGlyph(entityKind);
     const img = document.createElement('img');
-    img.src = pinMarker(glyph, markerColor ?? DEFAULT_MARKER_COLOR, { big: true }).url;
+    img.src = pinMarker(glyph, { outline: MARKER_NEUTRAL_OUTLINE, big: true }).url;
     img.alt = '';
     img.style.width = '38px';
     img.style.height = '47px';
     img.style.objectFit = 'contain';
     return img;
-  }, [markerIcon, markerColor, entityKind]);
+  }, [markerIcon, entityKind]);
 
   // Frame the map to the boundary when present (overrides center/zoom on load).
   const handleLoad = useCallback(

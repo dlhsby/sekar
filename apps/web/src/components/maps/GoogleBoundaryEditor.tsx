@@ -29,7 +29,7 @@ import { Search, X, Loader2, Pencil, Trash2, Check, MapPin } from 'lucide-react'
 import { Button, Input } from '@/components/ui';
 import { GoogleMapsGate } from './GoogleMapsGate';
 import { AdvancedMarker } from './AdvancedMarker';
-import { pinMarker } from '@/lib/monitoring/markers';
+import { pinMarker, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 import { useMapId } from '@/lib/api/config';
 import { calculatePolygonArea, formatArea } from '@/lib/utils/geo';
 
@@ -103,8 +103,6 @@ export interface GoogleBoundaryEditorProps {
   fillOpacity?: number | null;
   /** Center-pin glyph (`marker_icon`); null → the caller's default. */
   markerIcon?: string | null;
-  /** Center-pin fill = the entity's identity color (`border_color`). */
-  markerColor?: string | null;
   /** Rendered when Google Maps is unavailable (no key / load error). */
   manualFallback?: React.ReactNode;
 }
@@ -178,7 +176,6 @@ function BoundaryMap({
   fillColor,
   fillOpacity,
   markerIcon,
-  markerColor,
 }: Omit<GoogleBoundaryEditorProps, 'manualFallback'>) {
   const { t } = useTranslation();
   const editablePolygon = !readonly && !!onPolygonChange;
@@ -200,15 +197,15 @@ function BoundaryMap({
   // Center-pin visual = the entity's unified pin (glyph + identity color),
   // rebuilt on change; null → Google's default pin.
   const pinContent = useMemo(() => {
-    if (typeof document === 'undefined' || !markerColor) return null;
+    if (typeof document === 'undefined' || !markerIcon) return null;
     const img = document.createElement('img');
-    img.src = pinMarker(markerIcon ?? null, markerColor, { big: true }).url;
+    img.src = pinMarker(markerIcon ?? null, { outline: MARKER_NEUTRAL_OUTLINE, big: true }).url;
     img.alt = '';
     img.style.width = '34px';
     img.style.height = '42px';
     img.style.objectFit = 'contain';
     return img;
-  }, [markerIcon, markerColor]);
+  }, [markerIcon]);
 
   const [paths, setPaths] = useState<LatLng[][]>(() => geometryToPaths(initialPolygon));
   const [drawing, setDrawing] = useState(false);

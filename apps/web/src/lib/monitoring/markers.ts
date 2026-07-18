@@ -23,7 +23,6 @@ const ACTIVITY_COLORS = {
   aktif: '#15803D', // fresh ping (status.active)
   tidak_aktif: '#92400E', // offline or stale ping (status.idle)
 } as const;
-const OUTSIDE_RING = '#9333EA'; // luar area (status.outside)
 const ADHOC = '#57534E'; // ad-hoc / off-schedule (gray-600)
 
 /** Map the 5-status tracking model onto the 2-activity presence model. */
@@ -86,6 +85,26 @@ const ICON_GLYPHS: Record<string, string> = {
     '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
   key: '<circle cx="8" cy="15" r="4"/><path d="M11 12l7-7 2 2-2 2 2 2-2 2-2-2-2 2"/>',
   droplets: '<path d="M12 3s6 6 6 11a6 6 0 0 1-12 0c0-5 6-11 6-11z"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>',
+  sprout:
+    '<path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2z"/>',
+  flower:
+    '<circle cx="12" cy="12" r="3"/><path d="M12 16.5A4.5 4.5 0 1 1 7.5 12 4.5 4.5 0 1 1 12 7.5a4.5 4.5 0 1 1 4.5 4.5 4.5 4.5 0 1 1-4.5 4.5"/>',
+  leaf: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6"/>',
+  wrench:
+    '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
+  truck:
+    '<path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11"/><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+  users:
+    '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  'map-pin': '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
+  warehouse:
+    '<path d="M22 8.35V20a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8.35A2 2 0 0 1 3.26 6.5l8-3.2a2 2 0 0 1 1.48 0l8 3.2A2 2 0 0 1 22 8.35Z"/><path d="M6 18h12"/><path d="M6 14h12"/>',
+  camera:
+    '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3"/>',
+  heart:
+    '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>',
 };
 const FALLBACK_GLYPH = '<circle cx="12" cy="9" r="3.2"/><path d="M6 19a6 6 0 0 1 12 0"/>';
 
@@ -109,10 +128,11 @@ function svgUrl(svg: string): string {
 }
 
 /**
- * A worker pin: a circle with a white role glyph + arrow tail (mirrors mobile
- * UserMarker). Fill = activity (aktif green / tidak-aktif amber); a purple ring
- * marks luar area. Ad-hoc (off-schedule) workers render hollow/gray so they're
- * visibly distinct from the scheduled roster and read as "uncounted".
+ * A worker pin — the SAME unified white teardrop as areas (ADR-051 revised): the
+ * **role glyph** identifies who it is, and live status rides the **outline ring**
+ * (green aktif / amber tidak-aktif; **grey = ad-hoc/uncounted**). A **dashed**
+ * outline marks a worker outside their area (luar area). Fill stays white so the
+ * status color reads cleanly and workers match the area markers.
  */
 export function workerPinIcon(
   role: string,
@@ -125,33 +145,13 @@ export function workerPinIcon(
     markerIcon?: string | null;
   }
 ): google.maps.Icon {
-  const glyph = resolveWorkerGlyph(role, opts.markerIcon);
-  const solid = ACTIVITY_COLORS[opts.activity];
-  // Ad-hoc: white fill + gray outline + gray glyph (hollow). Scheduled: colored
-  // fill + white glyph (solid).
-  const fill = opts.adHoc ? WHITE : solid;
-  const glyphColor = opts.adHoc ? ADHOC : WHITE;
-  const border = opts.adHoc ? ADHOC : WHITE;
-  const ring = opts.outside
-    ? `<circle cx="20" cy="20" r="18" fill="${WHITE}" stroke="${OUTSIDE_RING}" stroke-width="2"/>`
-    : '';
-  const dash = opts.adHoc ? ' stroke-dasharray="3 2"' : '';
-  const svg =
-    `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">` +
-    ring +
-    `<path d="M14 33 L20 41 L26 33 Z" fill="${opts.adHoc ? ADHOC : solid}"/>` +
-    `<circle cx="20" cy="20" r="14" fill="${fill}" stroke="${border}" stroke-width="${opts.selected ? 3 : 2}"${dash}/>` +
-    `<g transform="translate(20 20) scale(0.8) translate(-12 -12)" fill="none" stroke="${glyphColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyph}</g>` +
-    `</svg>`;
-  const size = opts.selected ? 62 : 48;
-  const h = Math.round(size * 1.2);
-  return {
-    url: svgUrl(svg),
-    scaledSize: new google.maps.Size(size, h),
-    anchor: new google.maps.Point(size / 2, size * 0.5),
-    // Name label sits just below the teardrop tip.
-    labelOrigin: new google.maps.Point(size / 2, h + 2),
-  };
+  const glyphPath = resolveWorkerGlyph(role, opts.markerIcon);
+  const outline = opts.adHoc ? ADHOC : ACTIVITY_COLORS[opts.activity];
+  return pinMarkerFromPath(glyphPath, {
+    outline,
+    dashed: opts.outside,
+    big: opts.selected,
+  });
 }
 
 /**
@@ -178,10 +178,12 @@ const NODE_GLYPHS: Record<string, string> = {
  * Used when an area has no explicit `marker_icon`, so every node carries a
  * kind-appropriate marker instead of a bare dot.
  */
+// Per-kind default glyph. Kawasan (trees = a grove) and lokasi (tree = a single
+// site) are deliberately DISTINCT so the two tiers read apart at a glance.
 export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'area' | 'region' | 'surabaya', string> = {
   rayon: 'building',
   region: 'trees',
-  area: 'trees',
+  area: 'tree',
   surabaya: 'building',
 };
 
@@ -191,33 +193,44 @@ const ALL_GLYPHS: Record<string, string> = { ...ICON_GLYPHS, ...NODE_GLYPHS };
 // The pin-*.svg teardrop, so a code-drawn marker matches the old preset shape.
 const PIN_PATH = 'M24 2C12.4 2 3 11.4 3 23c0 15 21 34 21 34s21-19 21-34C45 11.4 35.6 2 24 2z';
 const PIN_INK = '#1C1917';
-/** Fallback pin fill when an entity has no identity color set. */
+/** Neutral outline for static previews (no live status to show). */
+export const MARKER_NEUTRAL_OUTLINE = PIN_INK;
+/** Team fill when a team has no color set (teams are the one color-differentiated kind). */
 export const DEFAULT_MARKER_COLOR = '#78716C';
 /* eslint-enable sekar-design/no-inline-hex-colors */
 
 /**
- * The unified marker (ADR-051): one code-drawn teardrop pin, filled with the
- * entity's identity `color`, carrying its glyph, and — for areas — a staffing
- * **health-colored outline + active-count badge**. Replaces both the old area
- * pin *images* and the glyph-circle. `color` is the area's `border_color`;
- * `opts.health` tints the outline/badge; `opts.count` rides a top-right badge.
+ * The unified marker (ADR-051, revised): one code-drawn teardrop pin. **Fill is
+ * white** for every kind (rayon/kawasan/lokasi/worker) so the marker never
+ * competes with the base map — the **glyph alone identifies the type/role**.
+ * ALL live status rides the **outline ring + the count number** (`opts.outline`
+ * = staffing health for areas / activity for workers; `opts.count` = the
+ * badge). Teams are the sole exception: they pass a `fill` = their team color.
+ * `opts.dashed` marks a worker outside its area.
  */
 export function pinMarker(
   glyph: string | null,
-  color: string,
-  opts?: { health?: HealthLevel; count?: number; big?: boolean }
+  opts: { outline: string; fill?: string; count?: number; big?: boolean; dashed?: boolean }
 ): google.maps.Icon {
-  const g = glyph ? (ALL_GLYPHS[glyph] ?? null) : null;
-  const outline = opts?.health ? HEALTH_COLORS[opts.health] : PIN_INK;
-  const count = opts?.count ?? 0;
-  const w = opts?.big ? 46 : 38;
+  return pinMarkerFromPath(glyph ? (ALL_GLYPHS[glyph] ?? null) : null, opts);
+}
+
+/** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path). */
+function pinMarkerFromPath(
+  glyphPath: string | null,
+  opts: { outline: string; fill?: string; count?: number; big?: boolean; dashed?: boolean }
+): google.maps.Icon {
+  const fill = opts.fill ?? WHITE;
+  const { outline } = opts;
+  const count = opts.count ?? 0;
+  const dash = opts.dashed ? ' stroke-dasharray="5 3"' : '';
+  const w = opts.big ? 46 : 38;
   const h = Math.round(w * 1.25);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 48 60">` +
-    `<path d="${PIN_PATH}" fill="${color}" stroke="${outline}" stroke-width="3" stroke-linejoin="round"/>` +
-    `<circle cx="24" cy="22" r="13" fill="${WHITE}" stroke="${outline}" stroke-width="2.5"/>` +
-    (g
-      ? `<g transform="translate(24 22) scale(0.9) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${g}</g>`
+    `<path d="${PIN_PATH}" fill="${fill}" stroke="${outline}" stroke-width="3.5" stroke-linejoin="round"${dash}/>` +
+    (glyphPath
+      ? `<g transform="translate(24 22) scale(0.92) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyphPath}</g>`
       : '') +
     (count > 0
       ? `<circle cx="39" cy="10" r="9" fill="${outline}" stroke="${WHITE}" stroke-width="1.5"/>` +
@@ -232,10 +245,11 @@ export function pinMarker(
   };
 }
 
-/** System-default glyph per marker-entity kind (rayon → building, kawasan/lokasi → trees, team → droplets). */
+/** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → tree, team → droplets). */
 export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'area' | 'team'): string {
   if (kind === 'rayon') return 'building';
   if (kind === 'team') return 'droplets';
+  if (kind === 'area') return 'tree';
   return 'trees';
 }
 

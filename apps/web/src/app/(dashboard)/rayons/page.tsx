@@ -145,7 +145,6 @@ export default function RayonsPage() {
             fillColor={row.original.fill_color}
             fillOpacity={row.original.fill_opacity}
             markerIcon={row.original.marker_icon}
-            markerColor={row.original.border_color}
             entityKind="rayon"
           />
         ),

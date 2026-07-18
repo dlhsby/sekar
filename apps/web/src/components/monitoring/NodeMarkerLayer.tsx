@@ -15,7 +15,6 @@ import {
   rosterHealth,
   HEALTH_COLORS,
   KIND_DEFAULT_GLYPH,
-  DEFAULT_MARKER_COLOR,
 } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
@@ -70,11 +69,11 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
         const big = node.variant === 'rayon' || node.variant === 'region';
         const icon = isEmptyArea
           ? nodeCountIcon(node.variant, 0, 'empty', { icon: null })
-          : pinMarker(
-              node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null,
-              node.marker_color ?? DEFAULT_MARKER_COLOR,
-              { health, count: node.active, big }
-            );
+          : pinMarker(node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null, {
+              outline: HEALTH_COLORS[health],
+              count: node.active,
+              big,
+            });
         // Google-style place label under every marker (rayon / kawasan / lokasi),
         // colored by staffing health (green ok / amber short / red none) so
         // per-node status still reads at a glance now that the pin shows identity.
