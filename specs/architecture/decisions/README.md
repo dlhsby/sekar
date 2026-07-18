@@ -50,6 +50,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [047](./ADR-047-schedule-redesign.md) | Schedule Redesign — rule-based recurrence + occurrences, calendar, teams | Active · amends 013 |
 | [048](./ADR-048-teams.md) | Teams — grouped monitoring subjects with typed markers | Active |
 | [049](./ADR-049-settings-architecture.md) | Settings Architecture — personal preferences vs system settings | Active |
+| [051](./ADR-051-unified-icon-color-markers.md) | Unified Icon + Color Marker System — one glyph+color pin everywhere; retire marker_image_url | Accepted (impl. in progress) · supersedes image-marker part of 045 |
 | [050](./ADR-050-presence-attendance-model.md) | Presence & Attendance Model — lifecycle · live presence · counting axes | Accepted (impl. Phase 5.4) · supersedes 046's status model · extends 046 · depends on 047/013 |
 
 ## By domain
