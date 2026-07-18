@@ -24,8 +24,8 @@ const MOCK_HISTORY: LocationHistory = {
   date: '2026-03-05',
   shift_id: 'shift-1',
   shift_name: 'Pagi',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
   clock_in_time: POINT_1_ISO,
   clock_out_time: null,
   points: [

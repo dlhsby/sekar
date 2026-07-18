@@ -302,7 +302,7 @@ export default function MonitoringPage() {
           scope: 'area',
           id: w.location_id,
           rayonId: w.rayon_id ?? result.rayonId ?? undefined,
-          name: w.area_name ?? undefined,
+          name: w.location_name ?? undefined,
         });
       }
       setSelectedId(result.id);
@@ -536,7 +536,7 @@ export default function MonitoringPage() {
     for (const w of workers) {
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) continue;
-      if (w.location_id && w.area_name && !map.has(w.location_id)) map.set(w.location_id, w.area_name);
+      if (w.location_id && w.location_name && !map.has(w.location_id)) map.set(w.location_id, w.location_name);
     }
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
@@ -842,7 +842,7 @@ export default function MonitoringPage() {
             if (!open) setBulkTarget(null);
           }}
           targetAreaId={bulkTarget.location_id}
-          targetAreaName={bulkTarget.area_name}
+          targetAreaName={bulkTarget.location_name}
           boundaries={boundaries}
         />
       )}

@@ -70,7 +70,7 @@ export function useMonitoringSearch(
         id: w.user_id,
         type: 'petugas' as const,
         name: w.full_name,
-        subtitle: [roleLabel(w.role), w.area_name].filter(Boolean).join(' · '),
+        subtitle: [roleLabel(w.role), w.location_name].filter(Boolean).join(' · '),
         latitude: w.lat,
         longitude: w.lng,
         role: w.role,

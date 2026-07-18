@@ -106,7 +106,7 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
           id: user.id,
           type: 'petugas',
           name: user.full_name,
-          subtitle: [roleLabel(user.role), user.area_name].filter(Boolean).join(' · '),
+          subtitle: [roleLabel(user.role), user.location_name].filter(Boolean).join(' · '),
           latitude: user.latitude,
           longitude: user.longitude,
           role: user.role,

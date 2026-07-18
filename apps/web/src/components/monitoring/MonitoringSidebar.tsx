@@ -73,7 +73,7 @@ function WorkerRow({
             </span>
           </div>
           <div className="mt-0.5 flex items-center gap-1.5 text-xs text-nb-gray-500">
-            <span className="truncate">{worker.area_name ?? '—'}</span>
+            <span className="truncate">{worker.location_name ?? '—'}</span>
             <span className="text-nb-gray-300">·</span>
             <span className="flex-shrink-0 text-nb-gray-400">
               {formatRelativeTime(worker.last_update)}
@@ -133,16 +133,16 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
               {statusLabels[status] ?? worker.status}
             </span>
           </div>
-          {(worker.rayon_name || worker.area_name) && (
+          {(worker.rayon_name || worker.location_name) && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
               {worker.rayon_name && (
                 <span>
                   {t('monitoring:sidebar.rayonLabel')} <strong className="text-nb-black">{worker.rayon_name}</strong>
                 </span>
               )}
-              {worker.area_name && (
+              {worker.location_name && (
                 <span>
-                  {t('monitoring:sidebar.areaLabel')} <strong className="text-nb-black">{worker.area_name}</strong>
+                  {t('monitoring:sidebar.areaLabel')} <strong className="text-nb-black">{worker.location_name}</strong>
                 </span>
               )}
             </div>
@@ -226,7 +226,7 @@ function AreaSummaryList({
           >
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-nb-black">{area.area_name}</p>
+                <p className="truncate text-sm font-bold text-nb-black">{area.location_name}</p>
                 {area.rayon_name && (
                   <p className="truncate text-xs text-nb-gray-500">{area.rayon_name}</p>
                 )}
@@ -259,7 +259,7 @@ function AreaSummaryList({
                 <button
                   type="button"
                   onClick={() => onBulkReassign(area)}
-                  aria-label={t('monitoring:sidebar.bulkReassignLabel', { area: area.area_name })}
+                  aria-label={t('monitoring:sidebar.bulkReassignLabel', { area: area.location_name })}
                   className="inline-flex items-center gap-1 rounded-nb-sm border border-nb-black bg-nb-white px-1.5 py-0.5 text-[10px] font-bold text-nb-black shadow-nb-xs hover:bg-nb-gray-50"
                 >
                   <ArrowRightLeft className="h-2.5 w-2.5" />

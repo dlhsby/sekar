@@ -74,8 +74,8 @@ export interface LiveUser {
   role: UserRole;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
-  area_name: string;
+  location_id: string | null;
+  location_name: string;
   rayon_id: string | null;
   rayon_name: string | null;
   latitude: number;
@@ -121,7 +121,7 @@ export interface LiveUsersResponse {
 
 export interface LiveUsersFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   role?: string;
   status?: TrackingStatus;
   search?: string;
@@ -138,8 +138,8 @@ export interface UserDaySummary {
   role: string;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
-  area_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
   shift: {
@@ -194,8 +194,8 @@ export interface LocationHistory {
   date: string;
   shift_id: string | null;
   shift_name: string | null;
-  area_id: string | null;
-  area_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
   points: LocationHistoryPoint[];
@@ -239,7 +239,7 @@ export interface StaffingSummaryResponse {
 
 export interface StaffingFilters {
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -266,7 +266,7 @@ export interface UserStatusChangedEvent {
   user_name: string;
   role: string;
   location_id: string | null;
-  area_name: string | null;
+  location_name: string | null;
   rayon_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
@@ -279,8 +279,8 @@ export interface UserAreaEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
-  area_name: string;
+  location_id: string;
+  location_name: string;
   rayon_id: string | null;
   latitude: number;
   longitude: number;

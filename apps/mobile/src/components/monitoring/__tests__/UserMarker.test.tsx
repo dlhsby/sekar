@@ -36,7 +36,7 @@ const createMockUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   phone: '08123456789',
   status: 'active',
   area_id: 'area-123',
-  area_name: 'Taman A',
+  location_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   latitude: -7.250445,

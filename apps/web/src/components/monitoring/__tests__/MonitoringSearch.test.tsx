@@ -20,7 +20,7 @@ const workers: SnapshotWorker[] = [
     lng: 112.75,
     status: 'active',
     location_id: 'a1',
-    area_name: 'Taman Bungkul',
+    location_name: 'Taman Bungkul',
     rayon_id: 'r1',
     rayon_name: 'Rayon Pusat',
     last_update: '',

@@ -33,7 +33,7 @@ export class LiveUserDto {
   location_id: string | null;
 
   @ApiProperty({ example: 'Taman Bungkul' })
-  area_name: string;
+  location_name: string;
 
   @ApiProperty({ example: 'rayon-uuid' })
   rayon_id: string | null;

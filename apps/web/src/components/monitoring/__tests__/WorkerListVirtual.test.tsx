@@ -47,8 +47,8 @@ function makeWorkers(count: number): WorkerListItem[] {
     full_name: `Petugas ${i}`,
     role: 'satgas',
     status: 'active' as const,
-    area_id: `area-${i % 3}`,
-    area_name: `Area ${i % 3}`,
+    location_id: `area-${i % 3}`,
+    location_name: `Area ${i % 3}`,
     last_update: new Date(Date.now() - i * 60_000).toISOString(),
   }));
 }
@@ -172,8 +172,8 @@ describe('WorkerListVirtual', () => {
         full_name: 'Caca',
         role: 'satgas',
         status: 'absent',
-        area_id: 'area-1',
-        area_name: 'Taman A',
+        location_id: 'area-1',
+        location_name: 'Taman A',
         last_update: new Date().toISOString(),
       },
     ];

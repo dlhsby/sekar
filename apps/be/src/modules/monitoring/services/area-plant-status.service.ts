@@ -40,7 +40,7 @@ export interface RayonPlantStatusSummary {
   due_soon: number;
   overdue: number;
   unknown: number;
-  overdue_areas: { location_id: string; area_name: string; overdue: number }[];
+  overdue_areas: { location_id: string; location_name: string; overdue: number }[];
 }
 
 export interface PlantStatusSummaryResponse {
@@ -196,7 +196,11 @@ export class AreaPlantStatusService {
     for (const [locationId, count] of overduePerArea) {
       const area = areaById.get(locationId)!;
       const entry = rayonMap.get(area.rayon_id ?? 'none');
-      entry?.overdue_areas.push({ location_id: locationId, area_name: area.name, overdue: count });
+      entry?.overdue_areas.push({
+        location_id: locationId,
+        location_name: area.name,
+        overdue: count,
+      });
     }
     for (const entry of rayonMap.values()) {
       entry.overdue_areas.sort((a, b) => b.overdue - a.overdue);

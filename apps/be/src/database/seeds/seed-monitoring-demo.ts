@@ -48,7 +48,7 @@ async function seedMonitoringDemo() {
         u.username,
         u.role,
         ua.location_id,
-        a.name as area_name,
+        a.name as location_name,
         a.boundary_polygon
       FROM users u
       LEFT JOIN user_locations ua ON u.id = ua.user_id AND ua.assignment_type = 'permanent'

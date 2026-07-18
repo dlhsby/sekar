@@ -203,7 +203,7 @@ const mockLiveUser1: LiveUser = {
   phone: '08123456789',
   status: 'active' as any,
   area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   latitude: -7.2905,
@@ -226,7 +226,7 @@ const mockLiveUser2: LiveUser = {
   id: 'u-2',
   full_name: 'Worker Two',
   area_id: 'area-2',
-  area_name: 'Taman Jayengrono',
+  location_name: 'Taman Jayengrono',
   status: 'absent' as any,
 };
 

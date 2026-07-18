@@ -250,7 +250,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * Emit user location update
    */
   emitUserLocation(event: UserLocationEvent): void {
-    this.logger.debug(`Emitting user location: ${event.user_id} at ${event.area_name}`);
+    this.logger.debug(`Emitting user location: ${event.user_id} at ${event.location_name}`);
 
     // Emit to area subscribers
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_LOCATION, event);
@@ -272,7 +272,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * Emit user clock-in event
    */
   emitUserClockIn(event: UserClockInEvent): void {
-    this.logger.log(`Emitting user clock-in: ${event.user_name} at ${event.area_name}`);
+    this.logger.log(`Emitting user clock-in: ${event.user_name} at ${event.location_name}`);
 
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_CLOCK_IN, event);
     if (event.rayon_id) {
@@ -288,7 +288,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * Emit user clock-out event
    */
   emitUserClockOut(event: UserClockOutEvent): void {
-    this.logger.log(`Emitting user clock-out: ${event.user_name} at ${event.area_name}`);
+    this.logger.log(`Emitting user clock-out: ${event.user_name} at ${event.location_name}`);
 
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_CLOCK_OUT, event);
     if (event.rayon_id) {
@@ -305,7 +305,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    */
   emitAreaStaffing(event: AreaStaffingEvent): void {
     this.logger.log(
-      `Emitting area staffing: ${event.area_name} - ${event.workers_online}/${event.workers_required}`,
+      `Emitting area staffing: ${event.location_name} - ${event.workers_online}/${event.workers_required}`,
     );
 
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.AREA_STAFFING, event);
@@ -376,7 +376,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * Emit user left area event (Phase 2D)
    */
   emitUserLeftArea(event: UserAreaEvent): void {
-    this.logger.log(`User left area: ${event.user_name} left ${event.area_name}`);
+    this.logger.log(`User left area: ${event.user_name} left ${event.location_name}`);
 
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_LEFT_AREA, event);
     if (event.rayon_id) {
@@ -392,7 +392,7 @@ export class EventsGateway implements OnGatewayInit, OnGatewayConnection, OnGate
    * Emit user entered area event (Phase 2D)
    */
   emitUserEnteredArea(event: UserAreaEvent): void {
-    this.logger.log(`User entered area: ${event.user_name} entered ${event.area_name}`);
+    this.logger.log(`User entered area: ${event.user_name} entered ${event.location_name}`);
 
     this.server.to(`monitoring:area:${event.location_id}`).emit(EventType.USER_ENTERED_AREA, event);
     if (event.rayon_id) {

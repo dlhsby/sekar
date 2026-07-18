@@ -18,7 +18,7 @@ export interface WorkerPatch {
   lat?: number;
   lng?: number;
   location_id?: string | null;
-  area_name?: string | null;
+  location_name?: string | null;
   rayon_id?: string | null;
   rayon_name?: string | null;
   is_within_area?: boolean;
@@ -75,7 +75,7 @@ function mergeDefined(worker: SnapshotWorker, patch: WorkerPatch): SnapshotWorke
   if (patch.lat !== undefined) next.lat = patch.lat;
   if (patch.lng !== undefined) next.lng = patch.lng;
   if (patch.location_id !== undefined) next.location_id = patch.location_id;
-  if (patch.area_name !== undefined) next.area_name = patch.area_name;
+  if (patch.location_name !== undefined) next.location_name = patch.location_name;
   if (patch.rayon_id !== undefined) next.rayon_id = patch.rayon_id;
   if (patch.rayon_name !== undefined) next.rayon_name = patch.rayon_name;
   if (patch.is_within_area !== undefined) next.is_within_area = patch.is_within_area;
@@ -108,7 +108,7 @@ export function applyWorkerPatch(
       lng: patch.lng,
       status: patch.status,
       location_id: patch.location_id ?? null,
-      area_name: patch.area_name ?? null,
+      location_name: patch.location_name ?? null,
       rayon_id: patch.rayon_id ?? null,
       rayon_name: patch.rayon_name ?? null,
       last_update: patch.last_update ?? new Date(0).toISOString(),

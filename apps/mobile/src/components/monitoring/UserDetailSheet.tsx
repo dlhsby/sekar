@@ -286,7 +286,7 @@ export function UserDetailSheet({
                   {user.full_name}
                 </NBText>
                 <NBText variant="mono-sm" color="gray600">
-                  {ROLE_LABELS[user.role as UserRole] ?? user.role} · {user.area_name}
+                  {ROLE_LABELS[user.role as UserRole] ?? user.role} · {user.location_name}
                 </NBText>
               </View>
               <View style={styles.profileMeta}>
@@ -314,7 +314,7 @@ export function UserDetailSheet({
             <View style={styles.statSection}>
               <HomeStatTile
                 label={t('monitoring:userDetail.location')}
-                value={user.area_name || '—'}
+                value={user.location_name || '—'}
                 detail={locationDetail}
                 onPress={() => setMapOpen(true)}
               />

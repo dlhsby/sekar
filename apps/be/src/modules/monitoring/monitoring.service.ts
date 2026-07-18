@@ -38,7 +38,7 @@ export interface SnapshotWorker {
   lng: number;
   status: TrackingStatus;
   location_id: string | null;
-  area_name: string | null;
+  location_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
   region_id: string | null;
@@ -64,7 +64,7 @@ export interface SnapshotWorker {
 
 export interface SnapshotAreaSummary {
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id: string;
   rayon_name: string;
   active_count: number;
@@ -218,7 +218,7 @@ export class MonitoringService {
         lng: u.longitude,
         status: u.status,
         location_id: u.location_id,
-        area_name: u.area_name,
+        location_name: u.location_name,
         rayon_id: u.rayon_id,
         rayon_name: u.rayon_name,
         region_id: u.region_id,
@@ -298,7 +298,7 @@ export class MonitoringService {
         existing.activeCount += clockedIn;
       } else {
         areaMap.set(w.location_id, {
-          name: w.area_name ?? 'Unknown',
+          name: w.location_name ?? 'Unknown',
           rayon_id: w.rayon_id ?? '',
           rayon_name: w.rayon_name ?? 'Unknown',
           activeCount: clockedIn,
@@ -334,7 +334,7 @@ export class MonitoringService {
       const requiredCount = requiredByLocation.get(locationId) ?? 0;
       summaries.push({
         location_id: locationId,
-        area_name: areaData.name,
+        location_name: areaData.name,
         rayon_id: areaData.rayon_id,
         rayon_name: areaData.rayon_name,
         active_count: areaData.activeCount,

@@ -194,7 +194,7 @@ export interface RayonPlantStatusSummary {
   due_soon: number;
   overdue: number;
   unknown: number;
-  overdue_areas: { area_id: string; area_name: string; overdue: number }[];
+  overdue_areas: { area_id: string; location_name: string; overdue: number }[];
 }
 
 export interface PlantStatusSummaryResponse {

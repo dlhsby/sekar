@@ -79,7 +79,7 @@ export class UserLocationEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
@@ -138,7 +138,7 @@ export class UserClockInEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
@@ -174,7 +174,7 @@ export class UserClockOutEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
@@ -198,7 +198,7 @@ export class AreaStaffingEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
@@ -227,7 +227,7 @@ export class TaskAssignedEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
@@ -261,7 +261,7 @@ export class TaskCompletedEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()
@@ -298,7 +298,7 @@ export class UserStatusChangedEvent {
 
   @IsString()
   @IsOptional()
-  area_name?: string | null;
+  location_name?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -351,7 +351,7 @@ export class UserAreaEvent {
   location_id: string;
 
   @IsString()
-  area_name: string;
+  location_name: string;
 
   @IsUUID()
   @IsOptional()

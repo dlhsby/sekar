@@ -103,7 +103,7 @@ export class UserDaySummaryDto {
   location_id: string | null;
 
   @ApiPropertyOptional({ example: 'Taman Bungkul' })
-  area_name: string | null;
+  location_name: string | null;
 
   @ApiPropertyOptional({ example: 'rayon-uuid' })
   rayon_id: string | null;

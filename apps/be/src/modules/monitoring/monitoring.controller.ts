@@ -199,9 +199,9 @@ export class MonitoringController {
       history: reassignmentLogs.map((log) => ({
         id: log.id,
         previous_area_id: log.old_value?.location_id ?? null,
-        previous_area_name: log.old_value?.area_name ?? null,
+        previous_area_name: log.old_value?.location_name ?? null,
         new_area_id: log.new_value?.location_id ?? null,
-        new_area_name: log.new_value?.area_name ?? null,
+        new_area_name: log.new_value?.location_name ?? null,
         reason: log.metadata?.reason ?? null,
         effective_date: log.metadata?.effective_date ?? null,
         actor_id: log.actor_id,

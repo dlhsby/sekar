@@ -278,7 +278,7 @@ export class AnalyticsService {
 
     return {
       id: areaId,
-      area_name: areaName,
+      location_name: areaName,
       date: dateStr,
       attended_workers: row.attended_workers,
       required_workers: row.required_workers,
@@ -495,7 +495,7 @@ export class AnalyticsService {
   private emptyAreaAnalytics(id: string, name: string, dateStr: string): AreaAnalyticsDto {
     return {
       id,
-      area_name: name,
+      location_name: name,
       date: dateStr,
       attended_workers: 0,
       required_workers: 0,

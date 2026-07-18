@@ -27,7 +27,7 @@ const mockGetRecents = getRecentSearches as jest.MockedFunction<typeof getRecent
 const mockClear = clearRecentSearches as jest.MockedFunction<typeof clearRecentSearches>;
 
 const user = (id: string, name: string): LiveUser =>
-  ({ id, full_name: name, role: 'satgas', area_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
+  ({ id, full_name: name, role: 'satgas', location_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
 const rayons: RayonBoundary[] = [
   ({
     id: 'r1',

@@ -171,7 +171,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
         pill: t('home:coordinator.alerts.outOfArea'),
         title: t('home:coordinator.alerts.outOfAreaTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
-        sub: u.area_name || undefined,
+        sub: u.location_name || undefined,
       }));
     const absent = liveUsers
       .filter((u) => u.status === 'absent')
@@ -181,7 +181,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
         pill: t('home:coordinator.alerts.absent'),
         title: t('home:coordinator.alerts.absentTitle', { name: u.full_name }),
         meta: formatRelativeTime(u.last_update),
-        sub: u.area_name || undefined,
+        sub: u.location_name || undefined,
       }));
     return [...out, ...absent];
   }, [liveUsers, t]);

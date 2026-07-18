@@ -50,7 +50,7 @@ describe('Monitoring v2 API', () => {
     lng: 112.74,
     status: 'active',
     location_id: 'a-1',
-    area_name: 'Taman Bungkul',
+    location_name: 'Taman Bungkul',
     rayon_id: 'r-1',
     rayon_name: 'Rayon Pusat',
     last_update: '2026-05-23T08:00:00Z',
@@ -60,7 +60,7 @@ describe('Monitoring v2 API', () => {
 
   const mockArea: SnapshotAreaSummary = {
     location_id: 'a-1',
-    area_name: 'Taman Bungkul',
+    location_name: 'Taman Bungkul',
     rayon_id: 'r-1',
     rayon_name: 'Rayon Pusat',
     active_count: 3,
@@ -297,8 +297,8 @@ describe('Monitoring v2 API', () => {
             role: 'satgas',
             phone: '081234567890',
             status: 'active',
-            area_id: 'a-1',
-            area_name: 'Taman Bungkul',
+            location_id: 'a-1',
+            location_name: 'Taman Bungkul',
             rayon_id: 'r-1',
             rayon_name: 'Rayon Pusat',
             latitude: -7.29,
