@@ -17,8 +17,8 @@ const MOCK_USER_1: LiveUser = {
   role: 'satgas',
   phone: '+6281111111111',
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon Selatan',
   latitude: -7.289659,
@@ -41,8 +41,8 @@ const MOCK_USER_2: LiveUser = {
   full_name: 'Siti Rahayu',
   role: 'korlap',
   status: 'offline',
-  area_name: 'Taman Flora',
-  area_id: 'area-2',
+  location_name: 'Taman Flora',
+  location_id: 'area-2',
 };
 
 const MOCK_DATA: LiveUsersResponse = {

@@ -36,11 +36,11 @@
   "layers": {
     "title": "Settings",
     "overlays": "Map Layers",
-    "areaPins": "Area Pins",
-    "petugas": "Officers",
-    "overdue": "Overdue Plants",
-    "rayon": "District Border",
-    "area": "Area Border"
+    "rayon": "Rayon Boundary",
+    "kawasan": "Kawasan Boundary",
+    "lokasi": "Lokasi Boundary",
+    "petugas": "Workers",
+    "teamBubbles": "Teams"
   },
   "search": {
     "personnelLabel": "Officers",
@@ -63,8 +63,14 @@
     "statusLabel": "Status",
     "rayonLabel": "District",
     "rayonAllOption": "All Districts",
+    "kawasanLabel": "Kawasan",
+    "kawasanAllOption": "All Kawasan",
+    "lokasiLabel": "Lokasi",
+    "lokasiAllOption": "All Lokasi",
     "roleLabel": "Role",
     "roleAllOption": "All Roles",
+    "timLabel": "Team",
+    "timAllOption": "All Teams",
     "matchSummary": "{{matched}} / {{total}} officers",
     "reset": "Reset",
     "ariaLabel": "Monitoring filter"

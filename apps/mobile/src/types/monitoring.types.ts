@@ -21,7 +21,7 @@ export interface ActiveUser {
   user_id: string;
   full_name: string;
   role: UserRole;
-  area_name: string;
+  location_name: string;
   area_type: string;
   current_gps_lat: number;
   current_gps_lng: number;
@@ -33,7 +33,7 @@ export interface ActiveUser {
 export interface AttendanceRecord {
   user_id: string;
   full_name: string;
-  area_name: string;
+  location_name: string;
   area_type: string;
   clock_in_time?: string;
   clock_out_time?: string;
@@ -75,7 +75,7 @@ export interface LiveUser {
   activity?: PresenceActivity;
   location?: PresenceLocation;
   area_id: string | null;
-  area_name: string;
+  location_name: string;
   rayon_id: string | null;
   rayon_name: string | null;
   latitude: number;
@@ -151,7 +151,7 @@ export interface UserDaySummary {
   phone: string | null;
   status: TrackingStatus;
   area_id: string | null;
-  area_name: string | null;
+  location_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
   shift: {
@@ -208,7 +208,7 @@ export interface LocationHistory {
   shift_id: string | null;
   shift_name: string | null;
   area_id: string | null;
-  area_name: string | null;
+  location_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
   points: LocationHistoryPoint[];
@@ -246,7 +246,7 @@ export interface UserStatusChangedEvent {
   user_name: string;
   role: string;
   area_id: string | null;
-  area_name: string | null;
+  location_name: string | null;
   rayon_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
@@ -263,7 +263,7 @@ export interface UserAreaEvent {
   user_name: string;
   role: string;
   area_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id: string | null;
   latitude: number;
   longitude: number;

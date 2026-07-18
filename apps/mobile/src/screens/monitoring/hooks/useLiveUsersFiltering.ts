@@ -89,7 +89,7 @@ export function useLiveUsersFiltering(
               username: u.full_name,
               full_name: u.full_name,
               role: u.role as UserRole,
-              shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.area_id ?? '', name: u.area_name } },
+              shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.area_id ?? '', name: u.location_name } },
               latest_location: { gps_lat: u.latitude, gps_lng: u.longitude, logged_at: u.last_update },
             })),
             currentRegion,

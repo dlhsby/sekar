@@ -70,7 +70,7 @@ export function useWebSocketUpdates(dispatch: AppDispatch): void {
       dispatch(updateLiveUser({
         id: data.user_id,
         area_id: data.new_area_id,
-        area_name: data.new_area_name,
+        location_name: data.new_area_name,
       }));
     });
 

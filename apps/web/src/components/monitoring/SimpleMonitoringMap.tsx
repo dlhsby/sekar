@@ -64,10 +64,7 @@ export interface SimpleMonitoringMapProps {
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
-  /** Phase 3-8: per-area overdue plant counts — area markers with overdue
-   *  species turn danger-tinted and show the count. */
-  overdueByArea?: Record<string, number> | null;
-  /** Which overlays to draw (rayon border/fill, area border/pins, petugas). */
+  /** Which overlays to draw (rayon/kawasan/lokasi boundaries, petugas, team bubbles). */
   layers?: MonitoringLayers;
   /** Imperative focus target (from search / drill). `exact` sets the zoom
    *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
@@ -77,13 +74,6 @@ export interface SimpleMonitoringMapProps {
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 
 // Concrete colors for Google overlay options (can't read CSS custom props).
-/* eslint-disable sekar-design/no-inline-hex-colors -- Google overlay options, not rendered style tokens */
-const BLACK = '#1C1917';
-const WHITE = '#FFFFFF';
-const AREA_MARKER = '#D97706';
-const AREA_MARKER_OVERDUE = '#DC2626';
-/* eslint-enable sekar-design/no-inline-hex-colors */
-
 // Native Google Maps gesture UX: greedy scroll/pinch zoom + drag pan (the camera
 // controls are enough, so the +/- zoom buttons are off). The only on-map control
 // is a single My-Location button (added natively in createLocateControl).
@@ -119,14 +109,6 @@ const DEFAULT_ZOOM = 11;
 const WORKER_REVEAL_ZOOM = 15;
 // Alpha for the rayon fill when tinted with its configured color.
 const RAYON_FILL_ALPHA = 0.18;
-
-interface AreaPin {
-  id: string;
-  name: string;
-  lat: number;
-  lng: number;
-  understaffed: boolean;
-}
 
 /** Convert a hex color to an `rgba()` string with the given alpha (for fills). */
 function hexToRgba(hex: string, alpha: number): string | null {
@@ -181,7 +163,6 @@ function MonitoringMapInner({
   boundaries,
   selectedId,
   onSelect,
-  overdueByArea,
   layers = DEFAULT_LAYERS,
   focusTarget,
 }: SimpleMonitoringMapProps) {
@@ -190,7 +171,6 @@ function MonitoringMapInner({
   const locateMeRef = useRef<() => void>(() => {});
   const locateAddedRef = useRef(false);
   const didFitRef = useRef(false);
-  const [hoverAreaId, setHoverAreaId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
   const [bounds, setBounds] = useState<MapBounds | null>(null);
 
@@ -215,11 +195,10 @@ function MonitoringMapInner({
 
   // Flatten boundary geometry into renderable pieces. Rayon polygons keep their
   // configured color so the map can tint the fill/border per rayon.
-  const { rayonPolys, regionPolys, areaPaths, areaPins } = useMemo(() => {
+  const { rayonPolys, regionPolys, areaPaths } = useMemo(() => {
     const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     const regionPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     const areaPaths: { id: string; paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
-    const areaPins: AreaPin[] = [];
     for (const rayon of boundaries?.rayons ?? []) {
       geometryToPaths(rayon.boundary_polygon).forEach((p) =>
         rayonPolys.push({ paths: p, color: rayon.color ?? null })
@@ -233,18 +212,9 @@ function MonitoringMapInner({
         geometryToPaths(area.boundary_polygon).forEach((p) =>
           areaPaths.push({ id: area.id, paths: p, color: area.color ?? null })
         );
-        if (typeof area.center_lat === 'number' && typeof area.center_lng === 'number') {
-          areaPins.push({
-            id: area.id,
-            name: area.name,
-            lat: area.center_lat,
-            lng: area.center_lng,
-            understaffed: area.is_understaffed,
-          });
-        }
       }
     }
-    return { rayonPolys, regionPolys, areaPaths, areaPins };
+    return { rayonPolys, regionPolys, areaPaths };
   }, [boundaries]);
 
   // Fit the map to the served region once geometry/markers are available.
@@ -259,14 +229,13 @@ function MonitoringMapInner({
       };
       rayonPolys.forEach((poly) => poly.paths.forEach(extend));
       areaPaths.forEach((area) => area.paths.forEach(extend));
-      areaPins.forEach((a) => extend({ lat: a.lat, lng: a.lng }));
       workers.forEach((w) => w.lat && w.lng && extend({ lat: w.lat, lng: w.lng }));
       if (has) {
         map.fitBounds(bounds, 48);
         didFitRef.current = true;
       }
     },
-    [rayonPolys, areaPaths, areaPins, workers]
+    [rayonPolys, areaPaths, workers]
   );
 
   const handleMapLoad = useCallback(
@@ -333,15 +302,6 @@ function MonitoringMapInner({
 
   const selectedWorker =
     renderWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
-  const hoverArea = hoverAreaId ? areaPins.find((a) => a.id === hoverAreaId) : null;
-  // Area centre pins only clutter the node view (node markers already carry
-  // counts); keep them for the drilled worker view or when the plant overlay is
-  // on — and only when the areaPins layer is enabled.
-  // Area centre pins are now only the plant-overdue overlay — the drill markers
-  // (node bubbles above / the current-node pin) carry the area context, so we no
-  // longer scatter a dot on every area. At area scope, restrict even the overdue
-  // pins to the SELECTED area so siblings don't reappear.
-  const showAreaPins = layers.areaPins && !!overdueByArea;
   // Scope-gate boundary polygons: rayon outlines from the city view down, area
   // outlines only once inside a rayon. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
@@ -354,10 +314,6 @@ function MonitoringMapInner({
   const visibleAreaPaths = useMemo(
     () => (scope === 'area' && areaId ? areaPaths.filter((a) => a.id === areaId) : areaPaths),
     [areaPaths, scope, areaId]
-  );
-  const visibleAreaPins = useMemo(
-    () => (scope === 'area' && areaId ? areaPins.filter((a) => a.id === areaId) : areaPins),
-    [areaPins, scope, areaId]
   );
 
   // At area scope, frame the SELECTED area's boundary once it loads — a reliable
@@ -426,7 +382,7 @@ function MonitoringMapInner({
 
         {/* Kawasan (region) boundaries — outline + light tint in the kawasan's
             own color; drawn once you're inside a rayon. */}
-        {layers.rayon && showRegionPolys &&
+        {layers.kawasan && showRegionPolys &&
           regionPolys.map((poly, i) => {
             const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
             const fill =
@@ -449,9 +405,9 @@ function MonitoringMapInner({
             );
           })}
 
-        {/* Area boundaries — outline + fill in the lokasi's own color when set
-            (one `area` toggle); only the selected area at area scope (on-demand). */}
-        {layers.area && showAreaBorders &&
+        {/* Lokasi boundaries — outline + fill in the lokasi's own color when set
+            (one `lokasi` toggle); only the selected area at area scope (on-demand). */}
+        {layers.lokasi && showAreaBorders &&
           visibleAreaPaths.map((area, i) => (
             <Polygon
               key={`area-${area.id}-${i}`}
@@ -470,37 +426,9 @@ function MonitoringMapInner({
             />
           ))}
 
-        {/* Area centre markers */}
-        {showAreaPins &&
-          visibleAreaPins.map((area) => {
-          const overdue = overdueByArea?.[area.id] ?? 0;
-          const danger = overdue > 0 || area.understaffed;
-          return (
-            <Marker
-              key={`area-pin-${area.id}`}
-              position={{ lat: area.lat, lng: area.lng }}
-              onMouseOver={() => setHoverAreaId(area.id)}
-              onMouseOut={() => setHoverAreaId((cur) => (cur === area.id ? null : cur))}
-              icon={{
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 9,
-                fillColor: danger ? AREA_MARKER_OVERDUE : AREA_MARKER,
-                fillOpacity: 1,
-                strokeColor: BLACK,
-                strokeWeight: 2,
-              }}
-              label={{
-                text: overdue > 0 ? String(overdue) : 'A',
-                color: WHITE,
-                fontSize: '10px',
-                fontWeight: '700',
-              }}
-              zIndex={3}
-            />
-          );
-        })}
-
-        {/* Drill-down node markers (Surabaya / rayon / area) or clustered worker pins. */}
+        {/* Drill-down node markers (Surabaya / rayon / area) — always drawn, the
+            map's primary content — or clustered worker pins (gated by `petugas`).
+            `teamBubbles` collapses each team's members into one bubble. */}
         {!renderWorkers ? (
           <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} />
         ) : layers.petugas ? (
@@ -511,6 +439,7 @@ function MonitoringMapInner({
             selectedId={selectedId}
             onSelect={onSelect}
             onClusterClick={handleClusterZoom}
+            teamBubbles={layers.teamBubbles}
           />
         ) : null}
 
@@ -525,22 +454,6 @@ function MonitoringMapInner({
             zIndex={50}
             title={currentNode.name}
           />
-        )}
-
-        {/* Info windows */}
-        {hoverArea && (
-          <InfoWindow
-            position={{ lat: hoverArea.lat, lng: hoverArea.lng }}
-            onCloseClick={() => setHoverAreaId(null)}
-            options={{ disableAutoPan: true }}
-          >
-            <div className="text-xs font-semibold text-nb-black">
-              {hoverArea.name}
-              {(overdueByArea?.[hoverArea.id] ?? 0) > 0 && (
-                <> · {t('monitoring:map.overduePlantLabel', { count: overdueByArea?.[hoverArea.id] })}</>
-              )}
-            </div>
-          </InfoWindow>
         )}
 
         {selectedWorker?.lat && selectedWorker?.lng && (

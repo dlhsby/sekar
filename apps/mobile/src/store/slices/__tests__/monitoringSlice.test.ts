@@ -62,7 +62,7 @@ const mockLiveUser: LiveUser = {
   phone: '08123456789',
   status: 'active',
   area_id: 'area-123',
-  area_name: 'Taman A',
+  location_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   latitude: -7.250445,
@@ -121,7 +121,7 @@ const mockUserDaySummary: UserDaySummary = {
   phone: '08123456789',
   status: 'active',
   area_id: 'area-123',
-  area_name: 'Taman A',
+  location_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   shift: {
@@ -156,7 +156,7 @@ const mockLocationHistory: LocationHistory = {
   shift_id: 'shift-123',
   shift_name: 'Shift Pagi',
   area_id: 'area-123',
-  area_name: 'Taman A',
+  location_name: 'Taman A',
   clock_in_time: '2026-02-15T07:00:00Z',
   clock_out_time: null,
   points: [

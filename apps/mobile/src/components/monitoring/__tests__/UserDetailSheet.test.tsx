@@ -62,7 +62,7 @@ const createUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   phone: '08123456789',
   status: 'active',
   area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   latitude: -7.250445,
@@ -89,7 +89,7 @@ const createDaySummary = (overrides?: Partial<UserDaySummary>): UserDaySummary =
   phone: '08123456789',
   status: 'active',
   area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   shift: {
@@ -276,7 +276,7 @@ describe('UserDetailSheet (CP1)', () => {
     });
 
     it('falls back to "—" when area name is missing', async () => {
-      const u = createUser({ area_name: '' });
+      const u = createUser({ location_name: '' });
       const { getAllByText } = render(
         <UserDetailSheet {...defaultProps()} user={u} />
       );

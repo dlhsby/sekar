@@ -60,7 +60,7 @@ export default function AreaAnalyticsPage() {
   const chartData = useMemo(() => {
     const rows = listData?.data ?? [];
     return rows.slice(0, 8).map((a) => ({
-      area: a.area_name,
+      area: a.location_name,
       staffing: a.staffing_coverage,
       tasks: a.open_tasks,
     }));
@@ -110,7 +110,7 @@ export default function AreaAnalyticsPage() {
               onClick={() => setSelectedAreaId(area.id)}
               interactive
             >
-              <h3 className="font-semibold text-nb-h3 mb-3">{area.area_name}</h3>
+              <h3 className="font-semibold text-nb-h3 mb-3">{area.location_name}</h3>
 
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between items-center">
@@ -159,7 +159,7 @@ export default function AreaAnalyticsPage() {
           ) : areaDetail ? (
             <div className="space-y-4">
               <Card className="p-4 space-y-3">
-                <h4 className="font-semibold text-nb-h3">{areaDetail.area_name}</h4>
+                <h4 className="font-semibold text-nb-h3">{areaDetail.location_name}</h4>
                 <div className="flex justify-between items-center">
                   <span className="text-nb-body-sm text-nb-gray-600">{t('areas.detail.staffingCoverage')}</span>
                   <span className="font-medium">{areaDetail.staffing_coverage.toFixed(1)}%</span>

@@ -17,8 +17,8 @@ const BASE_USER: LiveUser = {
   role: 'satgas',
   phone: '+6281234567890',
   status: 'active',
-  area_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_id: 'area-1',
+  location_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon Selatan',
   latitude: -7.289659,
@@ -63,8 +63,8 @@ describe('UserListItem', () => {
       expect(screen.getByText(/satgas|petugas/i)).toBeInTheDocument();
     });
 
-    it('should render a dash when area_name is empty', () => {
-      const user = { ...BASE_USER, area_name: '' };
+    it('should render a dash when location_name is empty', () => {
+      const user = { ...BASE_USER, location_name: '' };
       render(<UserListItem {...defaultProps} user={user} />);
       expect(screen.getByText('—')).toBeInTheDocument();
     });

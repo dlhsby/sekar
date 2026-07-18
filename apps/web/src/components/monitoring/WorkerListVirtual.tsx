@@ -29,8 +29,8 @@ export interface WorkerListItem {
   full_name: string;
   role: string;
   status: TrackingStatus;
-  area_id: string | null;
-  area_name: string | null;
+  location_id: string | null;
+  location_name: string | null;
   last_update: string;
 }
 
@@ -163,7 +163,7 @@ export function WorkerListVirtual({
                   {worker.full_name}
                 </p>
                 <p className="text-nb-caption text-nb-gray-500 truncate">
-                  {worker.area_name ?? '—'}
+                  {worker.location_name ?? '—'}
                 </p>
               </div>
 

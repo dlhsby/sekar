@@ -95,7 +95,7 @@ describe('monitoringApi', () => {
       const mockResponse = {
         data: {
           area_id: areaId,
-          area_name: 'Taman Bungkul',
+          location_name: 'Taman Bungkul',
           staffing_status: 'adequate',
           users: [],
         },
@@ -228,7 +228,7 @@ describe('monitoringApi', () => {
     it('should call get with /activities endpoint and empty params', async () => {
       const mockResponse = {
         data: [
-          { id: 'uuid-1', user_name: 'John', area_name: 'Park A', activity_time: '2026-01-19T10:00:00Z' },
+          { id: 'uuid-1', user_name: 'John', location_name: 'Park A', activity_time: '2026-01-19T10:00:00Z' },
         ],
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -458,7 +458,7 @@ describe('monitoringApi', () => {
           adequately_staffed: 1,
           understaffed: 0,
           overstaffed: 0,
-          areas: [{ area_id: 'area-456', area_name: 'Taman Bungkul', status: 'adequate' }],
+          areas: [{ area_id: 'area-456', location_name: 'Taman Bungkul', status: 'adequate' }],
         },
       };
       mockGet.mockResolvedValue(mockResponse);

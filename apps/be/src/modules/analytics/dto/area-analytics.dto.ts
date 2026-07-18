@@ -8,7 +8,7 @@ export class AreaAnalyticsDto {
 
   @ApiProperty({ description: 'Location name', example: 'Taman Utara' })
   @Expose()
-  area_name: string;
+  location_name: string;
 
   @ApiProperty({ description: 'Analytics date', example: '2026-06-16' })
   @Expose()

@@ -13,8 +13,8 @@ function worker(over: Partial<SnapshotWorker>): SnapshotWorker {
     lat: -7.25,
     lng: 112.75,
     status: 'active',
-    area_id: 'area-1',
-    area_name: 'Area 1',
+    location_id: 'area-1',
+    location_name: 'Area 1',
     rayon_id: 'rayon-1',
     rayon_name: 'Rayon 1',
     last_update: '2026-07-04T00:00:00Z',
@@ -83,9 +83,9 @@ describe('patch-reducers', () => {
   });
 
   it('does not overwrite existing fields with undefined', () => {
-    const data = snapshot([worker({ user_id: 'u1', area_name: 'Area 1' })]);
+    const data = snapshot([worker({ user_id: 'u1', location_name: 'Area 1' })]);
     const next = applyWorkerPatch(data, { user_id: 'u1', status: 'offline' });
-    expect(next.workers[0].area_name).toBe('Area 1'); // preserved
+    expect(next.workers[0].location_name).toBe('Area 1'); // preserved
     expect(next.workers[0].status).toBe('offline');
   });
 

@@ -313,7 +313,7 @@ export default function DashboardPage() {
                       <span className="min-w-0 truncate text-nb-gray-700">
                         {r.rayon_name ?? t('home:plants.noRayon')}
                         {r.overdue_areas[0] && (
-                          <span className="text-nb-gray-500"> · {r.overdue_areas[0].area_name}</span>
+                          <span className="text-nb-gray-500"> · {r.overdue_areas[0].location_name}</span>
                         )}
                       </span>
                       <span className="shrink-0 rounded-nb-sm border border-nb-danger bg-nb-danger-light/30 px-1.5 py-0.5 font-mono text-[11px] font-bold text-nb-danger-dark">

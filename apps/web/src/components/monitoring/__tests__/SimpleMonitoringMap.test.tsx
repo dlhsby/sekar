@@ -253,21 +253,6 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(2);
   });
 
-  it('shows the selected area pin when the overdue overlay is active', () => {
-    render(
-      <SimpleMonitoringMap
-        showWorkers
-        scope="area"
-        areaId="a1"
-        workers={workers}
-        boundaries={boundaries}
-        overdueByArea={{ a1: 3 }}
-      />
-    );
-    // 2 workers + 1 overdue area pin (scoped to the selected area a1).
-    expect(screen.getAllByTestId('marker')).toHaveLength(3);
-  });
-
   it('calls onSelect when a worker marker is clicked', () => {
     const onSelect = jest.fn();
     render(
@@ -310,14 +295,14 @@ describe('SimpleMonitoringMap', () => {
         boundaries={boundaries}
         layers={{
           rayon: true,
-          area: true,
-          areaPins: false,
+          kawasan: true,
+          lokasi: true,
           petugas: false,
-          overdue: false,
+          teamBubbles: true,
         }}
       />
     );
-    // Only the rayon + area polygons (no worker/area markers).
+    // Only the rayon + area polygons (no worker markers).
     expect(screen.queryAllByTestId('marker')).toHaveLength(0);
   });
 });

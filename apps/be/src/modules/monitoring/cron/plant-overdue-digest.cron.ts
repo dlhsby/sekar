@@ -111,7 +111,7 @@ export class PlantOverdueDigestCron {
     const totalOverdue = rayons.reduce((sum, r) => sum + r.overdue, 0);
     if (rayons.length === 1) {
       const r = rayons[0];
-      const topArea = r.overdue_areas[0]?.area_name;
+      const topArea = r.overdue_areas[0]?.location_name;
       return (
         `${r.overdue} jenis tanaman terlambat dipangkas di ${r.rayon_name ?? 'rayon Anda'}` +
         (topArea ? `, terbanyak di ${topArea}.` : '.')

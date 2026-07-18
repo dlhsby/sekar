@@ -70,7 +70,7 @@ const makeLiveUser = (
   phone: null,
   status: 'active',
   area_id: 'area-1',
-  area_name: 'Area area-1',
+  location_name: 'Area area-1',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon rayon-1',
   latitude: lat,

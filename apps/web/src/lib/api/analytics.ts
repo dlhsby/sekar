@@ -76,7 +76,7 @@ export interface WorkerAnalytics extends Record<string, unknown> {
  */
 export interface AreaAnalytics extends Record<string, unknown> {
   id: string;
-  area_name: string;
+  location_name: string;
   date: string;
   attended_workers: number;
   required_workers: number;

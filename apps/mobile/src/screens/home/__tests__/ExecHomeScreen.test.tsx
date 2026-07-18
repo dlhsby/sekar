@@ -25,7 +25,7 @@ const liveUser = (over: Record<string, unknown>) => ({
   phone: null,
   status: 'active',
   area_id: 'a1',
-  area_name: 'Zona A',
+  location_name: 'Zona A',
   rayon_id: 'r1',
   rayon_name: 'Rayon Pusat',
   latitude: -7.25,
