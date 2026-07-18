@@ -208,6 +208,11 @@ export function RegionForm({
           }
           readonly={readOnly}
           autoLocateOnMount={mode === 'create' && !seedPolygon && !readOnly}
+          strokeColor={style.border_color}
+          strokeOpacity={style.border_opacity}
+          fillColor={style.fill_color}
+          fillOpacity={style.fill_opacity}
+          markerImageUrl={style.marker_image_url ?? entityMarkerDefault('region')}
         />
         <div className="space-y-4">
           <FormInput
