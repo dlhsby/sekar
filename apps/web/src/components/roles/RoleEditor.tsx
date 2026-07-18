@@ -15,6 +15,7 @@ import {
 } from '@/lib/api/roles';
 import { PermissionAccordion } from './PermissionAccordion';
 import { MarkerImagePicker } from '@/components/forms/MarkerImagePicker';
+import { MarkerIconPicker } from '@/components/forms/MarkerIconPicker';
 import { ColorField, HEX_COLOR } from '@/components/forms/ColorField';
 import { roleMarkerDefault } from '@/lib/constants/markerDefaults';
 
@@ -57,6 +58,8 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   );
   const initialColor = role.marker_color ?? DEFAULT_ROLE_COLOR;
   const [markerColor, setMarkerColor] = useState<string>(initialColor);
+  const initialIcon = role.marker_icon ?? null;
+  const [markerIcon, setMarkerIcon] = useState<string | null>(initialIcon);
   const [checked, setChecked] = useState<Set<string>>(initialChecked);
 
   const initialMarker = role.marker_image_url ?? null;
@@ -67,6 +70,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     description !== (role.description ?? '') ||
     scope !== role.monitoring_scope ||
     (markerImageUrl ?? null) !== initialMarker ||
+    (markerIcon ?? null) !== initialIcon ||
     markerColor !== initialColor ||
     permsDirty;
 
@@ -75,6 +79,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     setDescription(role.description ?? '');
     setScope(role.monitoring_scope);
     setMarkerImageUrl(initialMarker);
+    setMarkerIcon(initialIcon);
     setMarkerColor(initialColor);
     setChecked(new Set(initialChecked));
   };
@@ -114,7 +119,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           name: name.trim(),
           description: description.trim() || undefined,
           monitoring_scope: scope,
-          marker_icon: role.marker_icon ?? undefined,
+          marker_icon: markerIcon ?? undefined,
           marker_image_url: markerImageUrl,
           marker_color: markerColor,
           // Preserve the *:* superuser grant instead of materializing it.
@@ -196,6 +201,7 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           onChange={(e) => setDescription(e.target.value)}
           disabled={!canManage}
         />
+        <MarkerIconPicker value={markerIcon} onChange={setMarkerIcon} disabled={!canManage} />
         <MarkerImagePicker
           value={markerImageUrl}
           onChange={setMarkerImageUrl}

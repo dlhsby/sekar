@@ -30,7 +30,8 @@
     "scope": "Monitoring Scope",
     "markerIcon": "Marker Icon",
     "markerIconPlaceholder": "e.g. shield",
-    "markerColor": "Marker Color"
+    "markerColor": "Marker Color",
+    "markerIconHint": "The glyph shown inside the worker pin (its color follows live status)."
   },
   "scope": {
     "city": "Whole City (Surabaya)",

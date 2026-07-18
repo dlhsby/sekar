@@ -30,7 +30,8 @@
     "scope": "Cakupan Monitoring",
     "markerIcon": "Ikon Penanda",
     "markerIconPlaceholder": "mis. shield",
-    "markerColor": "Warna Penanda"
+    "markerColor": "Warna Penanda",
+    "markerIconHint": "Bentuk ikon di dalam penanda petugas (warnanya mengikuti status langsung)."
   },
   "scope": {
     "city": "Seluruh Kota (Surabaya)",
