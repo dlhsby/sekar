@@ -38,7 +38,6 @@ import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
 import { AggregateNodeList } from '@/components/monitoring/AggregateNodeList';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
-import { usePlantStatusSummary } from '@/lib/api/plants';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
 import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { NodeMarker } from '@/components/monitoring/NodeMarkerLayer';
@@ -145,7 +144,10 @@ export default function MonitoringPage() {
     search: '',
     statuses: new Set(),
     rayonId: 'all',
+    regionId: 'all',
+    locationId: 'all',
     role: 'all',
+    teamId: 'all',
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -160,9 +162,8 @@ export default function MonitoringPage() {
     key: number;
   } | null>(null);
 
-  // Map layer visibility (persisted). Overdue-plant overlay is a layer now.
+  // Map layer visibility (persisted).
   const { layers, toggleLayer } = useMonitoringLayers();
-  const showOverdue = layers.overdue;
 
   // Keep view in sync when the user (role) resolves.
   useEffect(() => {
@@ -217,16 +218,6 @@ export default function MonitoringPage() {
     isFetching: boundariesFetching,
     refetch: refetchBoundaries,
   } = useBoundaries(canMonitor, boundaryLevel, boundaryRayonId);
-
-  const plantSummary = usePlantStatusSummary(canMonitor && showOverdue);
-  const overdueByArea = useMemo(() => {
-    if (!showOverdue || !plantSummary.data) return null;
-    const map: Record<string, number> = {};
-    for (const rayon of plantSummary.data.rayons) {
-      for (const a of rayon.overdue_areas) map[a.area_id] = a.overdue;
-    }
-    return map;
-  }, [showOverdue, plantSummary.data]);
 
   // Live incremental updates (replaces the old 30 s full-refresh flash).
   useMonitoringSocket(canMonitor);
@@ -306,12 +297,12 @@ export default function MonitoringPage() {
     if (result.type === 'petugas') {
       // Drill into the worker's area so the pin renders, then select + focus.
       const w = workers.find((x) => x.user_id === result.id);
-      if (w?.area_id) {
+      if (w?.location_id) {
         setView({
           scope: 'area',
-          id: w.area_id,
+          id: w.location_id,
           rayonId: w.rayon_id ?? result.rayonId ?? undefined,
-          name: w.area_name ?? undefined,
+          name: w.location_name ?? undefined,
         });
       }
       setSelectedId(result.id);
@@ -527,10 +518,45 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, boundaries]);
 
+  // Kawasan options, narrowed to the selected rayon (cascade: rayon → kawasan).
+  const regionOptions = useMemo<RayonOption[]>(() => {
+    const map = new Map<string, string>();
+    for (const w of workers) {
+      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
+      if (w.region_id && w.region_name && !map.has(w.region_id)) map.set(w.region_id, w.region_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [workers, filters.rayonId]);
+
+  // Lokasi options, narrowed to the selected rayon + kawasan (cascade tail).
+  const locationOptions = useMemo<RayonOption[]>(() => {
+    const map = new Map<string, string>();
+    for (const w of workers) {
+      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
+      if (filters.regionId !== 'all' && w.region_id !== filters.regionId) continue;
+      if (w.location_id && w.location_name && !map.has(w.location_id)) map.set(w.location_id, w.location_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [workers, filters.rayonId, filters.regionId]);
+
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
     for (const w of workers) set.add(w.role);
     return [...set] as UserRole[];
+  }, [workers]);
+
+  const teamOptions = useMemo<RayonOption[]>(() => {
+    const map = new Map<string, string>();
+    for (const w of workers) {
+      if (w.team_id && w.team_name && !map.has(w.team_id)) map.set(w.team_id, w.team_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers]);
 
   const filteredWorkers = useMemo(() => {
@@ -538,7 +564,10 @@ export default function MonitoringPage() {
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
+      if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
+      if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (filters.role !== 'all' && w.role !== filters.role) return false;
+      if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -624,7 +653,6 @@ export default function MonitoringPage() {
         boundaries={boundaries ?? null}
         selectedId={selectedId}
         onSelect={selectWorker}
-        overdueByArea={overdueByArea}
         layers={layers}
         focusTarget={focusTarget}
       />
@@ -736,7 +764,10 @@ export default function MonitoringPage() {
             onChange={setFilters}
             statusCounts={statusCounts}
             rayonOptions={rayonOptions}
+            regionOptions={regionOptions}
+            locationOptions={locationOptions}
             roleOptions={roleOptions}
+            teamOptions={teamOptions}
             total={showWorkers ? workers.length : listNodes.length}
             matched={listCount}
             showSearch={false}
@@ -810,8 +841,8 @@ export default function MonitoringPage() {
           onOpenChange={(open) => {
             if (!open) setBulkTarget(null);
           }}
-          targetAreaId={bulkTarget.area_id}
-          targetAreaName={bulkTarget.area_name}
+          targetAreaId={bulkTarget.location_id}
+          targetAreaName={bulkTarget.location_name}
           boundaries={boundaries}
         />
       )}

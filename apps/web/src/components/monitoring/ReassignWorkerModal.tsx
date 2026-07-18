@@ -66,11 +66,11 @@ export function ReassignWorkerModal({
   const siblingAreas = getSiblingAreas(boundaries, targetAreaId);
 
   const { data: liveUsersData, isLoading: usersLoading } = useLiveUsers(
-    sourceAreaId ? { area_id: sourceAreaId } : undefined
+    sourceAreaId ? { location_id: sourceAreaId } : undefined
   );
 
   const workers: LiveUser[] = sourceAreaId
-    ? (liveUsersData?.users ?? []).filter((u) => u.area_id === sourceAreaId)
+    ? (liveUsersData?.users ?? []).filter((u) => u.location_id === sourceAreaId)
     : [];
 
   const reassignMutation = useReassignWorker();

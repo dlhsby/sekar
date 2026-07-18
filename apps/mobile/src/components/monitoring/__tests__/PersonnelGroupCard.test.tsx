@@ -24,7 +24,7 @@ const user = (id: string, status: LiveUser['status']): LiveUser => ({
   phone: null,
   status,
   location_id: 'a1',
-  area_name: 'Taman',
+  location_name: 'Taman',
   rayon_id: 'r1',
   rayon_name: 'Rayon 1',
   latitude: 0,

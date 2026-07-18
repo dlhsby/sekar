@@ -1008,7 +1008,7 @@ describe('MonitoringService', () => {
 
       expect(result.points).toHaveLength(2);
       expect(result.shift_name).toBe('Shift 1');
-      expect(result.area_name).toBe('Taman Bungkul');
+      expect(result.location_name).toBe('Taman Bungkul');
       expect(result.total_distance_meters).toBeGreaterThanOrEqual(0);
     });
 
@@ -1190,7 +1190,7 @@ describe('MonitoringService', () => {
 
       const result = await service.getUserDaySummary('user-1');
 
-      expect(result.area_name).toBe('Taman Bungkul');
+      expect(result.location_name).toBe('Taman Bungkul');
       expect(result.rayon_name).toBe('Rayon Selatan');
     });
   });
@@ -1384,7 +1384,7 @@ describe('MonitoringService', () => {
             full_name: 'Satgas Satu',
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Pusat',
             status: TrackingStatus.ACTIVE,
@@ -1398,7 +1398,7 @@ describe('MonitoringService', () => {
             full_name: 'Korlap Satu',
             role: 'korlap',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Pusat',
             status: TrackingStatus.ACTIVE,
@@ -1442,7 +1442,7 @@ describe('MonitoringService', () => {
             full_name: 'Satgas Adhoc',
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Pusat',
             status: TrackingStatus.ACTIVE,
@@ -1493,7 +1493,7 @@ describe('MonitoringService', () => {
             phone: '08123456789',
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.2905,
@@ -1519,7 +1519,7 @@ describe('MonitoringService', () => {
             phone: '08129999999',
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.291,
@@ -1577,7 +1577,7 @@ describe('MonitoringService', () => {
         lng: 112.7398,
         status: TrackingStatus.ACTIVE,
         location_id: 'area-1',
-        area_name: 'Taman Bungkul',
+        location_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
         is_within_area: true,
@@ -1589,7 +1589,7 @@ describe('MonitoringService', () => {
       expect(result.data.area_summaries).toHaveLength(1);
       expect(result.data.area_summaries[0]).toMatchObject({
         location_id: 'area-1',
-        area_name: 'Taman Bungkul',
+        location_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
         active_count: 2, // active + offline = clocked in (both satgas staff the park)
@@ -1612,7 +1612,7 @@ describe('MonitoringService', () => {
             phone: '08123456789',
             role: 'satgas',
             location_id: null,
-            area_name: 'Unknown',
+            location_name: 'Unknown',
             rayon_id: null,
             rayon_name: null,
             latitude: -7.2905,
@@ -1664,7 +1664,7 @@ describe('MonitoringService', () => {
             phone: null,
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.2905,
@@ -1690,7 +1690,7 @@ describe('MonitoringService', () => {
             phone: null,
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.29,
@@ -1716,7 +1716,7 @@ describe('MonitoringService', () => {
             phone: null,
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.288,
@@ -1774,7 +1774,7 @@ describe('MonitoringService', () => {
           phone: null,
           role: 'satgas',
           location_id: 'area-1',
-          area_name: 'Taman Bungkul',
+          location_name: 'Taman Bungkul',
           rayon_id: 'rayon-1',
           rayon_name: 'Rayon Selatan',
           latitude: -7.2905,
@@ -1828,7 +1828,7 @@ describe('MonitoringService', () => {
             phone: null,
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.2905,
@@ -1854,7 +1854,7 @@ describe('MonitoringService', () => {
             phone: null,
             role: 'satgas',
             location_id: 'area-1',
-            area_name: 'Taman Bungkul',
+            location_name: 'Taman Bungkul',
             rayon_id: 'rayon-1',
             rayon_name: 'Rayon Selatan',
             latitude: -7.29,

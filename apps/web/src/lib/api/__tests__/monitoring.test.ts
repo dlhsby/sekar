@@ -203,7 +203,7 @@ describe('Monitoring API', () => {
           phone: '+6281234567890',
           status: 'active',
           area_id: 'area-1',
-          area_name: 'Taman Bungkul',
+          location_name: 'Taman Bungkul',
           rayon_id: 'rayon-1',
           rayon_name: 'Rayon Selatan',
           latitude: -7.289659,
@@ -249,7 +249,7 @@ describe('Monitoring API', () => {
       expect(user.phone).toBe('+6281234567890');
       expect(user.status).toBe('active');
       expect(user.area_id).toBe('area-1');
-      expect(user.area_name).toBe('Taman Bungkul');
+      expect(user.location_name).toBe('Taman Bungkul');
       expect(user.rayon_id).toBe('rayon-1');
       expect(user.rayon_name).toBe('Rayon Selatan');
       expect(user.latitude).toBeCloseTo(-7.289659);
@@ -301,7 +301,7 @@ describe('Monitoring API', () => {
         phone: '+6281234567890',
         status: 'active',
         area_id: 'area-1',
-        area_name: 'Taman Bungkul',
+        location_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
         shift: {
@@ -384,7 +384,7 @@ describe('Monitoring API', () => {
         shift_id: 'shift-1',
         shift_name: 'Pagi',
         area_id: 'area-1',
-        area_name: 'Taman Bungkul',
+        location_name: 'Taman Bungkul',
         clock_in_time: '2026-03-05T06:05:00Z',
         clock_out_time: null,
         points: [
@@ -439,7 +439,7 @@ describe('Monitoring API', () => {
         shift_id: null,
         shift_name: null,
         area_id: null,
-        area_name: null,
+        location_name: null,
         clock_in_time: null,
         clock_out_time: null,
         points: [],

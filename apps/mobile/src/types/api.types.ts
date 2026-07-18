@@ -74,7 +74,7 @@ export interface ClockOutResponse {
 }
 
 export interface CurrentShiftResponse extends Shift {
-  area_name: string;
+  location_name: string;
   area_type: string;
   hours_worked: number;
 }
@@ -524,7 +524,7 @@ export interface RayonMonitoringResponse extends MonitoringStats {
 
 export interface AreaMonitoringResponse extends MonitoringStats {
   location_id: string;
-  area_name: string;
+  location_name: string;
   staffing_status: 'adequate' | 'understaffed' | 'overstaffed';
   required_users: number;
   actual_users: number;

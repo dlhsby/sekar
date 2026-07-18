@@ -8,7 +8,7 @@ import { useMonitoringSearch } from '../useMonitoringSearch';
 import type { LiveUser, RayonBoundary } from '../../types/models.types';
 
 const user = (id: string, name: string): LiveUser =>
-  ({ id, full_name: name, role: 'satgas', area_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
+  ({ id, full_name: name, role: 'satgas', location_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
 
 const area = (id: string, name: string) =>
   ({ id, name, center_lat: 5, center_lng: 6, rayon_name: 'Rayon Pusat' });

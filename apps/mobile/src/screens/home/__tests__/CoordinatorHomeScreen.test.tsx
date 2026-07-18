@@ -40,7 +40,7 @@ const liveUser = (over: Record<string, unknown>) => ({
   phone: null,
   status: 'active',
   location_id: 'a1',
-  area_name: 'Zona A',
+  location_name: 'Zona A',
   rayon_id: 'r1',
   rayon_name: 'Pusat',
   latitude: -7.25,
@@ -135,8 +135,8 @@ describe('CoordinatorHomeScreen (HOME-2)', () => {
         generated_at: new Date().toISOString(),
         users: [
           liveUser({ id: 'u1', full_name: 'Andi Aktif', status: 'active' }),
-          liveUser({ id: 'u2', full_name: 'Budi Keluar', status: 'absent', outside_boundary: true, area_name: 'Zona B' }),
-          liveUser({ id: 'u3', full_name: 'Citra Hilang', status: 'absent', area_name: 'Zona C' }),
+          liveUser({ id: 'u2', full_name: 'Budi Keluar', status: 'absent', outside_boundary: true, location_name: 'Zona B' }),
+          liveUser({ id: 'u3', full_name: 'Citra Hilang', status: 'absent', location_name: 'Zona C' }),
         ],
       },
     });

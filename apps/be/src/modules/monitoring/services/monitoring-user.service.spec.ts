@@ -12,6 +12,7 @@ import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
@@ -25,6 +26,7 @@ describe('MonitoringUserService', () => {
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
   let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
 
@@ -42,6 +44,7 @@ describe('MonitoringUserService', () => {
     id: 'area-1',
     name: 'Location 1',
     rayon_id: 'rayon-1',
+    region_id: 'region-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
   } as Location;
@@ -119,6 +122,12 @@ describe('MonitoringUserService', () => {
           },
         },
         {
+          provide: getRepositoryToken(Region),
+          useValue: {
+            find: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
           provide: getRepositoryToken(Role),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
@@ -170,6 +179,7 @@ describe('MonitoringUserService', () => {
       getRepositoryToken(LocationLog),
     );
     rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
+    regionRepository = module.get<jest.Mocked<Repository<Region>>>(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
     );

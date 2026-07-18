@@ -41,7 +41,7 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
     phone: null,
     status: 'active',
     location_id: 'area-source',
-    area_name: 'Area Selatan',
+    location_name: 'Area Selatan',
     rayon_id: 'rayon-1',
     rayon_name: 'Rayon 1',
     latitude: -7.25,
@@ -253,7 +253,7 @@ describe('ReassignWorkerModal', () => {
     it('shows worker role label and area name as meta', async () => {
       const { getAllByText } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
       await waitFor(() => {
-        // Both workerA (satgas) and workerB (linmas) share area_name "Area Selatan"
+        // Both workerA (satgas) and workerB (linmas) share location_name "Area Selatan"
         const hits = getAllByText(/Area Selatan/);
         expect(hits.length).toBeGreaterThanOrEqual(1);
       });

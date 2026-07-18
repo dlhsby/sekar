@@ -34,6 +34,9 @@ export interface WorkerClusterLayerProps {
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
   onClusterClick?: (lat: number, lng: number, expansionZoom: number) => void;
+  /** Collapse ≥2-member teams into one bubble below the expand zoom. When false,
+   *  every worker renders individually (the Tim layer toggle is off). */
+  teamBubbles?: boolean;
 }
 
 type WorkerProps = {
@@ -76,9 +79,15 @@ export function WorkerClusterLayer({
   selectedId,
   onSelect,
   onClusterClick,
+  teamBubbles = true,
 }: WorkerClusterLayerProps) {
-  // Group workers by team (collapses ≥2-member teams into bubbles below expansionZoom).
-  const renderables = useMemo(() => groupWorkersByTeam(workers, zoom, 17), [workers, zoom]);
+  // Group workers by team (collapses ≥2-member teams into bubbles below the
+  // expand zoom). When the Tim layer is off, pass expandZoom 0 so grouping never
+  // kicks in and every worker renders individually.
+  const renderables = useMemo(
+    () => groupWorkersByTeam(workers, zoom, teamBubbles ? 17 : 0),
+    [workers, zoom, teamBubbles]
+  );
 
   // Build the supercluster index from workers + team groups with valid coordinates.
   const index = useMemo(() => {

@@ -38,9 +38,11 @@ export interface SnapshotWorker {
   lng: number;
   status: TrackingStatus;
   location_id: string | null;
-  area_name: string | null;
+  location_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
+  region_id: string | null;
+  region_name: string | null;
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
@@ -62,7 +64,7 @@ export interface SnapshotWorker {
 
 export interface SnapshotAreaSummary {
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id: string;
   rayon_name: string;
   active_count: number;
@@ -216,9 +218,11 @@ export class MonitoringService {
         lng: u.longitude,
         status: u.status,
         location_id: u.location_id,
-        area_name: u.area_name,
+        location_name: u.location_name,
         rayon_id: u.rayon_id,
         rayon_name: u.rayon_name,
+        region_id: u.region_id,
+        region_name: u.region_name,
         last_update: u.last_update.toISOString(),
         is_within_area: u.is_within_area,
         battery_level: u.battery_level,
@@ -252,7 +256,11 @@ export class MonitoringService {
         present_count: result?.present_count ?? 0,
         absent_count: result?.absent_count ?? 0,
         on_leave_count: result?.on_leave_count ?? 0,
-        off_schedule_count: result?.off_schedule_count ?? 0,
+        // "Luar jadwal" = clocked in but NOT on the CURRENT shift's roster — the
+        // same current-shift definition used per-worker (`is_scheduled`) above and
+        // by the aggregate, so the status bar and the worker list always agree.
+        // (getLiveUsers' looser "no schedule today at all" count is not used here.)
+        off_schedule_count: workers.filter((w) => !w.is_scheduled).length,
         generated_at: generatedAt,
       },
     };
@@ -294,7 +302,7 @@ export class MonitoringService {
         existing.activeCount += clockedIn;
       } else {
         areaMap.set(w.location_id, {
-          name: w.area_name ?? 'Unknown',
+          name: w.location_name ?? 'Unknown',
           rayon_id: w.rayon_id ?? '',
           rayon_name: w.rayon_name ?? 'Unknown',
           activeCount: clockedIn,
@@ -330,7 +338,7 @@ export class MonitoringService {
       const requiredCount = requiredByLocation.get(locationId) ?? 0;
       summaries.push({
         location_id: locationId,
-        area_name: areaData.name,
+        location_name: areaData.name,
         rayon_id: areaData.rayon_id,
         rayon_name: areaData.rayon_name,
         active_count: areaData.activeCount,

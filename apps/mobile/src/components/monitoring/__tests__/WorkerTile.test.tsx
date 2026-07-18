@@ -27,7 +27,7 @@ const createUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   phone: '08123456789',
   status: 'active',
   location_id: 'area-1',
-  area_name: 'Taman Bungkul',
+  location_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
   latitude: -7.25,

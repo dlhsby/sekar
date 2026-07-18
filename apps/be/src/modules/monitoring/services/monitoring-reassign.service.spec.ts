@@ -536,8 +536,8 @@ describe('MonitoringReassignService', () => {
         entity_id: worker.id,
         action: 'reassign',
         actor_id: superadmin.id,
-        old_value: { location_id: AREA_A1_ID, area_name: 'Taman Bungkul' },
-        new_value: { location_id: AREA_A2_ID, area_name: 'Taman Mundu' },
+        old_value: { location_id: AREA_A1_ID, location_name: 'Taman Bungkul' },
+        new_value: { location_id: AREA_A2_ID, location_name: 'Taman Mundu' },
         metadata: {
           reason: 'Understaffed at target area',
           effective_date: '2026-06-10',

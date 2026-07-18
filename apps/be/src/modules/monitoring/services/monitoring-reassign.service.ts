@@ -119,8 +119,8 @@ export class MonitoringReassignService {
         entity_id: worker.id,
         action: 'reassign',
         actor_id: requestingUser.id,
-        old_value: { location_id: previousAreaId, area_name: previousAreaName },
-        new_value: { location_id: targetArea.id, area_name: targetArea.name },
+        old_value: { location_id: previousAreaId, location_name: previousAreaName },
+        new_value: { location_id: targetArea.id, location_name: targetArea.name },
         metadata: {
           reason: dto.reason ?? null,
           effective_date: effectiveDate,

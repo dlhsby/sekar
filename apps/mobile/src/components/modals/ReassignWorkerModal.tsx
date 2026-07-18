@@ -166,7 +166,7 @@ export function ReassignWorkerModal({
                 <View style={styles.userInfo}>
                   <Text style={styles.userName}>{user.full_name}</Text>
                   <Text style={styles.userMeta}>
-                    {ROLE_LABELS[user.role as UserRole] ?? user.role} - {user.area_name}
+                    {ROLE_LABELS[user.role as UserRole] ?? user.role} - {user.location_name}
                   </Text>
                 </View>
                 {isSelected && (

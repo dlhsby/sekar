@@ -47,7 +47,7 @@ export interface UserLocationEvent {
   role: string;
   shift_id: string;
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id?: string;
   latitude: number;
   longitude: number;
@@ -71,7 +71,7 @@ export interface UserClockInEvent {
   role: string;
   shift_id: string;
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id?: string;
   latitude: number;
   longitude: number;
@@ -86,7 +86,7 @@ export interface UserClockOutEvent {
   worker_name: string;
   shift_id: string;
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id?: string;
   timestamp: Date | string;
   duration_minutes: number;
@@ -97,7 +97,7 @@ export interface UserClockOutEvent {
  */
 export interface AreaStaffingEvent {
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id?: string;
   workers_required: number;
   workers_online: number;
@@ -114,7 +114,7 @@ export interface TaskAssignedEvent {
   task_id: string;
   title: string;
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id?: string;
   assigned_to: string;
   assignee_name: string;
@@ -130,7 +130,7 @@ export interface TaskCompletedEvent {
   task_id: string;
   title: string;
   location_id: string;
-  area_name: string;
+  location_name: string;
   rayon_id?: string;
   completed_by: string;
   completer_name: string;

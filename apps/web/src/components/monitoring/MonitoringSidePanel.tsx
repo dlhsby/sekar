@@ -70,7 +70,7 @@ export function MonitoringSidePanel({
       const matchesSearch =
         !debouncedSearch ||
         user.full_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        user.area_name.toLowerCase().includes(debouncedSearch.toLowerCase());
+        user.location_name.toLowerCase().includes(debouncedSearch.toLowerCase());
 
       const matchesStatus = !statusFilter || user.status === statusFilter;
       const matchesRole = roleFilters.size === 0 || roleFilters.has(user.role);

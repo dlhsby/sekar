@@ -106,7 +106,7 @@ describe('Monitoring API', () => {
         phone: '+6281234567890',
         status: 'active',
         area_id: 'area-1',
-        area_name: 'Taman Bungkul',
+        location_name: 'Taman Bungkul',
         rayon_id: 'rayon-1',
         rayon_name: 'Rayon Selatan',
         latitude: -7.289659,
@@ -305,7 +305,7 @@ describe('Monitoring API', () => {
       expect(user?.role).toBe('satgas');
       expect(user?.phone).toBe('+6281234567890');
       expect(user?.status).toBe('active');
-      expect(user?.area_name).toBe('Taman Bungkul');
+      expect(user?.location_name).toBe('Taman Bungkul');
       expect(user?.rayon_name).toBe('Rayon Selatan');
       expect(user?.is_within_area).toBe(true);
       expect(user?.outside_boundary).toBe(false);

@@ -53,7 +53,7 @@ describe('AnalyticsController', () => {
       }),
       getArea: jest.fn().mockResolvedValue({
         id: 'area-1',
-        area_name: 'Taman Utara',
+        location_name: 'Taman Utara',
         date: '2026-06-16',
         staffing_coverage: 83.3,
       }),

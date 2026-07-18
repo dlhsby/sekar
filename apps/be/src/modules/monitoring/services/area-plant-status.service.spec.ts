@@ -427,8 +427,8 @@ describe('AreaPlantStatusService', () => {
       const south = summary.rayons.find((r) => r.rayon_id === RAYON_A)!;
       expect(south).toMatchObject({ rayon_name: 'Rayon Selatan', ok: 1, overdue: 2 });
       expect(south.overdue_areas).toEqual([
-        { location_id: 'area-a1', area_name: 'Taman Bungkul', overdue: 1 },
-        { location_id: 'area-a2', area_name: 'Taman Flora', overdue: 1 },
+        { location_id: 'area-a1', location_name: 'Taman Bungkul', overdue: 1 },
+        { location_id: 'area-a2', location_name: 'Taman Flora', overdue: 1 },
       ]);
       const north = summary.rayons.find((r) => r.rayon_id === RAYON_B)!;
       expect(north).toMatchObject({ due_soon: 1, overdue: 0, overdue_areas: [] });

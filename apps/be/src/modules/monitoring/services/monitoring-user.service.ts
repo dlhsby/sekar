@@ -8,6 +8,7 @@ import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
 import { Rayon } from '../../rayons/entities/rayon.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
@@ -51,6 +52,8 @@ export class MonitoringUserService {
     private readonly locationRepository: Repository<LocationLog>,
     @InjectRepository(Rayon)
     private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(Region)
+    private readonly regionRepository: Repository<Region>,
     @InjectRepository(Role)
     private readonly roleRepository: Repository<Role>,
     @InjectRepository(ShiftDefinition)
@@ -122,9 +125,13 @@ export class MonitoringUserService {
 
     const locationIds = [...new Set(trackingRecords.map((r) => r.location_id).filter(Boolean))];
     const userIds = trackingRecords.map((r) => r.user_id);
+    const regionIds = [
+      ...new Set(trackingRecords.map((r) => r.area?.region_id).filter(Boolean)),
+    ] as string[];
 
-    const [rayonMap, taskMap, thresholds, teamMap, roleMarkerMap] = await Promise.all([
+    const [rayonMap, regionMap, taskMap, thresholds, teamMap, roleMarkerMap] = await Promise.all([
       this.buildRayonMap(locationIds as string[]),
+      this.buildRegionMap(regionIds),
       this.buildCurrentTaskMap(userIds),
       this.cacheService.getThresholds(),
       this.dailySchedulesService
@@ -150,9 +157,11 @@ export class MonitoringUserService {
         role: uts.user.role,
         role_marker_icon: roleMarkerMap.get(uts.user.role) ?? null,
         location_id: uts.location_id,
-        area_name: uts.area?.name || 'Unknown',
+        location_name: uts.area?.name || 'Unknown',
         rayon_id: rayonId,
         rayon_name: rayonId ? rayonMap.get(rayonId) || null : null,
+        region_id: uts.area?.region_id ?? null,
+        region_name: uts.area?.region_id ? (regionMap.get(uts.area.region_id) ?? null) : null,
         latitude: uts.last_latitude || 0,
         longitude: uts.last_longitude || 0,
         accuracy: uts.last_accuracy_meters,
@@ -303,7 +312,7 @@ export class MonitoringUserService {
       shift_id: shift?.id || null,
       shift_name: shiftDef?.name || null,
       location_id: area?.id || null,
-      area_name: area?.name || null,
+      location_name: area?.name || null,
       clock_in_time: shift?.clock_in_time || null,
       clock_out_time: shift?.clock_out_time || null,
       points,
@@ -352,7 +361,7 @@ export class MonitoringUserService {
       phone: user.phone_number || null,
       status: tracking?.status || TrackingStatus.OFFLINE,
       location_id: area?.id || null,
-      area_name: area?.name || null,
+      location_name: area?.name || null,
       rayon_id: rayon?.id || null,
       rayon_name: rayon?.name || null,
       shift: shiftInfo,
@@ -453,6 +462,12 @@ export class MonitoringUserService {
     });
 
     return new Map(rayons.map((r) => [r.id, r.name]));
+  }
+
+  private async buildRegionMap(regionIds: string[]): Promise<Map<string, string>> {
+    if (regionIds.length === 0) return new Map();
+    const regions = await this.regionRepository.find({ where: { id: In(regionIds) } });
+    return new Map(regions.map((r) => [r.id, r.name]));
   }
 
   /**
