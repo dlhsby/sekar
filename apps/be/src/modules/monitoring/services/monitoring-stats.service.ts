@@ -487,6 +487,7 @@ export class MonitoringStatsService {
         center_lng: this.toNum(rayon.center_lng),
         marker_icon: (rayon as any).marker_icon ?? null,
         marker_image_url: (rayon as any).marker_image_url ?? null,
+        marker_color: (rayon as any).border_color ?? null,
         counts_by_status: statusByGroup.get(rayon.id),
         counts_by_role: roleByGroup.get(rayon.id),
         required: requiredMap.get(rayon.id) ?? 0,
@@ -567,6 +568,7 @@ export class MonitoringStatsService {
         center_lat: this.toNum(area.gps_lat),
         marker_icon: (area as any).marker_icon ?? null,
         marker_image_url: (area as any).marker_image_url ?? null,
+        marker_color: (area as any).border_color ?? null,
         center_lng: this.toNum(area.gps_lng),
         counts_by_status: statusByGroup.get(area.id),
         counts_by_role: roleByGroup.get(area.id),
@@ -659,6 +661,7 @@ export class MonitoringStatsService {
         center_lat: this.toNum(region.center_lat),
         marker_icon: (region as any).marker_icon ?? null,
         marker_image_url: (region as any).marker_image_url ?? null,
+        marker_color: (region as any).border_color ?? null,
         center_lng: this.toNum(region.center_lng),
         counts_by_status: statusByGroup.get(region.id),
         counts_by_role: roleByGroup.get(region.id),
@@ -864,6 +867,7 @@ export class MonitoringStatsService {
     region_id?: string | null;
     marker_icon?: string | null;
     marker_image_url?: string | null;
+    marker_color?: string | null;
   }): AggregateNodeDto {
     const counts = input.counts_by_status ?? this.emptyStatusCounts();
     // active + offline = clocked in. `outside_area` is an AXIS overlapping both,
@@ -893,6 +897,7 @@ export class MonitoringStatsService {
       presence: input.presence,
       marker_icon: input.marker_icon ?? null,
       marker_image_url: input.marker_image_url ?? null,
+      marker_color: input.marker_color ?? null,
       ...(input.type === 'rayon' ? { area_count: input.area_count ?? 0 } : {}),
       ...(input.type === 'region' ? { location_count: input.location_count ?? 0 } : {}),
       ...(input.type === 'area' ? { rayon_id: input.rayon_id ?? null } : {}),

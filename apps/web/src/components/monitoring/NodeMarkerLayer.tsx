@@ -9,8 +9,14 @@
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
-import { nodeCountIcon, nodeImageIcon, rosterHealth, HEALTH_COLORS } from '@/lib/monitoring/markers';
-import { entityMarkerDefault, type MarkerEntityKind } from '@/lib/constants/markerDefaults';
+import {
+  nodeCountIcon,
+  pinMarker,
+  rosterHealth,
+  HEALTH_COLORS,
+  KIND_DEFAULT_GLYPH,
+  DEFAULT_MARKER_COLOR,
+} from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
   id: string;
@@ -25,10 +31,10 @@ export interface NodeMarker {
   active: number;
   /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */
   active_inside: number;
-  /** Configured marker glyph for this area (e.g. "trees"); falls back to a plain dot. */
+  /** Configured marker glyph for this area (e.g. "trees"); null → per-kind default. */
   marker_icon?: string | null;
-  /** Configured map-marker image (penanda peta); null → the per-kind system default. */
-  marker_image_url?: string | null;
+  /** The area's identity color (border_color) — fills the marker pin. */
+  marker_color?: string | null;
 }
 
 export interface NodeMarkerLayerProps {
@@ -50,22 +56,24 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
   return (
     <>
       {placed.map((node) => {
-        // Render the SAME marker the settings/edit screens show: the configured
-        // `marker_image_url`, or the per-kind system default pin — so the map and
-        // the editor agree (no more building-glyph-vs-pin split). Empty lokasi
-        // (nothing scheduled) stay a muted dot so a rayon's many idle locations
-        // don't clutter the map.
+        // ONE unified marker (ADR-051): a code-drawn pin filled with the area's
+        // identity color (marker_color = border_color), carrying its glyph + a
+        // staffing-health outline + the active-count badge — the same builder the
+        // editor/preview use, so the map and settings always agree. Empty lokasi
+        // (nothing scheduled, no explicit glyph) stay a muted dot to fight clutter.
         const isEmptyArea =
           node.variant === 'area' &&
           node.scheduled <= 0 &&
           node.active <= 0 &&
-          !node.marker_image_url;
+          !node.marker_icon;
         const health = rosterHealth(node.scheduled, node.clocked_in);
+        const big = node.variant === 'rayon' || node.variant === 'region';
         const icon = isEmptyArea
           ? nodeCountIcon(node.variant, 0, 'empty', { icon: null })
-          : nodeImageIcon(
-              node.marker_image_url ?? entityMarkerDefault(kindOf(node.variant)),
-              node.variant
+          : pinMarker(
+              node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null,
+              node.marker_color ?? DEFAULT_MARKER_COLOR,
+              { health, count: node.active, big }
             );
         // Google-style place label under every marker (rayon / kawasan / lokasi),
         // colored by staffing health (green ok / amber short / red none) so
@@ -96,11 +104,4 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
       })}
     </>
   );
-}
-
-/** Node variant → the marker-entity kind used to resolve its default pin. */
-function kindOf(variant: NodeMarker['variant']): MarkerEntityKind {
-  if (variant === 'region') return 'region';
-  if (variant === 'area') return 'area';
-  return 'rayon';
 }

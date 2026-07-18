@@ -1,10 +1,10 @@
 /**
- * Unit tests: NodeMarkerLayer node markers. Each rayon/kawasan/lokasi renders the
- * SAME marker the settings/edit screens show — its configured `marker_image_url`,
- * or the per-kind system default pin (rayon → orange, kawasan → yellow, lokasi →
- * green) — with a staffing-health-tinted name label. Empty lokasi collapse to a
- * muted dot to fight clutter.
+ * Unit tests: NodeMarkerLayer node markers (ADR-051). Each rayon/kawasan/lokasi
+ * renders ONE unified pin — a code-drawn teardrop filled with the area's identity
+ * color, its glyph, a staffing-health outline + active-count badge — the same
+ * builder the editor uses. Empty lokasi collapse to a muted dot.
  */
+/* eslint-disable sekar-design/no-inline-hex-colors -- test fixtures for marker fill colors, not UI tokens */
 import { render } from '@testing-library/react';
 import { NodeMarkerLayer, type NodeMarker } from '../NodeMarkerLayer';
 import { HEALTH_COLORS } from '@/lib/monitoring/markers';
@@ -28,9 +28,7 @@ jest.mock('@react-google-maps/api', () => ({
   InfoWindow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (k: string) => k }),
-}));
+jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 
 beforeAll(() => {
   (global as unknown as { google: unknown }).google = {
@@ -57,41 +55,40 @@ const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
   ...over,
 });
 
-const url = () => mockIcons[0].url;
+const svg = () => decodeURIComponent(mockIcons[0].url);
 
-describe('NodeMarkerLayer marker image', () => {
-  it('renders the per-kind default pin when no custom marker is set (rayon → orange)', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon' })]} />);
-    expect(url()).toContain('pin-orange.svg');
+describe('NodeMarkerLayer unified pin', () => {
+  it('fills the pin with the area identity color and its default glyph (rayon → building)', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon', marker_color: '#1b6f1c' })]} />);
+    const s = svg();
+    expect(s).toContain('fill="#1b6f1c"'); // teardrop filled with identity color
+    expect(s).toContain('M6 22V4'); // building glyph
   });
 
-  it('renders the kawasan (yellow) and lokasi (green) defaults', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'region' })]} zoom={15} />);
-    expect(url()).toContain('pin-yellow.svg');
-    mockIcons.length = 0;
-    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 1, active: 1 })]} zoom={15} />);
-    expect(url()).toContain('pin-green.svg');
+  it('draws the configured glyph over the default (marker_icon = star)', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ marker_icon: 'star', marker_color: '#9333EA' })]} />);
+    expect(svg()).toContain('M12 2.5l2.9'); // star path fragment
   });
 
-  it('renders a configured custom marker image over the default', () => {
-    render(
-      <NodeMarkerLayer nodes={[makeNode({ variant: 'rayon', marker_image_url: '/uploads/custom.png' })]} />
-    );
-    expect(url()).toBe('/uploads/custom.png');
+  it('rides the active count on a health-colored badge', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ active: 3, scheduled: 4, clocked_in: 4 })]} />);
+    const s = svg();
+    expect(s).toContain('>3<'); // count badge
+    expect(s).toContain(HEALTH_COLORS.ok); // badge/outline health color (fully attended)
   });
 
-  it('labels the node with its name, colored by staffing health (green when fully attended)', () => {
+  it('outlines red when nobody clocked in for a scheduled node', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 3, clocked_in: 0, active: 0 })]} />);
+    expect(svg()).toContain(HEALTH_COLORS.none);
+  });
+
+  it('labels the node with its name, colored by staffing health', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2 })]} />);
     expect(mockLabels[0]?.text).toBe('Rayon X');
     expect(mockLabels[0]?.color).toBe(HEALTH_COLORS.ok);
   });
 
-  it('colors the label red when nobody clocked in for a scheduled node', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 3, clocked_in: 0, active: 0 })]} />);
-    expect(mockLabels[0]?.color).toBe(HEALTH_COLORS.none);
-  });
-
-  it('labels kawasan at every zoom, just like rayon', () => {
+  it('labels kawasan at every zoom, like rayon', () => {
     const kawasan = makeNode({ variant: 'region', name: 'Kawasan Mulyosari', active: 1 });
     const { rerender } = render(<NodeMarkerLayer nodes={[kawasan]} zoom={13} />);
     expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari');
@@ -104,17 +101,17 @@ describe('NodeMarkerLayer marker image', () => {
     render(
       <NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 0, clocked_in: 0, active: 0 })]} zoom={16} />
     );
-    expect(decodeURIComponent(url())).toContain('width="12"'); // muted dot SVG
+    expect(svg()).toContain('width="12"'); // muted dot
     expect(mockLabels[0]).toBeUndefined();
   });
 
-  it('renders a custom marker on an otherwise-empty area (not a muted dot)', () => {
+  it('renders a custom-glyph area even when empty (not a muted dot)', () => {
     render(
       <NodeMarkerLayer
-        nodes={[makeNode({ variant: 'area', scheduled: 0, active: 0, marker_image_url: '/uploads/x.png' })]}
+        nodes={[makeNode({ variant: 'area', scheduled: 0, active: 0, marker_icon: 'star' })]}
         zoom={16}
       />
     );
-    expect(url()).toBe('/uploads/x.png');
+    expect(svg()).toContain('M12 2.5l2.9'); // star, not a dot
   });
 });

@@ -185,6 +185,60 @@ export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'area' | 'region' | 'surabaya'
   surabaya: 'building',
 };
 
+/* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays */
+// Every glyph name the unified pin can draw (role glyphs + area glyphs).
+const ALL_GLYPHS: Record<string, string> = { ...ICON_GLYPHS, ...NODE_GLYPHS };
+// The pin-*.svg teardrop, so a code-drawn marker matches the old preset shape.
+const PIN_PATH = 'M24 2C12.4 2 3 11.4 3 23c0 15 21 34 21 34s21-19 21-34C45 11.4 35.6 2 24 2z';
+const PIN_INK = '#1C1917';
+/** Fallback pin fill when an entity has no identity color set. */
+export const DEFAULT_MARKER_COLOR = '#78716C';
+/* eslint-enable sekar-design/no-inline-hex-colors */
+
+/**
+ * The unified marker (ADR-051): one code-drawn teardrop pin, filled with the
+ * entity's identity `color`, carrying its glyph, and — for areas — a staffing
+ * **health-colored outline + active-count badge**. Replaces both the old area
+ * pin *images* and the glyph-circle. `color` is the area's `border_color`;
+ * `opts.health` tints the outline/badge; `opts.count` rides a top-right badge.
+ */
+export function pinMarker(
+  glyph: string | null,
+  color: string,
+  opts?: { health?: HealthLevel; count?: number; big?: boolean }
+): google.maps.Icon {
+  const g = glyph ? (ALL_GLYPHS[glyph] ?? null) : null;
+  const outline = opts?.health ? HEALTH_COLORS[opts.health] : PIN_INK;
+  const count = opts?.count ?? 0;
+  const w = opts?.big ? 46 : 38;
+  const h = Math.round(w * 1.25);
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 48 60">` +
+    `<path d="${PIN_PATH}" fill="${color}" stroke="${outline}" stroke-width="3" stroke-linejoin="round"/>` +
+    `<circle cx="24" cy="22" r="11" fill="${WHITE}" stroke="${outline}" stroke-width="2.5"/>` +
+    (g
+      ? `<g transform="translate(24 22) scale(0.62) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${g}</g>`
+      : '') +
+    (count > 0
+      ? `<circle cx="39" cy="10" r="9" fill="${outline}" stroke="${WHITE}" stroke-width="1.5"/>` +
+        `<text x="39" y="14" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="800" fill="${WHITE}">${count}</text>`
+      : '') +
+    `</svg>`;
+  return {
+    url: svgUrl(svg),
+    scaledSize: new google.maps.Size(w, h),
+    anchor: new google.maps.Point(w / 2, Math.round(h * 0.95)),
+    labelOrigin: new google.maps.Point(w / 2, h + 2),
+  };
+}
+
+/** System-default glyph per marker-entity kind (rayon → building, kawasan/lokasi → trees, team → droplets). */
+export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'area' | 'team'): string {
+  if (kind === 'rayon') return 'building';
+  if (kind === 'team') return 'droplets';
+  return 'trees';
+}
+
 export function nodeCountIcon(
   variant: 'rayon' | 'area' | 'region' | 'surabaya',
   active: number,
