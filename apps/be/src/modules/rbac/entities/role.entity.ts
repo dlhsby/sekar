@@ -48,10 +48,6 @@ export class Role {
   @Column({ length: 50, nullable: true })
   marker_icon?: string;
 
-  @ApiPropertyOptional({ description: 'Map marker image (preset path or data-URI)' })
-  @Column({ type: 'text', nullable: true })
-  marker_image_url?: string;
-
   @ApiPropertyOptional({
     description: 'Role accent colour (hex #RRGGBB) — drives the user pill/avatar tint',
     example: '#7FBC8C',

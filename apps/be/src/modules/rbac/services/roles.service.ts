@@ -59,7 +59,6 @@ export class RolesService {
       is_system: false,
       monitoring_scope: dto.monitoring_scope ?? MonitoringScope.NONE,
       marker_icon: dto.marker_icon,
-      marker_image_url: dto.marker_image_url,
       marker_color: dto.marker_color,
       permissions,
       created_by: actorId,
@@ -103,7 +102,6 @@ export class RolesService {
     if (dto.description !== undefined) role.description = dto.description;
     if (dto.monitoring_scope !== undefined) role.monitoring_scope = dto.monitoring_scope;
     if (dto.marker_icon !== undefined) role.marker_icon = dto.marker_icon;
-    if (dto.marker_image_url !== undefined) role.marker_image_url = dto.marker_image_url;
     if (dto.marker_color !== undefined) role.marker_color = dto.marker_color;
     if (dto.permissionKeys !== undefined) {
       role.permissions = await this.resolvePermissions(dto.permissionKeys);
@@ -211,7 +209,6 @@ export class RolesService {
       is_system: role.is_system,
       monitoring_scope: role.monitoring_scope,
       marker_icon: role.marker_icon,
-      marker_image_url: role.marker_image_url,
       marker_color: role.marker_color,
       permissionKeys,
       permissionCount: permissionKeys.length,

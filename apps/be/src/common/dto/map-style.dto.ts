@@ -4,16 +4,6 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 /**
- * Marker images are either a bundled preset path or an uploaded base64 data-URI
- * limited to the same image types the web picker accepts. Server-side guard so
- * arbitrary data-URIs (e.g. text/html) can never be stored and later rendered.
- */
-export const MARKER_IMAGE_PATTERN =
-  /^(\/markers\/[A-Za-z0-9._-]+\.(svg|png|webp)|data:image\/(svg\+xml|png|webp|jpe?g);base64,[A-Za-z0-9+/]+=*)$/;
-export const MARKER_IMAGE_MESSAGE =
-  'marker_image_url must be a preset path (/markers/*.svg) or an image data-URI (svg/png/webp/jpeg)';
-
-/**
  * Per-level map styling fields (ADR-045) — shared by rayon/region/area DTOs.
  * Separate border + fill color, each with an independent 0–1 opacity, plus a
  * marker icon + color. All optional; colors validate as 6-digit hex.
@@ -48,14 +38,4 @@ export class MapStyleDto {
   @IsString()
   @MaxLength(50)
   marker_icon?: string;
-
-  @ApiPropertyOptional({
-    description: 'Marker image: a preset path (/markers/*.svg) or a base64 data-URI',
-    example: '/markers/pin-sage.svg',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(600000)
-  @Matches(MARKER_IMAGE_PATTERN, { message: MARKER_IMAGE_MESSAGE })
-  marker_image_url?: string;
 }

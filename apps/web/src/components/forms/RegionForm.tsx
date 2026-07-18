@@ -25,7 +25,6 @@ const STYLE_KEYS: (keyof MapStyle)[] = [
   'border_opacity',
   'fill_opacity',
   'marker_icon',
-  'marker_image_url',
 ];
 
 type RegionFormData = MapStyle & {
@@ -74,7 +73,6 @@ export function RegionForm({
         border_opacity: z.number().nullable().optional(),
         fill_opacity: z.number().nullable().optional(),
         marker_icon: z.string().nullable().optional(),
-        marker_image_url: z.string().nullable().optional(),
       }),
     [t],
   );
@@ -95,7 +93,6 @@ export function RegionForm({
       border_opacity: initialData?.border_opacity != null ? Number(initialData.border_opacity) : undefined,
       fill_opacity: initialData?.fill_opacity != null ? Number(initialData.fill_opacity) : undefined,
       marker_icon: initialData?.marker_icon ?? undefined,
-      marker_image_url: initialData?.marker_image_url ?? undefined,
     },
   });
   const errors = formState.errors;
@@ -131,7 +128,6 @@ export function RegionForm({
       border_opacity: data.border_opacity ?? null,
       fill_opacity: data.fill_opacity ?? null,
       marker_icon: data.marker_icon || null,
-      marker_image_url: data.marker_image_url || null,
     };
     await onSubmit(payload);
   };

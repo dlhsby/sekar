@@ -9,7 +9,6 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MonitoringScope } from '../enums/monitoring-scope.enum';
-import { MARKER_IMAGE_PATTERN, MARKER_IMAGE_MESSAGE } from '../../../common/dto/map-style.dto';
 
 export class CreateRoleDto {
   @ApiProperty({ example: 'Pengawas Taman', description: 'Display label' })
@@ -34,16 +33,6 @@ export class CreateRoleDto {
   @IsString()
   @MaxLength(50)
   marker_icon?: string;
-
-  @ApiPropertyOptional({
-    description: 'Marker image: a preset path (/markers/*.svg) or a base64 data-URI',
-    example: '/markers/pin-sage.svg',
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(600000)
-  @Matches(MARKER_IMAGE_PATTERN, { message: MARKER_IMAGE_MESSAGE })
-  marker_image_url?: string;
 
   @ApiPropertyOptional({
     description: 'Role accent colour as a 6-digit hex (#RRGGBB) — drives the user pill/avatar tint',

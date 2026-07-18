@@ -145,9 +145,6 @@ export class AggregateNodeDto {
   })
   marker_icon?: string | null;
 
-  @ApiPropertyOptional({ description: 'Custom marker image (PNG/SVG) configured for the area' })
-  marker_image_url?: string | null;
-
   @ApiPropertyOptional({
     description: "The area's identity color (border_color) — fills the marker pin",
     example: '#1b6f1c',

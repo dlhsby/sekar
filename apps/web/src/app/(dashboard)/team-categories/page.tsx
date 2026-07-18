@@ -20,7 +20,6 @@ import {
 } from '@/components/ui';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
-import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import {
   useTeamCategories,
   useDeleteTeamCategory,
@@ -87,16 +86,14 @@ export default function TeamsPage() {
         header: t('admin:teamCategories.columnMarker'),
         enableSorting: false,
         cell: ({ row }) => {
-          const src = row.original.marker_image_url ?? entityMarkerDefault('team');
-          const color = row.original.marker_color || 'transparent';
+          // eslint-disable-next-line sekar-design/no-inline-hex-colors -- fallback for missing color
+          const color = row.original.marker_color || '#cccccc';
           return (
             <span
-              className="inline-flex size-9 items-center justify-center rounded-nb-base border-2 border-nb-black bg-nb-white"
+              className="inline-flex size-9 rounded-nb-base border-2 border-nb-black"
               style={{ backgroundColor: color }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element -- small marker thumbnail */}
-              <img src={src} alt="" className="size-6" />
-            </span>
+              title={color}
+            />
           );
         },
       },

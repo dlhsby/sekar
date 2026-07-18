@@ -290,25 +290,6 @@ export function nodeCountIcon(
 }
 
 /**
- * A custom-uploaded area marker image (penanda peta) rendered literally as the
- * pin — a square-boxed icon anchored at centre with the name label below. Legacy
- * markers can't composite the count badge + status ring onto an external image
- * (that needs Advanced/DOM markers), so the count/status stays in the status bar.
- */
-export function nodeImageIcon(
-  url: string,
-  variant: 'rayon' | 'area' | 'region' | 'surabaya'
-): google.maps.Icon {
-  const d = variant === 'rayon' || variant === 'region' ? 42 : 34;
-  return {
-    url,
-    scaledSize: new google.maps.Size(d, d),
-    anchor: new google.maps.Point(d / 2, d / 2),
-    labelOrigin: new google.maps.Point(d / 2, d + 9),
-  };
-}
-
-/**
  * A node marker showing the attendance ratio `hadir/terjadwal`, colored by
  * staffing health — a white rounded bubble with a health-colored border, exactly
  * matching the mobile node bubbles. Surabaya is a wider bubble with a label.

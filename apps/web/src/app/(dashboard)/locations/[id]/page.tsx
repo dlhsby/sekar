@@ -11,7 +11,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit, Trash2, Map as MapIcon } from 'lucide-react';
 import { Button, Badge, Card, CardContent, CardHeader } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
-import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { DeleteLocationModal } from '@/components/locations/DeleteLocationModal';
 import { LocationFormModal } from '@/components/locations/LocationFormModal';
 import { LocationWorkersCard } from '@/components/locations/LocationWorkersCard';

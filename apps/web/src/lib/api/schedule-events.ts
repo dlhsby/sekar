@@ -95,7 +95,6 @@ export interface ScheduleEvent {
   team_category?: {
     id: string;
     name: string;
-    marker_image_url?: string | null;
     marker_color?: string | null;
   } | null;
   pic_user?: {
@@ -148,7 +147,6 @@ export interface ScheduleOccurrence {
   team_category?: {
     id: string;
     name: string;
-    marker_image_url?: string | null;
     marker_color?: string | null;
   } | null;
   location?: {
