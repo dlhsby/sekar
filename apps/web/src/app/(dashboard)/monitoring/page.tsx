@@ -144,7 +144,9 @@ export default function MonitoringPage() {
     search: '',
     statuses: new Set(),
     rayonId: 'all',
+    areaId: 'all',
     role: 'all',
+    teamId: 'all',
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -515,10 +517,32 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, boundaries]);
 
+  // Lokasi options, narrowed to the selected rayon so the two selects cascade.
+  const areaOptions = useMemo<RayonOption[]>(() => {
+    const map = new Map<string, string>();
+    for (const w of workers) {
+      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
+      if (w.area_id && w.area_name && !map.has(w.area_id)) map.set(w.area_id, w.area_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [workers, filters.rayonId]);
+
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
     for (const w of workers) set.add(w.role);
     return [...set] as UserRole[];
+  }, [workers]);
+
+  const teamOptions = useMemo<RayonOption[]>(() => {
+    const map = new Map<string, string>();
+    for (const w of workers) {
+      if (w.team_id && w.team_name && !map.has(w.team_id)) map.set(w.team_id, w.team_name);
+    }
+    return [...map.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers]);
 
   const filteredWorkers = useMemo(() => {
@@ -526,7 +550,9 @@ export default function MonitoringPage() {
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
+      if (filters.areaId !== 'all' && w.area_id !== filters.areaId) return false;
       if (filters.role !== 'all' && w.role !== filters.role) return false;
+      if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -723,7 +749,9 @@ export default function MonitoringPage() {
             onChange={setFilters}
             statusCounts={statusCounts}
             rayonOptions={rayonOptions}
+            areaOptions={areaOptions}
             roleOptions={roleOptions}
+            teamOptions={teamOptions}
             total={showWorkers ? workers.length : listNodes.length}
             matched={listCount}
             showSearch={false}

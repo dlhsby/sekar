@@ -63,8 +63,12 @@
     "statusLabel": "Status",
     "rayonLabel": "Rayon",
     "rayonAllOption": "Semua Rayon",
+    "lokasiLabel": "Lokasi",
+    "lokasiAllOption": "Semua Lokasi",
     "roleLabel": "Peran",
     "roleAllOption": "Semua Peran",
+    "timLabel": "Tim",
+    "timAllOption": "Semua Tim",
     "matchSummary": "{{matched}} / {{total}} petugas",
     "reset": "Reset",
     "ariaLabel": "Filter monitoring"
