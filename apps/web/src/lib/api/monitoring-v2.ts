@@ -108,8 +108,10 @@ export interface PresenceBreakdown {
 export interface AggregateNodeMarker {
   /** Named marker glyph configured for the area (e.g. "trees"). */
   marker_icon?: string | null;
-  /** The area's identity color (border_color) — fills the marker pin. */
-  marker_color?: string | null;
+  /** The area's fill_color — fills the marker pin. */
+  fill_color?: string | null;
+  /** The area's fill_opacity 0–1. */
+  fill_opacity?: number | null;
 }
 
 export interface AggregateNode extends AggregateNodeMarker {

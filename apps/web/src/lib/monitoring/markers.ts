@@ -210,7 +210,7 @@ export const DEFAULT_MARKER_COLOR = '#78716C';
  */
 export function pinMarker(
   glyph: string | null,
-  opts: { outline: string; fill?: string; count?: number; big?: boolean; dashed?: boolean }
+  opts: { outline: string; fill?: string; fillOpacity?: number; count?: number; big?: boolean; dashed?: boolean }
 ): google.maps.Icon {
   return pinMarkerFromPath(glyph ? (ALL_GLYPHS[glyph] ?? null) : null, opts);
 }
@@ -218,9 +218,10 @@ export function pinMarker(
 /** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path). */
 function pinMarkerFromPath(
   glyphPath: string | null,
-  opts: { outline: string; fill?: string; count?: number; big?: boolean; dashed?: boolean }
+  opts: { outline: string; fill?: string; fillOpacity?: number; count?: number; big?: boolean; dashed?: boolean }
 ): google.maps.Icon {
   const fill = opts.fill ?? WHITE;
+  const fillOpacity = opts.fillOpacity ?? 1;
   const { outline } = opts;
   const count = opts.count ?? 0;
   const dash = opts.dashed ? ' stroke-dasharray="5 3"' : '';
@@ -228,7 +229,8 @@ function pinMarkerFromPath(
   const h = Math.round(w * 1.25);
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 48 60">` +
-    `<path d="${PIN_PATH}" fill="${fill}" stroke="${outline}" stroke-width="3.5" stroke-linejoin="round"${dash}/>` +
+    `<path d="${PIN_PATH}" fill="${fill}" fill-opacity="${fillOpacity}" stroke="${outline}" stroke-width="3.5" stroke-linejoin="round"${dash}/>` +
+    `<circle cx="24" cy="22" r="13" fill="${WHITE}" fill-opacity="${fillOpacity < 1 ? 0.85 : 1}"/>` +
     (glyphPath
       ? `<g transform="translate(24 22) scale(0.92) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyphPath}</g>`
       : '') +

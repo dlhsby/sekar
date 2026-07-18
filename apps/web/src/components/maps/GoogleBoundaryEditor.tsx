@@ -199,13 +199,18 @@ function BoundaryMap({
   const pinContent = useMemo(() => {
     if (typeof document === 'undefined' || !markerIcon) return null;
     const img = document.createElement('img');
-    img.src = pinMarker(markerIcon ?? null, { outline: MARKER_NEUTRAL_OUTLINE, big: true }).url;
+    img.src = pinMarker(markerIcon ?? null, {
+      outline: MARKER_NEUTRAL_OUTLINE,
+      fill: fillColor ?? undefined,
+      fillOpacity: fillOpacity ?? undefined,
+      big: true,
+    }).url;
     img.alt = '';
     img.style.width = '34px';
     img.style.height = '42px';
     img.style.objectFit = 'contain';
     return img;
-  }, [markerIcon]);
+  }, [markerIcon, fillColor, fillOpacity]);
 
   const [paths, setPaths] = useState<LatLng[][]>(() => geometryToPaths(initialPolygon));
   const [drawing, setDrawing] = useState(false);

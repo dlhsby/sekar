@@ -71,7 +71,7 @@ describe('NodeMarkerLayer unified pin', () => {
   });
 
   it('draws the configured glyph over the default (marker_icon = star)', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ marker_icon: 'star', marker_color: '#9333EA' })]} />);
+    render(<NodeMarkerLayer nodes={[makeNode({ marker_icon: 'star', fill_color: '#9333EA' })]} />);
     expect(svg()).toContain('M12 2.5l2.9'); // star path fragment
   });
 
