@@ -28,7 +28,7 @@ import { logger } from '../../utils/logger';
  * Type-safe data interfaces for sync operations
  */
 interface ClockInData {
-  area_id: number;
+  location_id: number;
   gps_lat: number;
   gps_lng: number;
   selfie_photo?: string;
@@ -482,8 +482,8 @@ class SyncManager extends EventEmitter {
    * Sync clock-in
    */
   private async syncClockIn(data: ClockInData): Promise<void> {
-    const { area_id, gps_lat, gps_lng, selfie_photo } = data;
-    const result = await clockIn(gps_lat, gps_lng, selfie_photo, area_id?.toString());
+    const { location_id, gps_lat, gps_lng, selfie_photo } = data;
+    const result = await clockIn(gps_lat, gps_lng, selfie_photo, location_id?.toString());
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Clock-in sync failed');

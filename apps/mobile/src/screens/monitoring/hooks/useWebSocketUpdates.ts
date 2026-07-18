@@ -69,7 +69,7 @@ export function useWebSocketUpdates(dispatch: AppDispatch): void {
       if (!mounted) return;
       dispatch(updateLiveUser({
         id: data.user_id,
-        area_id: data.new_area_id,
+        location_id: data.new_area_id,
         location_name: data.new_area_name,
       }));
     });

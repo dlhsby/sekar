@@ -87,7 +87,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
 
   // No hard block for a missing area: ad-hoc / patrol workers with no assigned
   // area may still clock in (GPS is recorded, geofencing stays soft, and the
-  // shift is created with area_id = null). The form surfaces "no area" inline;
+  // shift is created with location_id = null). The form surfaces "no area" inline;
   // rayon-scoped roles show a "no specific area" note instead.
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const isRayonScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';

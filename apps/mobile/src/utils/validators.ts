@@ -113,7 +113,7 @@ export function sanitizeString(input: string): string {
  *
  * IMPORTANT: never version-pin this. SEKAR entity ids are a mix of random v4 and
  * deterministic v5 (uuidv5 for seeded areas + sheet-imported roster users), so a
- * v4-only check would wrongly reject real ids (e.g. an area_id sent on clock-in)
+ * v4-only check would wrongly reject real ids (e.g. an location_id sent on clock-in)
  * and surface as a 400 from the API. Accept any version; the server checks the FK.
  * @param uuid - UUID string to validate
  * @returns True if a well-formed UUID of any version

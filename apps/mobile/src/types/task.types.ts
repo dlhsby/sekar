@@ -1,6 +1,6 @@
 /**
  * Tasks and task tags.
- * Phase 2C: accept/decline + verify/revision support, optional area_id, rayon support.
+ * Phase 2C: accept/decline + verify/revision support, optional location_id, rayon support.
  */
 import type { Area, Rayon, User } from './user.types';
 
@@ -27,7 +27,7 @@ export interface TaskTag {
   created_at: string;
 }
 
-// Task (Phase 2C: accept/decline + verify/revision support, optional area_id, rayon support)
+// Task (Phase 2C: accept/decline + verify/revision support, optional location_id, rayon support)
 export interface Task {
   id: string;
   title: string;
@@ -35,7 +35,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   deadline?: string;
-  area_id?: string;
+  location_id?: string;
   area?: Area;
   rayon_id?: string;
   rayon?: Rayon;

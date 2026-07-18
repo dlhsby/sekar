@@ -28,7 +28,7 @@ const mockTask = {
   updated_at: '2026-04-27T00:00:00Z',
   deadline: '2026-05-01T00:00:00Z',
   rayon_id: 'rayon-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   completion_notes: undefined,
   completion_photo_urls: [],
   assigned_at: '2026-04-10T00:00:00Z',

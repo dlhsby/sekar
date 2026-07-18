@@ -28,7 +28,7 @@ export function useActivitiesActivityFilters(
     if (activityFilters.status) count++;
     if (activityFilters.from_date || activityFilters.to_date) count++;
     if (activityFilters.activity_type_id) count++;
-    if (activityFilters.area_id && activityFilters.area_id !== initialAreaId) count++;
+    if (activityFilters.location_id && activityFilters.location_id !== initialAreaId) count++;
     if (activityFilters.rayon_id) count++;
     return count;
   }, [activityFilters, initialAreaId]);
@@ -38,7 +38,7 @@ export function useActivitiesActivityFilters(
   }, []);
 
   const handleResetActivityFilters = useCallback(() => {
-    setActivityFilters(initialAreaId ? { area_id: initialAreaId } : {});
+    setActivityFilters(initialAreaId ? { location_id: initialAreaId } : {});
   }, [initialAreaId]);
 
   return {

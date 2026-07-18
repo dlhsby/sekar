@@ -124,7 +124,7 @@ function LoginScreen(): React.JSX.Element {
           if (meResponse.data) {
             enrichedUser = {
               ...loginData.user,
-              area_id: meResponse.data.area_id ?? loginData.user.area_id,
+              location_id: meResponse.data.location_id ?? loginData.user.location_id,
               rayon_id: meResponse.data.rayon_id ?? loginData.user.rayon_id,
             };
             if (meResponse.data.assigned_area) {

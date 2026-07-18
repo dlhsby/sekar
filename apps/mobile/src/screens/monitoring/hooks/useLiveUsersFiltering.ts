@@ -40,7 +40,7 @@ export function useLiveUsersFiltering(
     // Worker pins only render at area scope — scope them to the SELECTED area so
     // the map shows exactly the people working / scheduled in that area.
     if (scope === 'area' && areaId) {
-      users = users.filter(u => u.area_id === areaId);
+      users = users.filter(u => u.location_id === areaId);
     }
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);
@@ -55,7 +55,7 @@ export function useLiveUsersFiltering(
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }
     const ids = new Set(
-      liveUsers.filter(u => u.status === 'active' && u.area_id).map(u => u.area_id),
+      liveUsers.filter(u => u.status === 'active' && u.location_id).map(u => u.location_id),
     );
     return ids.size;
   }, [liveUsers]);
@@ -89,7 +89,7 @@ export function useLiveUsersFiltering(
               username: u.full_name,
               full_name: u.full_name,
               role: u.role as UserRole,
-              shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.area_id ?? '', name: u.location_name } },
+              shift: { id: u.shift_id, clock_in_time: u.clock_in_time, area: { id: u.location_id ?? '', name: u.location_name } },
               latest_location: { gps_lat: u.latitude, gps_lng: u.longitude, logged_at: u.last_update },
             })),
             currentRegion,

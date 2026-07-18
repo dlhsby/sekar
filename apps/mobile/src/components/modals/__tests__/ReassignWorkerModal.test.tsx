@@ -40,7 +40,7 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
     role: 'satgas',
     phone: null,
     status: 'active',
-    area_id: 'area-source',
+    location_id: 'area-source',
     location_name: 'Area Selatan',
     rayon_id: 'rayon-1',
     rayon_name: 'Rayon 1',
@@ -61,10 +61,10 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
   } as any;
 }
 
-const workerA = buildLiveUser({ id: 'user-1', full_name: 'Ahmad Satgas', area_id: 'area-source' });
-const workerB = buildLiveUser({ id: 'user-2', full_name: 'Budi Linmas', role: 'linmas', area_id: 'area-source' });
+const workerA = buildLiveUser({ id: 'user-1', full_name: 'Ahmad Satgas', location_id: 'area-source' });
+const workerB = buildLiveUser({ id: 'user-2', full_name: 'Budi Linmas', role: 'linmas', location_id: 'area-source' });
 // workerC is already assigned to the target area
-const workerC = buildLiveUser({ id: 'user-3', full_name: 'Candra Korlap', role: 'korlap', area_id: 'area-target' });
+const workerC = buildLiveUser({ id: 'user-3', full_name: 'Candra Korlap', role: 'korlap', location_id: 'area-target' });
 
 const targetArea: AreaBoundary = {
   id: 'area-target',
@@ -185,7 +185,7 @@ describe('ReassignWorkerModal', () => {
   // ── Filtering out target-area workers ───────────────────────────────────────
 
   describe('filtering workers already in target area', () => {
-    it('excludes workers whose area_id matches the target area id', async () => {
+    it('excludes workers whose location_id matches the target area id', async () => {
       const { queryByText, getByText } = render(<ReassignWorkerModal {...buildDefaultProps()} />);
 
       await waitFor(() => {
@@ -196,7 +196,7 @@ describe('ReassignWorkerModal', () => {
       });
     });
 
-    it('shows all workers when none share the target area_id', async () => {
+    it('shows all workers when none share the target location_id', async () => {
       mockGetLiveUsers.mockResolvedValue({
         data: { users: [workerA, workerB] },
       });

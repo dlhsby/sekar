@@ -77,7 +77,7 @@ export function MonitoringFilterModal({
     currentFilters.rayon_id,
   );
   const [selectedAreaId, setSelectedAreaId] = useState<string | undefined>(
-    currentFilters.area_id,
+    currentFilters.location_id,
   );
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
     currentFilters.role ? [currentFilters.role] : [],
@@ -131,9 +131,9 @@ export function MonitoringFilterModal({
     }
     setIsLoadingStaffing(true);
     const rayonId = hasFixedRayon ? currentUser.rayon_id : selectedRayonId;
-    const filters: { rayon_id?: string; area_id?: string } = {};
+    const filters: { rayon_id?: string; location_id?: string } = {};
     if (rayonId) filters.rayon_id = rayonId;
-    if (selectedAreaId) filters.area_id = selectedAreaId;
+    if (selectedAreaId) filters.location_id = selectedAreaId;
     getStaffingSummary(filters)
       .then(res => {
         if (res.data?.items) { setStaffing(res.data.items); }
@@ -150,7 +150,7 @@ export function MonitoringFilterModal({
     if (visible) {
       setSelectedLocations(currentFilters.location ?? []);
       setSelectedRayonId(currentFilters.rayon_id);
-      setSelectedAreaId(currentFilters.area_id);
+      setSelectedAreaId(currentFilters.location_id);
       setSelectedRoles(currentFilters.role ? [currentFilters.role] : []);
       setSearchText(currentFilters.search ?? '');
     }
@@ -172,7 +172,7 @@ export function MonitoringFilterModal({
     const filters: MonitoringFilters = {};
     if (selectedLocations.length > 0) { filters.location = selectedLocations; }
     if (selectedRayonId) { filters.rayon_id = selectedRayonId; }
-    if (selectedAreaId) { filters.area_id = selectedAreaId; }
+    if (selectedAreaId) { filters.location_id = selectedAreaId; }
     if (selectedRoles.length === 1) { filters.role = selectedRoles[0]; }
     if (selectedRoles.length > 1) { (filters as any).roles = selectedRoles; }
     if (searchText.trim()) { filters.search = searchText.trim(); }

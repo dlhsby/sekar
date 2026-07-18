@@ -196,7 +196,7 @@ export function TaskFilterModal({
         filtered = filtered.filter((u) => subordinateRoles.includes(u.role));
       }
       if (areaId) {
-        filtered = filtered.filter((u) => (u as any).area_id === areaId);
+        filtered = filtered.filter((u) => (u as any).location_id === areaId);
       }
       setUsers(filtered);
     } catch {

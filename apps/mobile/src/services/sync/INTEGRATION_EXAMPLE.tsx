@@ -231,7 +231,7 @@ export async function handleClockInWithOffline(
     if (!netInfo.isConnected || !netInfo.isInternetReachable) {
       console.debug('[ClockIn] Offline - adding to queue');
       await addToQueue('clock-in', {
-        area_id: areaId,
+        location_id: areaId,
         gps_lat: gpsLat,
         gps_lng: gpsLng,
         selfie_photo: selfiePhoto,
@@ -253,7 +253,7 @@ export async function handleClockInWithOffline(
       // API failed, add to queue
       console.debug('[ClockIn] API error - adding to queue');
       await addToQueue('clock-in', {
-        area_id: areaId,
+        location_id: areaId,
         gps_lat: gpsLat,
         gps_lng: gpsLng,
         selfie_photo: selfiePhoto,
@@ -274,7 +274,7 @@ export async function handleClockInWithOffline(
 
     // Network error, add to queue
     await addToQueue('clock-in', {
-      area_id: areaId,
+      location_id: areaId,
       gps_lat: gpsLat,
       gps_lng: gpsLng,
       selfie_photo: selfiePhoto,

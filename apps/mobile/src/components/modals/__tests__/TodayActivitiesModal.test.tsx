@@ -21,7 +21,7 @@ describe('TodayActivitiesModal', () => {
       photo_urls: ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
       gps_lat: -7.250445,
       gps_lng: 112.768845,
-      area_id: 'area1',
+      location_id: 'area1',
       created_at: '2026-02-15T10:30:00Z',
       updated_at: '2026-02-15T10:30:00Z',
       activityType: {
@@ -54,7 +54,7 @@ describe('TodayActivitiesModal', () => {
       photo_urls: [],
       gps_lat: -7.250445,
       gps_lng: 112.768845,
-      area_id: 'area1',
+      location_id: 'area1',
       created_at: '2026-02-15T14:00:00Z',
       updated_at: '2026-02-15T14:00:00Z',
       activityType: {

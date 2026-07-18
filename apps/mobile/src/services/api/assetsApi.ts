@@ -15,7 +15,7 @@ import type {
 export interface AssetFilters {
   status?: string;
   category_id?: string;
-  area_id?: string;
+  location_id?: string;
   rayon_id?: string;
   search?: string;
   page?: number;
@@ -50,7 +50,7 @@ export async function getAssets(
   if (filters) {
     if (filters.status) params.status = filters.status;
     if (filters.category_id) params.category_id = filters.category_id;
-    if (filters.area_id) params.area_id = filters.area_id;
+    if (filters.location_id) params.location_id = filters.location_id;
     if (filters.rayon_id) params.rayon_id = filters.rayon_id;
     if (filters.search) params.search = filters.search;
     params.page = filters.page || 1;

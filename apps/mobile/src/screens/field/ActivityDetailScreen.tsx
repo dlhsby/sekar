@@ -123,7 +123,7 @@ export function ActivityDetailScreen(): React.JSX.Element {
     const submitterRole = activity.user?.role;
     if (user.role === 'korlap') {
       return (submitterRole === 'satgas' || submitterRole === 'linmas') &&
-             user.area_id != null && activity.area_id === user.area_id;
+             user.location_id != null && activity.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
       if (!user.rayon_id) {return false;}

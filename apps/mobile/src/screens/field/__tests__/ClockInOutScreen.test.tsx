@@ -454,7 +454,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
         shift: {
           currentShift: {
             id: 1,
-            area_id: 1,
+            location_id: 1,
             user_id: 1,
             clock_in_time: new Date().toISOString(),
             clock_in_gps_lat: -7.250445,

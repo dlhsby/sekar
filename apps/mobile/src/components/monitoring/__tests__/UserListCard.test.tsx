@@ -24,7 +24,7 @@ const createMockUser = (overrides?: Partial<LiveUser>): LiveUser => ({
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
+  location_id: 'area-123',
   location_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',

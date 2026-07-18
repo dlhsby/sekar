@@ -86,7 +86,7 @@ export function OvertimeFilterModal({
   const [localDateTo, setLocalDateTo] = useState(filters.to_date ?? '');
   const [localRayonId, setLocalRayonId] = useState(filters.rayon_id ?? '');
   const [localAreaId, setLocalAreaId] = useState(
-    isAreaFixed ? (userAreaId ?? '') : (filters.area_id ?? ''),
+    isAreaFixed ? (userAreaId ?? '') : (filters.location_id ?? ''),
   );
   const [localUserId, setLocalUserId] = useState(filters.user_id ?? '');
 
@@ -105,7 +105,7 @@ export function OvertimeFilterModal({
       setLocalDateFrom(filters.from_date ?? '');
       setLocalDateTo(filters.to_date ?? '');
       setLocalRayonId(filters.rayon_id ?? '');
-      setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : (filters.area_id ?? ''));
+      setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : (filters.location_id ?? ''));
       setLocalUserId(filters.user_id ?? '');
     }
   }, [visible, filters, isAreaFixed, userAreaId]);
@@ -171,7 +171,7 @@ export function OvertimeFilterModal({
         filtered = filtered.filter((u) => subordinateRoles.includes(u.role));
       }
       if (areaId) {
-        filtered = filtered.filter((u) => (u as any).area_id === areaId);
+        filtered = filtered.filter((u) => (u as any).location_id === areaId);
       }
       setUsers(filtered);
     } catch { /* non-critical */ } finally {
@@ -185,7 +185,7 @@ export function OvertimeFilterModal({
     if (localDateFrom) { applied.from_date = localDateFrom; }
     if (localDateTo) { applied.to_date = localDateTo; }
     if (localRayonId) { applied.rayon_id = localRayonId; }
-    if (localAreaId) { applied.area_id = localAreaId; }
+    if (localAreaId) { applied.location_id = localAreaId; }
     if (localUserId && localUserId !== 'all_subordinates') { applied.user_id = localUserId; }
     onApplyFilters(applied);
     onClose();

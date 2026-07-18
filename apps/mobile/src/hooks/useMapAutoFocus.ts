@@ -28,9 +28,9 @@ export function useMapAutoFocus(
     if (!mapRef.current) return;
 
     // Area selected -> animate to area center, zoom 15-16
-    if (filters.area_id && filters.area_id !== prev.area_id && boundaries) {
+    if (filters.location_id && filters.location_id !== prev.location_id && boundaries) {
       for (const rayon of boundaries.rayons) {
-        const area = rayon.areas.find(a => a.id === filters.area_id);
+        const area = rayon.areas.find(a => a.id === filters.location_id);
         if (area) {
           mapRef.current.animateToRegion(
             {
@@ -49,7 +49,7 @@ export function useMapAutoFocus(
     // Rayon selected (no area) -> fit to rayon bbox
     if (
       filters.rayon_id &&
-      !filters.area_id &&
+      !filters.location_id &&
       filters.rayon_id !== prev.rayon_id &&
       boundaries
     ) {
@@ -90,9 +90,9 @@ export function useMapAutoFocus(
 
     // All filters cleared -> reset to city view
     const hasFilters =
-      filters.area_id || filters.rayon_id || filters.search || filters.role;
+      filters.location_id || filters.rayon_id || filters.search || filters.role;
     const hadFilters =
-      prev.area_id || prev.rayon_id || prev.search || prev.role;
+      prev.location_id || prev.rayon_id || prev.search || prev.role;
     if (!hasFilters && hadFilters) {
       mapRef.current.animateToRegion(SURABAYA_CITY_REGION, 1000);
     }

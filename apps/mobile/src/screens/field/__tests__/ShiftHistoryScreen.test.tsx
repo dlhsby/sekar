@@ -82,7 +82,7 @@ describe('ShiftHistoryScreen', () => {
     {
       id: 1,
       user_id: 1,
-      area_id: 'area-uuid-1',
+      location_id: 'area-uuid-1',
       area: {
         id: 'area-uuid-1',
         name: 'Taman Bungkul',
@@ -112,7 +112,7 @@ describe('ShiftHistoryScreen', () => {
     {
       id: 2,
       user_id: 1,
-      area_id: 'area-uuid-1',
+      location_id: 'area-uuid-1',
       area: {
         id: 'area-uuid-1',
         name: 'Taman Bungkul',
@@ -142,7 +142,7 @@ describe('ShiftHistoryScreen', () => {
     {
       id: 3,
       user_id: 1,
-      area_id: 'area-uuid-2',
+      location_id: 'area-uuid-2',
       area: {
         id: 'area-uuid-2',
         name: 'Pedestrian Darmo',

@@ -63,7 +63,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
         fetchTeamAnalytics({
           page: 1,
           limit: TEAM_PAGE_SIZE,
-          area_id: areaId,
+          location_id: areaId,
           reset: true,
         }),
       );
@@ -76,7 +76,7 @@ export function TeamAnalyticsScreen({ route }: Props): React.JSX.Element {
       fetchTeamAnalytics({
         page: 1,
         limit: TEAM_PAGE_SIZE,
-        area_id: areaId,
+        location_id: areaId,
         reset: true,
       }),
     );

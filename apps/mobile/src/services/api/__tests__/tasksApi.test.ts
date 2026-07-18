@@ -30,7 +30,7 @@ describe('tasksApi', () => {
         title: 'Test Task',
         description: 'Test description',
         priority: 'high' as const,
-        area_id: 'area-123',
+        location_id: 'area-123',
       };
       const mockResponse = { data: { id: 'task-123', ...taskData } };
       mockPost.mockResolvedValue(mockResponse);
@@ -41,7 +41,7 @@ describe('tasksApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('creates a task with rayon_id instead of area_id', async () => {
+    it('creates a task with rayon_id instead of location_id', async () => {
       const taskData = {
         title: 'Rayon Task',
         description: 'Test description',
@@ -62,7 +62,7 @@ describe('tasksApi', () => {
         title: 'Tagged Task',
         description: 'Test description',
         priority: 'low' as const,
-        area_id: 'area-123',
+        location_id: 'area-123',
         tagged_user_ids: ['user-1', 'user-2'],
       };
       const mockResponse = { data: { id: 'task-789', ...taskData } };
