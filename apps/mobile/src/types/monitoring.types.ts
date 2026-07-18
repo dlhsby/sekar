@@ -74,7 +74,7 @@ export interface LiveUser {
   // `is_within_area` via `deriveAxes` when the backend payload omits them.
   activity?: PresenceActivity;
   location?: PresenceLocation;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -150,7 +150,7 @@ export interface UserDaySummary {
   role: string;
   phone: string | null;
   status: TrackingStatus;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   rayon_name: string | null;
@@ -207,7 +207,7 @@ export interface LocationHistory {
   date: string;
   shift_id: string | null;
   shift_name: string | null;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   clock_in_time: string | null;
   clock_out_time: string | null;
@@ -245,7 +245,7 @@ export interface UserStatusChangedEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string | null;
+  location_id: string | null;
   area_name: string | null;
   rayon_id: string | null;
   previous_status: TrackingStatus;
@@ -262,7 +262,7 @@ export interface UserAreaEvent {
   user_id: string;
   user_name: string;
   role: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id: string | null;
   latitude: number;
@@ -285,7 +285,7 @@ export interface UserReassignedEvent {
 
 // Phase 2D: WebSocket area staffing changed event
 export interface AreaStaffingChangedEvent {
-  area_id: string;
+  location_id: string;
   rayon_id: string | null;
   active_count: number;
   required_count: number;

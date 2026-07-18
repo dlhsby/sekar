@@ -121,7 +121,7 @@ const mockSuperadmin: User = {
   role: 'superadmin',
   rayon_id: undefined,
   rayon: undefined,
-  area_id: undefined,
+  location_id: undefined,
   area: undefined,
   created_at: '2026-01-01T00:00:00Z',
   updated_at: '2026-01-01T00:00:00Z',
@@ -133,7 +133,7 @@ const mockKorlap: User = {
   username: 'korlap1',
   full_name: 'Korlap 1',
   role: 'korlap',
-  area_id: 'area-1',
+  location_id: 'area-1',
 };
 
 const mockKepalaRayon: User = {

@@ -24,7 +24,7 @@ export interface Asset {
   id: string;
   category_id: string;
   category: AssetCategory;
-  area_id?: string | null;
+  location_id?: string | null;
   area?: Area | null;
   rayon_id?: string | null;
   rayon?: Rayon | null;

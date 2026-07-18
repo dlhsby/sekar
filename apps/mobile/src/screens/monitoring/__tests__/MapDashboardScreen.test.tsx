@@ -171,7 +171,7 @@ jest.mock('react-redux', () => ({
   useSelector: (selector: any) =>
     selector({
       monitoring: mockMonitoringState,
-      auth: { user: { id: 'u-1', role: 'korlap', area_id: 'area-1' } },
+      auth: { user: { id: 'u-1', role: 'korlap', location_id: 'area-1' } },
       // Phase 3 sub-phase 3-5: monitoringV2 slice default state
       monitoringV2: {
         visibleLayers: {
@@ -202,7 +202,7 @@ const mockLiveUser1: LiveUser = {
   role: 'satgas',
   phone: '08123456789',
   status: 'active' as any,
-  area_id: 'area-1',
+  location_id: 'area-1',
   area_name: 'Taman Bungkul',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
@@ -225,7 +225,7 @@ const mockLiveUser2: LiveUser = {
   ...mockLiveUser1,
   id: 'u-2',
   full_name: 'Worker Two',
-  area_id: 'area-2',
+  location_id: 'area-2',
   area_name: 'Taman Jayengrono',
   status: 'absent' as any,
 };

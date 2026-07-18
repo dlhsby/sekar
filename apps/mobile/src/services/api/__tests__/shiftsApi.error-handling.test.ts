@@ -93,7 +93,7 @@ describe('shiftsApi - Error Handling', () => {
         gps_lat: 10.5,
         gps_lng: 20.3,
         selfie_photo: 'data:image/jpeg;base64,abc123',
-        area_id: 'area-456',
+        location_id: 'area-456',
       });
     });
   });
@@ -257,7 +257,7 @@ describe('shiftsApi - Error Handling', () => {
         gps_lat: -90,
         gps_lng: -180,
         selfie_photo: 'data:image/jpeg;base64,abc',
-        area_id: 'area-id',
+        location_id: 'area-id',
       });
     });
 
@@ -271,7 +271,7 @@ describe('shiftsApi - Error Handling', () => {
         gps_lat: 10.5,
         gps_lng: 20.3,
         selfie_photo: longBase64,
-        area_id: 'area-id',
+        location_id: 'area-id',
       });
     });
 

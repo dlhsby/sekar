@@ -31,7 +31,7 @@ export interface User {
   role: UserRole;
   rayon_id?: string;
   rayon?: Rayon;
-  area_id?: string;
+  location_id?: string;
   area?: Area;
   phone_number?: string | null; // Phase 2E: for phone login
   profile_picture_url?: string | null; // Phase 2E: profile photo

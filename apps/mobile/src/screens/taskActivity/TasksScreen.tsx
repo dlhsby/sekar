@@ -37,7 +37,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
     { key: 'priority_desc', label: t('tasks:sort.priorityHighest') },
   ];
 
-  const initialAreaId = user?.area_id ?? currentShift?.area_id ?? null;
+  const initialAreaId = user?.location_id ?? currentShift?.location_id ?? null;
   const initialRayonId = user?.rayon_id ?? null;
 
   const [taskSort, setTaskSort] = useState<TaskSortOption>('created_at_desc');
@@ -179,7 +179,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
           onResetFilters={taskFilters.handleResetFilters}
           userRole={user?.role || 'satgas'}
           userRayonId={user?.rayon_id}
-          userAreaId={user?.area_id ?? currentShift?.area_id ?? undefined}
+          userAreaId={user?.location_id ?? currentShift?.location_id ?? undefined}
         />
       </View>
     </NBBackgroundPattern>

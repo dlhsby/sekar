@@ -82,7 +82,7 @@ export const fetchTeamAnalytics = createAsyncThunk(
       page: number;
       limit?: number;
       rayon_id?: string;
-      area_id?: string;
+      location_id?: string;
       reset?: boolean;
     },
     { rejectWithValue },
@@ -91,7 +91,7 @@ export const fetchTeamAnalytics = createAsyncThunk(
       page: params.page,
       limit: params.limit || 10,
       rayon_id: params.rayon_id,
-      area_id: params.area_id,
+      location_id: params.location_id,
       sort_by: 'performance_score',
       sort_dir: 'desc',
     });

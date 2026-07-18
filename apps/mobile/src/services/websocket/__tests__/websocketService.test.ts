@@ -107,7 +107,7 @@ describe('websocketService', () => {
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
         'subscribe:area',
-        { area_id: 'area-123' },
+        { location_id: 'area-123' },
         expect.any(Function)
       );
       expect(websocketService.getSubscribedRooms()).toContain('area:area-123');
@@ -121,7 +121,7 @@ describe('websocketService', () => {
 
       expect(mockSocket.emit).toHaveBeenCalledWith(
         'unsubscribe:area',
-        { area_id: 'area-123' },
+        { location_id: 'area-123' },
         expect.any(Function)
       );
       expect(websocketService.getSubscribedRooms()).not.toContain('area:area-123');

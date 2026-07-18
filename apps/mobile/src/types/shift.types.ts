@@ -10,7 +10,7 @@ export type DayType = 'WEEKDAY' | 'WEEKEND' | 'HOLIDAY';
 export interface Shift {
   id: string;
   user_id: string;
-  area_id: string | null; // Phase 2C: nullable, auto-detected
+  location_id: string | null; // Phase 2C: nullable, auto-detected
   area?: Area;
   user?: User;
   clock_in_time: string;
@@ -44,7 +44,7 @@ export interface ShiftDefinition {
 // Area Staff Requirements
 export interface AreaStaffRequirement {
   id: string;
-  area_id: string;
+  location_id: string;
   area?: Area;
   shift_definition_id: string;
   shift_definition?: ShiftDefinition;
@@ -68,7 +68,7 @@ export type ScheduleStatus =
 
 export interface ScheduleArea {
   id: string;
-  area_id: string;
+  location_id: string;
   area: {
     id: string;
     name: string;

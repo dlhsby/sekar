@@ -33,7 +33,7 @@ describe('loadAndSyncCurrentShift', () => {
     it('should fetch current shift and dispatch setCurrentShift with data', async () => {
       const mockShift = {
         id: '1',
-        area_id: '1',
+        location_id: '1',
         user_id: '1',
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_in_gps_lat: -7.250445,
@@ -247,7 +247,7 @@ describe('loadAndSyncCurrentShift', () => {
       const mockResponse = {
         data: {
           id: '1',
-          area_id: '1',
+          location_id: '1',
           user_id: '1',
           clock_in_time: '2026-01-20T08:00:00Z',
           clock_in_gps_lat: -7.250445,
@@ -270,7 +270,7 @@ describe('loadAndSyncCurrentShift', () => {
     it('should handle shift with all optional fields populated', async () => {
       const fullShift = {
         id: '1',
-        area_id: '1',
+        location_id: '1',
         user_id: '1',
         clock_in_time: '2026-01-20T08:00:00Z',
         clock_out_time: '2026-01-20T16:00:00Z',

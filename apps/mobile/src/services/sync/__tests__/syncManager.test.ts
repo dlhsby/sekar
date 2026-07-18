@@ -121,7 +121,7 @@ describe('syncManager', () => {
 
       // Now resolve the first sync
       resolveItems([
-        { id: '1', type: 'clock-in', data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' }, timestamp: 123, retryCount: 0, status: 'pending' },
+        { id: '1', type: 'clock-in', data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' }, timestamp: 123, retryCount: 0, status: 'pending' },
       ]);
 
       // Wait for first sync to complete
@@ -250,7 +250,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 0,
         status: 'pending' as const,
@@ -272,7 +272,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 1,
         status: 'pending' as const,
@@ -296,7 +296,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 5,
         status: 'pending' as const,
@@ -315,7 +315,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 0,
         status: 'pending' as const,
@@ -506,7 +506,7 @@ describe('syncManager', () => {
 
       // Resolve with the item
       resolveGetQueuedItems([
-        { id: '1', type: 'clock-in', data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' }, timestamp: 123, retryCount: 0, status: 'pending' },
+        { id: '1', type: 'clock-in', data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' }, timestamp: 123, retryCount: 0, status: 'pending' },
       ]);
 
       await syncPromise;
@@ -575,7 +575,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 5, // At max retry limit
         status: 'pending' as const,
@@ -601,7 +601,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 0,
         status: 'pending' as const,
@@ -628,7 +628,7 @@ describe('syncManager', () => {
       const itemAtMax = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: maxRetries,
         status: 'pending' as const,
@@ -653,7 +653,7 @@ describe('syncManager', () => {
       const item1 = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 1, // First retry
         status: 'pending' as const,
@@ -681,7 +681,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 4,
         status: 'pending' as const,
@@ -704,7 +704,7 @@ describe('syncManager', () => {
       const item = {
         id: '1',
         type: 'clock-in' as const,
-        data: { area_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
+        data: { location_id: 1, gps_lat: -7.25, gps_lng: 112.75, selfie_photo: 'base64' },
         timestamp: 123,
         retryCount: 2, // Has been retried twice
         status: 'pending' as const,

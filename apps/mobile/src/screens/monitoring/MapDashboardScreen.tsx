@@ -117,9 +117,9 @@ export function MapDashboardScreen(): React.JSX.Element {
     if (!currentUser) return;
     const role = currentUser.role;
     let payload: { view: typeof view; floor: MonitoringScope };
-    if (role === 'korlap' && currentUser.area_id) {
+    if (role === 'korlap' && currentUser.location_id) {
       payload = {
-        view: { scope: 'area', id: currentUser.area_id, rayonId: currentUser.rayon_id ?? null, name: null },
+        view: { scope: 'area', id: currentUser.location_id, rayonId: currentUser.rayon_id ?? null, name: null },
         floor: 'area',
       };
     } else if ((role === 'kepala_rayon' || role === 'admin_rayon') && currentUser.rayon_id) {
@@ -153,7 +153,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // level; the map only *renders* worker markers at area scope.
   useEffect(() => {
     void fetchLiveUsersWithFilters(
-      scope === 'area' && view.id ? { ...filters, area_id: view.id } : filters,
+      scope === 'area' && view.id ? { ...filters, location_id: view.id } : filters,
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, view.id, filters]);

@@ -46,7 +46,7 @@ export interface UserLocationEvent {
   user_name: string;
   role: string;
   shift_id: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id?: string;
   latitude: number;
@@ -70,7 +70,7 @@ export interface UserClockInEvent {
   worker_name: string;
   role: string;
   shift_id: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id?: string;
   latitude: number;
@@ -85,7 +85,7 @@ export interface UserClockOutEvent {
   worker_id: string;
   worker_name: string;
   shift_id: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id?: string;
   timestamp: Date | string;
@@ -96,7 +96,7 @@ export interface UserClockOutEvent {
  * Area staffing event data
  */
 export interface AreaStaffingEvent {
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id?: string;
   workers_required: number;
@@ -113,7 +113,7 @@ export interface AreaStaffingEvent {
 export interface TaskAssignedEvent {
   task_id: string;
   title: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id?: string;
   assigned_to: string;
@@ -129,7 +129,7 @@ export interface TaskAssignedEvent {
 export interface TaskCompletedEvent {
   task_id: string;
   title: string;
-  area_id: string;
+  location_id: string;
   area_name: string;
   rayon_id?: string;
   completed_by: string;
@@ -326,7 +326,7 @@ class WebSocketService {
 
     console.debug('[WebSocket] Subscribing to area:', areaId);
 
-    this.socket.emit('subscribe:area', { area_id: areaId }, (response: any) => {
+    this.socket.emit('subscribe:area', { location_id: areaId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.add(room);
         console.debug('[WebSocket] Subscribed to area:', areaId);
@@ -356,7 +356,7 @@ class WebSocketService {
 
     console.debug('[WebSocket] Unsubscribing from area:', areaId);
 
-    this.socket.emit('unsubscribe:area', { area_id: areaId }, (response: any) => {
+    this.socket.emit('unsubscribe:area', { location_id: areaId }, (response: any) => {
       if (response?.success) {
         this.subscribedRooms.delete(room);
         console.debug('[WebSocket] Unsubscribed from area:', areaId);

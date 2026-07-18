@@ -14,7 +14,7 @@ const baseHistory: LocationHistory = {
   date: '2026-03-08',
   shift_id: 'shift-1',
   shift_name: 'Pagi',
-  area_id: 'area-1',
+  location_id: 'area-1',
   area_name: 'Taman Bungkul',
   clock_in_time: '2026-03-08T07:00:00Z',
   clock_out_time: null,

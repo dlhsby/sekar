@@ -50,7 +50,7 @@ export function useOvertimeActions(
     const submitterRole = overtime.user?.role;
     if (user.role === 'korlap') {
       return (submitterRole === 'satgas' || submitterRole === 'linmas') &&
-             user.area_id != null && overtime.area_id === user.area_id;
+             user.location_id != null && overtime.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
       if (!user.rayon_id) return false;

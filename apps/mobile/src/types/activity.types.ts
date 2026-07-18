@@ -22,7 +22,7 @@ export interface Activity {
   id: string;
   user_id: string;
   shift_id: string;
-  area_id?: string;
+  location_id?: string;
   area?: Area;
   task_id?: string;
   activity_type_id: string;

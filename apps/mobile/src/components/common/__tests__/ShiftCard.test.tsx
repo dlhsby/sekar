@@ -49,7 +49,7 @@ const mockArea = {
 const mockActiveShift: Shift = {
   id: 'shift-1',
   user_id: 'user-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   clock_in_time: '2024-01-01T08:00:00Z',
   clock_in_gps_lat: -7.275,
   clock_in_gps_lng: 112.75,

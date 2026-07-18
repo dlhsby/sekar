@@ -40,7 +40,7 @@ export async function getWorkers(params?: {
   page?: number;
   limit?: number;
   rayon_id?: string;
-  area_id?: string;
+  location_id?: string;
   sort_by?: string;
   sort_dir?: 'asc' | 'desc';
   date_from?: string;

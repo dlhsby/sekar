@@ -54,7 +54,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
   const scrollViewRef = useRef<ScrollView>(null);
 
   const { form, setForm, errors, validateForm, resetForm, updateField, clearAssigneeAndTagged } = useTaskCreateForm(
-    user?.area_id,
+    user?.location_id,
     user?.rayon_id,
   );
 
@@ -104,8 +104,8 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     if (isRayonFixed && user.rayon_id) {
       updateField('rayonId', user.rayon_id);
     }
-    if (isAreaFixed && user.area_id) {
-      updateField('areaId', user.area_id);
+    if (isAreaFixed && user.location_id) {
+      updateField('areaId', user.location_id);
     }
   }, [user, role, isRayonFixed, isAreaFixed, updateField]);
 
@@ -170,7 +170,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
         title: form.title.trim(),
         priority: form.priority as TaskPriority,
         deadline: form.deadline ? form.deadline.toISOString() : undefined,
-        area_id: form.areaId || undefined,
+        location_id: form.areaId || undefined,
         rayon_id: form.rayonId || undefined,
         assigned_to: form.assignedTo || undefined,
         tagged_user_ids: form.taggedUserIds.length > 0 ? form.taggedUserIds : undefined,
@@ -262,7 +262,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
             isAreaFixed={isAreaFixed}
             isLoadingAreas={isLoadingAreas}
             areaOptions={areaOptions}
-            userAreaId={user?.area_id}
+            userAreaId={user?.location_id}
             userAreaName={user?.area?.name}
           />
 

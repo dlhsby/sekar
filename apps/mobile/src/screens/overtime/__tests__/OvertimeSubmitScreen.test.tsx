@@ -268,7 +268,7 @@ const createTestStore = () =>
           username: 'satgas1',
           full_name: 'Test Satgas',
           role: 'satgas' as const,
-          area_id: 'area-1',
+          location_id: 'area-1',
         },
         token: 'test-token',
         isAuthenticated: true,

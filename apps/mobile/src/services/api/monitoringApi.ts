@@ -118,7 +118,7 @@ export async function getUserLocationHistory(
 }
 
 export async function getStaffingSummary(
-  filters?: { rayon_id?: string; area_id?: string },
+  filters?: { rayon_id?: string; location_id?: string },
 ): Promise<ApiResponse<StaffingSummaryResponse>> {
   return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
 }

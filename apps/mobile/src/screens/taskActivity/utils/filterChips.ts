@@ -80,7 +80,7 @@ export function buildActivityFilterChips(
   if (filters.activity_type_id) {
     chips.push({ text: i18n.t('tasks:filterChips.type'), tone: 'assignment' });
   }
-  if (filters.area_id && filters.area_id !== initialAreaId) {
+  if (filters.location_id && filters.location_id !== initialAreaId) {
     chips.push({ text: i18n.t('tasks:filterChips.area'), tone: 'location' });
   }
   if (filters.rayon_id) {

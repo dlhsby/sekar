@@ -61,7 +61,7 @@ const mockLiveUser: LiveUser = {
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
+  location_id: 'area-123',
   area_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
@@ -120,7 +120,7 @@ const mockUserDaySummary: UserDaySummary = {
   role: 'satgas',
   phone: '08123456789',
   status: 'active',
-  area_id: 'area-123',
+  location_id: 'area-123',
   area_name: 'Taman A',
   rayon_id: 'rayon-1',
   rayon_name: 'Rayon 1',
@@ -155,7 +155,7 @@ const mockLocationHistory: LocationHistory = {
   date: '2026-02-15',
   shift_id: 'shift-123',
   shift_name: 'Shift Pagi',
-  area_id: 'area-123',
+  location_id: 'area-123',
   area_name: 'Taman A',
   clock_in_time: '2026-02-15T07:00:00Z',
   clock_out_time: null,
@@ -478,12 +478,12 @@ describe('monitoringSlice', () => {
       };
       const state = monitoringReducer(
         stateWithFilters,
-        setMonitoringFilters({ area_id: 'area-1' }),
+        setMonitoringFilters({ location_id: 'area-1' }),
       );
       expect(state.filters).toEqual({
         rayon_id: 'rayon-1',
         role: 'satgas',
-        area_id: 'area-1',
+        location_id: 'area-1',
       });
     });
 

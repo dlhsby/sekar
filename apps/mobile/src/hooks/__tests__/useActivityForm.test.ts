@@ -78,7 +78,7 @@ jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 const makeShift = () => ({
   id: 'shift-1',
   user_id: 'user-1',
-  area_id: 'area-1',
+  location_id: 'area-1',
   clock_in_time: new Date().toISOString(),
   clock_in_gps_lat: -7.25,
   clock_in_gps_lng: 112.77,
@@ -319,7 +319,7 @@ describe('useActivityForm', () => {
         photo_urls: [],
         gps_lat: -7.25,
         gps_lng: 112.77,
-        area_id: 'area-1',
+        location_id: 'area-1',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

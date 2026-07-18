@@ -40,9 +40,9 @@ export const useAssignableUsersFetching = (
             // Must have assignable role
             if (!assignableRoles.includes(u.role as UserRole)) return false;
             // Filter by area — user must be in the selected area
-            if (u.area_id && u.area_id === areaId) return true;
+            if (u.location_id && u.location_id === areaId) return true;
             // Also include users in the same rayon but no specific area (rayon-level users)
-            if (!u.area_id && u.rayon_id && u.rayon_id === rayonId) return true;
+            if (!u.location_id && u.rayon_id && u.rayon_id === rayonId) return true;
             return false;
           });
 

@@ -94,7 +94,7 @@ describe('monitoringApi', () => {
       const areaId = 'area-123';
       const mockResponse = {
         data: {
-          area_id: areaId,
+          location_id: areaId,
           area_name: 'Taman Bungkul',
           staffing_status: 'adequate',
           users: [],
@@ -114,7 +114,7 @@ describe('monitoringApi', () => {
     it('gets area monitoring stats with filters', async () => {
       const areaId = 'area-123';
       const filters = { date: '2026-01-25' };
-      const mockResponse = { data: { area_id: areaId } };
+      const mockResponse = { data: { location_id: areaId } };
       mockGet.mockResolvedValue(mockResponse);
 
       const result = await monitoringApi.getAreaMonitoring(areaId, filters);
@@ -149,7 +149,7 @@ describe('monitoringApi', () => {
     });
 
     it('gets live users with area filter', async () => {
-      const filters = { area_id: 'area-123' };
+      const filters = { location_id: 'area-123' };
       const mockResponse = {
         data: {
           total_online: 1,
@@ -248,13 +248,13 @@ describe('monitoringApi', () => {
       expect(mockGet).toHaveBeenCalledWith('/activities', { user_id: 'uuid-123' });
     });
 
-    it('should call get with area_id filter', async () => {
+    it('should call get with location_id filter', async () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getAllActivities({ area_id: 'uuid-456' });
+      const result = await monitoringApi.getAllActivities({ location_id: 'uuid-456' });
 
-      expect(mockGet).toHaveBeenCalledWith('/activities', { area_id: 'uuid-456' });
+      expect(mockGet).toHaveBeenCalledWith('/activities', { location_id: 'uuid-456' });
     });
 
     it('should return error on failure', async () => {
@@ -450,15 +450,15 @@ describe('monitoringApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets staffing summary with area_id filter', async () => {
-      const filters = { area_id: 'area-456' };
+    it('gets staffing summary with location_id filter', async () => {
+      const filters = { location_id: 'area-456' };
       const mockResponse = {
         data: {
           total_areas: 1,
           adequately_staffed: 1,
           understaffed: 0,
           overstaffed: 0,
-          areas: [{ area_id: 'area-456', area_name: 'Taman Bungkul', status: 'adequate' }],
+          areas: [{ location_id: 'area-456', area_name: 'Taman Bungkul', status: 'adequate' }],
         },
       };
       mockGet.mockResolvedValue(mockResponse);

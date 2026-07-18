@@ -26,7 +26,7 @@ describe('TodayWorkHoursModal', () => {
     {
       id: 'shift1',
       user_id: 'user1',
-      area_id: 'area1',
+      location_id: 'area1',
       clock_in_time: '2026-02-15T08:00:00Z',
       clock_in_gps_lat: -7.250445,
       clock_in_gps_lng: 112.768845,
@@ -50,7 +50,7 @@ describe('TodayWorkHoursModal', () => {
     {
       id: 'shift2',
       user_id: 'user1',
-      area_id: 'area2',
+      location_id: 'area2',
       clock_in_time: '2026-02-15T19:00:00Z',
       clock_in_gps_lat: -7.260000,
       clock_in_gps_lng: 112.780000,

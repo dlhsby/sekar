@@ -127,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
                 : null;
               const updatedUser = {
                 ...storedUser,
-                area_id: meResponse.data.area_id ?? storedUser.area_id,
+                location_id: meResponse.data.location_id ?? storedUser.location_id,
                 rayon_id: meResponse.data.rayon_id ?? storedUser.rayon_id,
               };
               dispatch(
