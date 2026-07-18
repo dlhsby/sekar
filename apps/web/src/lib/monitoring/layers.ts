@@ -5,40 +5,49 @@
  * localStorage so a supervisor's map setup survives reloads (mirrors the mobile
  * `monitoring.layers.v1` key). Consumed by the map (gates rendering) and the
  * Layers control panel (toggles).
+ *
+ * Two flavours of toggle live here, side by side (mirroring the panel):
+ *  - Boundary toggles — draw/hide each geo tier's outline+fill (rayon/kawasan/lokasi).
+ *  - Marker toggles — show/hide the worker pins (`petugas`) and the collapsed
+ *    team bubbles (`teamBubbles`). The geo NODE markers (count pins) are NOT
+ *    gated — they always render, so a supervisor can never hide the map's
+ *    primary content.
  */
 import { useCallback, useEffect, useState } from 'react';
 
 export interface MonitoringLayers {
-  /** Rayon boundary — outline + tinted fill (one toggle). */
+  /** Rayon boundary — outline + tinted fill. */
   rayon: boolean;
-  /** Area boundary — outline + tinted fill (one toggle). */
-  area: boolean;
-  /** Area centre pins (drilled/worker view). */
-  areaPins: boolean;
-  /** Worker pins / clusters ("Semua Petugas" mode). */
+  /** Kawasan (region) boundary — outline + tinted fill. */
+  kawasan: boolean;
+  /** Lokasi (area) boundary — outline + tinted fill. */
+  lokasi: boolean;
+  /** Worker pins / clusters. */
   petugas: boolean;
-  /** Overdue-plant tint + counts on area pins. */
-  overdue: boolean;
+  /** Collapse each team's members into one team-colored bubble. */
+  teamBubbles: boolean;
 }
 
 export const DEFAULT_LAYERS: MonitoringLayers = {
   rayon: true,
-  area: true,
-  areaPins: true,
+  kawasan: true,
+  lokasi: true,
   petugas: true,
-  overdue: false,
+  teamBubbles: true,
 };
 
-// v3: rayonBorder+rayonFill collapsed into `rayon`, areaBorder into `area`.
-const STORAGE_KEY = 'monitoring.layers.v3';
+// v4: split kawasan out of `rayon`, renamed `area`→`lokasi`, dropped `areaPins`
+// (node markers are always drawn) and `overdue` (Tanaman Terlambat retired from
+// the map); added the `teamBubbles` marker toggle.
+const STORAGE_KEY = 'monitoring.layers.v4';
 
 /** Layer toggles rendered by the Layers panel (order matters). */
 export const LAYER_TOGGLES: { key: keyof MonitoringLayers; labelKey: string }[] = [
   { key: 'rayon', labelKey: 'monitoring:layers.rayon' },
-  { key: 'area', labelKey: 'monitoring:layers.area' },
-  { key: 'areaPins', labelKey: 'monitoring:layers.areaPins' },
+  { key: 'kawasan', labelKey: 'monitoring:layers.kawasan' },
+  { key: 'lokasi', labelKey: 'monitoring:layers.lokasi' },
   { key: 'petugas', labelKey: 'monitoring:layers.petugas' },
-  { key: 'overdue', labelKey: 'monitoring:layers.overdue' },
+  { key: 'teamBubbles', labelKey: 'monitoring:layers.teamBubbles' },
 ];
 
 function readStored(): MonitoringLayers {

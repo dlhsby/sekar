@@ -36,11 +36,11 @@
   "layers": {
     "title": "Settings",
     "overlays": "Map Layers",
-    "areaPins": "Area Pins",
-    "petugas": "Officers",
-    "overdue": "Overdue Plants",
-    "rayon": "District Border",
-    "area": "Area Border"
+    "rayon": "Rayon Boundary",
+    "kawasan": "Kawasan Boundary",
+    "lokasi": "Lokasi Boundary",
+    "petugas": "Workers",
+    "teamBubbles": "Teams"
   },
   "search": {
     "personnelLabel": "Officers",

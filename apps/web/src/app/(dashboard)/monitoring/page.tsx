@@ -38,7 +38,6 @@ import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
 import { AggregateNodeList } from '@/components/monitoring/AggregateNodeList';
 import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
-import { usePlantStatusSummary } from '@/lib/api/plants';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
 import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { NodeMarker } from '@/components/monitoring/NodeMarkerLayer';
@@ -160,9 +159,8 @@ export default function MonitoringPage() {
     key: number;
   } | null>(null);
 
-  // Map layer visibility (persisted). Overdue-plant overlay is a layer now.
+  // Map layer visibility (persisted).
   const { layers, toggleLayer } = useMonitoringLayers();
-  const showOverdue = layers.overdue;
 
   // Keep view in sync when the user (role) resolves.
   useEffect(() => {
@@ -217,16 +215,6 @@ export default function MonitoringPage() {
     isFetching: boundariesFetching,
     refetch: refetchBoundaries,
   } = useBoundaries(canMonitor, boundaryLevel, boundaryRayonId);
-
-  const plantSummary = usePlantStatusSummary(canMonitor && showOverdue);
-  const overdueByArea = useMemo(() => {
-    if (!showOverdue || !plantSummary.data) return null;
-    const map: Record<string, number> = {};
-    for (const rayon of plantSummary.data.rayons) {
-      for (const a of rayon.overdue_areas) map[a.area_id] = a.overdue;
-    }
-    return map;
-  }, [showOverdue, plantSummary.data]);
 
   // Live incremental updates (replaces the old 30 s full-refresh flash).
   useMonitoringSocket(canMonitor);
@@ -624,7 +612,6 @@ export default function MonitoringPage() {
         boundaries={boundaries ?? null}
         selectedId={selectedId}
         onSelect={selectWorker}
-        overdueByArea={overdueByArea}
         layers={layers}
         focusTarget={focusTarget}
       />

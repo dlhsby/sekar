@@ -36,11 +36,11 @@
   "layers": {
     "title": "Pengaturan",
     "overlays": "Lapisan Peta",
-    "areaPins": "Titik Area",
-    "petugas": "Petugas",
-    "overdue": "Tanaman Terlambat",
     "rayon": "Batas Rayon",
-    "area": "Batas Area"
+    "kawasan": "Batas Kawasan",
+    "lokasi": "Batas Lokasi",
+    "petugas": "Petugas",
+    "teamBubbles": "Tim"
   },
   "search": {
     "personnelLabel": "Petugas",
