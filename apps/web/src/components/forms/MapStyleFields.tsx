@@ -46,6 +46,7 @@ export function MapStyleFields({
         <OpacityField
           label={t('admin:mapStyle.borderOpacity')}
           value={value.border_opacity}
+          defaultValue={1}
           onChange={(v) => onChange({ border_opacity: v })}
           disabled={disabled}
         />
@@ -158,25 +159,31 @@ function FillControl({
 function OpacityField({
   label,
   value,
+  defaultValue = 0.25,
   onChange,
   disabled,
 }: {
   label: string;
   value?: number | null;
+  /** Effective opacity when unset — matches how the map renders it (border → 1, fill → 0.25). */
+  defaultValue?: number;
   onChange: (v: number | null) => void;
   disabled?: boolean;
 }) {
+  // Always show the *effective* opacity as a percentage so the readout matches
+  // the slider position even when the value is unset (was a bare "—").
+  const effective = value ?? defaultValue;
   return (
     <div className="space-y-1.5">
       <label className="block text-nb-body-sm font-semibold text-nb-black">
-        {label} <span className="font-mono text-nb-gray-600">{value ?? '—'}</span>
+        {label} <span className="font-mono text-nb-gray-600">{Math.round(effective * 100)}%</span>
       </label>
       <input
         type="range"
         min={0}
         max={1}
         step={0.05}
-        value={value ?? 0.25}
+        value={effective}
         onChange={(e) => onChange(Number(e.target.value))}
         disabled={disabled}
         className="h-2 w-full cursor-pointer accent-nb-primary disabled:cursor-not-allowed disabled:opacity-60"
