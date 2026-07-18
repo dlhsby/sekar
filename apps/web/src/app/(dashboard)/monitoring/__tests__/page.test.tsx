@@ -51,7 +51,7 @@ const worker = (over: Record<string, unknown>) => ({
   lat: -7.25,
   lng: 112.75,
   status: 'active',
-  area_id: 'a1',
+  location_id: 'a1',
   location_name: 'Taman A',
   rayon_id: 'r1',
   rayon_name: 'Rayon Pusat',
@@ -69,7 +69,7 @@ const snapshotData = {
         worker({ user_id: 'w2', full_name: 'Budi', status: 'missing', rayon_id: 'r2', rayon_name: 'Rayon Timur' }),
       ],
       area_summaries: [
-        { area_id: 'a1', location_name: 'Taman A', rayon_id: 'r1', rayon_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
+        { location_id: 'a1', location_name: 'Taman A', rayon_id: 'r1', rayon_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
       ],
       total_active: 1,
       total_inactive: 0,
