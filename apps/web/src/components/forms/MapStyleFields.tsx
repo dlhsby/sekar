@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import type { MapStyle } from '@/lib/api/regions';
 import { cn } from '@/lib/utils/cn';
-import { MarkerImagePicker } from './MarkerImagePicker';
+import { MarkerIconPicker } from './MarkerIconPicker';
 import { ColorField, HEX_COLOR } from './ColorField';
 
 // eslint-disable-next-line sekar-design/no-inline-hex-colors -- color-input default values
@@ -12,8 +12,6 @@ const DEFAULTS = { border: '#1C1917', fill: '#7FBC8C' };
 interface MapStyleFieldsProps {
   value: MapStyle;
   onChange: (patch: Partial<MapStyle>) => void;
-  /** System default marker for this entity (shown when none is set). */
-  markerDefaultUrl: string;
   disabled?: boolean;
 }
 
@@ -25,7 +23,6 @@ interface MapStyleFieldsProps {
 export function MapStyleFields({
   value,
   onChange,
-  markerDefaultUrl,
   disabled,
 }: MapStyleFieldsProps) {
   const { t } = useTranslation();
@@ -61,10 +58,9 @@ export function MapStyleFields({
         disabled={disabled}
       />
 
-      <MarkerImagePicker
-        value={value.marker_image_url ?? null}
-        onChange={(v) => onChange({ marker_image_url: v })}
-        defaultUrl={markerDefaultUrl}
+      <MarkerIconPicker
+        value={value.marker_icon ?? null}
+        onChange={(v) => onChange({ marker_icon: v })}
         disabled={disabled}
       />
     </div>

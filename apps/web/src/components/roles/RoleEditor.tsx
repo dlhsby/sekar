@@ -14,10 +14,8 @@ import {
   type PermissionCatalogCategory,
 } from '@/lib/api/roles';
 import { PermissionAccordion } from './PermissionAccordion';
-import { MarkerImagePicker } from '@/components/forms/MarkerImagePicker';
 import { MarkerIconPicker } from '@/components/forms/MarkerIconPicker';
 import { ColorField, HEX_COLOR } from '@/components/forms/ColorField';
-import { roleMarkerDefault } from '@/lib/constants/markerDefaults';
 
 const SCOPES: MonitoringScope[] = ['city', 'district', 'region', 'location', 'none'];
 // Fallback accent for a role that has no colour yet (custom roles pre-pick).
@@ -53,23 +51,18 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
   const [name, setName] = useState(role.name);
   const [description, setDescription] = useState(role.description ?? '');
   const [scope, setScope] = useState<MonitoringScope>(role.monitoring_scope);
-  const [markerImageUrl, setMarkerImageUrl] = useState<string | null>(
-    role.marker_image_url ?? null,
-  );
   const initialColor = role.marker_color ?? DEFAULT_ROLE_COLOR;
   const [markerColor, setMarkerColor] = useState<string>(initialColor);
   const initialIcon = role.marker_icon ?? null;
   const [markerIcon, setMarkerIcon] = useState<string | null>(initialIcon);
   const [checked, setChecked] = useState<Set<string>>(initialChecked);
 
-  const initialMarker = role.marker_image_url ?? null;
   const permsDirty =
     checked.size !== initialChecked.size || [...checked].some((k) => !initialChecked.has(k));
   const isDirty =
     name !== role.name ||
     description !== (role.description ?? '') ||
     scope !== role.monitoring_scope ||
-    (markerImageUrl ?? null) !== initialMarker ||
     (markerIcon ?? null) !== initialIcon ||
     markerColor !== initialColor ||
     permsDirty;
@@ -78,7 +71,6 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
     setName(role.name);
     setDescription(role.description ?? '');
     setScope(role.monitoring_scope);
-    setMarkerImageUrl(initialMarker);
     setMarkerIcon(initialIcon);
     setMarkerColor(initialColor);
     setChecked(new Set(initialChecked));
@@ -120,7 +112,6 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           description: description.trim() || undefined,
           monitoring_scope: scope,
           marker_icon: markerIcon ?? undefined,
-          marker_image_url: markerImageUrl,
           marker_color: markerColor,
           // Preserve the *:* superuser grant instead of materializing it.
           ...(isSuperuser ? {} : { permissionKeys: Array.from(checked) }),
@@ -202,12 +193,6 @@ export function RoleEditor({ role, catalog, canManage, onRequestDelete }: RoleEd
           disabled={!canManage}
         />
         <MarkerIconPicker value={markerIcon} onChange={setMarkerIcon} disabled={!canManage} />
-        <MarkerImagePicker
-          value={markerImageUrl}
-          onChange={setMarkerImageUrl}
-          defaultUrl={roleMarkerDefault(role.code)}
-          disabled={!canManage}
-        />
         <ColorField
           label={t('access-control:fields.markerColor')}
           value={markerColor}

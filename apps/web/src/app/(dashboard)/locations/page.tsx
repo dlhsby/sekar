@@ -166,7 +166,8 @@ export default function LocationsPage() {
               borderColor={row.original.border_color}
               fillColor={row.original.fill_color}
               fillOpacity={row.original.fill_opacity}
-              markerImageUrl={row.original.marker_image_url}
+              markerIcon={row.original.marker_icon}
+            markerColor={row.original.border_color}
               entityKind="area"
             />
           ) : (

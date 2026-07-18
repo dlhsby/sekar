@@ -9,7 +9,6 @@ import { FormInput, FormCombobox, Textarea } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
-import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useRayons } from '@/lib/api/rayons';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
 import type { Region, CreateRegionDto, UpdateRegionDto, MapStyle } from '@/lib/api/regions';
@@ -169,7 +168,6 @@ export function RegionForm({
 
       <MapStyleFields
         value={style}
-        markerDefaultUrl={entityMarkerDefault('region')}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
             setValue(k as keyof RegionFormData, v as never, { shouldValidate: false }),
@@ -212,7 +210,8 @@ export function RegionForm({
           strokeOpacity={style.border_opacity}
           fillColor={style.fill_color}
           fillOpacity={style.fill_opacity}
-          markerImageUrl={style.marker_image_url ?? entityMarkerDefault('region')}
+          markerIcon={style.marker_icon}
+          markerColor={style.border_color}
         />
         <div className="space-y-4">
           <FormInput

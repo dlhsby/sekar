@@ -15,7 +15,6 @@ import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/componen
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
-import { entityMarkerDefault } from '@/lib/constants/markerDefaults';
 import { useRayons } from '@/lib/api/rayons';
 import { useRegions } from '@/lib/api/regions';
 import { useLocationTypes } from '@/lib/api/location-types';
@@ -305,7 +304,6 @@ export function LocationForm({
 
       <MapStyleFields
         value={style}
-        markerDefaultUrl={entityMarkerDefault('area')}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
             setValue(k as keyof LocationFormData, v as never, { shouldValidate: false }),
@@ -346,7 +344,8 @@ export function LocationForm({
           strokeOpacity={style.border_opacity}
           fillColor={style.fill_color}
           fillOpacity={style.fill_opacity}
-          markerImageUrl={style.marker_image_url ?? entityMarkerDefault('area')}
+          markerIcon={style.marker_icon}
+          markerColor={style.border_color}
           manualFallback={
             center ? (
               <div className="border-2 border-nb-black bg-nb-gray-100 p-4">

@@ -19,7 +19,8 @@ interface CoordinateLinkProps {
   borderColor?: string | null;
   fillColor?: string | null;
   fillOpacity?: number | null;
-  markerImageUrl?: string | null;
+  markerIcon?: string | null;
+  markerColor?: string | null;
   entityKind?: MarkerEntityKind;
 }
 
@@ -38,7 +39,8 @@ export function CoordinateLink({
   borderColor,
   fillColor,
   fillOpacity,
-  markerImageUrl,
+  markerIcon,
+  markerColor,
   entityKind,
 }: CoordinateLinkProps) {
   const { t } = useTranslation();
@@ -75,7 +77,8 @@ export function CoordinateLink({
         borderColor={borderColor}
         fillColor={fillColor}
         fillOpacity={fillOpacity}
-        markerImageUrl={markerImageUrl}
+        markerIcon={markerIcon}
+        markerColor={markerColor}
         entityKind={entityKind}
       />
     </span>

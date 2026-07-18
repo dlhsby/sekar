@@ -35,6 +35,10 @@ jest.mock('@/components/ui', () => ({
 }));
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 
+beforeAll(() => {
+  (global as unknown as { google: unknown }).google = { maps: { Size: class {}, Point: class {} } };
+});
+
 const boundary: GeoJSON.Polygon = {
   type: 'Polygon',
   coordinates: [[[112.7, -7.25], [112.76, -7.25], [112.76, -7.29], [112.7, -7.29], [112.7, -7.25]]],
@@ -65,14 +69,15 @@ describe('MapDisplayModal preview', () => {
     expect(lastPolygonOptions?.fillOpacity).toBe(0.3);
   });
 
-  it('previews the per-kind default marker when none is configured (rayon → pin-orange)', () => {
+  it('previews the per-kind default glyph pin when none is configured (rayon → building)', () => {
     render(
       <MapDisplayModal open onOpenChange={() => {}} lat={-7.26} lng={112.74} entityKind="rayon" />
     );
-    expect(screen.getByTestId('marker').getAttribute('data-src')).toContain('pin-orange.svg');
+    const src = decodeURIComponent(screen.getByTestId('marker').getAttribute('data-src') ?? '');
+    expect(src).toContain('M6 22V4'); // building glyph (rayon default)
   });
 
-  it('previews a configured custom marker image over the default', () => {
+  it('previews the configured glyph + identity color over the default', () => {
     render(
       <MapDisplayModal
         open
@@ -80,10 +85,13 @@ describe('MapDisplayModal preview', () => {
         lat={-7.26}
         lng={112.74}
         entityKind="rayon"
-        markerImageUrl="/uploads/custom-rayon.png"
+        markerIcon="star"
+        markerColor="#9333EA"
       />
     );
-    expect(screen.getByTestId('marker').getAttribute('data-src')).toContain('custom-rayon.png');
+    const src = decodeURIComponent(screen.getByTestId('marker').getAttribute('data-src') ?? '');
+    expect(src).toContain('M12 2.5l2.9'); // star glyph
+    expect(src).toContain('fill="#9333EA"'); // identity color fills the pin
   });
 
   it('renders no polygon when no boundary is given', () => {
