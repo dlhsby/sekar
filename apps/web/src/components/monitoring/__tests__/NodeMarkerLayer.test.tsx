@@ -124,12 +124,17 @@ describe('NodeMarkerLayer unified pin', () => {
     expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari');
   });
 
-  it('renders an empty lokasi as a muted dot with no label', () => {
+  it('renders an empty lokasi as its glyph pin (no white-dot fallback) with a label', () => {
     render(
-      <NodeMarkerLayer nodes={[makeNode({ variant: 'area', scheduled: 0, clocked_in: 0, active: 0 })]} zoom={16} />
+      <NodeMarkerLayer
+        nodes={[makeNode({ variant: 'area', name: 'Taman Kosong', scheduled: 0, clocked_in: 0, active: 0 })]}
+        zoom={16}
+      />
     );
-    expect(svg()).toContain('width="12"'); // muted dot
-    expect(mockLabels[0]).toBeUndefined();
+    // The unified teardrop pin, not the old 12px muted dot.
+    expect(svg()).toContain('M24 2C12.4 2');
+    expect(svg()).not.toContain('width="12"');
+    expect(mockLabels[0]?.text).toBe('Taman Kosong');
   });
 
   it('renders a custom-glyph area even when empty (not a muted dot)', () => {

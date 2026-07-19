@@ -395,6 +395,28 @@ export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
  *
  * Dimensions: 90×46 px (landscape-friendly for readability).
  */
+/**
+ * A team's map marker — the unified glyph pin (ADR-051) in the team's color:
+ * teardrop filled with the team color, the team glyph in the centre, and the
+ * member count as the badge. Replaces the old landscape bubble so a collapsed
+ * team reads like every other marker.
+ */
+export function teamMarkerIcon(
+  teamColor: string | null,
+  memberCount: number,
+  glyph?: string | null
+): google.maps.Icon {
+  const color = teamColor ?? TEAM_DEFAULT;
+  return pinMarker(glyph ?? entityDefaultGlyph('team'), {
+    outline: color,
+    fill: color,
+    fillOpacity: 0.9,
+    count: memberCount,
+    big: true,
+  });
+}
+
+/** @deprecated Use {@link teamMarkerIcon} — teams now render as a glyph pin, not a bubble. */
 export function teamBubbleIcon(
   teamColor: string | null,
   memberCount: number,

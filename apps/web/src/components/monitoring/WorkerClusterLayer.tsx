@@ -12,7 +12,7 @@
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
-import { workerPinIcon, statusToActivity, teamBubbleIcon } from '@/lib/monitoring/markers';
+import { workerPinIcon, statusToActivity, teamMarkerIcon } from '@/lib/monitoring/markers';
 import { groupWorkersByTeam, type TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { SimpleWorker } from './SimpleMonitoringMap';
 
@@ -30,10 +30,10 @@ export interface WorkerClusterLayerProps {
   bounds?: MapBounds | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
-  /** Zoom + recenter when a team bubble is clicked (to reveal its members). */
-  onClusterClick?: (lat: number, lng: number, expansionZoom: number) => void;
-  /** Collapse ≥2-member teams into one bubble below the expand zoom. When false,
-   *  every worker (team members included) renders as its own pin. */
+  /** Clicking a team marker opens its member list (no zoom-to-reveal). */
+  onTeamClick?: (team: TeamGroup) => void;
+  /** Collapse ≥2-member teams into one team marker. When false, every worker
+   *  (team members included) renders as its own pin. */
   teamBubbles?: boolean;
 }
 
@@ -42,15 +42,16 @@ export function WorkerClusterLayer({
   zoom,
   selectedId,
   onSelect,
-  onClusterClick,
+  onTeamClick,
   teamBubbles = true,
 }: WorkerClusterLayerProps) {
-  // Group workers by team only when the Tim layer is on (collapses ≥2-member
-  // teams below the expand zoom). Otherwise every worker renders individually.
-  // No supercluster: the returned renderables are drawn one-to-one.
+  // Group workers by team when the Tim layer is on. Teams ALWAYS collapse into
+  // one marker regardless of zoom (expandZoom = Infinity) — you reveal the
+  // members by CLICKING the team marker, never by zooming. Tim off → every
+  // worker renders individually. No supercluster: drawn one-to-one.
   const renderables = useMemo(
     () =>
-      groupWorkersByTeam(workers, zoom, teamBubbles ? 17 : 0).filter(
+      groupWorkersByTeam(workers, zoom, teamBubbles ? Number.POSITIVE_INFINITY : 0).filter(
         (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng)
       ),
     [workers, zoom, teamBubbles]
@@ -59,15 +60,15 @@ export function WorkerClusterLayer({
   return (
     <>
       {renderables.map((r) => {
-        // Team bubble (≥2-member team, Tim layer on, below expand zoom).
+        // Team marker (≥2-member team, Tim layer on) — click reveals members.
         if ('kind' in r && r.kind === 'team') {
           const team = r as TeamGroup;
           return (
             <Marker
               key={`team-${team.team_id}`}
               position={{ lat: team.lat, lng: team.lng }}
-              icon={teamBubbleIcon(team.team_color, team.member_count, team.team_name, team.team_icon)}
-              onClick={() => onClusterClick?.(team.lat, team.lng, 17)}
+              icon={teamMarkerIcon(team.team_color, team.member_count, team.team_icon)}
+              onClick={() => onTeamClick?.(team)}
               zIndex={5}
             />
           );

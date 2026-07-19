@@ -31,9 +31,9 @@ export interface MonitoringFilterState {
   rayonId: string; // 'all' or a rayon id
   regionId: string; // 'all' or a kawasan (region) id
   locationId: string; // 'all' or a lokasi (location) id
-  role: string; // 'all' or a role value
-  teamId: string; // 'all' or a team id
-  userId: string; // 'all' or a worker (user) id
+  jenis: 'individu' | 'team'; // assignment type — decides role vs team sub-filter
+  role: string; // 'all' or a role value (only used when jenis = individu)
+  teamId: string; // 'all' or a team id (only used when jenis = team)
 }
 
 export interface RayonOption {
@@ -57,9 +57,6 @@ export interface MonitoringFiltersProps {
   locationLoading?: boolean;
   roleOptions: UserRole[];
   teamOptions: FilterOption[];
-  /** Workers matching every filter above — the Petugas picker cascades from geo
-   *  (+ status/role/team). */
-  workerOptions: FilterOption[];
   total: number;
   matched: number;
   /** Hide the built-in search field (when search lives elsewhere, e.g. a top overlay). */
@@ -101,7 +98,6 @@ export function MonitoringFilters({
   locationLoading = false,
   roleOptions,
   teamOptions,
-  workerOptions,
   total,
   matched,
   showSearch = true,
@@ -131,9 +127,9 @@ export function MonitoringFilters({
     filters.rayonId !== 'all' ||
     filters.regionId !== 'all' ||
     filters.locationId !== 'all' ||
+    filters.jenis !== 'individu' ||
     filters.role !== 'all' ||
-    filters.teamId !== 'all' ||
-    filters.userId !== 'all';
+    filters.teamId !== 'all';
 
   const reset = () =>
     onChange({
@@ -142,9 +138,9 @@ export function MonitoringFilters({
       rayonId: 'all',
       regionId: 'all',
       locationId: 'all',
+      jenis: 'individu',
       role: 'all',
       teamId: 'all',
-      userId: 'all',
     });
 
   const regionPlaceholder = !rayonPicked
@@ -267,8 +263,34 @@ export function MonitoringFilters({
         </Field>
       )}
 
-      {/* Role */}
-      {roleOptions.length > 0 && (
+      {/* Jenis — Individu vs Tim. Individu reveals the Peran (role) filter; Tim
+          reveals the Jenis Tim (team) filter and scopes to team-assigned workers.
+          Switching resets the other axis so they never both apply. */}
+      <Field label={t('monitoring:filters.jenisLabel')} htmlFor="mon-jenis">
+        <div id="mon-jenis" className="flex rounded-nb-base border-2 border-nb-black p-0.5" role="group">
+          {(['individu', 'team'] as const).map((j) => (
+            <button
+              key={j}
+              type="button"
+              aria-pressed={filters.jenis === j}
+              onClick={() =>
+                onChange({ ...filters, jenis: j, role: 'all', teamId: 'all' })
+              }
+              className={cn(
+                'flex-1 rounded-nb-sm px-2 py-1.5 text-sm font-bold transition-colors',
+                filters.jenis === j
+                  ? 'bg-nb-gray-900 text-nb-white'
+                  : 'bg-nb-white text-nb-gray-700 hover:bg-nb-gray-50'
+              )}
+            >
+              {t(`monitoring:filters.jenis.${j}`)}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      {/* Individu → Peran (role) */}
+      {filters.jenis === 'individu' && roleOptions.length > 0 && (
         <Field label={t('monitoring:filters.roleLabel')} htmlFor="mon-role">
           <Combobox
             id="mon-role"
@@ -283,8 +305,8 @@ export function MonitoringFilters({
         </Field>
       )}
 
-      {/* Tim */}
-      {teamOptions.length > 0 && (
+      {/* Tim → Jenis Tim (team category) */}
+      {filters.jenis === 'team' && (
         <Field label={t('monitoring:filters.timLabel')} htmlFor="mon-team">
           <Combobox
             id="mon-team"
@@ -292,23 +314,6 @@ export function MonitoringFilters({
             value={filters.teamId === 'all' ? '' : filters.teamId}
             onValueChange={(v) => onChange({ ...filters, teamId: v || 'all' })}
             placeholder={t('monitoring:filters.timAllOption')}
-            searchPlaceholder={searchPh}
-            emptyText={noResults}
-            clearable
-          />
-        </Field>
-      )}
-
-      {/* Petugas — the leaf: workers matching every filter above (geo + status +
-          role + team). A stale pick is reset by the page when it drops out. */}
-      {workerOptions.length > 0 && (
-        <Field label={t('monitoring:filters.workerLabel')} htmlFor="mon-worker">
-          <Combobox
-            id="mon-worker"
-            options={toComboOptions(workerOptions)}
-            value={filters.userId === 'all' ? '' : filters.userId}
-            onValueChange={(v) => onChange({ ...filters, userId: v || 'all' })}
-            placeholder={t('monitoring:filters.workerAllOption')}
             searchPlaceholder={searchPh}
             emptyText={noResults}
             clearable

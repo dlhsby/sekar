@@ -18,6 +18,7 @@ import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer } from './WorkerClusterLayer';
+import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import { pinMarker, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 
 /** The current node's own pin (selected rayon at rayon scope / area at area scope). */
@@ -78,6 +79,8 @@ export interface SimpleMonitoringMapProps {
   focusTarget?: { lat: number; lng: number; zoom?: number; exact?: boolean; key: number } | null;
   /** Selected worker's location trail (today) — drawn as a polyline when set. */
   trail?: google.maps.LatLngLiteral[] | null;
+  /** Clicking a team marker opens its member list (no zoom-to-reveal). */
+  onTeamClick?: (team: TeamGroup) => void;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -174,6 +177,7 @@ function MonitoringMapInner({
   layers = DEFAULT_LAYERS,
   focusTarget,
   trail,
+  onTeamClick,
 }: SimpleMonitoringMapProps) {
   const { t } = useTranslation();
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -357,13 +361,6 @@ function MonitoringMapInner({
     fittedAreaRef.current = areaId;
   }, [scope, areaId, visibleAreaPaths]);
 
-  const handleClusterZoom = useCallback((lat: number, lng: number, expansionZoom: number) => {
-    const map = mapRef.current;
-    if (!map) return;
-    map.panTo({ lat, lng });
-    map.setZoom(expansionZoom);
-  }, []);
-
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <GoogleMap
@@ -478,7 +475,7 @@ function MonitoringMapInner({
             zoom={zoom}
             selectedId={selectedId}
             onSelect={onSelect}
-            onClusterClick={handleClusterZoom}
+            onTeamClick={onTeamClick}
             teamBubbles={layers.teamBubbles}
           />
         )}
