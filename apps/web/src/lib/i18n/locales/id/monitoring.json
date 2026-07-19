@@ -40,7 +40,8 @@
     "kawasan": "Batas Kawasan",
     "lokasi": "Batas Lokasi",
     "petugas": "Petugas",
-    "teamBubbles": "Tim"
+    "teamBubbles": "Tim",
+    "teamNeedsPetugas": "Aktifkan Petugas dulu untuk gelembung tim"
   },
   "search": {
     "personnelLabel": "Petugas",

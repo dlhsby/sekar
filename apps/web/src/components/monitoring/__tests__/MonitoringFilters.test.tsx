@@ -80,4 +80,15 @@ describe('MonitoringFilters cascade', () => {
     );
     expect(location(container).disabled).toBe(false);
   });
+
+  it('shows a loading placeholder (not "no kawasan") while the hierarchy resolves', () => {
+    const { container } = renderFilters({
+      filters: { ...baseFilters, rayonId: 'r1' },
+      regionOptions: [], // empty because still fetching, not because there are none
+      regionLoading: true,
+    });
+    expect(region(container).disabled).toBe(true);
+    // The empty-during-load state must read "loading", never "no kawasan".
+    expect(region(container).querySelector('option')?.textContent).toBe('common:actions.loading');
+  });
 });

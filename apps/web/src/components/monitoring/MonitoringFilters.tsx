@@ -52,6 +52,10 @@ export interface MonitoringFiltersProps {
   rayonOptions: RayonOption[];
   regionOptions: FilterOption[];
   locationOptions: FilterOption[];
+  /** Kawasan/Lokasi options are fetched on rayon change — show a loading hint
+   *  instead of the "no kawasan" empty state while they resolve. */
+  regionLoading?: boolean;
+  locationLoading?: boolean;
   roleOptions: UserRole[];
   teamOptions: FilterOption[];
   total: number;
@@ -68,6 +72,8 @@ export function MonitoringFilters({
   rayonOptions,
   regionOptions,
   locationOptions,
+  regionLoading = false,
+  locationLoading = false,
   roleOptions,
   teamOptions,
   total,
@@ -82,8 +88,8 @@ export function MonitoringFilters({
   // Kawasan is also disabled for a rayon that has none (e.g. Taman Aktif —
   // lokasi sit directly under the rayon).
   const rayonPicked = filters.rayonId !== 'all';
-  const regionDisabled = !rayonPicked || regionOptions.length === 0;
-  const locationDisabled = !rayonPicked || locationOptions.length === 0;
+  const regionDisabled = !rayonPicked || regionLoading || regionOptions.length === 0;
+  const locationDisabled = !rayonPicked || locationLoading || locationOptions.length === 0;
   const selectClass =
     'w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary disabled:cursor-not-allowed disabled:border-nb-gray-300 disabled:bg-nb-gray-100 disabled:text-nb-gray-400';
 
@@ -212,9 +218,11 @@ export function MonitoringFilters({
             <option value="all">
               {!rayonPicked
                 ? t('monitoring:filters.pickRayonFirst')
-                : regionOptions.length === 0
-                  ? t('monitoring:filters.noKawasan')
-                  : t('monitoring:filters.kawasanAllOption')}
+                : regionLoading
+                  ? t('common:actions.loading')
+                  : regionOptions.length === 0
+                    ? t('monitoring:filters.noKawasan')
+                    : t('monitoring:filters.kawasanAllOption')}
             </option>
             {regionOptions.map((r) => (
               <option key={r.id} value={r.id}>
@@ -241,7 +249,9 @@ export function MonitoringFilters({
             <option value="all">
               {!rayonPicked
                 ? t('monitoring:filters.pickRayonFirst')
-                : t('monitoring:filters.lokasiAllOption')}
+                : locationLoading
+                  ? t('common:actions.loading')
+                  : t('monitoring:filters.lokasiAllOption')}
             </option>
             {locationOptions.map((a) => (
               <option key={a.id} value={a.id}>

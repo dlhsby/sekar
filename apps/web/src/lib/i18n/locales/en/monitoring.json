@@ -40,7 +40,8 @@
     "kawasan": "Kawasan Boundary",
     "lokasi": "Lokasi Boundary",
     "petugas": "Workers",
-    "teamBubbles": "Teams"
+    "teamBubbles": "Teams",
+    "teamNeedsPetugas": "Enable Petugas first to group team bubbles"
   },
   "search": {
     "personnelLabel": "Officers",

@@ -60,19 +60,29 @@ export function MonitoringLayersPanel({
         {t('monitoring:layers.overlays')}
       </span>
       <ul className="flex flex-col gap-0.5">
-        {LAYER_TOGGLES.map(({ key, labelKey }) => (
-          <li key={key}>
-            <button
-              type="button"
-              onClick={() => onToggleLayer(key)}
-              aria-pressed={layers[key]}
-              className="flex w-full items-center justify-between gap-3 rounded-nb-sm px-2 py-2 text-left text-sm font-medium text-nb-black hover:bg-nb-gray-50"
-            >
-              <span>{t(labelKey)}</span>
-              <Switch on={layers[key]} />
-            </button>
-          </li>
-        ))}
+        {LAYER_TOGGLES.map(({ key, labelKey }) => {
+          // Tim only groups worker pins, so it does nothing while Petugas is off
+          // — grey it out (and hint why) rather than let it toggle to no effect.
+          const isDisabled = key === 'teamBubbles' && !layers.petugas;
+          return (
+            <li key={key}>
+              <button
+                type="button"
+                onClick={() => onToggleLayer(key)}
+                aria-pressed={layers[key]}
+                disabled={isDisabled}
+                title={isDisabled ? t('monitoring:layers.teamNeedsPetugas') : undefined}
+                className={cn(
+                  'flex w-full items-center justify-between gap-3 rounded-nb-sm px-2 py-2 text-left text-sm font-medium text-nb-black hover:bg-nb-gray-50',
+                  isDisabled && 'cursor-not-allowed opacity-40 hover:bg-transparent'
+                )}
+              >
+                <span>{t(labelKey)}</span>
+                <Switch on={layers[key]} />
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );

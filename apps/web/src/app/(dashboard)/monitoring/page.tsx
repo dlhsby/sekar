@@ -518,36 +518,38 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, boundaries]);
 
-  // Kawasan options — cascade: EMPTY until a rayon is picked, then the kawasan
-  // that belong to that rayon (a rayon like Taman Aktif has none → stays empty,
-  // and the panel disables the select).
-  const regionOptions = useMemo<RayonOption[]>(() => {
-    if (filters.rayonId === 'all') return [];
-    const map = new Map<string, string>();
-    for (const w of workers) {
-      if (w.rayon_id !== filters.rayonId) continue;
-      if (w.region_id && w.region_name && !map.has(w.region_id)) map.set(w.region_id, w.region_name);
-    }
-    return [...map.entries()]
-      .map(([id, name]) => ({ id, name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [workers, filters.rayonId]);
+  // Full geo hierarchy for the FILTER-selected rayon (independent of the current
+  // view + of who is on shift): its kawasan (`region` aggregate) + its lokasi
+  // (`rayon` aggregate). Reuses the monitoring aggregate — perm-safe for every
+  // monitoring role, and react-query dedupes with the view's own fetches when
+  // the ids align. Gated on a concrete rayon selection (the cascade root).
+  const filterRayonId = filters.rayonId !== 'all' ? filters.rayonId : undefined;
+  const filterKawasanAgg = useMonitoringAggregate('region', filterRayonId, canMonitor && !!filterRayonId);
+  const filterLokasiAgg = useMonitoringAggregate('rayon', filterRayonId, canMonitor && !!filterRayonId);
 
-  // Lokasi options — cascade: EMPTY until a rayon is picked; then all lokasi in
-  // the rayon (direct + under-kawasan), narrowed to a single kawasan once one is
-  // selected.
-  const locationOptions = useMemo<RayonOption[]>(() => {
-    if (filters.rayonId === 'all') return [];
-    const map = new Map<string, string>();
-    for (const w of workers) {
-      if (w.rayon_id !== filters.rayonId) continue;
-      if (filters.regionId !== 'all' && w.region_id !== filters.regionId) continue;
-      if (w.location_id && w.location_name && !map.has(w.location_id)) map.set(w.location_id, w.location_name);
-    }
-    return [...map.entries()]
-      .map(([id, name]) => ({ id, name }))
+  // Kawasan options — EMPTY until a rayon is picked, then ALL kawasan in that
+  // rayon (even ones with no live worker). A rayon like Taman Aktif has none →
+  // stays empty and the panel disables the select.
+  const regionOptions = useMemo<RayonOption[]>(() => {
+    if (!filterRayonId) return [];
+    return (filterKawasanAgg.data?.nodes ?? [])
+      .map((n) => ({ id: n.id, name: n.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [workers, filters.rayonId, filters.regionId]);
+  }, [filterRayonId, filterKawasanAgg.data]);
+
+  // Lokasi options — EMPTY until a rayon is picked; then ALL lokasi in the rayon
+  // (direct + under-kawasan), narrowed to a single kawasan's lokasi (by the
+  // node's region_id) once a kawasan is selected.
+  const locationOptions = useMemo<RayonOption[]>(() => {
+    if (!filterRayonId) return [];
+    return (filterLokasiAgg.data?.nodes ?? [])
+      .filter((n) => filters.regionId === 'all' || n.region_id === filters.regionId)
+      .map((n) => ({ id: n.id, name: n.name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [filterRayonId, filters.regionId, filterLokasiAgg.data]);
+
+  const regionLoading = !!filterRayonId && filterKawasanAgg.isLoading;
+  const locationLoading = !!filterRayonId && filterLokasiAgg.isLoading;
 
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
@@ -570,15 +572,29 @@ export default function MonitoringPage() {
   // when the entity leaves the live snapshot (WS churn) — so a select never
   // silently filters to nothing while showing a blank value.
   useEffect(() => {
-    if (workers.length === 0) return; // don't reset during the initial load
     const patch: Partial<MonitoringFilterState> = {};
-    if (filters.regionId !== 'all' && !regionOptions.some((o) => o.id === filters.regionId)) {
+    // Skip while the kawasan/lokasi hierarchy is still loading — its options are
+    // transiently empty then, and resetting would drop a still-valid selection.
+    if (
+      !regionLoading &&
+      filters.regionId !== 'all' &&
+      !regionOptions.some((o) => o.id === filters.regionId)
+    ) {
       patch.regionId = 'all';
     }
-    if (filters.locationId !== 'all' && !locationOptions.some((o) => o.id === filters.locationId)) {
+    if (
+      !locationLoading &&
+      filters.locationId !== 'all' &&
+      !locationOptions.some((o) => o.id === filters.locationId)
+    ) {
       patch.locationId = 'all';
     }
-    if (filters.teamId !== 'all' && !teamOptions.some((o) => o.id === filters.teamId)) {
+    // Team stays snapshot-derived; only reset once workers have loaded.
+    if (
+      workers.length > 0 &&
+      filters.teamId !== 'all' &&
+      !teamOptions.some((o) => o.id === filters.teamId)
+    ) {
       patch.teamId = 'all';
     }
     if (Object.keys(patch).length > 0) setFilters((prev) => ({ ...prev, ...patch }));
@@ -587,6 +603,8 @@ export default function MonitoringPage() {
     regionOptions,
     locationOptions,
     teamOptions,
+    regionLoading,
+    locationLoading,
     filters.regionId,
     filters.locationId,
     filters.teamId,
@@ -622,14 +640,21 @@ export default function MonitoringPage() {
     });
   }, [workers, filters]);
 
+  // The list shows every search match and DIMS the ones outside the geo
+  // spotlight (parity with the map, which dims rather than hides). The geo match
+  // only drives the "matched" count + which rows dim, not which rows render.
   const filteredNodes = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
-    return listNodes.filter(
-      (n) =>
-        (!q || n.name.toLowerCase().includes(q)) &&
-        (activeGeoId == null || n.id === activeGeoId)
-    );
-  }, [listNodes, filters.search, activeGeoId]);
+    return q ? listNodes.filter((n) => n.name.toLowerCase().includes(q)) : listNodes;
+  }, [listNodes, filters.search]);
+
+  const nodeMatchedCount = useMemo(
+    () =>
+      activeGeoId == null
+        ? filteredNodes.length
+        : filteredNodes.filter((n) => n.id === activeGeoId).length,
+    [filteredNodes, activeGeoId]
+  );
 
   const filteredAreaSummaries = useMemo(() => {
     if (filters.rayonId === 'all') return areaSummaries;
@@ -672,7 +697,7 @@ export default function MonitoringPage() {
       toast.error(t('monitoring:page.refreshError'));
     }
   };
-  const listCount = showWorkers ? filteredWorkers.length : filteredNodes.length;
+  const listCount = showWorkers ? filteredWorkers.length : nodeMatchedCount;
 
   if (authLoading || !user) {
     return (
@@ -819,6 +844,8 @@ export default function MonitoringPage() {
             rayonOptions={rayonOptions}
             regionOptions={regionOptions}
             locationOptions={locationOptions}
+            regionLoading={regionLoading}
+            locationLoading={locationLoading}
             roleOptions={roleOptions}
             teamOptions={teamOptions}
             total={showWorkers ? workers.length : listNodes.length}
@@ -868,6 +895,7 @@ export default function MonitoringPage() {
           ) : (
             <AggregateNodeList
               nodes={filteredNodes}
+              activeGeoId={activeGeoId}
               onDrill={onDrillListNode}
               className="min-h-0 flex-1 shadow-nb-lg"
             />
