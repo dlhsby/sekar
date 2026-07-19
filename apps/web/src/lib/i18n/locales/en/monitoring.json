@@ -56,6 +56,7 @@
   "status": {
     "active": "Active",
     "offline": "Offline",
+    "inactive": "Inactive",
     "absent": "Absent",
     "adhoc": "Off-schedule"
   },

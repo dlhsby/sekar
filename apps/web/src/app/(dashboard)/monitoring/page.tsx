@@ -117,7 +117,7 @@ export default function MonitoringPage() {
   type PresenceKey = 'aktif' | 'tidak_aktif' | 'tidak_hadir' | 'adhoc';
   const PRESENCE_PILLS: { key: PresenceKey; label: string; color: string }[] = [
     { key: 'aktif', label: t('monitoring:status.active'), color: 'var(--color-status-active)' },
-    { key: 'tidak_aktif', label: t('monitoring:status.offline'), color: 'var(--color-status-idle)' },
+    { key: 'tidak_aktif', label: t('monitoring:status.inactive'), color: 'var(--color-status-idle)' },
     { key: 'tidak_hadir', label: t('monitoring:status.absent'), color: 'var(--color-status-missing)' },
     { key: 'adhoc', label: t('monitoring:status.adhoc'), color: 'var(--color-status-offline)' },
   ];
