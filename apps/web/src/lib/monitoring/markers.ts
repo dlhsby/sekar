@@ -215,11 +215,19 @@ export function pinMarker(
   return pinMarkerFromPath(glyph ? (ALL_GLYPHS[glyph] ?? null) : null, opts);
 }
 
-/** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path). */
-function pinMarkerFromPath(
-  glyphPath: string | null,
-  opts: { outline: string; fill?: string; fillOpacity?: number; count?: number; big?: boolean; dashed?: boolean }
-): google.maps.Icon {
+export interface PinOpts {
+  outline: string;
+  fill?: string;
+  fillOpacity?: number;
+  count?: number;
+  big?: boolean;
+  dashed?: boolean;
+}
+
+/** Shared SVG-string builder for the unified pin — the single source of truth for
+ *  how a pin looks, consumed by BOTH the legacy `google.maps.Icon` builder (data-URI)
+ *  and the `AdvancedMarkerElement` DOM builder (inline SVG). */
+function pinSvg(glyphPath: string | null, opts: PinOpts): { svg: string; w: number; h: number } {
   const fill = opts.fill ?? WHITE;
   const fillOpacity = opts.fillOpacity ?? 1;
   const { outline } = opts;
@@ -239,12 +247,95 @@ function pinMarkerFromPath(
         `<text x="39" y="14" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="800" fill="${WHITE}">${count}</text>`
       : '') +
     `</svg>`;
+  return { svg, w, h };
+}
+
+/** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path). */
+function pinMarkerFromPath(glyphPath: string | null, opts: PinOpts): google.maps.Icon {
+  const { svg, w, h } = pinSvg(glyphPath, opts);
   return {
     url: svgUrl(svg),
     scaledSize: new google.maps.Size(w, h),
     anchor: new google.maps.Point(w / 2, Math.round(h * 0.95)),
     labelOrigin: new google.maps.Point(w / 2, h + 2),
   };
+}
+
+/** A name label rendered beneath an AdvancedMarker pin (baked into the content DOM
+ *  so it rides with the marker; the halo classes match the old Google labels). */
+export interface PinLabel {
+  text: string;
+  /** `node-marker-label` (health-tinted) or `worker-marker-label` (neutral). */
+  className: string;
+  /** Inline color (health tint); the class supplies only the white halo + font. */
+  color?: string;
+}
+
+/**
+ * DOM builder for the unified pin — the `AdvancedMarkerElement` equivalent of
+ * {@link pinMarkerFromPath}. Returns a container whose bottom-center (the pin tip)
+ * is what Advanced Markers anchor to the LatLng; the optional name label is
+ * absolutely positioned BELOW the pin so it never shifts that anchor. Same SVG as
+ * the legacy icon, so the two render paths look identical.
+ */
+function pinElementFromPath(
+  glyphPath: string | null,
+  opts: PinOpts,
+  label?: PinLabel
+): HTMLElement {
+  const { svg, w, h } = pinSvg(glyphPath, opts);
+  const el = document.createElement('div');
+  el.className = 'am-marker';
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  el.innerHTML = svg;
+  const svgEl = el.firstElementChild as HTMLElement | null;
+  if (svgEl) svgEl.style.display = 'block';
+  if (label) {
+    const lab = document.createElement('div');
+    lab.className = `am-label ${label.className}`;
+    lab.textContent = label.text;
+    if (label.color) lab.style.color = label.color;
+    el.appendChild(lab);
+  }
+  return el;
+}
+
+/** {@link pinMarker} as an AdvancedMarker DOM element (glyph resolved by name). */
+export function pinElement(glyph: string | null, opts: PinOpts, label?: PinLabel): HTMLElement {
+  return pinElementFromPath(glyph ? (ALL_GLYPHS[glyph] ?? null) : null, opts, label);
+}
+
+/** {@link workerPinIcon} as an AdvancedMarker DOM element. */
+export function workerPinElement(
+  role: string,
+  opts: {
+    activity: 'aktif' | 'tidak_aktif';
+    outside?: boolean;
+    adHoc?: boolean;
+    selected?: boolean;
+    markerIcon?: string | null;
+  },
+  label?: PinLabel
+): HTMLElement {
+  const glyphPath = resolveWorkerGlyph(role, opts.markerIcon);
+  const outline = opts.adHoc ? ADHOC : ACTIVITY_COLORS[opts.activity];
+  return pinElementFromPath(glyphPath, { outline, dashed: opts.outside, big: opts.selected }, label);
+}
+
+/** {@link teamMarkerIcon} as an AdvancedMarker DOM element. */
+export function teamMarkerElement(
+  teamColor: string | null,
+  memberCount: number,
+  glyph: string | null | undefined,
+  label?: PinLabel
+): HTMLElement {
+  const color = teamColor ?? TEAM_DEFAULT;
+  return pinElement(
+    glyph ?? entityDefaultGlyph('team'),
+    { outline: color, fill: color, fillOpacity: 0.9, count: memberCount, big: true },
+    label
+  );
 }
 
 /** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → leaf, team → droplets). */

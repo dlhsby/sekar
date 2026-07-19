@@ -59,13 +59,24 @@ jest.mock('@react-google-maps/api', () => ({
     return <div data-testid="gmap">{children}</div>;
   },
   Polygon: () => <div data-testid="polygon" />,
-  Marker: ({ onClick }: { onClick?: () => void }) => (
-    <button data-testid="marker" onClick={() => onClick?.()} />
-  ),
+  Polyline: () => <div data-testid="polyline" />,
   InfoWindow: ({ children }: { children?: React.ReactNode }) => (
     <div data-testid="infowindow">{children}</div>
   ),
+  useGoogleMap: () => fakeMap,
 }));
+
+// The node/worker layers + current-node pin now render AdvancedMarker; mock it to
+// a clickable button so the existing marker-count/click assertions still apply.
+jest.mock('@/components/maps/AdvancedMarker', () => ({
+  AdvancedMarker: ({ onClick }: { onClick?: () => void }) => (
+    <button data-testid="marker" onClick={() => onClick?.()} />
+  ),
+}));
+
+// AdvancedMarkers need a vector Map ID; stub the resolver so no react-query
+// provider is required in this unit test.
+jest.mock('@/lib/api/config', () => ({ useMapId: () => 'test-map-id' }));
 
 beforeAll(() => {
   (global as unknown as { google: unknown }).google = {
