@@ -326,7 +326,8 @@
   },
   "breadcrumb": {
     "label": "Navigasi lokasi",
-    "city": "Surabaya"
+    "city": "Surabaya",
+    "statsLegend": "Ringkasan kehadiran"
   },
   "teamDetail": {
     "title": "Anggota Tim"

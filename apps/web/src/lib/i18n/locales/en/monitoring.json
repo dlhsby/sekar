@@ -326,7 +326,8 @@
   },
   "breadcrumb": {
     "label": "Location breadcrumb",
-    "city": "Surabaya"
+    "city": "Surabaya",
+    "statsLegend": "Presence summary"
   },
   "teamDetail": {
     "title": "Team Members"

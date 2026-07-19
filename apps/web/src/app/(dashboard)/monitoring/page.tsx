@@ -165,6 +165,7 @@ export default function MonitoringPage() {
   const [listOpen, setListOpen] = useState(false);
   const [areaDetailOpen, setAreaDetailOpen] = useState(false);
   const [teamDetail, setTeamDetail] = useState<TeamGroup | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false); // tappable stat legend (mobile)
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
   const [focusTarget, setFocusTarget] = useState<{
     lat: number;
@@ -888,42 +889,76 @@ export default function MonitoringPage() {
             className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm"
             aria-label={t('monitoring:breadcrumb.label')}
           >
-            {crumbs.map((c, i) => (
-              <span key={c.key} className="flex shrink-0 items-center gap-1">
-                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
-                {c.onClick ? (
-                  <button
-                    type="button"
-                    onClick={c.onClick}
-                    className="max-w-[8rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
-                  >
-                    {c.label}
-                  </button>
-                ) : (
-                  <span className="max-w-[10rem] truncate font-bold text-nb-black" aria-current="page">
-                    {c.label}
-                  </span>
-                )}
-              </span>
-            ))}
+            {/* Mobile (<sm): current level only — the ‹ back handles going up, so
+                intermediate crumbs (and their truncation) are dropped for space. */}
+            <span className="truncate font-bold text-nb-black sm:hidden" aria-current="page">
+              {crumbs[crumbs.length - 1]?.label}
+            </span>
+            {/* Desktop (≥sm): the full clickable trail. */}
+            <span className="hidden items-center gap-1 sm:flex">
+              {crumbs.map((c, i) => (
+                <span key={c.key} className="flex shrink-0 items-center gap-1">
+                  {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
+                  {c.onClick ? (
+                    <button
+                      type="button"
+                      onClick={c.onClick}
+                      className="max-w-[8rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
+                    >
+                      {c.label}
+                    </button>
+                  ) : (
+                    <span className="max-w-[10rem] truncate font-bold text-nb-black" aria-current="page">
+                      {c.label}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </span>
           </nav>
-          {/* Compact presence stats — pinned right of the breadcrumb (was a whole
-              extra row). Dot + number always; short label on ≥sm. */}
-          <div
-            className="flex shrink-0 items-center gap-1 border-l-2 border-nb-gray-200 pl-1.5"
-            aria-live="polite"
-          >
-            {PRESENCE_PILLS.map((p) => (
-              <span
-                key={p.key}
-                title={p.label}
-                className="flex items-center gap-1 rounded-nb-sm px-1 py-0.5 text-xs font-semibold text-nb-gray-700"
+          {/* Compact presence stats — pinned right of the breadcrumb (replaces a
+              whole extra row). Dot + number always; short label on ≥md. Tapping
+              opens a labeled legend (the only way to read the labels on mobile,
+              where they're hidden). */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setStatsOpen((v) => !v)}
+              aria-expanded={statsOpen}
+              aria-label={t('monitoring:breadcrumb.statsLegend')}
+              className="flex items-center gap-1 border-l-2 border-nb-gray-200 pl-1.5"
+              aria-live="polite"
+            >
+              {PRESENCE_PILLS.map((p) => (
+                <span
+                  key={p.key}
+                  title={p.label}
+                  className="flex items-center gap-1 rounded-nb-sm px-1 py-0.5 text-xs font-semibold text-nb-gray-700"
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                  <span className="hidden md:inline">{p.label}</span>
+                  <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+                </span>
+              ))}
+            </button>
+            {statsOpen && (
+              <div
+                className="absolute right-0 top-full z-40 mt-1 w-44 rounded-nb-md border-2 border-nb-black bg-nb-white p-2 shadow-nb-lg"
+                role="dialog"
               >
-                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
-                <span className="hidden md:inline">{p.label}</span>
-                <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
-              </span>
-            ))}
+                <ul className="space-y-1">
+                  {PRESENCE_PILLS.map((p) => (
+                    <li key={p.key} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="flex items-center gap-1.5 font-semibold text-nb-gray-700">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                        {p.label}
+                      </span>
+                      <span className="font-mono font-bold tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
