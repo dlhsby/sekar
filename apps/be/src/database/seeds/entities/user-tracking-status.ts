@@ -137,6 +137,11 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
           isWithinArea = false;
       }
 
+      // Map the demo scenario to a valid tracking status (3-state model — the
+      // check constraint only allows active/offline/absent). Inside/outside is a
+      // separate axis (is_within_area), so an "outside" worker is still active.
+      const dbStatus = status === 'active' || status === 'outside_area' ? 'active' : 'offline';
+
       // Build INSERT query for this user's tracking status
       const latValue = lastLocationAtExpr === 'NULL' ? 'NULL' : lat.toString();
       const lngValue = lastLocationAtExpr === 'NULL' ? 'NULL' : lng.toString();
@@ -155,7 +160,7 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
         last_location_at = EXCLUDED.last_location_at,
         is_within_area = EXCLUDED.is_within_area,
         updated_at = NOW()`,
-        [user.id, status, user.location_id, user.rayon_id, isWithinArea],
+        [user.id, dbStatus, user.location_id, user.rayon_id, isWithinArea],
       );
     }
 
