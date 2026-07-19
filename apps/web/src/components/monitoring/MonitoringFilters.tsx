@@ -47,7 +47,6 @@ export type FilterOption = RayonOption;
 export interface MonitoringFiltersProps {
   filters: MonitoringFilterState;
   onChange: (next: MonitoringFilterState) => void;
-  statusCounts: Record<TrackingStatus, number>;
   rayonOptions: RayonOption[];
   regionOptions: FilterOption[];
   locationOptions: FilterOption[];
@@ -90,7 +89,6 @@ function Field({
 export function MonitoringFilters({
   filters,
   onChange,
-  statusCounts,
   rayonOptions,
   regionOptions,
   locationOptions,
@@ -205,7 +203,6 @@ export function MonitoringFilters({
                   aria-hidden="true"
                 />
                 {statusLabels[status]}
-                <span className="font-mono tabular-nums opacity-70">{statusCounts[status] ?? 0}</span>
               </button>
             );
           })}

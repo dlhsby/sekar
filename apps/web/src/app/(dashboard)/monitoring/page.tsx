@@ -21,7 +21,6 @@ import {
   useMonitoringSnapshot,
   useMonitoringAggregate,
   type AggregateNode,
-  type AggregateStatusCounts,
 } from '@/lib/api/monitoring-v2';
 import { useBoundaries, useLocationHistory } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
@@ -77,23 +76,6 @@ const STATUS_DOT: Record<TrackingStatus, string> = {
   offline: 'var(--color-status-idle)',
   absent: 'var(--color-status-missing)',
 };
-
-const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
-  active: 0,
-  offline: 0,
-  absent: 0,
-};
-
-function aggregateToStatusCounts(
-  totals: AggregateStatusCounts | undefined
-): Record<TrackingStatus, number> {
-  if (!totals) return { ...EMPTY_STATUS_COUNTS };
-  return {
-    active: totals.active,
-    offline: totals.offline,
-    absent: totals.absent,
-  };
-}
 
 /** An aggregate node → a map marker (skips nodes without a center point). */
 function aggToMarker(n: AggregateNode): NodeMarker | null {
@@ -551,28 +533,6 @@ export default function MonitoringPage() {
     return { totals, presence_totals, roster_totals };
   }, [scope, view.id, regionAreasAgg.data]);
 
-  const statusCounts = useMemo(() => {
-    if (showWorkers) {
-      const counts = { ...EMPTY_STATUS_COUNTS };
-      for (const w of workers) {
-        const s = w.status as TrackingStatus;
-        if (s in counts) counts[s] += 1;
-      }
-      return counts;
-    }
-    // Above area scope, derive the filter chips from the SAME presence/roster
-    // model as the status-bar pills (scheduled-active / scheduled-offline /
-    // roster not-clocked-in) so the two never disagree for the same label.
-    const p = regionTotals?.presence_totals ?? activeAgg.data?.presence_totals;
-    const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
-    return aggregateToStatusCounts({
-      active: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
-      offline: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
-      absent: r?.tidak_hadir ?? 0,
-      outside_area: (p?.aktif.luar ?? 0) + (p?.tidak_aktif.luar ?? 0),
-    });
-  }, [showWorkers, regionTotals, activeAgg.data, workers]);
-
   // Presence-model counts for the top pills. At area scope, derive from the
   // worker list (scheduled → aktif/tidak-aktif; unscheduled → ad-hoc); above
   // area, read the aggregate's presence + roster totals.
@@ -916,11 +876,24 @@ export default function MonitoringPage() {
               ))}
             </span>
           </nav>
-          {/* Compact presence stats — pinned right of the breadcrumb (replaces a
-              whole extra row). Dot + number always; short label on ≥md. Tapping
-              opens a labeled legend (the only way to read the labels on mobile,
-              where they're hidden). */}
-          <div className="relative shrink-0">
+          {/* Presence stats, pinned right of the breadcrumb (replaces a whole
+              extra row). Desktop (≥md) has room → labels + counts + timestamp
+              inline, no tap. Mobile → compact dot+number chips that tap open a
+              labeled legend (the only way to read the labels there). */}
+          <div
+            className="hidden shrink-0 items-center gap-2 border-l-2 border-nb-gray-200 pl-2 md:flex"
+            aria-live="polite"
+          >
+            {PRESENCE_PILLS.map((p) => (
+              <span key={p.key} className="flex items-center gap-1 text-xs font-semibold text-nb-gray-700">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                {p.label}
+                <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+              </span>
+            ))}
+            <span className="whitespace-nowrap text-[10px] text-nb-gray-400">{updatedLabel}</span>
+          </div>
+          <div className="relative shrink-0 md:hidden">
             <button
               type="button"
               onClick={() => setStatsOpen((v) => !v)}
@@ -936,7 +909,6 @@ export default function MonitoringPage() {
                   className="flex items-center gap-1 rounded-nb-sm px-1 py-0.5 text-xs font-semibold text-nb-gray-700"
                 >
                   <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
-                  <span className="hidden md:inline">{p.label}</span>
                   <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
                 </span>
               ))}
@@ -1038,7 +1010,6 @@ export default function MonitoringPage() {
           <MonitoringFilters
             filters={filters}
             onChange={setFilters}
-            statusCounts={statusCounts}
             rayonOptions={rayonOptions}
             regionOptions={regionOptions}
             locationOptions={locationOptions}

@@ -33,7 +33,6 @@ const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
   const props: MonitoringFiltersProps = {
     filters: baseFilters,
     onChange: jest.fn(),
-    statusCounts: { active: 0, offline: 0, absent: 0 },
     rayonOptions: [{ id: 'r1', name: 'Rayon 1' }],
     regionOptions: [],
     locationOptions: [],
@@ -108,7 +107,6 @@ describe('MonitoringFilters cascade', () => {
       <MonitoringFilters
         filters={{ ...baseFilters, jenis: 'team' }}
         onChange={jest.fn()}
-        statusCounts={{ active: 0, offline: 0, absent: 0 }}
         rayonOptions={[{ id: 'r1', name: 'Rayon 1' }]}
         regionOptions={[]}
         locationOptions={[]}
