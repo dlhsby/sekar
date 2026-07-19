@@ -9,9 +9,11 @@ import { AppThrottlerGuard } from './app-throttler.guard';
 describe('AppThrottlerGuard', () => {
   const SYS: Record<string, number> = {
     'ratelimit.login_per_min': 7,
+    'auth.login_throttle_ttl_ms': 45000,
     'auth.change_password_throttle_max': 2,
     'auth.change_password_throttle_ttl_ms': 30000,
     'ratelimit.global_per_min': 250,
+    'ratelimit.global_ttl_ms': 120000,
   };
 
   const makeReq = (handlerName: string, limit: number, ttl = 60000): ThrottlerRequest =>
@@ -33,7 +35,7 @@ describe('AppThrottlerGuard', () => {
     (guard as unknown as { systemConfig: unknown }).systemConfig = {
       getNumber: (k: string, def: number) => SYS[k] ?? def,
     };
-    (guard as unknown as { throttlers: unknown }).throttlers = [{ limit: 100 }];
+    (guard as unknown as { throttlers: unknown }).throttlers = [{ limit: 100, ttl: 60000 }];
     superSpy = jest
       .spyOn(
         ThrottlerGuard.prototype as unknown as { handleRequest: () => Promise<boolean> },
@@ -48,9 +50,9 @@ describe('AppThrottlerGuard', () => {
       guard as unknown as { handleRequest: (r: ThrottlerRequest) => Promise<boolean> }
     ).handleRequest(req);
 
-  it('substitutes the login limit by handler name', async () => {
+  it('substitutes the login limit + window by handler name', async () => {
     await callHandle(makeReq('login', 5));
-    expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 7 }));
+    expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 7, ttl: 45000 }));
   });
 
   it('substitutes change-password limit + ttl by handler name', async () => {
@@ -58,13 +60,20 @@ describe('AppThrottlerGuard', () => {
     expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 2, ttl: 30000 }));
   });
 
-  it('substitutes the global limit when the incoming limit is the module default', async () => {
-    await callHandle(makeReq('listUsers', 100));
-    expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 250 }));
+  it('substitutes the global limit + window when the incoming values are the module defaults', async () => {
+    await callHandle(makeReq('listUsers', 100, 60000));
+    expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 250, ttl: 120000 }));
   });
 
   it('does NOT clobber a route-level @Throttle (limit differs from the module default)', async () => {
     await callHandle(makeReq('refresh', 10));
     expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 10 }));
+  });
+
+  it('guards limit and window independently (route overrides window only)', async () => {
+    // A route that changed the TTL but kept the default limit still gets the
+    // runtime global limit, and its custom window is left untouched.
+    await callHandle(makeReq('listUsers', 100, 5000));
+    expect(superSpy).toHaveBeenCalledWith(expect.objectContaining({ limit: 250, ttl: 5000 }));
   });
 });
