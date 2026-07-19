@@ -506,7 +506,19 @@ export default function MonitoringPage() {
 
   }, [showWorkers, workers, regionTotals, activeAgg.data]);
 
+  // ALL rayons from the city aggregate (not just those with live workers), so
+  // the cascade root lists every rayon. Fetched independently of the view scope
+  // (react-query dedupes with the city-scope view fetch); falls back to the
+  // snapshot/boundaries until it loads.
+  const allRayonsAgg = useMonitoringAggregate('city', undefined, canMonitor);
   const rayonOptions = useMemo<RayonOption[]>(() => {
+    const nodes = allRayonsAgg.data?.nodes ?? [];
+    if (nodes.length > 0) {
+      return nodes
+        .map((n) => ({ id: n.id, name: n.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // Fallback before the aggregate resolves.
     const map = new Map<string, string>();
     for (const w of workers) {
       if (w.rayon_id && w.rayon_name && !map.has(w.rayon_id)) map.set(w.rayon_id, w.rayon_name);
@@ -517,7 +529,7 @@ export default function MonitoringPage() {
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [workers, boundaries]);
+  }, [allRayonsAgg.data, workers, boundaries]);
 
   // Full geo hierarchy for the FILTER-selected rayon (independent of the current
   // view + of who is on shift): its kawasan (`region` aggregate) + its lokasi
