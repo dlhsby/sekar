@@ -346,5 +346,9 @@
   },
   "areaDrawer": {
     "rayonFallback": "Rayon —"
+  },
+  "breadcrumb": {
+    "label": "Navigasi lokasi",
+    "city": "Surabaya"
   }
 }

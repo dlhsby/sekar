@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, Settings } from 'lucide-react';
+import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
@@ -348,6 +348,64 @@ export default function MonitoringPage() {
     }
     // city is the top level — no drill-up above the rayons.
   };
+
+  // Jump straight back to the city (Surabaya) view — used by the breadcrumb root.
+  const resetToCity = () => {
+    setSelectedId(null);
+    setView({ scope: 'city' });
+    focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
+  };
+
+  // Resolve rayon/kawasan/lokasi names from the loaded boundaries so the
+  // breadcrumb can label each drill level (view only carries the current name).
+  const geoNames = useMemo(() => {
+    const rayon = new Map<string, string>();
+    const region = new Map<string, string>();
+    const area = new Map<string, string>();
+    for (const r of boundaries?.rayons ?? []) {
+      rayon.set(r.id, r.name);
+      for (const k of r.regions ?? []) region.set(k.id, k.name);
+      for (const a of r.areas ?? []) area.set(a.id, a.name);
+    }
+    return { rayon, region, area };
+  }, [boundaries]);
+
+  // Breadcrumb trail: Surabaya › Rayon › Kawasan › Lokasi. Each ancestor is a
+  // button that drills back to that level; the current (last) crumb is static.
+  const crumbs = useMemo<{ key: string; label: string; onClick?: () => void }[]>(() => {
+    const items: { key: string; label: string; onClick?: () => void }[] = [];
+    items.push({
+      key: 'city',
+      label: t('monitoring:breadcrumb.city'),
+      onClick: scope === 'city' ? undefined : resetToCity,
+    });
+    const rid = scope === 'rayon' ? view.id : view.rayonId;
+    if (rid) {
+      const name = geoNames.rayon.get(rid) ?? (scope === 'rayon' ? view.name : undefined) ?? t('common:entities.rayon');
+      items.push({
+        key: 'rayon',
+        label: name,
+        onClick: scope === 'rayon' ? undefined : () => drillToRayon(rid, name),
+      });
+    }
+    const kid = scope === 'region' ? view.id : scope === 'area' ? view.regionId : undefined;
+    if (kid) {
+      const name = geoNames.region.get(kid) ?? (scope === 'region' ? view.name : undefined) ?? t('monitoring:filters.kawasanLabel');
+      items.push({
+        key: 'region',
+        label: name,
+        onClick: scope === 'region' ? undefined : () => drillToRegion(kid, name, view.rayonId),
+      });
+    }
+    if (scope === 'area') {
+      items.push({
+        key: 'area',
+        label: geoNames.area.get(view.id ?? '') ?? view.name ?? t('monitoring:filters.lokasiLabel'),
+      });
+    }
+    return items;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, view, geoNames, t]);
 
   // The current node's own pin (rayon at rayon scope / area at area scope) — the
   // detail-opener. Coords come from the drill; fall back to the aggregate node /
@@ -798,21 +856,47 @@ export default function MonitoringPage() {
 
       {/* Top overlay: breadcrumb + search + settings + filter + refresh + status pills */}
       <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2">
-        <div className="pointer-events-none flex items-center gap-2">
-          {/* Back / breadcrumb */}
+        {/* Row 1 — full-width breadcrumb so the current location is always visible
+            (esp. mobile, where the back button used to be an unlabeled icon). Back
+            steps up one level; each ancestor crumb jumps straight to that level. */}
+        <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1.5 shadow-nb-sm backdrop-blur-sm">
           {canGoBack && (
             <button
               type="button"
               onClick={goBack}
               aria-label={t('monitoring:page.backLabel')}
-              className="pointer-events-auto flex h-11 items-center gap-1 rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 text-sm font-bold text-nb-black shadow-nb-sm hover:bg-nb-gray-50"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-nb-sm text-nb-black hover:bg-nb-gray-100"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="hidden max-w-[8rem] truncate sm:inline">
-                {view.name ?? t('monitoring:page.backLabel')}
-              </span>
             </button>
           )}
+          <nav
+            className="flex min-w-0 items-center gap-1 whitespace-nowrap text-sm"
+            aria-label={t('monitoring:breadcrumb.label')}
+          >
+            {crumbs.map((c, i) => (
+              <span key={c.key} className="flex shrink-0 items-center gap-1">
+                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
+                {c.onClick ? (
+                  <button
+                    type="button"
+                    onClick={c.onClick}
+                    className="max-w-[9rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
+                  >
+                    {c.label}
+                  </button>
+                ) : (
+                  <span className="max-w-[12rem] truncate font-bold text-nb-black" aria-current="page">
+                    {c.label}
+                  </span>
+                )}
+              </span>
+            ))}
+          </nav>
+        </div>
+
+        {/* Row 2 — search + tools */}
+        <div className="pointer-events-none flex items-center gap-2">
           {/* Search (recent + grouped results + click-to-locate) */}
           <MonitoringSearch
             workers={workers}

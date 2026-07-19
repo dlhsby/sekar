@@ -346,5 +346,9 @@
   },
   "areaDrawer": {
     "rayonFallback": "District —"
+  },
+  "breadcrumb": {
+    "label": "Location breadcrumb",
+    "city": "Surabaya"
   }
 }
