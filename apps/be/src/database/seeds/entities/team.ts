@@ -9,14 +9,17 @@ import type { SeedContext } from '../lib/context';
  */
 export async function seedTeams(ctx: SeedContext): Promise<void> {
   ctx.log('🧑‍🤝‍🧑 Seeding Team Categories…');
+  // A distinct glyph per crew type (all real render-path glyphs): watering →
+  // droplets, maintenance → wrench, planting → sprout, sweeping → flower.
   await ctx.qr.query(
-    `INSERT INTO team_categories (name, marker_color) VALUES
-       ('Perawatan',  '#7FBC8C'),
-       ('Penyiraman', '#69D2E7'),
-       ('Penanaman',  '#15803D'),
-       ('Penyapuan',  '#E3A018')
+    `INSERT INTO team_categories (name, marker_color, marker_icon) VALUES
+       ('Perawatan',  '#7FBC8C', 'wrench'),
+       ('Penyiraman', '#69D2E7', 'droplets'),
+       ('Penanaman',  '#15803D', 'sprout'),
+       ('Penyapuan',  '#E3A018', 'flower')
      ON CONFLICT (name) DO UPDATE SET
-       marker_color = COALESCE(team_categories.marker_color, EXCLUDED.marker_color)`,
+       marker_color = COALESCE(team_categories.marker_color, EXCLUDED.marker_color),
+       marker_icon = COALESCE(team_categories.marker_icon, EXCLUDED.marker_icon)`,
   );
   ctx.log('  ✓ Seeded 4 team categories (marker + bubble colour)');
 }
