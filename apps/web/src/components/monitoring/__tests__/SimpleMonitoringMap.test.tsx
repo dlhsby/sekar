@@ -187,6 +187,39 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.queryAllByTestId('polygon')).toHaveLength(0);
   });
 
+  it('at region scope draws ONLY the drilled kawasan boundary (others hidden)', () => {
+    const poly = (n: number) => ({
+      type: 'Polygon' as const,
+      coordinates: [[[112.74 + n, -7.28], [112.75 + n, -7.28], [112.75 + n, -7.29], [112.74 + n, -7.28]]],
+    });
+    const withRegions: BoundariesResponse = {
+      generated_at: '2026-01-01T00:00:00Z',
+      rayons: [
+        {
+          id: 'r1', name: 'Rayon 1', color: null, boundary_polygon: poly(0),
+          center_lat: -7.29, center_lng: 112.75, area_count: 0,
+          is_understaffed: false, understaffed_area_count: 0,
+          regions: [
+            { id: 'k1', name: 'Kawasan 1', color: null, boundary_polygon: poly(0), center_lat: -7.28, center_lng: 112.74 },
+            { id: 'k2', name: 'Kawasan 2', color: null, boundary_polygon: poly(0.1), center_lat: -7.28, center_lng: 112.84 },
+          ],
+          areas: [],
+        },
+      ],
+    };
+    render(
+      <SimpleMonitoringMap
+        showWorkers={false}
+        scope="region"
+        regionId="k1"
+        workers={[]}
+        boundaries={withRegions}
+      />
+    );
+    // rayon outline (1) + only kawasan k1 (1); k2 is hidden = 2 polygons total.
+    expect(screen.getAllByTestId('polygon')).toHaveLength(2);
+  });
+
   it('node view renders one marker per node and no area pins', () => {
     render(
       <SimpleMonitoringMap

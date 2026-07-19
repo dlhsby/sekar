@@ -712,9 +712,18 @@ export default function MonitoringPage() {
     return areaSummaries.filter((a) => a.rayon_id === filters.rayonId);
   }, [areaSummaries, filters.rayonId]);
 
+  // Workers drawn on the map are scoped to the DRILL level, not just the filter
+  // panel: at kawasan (region) scope only that kawasan's workers show; at lokasi
+  // (area) scope only that lokasi's. At rayon/city all of the fetched workers show.
+  const drillScopedWorkers = useMemo(() => {
+    if (scope === 'region') return filteredWorkers.filter((w) => w.region_id === view.id);
+    if (scope === 'area') return filteredWorkers.filter((w) => w.location_id === view.id);
+    return filteredWorkers;
+  }, [filteredWorkers, scope, view.id]);
+
   const mapWorkers = useMemo<SimpleWorker[]>(
     () =>
-      filteredWorkers.map((w) => ({
+      drillScopedWorkers.map((w) => ({
         user_id: w.user_id,
         full_name: w.full_name,
         lat: w.lat,
@@ -728,7 +737,7 @@ export default function MonitoringPage() {
         team_name: w.team_name ?? null,
         team_color: w.team_color ?? null,
       })),
-    [filteredWorkers]
+    [drillScopedWorkers]
   );
 
   const isLoading = showWorkers ? snapshot.isLoading : activeAgg.isLoading;
@@ -778,6 +787,7 @@ export default function MonitoringPage() {
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
         areaId={scope === 'area' ? view.id ?? null : null}
+        regionId={scope === 'region' ? view.id ?? null : null}
         workers={mapWorkers}
         boundaries={boundaries ?? null}
         selectedId={selectedId}

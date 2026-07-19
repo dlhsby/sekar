@@ -63,6 +63,9 @@ export interface SimpleMonitoringMapProps {
   onNodeDetail?: (node: CurrentNodeMarker) => void;
   /** Selected area id — at area scope only its boundary is drawn (on demand). */
   areaId?: string | null;
+  /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
+   *  (other kawasan hidden), matching the drill-down narrowing. */
+  regionId?: string | null;
   workers: SimpleWorker[];
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
@@ -160,6 +163,7 @@ function MonitoringMapInner({
   currentNode,
   onNodeDetail,
   areaId,
+  regionId,
   workers,
   boundaries,
   selectedId,
@@ -191,7 +195,7 @@ function MonitoringMapInner({
   // configured color so the map can tint the fill/border per rayon.
   const { rayonPolys, regionPolys, areaPaths } = useMemo(() => {
     const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
-    const regionPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
+    const regionPolys: { id: string; paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     const areaPaths: { id: string; paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     for (const rayon of boundaries?.rayons ?? []) {
       geometryToPaths(rayon.boundary_polygon).forEach((p) =>
@@ -199,7 +203,7 @@ function MonitoringMapInner({
       );
       for (const region of rayon.regions ?? []) {
         geometryToPaths(region.boundary_polygon).forEach((p) =>
-          regionPolys.push({ paths: p, color: region.color ?? null })
+          regionPolys.push({ id: region.id, paths: p, color: region.color ?? null })
         );
       }
       for (const area of rayon.areas) {
@@ -300,8 +304,14 @@ function MonitoringMapInner({
   // outlines only once inside a rayon. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
   const showRayonPolys = scope !== 'surabaya';
-  // Kawasan outlines are drawn tinted once you're inside a rayon (rayon/region scope).
+  // Kawasan outlines: all of a rayon's kawasan at rayon scope; ONLY the drilled
+  // kawasan once you're inside one (region scope) — the others hide so the view
+  // narrows to that kawasan.
   const showRegionPolys = scope === 'rayon' || scope === 'region';
+  const visibleRegionPolys = useMemo(
+    () => (scope === 'region' && regionId ? regionPolys.filter((r) => r.id === regionId) : regionPolys),
+    [regionPolys, scope, regionId]
+  );
   // Lokasi outlines: the SELECTED area at area scope; at rayon/kawasan scope the
   // lokasi shown as node markers (direct lokasi under the rayon, or the kawasan's
   // lokasi) get their boundary drawn too, so drilling in reveals location shapes
@@ -387,7 +397,7 @@ function MonitoringMapInner({
         {/* Kawasan (region) boundaries — outline + light tint in the kawasan's
             own color; drawn once you're inside a rayon. */}
         {layers.kawasan && showRegionPolys &&
-          regionPolys.map((poly, i) => {
+          visibleRegionPolys.map((poly, i) => {
             const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
             const fill =
               (poly.color && hexToRgba(poly.color, RAYON_FILL_ALPHA * 0.6)) ??
