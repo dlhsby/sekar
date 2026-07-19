@@ -92,7 +92,7 @@ const boundaries: BoundariesResponse = {
     {
       id: 'r1',
       name: 'Rayon 1',
-      color: 'var(--color-nb-primary)',
+      border_color: 'var(--color-nb-primary)',
       boundary_polygon: {
         type: 'Polygon',
         coordinates: [
@@ -196,12 +196,12 @@ describe('SimpleMonitoringMap', () => {
       generated_at: '2026-01-01T00:00:00Z',
       rayons: [
         {
-          id: 'r1', name: 'Rayon 1', color: null, boundary_polygon: poly(0),
+          id: 'r1', name: 'Rayon 1', border_color: null, boundary_polygon: poly(0),
           center_lat: -7.29, center_lng: 112.75, area_count: 0,
           is_understaffed: false, understaffed_area_count: 0,
           regions: [
-            { id: 'k1', name: 'Kawasan 1', color: null, boundary_polygon: poly(0), center_lat: -7.28, center_lng: 112.74 },
-            { id: 'k2', name: 'Kawasan 2', color: null, boundary_polygon: poly(0.1), center_lat: -7.28, center_lng: 112.84 },
+            { id: 'k1', name: 'Kawasan 1', border_color: null, boundary_polygon: poly(0), center_lat: -7.28, center_lng: 112.74 },
+            { id: 'k2', name: 'Kawasan 2', border_color: null, boundary_polygon: poly(0.1), center_lat: -7.28, center_lng: 112.84 },
           ],
           areas: [],
         },

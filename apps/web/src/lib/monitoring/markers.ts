@@ -182,8 +182,8 @@ const NODE_GLYPHS: Record<string, string> = {
 // site) are deliberately DISTINCT so the two tiers read apart at a glance.
 export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'area' | 'region' | 'surabaya', string> = {
   rayon: 'building',
-  region: 'trees',
-  area: 'tree',
+  region: 'trees', // kawasan = a grove of trees
+  area: 'leaf', // lokasi = a single leaf (visually distinct from the kawasan grove)
   surabaya: 'building',
 };
 
@@ -247,11 +247,11 @@ function pinMarkerFromPath(
   };
 }
 
-/** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → tree, team → droplets). */
+/** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → leaf, team → droplets). */
 export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'area' | 'team'): string {
   if (kind === 'rayon') return 'building';
   if (kind === 'team') return 'droplets';
-  if (kind === 'area') return 'tree';
+  if (kind === 'area') return 'leaf';
   return 'trees';
 }
 

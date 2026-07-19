@@ -301,8 +301,11 @@ export interface AreaBoundary {
   id: string;
   name: string;
   boundary_polygon: GeoJSON.Geometry | null;
-  /** Hex color configured for the lokasi (border_color → fill_color); drives the map tint. */
-  color?: string | null;
+  /** Per-entity styling (ADR-045) — border + fill drawn separately on the map. */
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
   center_lat: number;
   center_lng: number;
   rayon_id: string | null;
@@ -316,7 +319,10 @@ export interface AreaBoundary {
 export interface RegionBoundary {
   id: string;
   name: string;
-  color?: string | null;
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
   boundary_polygon: GeoJSON.Geometry | null;
   center_lat: number | null;
   center_lng: number | null;
@@ -325,8 +331,11 @@ export interface RegionBoundary {
 export interface RayonBoundary {
   id: string;
   name: string;
-  /** Hex color configured for the rayon (Rayon settings) — drives the map fill/border. */
-  color?: string | null;
+  /** Per-entity styling (ADR-045) — border + fill drawn separately on the map. */
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
   boundary_polygon: GeoJSON.Geometry | null;
   center_lat: number | null;
   center_lng: number | null;

@@ -21,9 +21,19 @@ export class AreaBoundaryDto {
   @ApiPropertyOptional()
   boundary_polygon: object | null;
 
-  /** Boundary tint (border_color, falling back to fill_color); null when unset. */
+  /** Per-entity styling (ADR-045). Border + fill are drawn separately on the
+   *  map — the border is the outline, the fill tints the interior. */
+  @ApiPropertyOptional({ example: '#2D5233' })
+  border_color: string | null;
+
   @ApiPropertyOptional({ example: '#7FBC8C' })
-  color: string | null;
+  fill_color: string | null;
+
+  @ApiPropertyOptional({ example: 0.9 })
+  border_opacity: number | null;
+
+  @ApiPropertyOptional({ example: 0.25 })
+  fill_opacity: number | null;
 
   @ApiProperty({ example: -7.2575 })
   center_lat: number;
@@ -54,9 +64,17 @@ export class RegionBoundaryDto {
   @ApiProperty({ example: 'Kawasan Menur dan Manyar' })
   name: string;
 
-  /** Boundary tint (border_color, falling back to fill_color); null when unset. */
-  @ApiPropertyOptional({ example: '#1C1917' })
-  color: string | null;
+  @ApiPropertyOptional({ example: '#2D5233' })
+  border_color: string | null;
+
+  @ApiPropertyOptional({ example: '#7FBC8C' })
+  fill_color: string | null;
+
+  @ApiPropertyOptional({ example: 0.9 })
+  border_opacity: number | null;
+
+  @ApiPropertyOptional({ example: 0.25 })
+  fill_opacity: number | null;
 
   @ApiPropertyOptional()
   boundary_polygon: object | null;
@@ -75,10 +93,17 @@ export class RayonBoundaryDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  /** Boundary tint for the monitoring map — derived from the rayon's per-level
-   *  styling (`border_color`, falling back to `fill_color`). */
-  @ApiPropertyOptional({ example: '#7FBC8C' })
-  color: string | null;
+  @ApiPropertyOptional({ example: '#af1dd7' })
+  border_color: string | null;
+
+  @ApiPropertyOptional({ example: '#FFFF00' })
+  fill_color: string | null;
+
+  @ApiPropertyOptional({ example: 0.9 })
+  border_opacity: number | null;
+
+  @ApiPropertyOptional({ example: 0.18 })
+  fill_opacity: number | null;
 
   @ApiPropertyOptional()
   boundary_polygon: object | null;
