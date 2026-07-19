@@ -65,6 +65,8 @@
     "rayonAllOption": "Semua Rayon",
     "kawasanLabel": "Kawasan",
     "kawasanAllOption": "Semua Kawasan",
+    "pickRayonFirst": "Pilih rayon dulu",
+    "noKawasan": "Rayon ini tanpa kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "Semua Lokasi",
     "roleLabel": "Peran",

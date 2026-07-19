@@ -2,8 +2,9 @@
 
 /**
  * MonitoringFilters — filter rail for the monitoring page (mobile parity).
- * Search by name, 5-status toggle chips with live counts, rayon + role selects.
- * Purely client-side over the snapshot worker list. Controlled by the page.
+ * Search by name, 3-status toggle chips with live counts, and cascading
+ * Rayon → Kawasan → Lokasi selects plus Peran + Tim. Purely client-side over
+ * the snapshot worker list. Controlled by the page.
  */
 import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -76,6 +77,15 @@ export function MonitoringFilters({
 }: MonitoringFiltersProps) {
   const { t } = useTranslation();
   const statusLabels = getStatusLabels();
+
+  // Cascade gating: Kawasan + Lokasi stay disabled until a rayon is chosen.
+  // Kawasan is also disabled for a rayon that has none (e.g. Taman Aktif —
+  // lokasi sit directly under the rayon).
+  const rayonPicked = filters.rayonId !== 'all';
+  const regionDisabled = !rayonPicked || regionOptions.length === 0;
+  const locationDisabled = !rayonPicked || locationOptions.length === 0;
+  const selectClass =
+    'w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary disabled:cursor-not-allowed disabled:border-nb-gray-300 disabled:bg-nb-gray-100 disabled:text-nb-gray-400';
 
   const toggleStatus = (status: TrackingStatus) => {
     const next = new Set(filters.statuses);
@@ -185,8 +195,9 @@ export function MonitoringFilters({
         </div>
       )}
 
-      {/* Kawasan (region) */}
-      {regionOptions.length > 0 && (
+      {/* Kawasan (region) — cascades from Rayon (disabled until one is picked;
+          disabled with a hint for a rayon that has no kawasan). */}
+      {rayonOptions.length > 0 && (
         <div>
           <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-region">
             {t('monitoring:filters.kawasanLabel')}
@@ -194,10 +205,17 @@ export function MonitoringFilters({
           <select
             id="mon-region"
             value={filters.regionId}
+            disabled={regionDisabled}
             onChange={(e) => onChange({ ...filters, regionId: e.target.value, locationId: 'all' })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+            className={selectClass}
           >
-            <option value="all">{t('monitoring:filters.kawasanAllOption')}</option>
+            <option value="all">
+              {!rayonPicked
+                ? t('monitoring:filters.pickRayonFirst')
+                : regionOptions.length === 0
+                  ? t('monitoring:filters.noKawasan')
+                  : t('monitoring:filters.kawasanAllOption')}
+            </option>
             {regionOptions.map((r) => (
               <option key={r.id} value={r.id}>
                 {r.name}
@@ -207,8 +225,8 @@ export function MonitoringFilters({
         </div>
       )}
 
-      {/* Lokasi (location) */}
-      {locationOptions.length > 0 && (
+      {/* Lokasi (location) — cascades from Rayon (+ Kawasan when one is picked). */}
+      {rayonOptions.length > 0 && (
         <div>
           <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-location">
             {t('monitoring:filters.lokasiLabel')}
@@ -216,10 +234,15 @@ export function MonitoringFilters({
           <select
             id="mon-location"
             value={filters.locationId}
+            disabled={locationDisabled}
             onChange={(e) => onChange({ ...filters, locationId: e.target.value })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
+            className={selectClass}
           >
-            <option value="all">{t('monitoring:filters.lokasiAllOption')}</option>
+            <option value="all">
+              {!rayonPicked
+                ? t('monitoring:filters.pickRayonFirst')
+                : t('monitoring:filters.lokasiAllOption')}
+            </option>
             {locationOptions.map((a) => (
               <option key={a.id} value={a.id}>
                 {a.name}

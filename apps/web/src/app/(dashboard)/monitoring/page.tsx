@@ -518,11 +518,14 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, boundaries]);
 
-  // Kawasan options, narrowed to the selected rayon (cascade: rayon → kawasan).
+  // Kawasan options — cascade: EMPTY until a rayon is picked, then the kawasan
+  // that belong to that rayon (a rayon like Taman Aktif has none → stays empty,
+  // and the panel disables the select).
   const regionOptions = useMemo<RayonOption[]>(() => {
+    if (filters.rayonId === 'all') return [];
     const map = new Map<string, string>();
     for (const w of workers) {
-      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
+      if (w.rayon_id !== filters.rayonId) continue;
       if (w.region_id && w.region_name && !map.has(w.region_id)) map.set(w.region_id, w.region_name);
     }
     return [...map.entries()]
@@ -530,11 +533,14 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers, filters.rayonId]);
 
-  // Lokasi options, narrowed to the selected rayon + kawasan (cascade tail).
+  // Lokasi options — cascade: EMPTY until a rayon is picked; then all lokasi in
+  // the rayon (direct + under-kawasan), narrowed to a single kawasan once one is
+  // selected.
   const locationOptions = useMemo<RayonOption[]>(() => {
+    if (filters.rayonId === 'all') return [];
     const map = new Map<string, string>();
     for (const w of workers) {
-      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
+      if (w.rayon_id !== filters.rayonId) continue;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) continue;
       if (w.location_id && w.location_name && !map.has(w.location_id)) map.set(w.location_id, w.location_name);
     }
@@ -559,6 +565,49 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers]);
 
+  // Cascade / stale-selection guard: drop a kawasan / lokasi / team selection
+  // once it is no longer a valid option — after the parent rayon changes, or
+  // when the entity leaves the live snapshot (WS churn) — so a select never
+  // silently filters to nothing while showing a blank value.
+  useEffect(() => {
+    if (workers.length === 0) return; // don't reset during the initial load
+    const patch: Partial<MonitoringFilterState> = {};
+    if (filters.regionId !== 'all' && !regionOptions.some((o) => o.id === filters.regionId)) {
+      patch.regionId = 'all';
+    }
+    if (filters.locationId !== 'all' && !locationOptions.some((o) => o.id === filters.locationId)) {
+      patch.locationId = 'all';
+    }
+    if (filters.teamId !== 'all' && !teamOptions.some((o) => o.id === filters.teamId)) {
+      patch.teamId = 'all';
+    }
+    if (Object.keys(patch).length > 0) setFilters((prev) => ({ ...prev, ...patch }));
+  }, [
+    workers.length,
+    regionOptions,
+    locationOptions,
+    teamOptions,
+    filters.regionId,
+    filters.locationId,
+    filters.teamId,
+  ]);
+
+  // The geo selection that scopes the node bubbles at the current drill level.
+  // Each level's nodes are CHILDREN of the current view, so we match only the
+  // child tier: city → rayon; rayon → kawasan (or region-less lokasi); region →
+  // lokasi. At region scope, `regionId` is the parent view (not a child), so it
+  // must NOT drive dimming or every lokasi bubble would fade. Null = no filter.
+  const activeGeoId = useMemo<string | null>(() => {
+    if (scope === 'city') return filters.rayonId !== 'all' ? filters.rayonId : null;
+    if (scope === 'rayon') {
+      if (filters.locationId !== 'all') return filters.locationId;
+      if (filters.regionId !== 'all') return filters.regionId;
+      return null;
+    }
+    if (scope === 'region') return filters.locationId !== 'all' ? filters.locationId : null;
+    return null;
+  }, [scope, filters.rayonId, filters.regionId, filters.locationId]);
+
   const filteredWorkers = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return workers.filter((w) => {
@@ -575,9 +624,12 @@ export default function MonitoringPage() {
 
   const filteredNodes = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
-    if (!q) return listNodes;
-    return listNodes.filter((n) => n.name.toLowerCase().includes(q));
-  }, [listNodes, filters.search]);
+    return listNodes.filter(
+      (n) =>
+        (!q || n.name.toLowerCase().includes(q)) &&
+        (activeGeoId == null || n.id === activeGeoId)
+    );
+  }, [listNodes, filters.search, activeGeoId]);
 
   const filteredAreaSummaries = useMemo(() => {
     if (filters.rayonId === 'all') return areaSummaries;
@@ -645,6 +697,7 @@ export default function MonitoringPage() {
         showWorkers={showWorkers}
         scope={scope}
         nodeMarkers={nodeMarkers}
+        activeGeoId={activeGeoId}
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}

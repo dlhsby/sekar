@@ -65,6 +65,8 @@
     "rayonAllOption": "All Districts",
     "kawasanLabel": "Kawasan",
     "kawasanAllOption": "All Kawasan",
+    "pickRayonFirst": "Pick a rayon first",
+    "noKawasan": "This rayon has no kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "All Lokasi",
     "roleLabel": "Role",

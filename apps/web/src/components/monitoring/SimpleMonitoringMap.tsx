@@ -54,6 +54,9 @@ export interface SimpleMonitoringMapProps {
   /** Current drill scope — gates which boundary layers draw. */
   scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'area';
   nodeMarkers?: NodeMarker[];
+  /** Geo id selected in the filter (rayon/kawasan/lokasi). Non-matching node
+   *  bubbles are dimmed to spotlight the selection. Null = no geo filter. */
+  activeGeoId?: string | null;
   onDrillNode?: (node: NodeMarker) => void;
   /** The current node's own pin (rayon/area) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
@@ -155,6 +158,7 @@ function MonitoringMapInner({
   showWorkers,
   scope,
   nodeMarkers,
+  activeGeoId,
   onDrillNode,
   currentNode,
   onNodeDetail,
@@ -430,7 +434,7 @@ function MonitoringMapInner({
             map's primary content — or clustered worker pins (gated by `petugas`).
             `teamBubbles` collapses each team's members into one bubble. */}
         {!renderWorkers ? (
-          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} />
+          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
         ) : layers.petugas ? (
           <WorkerClusterLayer
             workers={workers}

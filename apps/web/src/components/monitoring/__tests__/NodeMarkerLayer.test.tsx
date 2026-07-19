@@ -11,18 +11,22 @@ import { HEALTH_COLORS } from '@/lib/monitoring/markers';
 
 const mockIcons: Array<{ url: string }> = [];
 const mockLabels: Array<{ text: string; color?: string } | undefined> = [];
+const mockOpacities: Array<number | undefined> = [];
 jest.mock('@react-google-maps/api', () => ({
   Marker: ({
     icon,
     label,
+    opacity,
     onClick,
   }: {
     icon: { url: string };
     label?: { text: string; color?: string };
+    opacity?: number;
     onClick?: () => void;
   }) => {
     mockIcons.push(icon);
     mockLabels.push(label);
+    mockOpacities.push(opacity);
     return <button data-testid="marker" onClick={() => onClick?.()} />;
   },
   InfoWindow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
@@ -39,6 +43,7 @@ beforeAll(() => {
 beforeEach(() => {
   mockIcons.length = 0;
   mockLabels.length = 0;
+  mockOpacities.length = 0;
 });
 
 const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
@@ -91,6 +96,23 @@ describe('NodeMarkerLayer unified pin', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2 })]} />);
     expect(mockLabels[0]?.text).toBe('Rayon X');
     expect(mockLabels[0]?.color).toBe(HEALTH_COLORS.ok);
+  });
+
+  it('dims + unlabels non-matching nodes when a geo filter spotlights one', () => {
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ id: 'r1', name: 'Match' }), makeNode({ id: 'r2', name: 'Other' })]}
+        activeGeoId="r1"
+      />
+    );
+    expect(mockOpacities).toEqual([1, 0.3]); // match full, other dimmed
+    expect(mockLabels[0]?.text).toBe('Match');
+    expect(mockLabels[1]).toBeUndefined(); // dimmed nodes drop their label
+  });
+
+  it('keeps every node at full opacity when no geo filter is set', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ id: 'r1' }), makeNode({ id: 'r2' })]} />);
+    expect(mockOpacities).toEqual([1, 1]);
   });
 
   it('labels kawasan at every zoom, like rayon', () => {
