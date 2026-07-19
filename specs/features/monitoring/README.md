@@ -13,9 +13,16 @@ Real-time supervisor dashboard: live worker positions, five-status tracking, and
 - ⚠️ The legacy `supervisor` module is **deprecated** — superseded by this feature; do not extend it.
 
 ## Revamp notes (post-UAT) — target model (ADR-046)
-> **Status: deferred (Phase 5).** Rollout tracking + the remaining checklist live in
-> [`../../REVAMP-STATUS.md`](../../REVAMP-STATUS.md). Understaffing on the map must use the polymorphic
-> staffing subject (region/location/rayon/city) from the Phase-4 consolidation, not location-only.
+> **Status: delivered — web merged to `main`** (see the Changelog for the full set). The target model
+> below is implemented: aggregate drill Rayon→Kawasan→Lokasi→workers (no Surabaya bubble), the 3-axis
+> presence model (Aktif/Tidak Aktif/Tidak Hadir + inside/outside axis + Luar Jadwal), scope-narrowing
+> drill, per-entity glyph markers + boundary border/fill colors, team glyph markers with a click-to-open
+> member list, worker trail + area-detail on marker click, breadcrumb with inline stats, and the
+> Individu/Tim filter. Understaffing uses the polymorphic staffing subject (satgas+linmas only).
+> **Verified** end-to-end after a clean reseed (Playwright, all levels + desktop/mobile); be 371 + web 321
+> monitoring specs green. **Remaining:** mobile-app (React Native) parity + a browser-perf pass on
+> AdvancedMarkers; **not deployed to staging** (deliberate `main`→`staging` cutover). Rollout tracking:
+> [`../../REVAMP-STATUS.md`](../../REVAMP-STATUS.md).
 - **Subject model** — *monitorable* (anyone clocked-in: satgas, linmas, korlap, kepala_rayon, admin_rayon) vs *scheduled/staffing-counted* (**only satgas + linmas**). Non-scheduled clock-ins surface only via daftar petugas / search.
 - **Presence & attendance model** ([ADR-050](../../architecture/decisions/ADR-050-presence-attendance-model.md), supersedes 046's status enum) — three **derived** axes, no stored lifecycle status: **attendance lifecycle** (`tidak_bertugas` · `belum_hadir` · `terlambat` · `bertugas` · `pulang` · `tidak_hadir`, one/worker/service-day — only `bertugas` renders live), **live presence** (`aktif`/`offline` + `dalam_area`/`luar_area`/unknown + one position field: current when aktif, last-known when offline), and **counting** (staffing = `bertugas` ∧ scheduled-for-subject ∧ satgas/linmas; ad-hoc & monitorable roles show but don't count). Policy locked: per-shift grace (late 15 min / no-show at end); forgotten clock-out **never auto-closed** (`lupa_clock_out` flag, corrected by supervisor; lembur is explicit only); excused reasons cuti/sakit/izin/libur set by admin_rayon/korlap; offline threshold 10 min configurable, korlap paged at threshold within shift window only. All resolved against the shift's **service day** (cross-midnight safe for shift 3).
 - **Supervisor visibility** (hierarchical, server-enforced) — management → all Surabaya; kepala_rayon/admin_rayon → their rayon; korlap → their region (+ optional location) incl. team members; satgas/linmas → none.
