@@ -1,7 +1,9 @@
 /**
- * Unit tests: MonitoringFilters cascade gating — Kawasan + Lokasi stay disabled
- * until a rayon is chosen, and Kawasan stays disabled for a rayon with no
- * kawasan (e.g. Taman Aktif → lokasi sit directly under the rayon).
+ * Unit tests: MonitoringFilters cascade gating — Kawasan + Lokasi comboboxes stay
+ * disabled until a rayon is chosen, Kawasan stays disabled for a rayon with no
+ * kawasan (e.g. Taman Aktif), and an in-flight fetch reads "loading" not "no
+ * kawasan". The controls are type-to-search comboboxes (trigger = a button that
+ * shows the placeholder until something is picked).
  */
 import { render } from '@testing-library/react';
 import {
@@ -24,6 +26,7 @@ const baseFilters: MonitoringFilterState = {
   locationId: 'all',
   role: 'all',
   teamId: 'all',
+  userId: 'all',
 };
 
 const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
@@ -36,6 +39,7 @@ const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
     locationOptions: [],
     roleOptions: [],
     teamOptions: [],
+    workerOptions: [],
     total: 0,
     matched: 0,
     showSearch: false,
@@ -44,16 +48,16 @@ const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
   return render(<MonitoringFilters {...props} />);
 };
 
-const region = (c: HTMLElement) => c.querySelector<HTMLSelectElement>('#mon-region')!;
-const location = (c: HTMLElement) => c.querySelector<HTMLSelectElement>('#mon-location')!;
+// The combobox trigger is a <button> carrying the field id; its text is the
+// placeholder while nothing is selected.
+const trigger = (c: HTMLElement, id: string) => c.querySelector<HTMLButtonElement>(`#${id}`)!;
 
 describe('MonitoringFilters cascade', () => {
   it('disables Kawasan + Lokasi until a rayon is picked', () => {
     const { container } = renderFilters({}); // rayonId = 'all'
-    expect(region(container).disabled).toBe(true);
-    expect(location(container).disabled).toBe(true);
-    // Placeholder hints the user to pick a rayon first.
-    expect(region(container).querySelector('option')?.textContent).toBe(
+    expect(trigger(container, 'mon-region').disabled).toBe(true);
+    expect(trigger(container, 'mon-location').disabled).toBe(true);
+    expect(trigger(container, 'mon-region').textContent).toContain(
       'monitoring:filters.pickRayonFirst'
     );
   });
@@ -64,8 +68,8 @@ describe('MonitoringFilters cascade', () => {
       regionOptions: [{ id: 'k1', name: 'Kawasan 1' }],
       locationOptions: [{ id: 'l1', name: 'Lokasi 1' }],
     });
-    expect(region(container).disabled).toBe(false);
-    expect(location(container).disabled).toBe(false);
+    expect(trigger(container, 'mon-region').disabled).toBe(false);
+    expect(trigger(container, 'mon-location').disabled).toBe(false);
   });
 
   it('keeps Kawasan disabled for a rayon with no kawasan (Taman Aktif) but enables Lokasi', () => {
@@ -74,11 +78,9 @@ describe('MonitoringFilters cascade', () => {
       regionOptions: [], // no kawasan in this rayon
       locationOptions: [{ id: 'l1', name: 'Lokasi Langsung' }],
     });
-    expect(region(container).disabled).toBe(true);
-    expect(region(container).querySelector('option')?.textContent).toBe(
-      'monitoring:filters.noKawasan'
-    );
-    expect(location(container).disabled).toBe(false);
+    expect(trigger(container, 'mon-region').disabled).toBe(true);
+    expect(trigger(container, 'mon-region').textContent).toContain('monitoring:filters.noKawasan');
+    expect(trigger(container, 'mon-location').disabled).toBe(false);
   });
 
   it('shows a loading placeholder (not "no kawasan") while the hierarchy resolves', () => {
@@ -87,8 +89,29 @@ describe('MonitoringFilters cascade', () => {
       regionOptions: [], // empty because still fetching, not because there are none
       regionLoading: true,
     });
-    expect(region(container).disabled).toBe(true);
-    // The empty-during-load state must read "loading", never "no kawasan".
-    expect(region(container).querySelector('option')?.textContent).toBe('common:actions.loading');
+    expect(trigger(container, 'mon-region').disabled).toBe(true);
+    expect(trigger(container, 'mon-region').textContent).toContain('common:actions.loading');
+  });
+
+  it('renders the Petugas picker only when workers cascade in', () => {
+    const { container, rerender } = renderFilters({ workerOptions: [] });
+    expect(container.querySelector('#mon-worker')).toBeNull();
+    rerender(
+      <MonitoringFilters
+        filters={baseFilters}
+        onChange={jest.fn()}
+        statusCounts={{ active: 0, offline: 0, absent: 0 }}
+        rayonOptions={[{ id: 'r1', name: 'Rayon 1' }]}
+        regionOptions={[]}
+        locationOptions={[]}
+        roleOptions={[]}
+        teamOptions={[]}
+        workerOptions={[{ id: 'u1', name: 'Budi' }]}
+        total={0}
+        matched={0}
+        showSearch={false}
+      />
+    );
+    expect(container.querySelector('#mon-worker')).not.toBeNull();
   });
 });

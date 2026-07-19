@@ -148,6 +148,7 @@ export default function MonitoringPage() {
     locationId: 'all',
     role: 'all',
     teamId: 'all',
+    userId: 'all',
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -567,6 +568,32 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers]);
 
+  // Petugas options cascade from the geo + status/role/team filters: the snapshot
+  // workers that everything ELSE would keep (the userId filter itself is excluded
+  // so picking a worker never empties its own list).
+  const workerOptions = useMemo<RayonOption[]>(() => {
+    return workers
+      .filter((w) => {
+        if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
+        if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
+        if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
+        if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
+        if (filters.role !== 'all' && w.role !== filters.role) return false;
+        if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
+        return true;
+      })
+      .map((w) => ({ id: w.user_id, name: w.full_name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [
+    workers,
+    filters.statuses,
+    filters.rayonId,
+    filters.regionId,
+    filters.locationId,
+    filters.role,
+    filters.teamId,
+  ]);
+
   // Cascade / stale-selection guard: drop a kawasan / lokasi / team selection
   // once it is no longer a valid option — after the parent rayon changes, or
   // when the entity leaves the live snapshot (WS churn) — so a select never
@@ -589,7 +616,7 @@ export default function MonitoringPage() {
     ) {
       patch.locationId = 'all';
     }
-    // Team stays snapshot-derived; only reset once workers have loaded.
+    // Team + Petugas are snapshot-derived; only reset once workers have loaded.
     if (
       workers.length > 0 &&
       filters.teamId !== 'all' &&
@@ -597,17 +624,26 @@ export default function MonitoringPage() {
     ) {
       patch.teamId = 'all';
     }
+    if (
+      workers.length > 0 &&
+      filters.userId !== 'all' &&
+      !workerOptions.some((o) => o.id === filters.userId)
+    ) {
+      patch.userId = 'all';
+    }
     if (Object.keys(patch).length > 0) setFilters((prev) => ({ ...prev, ...patch }));
   }, [
     workers.length,
     regionOptions,
     locationOptions,
     teamOptions,
+    workerOptions,
     regionLoading,
     locationLoading,
     filters.regionId,
     filters.locationId,
     filters.teamId,
+    filters.userId,
   ]);
 
   // The geo selection that scopes the node bubbles at the current drill level.
@@ -635,6 +671,7 @@ export default function MonitoringPage() {
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (filters.role !== 'all' && w.role !== filters.role) return false;
       if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
+      if (filters.userId !== 'all' && w.user_id !== filters.userId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -848,6 +885,7 @@ export default function MonitoringPage() {
             locationLoading={locationLoading}
             roleOptions={roleOptions}
             teamOptions={teamOptions}
+            workerOptions={workerOptions}
             total={showWorkers ? workers.length : listNodes.length}
             matched={listCount}
             showSearch={false}

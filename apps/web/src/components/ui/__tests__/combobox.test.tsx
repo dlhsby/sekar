@@ -78,4 +78,17 @@ describe('Combobox', () => {
     );
     expect(screen.getByRole('combobox', { name: 'Ke area' })).toBeInTheDocument();
   });
+
+  it('lazily renders only a page of a long list (not all rows at once)', async () => {
+    const user = userEvent.setup();
+    const many: ComboboxOption[] = Array.from({ length: 200 }, (_, i) => ({
+      value: `v${i}`,
+      label: `Item ${String(i).padStart(3, '0')}`,
+    }));
+    render(<Combobox options={many} value="" onValueChange={() => {}} placeholder="p" />);
+    await user.click(screen.getByRole('combobox', { expanded: false }));
+    const rendered = screen.getAllByRole('option');
+    expect(rendered.length).toBeLessThanOrEqual(50); // one page, not 200
+    expect(screen.getByRole('option', { name: 'Item 000' })).toBeInTheDocument();
+  });
 });

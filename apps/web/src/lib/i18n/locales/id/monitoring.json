@@ -74,6 +74,8 @@
     "roleAllOption": "Semua Peran",
     "timLabel": "Tim",
     "timAllOption": "Semua Tim",
+    "workerLabel": "Petugas",
+    "workerAllOption": "Semua Petugas",
     "matchSummary": "{{matched}} / {{total}} petugas",
     "reset": "Reset",
     "ariaLabel": "Filter monitoring"

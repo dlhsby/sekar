@@ -74,6 +74,8 @@
     "roleAllOption": "All Roles",
     "timLabel": "Team",
     "timAllOption": "All Teams",
+    "workerLabel": "Worker",
+    "workerAllOption": "All Workers",
     "matchSummary": "{{matched}} / {{total}} officers",
     "reset": "Reset",
     "ariaLabel": "Monitoring filter"

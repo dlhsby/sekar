@@ -62,6 +62,11 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState('');
   const [activeIndex, setActiveIndex] = React.useState(0);
+  // Lazy render: show a page at a time, growing on scroll, so a long list (e.g.
+  // hundreds of lokasi/workers) never renders all its rows at once. Type-to-search
+  // narrows first; this caps whatever's left.
+  const PAGE_SIZE = 50;
+  const [limit, setLimit] = React.useState(PAGE_SIZE);
   const reactId = React.useId();
   const listboxId = `${reactId}-listbox`;
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -74,6 +79,12 @@ export function Combobox({
     return options.filter((o) => o.label.toLowerCase().includes(q));
   }, [options, query]);
 
+  // Rows actually rendered — the lazy page, but always deep enough to include the
+  // keyboard-active row so aria-activedescendant never points at an unrendered id.
+  const renderCount = Math.min(filtered.length, Math.max(limit, activeIndex + 6));
+  const visible = filtered.slice(0, renderCount);
+  const hasMore = renderCount < filtered.length;
+
   const optionId = (i: number): string => `${reactId}-opt-${i}`;
 
   // Reset transient state on open/close (resetting the highlight as the filter
@@ -81,7 +92,15 @@ export function Combobox({
   const handleOpenChange = (next: boolean): void => {
     setOpen(next);
     setActiveIndex(0);
+    setLimit(PAGE_SIZE);
     if (!next) setQuery('');
+  };
+
+  const onListScroll = (e: React.UIEvent<HTMLUListElement>): void => {
+    const el = e.currentTarget;
+    if (hasMore && el.scrollTop + el.clientHeight >= el.scrollHeight - 48) {
+      setLimit((l) => l + PAGE_SIZE);
+    }
   };
 
   const commit = (option: ComboboxOption): void => {
@@ -184,17 +203,24 @@ export function Combobox({
             onChange={(e) => {
               setQuery(e.target.value);
               setActiveIndex(0);
+              setLimit(PAGE_SIZE);
             }}
             onKeyDown={onKeyDown}
             placeholder={searchPlaceholder}
             className="h-11 w-full bg-transparent text-nb-body-sm text-nb-black outline-none placeholder:text-nb-gray-500"
           />
         </div>
-        <ul ref={listboxScrollRef} id={listboxId} role="listbox" className="max-h-60 overflow-y-auto p-1">
+        <ul
+          ref={listboxScrollRef}
+          id={listboxId}
+          role="listbox"
+          onScroll={onListScroll}
+          className="max-h-60 overflow-y-auto p-1"
+        >
           {filtered.length === 0 ? (
             <li className="px-3 py-2 text-nb-body-sm text-nb-gray-500">{emptyText}</li>
           ) : (
-            filtered.map((option, i) => {
+            visible.map((option, i) => {
               const isSelected = option.value === value;
               const isActive = i === activeIndex;
               return (
