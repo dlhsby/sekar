@@ -9,7 +9,7 @@
  * Wrapped in GoogleMapsGate so it degrades to a placeholder when no key is set.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Marker, Polygon, Polyline, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
@@ -76,6 +76,8 @@ export interface SimpleMonitoringMapProps {
   /** Imperative focus target (from search / drill). `exact` sets the zoom
    *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
   focusTarget?: { lat: number; lng: number; zoom?: number; exact?: boolean; key: number } | null;
+  /** Selected worker's location trail (today) — drawn as a polyline when set. */
+  trail?: google.maps.LatLngLiteral[] | null;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -171,6 +173,7 @@ function MonitoringMapInner({
   onSelect,
   layers = DEFAULT_LAYERS,
   focusTarget,
+  trail,
 }: SimpleMonitoringMapProps) {
   const { t } = useTranslation();
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -445,6 +448,27 @@ function MonitoringMapInner({
             drawn (the marker layer can't be hidden). At area scope nodeMarkers is
             empty, so nothing renders there. */}
         <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
+
+        {/* Selected worker's movement trail (today) — a dashed path under the pins. */}
+        {trail && trail.length >= 2 && (
+          <Polyline
+            path={trail}
+            options={{
+              strokeColor: POLYGON_STYLES.rayon.stroke,
+              strokeOpacity: 0.9,
+              strokeWeight: 3,
+              icons: [
+                {
+                  icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
+                  offset: '0',
+                  repeat: '12px',
+                },
+              ],
+              clickable: false,
+              zIndex: 3,
+            }}
+          />
+        )}
 
         {/* Worker pins (individual + optional team bubbles) — drawn ALONGSIDE the
             node bubbles at rayon/kawasan/area scope, no clustering. */}

@@ -23,7 +23,7 @@ import {
   type AggregateNode,
   type AggregateStatusCounts,
 } from '@/lib/api/monitoring-v2';
-import { useBoundaries } from '@/lib/api/monitoring';
+import { useBoundaries, useLocationHistory } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
 import { statusToActivity } from '@/lib/monitoring/markers';
@@ -155,6 +155,7 @@ export default function MonitoringPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [areaDetailOpen, setAreaDetailOpen] = useState(false);
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
   const [focusTarget, setFocusTarget] = useState<{
     lat: number;
@@ -230,8 +231,26 @@ export default function MonitoringPage() {
 
   const selectWorker = (id: string | null) => {
     setSelectedId(id);
-    if (id) setListOpen(true);
+    if (id) {
+      setListOpen(true);
+      setAreaDetailOpen(false);
+    }
   };
+
+  // Selected worker's movement trail for today — drawn as a polyline on the map
+  // so a marker click reads like the mobile detail (position + where they've been).
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }, []);
+  const trailQuery = useLocationHistory(selectedId, todayStr);
+  const trail = useMemo(
+    () =>
+      (trailQuery.data?.points ?? [])
+        .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+        .map((p) => ({ lat: p.latitude, lng: p.longitude })),
+    [trailQuery.data]
+  );
 
   const focusOn = (lat: number, lng: number, zoom?: number, exact?: boolean) =>
     setFocusTarget((cur) => ({ lat, lng, zoom, exact, key: cur ? cur.key + 1 : 1 }));
@@ -440,9 +459,10 @@ export default function MonitoringPage() {
 
   // Tapping the current-node pin focuses it a touch tighter and opens the list
   // sheet (its children/detail) — mirrors mobile's marker → detail.
+  // Clicking the current node's pin opens its AREA DETAIL card (not the list).
   const onNodeDetail = (node: CurrentNodeMarker) => {
     focusOn(node.lat, node.lng, node.variant === 'area' ? 16 : 14);
-    setListOpen(true);
+    setAreaDetailOpen(true);
   };
 
   // Rayons list (surabaya + city), regions list (rayon), or areas list (region or rayon-without-regions),
@@ -853,6 +873,7 @@ export default function MonitoringPage() {
         onSelect={selectWorker}
         layers={layers}
         focusTarget={focusTarget}
+        trail={trail}
       />
 
       {/* Top overlay: breadcrumb + search + settings + filter + refresh + status pills */}
@@ -1060,6 +1081,67 @@ export default function MonitoringPage() {
             {listCount}
           </span>
         </button>
+      )}
+
+      {/* Area detail card — opens when the current node's pin is tapped (parity
+          with mobile's area info). Shows the drilled node's presence + roster. */}
+      {areaDetailOpen && currentNode && (
+        <div className="absolute right-3 top-40 z-30 w-72 rounded-nb-md border-2 border-nb-black bg-nb-white p-3 shadow-nb-lg sm:top-32">
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold uppercase text-nb-gray-500">
+                {t(`monitoring:areaDetail.${currentNode.variant}`)}
+              </p>
+              <h2 className="text-sm font-black leading-tight text-nb-black">{currentNode.name}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAreaDetailOpen(false)}
+              aria-label={t('monitoring:page.closePanelLabel')}
+              className="shrink-0 rounded-nb-sm p-1 text-nb-gray-500 hover:bg-nb-gray-100 hover:text-nb-black"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {/* Presence */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {PRESENCE_PILLS.map((p) => (
+              <div
+                key={p.key}
+                className="flex items-center justify-between rounded-nb-sm border border-nb-gray-200 px-2 py-1 text-xs"
+              >
+                <span className="flex items-center gap-1.5 text-nb-gray-600">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                  {p.label}
+                </span>
+                <span className="font-mono font-bold tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+              </div>
+            ))}
+          </div>
+          {/* Roster */}
+          {(() => {
+            const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
+            if (!r) return null;
+            const rows: [string, number][] = [
+              [t('monitoring:aggregate.scheduledLabel'), r.scheduled],
+              [t('monitoring:aggregate.clockedInLabel'), r.clocked_in],
+              [t('monitoring:aggregate.belumHadirLabel'), r.belum_hadir],
+              [t('monitoring:aggregate.tidakHadirLabel'), r.tidak_hadir],
+            ];
+            return (
+              <div className="mt-2 border-t-2 border-nb-gray-200 pt-2">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
+                  {rows.map(([label, n]) => (
+                    <span key={label} className="flex items-baseline gap-1">
+                      <span className="font-mono font-bold tabular-nums text-nb-black">{n}</span>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {/* Bulk reassign modal */}
