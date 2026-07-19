@@ -47,15 +47,20 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
   const byRayon = new Map<string, number>();
   for (const a of areas) {
     await ctx.qr.query(
+      // Default lokasi styling (ADR-045): a leaf glyph (distinct from the kawasan
+      // grove) + a light-green border/fill. COALESCE on conflict preserves any
+      // per-lokasi overrides a user has set.
       `INSERT INTO locations (
          id, name, location_type_id, gps_lat, gps_lng,
-         boundary_polygon, coverage_area, address, rayon_id, is_active
+         boundary_polygon, coverage_area, address, rayon_id, is_active,
+         marker_icon, border_color, fill_color, border_opacity, fill_opacity
        )
        SELECT
          $1, $2,
          (SELECT id FROM location_types WHERE code = $3 LIMIT 1),
          $4, $5,
-         $6::jsonb, $7, $8, $9, $10
+         $6::jsonb, $7, $8, $9, $10,
+         'leaf', '#6BA87A', '#BAFCA2', 0.9, 0.2
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          location_type_id = EXCLUDED.location_type_id,
@@ -65,7 +70,12 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
          coverage_area = EXCLUDED.coverage_area,
          address = EXCLUDED.address,
          rayon_id = EXCLUDED.rayon_id,
-         is_active = EXCLUDED.is_active`,
+         is_active = EXCLUDED.is_active,
+         marker_icon = COALESCE(locations.marker_icon, EXCLUDED.marker_icon),
+         border_color = COALESCE(locations.border_color, EXCLUDED.border_color),
+         fill_color = COALESCE(locations.fill_color, EXCLUDED.fill_color),
+         border_opacity = COALESCE(locations.border_opacity, EXCLUDED.border_opacity),
+         fill_opacity = COALESCE(locations.fill_opacity, EXCLUDED.fill_opacity)`,
       [
         a.id,
         a.name,

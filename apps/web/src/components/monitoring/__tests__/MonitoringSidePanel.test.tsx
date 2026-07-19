@@ -76,7 +76,7 @@ describe('MonitoringSidePanel', () => {
     it('should render all three status cards', () => {
       render(<MonitoringSidePanel {...defaultProps} />);
       expect(screen.getByRole('button', { name: /saring aktif/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /saring offline/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /saring tidak aktif/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /saring tidak hadir/i })).toBeInTheDocument();
     });
 
@@ -198,7 +198,7 @@ describe('MonitoringSidePanel', () => {
       const user = userEvent.setup();
       render(<MonitoringSidePanel {...defaultProps} />);
 
-      await user.click(screen.getByRole('button', { name: /saring offline/i }));
+      await user.click(screen.getByRole('button', { name: /saring tidak aktif/i }));
 
       expect(screen.getByText('Siti Rahayu')).toBeInTheDocument();
       expect(screen.queryByText('Budi Santoso')).not.toBeInTheDocument();

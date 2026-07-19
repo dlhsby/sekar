@@ -182,8 +182,8 @@ const NODE_GLYPHS: Record<string, string> = {
 // site) are deliberately DISTINCT so the two tiers read apart at a glance.
 export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'area' | 'region' | 'surabaya', string> = {
   rayon: 'building',
-  region: 'trees',
-  area: 'tree',
+  region: 'trees', // kawasan = a grove of trees
+  area: 'leaf', // lokasi = a single leaf (visually distinct from the kawasan grove)
   surabaya: 'building',
 };
 
@@ -247,11 +247,11 @@ function pinMarkerFromPath(
   };
 }
 
-/** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → tree, team → droplets). */
+/** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → leaf, team → droplets). */
 export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'area' | 'team'): string {
   if (kind === 'rayon') return 'building';
   if (kind === 'team') return 'droplets';
-  if (kind === 'area') return 'tree';
+  if (kind === 'area') return 'leaf';
   return 'trees';
 }
 
@@ -395,6 +395,28 @@ export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
  *
  * Dimensions: 90×46 px (landscape-friendly for readability).
  */
+/**
+ * A team's map marker — the unified glyph pin (ADR-051) in the team's color:
+ * teardrop filled with the team color, the team glyph in the centre, and the
+ * member count as the badge. Replaces the old landscape bubble so a collapsed
+ * team reads like every other marker.
+ */
+export function teamMarkerIcon(
+  teamColor: string | null,
+  memberCount: number,
+  glyph?: string | null
+): google.maps.Icon {
+  const color = teamColor ?? TEAM_DEFAULT;
+  return pinMarker(glyph ?? entityDefaultGlyph('team'), {
+    outline: color,
+    fill: color,
+    fillOpacity: 0.9,
+    count: memberCount,
+    big: true,
+  });
+}
+
+/** @deprecated Use {@link teamMarkerIcon} — teams now render as a glyph pin, not a bubble. */
 export function teamBubbleIcon(
   teamColor: string | null,
   memberCount: number,

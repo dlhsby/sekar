@@ -24,22 +24,20 @@ const baseFilters: MonitoringFilterState = {
   rayonId: 'all',
   regionId: 'all',
   locationId: 'all',
+  jenis: 'individu',
   role: 'all',
   teamId: 'all',
-  userId: 'all',
 };
 
 const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
   const props: MonitoringFiltersProps = {
     filters: baseFilters,
     onChange: jest.fn(),
-    statusCounts: { active: 0, offline: 0, absent: 0 },
     rayonOptions: [{ id: 'r1', name: 'Rayon 1' }],
     regionOptions: [],
     locationOptions: [],
     roleOptions: [],
     teamOptions: [],
-    workerOptions: [],
     total: 0,
     matched: 0,
     showSearch: false,
@@ -93,25 +91,34 @@ describe('MonitoringFilters cascade', () => {
     expect(trigger(container, 'mon-region').textContent).toContain('common:actions.loading');
   });
 
-  it('renders the Petugas picker only when workers cascade in', () => {
-    const { container, rerender } = renderFilters({ workerOptions: [] });
+  it('shows Peran for jenis=individu and Jenis Tim for jenis=team (never both)', () => {
+    const { container, rerender } = renderFilters({
+      filters: { ...baseFilters, jenis: 'individu' },
+      roleOptions: ['satgas' as never],
+      teamOptions: [{ id: 't1', name: 'Penyiraman' }],
+    });
+    // Individu → role control present, team control absent.
+    expect(container.querySelector('#mon-role')).not.toBeNull();
+    expect(container.querySelector('#mon-team')).toBeNull();
+    // No Petugas picker exists any more.
     expect(container.querySelector('#mon-worker')).toBeNull();
+
     rerender(
       <MonitoringFilters
-        filters={baseFilters}
+        filters={{ ...baseFilters, jenis: 'team' }}
         onChange={jest.fn()}
-        statusCounts={{ active: 0, offline: 0, absent: 0 }}
         rayonOptions={[{ id: 'r1', name: 'Rayon 1' }]}
         regionOptions={[]}
         locationOptions={[]}
-        roleOptions={[]}
-        teamOptions={[]}
-        workerOptions={[{ id: 'u1', name: 'Budi' }]}
+        roleOptions={['satgas' as never]}
+        teamOptions={[{ id: 't1', name: 'Penyiraman' }]}
         total={0}
         matched={0}
         showSearch={false}
       />
     );
-    expect(container.querySelector('#mon-worker')).not.toBeNull();
+    // Team → team control present, role control absent.
+    expect(container.querySelector('#mon-team')).not.toBeNull();
+    expect(container.querySelector('#mon-role')).toBeNull();
   });
 });

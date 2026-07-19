@@ -10,7 +10,6 @@
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
 import {
-  nodeCountIcon,
   pinMarker,
   rosterHealth,
   HEALTH_COLORS,
@@ -64,33 +63,29 @@ export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayer
         // ONE unified marker (ADR-051): a code-drawn pin filled with the area's
         // identity color (marker_color = border_color), carrying its glyph + a
         // staffing-health outline + the active-count badge — the same builder the
-        // editor/preview use, so the map and settings always agree. Empty lokasi
-        // (nothing scheduled, no explicit glyph) stay a muted dot to fight clutter.
-        const isEmptyArea =
-          node.variant === 'area' &&
-          node.scheduled <= 0 &&
-          node.active <= 0 &&
-          !node.marker_icon;
+        // editor/preview use, so the map and settings always agree. EVERY node —
+        // including an empty lokasi — draws its glyph pin (no muted-dot fallback):
+        // a lokasi should always read as a lokasi marker, just with a grey (empty)
+        // health outline and no count badge.
         const health = rosterHealth(node.scheduled, node.clocked_in);
         const big = node.variant === 'rayon' || node.variant === 'region';
-        const icon = isEmptyArea
-          ? nodeCountIcon(node.variant, 0, 'empty', { icon: null })
-          : pinMarker(node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null, {
-              outline: HEALTH_COLORS[health],
-              fill: node.fill_color ?? undefined,
-              fillOpacity: node.fill_opacity ?? undefined,
-              count: node.active,
-              big,
-            });
+        const icon = pinMarker(node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null, {
+          outline: HEALTH_COLORS[health],
+          fill: node.fill_color ?? undefined,
+          fillOpacity: node.fill_opacity ?? undefined,
+          count: node.active,
+          big,
+        });
         // Google-style place label under every marker (rayon / kawasan / lokasi),
         // colored by staffing health (green ok / amber short / red none) so
         // per-node status still reads at a glance now that the pin shows identity.
-        // Empty muted-dot lokasi stay unlabeled to keep dense rayons clean.
         // Geo-filter spotlight: when a rayon/kawasan/lokasi is selected in the
         // filter, dim (and drop the label of) the nodes that don't match, so the
         // selected one stands out. No selection → everything at full opacity.
         const dimmed = activeGeoId != null && node.id !== activeGeoId;
-        const showLabel = !isEmptyArea && !dimmed;
+        // Every node shows its name label at every level (a dimmed node's icon is
+        // still de-emphasized via opacity, but the name stays readable).
+        const showLabel = true;
         return (
           <Marker
             key={`node-${node.id}`}

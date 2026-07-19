@@ -20,7 +20,7 @@
   },
   "tracking": {
     "active": "Aktif",
-    "offline": "Offline",
+    "offline": "Tidak Aktif",
     "absent": "Tidak Hadir",
     "outside_area": "Di Luar Area",
     "inside_area": "Di Dalam Area",

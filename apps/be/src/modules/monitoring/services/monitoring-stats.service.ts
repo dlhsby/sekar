@@ -932,6 +932,23 @@ export class MonitoringStatsService {
     return { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 };
   }
 
+  /** Per-entity map styling (ADR-045) — border + fill drawn separately by the map. */
+  private styleOf(e: unknown): {
+    border_color: string | null;
+    fill_color: string | null;
+    border_opacity: number | null;
+    fill_opacity: number | null;
+  } {
+    const x = (e ?? {}) as Record<string, unknown>;
+    const num = (v: unknown): number | null => (v != null ? Number(v) : null);
+    return {
+      border_color: (x.border_color as string | undefined) ?? null,
+      fill_color: (x.fill_color as string | undefined) ?? null,
+      border_opacity: num(x.border_opacity),
+      fill_opacity: num(x.fill_opacity),
+    };
+  }
+
   /**
    * Is "now" still within the current shift's opening grace window? Not-clocked-in
    * scheduled workers are `belum_hadir` (not yet due) while true, `tidak_hadir`
@@ -1567,7 +1584,7 @@ export class MonitoringStatsService {
           return {
             id: rayon.id,
             name: rayon.name,
-            color: (rayon as any).border_color ?? (rayon as any).fill_color ?? null,
+            ...this.styleOf(rayon),
             boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
             center_lat: rayonCenterLat,
             center_lng: rayonCenterLng,
@@ -1590,7 +1607,7 @@ export class MonitoringStatsService {
             return {
               id: rayon.id,
               name: rayon.name,
-              color: (rayon as any).border_color ?? (rayon as any).fill_color ?? null,
+              ...this.styleOf(rayon),
               boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
               center_lat: rayonCenterLat,
               center_lng: rayonCenterLng,
@@ -1611,7 +1628,7 @@ export class MonitoringStatsService {
         const regionBoundaries: RegionBoundaryDto[] = regionEntities.map((rg) => ({
           id: rg.id,
           name: rg.name,
-          color: (rg as any).border_color ?? (rg as any).fill_color ?? null,
+          ...this.styleOf(rg),
           boundary_polygon: simplifyGeometry((rg as any).boundary_polygon) || null,
           center_lat: (rg as any).center_lat ? parseFloat((rg as any).center_lat.toString()) : null,
           center_lng: (rg as any).center_lng ? parseFloat((rg as any).center_lng.toString()) : null,
@@ -1648,7 +1665,7 @@ export class MonitoringStatsService {
             id: area.id,
             name: area.name,
             boundary_polygon: simplifyGeometry(area.boundary_polygon) || null,
-            color: (area as any).border_color ?? (area as any).fill_color ?? null,
+            ...this.styleOf(area),
             center_lat: parseFloat(area.gps_lat?.toString() || '0'),
             center_lng: parseFloat(area.gps_lng?.toString() || '0'),
             rayon_id: rayon.id,
@@ -1664,7 +1681,7 @@ export class MonitoringStatsService {
         return {
           id: rayon.id,
           name: rayon.name,
-          color: (rayon as any).border_color ?? (rayon as any).fill_color ?? null,
+          ...this.styleOf(rayon),
           boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
           center_lat: rayonCenterLat,
           center_lng: rayonCenterLng,

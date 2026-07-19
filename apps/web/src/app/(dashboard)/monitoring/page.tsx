@@ -21,12 +21,12 @@ import {
   useMonitoringSnapshot,
   useMonitoringAggregate,
   type AggregateNode,
-  type AggregateStatusCounts,
 } from '@/lib/api/monitoring-v2';
 import { useBoundaries, useLocationHistory } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
 import { statusToActivity } from '@/lib/monitoring/markers';
+import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearch';
 import {
   MonitoringFilters,
@@ -42,7 +42,7 @@ import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMap
 import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { NodeMarker } from '@/components/monitoring/NodeMarkerLayer';
 import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
-import { MONITORING_ROLES, REASSIGN_ROLES, hasRole } from '@/lib/constants/roles';
+import { MONITORING_ROLES, REASSIGN_ROLES, hasRole, roleLabel } from '@/lib/constants/roles';
 import { formatTime } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
@@ -70,22 +70,12 @@ const ZOOM_REGION = 14;
 const ZOOM_AREA = 15;
 const ZOOM_CITY = 11;
 
-const EMPTY_STATUS_COUNTS: Record<TrackingStatus, number> = {
-  active: 0,
-  offline: 0,
-  absent: 0,
+// Status → dot color for compact lists (team members, etc.).
+const STATUS_DOT: Record<TrackingStatus, string> = {
+  active: 'var(--color-status-active)',
+  offline: 'var(--color-status-idle)',
+  absent: 'var(--color-status-missing)',
 };
-
-function aggregateToStatusCounts(
-  totals: AggregateStatusCounts | undefined
-): Record<TrackingStatus, number> {
-  if (!totals) return { ...EMPTY_STATUS_COUNTS };
-  return {
-    active: totals.active,
-    offline: totals.offline,
-    absent: totals.absent,
-  };
-}
 
 /** An aggregate node → a map marker (skips nodes without a center point). */
 function aggToMarker(n: AggregateNode): NodeMarker | null {
@@ -147,15 +137,17 @@ export default function MonitoringPage() {
     rayonId: 'all',
     regionId: 'all',
     locationId: 'all',
+    jenis: 'individu',
     role: 'all',
     teamId: 'all',
-    userId: 'all',
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [areaDetailOpen, setAreaDetailOpen] = useState(false);
+  const [teamDetail, setTeamDetail] = useState<TeamGroup | null>(null);
+  const [statsOpen, setStatsOpen] = useState(false); // tappable stat legend (mobile)
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
   const [focusTarget, setFocusTarget] = useState<{
     lat: number;
@@ -234,7 +226,15 @@ export default function MonitoringPage() {
     if (id) {
       setListOpen(true);
       setAreaDetailOpen(false);
+      setTeamDetail(null);
     }
+  };
+
+  // Clicking a team marker reveals its members (no zoom-to-expand).
+  const onTeamClick = (team: TeamGroup) => {
+    setTeamDetail(team);
+    setAreaDetailOpen(false);
+    setSelectedId(null);
   };
 
   // Selected worker's movement trail for today — drawn as a polyline on the map
@@ -533,28 +533,6 @@ export default function MonitoringPage() {
     return { totals, presence_totals, roster_totals };
   }, [scope, view.id, regionAreasAgg.data]);
 
-  const statusCounts = useMemo(() => {
-    if (showWorkers) {
-      const counts = { ...EMPTY_STATUS_COUNTS };
-      for (const w of workers) {
-        const s = w.status as TrackingStatus;
-        if (s in counts) counts[s] += 1;
-      }
-      return counts;
-    }
-    // Above area scope, derive the filter chips from the SAME presence/roster
-    // model as the status-bar pills (scheduled-active / scheduled-offline /
-    // roster not-clocked-in) so the two never disagree for the same label.
-    const p = regionTotals?.presence_totals ?? activeAgg.data?.presence_totals;
-    const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
-    return aggregateToStatusCounts({
-      active: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
-      offline: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
-      absent: r?.tidak_hadir ?? 0,
-      outside_area: (p?.aktif.luar ?? 0) + (p?.tidak_aktif.luar ?? 0),
-    });
-  }, [showWorkers, regionTotals, activeAgg.data, workers]);
-
   // Presence-model counts for the top pills. At area scope, derive from the
   // worker list (scheduled → aktif/tidak-aktif; unscheduled → ad-hoc); above
   // area, read the aggregate's presence + roster totals.
@@ -663,29 +641,6 @@ export default function MonitoringPage() {
   // Petugas options cascade from the geo + status/role/team filters: the snapshot
   // workers that everything ELSE would keep (the userId filter itself is excluded
   // so picking a worker never empties its own list).
-  const workerOptions = useMemo<RayonOption[]>(() => {
-    return workers
-      .filter((w) => {
-        if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
-        if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
-        if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
-        if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
-        if (filters.role !== 'all' && w.role !== filters.role) return false;
-        if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
-        return true;
-      })
-      .map((w) => ({ id: w.user_id, name: w.full_name }))
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [
-    workers,
-    filters.statuses,
-    filters.rayonId,
-    filters.regionId,
-    filters.locationId,
-    filters.role,
-    filters.teamId,
-  ]);
-
   // Cascade / stale-selection guard: drop a kawasan / lokasi / team selection
   // once it is no longer a valid option — after the parent rayon changes, or
   // when the entity leaves the live snapshot (WS churn) — so a select never
@@ -708,7 +663,7 @@ export default function MonitoringPage() {
     ) {
       patch.locationId = 'all';
     }
-    // Team + Petugas are snapshot-derived; only reset once workers have loaded.
+    // Team is snapshot-derived; only reset once workers have loaded.
     if (
       workers.length > 0 &&
       filters.teamId !== 'all' &&
@@ -716,26 +671,17 @@ export default function MonitoringPage() {
     ) {
       patch.teamId = 'all';
     }
-    if (
-      workers.length > 0 &&
-      filters.userId !== 'all' &&
-      !workerOptions.some((o) => o.id === filters.userId)
-    ) {
-      patch.userId = 'all';
-    }
     if (Object.keys(patch).length > 0) setFilters((prev) => ({ ...prev, ...patch }));
   }, [
     workers.length,
     regionOptions,
     locationOptions,
     teamOptions,
-    workerOptions,
     regionLoading,
     locationLoading,
     filters.regionId,
     filters.locationId,
     filters.teamId,
-    filters.userId,
   ]);
 
   // The geo selection that scopes the node bubbles at the current drill level.
@@ -761,9 +707,15 @@ export default function MonitoringPage() {
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
-      if (filters.role !== 'all' && w.role !== filters.role) return false;
-      if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
-      if (filters.userId !== 'all' && w.user_id !== filters.userId) return false;
+      // Individu = individually-assigned (no team); Tim = team-assigned. Individu
+      // then filters by Peran (role); Tim filters by team category.
+      if (filters.jenis === 'individu') {
+        if (w.team_id) return false;
+        if (filters.role !== 'all' && w.role !== filters.role) return false;
+      } else {
+        if (!w.team_id) return false;
+        if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
+      }
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -874,6 +826,7 @@ export default function MonitoringPage() {
         layers={layers}
         focusTarget={focusTarget}
         trail={trail}
+        onTeamClick={onTeamClick}
       />
 
       {/* Top overlay: breadcrumb + search + settings + filter + refresh + status pills */}
@@ -881,7 +834,7 @@ export default function MonitoringPage() {
         {/* Row 1 — full-width breadcrumb so the current location is always visible
             (esp. mobile, where the back button used to be an unlabeled icon). Back
             steps up one level; each ancestor crumb jumps straight to that level. */}
-        <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1.5 shadow-nb-sm backdrop-blur-sm">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1.5 shadow-nb-sm backdrop-blur-sm">
           {canGoBack && (
             <button
               type="button"
@@ -893,28 +846,95 @@ export default function MonitoringPage() {
             </button>
           )}
           <nav
-            className="flex min-w-0 items-center gap-1 whitespace-nowrap text-sm"
+            className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto whitespace-nowrap text-sm"
             aria-label={t('monitoring:breadcrumb.label')}
           >
-            {crumbs.map((c, i) => (
-              <span key={c.key} className="flex shrink-0 items-center gap-1">
-                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
-                {c.onClick ? (
-                  <button
-                    type="button"
-                    onClick={c.onClick}
-                    className="max-w-[9rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
-                  >
-                    {c.label}
-                  </button>
-                ) : (
-                  <span className="max-w-[12rem] truncate font-bold text-nb-black" aria-current="page">
-                    {c.label}
-                  </span>
-                )}
+            {/* Mobile (<sm): current level only — the ‹ back handles going up, so
+                intermediate crumbs (and their truncation) are dropped for space. */}
+            <span className="truncate font-bold text-nb-black sm:hidden" aria-current="page">
+              {crumbs[crumbs.length - 1]?.label}
+            </span>
+            {/* Desktop (≥sm): the full clickable trail. */}
+            <span className="hidden items-center gap-1 sm:flex">
+              {crumbs.map((c, i) => (
+                <span key={c.key} className="flex shrink-0 items-center gap-1">
+                  {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
+                  {c.onClick ? (
+                    <button
+                      type="button"
+                      onClick={c.onClick}
+                      className="max-w-[8rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
+                    >
+                      {c.label}
+                    </button>
+                  ) : (
+                    <span className="max-w-[10rem] truncate font-bold text-nb-black" aria-current="page">
+                      {c.label}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </span>
+          </nav>
+          {/* Presence stats, pinned right of the breadcrumb (replaces a whole
+              extra row). Desktop (≥md) has room → labels + counts + timestamp
+              inline, no tap. Mobile → compact dot+number chips that tap open a
+              labeled legend (the only way to read the labels there). */}
+          <div
+            className="hidden shrink-0 items-center gap-2 border-l-2 border-nb-gray-200 pl-2 md:flex"
+            aria-live="polite"
+          >
+            {PRESENCE_PILLS.map((p) => (
+              <span key={p.key} className="flex items-center gap-1 text-xs font-semibold text-nb-gray-700">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                {p.label}
+                <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
               </span>
             ))}
-          </nav>
+            <span className="whitespace-nowrap text-[10px] text-nb-gray-400">{updatedLabel}</span>
+          </div>
+          <div className="relative shrink-0 md:hidden">
+            <button
+              type="button"
+              onClick={() => setStatsOpen((v) => !v)}
+              aria-expanded={statsOpen}
+              aria-label={t('monitoring:breadcrumb.statsLegend')}
+              className="flex items-center gap-1 border-l-2 border-nb-gray-200 pl-1.5"
+              aria-live="polite"
+            >
+              {PRESENCE_PILLS.map((p) => (
+                <span
+                  key={p.key}
+                  title={p.label}
+                  className="flex items-center gap-1 rounded-nb-sm px-1 py-0.5 text-xs font-semibold text-nb-gray-700"
+                >
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                  <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+                </span>
+              ))}
+            </button>
+            {statsOpen && (
+              <div
+                className="absolute right-0 top-full z-40 mt-1 w-44 rounded-nb-md border-2 border-nb-black bg-nb-white p-2 shadow-nb-lg"
+                role="dialog"
+              >
+                <ul className="space-y-1">
+                  {PRESENCE_PILLS.map((p) => (
+                    <li key={p.key} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="flex items-center gap-1.5 font-semibold text-nb-gray-700">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                        {p.label}
+                      </span>
+                      <span className="font-mono font-bold tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2 border-t-2 border-nb-gray-200 pt-1.5 text-[10px] text-nb-gray-500">
+                  {updatedLabel}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Row 2 — search + tools */}
@@ -971,23 +991,6 @@ export default function MonitoringPage() {
             <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
           </button>
         </div>
-
-        {/* Status pills (presence model) */}
-        <div className="pointer-events-none flex flex-wrap items-center gap-1.5" aria-live="polite">
-          {PRESENCE_PILLS.map((p) => (
-            <span
-              key={p.key}
-              className="flex items-center gap-1.5 rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1 text-xs font-semibold text-nb-gray-700 shadow-nb-xs backdrop-blur-sm"
-            >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
-              {p.label}
-              <span className="font-mono tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
-            </span>
-          ))}
-          <span className="rounded-nb-base bg-nb-white/95 px-2 py-1 text-xs text-nb-gray-500 shadow-nb-xs backdrop-blur-sm">
-            {updatedLabel}
-          </span>
-        </div>
       </div>
 
       {/* Filter panel */}
@@ -1007,7 +1010,6 @@ export default function MonitoringPage() {
           <MonitoringFilters
             filters={filters}
             onChange={setFilters}
-            statusCounts={statusCounts}
             rayonOptions={rayonOptions}
             regionOptions={regionOptions}
             locationOptions={locationOptions}
@@ -1015,7 +1017,6 @@ export default function MonitoringPage() {
             locationLoading={locationLoading}
             roleOptions={roleOptions}
             teamOptions={teamOptions}
-            workerOptions={workerOptions}
             total={showWorkers ? workers.length : listNodes.length}
             matched={listCount}
             showSearch={false}
@@ -1141,6 +1142,63 @@ export default function MonitoringPage() {
               </div>
             );
           })()}
+        </div>
+      )}
+
+      {/* Team member list — opens when a team marker is clicked. Lists the team's
+          individual workers; tapping one opens that worker's detail + trail. */}
+      {teamDetail && (
+        <div className="absolute right-3 top-40 z-30 flex max-h-[60%] w-72 flex-col rounded-nb-md border-2 border-nb-black bg-nb-white shadow-nb-lg sm:top-32">
+          <div className="flex items-start justify-between gap-2 border-b-2 border-nb-black p-3">
+            <div className="flex items-center gap-2">
+              <span
+                className="h-3 w-3 shrink-0 rounded-full border border-nb-black"
+                style={{ backgroundColor: teamDetail.team_color ?? 'var(--color-nb-gray-400)' }}
+                aria-hidden="true"
+              />
+              <div>
+                <p className="text-xs font-bold uppercase text-nb-gray-500">
+                  {t('monitoring:teamDetail.title')}
+                </p>
+                <h2 className="text-sm font-black leading-tight text-nb-black">
+                  {teamDetail.team_name} · {teamDetail.member_count}
+                </h2>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setTeamDetail(null)}
+              aria-label={t('monitoring:page.closePanelLabel')}
+              className="shrink-0 rounded-nb-sm p-1 text-nb-gray-500 hover:bg-nb-gray-100 hover:text-nb-black"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <ul className="min-h-0 flex-1 divide-y divide-nb-gray-200 overflow-y-auto">
+            {workers
+              .filter((w) => teamDetail.member_ids.includes(w.user_id))
+              .map((w) => (
+                <li key={w.user_id}>
+                  <button
+                    type="button"
+                    onClick={() => selectWorker(w.user_id)}
+                    className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left hover:bg-nb-gray-50"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-semibold text-nb-black">
+                        {w.full_name}
+                      </span>
+                      <span className="block text-xs text-nb-gray-500">{roleLabel(w.role)}</span>
+                    </span>
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: STATUS_DOT[w.status as TrackingStatus] ?? 'var(--color-status-idle)' }}
+                      aria-hidden="true"
+                    />
+                  </button>
+                </li>
+              ))}
+          </ul>
         </div>
       )}
 

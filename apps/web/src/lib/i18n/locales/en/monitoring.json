@@ -80,7 +80,12 @@
     "workerAllOption": "All Workers",
     "matchSummary": "{{matched}} / {{total}} officers",
     "reset": "Reset",
-    "ariaLabel": "Monitoring filter"
+    "ariaLabel": "Monitoring filter",
+    "jenisLabel": "Type",
+    "jenis": {
+      "individu": "Individual",
+      "team": "Team"
+    }
   },
   "sidebar": {
     "backToList": "Back to list",
@@ -321,6 +326,10 @@
   },
   "breadcrumb": {
     "label": "Location breadcrumb",
-    "city": "Surabaya"
+    "city": "Surabaya",
+    "statsLegend": "Presence summary"
+  },
+  "teamDetail": {
+    "title": "Team Members"
   }
 }

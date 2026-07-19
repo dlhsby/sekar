@@ -80,7 +80,12 @@
     "workerAllOption": "Semua Petugas",
     "matchSummary": "{{matched}} / {{total}} petugas",
     "reset": "Reset",
-    "ariaLabel": "Filter monitoring"
+    "ariaLabel": "Filter monitoring",
+    "jenisLabel": "Jenis",
+    "jenis": {
+      "individu": "Individu",
+      "team": "Tim"
+    }
   },
   "sidebar": {
     "backToList": "Kembali ke daftar",
@@ -321,6 +326,10 @@
   },
   "breadcrumb": {
     "label": "Navigasi lokasi",
-    "city": "Surabaya"
+    "city": "Surabaya",
+    "statsLegend": "Ringkasan kehadiran"
+  },
+  "teamDetail": {
+    "title": "Anggota Tim"
   }
 }

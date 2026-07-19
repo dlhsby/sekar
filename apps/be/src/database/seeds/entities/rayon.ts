@@ -24,13 +24,14 @@ export async function seedRayons(ctx: SeedContext): Promise<void> {
     // boundary tint from border_color/fill_color.
     await ctx.qr.query(
       `INSERT INTO rayons
-         (id, name, description, border_color, fill_color, center_lat, center_lng, boundary_polygon, staffing_level)
-       VALUES ($1, $2, $3, $4, $4, $5, $6, $7::jsonb, $8)
+         (id, name, description, border_color, fill_color, marker_icon, center_lat, center_lng, boundary_polygon, staffing_level)
+       VALUES ($1, $2, $3, $4, $4, 'building', $5, $6, $7::jsonb, $8)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
          description = EXCLUDED.description,
          border_color = EXCLUDED.border_color,
          fill_color = EXCLUDED.fill_color,
+         marker_icon = COALESCE(rayons.marker_icon, EXCLUDED.marker_icon),
          center_lat = EXCLUDED.center_lat,
          center_lng = EXCLUDED.center_lng,
          boundary_polygon = EXCLUDED.boundary_polygon,

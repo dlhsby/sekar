@@ -3,10 +3,12 @@ import { loadKawasanSnapshot, loadAreaRegionMap } from '../load-seed-data';
 
 // Default per-level map styling (ADR-045). Boundaries/centres are drawn fresh in
 // the UI, so seeded kawasan start with only these cosmetic defaults + a marker.
-const BORDER_COLOR = '#1C1917';
+// Kawasan default styling — a green border/fill (parks theme), NOT black, so the
+// map's per-entity colors read as intended. A user can still override per kawasan.
+const BORDER_COLOR = '#2D5233';
 const FILL_COLOR = '#7FBC8C';
 const BORDER_OPACITY = 0.9;
-const FILL_OPACITY = 0.25;
+const FILL_OPACITY = 0.2;
 const MARKER_ICON = 'trees';
 
 /**
