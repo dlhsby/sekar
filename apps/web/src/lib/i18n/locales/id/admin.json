@@ -501,7 +501,8 @@
     "form": {
       "name": "Nama Kategori Tim",
       "namePlaceholder": "mis. Tim Penyiraman",
-      "markerColor": "Warna Penanda"
+      "markerColor": "Warna Penanda",
+      "markerIcon": "Ikon Penanda"
     }
   }
 }

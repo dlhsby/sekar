@@ -66,7 +66,7 @@ export function WorkerClusterLayer({
             <Marker
               key={`team-${team.team_id}`}
               position={{ lat: team.lat, lng: team.lng }}
-              icon={teamBubbleIcon(team.team_color, team.member_count, team.team_name)}
+              icon={teamBubbleIcon(team.team_color, team.member_count, team.team_name, team.team_icon)}
               onClick={() => onClusterClick?.(team.lat, team.lng, 17)}
               zIndex={5}
             />

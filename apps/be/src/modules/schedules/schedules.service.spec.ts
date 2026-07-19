@@ -1031,6 +1031,7 @@ describe('SchedulesService', () => {
         team_id: 'event-123',
         team_name: 'Penyiraman',
         team_color: '#22C55E',
+        team_icon: null,
       });
     });
 
@@ -1049,6 +1050,7 @@ describe('SchedulesService', () => {
         team_id: 'cat-456',
         team_name: 'Perawatan',
         team_color: '#FF6B6B',
+        team_icon: null,
       });
     });
 
@@ -1067,6 +1069,7 @@ describe('SchedulesService', () => {
         team_id: 'event-123',
         team_name: 'Penyapuan',
         team_color: null,
+        team_icon: null,
       });
     });
 
@@ -1100,12 +1103,14 @@ describe('SchedulesService', () => {
         team_id: 'event-1',
         team_name: 'Team A',
         team_color: '#22C55E',
+        team_icon: null,
       });
       // u2: only one (event-3, Team C)
       expect(result.get('u2')).toEqual({
         team_id: 'event-3',
         team_name: 'Team C',
         team_color: '#69D2E7',
+        team_icon: null,
       });
       expect(result.size).toBe(2);
     });

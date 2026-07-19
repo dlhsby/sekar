@@ -30,6 +30,13 @@ export class TeamCategory {
   @Column({ type: 'varchar', length: 7, nullable: true })
   marker_color?: string | null;
 
+  @ApiPropertyOptional({
+    description: 'Marker glyph name from the curated set (e.g. "droplets"); null → default.',
+    example: 'droplets',
+  })
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  marker_icon?: string | null;
+
   @ApiProperty({ example: true })
   @Column({ type: 'boolean', default: true })
   is_active: boolean;

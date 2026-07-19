@@ -794,6 +794,7 @@ export default function MonitoringPage() {
         team_id: w.team_id ?? null,
         team_name: w.team_name ?? null,
         team_color: w.team_color ?? null,
+        team_icon: w.team_icon ?? null,
       })),
     [drillScopedWorkers]
   );

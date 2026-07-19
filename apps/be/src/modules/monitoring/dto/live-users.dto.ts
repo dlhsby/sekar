@@ -128,6 +128,9 @@ export class LiveUserDto {
 
   @ApiPropertyOptional({ example: '#22C55E', nullable: true })
   team_color: string | null;
+
+  @ApiPropertyOptional({ example: 'droplets', nullable: true })
+  team_icon: string | null;
 }
 
 export class LiveUsersFilterDto {

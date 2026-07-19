@@ -45,6 +45,7 @@ export interface SnapshotWorker {
   team_name?: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color?: string | null;
+  team_icon?: string | null;
 }
 
 export interface SnapshotAreaSummary {

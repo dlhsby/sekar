@@ -7,12 +7,14 @@ export interface TeamCategory {
   name: string;
   is_active: boolean;
   marker_color?: string | null;
+  marker_icon?: string | null;
 }
 
 export interface CreateTeamCategoryDto {
   name: string;
   is_active: boolean;
   marker_color?: string | null;
+  marker_icon?: string | null;
 }
 export type UpdateTeamCategoryDto = Partial<CreateTeamCategoryDto>;
 

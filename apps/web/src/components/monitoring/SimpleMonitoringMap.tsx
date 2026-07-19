@@ -43,6 +43,7 @@ export interface SimpleWorker {
   team_id?: string | null;
   team_name?: string | null;
   team_color?: string | null;
+  team_icon?: string | null;
 }
 
 export interface SimpleMonitoringMapProps {

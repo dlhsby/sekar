@@ -19,6 +19,15 @@ export class CreateTeamCategoryDto {
   @MaxLength(7)
   @Matches(HEX, { message: 'marker_color must be a 6-digit hex color' })
   marker_color?: string;
+
+  @ApiPropertyOptional({
+    description: 'Marker glyph name from the curated set (e.g. "droplets")',
+    example: 'droplets',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  marker_icon?: string;
 }
 
 export class UpdateTeamCategoryDto extends PartialType(CreateTeamCategoryDto) {

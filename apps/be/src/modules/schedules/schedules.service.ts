@@ -1158,10 +1158,15 @@ export class SchedulesService {
   async getTeamMembership(
     userIds: string[],
     date: string,
-  ): Promise<Map<string, { team_id: string; team_name: string; team_color: string | null }>> {
+  ): Promise<
+    Map<
+      string,
+      { team_id: string; team_name: string; team_color: string | null; team_icon: string | null }
+    >
+  > {
     const map = new Map<
       string,
-      { team_id: string; team_name: string; team_color: string | null }
+      { team_id: string; team_name: string; team_color: string | null; team_icon: string | null }
     >();
     if (userIds.length === 0) return map;
 
@@ -1191,6 +1196,7 @@ export class SchedulesService {
         team_id: teamId,
         team_name: row.team_category.name,
         team_color: row.team_category.marker_color ?? null,
+        team_icon: row.team_category.marker_icon ?? null,
       });
     }
 
