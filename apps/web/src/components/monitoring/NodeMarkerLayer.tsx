@@ -25,7 +25,8 @@ export interface NodeMarker {
   lng: number;
   scheduled: number;
   clocked_in: number;
-  not_clocked_in: number;
+  belum_hadir: number;
+  tidak_hadir: number;
   /** Active workers in scope — the number shown on the count marker. */
   active: number;
   /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */

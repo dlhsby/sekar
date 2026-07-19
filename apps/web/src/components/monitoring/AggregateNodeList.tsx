@@ -81,10 +81,16 @@ export function AggregateNodeList({ nodes, onDrill, activeGeoId, className }: Ag
                     {t('monitoring:aggregate.clockedInLabel')}
                   </span>
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-nb-danger-dark">
-                      {node.roster.not_clocked_in}
+                    <span className="font-mono font-bold tabular-nums text-nb-warning">
+                      {node.roster.belum_hadir}
                     </span>
-                    {t('monitoring:aggregate.notClockedInLabel')}
+                    {t('monitoring:aggregate.belumHadirLabel')}
+                  </span>
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-nb-danger-dark">
+                      {node.roster.tidak_hadir}
+                    </span>
+                    {t('monitoring:aggregate.tidakHadirLabel')}
                   </span>
                 </div>
               </div>

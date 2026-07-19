@@ -26,7 +26,8 @@
     "understaffed": "Understaffed",
     "scheduledLabel": "Scheduled",
     "clockedInLabel": "Present",
-    "notClockedInLabel": "Absent",
+    "belumHadirLabel": "Not Yet In",
+    "tidakHadirLabel": "Absent",
     "activeInsideLabel": "Active in area"
   },
   "surabaya": {

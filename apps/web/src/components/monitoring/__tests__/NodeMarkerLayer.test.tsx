@@ -54,7 +54,7 @@ const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
   lng: 112.7,
   scheduled: 2,
   clocked_in: 2,
-  not_clocked_in: 0,
+  belum_hadir: 0, tidak_hadir: 0,
   active: 2,
   active_inside: 1,
   ...over,

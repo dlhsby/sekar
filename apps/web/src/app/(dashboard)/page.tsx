@@ -79,7 +79,7 @@ export default function DashboardPage() {
     return {
       scheduled: d.roster_totals.scheduled,
       hadir: d.roster_totals.clocked_in,
-      tidak_hadir: d.roster_totals.not_clocked_in,
+      tidak_hadir: d.roster_totals.belum_hadir + d.roster_totals.tidak_hadir,
       aktif,
       tidak_aktif,
     };

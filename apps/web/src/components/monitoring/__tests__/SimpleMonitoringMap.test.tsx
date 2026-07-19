@@ -153,7 +153,7 @@ const nodeMarkers = [
     lng: 112.75,
     scheduled: 6,
     clocked_in: 4,
-    not_clocked_in: 2,
+    belum_hadir: 0, tidak_hadir: 2,
     active: 3,
     active_inside: 3,
   },
@@ -200,10 +200,10 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(1);
   });
 
-  it('reveals worker pins at deep zoom inside a rayon (not only at area scope)', () => {
-    // The map mock's getZoom() returns 16 (>= WORKER_REVEAL_ZOOM). At rayon
-    // scope this should flip from node markers to worker pins by zoom alone,
-    // without drilling to area scope (showWorkers stays false).
+  it('draws worker pins ALONGSIDE node markers at rayon scope (no zoom gate)', () => {
+    // At rayon scope the map now shows the kawasan/lokasi node bubbles AND the
+    // workers on the ground at once — workers no longer replace nodes, and there
+    // is no zoom threshold to cross.
     render(
       <SimpleMonitoringMap
         showWorkers={false}
@@ -213,8 +213,8 @@ describe('SimpleMonitoringMap', () => {
         boundaries={boundaries}
       />
     );
-    // Two workers render as pins; the single node marker does not.
-    expect(screen.getAllByTestId('marker')).toHaveLength(workers.length);
+    // Node markers + worker pins coexist.
+    expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length + workers.length);
   });
 
   it('keeps node markers (no worker reveal) at city scope even when zoomed in', () => {

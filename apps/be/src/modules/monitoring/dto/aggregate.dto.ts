@@ -32,12 +32,17 @@ export class AggregateStatusCountsDto {
 }
 
 /**
- * Roster attendance trio for an aggregate node (or the whole response).
- * Mirrors the snapshot's expected/present/absent so `not_clocked_in` is always
- * `scheduled - clocked_in` clamped at 0 (a person can't be absent and present).
- * - `scheduled`      — distinct workers rostered today (status planned/present)
- * - `clocked_in`     — of those, how many have an active shift (clocked in)
- * - `not_clocked_in` — scheduled workers who have not clocked in
+ * Roster attendance breakdown for an aggregate node (or the whole response).
+ * `scheduled = clocked_in + belum_hadir + tidak_hadir`. The old `not_clocked_in`
+ * is split by the shift window (presence model, ADR-046): a scheduled worker who
+ * hasn't clocked in is only a **no-show** (`tidak_hadir`) once their shift has
+ * started (past the late grace); before that they are simply **not-yet-due**
+ * (`belum_hadir`). This is what lets the UI stop labelling a 06:00 no-show as
+ * "Belum Hadir" three hours into the shift.
+ * - `scheduled`   — distinct workers rostered today (status planned/present)
+ * - `clocked_in`  — of those, how many have an active shift (clocked in)
+ * - `belum_hadir` — scheduled, not clocked in, shift not started (within grace)
+ * - `tidak_hadir` — scheduled, not clocked in, shift started (past grace) = no-show
  */
 export class AggregateRosterCountsDto {
   @ApiProperty({ example: 30 })
@@ -46,8 +51,11 @@ export class AggregateRosterCountsDto {
   @ApiProperty({ example: 24 })
   clocked_in: number;
 
-  @ApiProperty({ example: 6 })
-  not_clocked_in: number;
+  @ApiProperty({ example: 2 })
+  belum_hadir: number;
+
+  @ApiProperty({ example: 4 })
+  tidak_hadir: number;
 }
 
 /** Dalam/luar (inside/outside area) split for one activity bucket. */

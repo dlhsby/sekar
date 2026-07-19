@@ -98,7 +98,8 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     lng: n.center_lng,
     scheduled: n.roster.scheduled,
     clocked_in: n.roster.clocked_in,
-    not_clocked_in: n.roster.not_clocked_in,
+    belum_hadir: n.roster.belum_hadir,
+    tidak_hadir: n.roster.tidak_hadir,
     active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
     marker_icon: n.marker_icon ?? null,
@@ -436,7 +437,7 @@ export default function MonitoringPage() {
     const nodes = (regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id);
     const totals = { active: 0, offline: 0, absent: 0, outside_area: 0 };
     const presence_totals = { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } };
-    const roster_totals = { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+    const roster_totals = { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 };
     for (const n of nodes) {
       totals.active += n.counts_by_status.active;
       totals.offline += n.counts_by_status.offline;
@@ -448,7 +449,8 @@ export default function MonitoringPage() {
       presence_totals.tidak_aktif.luar += n.presence.tidak_aktif.luar;
       roster_totals.scheduled += n.roster.scheduled;
       roster_totals.clocked_in += n.roster.clocked_in;
-      roster_totals.not_clocked_in += n.roster.not_clocked_in;
+      roster_totals.belum_hadir += n.roster.belum_hadir;
+      roster_totals.tidak_hadir += n.roster.tidak_hadir;
     }
     return { totals, presence_totals, roster_totals };
   }, [scope, view.id, regionAreasAgg.data]);
@@ -470,7 +472,7 @@ export default function MonitoringPage() {
     return aggregateToStatusCounts({
       active: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
       offline: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
-      absent: r?.not_clocked_in ?? 0,
+      absent: r?.tidak_hadir ?? 0,
       outside_area: (p?.aktif.luar ?? 0) + (p?.tidak_aktif.luar ?? 0),
     });
   }, [showWorkers, regionTotals, activeAgg.data, workers]);
@@ -498,7 +500,7 @@ export default function MonitoringPage() {
     return {
       aktif: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
       tidak_aktif: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
-      tidak_hadir: r?.not_clocked_in ?? 0,
+      tidak_hadir: r?.tidak_hadir ?? 0,
       // Ad-hoc (Luar jadwal): clocked in but off the current-shift roster — now
       // surfaced above area scope from the aggregate (was hard-0, hiding them).
       adhoc: activeAgg.data?.off_schedule_count ?? 0,

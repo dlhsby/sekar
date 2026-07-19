@@ -123,7 +123,7 @@ describe('Monitoring v2 API', () => {
         scope_id: null,
         nodes: [],
         totals: { active: 0, offline: 0, absent: 0, outside_area: 0 },
-        roster_totals: { scheduled: 0, clocked_in: 0, not_clocked_in: 0 },
+        roster_totals: { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 },
         presence_totals: {
           aktif: { dalam: 0, luar: 0 },
           tidak_aktif: { dalam: 0, luar: 0 },
@@ -160,7 +160,7 @@ describe('Monitoring v2 API', () => {
             online_count: 2,
             required: 3,
             is_understaffed: false,
-            roster: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+            roster: { scheduled: 3, clocked_in: 3, belum_hadir: 0, tidak_hadir: 0 },
             presence: {
               aktif: { dalam: 2, luar: 0 },
               tidak_aktif: { dalam: 0, luar: 1 },
@@ -169,7 +169,7 @@ describe('Monitoring v2 API', () => {
           },
         ],
         totals: { active: 2, offline: 1, absent: 0, outside_area: 0 },
-        roster_totals: { scheduled: 3, clocked_in: 3, not_clocked_in: 0 },
+        roster_totals: { scheduled: 3, clocked_in: 3, belum_hadir: 0, tidak_hadir: 0 },
         presence_totals: {
           aktif: { dalam: 2, luar: 0 },
           tidak_aktif: { dalam: 0, luar: 1 },
