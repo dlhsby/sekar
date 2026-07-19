@@ -25,7 +25,8 @@ export interface NodeMarker {
   lng: number;
   scheduled: number;
   clocked_in: number;
-  not_clocked_in: number;
+  belum_hadir: number;
+  tidak_hadir: number;
   /** Active workers in scope — the number shown on the count marker. */
   active: number;
   /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */
@@ -43,9 +44,12 @@ export interface NodeMarkerLayerProps {
   onDrill?: (node: NodeMarker) => void;
   /** Accepted for API compatibility; labels now show at every zoom. */
   zoom?: number;
+  /** Geo filter selection (rayon/kawasan/lokasi id). When set, node bubbles that
+   *  don't match are dimmed to spotlight the selection. Null = no geo filter. */
+  activeGeoId?: string | null;
 }
 
-export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
+export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayerProps) {
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
@@ -82,13 +86,18 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
         // colored by staffing health (green ok / amber short / red none) so
         // per-node status still reads at a glance now that the pin shows identity.
         // Empty muted-dot lokasi stay unlabeled to keep dense rayons clean.
-        const showLabel = !isEmptyArea;
+        // Geo-filter spotlight: when a rayon/kawasan/lokasi is selected in the
+        // filter, dim (and drop the label of) the nodes that don't match, so the
+        // selected one stands out. No selection → everything at full opacity.
+        const dimmed = activeGeoId != null && node.id !== activeGeoId;
+        const showLabel = !isEmptyArea && !dimmed;
         return (
           <Marker
             key={`node-${node.id}`}
             position={{ lat: node.lat, lng: node.lng }}
             onClick={() => onDrill?.(node)}
             icon={icon}
+            opacity={dimmed ? 0.3 : 1}
             label={
               showLabel
                 ? {
@@ -101,7 +110,7 @@ export function NodeMarkerLayer({ nodes, onDrill }: NodeMarkerLayerProps) {
                 : undefined
             }
             title={node.name}
-            zIndex={node.variant === 'surabaya' ? 8 : 5}
+            zIndex={dimmed ? 3 : node.variant === 'surabaya' ? 8 : 5}
           />
         );
       })}

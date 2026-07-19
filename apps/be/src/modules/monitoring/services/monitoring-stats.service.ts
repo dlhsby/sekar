@@ -30,6 +30,7 @@ import {
 } from '../../schedules/entities/schedule.entity';
 
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
+import { resolveShiftWindow } from '../lib/presence-lifecycle';
 import {
   AreaStatsDto,
   UserStatusDto,
@@ -335,6 +336,10 @@ export class MonitoringStatsService {
     const currentShift = await this.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
     const today = TimezoneUtil.jakartaDateString();
+    // Split not-clocked-in scheduled workers into belum_hadir (still within the
+    // current shift's opening grace) vs tidak_hadir (past grace = no-show). One
+    // boolean for the whole response — the aggregate is current-shift scoped.
+    const beforeGrace = await this.isBeforeShiftGrace(currentShift);
     // Ad-hoc (off-schedule) workers: clocked in but not on the current shift's
     // roster. Surfaced as the "Luar jadwal" pill at every scope so they aren't
     // invisible above area scope (they're excluded from the scheduled presence).
@@ -354,6 +359,7 @@ export class MonitoringStatsService {
         currentDayType,
         today,
         clockedInSet,
+        beforeGrace,
       );
       return {
         scope,
@@ -368,6 +374,7 @@ export class MonitoringStatsService {
           today,
           currentShift?.id,
           clockedInSet,
+          beforeGrace,
         ),
         presence_totals: this.sumPresence(nodes),
         off_schedule_count: offScheduleCount(clockedInSet),
@@ -384,6 +391,7 @@ export class MonitoringStatsService {
         currentDayType,
         today,
         clockedInSet,
+        beforeGrace,
       );
       return {
         scope,
@@ -396,6 +404,7 @@ export class MonitoringStatsService {
           today,
           currentShift?.id,
           clockedInSet,
+          beforeGrace,
         ),
         presence_totals: this.sumPresence(nodes),
         off_schedule_count: offScheduleCount(clockedInSet),
@@ -404,7 +413,13 @@ export class MonitoringStatsService {
     }
 
     const clockedInSet = await this.clockedInUserSet({});
-    const nodes = await this.buildRayonNodes(currentShift?.id, currentDayType, today, clockedInSet);
+    const nodes = await this.buildRayonNodes(
+      currentShift?.id,
+      currentDayType,
+      today,
+      clockedInSet,
+      beforeGrace,
+    );
     return {
       scope,
       scope_id: null,
@@ -418,6 +433,7 @@ export class MonitoringStatsService {
         today,
         currentShift?.id,
         clockedInSet,
+        beforeGrace,
       ),
       presence_totals: this.sumPresence(nodes),
       off_schedule_count: offScheduleCount(clockedInSet),
@@ -431,6 +447,7 @@ export class MonitoringStatsService {
     dayType: DayType,
     today: string,
     clockedInSet: Set<string>,
+    beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
     const rayons = await this.rayonRepository.find();
 
@@ -495,7 +512,7 @@ export class MonitoringStatsService {
           countableOnlineByRayon.get(rayon.id),
           scheduledByRayon.get(rayon.id),
         ),
-        roster: this.rosterCountsFor(scheduledByRayon.get(rayon.id), clockedInSet),
+        roster: this.rosterCountsFor(scheduledByRayon.get(rayon.id), clockedInSet, beforeGrace),
         presence: presenceByRayon.get(rayon.id) ?? this.emptyPresence(),
         area_count: areaCountByRayon.get(rayon.id) ?? 0,
       }),
@@ -509,6 +526,7 @@ export class MonitoringStatsService {
     dayType: DayType,
     today: string,
     clockedInSet: Set<string>,
+    beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
     const areas = await this.areaRepository.find({
       where: { rayon_id: rayonId, is_active: true },
@@ -577,7 +595,7 @@ export class MonitoringStatsService {
           countableOnlineByArea.get(area.id),
           scheduledByArea.get(area.id),
         ),
-        roster: this.rosterCountsFor(scheduledByArea.get(area.id), clockedInSet),
+        roster: this.rosterCountsFor(scheduledByArea.get(area.id), clockedInSet, beforeGrace),
         presence: presenceByArea.get(area.id) ?? this.emptyPresence(),
         rayon_id: rayonId,
         region_id: area.region_id ?? null,
@@ -592,6 +610,7 @@ export class MonitoringStatsService {
     dayType: DayType,
     today: string,
     clockedInSet: Set<string>,
+    beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
     const regions = await this.regionRepository.find({
       where: { rayon_id: rayonId, is_active: true },
@@ -670,7 +689,7 @@ export class MonitoringStatsService {
           countableOnlineByRegion.get(region.id),
           scheduledByRegion.get(region.id),
         ),
-        roster: this.rosterCountsFor(scheduledByRegion.get(region.id), clockedInSet),
+        roster: this.rosterCountsFor(scheduledByRegion.get(region.id), clockedInSet, beforeGrace),
         presence: presenceByRegion.get(region.id) ?? this.emptyPresence(),
         location_count: locationCountByRegion.get(region.id) ?? 0,
       }),
@@ -910,7 +929,35 @@ export class MonitoringStatsService {
   }
 
   private emptyRosterCounts(): AggregateRosterCountsDto {
-    return { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+    return { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 };
+  }
+
+  /**
+   * Is "now" still within the current shift's opening grace window? Not-clocked-in
+   * scheduled workers are `belum_hadir` (not yet due) while true, `tidak_hadir`
+   * (no-show) once false. Null shift (between shifts) → treat as past grace so any
+   * stragglers count as no-shows, not not-yet-due.
+   */
+  private async isBeforeShiftGrace(shift: ShiftDefinition | null): Promise<boolean> {
+    // No shift (between shifts) or a shift without a window → treat as past grace,
+    // so any not-clocked-in stragglers count as no-shows, not not-yet-due.
+    if (!shift || !shift.start_time || !shift.end_time) return false;
+    const thresholds = this.cacheService
+      ? await this.cacheService.getThresholds()
+      : { late_grace_seconds: 900 };
+    const today = TimezoneUtil.jakartaDateString();
+    const { start } = resolveShiftWindow(
+      today,
+      shift.start_time,
+      shift.end_time,
+      this.shiftCrossesMidnight(shift),
+    );
+    return Date.now() < start.getTime() + thresholds.late_grace_seconds * 1000;
+  }
+
+  /** A shift whose end time is at or before its start crosses midnight. */
+  private shiftCrossesMidnight(shift: ShiftDefinition): boolean {
+    return shift.end_time <= shift.start_time;
   }
 
   private emptyPresence(): PresenceBreakdownDto {
@@ -1108,17 +1155,28 @@ export class MonitoringStatsService {
   }
 
   /** Build a node's roster trio from its scheduled set and the clocked-in set. */
+  /**
+   * Roster counts for one node. The aggregate is scoped to the CURRENT shift, so
+   * every not-clocked-in worker here shares that shift's window; `beforeGrace`
+   * (now < shift start + late grace) decides whether they are still not-yet-due
+   * (`belum_hadir`) or already a no-show (`tidak_hadir`). During an active shift
+   * past its grace this collapses to all-`tidak_hadir`, which is the fix for
+   * no-shows being mislabelled "Belum Hadir".
+   */
   private rosterCountsFor(
     scheduled: Set<string> | undefined,
     clockedIn: Set<string>,
+    beforeGrace: boolean,
   ): AggregateRosterCountsDto {
     if (!scheduled || scheduled.size === 0) return this.emptyRosterCounts();
     let clocked = 0;
     for (const u of scheduled) if (clockedIn.has(u)) clocked += 1;
+    const notClockedIn = Math.max(0, scheduled.size - clocked);
     return {
       scheduled: scheduled.size,
       clocked_in: clocked,
-      not_clocked_in: Math.max(0, scheduled.size - clocked),
+      belum_hadir: beforeGrace ? notClockedIn : 0,
+      tidak_hadir: beforeGrace ? 0 : notClockedIn,
     };
   }
 
@@ -1144,6 +1202,7 @@ export class MonitoringStatsService {
     today: string,
     shiftDefinitionId: string | undefined,
     clockedInSet: Set<string>,
+    beforeGrace: boolean,
   ): Promise<AggregateRosterCountsDto> {
     if (!shiftDefinitionId) return this.emptyRosterCounts();
     const qb = this.scheduleRepository
@@ -1158,7 +1217,7 @@ export class MonitoringStatsService {
     if (scope === 'rayon') qb.andWhere('s.rayon_id = :rayonId', { rayonId });
     const rows = await qb.getRawMany();
     const scheduled = new Set(rows.map((r) => r.user_id));
-    return this.rosterCountsFor(scheduled, clockedInSet);
+    return this.rosterCountsFor(scheduled, clockedInSet, beforeGrace);
   }
 
   private toNum(v: unknown): number | null {

@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, Settings } from 'lucide-react';
+import { SlidersHorizontal, RefreshCw, X, List, ChevronDown, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
 import {
@@ -23,7 +23,7 @@ import {
   type AggregateNode,
   type AggregateStatusCounts,
 } from '@/lib/api/monitoring-v2';
-import { useBoundaries } from '@/lib/api/monitoring';
+import { useBoundaries, useLocationHistory } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
 import { statusToActivity } from '@/lib/monitoring/markers';
@@ -98,7 +98,8 @@ function aggToMarker(n: AggregateNode): NodeMarker | null {
     lng: n.center_lng,
     scheduled: n.roster.scheduled,
     clocked_in: n.roster.clocked_in,
-    not_clocked_in: n.roster.not_clocked_in,
+    belum_hadir: n.roster.belum_hadir,
+    tidak_hadir: n.roster.tidak_hadir,
     active: n.counts_by_status.active,
     active_inside: n.presence.aktif.dalam,
     marker_icon: n.marker_icon ?? null,
@@ -116,7 +117,7 @@ export default function MonitoringPage() {
   type PresenceKey = 'aktif' | 'tidak_aktif' | 'tidak_hadir' | 'adhoc';
   const PRESENCE_PILLS: { key: PresenceKey; label: string; color: string }[] = [
     { key: 'aktif', label: t('monitoring:status.active'), color: 'var(--color-status-active)' },
-    { key: 'tidak_aktif', label: t('monitoring:status.offline'), color: 'var(--color-status-idle)' },
+    { key: 'tidak_aktif', label: t('monitoring:status.inactive'), color: 'var(--color-status-idle)' },
     { key: 'tidak_hadir', label: t('monitoring:status.absent'), color: 'var(--color-status-missing)' },
     { key: 'adhoc', label: t('monitoring:status.adhoc'), color: 'var(--color-status-offline)' },
   ];
@@ -148,11 +149,13 @@ export default function MonitoringPage() {
     locationId: 'all',
     role: 'all',
     teamId: 'all',
+    userId: 'all',
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
+  const [areaDetailOpen, setAreaDetailOpen] = useState(false);
   const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
   const [focusTarget, setFocusTarget] = useState<{
     lat: number;
@@ -228,8 +231,26 @@ export default function MonitoringPage() {
 
   const selectWorker = (id: string | null) => {
     setSelectedId(id);
-    if (id) setListOpen(true);
+    if (id) {
+      setListOpen(true);
+      setAreaDetailOpen(false);
+    }
   };
+
+  // Selected worker's movement trail for today — drawn as a polyline on the map
+  // so a marker click reads like the mobile detail (position + where they've been).
+  const todayStr = useMemo(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  }, []);
+  const trailQuery = useLocationHistory(selectedId, todayStr);
+  const trail = useMemo(
+    () =>
+      (trailQuery.data?.points ?? [])
+        .filter((p) => Number.isFinite(p.latitude) && Number.isFinite(p.longitude))
+        .map((p) => ({ lat: p.latitude, lng: p.longitude })),
+    [trailQuery.data]
+  );
 
   const focusOn = (lat: number, lng: number, zoom?: number, exact?: boolean) =>
     setFocusTarget((cur) => ({ lat, lng, zoom, exact, key: cur ? cur.key + 1 : 1 }));
@@ -347,6 +368,64 @@ export default function MonitoringPage() {
     // city is the top level — no drill-up above the rayons.
   };
 
+  // Jump straight back to the city (Surabaya) view — used by the breadcrumb root.
+  const resetToCity = () => {
+    setSelectedId(null);
+    setView({ scope: 'city' });
+    focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
+  };
+
+  // Resolve rayon/kawasan/lokasi names from the loaded boundaries so the
+  // breadcrumb can label each drill level (view only carries the current name).
+  const geoNames = useMemo(() => {
+    const rayon = new Map<string, string>();
+    const region = new Map<string, string>();
+    const area = new Map<string, string>();
+    for (const r of boundaries?.rayons ?? []) {
+      rayon.set(r.id, r.name);
+      for (const k of r.regions ?? []) region.set(k.id, k.name);
+      for (const a of r.areas ?? []) area.set(a.id, a.name);
+    }
+    return { rayon, region, area };
+  }, [boundaries]);
+
+  // Breadcrumb trail: Surabaya › Rayon › Kawasan › Lokasi. Each ancestor is a
+  // button that drills back to that level; the current (last) crumb is static.
+  const crumbs = useMemo<{ key: string; label: string; onClick?: () => void }[]>(() => {
+    const items: { key: string; label: string; onClick?: () => void }[] = [];
+    items.push({
+      key: 'city',
+      label: t('monitoring:breadcrumb.city'),
+      onClick: scope === 'city' ? undefined : resetToCity,
+    });
+    const rid = scope === 'rayon' ? view.id : view.rayonId;
+    if (rid) {
+      const name = geoNames.rayon.get(rid) ?? (scope === 'rayon' ? view.name : undefined) ?? t('common:entities.rayon');
+      items.push({
+        key: 'rayon',
+        label: name,
+        onClick: scope === 'rayon' ? undefined : () => drillToRayon(rid, name),
+      });
+    }
+    const kid = scope === 'region' ? view.id : scope === 'area' ? view.regionId : undefined;
+    if (kid) {
+      const name = geoNames.region.get(kid) ?? (scope === 'region' ? view.name : undefined) ?? t('monitoring:filters.kawasanLabel');
+      items.push({
+        key: 'region',
+        label: name,
+        onClick: scope === 'region' ? undefined : () => drillToRegion(kid, name, view.rayonId),
+      });
+    }
+    if (scope === 'area') {
+      items.push({
+        key: 'area',
+        label: geoNames.area.get(view.id ?? '') ?? view.name ?? t('monitoring:filters.lokasiLabel'),
+      });
+    }
+    return items;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scope, view, geoNames, t]);
+
   // The current node's own pin (rayon at rayon scope / area at area scope) — the
   // detail-opener. Coords come from the drill; fall back to the aggregate node /
   // boundary centre so it also renders on role-landing + drill-back.
@@ -380,9 +459,10 @@ export default function MonitoringPage() {
 
   // Tapping the current-node pin focuses it a touch tighter and opens the list
   // sheet (its children/detail) — mirrors mobile's marker → detail.
+  // Clicking the current node's pin opens its AREA DETAIL card (not the list).
   const onNodeDetail = (node: CurrentNodeMarker) => {
     focusOn(node.lat, node.lng, node.variant === 'area' ? 16 : 14);
-    setListOpen(true);
+    setAreaDetailOpen(true);
   };
 
   // Rayons list (surabaya + city), regions list (rayon), or areas list (region or rayon-without-regions),
@@ -435,7 +515,7 @@ export default function MonitoringPage() {
     const nodes = (regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id);
     const totals = { active: 0, offline: 0, absent: 0, outside_area: 0 };
     const presence_totals = { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } };
-    const roster_totals = { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
+    const roster_totals = { scheduled: 0, clocked_in: 0, belum_hadir: 0, tidak_hadir: 0 };
     for (const n of nodes) {
       totals.active += n.counts_by_status.active;
       totals.offline += n.counts_by_status.offline;
@@ -447,7 +527,8 @@ export default function MonitoringPage() {
       presence_totals.tidak_aktif.luar += n.presence.tidak_aktif.luar;
       roster_totals.scheduled += n.roster.scheduled;
       roster_totals.clocked_in += n.roster.clocked_in;
-      roster_totals.not_clocked_in += n.roster.not_clocked_in;
+      roster_totals.belum_hadir += n.roster.belum_hadir;
+      roster_totals.tidak_hadir += n.roster.tidak_hadir;
     }
     return { totals, presence_totals, roster_totals };
   }, [scope, view.id, regionAreasAgg.data]);
@@ -469,7 +550,7 @@ export default function MonitoringPage() {
     return aggregateToStatusCounts({
       active: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
       offline: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
-      absent: r?.not_clocked_in ?? 0,
+      absent: r?.tidak_hadir ?? 0,
       outside_area: (p?.aktif.luar ?? 0) + (p?.tidak_aktif.luar ?? 0),
     });
   }, [showWorkers, regionTotals, activeAgg.data, workers]);
@@ -497,7 +578,7 @@ export default function MonitoringPage() {
     return {
       aktif: (p?.aktif.dalam ?? 0) + (p?.aktif.luar ?? 0),
       tidak_aktif: (p?.tidak_aktif.dalam ?? 0) + (p?.tidak_aktif.luar ?? 0),
-      tidak_hadir: r?.not_clocked_in ?? 0,
+      tidak_hadir: r?.tidak_hadir ?? 0,
       // Ad-hoc (Luar jadwal): clocked in but off the current-shift roster — now
       // surfaced above area scope from the aggregate (was hard-0, hiding them).
       adhoc: activeAgg.data?.off_schedule_count ?? 0,
@@ -505,7 +586,19 @@ export default function MonitoringPage() {
 
   }, [showWorkers, workers, regionTotals, activeAgg.data]);
 
+  // ALL rayons from the city aggregate (not just those with live workers), so
+  // the cascade root lists every rayon. Fetched independently of the view scope
+  // (react-query dedupes with the city-scope view fetch); falls back to the
+  // snapshot/boundaries until it loads.
+  const allRayonsAgg = useMonitoringAggregate('city', undefined, canMonitor);
   const rayonOptions = useMemo<RayonOption[]>(() => {
+    const nodes = allRayonsAgg.data?.nodes ?? [];
+    if (nodes.length > 0) {
+      return nodes
+        .map((n) => ({ id: n.id, name: n.name }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+    }
+    // Fallback before the aggregate resolves.
     const map = new Map<string, string>();
     for (const w of workers) {
       if (w.rayon_id && w.rayon_name && !map.has(w.rayon_id)) map.set(w.rayon_id, w.rayon_name);
@@ -516,32 +609,40 @@ export default function MonitoringPage() {
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [workers, boundaries]);
+  }, [allRayonsAgg.data, workers, boundaries]);
 
-  // Kawasan options, narrowed to the selected rayon (cascade: rayon → kawasan).
+  // Full geo hierarchy for the FILTER-selected rayon (independent of the current
+  // view + of who is on shift): its kawasan (`region` aggregate) + its lokasi
+  // (`rayon` aggregate). Reuses the monitoring aggregate — perm-safe for every
+  // monitoring role, and react-query dedupes with the view's own fetches when
+  // the ids align. Gated on a concrete rayon selection (the cascade root).
+  const filterRayonId = filters.rayonId !== 'all' ? filters.rayonId : undefined;
+  const filterKawasanAgg = useMonitoringAggregate('region', filterRayonId, canMonitor && !!filterRayonId);
+  const filterLokasiAgg = useMonitoringAggregate('rayon', filterRayonId, canMonitor && !!filterRayonId);
+
+  // Kawasan options — EMPTY until a rayon is picked, then ALL kawasan in that
+  // rayon (even ones with no live worker). A rayon like Taman Aktif has none →
+  // stays empty and the panel disables the select.
   const regionOptions = useMemo<RayonOption[]>(() => {
-    const map = new Map<string, string>();
-    for (const w of workers) {
-      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
-      if (w.region_id && w.region_name && !map.has(w.region_id)) map.set(w.region_id, w.region_name);
-    }
-    return [...map.entries()]
-      .map(([id, name]) => ({ id, name }))
+    if (!filterRayonId) return [];
+    return (filterKawasanAgg.data?.nodes ?? [])
+      .map((n) => ({ id: n.id, name: n.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [workers, filters.rayonId]);
+  }, [filterRayonId, filterKawasanAgg.data]);
 
-  // Lokasi options, narrowed to the selected rayon + kawasan (cascade tail).
+  // Lokasi options — EMPTY until a rayon is picked; then ALL lokasi in the rayon
+  // (direct + under-kawasan), narrowed to a single kawasan's lokasi (by the
+  // node's region_id) once a kawasan is selected.
   const locationOptions = useMemo<RayonOption[]>(() => {
-    const map = new Map<string, string>();
-    for (const w of workers) {
-      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) continue;
-      if (filters.regionId !== 'all' && w.region_id !== filters.regionId) continue;
-      if (w.location_id && w.location_name && !map.has(w.location_id)) map.set(w.location_id, w.location_name);
-    }
-    return [...map.entries()]
-      .map(([id, name]) => ({ id, name }))
+    if (!filterRayonId) return [];
+    return (filterLokasiAgg.data?.nodes ?? [])
+      .filter((n) => filters.regionId === 'all' || n.region_id === filters.regionId)
+      .map((n) => ({ id: n.id, name: n.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [workers, filters.rayonId, filters.regionId]);
+  }, [filterRayonId, filters.regionId, filterLokasiAgg.data]);
+
+  const regionLoading = !!filterRayonId && filterKawasanAgg.isLoading;
+  const locationLoading = !!filterRayonId && filterLokasiAgg.isLoading;
 
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
@@ -559,6 +660,100 @@ export default function MonitoringPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [workers]);
 
+  // Petugas options cascade from the geo + status/role/team filters: the snapshot
+  // workers that everything ELSE would keep (the userId filter itself is excluded
+  // so picking a worker never empties its own list).
+  const workerOptions = useMemo<RayonOption[]>(() => {
+    return workers
+      .filter((w) => {
+        if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
+        if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
+        if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
+        if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
+        if (filters.role !== 'all' && w.role !== filters.role) return false;
+        if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
+        return true;
+      })
+      .map((w) => ({ id: w.user_id, name: w.full_name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [
+    workers,
+    filters.statuses,
+    filters.rayonId,
+    filters.regionId,
+    filters.locationId,
+    filters.role,
+    filters.teamId,
+  ]);
+
+  // Cascade / stale-selection guard: drop a kawasan / lokasi / team selection
+  // once it is no longer a valid option — after the parent rayon changes, or
+  // when the entity leaves the live snapshot (WS churn) — so a select never
+  // silently filters to nothing while showing a blank value.
+  useEffect(() => {
+    const patch: Partial<MonitoringFilterState> = {};
+    // Skip while the kawasan/lokasi hierarchy is still loading — its options are
+    // transiently empty then, and resetting would drop a still-valid selection.
+    if (
+      !regionLoading &&
+      filters.regionId !== 'all' &&
+      !regionOptions.some((o) => o.id === filters.regionId)
+    ) {
+      patch.regionId = 'all';
+    }
+    if (
+      !locationLoading &&
+      filters.locationId !== 'all' &&
+      !locationOptions.some((o) => o.id === filters.locationId)
+    ) {
+      patch.locationId = 'all';
+    }
+    // Team + Petugas are snapshot-derived; only reset once workers have loaded.
+    if (
+      workers.length > 0 &&
+      filters.teamId !== 'all' &&
+      !teamOptions.some((o) => o.id === filters.teamId)
+    ) {
+      patch.teamId = 'all';
+    }
+    if (
+      workers.length > 0 &&
+      filters.userId !== 'all' &&
+      !workerOptions.some((o) => o.id === filters.userId)
+    ) {
+      patch.userId = 'all';
+    }
+    if (Object.keys(patch).length > 0) setFilters((prev) => ({ ...prev, ...patch }));
+  }, [
+    workers.length,
+    regionOptions,
+    locationOptions,
+    teamOptions,
+    workerOptions,
+    regionLoading,
+    locationLoading,
+    filters.regionId,
+    filters.locationId,
+    filters.teamId,
+    filters.userId,
+  ]);
+
+  // The geo selection that scopes the node bubbles at the current drill level.
+  // Each level's nodes are CHILDREN of the current view, so we match only the
+  // child tier: city → rayon; rayon → kawasan (or region-less lokasi); region →
+  // lokasi. At region scope, `regionId` is the parent view (not a child), so it
+  // must NOT drive dimming or every lokasi bubble would fade. Null = no filter.
+  const activeGeoId = useMemo<string | null>(() => {
+    if (scope === 'city') return filters.rayonId !== 'all' ? filters.rayonId : null;
+    if (scope === 'rayon') {
+      if (filters.locationId !== 'all') return filters.locationId;
+      if (filters.regionId !== 'all') return filters.regionId;
+      return null;
+    }
+    if (scope === 'region') return filters.locationId !== 'all' ? filters.locationId : null;
+    return null;
+  }, [scope, filters.rayonId, filters.regionId, filters.locationId]);
+
   const filteredWorkers = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return workers.filter((w) => {
@@ -568,25 +763,45 @@ export default function MonitoringPage() {
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (filters.role !== 'all' && w.role !== filters.role) return false;
       if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
+      if (filters.userId !== 'all' && w.user_id !== filters.userId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [workers, filters]);
 
+  // The list shows every search match and DIMS the ones outside the geo
+  // spotlight (parity with the map, which dims rather than hides). The geo match
+  // only drives the "matched" count + which rows dim, not which rows render.
   const filteredNodes = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
-    if (!q) return listNodes;
-    return listNodes.filter((n) => n.name.toLowerCase().includes(q));
+    return q ? listNodes.filter((n) => n.name.toLowerCase().includes(q)) : listNodes;
   }, [listNodes, filters.search]);
+
+  const nodeMatchedCount = useMemo(
+    () =>
+      activeGeoId == null
+        ? filteredNodes.length
+        : filteredNodes.filter((n) => n.id === activeGeoId).length,
+    [filteredNodes, activeGeoId]
+  );
 
   const filteredAreaSummaries = useMemo(() => {
     if (filters.rayonId === 'all') return areaSummaries;
     return areaSummaries.filter((a) => a.rayon_id === filters.rayonId);
   }, [areaSummaries, filters.rayonId]);
 
+  // Workers drawn on the map are scoped to the DRILL level, not just the filter
+  // panel: at kawasan (region) scope only that kawasan's workers show; at lokasi
+  // (area) scope only that lokasi's. At rayon/city all of the fetched workers show.
+  const drillScopedWorkers = useMemo(() => {
+    if (scope === 'region') return filteredWorkers.filter((w) => w.region_id === view.id);
+    if (scope === 'area') return filteredWorkers.filter((w) => w.location_id === view.id);
+    return filteredWorkers;
+  }, [filteredWorkers, scope, view.id]);
+
   const mapWorkers = useMemo<SimpleWorker[]>(
     () =>
-      filteredWorkers.map((w) => ({
+      drillScopedWorkers.map((w) => ({
         user_id: w.user_id,
         full_name: w.full_name,
         lat: w.lat,
@@ -599,8 +814,9 @@ export default function MonitoringPage() {
         team_id: w.team_id ?? null,
         team_name: w.team_name ?? null,
         team_color: w.team_color ?? null,
+        team_icon: w.team_icon ?? null,
       })),
-    [filteredWorkers]
+    [drillScopedWorkers]
   );
 
   const isLoading = showWorkers ? snapshot.isLoading : activeAgg.isLoading;
@@ -620,7 +836,7 @@ export default function MonitoringPage() {
       toast.error(t('monitoring:page.refreshError'));
     }
   };
-  const listCount = showWorkers ? filteredWorkers.length : filteredNodes.length;
+  const listCount = showWorkers ? filteredWorkers.length : nodeMatchedCount;
 
   if (authLoading || !user) {
     return (
@@ -645,35 +861,64 @@ export default function MonitoringPage() {
         showWorkers={showWorkers}
         scope={scope}
         nodeMarkers={nodeMarkers}
+        activeGeoId={activeGeoId}
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
         areaId={scope === 'area' ? view.id ?? null : null}
+        regionId={scope === 'region' ? view.id ?? null : null}
         workers={mapWorkers}
         boundaries={boundaries ?? null}
         selectedId={selectedId}
         onSelect={selectWorker}
         layers={layers}
         focusTarget={focusTarget}
+        trail={trail}
       />
 
       {/* Top overlay: breadcrumb + search + settings + filter + refresh + status pills */}
       <div className="pointer-events-none absolute inset-x-3 top-3 z-20 flex flex-col gap-2">
-        <div className="pointer-events-none flex items-center gap-2">
-          {/* Back / breadcrumb */}
+        {/* Row 1 — full-width breadcrumb so the current location is always visible
+            (esp. mobile, where the back button used to be an unlabeled icon). Back
+            steps up one level; each ancestor crumb jumps straight to that level. */}
+        <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-2 py-1.5 shadow-nb-sm backdrop-blur-sm">
           {canGoBack && (
             <button
               type="button"
               onClick={goBack}
               aria-label={t('monitoring:page.backLabel')}
-              className="pointer-events-auto flex h-11 items-center gap-1 rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 text-sm font-bold text-nb-black shadow-nb-sm hover:bg-nb-gray-50"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-nb-sm text-nb-black hover:bg-nb-gray-100"
             >
               <ChevronLeft className="h-4 w-4" />
-              <span className="hidden max-w-[8rem] truncate sm:inline">
-                {view.name ?? t('monitoring:page.backLabel')}
-              </span>
             </button>
           )}
+          <nav
+            className="flex min-w-0 items-center gap-1 whitespace-nowrap text-sm"
+            aria-label={t('monitoring:breadcrumb.label')}
+          >
+            {crumbs.map((c, i) => (
+              <span key={c.key} className="flex shrink-0 items-center gap-1">
+                {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-nb-gray-400" aria-hidden="true" />}
+                {c.onClick ? (
+                  <button
+                    type="button"
+                    onClick={c.onClick}
+                    className="max-w-[9rem] truncate font-semibold text-nb-gray-600 hover:text-nb-black hover:underline"
+                  >
+                    {c.label}
+                  </button>
+                ) : (
+                  <span className="max-w-[12rem] truncate font-bold text-nb-black" aria-current="page">
+                    {c.label}
+                  </span>
+                )}
+              </span>
+            ))}
+          </nav>
+        </div>
+
+        {/* Row 2 — search + tools */}
+        <div className="pointer-events-none flex items-center gap-2">
           {/* Search (recent + grouped results + click-to-locate) */}
           <MonitoringSearch
             workers={workers}
@@ -766,8 +1011,11 @@ export default function MonitoringPage() {
             rayonOptions={rayonOptions}
             regionOptions={regionOptions}
             locationOptions={locationOptions}
+            regionLoading={regionLoading}
+            locationLoading={locationLoading}
             roleOptions={roleOptions}
             teamOptions={teamOptions}
+            workerOptions={workerOptions}
             total={showWorkers ? workers.length : listNodes.length}
             matched={listCount}
             showSearch={false}
@@ -815,6 +1063,7 @@ export default function MonitoringPage() {
           ) : (
             <AggregateNodeList
               nodes={filteredNodes}
+              activeGeoId={activeGeoId}
               onDrill={onDrillListNode}
               className="min-h-0 flex-1 shadow-nb-lg"
             />
@@ -832,6 +1081,67 @@ export default function MonitoringPage() {
             {listCount}
           </span>
         </button>
+      )}
+
+      {/* Area detail card — opens when the current node's pin is tapped (parity
+          with mobile's area info). Shows the drilled node's presence + roster. */}
+      {areaDetailOpen && currentNode && (
+        <div className="absolute right-3 top-40 z-30 w-72 rounded-nb-md border-2 border-nb-black bg-nb-white p-3 shadow-nb-lg sm:top-32">
+          <div className="mb-2 flex items-start justify-between gap-2">
+            <div>
+              <p className="text-xs font-bold uppercase text-nb-gray-500">
+                {t(`monitoring:areaDetail.${currentNode.variant}`)}
+              </p>
+              <h2 className="text-sm font-black leading-tight text-nb-black">{currentNode.name}</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAreaDetailOpen(false)}
+              aria-label={t('monitoring:page.closePanelLabel')}
+              className="shrink-0 rounded-nb-sm p-1 text-nb-gray-500 hover:bg-nb-gray-100 hover:text-nb-black"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {/* Presence */}
+          <div className="grid grid-cols-2 gap-1.5">
+            {PRESENCE_PILLS.map((p) => (
+              <div
+                key={p.key}
+                className="flex items-center justify-between rounded-nb-sm border border-nb-gray-200 px-2 py-1 text-xs"
+              >
+                <span className="flex items-center gap-1.5 text-nb-gray-600">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
+                  {p.label}
+                </span>
+                <span className="font-mono font-bold tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
+              </div>
+            ))}
+          </div>
+          {/* Roster */}
+          {(() => {
+            const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
+            if (!r) return null;
+            const rows: [string, number][] = [
+              [t('monitoring:aggregate.scheduledLabel'), r.scheduled],
+              [t('monitoring:aggregate.clockedInLabel'), r.clocked_in],
+              [t('monitoring:aggregate.belumHadirLabel'), r.belum_hadir],
+              [t('monitoring:aggregate.tidakHadirLabel'), r.tidak_hadir],
+            ];
+            return (
+              <div className="mt-2 border-t-2 border-nb-gray-200 pt-2">
+                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
+                  {rows.map(([label, n]) => (
+                    <span key={label} className="flex items-baseline gap-1">
+                      <span className="font-mono font-bold tabular-nums text-nb-black">{n}</span>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
       )}
 
       {/* Bulk reassign modal */}

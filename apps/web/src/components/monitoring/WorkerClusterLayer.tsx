@@ -1,24 +1,20 @@
 'use client';
 
 /**
- * WorkerClusterLayer — renders individual worker pins + team bubbles clustered
- * with supercluster ("Semua Petugas" mode). Zoomed out, dense workers collapse
- * into count bubbles; team bubbles group ≥2-member teams. Zooming in (or
- * clicking a cluster) splits them into pins and individual team members.
- * This keeps the map responsive even when hundreds of workers are on screen.
+ * WorkerClusterLayer — renders EVERY worker as an individual pin (no clustering).
+ * Clustering (the supercluster count bubbles) was removed on request: it hid
+ * people and confused operators. Each worker is always drawn; the only optional
+ * collapse is team bubbles (the "Tim" layer toggle), which group a team's members
+ * into one bubble that expands on click. Team identity otherwise rides each pin's
+ * color. Trade-off: with hundreds of pins on screen the map does more work than
+ * the old clustered layer — acceptable at rayon/kawasan/lokasi scope where the
+ * live worker count is bounded.
  */
 import { useMemo } from 'react';
 import { Marker } from '@react-google-maps/api';
-import Supercluster from 'supercluster';
 import { workerPinIcon, statusToActivity, teamBubbleIcon } from '@/lib/monitoring/markers';
 import { groupWorkersByTeam, type TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { SimpleWorker } from './SimpleMonitoringMap';
-
-/* eslint-disable sekar-design/no-inline-hex-colors -- Google overlay options, not rendered style tokens */
-const BLACK = '#1C1917';
-const WHITE = '#FFFFFF';
-const CLUSTER = '#1A4D2E';
-/* eslint-enable sekar-design/no-inline-hex-colors */
 
 export interface MapBounds {
   west: number;
@@ -30,182 +26,74 @@ export interface MapBounds {
 export interface WorkerClusterLayerProps {
   workers: SimpleWorker[];
   zoom: number;
-  bounds: MapBounds | null;
+  /** Retained for signature compatibility; unused now that there is no clustering. */
+  bounds?: MapBounds | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
+  /** Zoom + recenter when a team bubble is clicked (to reveal its members). */
   onClusterClick?: (lat: number, lng: number, expansionZoom: number) => void;
   /** Collapse ≥2-member teams into one bubble below the expand zoom. When false,
-   *  every worker renders individually (the Tim layer toggle is off). */
+   *  every worker (team members included) renders as its own pin. */
   teamBubbles?: boolean;
-}
-
-type WorkerProps = {
-  kind?: 'worker';
-  workerId: string;
-  status: string;
-  role: string;
-  roleMarkerIcon: string | null;
-  full_name: string;
-  within: boolean;
-  scheduled: boolean;
-};
-
-type TeamProps = {
-  kind: 'team';
-  team_id: string;
-  team_name: string;
-  team_color: string | null;
-  member_count: number;
-  member_ids: string[];
-};
-
-type FeatureProps = WorkerProps | TeamProps;
-
-function clusterSymbol(pointCount: number): google.maps.Symbol {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: Math.min(24, 12 + Math.log2(pointCount + 1) * 3),
-    fillColor: CLUSTER,
-    fillOpacity: 0.92,
-    strokeColor: BLACK,
-    strokeWeight: 2,
-  };
 }
 
 export function WorkerClusterLayer({
   workers,
   zoom,
-  bounds,
   selectedId,
   onSelect,
   onClusterClick,
   teamBubbles = true,
 }: WorkerClusterLayerProps) {
-  // Group workers by team (collapses ≥2-member teams into bubbles below the
-  // expand zoom). When the Tim layer is off, pass expandZoom 0 so grouping never
-  // kicks in and every worker renders individually.
+  // Group workers by team only when the Tim layer is on (collapses ≥2-member
+  // teams below the expand zoom). Otherwise every worker renders individually.
+  // No supercluster: the returned renderables are drawn one-to-one.
   const renderables = useMemo(
-    () => groupWorkersByTeam(workers, zoom, teamBubbles ? 17 : 0),
+    () =>
+      groupWorkersByTeam(workers, zoom, teamBubbles ? 17 : 0).filter(
+        (r) => Number.isFinite(r.lat) && Number.isFinite(r.lng)
+      ),
     [workers, zoom, teamBubbles]
   );
 
-  // Build the supercluster index from workers + team groups with valid coordinates.
-  const index = useMemo(() => {
-    const sc = new Supercluster<FeatureProps>({ radius: 60, maxZoom: 18 });
-    sc.load(
-      renderables
-        .filter((r) => Number.isFinite(r.lat) && Number.isFinite(r.lng))
-        .map((r) => {
-          if ('kind' in r && r.kind === 'team') {
-            const team = r as TeamGroup;
-            return {
-              type: 'Feature' as const,
-              properties: {
-                kind: 'team' as const,
-                team_id: team.team_id,
-                team_name: team.team_name,
-                team_color: team.team_color,
-                member_count: team.member_count,
-                member_ids: team.member_ids,
-              },
-              geometry: { type: 'Point' as const, coordinates: [team.lng, team.lat] },
-            };
-          }
-          const worker = r as SimpleWorker;
-          return {
-            type: 'Feature' as const,
-            properties: {
-              kind: 'worker' as const,
-              workerId: worker.user_id,
-              status: worker.status,
-              role: worker.role,
-              roleMarkerIcon: worker.role_marker_icon ?? null,
-              full_name: worker.full_name,
-              within: worker.is_within_area,
-              scheduled: worker.is_scheduled,
-            },
-            geometry: { type: 'Point' as const, coordinates: [worker.lng, worker.lat] },
-          };
-        })
-    );
-    return sc;
-  }, [renderables]);
-
-  const clusters = useMemo(() => {
-    const bbox: [number, number, number, number] = bounds
-      ? [bounds.west, bounds.south, bounds.east, bounds.north]
-      : [-180, -85, 180, 85];
-    return index.getClusters(bbox, Math.round(zoom));
-  }, [index, bounds, zoom]);
-
   return (
     <>
-      {clusters.map((feature) => {
-        const [lng, lat] = feature.geometry.coordinates;
-        const props = feature.properties as
-          | (FeatureProps & { cluster?: false })
-          | { cluster: true; cluster_id: number; point_count: number };
-
-        // Supercluster cluster (count bubble).
-        if ('cluster' in props && props.cluster) {
-          return (
-            <Marker
-              key={`cluster-${props.cluster_id}`}
-              position={{ lat, lng }}
-              icon={clusterSymbol(props.point_count)}
-              label={{
-                text: String(props.point_count),
-                color: WHITE,
-                fontSize: '11px',
-                fontWeight: '700',
-              }}
-              onClick={() => {
-                const expansionZoom = Math.min(index.getClusterExpansionZoom(props.cluster_id), 18);
-                onClusterClick?.(lat, lng, expansionZoom);
-              }}
-              zIndex={6}
-            />
-          );
-        }
-
-        // Team bubble (≥2-member team).
-        if ('kind' in props && props.kind === 'team') {
-          const team = props as TeamProps;
+      {renderables.map((r) => {
+        // Team bubble (≥2-member team, Tim layer on, below expand zoom).
+        if ('kind' in r && r.kind === 'team') {
+          const team = r as TeamGroup;
           return (
             <Marker
               key={`team-${team.team_id}`}
-              position={{ lat, lng }}
-              icon={teamBubbleIcon(team.team_color, team.member_count, team.team_name)}
-              onClick={() => {
-                // Zoom to expand and reveal individual team members.
-                onClusterClick?.(lat, lng, 17);
-              }}
+              position={{ lat: team.lat, lng: team.lng }}
+              icon={teamBubbleIcon(team.team_color, team.member_count, team.team_name, team.team_icon)}
+              onClick={() => onClusterClick?.(team.lat, team.lng, 17)}
               zIndex={5}
             />
           );
         }
 
         // Individual worker pin.
-        const leaf = props as WorkerProps;
-        const selected = leaf.workerId === selectedId;
+        const worker = r as SimpleWorker;
+        const selected = worker.user_id === selectedId;
         return (
           <Marker
-            key={`worker-${leaf.workerId}`}
-            position={{ lat, lng }}
-            icon={workerPinIcon(leaf.role, {
-              activity: statusToActivity(leaf.status),
-              outside: !leaf.within,
-              adHoc: !leaf.scheduled,
+            key={`worker-${worker.user_id}`}
+            position={{ lat: worker.lat, lng: worker.lng }}
+            icon={workerPinIcon(worker.role, {
+              activity: statusToActivity(worker.status),
+              outside: !worker.is_within_area,
+              adHoc: !worker.is_scheduled,
               selected,
-              markerIcon: leaf.roleMarkerIcon,
+              markerIcon: worker.role_marker_icon ?? null,
             })}
             label={{
-              text: leaf.full_name,
+              text: worker.full_name,
               className: 'worker-marker-label',
               fontSize: '11px',
               fontWeight: '600',
             }}
-            onClick={() => onSelect?.(leaf.workerId)}
+            onClick={() => onSelect?.(worker.user_id)}
             zIndex={selected ? 10 : 4}
           />
         );

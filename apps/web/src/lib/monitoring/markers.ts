@@ -398,16 +398,22 @@ export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
 export function teamBubbleIcon(
   teamColor: string | null,
   memberCount: number,
-  teamName: string
+  teamName: string,
+  glyph?: string | null
 ): google.maps.Icon {
   const color = teamColor ?? TEAM_DEFAULT;
   const w = 90;
   const h = 46;
+  const glyphPath = glyph ? ALL_GLYPHS[glyph] ?? null : null;
 
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">` +
     `<rect x="2" y="2" width="${w - 4}" height="${h - 4}" rx="12" fill="${WHITE}" stroke="${color}" stroke-width="3"/>` +
-    `<text x="50%" y="18" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="800" fill="${color}" letter-spacing="0.5">${memberCount}</text>` +
+    // Team glyph (left, in the team color) when configured — identifies the crew type.
+    (glyphPath
+      ? `<g transform="translate(16 16) scale(0.7) translate(-12 -12)" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${glyphPath}</g>`
+      : '') +
+    `<text x="${glyphPath ? '58%' : '50%'}" y="18" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="20" font-weight="800" fill="${color}" letter-spacing="0.5">${memberCount}</text>` +
     `<text x="50%" y="40" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="600" fill="${BLACK}">${teamName}</text>` +
     `</svg>`;
 

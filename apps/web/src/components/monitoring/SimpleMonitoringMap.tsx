@@ -9,7 +9,7 @@
  * Wrapped in GoogleMapsGate so it degrades to a placeholder when no key is set.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, Marker, Polygon, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Marker, Polygon, Polyline, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
@@ -17,8 +17,8 @@ import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
-import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
-import { nodeDetailIcon } from '@/lib/monitoring/markers';
+import { WorkerClusterLayer } from './WorkerClusterLayer';
+import { pinMarker, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 
 /** The current node's own pin (selected rayon at rayon scope / area at area scope). */
 export interface CurrentNodeMarker {
@@ -43,6 +43,7 @@ export interface SimpleWorker {
   team_id?: string | null;
   team_name?: string | null;
   team_color?: string | null;
+  team_icon?: string | null;
 }
 
 export interface SimpleMonitoringMapProps {
@@ -54,12 +55,18 @@ export interface SimpleMonitoringMapProps {
   /** Current drill scope — gates which boundary layers draw. */
   scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'area';
   nodeMarkers?: NodeMarker[];
+  /** Geo id selected in the filter (rayon/kawasan/lokasi). Non-matching node
+   *  bubbles are dimmed to spotlight the selection. Null = no geo filter. */
+  activeGeoId?: string | null;
   onDrillNode?: (node: NodeMarker) => void;
   /** The current node's own pin (rayon/area) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
   /** Selected area id — at area scope only its boundary is drawn (on demand). */
   areaId?: string | null;
+  /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
+   *  (other kawasan hidden), matching the drill-down narrowing. */
+  regionId?: string | null;
   workers: SimpleWorker[];
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
@@ -69,6 +76,8 @@ export interface SimpleMonitoringMapProps {
   /** Imperative focus target (from search / drill). `exact` sets the zoom
    *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
   focusTarget?: { lat: number; lng: number; zoom?: number; exact?: boolean; key: number } | null;
+  /** Selected worker's location trail (today) — drawn as a polyline when set. */
+  trail?: google.maps.LatLngLiteral[] | null;
 }
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
@@ -104,9 +113,6 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 };
 
 const DEFAULT_ZOOM = 11;
-// Zoom at which individual worker pins take over from node markers inside a
-// rayon/kawasan (matches the page's ZOOM_AREA drill target).
-const WORKER_REVEAL_ZOOM = 15;
 // Alpha for the rayon fill when tinted with its configured color.
 const RAYON_FILL_ALPHA = 0.18;
 
@@ -155,16 +161,19 @@ function MonitoringMapInner({
   showWorkers,
   scope,
   nodeMarkers,
+  activeGeoId,
   onDrillNode,
   currentNode,
   onNodeDetail,
   areaId,
+  regionId,
   workers,
   boundaries,
   selectedId,
   onSelect,
   layers = DEFAULT_LAYERS,
   focusTarget,
+  trail,
 }: SimpleMonitoringMapProps) {
   const { t } = useTranslation();
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -172,32 +181,25 @@ function MonitoringMapInner({
   const locateAddedRef = useRef(false);
   const didFitRef = useRef(false);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
-  const [bounds, setBounds] = useState<MapBounds | null>(null);
 
-  // Workers reveal by ZOOM, not only by clicking into an area (ADR-046: "workers
-  // render only at deeper zoom"). Once you zoom past the area threshold inside a
-  // rayon/kawasan, individual worker pins take over from the node markers.
+  // Workers render immediately at every level that has them — area, rayon AND
+  // kawasan — as soon as the Petugas layer is on (no zoom gate). The geo node
+  // bubbles are drawn alongside (never replaced), so drilling into a rayon shows
+  // its kawasan/lokasi AND the people on the ground at once.
   const renderWorkers =
-    showWorkers ||
-    (zoom >= WORKER_REVEAL_ZOOM && (scope === 'rayon' || scope === 'region'));
+    layers.petugas && (showWorkers || scope === 'rayon' || scope === 'region');
 
-  // Track viewport zoom + bounds so supercluster recomputes on pan/zoom.
+  // Track viewport zoom so team-bubble collapse recomputes on pan/zoom.
   const syncViewport = useCallback((map: google.maps.Map) => {
     const z = map.getZoom();
     if (typeof z === 'number') setZoom(z);
-    const b = map.getBounds();
-    if (b) {
-      const ne = b.getNorthEast();
-      const sw = b.getSouthWest();
-      setBounds({ north: ne.lat(), east: ne.lng(), south: sw.lat(), west: sw.lng() });
-    }
   }, []);
 
   // Flatten boundary geometry into renderable pieces. Rayon polygons keep their
   // configured color so the map can tint the fill/border per rayon.
   const { rayonPolys, regionPolys, areaPaths } = useMemo(() => {
     const rayonPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
-    const regionPolys: { paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
+    const regionPolys: { id: string; paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     const areaPaths: { id: string; paths: google.maps.LatLngLiteral[]; color: string | null }[] = [];
     for (const rayon of boundaries?.rayons ?? []) {
       geometryToPaths(rayon.boundary_polygon).forEach((p) =>
@@ -205,7 +207,7 @@ function MonitoringMapInner({
       );
       for (const region of rayon.regions ?? []) {
         geometryToPaths(region.boundary_polygon).forEach((p) =>
-          regionPolys.push({ paths: p, color: region.color ?? null })
+          regionPolys.push({ id: region.id, paths: p, color: region.color ?? null })
         );
       }
       for (const area of rayon.areas) {
@@ -306,15 +308,31 @@ function MonitoringMapInner({
   // outlines only once inside a rayon. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
   const showRayonPolys = scope !== 'surabaya';
-  // Kawasan outlines are drawn tinted once you're inside a rayon (rayon/region scope).
+  // Kawasan outlines: all of a rayon's kawasan at rayon scope; ONLY the drilled
+  // kawasan once you're inside one (region scope) — the others hide so the view
+  // narrows to that kawasan.
   const showRegionPolys = scope === 'rayon' || scope === 'region';
-  // Area outlines are on-demand: only at area scope, and only the SELECTED area's
-  // polygon (mirrors mobile — never all of a rayon's areas at once).
-  const showAreaBorders = scope === 'area';
-  const visibleAreaPaths = useMemo(
-    () => (scope === 'area' && areaId ? areaPaths.filter((a) => a.id === areaId) : areaPaths),
-    [areaPaths, scope, areaId]
+  const visibleRegionPolys = useMemo(
+    () => (scope === 'region' && regionId ? regionPolys.filter((r) => r.id === regionId) : regionPolys),
+    [regionPolys, scope, regionId]
   );
+  // Lokasi outlines: the SELECTED area at area scope; at rayon/kawasan scope the
+  // lokasi shown as node markers (direct lokasi under the rayon, or the kawasan's
+  // lokasi) get their boundary drawn too, so drilling in reveals location shapes
+  // immediately — not just after zooming to a single area.
+  const showAreaBorders = scope === 'area' || scope === 'rayon' || scope === 'region';
+  // Ids of the lokasi currently drawn as node markers (variant 'area'); used to
+  // draw exactly those lokasi's boundaries at rayon/kawasan scope.
+  const nodeAreaIds = useMemo(
+    () => new Set((nodeMarkers ?? []).filter((n) => n.variant === 'area').map((n) => n.id)),
+    [nodeMarkers]
+  );
+  const visibleAreaPaths = useMemo(() => {
+    if (scope === 'area' && areaId) return areaPaths.filter((a) => a.id === areaId);
+    if (scope === 'rayon' || scope === 'region')
+      return areaPaths.filter((a) => nodeAreaIds.has(a.id));
+    return areaPaths;
+  }, [areaPaths, scope, areaId, nodeAreaIds]);
 
   // At area scope, frame the SELECTED area's boundary once it loads — a reliable
   // "focus in" that beats a fixed zoom (areas vary in size). Runs once per area.
@@ -383,7 +401,7 @@ function MonitoringMapInner({
         {/* Kawasan (region) boundaries — outline + light tint in the kawasan's
             own color; drawn once you're inside a rayon. */}
         {layers.kawasan && showRegionPolys &&
-          regionPolys.map((poly, i) => {
+          visibleRegionPolys.map((poly, i) => {
             const stroke = poly.color ?? POLYGON_STYLES.rayon.stroke;
             const fill =
               (poly.color && hexToRgba(poly.color, RAYON_FILL_ALPHA * 0.6)) ??
@@ -426,31 +444,56 @@ function MonitoringMapInner({
             />
           ))}
 
-        {/* Drill-down node markers (Surabaya / rayon / area) — always drawn, the
-            map's primary content — or clustered worker pins (gated by `petugas`).
-            `teamBubbles` collapses each team's members into one bubble. */}
-        {!renderWorkers ? (
-          <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} />
-        ) : layers.petugas ? (
+        {/* Geo node markers (Surabaya / rayon / kawasan / lokasi bubbles) — always
+            drawn (the marker layer can't be hidden). At area scope nodeMarkers is
+            empty, so nothing renders there. */}
+        <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
+
+        {/* Selected worker's movement trail (today) — a dashed path under the pins. */}
+        {trail && trail.length >= 2 && (
+          <Polyline
+            path={trail}
+            options={{
+              strokeColor: POLYGON_STYLES.rayon.stroke,
+              strokeOpacity: 0.9,
+              strokeWeight: 3,
+              icons: [
+                {
+                  icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
+                  offset: '0',
+                  repeat: '12px',
+                },
+              ],
+              clickable: false,
+              zIndex: 3,
+            }}
+          />
+        )}
+
+        {/* Worker pins (individual + optional team bubbles) — drawn ALONGSIDE the
+            node bubbles at rayon/kawasan/area scope, no clustering. */}
+        {renderWorkers && (
           <WorkerClusterLayer
             workers={workers}
             zoom={zoom}
-            bounds={bounds}
             selectedId={selectedId}
             onSelect={onSelect}
             onClusterClick={handleClusterZoom}
             teamBubbles={layers.teamBubbles}
           />
-        ) : null}
+        )}
 
-        {/* Current-node pin (selected rayon at rayon scope / area at area scope):
-            an icon marker that opens the node's detail — never drills. */}
+        {/* Current-node pin (the rayon/area you drilled into): a glyph teardrop
+            (kind default glyph) that opens the node's detail — never drills. */}
         {currentNode && (
           <Marker
             key={`current-node-${currentNode.id}`}
             position={{ lat: currentNode.lat, lng: currentNode.lng }}
             onClick={() => onNodeDetail?.(currentNode)}
-            icon={nodeDetailIcon(currentNode.variant)}
+            icon={pinMarker(KIND_DEFAULT_GLYPH[currentNode.variant], {
+              outline: MARKER_NEUTRAL_OUTLINE,
+              big: true,
+            })}
             zIndex={50}
             title={currentNode.name}
           />

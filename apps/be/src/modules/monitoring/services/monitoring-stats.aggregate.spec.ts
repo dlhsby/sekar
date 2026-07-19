@@ -194,7 +194,7 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(r1.area_count).toBe(2);
 
     // Roster trio: 3 scheduled, 2 clocked in (u1,u2), 1 not clocked in.
-    expect(r1.roster).toEqual({ scheduled: 3, clocked_in: 2, not_clocked_in: 1 });
+    expect(r1.roster).toEqual({ scheduled: 3, clocked_in: 2, belum_hadir: 0, tidak_hadir: 1 });
     // Presence breakdown of the clocked-in workers (active→aktif, offline→tidak_aktif;
     // within/outside is the is_within_area axis).
     expect(r1.presence).toEqual({
@@ -207,14 +207,19 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(r2.is_understaffed).toBe(false); // 2 online >= 0 required
     expect(r2.center_lat).toBeNull();
     // u4 scheduled, nobody from rayon-2 clocked in.
-    expect(r2.roster).toEqual({ scheduled: 1, clocked_in: 0, not_clocked_in: 1 });
+    expect(r2.roster).toEqual({ scheduled: 1, clocked_in: 0, belum_hadir: 0, tidak_hadir: 1 });
 
     // Totals sum across rayons.
     expect(res.totals.active).toBe(7);
     expect(res.totals.offline).toBe(1);
     // Roster totals are scope-wide distinct (u1..u4), not Σ nodes — so a
     // rayon-less rostered worker would still be counted here.
-    expect(res.roster_totals).toEqual({ scheduled: 4, clocked_in: 2, not_clocked_in: 2 });
+    expect(res.roster_totals).toEqual({
+      scheduled: 4,
+      clocked_in: 2,
+      belum_hadir: 0,
+      tidak_hadir: 2,
+    });
     // Presence totals sum across nodes (only rayon-1 has hadir workers).
     expect(res.presence_totals).toEqual({
       aktif: { dalam: 2, luar: 1 },
@@ -274,14 +279,19 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(a1.is_understaffed).toBe(false); // 3 online >= 2 required
     expect(a1.center_lat).toBe(-7.29);
     // 3 scheduled, 1 clocked in (u1), 2 not clocked in.
-    expect(a1.roster).toEqual({ scheduled: 3, clocked_in: 1, not_clocked_in: 2 });
+    expect(a1.roster).toEqual({ scheduled: 3, clocked_in: 1, belum_hadir: 0, tidak_hadir: 2 });
     // u1 is offline & inside → tidak_aktif/dalam.
     expect(a1.presence).toEqual({
       aktif: { dalam: 0, luar: 0 },
       tidak_aktif: { dalam: 1, luar: 0 },
     });
     // Scope-wide totals match the single area here.
-    expect(res.roster_totals).toEqual({ scheduled: 3, clocked_in: 1, not_clocked_in: 2 });
+    expect(res.roster_totals).toEqual({
+      scheduled: 3,
+      clocked_in: 1,
+      belum_hadir: 0,
+      tidak_hadir: 2,
+    });
   });
 
   it('rayon scope without id throws NotFound', async () => {
@@ -294,7 +304,12 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(res.scope).toBe('rayon');
     expect(res.nodes).toEqual([]);
     expect(res.totals).toEqual({ active: 0, offline: 0, absent: 0, outside_area: 0 });
-    expect(res.roster_totals).toEqual({ scheduled: 0, clocked_in: 0, not_clocked_in: 0 });
+    expect(res.roster_totals).toEqual({
+      scheduled: 0,
+      clocked_in: 0,
+      belum_hadir: 0,
+      tidak_hadir: 0,
+    });
     expect(res.presence_totals).toEqual({
       aktif: { dalam: 0, luar: 0 },
       tidak_aktif: { dalam: 0, luar: 0 },
@@ -404,7 +419,7 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(rg1.location_count).toBe(2);
 
     // Roster trio: 3 scheduled, 2 clocked in (r1,r2), 1 not clocked in.
-    expect(rg1.roster).toEqual({ scheduled: 3, clocked_in: 2, not_clocked_in: 1 });
+    expect(rg1.roster).toEqual({ scheduled: 3, clocked_in: 2, belum_hadir: 0, tidak_hadir: 1 });
     // Presence breakdown of the clocked-in workers.
     expect(rg1.presence).toEqual({
       aktif: { dalam: 2, luar: 0 },
@@ -416,13 +431,18 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(rg2.is_understaffed).toBe(true); // 2 online < 4 required (r4/r5 only, r5 is ad-hoc)
     expect(rg2.location_count).toBe(1);
     // r5 scheduled, nobody from region-2 clocked in.
-    expect(rg2.roster).toEqual({ scheduled: 1, clocked_in: 0, not_clocked_in: 1 });
+    expect(rg2.roster).toEqual({ scheduled: 1, clocked_in: 0, belum_hadir: 0, tidak_hadir: 1 });
 
     // Totals sum across regions.
     expect(res.totals.active).toBe(5);
     expect(res.totals.offline).toBe(1);
     // Roster totals are scope-wide distinct (r1..r5), not Σ nodes.
-    expect(res.roster_totals).toEqual({ scheduled: 4, clocked_in: 2, not_clocked_in: 2 });
+    expect(res.roster_totals).toEqual({
+      scheduled: 4,
+      clocked_in: 2,
+      belum_hadir: 0,
+      tidak_hadir: 2,
+    });
     // Presence totals sum across nodes (only region-1 has hadir workers).
     expect(res.presence_totals).toEqual({
       aktif: { dalam: 2, luar: 0 },
@@ -440,7 +460,12 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(res.scope).toBe('region');
     expect(res.nodes).toEqual([]);
     expect(res.totals).toEqual({ active: 0, offline: 0, absent: 0, outside_area: 0 });
-    expect(res.roster_totals).toEqual({ scheduled: 0, clocked_in: 0, not_clocked_in: 0 });
+    expect(res.roster_totals).toEqual({
+      scheduled: 0,
+      clocked_in: 0,
+      belum_hadir: 0,
+      tidak_hadir: 0,
+    });
     expect(res.presence_totals).toEqual({
       aktif: { dalam: 0, luar: 0 },
       tidak_aktif: { dalam: 0, luar: 0 },
@@ -561,5 +586,37 @@ describe('MonitoringStatsService — staffing correctness', () => {
     );
 
     expect(node.is_understaffed).toBe(false);
+  });
+
+  describe('isBeforeShiftGrace (belum_hadir vs tidak_hadir split)', () => {
+    // No DI needed — call on the prototype with a bare `this` carrying only the
+    // sibling helper it uses (cacheService undefined → default 900s grace), same
+    // style as the assembleNode test above.
+    const proto = MonitoringStatsService.prototype as unknown as {
+      isBeforeShiftGrace: (s: ShiftDefinition | null) => Promise<boolean>;
+      shiftCrossesMidnight: (s: ShiftDefinition) => boolean;
+    };
+    const ctx = { shiftCrossesMidnight: proto.shiftCrossesMidnight };
+    const call = (shift: Partial<ShiftDefinition> | null) =>
+      proto.isBeforeShiftGrace.call(ctx, shift as ShiftDefinition | null);
+
+    afterEach(() => jest.useRealTimers());
+
+    it('returns false for no shift / a shift without a window (→ tidak_hadir)', async () => {
+      expect(await call(null)).toBe(false);
+      expect(await call({ id: 's' })).toBe(false);
+    });
+
+    it('returns true within the opening grace window (→ belum_hadir)', async () => {
+      // Shift starts 06:00 WIB; freeze "now" at 06:05 WIB (inside default 15-min grace).
+      jest.useFakeTimers().setSystemTime(new Date('2026-07-19T06:05:00+07:00'));
+      expect(await call({ start_time: '06:00:00', end_time: '15:00:00' })).toBe(true);
+    });
+
+    it('returns false once past the grace window (→ tidak_hadir)', async () => {
+      // Freeze at 09:30 WIB — well past 06:00 + 15-min grace.
+      jest.useFakeTimers().setSystemTime(new Date('2026-07-19T09:30:00+07:00'));
+      expect(await call({ start_time: '06:00:00', end_time: '15:00:00' })).toBe(false);
+    });
   });
 });

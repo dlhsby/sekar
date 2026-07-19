@@ -17,6 +17,7 @@ export interface TeamGroup {
   team_id: string;
   team_name: string;
   team_color: string | null;
+  team_icon: string | null;
   lat: number;
   lng: number;
   member_ids: string[];
@@ -97,6 +98,7 @@ export function groupWorkersByTeam(
             team_id: w.team_id,
             team_name: first.team_name || '',
             team_color: first.team_color ?? null,
+            team_icon: first.team_icon ?? null,
             lat,
             lng,
             member_ids: teamMembers.map((m) => m.user_id),

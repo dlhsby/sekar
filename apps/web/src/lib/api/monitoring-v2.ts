@@ -45,6 +45,7 @@ export interface SnapshotWorker {
   team_name?: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color?: string | null;
+  team_icon?: string | null;
 }
 
 export interface SnapshotAreaSummary {
@@ -90,11 +91,17 @@ export interface AggregateStatusCounts {
   outside_area: number;
 }
 
-/** Roster attendance trio for a node (or the whole scope), for today. */
+/**
+ * Roster attendance breakdown for a node (or the whole scope), for today.
+ * `scheduled = clocked_in + belum_hadir + tidak_hadir`. Not-clocked-in is split
+ * by the shift window: `belum_hadir` = shift not started yet (not-yet-due),
+ * `tidak_hadir` = shift started, still no clock-in (no-show).
+ */
 export interface AggregateRosterCounts {
   scheduled: number;
   clocked_in: number;
-  not_clocked_in: number;
+  belum_hadir: number;
+  tidak_hadir: number;
 }
 
 /** Dalam/luar (inside/outside area) split for one activity bucket. */

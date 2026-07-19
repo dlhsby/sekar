@@ -2,12 +2,15 @@
 
 /**
  * MonitoringFilters — filter rail for the monitoring page (mobile parity).
- * Search by name, 5-status toggle chips with live counts, rayon + role selects.
- * Purely client-side over the snapshot worker list. Controlled by the page.
+ * 3-status toggle chips with live counts, then a cascading set of type-to-search,
+ * lazily-rendered comboboxes: Rayon → Kawasan → Lokasi, plus Peran + Tim, and a
+ * Petugas picker that cascades from everything above. Purely client-side over the
+ * snapshot worker list. Controlled by the page.
  */
 import { Search, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui';
+import { Combobox, type ComboboxOption } from '@/components/ui/combobox';
 import { cn } from '@/lib/utils/cn';
 import { getStatusLabels } from '@/lib/constants/monitoring';
 import { roleLabel } from '@/lib/constants/roles';
@@ -20,11 +23,7 @@ const STATUS_VAR: Record<TrackingStatus, string> = {
   absent: 'var(--color-status-missing)',
 };
 
-const STATUS_ORDER: TrackingStatus[] = [
-  'active',
-  'offline',
-  'absent',
-];
+const STATUS_ORDER: TrackingStatus[] = ['active', 'offline', 'absent'];
 
 export interface MonitoringFilterState {
   search: string;
@@ -34,6 +33,7 @@ export interface MonitoringFilterState {
   locationId: string; // 'all' or a lokasi (location) id
   role: string; // 'all' or a role value
   teamId: string; // 'all' or a team id
+  userId: string; // 'all' or a worker (user) id
 }
 
 export interface RayonOption {
@@ -41,7 +41,7 @@ export interface RayonOption {
   name: string;
 }
 
-/** A selectable id/name option (kawasan, lokasi, team, …). */
+/** A selectable id/name option (kawasan, lokasi, team, worker, …). */
 export type FilterOption = RayonOption;
 
 export interface MonitoringFiltersProps {
@@ -51,13 +51,43 @@ export interface MonitoringFiltersProps {
   rayonOptions: RayonOption[];
   regionOptions: FilterOption[];
   locationOptions: FilterOption[];
+  /** Kawasan/Lokasi options are fetched on rayon change — show a loading hint
+   *  instead of the "no kawasan" empty state while they resolve. */
+  regionLoading?: boolean;
+  locationLoading?: boolean;
   roleOptions: UserRole[];
   teamOptions: FilterOption[];
+  /** Workers matching every filter above — the Petugas picker cascades from geo
+   *  (+ status/role/team). */
+  workerOptions: FilterOption[];
   total: number;
   matched: number;
   /** Hide the built-in search field (when search lives elsewhere, e.g. a top overlay). */
   showSearch?: boolean;
   className?: string;
+}
+
+const toComboOptions = (opts: FilterOption[]): ComboboxOption[] =>
+  opts.map((o) => ({ value: o.id, label: o.name }));
+
+/** Labelled wrapper for a filter control. */
+function Field({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  htmlFor: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor={htmlFor}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
 }
 
 export function MonitoringFilters({
@@ -67,8 +97,11 @@ export function MonitoringFilters({
   rayonOptions,
   regionOptions,
   locationOptions,
+  regionLoading = false,
+  locationLoading = false,
   roleOptions,
   teamOptions,
+  workerOptions,
   total,
   matched,
   showSearch = true,
@@ -76,6 +109,14 @@ export function MonitoringFilters({
 }: MonitoringFiltersProps) {
   const { t } = useTranslation();
   const statusLabels = getStatusLabels();
+  const searchPh = t('common:ui.combobox.searchPlaceholder');
+  const noResults = t('common:ui.combobox.noResults');
+
+  // Cascade gating: Kawasan + Lokasi stay disabled until a rayon is chosen.
+  // Kawasan is also disabled for a rayon that has none (e.g. Taman Aktif).
+  const rayonPicked = filters.rayonId !== 'all';
+  const regionDisabled = !rayonPicked || regionLoading || regionOptions.length === 0;
+  const locationDisabled = !rayonPicked || locationLoading || locationOptions.length === 0;
 
   const toggleStatus = (status: TrackingStatus) => {
     const next = new Set(filters.statuses);
@@ -91,7 +132,8 @@ export function MonitoringFilters({
     filters.regionId !== 'all' ||
     filters.locationId !== 'all' ||
     filters.role !== 'all' ||
-    filters.teamId !== 'all';
+    filters.teamId !== 'all' ||
+    filters.userId !== 'all';
 
   const reset = () =>
     onChange({
@@ -102,16 +144,27 @@ export function MonitoringFilters({
       locationId: 'all',
       role: 'all',
       teamId: 'all',
+      userId: 'all',
     });
+
+  const regionPlaceholder = !rayonPicked
+    ? t('monitoring:filters.pickRayonFirst')
+    : regionLoading
+      ? t('common:actions.loading')
+      : regionOptions.length === 0
+        ? t('monitoring:filters.noKawasan')
+        : t('monitoring:filters.kawasanAllOption');
+  const locationPlaceholder = !rayonPicked
+    ? t('monitoring:filters.pickRayonFirst')
+    : locationLoading
+      ? t('common:actions.loading')
+      : t('monitoring:filters.lokasiAllOption');
 
   return (
     <div className={cn('flex flex-col gap-4', className)}>
       {/* Search */}
       {showSearch && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-search">
-            {t('monitoring:filters.label')}
-          </label>
+        <Field label={t('monitoring:filters.label')} htmlFor="mon-search">
           <div className="relative">
             <Search
               className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-nb-gray-400"
@@ -125,12 +178,14 @@ export function MonitoringFilters({
               className="pl-8"
             />
           </div>
-        </div>
+        </Field>
       )}
 
       {/* Status chips */}
       <fieldset>
-        <legend className="mb-1.5 text-xs font-bold uppercase text-nb-gray-500">{t('monitoring:filters.statusLabel')}</legend>
+        <legend className="mb-1.5 text-xs font-bold uppercase text-nb-gray-500">
+          {t('monitoring:filters.statusLabel')}
+        </legend>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_ORDER.map((status) => {
             const active = filters.statuses.has(status);
@@ -163,121 +218,107 @@ export function MonitoringFilters({
 
       {/* Rayon */}
       {rayonOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-rayon">
-            {t('monitoring:filters.rayonLabel')}
-          </label>
-          <select
+        <Field label={t('monitoring:filters.rayonLabel')} htmlFor="mon-rayon">
+          <Combobox
             id="mon-rayon"
-            value={filters.rayonId}
-            onChange={(e) =>
-              onChange({ ...filters, rayonId: e.target.value, regionId: 'all', locationId: 'all' })
-            }
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.rayonAllOption')}</option>
-            {rayonOptions.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            options={toComboOptions(rayonOptions)}
+            value={filters.rayonId === 'all' ? '' : filters.rayonId}
+            onValueChange={(v) => onChange({ ...filters, rayonId: v || 'all', regionId: 'all', locationId: 'all' })}
+            placeholder={t('monitoring:filters.rayonAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
       )}
 
-      {/* Kawasan (region) */}
-      {regionOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-region">
-            {t('monitoring:filters.kawasanLabel')}
-          </label>
-          <select
+      {/* Kawasan — cascades from Rayon (disabled until one is picked; a rayon
+          without kawasan, e.g. Taman Aktif, keeps it disabled with a hint). */}
+      {rayonOptions.length > 0 && (
+        <Field label={t('monitoring:filters.kawasanLabel')} htmlFor="mon-region">
+          <Combobox
             id="mon-region"
-            value={filters.regionId}
-            onChange={(e) => onChange({ ...filters, regionId: e.target.value, locationId: 'all' })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.kawasanAllOption')}</option>
-            {regionOptions.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            options={toComboOptions(regionOptions)}
+            value={filters.regionId === 'all' ? '' : filters.regionId}
+            onValueChange={(v) => onChange({ ...filters, regionId: v || 'all', locationId: 'all' })}
+            placeholder={regionPlaceholder}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            disabled={regionDisabled}
+            clearable
+          />
+        </Field>
       )}
 
-      {/* Lokasi (location) */}
-      {locationOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-location">
-            {t('monitoring:filters.lokasiLabel')}
-          </label>
-          <select
+      {/* Lokasi — cascades from Rayon (+ Kawasan when one is picked). */}
+      {rayonOptions.length > 0 && (
+        <Field label={t('monitoring:filters.lokasiLabel')} htmlFor="mon-location">
+          <Combobox
             id="mon-location"
-            value={filters.locationId}
-            onChange={(e) => onChange({ ...filters, locationId: e.target.value })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.lokasiAllOption')}</option>
-            {locationOptions.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            options={toComboOptions(locationOptions)}
+            value={filters.locationId === 'all' ? '' : filters.locationId}
+            onValueChange={(v) => onChange({ ...filters, locationId: v || 'all' })}
+            placeholder={locationPlaceholder}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            disabled={locationDisabled}
+            clearable
+          />
+        </Field>
       )}
 
       {/* Role */}
       {roleOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-role">
-            {t('monitoring:filters.roleLabel')}
-          </label>
-          <select
+        <Field label={t('monitoring:filters.roleLabel')} htmlFor="mon-role">
+          <Combobox
             id="mon-role"
-            value={filters.role}
-            onChange={(e) => onChange({ ...filters, role: e.target.value })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.roleAllOption')}</option>
-            {roleOptions.map((role) => (
-              <option key={role} value={role}>
-                {roleLabel(role)}
-              </option>
-            ))}
-          </select>
-        </div>
+            options={roleOptions.map((r) => ({ value: r, label: roleLabel(r) }))}
+            value={filters.role === 'all' ? '' : filters.role}
+            onValueChange={(v) => onChange({ ...filters, role: v || 'all' })}
+            placeholder={t('monitoring:filters.roleAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
       )}
 
-      {/* Tim (team) */}
+      {/* Tim */}
       {teamOptions.length > 0 && (
-        <div>
-          <label className="mb-1 block text-xs font-bold uppercase text-nb-gray-500" htmlFor="mon-team">
-            {t('monitoring:filters.timLabel')}
-          </label>
-          <select
+        <Field label={t('monitoring:filters.timLabel')} htmlFor="mon-team">
+          <Combobox
             id="mon-team"
-            value={filters.teamId}
-            onChange={(e) => onChange({ ...filters, teamId: e.target.value })}
-            className="w-full rounded-nb-base border-2 border-nb-black bg-nb-white px-2.5 py-2 text-sm font-medium text-nb-black focus:outline-none focus-visible:ring-2 focus-visible:ring-nb-primary"
-          >
-            <option value="all">{t('monitoring:filters.timAllOption')}</option>
-            {teamOptions.map((tm) => (
-              <option key={tm.id} value={tm.id}>
-                {tm.name}
-              </option>
-            ))}
-          </select>
-        </div>
+            options={toComboOptions(teamOptions)}
+            value={filters.teamId === 'all' ? '' : filters.teamId}
+            onValueChange={(v) => onChange({ ...filters, teamId: v || 'all' })}
+            placeholder={t('monitoring:filters.timAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
+      )}
+
+      {/* Petugas — the leaf: workers matching every filter above (geo + status +
+          role + team). A stale pick is reset by the page when it drops out. */}
+      {workerOptions.length > 0 && (
+        <Field label={t('monitoring:filters.workerLabel')} htmlFor="mon-worker">
+          <Combobox
+            id="mon-worker"
+            options={toComboOptions(workerOptions)}
+            value={filters.userId === 'all' ? '' : filters.userId}
+            onValueChange={(v) => onChange({ ...filters, userId: v || 'all' })}
+            placeholder={t('monitoring:filters.workerAllOption')}
+            searchPlaceholder={searchPh}
+            emptyText={noResults}
+            clearable
+          />
+        </Field>
       )}
 
       {/* Footer: match count + reset */}
       <div className="flex items-center justify-between border-t-2 border-nb-gray-200 pt-3 text-xs text-nb-gray-500">
-        <span aria-live="polite">
-          {t('monitoring:filters.matchSummary', { matched, total })}
-        </span>
+        <span aria-live="polite">{t('monitoring:filters.matchSummary', { matched, total })}</span>
         {hasActiveFilters && (
           <button
             type="button"

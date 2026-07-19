@@ -26,7 +26,8 @@
     "understaffed": "Kekurangan personel",
     "scheduledLabel": "Terjadwal",
     "clockedInLabel": "Hadir",
-    "notClockedInLabel": "Belum Hadir",
+    "belumHadirLabel": "Belum Hadir",
+    "tidakHadirLabel": "Tidak Hadir",
     "activeInsideLabel": "Aktif di area"
   },
   "surabaya": {
@@ -40,7 +41,8 @@
     "kawasan": "Batas Kawasan",
     "lokasi": "Batas Lokasi",
     "petugas": "Petugas",
-    "teamBubbles": "Tim"
+    "teamBubbles": "Tim",
+    "teamNeedsPetugas": "Aktifkan Petugas dulu untuk gelembung tim"
   },
   "search": {
     "personnelLabel": "Petugas",
@@ -54,6 +56,7 @@
   "status": {
     "active": "Aktif",
     "offline": "Offline",
+    "inactive": "Tidak Aktif",
     "absent": "Tidak hadir",
     "adhoc": "Luar jadwal"
   },
@@ -65,12 +68,16 @@
     "rayonAllOption": "Semua Rayon",
     "kawasanLabel": "Kawasan",
     "kawasanAllOption": "Semua Kawasan",
+    "pickRayonFirst": "Pilih rayon dulu",
+    "noKawasan": "Rayon ini tanpa kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "Semua Lokasi",
     "roleLabel": "Peran",
     "roleAllOption": "Semua Peran",
     "timLabel": "Tim",
     "timAllOption": "Semua Tim",
+    "workerLabel": "Petugas",
+    "workerAllOption": "Semua Petugas",
     "matchSummary": "{{matched}} / {{total}} petugas",
     "reset": "Reset",
     "ariaLabel": "Filter monitoring"
@@ -191,37 +198,8 @@
     "outArea": "Di Luar Area"
   },
   "areaDetail": {
-    "closeLabel": "Tutup drawer detail area",
-    "staffingLabel": "Ketersediaan Staf",
-    "staffingShortage": "Kekurangan staf",
-    "staffingFull": "Staf terpenuhi",
-    "activeOf": "aktif dari",
-    "required": "yang diperlukan",
-    "plantStatusLabel": "Status Tanaman",
-    "loadingPlants": "Memuat data tanaman…",
-    "errorPlants": "Gagal memuat data tanaman.",
-    "noPlants": "Belum ada data tanaman terdaftar untuk area ini.",
-    "ok": "OK",
-    "almostDue": "Hampir",
-    "overdue": "Lewat",
-    "speciesCount": "{{species}} jenis",
-    "totalCount": "{{total}} pohon terdata",
-    "plantsList": "Daftar jenis tanaman",
-    "heritage": "Pohon Heritage ({{count}})",
-    "heritageNoLabel": "Tanpa label",
-    "workersLabel": "Petugas di Area Ini",
-    "workersList": "Daftar petugas di area ini",
-    "pruningTitle": "Permohonan Pangkas di Rayon {{rayon}}",
-    "loadingPruning": "Memuat permohonan…",
-    "noPruning": "Tidak ada permohonan pangkas aktif pada rayon ini.",
-    "unknownSpecies": "Jenis tidak diketahui",
-    "treeUnit": "pohon",
-    "overduePlantStatus": "Lewat tempo",
-    "almostDuePlantStatus": "Hampir tempo",
-    "okPlantStatus": "OK",
-    "lastPrunedLabel": "Pangkas",
-    "neverPruned": "Belum pernah dipangkas",
-    "unknownRequester": "Pemohon tidak diketahui"
+    "rayon": "Rayon",
+    "area": "Lokasi"
   },
   "pruningStatus": {
     "submitted": "Diajukan",
@@ -340,5 +318,9 @@
   },
   "areaDrawer": {
     "rayonFallback": "Rayon —"
+  },
+  "breadcrumb": {
+    "label": "Navigasi lokasi",
+    "city": "Surabaya"
   }
 }

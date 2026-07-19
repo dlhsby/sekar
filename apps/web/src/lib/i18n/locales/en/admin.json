@@ -501,7 +501,8 @@
     "form": {
       "name": "Team Category Name",
       "namePlaceholder": "e.g. Watering Team",
-      "markerColor": "Marker Color"
+      "markerColor": "Marker Color",
+      "markerIcon": "Marker Icon"
     }
   }
 }

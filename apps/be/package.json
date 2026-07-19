@@ -29,6 +29,7 @@
     "db:seed:monitoring-demo": "ts-node -r tsconfig-paths/register src/database/seeds/seed-monitoring-demo.ts",
     "db:seed:loadtest": "ts-node -r tsconfig-paths/register src/database/seeds/seed-loadtest.ts",
     "db:fix-orphans": "ts-node -r tsconfig-paths/register src/database/seeds/db-fix-orphans.ts",
+    "db:seed:region-geometry": "ts-node -r tsconfig-paths/register src/database/seeds/seed-region-geometry.ts",
     "seed:geocode": "ts-node -r tsconfig-paths/register scripts/geocode-taman-aktif.ts",
     "sheet:sync": "ts-node -r tsconfig-paths/register scripts/sheet-sync.ts",
     "sheet:pull": "ts-node -r tsconfig-paths/register scripts/sheet-sync.ts --pull",

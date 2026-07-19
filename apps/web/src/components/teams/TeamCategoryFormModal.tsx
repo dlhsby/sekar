@@ -20,6 +20,7 @@ import {
   type TeamCategory,
 } from '@/lib/api/teams';
 import { ColorField } from '@/components/forms/ColorField';
+import { MarkerIconPicker } from '@/components/forms/MarkerIconPicker';
 
 interface TeamCategoryFormModalProps {
   open: boolean;
@@ -37,11 +38,13 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
 
   const [name, setName] = useState('');
   const [markerColor, setMarkerColor] = useState<string | null>(null);
+  const [markerIcon, setMarkerIcon] = useState<string | null>(null);
 
   // Revert the form to the loaded team category's values (also runs on open).
   const revert = () => {
     setName(teamCategory?.name ?? '');
     setMarkerColor(teamCategory?.marker_color ?? null);
+    setMarkerIcon(teamCategory?.marker_icon ?? null);
   };
 
   useEffect(() => {
@@ -55,7 +58,8 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   const canSave = name.trim().length >= 1;
   const isDirty =
     name !== (teamCategory?.name ?? '') ||
-    (markerColor ?? null) !== (teamCategory?.marker_color ?? null);
+    (markerColor ?? null) !== (teamCategory?.marker_color ?? null) ||
+    (markerIcon ?? null) !== (teamCategory?.marker_icon ?? null);
 
   const handleSave = async () => {
     // `is_active` is owned by the grid's activate/deactivate action, so an edit
@@ -63,6 +67,7 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
     const payload = {
       name: name.trim(),
       marker_color: markerColor,
+      marker_icon: markerIcon,
     };
     try {
       if (isEdit && teamCategory) await updateMutation.mutateAsync({ id: teamCategory.id, data: payload });
@@ -102,6 +107,12 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
             fallback="#7FBC8C"
             onChange={setMarkerColor}
           />
+          <div>
+            <span className="mb-1 block text-nb-body-sm font-bold text-nb-black">
+              {t('admin:teamCategories.form.markerIcon')}
+            </span>
+            <MarkerIconPicker value={markerIcon} onChange={setMarkerIcon} />
+          </div>
         </DialogBody>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

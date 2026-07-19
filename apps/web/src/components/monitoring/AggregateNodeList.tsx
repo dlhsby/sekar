@@ -15,10 +15,13 @@ import type { AggregateNode } from '@/lib/api/monitoring-v2';
 export interface AggregateNodeListProps {
   nodes: AggregateNode[];
   onDrill: (node: AggregateNode) => void;
+  /** Geo-filter selection (rayon/kawasan/lokasi id). Non-matching rows dim to
+   *  match the map's spotlight. Null = no geo filter (all rows full strength). */
+  activeGeoId?: string | null;
   className?: string;
 }
 
-export function AggregateNodeList({ nodes, onDrill, className }: AggregateNodeListProps) {
+export function AggregateNodeList({ nodes, onDrill, activeGeoId, className }: AggregateNodeListProps) {
   const { t } = useTranslation();
 
   if (nodes.length === 0) {
@@ -42,12 +45,17 @@ export function AggregateNodeList({ nodes, onDrill, className }: AggregateNodeLi
       )}
     >
       <ul className="divide-y-2 divide-nb-gray-100">
-        {nodes.map((node) => (
+        {nodes.map((node) => {
+          const dimmed = activeGeoId != null && node.id !== activeGeoId;
+          return (
           <li key={node.id}>
             <button
               type="button"
               onClick={() => onDrill(node)}
-              className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-nb-gray-50"
+              className={cn(
+                'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-nb-gray-50',
+                dimmed && 'opacity-40'
+              )}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
@@ -73,17 +81,24 @@ export function AggregateNodeList({ nodes, onDrill, className }: AggregateNodeLi
                     {t('monitoring:aggregate.clockedInLabel')}
                   </span>
                   <span className="flex items-baseline gap-1">
-                    <span className="font-mono font-bold tabular-nums text-nb-danger-dark">
-                      {node.roster.not_clocked_in}
+                    <span className="font-mono font-bold tabular-nums text-nb-warning">
+                      {node.roster.belum_hadir}
                     </span>
-                    {t('monitoring:aggregate.notClockedInLabel')}
+                    {t('monitoring:aggregate.belumHadirLabel')}
+                  </span>
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-nb-danger-dark">
+                      {node.roster.tidak_hadir}
+                    </span>
+                    {t('monitoring:aggregate.tidakHadirLabel')}
                   </span>
                 </div>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-nb-gray-400" aria-hidden="true" />
             </button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </div>
   );
