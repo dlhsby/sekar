@@ -957,6 +957,9 @@ export default function MonitoringPage() {
                     </li>
                   ))}
                 </ul>
+                <div className="mt-2 border-t-2 border-nb-gray-200 pt-1.5 text-[10px] text-nb-gray-500">
+                  {updatedLabel}
+                </div>
               </div>
             )}
           </div>
@@ -1015,14 +1018,6 @@ export default function MonitoringPage() {
           >
             <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
           </button>
-        </div>
-
-        {/* Last-updated stamp — compact (the presence stats now live in the
-            breadcrumb row above, so this whole strip is just the timestamp). */}
-        <div className="pointer-events-none flex">
-          <span className="rounded-nb-sm bg-nb-white/90 px-1.5 py-0.5 text-[10px] text-nb-gray-500 shadow-nb-xs backdrop-blur-sm">
-            {updatedLabel}
-          </span>
         </div>
       </div>
 

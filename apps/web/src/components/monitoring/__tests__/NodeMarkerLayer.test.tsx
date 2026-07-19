@@ -98,7 +98,7 @@ describe('NodeMarkerLayer unified pin', () => {
     expect(mockLabels[0]?.color).toBe(HEALTH_COLORS.ok);
   });
 
-  it('dims + unlabels non-matching nodes when a geo filter spotlights one', () => {
+  it('dims non-matching nodes when a geo filter spotlights one (labels stay)', () => {
     render(
       <NodeMarkerLayer
         nodes={[makeNode({ id: 'r1', name: 'Match' }), makeNode({ id: 'r2', name: 'Other' })]}
@@ -106,8 +106,9 @@ describe('NodeMarkerLayer unified pin', () => {
       />
     );
     expect(mockOpacities).toEqual([1, 0.3]); // match full, other dimmed
+    // Every node keeps its name label (dimming only lowers the icon opacity).
     expect(mockLabels[0]?.text).toBe('Match');
-    expect(mockLabels[1]).toBeUndefined(); // dimmed nodes drop their label
+    expect(mockLabels[1]?.text).toBe('Other');
   });
 
   it('keeps every node at full opacity when no geo filter is set', () => {

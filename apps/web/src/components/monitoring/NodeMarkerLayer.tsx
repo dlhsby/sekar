@@ -83,7 +83,9 @@ export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayer
         // filter, dim (and drop the label of) the nodes that don't match, so the
         // selected one stands out. No selection → everything at full opacity.
         const dimmed = activeGeoId != null && node.id !== activeGeoId;
-        const showLabel = !dimmed;
+        // Every node shows its name label at every level (a dimmed node's icon is
+        // still de-emphasized via opacity, but the name stays readable).
+        const showLabel = true;
         return (
           <Marker
             key={`node-${node.id}`}

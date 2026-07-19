@@ -68,6 +68,12 @@ export function WorkerClusterLayer({
               key={`team-${team.team_id}`}
               position={{ lat: team.lat, lng: team.lng }}
               icon={teamMarkerIcon(team.team_color, team.member_count, team.team_icon)}
+              label={{
+                text: team.team_name,
+                className: 'worker-marker-label',
+                fontSize: '11px',
+                fontWeight: '700',
+              }}
               onClick={() => onTeamClick?.(team)}
               zIndex={5}
             />
