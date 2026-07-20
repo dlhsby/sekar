@@ -89,7 +89,9 @@
       "fcm.enabled": "Aktifkan push notification (FCM)",
       "maps.browser_key": "Google Maps browser key",
       "ratelimit.global_per_min": "Batas permintaan global / menit",
+      "ratelimit.global_ttl_ms": "Jendela batas permintaan global (ms)",
       "ratelimit.login_per_min": "Batas percobaan login / menit",
+      "auth.login_throttle_ttl_ms": "Jendela throttle login (ms)",
       "auth.change_password_throttle_max": "Batas percobaan ganti sandi",
       "auth.change_password_throttle_ttl_ms": "Jendela throttle ganti sandi (ms)",
       "app.default_locale": "Bahasa default aplikasi"
@@ -107,7 +109,9 @@
       "schedule.min_shift_duration_min": "Durasi minimum agar clock-out dihitung sebagai shift sah",
       "fcm.enabled": "Matikan untuk menghentikan semua notifikasi push seketika",
       "ratelimit.global_per_min": "Batas total permintaan per IP per menit",
+      "ratelimit.global_ttl_ms": "Panjang jendela waktu untuk batas permintaan global",
       "ratelimit.login_per_min": "Batas percobaan login per IP per menit (anti brute-force)",
+      "auth.login_throttle_ttl_ms": "Panjang jendela waktu untuk throttle percobaan login",
       "auth.change_password_throttle_max": "Batas percobaan ganti sandi dalam satu jendela waktu",
       "auth.change_password_throttle_ttl_ms": "Panjang jendela waktu throttle ganti sandi",
       "app.default_locale": "Bahasa awal untuk pengguna baru sebelum mereka memilih preferensi"

@@ -89,7 +89,9 @@
       "fcm.enabled": "Enable push notifications (FCM)",
       "maps.browser_key": "Google Maps browser key",
       "ratelimit.global_per_min": "Global request limit / minute",
+      "ratelimit.global_ttl_ms": "Global request-limit window (ms)",
       "ratelimit.login_per_min": "Login attempt limit / minute",
+      "auth.login_throttle_ttl_ms": "Login throttle window (ms)",
       "auth.change_password_throttle_max": "Change-password attempt limit",
       "auth.change_password_throttle_ttl_ms": "Change-password throttle window (ms)",
       "app.default_locale": "Default application language"
@@ -107,7 +109,9 @@
       "schedule.min_shift_duration_min": "Minimum duration for a clock-out to count as a valid shift",
       "fcm.enabled": "Turn off to stop all push notifications immediately",
       "ratelimit.global_per_min": "Total requests per IP per minute",
+      "ratelimit.global_ttl_ms": "Length of the time window for the global request limit",
       "ratelimit.login_per_min": "Login attempts per IP per minute (anti brute-force)",
+      "auth.login_throttle_ttl_ms": "Length of the time window for login-attempt throttling",
       "auth.change_password_throttle_max": "Change-password attempts allowed within one time window",
       "auth.change_password_throttle_ttl_ms": "Length of the change-password throttle window",
       "app.default_locale": "Initial language for new users before they choose a preference"
