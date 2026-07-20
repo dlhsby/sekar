@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { TaskTag } from './task-tag.entity';
 
 /**
@@ -82,8 +82,8 @@ export class Task {
   @Column({ name: 'location_id', type: 'uuid', nullable: true })
   location_id: string | null;
 
-  @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  @Column({ name: 'district_id', type: 'uuid', nullable: true })
+  district_id: string | null;
 
   @Column({ name: 'assigned_to', type: 'uuid', nullable: true })
   assigned_to: string | null;
@@ -164,9 +164,9 @@ export class Task {
   @JoinColumn({ name: 'location_id' })
   area: Location | null;
 
-  @ManyToOne(() => Rayon, { onDelete: 'RESTRICT', nullable: true })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon: Rayon | null;
+  @ManyToOne(() => District, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'district_id' })
+  district: District | null;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'assigned_to' })

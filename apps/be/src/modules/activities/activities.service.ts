@@ -363,7 +363,7 @@ export class ActivitiesService {
 
   /**
    * Approve a pending activity (Phase 2C). Korlap approves satgas/linmas in
-   * their area; Kepala Rayon approves korlap/admin_rayon in their rayon.
+   * their area; Kepala Rayon approves korlap/admin_rayon in their district.
    */
   async approveActivity(activityId: string, reviewerId: string): Promise<Activity> {
     const activity = await this.loadPendingForReview(activityId, reviewerId);
@@ -429,14 +429,14 @@ export class ActivitiesService {
 
   /**
    * Hierarchy rules (Phase 2C): Korlap approves satgas/linmas within their
-   * area; Kepala Rayon approves korlap/admin_rayon within their rayon.
+   * area; Kepala Rayon approves korlap/admin_rayon within their district.
    */
   private validateApprovalHierarchy(activity: Activity, reviewer: User): void {
     if (reviewer.role === UserRole.KORLAP) {
       return this.assertKorlapApprovalScope(activity, reviewer);
     }
     if (reviewer.role === UserRole.KEPALA_RAYON) {
-      return this.assertKepalaRayonApprovalScope(activity, reviewer);
+      return this.assertKepalaDistrictApprovalScope(activity, reviewer);
     }
     throw new ForbiddenException('You are not authorized to approve activities');
   }
@@ -450,9 +450,9 @@ export class ActivitiesService {
     }
   }
 
-  private assertKepalaRayonApprovalScope(activity: Activity, reviewer: User): void {
-    if (!reviewer.rayon_id) {
-      throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
+  private assertKepalaDistrictApprovalScope(activity: Activity, reviewer: User): void {
+    if (!reviewer.district_id) {
+      throw new ForbiddenException('Your Kepala Rayon account has no district assigned');
     }
     const submitterRole = activity.user?.role;
     if (!['korlap', 'admin_rayon'].includes(submitterRole)) {
@@ -460,14 +460,14 @@ export class ActivitiesService {
         'Kepala Rayon hanya dapat menyetujui aktivitas korlap dan admin data',
       );
     }
-    if (submitterRole === 'korlap' && activity.area?.rayon_id !== reviewer.rayon_id) {
-      throw new ForbiddenException('You can only approve activities in your rayon');
+    if (submitterRole === 'korlap' && activity.area?.district_id !== reviewer.district_id) {
+      throw new ForbiddenException('You can only approve activities in your district');
     }
     if (
       submitterRole === 'admin_rayon' &&
-      (!activity.user.rayon_id || activity.user.rayon_id !== reviewer.rayon_id)
+      (!activity.user.district_id || activity.user.district_id !== reviewer.district_id)
     ) {
-      throw new ForbiddenException('You can only approve activities in your rayon');
+      throw new ForbiddenException('You can only approve activities in your district');
     }
   }
 

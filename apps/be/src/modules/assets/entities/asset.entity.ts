@@ -14,18 +14,18 @@ import { AssetCategory } from './asset-category.entity';
 import { AssetAssignment } from './asset-assignment.entity';
 import { AssetMaintenance } from './asset-maintenance.entity';
 import { Location } from '../../locations/entities/location.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { AssetStatus, AssetCondition } from '../enums/asset.enums';
 
 /**
- * Physical asset (tool / equipment / vehicle). Scoped to a rayon and optionally
+ * Physical asset (tool / equipment / vehicle). Scoped to a district and optionally
  * an area. Identified by a human-readable `asset_code` ({PREFIX}-{RAYON}-{SEQ})
  * encoded in a QR (`SEKAR:{asset_code}`, ADR-026).
  */
 @Entity('assets')
 @Index(['status'])
 @Index(['location_id'])
-@Index(['rayon_id'])
+@Index(['district_id'])
 export class Asset {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -45,11 +45,11 @@ export class Asset {
   area: Location | null;
 
   @Column({ type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  district_id: string | null;
 
-  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon: Rayon | null;
+  @ManyToOne(() => District, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'district_id' })
+  district: District | null;
 
   @Column({ type: 'varchar', length: 200 })
   name: string;

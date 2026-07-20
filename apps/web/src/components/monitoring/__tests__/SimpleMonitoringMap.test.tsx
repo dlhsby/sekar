@@ -175,14 +175,14 @@ describe('SimpleMonitoringMap', () => {
   it('draws only the rayon outline at rayon scope (area borders are on-demand)', () => {
     // Area outlines are deferred to area scope; at rayon scope only the rayon
     // outline draws + its area BUBBLES (the area polygons stay hidden).
-    render(<SimpleMonitoringMap showWorkers={false} scope="rayon" workers={[]} boundaries={boundaries} />);
+    render(<SimpleMonitoringMap scope="rayon" workers={[]} boundaries={boundaries} />);
     expect(screen.getAllByTestId('polygon')).toHaveLength(1);
   });
 
   it('draws the rayon outline + only the SELECTED location polygon at location scope', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers
+
         scope="location"
         areaId="a1"
         workers={[]}
@@ -194,7 +194,7 @@ describe('SimpleMonitoringMap', () => {
   });
 
   it('hides area boundaries at the top (Surabaya) scope', () => {
-    render(<SimpleMonitoringMap showWorkers={false} scope="surabaya" workers={[]} boundaries={boundaries} />);
+    render(<SimpleMonitoringMap scope="surabaya" workers={[]} boundaries={boundaries} />);
     // Neither rayon nor area outlines at the Surabaya summary level.
     expect(screen.queryAllByTestId('polygon')).toHaveLength(0);
   });
@@ -221,7 +221,7 @@ describe('SimpleMonitoringMap', () => {
     };
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
+
         scope="region"
         regionId="k1"
         workers={[]}
@@ -235,7 +235,7 @@ describe('SimpleMonitoringMap', () => {
   it('node view renders one marker per node and no area pins', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
+
         nodeMarkers={nodeMarkers}
         workers={[]}
         boundaries={boundaries}
@@ -251,7 +251,7 @@ describe('SimpleMonitoringMap', () => {
     // is no zoom threshold to cross.
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
+
         scope="rayon"
         nodeMarkers={nodeMarkers}
         workers={workers}
@@ -262,25 +262,25 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length + workers.length);
   });
 
-  it('keeps node markers (no worker reveal) at city scope even when zoomed in', () => {
+  it('draws worker pins ALONGSIDE node markers at city scope too', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
         scope="city"
         nodeMarkers={nodeMarkers}
         workers={workers}
         boundaries={boundaries}
       />
     );
-    // City scope never reveals workers by zoom — the node marker stays.
-    expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length);
+    // Workers now render at EVERY level, including city — the rayon node bubbles
+    // and the people on the ground show together.
+    expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length + workers.length);
   });
 
   it('drills when a node marker is clicked', () => {
     const onDrillNode = jest.fn();
     render(
       <SimpleMonitoringMap
-        showWorkers={false}
+
         nodeMarkers={nodeMarkers}
         onDrillNode={onDrillNode}
         workers={[]}
@@ -292,7 +292,7 @@ describe('SimpleMonitoringMap', () => {
   });
 
   it('worker view renders just the workers (no scattered area pins)', () => {
-    render(<SimpleMonitoringMap showWorkers workers={workers} boundaries={boundaries} />);
+    render(<SimpleMonitoringMap workers={workers} boundaries={boundaries} />);
     // Area centre pins are now the overdue-plant overlay only, so without
     // overdueByArea the worker view shows just the 2 (far-apart) worker markers.
     expect(screen.getAllByTestId('marker')).toHaveLength(2);
@@ -302,7 +302,7 @@ describe('SimpleMonitoringMap', () => {
     const onSelect = jest.fn();
     render(
       <SimpleMonitoringMap
-        showWorkers
+
         workers={workers}
         boundaries={boundaries}
         onSelect={onSelect}
@@ -316,7 +316,7 @@ describe('SimpleMonitoringMap', () => {
   it('pans to the selected worker', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers
+
         workers={workers}
         boundaries={boundaries}
         selectedId="w1"
@@ -326,7 +326,7 @@ describe('SimpleMonitoringMap', () => {
   });
 
   it('registers a native My-Location control (stacked with zoom, no overlap)', () => {
-    render(<SimpleMonitoringMap showWorkers={false} workers={[]} boundaries={null} />);
+    render(<SimpleMonitoringMap workers={[]} boundaries={null} />);
     // createLocateControl pushes the button into the RIGHT_BOTTOM control stack.
     expect(controlStack).toHaveLength(1);
     expect(controlStack[0].getAttribute('aria-label')).toMatch(/fokus ke lokasi saya/i);
@@ -335,7 +335,7 @@ describe('SimpleMonitoringMap', () => {
   it('hides worker markers when the petugas layer is off', () => {
     render(
       <SimpleMonitoringMap
-        showWorkers
+
         workers={workers}
         boundaries={boundaries}
         layers={{

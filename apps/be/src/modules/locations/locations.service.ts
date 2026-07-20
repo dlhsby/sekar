@@ -45,7 +45,7 @@ export class LocationsService {
 
     // Validate that location_type_id exists
     await this.locationTypesService.findOne(createAreaDto.location_type_id);
-    await this.validateRegion(createAreaDto.region_id, createAreaDto.rayon_id);
+    await this.validateRegion(createAreaDto.region_id, createAreaDto.district_id);
 
     // Create the area
     const area = this.locationRepository.create(createAreaDto);
@@ -57,28 +57,28 @@ export class LocationsService {
 
   /**
    * When an area is put into a region, the region must exist and belong to the
-   * same rayon as the area (ADR-045). `region_id` null/undefined clears it.
+   * same district as the area (ADR-045). `region_id` null/undefined clears it.
    */
-  private async validateRegion(regionId?: string | null, areaRayonId?: string): Promise<void> {
+  private async validateRegion(regionId?: string | null, areaDistrictId?: string): Promise<void> {
     if (!regionId) return;
     const rows = (await this.locationRepository.manager.query(
-      `SELECT rayon_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
+      `SELECT district_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
       [regionId],
-    )) as Array<{ rayon_id: string }>;
+    )) as Array<{ district_id: string }>;
     if (!rows[0]) throw new BadRequestException('Region not found');
-    if (areaRayonId && rows[0].rayon_id !== areaRayonId) {
-      throw new BadRequestException("Region must belong to the area's rayon");
+    if (areaDistrictId && rows[0].district_id !== areaDistrictId) {
+      throw new BadRequestException("Region must belong to the area's district");
     }
   }
 
   /**
    * Get all areas
    *
-   * Rayon scoping (2026-05-18):
+   * District scoping (2026-05-18):
    *   - City roles (superadmin / admin_system / management): see all areas.
    *   - Everyone else (kepala_rayon / admin_rayon / korlap / satgas / linmas /
-   *     staff_kecamatan): filtered to `area.rayon_id = user.rayon_id`.
-   *     Users without a rayon_id see nothing (defensive default).
+   *     staff_kecamatan): filtered to `area.district_id = user.district_id`.
+   *     Users without a district_id see nothing (defensive default).
    *
    * @param requester - The authenticated user issuing the request
    * @param areaType - Optional filter by area type code
@@ -120,14 +120,14 @@ export class LocationsService {
   }
 
   /**
-   * Shared findAll query builder. Returns null for rayon-scoped users with
-   * no rayon_id — they must see nothing (defensive cross-rayon guard).
+   * Shared findAll query builder. Returns null for district-scoped users with
+   * no district_id — they must see nothing (defensive cross-district guard).
    */
   private buildFindAllQuery(requester: User, areaType?: string, includeInactive = false) {
     const query = this.locationRepository
       .createQueryBuilder('area')
       .leftJoinAndSelect('area.locationType', 'locationType')
-      .leftJoinAndSelect('area.rayon', 'rayon')
+      .leftJoinAndSelect('area.district', 'district')
       .orderBy('area.id', 'ASC');
 
     if (!includeInactive) {
@@ -140,10 +140,10 @@ export class LocationsService {
 
     const isCityRole = MONITORING_CITY.includes(requester.role as UserRole);
     if (!isCityRole) {
-      if (!requester.rayon_id) {
+      if (!requester.district_id) {
         return null;
       }
-      query.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
+      query.andWhere('area.district_id = :districtId', { districtId: requester.district_id });
     }
 
     return query;
@@ -165,7 +165,7 @@ export class LocationsService {
     // it here made activate() 404 on the very area it's meant to reactivate.
     const area = await this.locationRepository.findOne({
       where: { id },
-      relations: ['rayon'],
+      relations: ['district'],
     });
 
     if (!area) {
@@ -192,16 +192,19 @@ export class LocationsService {
     const area = await this.findOne(id);
 
     if (updateAreaDto.region_id !== undefined) {
-      await this.validateRegion(updateAreaDto.region_id, updateAreaDto.rayon_id ?? area.rayon_id);
+      await this.validateRegion(
+        updateAreaDto.region_id,
+        updateAreaDto.district_id ?? area.district_id,
+      );
     }
 
-    // Drop the loaded `rayon` relation object before merging: keeping it would
-    // let TypeORM prefer the stale relation over a changed `rayon_id` on save,
-    // silently ignoring a rayon reassignment. We save by FK column only.
-    const { rayon: _rayon, ...areaWithoutRayon } = area;
+    // Drop the loaded `district` relation object before merging: keeping it would
+    // let TypeORM prefer the stale relation over a changed `district_id` on save,
+    // silently ignoring a district reassignment. We save by FK column only.
+    const { district: _rayon, ...areaWithoutDistrict } = area;
     void _rayon;
     const updatedArea = await this.locationRepository.save({
-      ...areaWithoutRayon,
+      ...areaWithoutDistrict,
       ...updateAreaDto,
     });
 
@@ -298,9 +301,9 @@ export class LocationsService {
     const saved = await this.locationRepository.save(area);
     this.logger.log(`Updated boundary for area ${id}`);
 
-    // Rayon boundaries are the official KMZ "Batas Wilayah Kerja Rayon" outlines
+    // District boundaries are the official KMZ "Batas Wilayah Kerja Rayon" outlines
     // set by the seeder — NOT derived from member-area geofences. Editing an
-    // area therefore never touches its rayon's boundary.
+    // area therefore never touches its district's boundary.
 
     return {
       location_id: saved.id,

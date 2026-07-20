@@ -11,7 +11,7 @@ import { MaintenanceOverdueCron } from './cron/maintenance-overdue.cron';
 import { User } from '../users/entities/user.entity';
 import { UserLocation } from '../user-locations/entities/user-location.entity';
 import { Location } from '../locations/entities/location.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { District } from '../districts/entities/district.entity';
 import { SharedModule } from '../../shared/shared.module';
 import { AuditModule } from '../audit/audit.module';
 
@@ -25,7 +25,7 @@ import { AuditModule } from '../audit/audit.module';
       User,
       UserLocation,
       Location,
-      Rayon,
+      District,
     ]),
     SharedModule,
     AuditModule,

@@ -10,23 +10,23 @@ import {
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MapStyleDto } from '../../../common/dto/map-style.dto';
-import { StaffingLevel } from '../entities/rayon.entity';
+import { StaffingLevel } from '../entities/district.entity';
 
 /**
- * Data Transfer Object for creating a new rayon.
+ * Data Transfer Object for creating a new district.
  *
- * Validates incoming request data for rayon creation endpoint.
+ * Validates incoming request data for district creation endpoint.
  * Name is required. Description/center coords + per-level styling
  * (ADR-045, inherited from MapStyleDto) are optional.
  */
-export class CreateRayonDto extends MapStyleDto {
+export class CreateDistrictDto extends MapStyleDto {
   /**
-   * Display name for the rayon.
+   * Display name for the district.
    *
    * @example 'Rayon Selatan'
    */
   @ApiProperty({
-    description: 'Display name for the rayon',
+    description: 'Display name for the district',
     example: 'Rayon Selatan',
     minLength: 1,
     maxLength: 100,
@@ -37,12 +37,12 @@ export class CreateRayonDto extends MapStyleDto {
   name: string;
 
   /**
-   * Optional description of the rayon.
+   * Optional description of the district.
    *
    * @example 'Covers southern Surabaya districts'
    */
   @ApiPropertyOptional({
-    description: 'Detailed description of the rayon',
+    description: 'Detailed description of the district',
     example: 'Covers southern Surabaya districts',
   })
   @IsString()

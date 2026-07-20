@@ -1,10 +1,10 @@
 /**
  * Loaders for the committed seed-data snapshots under `./data/`.
  *
- * The geography snapshots (rayons/kawasan/areas) are pulled live from staging —
+ * The geography snapshots (districts/kawasan/areas) are pulled live from staging —
  * the source of truth. The real user roster still comes from the exported sheet.
  *
- *   data/rayons.snapshot.json   — 8 rayons pulled live from staging (name/desc/colour/geometry)
+ *   data/districts.snapshot.json   — 8 districts pulled live from staging (name/desc/colour/geometry)
  *   data/kawasan.snapshot.json  — kawasan (regions) from the client's workbook
  *   data/areas.snapshot.json    — ~953 locations pulled live from staging
  *   data/users.csv              — real roster (exported + merged from the sheet)
@@ -19,7 +19,7 @@ const DATA_DIR = path.join(__dirname, 'data');
 // derived here from the username is byte-identical to the one the sheet holds.
 const USER_NS = 'b7e3c1a0-5d2f-4e8b-9c3a-1f2e3d4c5b6a';
 
-export interface SeedRayonRow {
+export interface SeedDistrictRow {
   id: string;
   name: string;
   description: string;
@@ -28,47 +28,47 @@ export interface SeedRayonRow {
   rayon_code: string;
 }
 
-/** GeoJSON Polygon (the only shape rayon boundaries use). */
+/** GeoJSON Polygon (the only shape district boundaries use). */
 export interface GeoJsonPolygon {
   type: 'Polygon';
   coordinates: number[][][];
 }
 
 /**
- * Full rayon snapshot pulled live from staging (the source of truth — the client
+ * Full district snapshot pulled live from staging (the source of truth — the client
  * validated names/colours/boundaries there via the UI). Supersedes the initial
- * `data/rayons.csv` + KMZ-derived boundaries. Regenerate with the data-pull
+ * `data/districts.csv` + KMZ-derived boundaries. Regenerate with the data-pull
  * script when staging changes.
  */
-export interface RayonSnapshotRow extends SeedRayonRow {
+export interface DistrictSnapshotRow extends SeedDistrictRow {
   center_lat: number | null;
   center_lng: number | null;
   boundary_polygon: GeoJsonPolygon;
-  /** Tier its staffing requirements attach to: region (kawasan) | location | rayon. */
-  staffing_level: 'region' | 'location' | 'rayon';
+  /** Tier its staffing requirements attach to: region (kawasan) | location | district. */
+  staffing_level: 'region' | 'location' | 'district';
 }
 
-/** The 8 rayons as they currently live in staging (master data + geometry). */
-export function loadRayonSnapshot(): RayonSnapshotRow[] {
-  const file = path.join(DATA_DIR, 'rayons.snapshot.json');
-  return JSON.parse(fs.readFileSync(file, 'utf8')) as RayonSnapshotRow[];
+/** The 8 districts as they currently live in staging (master data + geometry). */
+export function loadDistrictSnapshot(): DistrictSnapshotRow[] {
+  const file = path.join(DATA_DIR, 'districts.snapshot.json');
+  return JSON.parse(fs.readFileSync(file, 'utf8')) as DistrictSnapshotRow[];
 }
 
 /**
- * A Kawasan (Region) — name + parent rayon. Extracted from the client's
+ * A Kawasan (Region) — name + parent district. Extracted from the client's
  * "Kebutuhan Satgas" workbook (column K "NAMA RTH", cells prefixed "Kawasan…"),
- * grouped under the rayon each tab belongs to. Boundaries are drawn fresh in the
- * UI, so only name + rayon_id are seeded (id is deterministic for idempotency).
+ * grouped under the district each tab belongs to. Boundaries are drawn fresh in the
+ * UI, so only name + district_id are seeded (id is deterministic for idempotency).
  */
 export interface KawasanSnapshotRow {
   id: string;
   name: string;
-  rayon_id: string;
+  district_id: string;
   /** Rayon display name at extraction time — documentation only. */
-  rayon_name: string;
+  district_name: string;
 }
 
-/** The Kawasan (regions) grouped by rayon, from the client's workbook. */
+/** The Kawasan (regions) grouped by district, from the client's workbook. */
 export function loadKawasanSnapshot(): KawasanSnapshotRow[] {
   const file = path.join(DATA_DIR, 'kawasan.snapshot.json');
   return JSON.parse(fs.readFileSync(file, 'utf8')) as KawasanSnapshotRow[];
@@ -76,14 +76,14 @@ export function loadKawasanSnapshot(): KawasanSnapshotRow[] {
 
 /**
  * One area (location) as it lives in staging — the source of truth (client
- * validated names/boundaries/rayon there). Pulled verbatim; boundaries are
+ * validated names/boundaries/district there). Pulled verbatim; boundaries are
  * GeoJSON. `region_id` is intentionally absent (staging predates the Kawasan
  * tier; areas are re-parented later).
  */
 export interface AreaSnapshotRow {
   id: string;
   name: string;
-  rayon_id: string;
+  district_id: string;
   /** location-type code: park | pedestrian | mini_garden | street. */
   area_type_code: string;
   gps_lat: number | null;
@@ -115,12 +115,12 @@ export function loadAreaRegionMap(): Record<string, string> {
 /**
  * A staffing requirement (KEBUTUHAN) extracted from the client workbook: satgas
  * headcount per subject × shift × day_type. `subject_type` says which id column
- * it fills (`region` for the 7 grouped rayons' kawasan, `location` for Taman
+ * it fills (`region` for the 7 grouped districts' kawasan, `location` for Taman
  * Aktif parks). Deterministic id → idempotent seed + migration.
  */
 export interface StaffingSnapshotRow {
   id: string;
-  subject_type: 'region' | 'location' | 'rayon';
+  subject_type: 'region' | 'location' | 'district';
   subject_id: string;
   shift_definition_id: string;
   role: 'satgas' | 'linmas';

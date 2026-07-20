@@ -19,10 +19,10 @@ export class CreateAssetDto {
   @IsUUID()
   location_id?: string;
 
-  @ApiPropertyOptional({ description: 'Rayon id (rayon-level assets, e.g. vehicles)' })
+  @ApiPropertyOptional({ description: 'District id (district-level assets, e.g. vehicles)' })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiProperty({ example: 'Sapu Lidi #1' })
   @IsString()

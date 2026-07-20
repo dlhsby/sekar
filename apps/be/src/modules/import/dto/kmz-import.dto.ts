@@ -128,10 +128,10 @@ export class AreaSelectionDto {
   @IsOptional()
   location_type_id?: string;
 
-  @ApiPropertyOptional({ description: 'Rayon ID to assign' })
+  @ApiPropertyOptional({ description: 'District ID to assign' })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiProperty({
     description: 'Action: create, update, or skip',

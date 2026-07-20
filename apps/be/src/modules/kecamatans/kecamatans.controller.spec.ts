@@ -15,9 +15,9 @@ describe('KecamatansController', () => {
     id: 'kec-1',
     name: 'Wiyung',
     code: 'wiyung',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     region: 'selatan',
-    rayon: { id: 'rayon-1', name: 'Rayon Selatan' } as any,
+    district: { id: 'district-1', name: 'Rayon Selatan' } as any,
   } as Kecamatan;
 
   beforeEach(async () => {
@@ -34,7 +34,7 @@ describe('KecamatansController', () => {
   });
 
   describe('findAll', () => {
-    it('maps service entities to response DTOs and includes rayon_name', async () => {
+    it('maps service entities to response DTOs and includes district_name', async () => {
       service.findAll.mockResolvedValue([mockKecamatan]);
 
       const result = await controller.findAll();
@@ -45,27 +45,27 @@ describe('KecamatansController', () => {
           id: 'kec-1',
           name: 'Wiyung',
           code: 'wiyung',
-          rayon_id: 'rayon-1',
-          rayon_name: 'Rayon Selatan',
+          district_id: 'district-1',
+          district_name: 'Rayon Selatan',
           region: 'selatan',
         },
       ]);
     });
 
-    it('forwards the rayonId filter to the service', async () => {
+    it('forwards the districtId filter to the service', async () => {
       service.findAll.mockResolvedValue([]);
 
-      await controller.findAll('rayon-1');
+      await controller.findAll('district-1');
 
-      expect(service.findAll).toHaveBeenCalledWith('rayon-1');
+      expect(service.findAll).toHaveBeenCalledWith('district-1');
     });
 
-    it('leaves rayon_name undefined when relation not eager-loaded', async () => {
-      service.findAll.mockResolvedValue([{ ...mockKecamatan, rayon: undefined }]);
+    it('leaves district_name undefined when relation not eager-loaded', async () => {
+      service.findAll.mockResolvedValue([{ ...mockKecamatan, district: undefined }]);
 
       const result = await controller.findAll();
 
-      expect(result[0].rayon_name).toBeUndefined();
+      expect(result[0].district_name).toBeUndefined();
     });
   });
 
@@ -77,7 +77,7 @@ describe('KecamatansController', () => {
 
       expect(service.findOne).toHaveBeenCalledWith('kec-1');
       expect(result.id).toBe('kec-1');
-      expect(result.rayon_name).toBe('Rayon Selatan');
+      expect(result.district_name).toBe('Rayon Selatan');
     });
 
     it('propagates service errors', async () => {

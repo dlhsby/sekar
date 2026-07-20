@@ -132,7 +132,7 @@ export class RolesService {
       throw new BadRequestException('Role is assigned to users and cannot be deleted');
     }
     // softRemove (not softDelete) so the AuditSubscriber stamps deleted_by from
-    // the request actor — matching the codebase convention (see rayons.service).
+    // the request actor — matching the codebase convention (see districts.service).
     await this.roleRepo.softRemove(role);
     await this.rolePermissions.invalidateRole(role.code);
     await this.recordAudit('delete', role.id, actorId, { code: role.code, name: role.name }, null);

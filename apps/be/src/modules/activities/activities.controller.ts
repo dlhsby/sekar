@@ -78,7 +78,7 @@ export class ActivitiesController {
    * Get all activities with optional filters and pagination (Phase 2C: Scope-based access)
    * - Field workers (ACTIVITY_SUBMITTERS): Own activities only
    * - KORLAP: Activities from their area
-   * - KEPALA_RAYON: Activities from their rayon
+   * - KEPALA_RAYON: Activities from their district
    * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get()
@@ -134,7 +134,7 @@ export class ActivitiesController {
         user_id: filterDto.user_id,
         shift_id: filterDto.shift_id,
         location_id: filterDto.location_id,
-        rayon_id: filterDto.rayon_id,
+        district_id: filterDto.district_id,
         activity_type_id: filterDto.activity_type_id,
         from_date: filterDto.from_date,
         to_date: filterDto.to_date,
@@ -177,7 +177,7 @@ export class ActivitiesController {
   /**
    * Approve a pending activity (Phase 2C)
    * Korlap can approve Satgas/Linmas activities in their area.
-   * Kepala Rayon can approve Korlap/AdminData activities in their rayon.
+   * Kepala Rayon can approve Korlap/AdminData activities in their district.
    *
    * IMPORTANT: Must be placed BEFORE @Get(':id') to avoid route conflict.
    */
@@ -195,7 +195,7 @@ export class ActivitiesController {
   /**
    * Reject a pending activity with a reason (Phase 2C)
    * Korlap can reject Satgas/Linmas activities in their area.
-   * Kepala Rayon can reject Korlap/AdminData activities in their rayon.
+   * Kepala Rayon can reject Korlap/AdminData activities in their district.
    *
    * IMPORTANT: Must be placed BEFORE @Get(':id') to avoid route conflict.
    */
@@ -219,7 +219,7 @@ export class ActivitiesController {
    * Get activity by ID (Phase 2C: Scope-based access)
    * - Field workers: Own activities only
    * - KORLAP: Activities from their area
-   * - KEPALA_RAYON: Activities from their rayon
+   * - KEPALA_RAYON: Activities from their district
    * - MANAGEMENT, ADMIN_SYSTEM, SUPERADMIN: All activities
    */
   @Get(':id')
@@ -276,7 +276,7 @@ export class ActivitiesController {
    * List the users tagged on an activity (ADR-038, May 2026).
    *
    * Read scope follows the standard activity-read rules: caller must be the
-   * owner, in the activity's area/rayon, or have a city-wide role.
+   * owner, in the activity's area/district, or have a city-wide role.
    */
   @Get(':id/tags')
   @Roles(...MONITORING_AREA, ...ACTIVITY_SUBMITTERS)

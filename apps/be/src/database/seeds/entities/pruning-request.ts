@@ -114,13 +114,13 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
 
   // Prefer all staff_kecamatan users so each user has some requests in their `mine=true` view.
   const staffKecUsers = (await ctx.qr.query(
-    `SELECT id, rayon_id, username FROM users
+    `SELECT id, district_id, username FROM users
      WHERE role = 'staff_kecamatan' AND is_active = true
      ORDER BY username`,
-  )) as Array<{ id: string; rayon_id: string | null; username: string }>;
+  )) as Array<{ id: string; district_id: string | null; username: string }>;
   const fallbackAdmin =
     staffKecUsers.length === 0
-      ? await ctx.qr.query(`SELECT id, rayon_id FROM users WHERE role = 'admin_rayon' LIMIT 1`)
+      ? await ctx.qr.query(`SELECT id, district_id FROM users WHERE role = 'admin_rayon' LIMIT 1`)
       : [];
   const submitterId = staffKecUsers.length > 0 ? staffKecUsers[0].id : fallbackAdmin[0]?.id;
   // Pick the canonical Pusat staff_kecamatan user for the original 6 sample requests
@@ -132,8 +132,8 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
     `SELECT id FROM users WHERE role IN ('admin_rayon','kepala_rayon','superadmin') LIMIT 1`,
   );
   const reviewerId = reviewer.length > 0 ? reviewer[0].id : null;
-  const rayonForRequests = await ctx.qr.query(`SELECT id FROM rayons ORDER BY name LIMIT 1`);
-  const rayonIdForReq = rayonForRequests[0]?.id ?? null;
+  const districtForRequests = await ctx.qr.query(`SELECT id FROM districts ORDER BY name LIMIT 1`);
+  const districtIdForReq = districtForRequests[0]?.id ?? null;
 
   if (!submitterId) {
     ctx.log('  ⚠ No staff_kecamatan or admin_rayon users found, skipping pruning_requests');
@@ -157,7 +157,7 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
             expected_date, estimated_plant_count, tree_count,
             tree_height_estimate, tree_diameter_estimate,
             requester_name, requester_phone, rt_leader_name, rt_leader_phone,
-            photo_urls, status, rayon_id,
+            photo_urls, status, district_id,
             reviewed_by, reviewed_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::text[],$17,$18,$19,$20)
          ON CONFLICT (reference_code) DO NOTHING`,
@@ -179,7 +179,7 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
           r.rtPhone,
           photoUrls,
           r.status,
-          rayonIdForReq,
+          districtIdForReq,
           reviewedAt ? reviewerId : null,
           reviewedAt,
         ],
@@ -257,14 +257,16 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
     ];
     const DIAMETERS = ['15-25 cm', '25-35 cm', '35-50 cm', '50-70 cm', '70-90 cm', '90-110 cm'];
 
-    // Resolve rayon_id from kecamatan name for consistency
-    const kecRayonRows = (await ctx.qr.query(`SELECT name, rayon_id FROM kecamatans`)) as Array<{
+    // Resolve district_id from kecamatan name for consistency
+    const kecDistrictRows = (await ctx.qr.query(
+      `SELECT name, district_id FROM kecamatans`,
+    )) as Array<{
       name: string;
-      rayon_id: string;
+      district_id: string;
     }>;
-    const rayonByKec = new Map<string, string>();
-    for (const k of kecRayonRows) rayonByKec.set(k.name, k.rayon_id);
-    const rayonForKec = (kec: string): string => rayonByKec.get(kec) ?? rayonIdForReq;
+    const districtByKec = new Map<string, string>();
+    for (const k of kecDistrictRows) districtByKec.set(k.name, k.district_id);
+    const districtForKec = (kec: string): string => districtByKec.get(kec) ?? districtIdForReq;
 
     const BULK_COUNT = 25;
     let bulkInserted = 0;
@@ -310,7 +312,7 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
             estimated_plant_count, tree_count,
             tree_height_estimate, tree_diameter_estimate,
             requester_name, requester_phone, rt_leader_name, rt_leader_phone,
-            photo_urls, status, rayon_id,
+            photo_urls, status, district_id,
             reviewed_by, reviewed_at, created_at)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::text[],$19,$20,$21,$22,$23)
          ON CONFLICT (reference_code) DO NOTHING`,
@@ -334,7 +336,7 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
           `0812987${(60000 + i).toString().slice(-5)}`,
           photoUrls,
           status,
-          rayonForKec(kec),
+          districtForKec(kec),
           reviewedAt ? reviewerId : null,
           reviewedAt,
           createdAt,
@@ -347,17 +349,19 @@ export async function seedPruningRequests(ctx: SeedContext): Promise<void> {
     );
     pruningInserted += bulkInserted;
 
-    // Heal existing rows whose kecamatan_name disagrees with rayon_id
+    // Heal existing rows whose kecamatan_name disagrees with district_id
     const healed = await ctx.qr.query(`
       UPDATE pruning_requests pr
-      SET rayon_id = k.rayon_id
+      SET district_id = k.district_id
       FROM kecamatans k
       WHERE pr.kecamatan_name = k.name
-        AND (pr.rayon_id IS DISTINCT FROM k.rayon_id)
+        AND (pr.district_id IS DISTINCT FROM k.district_id)
     `);
     const healedCount = (healed as any)?.[1] ?? 0;
     if (healedCount) {
-      ctx.log(`  ✓ ${healedCount} existing pruning_requests realigned to their kecamatan's rayon`);
+      ctx.log(
+        `  ✓ ${healedCount} existing pruning_requests realigned to their kecamatan's district`,
+      );
     }
   }
   ctx.log(`  ✓ ${pruningInserted} pruning_requests total (sample + bulk volume rows)`);

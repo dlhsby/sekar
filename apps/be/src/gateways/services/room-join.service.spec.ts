@@ -48,20 +48,24 @@ describe('RoomJoinService', () => {
     });
 
     it.each([UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON])(
-      'should include the rayon room for %s',
+      'should include the district room for %s',
       async (role) => {
         userRepository.findOne.mockResolvedValue({
           id: 'u1',
-          rayon_id: 'rayon-3',
+          district_id: 'district-3',
           location_id: null,
         });
         const rooms = await service.getRoomsForUser('u1', role);
-        expect(rooms).toEqual(['user:u1', 'monitoring:rayon:rayon-3']);
+        expect(rooms).toEqual(['user:u1', 'monitoring:district:district-3']);
       },
     );
 
     it('should include all assigned area rooms for korlap (multi-area)', async () => {
-      userRepository.findOne.mockResolvedValue({ id: 'k1', rayon_id: null, location_id: 'legacy' });
+      userRepository.findOne.mockResolvedValue({
+        id: 'k1',
+        district_id: null,
+        location_id: 'legacy',
+      });
       userAreasService.getPermanentLocationIds.mockResolvedValue(['a1', 'a2']);
 
       const rooms = await service.getRoomsForUser('k1', UserRole.KORLAP);
@@ -69,7 +73,11 @@ describe('RoomJoinService', () => {
     });
 
     it('should fall back to the legacy single area for korlap without assignments', async () => {
-      userRepository.findOne.mockResolvedValue({ id: 'k1', rayon_id: null, location_id: 'area-5' });
+      userRepository.findOne.mockResolvedValue({
+        id: 'k1',
+        district_id: null,
+        location_id: 'area-5',
+      });
 
       const rooms = await service.getRoomsForUser('k1', UserRole.KORLAP);
       expect(rooms).toEqual(['user:k1', 'monitoring:area:area-5']);

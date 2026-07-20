@@ -50,7 +50,7 @@ export const PERMISSION_CATALOG: CatalogCategory[] = [
     label: 'Wilayah',
     resources: [
       { resource: 'city', label: 'Kota', actions: [READ, UPDATE] },
-      { resource: 'rayon', label: 'Rayon', actions: [READ, CREATE, UPDATE, DELETE] },
+      { resource: 'district', label: 'District', actions: [READ, CREATE, UPDATE, DELETE] },
       { resource: 'region', label: 'Kawasan', actions: [READ, CREATE, UPDATE, DELETE] },
       { resource: 'area', label: 'Lokasi', actions: [READ, CREATE, UPDATE, DELETE] },
     ],

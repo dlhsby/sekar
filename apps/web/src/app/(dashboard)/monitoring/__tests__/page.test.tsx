@@ -3,7 +3,7 @@
  * Full-bleed map with floating overlays: top search, dismissible filter panel,
  * dismissible worker/area sheet. Auth/role gating + client-side filtering.
  */
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import MonitoringPage from '../page';
@@ -57,6 +57,9 @@ const worker = (over: Record<string, unknown>) => ({
   location_name: 'Taman A',
   rayon_id: 'r1',
   rayon_name: 'Rayon Pusat',
+  // City-scheduled by default so they render at the default (city) drill scope.
+  display_scope: 'city',
+  display_scope_id: null,
   last_update: new Date().toISOString(),
   is_within_area: true,
   battery_level: 80,
@@ -135,12 +138,8 @@ describe('MonitoringPage', () => {
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
   });
 
-  // A korlap floors at area scope, so the unified drill-down lands directly on
-  // the worker view (no mode toggle) — the individual worker list renders.
-  const korlapUser = { id: 'k1', full_name: 'Korlap', role: 'korlap', area_id: 'a1', rayon_id: 'r1' };
-
   it('opens the worker sheet and shows detail when a worker is selected', () => {
-    mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
+    // Admin at city scope; the mock workers are city-scheduled so they list here.
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('button', { name: /andi/i }));
@@ -148,13 +147,12 @@ describe('MonitoringPage', () => {
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
   });
 
-  it('lists area staffing on the Area tab', () => {
-    mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
+  it('shows workers in the Daftar Petugas at city scope (not just at lokasi)', () => {
+    // The worker list is reachable from the Daftar Petugas at every level now —
+    // previously only lokasi scope showed workers.
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
-    fireEvent.click(screen.getByRole('tab', { name: /area/i }));
-    const region = screen.getByText('Taman A');
-    expect(within(region.closest('li') as HTMLElement).getByText(/kurang/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^andi/i })).toBeInTheDocument();
   });
 
   it('opens the filter panel from the top bar', () => {

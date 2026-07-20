@@ -23,7 +23,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
     SELECT id FROM users WHERE username = 'korlap_pusat_2' LIMIT 1
   `);
 
-  const kepalaRayonOtResult = await ctx.qr.query(`
+  const kepalaDistrictOtResult = await ctx.qr.query(`
     SELECT id FROM users WHERE username = 'kepala_rayon_selatan_1' LIMIT 1
   `);
 
@@ -36,7 +36,8 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
     const satgasOtId = satgasOtResult[0].id;
     const linmasOtId = linmasOtResult.length > 0 ? linmasOtResult[0].id : null;
     const korlap1OtId = korlapDarmoOtResult.length > 0 ? korlapDarmoOtResult[0].id : null;
-    const kepalaRayonOtId = kepalaRayonOtResult.length > 0 ? kepalaRayonOtResult[0].id : null;
+    const kepalaDistrictOtId =
+      kepalaDistrictOtResult.length > 0 ? kepalaDistrictOtResult[0].id : null;
     const tamanBungkulId = tamanBungkulIdResult[0].id;
 
     // Get activity type IDs for varied overtime
@@ -149,7 +150,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
               '2026-02-09T16:00:00+07:00', '2026-02-09T19:00:00+07:00',
               '${cekKendaraanId}', 'Koordinasi tim malam dan cek kendaraan',
               ARRAY['https://example.com/overtime-korlap.jpg'],
-              -7.2756, 112.7395, 'approved', ${kepalaRayonOtId ? `'${kepalaRayonOtId}'` : 'NULL'}, ${kepalaRayonOtId ? "NOW() - INTERVAL '10 days'" : 'NULL'},
+              -7.2756, 112.7395, 'approved', ${kepalaDistrictOtId ? `'${kepalaDistrictOtId}'` : 'NULL'}, ${kepalaDistrictOtId ? "NOW() - INTERVAL '10 days'" : 'NULL'},
               NOW() - INTERVAL '11 days', NOW() - INTERVAL '11 days'
             ),
             (
@@ -198,7 +199,7 @@ export async function seedOvertimes(ctx: SeedContext): Promise<void> {
                 '2026-02-11T16:00:00+07:00', '2026-02-11T19:00:00+07:00',
                 '${cekAbsensiId}', 'Rekap laporan mingguan di luar jam kerja',
                 ARRAY['https://example.com/overtime-admin-data2.jpg'],
-                -7.2756, 112.7395, 'approved', ${kepalaRayonOtId ? `'${kepalaRayonOtId}'` : 'NULL'}, ${kepalaRayonOtId ? "NOW() - INTERVAL '8 days'" : 'NULL'},
+                -7.2756, 112.7395, 'approved', ${kepalaDistrictOtId ? `'${kepalaDistrictOtId}'` : 'NULL'}, ${kepalaDistrictOtId ? "NOW() - INTERVAL '8 days'" : 'NULL'},
                 NOW() - INTERVAL '9 days', NOW() - INTERVAL '8 days'
               )
             ON CONFLICT (id) DO NOTHING;

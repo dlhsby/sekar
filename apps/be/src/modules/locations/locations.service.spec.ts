@@ -128,12 +128,12 @@ describe('LocationsService', () => {
   });
 
   describe('findAll', () => {
-    const cityUser = { id: 'u1', username: 'sa', role: 'superadmin', rayon_id: null } as any;
-    const rayonUser = {
+    const cityUser = { id: 'u1', username: 'sa', role: 'superadmin', district_id: null } as any;
+    const districtUser = {
       id: 'u2',
       username: 'korlap_pusat_1',
       role: 'korlap',
-      rayon_id: 'rayon-pusat-uuid',
+      district_id: 'district-pusat-uuid',
     } as any;
 
     const makeQB = () => ({
@@ -177,19 +177,19 @@ describe('LocationsService', () => {
       });
     });
 
-    it('should scope by rayon_id for rayon-scoped roles', async () => {
+    it('should scope by district_id for district-scoped roles', async () => {
       const qb = makeQB();
       mockRepository.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll(rayonUser);
+      await service.findAll(districtUser);
 
-      expect(qb.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: 'rayon-pusat-uuid',
+      expect(qb.andWhere).toHaveBeenCalledWith('area.district_id = :districtId', {
+        districtId: 'district-pusat-uuid',
       });
     });
 
-    it('should return empty array for rayon-scoped user without rayon_id', async () => {
-      const orphanUser = { ...rayonUser, rayon_id: null };
+    it('should return empty array for district-scoped user without district_id', async () => {
+      const orphanUser = { ...districtUser, district_id: null };
       const qb = makeQB();
       mockRepository.createQueryBuilder.mockReturnValue(qb);
 
@@ -209,7 +209,7 @@ describe('LocationsService', () => {
       expect(result).toEqual(mockArea);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: 'c3d4e5f6-a7b8-9012-cdef-123456789012' },
-        relations: ['rayon'],
+        relations: ['district'],
       });
     });
 

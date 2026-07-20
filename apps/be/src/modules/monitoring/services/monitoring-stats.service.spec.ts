@@ -9,7 +9,7 @@ import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon, StaffingLevel } from '../../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../../districts/entities/district.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
@@ -27,28 +27,28 @@ describe('MonitoringStatsService', () => {
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
-  let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let districtRepository: jest.Mocked<Repository<District>>;
   let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
   let staffRequirementRepository: jest.Mocked<Repository<LocationStaffRequirement>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
   let dayTypeService: jest.Mocked<DayTypeService>;
 
-  const mockRayon: Rayon = {
-    id: 'rayon-1',
-    name: 'Rayon 1',
+  const mockDistrict: District = {
+    id: 'district-1',
+    name: 'District 1',
     code: 'R1',
     border_color: '#7FBC8C',
     staffing_level: StaffingLevel.REGION,
     is_active: true,
     created_at: new Date(),
     updated_at: new Date(),
-  } as Rayon;
+  } as District;
 
   const mockArea: Location = {
     id: 'area-1',
     name: 'Location 1',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
     coverage_area: 100,
@@ -126,7 +126,7 @@ describe('MonitoringStatsService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Rayon),
+          provide: getRepositoryToken(District),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -192,7 +192,9 @@ describe('MonitoringStatsService', () => {
     locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(
       getRepositoryToken(LocationLog),
     );
-    rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
+    districtRepository = module.get<jest.Mocked<Repository<District>>>(
+      getRepositoryToken(District),
+    );
     regionRepository = module.get<jest.Mocked<Repository<Region>>>(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
@@ -212,10 +214,10 @@ describe('MonitoringStatsService', () => {
         getMany: jest.fn().mockResolvedValue([]),
         count: jest.fn().mockResolvedValue(0),
       };
-      rayonRepository.find.mockResolvedValue([mockRayon]);
-      jest.spyOn(service, 'getRayonSummary').mockResolvedValue({
-        id: 'rayon-1',
-        name: 'Rayon 1',
+      districtRepository.find.mockResolvedValue([mockDistrict]);
+      jest.spyOn(service, 'getDistrictSummary').mockResolvedValue({
+        id: 'district-1',
+        name: 'District 1',
         area_count: 1,
         worker_count: 10,
         workers_online: 5,
@@ -230,14 +232,14 @@ describe('MonitoringStatsService', () => {
       const result = await service.getCityStats();
 
       expect(result).toBeDefined();
-      expect(result.total_rayons).toBe(1);
+      expect(result.total_districts).toBe(1);
       expect(result.active_shifts).toBe(2);
     });
   });
 
-  describe('getRayonStats', () => {
-    it('should return rayon statistics', async () => {
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+  describe('getDistrictStats', () => {
+    it('should return district statistics', async () => {
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       areaRepository.find.mockResolvedValue([mockArea]);
       jest.spyOn(service, 'getAreaSummary').mockResolvedValue({
         id: 'area-1',
@@ -260,24 +262,24 @@ describe('MonitoringStatsService', () => {
       jest.spyOn(service, 'countOnlineWorkersByAreaIds').mockResolvedValue(0);
       jest.spyOn(service, 'countOfflineWorkersByAreaIds').mockResolvedValue(0);
 
-      const result = await service.getRayonStats('rayon-1');
+      const result = await service.getDistrictStats('district-1');
 
       expect(result).toBeDefined();
-      expect(result.id).toBe('rayon-1');
-      expect(result.name).toBe('Rayon 1');
+      expect(result.id).toBe('district-1');
+      expect(result.name).toBe('District 1');
     });
 
-    it('should throw NotFoundException when rayon not found', async () => {
-      rayonRepository.findOne.mockResolvedValue(null);
+    it('should throw NotFoundException when district not found', async () => {
+      districtRepository.findOne.mockResolvedValue(null);
 
-      await expect(service.getRayonStats('invalid-id')).rejects.toThrow(NotFoundException);
+      await expect(service.getDistrictStats('invalid-id')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('getAreaStats', () => {
     it('should return area statistics', async () => {
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       jest.spyOn(service, 'getAreaWorkers').mockResolvedValue([
         {
           id: 'user-1',
@@ -516,8 +518,8 @@ describe('MonitoringStatsService', () => {
   });
 
   describe('getBoundaries', () => {
-    it('should return boundaries for all rayons', async () => {
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+    it('should return boundaries for all districts', async () => {
+      districtRepository.find.mockResolvedValue([mockDistrict]);
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
       const mockQueryBuilder = {
@@ -539,11 +541,11 @@ describe('MonitoringStatsService', () => {
       const result = await service.getBoundaries();
 
       expect(result).toBeDefined();
-      expect(result.rayons).toHaveLength(1);
+      expect(result.districts).toHaveLength(1);
     });
 
-    it('should filter by rayon ID', async () => {
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+    it('should filter by district ID', async () => {
+      districtRepository.find.mockResolvedValue([mockDistrict]);
       areaRepository.find.mockResolvedValue([mockArea]);
       shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
       const mockQueryBuilder = {
@@ -561,7 +563,7 @@ describe('MonitoringStatsService', () => {
       trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       staffRequirementRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      const result = await service.getBoundaries({ rayon_id: 'rayon-1' });
+      const result = await service.getBoundaries({ district_id: 'district-1' });
 
       expect(result).toBeDefined();
     });

@@ -23,19 +23,19 @@ export class UnsubscribeAreaDto {
 }
 
 /**
- * Subscribe to rayon events
+ * Subscribe to district events
  */
-export class SubscribeRayonDto {
+export class SubscribeDistrictDto {
   @IsUUID()
-  rayon_id: string;
+  district_id: string;
 }
 
 /**
- * Unsubscribe from rayon events
+ * Unsubscribe from district events
  */
-export class UnsubscribeRayonDto {
+export class UnsubscribeDistrictDto {
   @IsUUID()
-  rayon_id: string;
+  district_id: string;
 }
 
 /**
@@ -83,7 +83,7 @@ export class UserLocationEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -142,7 +142,7 @@ export class UserClockInEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -178,7 +178,7 @@ export class UserClockOutEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -202,7 +202,7 @@ export class AreaStaffingEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id: string | null;
 
   workers_required: number;
   workers_online: number;
@@ -231,7 +231,7 @@ export class TaskAssignedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id: string | null;
 
   @IsUUID()
   assigned_to: string;
@@ -265,7 +265,7 @@ export class TaskCompletedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id: string | null;
+  district_id: string | null;
 
   @IsUUID()
   completed_by: string;
@@ -280,7 +280,7 @@ export class TaskCompletedEvent {
  * User status changed event (Phase 2D)
  *
  * Emitted when a user's tracking status transitions between states.
- * Broadcast to: area room, rayon room, region room, city room
+ * Broadcast to: area room, district room, region room, city room
  */
 export class UserStatusChangedEvent {
   @IsUUID()
@@ -302,7 +302,7 @@ export class UserStatusChangedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -335,7 +335,7 @@ export class UserStatusChangedEvent {
  * User left area / entered area event (Phase 2D)
  *
  * Emitted when boundary crossing is detected.
- * Broadcast to: area room, rayon room, region room, city room
+ * Broadcast to: area room, district room, region room, city room
  */
 export class UserAreaEvent {
   @IsUUID()
@@ -355,7 +355,7 @@ export class UserAreaEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -399,7 +399,7 @@ export class UserReassignedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()
@@ -414,7 +414,7 @@ export class AreaStaffingChangedEvent {
 
   @IsUUID()
   @IsOptional()
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @IsUUID()
   @IsOptional()

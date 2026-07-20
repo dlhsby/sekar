@@ -93,7 +93,7 @@ export async function seedActivityTypes(ctx: SeedContext): Promise<void> {
     INSERT INTO activity_types (id, name, code, description, applicable_roles, is_active) VALUES
       ($1, 'Cek Absensi', 'cek_absensi', 'Pengecekan data absensi', ARRAY['admin_rayon'], TRUE),
       ($2, 'Cek dan Entri Laporan', 'entri_laporan', 'Pengecekan dan entri laporan', ARRAY['admin_rayon'], TRUE),
-      ($3, 'Lainnya', 'lainnya_admin_rayon', 'Aktivitas admin rayon lainnya', ARRAY['admin_rayon'], TRUE)
+      ($3, 'Lainnya', 'lainnya_admin_rayon', 'Aktivitas admin district lainnya', ARRAY['admin_rayon'], TRUE)
     ON CONFLICT (code) DO NOTHING;
   `,
     [AT_CEK_ABSENSI_ID, AT_ENTRI_LAPORAN_ID, AT_LAINNYA_ADMIN_RAYON_ID],

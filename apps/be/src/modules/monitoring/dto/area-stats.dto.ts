@@ -101,11 +101,11 @@ export class AreaStatsDto {
   @ApiProperty({ example: 'active' })
   area_type_category: string;
 
-  @ApiProperty({ example: 'rayon-uuid' })
-  rayon_id: string;
+  @ApiProperty({ example: 'district-uuid' })
+  district_id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })
-  rayon_name: string;
+  district_name: string;
 
   @ApiProperty({ example: -7.2575 })
   latitude: number;

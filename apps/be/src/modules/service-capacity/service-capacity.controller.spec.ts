@@ -10,13 +10,13 @@ describe('ServiceCapacityController', () => {
   let controller: ServiceCapacityController;
   let service: jest.Mocked<ServiceCapacityService>;
 
-  const mockRayonId = 'rayon-11111111-1111-1111-1111-111111111111';
+  const mockDistrictId = 'district-11111111-1111-1111-1111-111111111111';
   const mockYear = 2026;
   const mockServiceType = 'pruning';
 
   const mockCapacity: ServiceCapacity = {
     id: 'cap-11111111-1111-1111-1111-111111111111',
-    rayonId: mockRayonId,
+    districtId: mockDistrictId,
     year: mockYear,
     isoWeek: 20,
     serviceType: mockServiceType,
@@ -34,14 +34,14 @@ describe('ServiceCapacityController', () => {
     phone_number: '081200000001',
     profile_picture_url: null,
     role: UserRole.ADMIN_RAYON,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
 
-  const mockKepalaRayon: User = {
+  const mockKepalaDistrict: User = {
     id: 'user-22222222-2222-2222-2222-222222222222',
     username: 'kepala_rayon1',
     password_hash: 'hash',
@@ -49,7 +49,7 @@ describe('ServiceCapacityController', () => {
     phone_number: '081200000002',
     profile_picture_url: null,
     role: UserRole.KEPALA_RAYON,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
@@ -92,7 +92,7 @@ describe('ServiceCapacityController', () => {
     phone_number: '081200000005',
     profile_picture_url: null,
     role: UserRole.STAFF_KECAMATAN,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
@@ -125,12 +125,12 @@ describe('ServiceCapacityController', () => {
     jest.clearAllMocks();
   });
 
-  describe('GET /rayons/:rayonId/capacity', () => {
-    it('should return calendar for admin_rayon in own rayon', async () => {
+  describe('GET /districts/:districtId/capacity', () => {
+    it('should return calendar for admin_rayon in own district', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
       const result = await controller.findCalendar(
-        mockRayonId,
+        mockDistrictId,
         {
           year: mockYear,
         },
@@ -139,38 +139,38 @@ describe('ServiceCapacityController', () => {
 
       expect(result).toEqual([mockCapacity]);
       expect(service.findCalendar).toHaveBeenCalledWith({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
       });
     });
 
-    it('should throw ForbiddenException for admin_rayon cross-rayon access', async () => {
-      const otherRayonId = 'rayon-99999999-9999-9999-9999-999999999999';
+    it('should throw ForbiddenException for admin_rayon cross-district access', async () => {
+      const otherDistrictId = 'district-99999999-9999-9999-9999-999999999999';
 
       await expect(
-        controller.findCalendar(otherRayonId, { year: mockYear }, mockAdminData),
+        controller.findCalendar(otherDistrictId, { year: mockYear }, mockAdminData),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow kepala_rayon access any rayon', async () => {
+    it('should allow kepala_rayon access any district', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
       const result = await controller.findCalendar(
-        mockRayonId,
+        mockDistrictId,
         {
           year: mockYear,
         },
-        mockKepalaRayon,
+        mockKepalaDistrict,
       );
 
       expect(result).toEqual([mockCapacity]);
     });
 
-    it('should allow management access any rayon', async () => {
+    it('should allow management access any district', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
       const result = await controller.findCalendar(
-        mockRayonId,
+        mockDistrictId,
         {
           year: mockYear,
         },
@@ -180,11 +180,11 @@ describe('ServiceCapacityController', () => {
       expect(result).toEqual([mockCapacity]);
     });
 
-    it('should allow superadmin access any rayon', async () => {
+    it('should allow superadmin access any district', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
       const result = await controller.findCalendar(
-        mockRayonId,
+        mockDistrictId,
         {
           year: mockYear,
         },
@@ -194,11 +194,11 @@ describe('ServiceCapacityController', () => {
       expect(result).toEqual([mockCapacity]);
     });
 
-    it('should allow staff_kecamatan to read own rayon', async () => {
+    it('should allow staff_kecamatan to read own district', async () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
       const result = await controller.findCalendar(
-        mockRayonId,
+        mockDistrictId,
         { year: mockYear },
         mockStaffKecamatan,
       );
@@ -206,11 +206,11 @@ describe('ServiceCapacityController', () => {
       expect(result).toEqual([mockCapacity]);
     });
 
-    it('should throw ForbiddenException for staff_kecamatan cross-rayon access', async () => {
-      const otherRayonId = 'rayon-99999999-9999-9999-9999-999999999999';
+    it('should throw ForbiddenException for staff_kecamatan cross-district access', async () => {
+      const otherDistrictId = 'district-99999999-9999-9999-9999-999999999999';
 
       await expect(
-        controller.findCalendar(otherRayonId, { year: mockYear }, mockStaffKecamatan),
+        controller.findCalendar(otherDistrictId, { year: mockYear }, mockStaffKecamatan),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -218,18 +218,18 @@ describe('ServiceCapacityController', () => {
       mockService.findCalendar.mockResolvedValue([mockCapacity]);
 
       await controller.findCalendar(
-        mockRayonId,
+        mockDistrictId,
         {
           year: mockYear,
           fromWeek: 15,
           toWeek: 25,
           serviceType: mockServiceType,
         },
-        mockKepalaRayon,
+        mockKepalaDistrict,
       );
 
       expect(service.findCalendar).toHaveBeenCalledWith({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         fromWeek: 15,
         toWeek: 25,
@@ -238,11 +238,11 @@ describe('ServiceCapacityController', () => {
     });
   });
 
-  describe('PUT /rayons/:rayonId/capacity', () => {
+  describe('PUT /districts/:districtId/capacity', () => {
     it('should upsert capacity for kepala_rayon', async () => {
       mockService.upsertCapacity.mockResolvedValue(mockCapacity);
 
-      const result = await controller.upsertCapacity(mockRayonId, {
+      const result = await controller.upsertCapacity(mockDistrictId, {
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -251,7 +251,7 @@ describe('ServiceCapacityController', () => {
 
       expect(result).toEqual(mockCapacity);
       expect(service.upsertCapacity).toHaveBeenCalledWith({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -262,7 +262,7 @@ describe('ServiceCapacityController', () => {
     it('should allow management to upsert', async () => {
       mockService.upsertCapacity.mockResolvedValue(mockCapacity);
 
-      const result = await controller.upsertCapacity(mockRayonId, {
+      const result = await controller.upsertCapacity(mockDistrictId, {
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -275,7 +275,7 @@ describe('ServiceCapacityController', () => {
     it('should allow superadmin to upsert', async () => {
       mockService.upsertCapacity.mockResolvedValue(mockCapacity);
 
-      const result = await controller.upsertCapacity(mockRayonId, {
+      const result = await controller.upsertCapacity(mockDistrictId, {
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -286,12 +286,12 @@ describe('ServiceCapacityController', () => {
     });
   });
 
-  describe('POST /rayons/:rayonId/capacity/book', () => {
+  describe('POST /districts/:districtId/capacity/book', () => {
     it('should book capacity for kepala_rayon', async () => {
       const booked = { ...mockCapacity, bookedUnits: 15 };
       mockService.bookAtomic.mockResolvedValue(booked);
 
-      const result = await controller.bookCapacity(mockRayonId, {
+      const result = await controller.bookCapacity(mockDistrictId, {
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -300,7 +300,7 @@ describe('ServiceCapacityController', () => {
 
       expect(result.bookedUnits).toBe(15);
       expect(service.bookAtomic).toHaveBeenCalledWith({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -312,7 +312,7 @@ describe('ServiceCapacityController', () => {
       const booked = { ...mockCapacity, bookedUnits: 15 };
       mockService.bookAtomic.mockResolvedValue(booked);
 
-      const result = await controller.bookCapacity(mockRayonId, {
+      const result = await controller.bookCapacity(mockDistrictId, {
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,
@@ -326,7 +326,7 @@ describe('ServiceCapacityController', () => {
       const booked = { ...mockCapacity, bookedUnits: 15 };
       mockService.bookAtomic.mockResolvedValue(booked);
 
-      const result = await controller.bookCapacity(mockRayonId, {
+      const result = await controller.bookCapacity(mockDistrictId, {
         year: mockYear,
         isoWeek: 20,
         serviceType: mockServiceType,

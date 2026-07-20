@@ -153,7 +153,7 @@ function parseIndoDate(raw: string): Date | null {
  */
 function rowFromCsv(cells: string[], rawIndex: number): CsvRow | null {
   // Header order (verified on 2026-05-23 against data/rekap_perantingan.csv):
-  // 0 Timestamp, 1 reference (25PRn), 2 Tanggal, 3 Rayon, 4 Lokasi,
+  // 0 Timestamp, 1 reference (25PRn), 2 Tanggal, 3 District, 4 Lokasi,
   // 5 Pohon, 6 Jumlah, 7 Penanganan(empty), 8 Keterangan Lokasi,
   // 9 Penanganan(case_type), 10 Waktu Laporan, 11 Waktu Penanganan,
   // 12 Foto Sebelum, 13 Foto Sesudah, 14 Taruna(source), 15 Penyebab Tumbang,
@@ -203,13 +203,13 @@ async function loadCsv(
 }
 
 /**
- * Resolve rayon name → rayon_id. Falls back to NULL when no exact match;
+ * Resolve district name → district_id. Falls back to NULL when no exact match;
  * the activity is still importable (location_id is nullable for kecamatan-
  * driven pruning, per ADR-035 amendment).
  */
-async function buildRayonNameIndex(): Promise<Map<string, string>> {
+async function buildDistrictNameIndex(): Promise<Map<string, string>> {
   const rows = await AppDataSource.query(
-    `SELECT id, lower(name) AS name FROM rayons WHERE deleted_at IS NULL`,
+    `SELECT id, lower(name) AS name FROM districts WHERE deleted_at IS NULL`,
   );
   const index = new Map<string, string>();
   for (const r of rows as Array<{ id: string; name: string }>) index.set(r.name, r.id);
@@ -297,7 +297,7 @@ async function ensureBackfillAnchors(dryRun: boolean): Promise<BackfillAnchors |
 async function importOne(
   row: CsvRow,
   ctx: {
-    rayonIndex: Map<string, string>;
+    districtIndex: Map<string, string>;
     speciesIndex: Map<string, string>;
     anchors: BackfillAnchors | null;
     dryRun: boolean;
@@ -315,7 +315,7 @@ async function importOne(
 
   const ts = parseIndoDate(row.timestamp) ?? new Date();
   const workDate = parseIndoDate(row.workDate);
-  const rayonId = ctx.rayonIndex.get(row.rayonName.toLowerCase()) ?? null;
+  const districtId = ctx.districtIndex.get(row.rayonName.toLowerCase()) ?? null;
   const speciesId = ctx.speciesIndex.get(row.speciesName.toLowerCase()) ?? null;
 
   const customFields = {
@@ -363,8 +363,8 @@ async function importOne(
       );
     }
     // Rayon-only mapping is logged via custom_fields; no FK column on
-    // activities for rayon (only via area→rayon, which is NULL here).
-    void rayonId;
+    // activities for district (only via area→district, which is NULL here).
+    void districtId;
   });
 
   return 'inserted';
@@ -383,7 +383,7 @@ async function main(): Promise<void> {
 
   const { rows: allRows, failures: parseFailures } = await loadCsv(csvPath);
   const rows = limit ? allRows.slice(0, limit) : allRows;
-  const rayonIndex = await buildRayonNameIndex();
+  const districtIndex = await buildDistrictNameIndex();
   const speciesIndex = await buildSpeciesNameIndex();
   const anchors = await ensureBackfillAnchors(dryRun);
 
@@ -408,7 +408,7 @@ async function main(): Promise<void> {
     const batch = rows.slice(i, i + BATCH_SIZE);
     for (const row of batch) {
       try {
-        const outcome = await importOne(row, { rayonIndex, speciesIndex, anchors, dryRun });
+        const outcome = await importOne(row, { districtIndex, speciesIndex, anchors, dryRun });
         if (outcome === 'inserted') report.inserted += 1;
         else if (outcome === 'skipped') report.skippedExisting += 1;
       } catch (err) {

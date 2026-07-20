@@ -3,7 +3,7 @@ import { SchedulesController } from './schedules.controller';
 import { SchedulesService } from './schedules.service';
 import { User, UserRole } from '../users/entities/user.entity';
 
-describe('SchedulesController (rayon scoping)', () => {
+describe('SchedulesController (district scoping)', () => {
   let controller: SchedulesController;
   let service: {
     findByDate: jest.Mock;
@@ -14,8 +14,8 @@ describe('SchedulesController (rayon scoping)', () => {
     addForDay: jest.Mock;
   };
 
-  const kepala = { id: 'k1', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' } as unknown as User;
-  const admin = { id: 'a1', role: UserRole.SUPERADMIN, rayon_id: null } as unknown as User;
+  const kepala = { id: 'k1', role: UserRole.KEPALA_RAYON, district_id: 'r1' } as unknown as User;
+  const admin = { id: 'a1', role: UserRole.SUPERADMIN, district_id: null } as unknown as User;
 
   beforeEach(async () => {
     service = {
@@ -33,28 +33,28 @@ describe('SchedulesController (rayon scoping)', () => {
     controller = module.get(SchedulesController);
   });
 
-  it('forces a kepala_rayon to its own rayon, ignoring the query', async () => {
+  it('forces a kepala_rayon to its own district, ignoring the query', async () => {
     await controller.getByDate('2026-06-30', kepala, 'r2');
     expect(service.findByDate).toHaveBeenCalledWith('2026-06-30', 'r1');
   });
 
-  it('lets a global admin pass an explicit rayon filter', async () => {
+  it('lets a global admin pass an explicit district filter', async () => {
     await controller.getByDate('2026-06-30', admin, 'r2');
     expect(service.findByDate).toHaveBeenCalledWith('2026-06-30', 'r2');
   });
 
-  it('returns nothing for a rayon-scoped user with no rayon_id (no leak)', async () => {
-    const scopedNoRayon = {
+  it('returns nothing for a district-scoped user with no district_id (no leak)', async () => {
+    const scopedNoDistrict = {
       id: 'k2',
       role: UserRole.KEPALA_RAYON,
-      rayon_id: null,
+      district_id: null,
     } as unknown as User;
-    const result = await controller.getByDate('2026-06-30', scopedNoRayon, 'r2');
+    const result = await controller.getByDate('2026-06-30', scopedNoDistrict, 'r2');
     expect(result).toEqual([]);
     expect(service.findByDate).not.toHaveBeenCalled();
   });
 
-  // The fine-grained edit permission (role hierarchy + rayon/area scope) now
+  // The fine-grained edit permission (role hierarchy + district/area scope) now
   // lives in SchedulesService.assertCanEdit — the controller just delegates,
   // passing the full editing user. See schedules.service.spec for the matrix.
   it('delegates setLeave to the service with the editing user', async () => {

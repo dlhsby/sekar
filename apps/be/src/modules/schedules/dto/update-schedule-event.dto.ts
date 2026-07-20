@@ -71,10 +71,10 @@ export class UpdateScheduleEventDto {
   @IsUUID()
   region_id?: string;
 
-  @ApiPropertyOptional({ description: 'Rayon id (required for rayon scope)' })
+  @ApiPropertyOptional({ description: 'District id (required for district scope)' })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'Member user ids for team events (immutable: cannot change kind)',

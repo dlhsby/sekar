@@ -2,10 +2,10 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsUUID } from 'class-validator';
 
 export class StaffingSummaryQueryDto {
-  @ApiPropertyOptional({ example: 'rayon-uuid' })
+  @ApiPropertyOptional({ example: 'district-uuid' })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({ example: 'area-uuid' })
   @IsUUID()
@@ -67,8 +67,8 @@ export class StaffingSummaryItemDto {
   @ApiProperty({ example: 'Taman Bungkul' })
   name: string;
 
-  @ApiProperty({ example: 'area', enum: ['rayon', 'location'] })
-  type: 'rayon' | 'location';
+  @ApiProperty({ example: 'area', enum: ['district', 'location'] })
+  type: 'district' | 'location';
 
   @ApiProperty({ type: [RoleStaffingDto] })
   roles: RoleStaffingDto[];

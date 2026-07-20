@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * Per-status worker counts for an aggregate node (rayon or area).
+ * Per-status worker counts for an aggregate node (district or area).
  * Mirrors the five-status model (ADR-011).
  */
 /**
@@ -82,19 +82,19 @@ export class PresenceBreakdownDto {
 }
 
 /**
- * One aggregate node — a rayon (city scope) or a location (rayon scope).
+ * One aggregate node — a district (city scope) or a location (district scope).
  * Carries only a center point + counts, never individual worker coordinates,
  * so the map can render lightweight summary bubbles that drill down on tap.
  */
 export class AggregateNodeDto {
-  @ApiProperty({ example: 'rayon-uuid' })
+  @ApiProperty({ example: 'district-uuid' })
   id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ enum: ['rayon', 'location', 'region'], example: 'rayon' })
-  type: 'rayon' | 'location' | 'region';
+  @ApiProperty({ enum: ['district', 'location', 'region'], example: 'district' })
+  type: 'district' | 'location' | 'region';
 
   @ApiPropertyOptional({ example: -7.2575, nullable: true })
   center_lat: number | null;
@@ -135,14 +135,14 @@ export class AggregateNodeDto {
   })
   presence: PresenceBreakdownDto;
 
-  @ApiPropertyOptional({ description: 'Number of areas (rayon nodes only)', example: 15 })
+  @ApiPropertyOptional({ description: 'Number of areas (district nodes only)', example: 15 })
   area_count?: number;
 
   @ApiPropertyOptional({ description: 'Number of locations (region nodes only)', example: 8 })
   location_count?: number;
 
-  @ApiPropertyOptional({ description: 'Rayon id (area nodes only)', example: 'rayon-uuid' })
-  rayon_id?: string | null;
+  @ApiPropertyOptional({ description: 'District id (area nodes only)', example: 'district-uuid' })
+  district_id?: string | null;
 
   @ApiPropertyOptional({ description: 'Region id (area nodes only)', example: 'region-uuid' })
   region_id?: string | null;
@@ -170,13 +170,13 @@ export class AggregateNodeDto {
 
 /**
  * Lightweight aggregate response for the monitoring map's "Ringkasan" mode.
- * `nodes` are rayons when `scope=city`, or areas when `scope=rayon`.
+ * `nodes` are districts when `scope=city`, or areas when `scope=district`.
  */
 export class AggregateResponseDto {
-  @ApiProperty({ enum: ['city', 'rayon', 'region'], example: 'city' })
-  scope: 'city' | 'rayon' | 'region';
+  @ApiProperty({ enum: ['city', 'district', 'region'], example: 'city' })
+  scope: 'city' | 'district' | 'region';
 
-  @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
+  @ApiPropertyOptional({ example: 'district-uuid', nullable: true })
   scope_id: string | null;
 
   @ApiProperty({ type: [AggregateNodeDto] })

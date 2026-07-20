@@ -102,10 +102,10 @@ describe('SchedulesService', () => {
       expect(rosterRepo.qb.leftJoinAndSelect).toHaveBeenCalledWith('ds.user', 'u');
     });
 
-    it('scopes to a rayon when one is given', async () => {
+    it('scopes to a district when one is given', async () => {
       await service.findByDate('2026-06-30', 'r1');
-      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.rayon_id = :rayonId', {
-        rayonId: 'r1',
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.district_id = :districtId', {
+        districtId: 'r1',
       });
     });
   });
@@ -131,10 +131,10 @@ describe('SchedulesService', () => {
       expect(joinCalls.some((c) => c[0] === 'ds.team_category')).toBe(true);
     });
 
-    it('scopes to a rayon when one is given', async () => {
+    it('scopes to a district when one is given', async () => {
       await service.findByDateRange('2026-06-30', '2026-07-05', 'r1');
-      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.rayon_id = :rayonId', {
-        rayonId: 'r1',
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.district_id = :districtId', {
+        districtId: 'r1',
       });
     });
   });
@@ -239,7 +239,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.SATGAS },
         schedule_date: '2026-06-30',
-        rayon_id: 'r1',
+        district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
         schedule_areas: [{ location_id: 'area1' }],
@@ -270,7 +270,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.SATGAS },
         schedule_date: '2026-06-30',
-        rayon_id: 'r1',
+        district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
         schedule_areas: [{ location_id: 'area1' }],
@@ -316,7 +316,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.SATGAS },
         schedule_date: '2026-06-30',
-        rayon_id: 'r1',
+        district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
         schedule_areas: [],
@@ -343,7 +343,7 @@ describe('SchedulesService', () => {
         id: 'W',
         is_active: true,
         role: UserRole.SATGAS,
-        rayon_id: 'r1',
+        district_id: 'r1',
         shift_definition_id: 's1',
       });
       shiftDefinitionRepo.findOne.mockResolvedValue({
@@ -383,7 +383,7 @@ describe('SchedulesService', () => {
         id: 'W',
         is_active: true,
         role: UserRole.SATGAS,
-        rayon_id: 'r1',
+        district_id: 'r1',
       });
       // Shiftless add: check findAllByUserAndDate, which returns empty
       rosterRepo.find.mockResolvedValue([]);
@@ -421,7 +421,7 @@ describe('SchedulesService', () => {
         id: 'W',
         is_active: true,
         role: UserRole.SATGAS,
-        rayon_id: 'r1',
+        district_id: 'r1',
       });
       shiftDefinitionRepo.findOne.mockResolvedValue({
         id: 's2',
@@ -454,7 +454,7 @@ describe('SchedulesService', () => {
         id: 'W',
         is_active: true,
         role: UserRole.SATGAS,
-        rayon_id: 'r1',
+        district_id: 'r1',
       });
       shiftDefinitionRepo.findOne.mockResolvedValue({
         id: 's3',
@@ -486,7 +486,7 @@ describe('SchedulesService', () => {
         id: 'W',
         is_active: true,
         role: UserRole.SATGAS,
-        rayon_id: 'r1',
+        district_id: 'r1',
       });
       shiftDefinitionRepo.findOne.mockResolvedValue({
         id: 's3',
@@ -809,14 +809,14 @@ describe('SchedulesService', () => {
       await service.overrideForDay(
         'u1',
         '2026-07-01',
-        { locationId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
+        { locationId: 'a1', districtId: 'r1', shiftDefinitionId: 's1' },
         'admin',
       );
 
       const created = rosterRepo.save.mock.calls[0][0];
       expect(created.status).toBe(ScheduleStatus.PLANNED);
       expect(created.shift_definition_id).toBe('s1');
-      expect(created.rayon_id).toBe('r1');
+      expect(created.district_id).toBe('r1');
     });
 
     it('creates an OFF row (not PLANNED) when no shift is provided', async () => {
@@ -859,7 +859,7 @@ describe('SchedulesService', () => {
       await service.overrideForDay(
         'u1',
         '2026-07-01',
-        { locationId: 'a1', rayonId: 'r1', shiftDefinitionId: 's1' },
+        { locationId: 'a1', districtId: 'r1', shiftDefinitionId: 's1' },
         'admin',
       );
 
@@ -874,7 +874,7 @@ describe('SchedulesService', () => {
 
   describe('edit hierarchy (assertCanEdit via setLeave)', () => {
     const KORLAP = { id: 'k1', role: UserRole.KORLAP } as User;
-    const KEPALA = { id: 'kr1', role: UserRole.KEPALA_RAYON, rayon_id: 'r1' } as User;
+    const KEPALA = { id: 'kr1', role: UserRole.KEPALA_RAYON, district_id: 'r1' } as User;
     const TOP = { id: 't1', role: UserRole.MANAGEMENT } as User;
 
     /** Queue findOne(id) then the post-save refresh so an ALLOWED edit resolves. */
@@ -920,23 +920,23 @@ describe('SchedulesService', () => {
       );
     });
 
-    it('kepala_rayon can edit a korlap in their rayon', async () => {
+    it('kepala_rayon can edit a korlap in their district', async () => {
       allowRow({
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.KORLAP },
-        rayon_id: 'r1',
+        district_id: 'r1',
         schedule_areas: [],
       });
       await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).resolves.toBeDefined();
     });
 
-    it('kepala_rayon CANNOT edit a worker in a different rayon', async () => {
+    it('kepala_rayon CANNOT edit a worker in a different district', async () => {
       rosterRepo.findOne.mockResolvedValueOnce({
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        rayon_id: 'r2',
+        district_id: 'r2',
         schedule_areas: [],
       });
       await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).rejects.toThrow(
@@ -949,7 +949,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.KEPALA_RAYON },
-        rayon_id: 'r1',
+        district_id: 'r1',
         schedule_areas: [],
       });
       await expect(service.setLeave('d1', 'sick', undefined, TOP)).resolves.toBeDefined();
@@ -958,7 +958,7 @@ describe('SchedulesService', () => {
         id: 'd2',
         user_id: 'B',
         user: { role: UserRole.SATGAS },
-        rayon_id: 'r1',
+        district_id: 'r1',
         schedule_areas: [],
       });
       await expect(service.setLeave('d2', 'sick', undefined, TOP)).resolves.toBeDefined();

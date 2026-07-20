@@ -31,7 +31,7 @@ describe('PlantSeedsController', () => {
     unitPrice: 5000,
     supplier: 'PT Kebun Maju',
     receiptUrl: null,
-    toRayonId: null,
+    toDistrictId: null,
     toAreaId: null,
     recipientName: null,
     occurredAt: new Date(),
@@ -44,7 +44,7 @@ describe('PlantSeedsController', () => {
     id: mockUserId,
     email: 'admin@test.com',
     role: UserRole.ADMIN_RAYON,
-    rayon_id: null,
+    district_id: null,
   };
 
   beforeEach(async () => {
@@ -221,7 +221,7 @@ describe('PlantSeedsController', () => {
         seedId: '',
         transactionType: 'distribution' as const,
         qty: 30,
-        toRayonId: 'rayon-1',
+        toDistrictId: 'district-1',
         occurredAt: new Date(),
       };
 

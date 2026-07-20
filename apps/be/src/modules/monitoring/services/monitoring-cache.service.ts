@@ -14,7 +14,7 @@ export interface StatusThresholds {
 }
 
 /** A geofence subject tier — the table a boundary polygon is loaded from. */
-export type BoundaryScope = 'location' | 'region' | 'rayon';
+export type BoundaryScope = 'location' | 'region' | 'district';
 
 export enum DayTypeEnum {
   WEEKDAY = 'WEEKDAY',
@@ -122,7 +122,7 @@ export class MonitoringCacheService {
 
   /**
    * Boundary polygon coordinates for a geofence subject — a lokasi, a kawasan
-   * (region) or a rayon (ADR-050 / 5.4e). Cached per `scope:id` so region/rayon
+   * (region) or a district (ADR-050 / 5.4e). Cached per `scope:id` so region/district
    * ids never collide with location ids in the shared cache.
    */
   async getBoundary(scope: BoundaryScope, id: string): Promise<number[][][] | null> {

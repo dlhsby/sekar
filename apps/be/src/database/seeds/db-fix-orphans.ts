@@ -3,7 +3,7 @@
  *
  * Standalone helper for the May 9, 2026 `pruning_requests` FK tightening.
  * Adding `@ManyToOne(User, { onDelete: 'CASCADE' })` for `submitted_by`
- * (and matching joins for `reviewed_by`, `rayon_id`) makes synchronize emit
+ * (and matching joins for `reviewed_by`, `district_id`) makes synchronize emit
  * `ALTER TABLE … ADD CONSTRAINT FOREIGN KEY …`. ADD CONSTRAINT validates
  * *existing* rows, so any pruning_requests row whose `submitted_by` no
  * longer points to a live user (typical after a previous wipe-by-truncate
@@ -60,21 +60,21 @@ async function fixOrphans(): Promise<void> {
     );
     const reviewedCount = parseInt(reviewedOrphans[0]?.count ?? '0', 10);
 
-    const rayonOrphans = await dataSource.query<{ count: string }[]>(
+    const districtOrphans = await dataSource.query<{ count: string }[]>(
       `SELECT count(*)::text AS count
        FROM pruning_requests pr
-       WHERE pr.rayon_id IS NOT NULL
-         AND NOT EXISTS (SELECT 1 FROM rayons r WHERE r.id = pr.rayon_id)`,
+       WHERE pr.district_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM districts r WHERE r.id = pr.district_id)`,
     );
-    const rayonCount = parseInt(rayonOrphans[0]?.count ?? '0', 10);
+    const districtCount = parseInt(districtOrphans[0]?.count ?? '0', 10);
 
-    if (submittedCount + reviewedCount + rayonCount === 0) {
+    if (submittedCount + reviewedCount + districtCount === 0) {
       console.log('✅ No orphans found. Schema sync should succeed cleanly.');
       return;
     }
 
     console.log(
-      `   Found: submitted_by ${submittedCount} | reviewed_by ${reviewedCount} | rayon_id ${rayonCount}`,
+      `   Found: submitted_by ${submittedCount} | reviewed_by ${reviewedCount} | district_id ${districtCount}`,
     );
 
     // submitted_by is NOT NULL + the request is invalid without a submitter,
@@ -100,15 +100,15 @@ async function fixOrphans(): Promise<void> {
       console.log(`   ✓ reviewed_by NULLed on ${reviewedCount} rows (review history cleared)`);
     }
 
-    // rayon_id is nullable — clear the dangling FK so admins re-derive scope.
-    if (rayonCount > 0) {
+    // district_id is nullable — clear the dangling FK so admins re-derive scope.
+    if (districtCount > 0) {
       await dataSource.query(
         `UPDATE pruning_requests
-            SET rayon_id = NULL
-          WHERE rayon_id IS NOT NULL
-            AND NOT EXISTS (SELECT 1 FROM rayons r WHERE r.id = pruning_requests.rayon_id)`,
+            SET district_id = NULL
+          WHERE district_id IS NOT NULL
+            AND NOT EXISTS (SELECT 1 FROM districts r WHERE r.id = pruning_requests.district_id)`,
       );
-      console.log(`   ✓ rayon_id NULLed on ${rayonCount} rows`);
+      console.log(`   ✓ district_id NULLed on ${districtCount} rows`);
     }
 
     console.log('✅ Orphans cleaned. You can now run `npm run start:dev`.');

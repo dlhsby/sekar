@@ -43,7 +43,7 @@ const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, Us
 
 /**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
- * and admin_rayon are confined to their own rayon (forced on list, checked on
+ * and admin_rayon are confined to their own district (forced on list, checked on
  * edit). Workers read their own day via `GET /schedules/my`.
  */
 @ApiTags('schedules')
@@ -53,8 +53,8 @@ const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, Us
 export class SchedulesController {
   constructor(private readonly service: SchedulesService) {}
 
-  /** Whether the caller is rayon-scoped (kepala_rayon / admin_rayon). */
-  private isRayonScoped(user: User): boolean {
+  /** Whether the caller is district-scoped (kepala_rayon / admin_rayon). */
+  private isDistrictScoped(user: User): boolean {
     return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON;
   }
 
@@ -78,20 +78,22 @@ export class SchedulesController {
   @Roles(...ROSTER_VIEWERS)
   @ApiOperation({ summary: 'List the roster for a WIB day' })
   @ApiParam({ name: 'date', example: '2026-06-30' })
-  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiQuery({ name: 'districtId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
   getByDate(
     @Param('date') date: string,
     @GetUser() user: User,
-    @Query('rayonId') rayonId?: string,
+    @Query('districtId') districtId?: string,
   ): Promise<Schedule[]> {
-    // Rayon-scoped roles always see only their own rayon, regardless of the
-    // query. A scoped user with no rayon_id (misconfiguration) sees nothing —
-    // never fall through to the unfiltered (all-rayon) query.
-    if (this.isRayonScoped(user)) {
-      return user.rayon_id ? this.service.findByDate(date, user.rayon_id) : Promise.resolve([]);
+    // Rayon-scoped roles always see only their own district, regardless of the
+    // query. A scoped user with no district_id (misconfiguration) sees nothing —
+    // never fall through to the unfiltered (all-district) query.
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.findByDate(date, user.district_id)
+        : Promise.resolve([]);
     }
-    return this.service.findByDate(date, rayonId);
+    return this.service.findByDate(date, districtId);
   }
 
   @Get('range')
@@ -102,7 +104,7 @@ export class SchedulesController {
   })
   @ApiQuery({ name: 'from', example: '2026-06-30' })
   @ApiQuery({ name: 'to', example: '2026-07-31' })
-  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiQuery({ name: 'districtId', required: false })
   @ApiQuery({ name: 'regionId', required: false })
   @ApiQuery({ name: 'locationId', required: false })
   @ApiQuery({ name: 'userId', required: false })
@@ -113,7 +115,7 @@ export class SchedulesController {
     @Query('from') from: string,
     @Query('to') to: string,
     @GetUser() user: User,
-    @Query('rayonId') rayonId?: string,
+    @Query('districtId') districtId?: string,
     @Query('regionId') regionId?: string,
     @Query('locationId') locationId?: string,
     @Query('userId') userId?: string,
@@ -149,25 +151,25 @@ export class SchedulesController {
     }
 
     // Rayon-scoped roles (kepala_rayon / admin_rayon) are pinned to their own
-    // rayon; the requested rayonId is ignored, other filters still apply.
-    if (this.isRayonScoped(user)) {
-      return user.rayon_id
-        ? this.service.findByDateRange(from, to, { ...filters, rayonId: user.rayon_id })
+    // district; the requested districtId is ignored, other filters still apply.
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.findByDateRange(from, to, { ...filters, districtId: user.district_id })
         : Promise.resolve([]);
     }
 
-    return this.service.findByDateRange(from, to, { ...filters, rayonId });
+    return this.service.findByDateRange(from, to, { ...filters, districtId });
   }
 
   @Get('year-summary')
   @Roles(...RANGE_VIEWERS)
   @ApiOperation({
     summary:
-      'Per-day occupancy counts for a date range (year heatmap). Lightweight aggregate — no row hydration. Workers are self-scoped; rayon-scoped roles pinned to their rayon.',
+      'Per-day occupancy counts for a date range (year heatmap). Lightweight aggregate — no row hydration. Workers are self-scoped; district-scoped roles pinned to their district.',
   })
   @ApiQuery({ name: 'from', example: '2026-01-01' })
   @ApiQuery({ name: 'to', example: '2026-12-31' })
-  @ApiQuery({ name: 'rayonId', required: false })
+  @ApiQuery({ name: 'districtId', required: false })
   @ApiQuery({ name: 'regionId', required: false })
   @ApiQuery({ name: 'locationId', required: false })
   @ApiQuery({ name: 'userId', required: false })
@@ -178,7 +180,7 @@ export class SchedulesController {
     @Query('from') from: string,
     @Query('to') to: string,
     @GetUser() user: User,
-    @Query('rayonId') rayonId?: string,
+    @Query('districtId') districtId?: string,
     @Query('regionId') regionId?: string,
     @Query('locationId') locationId?: string,
     @Query('userId') userId?: string,
@@ -205,12 +207,12 @@ export class SchedulesController {
     if (!ROSTER_VIEWERS.includes(user.role)) {
       return this.service.getDailyCounts(from, to, { userId: user.id });
     }
-    if (this.isRayonScoped(user)) {
-      return user.rayon_id
-        ? this.service.getDailyCounts(from, to, { ...filters, rayonId: user.rayon_id })
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.getDailyCounts(from, to, { ...filters, districtId: user.district_id })
         : Promise.resolve([]);
     }
-    return this.service.getDailyCounts(from, to, { ...filters, rayonId });
+    return this.service.getDailyCounts(from, to, { ...filters, districtId });
   }
 
   @Post('generate')
@@ -234,7 +236,7 @@ export class SchedulesController {
   })
   @ApiResponse({ status: 201, type: Schedule })
   async addSchedule(@Body() dto: AddScheduleDto, @GetUser() user: User): Promise<Schedule> {
-    // Role hierarchy + rayon/area scope is enforced in the service.
+    // Role hierarchy + district/area scope is enforced in the service.
     return this.service.addForDay(dto, user);
   }
 
@@ -247,7 +249,7 @@ export class SchedulesController {
     @Body() dto: SetLeaveDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
-    // Fine-grained edit permission (role hierarchy + rayon/area scope) is
+    // Fine-grained edit permission (role hierarchy + district/area scope) is
     // enforced in the service via assertCanEdit.
     return this.service.setLeave(id, dto.leave_type, dto.notes, user);
   }

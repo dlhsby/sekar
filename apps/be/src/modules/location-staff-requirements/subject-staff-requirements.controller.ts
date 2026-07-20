@@ -9,7 +9,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
- * Region (Kawasan)-level staffing requirements. Grouped rayons define KEBUTUHAN
+ * Region (Kawasan)-level staffing requirements. Grouped districts define KEBUTUHAN
  * per kawasan (ADR), so the day-board gear on a kawasan node edits here.
  */
 @ApiTags('location-staff-requirements')
@@ -41,32 +41,32 @@ export class RegionStaffRequirementsController {
 }
 
 /**
- * Rayon-level staffing requirements (for rayons whose `staffing_level = rayon`).
+ * Rayon-level staffing requirements (for districts whose `staffing_level = district`).
  */
 @ApiTags('location-staff-requirements')
 @ApiBearerAuth('JWT-auth')
-@Controller('rayons/:rayonId/staff-requirements')
+@Controller('districts/:districtId/staff-requirements')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class RayonStaffRequirementsController {
+export class DistrictStaffRequirementsController {
   constructor(private readonly service: LocationStaffRequirementsService) {}
 
   @Get()
-  @ApiOperation({ summary: "Get a rayon's staffing requirements" })
-  @ApiParam({ name: 'rayonId', description: 'Rayon UUID' })
+  @ApiOperation({ summary: "Get a district's staffing requirements" })
+  @ApiParam({ name: 'districtId', description: 'District UUID' })
   @ApiResponse({ status: 200, type: [LocationStaffRequirement] })
-  findByRayon(@Param('rayonId') rayonId: string): Promise<LocationStaffRequirement[]> {
-    return this.service.findByRayonId(rayonId);
+  findByDistrict(@Param('districtId') districtId: string): Promise<LocationStaffRequirement[]> {
+    return this.service.findByDistrictId(districtId);
   }
 
   @Put()
   @Roles(...USER_MANAGERS)
-  @ApiOperation({ summary: "Bulk set a rayon's staffing requirements" })
-  @ApiParam({ name: 'rayonId', description: 'Rayon UUID' })
+  @ApiOperation({ summary: "Bulk set a district's staffing requirements" })
+  @ApiParam({ name: 'districtId', description: 'District UUID' })
   @ApiResponse({ status: 200, type: [LocationStaffRequirement] })
   bulkSet(
-    @Param('rayonId') rayonId: string,
+    @Param('districtId') districtId: string,
     @Body() dto: SetStaffRequirementsDto,
   ): Promise<LocationStaffRequirement[]> {
-    return this.service.bulkSetForRayon(rayonId, dto.items);
+    return this.service.bulkSetForDistrict(districtId, dto.items);
   }
 }

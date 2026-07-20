@@ -15,17 +15,17 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
   if (ctx.mode === 'staging') {
     // STAGING: Backfill all 1076 clockable users as offline
     const clockableUsers = (await ctx.qr.query(`
-      SELECT id, location_id, rayon_id FROM users
+      SELECT id, location_id, district_id FROM users
       WHERE role IN ('satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon')
         AND deleted_at IS NULL
-    `)) as Array<{ id: string; location_id: string | null; rayon_id: string | null }>;
+    `)) as Array<{ id: string; location_id: string | null; district_id: string | null }>;
 
     for (const user of clockableUsers) {
       await ctx.qr.query(
-        `INSERT INTO user_tracking_status (user_id, status, location_id, rayon_id, is_within_area, updated_at)
+        `INSERT INTO user_tracking_status (user_id, status, location_id, district_id, is_within_area, updated_at)
          VALUES ($1, 'offline', $2, $3, FALSE, NOW())
          ON CONFLICT (user_id) DO UPDATE SET status = 'offline', updated_at = NOW()`,
-        [user.id, user.location_id, user.rayon_id],
+        [user.id, user.location_id, user.district_id],
       );
     }
     ctx.log(`  ✓ Backfilled ${clockableUsers.length} users as offline (1076 target)`);
@@ -54,26 +54,26 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
     // ==========================================
     ctx.log('  [D.3] Seeding monitoring status variants for web dashboard…');
 
-    // Get a sample of workers from different rayons to seed varied statuses
+    // Get a sample of workers from different districts to seed varied statuses
     const monitoringUsers = (await ctx.qr.query(`
-    SELECT u.id, u.username, u.rayon_id, u.location_id, a.gps_lat, a.gps_lng
+    SELECT u.id, u.username, u.district_id, u.location_id, a.gps_lat, a.gps_lng
     FROM users u
     LEFT JOIN locations a ON u.location_id = a.id
     WHERE u.role IN ('satgas', 'linmas', 'korlap')
     AND u.is_active = TRUE
     AND u.deleted_at IS NULL
-    ORDER BY u.rayon_id, u.username
+    ORDER BY u.district_id, u.username
     LIMIT 30
   `)) as Array<{
       id: string;
       username: string;
-      rayon_id: string | null;
+      district_id: string | null;
       location_id: string | null;
       gps_lat: number | string | null;
       gps_lng: number | string | null;
     }>;
 
-    // Assign status distribution across rayons (spread statuses)
+    // Assign status distribution across districts (spread statuses)
     let statusIndex = 0;
     const statuses = ['active', 'active', 'inactive', 'outside_area', 'missing', 'offline'];
 
@@ -148,7 +148,7 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
 
       await ctx.qr.query(
         `INSERT INTO user_tracking_status
-        (user_id, status, location_id, rayon_id, last_latitude, last_longitude,
+        (user_id, status, location_id, district_id, last_latitude, last_longitude,
          last_location_at, is_within_area, updated_at)
       VALUES
         ($1, $2, $3, $4, ${latValue}::decimal, ${lngValue}::decimal,
@@ -160,7 +160,7 @@ export async function seedUserTrackingStatus(ctx: SeedContext): Promise<void> {
         last_location_at = EXCLUDED.last_location_at,
         is_within_area = EXCLUDED.is_within_area,
         updated_at = NOW()`,
-        [user.id, dbStatus, user.location_id, user.rayon_id, isWithinArea],
+        [user.id, dbStatus, user.location_id, user.district_id, isWithinArea],
       );
     }
 

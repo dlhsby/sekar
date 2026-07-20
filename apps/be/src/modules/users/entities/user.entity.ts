@@ -68,14 +68,14 @@ export class User {
   role: UserRole;
 
   @ApiProperty({
-    description: 'Rayon ID for KepalaRayon role',
+    description: 'District ID for KepalaDistrict role',
     example: '11111111-1111-1111-1111-111111111101',
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id?: string;
+  district_id?: string;
 
-  // Region (Kawasan) scope for korlap (ADR-045). Nullable; no FK (matches rayon_id).
+  // Region (Kawasan) scope for korlap (ADR-045). Nullable; no FK (matches district_id).
   @Column({ type: 'uuid', nullable: true })
   region_id?: string;
 
@@ -88,7 +88,7 @@ export class User {
 
   // Phase 3 Apr 27 — staff_kecamatan kecamatan attribution.
   // Each staff_kecamatan user is mapped to one kecamatan; their pruning_requests
-  // inherit `kecamatan_name` and `rayon_id` from this profile at submit time.
+  // inherit `kecamatan_name` and `district_id` from this profile at submit time.
   // Other roles leave this null.
   @ApiProperty({
     description:

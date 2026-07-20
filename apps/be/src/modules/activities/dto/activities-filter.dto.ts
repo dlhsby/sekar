@@ -60,12 +60,12 @@ export class ActivitiesFilterDto extends PaginationDto {
   location_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by rayon ID (UUID)',
-    example: 'rayon-uuid',
+    description: 'Filter by district ID (UUID)',
+    example: 'district-uuid',
   })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'Filter by activity type ID (UUID)',

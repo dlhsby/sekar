@@ -13,7 +13,7 @@ export interface ActivityListFilters {
   user_id?: string;
   shift_id?: string;
   location_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   activity_type_id?: string;
   from_date?: string;
   to_date?: string;
@@ -147,7 +147,7 @@ export class ActivityQueryService {
   /**
    * Listing scope: involving_me (owner OR tagged) overrides the role scope;
    * otherwise korlap sees their assigned areas, kepala_rayon/admin_rayon their
-   * rayon, submitters their own rows. ADMIN_SYSTEM / SUPERADMIN /
+   * district, submitters their own rows. ADMIN_SYSTEM / SUPERADMIN /
    * MANAGEMENT see all.
    */
   private async applyAccessScope(
@@ -171,7 +171,7 @@ export class ActivityQueryService {
       return this.applyKorlapScope(queryBuilder, user);
     }
     if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
-      queryBuilder.andWhere('area.rayon_id = :rayonId', { rayonId: user.rayon_id });
+      queryBuilder.andWhere('area.district_id = :districtId', { districtId: user.district_id });
       return;
     }
     if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole)) {
@@ -211,8 +211,10 @@ export class ActivityQueryService {
         filterAreaId: filters.location_id,
       });
     }
-    if (filters.rayon_id) {
-      queryBuilder.andWhere('area.rayon_id = :filterRayonId', { filterRayonId: filters.rayon_id });
+    if (filters.district_id) {
+      queryBuilder.andWhere('area.district_id = :filterDistrictId', {
+        filterDistrictId: filters.district_id,
+      });
     }
     if (filters.activity_type_id) {
       queryBuilder.andWhere('activity.activity_type_id = :activityTypeId', {
@@ -273,7 +275,7 @@ export class ActivityQueryService {
       return this.assertKorlapReadScope(activity, user);
     }
     if (user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON) {
-      return this.assertRayonReadScope(activity, user);
+      return this.assertDistrictReadScope(activity, user);
     }
     if (ACTIVITY_SUBMITTERS.includes(user.role as UserRole) && activity.user_id !== user.id) {
       throw new ApiException(
@@ -296,12 +298,12 @@ export class ActivityQueryService {
     }
   }
 
-  private assertRayonReadScope(activity: Activity, user: User): void {
-    if (activity.shift?.area?.rayon_id !== user.rayon_id) {
+  private assertDistrictReadScope(activity: Activity, user: User): void {
+    if (activity.shift?.area?.district_id !== user.district_id) {
       throw new ApiException(
         HttpStatus.FORBIDDEN,
         ApiErrorCode.ACTIVITY_ACCESS_DENIED,
-        'You can only access activities from your assigned rayon',
+        'You can only access activities from your assigned district',
       );
     }
   }

@@ -57,12 +57,12 @@ export class MonitoringReassignService {
     }
 
     if (requestingUser.role === UserRole.KEPALA_RAYON) {
-      const workerRayonId = worker.area?.rayon_id ?? null;
+      const workerDistrictId = worker.area?.district_id ?? null;
       if (
-        workerRayonId !== requestingUser.rayon_id ||
-        targetArea.rayon_id !== requestingUser.rayon_id
+        workerDistrictId !== requestingUser.district_id ||
+        targetArea.district_id !== requestingUser.district_id
       ) {
-        throw new ForbiddenException('You can only reassign workers within your own rayon');
+        throw new ForbiddenException('You can only reassign workers within your own district');
       }
     }
 
@@ -88,7 +88,7 @@ export class MonitoringReassignService {
       effectiveDate,
       {
         locationId: dto.target_area_id,
-        rayonId: targetArea.rayon_id ?? null,
+        districtId: targetArea.district_id ?? null,
         shiftDefinitionId: dto.shift_definition_id ?? undefined,
       },
       requestingUser.id,
@@ -104,7 +104,7 @@ export class MonitoringReassignService {
       previous_area_name: previousAreaName,
       new_area_id: targetArea.id,
       new_area_name: targetArea.name,
-      rayon_id: targetArea.rayon_id ?? null,
+      district_id: targetArea.district_id ?? null,
       region_id: targetArea.region_id ?? null,
       timestamp: now,
     });

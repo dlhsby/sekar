@@ -4,7 +4,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 const HEX = /^#[0-9A-Fa-f]{6}$/;
 
 /**
- * Per-level map styling fields (ADR-045) — shared by rayon/region/area DTOs.
+ * Per-level map styling fields (ADR-045) — shared by district/region/area DTOs.
  * Separate border + fill color, each with an independent 0–1 opacity, plus a
  * marker icon + color. All optional; colors validate as 6-digit hex.
  */

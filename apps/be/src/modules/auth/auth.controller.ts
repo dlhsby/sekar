@@ -298,7 +298,7 @@ export class AuthController {
       profile_picture_url: user.profile_picture_url || null,
       role: user.role,
       location_id: user.location_id || null,
-      rayon_id: user.rayon_id || null,
+      district_id: user.district_id || null,
       kecamatan_id: user.kecamatan_id || null,
       kecamatan_name: user.kecamatan_name || null,
       created_at: user.created_at,
@@ -312,7 +312,7 @@ export class AuthController {
     if (user.location_id) {
       // Korlap with permanent area assignment
       userData.location_id = user.location_id;
-      userData.rayon_id = user.rayon_id ?? null;
+      userData.district_id = user.district_id ?? null;
 
       // Fetch full area details for clock-in/out
       const area = await this.areaRepository.findOne({

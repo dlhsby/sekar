@@ -252,7 +252,7 @@ describe('TasksService', () => {
 
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: { id: 'task-uuid' },
-        relations: ['area', 'rayon', 'assignee', 'creator', 'verifier', 'tags', 'tags.user'],
+        relations: ['area', 'district', 'assignee', 'creator', 'verifier', 'tags', 'tags.user'],
       });
       expect(result).toEqual(mockTask);
     });
@@ -333,20 +333,20 @@ describe('TasksService', () => {
       });
     });
 
-    it('should apply kepala_rayon scope filter with rayon_id', async () => {
+    it('should apply kepala_rayon scope filter with district_id', async () => {
       await service.findAll(undefined, {
         id: 'u-1',
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       } as User);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-        '(area.rayon_id = :scopeRayonId OR task.rayon_id = :scopeRayonId OR task.created_by = :scopeUserId)',
-        { scopeRayonId: 'rayon-1', scopeUserId: 'u-1' },
+        '(area.district_id = :scopeDistrictId OR task.district_id = :scopeDistrictId OR task.created_by = :scopeUserId)',
+        { scopeDistrictId: 'district-1', scopeUserId: 'u-1' },
       );
     });
 
-    it('should apply kepala_rayon scope filter without rayon_id', async () => {
+    it('should apply kepala_rayon scope filter without district_id', async () => {
       await service.findAll(undefined, { id: 'u-1', role: UserRole.KEPALA_RAYON } as User);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('task.created_by = :scopeUserId', {
@@ -1599,10 +1599,10 @@ describe('TasksService', () => {
       is_active: true,
     };
 
-    const mockKepalaRayonVerifier: Partial<User> = {
+    const mockKepalaDistrictVerifier: Partial<User> = {
       id: 'kr-uuid',
       role: UserRole.KEPALA_RAYON,
-      rayon_id: 'rayon-uuid',
+      district_id: 'district-uuid',
       is_active: true,
     };
 
@@ -1619,10 +1619,10 @@ describe('TasksService', () => {
       is_active: true,
     };
 
-    const mockAssignedKepalaRayon: Partial<User> = {
+    const mockAssignedKepalaDistrict: Partial<User> = {
       id: 'kr-assignee-uuid',
       role: UserRole.KEPALA_RAYON,
-      rayon_id: 'rayon-uuid',
+      district_id: 'district-uuid',
       is_active: true,
     };
 
@@ -1657,7 +1657,7 @@ describe('TasksService', () => {
       expect(result.status).toBe(TaskStatus.VERIFIED);
     });
 
-    it('should allow kepala_rayon to verify korlap task in same rayon', async () => {
+    it('should allow kepala_rayon to verify korlap task in same district', async () => {
       const completedTask = {
         ...mockTask,
         status: TaskStatus.COMPLETED,
@@ -1674,12 +1674,12 @@ describe('TasksService', () => {
         .mockResolvedValueOnce(completedTask as Task)
         .mockResolvedValueOnce(verifiedTask as Task);
       usersService.findOne
-        .mockResolvedValueOnce(mockKepalaRayonVerifier as User)
+        .mockResolvedValueOnce(mockKepalaDistrictVerifier as User)
         .mockResolvedValueOnce(mockAssignedKorlap as User);
-      // kepala_rayon scope check: locationsService.findOne returns area with matching rayon_id
+      // kepala_rayon scope check: locationsService.findOne returns area with matching district_id
       locationsService.findOne.mockResolvedValue({
         id: 'area-uuid',
-        rayon_id: 'rayon-uuid',
+        district_id: 'district-uuid',
       } as any);
       taskRepository.save.mockResolvedValue(verifiedTask as Task);
 
@@ -1708,7 +1708,7 @@ describe('TasksService', () => {
         .mockResolvedValueOnce(verifiedTask as Task);
       usersService.findOne
         .mockResolvedValueOnce(mockTopManagementVerifier as User)
-        .mockResolvedValueOnce(mockAssignedKepalaRayon as User);
+        .mockResolvedValueOnce(mockAssignedKepalaDistrict as User);
       taskRepository.save.mockResolvedValue(verifiedTask as Task);
 
       const result = await service.verifyTask('task-uuid', 'tm-uuid');
@@ -2160,11 +2160,11 @@ describe('TasksService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should deny kepala_rayon access when task outside their rayon', async () => {
+    it('should deny kepala_rayon access when task outside their district', async () => {
       const task = {
         ...mockTask,
-        rayon_id: 'other-rayon',
-        area: { rayon_id: 'other-rayon' },
+        district_id: 'other-district',
+        area: { district_id: 'other-district' },
         assigned_to: 'someone-else',
         created_by: 'someone-else',
       } as unknown as Task;
@@ -2174,22 +2174,22 @@ describe('TasksService', () => {
         service.findOne('task-uuid', {
           id: 'me',
           role: UserRole.KEPALA_RAYON,
-          rayon_id: 'my-rayon',
+          district_id: 'my-district',
         } as User),
       ).rejects.toThrow(ForbiddenException);
     });
 
-    it('should allow admin_rayon access when task in their rayon', async () => {
+    it('should allow admin_rayon access when task in their district', async () => {
       const task = {
         ...mockTask,
-        rayon_id: 'my-rayon',
+        district_id: 'my-district',
       } as Task;
       taskRepository.findOne.mockResolvedValue(task);
 
       const result = await service.findOne('task-uuid', {
         id: 'me',
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'my-rayon',
+        district_id: 'my-district',
       } as User);
       expect(result).toBeDefined();
     });

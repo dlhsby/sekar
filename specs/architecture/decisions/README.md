@@ -52,6 +52,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [049](./ADR-049-settings-architecture.md) | Settings Architecture — personal preferences vs system settings | Active |
 | [051](./ADR-051-unified-icon-color-markers.md) | Unified Icon + Color Marker System — one glyph+color pin everywhere; retire marker_image_url | Accepted (impl. in progress) · supersedes image-marker part of 045 |
 | [050](./ADR-050-presence-attendance-model.md) | Presence & Attendance Model — lifecycle · live presence · counting axes | Accepted (impl. Phase 5.4) · supersedes 046's status model · extends 046 · depends on 047/013 |
+| [052](./ADR-052-rayon-to-district-rename.md) | `rayon` → `district` — code/DB English-canonical; UI keeps "Rayon" | Accepted (impl. staged) · extends 010 |
 
 ## By domain
 

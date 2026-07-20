@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LocationPlant } from '../../plants/entities/location-plant.entity';
 import { Location } from '../../locations/entities/location.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { PlantDueDateService, PlantStatus } from '../../plants/services/plant-due-date.service';
 
 /**
@@ -33,9 +33,9 @@ export interface AreaPlantStatusResponse {
 /**
  * Rayon-level rollup (Phase 3-8 close-out: dashboard widget + overdue digest).
  */
-export interface RayonPlantStatusSummary {
-  rayon_id: string | null;
-  rayon_name: string | null;
+export interface DistrictPlantStatusSummary {
+  district_id: string | null;
+  district_name: string | null;
   ok: number;
   due_soon: number;
   overdue: number;
@@ -45,7 +45,7 @@ export interface RayonPlantStatusSummary {
 
 export interface PlantStatusSummaryResponse {
   generated_at: Date;
-  rayons: RayonPlantStatusSummary[];
+  districts: DistrictPlantStatusSummary[];
 }
 
 /**
@@ -67,8 +67,8 @@ export class AreaPlantStatusService {
     private readonly areaPlantRepository: Repository<LocationPlant>,
     @InjectRepository(Location)
     private readonly areaRepository: Repository<Location>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepository: Repository<District>,
     private readonly plantDueDateService: PlantDueDateService,
   ) {}
 
@@ -144,27 +144,27 @@ export class AreaPlantStatusService {
   }
 
   /**
-   * Per-rayon plant-status rollup across all areas (optionally one rayon).
+   * Per-district plant-status rollup across all areas (optionally one district).
    * Recomputes every row's status (same path as getAreaPlantStatus) and groups
-   * counts per rayon, listing the areas that currently have overdue species.
+   * counts per district, listing the areas that currently have overdue species.
    */
-  async getSummary(rayonId?: string): Promise<PlantStatusSummaryResponse> {
+  async getSummary(districtId?: string): Promise<PlantStatusSummaryResponse> {
     const areas = await this.areaRepository.find({
-      where: rayonId ? { rayon_id: rayonId } : {},
+      where: districtId ? { district_id: districtId } : {},
       relations: ['locationType'],
     });
     const areaById = new Map(areas.map((a) => [a.id, a]));
-    const rayons = await this.rayonRepository.find({ select: ['id', 'name'] });
-    const rayonNameById = new Map(rayons.map((r) => [r.id, r.name]));
+    const districts = await this.districtRepository.find({ select: ['id', 'name'] });
+    const districtNameById = new Map(districts.map((r) => [r.id, r.name]));
 
     const plants = await this.areaPlantRepository.find({ relations: ['species'] });
 
-    const rayonMap = new Map<string, RayonPlantStatusSummary>();
+    const districtMap = new Map<string, DistrictPlantStatusSummary>();
     const overduePerArea = new Map<string, number>();
 
     for (const plant of plants) {
       const area = areaById.get(plant.locationId);
-      if (!area) continue; // outside the requested rayon scope (or orphaned)
+      if (!area) continue; // outside the requested district scope (or orphaned)
 
       const { status } = this.plantDueDateService.recomputeAreaPlant(
         plant,
@@ -172,13 +172,15 @@ export class AreaPlantStatusService {
         area.locationType,
       );
 
-      const key = area.rayon_id ?? 'none';
+      const key = area.district_id ?? 'none';
       const entry =
-        rayonMap.get(key) ??
-        rayonMap
+        districtMap.get(key) ??
+        districtMap
           .set(key, {
-            rayon_id: area.rayon_id ?? null,
-            rayon_name: area.rayon_id ? (rayonNameById.get(area.rayon_id) ?? null) : null,
+            district_id: area.district_id ?? null,
+            district_name: area.district_id
+              ? (districtNameById.get(area.district_id) ?? null)
+              : null,
             ok: 0,
             due_soon: 0,
             overdue: 0,
@@ -195,21 +197,21 @@ export class AreaPlantStatusService {
 
     for (const [locationId, count] of overduePerArea) {
       const area = areaById.get(locationId)!;
-      const entry = rayonMap.get(area.rayon_id ?? 'none');
+      const entry = districtMap.get(area.district_id ?? 'none');
       entry?.overdue_areas.push({
         location_id: locationId,
         location_name: area.name,
         overdue: count,
       });
     }
-    for (const entry of rayonMap.values()) {
+    for (const entry of districtMap.values()) {
       entry.overdue_areas.sort((a, b) => b.overdue - a.overdue);
     }
 
     return {
       generated_at: new Date(),
-      rayons: [...rayonMap.values()].sort((a, b) =>
-        (a.rayon_name ?? '').localeCompare(b.rayon_name ?? ''),
+      districts: [...districtMap.values()].sort((a, b) =>
+        (a.district_name ?? '').localeCompare(b.district_name ?? ''),
       ),
     };
   }

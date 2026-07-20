@@ -1,7 +1,7 @@
 import {
   usersDataset,
   areasDataset,
-  rayonsDataset,
+  districtDataset,
   tasksDataset,
   activitiesDataset,
   overtimeDataset,
@@ -9,7 +9,7 @@ import {
 } from './entity-datasets';
 import type { User } from '../../users/entities/user.entity';
 import type { Location } from '../../locations/entities/location.entity';
-import type { Rayon } from '../../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../../districts/entities/district.entity';
 import type { Task } from '../../tasks/entities/task.entity';
 import type { Activity } from '../../activities/entities/activity.entity';
 import type { Overtime } from '../../overtime/entities/overtime.entity';
@@ -48,8 +48,8 @@ describe('entity dataset builders', () => {
     expect(ds.rows[0][1]).toBe('Taman');
   });
 
-  it('maps rayons', () => {
-    const ds = rayonsDataset([{ id: 'r1', name: 'Selatan', created_at: now } as Rayon]);
+  it('maps districts', () => {
+    const ds = districtDataset([{ id: 'r1', name: 'Selatan', created_at: now } as District]);
     expect(ds.rows[0][0]).toBe('r1');
     expect(ds.rows[0][1]).toBe('Selatan');
   });

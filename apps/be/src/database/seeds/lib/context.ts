@@ -14,8 +14,8 @@ export type SeedMode = 'demo' | 'staging' | 'production' | 'reference';
 
 /** Runtime id lookups shared across entity seeders (built as they run). */
 export interface SeedMaps {
-  /** rayon code (BARAT1, TAMAN_AKTIF, …) → rayon UUID. */
-  rayonIdByCode: Map<string, string>;
+  /** district code (BARAT1, TAMAN_AKTIF, …) → district UUID. */
+  districtIdByCode: Map<string, string>;
   /** plant species name → UUID (phase-3 location_plants/notable_plants). */
   speciesIdByName: Map<string, string>;
 }
@@ -81,7 +81,7 @@ export async function runProfile(
     ds,
     qr,
     mode,
-    maps: { rayonIdByCode: new Map(), speciesIdByName: new Map() },
+    maps: { districtIdByCode: new Map(), speciesIdByName: new Map() },
     log: (m) => console.log(m),
   };
   try {

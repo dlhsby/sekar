@@ -37,12 +37,12 @@ export class CreateLocationDto extends MapStyleDto {
   location_type_id: string;
 
   @ApiPropertyOptional({
-    description: 'Rayon UUID this area belongs to',
+    description: 'District UUID this area belongs to',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({ description: 'Region (Kawasan) UUID this area belongs to' })
   @IsOptional()

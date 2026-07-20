@@ -27,8 +27,8 @@ export class UserLocationsService {
   }
 
   async getPermanentLocations(userId: string): Promise<UserLocation[]> {
-    // `area.locationType` is eager on Location, so it loads automatically. The rayon name
-    // is resolved client-side from `area.rayon_id` (8 rayons, cached) rather than
+    // `area.locationType` is eager on Location, so it loads automatically. The district name
+    // is resolved client-side from `area.district_id` (8 districts, cached) rather than
     // eager-joined here.
     return this.userLocationRepo.find({
       where: { user_id: userId, assignment_type: 'permanent' },

@@ -93,7 +93,7 @@ export class PruningRequestsController {
    * Get pruning requests.
    *
    * When `mine=true`: Returns requests submitted by the authenticated user (staff_kecamatan only).
-   * Otherwise: Admin-only list with filtering by status, rayon, date range, and pagination.
+   * Otherwise: Admin-only list with filtering by status, district, date range, and pagination.
    *
    * @param mine - If true, return only user's own submissions
    * @param limit - Maximum results (default 20)
@@ -106,7 +106,7 @@ export class PruningRequestsController {
   @ApiOperation({
     summary: 'Get pruning requests',
     description:
-      'Retrieve pruning requests. mine=true returns your own submissions; admin=true returns filtered list with status/rayon/date filters.',
+      'Retrieve pruning requests. mine=true returns your own submissions; admin=true returns filtered list with status/district/date filters.',
   })
   @ApiQuery({
     name: 'mine',
@@ -133,8 +133,8 @@ export class PruningRequestsController {
     type: String,
   })
   @ApiQuery({
-    name: 'rayonId',
-    description: 'Filter by rayon ID (admin only; auto-forced for admin_rayon)',
+    name: 'districtId',
+    description: 'Filter by district ID (admin only; auto-forced for admin_rayon)',
     required: false,
     type: String,
   })
@@ -190,11 +190,11 @@ export class PruningRequestsController {
       return this.pruningRequestsService.findMine(user, parsedLimit, parsedOffset);
     }
 
-    // Admin list: status/rayon/date filters
+    // Admin list: status/district/date filters
     if (!mine || mine === 'false') {
       return this.pruningRequestsService.findAll(user!, {
         status: query?.status,
-        rayonId: query?.rayonId,
+        districtId: query?.districtId,
         from: query?.from,
         to: query?.to,
         page: query?.page ?? 1,
@@ -213,8 +213,8 @@ export class PruningRequestsController {
    *
    * Access is allowed to:
    * - The submitter (owner)
-   * - admin_rayon users with matching rayon
-   * - kepala_rayon users with matching rayon
+   * - admin_rayon users with matching district
+   * - kepala_rayon users with matching district
    * - management, admin_system, and superadmin users (unrestricted)
    *
    * @param id - Pruning request ID (UUID)
@@ -225,7 +225,7 @@ export class PruningRequestsController {
   // Defence-in-depth: the controller-level RolesGuard already runs, but listing
   // the allowed roles at the method level prevents a future refactor of the
   // service-side scope check (or its removal) from silently widening access.
-  // Ownership / rayon scoping is still enforced inside `findById`.
+  // Ownership / district scoping is still enforced inside `findById`.
   @Roles(
     UserRole.STAFF_KECAMATAN,
     UserRole.ADMIN_RAYON,
@@ -270,7 +270,7 @@ export class PruningRequestsController {
   /**
    * Review a pruning request (approve or reject).
    *
-   * Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system, and superadmin can review.
+   * Only admin_rayon (district-scoped), kepala_rayon, management, admin_system, and superadmin can review.
    * Requests must be in 'submitted' or 'under_review' status to be reviewable.
    *
    * @param id - Pruning request ID
@@ -289,7 +289,7 @@ export class PruningRequestsController {
   @ApiOperation({
     summary: 'Review a pruning request',
     description:
-      'Approve or reject a pruning request. Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system, and superadmin can perform this action.',
+      'Approve or reject a pruning request. Only admin_rayon (district-scoped), kepala_rayon, management, admin_system, and superadmin can perform this action.',
   })
   @ApiParam({
     name: 'id',
@@ -333,7 +333,7 @@ export class PruningRequestsController {
   /**
    * Convert an approved pruning request to a task.
    *
-   * Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system, and superadmin can convert.
+   * Only admin_rayon (district-scoped), kepala_rayon, management, admin_system, and superadmin can convert.
    * Request must be 'approved' to be converted. Idempotent: returns existing task if already converted.
    *
    * @param id - Pruning request ID
@@ -402,7 +402,7 @@ export class PruningRequestsController {
   /**
    * Reschedule the expected date of a pruning request.
    *
-   * Round 4 (Apr 28): admin_rayon (rayon-scoped), kepala_rayon, management,
+   * Round 4 (Apr 28): admin_rayon (district-scoped), kepala_rayon, management,
    * admin_system, and superadmin can adjust `expected_date` independent of the
    * assign-to-task flow. Only requests in 'submitted', 'under_review', or
    * 'approved' status can be rescheduled.
@@ -462,7 +462,7 @@ export class PruningRequestsController {
   /**
    * Update editable fields on a pruning request.
    *
-   * Only admin_rayon (rayon-scoped), kepala_rayon, management, admin_system,
+   * Only admin_rayon (district-scoped), kepala_rayon, management, admin_system,
    * and superadmin can update. Editable fields are address, notes, tree details
    * (count, height, diameter), and contact information (requester, RT leader).
    *

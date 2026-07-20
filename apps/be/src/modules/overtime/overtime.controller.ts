@@ -145,7 +145,7 @@ export class OvertimeController {
   })
   @ApiResponse({
     status: 403,
-    description: 'Access denied - not your area/rayon or wrong role',
+    description: 'Access denied - not your area/district or wrong role',
   })
   @ApiResponse({ status: 404, description: 'Overtime not found' })
   async approve(@Param('id') id: string, @GetUser() user: User): Promise<Overtime> {

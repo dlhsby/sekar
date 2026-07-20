@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -36,13 +36,10 @@ import {
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
-import { AggregateNodeList } from '@/components/monitoring/AggregateNodeList';
-import { BulkReassignModal } from '@/components/monitoring/BulkReassignModal';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
 import type { SimpleWorker, CurrentNodeMarker } from '@/components/monitoring/SimpleMonitoringMap';
 import type { NodeMarker } from '@/components/monitoring/NodeMarkerLayer';
-import type { SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
-import { MONITORING_ROLES, REASSIGN_ROLES, hasRole, roleLabel } from '@/lib/constants/roles';
+import { MONITORING_ROLES, hasRole, roleLabel } from '@/lib/constants/roles';
 import { formatTime } from '@/lib/utils/formatters';
 import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
@@ -113,7 +110,6 @@ export default function MonitoringPage() {
   ];
 
   const canMonitor = !!user && hasRole(user.role as UserRole, MONITORING_ROLES);
-  const canReassign = !!user && hasRole(user.role as UserRole, REASSIGN_ROLES);
 
   // Role determines the landing view + the floor the user can never drill above.
   const roleView = useMemo<{ view: MonitoringView; floor: Scope }>(() => {
@@ -148,7 +144,6 @@ export default function MonitoringPage() {
   const [areaDetailOpen, setAreaDetailOpen] = useState(false);
   const [teamDetail, setTeamDetail] = useState<TeamGroup | null>(null);
   const [statsOpen, setStatsOpen] = useState(false); // tappable stat legend (mobile)
-  const [bulkTarget, setBulkTarget] = useState<SnapshotAreaSummary | null>(null);
   const [focusTarget, setFocusTarget] = useState<{
     lat: number;
     lng: number;
@@ -201,7 +196,6 @@ export default function MonitoringPage() {
   const snapshotId = scope === 'region' ? view.rayonId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
-  const areaSummaries = useMemo(() => snapshot.data?.data?.area_summaries ?? [], [snapshot.data]);
 
   // Progressive boundaries: rayon outlines at the top, that rayon's locations deeper.
   // NB: the boundaries `level` param stays 'area' — it's part of the retained
@@ -318,14 +312,24 @@ export default function MonitoringPage() {
 
   const handleSearchSelect = (result: MonitoringSearchResult) => {
     if (result.type === 'petugas') {
-      // Drill into the worker's location so the pin renders, then select + focus.
+      // Drill to the worker's OWN scope level (their display_scope), so their row
+      // appears in the scoped list; then select + focus. (Detail still shows even
+      // if scope resolution is imperfect — it's looked up from the full snapshot.)
       const w = workers.find((x) => x.user_id === result.id);
-      if (w?.location_id) {
+      const ds = w?.display_scope ?? 'location';
+      const sid = w?.display_scope_id ?? null;
+      if (ds === 'city') {
+        setView({ scope: 'city' });
+      } else if (ds === 'rayon' && sid) {
+        setView({ scope: 'rayon', id: sid, rayonId: sid, name: w?.rayon_name ?? undefined });
+      } else if (ds === 'region' && sid) {
+        setView({ scope: 'region', id: sid, rayonId: w?.rayon_id ?? undefined, name: w?.region_name ?? undefined });
+      } else if (sid ?? w?.location_id) {
         setView({
           scope: 'location',
-          id: w.location_id,
-          rayonId: w.rayon_id ?? result.rayonId ?? undefined,
-          name: w.location_name ?? undefined,
+          id: (sid ?? w?.location_id)!,
+          rayonId: w?.rayon_id ?? result.rayonId ?? undefined,
+          name: w?.location_name ?? undefined,
         });
       }
       setSelectedId(result.id);
@@ -777,28 +781,34 @@ export default function MonitoringPage() {
     return q ? listNodes.filter((n) => n.name.toLowerCase().includes(q)) : listNodes;
   }, [listNodes, filters.search]);
 
-  const nodeMatchedCount = useMemo(
-    () =>
-      activeGeoId == null
-        ? filteredNodes.length
-        : filteredNodes.filter((n) => n.id === activeGeoId).length,
-    [filteredNodes, activeGeoId]
+  // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
+  // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
+  // rayon-scheduled worker only at that rayon, a city-wide/unassigned worker only
+  // at the city view — never at the levels above. So each level shows its own
+  // scoped crews (not every worker that happens to sit inside the geography).
+  const scopeMatches = useCallback(
+    (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
+      const s = w.display_scope ?? 'location';
+      if (scope === 'city') return s === 'city';
+      if (scope === 'rayon') return s === 'rayon' && w.display_scope_id === view.id;
+      if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
+      if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
+      return true;
+    },
+    [scope, view.id]
   );
 
-  const filteredAreaSummaries = useMemo(() => {
-    if (filters.rayonId === 'all') return areaSummaries;
-    return areaSummaries.filter((a) => a.rayon_id === filters.rayonId);
-  }, [areaSummaries, filters.rayonId]);
+  // Map source: base filter (no jenis split) so teams + individuals both draw.
+  const drillScopedWorkers = useMemo(
+    () => baseFilteredWorkers.filter(scopeMatches),
+    [baseFilteredWorkers, scopeMatches]
+  );
 
-  // Workers drawn on the map are scoped to the DRILL level, not just the filter
-  // panel: at kawasan (region) scope only that kawasan's workers show; at lokasi
-  // (location) scope only that lokasi's. At rayon/city all of the fetched workers show.
-  const drillScopedWorkers = useMemo(() => {
-    // Map source: base filter (no jenis split) so teams + individuals both draw.
-    if (scope === 'region') return baseFilteredWorkers.filter((w) => w.region_id === view.id);
-    if (scope === 'location') return baseFilteredWorkers.filter((w) => w.location_id === view.id);
-    return baseFilteredWorkers;
-  }, [baseFilteredWorkers, scope, view.id]);
+  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), same scope match.
+  const listScopedWorkers = useMemo(
+    () => filteredWorkers.filter(scopeMatches),
+    [filteredWorkers, scopeMatches]
+  );
 
   const mapWorkers = useMemo<SimpleWorker[]>(
     () =>
@@ -837,7 +847,9 @@ export default function MonitoringPage() {
       toast.error(t('monitoring:page.refreshError'));
     }
   };
-  const listCount = showWorkers ? filteredWorkers.length : nodeMatchedCount;
+  // Collapsed "Daftar Petugas" badge counts the scoped workers (the panel leads
+  // with Wilayah, but the button names the worker list).
+  const listCount = listScopedWorkers.length;
 
   if (authLoading || !user) {
     return (
@@ -859,7 +871,6 @@ export default function MonitoringPage() {
     <div className="relative h-[calc(100dvh_-_7rem)] min-h-[28rem] w-full overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-100">
       {/* Map (base layer) */}
       <SimpleMonitoringMap
-        showWorkers={showWorkers}
         scope={scope}
         nodeMarkers={nodeMarkers}
         activeGeoId={activeGeoId}
@@ -1066,7 +1077,7 @@ export default function MonitoringPage() {
             locationLoading={locationLoading}
             roleOptions={roleOptions}
             teamOptions={teamOptions}
-            total={showWorkers ? workers.length : listNodes.length}
+            total={drillScopedWorkers.length}
             matched={listCount}
             showSearch={false}
           />
@@ -1101,23 +1112,21 @@ export default function MonitoringPage() {
               <ChevronDown className="h-4 w-4" />
             </button>
           </div>
-          {showWorkers ? (
-            <MonitoringSidebar
-              workers={filteredWorkers}
-              areaSummaries={filteredAreaSummaries}
-              selectedId={selectedId}
-              onSelect={selectWorker}
-              onBulkReassign={canReassign ? setBulkTarget : undefined}
-              className="min-h-0 flex-1 shadow-nb-lg"
-            />
-          ) : (
-            <AggregateNodeList
-              nodes={filteredNodes}
-              activeGeoId={activeGeoId}
-              onDrill={onDrillListNode}
-              className="min-h-0 flex-1 shadow-nb-lg"
-            />
-          )}
+          {/* One sidebar at every level: Wilayah (child nodes, drillable) + Petugas
+              (workers). At lokasi scope there are no child nodes, so only Petugas
+              shows. */}
+          <MonitoringSidebar
+            workers={listScopedWorkers}
+            nodes={filteredNodes}
+            onDrillNode={onDrillListNode}
+            activeGeoId={activeGeoId}
+            selectedId={selectedId}
+            selectedWorker={
+              selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null
+            }
+            onSelect={selectWorker}
+            className="min-h-0 flex-1 shadow-nb-lg"
+          />
         </div>
       ) : (
         <button
@@ -1249,19 +1258,6 @@ export default function MonitoringPage() {
               ))}
           </ul>
         </div>
-      )}
-
-      {/* Bulk reassign modal */}
-      {canReassign && bulkTarget && (
-        <BulkReassignModal
-          open={!!bulkTarget}
-          onOpenChange={(open) => {
-            if (!open) setBulkTarget(null);
-          }}
-          targetAreaId={bulkTarget.location_id}
-          targetAreaName={bulkTarget.location_name}
-          boundaries={boundaries}
-        />
       )}
     </div>
   );

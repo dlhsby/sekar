@@ -11,7 +11,7 @@ import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../../districts/entities/district.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
@@ -25,7 +25,7 @@ describe('MonitoringUserService', () => {
   let taskRepository: jest.Mocked<Repository<Task>>;
   let activityRepository: jest.Mocked<Repository<Activity>>;
   let locationRepository: jest.Mocked<Repository<LocationLog>>;
-  let rayonRepository: jest.Mocked<Repository<Rayon>>;
+  let districtRepository: jest.Mocked<Repository<District>>;
   let regionRepository: jest.Mocked<Repository<Region>>;
   let shiftDefinitionRepository: jest.Mocked<Repository<ShiftDefinition>>;
   let trackingRepository: jest.Mocked<Repository<UserTrackingStatus>>;
@@ -37,22 +37,22 @@ describe('MonitoringUserService', () => {
     phone_number: '081234567890',
     role: 'satgas',
     location_id: 'area-1',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
   } as User;
 
   const mockArea: Location = {
     id: 'area-1',
     name: 'Location 1',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     region_id: 'region-1',
     gps_lat: -7.25,
     gps_lng: 112.75,
   } as Location;
 
-  const mockRayon: Rayon = {
-    id: 'rayon-1',
-    name: 'Rayon 1',
-  } as Rayon;
+  const mockDistrict: District = {
+    id: 'district-1',
+    name: 'District 1',
+  } as District;
 
   const mockShift: Shift = {
     id: 'shift-1',
@@ -115,7 +115,7 @@ describe('MonitoringUserService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Rayon),
+          provide: getRepositoryToken(District),
           useValue: {
             find: jest.fn(),
             findOne: jest.fn(),
@@ -178,7 +178,9 @@ describe('MonitoringUserService', () => {
     locationRepository = module.get<jest.Mocked<Repository<LocationLog>>>(
       getRepositoryToken(LocationLog),
     );
-    rayonRepository = module.get<jest.Mocked<Repository<Rayon>>>(getRepositoryToken(Rayon));
+    districtRepository = module.get<jest.Mocked<Repository<District>>>(
+      getRepositoryToken(District),
+    );
     regionRepository = module.get<jest.Mocked<Repository<Region>>>(getRepositoryToken(Region));
     shiftDefinitionRepository = module.get<jest.Mocked<Repository<ShiftDefinition>>>(
       getRepositoryToken(ShiftDefinition),
@@ -233,7 +235,7 @@ describe('MonitoringUserService', () => {
         getMany: jest.fn().mockResolvedValue([mockArea]),
       };
       areaRepository.createQueryBuilder.mockReturnValue(areaQb as any);
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+      districtRepository.find.mockResolvedValue([mockDistrict]);
 
       const result = await service.getLiveUsers();
 
@@ -265,7 +267,7 @@ describe('MonitoringUserService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       } as any);
-      rayonRepository.find.mockResolvedValue([]);
+      districtRepository.find.mockResolvedValue([]);
 
       await service.getLiveUsers({ q: 'John' } as any);
 
@@ -328,7 +330,7 @@ describe('MonitoringUserService', () => {
           andWhere: jest.fn().mockReturnThis(),
           getMany: jest.fn().mockResolvedValue([mockArea]),
         } as any);
-        rayonRepository.find.mockResolvedValue([mockRayon]);
+        districtRepository.find.mockResolvedValue([mockDistrict]);
 
         const result = await service.getLiveUsers();
 
@@ -357,7 +359,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u1',
             status: 'planned',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: 's1',
             user: { full_name: 'One', role: 'satgas' },
             shift_definition: { name: 'Shift 1' },
@@ -365,7 +367,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u2',
             status: 'planned',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: 's1',
             user: { full_name: 'Two', role: 'satgas' },
             shift_definition: { name: 'Shift 1' },
@@ -373,7 +375,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u3',
             status: 'leave_sick',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: 's1',
             user: { full_name: 'Three', role: 'linmas' },
             shift_definition: { name: 'Shift 1' },
@@ -381,7 +383,7 @@ describe('MonitoringUserService', () => {
           {
             user_id: 'u4',
             status: 'off',
-            rayon_id: 'r1',
+            district_id: 'r1',
             shift_definition_id: null,
             user: { full_name: 'Four', role: 'kepala_rayon' },
             shift_definition: null,
@@ -418,7 +420,7 @@ describe('MonitoringUserService', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
 
-    it('should filter users by rayon ID', async () => {
+    it('should filter users by district ID', async () => {
       const mockQueryBuilder = {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
         leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -430,7 +432,7 @@ describe('MonitoringUserService', () => {
 
       trackingRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      await service.getLiveUsers({ rayon_id: 'rayon-1' });
+      await service.getLiveUsers({ district_id: 'district-1' });
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalled();
     });
@@ -509,7 +511,7 @@ describe('MonitoringUserService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([mockArea]),
       } as any);
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+      districtRepository.find.mockResolvedValue([mockDistrict]);
 
       // Mock dailySchedulesService with team membership
       const mockTeamMap = new Map([
@@ -575,7 +577,7 @@ describe('MonitoringUserService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([mockArea]),
       } as any);
-      rayonRepository.find.mockResolvedValue([mockRayon]);
+      districtRepository.find.mockResolvedValue([mockDistrict]);
 
       // Don't mock dailySchedulesService — leave it undefined
       (service as any).dailySchedulesService = undefined;
@@ -673,7 +675,7 @@ describe('MonitoringUserService', () => {
 
       trackingRepository.findOne.mockResolvedValue(mockTracking);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       shiftDefinitionRepository.findOne.mockResolvedValue(mockShiftDef);
 
       const activityQb = {
@@ -703,7 +705,7 @@ describe('MonitoringUserService', () => {
       userRepository.findOne.mockResolvedValue(mockUser);
       trackingRepository.findOne.mockResolvedValue(null);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       activityRepository.find.mockResolvedValue([]);
 
       const taskQb = {
@@ -743,7 +745,7 @@ describe('MonitoringUserService', () => {
       userRepository.findOne.mockResolvedValue(userWithPhone);
       trackingRepository.findOne.mockResolvedValue(null);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       activityRepository.find.mockResolvedValue([]);
 
       const taskQb = {
@@ -762,7 +764,7 @@ describe('MonitoringUserService', () => {
       userRepository.findOne.mockResolvedValue(userNoPhone);
       trackingRepository.findOne.mockResolvedValue(null);
       areaRepository.findOne.mockResolvedValue(mockArea);
-      rayonRepository.findOne.mockResolvedValue(mockRayon);
+      districtRepository.findOne.mockResolvedValue(mockDistrict);
       activityRepository.find.mockResolvedValue([]);
 
       const taskQb = {

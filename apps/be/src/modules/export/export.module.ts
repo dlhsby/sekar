@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SharedModule } from '../../shared/shared.module';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { District } from '../districts/entities/district.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { Overtime } from '../overtime/entities/overtime.entity';
@@ -18,7 +18,7 @@ import { ExportService } from './export.service';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ExportJob, User, Location, Rayon, Task, Activity, Overtime]),
+    TypeOrmModule.forFeature([ExportJob, User, Location, District, Task, Activity, Overtime]),
     SharedModule,
   ],
   controllers: [ExportController],

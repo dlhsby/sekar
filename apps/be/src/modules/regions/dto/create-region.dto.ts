@@ -18,9 +18,9 @@ export class CreateRegionDto extends MapStyleDto {
   @MaxLength(100)
   name: string;
 
-  @ApiProperty({ description: 'Parent rayon id' })
+  @ApiProperty({ description: 'Parent district id' })
   @IsUUID()
-  rayon_id: string;
+  district_id: string;
 
   @ApiPropertyOptional()
   @IsOptional()

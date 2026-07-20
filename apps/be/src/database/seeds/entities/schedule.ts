@@ -25,11 +25,11 @@ export async function seedSchedules(ctx: SeedContext): Promise<void> {
   // Status: 'planned' if user has shift_definition_id, 'off' otherwise
   // Source: 'template' (generated from user template, not manually created)
   const result = await ctx.qr.query(
-    `INSERT INTO schedules (user_id, schedule_date, rayon_id, shift_definition_id, status, source)
+    `INSERT INTO schedules (user_id, schedule_date, district_id, shift_definition_id, status, source)
      SELECT
        u.id,
        $1::date,
-       u.rayon_id,
+       u.district_id,
        u.shift_definition_id,
        CASE WHEN u.shift_definition_id IS NOT NULL THEN 'planned' ELSE 'off' END,
        'template'

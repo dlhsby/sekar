@@ -111,12 +111,12 @@ export class ScheduleMaterializerService {
         );
 
         // Create the schedule row
-        const rayon_id =
+        const district_id =
           event.scope === 'static'
-            ? event.location?.rayon_id
+            ? event.location?.district_id
             : event.scope === 'mobile'
-              ? event.region?.rayon_id
-              : event.rayon_id;
+              ? event.region?.district_id
+              : event.district_id;
 
         const schedule = this.scheduleRepo.create({
           user_id: memberId,
@@ -127,7 +127,7 @@ export class ScheduleMaterializerService {
           schedule_event_id: event.id,
           region_id: event.scope === 'mobile' ? event.region_id : null,
           team_category_id: event.is_team ? event.team_category_id : null,
-          rayon_id,
+          district_id,
           created_by: event.created_by,
         });
 

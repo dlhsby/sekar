@@ -75,8 +75,8 @@ export class AssetsService {
     if (query.location_id) {
       qb.andWhere('asset.location_id = :areaId', { areaId: query.location_id });
     }
-    if (query.rayon_id) {
-      qb.andWhere('asset.rayon_id = :rayonId', { rayonId: query.rayon_id });
+    if (query.district_id) {
+      qb.andWhere('asset.district_id = :districtId', { districtId: query.district_id });
     }
     if (query.search) {
       qb.andWhere(
@@ -128,10 +128,10 @@ export class AssetsService {
       throw new BadRequestException('Invalid category id');
     }
 
-    const rayonId =
-      dto.rayon_id || (dto.location_id ? await this.getAreaRayon(dto.location_id) : null);
-    if (!rayonId) {
-      throw new BadRequestException('Asset must have either location_id or rayon_id');
+    const districtId =
+      dto.district_id || (dto.location_id ? await this.getAreaDistrict(dto.location_id) : null);
+    if (!districtId) {
+      throw new BadRequestException('Asset must have either location_id or district_id');
     }
 
     const assetCode = await this.generateAssetCode(category.code_prefix);
@@ -139,7 +139,7 @@ export class AssetsService {
     const asset = this.assetRepo.create({
       category_id: dto.category_id,
       location_id: dto.location_id || null,
-      rayon_id: rayonId,
+      district_id: districtId,
       name: dto.name,
       description: dto.description || null,
       asset_code: assetCode,
@@ -273,7 +273,7 @@ export class AssetsService {
 
     for (const asset of assets) {
       // Scope-checked per asset inside generateQr — a manager cannot bulk-print
-      // QRs for assets outside their area/rayon.
+      // QRs for assets outside their area/district.
       const qrCodeUrl = await this.generateQr(asset.id, user);
       results.push({
         assetId: asset.id,
@@ -620,7 +620,7 @@ export class AssetsService {
   }
 
   private async applyScopeFilter(qb: any, user: User): Promise<void> {
-    const { role, location_id, rayon_id } = user;
+    const { role, location_id, district_id } = user;
 
     if (ASSET_VIEWERS.includes(role as any)) {
       if (role === UserRole.SATGAS || role === UserRole.LINMAS) {
@@ -634,13 +634,13 @@ export class AssetsService {
       } else if (role === UserRole.ADMIN_RAYON) {
         qb.andWhere('asset.location_id = :areaId', { areaId: location_id });
       } else if (role === UserRole.KEPALA_RAYON) {
-        qb.andWhere('asset.rayon_id = :rayonId', { rayonId: rayon_id });
+        qb.andWhere('asset.district_id = :districtId', { districtId: district_id });
       }
     }
   }
 
   private async applyScopeFilterForMaintenance(qb: any, user: User): Promise<void> {
-    const { role, location_id, rayon_id } = user;
+    const { role, location_id, district_id } = user;
 
     if (ASSET_VIEWERS.includes(role as any)) {
       if (role === UserRole.SATGAS || role === UserRole.LINMAS) {
@@ -654,7 +654,7 @@ export class AssetsService {
       } else if (role === UserRole.ADMIN_RAYON) {
         qb.andWhere('asset.location_id = :areaId', { areaId: location_id });
       } else if (role === UserRole.KEPALA_RAYON) {
-        qb.andWhere('asset.rayon_id = :rayonId', { rayonId: rayon_id });
+        qb.andWhere('asset.district_id = :districtId', { districtId: district_id });
       }
     }
   }
@@ -664,7 +664,7 @@ export class AssetsService {
       throw new ForbiddenException('You do not have permission to view this asset');
     }
 
-    const { role, location_id, rayon_id } = user;
+    const { role, location_id, district_id } = user;
     if (role === UserRole.SATGAS || role === UserRole.LINMAS) {
       if (asset.location_id && location_id && asset.location_id !== location_id) {
         throw new ForbiddenException('You can only view assets in your area');
@@ -680,24 +680,24 @@ export class AssetsService {
         throw new ForbiddenException('You can only view assets in your area');
       }
     } else if (role === UserRole.KEPALA_RAYON) {
-      if (asset.rayon_id && rayon_id && asset.rayon_id !== rayon_id) {
-        throw new ForbiddenException('You can only view assets in your rayon');
+      if (asset.district_id && district_id && asset.district_id !== district_id) {
+        throw new ForbiddenException('You can only view assets in your district');
       }
     }
   }
 
-  private async getAreaRayon(areaId: string): Promise<string> {
+  private async getAreaDistrict(areaId: string): Promise<string> {
     const area = await this.locationRepo.findOne({ where: { id: areaId } });
-    if (!area || !area.rayon_id) {
-      throw new BadRequestException('Location does not have associated rayon');
+    if (!area || !area.district_id) {
+      throw new BadRequestException('Location does not have associated district');
     }
-    return area.rayon_id;
+    return area.district_id;
   }
 
   /**
    * Asset code = `PREFIX-SEQ` (e.g. TOOL-001). The sequence is global per
-   * category prefix so codes stay unique without embedding a rayon code (rayon
-   * is still tracked via `asset.rayon_id`).
+   * category prefix so codes stay unique without embedding a district code (district
+   * is still tracked via `asset.district_id`).
    */
   private async generateAssetCode(prefix: string): Promise<string> {
     const lastAsset = await this.assetRepo.findOne({

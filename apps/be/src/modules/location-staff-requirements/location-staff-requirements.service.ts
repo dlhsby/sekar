@@ -12,7 +12,7 @@ import {
   DayType,
   StaffRole,
 } from './entities/location-staff-requirement.entity';
-import { Rayon, StaffingLevel } from '../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../districts/entities/district.entity';
 import { Region } from '../regions/entities/region.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ApiException } from '../../common/exceptions/api.exception';
@@ -35,8 +35,8 @@ export class LocationStaffRequirementsService {
   constructor(
     @InjectRepository(LocationStaffRequirement)
     private readonly requirementRepository: Repository<LocationStaffRequirement>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepository: Repository<District>,
     @InjectRepository(Region)
     private readonly regionRepository: Repository<Region>,
     @InjectRepository(Location)
@@ -46,43 +46,44 @@ export class LocationStaffRequirementsService {
   ) {}
 
   /**
-   * A requirement may only be written at the tier its parent rayon nominates
-   * (`rayon.staffing_level`) — otherwise two tiers could each carry a target and
+   * A requirement may only be written at the tier its parent district nominates
+   * (`district.staffing_level`) — otherwise two tiers could each carry a target and
    * the board would double-count. The write endpoints are the only guard: reads
    * stay open so an existing wrong-level row remains inspectable/recoverable if
-   * the rayon's level changes back.
+   * the district's level changes back.
    */
   private async assertSubjectMatchesStaffingLevel(
-    subjectColumn: 'location_id' | 'region_id' | 'rayon_id',
+    subjectColumn: 'location_id' | 'region_id' | 'district_id',
     subjectId: string,
   ): Promise<void> {
     const expected: Record<typeof subjectColumn, StaffingLevel> = {
-      rayon_id: StaffingLevel.RAYON,
+      district_id: StaffingLevel.DISTRICT,
       region_id: StaffingLevel.REGION,
       location_id: StaffingLevel.LOCATION,
     };
 
-    let rayonId: string | null | undefined;
-    if (subjectColumn === 'rayon_id') {
-      rayonId = subjectId;
+    let districtId: string | null | undefined;
+    if (subjectColumn === 'district_id') {
+      districtId = subjectId;
     } else if (subjectColumn === 'region_id') {
-      rayonId = (await this.regionRepository.findOne({ where: { id: subjectId } }))?.rayon_id;
+      districtId = (await this.regionRepository.findOne({ where: { id: subjectId } }))?.district_id;
     } else {
-      rayonId = (await this.locationRepository.findOne({ where: { id: subjectId } }))?.rayon_id;
+      districtId = (await this.locationRepository.findOne({ where: { id: subjectId } }))
+        ?.district_id;
     }
-    // No resolvable parent rayon (e.g. a lokasi not yet assigned one) — there is
+    // No resolvable parent district (e.g. a lokasi not yet assigned one) — there is
     // no staffing_level to check against, so leave it to the existing checks.
-    if (!rayonId) return;
+    if (!districtId) return;
 
-    const rayon = await this.rayonRepository.findOne({ where: { id: rayonId } });
-    if (!rayon) return;
+    const district = await this.districtRepository.findOne({ where: { id: districtId } });
+    if (!district) return;
 
-    const level = rayon.staffing_level ?? StaffingLevel.REGION;
+    const level = district.staffing_level ?? StaffingLevel.REGION;
     if (level !== expected[subjectColumn]) {
       throw new ApiException(
         HttpStatus.CONFLICT,
         ApiErrorCode.CAPACITY_WRONG_LEVEL,
-        `Cannot set capacity at '${expected[subjectColumn]}' level: rayon '${rayon.name}' ` +
+        `Cannot set capacity at '${expected[subjectColumn]}' level: district '${district.name}' ` +
           `attaches staffing requirements at '${level}' level.`,
       );
     }
@@ -121,10 +122,10 @@ export class LocationStaffRequirementsService {
     });
   }
 
-  /** Rayon-level requirements (for the rayon editor). */
-  findByRayonId(rayonId: string): Promise<LocationStaffRequirement[]> {
+  /** Rayon-level requirements (for the district editor). */
+  findByDistrictId(districtId: string): Promise<LocationStaffRequirement[]> {
     return this.requirementRepository.find({
-      where: { rayon_id: rayonId },
+      where: { district_id: districtId },
       relations: ['shiftDefinition'],
       order: { day_type: 'ASC', role: 'ASC' },
     });
@@ -132,11 +133,11 @@ export class LocationStaffRequirementsService {
 
   /**
    * Upsert a subject's per-(shift, role, day_type) targets — polymorphic over
-   * location / region / rayon. Only the items passed are written (find-or-update
+   * location / region / district. Only the items passed are written (find-or-update
    * on the subject column), so a partial edit is safe.
    */
   private async bulkSetForSubject(
-    subjectColumn: 'location_id' | 'region_id' | 'rayon_id',
+    subjectColumn: 'location_id' | 'region_id' | 'district_id',
     subjectId: string,
     items: Array<{
       shift_definition_id: string;
@@ -187,9 +188,9 @@ export class LocationStaffRequirementsService {
     return this.bulkSetForSubject('region_id', regionId, items);
   }
 
-  /** Upsert a rayon's targets. */
-  async bulkSetForRayon(
-    rayonId: string,
+  /** Upsert a district's targets. */
+  async bulkSetForDistrict(
+    districtId: string,
     items: Array<{
       shift_definition_id: string;
       role: StaffRole;
@@ -197,7 +198,7 @@ export class LocationStaffRequirementsService {
       required_count: number;
     }>,
   ): Promise<LocationStaffRequirement[]> {
-    return this.bulkSetForSubject('rayon_id', rayonId, items);
+    return this.bulkSetForSubject('district_id', districtId, items);
   }
 
   /**

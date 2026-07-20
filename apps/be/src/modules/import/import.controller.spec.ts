@@ -247,7 +247,7 @@ describe('ImportController', () => {
             action: 'create' as const,
             name_override: 'Custom Name',
             location_type_id: 'type-1',
-            rayon_id: 'rayon-1',
+            district_id: 'district-1',
           },
         ],
       };

@@ -29,12 +29,12 @@ export class WorkerAnalyticsQueryDto extends PaginationDto {
   location_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by rayon ID',
-    example: 'rayon-1',
+    description: 'Filter by district ID',
+    example: 'district-1',
   })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'Search by worker name',

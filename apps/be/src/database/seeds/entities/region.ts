@@ -13,30 +13,30 @@ const MARKER_ICON = 'trees';
 
 /**
  * Seed the Kawasan (Regions) from the client's workbook
- * (`data/kawasan.snapshot.json`) — the "Kawasan …" entries in each rayon tab's
- * column K, grouped under that rayon (ADR-045). Names + parent rayon only;
+ * (`data/kawasan.snapshot.json`) — the "Kawasan …" entries in each district tab's
+ * column K, grouped under that district (ADR-045). Names + parent district only;
  * boundaries are drawn fresh in the UI. Deterministic ids make this idempotent.
  *
- * Runs for both demo and staging. Must run AFTER seedRayons (FK rayon_id) and
+ * Runs for both demo and staging. Must run AFTER seedDistricts (FK district_id) and
  * seedAreas (the re-parent step sets locations.region_id).
  */
 export async function seedRegions(ctx: SeedContext): Promise<void> {
   ctx.log('🗺️  Seeding Kawasan (Regions) from workbook…');
 
   const kawasan = loadKawasanSnapshot();
-  const byRayon = new Map<string, number>();
+  const byDistrict = new Map<string, number>();
   for (const k of kawasan) {
     await ctx.qr.query(
       `INSERT INTO regions
-         (id, name, rayon_id, border_color, fill_color, border_opacity, fill_opacity, marker_icon)
+         (id, name, district_id, border_color, fill_color, border_opacity, fill_opacity, marker_icon)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        ON CONFLICT (id) DO UPDATE SET
          name = EXCLUDED.name,
-         rayon_id = EXCLUDED.rayon_id`,
+         district_id = EXCLUDED.district_id`,
       [
         k.id,
         k.name,
-        k.rayon_id,
+        k.district_id,
         BORDER_COLOR,
         FILL_COLOR,
         BORDER_OPACITY,
@@ -44,10 +44,10 @@ export async function seedRegions(ctx: SeedContext): Promise<void> {
         MARKER_ICON,
       ],
     );
-    byRayon.set(k.rayon_id, (byRayon.get(k.rayon_id) ?? 0) + 1);
+    byDistrict.set(k.district_id, (byDistrict.get(k.district_id) ?? 0) + 1);
   }
 
-  ctx.log(`  ✓ ${kawasan.length} kawasan across ${byRayon.size} rayons`);
+  ctx.log(`  ✓ ${kawasan.length} kawasan across ${byDistrict.size} districts`);
 
   // Re-parent areas under their kawasan (confident name matches from the
   // workbook; the rest stay unassigned for UI remediation). One bulk UPDATE via
@@ -143,7 +143,7 @@ function boundingBox(pts: Array<[number, number]>, margin: number): Array<[numbe
  * lokasi so they at least sit in the right place — a hull nobody believes is
  * worse than none — but they are not surveyed boundaries and must not be treated
  * as such. Import via `ImportBoundaryButton` / `GoogleBoundaryEditor` (already
- * wired for rayon + lokasi) replaces them; this only fills rows that are still
+ * wired for district + lokasi) replaces them; this only fills rows that are still
  * empty, so a real boundary is never clobbered.
  *
  * Three shapes, because the data is uneven (86 kawasan have ≥3 lokasi, 29 have
@@ -153,7 +153,7 @@ function boundingBox(pts: Array<[number, number]>, margin: number): Array<[numbe
  *    bounds the pins rather than sitting a fixed box on their centroid — two
  *    lokasi further apart than the box would otherwise fall outside their own
  *    kawasan.
- *  - **0 lokasi**  → a small box offset from the rayon centre, so the kawasan is
+ *  - **0 lokasi**  → a small box offset from the district centre, so the kawasan is
  *    still selectable. Purely arbitrary — flagged in the log.
  */
 export async function seedRegionGeometry(ctx: SeedContext): Promise<void> {
@@ -163,7 +163,7 @@ export async function seedRegionGeometry(ctx: SeedContext): Promise<void> {
 
   const rows = (await ctx.qr.query(
     `SELECT r.id,
-            r.rayon_id,
+            r.district_id,
             ry.center_lat AS rayon_lat,
             ry.center_lng AS rayon_lng,
             COALESCE(
@@ -172,10 +172,10 @@ export async function seedRegionGeometry(ctx: SeedContext): Promise<void> {
               '[]'
             ) AS pts
        FROM regions r
-       JOIN rayons ry ON ry.id = r.rayon_id
+       JOIN districts ry ON ry.id = r.district_id
        LEFT JOIN locations l ON l.region_id = r.id AND l.deleted_at IS NULL
       WHERE r.deleted_at IS NULL AND r.boundary_polygon IS NULL
-      GROUP BY r.id, r.rayon_id, ry.center_lat, ry.center_lng
+      GROUP BY r.id, r.district_id, ry.center_lat, ry.center_lng
       ORDER BY r.id`,
   )) as Array<{
     id: string;
@@ -210,7 +210,7 @@ export async function seedRegionGeometry(ctx: SeedContext): Promise<void> {
       boxed += 1;
     } else {
       if (r.rayon_lat == null || r.rayon_lng == null) continue;
-      // No lokasi at all: park it near the rayon centre, fanned out by index so
+      // No lokasi at all: park it near the district centre, fanned out by index so
       // several such kawasan don't stack on the same spot.
       const angle = (i * 2 * Math.PI) / Math.max(rows.length, 1);
       const offset = 0.01;
@@ -236,6 +236,6 @@ export async function seedRegionGeometry(ctx: SeedContext): Promise<void> {
 
   ctx.log(`  ✓ ${hulled} from member lokasi (hull) · ${boxed} boxed (1–2 lokasi)`);
   if (orphan > 0) {
-    ctx.log(`  ⚠ ${orphan} kawasan have NO lokasi — placed arbitrarily near their rayon centre`);
+    ctx.log(`  ⚠ ${orphan} kawasan have NO lokasi — placed arbitrarily near their district centre`);
   }
 }

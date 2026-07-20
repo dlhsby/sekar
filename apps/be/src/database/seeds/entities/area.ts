@@ -33,18 +33,18 @@ function circlePolygon(lat: number, lng: number, radiusMeters: number): object {
 /**
  * Seed locations (areas) from the live-staging snapshot
  * (`data/areas.snapshot.json`) — the client-validated real-world footprint
- * (~953 areas across the 8 rayons). Staging is the source of truth, so both
- * demo and staging seed the exact same set by id (names, boundaries, rayon,
+ * (~953 areas across the 8 districts). Staging is the source of truth, so both
+ * demo and staging seed the exact same set by id (names, boundaries, district,
  * type), replacing the former KMZ-derived geometry + synthetic demo playground.
  *
  * Idempotent: re-seeding refreshes the mutable columns. Must run AFTER
- * seedRayons (FK rayon_id) and seedAreaTypes (FK location_type_id via code).
+ * seedDistricts (FK district_id) and seedAreaTypes (FK location_type_id via code).
  */
 export async function seedAreas(ctx: SeedContext): Promise<void> {
   ctx.log('📍 Seeding Areas (from live-staging snapshot)…');
 
   const areas = loadAreaSnapshot();
-  const byRayon = new Map<string, number>();
+  const byDistrict = new Map<string, number>();
   for (const a of areas) {
     await ctx.qr.query(
       // Default lokasi styling (ADR-045): a leaf glyph (distinct from the kawasan
@@ -52,7 +52,7 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
       // per-lokasi overrides a user has set.
       `INSERT INTO locations (
          id, name, location_type_id, gps_lat, gps_lng,
-         boundary_polygon, coverage_area, address, rayon_id, is_active,
+         boundary_polygon, coverage_area, address, district_id, is_active,
          marker_icon, border_color, fill_color, border_opacity, fill_opacity
        )
        SELECT
@@ -69,7 +69,7 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
          boundary_polygon = EXCLUDED.boundary_polygon,
          coverage_area = EXCLUDED.coverage_area,
          address = EXCLUDED.address,
-         rayon_id = EXCLUDED.rayon_id,
+         district_id = EXCLUDED.district_id,
          is_active = EXCLUDED.is_active,
          marker_icon = COALESCE(locations.marker_icon, EXCLUDED.marker_icon),
          border_color = COALESCE(locations.border_color, EXCLUDED.border_color),
@@ -92,12 +92,12 @@ export async function seedAreas(ctx: SeedContext): Promise<void> {
         ),
         a.coverage_area,
         a.address,
-        a.rayon_id,
+        a.district_id,
         a.is_active,
       ],
     );
-    byRayon.set(a.rayon_id, (byRayon.get(a.rayon_id) ?? 0) + 1);
+    byDistrict.set(a.district_id, (byDistrict.get(a.district_id) ?? 0) + 1);
   }
 
-  ctx.log(`  ✓ ${areas.length} locations across ${byRayon.size} rayons (staging snapshot)`);
+  ctx.log(`  ✓ ${areas.length} locations across ${byDistrict.size} districts (staging snapshot)`);
 }

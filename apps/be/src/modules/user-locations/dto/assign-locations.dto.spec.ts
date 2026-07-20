@@ -6,7 +6,7 @@ describe('AssignLocationsDto', () => {
   const build = (location_ids: unknown) => plainToInstance(AssignLocationsDto, { location_ids });
 
   it('accepts deterministic v5 area ids (the shape every seeded area uses)', async () => {
-    // e.g. Taman 10 Nopember — minted as UUID v5 from `rayon:name`.
+    // e.g. Taman 10 Nopember — minted as UUID v5 from `district:name`.
     const dto = build(['80a29989-f5cf-55bd-9386-86338b413bfc']);
     expect(await validate(dto)).toHaveLength(0);
   });

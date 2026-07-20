@@ -25,7 +25,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
 
   if (ctx.mode === 'staging') {
     // Faithful port of seed-staging STEP 11 — a FIXED set of permanent
-    // assignments (not "all locations in rayon"). The roster's taman-aktif area
+    // assignments (not "all locations in district"). The roster's taman-aktif area
     // links are already created during user seeding (STEP 9).
     const superadminRow = (await ctx.qr.query(
       `SELECT id FROM users WHERE username = 'superadmin' LIMIT 1`,
@@ -33,7 +33,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     const superadminId = superadminRow[0]?.id;
     const pusatDummyAreaIds: string[] = (
       (await ctx.qr.query(
-        `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
+        `SELECT id FROM locations WHERE district_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
         [RAYON_PUSAT_ID],
       )) as Array<{ id: string }>
     ).map((r) => r.id);
@@ -85,7 +85,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
     ON CONFLICT DO NOTHING;
   `);
 
-    // korlap_pusat_1 also → Jalan Raya Darmo (same Rayon Pusat — korlap must stay within one rayon)
+    // korlap_pusat_1 also → Jalan Raya Darmo (same Rayon Pusat — korlap must stay within one district)
     await ctx.qr.query(`
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
@@ -167,7 +167,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
   `);
 
     // satgas_pusat_4 → Darmo Pulau 5 (default location_id) + Jalan Raya Darmo Pulau 1 (secondary permanent area)
-    // This tests: satgas with two permanent locations in the same rayon
+    // This tests: satgas with two permanent locations in the same district
     await ctx.qr.query(`
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
     SELECT u.id, a.id, 'permanent', (SELECT id FROM users WHERE username = 'superadmin' LIMIT 1)
@@ -203,8 +203,8 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
       '  ✓ Taman Aktif users: satgas_taman_bungkul_1, korlap_taman_aktif_1, linmas_taman_aktif_1, satgas_taman_flora_1',
     );
 
-    // Per-rayon korlap area assignments. Only Rayon Timur 2 has a KMZ area
-    // (Taman Buk Tong); the other rayons leave user_locations empty for korlap,
+    // Per-district korlap area assignments. Only Rayon Timur 2 has a KMZ area
+    // (Taman Buk Tong); the other districts leave user_locations empty for korlap,
     // which exercises the "korlap with no assignments" supervisor view.
     await ctx.qr.query(`
     INSERT INTO user_locations (user_id, location_id, assignment_type, assigned_by)
@@ -215,7 +215,7 @@ export async function seedUserAreas(ctx: SeedContext): Promise<void> {
   `);
 
     ctx.log(
-      '  ✓ korlap_timur_2_1→Taman Buk Tong; other rayon korlap have no user_locations (intentional)',
+      '  ✓ korlap_timur_2_1→Taman Buk Tong; other district korlap have no user_locations (intentional)',
     );
 
     ctx.log('✅ User-area assignments seeding complete (demo)');

@@ -8,7 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 
 export type PruningRequestStatus =
   | 'submitted'
@@ -114,13 +114,13 @@ export class PruningRequest {
   @Column({ type: 'text', default: 'submitted' })
   status: PruningRequestStatus;
 
-  @Column({ type: 'uuid', nullable: true, name: 'rayon_id' })
-  rayonId: string | null;
+  @Column({ type: 'uuid', nullable: true, name: 'district_id' })
+  districtId: string | null;
 
-  // May 9, 2026 — relation for `request.rayon?.name` on detail screen.
-  @ManyToOne(() => Rayon, { onDelete: 'SET NULL', nullable: true })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon;
+  // May 9, 2026 — relation for `request.district?.name` on detail screen.
+  @ManyToOne(() => District, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'district_id' })
+  district?: District;
 
   @Column({ type: 'uuid', nullable: true, name: 'reviewed_by' })
   reviewedBy: string | null;

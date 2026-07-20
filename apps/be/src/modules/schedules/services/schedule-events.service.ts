@@ -13,7 +13,7 @@ import { Schedule } from '../entities/schedule.entity';
 import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { CreateScheduleEventDto } from '../dto/create-schedule-event.dto';
@@ -28,7 +28,7 @@ import { MONITORING_CITY } from '../../users/constants/role-groups';
 
 /**
  * Service for ScheduleEvent CRUD and materialization orchestration.
- * Handles validation, rayon/region scoping, and edit semantics (series/this-and-future).
+ * Handles validation, district/region scoping, and edit semantics (series/this-and-future).
  */
 @Injectable()
 export class ScheduleEventsService {
@@ -47,8 +47,8 @@ export class ScheduleEventsService {
     private readonly locationRepo: Repository<Location>,
     @InjectRepository(Region)
     private readonly regionRepo: Repository<Region>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepo: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepo: Repository<District>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftRepo: Repository<ShiftDefinition>,
     @InjectRepository(TeamCategory)
@@ -59,13 +59,13 @@ export class ScheduleEventsService {
 
   /**
    * List schedule events with optional filters.
-   * Non-city roles are forced to their own rayon scope.
+   * Non-city roles are forced to their own district scope.
    */
   async list(
     filters: {
       from?: string;
       to?: string;
-      rayon_id?: string;
+      district_id?: string;
       user_id?: string;
       team_category_id?: string;
       shift_definition_id?: string;
@@ -84,19 +84,19 @@ export class ScheduleEventsService {
       .leftJoinAndSelect('se.members', 'm')
       .where('se.deleted_at IS NULL');
 
-    // Rayon scoping for non-city roles
+    // District scoping for non-city roles
     if (!MONITORING_CITY.includes(actor.role)) {
-      if (!actor.rayon_id) {
-        throw new ForbiddenException('Your account is missing a rayon assignment');
+      if (!actor.district_id) {
+        throw new ForbiddenException('Your account is missing a district assignment');
       }
       query = query.andWhere(
-        '(se.scope = :static AND l.rayon_id = :rayon) OR (se.scope = :mobile AND r.rayon_id = :rayon) OR (se.scope = :rayonScope AND se.rayon_id = :rayon) OR se.scope = :cityScope',
+        '(se.scope = :static AND l.district_id = :district) OR (se.scope = :mobile AND r.district_id = :district) OR (se.scope = :districtScope AND se.district_id = :district) OR se.scope = :cityScope',
         {
           static: ScheduleScope.STATIC,
           mobile: ScheduleScope.MOBILE,
-          rayonScope: ScheduleScope.RAYON,
+          districtScope: ScheduleScope.RAYON,
           cityScope: ScheduleScope.CITY,
-          rayon: actor.rayon_id,
+          district: actor.district_id,
         },
       );
     }
@@ -111,15 +111,15 @@ export class ScheduleEventsService {
         rangeFrom: filters.from,
       });
     }
-    if (filters.rayon_id) {
+    if (filters.district_id) {
       query = query.andWhere(
-        '(se.scope = :static AND l.rayon_id = :rayonId) OR (se.scope = :mobile AND r.rayon_id = :rayonId) OR (se.scope = :rayonScope AND se.rayon_id = :rayonId) OR se.scope = :cityScope',
+        '(se.scope = :static AND l.district_id = :districtId) OR (se.scope = :mobile AND r.district_id = :districtId) OR (se.scope = :districtScope AND se.district_id = :districtId) OR se.scope = :cityScope',
         {
           static: ScheduleScope.STATIC,
           mobile: ScheduleScope.MOBILE,
-          rayonScope: ScheduleScope.RAYON,
+          districtScope: ScheduleScope.RAYON,
           cityScope: ScheduleScope.CITY,
-          rayonId: filters.rayon_id,
+          districtId: filters.district_id,
         },
       );
     }
@@ -153,7 +153,7 @@ export class ScheduleEventsService {
         'shift_definition',
         'location',
         'region',
-        'rayon',
+        'district',
         'team_category',
         'pic_user',
         'user',
@@ -162,21 +162,21 @@ export class ScheduleEventsService {
     });
     if (!event) throw new NotFoundException('Schedule event not found');
 
-    // Rayon scope check
+    // District scope check
     if (!MONITORING_CITY.includes(actor.role)) {
-      if (!actor.rayon_id) {
-        throw new ForbiddenException('Your account is missing a rayon assignment');
+      if (!actor.district_id) {
+        throw new ForbiddenException('Your account is missing a district assignment');
       }
-      // City-wide events cover every rayon, so they're visible to all.
+      // City-wide events cover every district, so they're visible to all.
       if (event.scope !== ScheduleScope.CITY) {
-        const eventRayonId =
+        const eventDistrictId =
           event.scope === ScheduleScope.STATIC
-            ? event.location?.rayon_id
+            ? event.location?.district_id
             : event.scope === ScheduleScope.MOBILE
-              ? event.region?.rayon_id
-              : event.rayon_id;
-        if (eventRayonId !== actor.rayon_id) {
-          throw new ForbiddenException('This event is outside your rayon');
+              ? event.region?.district_id
+              : event.district_id;
+        if (eventDistrictId !== actor.district_id) {
+          throw new ForbiddenException('This event is outside your district');
         }
       }
     }
@@ -200,7 +200,7 @@ export class ScheduleEventsService {
         scope: dto.scope,
         location_id: dto.location_id ?? null,
         region_id: dto.region_id ?? null,
-        rayon_id: dto.rayon_id ?? null,
+        district_id: dto.district_id ?? null,
         start_date: dto.start_date,
         end_date: dto.end_date ?? null,
         recurrence_type: dto.recurrence_type,
@@ -247,7 +247,7 @@ export class ScheduleEventsService {
       scope: dto.scope,
       location_id: dto.location_id || null,
       region_id: dto.region_id || null,
-      rayon_id: dto.rayon_id || null,
+      district_id: dto.district_id || null,
       is_team: dto.is_team,
       user_id: dto.user_id || null,
       team_category_id: dto.team_category_id || null,
@@ -335,7 +335,7 @@ export class ScheduleEventsService {
         scope: dto.scope || event.scope,
         location_id: dto.location_id !== undefined ? dto.location_id : event.location_id,
         region_id: dto.region_id !== undefined ? dto.region_id : event.region_id,
-        rayon_id: dto.rayon_id !== undefined ? dto.rayon_id : event.rayon_id,
+        district_id: dto.district_id !== undefined ? dto.district_id : event.district_id,
         start_date: fromDate,
         end_date: dto.end_date !== undefined ? dto.end_date : prevEndDate,
         recurrence_type: dto.recurrence_type || event.recurrence_type,
@@ -418,20 +418,20 @@ export class ScheduleEventsService {
       if (dto.scope) event.scope = dto.scope;
       if (dto.location_id !== undefined) event.location_id = dto.location_id;
       if (dto.region_id !== undefined) event.region_id = dto.region_id;
-      if (dto.rayon_id !== undefined) event.rayon_id = dto.rayon_id;
+      if (dto.district_id !== undefined) event.district_id = dto.district_id;
       if (dto.notes !== undefined) event.notes = dto.notes;
       event.updated_by = actor.id;
 
       // Validate the EFFECTIVE post-update shape — a scope/location/recurrence
       // change must satisfy the same rules as create (friendly 400s instead of
-      // DB CHECK 500s; rayon-scope enforced on the new location/region).
+      // DB CHECK 500s; district-scope enforced on the new location/region).
       await this.validateEventShape(
         {
           shift_definition_id: event.shift_definition_id,
           scope: event.scope,
           location_id: event.location_id,
           region_id: event.region_id,
-          rayon_id: event.rayon_id,
+          district_id: event.district_id,
           start_date: event.start_date,
           end_date: event.end_date,
           recurrence_type: event.recurrence_type,
@@ -562,7 +562,7 @@ export class ScheduleEventsService {
 
   /**
    * Shared shape validation for create / series-edit / this-and-future split:
-   * shift existence, scope↔location/region coherency (+ rayon scoping for
+   * shift existence, scope↔location/region coherency (+ district scoping for
    * non-city actors), date ordering, and per-type recurrence_config rules.
    * Mirrors the DB CHECKs so callers get 400s instead of constraint 500s.
    */
@@ -572,7 +572,7 @@ export class ScheduleEventsService {
       scope: ScheduleScope;
       location_id: string | null;
       region_id: string | null;
-      rayon_id: string | null;
+      district_id: string | null;
       start_date: string;
       end_date: string | null;
       recurrence_type: RecurrenceType;
@@ -585,31 +585,31 @@ export class ScheduleEventsService {
 
     if (e.scope === ScheduleScope.STATIC) {
       if (!e.location_id) throw new BadRequestException('Static scope requires location_id');
-      if (e.region_id || e.rayon_id)
-        throw new BadRequestException('Static scope must not have region_id or rayon_id');
+      if (e.region_id || e.district_id)
+        throw new BadRequestException('Static scope must not have region_id or district_id');
       const loc = await this.locationRepo.findOne({ where: { id: e.location_id } });
       if (!loc) throw new NotFoundException('Location not found');
-      this.assertRayonScope(loc.rayon_id, actor, 'location');
+      this.assertDistrictScope(loc.district_id, actor, 'location');
     } else if (e.scope === ScheduleScope.MOBILE) {
       if (!e.region_id) throw new BadRequestException('Mobile scope requires region_id');
-      if (e.location_id || e.rayon_id)
-        throw new BadRequestException('Mobile scope must not have location_id or rayon_id');
+      if (e.location_id || e.district_id)
+        throw new BadRequestException('Mobile scope must not have location_id or district_id');
       const region = await this.regionRepo.findOne({ where: { id: e.region_id } });
       if (!region) throw new NotFoundException('Region not found');
-      this.assertRayonScope(region.rayon_id, actor, 'region');
+      this.assertDistrictScope(region.district_id, actor, 'region');
     } else if (e.scope === ScheduleScope.RAYON) {
-      // Rayon scope: rayon-wide placement, no location/region.
-      if (!e.rayon_id) throw new BadRequestException('Rayon scope requires rayon_id');
+      // District scope: district-wide placement, no location/region.
+      if (!e.district_id) throw new BadRequestException('District scope requires district_id');
       if (e.location_id || e.region_id)
-        throw new BadRequestException('Rayon scope must not have location_id or region_id');
-      const rayon = await this.rayonRepo.findOne({ where: { id: e.rayon_id } });
-      if (!rayon) throw new NotFoundException('Rayon not found');
-      this.assertRayonScope(rayon.id, actor, 'rayon');
+        throw new BadRequestException('District scope must not have location_id or region_id');
+      const district = await this.districtRepo.findOne({ where: { id: e.district_id } });
+      if (!district) throw new NotFoundException('District not found');
+      this.assertDistrictScope(district.id, actor, 'district');
     } else {
-      // City scope: whole-Surabaya placement, no rayon/region/location.
-      if (e.location_id || e.region_id || e.rayon_id)
+      // City scope: whole-Surabaya placement, no district/region/location.
+      if (e.location_id || e.region_id || e.district_id)
         throw new BadRequestException(
-          'City scope must not have location_id, region_id or rayon_id',
+          'City scope must not have location_id, region_id or district_id',
         );
       if (!MONITORING_CITY.includes(actor.role)) {
         throw new ForbiddenException(
@@ -657,13 +657,17 @@ export class ScheduleEventsService {
     }
   }
 
-  private assertRayonScope(rayonId: string | null | undefined, actor: User, what: string): void {
+  private assertDistrictScope(
+    districtId: string | null | undefined,
+    actor: User,
+    what: string,
+  ): void {
     if (MONITORING_CITY.includes(actor.role)) return;
-    if (!actor.rayon_id) {
-      throw new ForbiddenException('Your account is missing a rayon assignment');
+    if (!actor.district_id) {
+      throw new ForbiddenException('Your account is missing a district assignment');
     }
-    if (rayonId !== actor.rayon_id) {
-      throw new ForbiddenException(`This ${what} is outside your rayon`);
+    if (districtId !== actor.district_id) {
+      throw new ForbiddenException(`This ${what} is outside your district`);
     }
   }
 

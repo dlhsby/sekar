@@ -87,7 +87,7 @@ export class StatusCalculatorService {
 
   /**
    * Phase 4-3 (§C1 #8): notify the korlap(s) responsible for an area AND the
-   * kepala_rayon of its rayon when one of their workers transitions to MISSING.
+   * kepala_rayon of its district when one of their workers transitions to MISSING.
    *
    * Public so the 5-min stale-status sweeper can reuse it for the records it
    * flips directly (those bypass `recalculate`). De-duplicated per
@@ -96,12 +96,12 @@ export class StatusCalculatorService {
    * never silence a safety alert.
    *
    * Korlap scope matches the worker's primary `users.location_id` (multi-area via
-   * `user_areas` is a later follow-up); kepala_rayon scope matches `rayon_id`.
+   * `user_areas` is a later follow-up); kepala_rayon scope matches `district_id`.
    */
   async notifyMissingWorker(
     workerUserId: string,
     locationId: string | null,
-    rayonId?: string | null,
+    districtId?: string | null,
   ): Promise<void> {
     if (!this.notificationsService || !locationId) return;
 
@@ -121,15 +121,15 @@ export class StatusCalculatorService {
         select: ['id'],
       });
 
-      const kepalaRayons = rayonId
+      const kepalaDistricts = districtId
         ? await this.userRepository.find({
-            where: { role: UserRole.KEPALA_RAYON, rayon_id: rayonId, is_active: true },
+            where: { role: UserRole.KEPALA_RAYON, district_id: districtId, is_active: true },
             select: ['id'],
           })
         : [];
 
       // Dedup recipient ids (a user could match both queries in odd configs).
-      const recipientIds = Array.from(new Set([...korlaps, ...kepalaRayons].map((u) => u.id)));
+      const recipientIds = Array.from(new Set([...korlaps, ...kepalaDistricts].map((u) => u.id)));
 
       await Promise.all(
         recipientIds.map((id) =>
@@ -279,7 +279,7 @@ export class StatusCalculatorService {
       // expected departure) is a lifecycle-phase refinement — it needs the resolved
       // shift window, which this path does not yet carry.
       if (newStatus === TrackingStatus.OFFLINE && previousStatus !== TrackingStatus.OFFLINE) {
-        void this.notifyMissingWorker(userId, existing.location_id, existing.rayon_id);
+        void this.notifyMissingWorker(userId, existing.location_id, existing.district_id);
       }
 
       this.logger.debug(`User ${userId} status: ${previousStatus} → ${newStatus}`);
@@ -303,27 +303,27 @@ export class StatusCalculatorService {
       isWithinArea = await this.checkWithinArea(locationId, clockInLat, clockInLng);
     }
 
-    // Resolve rayon_id from the day's generated roster first (the operational
-    // source of truth), then the area's rayon, then the user template last.
-    let rayonId: string | null = null;
+    // Resolve district_id from the day's generated roster first (the operational
+    // source of truth), then the area's district, then the user template last.
+    let districtId: string | null = null;
     const roster = this.dailySchedulesService
       ? await this.dailySchedulesService.findByUserAndDate(userId, TimezoneUtil.jakartaDateString())
       : null;
-    if (roster?.rayon_id) {
-      rayonId = roster.rayon_id;
+    if (roster?.district_id) {
+      districtId = roster.district_id;
     } else if (locationId) {
       const area = await this.areaRepository.findOne({
         where: { id: locationId },
-        select: ['id', 'rayon_id'],
+        select: ['id', 'district_id'],
       });
-      rayonId = area?.rayon_id || null;
+      districtId = area?.district_id || null;
     }
-    if (!rayonId) {
+    if (!districtId) {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'rayon_id'],
+        select: ['id', 'district_id'],
       });
-      rayonId = user?.rayon_id ?? null;
+      districtId = user?.district_id ?? null;
     }
 
     await this.trackingRepository.upsert(
@@ -332,7 +332,7 @@ export class StatusCalculatorService {
         shift_id: shiftId,
         shift_definition_id: shiftDefinitionId,
         location_id: locationId,
-        rayon_id: rayonId,
+        district_id: districtId,
         status: TrackingStatus.ACTIVE,
         is_within_area: isWithinArea,
         updated_at: now,
@@ -352,7 +352,7 @@ export class StatusCalculatorService {
         shift_id: null,
         shift_definition_id: null,
         location_id: null,
-        rayon_id: null,
+        district_id: null,
         // Not clocked in is ABSENT, not OFFLINE. Under the 5→3 collapse OFFLINE
         // inverted to mean "clocked in but unreachable"; a clocked-out worker is
         // simply not on shift, which is exactly what calculateStatus returns for
@@ -386,7 +386,7 @@ export class StatusCalculatorService {
       relations: ['shift_definition', 'user', 'area'],
       select: {
         user: { id: true, full_name: true, role: true },
-        area: { id: true, name: true, rayon_id: true },
+        area: { id: true, name: true, district_id: true },
       } as any,
     });
 
@@ -491,7 +491,7 @@ export class StatusCalculatorService {
       role: context.user.role as UserRole,
       location_id: tracking.location_id,
       location_name: context.area?.name || null,
-      rayon_id: context.area?.rayon_id || null,
+      district_id: context.area?.district_id || null,
       region_id: context.area?.region_id || null,
       previous_status: previousStatus,
       new_status: newStatus,
@@ -525,7 +525,7 @@ export class StatusCalculatorService {
       role: context.user.role as UserRole,
       location_id: tracking.location_id,
       location_name: context.area.name,
-      rayon_id: context.area.rayon_id || null,
+      district_id: context.area.district_id || null,
       region_id: context.area.region_id || null,
       latitude: lat,
       longitude: lng,
@@ -575,7 +575,7 @@ export class StatusCalculatorService {
       shift_name: tracking.shift_definition?.name || 'Active Shift',
       location_id: tracking.location_id,
       location_name: context.area?.name || 'Unknown',
-      rayon_id: context.area?.rayon_id || null,
+      district_id: context.area?.district_id || null,
       region_id: context.area?.region_id || null,
       latitude: lat,
       longitude: lng,
@@ -631,12 +631,12 @@ export class StatusCalculatorService {
 
     const area = await this.areaRepository.findOne({
       where: { id: locationId },
-      select: ['id', 'rayon_id', 'region_id'],
+      select: ['id', 'district_id', 'region_id'],
     });
 
     const event: AreaStaffingChangedEvent = {
       location_id: locationId,
-      rayon_id: area?.rayon_id || null,
+      district_id: area?.district_id || null,
       region_id: area?.region_id || null,
       active_count: activeCount,
       required_count: requiredCount,
@@ -667,7 +667,7 @@ export class StatusCalculatorService {
     const area = locationId
       ? await this.areaRepository.findOne({
           where: { id: locationId },
-          select: ['id', 'name', 'rayon_id', 'region_id'],
+          select: ['id', 'name', 'district_id', 'region_id'],
         })
       : null;
 
@@ -679,7 +679,7 @@ export class StatusCalculatorService {
   }
 
   /**
-   * Is a point inside a geofence subject's polygon (lokasi, kawasan or rayon)?
+   * Is a point inside a geofence subject's polygon (lokasi, kawasan or district)?
    * Fails OPEN when the subject has no polygon — an un-mapped area must not mark
    * everyone in it as outside. The tolerance math is scope-agnostic (5.4e).
    */
@@ -753,8 +753,8 @@ export class StatusCalculatorService {
     // wider scope apply: a MOBILE crew (region occurrence, no lokasi) roams its
     // KAWASAN, so geofence against the region polygon — "outside area" for a mobile
     // subject means outside its kawasan (ADR-046, 5.4e). Static workers keep the
-    // lokasi-only rule above; rayon-scoped + supervisor (kepala_rayon/admin_rayon)
-    // rayon-geofencing is a documented follow-up.
+    // lokasi-only rule above; district-scoped + supervisor (kepala_rayon/admin_rayon)
+    // district-geofencing is a documented follow-up.
     if (candidates.length > 0) {
       return false;
     }

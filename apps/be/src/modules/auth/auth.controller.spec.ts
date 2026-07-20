@@ -162,7 +162,7 @@ describe('AuthController', () => {
             ...mockUser,
             role: UserRole.KORLAP,
             location_id: 'area-123',
-            rayon_id: 'rayon-456',
+            district_id: 'district-456',
           };
 
           const mockArea = {
@@ -190,7 +190,7 @@ describe('AuthController', () => {
 
           expect(result).toHaveProperty('id', korlapUser.id);
           expect(result).toHaveProperty('location_id', 'area-123');
-          expect(result).toHaveProperty('rayon_id', 'rayon-456');
+          expect(result).toHaveProperty('district_id', 'district-456');
           expect(result).toHaveProperty('assigned_area');
           expect(result.assigned_area).toEqual({
             id: 'area-123',
@@ -211,7 +211,7 @@ describe('AuthController', () => {
             ...mockUser,
             role: UserRole.KORLAP,
             location_id: 'deleted-area',
-            rayon_id: 'rayon-456',
+            district_id: 'district-456',
           };
 
           mockAreaRepository.findOne.mockResolvedValue(null);
@@ -219,7 +219,7 @@ describe('AuthController', () => {
           const result = await controller.getMe(korlapUser);
 
           expect(result).toHaveProperty('location_id', 'deleted-area');
-          expect(result).toHaveProperty('rayon_id', 'rayon-456');
+          expect(result).toHaveProperty('district_id', 'district-456');
           expect(result).not.toHaveProperty('assigned_area');
         });
       });
@@ -328,7 +328,7 @@ describe('AuthController', () => {
 
           expect(result).toHaveProperty('id', 'basic-user');
           expect(result).toHaveProperty('location_id', null);
-          expect(result).toHaveProperty('rayon_id', null);
+          expect(result).toHaveProperty('district_id', null);
           expect(result).not.toHaveProperty('assigned_area');
         });
       });

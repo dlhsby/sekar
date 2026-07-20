@@ -104,7 +104,7 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
      occurrence_inserts AS (
        INSERT INTO schedules
        (
-         id, user_id, schedule_date, rayon_id, shift_definition_id,
+         id, user_id, schedule_date, district_id, shift_definition_id,
          status, source, schedule_event_id, region_id, team_category_id, is_detached,
          created_by, created_at, updated_at, deleted_at
        )
@@ -113,8 +113,8 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
          em.user_id,
          $1::date,
          CASE
-           WHEN se.scope = 'static' THEN l.rayon_id
-           ELSE r.rayon_id
+           WHEN se.scope = 'static' THEN l.district_id
+           ELSE r.district_id
          END,
          se.shift_definition_id,
          'planned',
@@ -187,7 +187,7 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
  *
  * Why this exists: `seedScheduleEvents` above only ever produced
  * `scope=static` + `recurrence=daily` + individual. Every other branch the code
- * supports — city / rayon / mobile scope, team fan-out, and the
+ * supports — city / district / mobile scope, team fan-out, and the
  * weekly / every_n_days / specific_dates rules — had unit tests but had never
  * run end-to-end against real rows. That is exactly where a materializer or
  * projection defect hides, and it is invisible from the seeded UI because the
@@ -217,7 +217,7 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
   // linmas a daily event on THEIR OWN shift. Reusing one shift and one member
   // pool across the variants — the first cut here — meant the guard rejected most
   // of them and only the first team materialized, which looks like coverage while
-  // the city and rayon rows silently never appear on the board.
+  // the city and district rows silently never appear on the board.
   //
   // korlap is the free pool (never auto-scheduled), so it supplies the
   // individuals and the PICs. Team MEMBERS are satgas/linmas on purpose — only
@@ -232,17 +232,17 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
   )) as Array<{ id: string }>;
   const [anchors] = (await ctx.qr.query(
     `SELECT
-       (SELECT id FROM rayons WHERE deleted_at IS NULL ORDER BY name LIMIT 1) AS rayon_id,
-       (SELECT r.id FROM regions r JOIN rayons ry ON ry.id = r.rayon_id
+       (SELECT id FROM districts WHERE deleted_at IS NULL ORDER BY name LIMIT 1) AS district_id,
+       (SELECT r.id FROM regions r JOIN districts ry ON ry.id = r.district_id
          WHERE r.deleted_at IS NULL ORDER BY ry.name, r.name LIMIT 1) AS region_id,
        (SELECT id FROM team_categories WHERE is_active ORDER BY name LIMIT 1) AS team_id`,
   )) as Array<Record<string, string | null>>;
 
-  const { rayon_id, region_id, team_id } = anchors;
-  if (!rayon_id || !region_id || !team_id || shifts.length < 2 || korlaps.length < 5) {
+  const { district_id, region_id, team_id } = anchors;
+  if (!district_id || !region_id || !team_id || shifts.length < 2 || korlaps.length < 5) {
     // Loud, not silent: a half-seeded variant set is worse than none, because it
     // looks like coverage.
-    ctx.log('  ⚠ skipped — needs a rayon, a kawasan, a team category, 2+ shifts and 5+ korlap');
+    ctx.log('  ⚠ skipped — needs a district, a kawasan, a team category, 2+ shifts and 5+ korlap');
     return;
   }
 
@@ -275,7 +275,7 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
       scope: 'city' as const,
       recurrence: 'weekly' as const,
       config: { weekdays: [1, 3, 5] },
-      rayonId: null,
+      districtId: null,
       regionId: null,
       shiftId: shifts[0].id,
       isTeam: false,
@@ -284,11 +284,11 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
       members: [] as string[],
     },
     {
-      note: 'SEED VARIANT: rayon × individual × every_n_days',
-      scope: 'rayon' as const,
+      note: 'SEED VARIANT: district × individual × every_n_days',
+      scope: 'district' as const,
       recurrence: 'every_n_days' as const,
       config: { interval_n: 3 },
-      rayonId: rayon_id,
+      districtId: district_id,
       regionId: null,
       shiftId: shifts[1].id,
       isTeam: false,
@@ -301,7 +301,7 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
       scope: 'mobile' as const,
       recurrence: 'daily' as const,
       config: null,
-      rayonId: null,
+      districtId: null,
       regionId: region_id,
       shiftId: shifts[0].id,
       isTeam: true,
@@ -314,7 +314,7 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
       scope: 'city' as const,
       recurrence: 'specific_dates' as const,
       config: { dates: [today] },
-      rayonId: null,
+      districtId: null,
       regionId: null,
       shiftId: shifts[1].id,
       isTeam: true,
@@ -323,11 +323,11 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
       members: await membersFreeOn(shifts[1].id, 2),
     },
     {
-      note: 'SEED VARIANT: rayon × team × none (one-off)',
-      scope: 'rayon' as const,
+      note: 'SEED VARIANT: district × team × none (one-off)',
+      scope: 'district' as const,
       recurrence: 'none' as const,
       config: null,
-      rayonId: rayon_id,
+      districtId: district_id,
       regionId: null,
       shiftId: shifts[0].id,
       isTeam: true,
@@ -342,7 +342,7 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
     const rows = (await ctx.qr.query(
       `INSERT INTO schedule_events
          (id, recurrence_type, start_date, end_date, recurrence_config,
-          shift_definition_id, scope, location_id, region_id, rayon_id,
+          shift_definition_id, scope, location_id, region_id, district_id,
           is_team, pic_user_id, team_category_id, user_id,
           is_active, notes, created_at, updated_at)
        SELECT gen_random_uuid(), $1, $2::date, NULL, $3::jsonb,
@@ -361,7 +361,7 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
         v.scope,
         null, // no static variant here: seedScheduleEvents already covers scope=static
         v.regionId,
-        v.rayonId,
+        v.districtId,
         v.isTeam,
         v.picId,
         v.isTeam ? team_id : null,
@@ -386,9 +386,9 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
 
   ctx.log(`  ✓ ${inserted} variant schedule_events inserted`);
 
-  // Materialize today's occurrences for the variants. rayon_id on the roster row
-  // resolves per scope: static → its lokasi's rayon, mobile → its kawasan's
-  // rayon, rayon → itself, city → NULL (it belongs to no rayon, which is what
+  // Materialize today's occurrences for the variants. district_id on the roster row
+  // resolves per scope: static → its lokasi's district, mobile → its kawasan's
+  // district, district → itself, city → NULL (it belongs to no district, which is what
   // puts it on the board's Surabaya node).
   const materialized = (await ctx.qr.query(
     `WITH ev AS (
@@ -405,13 +405,13 @@ export async function seedScheduleEventVariants(ctx: SeedContext): Promise<void>
      ),
      ins AS (
        INSERT INTO schedules
-         (id, user_id, schedule_date, rayon_id, shift_definition_id, status, source,
+         (id, user_id, schedule_date, district_id, shift_definition_id, status, source,
           schedule_event_id, region_id, team_category_id, is_detached, created_at, updated_at)
        SELECT gen_random_uuid(), mr.user_id, $1::date,
               CASE e.scope
-                WHEN 'static' THEN l.rayon_id
-                WHEN 'mobile' THEN r.rayon_id
-                WHEN 'rayon'  THEN e.rayon_id
+                WHEN 'static' THEN l.district_id
+                WHEN 'mobile' THEN r.district_id
+                WHEN 'district'  THEN e.district_id
                 ELSE NULL
               END,
               e.shift_definition_id, 'planned', 'event', e.id,
