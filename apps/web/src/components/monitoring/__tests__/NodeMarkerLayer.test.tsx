@@ -10,7 +10,7 @@
 /* eslint-disable sekar-design/no-inline-hex-colors -- test fixtures for marker fill colors, not UI tokens */
 import { render } from '@testing-library/react';
 import { NodeMarkerLayer, type NodeMarker } from '../NodeMarkerLayer';
-import { HEALTH_COLORS } from '@/lib/monitoring/markers';
+import { HEALTH_COLORS, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 
 interface CapturedMarker {
   content: HTMLElement;
@@ -67,9 +67,12 @@ describe('NodeMarkerLayer unified pin', () => {
     expect(s).toContain('M6 22V4'); // building glyph identifies rayon
   });
 
-  it('puts staffing health on the outline ring, not the fill', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2 })]} />);
-    expect(svg()).toContain(HEALTH_COLORS.ok); // health = outline stroke
+  it('keeps the ring NEUTRAL (identity = fill_color) with staffing health on the badge', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2, active: 2 })]} />);
+    const s = svg();
+    expect(s).toContain(`stroke="${MARKER_NEUTRAL_OUTLINE}"`); // ring is neutral, not health/border
+    expect(s).not.toContain(`stroke="${HEALTH_COLORS.ok}"`); // health never rides the ring
+    expect(s).toContain(HEALTH_COLORS.ok); // health lives on the count badge instead
   });
 
   it('draws the configured glyph over the default (marker_icon = star)', () => {
@@ -84,9 +87,12 @@ describe('NodeMarkerLayer unified pin', () => {
     expect(s).toContain(HEALTH_COLORS.ok); // badge/outline health color (fully attended)
   });
 
-  it('outlines red when nobody clocked in for a scheduled node', () => {
+  it('signals "nobody clocked in" via the health-tinted name label (ring stays neutral)', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 3, clocked_in: 0, active: 0 })]} />);
-    expect(svg()).toContain(HEALTH_COLORS.none);
+    // No active count → no badge; the neutral ring carries no health color, so the
+    // understaffed (none) signal reads from the health-tinted name label.
+    expect(svg()).toContain(`stroke="${MARKER_NEUTRAL_OUTLINE}"`);
+    expect(labelEl()?.style.color).toBe(asCss(HEALTH_COLORS.none));
   });
 
   it('labels the node with its name, colored by staffing health', () => {
