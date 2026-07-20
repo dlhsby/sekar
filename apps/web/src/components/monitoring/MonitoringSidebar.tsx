@@ -1,34 +1,38 @@
 'use client';
 
 /**
- * MonitoringSidebar — right panel for the monitoring page (mobile parity).
- * Two tabs:
- *  - Petugas: filtered worker list; selecting a worker opens an inline detail
- *    card (snapshot fields only — no extra fetch).
- *  - Area: per-area staffing summary (active/required) with understaffed flags.
- * All data is the unified snapshot; no legacy day-summary call.
+ * MonitoringSidebar — right panel for the monitoring page (mobile parity), shown
+ * at EVERY drill level. Two tabs:
+ *  - Wilayah (first): the current level's child nodes (rayons at city, kawasan/
+ *    lokasi deeper) with today's attendance trio; tapping a row drills in.
+ *  - Petugas (second): the scoped worker list; selecting a worker opens an inline
+ *    detail card (snapshot fields only — no extra fetch).
+ * At lokasi scope there are no child nodes, so only the Petugas tab shows.
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRightLeft, Battery, MapPin, AlertTriangle, Users } from 'lucide-react';
+import { ArrowLeft, Battery, MapPin, Users } from 'lucide-react';
 import { Tabs, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { getStatusLabels, STATUS_DOT_CLASSES, STATUS_BADGE_CLASSES } from '@/lib/constants/monitoring';
-import type { SnapshotWorker, SnapshotAreaSummary } from '@/lib/api/monitoring-v2';
+import { AggregateNodeList } from './AggregateNodeList';
+import type { SnapshotWorker, AggregateNode } from '@/lib/api/monitoring-v2';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
-type SidebarTab = 'petugas' | 'area';
+type SidebarTab = 'wilayah' | 'petugas';
 
 export interface MonitoringSidebarProps {
   workers: SnapshotWorker[];
-  areaSummaries: SnapshotAreaSummary[];
+  /** The current level's child nodes (empty at lokasi scope → Wilayah tab hidden). */
+  nodes: AggregateNode[];
+  onDrillNode: (node: AggregateNode) => void;
+  /** Geo-filter spotlight id — dims non-matching Wilayah rows. */
+  activeGeoId?: string | null;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
-  /** Phase 4-4: opens the bulk-reassign modal targeting the given area (role-gated by the page) */
-  onBulkReassign?: (area: SnapshotAreaSummary) => void;
   className?: string;
 }
 
@@ -188,107 +192,48 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
 }
 
 // ---------------------------------------------------------------------------
-// Area staffing list
-// ---------------------------------------------------------------------------
-
-function AreaSummaryList({
-  summaries,
-  onBulkReassign,
-}: {
-  summaries: SnapshotAreaSummary[];
-  onBulkReassign?: (area: SnapshotAreaSummary) => void;
-}) {
-  const { t } = useTranslation();
-
-  if (summaries.length === 0) {
-    return (
-      <div className="p-4">
-        <EmptyState variant="noData" title={t('monitoring:sidebar.noAreasData')} description={t('monitoring:sidebar.noAreasSummary')} />
-      </div>
-    );
-  }
-
-  return (
-    <ul className="space-y-2 p-3">
-      {summaries.map((area) => {
-        const shortage = Math.max(0, area.required_count - area.active_count);
-        const pct =
-          area.required_count > 0
-            ? Math.min(100, Math.round((area.active_count / area.required_count) * 100))
-            : 0;
-        return (
-          <li
-            key={area.location_id}
-            className={cn(
-              'rounded-nb-base border-2 border-nb-black bg-nb-white p-2.5 shadow-nb-sm',
-              area.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
-            )}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-nb-black">{area.location_name}</p>
-                {area.rayon_name && (
-                  <p className="truncate text-xs text-nb-gray-500">{area.rayon_name}</p>
-                )}
-              </div>
-              <span className="flex-shrink-0 font-mono text-xs tabular-nums text-nb-gray-600">
-                {area.active_count}/{area.required_count}
-              </span>
-            </div>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full border border-nb-gray-300 bg-nb-gray-200">
-              <div
-                className={cn(
-                  'h-full rounded-full transition-all',
-                  area.is_understaffed
-                    ? 'bg-[var(--color-status-idle)]'
-                    : 'bg-[var(--color-status-active)]'
-                )}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-2">
-              {area.is_understaffed && shortage > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-nb-sm border border-[var(--color-status-missing)] bg-[var(--color-status-missing-bg)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-status-missing)]">
-                  <AlertTriangle className="h-2.5 w-2.5" />
-                  {t('monitoring:sidebar.staffingShortage', { shortage })}
-                </span>
-              ) : (
-                <span />
-              )}
-              {onBulkReassign && (
-                <button
-                  type="button"
-                  onClick={() => onBulkReassign(area)}
-                  aria-label={t('monitoring:sidebar.bulkReassignLabel', { area: area.location_name })}
-                  className="inline-flex items-center gap-1 rounded-nb-sm border border-nb-black bg-nb-white px-1.5 py-0.5 text-[10px] font-bold text-nb-black shadow-nb-xs hover:bg-nb-gray-50"
-                >
-                  <ArrowRightLeft className="h-2.5 w-2.5" />
-                  {t('monitoring:sidebar.bulkReassignButton')}
-                </button>
-              )}
-            </div>
-          </li>
-        );
-      })}
-    </ul>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 export function MonitoringSidebar({
   workers,
-  areaSummaries,
+  nodes,
+  onDrillNode,
+  activeGeoId,
   selectedId,
   onSelect,
-  onBulkReassign,
   className,
 }: MonitoringSidebarProps) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<SidebarTab>('petugas');
+  // Wilayah (child nodes) leads; at lokasi scope there are none, so default to
+  // Petugas and hide the Wilayah tab.
+  const hasNodes = nodes.length > 0;
+  const [tab, setTab] = useState<SidebarTab>(hasNodes ? 'wilayah' : 'petugas');
+  const activeTab: SidebarTab = hasNodes ? tab : 'petugas';
   const selectedWorker = selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null;
+
+  const workerList =
+    workers.length === 0 ? (
+      <div className="p-4">
+        <EmptyState
+          variant="noResults"
+          title={t('monitoring:sidebar.noWorkers')}
+          description={t('monitoring:sidebar.noWorkersMatch')}
+        />
+      </div>
+    ) : (
+      <ul>
+        {workers.map((w) => (
+          <li key={w.user_id}>
+            <WorkerRow
+              worker={w}
+              selected={w.user_id === selectedId}
+              onClick={() => onSelect(w.user_id)}
+            />
+          </li>
+        ))}
+      </ul>
+    );
 
   return (
     <div
@@ -301,45 +246,27 @@ export function MonitoringSidebar({
         <WorkerDetail worker={selectedWorker} onBack={() => onSelect(null)} />
       ) : (
         <>
-          <div className="flex-shrink-0 border-b-2 border-nb-black p-2">
-            <Tabs
-              fullWidth
-              size="sm"
-              value={tab}
-              onValueChange={(k) => setTab(k as SidebarTab)}
-              aria-label={t("common:a11y.monitoringPanel")}
-              tabs={[
-                { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: workers.length },
-                { key: 'area', label: t('monitoring:sidebar.tabAreas'), count: areaSummaries.length },
-              ]}
-            />
-          </div>
+          {hasNodes && (
+            <div className="flex-shrink-0 border-b-2 border-nb-black p-2">
+              <Tabs
+                fullWidth
+                size="sm"
+                value={activeTab}
+                onValueChange={(k) => setTab(k as SidebarTab)}
+                aria-label={t('common:a11y.monitoringPanel')}
+                tabs={[
+                  { key: 'wilayah', label: t('monitoring:sidebar.tabWilayah'), count: nodes.length },
+                  { key: 'petugas', label: t('monitoring:sidebar.tabWorkers'), count: workers.length },
+                ]}
+              />
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto">
-            {tab === 'petugas' ? (
-              workers.length === 0 ? (
-                <div className="p-4">
-                  <EmptyState
-                    variant="noResults"
-                    title={t('monitoring:sidebar.noWorkers')}
-                    description={t('monitoring:sidebar.noWorkersMatch')}
-                  />
-                </div>
-              ) : (
-                <ul>
-                  {workers.map((w) => (
-                    <li key={w.user_id}>
-                      <WorkerRow
-                        worker={w}
-                        selected={w.user_id === selectedId}
-                        onClick={() => onSelect(w.user_id)}
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )
+            {activeTab === 'wilayah' ? (
+              <AggregateNodeList bare nodes={nodes} onDrill={onDrillNode} activeGeoId={activeGeoId} />
             ) : (
-              <AreaSummaryList summaries={areaSummaries} onBulkReassign={onBulkReassign} />
+              workerList
             )}
           </div>
         </>

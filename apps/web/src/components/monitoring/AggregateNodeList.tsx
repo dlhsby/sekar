@@ -18,17 +18,21 @@ export interface AggregateNodeListProps {
   /** Geo-filter selection (rayon/kawasan/lokasi id). Non-matching rows dim to
    *  match the map's spotlight. Null = no geo filter (all rows full strength). */
   activeGeoId?: string | null;
+  /** Bare mode drops the bordered card chrome — for embedding inside a tab panel
+   *  that already provides the container. */
+  bare?: boolean;
   className?: string;
 }
 
-export function AggregateNodeList({ nodes, onDrill, activeGeoId, className }: AggregateNodeListProps) {
+export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className }: AggregateNodeListProps) {
   const { t } = useTranslation();
 
   if (nodes.length === 0) {
     return (
       <div
         className={cn(
-          'flex items-center justify-center rounded-nb-md border-2 border-nb-black bg-nb-white p-4',
+          'flex items-center justify-center p-4',
+          !bare && 'rounded-nb-md border-2 border-nb-black bg-nb-white',
           className
         )}
       >
@@ -40,7 +44,8 @@ export function AggregateNodeList({ nodes, onDrill, activeGeoId, className }: Ag
   return (
     <div
       className={cn(
-        'overflow-y-auto rounded-nb-md border-2 border-nb-black bg-nb-white',
+        'overflow-y-auto',
+        !bare && 'rounded-nb-md border-2 border-nb-black bg-nb-white',
         className
       )}
     >

@@ -3,7 +3,7 @@
  * Full-bleed map with floating overlays: top search, dismissible filter panel,
  * dismissible worker/area sheet. Auth/role gating + client-side filtering.
  */
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import MonitoringPage from '../page';
@@ -148,13 +148,12 @@ describe('MonitoringPage', () => {
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
   });
 
-  it('lists area staffing on the Area tab', () => {
-    mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
+  it('shows workers in the Daftar Petugas at city scope (not just at lokasi)', () => {
+    // The worker list is reachable from the Daftar Petugas at every level now —
+    // previously only lokasi scope showed workers.
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
-    fireEvent.click(screen.getByRole('tab', { name: /area/i }));
-    const region = screen.getByText('Taman A');
-    expect(within(region.closest('li') as HTMLElement).getByText(/kurang/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^andi/i })).toBeInTheDocument();
   });
 
   it('opens the filter panel from the top bar', () => {

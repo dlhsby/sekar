@@ -54,11 +54,6 @@ export interface SimpleWorker {
 }
 
 export interface SimpleMonitoringMapProps {
-  /**
-   * `true` (location scope) → cluster individual worker pins. `false` → draw the
-   * drill-down node markers (Surabaya / rayons / regions / locations) from `nodeMarkers`.
-   */
-  showWorkers: boolean;
   /** Current drill scope — gates which boundary layers draw. */
   scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'location';
   nodeMarkers?: NodeMarker[];
@@ -183,7 +178,6 @@ function createLocateControl(map: google.maps.Map, onClick: () => void, ariaLabe
 }
 
 function MonitoringMapInner({
-  showWorkers,
   scope,
   nodeMarkers,
   activeGeoId,
@@ -228,12 +222,11 @@ function MonitoringMapInner({
   const viewportRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
-  // Workers render immediately at every level that has them — area, rayon AND
-  // kawasan — as soon as the Petugas layer is on (no zoom gate). The geo node
-  // bubbles are drawn alongside (never replaced), so drilling into a rayon shows
-  // its kawasan/lokasi AND the people on the ground at once.
-  const renderWorkers =
-    layers.petugas && (showWorkers || scope === 'rayon' || scope === 'region');
+  // Workers render at EVERY level (city → rayon → kawasan → lokasi) as soon as
+  // the Petugas layer is on — no scope/zoom gate. The geo node bubbles are drawn
+  // alongside (never replaced), so the city view shows the rayon bubbles AND the
+  // people on the ground at once.
+  const renderWorkers = layers.petugas;
 
   // Track viewport zoom so team-bubble collapse recomputes on pan/zoom.
   const syncViewport = useCallback((map: google.maps.Map) => {

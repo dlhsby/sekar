@@ -99,6 +99,7 @@
     "staffingShortage": "Kurang {{shortage}}",
     "bulkReassignLabel": "Pindah massal petugas ke {{area}}",
     "bulkReassignButton": "Pindah Massal",
+    "tabWilayah": "Wilayah",
     "tabWorkers": "Petugas",
     "tabAreas": "Area",
     "noWorkers": "Tidak ada petugas",

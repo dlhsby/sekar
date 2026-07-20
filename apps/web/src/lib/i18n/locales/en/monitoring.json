@@ -99,6 +99,7 @@
     "staffingShortage": "Short {{shortage}}",
     "bulkReassignLabel": "Bulk reassign officers to {{area}}",
     "bulkReassignButton": "Bulk Reassign",
+    "tabWilayah": "Areas",
     "tabWorkers": "Officers",
     "tabAreas": "Areas",
     "noWorkers": "No officers",
