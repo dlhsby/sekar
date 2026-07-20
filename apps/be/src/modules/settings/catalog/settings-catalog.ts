@@ -184,7 +184,7 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     isSecret: false,
     envKey: 'GOOGLE_MAPS_MAP_ID',
     label: 'Google Maps Map ID',
-    help: 'Map ID (vektor) dari Google Cloud — wajib untuk Advanced Markers',
+    help: 'Map ID (vektor) dari Google Cloud — wajib untuk Advanced Markers. Ikat gaya terang + gelap ke Map ID ini; peta memilih via colorScheme',
   },
 
   // ── Keamanan & Batas (limits) ─────────────────────────────────────────────

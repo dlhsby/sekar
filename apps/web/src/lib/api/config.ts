@@ -14,7 +14,8 @@ const BUILD_TIME_MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || null;
 export interface MapsConfig {
   /** Google Maps JS API key (browser/referer-restricted) — null when unset. */
   googleMapsApiKey: string | null;
-  /** Vector-map Map ID (required for Advanced Markers) — null when unset. */
+  /** Vector-map Map ID (required for Advanced Markers) — null when unset. Bind
+   *  both light + dark cloud styles to it; the map picks via `colorScheme`. */
   googleMapsMapId: string | null;
 }
 
@@ -47,7 +48,8 @@ export function useMapsConfig(options?: { enabled?: boolean }) {
  * Resolve the vector-map Map ID (required by Advanced Markers): the build-time
  * `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`, else the backend-served value (settings key
  * `maps.map_id`, editable in System Settings), else null. Deduped with
- * `useMapsConfig` via the shared query key.
+ * `useMapsConfig` via the shared query key. Light/dark is NOT chosen here — one
+ * Map ID carries both cloud styles and the map switches via `colorScheme`.
  */
 export function useMapId(): string | null {
   const needConfig = !BUILD_TIME_MAP_ID;

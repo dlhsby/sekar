@@ -6,7 +6,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 export interface MapsConfigDto {
   /** Google Maps JS API key (browser/referer-restricted) — null when unset. */
   googleMapsApiKey: string | null;
-  /** Vector-map Map ID (required for Advanced Markers) — null when unset. */
+  /** Vector-map Map ID (required for Advanced Markers) — null when unset. Bind
+   *  both a light and a dark cloud style to this one Map ID; the web selects
+   *  between them via the map's `colorScheme` option. */
   googleMapsMapId: string | null;
 }
 

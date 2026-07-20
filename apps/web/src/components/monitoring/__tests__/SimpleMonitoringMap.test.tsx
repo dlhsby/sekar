@@ -14,6 +14,7 @@ const fakeMap = {
   panTo: jest.fn(),
   setZoom: jest.fn(),
   getZoom: () => 16,
+  getCenter: () => ({ lat: () => -7.29, lng: () => 112.75 }),
   controls: { 3: controlStack },
   getBounds: () => ({
     getNorthEast: () => ({ lat: () => -7.0, lng: () => 113.0 }),
