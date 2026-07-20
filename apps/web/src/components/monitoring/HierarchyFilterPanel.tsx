@@ -19,7 +19,7 @@ import { useLocations } from '@/lib/api/locations';
 // Types
 // ---------------------------------------------------------------------------
 
-export type FilterScope = 'city' | 'rayon' | 'area';
+export type FilterScope = 'city' | 'rayon' | 'location';
 
 export interface HierarchyFilterState {
   scope: FilterScope;
@@ -72,7 +72,7 @@ export function HierarchyFilterPanel({
   const handleAreaChange = useCallback(
     (areaId: string) => {
       const id = areaId === 'none' ? undefined : areaId;
-      onChange({ scope: 'area', rayonId: value.rayonId, areaId: id });
+      onChange({ scope: 'location', rayonId: value.rayonId, areaId: id });
     },
     [onChange, value.rayonId]
   );
@@ -99,7 +99,7 @@ export function HierarchyFilterPanel({
         aria-label={t('monitoring:hierarchy.scopeLabel')}
         className="flex items-center border-2 border-nb-black rounded-nb-base overflow-hidden shadow-nb-xs"
       >
-        {(['city', 'rayon', 'area'] as FilterScope[]).map((s) => (
+        {(['city', 'rayon', 'location'] as FilterScope[]).map((s) => (
           <button
             key={s}
             type="button"
@@ -118,8 +118,8 @@ export function HierarchyFilterPanel({
         ))}
       </div>
 
-      {/* Rayon dropdown — shown for rayon/area scope */}
-      {(value.scope === 'rayon' || value.scope === 'area') && (
+      {/* Rayon dropdown — shown for rayon/location scope */}
+      {(value.scope === 'rayon' || value.scope === 'location') && (
         <div className="w-40">
           <FormSelect
             label=""
@@ -133,8 +133,8 @@ export function HierarchyFilterPanel({
         </div>
       )}
 
-      {/* Area dropdown — shown for area scope */}
-      {value.scope === 'area' && (
+      {/* Location dropdown — shown for location scope */}
+      {value.scope === 'location' && (
         <div className="w-44">
           <FormSelect
             label=""

@@ -174,7 +174,7 @@ export class MonitoringService {
    * Contract matches apps/web/src/lib/api/monitoring-v2.ts.
    */
   async getSnapshot(
-    scope: 'city' | 'rayon' | 'area',
+    scope: 'city' | 'rayon' | 'location',
     id?: string,
   ): Promise<{
     success: boolean;
@@ -188,12 +188,12 @@ export class MonitoringService {
   }
 
   private async computeSnapshot(
-    scope: 'city' | 'rayon' | 'area',
+    scope: 'city' | 'rayon' | 'location',
     id?: string,
   ): Promise<{ success: boolean; data: SnapshotData }> {
     const filters: LiveUsersFilterDto = {};
     if (scope === 'rayon' && id) filters.rayon_id = id;
-    if (scope === 'area' && id) filters.location_id = id;
+    if (scope === 'location' && id) filters.location_id = id;
 
     const result = await this.userService.getLiveUsers(filters);
     const currentShift = await this.statsService.getCurrentShiftDefinition();
@@ -436,7 +436,7 @@ export class MonitoringService {
     return {
       id: area.id,
       name: area.name,
-      type: 'area',
+      type: 'location',
       roles,
       ...totals,
       // active + offline = clocked in, which is what staffs a place; `outside_area`

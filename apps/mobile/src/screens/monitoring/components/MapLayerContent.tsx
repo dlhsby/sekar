@@ -27,14 +27,14 @@ interface MapLayerContentProps {
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
-  scope: 'surabaya' | 'city' | 'rayon' | 'area';
-  /** The rayon being viewed (rayon/area scope) — scopes markers to it. */
+  scope: 'surabaya' | 'city' | 'rayon' | 'location';
+  /** The rayon being viewed (rayon/location scope) — scopes markers to it. */
   rayonId: string | null;
-  /** The selected area (area scope) — only its boundary is drawn, on demand. */
+  /** The selected location (location scope) — only its boundary is drawn, on demand. */
   areaId: string | null;
-  /** Attendance ratio per rayon/area id, shown on the geographic markers. */
+  /** Attendance ratio per rayon/location id, shown on the geographic markers. */
   rosterById: Record<string, { activeInside: number; scheduled: number }>;
-  /** Unified drill-down: true → worker markers (area scope). */
+  /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
   /** Bubble taps — drill into the child level (city→rayon, rayon→area). */
   onRayonDrill: (rayon: any) => void;
@@ -72,12 +72,12 @@ export function MapLayerContent({
   const { t } = useTranslation();
 
   // Scope the boundary set to the drill level. City → all rayons; rayon → the
-  // current rayon (its areas are markers, not polygons, so nothing heavy draws);
-  // area → the current rayon but ONLY the selected area's polygon (drawn on
+  // current rayon (its locations are markers, not polygons, so nothing heavy draws);
+  // location → the current rayon but ONLY the selected location's polygon (drawn on
   // demand when its marker is tapped) — this keeps the map cheap.
   const scopedRayons = useMemo(() => {
     const all = boundaries?.rayons ?? [];
-    if (scope === 'area') {
+    if (scope === 'location') {
       return all
         .filter((r: any) => r.id === rayonId)
         .map((r: any) => ({ ...r, areas: (r.areas ?? []).filter((a: any) => a.id === areaId) }));
@@ -88,20 +88,20 @@ export function MapLayerContent({
     return all;
   }, [boundaries, scope, rayonId, areaId]);
 
-  // Rayon outline follows its toggle from the city view down. Area outlines draw
-  // ONLY at area scope (the one selected area) — never all-at-once at rayon scope.
+  // Rayon outline follows its toggle from the city view down. Location outlines draw
+  // ONLY at location scope (the one selected location) — never all-at-once at rayon scope.
   const showRayonBoundaries = visibleLayers.rayons && scope !== 'surabaya';
-  const showAreaBoundaries = visibleLayers.areas && scope === 'area';
+  const showAreaBoundaries = visibleLayers.areas && scope === 'location';
 
   // Bubbles vs markers are separated by scope (gated independently of the
   // boundary toggles):
   //   • city  → rayon BUBBLES (ratio, drill into a rayon)
   //   • rayon → the selected rayon MARKER (detail) + its area BUBBLES (drill)
-  //   • area  → the selected area MARKER (detail) + worker markers
+  //   • location  → the selected location MARKER (detail) + worker markers
   const showRayonBubbles = scope === 'city';
   const showAreaBubbles = scope === 'rayon';
   const showRayonMarker = scope === 'rayon';
-  const showAreaMarker = scope === 'area';
+  const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
     showRayonBoundaries || showAreaBoundaries ||
     showRayonBubbles || showAreaBubbles || showRayonMarker || showAreaMarker;
@@ -142,7 +142,7 @@ export function MapLayerContent({
         <PlantOverlayLayer visible={visibleLayers.plants} />
       )}
 
-      {/* Worker markers only at area scope. */}
+      {/* Worker markers only at location scope. */}
       {showWorkers &&
         (featureFlags.clusterMarkersV2 ? (
         <ClusteredUserMarkers

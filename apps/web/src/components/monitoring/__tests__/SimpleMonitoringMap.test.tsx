@@ -179,17 +179,17 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('polygon')).toHaveLength(1);
   });
 
-  it('draws the rayon outline + only the SELECTED area polygon at area scope', () => {
+  it('draws the rayon outline + only the SELECTED location polygon at location scope', () => {
     render(
       <SimpleMonitoringMap
         showWorkers
-        scope="area"
+        scope="location"
         areaId="a1"
         workers={[]}
         boundaries={boundaries}
       />
     );
-    // 1 rayon polygon + 1 selected-area polygon (a1).
+    // 1 rayon polygon + 1 selected-location polygon (a1).
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 

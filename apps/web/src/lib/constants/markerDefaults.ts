@@ -1,10 +1,10 @@
 /**
  * Marker entity kinds — used by coordinate-link and map displays to tag what
- * kind of entity a marker represents (rayon, region, area, team).
+ * kind of entity a marker represents (rayon, region, location, team).
  *
  * Note: The old image-based marker system has been retired (ADR-051). Markers
  * are now rendered as glyph+color pins only. This file is retained for the
  * type exports needed by downstream components.
  */
 
-export type MarkerEntityKind = 'rayon' | 'region' | 'area' | 'team';
+export type MarkerEntityKind = 'rayon' | 'region' | 'location' | 'team';

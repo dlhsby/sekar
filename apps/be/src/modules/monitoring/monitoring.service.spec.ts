@@ -1551,12 +1551,12 @@ describe('MonitoringService', () => {
         .mockResolvedValue(mockShiftDefinition);
       staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
 
-      const result = await service.getSnapshot('area', 'area-1');
+      const result = await service.getSnapshot('location', 'area-1');
 
       // Validate overall structure
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(result.data.scope).toBe('area');
+      expect(result.data.scope).toBe('location');
       expect(result.data.scope_id).toBe('area-1');
 
       // Validate aggregated counts
@@ -1754,7 +1754,7 @@ describe('MonitoringService', () => {
         { ...mockStaffRequirement, role: StaffRole.LINMAS, required_count: 2 },
       ]);
 
-      const result = await service.getSnapshot('area', 'area-1');
+      const result = await service.getSnapshot('location', 'area-1');
 
       expect(result.data.area_summaries[0].active_count).toBe(3); // 3 workers with ACTIVE status
       expect(result.data.area_summaries[0].required_count).toBe(5); // 3 + 2 summed
@@ -1807,7 +1807,7 @@ describe('MonitoringService', () => {
       // Required count = 5, active count = 5 → fully staffed
       staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
 
-      const result = await service.getSnapshot('area', 'area-1');
+      const result = await service.getSnapshot('location', 'area-1');
 
       expect(result.data.area_summaries[0].active_count).toBe(5);
       expect(result.data.area_summaries[0].required_count).toBe(5);
@@ -1883,7 +1883,7 @@ describe('MonitoringService', () => {
         .mockResolvedValue(mockLiveUsersResult as any);
       jest.spyOn(service['statsService'], 'getCurrentShiftDefinition').mockResolvedValue(null);
 
-      const result = await service.getSnapshot('area', 'area-1');
+      const result = await service.getSnapshot('location', 'area-1');
 
       expect(result.data.area_summaries).toHaveLength(1);
       // With no shift, required_count defaults to 0

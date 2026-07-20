@@ -1,10 +1,10 @@
 /**
  * MonitoringSearchModal — fullscreen search over the monitoring map's petugas /
- * area / rayon, opened from the map search bar.
+ * location / rayon, opened from the map search bar.
  *
  * - Autofocused search field (typing happens here, not on the map bar).
  * - Empty query → "Terakhir dilihat" recents list + "Hapus semua".
- * - As you type → results in tabs [Semua, Petugas, Area, Rayon]; the Semua tab
+ * - As you type → results in tabs [Semua, Petugas, Location, Rayon]; the Semua tab
  *   groups results by type. Selecting a result bubbles up via onSelect.
  */
 
@@ -36,7 +36,7 @@ import type { LiveUser, RayonBoundary } from '../../types/models.types';
 
 const TYPE_META: Record<SearchResultType, { icon: string; accent: string }> = {
   petugas: { icon: 'account', accent: nbColors.primary },
-  area: { icon: 'map-marker', accent: nbColors.warning },
+  location: { icon: 'map-marker', accent: nbColors.warning },
   rayon: { icon: 'office-building', accent: nbColors.requestUnderReview },
 };
 
@@ -138,7 +138,7 @@ export function MonitoringSearchModal({
     () => [
       { key: 'semua', label: t('monitoring:search.all'), count: results.total },
       { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
-      { key: 'area', label: t('monitoring:layers.areas'), count: results.area.length },
+      { key: 'location', label: t('monitoring:layers.areas'), count: results.location.length },
       { key: 'rayon', label: t('monitoring:layers.rayons'), count: results.rayon.length },
     ],
     [results, t],

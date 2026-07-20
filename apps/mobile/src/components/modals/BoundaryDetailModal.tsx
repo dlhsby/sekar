@@ -40,7 +40,7 @@ import { listAreaPlants, listNotablePlants } from '../../services/api/plantsApi'
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BoundaryDetailModalProps {
-  type: 'rayon' | 'area';
+  type: 'rayon' | 'location';
   data: RayonBoundary | AreaBoundary | null;
   visible: boolean;
   onClose: () => void;

@@ -893,21 +893,21 @@ describe('MonitoringController', () => {
       );
     });
 
-    it('should enforce area scope for korlap', async () => {
+    it('should enforce location scope for korlap', async () => {
       const userAreasService = controller['userAreasService'] as any;
       userAreasService.getPermanentLocationIds.mockResolvedValue(['area-1']);
-      service.getSnapshot.mockResolvedValue({ scope: 'area' } as any);
+      service.getSnapshot.mockResolvedValue({ scope: 'location' } as any);
 
-      await controller.getSnapshot(mockKorlap, 'area', 'area-1');
+      await controller.getSnapshot(mockKorlap, 'location', 'area-1');
 
-      expect(service.getSnapshot).toHaveBeenCalledWith('area', 'area-1');
+      expect(service.getSnapshot).toHaveBeenCalledWith('location', 'area-1');
     });
 
-    it('should reject area scope for korlap accessing non-assigned area', async () => {
+    it('should reject location scope for korlap accessing non-assigned area', async () => {
       const userAreasService = controller['userAreasService'] as any;
       userAreasService.getPermanentLocationIds.mockResolvedValue(['area-9']);
 
-      await expect(controller.getSnapshot(mockKorlap, 'area', 'area-1')).rejects.toThrow(
+      await expect(controller.getSnapshot(mockKorlap, 'location', 'area-1')).rejects.toThrow(
         ForbiddenException,
       );
     });

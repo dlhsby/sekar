@@ -19,7 +19,7 @@ import i18n from '../../i18n/config';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface MonitoringV2Snapshot {
-  scope: 'city' | 'rayon' | 'area';
+  scope: 'city' | 'rayon' | 'location';
   scope_id: string | null;
   workers: LiveUser[];
   generated_at: string | null;
@@ -33,9 +33,9 @@ export interface MonitoringV2VisibleLayers {
   areas: boolean;
 }
 
-export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'area';
+export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'location';
 
-/** Current drill position on the map (Surabaya → rayon → area). */
+/** Current drill position on the map (Surabaya → rayon → location). */
 export interface MonitoringView {
   scope: MonitoringScope;
   id: string | null;
@@ -60,7 +60,7 @@ export interface MonitoringV2State {
 }
 
 export interface FetchSnapshotParams {
-  scope: 'city' | 'rayon' | 'area';
+  scope: 'city' | 'rayon' | 'location';
   id?: string;
 }
 
@@ -101,7 +101,7 @@ const initialState: MonitoringV2State = {
 
 /**
  * Fetch a fresh monitoring snapshot from the server.
- * Endpoint: GET /monitoring/snapshot?scope=city|rayon|area[&id=<uuid>]
+ * Endpoint: GET /monitoring/snapshot?scope=city|rayon|location[&id=<uuid>]
  */
 export const fetchSnapshot = createAsyncThunk(
   'monitoringV2/fetchSnapshot',
@@ -112,7 +112,7 @@ export const fetchSnapshot = createAsyncThunk(
         : `?scope=${params.scope}`;
       const response = await apiClient.get<{
         data?: {
-          scope: 'city' | 'rayon' | 'area';
+          scope: 'city' | 'rayon' | 'location';
           scope_id: string | null;
           workers: LiveUser[];
           generated_at: string;
@@ -240,17 +240,17 @@ const monitoringV2Slice = createSlice({
       state.selectedUserId = null;
     },
 
-    /** Drill one level deeper from a tapped rayon/area node. */
+    /** Drill one level deeper from a tapped rayon/location node. */
     drillTo(
       state,
-      action: PayloadAction<{ id: string; type: 'rayon' | 'area'; name: string; rayonId: string | null }>,
+      action: PayloadAction<{ id: string; type: 'rayon' | 'location'; name: string; rayonId: string | null }>,
     ) {
       const n = action.payload;
       if (n.type === 'rayon') {
         state.view = { scope: 'rayon', id: n.id, rayonId: n.id, name: n.name };
       } else {
         state.view = {
-          scope: 'area',
+          scope: 'location',
           id: n.id,
           rayonId: n.rayonId ?? state.view.rayonId,
           name: n.name,
@@ -262,7 +262,7 @@ const monitoringV2Slice = createSlice({
     /** Drill back up one level, never above the role floor. */
     drillBack(state) {
       if (state.view.scope === state.floor) return;
-      if (state.view.scope === 'area') {
+      if (state.view.scope === 'location') {
         state.view = {
           scope: 'rayon',
           id: state.view.rayonId,

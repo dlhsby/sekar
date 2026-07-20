@@ -353,7 +353,7 @@ export class MonitoringStatsService {
     if (scope === 'rayon') {
       if (!rayonId) throw new NotFoundException('rayon id is required for rayon scope');
       const clockedInSet = await this.clockedInUserSet({ rayonId });
-      const nodes = await this.buildAreaNodes(
+      const nodes = await this.buildLocationNodes(
         rayonId,
         currentShift?.id,
         currentDayType,
@@ -519,8 +519,8 @@ export class MonitoringStatsService {
     );
   }
 
-  /** Rayon scope: one aggregate node per area in the rayon, grouped by `uts.location_id`. */
-  private async buildAreaNodes(
+  /** Rayon scope: one aggregate node per location in the rayon, grouped by `uts.location_id`. */
+  private async buildLocationNodes(
     rayonId: string,
     shiftDefinitionId: string | undefined,
     dayType: DayType,
@@ -542,8 +542,8 @@ export class MonitoringStatsService {
       statusRows,
       roleRows,
       requiredMap,
-      scheduledByArea,
-      countableOnlineByArea,
+      scheduledByLocation,
+      countableOnlineByLocation,
       scheduledByRayon,
     ] = await Promise.all([
       this.trackingRepository
@@ -574,9 +574,9 @@ export class MonitoringStatsService {
         .groupBy('uts.location_id')
         .addGroupBy('user.role')
         .getRawMany(),
-      this.requiredCountByGroup('area', shiftDefinitionId, dayType, locationIds),
-      this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { locationIds }),
-      this.countableOnlineByGroup('area', locationIds),
+      this.requiredCountByGroup('location', shiftDefinitionId, dayType, locationIds),
+      this.scheduledUserSetsByGroup('location', today, shiftDefinitionId, { locationIds }),
+      this.countableOnlineByGroup('location', locationIds),
       this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
     ]);
 
@@ -588,21 +588,23 @@ export class MonitoringStatsService {
     // counted there, matching the rayon node instead of vanishing at lokasi scope.
     // Uses the SAME scheduled set the rayon node does (all scheduled-today users,
     // flattened), gated to this rayon's lokasi by `locationIds` inside the query.
-    // The per-lokasi ROSTER (`scheduledByArea`, driving belum/tidak-hadir) stays
-    // lokasi-based.
+    // The per-location ROSTER (`scheduledByLocation`, driving belum/tidak-hadir) stays
+    // location-based.
     const scheduledIds = Array.from(
       new Set([
-        ...this.flattenUserSets(scheduledByArea),
+        ...this.flattenUserSets(scheduledByLocation),
         ...this.flattenUserSets(scheduledByRayon),
       ]),
     );
-    const presenceByArea = await this.presenceByGroup('area', scheduledIds, { locationIds });
+    const presenceByLocation = await this.presenceByGroup('location', scheduledIds, {
+      locationIds,
+    });
 
     return areas.map((area) =>
       this.assembleNode({
         id: area.id,
         name: area.name,
-        type: 'area',
+        type: 'location',
         center_lat: this.toNum(area.gps_lat),
         marker_icon: (area as any).marker_icon ?? null,
         fill_color: (area as any).fill_color ?? null,
@@ -612,11 +614,11 @@ export class MonitoringStatsService {
         counts_by_role: roleByGroup.get(area.id),
         required: requiredMap.get(area.id) ?? 0,
         countable_online: this.countScheduledOnline(
-          countableOnlineByArea.get(area.id),
-          scheduledByArea.get(area.id),
+          countableOnlineByLocation.get(area.id),
+          scheduledByLocation.get(area.id),
         ),
-        roster: this.rosterCountsFor(scheduledByArea.get(area.id), clockedInSet, beforeGrace),
-        presence: presenceByArea.get(area.id) ?? this.emptyPresence(),
+        roster: this.rosterCountsFor(scheduledByLocation.get(area.id), clockedInSet, beforeGrace),
+        presence: presenceByLocation.get(area.id) ?? this.emptyPresence(),
         rayon_id: rayonId,
         region_id: area.region_id ?? null,
       }),
@@ -717,7 +719,7 @@ export class MonitoringStatsService {
   }
 
   /**
-   * Sum required_count grouped by rayon or area for the current shift + day type.
+   * Sum required_count grouped by rayon or location for the current shift + day type.
    *
    * Requirements are **polymorphic** (ADR-045/Phase 4): exactly one of
    * `location_id` / `region_id` / `rayon_id` is set, decided by the rayon's
@@ -731,20 +733,20 @@ export class MonitoringStatsService {
    * and reported `required: 0` for **8 of 9 rayons**, so their bubbles could
    * never read understaffed.
    *
-   * `area` grouping stays location-keyed on purpose: a lokasi under a
+   * `location` grouping stays location-keyed on purpose: a lokasi under a
    * kawasan-scoped rayon genuinely has no target of its own (the kawasan owns
    * it), exactly as the day board renders it. The kawasan's own bubble is the
    * region tier (Phase 5.5).
    */
   private async requiredCountByGroup(
-    groupBy: 'rayon' | 'area' | 'region',
+    groupBy: 'rayon' | 'location' | 'region',
     shiftDefinitionId: string | undefined,
     dayType: DayType,
     groupIds?: string[],
   ): Promise<Map<string, number>> {
     if (!shiftDefinitionId) return new Map();
 
-    if (groupBy === 'area') {
+    if (groupBy === 'location') {
       if (!groupIds || groupIds.length === 0) return new Map();
       const rows = await this.staffRequirementRepository
         .createQueryBuilder('req')
@@ -802,7 +804,7 @@ export class MonitoringStatsService {
    * because a phone lost GPS. ABSENT cannot appear (it requires no shift).
    */
   private async countableOnlineByGroup(
-    groupBy: 'rayon' | 'area' | 'region',
+    groupBy: 'rayon' | 'location' | 'region',
     groupIds?: string[],
   ): Promise<Map<string, Set<string>>> {
     const groupCol =
@@ -820,9 +822,9 @@ export class MonitoringStatsService {
       .where('uts.shift_id IS NOT NULL')
       .andWhere('user.role IN (:...countedRoles)', { countedRoles: STAFFING_COUNTED_ROLES });
 
-    // area/region are always bounded by a caller-supplied id list; an empty list
+    // location/region are always bounded by a caller-supplied id list; an empty list
     // means "no groups" → no counts (never an unfiltered whole-DB scan).
-    if (groupBy === 'area' || groupBy === 'region') {
+    if (groupBy === 'location' || groupBy === 'region') {
       if (!groupIds || groupIds.length === 0) return new Map();
       if (groupBy === 'region') {
         qb.andWhere('area.region_id IN (:...groupIds)', { groupIds });
@@ -890,7 +892,7 @@ export class MonitoringStatsService {
   private assembleNode(input: {
     id: string;
     name: string;
-    type: 'rayon' | 'area' | 'region';
+    type: 'rayon' | 'location' | 'region';
     center_lat: number | null;
     center_lng: number | null;
     counts_by_status?: AggregateStatusCountsDto;
@@ -939,8 +941,8 @@ export class MonitoringStatsService {
       fill_opacity: input.fill_opacity ?? null,
       ...(input.type === 'rayon' ? { area_count: input.area_count ?? 0 } : {}),
       ...(input.type === 'region' ? { location_count: input.location_count ?? 0 } : {}),
-      ...(input.type === 'area' ? { rayon_id: input.rayon_id ?? null } : {}),
-      ...(input.type === 'area' ? { region_id: input.region_id ?? null } : {}),
+      ...(input.type === 'location' ? { rayon_id: input.rayon_id ?? null } : {}),
+      ...(input.type === 'location' ? { region_id: input.region_id ?? null } : {}),
     };
   }
 
@@ -1025,12 +1027,12 @@ export class MonitoringStatsService {
 
   /**
    * Activity×location breakdown of HADIR workers (scheduled + clocked-in),
-   * grouped by rayon, region, or area. Restricting to `scheduledUserIds` excludes ad-hoc
+   * grouped by rayon, region, or location. Restricting to `scheduledUserIds` excludes ad-hoc
    * clock-ins from the counts. active→aktif/dalam, outside_area→aktif/luar,
    * inactive|missing→tidak_aktif (dalam/luar by is_within_area).
    */
   private async presenceByGroup(
-    groupBy: 'rayon' | 'area' | 'region',
+    groupBy: 'rayon' | 'location' | 'region',
     scheduledUserIds: string[],
     opts: { locationIds?: string[]; regionIds?: string[] },
   ): Promise<Map<string, PresenceBreakdownDto>> {
@@ -1050,7 +1052,7 @@ export class MonitoringStatsService {
       .addSelect('COUNT(*)', 'count')
       .where('uts.shift_id IS NOT NULL')
       .andWhere('uts.user_id IN (:...ids)', { ids: scheduledUserIds });
-    if (groupBy === 'area' && opts.locationIds && opts.locationIds.length > 0) {
+    if (groupBy === 'location' && opts.locationIds && opts.locationIds.length > 0) {
       qb.andWhere('uts.location_id IN (:...locationIds)', { locationIds: opts.locationIds });
     }
     if (groupBy === 'region' && opts.regionIds && opts.regionIds.length > 0) {
@@ -1097,11 +1099,11 @@ export class MonitoringStatsService {
 
   /**
    * Distinct rostered (planned/present) user ids for today, grouped by rayon,
-   * region, or area. Location grouping goes through the schedule_areas join
+   * region, or location. Location grouping goes through the schedule_areas join
    * (a worker can be assigned to several areas in a day).
    */
   private async scheduledUserSetsByGroup(
-    groupBy: 'rayon' | 'area' | 'region',
+    groupBy: 'rayon' | 'location' | 'region',
     today: string,
     shiftDefinitionId: string | undefined,
     opts: { locationIds?: string[]; regionIds?: string[] },

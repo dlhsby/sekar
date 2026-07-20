@@ -222,14 +222,14 @@ describe('Monitoring v2 API', () => {
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
     });
 
-    it('passes scope + id when area-scoped', async () => {
+    it('passes scope + id when location-scoped', async () => {
       mockAxios.onGet('/monitoring/snapshot').reply((config) => {
-        expect(config.params).toEqual({ scope: 'area', id: 'a-1' });
+        expect(config.params).toEqual({ scope: 'location', id: 'a-1' });
         return [200, mockResponse];
       });
 
       const { result } = renderHook(
-        () => useMonitoringSnapshot('area', 'a-1'),
+        () => useMonitoringSnapshot('location', 'a-1'),
         { wrapper: createWrapper() },
       );
 

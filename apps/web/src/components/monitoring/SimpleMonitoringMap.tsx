@@ -26,7 +26,7 @@ import { useThemeStore } from '@/stores/theme';
 
 /** The current node's own pin (selected rayon at rayon scope / area at area scope). */
 export interface CurrentNodeMarker {
-  variant: 'rayon' | 'region' | 'area';
+  variant: 'rayon' | 'region' | 'location';
   id: string;
   name: string;
   lat: number;
@@ -55,21 +55,21 @@ export interface SimpleWorker {
 
 export interface SimpleMonitoringMapProps {
   /**
-   * `true` (area scope) → cluster individual worker pins. `false` → draw the
-   * drill-down node markers (Surabaya / rayons / regions / areas) from `nodeMarkers`.
+   * `true` (location scope) → cluster individual worker pins. `false` → draw the
+   * drill-down node markers (Surabaya / rayons / regions / locations) from `nodeMarkers`.
    */
   showWorkers: boolean;
   /** Current drill scope — gates which boundary layers draw. */
-  scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'area';
+  scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'location';
   nodeMarkers?: NodeMarker[];
   /** Geo id selected in the filter (rayon/kawasan/lokasi). Non-matching node
    *  bubbles are dimmed to spotlight the selection. Null = no geo filter. */
   activeGeoId?: string | null;
   onDrillNode?: (node: NodeMarker) => void;
-  /** The current node's own pin (rayon/area) — opens detail on click, no drill. */
+  /** The current node's own pin (rayon/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
-  /** Selected area id — at area scope only its boundary is drawn (on demand). */
+  /** Selected location id — at location scope only its boundary is drawn (on demand). */
   areaId?: string | null;
   /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
    *  (other kawasan hidden), matching the drill-down narrowing. */
@@ -379,30 +379,30 @@ function MonitoringMapInner({
     () => (scope === 'region' && regionId ? regionPolys.filter((r) => r.id === regionId) : regionPolys),
     [regionPolys, scope, regionId]
   );
-  // Lokasi outlines: the SELECTED area at area scope; at rayon/kawasan scope the
+  // Lokasi outlines: the SELECTED location at location scope; at rayon/kawasan scope the
   // lokasi shown as node markers (direct lokasi under the rayon, or the kawasan's
   // lokasi) get their boundary drawn too, so drilling in reveals location shapes
-  // immediately — not just after zooming to a single area.
-  const showAreaBorders = scope === 'area' || scope === 'rayon' || scope === 'region';
-  // Ids of the lokasi currently drawn as node markers (variant 'area'); used to
+  // immediately — not just after zooming to a single location.
+  const showAreaBorders = scope === 'location' || scope === 'rayon' || scope === 'region';
+  // Ids of the lokasi currently drawn as node markers (variant 'location'); used to
   // draw exactly those lokasi's boundaries at rayon/kawasan scope.
   const nodeAreaIds = useMemo(
-    () => new Set((nodeMarkers ?? []).filter((n) => n.variant === 'area').map((n) => n.id)),
+    () => new Set((nodeMarkers ?? []).filter((n) => n.variant === 'location').map((n) => n.id)),
     [nodeMarkers]
   );
   const visibleAreaPaths = useMemo(() => {
-    if (scope === 'area' && areaId) return areaPaths.filter((a) => a.id === areaId);
+    if (scope === 'location' && areaId) return areaPaths.filter((a) => a.id === areaId);
     if (scope === 'rayon' || scope === 'region')
       return areaPaths.filter((a) => nodeAreaIds.has(a.id));
     return areaPaths;
   }, [areaPaths, scope, areaId, nodeAreaIds]);
 
-  // At area scope, frame the SELECTED area's boundary once it loads — a reliable
-  // "focus in" that beats a fixed zoom (areas vary in size). Runs once per area.
+  // At location scope, frame the SELECTED location's boundary once it loads — a reliable
+  // "focus in" that beats a fixed zoom (locations vary in size). Runs once per location.
   const fittedAreaRef = useRef<string | null>(null);
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || scope !== 'area' || !areaId) {
+    if (!map || scope !== 'location' || !areaId) {
       fittedAreaRef.current = null;
       return;
     }
@@ -505,7 +505,7 @@ function MonitoringMapInner({
           ))}
 
         {/* Geo node markers (Surabaya / rayon / kawasan / lokasi bubbles) — always
-            drawn (the marker layer can't be hidden). At area scope nodeMarkers is
+            drawn (the marker layer can't be hidden). At location scope nodeMarkers is
             empty, so nothing renders there. */}
         <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
 
@@ -531,7 +531,7 @@ function MonitoringMapInner({
         )}
 
         {/* Worker pins (individual + optional team bubbles) — drawn ALONGSIDE the
-            node bubbles at rayon/kawasan/area scope, no clustering. */}
+            node bubbles at rayon/kawasan/location scope, no clustering. */}
         {renderWorkers && (
           <WorkerClusterLayer
             workers={workers}
@@ -543,7 +543,7 @@ function MonitoringMapInner({
           />
         )}
 
-        {/* Current-node pin (the rayon/area you drilled into): a glyph teardrop
+        {/* Current-node pin (the rayon/location you drilled into): a glyph teardrop
             (kind default glyph) that opens the node's detail — never drills. */}
         {currentNode && currentNodeEl && (
           <AdvancedMarker

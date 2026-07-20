@@ -26,7 +26,7 @@ interface FilterAndSearchModalsProps {
   onSearchSelect: (result: SearchResult) => void;
   boundaryDetailVisible: boolean;
   setBoundaryDetailVisible: (visible: boolean) => void;
-  boundaryDetailType: 'rayon' | 'area';
+  boundaryDetailType: 'rayon' | 'location';
   boundaryDetailData: RayonBoundary | AreaBoundary | null;
 }
 
@@ -69,7 +69,7 @@ export function FilterAndSearchModals({
         onClose={() => setBoundaryDetailVisible(false)}
       />
 
-      {/* Fullscreen search — find a petugas / area / rayon and fly to it */}
+      {/* Fullscreen search — find a petugas / location / rayon and fly to it */}
       <MonitoringSearchModal
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
