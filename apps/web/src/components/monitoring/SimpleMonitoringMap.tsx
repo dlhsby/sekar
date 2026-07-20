@@ -22,6 +22,7 @@ import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer } from './WorkerClusterLayer';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import { pinElement, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
+import { useThemeStore } from '@/stores/theme';
 
 /** The current node's own pin (selected rayon at rayon scope / area at area scope). */
 export interface CurrentNodeMarker {
@@ -96,9 +97,10 @@ const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 // geometry stays visible (green context matters for a parks dept); only its
 // labels/icons are muted.
 // NOTE: JSON `styles` are IGNORED on a vector map (one with a `mapId`), which the
-// AdvancedMarker layers now require. These rules therefore only take effect on the
-// raster fallback (no Map ID configured); on the vector map the same decluttering
-// must be replicated in the cloud Map Style bound to the Map ID.
+// AdvancedMarker layers require. These rules only take effect on the raster
+// fallback (no Map ID configured). On the vector map the decluttering lives in the
+// cloud Map Style(s) bound to the Map ID — both the light and dark styles carry it,
+// so the map stays decluttered in either colorScheme.
 const DECLUTTER_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
   { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
@@ -201,14 +203,26 @@ function MonitoringMapInner({
   // unset the map falls back to raster (JSON declutter styles apply) but the
   // marker layers won't render, so a Map ID must be configured for monitoring.
   const mapId = useMapId();
+  // Light/dark base map: one Map ID carries both cloud styles; the map picks via
+  // `colorScheme`. It can only be set at construction, so the map remounts when
+  // the theme flips (keyed below). Falls back gracefully if the Map ID has no dark
+  // style bound (Google just serves the light one).
+  const theme = useThemeStore((s) => s.theme);
+  const colorScheme = theme === 'dark' ? 'DARK' : 'LIGHT';
   const mapOptions = useMemo<google.maps.MapOptions>(
-    () => ({ ...MAP_OPTIONS, mapId: mapId ?? undefined }),
-    [mapId]
+    () => ({ ...MAP_OPTIONS, mapId: mapId ?? undefined, colorScheme }),
+    [mapId, colorScheme]
   );
   const mapRef = useRef<google.maps.Map | null>(null);
   const locateMeRef = useRef<() => void>(() => {});
-  const locateAddedRef = useRef(false);
+  // The map instance that already has the My-Location control, so we add it once
+  // per instance (a theme swap remounts the map → a fresh instance needs it again).
+  const controlMapRef = useRef<google.maps.Map | null>(null);
   const didFitRef = useRef(false);
+  // Last camera (center + zoom), captured on idle, so a Map-ID remount (theme
+  // toggle) can restore the viewport instead of snapping back to the city. It is
+  // read only inside handleMapLoad (a callback), never during render.
+  const viewportRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
   // Workers render immediately at every level that has them — area, rayon AND
@@ -273,20 +287,36 @@ function MonitoringMapInner({
   const handleMapLoad = useCallback(
     (map: google.maps.Map) => {
       mapRef.current = map;
-      fitToContent(map);
+      // A remount (theme → Map ID swap) has a saved viewport → restore it so the
+      // map doesn't snap back to the city; skip the content fit. First-ever load
+      // has none → fit to content.
+      if (viewportRef.current) {
+        map.setCenter(viewportRef.current.center);
+        map.setZoom(viewportRef.current.zoom);
+        didFitRef.current = true;
+      } else {
+        fitToContent(map);
+      }
       syncViewport(map);
-      // Add the single My-Location control once (onLoad can fire again on a
-      // remount / Strict-Mode double-invoke — guard against duplicate buttons).
-      if (!locateAddedRef.current) {
+      // Add the My-Location control once per map INSTANCE. onLoad can fire twice
+      // for the same map (Strict-Mode double-invoke) — guarded by identity — and a
+      // theme remount yields a new instance whose control stack starts empty.
+      if (controlMapRef.current !== map) {
         createLocateControl(map, () => locateMeRef.current(), t('monitoring:map.locateMeAriaLabel'));
-        locateAddedRef.current = true;
+        controlMapRef.current = map;
       }
     },
     [fitToContent, syncViewport, t]
   );
 
   const handleIdle = useCallback(() => {
-    if (mapRef.current) syncViewport(mapRef.current);
+    const map = mapRef.current;
+    if (!map) return;
+    syncViewport(map);
+    // Remember the camera so a Map-ID remount can restore it.
+    const c = map.getCenter();
+    const z = map.getZoom();
+    if (c && typeof z === 'number') viewportRef.current = { center: { lat: c.lat(), lng: c.lng() }, zoom: z };
   }, [syncViewport]);
 
   // Fit once content arrives after the map already loaded (async boundaries).
@@ -401,6 +431,10 @@ function MonitoringMapInner({
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <GoogleMap
+        // Remount when the Map ID or colorScheme changes: both are immutable after
+        // construction, so a light↔dark theme flip needs a fresh map. handleMapLoad
+        // restores the preserved viewport so it doesn't snap back to the city.
+        key={`${mapId ?? 'no-map-id'}-${colorScheme}`}
         mapContainerStyle={{ width: '100%', height: '100%' }}
         center={SURABAYA}
         zoom={DEFAULT_ZOOM}

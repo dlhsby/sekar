@@ -512,6 +512,17 @@ body {
       1px 0 2px var(--color-nb-white),
       -1px 0 2px var(--color-nb-white);
   }
+  /* On the dark map (dark theme → dark Map ID), flip the worker label to light
+     ink with a dark halo so it stays legible over the dark base tiles. Node
+     labels keep their health tint + white halo, which reads on either map. */
+  .dark .worker-marker-label {
+    color: var(--color-nb-white) !important;
+    text-shadow:
+      0 1px 2px var(--color-nb-black),
+      0 -1px 2px var(--color-nb-black),
+      1px 0 2px var(--color-nb-black),
+      -1px 0 2px var(--color-nb-black);
+  }
   .text-nb-display-xl {
     font-family: var(--type-display-xl-family);
     font-weight: var(--type-display-xl-weight);
