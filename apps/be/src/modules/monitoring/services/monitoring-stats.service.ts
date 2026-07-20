@@ -538,44 +538,64 @@ export class MonitoringStatsService {
     if (areas.length === 0) return [];
 
     const locationIds = areas.map((a) => a.id);
-    const [statusRows, roleRows, requiredMap, scheduledByArea, countableOnlineByArea] =
-      await Promise.all([
-        this.trackingRepository
-          .createQueryBuilder('uts')
-          .select('uts.location_id', 'group_id')
-          .addSelect('uts.status', 'status')
-          .addSelect('uts.is_within_area', 'is_within_area')
-          .addSelect('COUNT(*)', 'count')
-          .where('uts.shift_id IS NOT NULL')
-          .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
-            rayonId,
-            locationIds,
-          })
-          .groupBy('uts.location_id')
-          .addGroupBy('uts.status')
-          .addGroupBy('uts.is_within_area')
-          .getRawMany(),
-        this.trackingRepository
-          .createQueryBuilder('uts')
-          .innerJoin('uts.user', 'user')
-          .select('uts.location_id', 'group_id')
-          .addSelect('user.role', 'role')
-          .addSelect('COUNT(*)', 'count')
-          .where('uts.shift_id IS NOT NULL')
-          .andWhere('uts.location_id IN (:...locationIds)', {
-            locationIds,
-          })
-          .groupBy('uts.location_id')
-          .addGroupBy('user.role')
-          .getRawMany(),
-        this.requiredCountByGroup('area', shiftDefinitionId, dayType, locationIds),
-        this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { locationIds }),
-        this.countableOnlineByGroup('area', locationIds),
-      ]);
+    const [
+      statusRows,
+      roleRows,
+      requiredMap,
+      scheduledByArea,
+      countableOnlineByArea,
+      scheduledByRayon,
+    ] = await Promise.all([
+      this.trackingRepository
+        .createQueryBuilder('uts')
+        .select('uts.location_id', 'group_id')
+        .addSelect('uts.status', 'status')
+        .addSelect('uts.is_within_area', 'is_within_area')
+        .addSelect('COUNT(*)', 'count')
+        .where('uts.shift_id IS NOT NULL')
+        .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
+          rayonId,
+          locationIds,
+        })
+        .groupBy('uts.location_id')
+        .addGroupBy('uts.status')
+        .addGroupBy('uts.is_within_area')
+        .getRawMany(),
+      this.trackingRepository
+        .createQueryBuilder('uts')
+        .innerJoin('uts.user', 'user')
+        .select('uts.location_id', 'group_id')
+        .addSelect('user.role', 'role')
+        .addSelect('COUNT(*)', 'count')
+        .where('uts.shift_id IS NOT NULL')
+        .andWhere('uts.location_id IN (:...locationIds)', {
+          locationIds,
+        })
+        .groupBy('uts.location_id')
+        .addGroupBy('user.role')
+        .getRawMany(),
+      this.requiredCountByGroup('area', shiftDefinitionId, dayType, locationIds),
+      this.scheduledUserSetsByGroup('area', today, shiftDefinitionId, { locationIds }),
+      this.countableOnlineByGroup('area', locationIds),
+      this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
+    ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
-    const scheduledIds = this.flattenUserSets(scheduledByArea);
+    // Presence (live aktif/tidak-aktif) is grouped by the worker's LIVE location
+    // (`uts.location_id`), so a worker rostered rayon-wide (no schedule_location)
+    // — or filed under another rayon — but physically standing in a lokasi here is
+    // counted there, matching the rayon node instead of vanishing at lokasi scope.
+    // Uses the SAME scheduled set the rayon node does (all scheduled-today users,
+    // flattened), gated to this rayon's lokasi by `locationIds` inside the query.
+    // The per-lokasi ROSTER (`scheduledByArea`, driving belum/tidak-hadir) stays
+    // lokasi-based.
+    const scheduledIds = Array.from(
+      new Set([
+        ...this.flattenUserSets(scheduledByArea),
+        ...this.flattenUserSets(scheduledByRayon),
+      ]),
+    );
     const presenceByArea = await this.presenceByGroup('area', scheduledIds, { locationIds });
 
     return areas.map((area) =>

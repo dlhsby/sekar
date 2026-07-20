@@ -260,8 +260,10 @@ describe('MonitoringStatsService.getAggregate', () => {
         ],
       ]),
     );
-    // Scope-wide (rayon) distinct roster for roster_totals: u1,u2,u3.
-    scheduleRepo.createQueryBuilder.mockReturnValue(
+    // Scope-wide (rayon) distinct roster for roster_totals AND the rayon-wide
+    // scheduled set that area presence now unions in (live-position counting) both
+    // read scheduleRepo — return a FRESH builder per call so each query is served.
+    scheduleRepo.createQueryBuilder.mockImplementation(() =>
       makeQb([[{ user_id: 'u1' }, { user_id: 'u2' }, { user_id: 'u3' }]]),
     );
     trackingRepo.find.mockResolvedValue([{ user_id: 'u1' }]);

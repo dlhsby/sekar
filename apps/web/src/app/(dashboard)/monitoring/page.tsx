@@ -700,15 +700,27 @@ export default function MonitoringPage() {
     return null;
   }, [scope, filters.rayonId, filters.regionId, filters.locationId]);
 
-  const filteredWorkers = useMemo(() => {
+  // Base filter (status + geo + search) — shared by the MAP and the list. The
+  // Individu/Tim (jenis) split is deliberately NOT applied here: the map must
+  // always show BOTH individuals and team crews, so a fully-staffed team is never
+  // hidden just because the list is scoped to "Individu" (the default).
+  const baseFilteredWorkers = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
       if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
-      // Individu = individually-assigned (no team); Tim = team-assigned. Individu
-      // then filters by Peran (role); Tim filters by team category.
+      if (q && !w.full_name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [workers, filters.statuses, filters.rayonId, filters.regionId, filters.locationId, filters.search]);
+
+  // LIST view of workers: the Individu/Tim toggle applies HERE ONLY. Individu =
+  // individually-assigned (no team) + Peran (role); Tim = team-assigned + team
+  // category. The map (below) uses `baseFilteredWorkers` so it isn't narrowed.
+  const filteredWorkers = useMemo(() => {
+    return baseFilteredWorkers.filter((w) => {
       if (filters.jenis === 'individu') {
         if (w.team_id) return false;
         if (filters.role !== 'all' && w.role !== filters.role) return false;
@@ -716,10 +728,9 @@ export default function MonitoringPage() {
         if (!w.team_id) return false;
         if (filters.teamId !== 'all' && w.team_id !== filters.teamId) return false;
       }
-      if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [workers, filters]);
+  }, [baseFilteredWorkers, filters.jenis, filters.role, filters.teamId]);
 
   // The list shows every search match and DIMS the ones outside the geo
   // spotlight (parity with the map, which dims rather than hides). The geo match
@@ -746,10 +757,11 @@ export default function MonitoringPage() {
   // panel: at kawasan (region) scope only that kawasan's workers show; at lokasi
   // (area) scope only that lokasi's. At rayon/city all of the fetched workers show.
   const drillScopedWorkers = useMemo(() => {
-    if (scope === 'region') return filteredWorkers.filter((w) => w.region_id === view.id);
-    if (scope === 'area') return filteredWorkers.filter((w) => w.location_id === view.id);
-    return filteredWorkers;
-  }, [filteredWorkers, scope, view.id]);
+    // Map source: base filter (no jenis split) so teams + individuals both draw.
+    if (scope === 'region') return baseFilteredWorkers.filter((w) => w.region_id === view.id);
+    if (scope === 'area') return baseFilteredWorkers.filter((w) => w.location_id === view.id);
+    return baseFilteredWorkers;
+  }, [baseFilteredWorkers, scope, view.id]);
 
   const mapWorkers = useMemo<SimpleWorker[]>(
     () =>
