@@ -20,7 +20,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
 import { useLocations } from '@/lib/api/locations';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { getErrorMessage } from '@/lib/api/client';
 import { VALID_TASK_ASSIGNMENTS, ROLE_LABELS } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -44,13 +44,13 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   const createMutation = useCreateTask();
   const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useLocations({ limit: 1000 });
-  const { data: rayonsData } = useRayons();
+  const { data: districtsData } = useDistricts();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('none');
   const [areaId, setAreaId] = useState('none');
-  const [rayonId, setRayonId] = useState('none');
+  const [districtId, setDistrictId] = useState('none');
   const [priority, setPriority] = useState<TaskPriority>('normal');
   const [dueDate, setDueDate] = useState('');
   const [error, setError] = useState('');
@@ -63,7 +63,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     setDescription('');
     setAssignedTo('none');
     setAreaId('none');
-    setRayonId('none');
+    setDistrictId('none');
     setPriority('normal');
     setDueDate('');
     setError('');
@@ -80,7 +80,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     assignableRoles.includes(u.role as UserRole)
   );
   const areas = areasData?.data || [];
-  const rayons = rayonsData || [];
+  const districts = districtsData || [];
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
@@ -95,7 +95,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
         area_id: areaId !== 'none' ? areaId : undefined,
-        rayon_id: rayonId !== 'none' ? rayonId : undefined,
+        district_id: districtId !== 'none' ? districtId : undefined,
         priority,
         due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
@@ -153,12 +153,12 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 ]}
               />
               <FormSelect
-                label={t("tasks:form.rayonLabel")}
-                value={rayonId}
-                onChange={setRayonId}
+                label={t("tasks:form.districtLabel")}
+                value={districtId}
+                onChange={setDistrictId}
                 options={[
-                  { value: 'none', label: t('tasks:form.rayonPlaceholder') },
-                  ...rayons.map((r) => ({ value: r.id, label: r.name })),
+                  { value: 'none', label: t('tasks:form.districtPlaceholder') },
+                  ...districts.map((r) => ({ value: r.id, label: r.name })),
                 ]}
               />
               <FormSelect

@@ -41,13 +41,13 @@ const mockUseReassignWorker = useReassignWorker as jest.MockedFunction<typeof us
 
 const AREA_1_ID = 'area-1';
 const AREA_2_ID = 'area-2';
-const RAYON_1_ID = 'rayon-1';
+const DISTRICT_1_ID = 'district-1';
 
 const MOCK_BOUNDARIES: BoundariesResponse = {
   generated_at: new Date().toISOString(),
-  rayons: [
+  districts: [
     {
-      id: RAYON_1_ID,
+      id: DISTRICT_1_ID,
       name: 'Rayon Selatan',
       boundary_polygon: null,
       center_lat: -7.3,
@@ -63,8 +63,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.289659,
           center_lng: 112.739208,
-          rayon_id: RAYON_1_ID,
-          rayon_name: 'Rayon Selatan',
+          district_id: DISTRICT_1_ID,
+          district_name: 'Rayon Selatan',
           assigned_count: 3,
           is_understaffed: true,
           staffing_summary: [],
@@ -75,8 +75,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.299,
           center_lng: 112.749,
-          rayon_id: RAYON_1_ID,
-          rayon_name: 'Rayon Selatan',
+          district_id: DISTRICT_1_ID,
+          district_name: 'Rayon Selatan',
           assigned_count: 2,
           is_understaffed: false,
           staffing_summary: [],
@@ -94,8 +94,8 @@ const MOCK_WORKER_1: LiveUser = {
   status: 'active',
   location_id: AREA_2_ID,
   location_name: 'Taman Flora',
-  rayon_id: RAYON_1_ID,
-  rayon_name: 'Rayon Selatan',
+  district_id: DISTRICT_1_ID,
+  district_name: 'Rayon Selatan',
   latitude: -7.299,
   longitude: 112.749,
   accuracy: 5,

@@ -4,44 +4,44 @@ import { useId } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Dialog, DialogBody, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui';
-import { RayonForm } from '@/components/forms/RayonForm';
+import { DistrictForm } from '@/components/forms/DistrictForm';
 import { FormActions } from '@/components/forms/FormActions';
-import { useCreateRayon, useUpdateRayon, type CreateRayonDto, type UpdateRayonDto } from '@/lib/api/rayons';
+import { useCreateDistrict, useUpdateDistrict, type CreateDistrictDto, type UpdateDistrictDto } from '@/lib/api/districts';
 import { getErrorMessage } from '@/lib/api/client';
-import type { Rayon } from '@/types/models';
+import type { District } from '@/types/models';
 
-interface RayonFormModalProps {
+interface DistrictFormModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   /** Present → edit; omitted/null → create. */
-  rayon?: Rayon | null;
+  district?: District | null;
   onSuccess?: () => void;
   /** Read-only "Detail" mode — reuses the form disabled, no submit. */
   readOnly?: boolean;
 }
 
 /**
- * Create / edit / view a rayon in a modal.
+ * Create / edit / view a district in a modal.
  */
-export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly = false }: RayonFormModalProps) {
+export function DistrictFormModal({ open, onOpenChange, district, onSuccess, readOnly = false }: DistrictFormModalProps) {
   const { t } = useTranslation();
   const formId = useId();
-  const isEdit = !!rayon;
-  const createMutation = useCreateRayon();
-  const updateMutation = useUpdateRayon();
+  const isEdit = !!district;
+  const createMutation = useCreateDistrict();
+  const updateMutation = useUpdateDistrict();
 
-  const handleSubmit = async (data: CreateRayonDto | UpdateRayonDto): Promise<void> => {
+  const handleSubmit = async (data: CreateDistrictDto | UpdateDistrictDto): Promise<void> => {
     // `boundary_polygon` is update-only on the backend (not accepted on create),
-    // so a new rayon is saved in two steps: POST scalars, then PATCH the polygon.
-    const { boundary_polygon, ...scalars } = data as UpdateRayonDto;
+    // so a new district is saved in two steps: POST scalars, then PATCH the polygon.
+    const { boundary_polygon, ...scalars } = data as UpdateDistrictDto;
     try {
-      if (isEdit && rayon) {
+      if (isEdit && district) {
         await updateMutation.mutateAsync({
-          id: rayon.id,
+          id: district.id,
           data: { ...scalars, boundary_polygon: boundary_polygon ?? null },
         });
       } else {
-        const created = await createMutation.mutateAsync(scalars as CreateRayonDto);
+        const created = await createMutation.mutateAsync(scalars as CreateDistrictDto);
         if (boundary_polygon) {
           await updateMutation.mutateAsync({
             id: created.id,
@@ -56,8 +56,8 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
     }
     toast.success(
       isEdit
-        ? t('admin:rayons.successUpdated', { name: data.name })
-        : t('admin:rayons.successCreated', { name: data.name })
+        ? t('admin:districts.successUpdated', { name: data.name })
+        : t('admin:districts.successCreated', { name: data.name })
     );
     onSuccess?.();
     onOpenChange(false);
@@ -73,8 +73,8 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
     (failedMutation.error instanceof Error
       ? failedMutation.error.message
       : isEdit
-        ? t('admin:rayons.updateErrorMessage')
-        : t('admin:rayons.createErrorMessage'));
+        ? t('admin:districts.updateErrorMessage')
+        : t('admin:districts.createErrorMessage'));
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   return (
@@ -83,10 +83,10 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
         <DialogHeader>
           <DialogTitle>
             {readOnly
-              ? t('admin:rayons.detailTitle')
+              ? t('admin:districts.detailTitle')
               : isEdit
-                ? t('admin:rayons.actionEdit')
-                : t('admin:rayons.buttonAdd')}
+                ? t('admin:districts.actionEdit')
+                : t('admin:districts.buttonAdd')}
           </DialogTitle>
         </DialogHeader>
         <DialogBody>
@@ -99,11 +99,11 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
               <p className="text-nb-body-sm font-medium text-nb-danger">{errorMessage}</p>
             </div>
           ) : null}
-          <RayonForm
-            key={`${rayon?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
+          <DistrictForm
+            key={`${district?.id ?? 'new'}-${readOnly ? 'view' : 'edit'}`}
             formId={formId}
             mode={isEdit ? 'edit' : 'create'}
-            initialData={rayon ?? undefined}
+            initialData={district ?? undefined}
             onSubmit={handleSubmit}
             readOnly={readOnly}
           />
@@ -120,8 +120,8 @@ export function RayonFormModal({ open, onOpenChange, rayon, onSuccess, readOnly 
                     ? t('admin:shared.updating')
                     : t('admin:shared.creating')
                   : isEdit
-                    ? t('admin:rayons.form.submit')
-                    : t('admin:rayons.form.submitNew')
+                    ? t('admin:districts.form.submit')
+                    : t('admin:districts.form.submitNew')
               }
               loading={isPending}
               showReset={isEdit}

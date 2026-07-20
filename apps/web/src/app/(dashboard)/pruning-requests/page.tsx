@@ -122,12 +122,12 @@ export default function PruningRequestsPage() {
         ),
       },
       {
-        id: 'rayon',
-        accessorFn: (r) => r.rayon?.name ?? '',
-        header: t('pruning:columns.rayon'),
+        id: 'district',
+        accessorFn: (r) => r.district?.name ?? '',
+        header: t('pruning:columns.district'),
         enableSorting: false,
-        meta: { label: t('pruning:columns.rayon'), filterVariant: 'text' },
-        cell: ({ row }) => <div className="text-sm">{row.original.rayon?.name ?? '-'}</div>,
+        meta: { label: t('pruning:columns.district'), filterVariant: 'text' },
+        cell: ({ row }) => <div className="text-sm">{row.original.district?.name ?? '-'}</div>,
       },
       {
         id: 'expected',

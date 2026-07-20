@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from '@/components/ui';
 import { AreaBoundaryMap } from '@/components/maps/AreaBoundaryMapLazy';
-import { useRayon } from '@/lib/api/rayons';
+import { useDistrict } from '@/lib/api/districts';
 import { useRegion } from '@/lib/api/regions';
 import { useLocation } from '@/lib/api/locations';
 import type { AreaLevel } from '@/components/maps/AreaBoundaryMap';
@@ -26,10 +26,10 @@ const num = (v: number | string | null | undefined): number | null => {
 };
 
 /**
- * The boundary of one rayon / kawasan / lokasi, opened from the day board.
+ * The boundary of one district / kawasan / lokasi, opened from the day board.
  *
  * Fetched ON DEMAND (each hook is `enabled` only for the level actually asked
- * for) rather than threaded through `BoardMasterData`: the board holds ~9 rayons,
+ * for) rather than threaded through `BoardMasterData`: the board holds ~9 districts,
  * ~130 kawasan and ~800 lokasi, and carrying every polygon just so a button can
  * occasionally draw one would weigh down every board load for a rare action. The
  * map component itself is lazy too, so Google Maps never enters the board bundle.
@@ -39,18 +39,18 @@ export function AreaMapModal({ subject, onOpenChange }: AreaMapModalProps) {
   const open = !!subject;
   const level = subject?.level;
 
-  const rayon = useRayon(level === 'rayon' && subject ? subject.id : '');
+  const district = useDistrict(level === 'district' && subject ? subject.id : '');
   const region = useRegion(level === 'region' && subject ? subject.id : '', open);
   const location = useLocation(level === 'location' && subject ? subject.id : '', {
     enabled: open && level === 'location',
   });
 
   const entity =
-    level === 'rayon' ? rayon.data : level === 'region' ? region.data : location.data;
+    level === 'district' ? district.data : level === 'region' ? region.data : location.data;
   const isLoading =
-    level === 'rayon' ? rayon.isLoading : level === 'region' ? region.isLoading : location.isLoading;
+    level === 'district' ? district.isLoading : level === 'region' ? region.isLoading : location.isLoading;
 
-  // A rayon carries `center_*`; a lokasi carries `gps_*`. A kawasan has neither —
+  // A district carries `center_*`; a lokasi carries `gps_*`. A kawasan has neither —
   // its outline is the whole answer.
   const lat = num(
     (entity as { center_lat?: number | string | null; gps_lat?: number | string | null })

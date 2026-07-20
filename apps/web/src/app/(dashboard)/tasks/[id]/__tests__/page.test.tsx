@@ -51,7 +51,7 @@ const mockTask = {
   assigned_by: { id: 'korlap-1', full_name: 'Korlap One' },
   assigned_at: '2026-02-16T08:00:00Z',
   area: { id: 'area-1', name: 'Taman Bungkul' },
-  rayon: { id: 'rayon-1', name: 'Rayon 1' },
+  district: { id: 'district-1', name: 'Rayon 1' },
   status: 'pending' as const,
   priority: 'high' as const,
   due_date: '2026-02-20T00:00:00Z',
@@ -217,7 +217,7 @@ describe('TaskDetailPage', () => {
       expect(screen.getByText('Bersihkan area utara taman')).toBeInTheDocument();
     });
 
-    it('should display area and rayon', async () => {
+    it('should display area and district', async () => {
       await renderPage();
       expect(screen.getByText('Taman Bungkul')).toBeInTheDocument();
       expect(screen.getByText('Rayon 1')).toBeInTheDocument();

@@ -26,7 +26,7 @@ import { getErrorMessage } from '@/lib/api/client';
 interface CapacityModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** The subject whose requirements to edit — a location, kawasan, or rayon. */
+  /** The subject whose requirements to edit — a location, kawasan, or district. */
   subject: StaffSubject | null;
 }
 

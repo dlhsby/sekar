@@ -26,7 +26,7 @@ import { CapacityModal } from '@/components/schedules/CapacityModal';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import { useLocations, useDeactivateLocation, useActivateLocation } from '@/lib/api/locations';
 import { useUsers } from '@/lib/api/users';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useLocationTypes } from '@/lib/api/location-types';
 import { useAuth } from '@/lib/auth/hooks';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
@@ -52,17 +52,17 @@ export default function LocationsPage() {
   // Full master-data lists so the enum column filters can list every possible
   // value (incl. ones with zero matching areas) instead of only values that
   // happen to appear in the currently loaded rows.
-  // Resolver, not a picker: a lokasi under a deactivated rayon must still
-  // resolve its rayon's staffing level.
-  const { data: allRayons } = useRayons(true);
-  const rayonFilterOptions = useMemo(
-    () => (allRayons ?? []).map((r) => ({ value: r.name, label: r.name })),
-    [allRayons]
+  // Resolver, not a picker: a lokasi under a deactivated district must still
+  // resolve its district's staffing level.
+  const { data: allDistricts } = useDistricts(true);
+  const districtFilterOptions = useMemo(
+    () => (allDistricts ?? []).map((r) => ({ value: r.name, label: r.name })),
+    [allDistricts]
   );
   // Which tier owns capacity is the parent RAYON's call, not the lokasi's.
-  const rayonLevel = useMemo(
-    () => new Map((allRayons ?? []).map((r) => [r.id, r.staffing_level ?? 'region'])),
-    [allRayons]
+  const districtLevel = useMemo(
+    () => new Map((allDistricts ?? []).map((r) => [r.id, r.staffing_level ?? 'region'])),
+    [allDistricts]
   );
   const { data: allAreaTypes } = useLocationTypes();
   const locationTypeFilterOptions = useMemo(
@@ -113,15 +113,15 @@ export default function LocationsPage() {
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
-        id: 'rayon',
-        accessorFn: (a) => a.rayon?.name ?? '',
-        header: t('admin:locations.columnRayon'),
+        id: 'district',
+        accessorFn: (a) => a.district?.name ?? '',
+        header: t('admin:locations.columnDistrict'),
         meta: {
-          label: t('admin:locations.columnRayon'),
+          label: t('admin:locations.columnDistrict'),
           filterVariant: 'enum',
-          filterOptions: rayonFilterOptions,
+          filterOptions: districtFilterOptions,
         },
-        cell: ({ row }) => <span>{row.original.rayon?.name ?? '—'}</span>,
+        cell: ({ row }) => <span>{row.original.district?.name ?? '—'}</span>,
       },
       {
         id: 'area_type',
@@ -287,7 +287,7 @@ export default function LocationsPage() {
         ),
       },
     ],
-    [t, actorName, rayonFilterOptions, locationTypeFilterOptions]
+    [t, actorName, districtFilterOptions, locationTypeFilterOptions]
   );
 
   const rowActions = useCallback(
@@ -315,8 +315,8 @@ export default function LocationsPage() {
         label: t('schedules:staffCapacity.title'),
         icon: Settings2,
         // Capacity belongs to whichever tier the parent RAYON nominates — a
-        // lokasi only owns it when that rayon is lokasi-scoped.
-        hidden: !isAdmin || rayonLevel.get(a.rayon_id ?? '') !== 'location',
+        // lokasi only owns it when that district is lokasi-scoped.
+        hidden: !isAdmin || districtLevel.get(a.district_id ?? '') !== 'location',
         onClick: () => setCapacitySubject({ type: 'location', id: a.id, name: a.name }),
       },
       {
@@ -336,7 +336,7 @@ export default function LocationsPage() {
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [isAdmin, deactivateArea, activateArea, rayonLevel, view, t]
+    [isAdmin, deactivateArea, activateArea, districtLevel, view, t]
   );
 
   return (

@@ -61,7 +61,7 @@
   "entities": {
     "user": "User",
     "area": "Area",
-    "rayon": "District",
+    "district": "District",
     "task": "Task",
     "activity": "Activity",
     "schedule": "Schedule",
@@ -166,7 +166,7 @@
     "roles": "Roles",
     "masterData": "Master Data",
     "locations": "Locations",
-    "rayons": "Districts",
+    "districts": "Districts",
     "regions": "Regions",
     "plants": "Plants",
     "seeds": "Seeds",

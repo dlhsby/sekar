@@ -64,21 +64,21 @@ export interface BoardRegion {
   locations: BoardLocation[];
   total: number;
 }
-export interface BoardRayon {
+export interface BoardDistrict {
   id: string;
   name: string;
   regions: BoardRegion[];
-  /** locations under this rayon with no region parent */
+  /** locations under this district with no region parent */
   looseLocations: BoardLocation[];
-  /** rayon-wide (rayon-scope) assignments with no location/region */
+  /** district-wide (district-scope) assignments with no location/region */
   placement: BoardShiftGroup[];
   total: number;
   /**
-   * Tier this rayon's staffing requirements attach to — decides which single
-   * level may edit capacity (rayon / kawasan / lokasi, never several).
-   * Real rayons always carry a concrete value (falling back to the entity's
+   * Tier this district's staffing requirements attach to — decides which single
+   * level may edit capacity (district / kawasan / lokasi, never several).
+   * Real districts always carry a concrete value (falling back to the entity's
    * `region` column default). Left undefined ONLY on the synthetic city node,
-   * which has no rayon record and therefore no capacity to edit.
+   * which has no district record and therefore no capacity to edit.
    */
   staffing_level?: StaffingLevel;
 }
@@ -88,16 +88,16 @@ export interface BoardMasterData {
    * `staffing_level` decides which tier may edit capacity. It must be carried
    * here — the board can't gate the capacity control without it.
    */
-  rayons: Array<{ id: string; name: string; staffing_level?: StaffingLevel }>;
-  regions: Array<{ id: string; name: string; rayon_id: string }>;
-  locations: Array<{ id: string; name: string; rayon_id: string; region_id?: string | null }>;
+  districts: Array<{ id: string; name: string; staffing_level?: StaffingLevel }>;
+  regions: Array<{ id: string; name: string; district_id: string }>;
+  locations: Array<{ id: string; name: string; district_id: string; region_id?: string | null }>;
   shifts: BoardShiftDef[];
 }
 
 /** Only these roles count toward staffing/understaffing (ADR requirement). */
 export const COUNTABLE_ROLES = ['satgas', 'linmas'];
 
-/** Sentinel rayon id for the city-wide ("Seluruh Surabaya") board node — its
+/** Sentinel district id for the city-wide ("Seluruh Surabaya") board node — its
  * label is localized in the component (this lib stays string-free). */
 export const CITY_NODE_ID = '__city__';
 
@@ -166,20 +166,20 @@ const sumTotal = (groups: BoardShiftGroup[]): number => groups.reduce((acc, g) =
 /**
  * Build the day board tree. Occurrences are placed by their container:
  * `location_id` → that location; else `region_id` → that kawasan's mobile
- * placement; else `rayon_id` → that rayon's rayon-wide placement. Empty
+ * placement; else `district_id` → that district's district-wide placement. Empty
  * locations/regions still render so operators can assign into them.
  */
 export function buildDayBoard(
   occurrences: ScheduleOccurrence[],
   master: BoardMasterData
-): BoardRayon[] {
-  const { rayons, regions, locations, shifts } = master;
+): BoardDistrict[] {
+  const { districts, regions, locations, shifts } = master;
 
-  // Occurrences bucketed by container id (location, region, or rayon); those
+  // Occurrences bucketed by container id (location, region, or district); those
   // with no binding at all are city-wide (Seluruh Surabaya).
   const byLocation = new Map<string, ScheduleOccurrence[]>();
   const byRegionMobile = new Map<string, ScheduleOccurrence[]>();
-  const byRayonMobile = new Map<string, ScheduleOccurrence[]>();
+  const byDistrictMobile = new Map<string, ScheduleOccurrence[]>();
   const cityOccs: ScheduleOccurrence[] = [];
   for (const o of occurrences) {
     if (o.location_id) {
@@ -190,8 +190,8 @@ export function buildDayBoard(
       (
         byRegionMobile.get(o.region_id) ?? byRegionMobile.set(o.region_id, []).get(o.region_id)!
       ).push(o);
-    } else if (o.rayon_id) {
-      (byRayonMobile.get(o.rayon_id) ?? byRayonMobile.set(o.rayon_id, []).get(o.rayon_id)!).push(o);
+    } else if (o.district_id) {
+      (byDistrictMobile.get(o.district_id) ?? byDistrictMobile.set(o.district_id, []).get(o.district_id)!).push(o);
     } else {
       cityOccs.push(o);
     }
@@ -202,16 +202,16 @@ export function buildDayBoard(
     return { id: loc.id, name: loc.name, shifts: shiftGroups, total: sumTotal(shiftGroups) };
   };
 
-  // City-wide ("Seluruh Surabaya") node, always first — a placement-only rayon
+  // City-wide ("Seluruh Surabaya") node, always first — a placement-only district
   // with the sentinel id; the component localizes its label.
   //
   // It used to render only once city occurrences existed, which made it
   // unreachable: a city-scope schedule had nowhere to be assigned FROM, so the
   // node never appeared, so you could never assign one. Same chicken-and-egg the
-  // rayon/kawasan assign tables had. It is now always present, like every other
+  // district/kawasan assign tables had. It is now always present, like every other
   // empty container on the board.
   const cityPlacement = groupByShift(cityOccs, shifts);
-  const cityNode: BoardRayon[] = [
+  const cityNode: BoardDistrict[] = [
     {
       id: CITY_NODE_ID,
       name: '',
@@ -219,7 +219,7 @@ export function buildDayBoard(
       looseLocations: [],
       placement: cityPlacement,
       total: sumTotal(cityPlacement),
-      // No staffing_level: the city node is a sentinel, not a rayon — there is
+      // No staffing_level: the city node is a sentinel, not a district — there is
       // nothing to attach a capacity to.
     },
   ];
@@ -227,21 +227,21 @@ export function buildDayBoard(
   const byName = (a: { name: string }, b: { name: string }) =>
     a.name.localeCompare(b.name, undefined, { numeric: true });
 
-  const rayonNodes = rayons.map((rayon) => {
-    const rayonRegions = regions.filter((r) => r.rayon_id === rayon.id).sort(byName);
-    const rayonLocations = locations.filter((l) => l.rayon_id === rayon.id).sort(byName);
+  const districtNodes = districts.map((district) => {
+    const districtRegions = regions.filter((r) => r.district_id === district.id).sort(byName);
+    const districtLocations = locations.filter((l) => l.district_id === district.id).sort(byName);
 
-    const regionNodes: BoardRegion[] = rayonRegions.map((region) => {
+    const regionNodes: BoardRegion[] = districtRegions.map((region) => {
       const placement = groupByShift(byRegionMobile.get(region.id) ?? [], shifts);
-      const regionLocations = rayonLocations
+      const regionLocations = districtLocations
         .filter((l) => l.region_id === region.id)
         .map(buildLocation);
       const total = sumTotal(placement) + regionLocations.reduce((acc, l) => acc + l.total, 0);
       return { id: region.id, name: region.name, placement, locations: regionLocations, total };
     });
 
-    const looseLocations = rayonLocations.filter((l) => !l.region_id).map(buildLocation);
-    const placement = groupByShift(byRayonMobile.get(rayon.id) ?? [], shifts);
+    const looseLocations = districtLocations.filter((l) => !l.region_id).map(buildLocation);
+    const placement = groupByShift(byDistrictMobile.get(district.id) ?? [], shifts);
 
     const total =
       regionNodes.reduce((acc, r) => acc + r.total, 0) +
@@ -249,20 +249,20 @@ export function buildDayBoard(
       sumTotal(placement);
 
     return {
-      id: rayon.id,
-      name: rayon.name,
+      id: district.id,
+      name: district.name,
       regions: regionNodes,
       looseLocations,
       placement,
       total,
-      // Mirror the entity's column default so a rayon whose level the API
+      // Mirror the entity's column default so a district whose level the API
       // omitted still resolves to exactly one editable tier (kawasan) rather
       // than none.
-      staffing_level: rayon.staffing_level ?? 'region',
+      staffing_level: district.staffing_level ?? 'region',
     };
   });
 
-  return [...cityNode, ...rayonNodes];
+  return [...cityNode, ...districtNodes];
 }
 
 /**
@@ -270,7 +270,7 @@ export function buildDayBoard(
  * subject halves of `ScheduleRangeFilters` (which is what the range query sends).
  */
 export interface BoardFilters {
-  rayonId?: string;
+  districtId?: string;
   regionId?: string;
   locationId?: string;
   userId?: string;
@@ -280,7 +280,7 @@ export interface BoardFilters {
 
 /** A geography criterion names a container; it prunes the tree structurally. */
 const hasGeographyFilter = (f: BoardFilters): boolean =>
-  !!(f.rayonId || f.regionId || f.locationId);
+  !!(f.districtId || f.regionId || f.locationId);
 
 /** A subject criterion names people/shifts; it only shows where they actually are. */
 const hasSubjectFilter = (f: BoardFilters): boolean =>
@@ -294,10 +294,10 @@ export const hasAnyBoardFilter = (f: BoardFilters): boolean =>
  *
  * The range query already filters *occurrences* server-side, but the tree's
  * skeleton comes from master data — so filtering alone removed the people and
- * left every rayon standing at "0 petugas". This prunes the skeleton to match.
+ * left every district standing at "0 petugas". This prunes the skeleton to match.
  *
  * The two kinds of criteria prune differently, on purpose:
- * - **Geography** (rayon/kawasan/lokasi) names a container, so the matching
+ * - **Geography** (district/kawasan/lokasi) names a container, so the matching
  *   subtree is kept **even when empty** — an empty match is a real answer
  *   ("nobody is here today") and is exactly where an operator wants to assign.
  * - **Subject** (petugas/shift/tim) names something that is either present or
@@ -305,26 +305,26 @@ export const hasAnyBoardFilter = (f: BoardFilters): boolean =>
  *   noise when you asked "where is Budi".
  *
  * The city node is left to the caller's structural rules: it is kept only when a
- * subject filter matches it, since it belongs to no rayon/kawasan/lokasi.
+ * subject filter matches it, since it belongs to no district/kawasan/lokasi.
  */
-export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardRayon[] {
+export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): BoardDistrict[] {
   if (!hasAnyBoardFilter(filters)) return tree;
 
   const dropEmpty = hasSubjectFilter(filters);
   const keepNode = (total: number) => !dropEmpty || total > 0;
 
-  const rayons = filters.rayonId ? tree.filter((r) => r.id === filters.rayonId) : tree;
+  const districts = filters.districtId ? tree.filter((r) => r.id === filters.districtId) : tree;
 
-  return rayons
-    .map((rayon) => {
+  return districts
+    .map((district) => {
       // The city node is a sentinel with no geography; a geography filter can
       // never match it, so it only survives a pure subject search.
-      if (rayon.id === CITY_NODE_ID) {
-        return hasGeographyFilter(filters) ? null : keepNode(rayon.total) ? rayon : null;
+      if (district.id === CITY_NODE_ID) {
+        return hasGeographyFilter(filters) ? null : keepNode(district.total) ? district : null;
       }
 
       const regions = (
-        filters.regionId ? rayon.regions.filter((r) => r.id === filters.regionId) : rayon.regions
+        filters.regionId ? district.regions.filter((r) => r.id === filters.regionId) : district.regions
       )
         .map((region) => {
           const locations = (
@@ -334,7 +334,7 @@ export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardR
           ).filter((l) => keepNode(l.total));
 
           // A kawasan that cannot hold the named lokasi is not on the path to it,
-          // so it goes — otherwise every rayon survives at "0 petugas", which is
+          // so it goes — otherwise every district survives at "0 petugas", which is
           // the bug this whole function exists to fix. Being named outright
           // (`regionId`) always wins.
           if (filters.locationId && filters.regionId !== region.id && locations.length === 0) {
@@ -355,17 +355,17 @@ export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardR
       const looseLocations = filters.regionId
         ? []
         : (filters.locationId
-            ? rayon.looseLocations.filter((l) => l.id === filters.locationId)
-            : rayon.looseLocations
+            ? district.looseLocations.filter((l) => l.id === filters.locationId)
+            : district.looseLocations
           ).filter((l) => keepNode(l.total));
 
       // A lokasi/kawasan filter is asking about a container, not about the
-      // rayon's own mobile placement — don't let placement smuggle it back in.
+      // district's own mobile placement — don't let placement smuggle it back in.
       const placement =
         filters.locationId || filters.regionId
           ? []
-          : keepNode(sumTotal(rayon.placement))
-            ? rayon.placement
+          : keepNode(sumTotal(district.placement))
+            ? district.placement
             : [];
 
       const total =
@@ -373,12 +373,12 @@ export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardR
         looseLocations.reduce((a, l) => a + l.total, 0) +
         sumTotal(placement);
 
-      // Nothing left under this rayon at all → it isn't an answer to the query.
+      // Nothing left under this district at all → it isn't an answer to the query.
       if (regions.length === 0 && looseLocations.length === 0 && placement.length === 0) return null;
 
-      return { ...rayon, regions, looseLocations, placement, total };
+      return { ...district, regions, looseLocations, placement, total };
     })
-    .filter((r): r is BoardRayon => r !== null);
+    .filter((r): r is BoardDistrict => r !== null);
 }
 
 /**
@@ -401,39 +401,39 @@ export function pruneDayBoard(tree: BoardRayon[], filters: BoardFilters): BoardR
  * A subject criterion therefore always wins the depth question, even combined
  * with a geography one ("Budi, in Rayon Pusat" still has to reach Budi).
  */
-export function autoExpandedIds(tree: BoardRayon[], filters: BoardFilters): Set<string> {
+export function autoExpandedIds(tree: BoardDistrict[], filters: BoardFilters): Set<string> {
   const ids = new Set<string>();
   if (!hasAnyBoardFilter(filters)) return ids;
 
   // Geography-only: the tree is already pruned to the named subtree, so opening
   // the chain means opening what survived — down to the named level, no further.
   if (!hasSubjectFilter(filters)) {
-    const deepest = filters.locationId ? 'location' : filters.regionId ? 'region' : 'rayon';
+    const deepest = filters.locationId ? 'location' : filters.regionId ? 'region' : 'district';
 
-    for (const rayon of tree) {
-      ids.add(rayon.id);
-      if (deepest === 'rayon') continue;
+    for (const district of tree) {
+      ids.add(district.id);
+      if (deepest === 'district') continue;
 
-      for (const region of rayon.regions) {
+      for (const region of district.regions) {
         ids.add(region.id);
         if (deepest === 'region') continue;
         for (const loc of region.locations) ids.add(loc.id);
       }
-      for (const loc of rayon.looseLocations) ids.add(loc.id);
+      for (const loc of district.looseLocations) ids.add(loc.id);
     }
     return ids;
   }
 
   // Subject search: walk to every match and open its ancestors.
-  for (const rayon of tree) {
-    let rayonHit = false;
+  for (const district of tree) {
+    let districtHit = false;
 
-    if (sumTotal(rayon.placement) > 0) {
-      ids.add(`${rayon.id}:placement`);
-      rayonHit = true;
+    if (sumTotal(district.placement) > 0) {
+      ids.add(`${district.id}:placement`);
+      districtHit = true;
     }
 
-    for (const region of rayon.regions) {
+    for (const region of district.regions) {
       let regionHit = false;
       if (sumTotal(region.placement) > 0) {
         ids.add(`${region.id}:placement`);
@@ -447,18 +447,18 @@ export function autoExpandedIds(tree: BoardRayon[], filters: BoardFilters): Set<
       }
       if (regionHit) {
         ids.add(region.id);
-        rayonHit = true;
+        districtHit = true;
       }
     }
 
-    for (const loc of rayon.looseLocations) {
+    for (const loc of district.looseLocations) {
       if (loc.total > 0) {
         ids.add(loc.id);
-        rayonHit = true;
+        districtHit = true;
       }
     }
 
-    if (rayonHit) ids.add(rayon.id);
+    if (districtHit) ids.add(district.id);
   }
 
   return ids;
@@ -479,8 +479,8 @@ export interface WeekShiftBreakdown {
 }
 
 export interface WeekCoverageRow {
-  rayonId: string;
-  rayonName: string;
+  districtId: string;
+  districtName: string;
   /** Worker count per day, aligned to the `dateStrs` passed in. */
   counts: number[];
   /** Per-day shift breakdown (only shifts with assignments), aligned to `dateStrs`. */
@@ -493,71 +493,71 @@ export function shortShiftLabel(name: string): string {
   return name.match(/\d+/)?.[0] ?? name;
 }
 
-export interface RayonCount {
-  rayonId: string;
-  rayonName: string;
+export interface DistrictCount {
+  districtId: string;
+  districtName: string;
   count: number;
 }
 
 /**
- * Group a day's occurrences by rayon (via their location/region), for the month
- * view's per-day summary. Returns only rayons with assignments, highest first.
+ * Group a day's occurrences by district (via their location/region), for the month
+ * view's per-day summary. Returns only districts with assignments, highest first.
  */
-export function rayonCountsFor(
+export function districtCountsFor(
   occurrences: ScheduleOccurrence[],
   master: BoardMasterData
-): RayonCount[] {
-  const locRayon = new Map(master.locations.map((l) => [l.id, l.rayon_id]));
-  const regRayon = new Map(master.regions.map((r) => [r.id, r.rayon_id]));
+): DistrictCount[] {
+  const locDistrict = new Map(master.locations.map((l) => [l.id, l.district_id]));
+  const regDistrict = new Map(master.regions.map((r) => [r.id, r.district_id]));
   const counts = new Map<string, number>();
 
   for (const o of occurrences) {
-    const rayonId = o.location_id
-      ? locRayon.get(o.location_id)
+    const districtId = o.location_id
+      ? locDistrict.get(o.location_id)
       : o.region_id
-        ? regRayon.get(o.region_id)
-        : (o.rayon_id ?? undefined);
-    if (!rayonId) continue;
-    counts.set(rayonId, (counts.get(rayonId) ?? 0) + 1);
+        ? regDistrict.get(o.region_id)
+        : (o.district_id ?? undefined);
+    if (!districtId) continue;
+    counts.set(districtId, (counts.get(districtId) ?? 0) + 1);
   }
 
-  return master.rayons
-    .map((r) => ({ rayonId: r.id, rayonName: r.name, count: counts.get(r.id) ?? 0 }))
+  return master.districts
+    .map((r) => ({ districtId: r.id, districtName: r.name, count: counts.get(r.id) ?? 0 }))
     .filter((r) => r.count > 0)
     .sort((a, b) => b.count - a.count);
 }
 
 /**
- * Per-rayon × per-day coverage for the week view. Every rayon in the master is
+ * Per-district × per-day coverage for the week view. Every district in the master is
  * returned (even with no schedule), each day carrying a per-shift, per-role
- * breakdown. Occurrences are mapped to a rayon via their location or region
- * (occurrences carry no rayon id).
+ * breakdown. Occurrences are mapped to a district via their location or region
+ * (occurrences carry no district id).
  */
 export function buildWeekCoverage(
   occurrences: ScheduleOccurrence[],
   master: BoardMasterData,
   dateStrs: string[]
 ): WeekCoverageRow[] {
-  const locRayon = new Map(master.locations.map((l) => [l.id, l.rayon_id]));
-  const regRayon = new Map(master.regions.map((r) => [r.id, r.rayon_id]));
+  const locDistrict = new Map(master.locations.map((l) => [l.id, l.district_id]));
+  const regDistrict = new Map(master.regions.map((r) => [r.id, r.district_id]));
   const shiftName = new Map(master.shifts.map((s) => [s.id, s.name]));
   const dayIndex = new Map(dateStrs.map((d, i) => [d, i]));
 
-  // rayonId → dayIndex → shiftId → breakdown accumulator.
+  // districtId → dayIndex → shiftId → breakdown accumulator.
   const acc = new Map<string, Map<string, WeekShiftBreakdown>[]>(
-    master.rayons.map((r) => [r.id, dateStrs.map(() => new Map<string, WeekShiftBreakdown>())])
+    master.districts.map((r) => [r.id, dateStrs.map(() => new Map<string, WeekShiftBreakdown>())])
   );
 
   for (const o of occurrences) {
-    const rayonId = o.location_id
-      ? locRayon.get(o.location_id)
+    const districtId = o.location_id
+      ? locDistrict.get(o.location_id)
       : o.region_id
-        ? regRayon.get(o.region_id)
-        : (o.rayon_id ?? undefined);
-    if (!rayonId) continue;
+        ? regDistrict.get(o.region_id)
+        : (o.district_id ?? undefined);
+    if (!districtId) continue;
     const di = dayIndex.get(o.schedule_date);
     if (di == null) continue;
-    const dayShifts = acc.get(rayonId)?.[di];
+    const dayShifts = acc.get(districtId)?.[di];
     if (!dayShifts) continue;
 
     const shiftId = o.shift_definition_id ?? 'none';
@@ -583,7 +583,7 @@ export function buildWeekCoverage(
     }
   }
 
-  return master.rayons.map((r) => {
+  return master.districts.map((r) => {
     const perDay = acc.get(r.id) ?? dateStrs.map(() => new Map<string, WeekShiftBreakdown>());
     const cells = perDay.map((m) =>
       Array.from(m.values()).sort((a, b) =>
@@ -592,8 +592,8 @@ export function buildWeekCoverage(
     );
     const counts = cells.map((day) => day.reduce((sum, s) => sum + s.total, 0));
     return {
-      rayonId: r.id,
-      rayonName: r.name,
+      districtId: r.id,
+      districtName: r.name,
       counts,
       cells,
       total: counts.reduce((a, b) => a + b, 0),

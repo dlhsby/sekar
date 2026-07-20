@@ -74,10 +74,10 @@ export function DeleteLocationModal({ area, isOpen, onClose, onSuccess }: Delete
             <span className="font-bold">{t('admin:locations.detailType')}:</span>
             <span>{area?.locationType?.name ?? '—'}</span>
           </div>
-          {area?.rayon && (
+          {area?.district && (
             <div className="flex justify-between">
-              <span className="font-bold">{t('admin:locations.detailRayon')}:</span>
-              <span>{area.rayon.name}</span>
+              <span className="font-bold">{t('admin:locations.detailDistrict')}:</span>
+              <span>{area.district.name}</span>
             </div>
           )}
         </div>

@@ -10,11 +10,11 @@ import { apiClient } from '../client';
 import {
   monitoringKeys,
   useCityStats,
-  useRayonMonitoring,
+  useDistrictMonitoring,
   useAreaMonitoring,
   useLiveUsers,
   type CityStats,
-  type RayonMonitoringStats,
+  type DistrictMonitoringStats,
   type AreaMonitoringStats,
   type LiveUsersResponse,
 } from '../monitoring';
@@ -40,7 +40,7 @@ describe('Monitoring API', () => {
   };
 
   // -------------------------------------------------------------------------
-  // Phase 2D flat mock data (no nested summary/rayon/area/current_shift)
+  // Phase 2D flat mock data (no nested summary/district/area/current_shift)
   // -------------------------------------------------------------------------
 
   const mockCityStats: CityStats = {
@@ -57,8 +57,8 @@ describe('Monitoring API', () => {
     generated_at: '2026-03-05T08:00:00Z',
   };
 
-  const mockRayonStats: RayonMonitoringStats = {
-    id: 'rayon-1',
+  const mockDistrictStats: DistrictMonitoringStats = {
+    id: 'district-1',
     name: 'Rayon Selatan',
     code: 'RS',
     total_areas: 15,
@@ -78,8 +78,8 @@ describe('Monitoring API', () => {
     id: 'area-1',
     name: 'Taman Bungkul',
     area_type: 'taman',
-    rayon_id: 'rayon-1',
-    rayon_name: 'Rayon Selatan',
+    district_id: 'district-1',
+    district_name: 'Rayon Selatan',
     coverage_area: 12500,
     total_users_assigned: 5,
     users_online: 4,
@@ -107,8 +107,8 @@ describe('Monitoring API', () => {
         status: 'active',
         area_id: 'area-1',
         location_name: 'Taman Bungkul',
-        rayon_id: 'rayon-1',
-        rayon_name: 'Rayon Selatan',
+        district_id: 'district-1',
+        district_name: 'Rayon Selatan',
         latitude: -7.289659,
         longitude: 112.739208,
         accuracy: 5,
@@ -143,12 +143,12 @@ describe('Monitoring API', () => {
     it('should generate correct query keys', () => {
       expect(monitoringKeys.all).toEqual(['monitoring']);
       expect(monitoringKeys.city()).toEqual(['monitoring', 'city']);
-      expect(monitoringKeys.rayon('1')).toEqual(['monitoring', 'rayon', '1']);
+      expect(monitoringKeys.district('1')).toEqual(['monitoring', 'district', '1']);
       expect(monitoringKeys.area('1')).toEqual(['monitoring', 'area', '1']);
-      expect(monitoringKeys.liveUsers({ rayon_id: '1' })).toEqual([
+      expect(monitoringKeys.liveUsers({ district_id: '1' })).toEqual([
         'monitoring',
         'live-users',
-        { rayon_id: '1' },
+        { district_id: '1' },
       ]);
     });
   });
@@ -187,20 +187,20 @@ describe('Monitoring API', () => {
   });
 
   // -------------------------------------------------------------------------
-  // useRayonMonitoring
+  // useDistrictMonitoring
   // -------------------------------------------------------------------------
 
-  describe('useRayonMonitoring', () => {
-    it('should fetch rayon monitoring statistics with flat shape', async () => {
-      mockAxios.onGet('/monitoring/rayon/rayon-1').reply(200, mockRayonStats);
+  describe('useDistrictMonitoring', () => {
+    it('should fetch district monitoring statistics with flat shape', async () => {
+      mockAxios.onGet('/monitoring/district/district-1').reply(200, mockDistrictStats);
 
-      const { result } = renderHook(() => useRayonMonitoring('rayon-1'), {
+      const { result } = renderHook(() => useDistrictMonitoring('district-1'), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(result.current.data?.id).toBe('rayon-1');
+      expect(result.current.data?.id).toBe('district-1');
       expect(result.current.data?.name).toBe('Rayon Selatan');
       expect(result.current.data?.code).toBe('RS');
       expect(result.current.data?.total_areas).toBe(15);
@@ -211,7 +211,7 @@ describe('Monitoring API', () => {
     });
 
     it('should not fetch when id is empty', () => {
-      const { result } = renderHook(() => useRayonMonitoring(''), {
+      const { result } = renderHook(() => useDistrictMonitoring(''), {
         wrapper: createWrapper(),
       });
 
@@ -219,9 +219,9 @@ describe('Monitoring API', () => {
     });
 
     it('should handle fetch error', async () => {
-      mockAxios.onGet('/monitoring/rayon/rayon-1').reply(500);
+      mockAxios.onGet('/monitoring/district/district-1').reply(500);
 
-      const { result } = renderHook(() => useRayonMonitoring('rayon-1'), {
+      const { result } = renderHook(() => useDistrictMonitoring('district-1'), {
         wrapper: createWrapper(),
       });
 
@@ -246,8 +246,8 @@ describe('Monitoring API', () => {
       expect(result.current.data?.id).toBe('area-1');
       expect(result.current.data?.name).toBe('Taman Bungkul');
       expect(result.current.data?.area_type).toBe('taman');
-      expect(result.current.data?.rayon_id).toBe('rayon-1');
-      expect(result.current.data?.rayon_name).toBe('Rayon Selatan');
+      expect(result.current.data?.district_id).toBe('district-1');
+      expect(result.current.data?.district_name).toBe('Rayon Selatan');
       expect(result.current.data?.coverage_area).toBe(12500);
       expect(result.current.data?.total_users_assigned).toBe(5);
       expect(result.current.data?.users_online).toBe(4);
@@ -306,7 +306,7 @@ describe('Monitoring API', () => {
       expect(user?.phone).toBe('+6281234567890');
       expect(user?.status).toBe('active');
       expect(user?.location_name).toBe('Taman Bungkul');
-      expect(user?.rayon_name).toBe('Rayon Selatan');
+      expect(user?.district_name).toBe('Rayon Selatan');
       expect(user?.is_within_area).toBe(true);
       expect(user?.outside_boundary).toBe(false);
       expect(user?.shift_name).toBe('Pagi');
@@ -314,7 +314,7 @@ describe('Monitoring API', () => {
       expect(user?.current_task_title).toBe('Penyiraman Tanaman');
     });
 
-    it('should fetch live users with rayon_id filter', async () => {
+    it('should fetch live users with district_id filter', async () => {
       const filteredResponse: LiveUsersResponse = {
         total_active: 3,
         total_offline: 2,
@@ -326,7 +326,7 @@ describe('Monitoring API', () => {
 
       mockAxios.onGet('/monitoring/live-users').reply(200, filteredResponse);
 
-      const { result } = renderHook(() => useLiveUsers({ rayon_id: 'rayon-1' }), {
+      const { result } = renderHook(() => useLiveUsers({ district_id: 'district-1' }), {
         wrapper: createWrapper(),
       });
 

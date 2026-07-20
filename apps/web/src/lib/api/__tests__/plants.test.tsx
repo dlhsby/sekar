@@ -2,7 +2,7 @@
  * Unit Tests: Plants & Pruning read hooks (Phase 3 sub-phase 3-4)
  *
  * Audit H6 (2026-05-23): the `plants` API client was below the 80 % gate.
- * Covers the pure helper + all three hooks (city/rayon/area scopes) + the
+ * Covers the pure helper + all three hooks (city/district/area scopes) + the
  * disabled / empty-response branches.
  */
 
@@ -16,7 +16,7 @@ import {
   summarizePlantStatuses,
   useAreaPlants,
   useNotablePlants,
-  usePruningByRayon,
+  usePruningByDistrict,
   type AreaPlantRow,
   type NotablePlantRow,
   type PruningRequestRow,
@@ -51,7 +51,7 @@ describe('Plants API', () => {
     it('produces stable, scope-specific tuples', () => {
       expect(plantsKeys.areaPlants('a-1')).toEqual(['areaPlants', 'a-1']);
       expect(plantsKeys.notablePlants('a-1')).toEqual(['notablePlants', 'a-1']);
-      expect(plantsKeys.pruningByRayon('r-1')).toEqual(['pruningByRayon', 'r-1']);
+      expect(plantsKeys.pruningByDistrict('r-1')).toEqual(['pruningByDistrict', 'r-1']);
     });
   });
 
@@ -172,7 +172,7 @@ describe('Plants API', () => {
     });
   });
 
-  describe('usePruningByRayon', () => {
+  describe('usePruningByDistrict', () => {
     const sample: PruningRequestRow = {
       id: 'pr-1',
       reference_code: '25PR000001',
@@ -184,21 +184,21 @@ describe('Plants API', () => {
       tree_count: 3,
       requester_name: 'Pak Budi',
       status: 'submitted',
-      rayon_id: 'r-1',
+      district_id: 'r-1',
       created_at: '2026-05-23T08:00:00Z',
     };
 
-    it('is disabled when rayonId is null', () => {
-      const { result } = renderHook(() => usePruningByRayon(null), {
+    it('is disabled when districtId is null', () => {
+      const { result } = renderHook(() => usePruningByDistrict(null), {
         wrapper: createWrapper(),
       });
       expect(result.current.fetchStatus).toBe('idle');
     });
 
-    it('passes default paging (limit=10, page=1) and rayonId', async () => {
+    it('passes default paging (limit=10, page=1) and districtId', async () => {
       mockAxios.onGet('/pruning-requests').reply((config) => {
         expect(config.params).toMatchObject({
-          rayonId: 'r-1',
+          districtId: 'r-1',
           limit: 10,
           page: 1,
         });
@@ -206,7 +206,7 @@ describe('Plants API', () => {
         return [200, { data: [sample] }];
       });
 
-      const { result } = renderHook(() => usePruningByRayon('r-1'), {
+      const { result } = renderHook(() => usePruningByDistrict('r-1'), {
         wrapper: createWrapper(),
       });
 
@@ -217,7 +217,7 @@ describe('Plants API', () => {
     it('forwards custom limit + status filter', async () => {
       mockAxios.onGet('/pruning-requests').reply((config) => {
         expect(config.params).toMatchObject({
-          rayonId: 'r-1',
+          districtId: 'r-1',
           limit: 5,
           page: 1,
           status: 'approved',
@@ -226,7 +226,7 @@ describe('Plants API', () => {
       });
 
       const { result } = renderHook(
-        () => usePruningByRayon('r-1', { limit: 5, status: 'approved' }),
+        () => usePruningByDistrict('r-1', { limit: 5, status: 'approved' }),
         { wrapper: createWrapper() },
       );
 
@@ -236,7 +236,7 @@ describe('Plants API', () => {
     it('accepts a raw array response (legacy mine-style)', async () => {
       mockAxios.onGet('/pruning-requests').reply(200, [sample]);
 
-      const { result } = renderHook(() => usePruningByRayon('r-1'), {
+      const { result } = renderHook(() => usePruningByDistrict('r-1'), {
         wrapper: createWrapper(),
       });
 
@@ -247,7 +247,7 @@ describe('Plants API', () => {
     it('returns [] when the envelope has no data', async () => {
       mockAxios.onGet('/pruning-requests').reply(200, { foo: 'bar' });
 
-      const { result } = renderHook(() => usePruningByRayon('r-1'), {
+      const { result } = renderHook(() => usePruningByDistrict('r-1'), {
         wrapper: createWrapper(),
       });
 

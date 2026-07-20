@@ -19,7 +19,7 @@ import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui';
 
 export interface CapacityWeeklyGridProps {
-  rayonId: string;
+  districtId: string;
   year: number;
   fromWeek: number;
   toWeek: number;
@@ -36,7 +36,7 @@ interface EditedCell {
 }
 
 export function CapacityWeeklyGrid({
-  rayonId,
+  districtId,
   year,
   fromWeek,
   toWeek,
@@ -45,13 +45,13 @@ export function CapacityWeeklyGrid({
   loading,
 }: CapacityWeeklyGridProps) {
   const { t } = useTranslation();
-  const { data: capacities = [] } = useCapacityCalendar(rayonId, {
+  const { data: capacities = [] } = useCapacityCalendar(districtId, {
     year,
     fromWeek,
     toWeek,
   });
 
-  const upsertMutation = useUpsertCapacity(rayonId);
+  const upsertMutation = useUpsertCapacity(districtId);
   const [edited, setEdited] = useState<Map<string, EditedCell>>(new Map());
   const [isSaving, setIsSaving] = useState(false);
 

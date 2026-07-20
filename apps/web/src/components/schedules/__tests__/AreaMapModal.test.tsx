@@ -3,14 +3,14 @@
  * Unit tests: AreaMapModal — the day board's boundary view.
  *
  * The decision this pins is fetch-on-demand. `BoardMasterData` deliberately does
- * NOT carry boundaries: the board holds ~9 rayons, ~130 kawasan and ~800 lokasi,
+ * NOT carry boundaries: the board holds ~9 districts, ~130 kawasan and ~800 lokasi,
  * and threading every polygon through it to serve an occasional button would
  * weigh down every board load. So the load-bearing assertions are about what is
  * fetched and when — not about the map, which is a lazy browser-only component.
  */
 import { render, screen } from '@testing-library/react';
 import { AreaMapModal } from '../AreaMapModal';
-import { useRayon } from '@/lib/api/rayons';
+import { useDistrict } from '@/lib/api/districts';
 import { useRegion } from '@/lib/api/regions';
 import { useLocation } from '@/lib/api/locations';
 
@@ -18,7 +18,7 @@ jest.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
-jest.mock('@/lib/api/rayons', () => ({ useRayon: jest.fn() }));
+jest.mock('@/lib/api/districts', () => ({ useDistrict: jest.fn() }));
 jest.mock('@/lib/api/regions', () => ({ useRegion: jest.fn() }));
 jest.mock('@/lib/api/locations', () => ({ useLocation: jest.fn() }));
 
@@ -47,7 +47,7 @@ const idle = { data: undefined, isLoading: false };
 
 beforeEach(() => {
   mapProps.length = 0;
-  (useRayon as jest.Mock).mockReturnValue(idle);
+  (useDistrict as jest.Mock).mockReturnValue(idle);
   (useRegion as jest.Mock).mockReturnValue(idle);
   (useLocation as jest.Mock).mockReturnValue(idle);
 });
@@ -58,20 +58,20 @@ describe('AreaMapModal — fetches only what was asked for', () => {
 
     // Every hook is called (rules of hooks) but each must be disabled/id-less,
     // so no request goes out for a modal nobody opened.
-    expect(useRayon).toHaveBeenCalledWith('');
+    expect(useDistrict).toHaveBeenCalledWith('');
     expect(useRegion).toHaveBeenCalledWith('', false);
     expect(useLocation).toHaveBeenCalledWith('', expect.objectContaining({ enabled: false }));
   });
 
-  it('fetches the rayon only, when a rayon is asked for', () => {
+  it('fetches the district only, when a district is asked for', () => {
     render(
       <AreaMapModal
-        subject={{ level: 'rayon', id: 'ry1', name: 'Rayon Pusat' }}
+        subject={{ level: 'district', id: 'ry1', name: 'Rayon Pusat' }}
         onOpenChange={jest.fn()}
       />
     );
 
-    expect(useRayon).toHaveBeenCalledWith('ry1');
+    expect(useDistrict).toHaveBeenCalledWith('ry1');
     // The other two tiers stay switched off — one click, one request.
     expect(useRegion).toHaveBeenCalledWith('', true);
     expect(useLocation).toHaveBeenCalledWith('', expect.objectContaining({ enabled: false }));
@@ -86,13 +86,13 @@ describe('AreaMapModal — fetches only what was asked for', () => {
     );
 
     expect(useRegion).toHaveBeenCalledWith('kw1', true);
-    expect(useRayon).toHaveBeenCalledWith('');
+    expect(useDistrict).toHaveBeenCalledWith('');
   });
 });
 
 describe('AreaMapModal — drawing', () => {
   it('passes the entity’s own colours through (ADR-045), not a fixed palette', () => {
-    (useRayon as jest.Mock).mockReturnValue({
+    (useDistrict as jest.Mock).mockReturnValue({
       data: {
         boundary_polygon: BOUNDARY,
         center_lat: -7.25,
@@ -107,14 +107,14 @@ describe('AreaMapModal — drawing', () => {
 
     render(
       <AreaMapModal
-        subject={{ level: 'rayon', id: 'ry1', name: 'Rayon Pusat' }}
+        subject={{ level: 'district', id: 'ry1', name: 'Rayon Pusat' }}
         onOpenChange={jest.fn()}
       />
     );
 
     expect(screen.getByTestId('area-map')).toBeInTheDocument();
     expect(mapProps.at(-1)).toMatchObject({
-      level: 'rayon',
+      level: 'district',
       borderColor: '#123456',
       fillColor: '#654321',
       borderOpacity: 0.5,

@@ -3,7 +3,7 @@
  *
  * `buildDayBoard` (the tree logic) is covered in lib/schedules/__tests__; this
  * covers the COMPONENT: lazy tree expansion, understaffing pills at the subject
- * level the rayon's staffing_level dictates (kawasan vs park), the capacity gear's
+ * level the district's staffing_level dictates (kawasan vs park), the capacity gear's
  * subject, and — critically — that "+ Tugaskan" reports the geography of the
  * container it was clicked in (the pre-fill contract).
  */
@@ -22,21 +22,21 @@ const shift = (id: string, name: string) => ({
 });
 
 /**
- * The rayon's `staffing_level` decides which single tier owns capacity. Build a
+ * The district's `staffing_level` decides which single tier owns capacity. Build a
  * master for a given level — the board must never infer it from tree position.
  */
 const masterAt = (level: StaffingLevel): BoardMasterData => ({
   ...master,
-  rayons: [{ id: 'ry1', name: 'Rayon Pusat', staffing_level: level }],
+  districts: [{ id: 'ry1', name: 'Rayon Pusat', staffing_level: level }],
 });
 
 const master: BoardMasterData = {
   // No staffing_level → falls back to the entity default (`region`).
-  rayons: [{ id: 'ry1', name: 'Rayon Pusat' }],
-  regions: [{ id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry1' }],
+  districts: [{ id: 'ry1', name: 'Rayon Pusat' }],
+  regions: [{ id: 'kw1', name: 'Kawasan Pusat', district_id: 'ry1' }],
   locations: [
-    { id: 'loc1', name: 'Taman Bungkul', rayon_id: 'ry1', region_id: 'kw1' },
-    { id: 'loc2', name: 'Taman Aktif Park', rayon_id: 'ry1', region_id: null },
+    { id: 'loc1', name: 'Taman Bungkul', district_id: 'ry1', region_id: 'kw1' },
+    { id: 'loc2', name: 'Taman Aktif Park', district_id: 'ry1', region_id: null },
   ],
   shifts: [shift('s1', 'Shift 1')],
 };
@@ -81,11 +81,11 @@ describe('DayBoard', () => {
     expect(screen.getByText(/belum ada jadwal/i)).toBeInTheDocument();
   });
 
-  it('renders rayons collapsed and only reveals children once expanded', async () => {
+  it('renders districts collapsed and only reveals children once expanded', async () => {
     const user = userEvent.setup();
     renderBoard({ occurrences: [occ({ location_id: 'loc1' })] });
 
-    // Collapsed: the rayon header is there, its kawasan is not.
+    // Collapsed: the district header is there, its kawasan is not.
     expect(screen.getByText('Rayon Pusat')).toBeInTheDocument();
     expect(screen.queryByText('Kawasan Pusat')).not.toBeInTheDocument();
 
@@ -107,7 +107,7 @@ describe('DayBoard', () => {
     await expand(user, /Rayon Pusat/);
 
     // 1 of 3 → understaffed pill on the kawasan row.
-    // The kawasan owns the target; the rayon rolls the same 3 up, so both pills
+    // The kawasan owns the target; the district rolls the same 3 up, so both pills
     // read 1/3 — assert on the count rather than a single match.
     expect(screen.getAllByText(/S1·1\/3/)).toHaveLength(2);
   });
@@ -121,13 +121,13 @@ describe('DayBoard', () => {
     });
     await expand(user, /Rayon Pusat/);
 
-    // Lokasi owns it; the rayon rolls it up → two pills with the same numbers.
+    // Lokasi owns it; the district rolls it up → two pills with the same numbers.
     expect(screen.getAllByText(/S1·1\/2/)).toHaveLength(2);
   });
 
-  it('ignores a lokasi target when the rayon is kawasan-scoped', async () => {
+  it('ignores a lokasi target when the district is kawasan-scoped', async () => {
     // A stale loc-level row can exist (the API used to accept any level); it must
-    // not surface once the rayon says the kawasan owns capacity.
+    // not surface once the district says the kawasan owns capacity.
     const user = userEvent.setup();
     renderBoard({
       master: masterAt('region'),
@@ -143,7 +143,7 @@ describe('DayBoard', () => {
     const user = userEvent.setup();
     renderBoard({
       occurrences: [occ({ location_id: 'loc1' })],
-      // A loc target exists, but staffing for grouped rayons lives on the kawasan.
+      // A loc target exists, but staffing for grouped districts lives on the kawasan.
       capacities: new Map([['loc:loc1:s1', 5]]),
     });
     await expand(user, /Rayon Pusat/);
@@ -153,7 +153,7 @@ describe('DayBoard', () => {
     expect(screen.queryByText(/S1·1\/5/)).not.toBeInTheDocument();
   });
 
-  it('offers the capacity gear on exactly one tier — the kawasan — when rayon is kawasan-scoped', async () => {
+  it('offers the capacity gear on exactly one tier — the kawasan — when district is kawasan-scoped', async () => {
     const user = userEvent.setup();
     const onEditCapacity = jest.fn();
     renderBoard({
@@ -174,7 +174,7 @@ describe('DayBoard', () => {
     });
   });
 
-  it('offers the gear on the lokasi — including one nested under a kawasan — when rayon is lokasi-scoped', async () => {
+  it('offers the gear on the lokasi — including one nested under a kawasan — when district is lokasi-scoped', async () => {
     const user = userEvent.setup();
     const onEditCapacity = jest.fn();
     renderBoard({
@@ -199,33 +199,33 @@ describe('DayBoard', () => {
     });
   });
 
-  it('offers the gear on the rayon itself when rayon-scoped, and nowhere below', async () => {
+  it('offers the gear on the district itself when district-scoped, and nowhere below', async () => {
     const user = userEvent.setup();
     const onEditCapacity = jest.fn();
     renderBoard({
-      master: masterAt('rayon'),
+      master: masterAt('district'),
       occurrences: [occ({ location_id: 'loc1' }), occ({ location_id: 'loc2' })],
       onEditCapacity,
     });
 
-    // Visible before expanding: the gear sits on the rayon header itself.
+    // Visible before expanding: the gear sits on the district header itself.
     const gears = screen.getAllByRole('button', { name: /atur kapasitas/i });
     expect(gears).toHaveLength(1);
 
     await user.click(gears[0]);
     expect(onEditCapacity).toHaveBeenCalledWith({
-      type: 'rayon',
+      type: 'district',
       id: 'ry1',
       name: 'Rayon Pusat',
     });
 
-    // Nothing below the rayon offers one.
+    // Nothing below the district offers one.
     await expand(user, /Rayon Pusat/);
     await expand(user, /Kawasan Pusat/);
     expect(screen.getAllByRole('button', { name: /atur kapasitas/i })).toHaveLength(1);
   });
 
-  it('never offers capacity on the city node (a sentinel, not a rayon)', async () => {
+  it('never offers capacity on the city node (a sentinel, not a district)', async () => {
     renderBoard({
       occurrences: [occ({})], // no geography → city-wide
       onEditCapacity: jest.fn(),
@@ -253,7 +253,7 @@ describe('DayBoard', () => {
 
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({
-        rayon_id: 'ry1',
+        district_id: 'ry1',
         region_id: 'kw1',
         location_id: 'loc1',
         shiftId: 's1',
@@ -280,16 +280,16 @@ describe('DayBoard', () => {
     await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
 
     expect(onAssign).toHaveBeenCalledWith(
-      expect.objectContaining({ rayon_id: 'ry1', region_id: 'kw1', shiftId: 's1' })
+      expect.objectContaining({ district_id: 'ry1', region_id: 'kw1', shiftId: 's1' })
     );
     expect(onAssign.mock.calls[0][0]).not.toHaveProperty('location_id');
   });
 
-  it('offers an assign table on the rayon itself when rayon-scoped, even when empty', async () => {
+  it('offers an assign table on the district itself when district-scoped, even when empty', async () => {
     const user = userEvent.setup();
     const onAssign = jest.fn();
     renderBoard({
-      master: masterAt('rayon'),
+      master: masterAt('district'),
       occurrences: [],
       canAssign: true,
       onAssign,
@@ -300,7 +300,7 @@ describe('DayBoard', () => {
     await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
 
     expect(onAssign).toHaveBeenCalledWith(
-      expect.objectContaining({ rayon_id: 'ry1', shiftId: 's1' })
+      expect.objectContaining({ district_id: 'ry1', shiftId: 's1' })
     );
     expect(onAssign.mock.calls[0][0]).not.toHaveProperty('region_id');
   });
@@ -337,8 +337,8 @@ describe('DayBoard', () => {
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({ city: true, shiftId: 's1' })
     );
-    // The city node carries no rayon geography.
-    expect(onAssign.mock.calls[0][0].rayon_id).toBeUndefined();
+    // The city node carries no district geography.
+    expect(onAssign.mock.calls[0][0].district_id).toBeUndefined();
     expect(CITY_NODE_ID).toBe('__city__');
   });
 
@@ -354,7 +354,7 @@ describe('DayBoard', () => {
 });
 
 
-describe('subject pills (rayon / kawasan)', () => {
+describe('subject pills (district / kawasan)', () => {
   /**
    * Regression: these pills are built from a SYNTHETIC per-shift group that has
    * no `byRole` — an `as BoardShiftGroup` cast hid that from tsc, and reading
@@ -373,7 +373,7 @@ describe('subject pills (rayon / kawasan)', () => {
     });
     await expand(user, /Rayon Pusat/);
 
-    // Both the kawasan (owner) and the rayon (roll-up) render it.
+    // Both the kawasan (owner) and the district (roll-up) render it.
     expect(screen.getAllByText(/S1·1\/3/)).toHaveLength(2);
   });
 
@@ -392,9 +392,9 @@ describe('subject pills (rayon / kawasan)', () => {
     expect(screen.getByTitle(/Satgas 1\/3/)).toBeInTheDocument();
   });
 
-  it('renders a rayon pill with a per-role hint without crashing', async () => {
+  it('renders a district pill with a per-role hint without crashing', async () => {
     renderBoard({
-      master: masterAt('rayon'),
+      master: masterAt('district'),
       occurrences: [occ({ location_id: 'loc1' })],
       capacities: new Map([['ray:ry1:s1', 2]]),
       roleCapacities: new Map([['ray:ry1:s1:satgas', 2]]),
@@ -410,20 +410,20 @@ describe('subject pills (rayon / kawasan)', () => {
 describe('roll-up pills on a parent tier', () => {
   /**
    * A parent carries no target of its own, but an operator must be able to scan
-   * rayons and see which needs staffing without expanding all 11 kawasan. So a
+   * districts and see which needs staffing without expanding all 11 kawasan. So a
    * parent sums the targets of whichever tier owns them below it — rendered
    * dashed, since it is summed from below and has no gear.
    */
   const twoKawasan: BoardMasterData = {
     ...master,
-    rayons: [{ id: 'ry1', name: 'Rayon Pusat', staffing_level: 'region' }],
+    districts: [{ id: 'ry1', name: 'Rayon Pusat', staffing_level: 'region' }],
     regions: [
-      { id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry1' },
-      { id: 'kw2', name: 'Kawasan Dua', rayon_id: 'ry1' },
+      { id: 'kw1', name: 'Kawasan Pusat', district_id: 'ry1' },
+      { id: 'kw2', name: 'Kawasan Dua', district_id: 'ry1' },
     ],
   };
 
-  it('sums the kawasan targets onto the rayon header', () => {
+  it('sums the kawasan targets onto the district header', () => {
     renderBoard({
       master: twoKawasan,
       occurrences: [],
@@ -450,7 +450,7 @@ describe('roll-up pills on a parent tier', () => {
 
   it('does not mark an OWNED target as rolled up', () => {
     renderBoard({
-      master: masterAt('rayon'),
+      master: masterAt('district'),
       occurrences: [],
       capacities: new Map([['ray:ry1:s1', 4]]),
     });
@@ -465,11 +465,11 @@ describe('roll-up pills on a parent tier', () => {
       capacities: new Map([['reg:kw1:s1', 10]]),
     });
 
-    // The rayon roll-up counts the whole subtree, so staffing anywhere shows here.
+    // The district roll-up counts the whole subtree, so staffing anywhere shows here.
     expect(screen.getByText(/S1·1\/10/)).toBeInTheDocument();
   });
 
-  it('shows no rayon pill when nothing below defines a target', () => {
+  it('shows no district pill when nothing below defines a target', () => {
     renderBoard({ master: twoKawasan, occurrences: [], capacities: new Map() });
 
     expect(screen.queryByText(/S1·\d+\//)).not.toBeInTheDocument();
@@ -482,7 +482,7 @@ describe('hierarchy depth', () => {
    * Depth follows the tree, and every container reads the same way: its own
    * "Penempatan" block sits at the container's level, its children step in by
    * one. So a lokasi under a kawasan lands deeper than one hanging straight off
-   * the rayon — which is exactly what they are. This is also the hierarchy's
+   * the district — which is exactly what they are. This is also the hierarchy's
    * only non-colour channel: the border hues (primary/info/warning) alone fail
    * WCAG 2.1 AA.
    */
@@ -491,16 +491,16 @@ describe('hierarchy depth', () => {
   const kawasanCard = (name: RegExp) =>
     screen.getByText(name).closest('div[class*="border-l-nb-info"]') as HTMLElement;
 
-  it('steps the kawasan in from the rayon’s own Penempatan block', async () => {
+  it('steps the kawasan in from the district’s own Penempatan block', async () => {
     const user = userEvent.setup();
     renderBoard({ occurrences: [] });
     await expand(user, /Rayon Pusat/);
 
-    // PENEMPATAN RAYON is rayon-level (depth 0); its kawasan are children.
+    // PENEMPATAN RAYON is district-level (depth 0); its kawasan are children.
     expect(kawasanCard(/Kawasan Pusat/).className).toContain('ml-4');
   });
 
-  it('steps a lokasi hanging off the rayon past the kawasan level', async () => {
+  it('steps a lokasi hanging off the district past the kawasan level', async () => {
     const user = userEvent.setup();
     renderBoard({ occurrences: [] });
     await expand(user, /Rayon Pusat/);
@@ -530,7 +530,7 @@ describe('group rail', () => {
    * connectors fight NB's 2px/hard-shadow language and would sit right beside
    * each card's existing 6px accent border, two strokes doing one job.
    */
-  it('rails the rayon’s children in the rayon’s accent', async () => {
+  it('rails the district’s children in the district’s accent', async () => {
     const user = userEvent.setup();
     const { container } = renderBoard({ occurrences: [] });
     await expand(user, /Rayon Pusat/);
@@ -549,7 +549,7 @@ describe('group rail', () => {
 
   it('draws no rail when a container has no children to group', async () => {
     const user = userEvent.setup();
-    // A rayon with only city-wide placement has neither kawasan nor lokasi.
+    // A district with only city-wide placement has neither kawasan nor lokasi.
     const { container } = renderBoard({
       master: { ...master, regions: [], locations: [] },
       occurrences: [],
@@ -562,29 +562,29 @@ describe('group rail', () => {
 
 // ---------------------------------------------------------------------------
 // Search integration — the reported bug: filtering narrowed the OCCURRENCES
-// server-side but the tree's skeleton came from `master`, so every rayon stayed
+// server-side but the tree's skeleton came from `master`, so every district stayed
 // on screen at "0 petugas" and nothing opened. (The prune/expand rules
 // themselves are unit-tested in lib/schedules/__tests__.)
 // ---------------------------------------------------------------------------
 
 describe('DayBoard — search', () => {
-  const twoRayon: BoardMasterData = {
+  const twoDistrict: BoardMasterData = {
     ...master,
-    rayons: [
+    districts: [
       { id: 'ry1', name: 'Rayon Pusat' },
       { id: 'ry2', name: 'Rayon Barat' },
     ],
   };
 
-  it('renders every rayon when nothing is filtered', () => {
-    renderBoard({ master: twoRayon });
+  it('renders every district when nothing is filtered', () => {
+    renderBoard({ master: twoDistrict });
 
     expect(screen.getByRole('button', { name: /Rayon Pusat/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Rayon Barat/ })).toBeInTheDocument();
   });
 
-  it('drops rayons that cannot hold the searched lokasi', () => {
-    renderBoard({ master: twoRayon, filters: { locationId: 'loc1' } });
+  it('drops districts that cannot hold the searched lokasi', () => {
+    renderBoard({ master: twoDistrict, filters: { locationId: 'loc1' } });
 
     expect(screen.getByRole('button', { name: /Rayon Pusat/ })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Rayon Barat/ })).not.toBeInTheDocument();
@@ -592,7 +592,7 @@ describe('DayBoard — search', () => {
 
   it('opens the path to the searched lokasi instead of leaving it collapsed', () => {
     // The old board made you open Rayon ▸ Kawasan ▸ Lokasi by hand to find it.
-    renderBoard({ master: twoRayon, filters: { locationId: 'loc1' } });
+    renderBoard({ master: twoDistrict, filters: { locationId: 'loc1' } });
 
     expect(screen.getByRole('button', { expanded: true, name: /Rayon Pusat/ })).toBeInTheDocument();
     expect(
@@ -605,7 +605,7 @@ describe('DayBoard — search', () => {
     // Searching a kawasan is a request to focus on it — unfurling every lokasi
     // under it (even ones with a roster) buries the thing that was asked for.
     renderBoard({
-      master: twoRayon,
+      master: twoDistrict,
       occurrences: [occ({ location_id: 'loc1' })],
       filters: { regionId: 'kw1' },
     });
@@ -618,7 +618,7 @@ describe('DayBoard — search', () => {
 
   it('opens all the way to a searched worker, wherever they are', () => {
     renderBoard({
-      master: twoRayon,
+      master: twoDistrict,
       occurrences: [occ({ location_id: 'loc1' })],
       filters: { userId: 'u' },
     });
@@ -630,7 +630,7 @@ describe('DayBoard — search', () => {
   it('shows an explicit not-found state, not the empty-day message, when nothing matches', async () => {
     const onClearFilters = jest.fn();
     const user = userEvent.setup();
-    renderBoard({ master: twoRayon, filters: { userId: 'ghost' }, onClearFilters });
+    renderBoard({ master: twoDistrict, filters: { userId: 'ghost' }, onClearFilters });
 
     expect(screen.getByText(/tidak ada jadwal yang cocok/i)).toBeInTheDocument();
     expect(screen.queryByText(/belum ada jadwal untuk hari ini/i)).not.toBeInTheDocument();
@@ -642,7 +642,7 @@ describe('DayBoard — search', () => {
   it('shows the matched lokasi rather than "no schedule today" when it is simply empty', () => {
     // An empty geography match is an answer ("nobody is here"), so emptyDay
     // would be a lie — and this is exactly where an operator wants to assign.
-    renderBoard({ master: twoRayon, filters: { locationId: 'loc1' } });
+    renderBoard({ master: twoDistrict, filters: { locationId: 'loc1' } });
 
     expect(screen.queryByText(/belum ada jadwal untuk hari ini/i)).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Taman Bungkul/ })).toBeInTheDocument();
@@ -652,7 +652,7 @@ describe('DayBoard — search', () => {
     const { rerender } = render(
       <DayBoard
         occurrences={[]}
-        master={twoRayon}
+        master={twoDistrict}
         onOccurrenceClick={jest.fn()}
         filters={{ locationId: 'loc1' }}
       />
@@ -662,7 +662,7 @@ describe('DayBoard — search', () => {
     rerender(
       <DayBoard
         occurrences={[]}
-        master={twoRayon}
+        master={twoDistrict}
         onOccurrenceClick={jest.fn()}
         filters={{ locationId: 'loc2' }}
       />
@@ -707,11 +707,11 @@ describe('DayBoard — Surabaya node', () => {
 // The map button opens a boundary view per container. Surabaya is excluded: it
 // is a city-wide sentinel with no geography of its own.
 describe('DayBoard — map button', () => {
-  it('offers a map on the rayon, but never on Surabaya', () => {
+  it('offers a map on the district, but never on Surabaya', () => {
     renderBoard({ onShowMap: jest.fn() });
 
     const mapButtons = screen.getAllByRole('button', { name: /lihat peta/i });
-    // One rayon in the fixture master → exactly one button, and the Surabaya
+    // One district in the fixture master → exactly one button, and the Surabaya
     // header (which is tree[0]) contributes none.
     expect(mapButtons).toHaveLength(1);
   });
@@ -723,7 +723,7 @@ describe('DayBoard — map button', () => {
 
     await user.click(screen.getByRole('button', { name: /lihat peta/i }));
 
-    expect(onShowMap).toHaveBeenCalledWith({ level: 'rayon', id: 'ry1', name: 'Rayon Pusat' });
+    expect(onShowMap).toHaveBeenCalledWith({ level: 'district', id: 'ry1', name: 'Rayon Pusat' });
   });
 
   it('offers a map on a kawasan and a lokasi once opened', async () => {
@@ -735,7 +735,7 @@ describe('DayBoard — map button', () => {
     await expand(user, /Kawasan Pusat/);
 
     const buttons = screen.getAllByRole('button', { name: /lihat peta/i });
-    // rayon + kawasan + its lokasi + the loose lokasi.
+    // district + kawasan + its lokasi + the loose lokasi.
     expect(buttons.length).toBeGreaterThan(1);
 
     await user.click(buttons[1]);

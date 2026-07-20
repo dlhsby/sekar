@@ -2,7 +2,7 @@
   "pageTitle": {
     "dashboard": "Dashboard", "monitoring": "Monitoring", "tasks": "Tugas", "tasksNew": "Tugas Baru",
     "activities": "Aktivitas", "overtime": "Lembur", "schedules": "Jadwal", "users": "Pengguna",
-    "locations": "Lokasi", "rayons": "Rayon", "plants": "Tanaman", "seeds": "Bibit", "assets": "Aset",
+    "locations": "Lokasi", "districts": "Rayon", "plants": "Tanaman", "seeds": "Bibit", "assets": "Aset",
     "assetsNew": "Aset Baru", "assetsQr": "Generator QR", "assetsMaintenance": "Perawatan Aset",
     "reports": "Laporan", "reportsBuilder": "Buat Laporan", "reportsSchedules": "Jadwal Laporan",
     "reportsReporting": "Laporan", "database": "Data Base",

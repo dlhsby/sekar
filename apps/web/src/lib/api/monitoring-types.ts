@@ -12,11 +12,11 @@ import type { UserRole } from '@/types/models';
 export type TrackingStatus = 'active' | 'offline' | 'absent';
 
 // ---------------------------------------------------------------------------
-// City / Rayon / Area Stats (Phase 2C - unchanged)
+// City / District / Area Stats (Phase 2C - unchanged)
 // ---------------------------------------------------------------------------
 
 export interface CityStats {
-  total_rayons: number;
+  total_districts: number;
   total_areas: number;
   total_workers: number;
   workers_online: number;
@@ -29,7 +29,7 @@ export interface CityStats {
   generated_at: string;
 }
 
-export interface RayonMonitoringStats {
+export interface DistrictMonitoringStats {
   id: string;
   name: string;
   total_areas: number;
@@ -49,8 +49,8 @@ export interface AreaMonitoringStats {
   id: string;
   name: string;
   area_type: string;
-  rayon_id: string;
-  rayon_name: string;
+  district_id: string;
+  district_name: string;
   coverage_area: number | null;
   total_users_assigned: number;
   users_online: number;
@@ -76,8 +76,8 @@ export interface LiveUser {
   status: TrackingStatus;
   location_id: string | null;
   location_name: string;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   latitude: number;
   longitude: number;
   accuracy: number | null;
@@ -97,7 +97,7 @@ export interface AbsentUser {
   user_id: string;
   full_name: string;
   role: string;
-  rayon_id: string | null;
+  district_id: string | null;
   shift_definition_id: string | null;
   shift_name: string | null;
 }
@@ -120,7 +120,7 @@ export interface LiveUsersResponse {
 }
 
 export interface LiveUsersFilters {
-  rayon_id?: string;
+  district_id?: string;
   location_id?: string;
   role?: string;
   status?: TrackingStatus;
@@ -140,8 +140,8 @@ export interface UserDaySummary {
   status: TrackingStatus;
   location_id: string | null;
   location_name: string | null;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   shift: {
     id: string;
     name: string;
@@ -223,7 +223,7 @@ export interface StaffingRoleBreakdown {
 export interface StaffingSummaryItem {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'district' | 'area';
   roles: StaffingRoleBreakdown[];
   total_active: number;
   total_offline: number;
@@ -238,7 +238,7 @@ export interface StaffingSummaryResponse {
 }
 
 export interface StaffingFilters {
-  rayon_id?: string;
+  district_id?: string;
   location_id?: string;
 }
 
@@ -267,7 +267,7 @@ export interface UserStatusChangedEvent {
   role: string;
   location_id: string | null;
   location_name: string | null;
-  rayon_id: string | null;
+  district_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
   latitude: number | null;
@@ -281,7 +281,7 @@ export interface UserAreaEvent {
   role: string;
   location_id: string;
   location_name: string;
-  rayon_id: string | null;
+  district_id: string | null;
   latitude: number;
   longitude: number;
   timestamp: string;
@@ -308,14 +308,14 @@ export interface AreaBoundary {
   fill_opacity?: number | null;
   center_lat: number;
   center_lng: number;
-  rayon_id: string | null;
-  rayon_name: string;
+  district_id: string | null;
+  district_name: string;
   assigned_count: number;
   is_understaffed: boolean;
   staffing_summary: RoleStaffingItem[];
 }
 
-/** Kawasan (region) outline within a rayon — drawn tinted at rayon zoom. */
+/** Kawasan (region) outline within a district — drawn tinted at district zoom. */
 export interface RegionBoundary {
   id: string;
   name: string;
@@ -328,7 +328,7 @@ export interface RegionBoundary {
   center_lng: number | null;
 }
 
-export interface RayonBoundary {
+export interface DistrictBoundary {
   id: string;
   name: string;
   /** Per-entity styling (ADR-045) — border + fill drawn separately on the map. */
@@ -347,7 +347,7 @@ export interface RayonBoundary {
 }
 
 export interface BoundariesResponse {
-  rayons: RayonBoundary[];
+  districts: DistrictBoundary[];
   generated_at: string;
 }
 

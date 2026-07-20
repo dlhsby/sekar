@@ -52,14 +52,14 @@ export default function DashboardPage() {
   const notifications = useNotifications();
   const plantSummary = usePlantStatusSummary();
 
-  // Rayons that currently have overdue plant maintenance (Phase 3-8 widget)
-  const overdueRayons = useMemo(
-    () => (plantSummary.data?.rayons ?? []).filter((r) => r.overdue > 0),
+  // Districts that currently have overdue plant maintenance (Phase 3-8 widget)
+  const overdueDistricts = useMemo(
+    () => (plantSummary.data?.districts ?? []).filter((r) => r.overdue > 0),
     [plantSummary.data]
   );
   const totalOverduePlants = useMemo(
-    () => overdueRayons.reduce((sum, r) => sum + r.overdue, 0),
-    [overdueRayons]
+    () => overdueDistricts.reduce((sum, r) => sum + r.overdue, 0),
+    [overdueDistricts]
   );
 
   const counts = useMemo(() => {
@@ -94,8 +94,8 @@ export default function DashboardPage() {
     [counts]
   );
 
-  // Per-rayon hadir/scheduled, from the aggregate's rayon nodes.
-  const perRayon = useMemo(
+  // Per-district hadir/scheduled, from the aggregate's district nodes.
+  const perDistrict = useMemo(
     () =>
       (aggregate.data?.nodes ?? []).map((n) => ({
         name: n.name,
@@ -160,7 +160,7 @@ export default function DashboardPage() {
               ? t('home:statusMeta', {
                   hadir: counts.hadir,
                   scheduled: counts.scheduled,
-                  rayons: perRayon.length,
+                  districts: perDistrict.length,
                 })
               : undefined
           }
@@ -228,13 +228,13 @@ export default function DashboardPage() {
                 </ul>
               </div>
 
-              {perRayon.length > 0 && (
+              {perDistrict.length > 0 && (
                 <>
                   <p className="mt-5 mb-2 font-mono text-[10px] font-bold uppercase tracking-wide text-nb-gray-600">
-                    {t('home:statusSection.perRayon')}
+                    {t('home:statusSection.perDistrict')}
                   </p>
                   <div className="space-y-1.5">
-                    {perRayon.map((r) => {
+                    {perDistrict.map((r) => {
                       const ratio = r.scheduled ? r.hadir / r.scheduled : 0;
                       const barColor =
                         ratio >= 0.75
@@ -295,23 +295,23 @@ export default function DashboardPage() {
           >
             {plantSummary.isLoading ? (
               <p className="text-nb-body-sm text-nb-gray-500">{t('common:actions.loading')}</p>
-            ) : overdueRayons.length === 0 ? (
+            ) : overdueDistricts.length === 0 ? (
               <p className="text-nb-body-sm text-nb-gray-600">
                 {t('home:plants.allOnSchedule')} 🌿
               </p>
             ) : (
               <div className="space-y-2">
                 <p className="text-nb-body-sm text-nb-gray-700">
-                  {t('home:plants.overdueCount', { count: totalOverduePlants, rayons: overdueRayons.length })}
+                  {t('home:plants.overdueCount', { count: totalOverduePlants, districts: overdueDistricts.length })}
                 </p>
                 <ul className="space-y-1.5">
-                  {overdueRayons.map((r) => (
+                  {overdueDistricts.map((r) => (
                     <li
-                      key={r.rayon_id ?? 'none'}
+                      key={r.district_id ?? 'none'}
                       className="flex items-center justify-between gap-2 text-nb-body-sm"
                     >
                       <span className="min-w-0 truncate text-nb-gray-700">
-                        {r.rayon_name ?? t('home:plants.noRayon')}
+                        {r.district_name ?? t('home:plants.noDistrict')}
                         {r.overdue_areas[0] && (
                           <span className="text-nb-gray-500"> · {r.overdue_areas[0].location_name}</span>
                         )}

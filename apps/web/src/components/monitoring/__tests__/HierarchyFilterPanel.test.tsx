@@ -20,8 +20,8 @@ import {
 // Mock cascading data hooks
 // ---------------------------------------------------------------------------
 
-jest.mock('@/lib/api/rayons', () => ({
-  useRayons: jest.fn(() => ({
+jest.mock('@/lib/api/districts', () => ({
+  useDistricts: jest.fn(() => ({
     data: [
       { id: 'r1', name: 'Rayon Utara', code: 'RU' },
       { id: 'r2', name: 'Rayon Selatan', code: 'RS' },
@@ -33,8 +33,8 @@ jest.mock('@/lib/api/locations', () => ({
   useLocations: jest.fn(() => ({
     data: {
       data: [
-        { id: 'a1', name: 'Area Bungkul', rayon_id: 'r1' },
-        { id: 'a2', name: 'Area Wonokromo', rayon_id: 'r1' },
+        { id: 'a1', name: 'Area Bungkul', district_id: 'r1' },
+        { id: 'a2', name: 'Area Wonokromo', district_id: 'r1' },
       ],
     },
   })),
@@ -86,7 +86,7 @@ describe('HierarchyFilterPanel', () => {
     expect(screen.queryByRole('button', { name: /reset/i })).not.toBeInTheDocument();
   });
 
-  it('switches to Rayon scope and shows rayon dropdown on Rayon click', async () => {
+  it('switches to Rayon scope and shows district dropdown on Rayon click', async () => {
     const user = userEvent.setup();
     render(<Wrapper />);
     await user.click(screen.getByRole('button', { name: /^Rayon$/i }));
@@ -98,7 +98,7 @@ describe('HierarchyFilterPanel', () => {
     expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
-  it('shows Reset button when scope is rayon', async () => {
+  it('shows Reset button when scope is district', async () => {
     const user = userEvent.setup();
     render(<Wrapper />);
     await user.click(screen.getByRole('button', { name: /^Rayon$/i }));
@@ -119,7 +119,7 @@ describe('HierarchyFilterPanel', () => {
     );
   });
 
-  it('shows two dropdowns (rayon + area) in Area scope', async () => {
+  it('shows two dropdowns (district + area) in Area scope', async () => {
     const user = userEvent.setup();
     render(<Wrapper />);
     await user.click(screen.getByRole('button', { name: /^Area$/i }));
@@ -127,8 +127,8 @@ describe('HierarchyFilterPanel', () => {
     expect(selects.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('renders with a pre-set rayon scope correctly', () => {
-    render(<Wrapper initial={{ scope: 'rayon', rayonId: 'r1' }} />);
+  it('renders with a pre-set district scope correctly', () => {
+    render(<Wrapper initial={{ scope: 'district', districtId: 'r1' }} />);
     expect(screen.getByRole('button', { name: /^Rayon$/i })).toHaveAttribute(
       'aria-pressed',
       'true'

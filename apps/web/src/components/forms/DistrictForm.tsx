@@ -2,7 +2,7 @@
 
 /**
  * Rayon Form Component
- * Reusable form for creating and editing rayons
+ * Reusable form for creating and editing districts
  */
 
 import { useState, useMemo } from 'react';
@@ -16,10 +16,10 @@ import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
 import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
-import { checkRayonName } from '@/lib/api/rayons';
+import { checkDistrictName } from '@/lib/api/districts';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
-import type { Rayon, MapStyleFieldsDto, StaffingLevel } from '@/types/models';
-import type { CreateRayonDto, UpdateRayonDto } from '@/lib/api/rayons';
+import type { District, MapStyleFieldsDto, StaffingLevel } from '@/types/models';
+import type { CreateDistrictDto, UpdateDistrictDto } from '@/lib/api/districts';
 
 const STYLE_KEYS: (keyof MapStyleFieldsDto)[] = [
   'border_color',
@@ -36,7 +36,7 @@ const toNullableNumber = (v: unknown): number | null => {
   return Number.isNaN(n) ? null : n;
 };
 
-type RayonFormData = MapStyleFieldsDto & {
+type DistrictFormData = MapStyleFieldsDto & {
   name: string;
   description?: string | null;
   // '' = not-yet-chosen (no preselection on create); refined to a StaffingLevel on submit.
@@ -46,30 +46,30 @@ type RayonFormData = MapStyleFieldsDto & {
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
 };
 
-const STAFFING_LEVELS: StaffingLevel[] = ['rayon', 'region', 'location'];
+const STAFFING_LEVELS: StaffingLevel[] = ['district', 'region', 'location'];
 
-export interface RayonFormProps {
+export interface DistrictFormProps {
   /** Matches the `<form id>` so the modal's DialogFooter submit button (outside
    *  this form in the DOM) still submits it via the HTML `form` attribute. */
   formId: string;
-  initialData?: Rayon;
-  onSubmit: (data: CreateRayonDto | UpdateRayonDto) => Promise<void>;
+  initialData?: District;
+  onSubmit: (data: CreateDistrictDto | UpdateDistrictDto) => Promise<void>;
   mode: 'create' | 'edit';
   /** Read-only "Detail" mode — fields disabled, map read-only, no submit. */
   readOnly?: boolean;
 }
 
-export function RayonForm({
+export function DistrictForm({
   formId,
   initialData,
   onSubmit,
   mode,
   readOnly = false,
-}: RayonFormProps) {
+}: DistrictFormProps) {
   const { t } = useTranslation();
 
   // Localized validation schema
-  const rayonSchema = useMemo(
+  const districtSchema = useMemo(
     () =>
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
@@ -117,8 +117,8 @@ export function RayonForm({
     watch,
     reset,
     formState: { errors },
-  } = useForm<RayonFormData>({
-    resolver: zodResolver(rayonSchema),
+  } = useForm<DistrictFormData>({
+    resolver: zodResolver(districtSchema),
     defaultValues: {
       name: initialData?.name || '',
       description: initialData?.description || '',
@@ -142,7 +142,7 @@ export function RayonForm({
   const nameValue = watch('name');
   const nameStatus = useAvailabilityCheck({
     value: nameValue,
-    check: (v) => checkRayonName(v, initialData?.id),
+    check: (v) => checkDistrictName(v, initialData?.id),
     minLength: 2,
     isUnchanged: (v) => mode === 'edit' && v === initialData?.name,
   });
@@ -181,8 +181,8 @@ export function RayonForm({
     setEditorKey((k) => k + 1);
   };
 
-  const onSubmitForm = async (data: RayonFormData) => {
-    const submitData: UpdateRayonDto = {
+  const onSubmitForm = async (data: DistrictFormData) => {
+    const submitData: UpdateDistrictDto = {
       name: data.name,
       staffing_level: data.staffing_level as StaffingLevel,
       description: data.description || null,
@@ -203,12 +203,12 @@ export function RayonForm({
     <form id={formId} onSubmit={handleSubmit(onSubmitForm)} onReset={handleReset} className="space-y-6">
       {/* Basic Information */}
       <div className="space-y-4">
-        <h3 className="font-bold text-lg">{t('admin:rayons.form.basicInfoTitle')}</h3>
+        <h3 className="font-bold text-lg">{t('admin:districts.form.basicInfoTitle')}</h3>
 
         <div className="space-y-1">
           <FormInput
-            label={t('admin:rayons.form.name')}
-            placeholder={t('admin:rayons.form.namePlaceholder')}
+            label={t('admin:districts.form.name')}
+            placeholder={t('admin:districts.form.namePlaceholder')}
             error={errors.name?.message}
             required
             disabled={readOnly}
@@ -217,16 +217,16 @@ export function RayonForm({
           <AvailabilityHint
             status={nameStatus}
             labels={{
-              available: t('admin:rayons.form.nameAvailable'),
-              taken: t('admin:rayons.form.nameTaken'),
+              available: t('admin:districts.form.nameAvailable'),
+              taken: t('admin:districts.form.nameTaken'),
             }}
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-bold leading-none">{t('admin:rayons.form.description')}</label>
+          <label className="text-sm font-bold leading-none">{t('admin:districts.form.description')}</label>
           <Textarea
-            placeholder={t('admin:rayons.form.descriptionPlaceholder')}
+            placeholder={t('admin:districts.form.descriptionPlaceholder')}
             rows={3}
             error={errors.description?.message}
             disabled={readOnly}
@@ -235,9 +235,9 @@ export function RayonForm({
         </div>
 
         <FormSelect
-          label={t('admin:rayons.form.staffingLevel')}
-          helperText={t('admin:rayons.form.staffingLevelHelp')}
-          placeholder={t('admin:rayons.form.staffingLevelPlaceholder')}
+          label={t('admin:districts.form.staffingLevel')}
+          helperText={t('admin:districts.form.staffingLevelHelp')}
+          placeholder={t('admin:districts.form.staffingLevelPlaceholder')}
           required
           value={watch('staffing_level')}
           onChange={(v) =>
@@ -246,9 +246,9 @@ export function RayonForm({
           disabled={readOnly}
           error={errors.staffing_level?.message}
           options={[
-            { value: 'rayon', label: t('admin:rayons.form.staffingLevelRayon') },
-            { value: 'region', label: t('admin:rayons.form.staffingLevelRegion') },
-            { value: 'location', label: t('admin:rayons.form.staffingLevelLocation') },
+            { value: 'district', label: t('admin:districts.form.staffingLevelDistrict') },
+            { value: 'region', label: t('admin:districts.form.staffingLevelRegion') },
+            { value: 'location', label: t('admin:districts.form.staffingLevelLocation') },
           ]}
         />
       </div>
@@ -257,7 +257,7 @@ export function RayonForm({
         value={style}
         onChange={(patch) =>
           Object.entries(patch).forEach(([k, v]) =>
-            setValue(k as keyof RayonFormData, v as never, { shouldValidate: false }),
+            setValue(k as keyof DistrictFormData, v as never, { shouldValidate: false }),
           )
         }
         disabled={readOnly}
@@ -266,12 +266,12 @@ export function RayonForm({
       {/* Boundary + center pin on a single Google map */}
       <div className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-bold text-lg">{t('admin:rayons.form.boundaryTitle')}</h3>
+          <h3 className="font-bold text-lg">{t('admin:districts.form.boundaryTitle')}</h3>
           {!readOnly && <ImportBoundaryButton onImport={handleImportBoundary} />}
         </div>
         {!readOnly && (
           <p className="text-nb-body-sm text-nb-gray-500">
-            {t('admin:rayons.form.boundaryDescription')}
+            {t('admin:districts.form.boundaryDescription')}
           </p>
         )}
 
@@ -309,7 +309,7 @@ export function RayonForm({
           manualFallback={
             <div className="rounded-nb-base border-2 border-nb-black bg-nb-gray-100 p-3">
               <p className="text-nb-body-sm text-nb-gray-700">
-                {t('admin:rayons.form.mapUnavailable')}
+                {t('admin:districts.form.mapUnavailable')}
               </p>
             </div>
           }
@@ -318,9 +318,9 @@ export function RayonForm({
         {/* Manual entry / fine-tuning — stays in sync with the pin. Optional. */}
         <div className="space-y-4">
           <FormInput
-            label={t('admin:rayons.form.latitude')}
+            label={t('admin:districts.form.latitude')}
             type="number"
-            placeholder={t('admin:rayons.form.latitudePlaceholder')}
+            placeholder={t('admin:districts.form.latitudePlaceholder')}
             step="any"
             error={errors.center_lat?.message}
             disabled={readOnly}
@@ -328,9 +328,9 @@ export function RayonForm({
           />
 
           <FormInput
-            label={t('admin:rayons.form.longitude')}
+            label={t('admin:districts.form.longitude')}
             type="number"
-            placeholder={t('admin:rayons.form.longitudePlaceholder')}
+            placeholder={t('admin:districts.form.longitudePlaceholder')}
             step="any"
             error={errors.center_lng?.message}
             disabled={readOnly}

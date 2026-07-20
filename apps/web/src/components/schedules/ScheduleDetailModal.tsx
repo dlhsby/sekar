@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
 
 interface ScheduleDetailModalProps {
@@ -49,9 +49,9 @@ export function ScheduleDetailModal({
   localeCode,
 }: ScheduleDetailModalProps) {
   const { t } = useTranslation(['schedules', 'roles', 'status', 'common']);
-  // Resolves an existing schedule's rayon id -> name, so it must still find a
-  // deactivated rayon or the name silently blanks.
-  const { data: rayons = [] } = useRayons(true);
+  // Resolves an existing schedule's district id -> name, so it must still find a
+  // deactivated district or the name silently blanks.
+  const { data: districts = [] } = useDistricts(true);
   if (!occurrence) return null;
 
   const isTeam = occurrence.team_category != null;
@@ -67,15 +67,15 @@ export function ScheduleDetailModal({
     ? `${shift.name} · ${shift.start_time.slice(0, 5)}–${shift.end_time.slice(0, 5)}`
     : '—';
 
-  const rayonName = occurrence.rayon_id
-    ? (rayons.find((r) => r.id === occurrence.rayon_id)?.name ?? '')
+  const districtName = occurrence.district_id
+    ? (districts.find((r) => r.id === occurrence.district_id)?.name ?? '')
     : '';
   const placement = occurrence.location
     ? `${t('schedules:filters.locationLabel')} · ${occurrence.location.name}`
     : occurrence.region
       ? `${t('schedules:filters.regionLabel')} · ${occurrence.region.name}`
-      : occurrence.rayon_id
-        ? `${t('schedules:filters.rayonLabel')} · ${rayonName}`
+      : occurrence.district_id
+        ? `${t('schedules:filters.districtLabel')} · ${districtName}`
         : '—';
 
   const recurrence = (() => {

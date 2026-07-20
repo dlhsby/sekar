@@ -52,10 +52,10 @@ describe('Locations API', () => {
     it('should generate correct query keys', () => {
       expect(locationKeys.all).toEqual(['locations']);
       expect(locationKeys.lists()).toEqual(['locations', 'list']);
-      expect(locationKeys.list({ rayon_id: 'rayon-1' })).toEqual([
+      expect(locationKeys.list({ district_id: 'district-1' })).toEqual([
         'locations',
         'list',
-        { rayon_id: 'rayon-1' },
+        { district_id: 'district-1' },
       ]);
       expect(locationKeys.details()).toEqual(['locations', 'detail']);
       expect(locationKeys.detail('1')).toEqual(['locations', 'detail', '1']);
@@ -71,7 +71,7 @@ describe('Locations API', () => {
           code: 'TB',
           location_type_id: 'type-1',
           locationType: mockAreaType,
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
           boundary_polygon: {
             type: 'Polygon',
             coordinates: [
@@ -123,10 +123,10 @@ describe('Locations API', () => {
       expect(result.current.data?.data[0].name).toBe('Taman Bungkul');
     });
 
-    it('should fetch areas with rayon_id filter', async () => {
-      mockAxios.onGet('/locations?rayon_id=rayon-1').reply(200, mockResponse);
+    it('should fetch areas with district_id filter', async () => {
+      mockAxios.onGet('/locations?district_id=district-1').reply(200, mockResponse);
 
-      const { result } = renderHook(() => useLocations({ rayon_id: 'rayon-1' }), {
+      const { result } = renderHook(() => useLocations({ district_id: 'district-1' }), {
         wrapper: createWrapper(),
       });
 
@@ -165,7 +165,7 @@ describe('Locations API', () => {
 
     it('returns every area from a full-array response without a limit (no cap)', async () => {
       // Backend returns a plain array (all areas) when page/limit are omitted.
-      const barat2Area = { ...mockResponse.data[0], id: '2', name: 'Taman Barat 2', rayon_id: 'rayon-b2' };
+      const barat2Area = { ...mockResponse.data[0], id: '2', name: 'Taman Barat 2', district_id: 'district-b2' };
       mockAxios.onGet('/locations?').reply(200, [mockResponse.data[0], barat2Area]);
 
       const { result } = renderHook(() => useLocations({ limit: 1000 }), { wrapper: createWrapper() });
@@ -185,7 +185,7 @@ describe('Locations API', () => {
         meta: { total: 2, page: 1, limit: 1, totalPages: 2 },
       };
       const pageTwo: PaginatedResponse<Location> = {
-        data: [{ ...mockResponse.data[0], id: '2', name: 'Barat 2 Area', rayon_id: 'rayon-b2' }],
+        data: [{ ...mockResponse.data[0], id: '2', name: 'Barat 2 Area', district_id: 'district-b2' }],
         meta: { total: 2, page: 2, limit: 1, totalPages: 2 },
       };
       mockAxios.onGet('/locations?').reply(200, pageOne); // no-page probe → paginated
@@ -221,7 +221,7 @@ describe('Locations API', () => {
       code: 'TB',
       location_type_id: 'type-1',
       locationType: mockAreaType,
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       boundary_polygon: {
         type: 'Polygon',
         coordinates: [
@@ -280,7 +280,7 @@ describe('Locations API', () => {
       const newArea: CreateLocationDto = {
         name: 'New Park',
         location_type_id: 'type-1',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         gps_lat: -7.2885,
         gps_lng: 112.7395,
         boundary_polygon: {
@@ -343,7 +343,7 @@ describe('Locations API', () => {
       const newArea: CreateLocationDto = {
         name: 'New Park',
         location_type_id: 'type-1',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         gps_lat: -7.2885,
         gps_lng: 112.7395,
         boundary_polygon: {
@@ -387,7 +387,7 @@ describe('Locations API', () => {
         code: 'TB',
         location_type_id: 'type-1',
         locationType: mockAreaType,
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         boundary_polygon: {
           type: 'Polygon',
           coordinates: [

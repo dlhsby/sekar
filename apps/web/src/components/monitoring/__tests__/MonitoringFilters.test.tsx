@@ -1,6 +1,6 @@
 /**
  * Unit tests: MonitoringFilters cascade gating — Kawasan + Lokasi comboboxes stay
- * disabled until a rayon is chosen, Kawasan stays disabled for a rayon with no
+ * disabled until a district is chosen, Kawasan stays disabled for a district with no
  * kawasan (e.g. Taman Aktif), and an in-flight fetch reads "loading" not "no
  * kawasan". The controls are type-to-search comboboxes (trigger = a button that
  * shows the placeholder until something is picked).
@@ -21,7 +21,7 @@ jest.mock('@/lib/constants/roles', () => ({ roleLabel: (r: string) => r }));
 const baseFilters: MonitoringFilterState = {
   search: '',
   statuses: new Set(),
-  rayonId: 'all',
+  districtId: 'all',
   regionId: 'all',
   locationId: 'all',
   jenis: 'individu',
@@ -33,7 +33,7 @@ const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
   const props: MonitoringFiltersProps = {
     filters: baseFilters,
     onChange: jest.fn(),
-    rayonOptions: [{ id: 'r1', name: 'Rayon 1' }],
+    districtOptions: [{ id: 'r1', name: 'Rayon 1' }],
     regionOptions: [],
     locationOptions: [],
     roleOptions: [],
@@ -51,18 +51,18 @@ const renderFilters = (over: Partial<MonitoringFiltersProps>) => {
 const trigger = (c: HTMLElement, id: string) => c.querySelector<HTMLButtonElement>(`#${id}`)!;
 
 describe('MonitoringFilters cascade', () => {
-  it('disables Kawasan + Lokasi until a rayon is picked', () => {
-    const { container } = renderFilters({}); // rayonId = 'all'
+  it('disables Kawasan + Lokasi until a district is picked', () => {
+    const { container } = renderFilters({}); // districtId = 'all'
     expect(trigger(container, 'mon-region').disabled).toBe(true);
     expect(trigger(container, 'mon-location').disabled).toBe(true);
     expect(trigger(container, 'mon-region').textContent).toContain(
-      'monitoring:filters.pickRayonFirst'
+      'monitoring:filters.pickDistrictFirst'
     );
   });
 
-  it('enables both once a rayon with kawasan is selected', () => {
+  it('enables both once a district with kawasan is selected', () => {
     const { container } = renderFilters({
-      filters: { ...baseFilters, rayonId: 'r1' },
+      filters: { ...baseFilters, districtId: 'r1' },
       regionOptions: [{ id: 'k1', name: 'Kawasan 1' }],
       locationOptions: [{ id: 'l1', name: 'Lokasi 1' }],
     });
@@ -70,10 +70,10 @@ describe('MonitoringFilters cascade', () => {
     expect(trigger(container, 'mon-location').disabled).toBe(false);
   });
 
-  it('keeps Kawasan disabled for a rayon with no kawasan (Taman Aktif) but enables Lokasi', () => {
+  it('keeps Kawasan disabled for a district with no kawasan (Taman Aktif) but enables Lokasi', () => {
     const { container } = renderFilters({
-      filters: { ...baseFilters, rayonId: 'r1' },
-      regionOptions: [], // no kawasan in this rayon
+      filters: { ...baseFilters, districtId: 'r1' },
+      regionOptions: [], // no kawasan in this district
       locationOptions: [{ id: 'l1', name: 'Lokasi Langsung' }],
     });
     expect(trigger(container, 'mon-region').disabled).toBe(true);
@@ -83,7 +83,7 @@ describe('MonitoringFilters cascade', () => {
 
   it('shows a loading placeholder (not "no kawasan") while the hierarchy resolves', () => {
     const { container } = renderFilters({
-      filters: { ...baseFilters, rayonId: 'r1' },
+      filters: { ...baseFilters, districtId: 'r1' },
       regionOptions: [], // empty because still fetching, not because there are none
       regionLoading: true,
     });
@@ -107,7 +107,7 @@ describe('MonitoringFilters cascade', () => {
       <MonitoringFilters
         filters={{ ...baseFilters, jenis: 'team' }}
         onChange={jest.fn()}
-        rayonOptions={[{ id: 'r1', name: 'Rayon 1' }]}
+        districtOptions={[{ id: 'r1', name: 'Rayon 1' }]}
         regionOptions={[]}
         locationOptions={[]}
         roleOptions={['satgas' as never]}

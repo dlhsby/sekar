@@ -25,7 +25,7 @@ describe('Tasks API', () => {
     description: 'Remove trash and maintain plants',
     status: 'pending',
     priority: 'high',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     area_id: 'area-1',
     created_by: 'user-1',
     created_at: '2026-02-04T00:00:00Z',
@@ -102,7 +102,7 @@ describe('Tasks API', () => {
         title: 'New Task',
         description: 'Description',
         priority: 'medium' as const,
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         area_id: 'area-1',
       };
 
@@ -127,7 +127,7 @@ describe('Tasks API', () => {
         message: 'Validation failed',
         errors: {
           title: 'Title is required',
-          rayon_id: 'Rayon ID is required',
+          district_id: 'Rayon ID is required',
         },
       });
 

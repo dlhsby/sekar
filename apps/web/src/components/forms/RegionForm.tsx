@@ -9,7 +9,7 @@ import { FormInput, FormCombobox, Textarea } from '@/components/ui';
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { isBoundaryGeometry } from '@/lib/utils/geo';
 import type { Region, CreateRegionDto, UpdateRegionDto, MapStyle } from '@/lib/api/regions';
 
@@ -29,7 +29,7 @@ const STYLE_KEYS: (keyof MapStyle)[] = [
 
 type RegionFormData = MapStyle & {
   name: string;
-  rayon_id: string;
+  district_id: string;
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
@@ -52,13 +52,13 @@ export function RegionForm({
   readOnly = false,
 }: RegionFormProps) {
   const { t } = useTranslation();
-  const { data: rayons = [] } = useRayons();
+  const { data: districts = [] } = useDistricts();
 
   const schema = useMemo(
     () =>
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
-        rayon_id: z.string().uuid(t('validation:rayonRequired')),
+        district_id: z.string().uuid(t('validation:districtRequired')),
         description: z.string().optional().nullable(),
         center_lat: z.number().min(-90).max(90).nullable().optional(),
         center_lng: z.number().min(-180).max(180).nullable().optional(),
@@ -81,7 +81,7 @@ export function RegionForm({
     resolver: zodResolver(schema),
     defaultValues: {
       name: initialData?.name ?? '',
-      rayon_id: initialData?.rayon_id ?? '',
+      district_id: initialData?.district_id ?? '',
       description: initialData?.description ?? '',
       center_lat: initialData?.center_lat != null ? Number(initialData.center_lat) : undefined,
       center_lng: initialData?.center_lng != null ? Number(initialData.center_lng) : undefined,
@@ -118,7 +118,7 @@ export function RegionForm({
   const submit = async (data: RegionFormData) => {
     const payload: UpdateRegionDto = {
       name: data.name,
-      rayon_id: data.rayon_id,
+      district_id: data.district_id,
       description: data.description || null,
       center_lat: data.center_lat ?? null,
       center_lng: data.center_lng ?? null,
@@ -144,12 +144,12 @@ export function RegionForm({
           {...register('name')}
         />
         <FormCombobox
-          label={t('admin:regions.form.rayon')}
-          options={rayons.map((r) => ({ value: r.id, label: r.name }))}
-          value={watch('rayon_id') || ''}
-          onChange={(v) => setValue('rayon_id', v, { shouldValidate: true })}
-          placeholder={t('admin:regions.form.rayonPlaceholder')}
-          error={errors.rayon_id?.message}
+          label={t('admin:regions.form.district')}
+          options={districts.map((r) => ({ value: r.id, label: r.name }))}
+          value={watch('district_id') || ''}
+          onChange={(v) => setValue('district_id', v, { shouldValidate: true })}
+          placeholder={t('admin:regions.form.districtPlaceholder')}
+          error={errors.district_id?.message}
           required
           clearable={false}
           disabled={readOnly}

@@ -19,8 +19,8 @@ export interface WorkerPatch {
   lng?: number;
   location_id?: string | null;
   location_name?: string | null;
-  rayon_id?: string | null;
-  rayon_name?: string | null;
+  district_id?: string | null;
+  district_name?: string | null;
   is_within_area?: boolean;
   battery_level?: number | null;
   last_update?: string;
@@ -76,8 +76,8 @@ function mergeDefined(worker: SnapshotWorker, patch: WorkerPatch): SnapshotWorke
   if (patch.lng !== undefined) next.lng = patch.lng;
   if (patch.location_id !== undefined) next.location_id = patch.location_id;
   if (patch.location_name !== undefined) next.location_name = patch.location_name;
-  if (patch.rayon_id !== undefined) next.rayon_id = patch.rayon_id;
-  if (patch.rayon_name !== undefined) next.rayon_name = patch.rayon_name;
+  if (patch.district_id !== undefined) next.district_id = patch.district_id;
+  if (patch.district_name !== undefined) next.district_name = patch.district_name;
   if (patch.is_within_area !== undefined) next.is_within_area = patch.is_within_area;
   if (patch.battery_level !== undefined) next.battery_level = patch.battery_level;
   if (patch.last_update !== undefined) next.last_update = patch.last_update;
@@ -109,8 +109,8 @@ export function applyWorkerPatch(
       status: patch.status,
       location_id: patch.location_id ?? null,
       location_name: patch.location_name ?? null,
-      rayon_id: patch.rayon_id ?? null,
-      rayon_name: patch.rayon_name ?? null,
+      district_id: patch.district_id ?? null,
+      district_name: patch.district_name ?? null,
       last_update: patch.last_update ?? new Date(0).toISOString(),
       is_within_area: patch.is_within_area ?? true,
       battery_level: patch.battery_level ?? null,

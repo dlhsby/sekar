@@ -29,7 +29,7 @@ export interface SeedTransactionRow {
   unitPrice?: number | null;
   supplier?: string | null;
   receiptUrl?: string | null;
-  toRayonId?: string | null;
+  toDistrictId?: string | null;
   toAreaId?: string | null;
   recipientName?: string | null;
   occurredAt: string;          // YYYY-MM-DD
@@ -191,7 +191,7 @@ export function useRecordTransaction() {
       unitPrice,
       supplier,
       receiptUrl,
-      toRayonId,
+      toDistrictId,
       toAreaId,
       recipientName,
       occurredAt,
@@ -203,7 +203,7 @@ export function useRecordTransaction() {
       unitPrice?: number;
       supplier?: string;
       receiptUrl?: string;
-      toRayonId?: string;
+      toDistrictId?: string;
       toAreaId?: string;
       recipientName?: string;
       occurredAt: string;
@@ -215,7 +215,7 @@ export function useRecordTransaction() {
         unitPrice,
         supplier,
         receiptUrl,
-        toRayonId,
+        toDistrictId,
         toAreaId,
         recipientName,
         occurredAt,

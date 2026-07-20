@@ -1,15 +1,15 @@
 /**
- * Unit tests: RayonForm — boundary polygon (optional) + center pin on the
+ * Unit tests: DistrictForm — boundary polygon (optional) + center pin on the
  * unified Google Maps editor (mocked). Submit/Cancel live in the modal's
  * DialogFooter (outside this form), so tests submit via a sibling button
- * wired to the same `formId`, matching how RayonFormModal renders it.
+ * wired to the same `formId`, matching how DistrictFormModal renders it.
  */
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { RayonForm } from '../RayonForm';
+import { DistrictForm } from '../DistrictForm';
 
-jest.mock('@/lib/api/rayons', () => ({
-  checkRayonName: jest.fn().mockResolvedValue(true),
+jest.mock('@/lib/api/districts', () => ({
+  checkDistrictName: jest.fn().mockResolvedValue(true),
 }));
 
 jest.mock('@/lib/hooks/useAvailabilityCheck', () => ({
@@ -55,9 +55,9 @@ jest.mock('@/components/maps/GoogleBoundaryEditor', () => ({
   ),
 }));
 
-const FORM_ID = 'rayon-form-test';
+const FORM_ID = 'district-form-test';
 
-/** Mirrors RayonFormModal: a submit button outside the form, wired via `form`. */
+/** Mirrors DistrictFormModal: a submit button outside the form, wired via `form`. */
 function ExternalSubmitButton() {
   return (
     <button type="submit" form={FORM_ID}>
@@ -72,11 +72,11 @@ async function selectStaffing(user: ReturnType<typeof userEvent.setup>, label: R
   await user.click(await screen.findByRole('option', { name: label }));
 }
 
-describe('RayonForm', () => {
+describe('DistrictForm', () => {
   it('renders name, map-style colours, description and the boundary editor', () => {
     render(
       <>
-        <RayonForm formId={FORM_ID} mode="create" onSubmit={jest.fn().mockResolvedValue(undefined)} />
+        <DistrictForm formId={FORM_ID} mode="create" onSubmit={jest.fn().mockResolvedValue(undefined)} />
         <ExternalSubmitButton />
       </>
     );
@@ -95,7 +95,7 @@ describe('RayonForm', () => {
     const user = userEvent.setup();
     render(
       <>
-        <RayonForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
+        <DistrictForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
         <ExternalSubmitButton />
       </>
     );
@@ -109,7 +109,7 @@ describe('RayonForm', () => {
     expect(onSubmit.mock.calls[0][0]).toMatchObject({
       name: 'Rayon Baru',
       boundary_polygon: null,
-      staffing_level: 'rayon',
+      staffing_level: 'district',
     });
   });
 
@@ -119,7 +119,7 @@ describe('RayonForm', () => {
     const user = userEvent.setup();
     render(
       <>
-        <RayonForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
+        <DistrictForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
         <ExternalSubmitButton />
       </>
     );
@@ -156,7 +156,7 @@ describe('RayonForm', () => {
     } as never;
     render(
       <>
-        <RayonForm formId={FORM_ID} mode="edit" initialData={initialData} onSubmit={onSubmit} />
+        <DistrictForm formId={FORM_ID} mode="edit" initialData={initialData} onSubmit={onSubmit} />
         <ExternalSubmitButton />
       </>
     );
@@ -179,7 +179,7 @@ describe('RayonForm', () => {
     const initialData = {
       id: 'r1',
       name: 'Rayon Lama',
-      staffing_level: 'rayon',
+      staffing_level: 'district',
       center_lat: -7.28,
       center_lng: 112.74,
       border_opacity: '0.80',
@@ -187,7 +187,7 @@ describe('RayonForm', () => {
     } as never;
     render(
       <>
-        <RayonForm formId={FORM_ID} mode="edit" initialData={initialData} onSubmit={onSubmit} />
+        <DistrictForm formId={FORM_ID} mode="edit" initialData={initialData} onSubmit={onSubmit} />
         <ExternalSubmitButton />
       </>
     );
@@ -205,7 +205,7 @@ describe('RayonForm', () => {
     const user = userEvent.setup();
     render(
       <>
-        <RayonForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
+        <DistrictForm formId={FORM_ID} mode="create" onSubmit={onSubmit} />
         <ExternalSubmitButton />
       </>
     );

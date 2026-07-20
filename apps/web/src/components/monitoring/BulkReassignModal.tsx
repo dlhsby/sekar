@@ -37,19 +37,19 @@ export interface BulkReassignModalProps {
   boundaries?: BoundariesResponse;
 }
 
-/** Derive sibling areas (same rayon) excluding the target area */
+/** Derive sibling areas (same district) excluding the target area */
 function getSiblingAreas(
   boundaries: BoundariesResponse | undefined,
   targetAreaId: string
-): { id: string; name: string; rayonName: string }[] {
+): { id: string; name: string; districtName: string }[] {
   if (!boundaries) return [];
-  const results: { id: string; name: string; rayonName: string }[] = [];
-  for (const rayon of boundaries.rayons) {
-    const hasTarget = rayon.areas.some((a) => a.id === targetAreaId);
+  const results: { id: string; name: string; districtName: string }[] = [];
+  for (const district of boundaries.districts) {
+    const hasTarget = district.areas.some((a) => a.id === targetAreaId);
     if (!hasTarget) continue;
-    for (const area of rayon.areas) {
+    for (const area of district.areas) {
       if (area.id !== targetAreaId) {
-        results.push({ id: area.id, name: area.name, rayonName: rayon.name });
+        results.push({ id: area.id, name: area.name, districtName: district.name });
       }
     }
   }

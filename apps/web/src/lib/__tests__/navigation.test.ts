@@ -58,7 +58,7 @@ describe('Navigation Utilities', () => {
       // + the 'Data Base' embed page. Seeds and assets are archived per request.
       const dataItem = navigationItems.find((item) => item.id === 'data');
       expect(dataItem?.children?.map((c) => c.id)).toEqual([
-        'rayons',
+        'districts',
         'regions',
         'locations',
         'team-categories',
@@ -144,7 +144,7 @@ describe('Navigation Utilities', () => {
 
       const dataItem = filtered.find((item) => item.id === 'data');
       expect(dataItem?.children?.find((child) => child.id === 'locations')).toBeDefined();
-      expect(dataItem?.children?.find((child) => child.id === 'rayons')).toBeDefined();
+      expect(dataItem?.children?.find((child) => child.id === 'districts')).toBeDefined();
       // Users is admin/admin_rayon only — hidden from management.
       expect(dataItem?.children?.find((child) => child.id === 'users')).toBeUndefined();
       // Pengaturan is visible to all monitoring roles (incl. management).

@@ -12,8 +12,8 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useRayon, useRayonStats, useRayonAreas } from '@/lib/api/rayons';
-import RayonStatsCards from '@/components/rayons/RayonStatsCards';
+import { useDistrict, useDistrictStats, useDistrictAreas } from '@/lib/api/districts';
+import DistrictStatsCards from '@/components/districts/DistrictStatsCards';
 import {
   Card,
   CardContent,
@@ -31,12 +31,12 @@ import type { ColumnDef } from '@/components/ui/data-table';
 // redirected every user to a non-existent /dashboard).
 const ALLOWED_ROLES = ['admin_system', 'superadmin', 'management', 'kepala_rayon'];
 
-interface RayonDetailPageProps {
+interface DistrictDetailPageProps {
   // Next 16: route params are a Promise and must be unwrapped with `use()`.
   params: Promise<{ id: string }>;
 }
 
-export default function RayonDetailPage({ params }: RayonDetailPageProps) {
+export default function DistrictDetailPage({ params }: DistrictDetailPageProps) {
   const { t } = useTranslation();
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
@@ -45,9 +45,9 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   const [page, setPage] = useState(1);
   const limit = 10;
 
-  const { data: rayon, isLoading: rayonLoading } = useRayon(id);
-  const { data: stats, isLoading: statsLoading } = useRayonStats(id);
-  const { data: areasData, isLoading: areasLoading } = useRayonAreas(id, {
+  const { data: district, isLoading: districtLoading } = useDistrict(id);
+  const { data: stats, isLoading: statsLoading } = useDistrictStats(id);
+  const { data: areasData, isLoading: areasLoading } = useDistrictAreas(id, {
     search,
     page,
     limit,
@@ -97,10 +97,10 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
     },
     {
       id: 'coverage_area',
-      header: t('admin:rayons.stats.totalCoverageArea'),
+      header: t('admin:districts.stats.totalCoverageArea'),
       enableSorting: false,
       enableColumnFilter: false,
-      meta: { label: t('admin:rayons.stats.totalCoverageArea') },
+      meta: { label: t('admin:districts.stats.totalCoverageArea') },
       cell: ({ row }) => (
         <span className="font-mono text-nb-body-sm">
           {row.original.coverage_area ? formatArea(row.original.coverage_area) : '—'}
@@ -124,12 +124,12 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
   return (
     <div className="space-y-5">
       <PageHeader
-        title={rayonLoading ? t('admin:rayons.loadingTitle') : `Rayon ${rayon?.name ?? ''}`}
-        description={rayon?.description || undefined}
+        title={districtLoading ? t('admin:districts.loadingTitle') : `Rayon ${district?.name ?? ''}`}
+        description={district?.description || undefined}
         actions={
           stats ? (
             <StatusPill tone="neutral">
-              {t('admin:rayons.staffCount', { count: stats.total_users })}
+              {t('admin:districts.staffCount', { count: stats.total_users })}
             </StatusPill>
           ) : undefined
         }
@@ -137,13 +137,13 @@ export default function RayonDetailPage({ params }: RayonDetailPageProps) {
 
       {/* Action buttons */}
       <div className="flex gap-2">
-        <Link href={`/rayons/${id}/capacity`}>
-          <Button variant="secondary">{t('admin:rayons.actionCapacity')}</Button>
+        <Link href={`/districts/${id}/capacity`}>
+          <Button variant="secondary">{t('admin:districts.actionCapacity')}</Button>
         </Link>
       </div>
 
       {/* KPI strip */}
-      <RayonStatsCards stats={stats} loading={statsLoading} />
+      <DistrictStatsCards stats={stats} loading={statsLoading} />
 
       {/* Areas list */}
       <Card>

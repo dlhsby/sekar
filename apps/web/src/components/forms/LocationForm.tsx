@@ -15,7 +15,7 @@ import { FormInput, FormCombobox, Textarea, Card, CardContent } from '@/componen
 import { GoogleBoundaryEditor } from '@/components/maps/GoogleBoundaryEditor';
 import { ImportBoundaryButton } from '@/components/maps/ImportBoundaryButton';
 import { MapStyleFields } from '@/components/forms/MapStyleFields';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocationTypes } from '@/lib/api/location-types';
 import { calculatePolygonCenter, isValidPolygon, isBoundaryGeometry, formatCoordinates } from '@/lib/utils/geo';
@@ -48,7 +48,7 @@ function boundaryCentroid(geom: BoundaryGeometry): LatLng {
 
 type LocationFormData = MapStyleFieldsDto & {
   name: string;
-  rayon_id: string;
+  district_id: string;
   location_type_id: string;
   region_id?: string | null;
   address?: string | null;
@@ -87,7 +87,7 @@ export function LocationForm({
     () =>
       z.object({
         name: z.string().min(2, t('validation:nameMin')),
-        rayon_id: z.string().uuid(t('validation:rayonRequired')),
+        district_id: z.string().uuid(t('validation:districtRequired')),
         // Optional Kawasan (ADR-045) — set via the cascade select; must be in the
         // schema or zodResolver strips it and the assignment silently won't save.
         region_id: z.string().optional().nullable(),
@@ -124,8 +124,8 @@ export function LocationForm({
         : null;
   const [center, setCenter] = useState<LatLng | null>(initialCenter);
 
-  // Fetch rayons and area types
-  const { data: rayonsData, isLoading: loadingRayons } = useRayons();
+  // Fetch districts and area types
+  const { data: districtsData, isLoading: loadingDistricts } = useDistricts();
   const { data: locationTypes, isLoading: loadingAreaTypes } = useLocationTypes();
 
   // Form setup
@@ -140,7 +140,7 @@ export function LocationForm({
     resolver: zodResolver(areaSchema),
     defaultValues: {
       name: initialData?.name || '',
-      rayon_id: initialData?.rayon_id || '',
+      district_id: initialData?.district_id || '',
       location_type_id: initialData?.location_type_id || '',
       region_id: initialData?.region_id || '',
       address: initialData?.address || '',
@@ -155,9 +155,9 @@ export function LocationForm({
     },
   });
 
-  // Regions cascade from the selected rayon (optional; ADR-045).
-  const selectedRayon = watch('rayon_id');
-  const { data: regions = [] } = useRegions(selectedRayon || undefined);
+  // Regions cascade from the selected district (optional; ADR-045).
+  const selectedDistrict = watch('district_id');
+  const { data: regions = [] } = useRegions(selectedDistrict || undefined);
   const style: MapStyleFieldsDto = Object.fromEntries(STYLE_KEYS.map((k) => [k, watch(k)]));
 
   // Seed geometry for the map editor. Bumping `editorKey` remounts the editor so
@@ -211,7 +211,7 @@ export function LocationForm({
 
     const submitData: CreateLocationDto | UpdateLocationDto = {
       name: data.name,
-      rayon_id: data.rayon_id,
+      district_id: data.district_id,
       location_type_id: data.location_type_id,
       region_id: data.region_id || null,
       address: data.address || undefined,
@@ -244,20 +244,20 @@ export function LocationForm({
         />
 
         <FormCombobox
-          label={t('admin:locations.form.rayon')}
-          options={(rayonsData ?? []).map((rayon) => ({ value: rayon.id, label: rayon.name }))}
-          value={watch('rayon_id') || ''}
+          label={t('admin:locations.form.district')}
+          options={(districtsData ?? []).map((district) => ({ value: district.id, label: district.name }))}
+          value={watch('district_id') || ''}
           onChange={(value) => {
-            setValue('rayon_id', value, { shouldValidate: true });
-            // Region belongs to a rayon — clear it when the rayon changes.
+            setValue('district_id', value, { shouldValidate: true });
+            // Region belongs to a district — clear it when the district changes.
             setValue('region_id', '', { shouldValidate: false });
           }}
-          placeholder={loadingRayons ? t('admin:shared.loading') : t('admin:locations.form.rayonPlaceholder')}
-          searchPlaceholder={t('admin:locations.form.rayonSearchPlaceholder')}
-          error={errors.rayon_id?.message}
+          placeholder={loadingDistricts ? t('admin:shared.loading') : t('admin:locations.form.districtPlaceholder')}
+          searchPlaceholder={t('admin:locations.form.districtSearchPlaceholder')}
+          error={errors.district_id?.message}
           required
           clearable={false}
-          disabled={loadingRayons || readOnly}
+          disabled={loadingDistricts || readOnly}
         />
 
         <FormCombobox
@@ -266,7 +266,7 @@ export function LocationForm({
           value={watch('region_id') || ''}
           onChange={(value) => setValue('region_id', value, { shouldValidate: false })}
           placeholder={t('admin:locations.form.regionPlaceholder')}
-          disabled={!selectedRayon || readOnly}
+          disabled={!selectedDistrict || readOnly}
         />
 
         <FormCombobox

@@ -23,7 +23,7 @@ function makeRoster(overrides: Partial<Schedule> = {}): Schedule {
     id: 'sched-1',
     user_id: 'user-1',
     schedule_date: '2026-07-05',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     shift_definition_id: 'shift-1',
     status: 'planned',
     replacement_user_id: null,
@@ -40,8 +40,8 @@ function makeRoster(overrides: Partial<Schedule> = {}): Schedule {
 }
 
 const shifts = [{ id: 'shift-1', name: 'Shift 1', start_time: '06:00', end_time: '14:00' }];
-const allRayons = [{ id: 'rayon-1', name: 'Rayon Pusat' }];
-const allAreas = [{ id: 'area-1', name: 'Taman A', rayon_id: 'rayon-1' }];
+const allDistricts = [{ id: 'district-1', name: 'Rayon Pusat' }];
+const allAreas = [{ id: 'area-1', name: 'Taman A', district_id: 'district-1' }];
 
 describe('EditScheduleModal', () => {
   const baseProps = {
@@ -50,7 +50,7 @@ describe('EditScheduleModal', () => {
     onUpdateShift: jest.fn().mockResolvedValue(undefined),
     onUpdateAreas: jest.fn().mockResolvedValue(undefined),
     shifts,
-    allRayons,
+    allDistricts,
     allAreas,
   };
 
@@ -95,14 +95,14 @@ describe('EditScheduleModal', () => {
         {...baseProps}
         onUpdateAreas={onUpdateAreas}
         roster={makeRoster({ schedule_areas: [] })}
-        allAreas={[...allAreas, { id: 'area-2', name: 'Taman B', rayon_id: 'rayon-1' }]}
+        allAreas={[...allAreas, { id: 'area-2', name: 'Taman B', district_id: 'district-1' }]}
       />
     );
 
     const submit = screen.getByRole('button', { name: /simpan|save/i });
     expect(submit).toBeDisabled();
 
-    // The roster's rayon_id ('rayon-1') is preselected on mount, so its areas
+    // The roster's district_id ('district-1') is preselected on mount, so its areas
     // are already in the cascade — just open the area field and pick one.
     await user.click(screen.getByRole('combobox', { name: /area/i }));
     await user.click(screen.getByRole('option', { name: 'Taman B' }));

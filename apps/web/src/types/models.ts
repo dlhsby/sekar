@@ -30,8 +30,8 @@ export interface User extends Record<string, unknown> {
   role: UserRole;
   phone_number?: string;
   profile_picture_url?: string;
-  rayon_id?: string;
-  rayon?: Rayon;
+  district_id?: string;
+  district?: District;
   region_id?: string;
   location_id?: string;
   location?: Location;
@@ -56,10 +56,10 @@ export interface User extends Record<string, unknown> {
 /**
  * Rayon Interface
  */
-/** The tier a rayon's staffing requirements attach to (region = kawasan). */
-export type StaffingLevel = 'region' | 'location' | 'rayon';
+/** The tier a district's staffing requirements attach to (region = kawasan). */
+export type StaffingLevel = 'region' | 'location' | 'district';
 
-export interface Rayon {
+export interface District {
   id: string;
   name: string;
   description?: string | null;
@@ -88,8 +88,8 @@ export interface Rayon {
 /**
  * Rayon Statistics Interface
  */
-export interface RayonStats {
-  rayon_id: string;
+export interface DistrictStats {
+  district_id: string;
   total_areas: number;
   total_users: number;
   active_users: number;
@@ -119,8 +119,8 @@ export interface CreateUserDto {
   /** Role code — any code from the data-driven roles catalog (ADR-044). */
   role: string;
   phone_number?: string;
-  /** `null` explicitly clears the field (roles without a rayon scope). */
-  rayon_id?: string | null;
+  /** `null` explicitly clears the field (roles without a district scope). */
+  district_id?: string | null;
   /** Region (Kawasan) for region-scoped roles (korlap). `null` clears it. */
   region_id?: string | null;
   /** Permanent location assignments (multi); first becomes the primary location. */
@@ -142,8 +142,8 @@ export interface UpdateUserDto {
   full_name?: string;
   role?: string;
   phone_number?: string;
-  /** `null` explicitly clears the field (roles without a rayon scope). */
-  rayon_id?: string | null;
+  /** `null` explicitly clears the field (roles without a district scope). */
+  district_id?: string | null;
   /** Region (Kawasan) for region-scoped roles (korlap). `null` clears it. */
   region_id?: string | null;
   location_ids?: string[];
@@ -184,8 +184,8 @@ export interface LocationType {
 export interface Location extends Record<string, unknown> {
   id: string;
   name: string;
-  rayon_id: string;
-  rayon?: Rayon;
+  district_id: string;
+  district?: District;
   location_type_id: string;
   locationType?: LocationType;
   gps_lat?: number | string;
@@ -210,7 +210,7 @@ export interface Location extends Record<string, unknown> {
   deleted_by?: string;
 }
 
-/** Per-level map styling fields (ADR-045), shared by area/rayon DTOs. */
+/** Per-level map styling fields (ADR-045), shared by area/district DTOs. */
 export interface MapStyleFieldsDto {
   border_color?: string | null;
   fill_color?: string | null;
@@ -224,7 +224,7 @@ export interface MapStyleFieldsDto {
  */
 export interface LocationFilters {
   search?: string;
-  rayon_id?: string;
+  district_id?: string;
   location_type_id?: string;
   page?: number;
   limit?: number;
@@ -238,7 +238,7 @@ export interface LocationFilters {
  */
 export interface CreateLocationDto extends MapStyleFieldsDto {
   name: string;
-  rayon_id: string;
+  district_id: string;
   location_type_id: string;
   gps_lat?: number;
   gps_lng?: number;
@@ -252,7 +252,7 @@ export interface CreateLocationDto extends MapStyleFieldsDto {
  */
 export interface UpdateLocationDto extends MapStyleFieldsDto {
   name?: string;
-  rayon_id?: string;
+  district_id?: string;
   location_type_id?: string;
   gps_lat?: number;
   gps_lng?: number;
@@ -391,7 +391,7 @@ export interface ActivityFilters {
   area_id?: string;
   user_id?: string;
   status?: ActivityStatus;
-  rayon_id?: string;
+  district_id?: string;
   from_date?: string;
   to_date?: string;
   sort_by?: string;
@@ -471,7 +471,7 @@ export interface Overtime extends Record<string, unknown> {
 export interface OvertimeFilters {
   status?: OvertimeStatus;
   area_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   user_id?: string;
   from_date?: string;
   to_date?: string;

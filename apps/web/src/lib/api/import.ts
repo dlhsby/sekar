@@ -115,7 +115,7 @@ export interface KmzConfirmSelection {
   action: 'create' | 'update' | 'skip';
   name_override?: string;
   location_type_id?: string;
-  rayon_id?: string;
+  district_id?: string;
 }
 
 export interface KmzConfirmResponse {

@@ -3,7 +3,7 @@
 /**
  * MonitoringFilters — filter rail for the monitoring page (mobile parity).
  * 3-status toggle chips with live counts, then a cascading set of type-to-search,
- * lazily-rendered comboboxes: Rayon → Kawasan → Lokasi, plus Peran + Tim, and a
+ * lazily-rendered comboboxes: District → Kawasan → Lokasi, plus Peran + Tim, and a
  * Petugas picker that cascades from everything above. Purely client-side over the
  * snapshot worker list. Controlled by the page.
  */
@@ -28,7 +28,7 @@ const STATUS_ORDER: TrackingStatus[] = ['active', 'offline', 'absent'];
 export interface MonitoringFilterState {
   search: string;
   statuses: Set<TrackingStatus>;
-  rayonId: string; // 'all' or a rayon id
+  districtId: string; // 'all' or a district id
   regionId: string; // 'all' or a kawasan (region) id
   locationId: string; // 'all' or a lokasi (location) id
   jenis: 'individu' | 'team'; // assignment type — decides role vs team sub-filter
@@ -36,21 +36,21 @@ export interface MonitoringFilterState {
   teamId: string; // 'all' or a team id (only used when jenis = team)
 }
 
-export interface RayonOption {
+export interface DistrictOption {
   id: string;
   name: string;
 }
 
 /** A selectable id/name option (kawasan, lokasi, team, worker, …). */
-export type FilterOption = RayonOption;
+export type FilterOption = DistrictOption;
 
 export interface MonitoringFiltersProps {
   filters: MonitoringFilterState;
   onChange: (next: MonitoringFilterState) => void;
-  rayonOptions: RayonOption[];
+  districtOptions: DistrictOption[];
   regionOptions: FilterOption[];
   locationOptions: FilterOption[];
-  /** Kawasan/Lokasi options are fetched on rayon change — show a loading hint
+  /** Kawasan/Lokasi options are fetched on district change — show a loading hint
    *  instead of the "no kawasan" empty state while they resolve. */
   regionLoading?: boolean;
   locationLoading?: boolean;
@@ -89,7 +89,7 @@ function Field({
 export function MonitoringFilters({
   filters,
   onChange,
-  rayonOptions,
+  districtOptions,
   regionOptions,
   locationOptions,
   regionLoading = false,
@@ -106,11 +106,11 @@ export function MonitoringFilters({
   const searchPh = t('common:ui.combobox.searchPlaceholder');
   const noResults = t('common:ui.combobox.noResults');
 
-  // Cascade gating: Kawasan + Lokasi stay disabled until a rayon is chosen.
-  // Kawasan is also disabled for a rayon that has none (e.g. Taman Aktif).
-  const rayonPicked = filters.rayonId !== 'all';
-  const regionDisabled = !rayonPicked || regionLoading || regionOptions.length === 0;
-  const locationDisabled = !rayonPicked || locationLoading || locationOptions.length === 0;
+  // Cascade gating: Kawasan + Lokasi stay disabled until a district is chosen.
+  // Kawasan is also disabled for a district that has none (e.g. Taman Aktif).
+  const districtPicked = filters.districtId !== 'all';
+  const regionDisabled = !districtPicked || regionLoading || regionOptions.length === 0;
+  const locationDisabled = !districtPicked || locationLoading || locationOptions.length === 0;
 
   const toggleStatus = (status: TrackingStatus) => {
     const next = new Set(filters.statuses);
@@ -122,7 +122,7 @@ export function MonitoringFilters({
   const hasActiveFilters =
     filters.search !== '' ||
     filters.statuses.size > 0 ||
-    filters.rayonId !== 'all' ||
+    filters.districtId !== 'all' ||
     filters.regionId !== 'all' ||
     filters.locationId !== 'all' ||
     filters.jenis !== 'individu' ||
@@ -133,7 +133,7 @@ export function MonitoringFilters({
     onChange({
       search: '',
       statuses: new Set(),
-      rayonId: 'all',
+      districtId: 'all',
       regionId: 'all',
       locationId: 'all',
       jenis: 'individu',
@@ -141,15 +141,15 @@ export function MonitoringFilters({
       teamId: 'all',
     });
 
-  const regionPlaceholder = !rayonPicked
-    ? t('monitoring:filters.pickRayonFirst')
+  const regionPlaceholder = !districtPicked
+    ? t('monitoring:filters.pickDistrictFirst')
     : regionLoading
       ? t('common:actions.loading')
       : regionOptions.length === 0
         ? t('monitoring:filters.noKawasan')
         : t('monitoring:filters.kawasanAllOption');
-  const locationPlaceholder = !rayonPicked
-    ? t('monitoring:filters.pickRayonFirst')
+  const locationPlaceholder = !districtPicked
+    ? t('monitoring:filters.pickDistrictFirst')
     : locationLoading
       ? t('common:actions.loading')
       : t('monitoring:filters.lokasiAllOption');
@@ -210,14 +210,14 @@ export function MonitoringFilters({
       </fieldset>
 
       {/* Rayon */}
-      {rayonOptions.length > 0 && (
-        <Field label={t('monitoring:filters.rayonLabel')} htmlFor="mon-rayon">
+      {districtOptions.length > 0 && (
+        <Field label={t('monitoring:filters.districtLabel')} htmlFor="mon-district">
           <Combobox
-            id="mon-rayon"
-            options={toComboOptions(rayonOptions)}
-            value={filters.rayonId === 'all' ? '' : filters.rayonId}
-            onValueChange={(v) => onChange({ ...filters, rayonId: v || 'all', regionId: 'all', locationId: 'all' })}
-            placeholder={t('monitoring:filters.rayonAllOption')}
+            id="mon-district"
+            options={toComboOptions(districtOptions)}
+            value={filters.districtId === 'all' ? '' : filters.districtId}
+            onValueChange={(v) => onChange({ ...filters, districtId: v || 'all', regionId: 'all', locationId: 'all' })}
+            placeholder={t('monitoring:filters.districtAllOption')}
             searchPlaceholder={searchPh}
             emptyText={noResults}
             clearable
@@ -225,9 +225,9 @@ export function MonitoringFilters({
         </Field>
       )}
 
-      {/* Kawasan — cascades from Rayon (disabled until one is picked; a rayon
+      {/* Kawasan — cascades from Rayon (disabled until one is picked; a district
           without kawasan, e.g. Taman Aktif, keeps it disabled with a hint). */}
-      {rayonOptions.length > 0 && (
+      {districtOptions.length > 0 && (
         <Field label={t('monitoring:filters.kawasanLabel')} htmlFor="mon-region">
           <Combobox
             id="mon-region"
@@ -244,7 +244,7 @@ export function MonitoringFilters({
       )}
 
       {/* Lokasi — cascades from Rayon (+ Kawasan when one is picked). */}
-      {rayonOptions.length > 0 && (
+      {districtOptions.length > 0 && (
         <Field label={t('monitoring:filters.lokasiLabel')} htmlFor="mon-location">
           <Combobox
             id="mon-location"

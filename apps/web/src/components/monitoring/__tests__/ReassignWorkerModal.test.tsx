@@ -43,14 +43,14 @@ const mockUseReassignWorker = useReassignWorker as jest.MockedFunction<typeof us
 const AREA_1_ID = 'area-1';
 const AREA_2_ID = 'area-2';
 const AREA_3_ID = 'area-3';
-const RAYON_1_ID = 'rayon-1';
-const RAYON_2_ID = 'rayon-2';
+const DISTRICT_1_ID = 'district-1';
+const DISTRICT_2_ID = 'district-2';
 
 const MOCK_BOUNDARIES: BoundariesResponse = {
   generated_at: new Date().toISOString(),
-  rayons: [
+  districts: [
     {
-      id: RAYON_1_ID,
+      id: DISTRICT_1_ID,
       name: 'Rayon Selatan',
       boundary_polygon: null,
       center_lat: -7.3,
@@ -66,8 +66,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.289659,
           center_lng: 112.739208,
-          rayon_id: RAYON_1_ID,
-          rayon_name: 'Rayon Selatan',
+          district_id: DISTRICT_1_ID,
+          district_name: 'Rayon Selatan',
           assigned_count: 3,
           is_understaffed: false,
           staffing_summary: [],
@@ -78,8 +78,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.299,
           center_lng: 112.749,
-          rayon_id: RAYON_1_ID,
-          rayon_name: 'Rayon Selatan',
+          district_id: DISTRICT_1_ID,
+          district_name: 'Rayon Selatan',
           assigned_count: 2,
           is_understaffed: true,
           staffing_summary: [],
@@ -87,7 +87,7 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
       ],
     },
     {
-      id: RAYON_2_ID,
+      id: DISTRICT_2_ID,
       name: 'Rayon Utara',
       boundary_polygon: null,
       center_lat: -7.1,
@@ -103,8 +103,8 @@ const MOCK_BOUNDARIES: BoundariesResponse = {
           boundary_polygon: null,
           center_lat: -7.2,
           center_lng: 112.74,
-          rayon_id: RAYON_2_ID,
-          rayon_name: 'Rayon Utara',
+          district_id: DISTRICT_2_ID,
+          district_name: 'Rayon Utara',
           assigned_count: 1,
           is_understaffed: false,
           staffing_summary: [],
@@ -122,8 +122,8 @@ const MOCK_WORKER_1: LiveUser = {
   status: 'active',
   location_id: AREA_2_ID,
   location_name: 'Taman Flora',
-  rayon_id: RAYON_1_ID,
-  rayon_name: 'Rayon Selatan',
+  district_id: DISTRICT_1_ID,
+  district_name: 'Rayon Selatan',
   latitude: -7.299,
   longitude: 112.749,
   accuracy: 5,
@@ -264,7 +264,7 @@ describe('ReassignWorkerModal', () => {
   // -------------------------------------------------------------------------
 
   describe('Source area selector', () => {
-    it('should show sibling areas from the same rayon as options', () => {
+    it('should show sibling areas from the same district as options', () => {
       render(<ReassignWorkerModal {...defaultProps} />);
       const select = screen.getByLabelText(/area asal/i);
       // Taman Flora is the sibling area in Rayon Selatan (target is Taman Bungkul)
@@ -276,7 +276,7 @@ describe('ReassignWorkerModal', () => {
       expect(screen.queryByRole('option', { name: /taman bungkul/i })).not.toBeInTheDocument();
     });
 
-    it('should not show areas from a different rayon', () => {
+    it('should not show areas from a different district', () => {
       render(<ReassignWorkerModal {...defaultProps} />);
       expect(screen.queryByRole('option', { name: /taman apsari/i })).not.toBeInTheDocument();
     });
@@ -286,13 +286,13 @@ describe('ReassignWorkerModal', () => {
       expect(screen.getByText(/tidak ada area lain dalam rayon yang sama/i)).toBeInTheDocument();
     });
 
-    it('should show a "no sibling areas" message when target area is the only area in its rayon', () => {
+    it('should show a "no sibling areas" message when target area is the only area in its district', () => {
       const singleAreaBoundaries: BoundariesResponse = {
         generated_at: new Date().toISOString(),
-        rayons: [
+        districts: [
           {
-            ...MOCK_BOUNDARIES.rayons[0],
-            areas: [MOCK_BOUNDARIES.rayons[0].areas[0]], // only target area
+            ...MOCK_BOUNDARIES.districts[0],
+            areas: [MOCK_BOUNDARIES.districts[0].areas[0]], // only target area
           },
         ],
       };

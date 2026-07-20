@@ -1,24 +1,24 @@
 /**
- * RayonCard Component
- * Displays rayon information with statistics in Neo Brutalism style
+ * DistrictCard Component
+ * Displays district information with statistics in Neo Brutalism style
  */
 
 'use client';
 
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
-import { Rayon, RayonStats } from '@/types/models';
+import { District, DistrictStats } from '@/types/models';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui';
 import { formatArea } from '@/lib/utils/geo';
 import { ChevronRight } from 'lucide-react';
 
-interface RayonCardProps {
-  rayon: Rayon;
-  stats?: RayonStats;
+interface DistrictCardProps {
+  district: District;
+  stats?: DistrictStats;
   loading?: boolean;
 }
 
-export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
+export default function DistrictCard({ district, stats, loading }: DistrictCardProps) {
   const { t } = useTranslation();
   if (loading) {
     return (
@@ -38,50 +38,50 @@ export default function RayonCard({ rayon, stats, loading }: RayonCardProps) {
   }
 
   return (
-    <Link href={`/rayons/${rayon.id}`}>
+    <Link href={`/districts/${district.id}`}>
       <Card variant="elevated" interactive className="h-full">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div>
-              <h3 className="text-xl font-bold text-nb-black mb-1">{rayon.name}</h3>
+              <h3 className="text-xl font-bold text-nb-black mb-1">{district.name}</h3>
             </div>
           </div>
         </CardHeader>
 
         <CardContent>
-          {rayon.description && (
-            <p className="text-nb-gray-600 text-sm mb-4 line-clamp-2">{rayon.description}</p>
+          {district.description && (
+            <p className="text-nb-gray-600 text-sm mb-4 line-clamp-2">{district.description}</p>
           )}
 
           {stats && (
             <div className="grid grid-cols-2 gap-3">
               <div className="border-2 border-nb-black p-3 bg-nb-primary/10 rounded-nb-base">
                 <div className="text-2xl font-bold text-nb-primary">{stats.total_areas}</div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalAreas')}</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:districts.stats.totalAreas')}</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-success/10 rounded-nb-base">
                 <div className="text-2xl font-bold text-nb-success">{stats.total_users}</div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalStaff')}</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:districts.stats.totalStaff')}</div>
               </div>
 
               <div className="border-2 border-nb-black p-3 bg-nb-gray-100 rounded-nb-base col-span-2">
                 <div className="text-lg font-bold text-nb-black">
                   {formatArea(stats.total_coverage_area || 0)}
                 </div>
-                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:rayons.stats.totalCoverageArea')}</div>
+                <div className="text-xs font-medium text-nb-gray-600 mt-1">{t('admin:districts.stats.totalCoverageArea')}</div>
               </div>
             </div>
           )}
 
           {!stats && (
-            <div className="text-sm text-nb-gray-500 italic">{t('admin:rayons.card.statsUnavailable')}</div>
+            <div className="text-sm text-nb-gray-500 italic">{t('admin:districts.card.statsUnavailable')}</div>
           )}
         </CardContent>
 
         <CardFooter>
           <div className="flex items-center text-nb-success-dark text-sm font-semibold">
-            {t('admin:rayons.card.viewDetail')}
+            {t('admin:districts.card.viewDetail')}
             <ChevronRight className="w-4 h-4 ml-1" />
           </div>
         </CardFooter>

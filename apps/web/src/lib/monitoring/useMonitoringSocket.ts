@@ -2,7 +2,7 @@
  * useMonitoringSocket — subscribes to the backend Socket.IO `/events` namespace
  * and applies incremental patches to the cached monitoring snapshot, replacing
  * the old full-refresh poll. The server assigns each client to its role room
- * (monitoring:city | rayon:{id} | area:{id}) on connect, so no explicit
+ * (monitoring:city | district:{id} | area:{id}) on connect, so no explicit
  * subscription is needed here.
  *
  * Patches are applied to every cached snapshot query in place via
@@ -32,7 +32,7 @@ interface UserLocationWsEvent {
   role: string;
   location_id: string;
   location_name: string;
-  rayon_id: string | null;
+  district_id: string | null;
   latitude: number;
   longitude: number;
   battery_level: number | null;
@@ -45,7 +45,7 @@ interface UserReassignedWsEvent {
   user_id: string;
   location_id: string;
   location_name: string;
-  rayon_id: string | null;
+  district_id: string | null;
   timestamp: string;
 }
 
@@ -68,7 +68,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
     const token = getCookie('access_token');
     if (!token) return;
 
-    // Patch every cached snapshot query (city/rayon/area) with the given worker patch.
+    // Patch every cached snapshot query (city/district/area) with the given worker patch.
     const patchWorker = (patch: WorkerPatch) => {
       queryClient.setQueriesData<MonitoringSnapshotResponse>(
         { queryKey: snapshotKeys.all },
@@ -113,7 +113,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
         lng: e.longitude,
         location_id: e.location_id,
         location_name: e.location_name,
-        rayon_id: e.rayon_id,
+        district_id: e.district_id,
         is_within_area: e.is_within_area,
         battery_level: e.battery_level,
         last_update: e.timestamp,
@@ -126,7 +126,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
         status: e.new_status,
         location_id: e.location_id,
         location_name: e.location_name,
-        rayon_id: e.rayon_id,
+        district_id: e.district_id,
         lat: e.latitude ?? undefined,
         lng: e.longitude ?? undefined,
         last_update: e.timestamp,
@@ -150,7 +150,7 @@ export function useMonitoringSocket(enabled: boolean): { connected: boolean } {
         user_id: e.user_id,
         location_id: e.location_id,
         location_name: e.location_name,
-        rayon_id: e.rayon_id,
+        district_id: e.district_id,
         last_update: e.timestamp,
       });
     });

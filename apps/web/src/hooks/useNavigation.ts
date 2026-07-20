@@ -48,7 +48,7 @@ function getNavigationKeyForId(id: string): string {
     users: 'access.users',
     data: 'data.title',
     areas: 'data.areas',
-    rayons: 'data.rayons',
+    districts: 'data.districts',
     plants: 'data.plants',
     seeds: 'data.seeds',
     assets: 'data.assets',

@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useUsers } from '@/lib/api/users';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
@@ -14,18 +14,18 @@ import type { ScheduleRangeFilters } from '@/lib/api/schedule-events';
 interface ScheduleFilterChipsProps {
   filters: ScheduleRangeFilters;
   onChange: (next: ScheduleRangeFilters) => void;
-  lockRayon?: boolean;
+  lockDistrict?: boolean;
 }
 
 /** Removable chips for the active filter slice (below the search toolbar). */
-export function ScheduleFilterChips({ filters, onChange, lockRayon }: ScheduleFilterChipsProps) {
+export function ScheduleFilterChips({ filters, onChange, lockDistrict }: ScheduleFilterChipsProps) {
   const { t } = useTranslation(['schedules']);
   const hasAny = Object.values(filters).some(Boolean);
 
   const { data: usersResp } = useUsers({ limit: 1000 });
-  // Resolves an active filter's rayon id -> name; a stale filter may point at a
-  // deactivated rayon, which should still render as a chip.
-  const { data: rayons = [] } = useRayons(true);
+  // Resolves an active filter's district id -> name; a stale filter may point at a
+  // deactivated district, which should still render as a chip.
+  const { data: districts = [] } = useDistricts(true);
   const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: shifts = [] } = useShiftDefinitions();
@@ -34,13 +34,13 @@ export function ScheduleFilterChips({ filters, onChange, lockRayon }: ScheduleFi
   const nameOf = useMemo(
     () => ({
       user: new Map((usersResp?.data ?? []).map((u) => [u.id, u.full_name])),
-      rayon: new Map(rayons.map((r) => [r.id, r.name])),
+      district: new Map(districts.map((r) => [r.id, r.name])),
       region: new Map(regions.map((r) => [r.id, r.name])),
       location: new Map((locationsResp?.data ?? []).map((l) => [l.id, l.name])),
       shift: new Map(shifts.map((s) => [s.id, s.name])),
       category: new Map(teamCategories.map((c) => [c.id, c.name])),
     }),
-    [usersResp, rayons, regions, locationsResp, shifts, teamCategories]
+    [usersResp, districts, regions, locationsResp, shifts, teamCategories]
   );
 
   const chips = useMemo(() => {
@@ -49,8 +49,8 @@ export function ScheduleFilterChips({ filters, onChange, lockRayon }: ScheduleFi
       if (filters[key] && name) c.push({ key, label: `${prefix}: ${name}` });
     };
     add('userId', t('schedules:filters.userLabel'), nameOf.user.get(filters.userId ?? ''));
-    if (!lockRayon)
-      add('rayonId', t('schedules:filters.rayonLabel'), nameOf.rayon.get(filters.rayonId ?? ''));
+    if (!lockDistrict)
+      add('districtId', t('schedules:filters.districtLabel'), nameOf.district.get(filters.districtId ?? ''));
     add('regionId', t('schedules:filters.regionLabel'), nameOf.region.get(filters.regionId ?? ''));
     add(
       'locationId',
@@ -68,7 +68,7 @@ export function ScheduleFilterChips({ filters, onChange, lockRayon }: ScheduleFi
       nameOf.category.get(filters.teamCategoryId ?? '')
     );
     return c;
-  }, [filters, nameOf, lockRayon, t]);
+  }, [filters, nameOf, lockDistrict, t]);
 
   if (!hasAny || chips.length === 0) return null;
 

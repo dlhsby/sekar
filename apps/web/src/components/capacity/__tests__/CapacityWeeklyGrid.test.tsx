@@ -36,7 +36,7 @@ describe('CapacityWeeklyGrid', () => {
   const mockCapacities: capacityApi.CapacityRow[] = [
     {
       id: '1',
-      rayonId: 'rayon-1',
+      districtId: 'district-1',
       year: 2026,
       isoWeek: 24,
       serviceType: 'pruning',
@@ -47,7 +47,7 @@ describe('CapacityWeeklyGrid', () => {
     },
     {
       id: '2',
-      rayonId: 'rayon-1',
+      districtId: 'district-1',
       year: 2026,
       isoWeek: 25,
       serviceType: 'pruning',
@@ -58,7 +58,7 @@ describe('CapacityWeeklyGrid', () => {
     },
     {
       id: '3',
-      rayonId: 'rayon-1',
+      districtId: 'district-1',
       year: 2026,
       isoWeek: 24,
       serviceType: 'maintenance',
@@ -71,7 +71,7 @@ describe('CapacityWeeklyGrid', () => {
 
   const renderComponent = (props: Partial<React.ComponentProps<typeof CapacityWeeklyGrid>> = {}) => {
     const defaultProps: React.ComponentProps<typeof CapacityWeeklyGrid> = {
-      rayonId: 'rayon-1',
+      districtId: 'district-1',
       year: 2026,
       fromWeek: 24,
       toWeek: 25,

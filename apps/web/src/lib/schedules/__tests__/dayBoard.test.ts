@@ -2,13 +2,13 @@
 import {
   buildDayBoard,
   buildWeekCoverage,
-  rayonCountsFor,
+  districtCountsFor,
   pruneDayBoard,
   autoExpandedIds,
   COUNTABLE_ROLES,
   CITY_NODE_ID,
   type BoardMasterData,
-  type BoardRayon,
+  type BoardDistrict,
 } from '../dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 
@@ -20,11 +20,11 @@ const shift = (id: string, name: string): BoardMasterData['shifts'][number] => (
 });
 
 const master: BoardMasterData = {
-  rayons: [{ id: 'ry1', name: 'Rayon Pusat' }],
-  regions: [{ id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry1' }],
+  districts: [{ id: 'ry1', name: 'Rayon Pusat' }],
+  regions: [{ id: 'kw1', name: 'Kawasan Pusat', district_id: 'ry1' }],
   locations: [
-    { id: 'loc1', name: 'Taman Bungkul', rayon_id: 'ry1', region_id: 'kw1' },
-    { id: 'loc2', name: 'Taman Loose', rayon_id: 'ry1', region_id: null },
+    { id: 'loc1', name: 'Taman Bungkul', district_id: 'ry1', region_id: 'kw1' },
+    { id: 'loc2', name: 'Taman Loose', district_id: 'ry1', region_id: null },
   ],
   shifts: [shift('s1', 'Shift 1'), shift('s2', 'Shift 2')],
 };
@@ -46,22 +46,22 @@ const occ = (o: Partial<ScheduleOccurrence>): ScheduleOccurrence =>
 /**
  * The city ("Surabaya") node is always tree[0] — it is a placement-only sentinel
  * that must render even when empty, or a city-wide schedule has nowhere to be
- * assigned from. Rayons follow it.
+ * assigned from. Districts follow it.
  */
-const rayonOf = (tree: BoardRayon[], id = 'ry1') => tree.find((r) => r.id === id)!;
+const districtOf = (tree: BoardDistrict[], id = 'ry1') => tree.find((r) => r.id === id)!;
 
 describe('buildDayBoard', () => {
-  it('nests region locations under rayon and keeps loose locations separate', () => {
+  it('nests region locations under district and keeps loose locations separate', () => {
     const tree = buildDayBoard([], master);
-    const rayon = rayonOf(tree);
-    expect(rayon.regions).toHaveLength(1);
-    expect(rayon.regions[0].locations.map((l) => l.id)).toEqual(['loc1']);
-    expect(rayon.looseLocations.map((l) => l.id)).toEqual(['loc2']);
+    const district = districtOf(tree);
+    expect(district.regions).toHaveLength(1);
+    expect(district.regions[0].locations.map((l) => l.id)).toEqual(['loc1']);
+    expect(district.looseLocations.map((l) => l.id)).toEqual(['loc2']);
   });
 
   it('renders every shift even when empty', () => {
     const tree = buildDayBoard([], master);
-    const loc = rayonOf(tree).regions[0].locations[0];
+    const loc = districtOf(tree).regions[0].locations[0];
     expect(loc.shifts.map((s) => s.shift.id)).toEqual(['s1', 's2']);
     expect(loc.shifts.every((s) => s.total === 0)).toBe(true);
   });
@@ -82,12 +82,12 @@ describe('buildDayBoard', () => {
   });
 
   it('collects unbound occurrences into the city node', () => {
-    const cityOcc = occ({ scope: 'city', location_id: null, region_id: null, rayon_id: null });
+    const cityOcc = occ({ scope: 'city', location_id: null, region_id: null, district_id: null });
     const tree = buildDayBoard([cityOcc], master);
 
     expect(tree[0].id).toBe(CITY_NODE_ID);
     expect(tree[0].total).toBe(1);
-    // A sentinel, not a rayon — nothing to attach a capacity to.
+    // A sentinel, not a district — nothing to attach a capacity to.
     expect(tree[0].staffing_level).toBeUndefined();
   });
 
@@ -109,7 +109,7 @@ describe('buildDayBoard', () => {
       ],
       master
     );
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
     expect(Object.keys(s1.byRole).sort()).toEqual(['korlap', 'linmas', 'satgas']);
     expect(s1.total).toBe(3);
     expect(s1.countable).toBe(2); // korlap excluded
@@ -136,7 +136,7 @@ describe('buildDayBoard', () => {
       ],
       master
     );
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
     expect(s1.teams).toHaveLength(1);
     expect(s1.teams[0]).toMatchObject({ name: 'Perawatan', count: 2, markerColor: '#7FBC8C' });
     expect(Object.keys(s1.byRole)).toHaveLength(0); // team members not in role columns
@@ -154,7 +154,7 @@ describe('buildDayBoard', () => {
       days
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ rayonId: 'ry1', counts: [2, 1], total: 3 });
+    expect(rows[0]).toMatchObject({ districtId: 'ry1', counts: [2, 1], total: 3 });
   });
 
   it('breaks a week cell down by shift and role', () => {
@@ -178,21 +178,21 @@ describe('buildDayBoard', () => {
     expect(cellS2).toMatchObject({ label: '2', roleCounts: { satgas: 1 }, total: 1 });
   });
 
-  it('returns every rayon in week coverage (even with no schedule)', () => {
-    const twoRayon: BoardMasterData = {
+  it('returns every district in week coverage (even with no schedule)', () => {
+    const twoDistrict: BoardMasterData = {
       ...master,
-      rayons: [
+      districts: [
         { id: 'ry1', name: 'Rayon Pusat' },
         { id: 'ry2', name: 'Rayon Utara' },
       ],
     };
-    const rows = buildWeekCoverage([occ({ location_id: 'loc1' })], twoRayon, ['2026-07-13']);
-    expect(rows.map((r) => r.rayonId)).toEqual(['ry1', 'ry2']);
+    const rows = buildWeekCoverage([occ({ location_id: 'loc1' })], twoDistrict, ['2026-07-13']);
+    expect(rows.map((r) => r.districtId)).toEqual(['ry1', 'ry2']);
     expect(rows[1].total).toBe(0);
   });
 
-  it('groups a day into per-rayon counts (highest first, empties dropped)', () => {
-    const counts = rayonCountsFor(
+  it('groups a day into per-district counts (highest first, empties dropped)', () => {
+    const counts = districtCountsFor(
       [
         occ({ location_id: 'loc1' }),
         occ({ location_id: 'loc2' }),
@@ -200,32 +200,32 @@ describe('buildDayBoard', () => {
       ],
       master
     );
-    expect(counts).toEqual([{ rayonId: 'ry1', rayonName: 'Rayon Pusat', count: 3 }]);
+    expect(counts).toEqual([{ districtId: 'ry1', districtName: 'Rayon Pusat', count: 3 }]);
   });
 
-  it('places rayon-scoped occurrences (no location/region) into rayon placement', () => {
+  it('places district-scoped occurrences (no location/region) into district placement', () => {
     const tree = buildDayBoard(
-      [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
+      [occ({ location_id: null, region_id: null, district_id: 'ry1', scope: 'district' as never })],
       master
     );
-    expect(rayonOf(tree).placement.reduce((a, s) => a + s.total, 0)).toBe(1);
-    expect(rayonOf(tree).total).toBe(1);
+    expect(districtOf(tree).placement.reduce((a, s) => a + s.total, 0)).toBe(1);
+    expect(districtOf(tree).total).toBe(1);
     // Not double-counted into any region/location.
-    expect(rayonOf(tree).regions.every((r) => r.total === 0)).toBe(true);
+    expect(districtOf(tree).regions.every((r) => r.total === 0)).toBe(true);
   });
 
-  it('maps rayon-scoped occurrences into week + per-rayon counts via rayon_id', () => {
+  it('maps district-scoped occurrences into week + per-district counts via district_id', () => {
     const weekRows = buildWeekCoverage(
-      [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
+      [occ({ location_id: null, region_id: null, district_id: 'ry1', scope: 'district' as never })],
       master,
       ['2026-07-13']
     );
     expect(weekRows[0].total).toBe(1);
-    const counts = rayonCountsFor(
-      [occ({ location_id: null, region_id: null, rayon_id: 'ry1', scope: 'rayon' as never })],
+    const counts = districtCountsFor(
+      [occ({ location_id: null, region_id: null, district_id: 'ry1', scope: 'district' as never })],
       master
     );
-    expect(counts).toEqual([{ rayonId: 'ry1', rayonName: 'Rayon Pusat', count: 1 }]);
+    expect(counts).toEqual([{ districtId: 'ry1', districtName: 'Rayon Pusat', count: 1 }]);
   });
 
   it('places region-scoped (mobile, no location) occurrences into kawasan placement', () => {
@@ -233,7 +233,7 @@ describe('buildDayBoard', () => {
       [occ({ location_id: null, region_id: 'kw1', scope: 'mobile' })],
       master
     );
-    const region = rayonOf(tree).regions[0];
+    const region = districtOf(tree).regions[0];
     expect(region.placement[0].total).toBe(1);
     expect(region.total).toBe(1);
   });
@@ -243,38 +243,38 @@ describe('buildDayBoard', () => {
 // pruneDayBoard / autoExpandedIds — the search's effect on the board.
 //
 // The range query filters occurrences server-side, but the tree's skeleton comes
-// from master data: filtering alone removed the people and left every rayon
+// from master data: filtering alone removed the people and left every district
 // standing at "0 petugas". These pin the two pruning rules apart.
 // ---------------------------------------------------------------------------
 
-const twoRayonMaster: BoardMasterData = {
-  rayons: [
+const twoDistrictMaster: BoardMasterData = {
+  districts: [
     { id: 'ry1', name: 'Rayon Barat 1' },
     { id: 'ry2', name: 'Rayon Pusat' },
   ],
   regions: [
-    { id: 'kw1', name: 'Kawasan Bungkul', rayon_id: 'ry1' },
-    { id: 'kw2', name: 'Kawasan Pusat', rayon_id: 'ry2' },
+    { id: 'kw1', name: 'Kawasan Bungkul', district_id: 'ry1' },
+    { id: 'kw2', name: 'Kawasan Pusat', district_id: 'ry2' },
   ],
   locations: [
-    { id: 'loc1', name: 'Taman Bungkul', rayon_id: 'ry1', region_id: 'kw1' },
-    { id: 'loc2', name: 'Taman Loose', rayon_id: 'ry1', region_id: null },
-    { id: 'loc3', name: 'Taman Pusat', rayon_id: 'ry2', region_id: 'kw2' },
+    { id: 'loc1', name: 'Taman Bungkul', district_id: 'ry1', region_id: 'kw1' },
+    { id: 'loc2', name: 'Taman Loose', district_id: 'ry1', region_id: null },
+    { id: 'loc3', name: 'Taman Pusat', district_id: 'ry2', region_id: 'kw2' },
   ],
   shifts: [shift('s1', 'Shift 1')],
 };
 
-const names = (tree: BoardRayon[]) => tree.map((r) => r.name);
+const names = (tree: BoardDistrict[]) => tree.map((r) => r.name);
 
 describe('pruneDayBoard', () => {
   it('returns the tree untouched when nothing is filtered', () => {
-    const tree = buildDayBoard([], twoRayonMaster);
+    const tree = buildDayBoard([], twoDistrictMaster);
     expect(pruneDayBoard(tree, {})).toBe(tree);
   });
 
-  it('drops rayons that cannot contain a filtered lokasi, even with no occurrences', () => {
-    // The reported bug: searching a lokasi left all rayons rendered at 0 petugas.
-    const tree = buildDayBoard([], twoRayonMaster);
+  it('drops districts that cannot contain a filtered lokasi, even with no occurrences', () => {
+    // The reported bug: searching a lokasi left all districts rendered at 0 petugas.
+    const tree = buildDayBoard([], twoDistrictMaster);
 
     const pruned = pruneDayBoard(tree, { locationId: 'loc1' });
 
@@ -286,7 +286,7 @@ describe('pruneDayBoard', () => {
 
   it('keeps an empty lokasi that was named by a geography filter', () => {
     // "Nobody is at Taman Bungkul today" is an answer, and it's where you'd assign.
-    const tree = buildDayBoard([], twoRayonMaster);
+    const tree = buildDayBoard([], twoDistrictMaster);
 
     const pruned = pruneDayBoard(tree, { locationId: 'loc1' });
 
@@ -294,20 +294,20 @@ describe('pruneDayBoard', () => {
   });
 
   it('keeps only the named kawasan and its lokasi', () => {
-    const tree = buildDayBoard([], twoRayonMaster);
+    const tree = buildDayBoard([], twoDistrictMaster);
 
     const pruned = pruneDayBoard(tree, { regionId: 'kw1' });
 
     expect(names(pruned)).toEqual(['Rayon Barat 1']);
     expect(pruned[0].regions.map((r) => r.name)).toEqual(['Kawasan Bungkul']);
-    // A kawasan filter is not asking about the rayon's loose lokasi.
+    // A kawasan filter is not asking about the district's loose lokasi.
     expect(pruned[0].looseLocations).toEqual([]);
   });
 
-  it('keeps a whole rayon when the rayon itself is the filter', () => {
-    const tree = buildDayBoard([], twoRayonMaster);
+  it('keeps a whole district when the district itself is the filter', () => {
+    const tree = buildDayBoard([], twoDistrictMaster);
 
-    const pruned = pruneDayBoard(tree, { rayonId: 'ry1' });
+    const pruned = pruneDayBoard(tree, { districtId: 'ry1' });
 
     expect(names(pruned)).toEqual(['Rayon Barat 1']);
     expect(pruned[0].regions).toHaveLength(1);
@@ -318,7 +318,7 @@ describe('pruneDayBoard', () => {
     // Searching a petugas: an empty lokasi is noise, not an answer.
     const tree = buildDayBoard(
       [occ({ location_id: 'loc3', user: { id: 'u9', full_name: 'Budi', username: 'b', role: 'satgas' } })],
-      twoRayonMaster
+      twoDistrictMaster
     );
 
     const pruned = pruneDayBoard(tree, { userId: 'u9' });
@@ -328,7 +328,7 @@ describe('pruneDayBoard', () => {
   });
 
   it('keeps a kawasan as the path to a matching lokasi under it', () => {
-    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoRayonMaster);
+    const tree = buildDayBoard([occ({ location_id: 'loc1' })], twoDistrictMaster);
 
     const pruned = pruneDayBoard(tree, { userId: 'u' });
 
@@ -337,22 +337,22 @@ describe('pruneDayBoard', () => {
   });
 
   it('returns an empty tree when a subject filter matches nothing', () => {
-    const tree = buildDayBoard([], twoRayonMaster);
+    const tree = buildDayBoard([], twoDistrictMaster);
 
     expect(pruneDayBoard(tree, { userId: 'nobody' })).toEqual([]);
   });
 
   it('keeps the city node for a subject filter but never for a geography one', () => {
-    const tree = buildDayBoard([occ({ user_id: 'u9' })], twoRayonMaster); // no location/region/rayon
+    const tree = buildDayBoard([occ({ user_id: 'u9' })], twoDistrictMaster); // no location/region/district
 
     expect(pruneDayBoard(tree, { userId: 'u9' })[0].id).toBe(CITY_NODE_ID);
-    expect(pruneDayBoard(tree, { rayonId: 'ry1' }).map((r) => r.id)).not.toContain(CITY_NODE_ID);
+    expect(pruneDayBoard(tree, { districtId: 'ry1' }).map((r) => r.id)).not.toContain(CITY_NODE_ID);
   });
 });
 
 /** Real usage: the board prunes first, then asks what to open. */
 const expandFor = (occs: ScheduleOccurrence[], filters: Parameters<typeof pruneDayBoard>[1]) =>
-  autoExpandedIds(pruneDayBoard(buildDayBoard(occs, twoRayonMaster), filters), filters);
+  autoExpandedIds(pruneDayBoard(buildDayBoard(occs, twoDistrictMaster), filters), filters);
 
 describe('autoExpandedIds', () => {
   it('opens nothing when nothing is filtered', () => {
@@ -362,10 +362,10 @@ describe('autoExpandedIds', () => {
   // Geography names the destination: open the chain down to it and stop. What is
   // inside the named container is the answer's contents, not more search results.
   describe('geography search — opens down to the named level, no further', () => {
-    it('stops at the rayon when a rayon was named', () => {
+    it('stops at the district when a district was named', () => {
       // Searching "Rayon Barat 1" is a request to focus on it, not to unfurl its
       // 11 kawasan and 87 lokasi.
-      const ids = expandFor([occ({ location_id: 'loc1' })], { rayonId: 'ry1' });
+      const ids = expandFor([occ({ location_id: 'loc1' })], { districtId: 'ry1' });
 
       expect(ids).toEqual(new Set(['ry1']));
     });
@@ -399,7 +399,7 @@ describe('autoExpandedIds', () => {
     });
 
     it('opens a placement block that holds a match', () => {
-      const ids = expandFor([occ({ rayon_id: 'ry1' })], { userId: 'u' });
+      const ids = expandFor([occ({ district_id: 'ry1' })], { userId: 'u' });
 
       expect(ids).toContain('ry1:placement');
       expect(ids).toContain('ry1');
@@ -408,7 +408,7 @@ describe('autoExpandedIds', () => {
     it('still reaches the worker when a geography filter is combined with it', () => {
       // "Budi, in Rayon Barat 1" still has to reach Budi — the subject wins the
       // depth question, or the combination would be less useful than either half.
-      const ids = expandFor([occ({ location_id: 'loc1' })], { rayonId: 'ry1', userId: 'u' });
+      const ids = expandFor([occ({ location_id: 'loc1' })], { districtId: 'ry1', userId: 'u' });
 
       expect(ids).toEqual(new Set(['ry1', 'kw1', 'loc1']));
     });
@@ -433,7 +433,7 @@ describe('buildDayBoard — teams count toward staffing', () => {
 
   it('counts team members toward countable, like individuals', () => {
     const tree = buildDayBoard([teamOcc('satgas', 'A'), teamOcc('linmas', 'B')], master);
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
 
     expect(s1.countable).toBe(2);
   });
@@ -443,14 +443,14 @@ describe('buildDayBoard — teams count toward staffing', () => {
       [teamOcc('satgas', 'A'), teamOcc('satgas', 'B'), teamOcc('linmas', 'C')],
       master
     );
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
 
     expect(s1.countableByRole).toEqual({ satgas: 2, linmas: 1 });
   });
 
   it('still excludes a team member whose role is not countable', () => {
     const tree = buildDayBoard([teamOcc('korlap', 'A')], master);
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
 
     expect(s1.countable).toBe(0);
     expect(s1.countableByRole).toEqual({});
@@ -460,7 +460,7 @@ describe('buildDayBoard — teams count toward staffing', () => {
     // The Tim column lists them; the role columns only COUNT them. Filing a team
     // under one role is what we cannot do — it is a combination of roles.
     const tree = buildDayBoard([teamOcc('satgas', 'A'), teamOcc('linmas', 'B')], master);
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
 
     expect(s1.byRole).toEqual({});
     expect(s1.teams).toHaveLength(1);
@@ -469,7 +469,7 @@ describe('buildDayBoard — teams count toward staffing', () => {
 
   it('carries the member occurrences so the Tim row can open a detail', () => {
     const tree = buildDayBoard([teamOcc('satgas', 'A'), teamOcc('satgas', 'B')], master);
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
 
     expect(s1.teams[0].occurrences).toHaveLength(2);
     expect(s1.teams[0].occurrences[0].user.full_name).toBe('A');
@@ -483,7 +483,7 @@ describe('buildDayBoard — teams count toward staffing', () => {
       ],
       master
     );
-    const s1 = rayonOf(tree).regions[0].locations[0].shifts[0];
+    const s1 = districtOf(tree).regions[0].locations[0].shifts[0];
 
     expect(s1.countable).toBe(2);
     expect(s1.countableByRole.satgas).toBe(2);

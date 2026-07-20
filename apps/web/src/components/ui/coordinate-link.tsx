@@ -12,7 +12,7 @@ interface CoordinateLinkProps {
   lat?: number | string | null;
   lng?: number | string | null;
   className?: string;
-  /** Title for the display modal (e.g. the rayon/area name). */
+  /** Title for the display modal (e.g. the district/area name). */
   label?: string;
   /** Optional boundary + styling to preview the entity, not just a bare pin. */
   boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;

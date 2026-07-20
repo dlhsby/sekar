@@ -37,7 +37,7 @@
   "layers": {
     "title": "Pengaturan",
     "overlays": "Lapisan Peta",
-    "rayon": "Batas Rayon",
+    "district": "Batas Rayon",
     "kawasan": "Batas Kawasan",
     "lokasi": "Batas Lokasi",
     "petugas": "Petugas",
@@ -47,7 +47,7 @@
   "search": {
     "personnelLabel": "Petugas",
     "areaLabel": "Area",
-    "rayonLabel": "Rayon",
+    "districtLabel": "Rayon",
     "recentTitle": "Pencarian Terakhir",
     "clearRecent": "Hapus",
     "recentEmpty": "Belum ada pencarian terakhir",
@@ -64,11 +64,11 @@
     "label": "Cari Petugas",
     "placeholder": "Nama petugas…",
     "statusLabel": "Status",
-    "rayonLabel": "Rayon",
-    "rayonAllOption": "Semua Rayon",
+    "districtLabel": "Rayon",
+    "districtAllOption": "Semua Rayon",
     "kawasanLabel": "Kawasan",
     "kawasanAllOption": "Semua Kawasan",
-    "pickRayonFirst": "Pilih rayon dulu",
+    "pickDistrictFirst": "Pilih rayon dulu",
     "noKawasan": "Rayon ini tanpa kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "Semua Lokasi",
@@ -90,7 +90,7 @@
   "sidebar": {
     "backToList": "Kembali ke daftar",
     "location": "Lokasi",
-    "rayonLabel": "Rayon:",
+    "districtLabel": "Rayon:",
     "areaLabel": "Area:",
     "withinArea": "Dalam area",
     "outsideArea": "Di luar area",
@@ -151,10 +151,10 @@
   "hierarchy": {
     "scopeLabel": "Cakupan filter",
     "city": "Kota",
-    "rayon": "Rayon",
+    "district": "Rayon",
     "region": "Kawasan",
     "area": "Area",
-    "rayonLabel": "Pilih Rayon",
+    "districtLabel": "Pilih Rayon",
     "regionLabel": "Pilih Kawasan",
     "areaLabel": "Pilih Area",
     "areaDisabled": "Pilih rayon dulu",
@@ -167,7 +167,7 @@
     "workers": "Petugas",
     "plants": "Tanaman",
     "overdue": "Jatuh Tempo",
-    "rayons": "Batas Rayon",
+    "districts": "Batas Rayon",
     "areas": "Batas Area",
     "showLayer": "Tampilkan {{label}}"
   },
@@ -204,7 +204,7 @@
     "outArea": "Di Luar Area"
   },
   "areaDetail": {
-    "rayon": "Rayon",
+    "district": "Rayon",
     "region": "Kawasan",
     "area": "Lokasi"
   },
@@ -240,7 +240,7 @@
     "tasksTitle": "Tugas Hari Ini",
     "contactTitle": "Hubungi",
     "phoneLabel": "Telepon",
-    "rayonLabel": "Rayon:",
+    "districtLabel": "Rayon:",
     "areaLabel": "Area:"
   },
   "sidePanel": {
@@ -260,7 +260,7 @@
     "shortageLabel": "Kurang",
     "reassignButton": "Pindah Petugas",
     "dataUnavailable": "Data tidak tersedia.",
-    "rayonDataUnavailable": "Data rayon tidak tersedia.",
+    "districtDataUnavailable": "Data rayon tidak tersedia.",
     "cityDataUnavailable": "Data wilayah tidak tersedia.",
     "activeStatus": "Aktif",
     "offlineStatus": "Offline",
@@ -324,7 +324,7 @@
     }
   },
   "areaDrawer": {
-    "rayonFallback": "Rayon —"
+    "districtFallback": "Rayon —"
   },
   "breadcrumb": {
     "label": "Navigasi lokasi",

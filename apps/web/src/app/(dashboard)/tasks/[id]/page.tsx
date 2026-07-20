@@ -78,7 +78,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
   // ADR-038: assignment chain. Best-effort — failure leaves the card hidden.
   const { data: delegations = [] } = useTaskDelegations(taskId);
   // Pull a wide user pool when the delegate form is open; filter client-side
-  // by role + rayon to surface only valid hand-off targets.
+  // by role + district to surface only valid hand-off targets.
   const { data: usersResp } = useUsers({ limit: 200 });
   const delegateCandidates = useMemo(() => {
     if (!user || !task || !task.assigned_to) return [];
@@ -89,7 +89,7 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
       (u) =>
         allowedRoles.includes(u.role) &&
         u.id !== user.id &&
-        (!task.rayon?.id || !u.rayon_id || u.rayon_id === task.rayon.id),
+        (!task.district?.id || !u.district_id || u.district_id === task.district.id),
     );
   }, [user, task, usersResp]);
 
@@ -305,10 +305,10 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                   <div className="font-bold text-nb-black">{task.area.name}</div>
                 </div>
               )}
-              {task.rayon && (
+              {task.district && (
                 <div>
-                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.rayon')}</div>
-                  <div className="font-bold text-nb-black">{task.rayon.name}</div>
+                  <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.district')}</div>
+                  <div className="font-bold text-nb-black">{task.district.name}</div>
                 </div>
               )}
             </div>

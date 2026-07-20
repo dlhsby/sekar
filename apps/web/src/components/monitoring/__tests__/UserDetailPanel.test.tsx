@@ -24,8 +24,8 @@ const MOCK_SUMMARY: UserDaySummary = {
   status: 'active',
   location_id: 'area-1',
   location_name: 'Taman Bungkul',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon Selatan',
+  district_id: 'district-1',
+  district_name: 'Rayon Selatan',
   shift: {
     id: 'shift-1',
     name: 'Pagi',
@@ -142,7 +142,7 @@ describe('UserDetailPanel', () => {
       expect(screen.getByText('Aktif')).toBeInTheDocument();
     });
 
-    it('should render rayon name', () => {
+    it('should render district name', () => {
       render(<UserDetailPanel {...defaultProps} />);
       expect(screen.getByText(/rayon selatan/i)).toBeInTheDocument();
     });

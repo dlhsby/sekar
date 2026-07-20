@@ -10,7 +10,7 @@ type ScopeValue = FormValues['scope'];
 
 /**
  * The "where" half of the Buat Jadwal form: Ruang Lingkup plus the geography
- * cascade it gates (rayon → kawasan → lokasi).
+ * cascade it gates (district → kawasan → lokasi).
  *
  * Split out of ScheduleEventModal, which had grown past the 800-line ceiling in
  * CLAUDE.md. Scope leads the form — it decides which of these fields exist and
@@ -23,14 +23,14 @@ export interface ScopeFieldsProps {
   scope: FormValues['scope'];
   onScopeChange: (v: ScopeValue) => void;
   scopeOptions: Array<{ value: ScopeValue; label: string }>;
-  rayonId: string;
+  districtId: string;
   regionId: string;
   locationId: string;
-  rayonOptions: Array<{ value: string; label: string }>;
+  districtOptions: Array<{ value: string; label: string }>;
   regionOptions: Array<{ value: string; label: string }>;
   locationOptions: Array<{ value: string; label: string }>;
   lockScope: boolean;
-  lockRayon: boolean;
+  lockDistrict: boolean;
   lockRegion: boolean;
   lockLocation: boolean;
 }
@@ -42,14 +42,14 @@ export function ScopeFields({
   scope: formScope,
   onScopeChange: handleScopeChange,
   scopeOptions,
-  rayonId: formRayon,
+  districtId: formDistrict,
   regionId: formRegion,
   locationId,
-  rayonOptions,
+  districtOptions,
   regionOptions,
   locationOptions,
   lockScope,
-  lockRayon,
+  lockDistrict,
   lockRegion,
   lockLocation,
 }: ScopeFieldsProps) {
@@ -73,31 +73,31 @@ export function ScopeFields({
         />
 
         {/* Placement cascade, gated by scope:
-            rayon → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
+            district → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
             `formScope &&` matters now that '' is the un-chosen state — without
-            it the rayon field appears before a scope has been picked. */}
+            it the district field appears before a scope has been picked. */}
         {formScope && formScope !== 'city' && (
           <FormCombobox
-            label={t('schedules:calendar.event.rayonLabel')}
-            options={rayonOptions}
-            value={formRayon || ''}
+            label={t('schedules:calendar.event.districtLabel')}
+            options={districtOptions}
+            value={formDistrict || ''}
             onChange={(v) => {
-              setValue('rayon_id', v, { shouldValidate: true });
+              setValue('district_id', v, { shouldValidate: true });
               setValue('region_id', '');
               setValue('location_id', '');
             }}
-            placeholder={t('schedules:calendar.event.rayonPlaceholder')}
-            error={errors.rayon_id?.message}
+            placeholder={t('schedules:calendar.event.districtPlaceholder')}
+            error={errors.district_id?.message}
             required
-            disabled={lockRayon}
+            disabled={lockDistrict}
           />
         )}
 
         {/* Under a Lokasi scope the kawasan is an optional NARROWING filter,
-            not a step: a lokasi belongs to a rayon and may have no kawasan at
+            not a step: a lokasi belongs to a district and may have no kawasan at
             all (Rayon Taman Aktif). Only the mobile (kawasan-wide) scope
             actually needs one. */}
-        {(formScope === 'region' || formScope === 'location') && formRayon && (
+        {(formScope === 'region' || formScope === 'location') && formDistrict && (
           <FormCombobox
             label={t('schedules:calendar.event.regionLabel')}
             options={regionOptions}
@@ -122,7 +122,7 @@ export function ScopeFields({
           />
         )}
 
-        {formScope === 'location' && formRayon && (
+        {formScope === 'location' && formDistrict && (
           <FormCombobox
             label={t('schedules:calendar.event.locationLabel')}
             options={locationOptions}

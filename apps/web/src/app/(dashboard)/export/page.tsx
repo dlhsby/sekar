@@ -6,7 +6,7 @@
  * async job that this page polls every 3s, then offers a download link. The
  * Export History table lists the user's jobs from the last 30 days.
  *
- * Access: admin_system, superadmin, and kepala_rayon (limited to their rayon's
+ * Access: admin_system, superadmin, and kepala_rayon (limited to their district's
  * tasks/activities/overtime — enforced server-side).
  */
 
@@ -25,7 +25,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import { getErrorMessage } from '@/lib/api/client';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useLocations } from '@/lib/api/locations';
 import {
   useExportData,
@@ -43,14 +43,14 @@ function getEntityLabels(t: ReturnType<typeof useTranslation>['t']): Record<Expo
   return {
     users: t('export.entities.users'),
     areas: t('export.entities.areas'),
-    rayons: t('export.entities.rayons'),
+    districts: t('export.entities.districts'),
     tasks: t('export.entities.tasks'),
     activities: t('export.entities.activities'),
     overtime: t('export.entities.overtime'),
   };
 }
 
-/** Entities a kepala_rayon may export (their own rayon only). */
+/** Entities a kepala_rayon may export (their own district only). */
 const KEPALA_RAYON_ENTITIES: ExportEntityType[] = ['tasks', 'activities', 'overtime'];
 
 const STATUS_TONE: Record<ExportJob['status'], 'ok' | 'warn' | 'bad'> = {
@@ -94,23 +94,23 @@ export default function ExportPage() {
 
 function ExportForm({ role }: { role: UserRole }) {
   const { t } = useTranslation(['import']);
-  const isKepalaRayon = role === 'kepala_rayon';
+  const isKepalaDistrict = role === 'kepala_rayon';
   const entityLabels = useMemo(() => getEntityLabels(t), [t]);
   const statusLabels = useMemo(() => getStatusLabels(t), [t]);
 
   const entityOptions = useMemo(
     () =>
-      (isKepalaRayon ? KEPALA_RAYON_ENTITIES : (Object.keys(entityLabels) as ExportEntityType[])).map(
+      (isKepalaDistrict ? KEPALA_RAYON_ENTITIES : (Object.keys(entityLabels) as ExportEntityType[])).map(
         (value) => ({ value, label: entityLabels[value] }),
       ),
-    [isKepalaRayon, entityLabels],
+    [isKepalaDistrict, entityLabels],
   );
 
   const [entityType, setEntityType] = useState<ExportEntityType>(entityOptions[0].value as ExportEntityType);
   const [format, setFormat] = useState<ExportFormat>('csv');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [rayonId, setRayonId] = useState(ALL);
+  const [districtId, setDistrictId] = useState(ALL);
   const [areaId, setAreaId] = useState(ALL);
   const [activeJobId, setActiveJobId] = useState<string | null>(null);
 
@@ -118,8 +118,8 @@ function ExportForm({ role }: { role: UserRole }) {
   const jobsQuery = useExportJobs();
   const activeJob = useExportJob(activeJobId);
 
-  const { data: rayons } = useRayons();
-  const { data: areasPage } = useLocations(rayonId !== ALL ? { rayon_id: rayonId } : {});
+  const { data: districts } = useDistricts();
+  const { data: areasPage } = useLocations(districtId !== ALL ? { district_id: districtId } : {});
 
   const formatOptions = useMemo(() => {
     const base = [
@@ -162,7 +162,7 @@ function ExportForm({ role }: { role: UserRole }) {
         format,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
-        rayonId: rayonId !== ALL ? rayonId : undefined,
+        districtId: districtId !== ALL ? districtId : undefined,
         areaId: areaId !== ALL ? areaId : undefined,
       });
       if (outcome.kind === 'downloaded') {
@@ -177,12 +177,12 @@ function ExportForm({ role }: { role: UserRole }) {
     }
   };
 
-  const rayonOptions = useMemo(
+  const districtOptions = useMemo(
     () => [
-      { value: ALL, label: t('export.allRayons') },
-      ...(rayons ?? []).map((r) => ({ value: r.id, label: r.name })),
+      { value: ALL, label: t('export.allDistricts') },
+      ...(districts ?? []).map((r) => ({ value: r.id, label: r.name })),
     ],
-    [rayons, t]
+    [districts, t]
   );
   const areaOptions = useMemo(
     () => [
@@ -225,7 +225,7 @@ function ExportForm({ role }: { role: UserRole }) {
               />
             )}
           </Field>
-          <FormSelect label={t('export.rayonLabel')} options={rayonOptions} value={rayonId} onChange={setRayonId} />
+          <FormSelect label={t('export.districtLabel')} options={districtOptions} value={districtId} onChange={setDistrictId} />
           <FormSelect label={t('export.areaLabel')} options={areaOptions} value={areaId} onChange={setAreaId} />
         </div>
 

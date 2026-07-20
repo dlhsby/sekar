@@ -7,7 +7,7 @@
  * Layers control panel (toggles).
  *
  * Two flavours of toggle live here, side by side (mirroring the panel):
- *  - Boundary toggles — draw/hide each geo tier's outline+fill (rayon/kawasan/lokasi).
+ *  - Boundary toggles — draw/hide each geo tier's outline+fill (district/kawasan/lokasi).
  *  - Marker toggles — show/hide the worker pins (`petugas`) and the collapsed
  *    team bubbles (`teamBubbles`). The geo NODE markers (count pins) are NOT
  *    gated — they always render, so a supervisor can never hide the map's
@@ -17,7 +17,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export interface MonitoringLayers {
   /** Rayon boundary — outline + tinted fill. */
-  rayon: boolean;
+  district: boolean;
   /** Kawasan (region) boundary — outline + tinted fill. */
   kawasan: boolean;
   /** Lokasi (area) boundary — outline + tinted fill. */
@@ -29,21 +29,21 @@ export interface MonitoringLayers {
 }
 
 export const DEFAULT_LAYERS: MonitoringLayers = {
-  rayon: true,
+  district: true,
   kawasan: true,
   lokasi: true,
   petugas: true,
   teamBubbles: true,
 };
 
-// v4: split kawasan out of `rayon`, renamed `area`→`lokasi`, dropped `areaPins`
+// v4: split kawasan out of `district`, renamed `area`→`lokasi`, dropped `areaPins`
 // (node markers are always drawn) and `overdue` (Tanaman Terlambat retired from
 // the map); added the `teamBubbles` marker toggle.
 const STORAGE_KEY = 'monitoring.layers.v4';
 
 /** Layer toggles rendered by the Layers panel (order matters). */
 export const LAYER_TOGGLES: { key: keyof MonitoringLayers; labelKey: string }[] = [
-  { key: 'rayon', labelKey: 'monitoring:layers.rayon' },
+  { key: 'district', labelKey: 'monitoring:layers.district' },
   { key: 'kawasan', labelKey: 'monitoring:layers.kawasan' },
   { key: 'lokasi', labelKey: 'monitoring:layers.lokasi' },
   { key: 'petugas', labelKey: 'monitoring:layers.petugas' },

@@ -3,7 +3,7 @@
  *
  * This conversion used to exist twice (monitoring map + board boundary map) and
  * was untested in both. Boundary geometry comes from KMZ/shapefile imports, so
- * MultiPolygon is not hypothetical — it is what a rayon with detached parcels
+ * MultiPolygon is not hypothetical — it is what a district with detached parcels
  * actually looks like.
  */
 import { geometryToPaths } from '../geometry';

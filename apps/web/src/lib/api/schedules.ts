@@ -28,7 +28,7 @@ export interface Schedule {
   id: string;
   user_id: string;
   schedule_date: string; // YYYY-MM-DD
-  rayon_id: string;
+  district_id: string;
   shift_definition_id: string | null;
   status:
     | 'planned'
@@ -78,20 +78,20 @@ export interface Schedule {
 export const dailyScheduleKeys = {
   all: ['schedules'] as const,
   lists: () => [...dailyScheduleKeys.all, 'list'] as const,
-  byDate: (date: string, rayonId?: string) =>
-    [...dailyScheduleKeys.lists(), { date, rayonId }] as const,
+  byDate: (date: string, districtId?: string) =>
+    [...dailyScheduleKeys.lists(), { date, districtId }] as const,
   myRoster: (date?: string) => [...dailyScheduleKeys.all, 'my', date] as const,
 };
 
 /**
- * Fetch daily schedules for a given date (optionally filtered by rayon)
+ * Fetch daily schedules for a given date (optionally filtered by district)
  */
 async function fetchSchedules(
   date: string,
-  rayonId?: string,
+  districtId?: string,
 ): Promise<Schedule[]> {
   const params = new URLSearchParams();
-  params.append('rayonId', rayonId || '');
+  params.append('districtId', districtId || '');
   const response = await apiClient.get<Schedule[]>(
     `/schedules/date/${date}?${params.toString()}`,
   );
@@ -184,10 +184,10 @@ async function addSchedule(input: AddScheduleInput): Promise<Schedule> {
 /**
  * Hook to fetch daily schedules for a specific date
  */
-export function useDailyRoster(date: string, rayonId?: string) {
+export function useDailyRoster(date: string, districtId?: string) {
   return useQuery({
-    queryKey: dailyScheduleKeys.byDate(date, rayonId),
-    queryFn: () => fetchSchedules(date, rayonId),
+    queryKey: dailyScheduleKeys.byDate(date, districtId),
+    queryFn: () => fetchSchedules(date, districtId),
     enabled: !!date,
   });
 }

@@ -21,7 +21,7 @@ describe('requirementTotalMap', () => {
       req({ location_id: 'L1', shift_definition_id: 's1', role: 'satgas', required_count: 3 }),
       req({ location_id: 'L1', shift_definition_id: 's1', role: 'linmas', required_count: 1 }),
       req({ region_id: 'R1', shift_definition_id: 's1', role: 'satgas', required_count: 5 }),
-      req({ rayon_id: 'RY1', shift_definition_id: 's2', role: 'satgas', required_count: 9 }),
+      req({ district_id: 'RY1', shift_definition_id: 's2', role: 'satgas', required_count: 9 }),
     ];
     const m = requirementTotalMap(rows, 'WEEKDAY');
     expect(m.get('loc:L1:s1')).toBe(4); // satgas 3 + linmas 1
@@ -63,7 +63,7 @@ describe('requirementRoleMap', () => {
   it('keys by subject: loc / reg / ray', () => {
     const rows: StaffRequirement[] = [
       req({ region_id: 'R1', shift_definition_id: 's1', role: 'satgas', required_count: 5 }),
-      req({ rayon_id: 'RY1', shift_definition_id: 's2', role: 'linmas', required_count: 9 }),
+      req({ district_id: 'RY1', shift_definition_id: 's2', role: 'linmas', required_count: 9 }),
     ];
     const m = requirementRoleMap(rows, 'WEEKDAY');
 

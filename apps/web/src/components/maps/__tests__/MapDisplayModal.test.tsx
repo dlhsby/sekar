@@ -60,7 +60,7 @@ describe('MapDisplayModal preview', () => {
         borderColor="#1b6f1c"
         fillColor="#1b6f1c"
         fillOpacity={0.3}
-        entityKind="rayon"
+        entityKind="district"
       />
     );
     expect(screen.getByTestId('polygon')).toBeInTheDocument();
@@ -69,17 +69,17 @@ describe('MapDisplayModal preview', () => {
     expect(lastPolygonOptions?.fillOpacity).toBe(0.3);
   });
 
-  it('previews the per-kind default glyph pin when none is configured (rayon → building)', () => {
+  it('previews the per-kind default glyph pin when none is configured (district → building)', () => {
     render(
-      <MapDisplayModal open onOpenChange={() => {}} lat={-7.26} lng={112.74} entityKind="rayon" />
+      <MapDisplayModal open onOpenChange={() => {}} lat={-7.26} lng={112.74} entityKind="district" />
     );
     const src = decodeURIComponent(screen.getByTestId('marker').getAttribute('data-src') ?? '');
-    expect(src).toContain('M6 22V4'); // building glyph (rayon default)
+    expect(src).toContain('M6 22V4'); // building glyph (district default)
   });
 
   it('previews the configured glyph over the default (white pin, glyph identifies type)', () => {
     render(
-      <MapDisplayModal open onOpenChange={() => {}} lat={-7.26} lng={112.74} entityKind="rayon" markerIcon="star" />
+      <MapDisplayModal open onOpenChange={() => {}} lat={-7.26} lng={112.74} entityKind="district" markerIcon="star" />
     );
     const src = decodeURIComponent(screen.getByTestId('marker').getAttribute('data-src') ?? '');
     expect(src).toContain('M12 2.5l2.9'); // star glyph

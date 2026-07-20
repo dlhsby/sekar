@@ -37,7 +37,7 @@
   "layers": {
     "title": "Settings",
     "overlays": "Map Layers",
-    "rayon": "Rayon Boundary",
+    "district": "District Boundary",
     "kawasan": "Kawasan Boundary",
     "lokasi": "Lokasi Boundary",
     "petugas": "Workers",
@@ -47,7 +47,7 @@
   "search": {
     "personnelLabel": "Officers",
     "areaLabel": "Area",
-    "rayonLabel": "District",
+    "districtLabel": "District",
     "recentTitle": "Recent Searches",
     "clearRecent": "Clear",
     "recentEmpty": "No recent searches yet",
@@ -64,12 +64,12 @@
     "label": "Search Officers",
     "placeholder": "Officer name…",
     "statusLabel": "Status",
-    "rayonLabel": "District",
-    "rayonAllOption": "All Districts",
+    "districtLabel": "District",
+    "districtAllOption": "All Districts",
     "kawasanLabel": "Kawasan",
     "kawasanAllOption": "All Kawasan",
-    "pickRayonFirst": "Pick a rayon first",
-    "noKawasan": "This rayon has no kawasan",
+    "pickDistrictFirst": "Pick a district first",
+    "noKawasan": "This district has no kawasan",
     "lokasiLabel": "Lokasi",
     "lokasiAllOption": "All Lokasi",
     "roleLabel": "Role",
@@ -90,7 +90,7 @@
   "sidebar": {
     "backToList": "Back to list",
     "location": "Location",
-    "rayonLabel": "District:",
+    "districtLabel": "District:",
     "areaLabel": "Area:",
     "withinArea": "Within area",
     "outsideArea": "Outside area",
@@ -151,10 +151,10 @@
   "hierarchy": {
     "scopeLabel": "Filter scope",
     "city": "City",
-    "rayon": "District",
+    "district": "District",
     "region": "Region",
     "area": "Area",
-    "rayonLabel": "Select District",
+    "districtLabel": "Select District",
     "regionLabel": "Select Region",
     "areaLabel": "Select Area",
     "areaDisabled": "Select district first",
@@ -167,7 +167,7 @@
     "workers": "Officers",
     "plants": "Plants",
     "overdue": "Overdue",
-    "rayons": "District Boundaries",
+    "districts": "District Boundaries",
     "areas": "Area Boundaries",
     "showLayer": "Show {{label}}"
   },
@@ -204,7 +204,7 @@
     "outArea": "Outside Area"
   },
   "areaDetail": {
-    "rayon": "Rayon",
+    "district": "District",
     "region": "Region",
     "area": "Location"
   },
@@ -240,7 +240,7 @@
     "tasksTitle": "Today's Tasks",
     "contactTitle": "Contact",
     "phoneLabel": "Phone",
-    "rayonLabel": "District:",
+    "districtLabel": "District:",
     "areaLabel": "Area:"
   },
   "sidePanel": {
@@ -260,7 +260,7 @@
     "shortageLabel": "Short",
     "reassignButton": "Reassign Officers",
     "dataUnavailable": "Data not available.",
-    "rayonDataUnavailable": "District data not available.",
+    "districtDataUnavailable": "District data not available.",
     "cityDataUnavailable": "City data not available.",
     "activeStatus": "Active",
     "offlineStatus": "Offline",
@@ -324,7 +324,7 @@
     }
   },
   "areaDrawer": {
-    "rayonFallback": "District —"
+    "districtFallback": "District —"
   },
   "breadcrumb": {
     "label": "Location breadcrumb",

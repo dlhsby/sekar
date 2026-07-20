@@ -25,8 +25,8 @@ export interface PruningRequest extends Record<string, unknown> {
   submittedBy: string;
   submitter?: { id: string; full_name: string; role: string } | null;
   kecamatanName: string | null;
-  rayonId: string | null;
-  rayon?: { id: string; name: string } | null;
+  districtId: string | null;
+  district?: { id: string; name: string } | null;
   address: string;
   gpsLat: number | string;
   gpsLng: number | string;
@@ -56,7 +56,7 @@ export interface PruningRequest extends Record<string, unknown> {
 export interface PruningRequestsFilters {
   admin?: boolean;
   status?: PruningRequestStatus;
-  rayon_id?: string;
+  district_id?: string;
   page?: number;
   limit?: number;
   offset?: number;
@@ -86,7 +86,7 @@ export interface ConvertToTaskDto {
  * Payload for a kecamatan submission (KEC-1). Mirrors the mobile SubmitScreen
  * shape: photos are base64 data-URI strings (the S3 pipeline lands in a later
  * phase), and timing preference is expressed as an ISO week pair — admin_rayon
- * picks the concrete day at assign-to-task. `kecamatan_name`/`rayon_id` are
+ * picks the concrete day at assign-to-task. `kecamatan_name`/`district_id` are
  * auto-derived server-side from the submitter profile when omitted.
  */
 export interface SubmitPruningRequestPayload {
@@ -106,7 +106,7 @@ export interface SubmitPruningRequestPayload {
   expected_year?: number;
   expected_iso_week?: number;
   kecamatan_name?: string;
-  rayon_id?: string;
+  district_id?: string;
 }
 
 /** Submit a new pruning request (staff_kecamatan). */

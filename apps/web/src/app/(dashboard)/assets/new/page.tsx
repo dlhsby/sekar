@@ -27,7 +27,7 @@ export default function CreateAssetPage() {
   const [name, setName] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [areaId, setAreaId] = useState('');
-  const [rayonId, setRayonId] = useState('');
+  const [districtId, setDistrictId] = useState('');
   const [description, setDescription] = useState('');
   const [purchaseDate, setPurchaseDate] = useState('');
   const [purchasePrice, setPurchasePrice] = useState('');
@@ -51,7 +51,7 @@ export default function CreateAssetPage() {
         name,
         category_id: categoryId,
         area_id: areaId || undefined,
-        rayon_id: rayonId || undefined,
+        district_id: districtId || undefined,
         description: description || undefined,
         purchase_date: purchaseDate || undefined,
         purchase_price: purchasePrice ? parseFloat(purchasePrice) : undefined,

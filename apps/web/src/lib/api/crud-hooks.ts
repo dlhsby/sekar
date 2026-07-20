@@ -11,11 +11,11 @@ import { apiClient } from './client';
  * Configuration for a CRUD resource
  */
 export interface CrudHookConfig<TEntity extends { id?: string }> {
-  /** Resource name (e.g., 'rayons', 'areas', 'users') */
+  /** Resource name (e.g., 'districts', 'areas', 'users') */
   resource: string;
-  /** Query key for list invalidation (e.g., rayonKeys.lists()) */
+  /** Query key for list invalidation (e.g., districtKeys.lists()) */
   listKey: QueryKey;
-  /** Optional callback to get detail key for a given ID (e.g., (id) => rayonKeys.detail(id)) */
+  /** Optional callback to get detail key for a given ID (e.g., (id) => districtKeys.detail(id)) */
   detailKeyFn?: (id: string) => QueryKey;
   /** Optional callback to extract ID from response data for update detail invalidation */
   getDetailIdFromResponse?: (data: TEntity) => string;
@@ -26,10 +26,10 @@ export interface CrudHookConfig<TEntity extends { id?: string }> {
  *
  * @example
  * ```ts
- * const { useCreate, useUpdate, useDelete } = makeCrudHooks<Rayon, CreateRayonDto, UpdateRayonDto>({
- *   resource: 'rayons',
- *   listKey: rayonKeys.lists(),
- *   detailKeyFn: (id) => rayonKeys.detail(id),
+ * const { useCreate, useUpdate, useDelete } = makeCrudHooks<District, CreateDistrictDto, UpdateDistrictDto>({
+ *   resource: 'districts',
+ *   listKey: districtKeys.lists(),
+ *   detailKeyFn: (id) => districtKeys.detail(id),
  * });
  * ```
  */

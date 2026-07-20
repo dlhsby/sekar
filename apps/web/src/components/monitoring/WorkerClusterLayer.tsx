@@ -12,7 +12,7 @@
  * content is memoized by visual signature, so a GPS ping that only moves a worker
  * repositions the marker in place instead of rebuilding it (reposition-on-patch,
  * profiled 47× cheaper than clear-and-rebuild) — which is what keeps hundreds of
- * live pins smooth at rayon/kawasan/lokasi scope.
+ * live pins smooth at district/kawasan/lokasi scope.
  */
 import { useMemo } from 'react';
 import { AdvancedPinMarker } from './AdvancedPinMarker';

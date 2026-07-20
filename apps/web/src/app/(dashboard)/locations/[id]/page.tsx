@@ -112,7 +112,7 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* Badges */}
           <div className="flex items-center gap-2 mt-3">
-            {area.rayon && <Badge variant="default">📍 {area.rayon.name}</Badge>}
+            {area.district && <Badge variant="default">📍 {area.district.name}</Badge>}
             {area.locationType && (
               <Badge variant={area.locationType.category === 'ACTIVE' ? 'success' : 'warning'}>
                 {area.locationType.name}
@@ -180,8 +180,8 @@ export default function AreaDetailPage({ params }: { params: Promise<{ id: strin
               <span>{area.name}</span>
             </div>
             <div className="flex justify-between">
-              <span className="font-bold text-nb-gray-700">{t('admin:locations.detailRayon')}:</span>
-              <span>{area.rayon?.name || '-'}</span>
+              <span className="font-bold text-nb-gray-700">{t('admin:locations.detailDistrict')}:</span>
+              <span>{area.district?.name || '-'}</span>
             </div>
             <div className="flex justify-between">
               <span className="font-bold text-nb-gray-700">{t('admin:locations.detailType')}:</span>

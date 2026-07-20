@@ -117,9 +117,9 @@ export function UserDetailPanel({
           </div>
 
           {/* Area / Rayon */}
-          {(summary.location_name || summary.rayon_name) && (
+          {(summary.location_name || summary.district_name) && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-nb-gray-600">
-              {summary.rayon_name && <span>{t('monitoring:userDetail.rayonLabel')} {summary.rayon_name}</span>}
+              {summary.district_name && <span>{t('monitoring:userDetail.districtLabel')} {summary.district_name}</span>}
               {summary.location_name && <span>{t('monitoring:userDetail.areaLabel')} {summary.location_name}</span>}
             </div>
           )}

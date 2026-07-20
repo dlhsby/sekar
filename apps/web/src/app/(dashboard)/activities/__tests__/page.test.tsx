@@ -75,7 +75,7 @@ const mockKorlapUser = {
   created_at: '2026-01-01T00:00:00Z',
 };
 
-const mockKepalaRayonUser = {
+const mockKepalaDistrictUser = {
   id: 'user-kepala',
   username: 'kepala_rayon1',
   full_name: 'Kepala Rayon',
@@ -244,7 +244,7 @@ describe('ActivitiesPage', () => {
     });
 
     it('should allow kepala_rayon role to access the page', () => {
-      mockUseAuth.mockReturnValue({ user: mockKepalaRayonUser, loading: false });
+      mockUseAuth.mockReturnValue({ user: mockKepalaDistrictUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
@@ -602,7 +602,7 @@ describe('ActivitiesPage', () => {
 
     it('should show Setujui and Tolak menuitems for kepala_rayon when an activity is pending', async () => {
       const user = userEvent.setup();
-      mockUseAuth.mockReturnValue({ user: mockKepalaRayonUser, loading: false });
+      mockUseAuth.mockReturnValue({ user: mockKepalaDistrictUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 

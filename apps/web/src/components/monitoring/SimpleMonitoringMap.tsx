@@ -2,7 +2,7 @@
 
 /**
  * SimpleMonitoringMap — the live monitoring map on Google Maps. Renders:
- *   - rayon + area boundary overlays (always, independent of live workers),
+ *   - district + area boundary overlays (always, independent of live workers),
  *   - area centre markers (overdue-plant count badge when set),
  *   - worker pins coloured by status, with selection (highlight + pan-to).
  *
@@ -24,9 +24,9 @@ import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import { pinElement, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 import { useThemeStore } from '@/stores/theme';
 
-/** The current node's own pin (selected rayon at rayon scope / area at area scope). */
+/** The current node's own pin (selected district at district scope / area at area scope). */
 export interface CurrentNodeMarker {
-  variant: 'rayon' | 'region' | 'location';
+  variant: 'district' | 'region' | 'location';
   id: string;
   name: string;
   lat: number;
@@ -55,13 +55,13 @@ export interface SimpleWorker {
 
 export interface SimpleMonitoringMapProps {
   /** Current drill scope — gates which boundary layers draw. */
-  scope?: 'surabaya' | 'city' | 'rayon' | 'region' | 'location';
+  scope?: 'surabaya' | 'city' | 'district' | 'region' | 'location';
   nodeMarkers?: NodeMarker[];
-  /** Geo id selected in the filter (rayon/kawasan/lokasi). Non-matching node
+  /** Geo id selected in the filter (district/kawasan/lokasi). Non-matching node
    *  bubbles are dimmed to spotlight the selection. Null = no geo filter. */
   activeGeoId?: string | null;
   onDrillNode?: (node: NodeMarker) => void;
-  /** The current node's own pin (rayon/location) — opens detail on click, no drill. */
+  /** The current node's own pin (district/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
   /** Selected location id — at location scope only its boundary is drawn (on demand). */
@@ -73,7 +73,7 @@ export interface SimpleMonitoringMapProps {
   boundaries?: BoundariesResponse | null;
   selectedId?: string | null;
   onSelect?: (userId: string) => void;
-  /** Which overlays to draw (rayon/kawasan/lokasi boundaries, petugas, team bubbles). */
+  /** Which overlays to draw (district/kawasan/lokasi boundaries, petugas, team bubbles). */
   layers?: MonitoringLayers;
   /** Imperative focus target (from search / drill). `exact` sets the zoom
    *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
@@ -122,7 +122,7 @@ const MAP_OPTIONS: google.maps.MapOptions = {
 };
 
 const DEFAULT_ZOOM = 11;
-// Alpha for the rayon fill when tinted with its configured color.
+// Alpha for the district fill when tinted with its configured color.
 const RAYON_FILL_ALPHA = 0.18;
 
 /** Per-entity boundary styling (ADR-045) — border + fill drawn separately. */
@@ -222,9 +222,9 @@ function MonitoringMapInner({
   const viewportRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
-  // Workers render at EVERY level (city → rayon → kawasan → lokasi) as soon as
+  // Workers render at EVERY level (city → district → kawasan → lokasi) as soon as
   // the Petugas layer is on — no scope/zoom gate. The geo node bubbles are drawn
-  // alongside (never replaced), so the city view shows the rayon bubbles AND the
+  // alongside (never replaced), so the city view shows the district bubbles AND the
   // people on the ground at once.
   const renderWorkers = layers.petugas;
 
@@ -236,27 +236,27 @@ function MonitoringMapInner({
 
   // Flatten boundary geometry into renderable pieces. Rayon polygons keep their
   // configured color so the map can tint the fill/border per rayon.
-  const { rayonPolys, regionPolys, areaPaths } = useMemo(() => {
-    const rayonPolys: (PolyStyle & { paths: google.maps.LatLngLiteral[] })[] = [];
+  const { districtPolys, regionPolys, areaPaths } = useMemo(() => {
+    const districtPolys: (PolyStyle & { paths: google.maps.LatLngLiteral[] })[] = [];
     const regionPolys: (PolyStyle & { id: string; paths: google.maps.LatLngLiteral[] })[] = [];
     const areaPaths: (PolyStyle & { id: string; paths: google.maps.LatLngLiteral[] })[] = [];
-    for (const rayon of boundaries?.rayons ?? []) {
-      const rs = boundaryStyle(rayon);
-      geometryToPaths(rayon.boundary_polygon).forEach((p) => rayonPolys.push({ paths: p, ...rs }));
-      for (const region of rayon.regions ?? []) {
+    for (const district of boundaries?.districts ?? []) {
+      const rs = boundaryStyle(district);
+      geometryToPaths(district.boundary_polygon).forEach((p) => districtPolys.push({ paths: p, ...rs }));
+      for (const region of district.regions ?? []) {
         const gs = boundaryStyle(region);
         geometryToPaths(region.boundary_polygon).forEach((p) =>
           regionPolys.push({ id: region.id, paths: p, ...gs })
         );
       }
-      for (const area of rayon.areas) {
+      for (const area of district.areas) {
         const as = boundaryStyle(area);
         geometryToPaths(area.boundary_polygon).forEach((p) =>
           areaPaths.push({ id: area.id, paths: p, ...as })
         );
       }
     }
-    return { rayonPolys, regionPolys, areaPaths };
+    return { districtPolys, regionPolys, areaPaths };
   }, [boundaries]);
 
   // Fit the map to the served region once geometry/markers are available.
@@ -269,7 +269,7 @@ function MonitoringMapInner({
         bounds.extend(p);
         has = true;
       };
-      rayonPolys.forEach((poly) => poly.paths.forEach(extend));
+      districtPolys.forEach((poly) => poly.paths.forEach(extend));
       areaPaths.forEach((area) => area.paths.forEach(extend));
       workers.forEach((w) => w.lat && w.lng && extend({ lat: w.lat, lng: w.lng }));
       if (has) {
@@ -277,7 +277,7 @@ function MonitoringMapInner({
         didFitRef.current = true;
       }
     },
-    [rayonPolys, areaPaths, workers]
+    [districtPolys, areaPaths, workers]
   );
 
   const handleMapLoad = useCallback(
@@ -360,32 +360,32 @@ function MonitoringMapInner({
 
   const selectedWorker =
     renderWorkers && selectedId ? workers.find((w) => w.user_id === selectedId) : null;
-  // Scope-gate boundary polygons: rayon outlines from the city view down, area
-  // outlines only once inside a rayon. At the top (Surabaya) the map shows just
+  // Scope-gate boundary polygons: district outlines from the city view down, area
+  // outlines only once inside a district. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
-  const showRayonPolys = scope !== 'surabaya';
-  // Kawasan outlines: all of a rayon's kawasan at rayon scope; ONLY the drilled
+  const showDistrictPolys = scope !== 'surabaya';
+  // Kawasan outlines: all of a district's kawasan at district scope; ONLY the drilled
   // kawasan once you're inside one (region scope) — the others hide so the view
   // narrows to that kawasan.
-  const showRegionPolys = scope === 'rayon' || scope === 'region';
+  const showRegionPolys = scope === 'district' || scope === 'region';
   const visibleRegionPolys = useMemo(
     () => (scope === 'region' && regionId ? regionPolys.filter((r) => r.id === regionId) : regionPolys),
     [regionPolys, scope, regionId]
   );
-  // Lokasi outlines: the SELECTED location at location scope; at rayon/kawasan scope the
-  // lokasi shown as node markers (direct lokasi under the rayon, or the kawasan's
+  // Lokasi outlines: the SELECTED location at location scope; at district/kawasan scope the
+  // lokasi shown as node markers (direct lokasi under the district, or the kawasan's
   // lokasi) get their boundary drawn too, so drilling in reveals location shapes
   // immediately — not just after zooming to a single location.
-  const showAreaBorders = scope === 'location' || scope === 'rayon' || scope === 'region';
+  const showAreaBorders = scope === 'location' || scope === 'district' || scope === 'region';
   // Ids of the lokasi currently drawn as node markers (variant 'location'); used to
-  // draw exactly those lokasi's boundaries at rayon/kawasan scope.
+  // draw exactly those lokasi's boundaries at district/kawasan scope.
   const nodeAreaIds = useMemo(
     () => new Set((nodeMarkers ?? []).filter((n) => n.variant === 'location').map((n) => n.id)),
     [nodeMarkers]
   );
   const visibleAreaPaths = useMemo(() => {
     if (scope === 'location' && areaId) return areaPaths.filter((a) => a.id === areaId);
-    if (scope === 'rayon' || scope === 'region')
+    if (scope === 'district' || scope === 'region')
       return areaPaths.filter((a) => nodeAreaIds.has(a.id));
     return areaPaths;
   }, [areaPaths, scope, areaId, nodeAreaIds]);
@@ -418,7 +418,7 @@ function MonitoringMapInner({
   const currentNodeEl = useMemo(() => {
     if (!currentNode) return null;
     // Filled with the node's own fill_color (neutral ring), so the drilled-in pin
-    // reads the same as the drill-node markers at every level (rayon/kawasan/lokasi).
+    // reads the same as the drill-node markers at every level (district/kawasan/lokasi).
     return pinElement(
       KIND_DEFAULT_GLYPH[currentNode.variant],
       { outline: MARKER_NEUTRAL_OUTLINE, fill: currentNode.fill_color ?? undefined, big: true },
@@ -440,18 +440,18 @@ function MonitoringMapInner({
         onIdle={handleIdle}
         options={mapOptions}
       >
-        {/* Rayon boundaries — the rayon's own border_color + fill_color (ADR-045),
+        {/* Rayon boundaries — the district's own border_color + fill_color (ADR-045),
             drawn separately; sensible defaults only when unset. */}
-        {layers.rayon && showRayonPolys &&
-          rayonPolys.map((poly, i) => (
+        {layers.district && showDistrictPolys &&
+          districtPolys.map((poly, i) => (
             <Polygon
-              key={`rayon-${i}`}
+              key={`district-${i}`}
               paths={poly.paths}
               options={{
-                strokeColor: poly.border_color ?? POLYGON_STYLES.rayon.stroke,
-                strokeWeight: POLYGON_STYLES.rayon.strokeWidth,
+                strokeColor: poly.border_color ?? POLYGON_STYLES.district.stroke,
+                strokeWeight: POLYGON_STYLES.district.strokeWidth,
                 strokeOpacity: poly.border_opacity ?? 0.9,
-                fillColor: poly.fill_color ?? POLYGON_STYLES.rayon.fill,
+                fillColor: poly.fill_color ?? POLYGON_STYLES.district.fill,
                 fillOpacity: poly.fill_opacity ?? RAYON_FILL_ALPHA,
                 clickable: false,
                 zIndex: 1,
@@ -460,17 +460,17 @@ function MonitoringMapInner({
           ))}
 
         {/* Kawasan (region) boundaries — the kawasan's own border_color +
-            fill_color; drawn once you're inside a rayon. */}
+            fill_color; drawn once you're inside a district. */}
         {layers.kawasan && showRegionPolys &&
           visibleRegionPolys.map((poly, i) => (
             <Polygon
               key={`region-${i}`}
               paths={poly.paths}
               options={{
-                strokeColor: poly.border_color ?? POLYGON_STYLES.rayon.stroke,
+                strokeColor: poly.border_color ?? POLYGON_STYLES.district.stroke,
                 strokeWeight: 1.5,
                 strokeOpacity: poly.border_opacity ?? 0.85,
-                fillColor: poly.fill_color ?? POLYGON_STYLES.rayon.fill,
+                fillColor: poly.fill_color ?? POLYGON_STYLES.district.fill,
                 fillOpacity: poly.fill_opacity ?? RAYON_FILL_ALPHA * 0.6,
                 clickable: false,
                 zIndex: 2,
@@ -497,7 +497,7 @@ function MonitoringMapInner({
             />
           ))}
 
-        {/* Geo node markers (Surabaya / rayon / kawasan / lokasi bubbles) — always
+        {/* Geo node markers (Surabaya / district / kawasan / lokasi bubbles) — always
             drawn (the marker layer can't be hidden). At location scope nodeMarkers is
             empty, so nothing renders there. */}
         <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
@@ -507,7 +507,7 @@ function MonitoringMapInner({
           <Polyline
             path={trail}
             options={{
-              strokeColor: POLYGON_STYLES.rayon.stroke,
+              strokeColor: POLYGON_STYLES.district.stroke,
               strokeOpacity: 0.9,
               strokeWeight: 3,
               icons: [
@@ -524,7 +524,7 @@ function MonitoringMapInner({
         )}
 
         {/* Worker pins (individual + optional team bubbles) — drawn ALONGSIDE the
-            node bubbles at rayon/kawasan/location scope, no clustering. */}
+            node bubbles at district/kawasan/location scope, no clustering. */}
         {renderWorkers && (
           <WorkerClusterLayer
             workers={workers}
@@ -536,7 +536,7 @@ function MonitoringMapInner({
           />
         )}
 
-        {/* Current-node pin (the rayon/location you drilled into): a glyph teardrop
+        {/* Current-node pin (the district/location you drilled into): a glyph teardrop
             (kind default glyph) that opens the node's detail — never drills. */}
         {currentNode && currentNodeEl && (
           <AdvancedMarker

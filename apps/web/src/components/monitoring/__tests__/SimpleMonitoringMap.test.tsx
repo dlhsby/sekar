@@ -100,7 +100,7 @@ beforeEach(() => {
 
 const boundaries: BoundariesResponse = {
   generated_at: '2026-01-01T00:00:00Z',
-  rayons: [
+  districts: [
     {
       id: 'r1',
       name: 'Rayon 1',
@@ -139,8 +139,8 @@ const boundaries: BoundariesResponse = {
           },
           center_lat: -7.287,
           center_lng: 112.747,
-          rayon_id: 'r1',
-          rayon_name: 'Rayon 1',
+          district_id: 'r1',
+          district_name: 'Rayon 1',
           assigned_count: 2,
           is_understaffed: false,
           staffing_summary: [],
@@ -160,7 +160,7 @@ const nodeMarkers = [
   {
     id: 'r1',
     name: 'Rayon 1',
-    variant: 'rayon' as const,
+    variant: 'district' as const,
     lat: -7.29,
     lng: 112.75,
     scheduled: 6,
@@ -172,14 +172,14 @@ const nodeMarkers = [
 ];
 
 describe('SimpleMonitoringMap', () => {
-  it('draws only the rayon outline at rayon scope (area borders are on-demand)', () => {
-    // Area outlines are deferred to area scope; at rayon scope only the rayon
+  it('draws only the district outline at district scope (area borders are on-demand)', () => {
+    // Area outlines are deferred to area scope; at district scope only the district
     // outline draws + its area BUBBLES (the area polygons stay hidden).
-    render(<SimpleMonitoringMap scope="rayon" workers={[]} boundaries={boundaries} />);
+    render(<SimpleMonitoringMap scope="district" workers={[]} boundaries={boundaries} />);
     expect(screen.getAllByTestId('polygon')).toHaveLength(1);
   });
 
-  it('draws the rayon outline + only the SELECTED location polygon at location scope', () => {
+  it('draws the district outline + only the SELECTED location polygon at location scope', () => {
     render(
       <SimpleMonitoringMap
 
@@ -189,13 +189,13 @@ describe('SimpleMonitoringMap', () => {
         boundaries={boundaries}
       />
     );
-    // 1 rayon polygon + 1 selected-location polygon (a1).
+    // 1 district polygon + 1 selected-location polygon (a1).
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 
   it('hides area boundaries at the top (Surabaya) scope', () => {
     render(<SimpleMonitoringMap scope="surabaya" workers={[]} boundaries={boundaries} />);
-    // Neither rayon nor area outlines at the Surabaya summary level.
+    // Neither district nor area outlines at the Surabaya summary level.
     expect(screen.queryAllByTestId('polygon')).toHaveLength(0);
   });
 
@@ -206,7 +206,7 @@ describe('SimpleMonitoringMap', () => {
     });
     const withRegions: BoundariesResponse = {
       generated_at: '2026-01-01T00:00:00Z',
-      rayons: [
+      districts: [
         {
           id: 'r1', name: 'Rayon 1', border_color: null, boundary_polygon: poly(0),
           center_lat: -7.29, center_lng: 112.75, area_count: 0,
@@ -228,7 +228,7 @@ describe('SimpleMonitoringMap', () => {
         boundaries={withRegions}
       />
     );
-    // rayon outline (1) + only kawasan k1 (1); k2 is hidden = 2 polygons total.
+    // district outline (1) + only kawasan k1 (1); k2 is hidden = 2 polygons total.
     expect(screen.getAllByTestId('polygon')).toHaveLength(2);
   });
 
@@ -245,14 +245,14 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.getAllByTestId('marker')).toHaveLength(1);
   });
 
-  it('draws worker pins ALONGSIDE node markers at rayon scope (no zoom gate)', () => {
-    // At rayon scope the map now shows the kawasan/lokasi node bubbles AND the
+  it('draws worker pins ALONGSIDE node markers at district scope (no zoom gate)', () => {
+    // At district scope the map now shows the kawasan/lokasi node bubbles AND the
     // workers on the ground at once — workers no longer replace nodes, and there
     // is no zoom threshold to cross.
     render(
       <SimpleMonitoringMap
 
-        scope="rayon"
+        scope="district"
         nodeMarkers={nodeMarkers}
         workers={workers}
         boundaries={boundaries}
@@ -271,7 +271,7 @@ describe('SimpleMonitoringMap', () => {
         boundaries={boundaries}
       />
     );
-    // Workers now render at EVERY level, including city — the rayon node bubbles
+    // Workers now render at EVERY level, including city — the district node bubbles
     // and the people on the ground show together.
     expect(screen.getAllByTestId('marker')).toHaveLength(nodeMarkers.length + workers.length);
   });
@@ -339,7 +339,7 @@ describe('SimpleMonitoringMap', () => {
         workers={workers}
         boundaries={boundaries}
         layers={{
-          rayon: true,
+          district: true,
           kawasan: true,
           lokasi: true,
           petugas: false,
@@ -347,7 +347,7 @@ describe('SimpleMonitoringMap', () => {
         }}
       />
     );
-    // Only the rayon + area polygons (no worker markers).
+    // Only the district + area polygons (no worker markers).
     expect(screen.queryAllByTestId('marker')).toHaveLength(0);
   });
 });

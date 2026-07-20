@@ -49,7 +49,7 @@ const mockTask: tasksApi.Task = {
   creator: { id: 'user-1', full_name: 'Korlap One' },
   assigned_to: { id: 'user-2', full_name: 'Satgas One' },
   area: { id: 'area-1', name: 'Taman Bungkul' },
-  rayon: { id: 'rayon-1', name: 'Rayon I' },
+  district: { id: 'district-1', name: 'Rayon I' },
   priority: 'high' as const,
   status: 'assigned' as const,
   due_date: '2026-03-01',
