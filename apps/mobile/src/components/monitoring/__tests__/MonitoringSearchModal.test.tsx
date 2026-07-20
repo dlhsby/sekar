@@ -80,8 +80,8 @@ describe('MonitoringSearchModal', () => {
     await waitFor(() => expect(getByText('Mulai Mencari')).toBeTruthy());
 
     fireEvent.changeText(getByTestId('monitoring-search-input'), 'taman');
-    // Area section + the matching area row.
-    expect(getByTestId('search-result-area-a1')).toBeTruthy();
+    // Location section + the matching location row.
+    expect(getByTestId('search-result-location-a1')).toBeTruthy();
     expect(getByText('Taman Bungkul')).toBeTruthy();
   });
 
