@@ -1059,19 +1059,23 @@ export class MonitoringStatsService {
       .addSelect('s.district_id', 'district_id')
       .addSelect('s.region_id', 'region_id')
       .addSelect('sl.location_id', 'location_id')
+      .addSelect('sl.id', 'sl_id')
       .where('s.schedule_date = :today', { today })
       .andWhere('s.status IN (:...statuses)', {
         statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
       })
       .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
       .andWhere('s.deleted_at IS NULL')
+      .orderBy('sl.id', 'ASC')
       .getRawMany()) as Array<{
       user_id: string;
       district_id: string | null;
       region_id: string | null;
       location_id: string | null;
+      sl_id: string | null;
     }>;
     // Rank most-specific → least so a user with several rows keeps the deepest.
+    // ORDER BY ensures deterministic output when a user has multiple locations at same depth.
     const rank = { location: 3, region: 2, district: 1, city: 0 } as const;
     for (const r of rows) {
       const resolved: {
@@ -1085,7 +1089,19 @@ export class MonitoringStatsService {
             ? { scope: 'district', scope_id: r.district_id }
             : { scope: 'city', scope_id: null };
       const prev = map.get(r.user_id);
-      if (!prev || rank[resolved.scope] > rank[prev.scope]) map.set(r.user_id, resolved);
+      if (!prev || rank[resolved.scope] > rank[prev.scope]) {
+        if (
+          prev &&
+          rank[resolved.scope] === rank[prev.scope] &&
+          prev.scope_id !== resolved.scope_id
+        ) {
+          this.logger.warn(
+            `User ${r.user_id} has multiple locations at same depth (${resolved.scope}). ` +
+              `Keeping first by sl.id: ${prev.scope_id}, discarding: ${resolved.scope_id}`,
+          );
+        }
+        map.set(r.user_id, resolved);
+      }
     }
     return map;
   }
