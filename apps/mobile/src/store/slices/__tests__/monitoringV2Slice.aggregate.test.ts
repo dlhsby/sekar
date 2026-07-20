@@ -40,16 +40,16 @@ describe('monitoringV2Slice drill', () => {
     expect(s.view).toEqual({ scope: 'rayon', id: 'ry', rayonId: 'ry', name: 'R' });
   });
 
-  it('drillTo area node → area view (carries rayonId)', () => {
+  it('drillTo location node → location view (carries rayonId)', () => {
     let s = reducer(base(), drillTo({ id: 'ry', type: 'rayon', name: 'R', rayonId: null }));
-    s = reducer(s, drillTo({ id: 'a1', type: 'area', name: 'Area 1', rayonId: 'ry' }));
-    expect(s.view).toEqual({ scope: 'area', id: 'a1', rayonId: 'ry', name: 'Area 1' });
+    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'Area 1', rayonId: 'ry' }));
+    expect(s.view).toEqual({ scope: 'location', id: 'a1', rayonId: 'ry', name: 'Area 1' });
   });
 
-  it('drillBack area → rayon → city → surabaya, never above floor', () => {
+  it('drillBack location → rayon → city → surabaya, never above floor', () => {
     let s = reducer(base(), enterCity());
     s = reducer(s, drillTo({ id: 'ry', type: 'rayon', name: 'R', rayonId: null }));
-    s = reducer(s, drillTo({ id: 'a1', type: 'area', name: 'A', rayonId: 'ry' }));
+    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'A', rayonId: 'ry' }));
     s = reducer(s, drillBack());
     expect(s.view.scope).toBe('rayon');
     s = reducer(s, drillBack());
@@ -69,7 +69,7 @@ describe('monitoringV2Slice drill', () => {
         floor: 'rayon',
       }),
     );
-    s = reducer(s, drillTo({ id: 'a1', type: 'area', name: 'A', rayonId: 'ry' }));
+    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'A', rayonId: 'ry' }));
     s = reducer(s, drillBack()); // area → rayon (floor)
     expect(s.view.scope).toBe('rayon');
     s = reducer(s, drillBack()); // no-op at floor

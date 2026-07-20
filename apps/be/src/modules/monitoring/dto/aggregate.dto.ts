@@ -82,7 +82,7 @@ export class PresenceBreakdownDto {
 }
 
 /**
- * One aggregate node — a rayon (city scope) or an area (rayon scope).
+ * One aggregate node — a rayon (city scope) or a location (rayon scope).
  * Carries only a center point + counts, never individual worker coordinates,
  * so the map can render lightweight summary bubbles that drill down on tap.
  */
@@ -93,8 +93,8 @@ export class AggregateNodeDto {
   @ApiProperty({ example: 'Rayon Selatan' })
   name: string;
 
-  @ApiProperty({ enum: ['rayon', 'area', 'region'], example: 'rayon' })
-  type: 'rayon' | 'area' | 'region';
+  @ApiProperty({ enum: ['rayon', 'location', 'region'], example: 'rayon' })
+  type: 'rayon' | 'location' | 'region';
 
   @ApiPropertyOptional({ example: -7.2575, nullable: true })
   center_lat: number | null;

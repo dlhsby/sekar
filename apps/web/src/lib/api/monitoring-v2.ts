@@ -128,7 +128,7 @@ export interface AggregateNodeMarker {
 export interface AggregateNode extends AggregateNodeMarker {
   id: string;
   name: string;
-  type: 'rayon' | 'area' | 'region';
+  type: 'rayon' | 'location' | 'region';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;
@@ -226,7 +226,7 @@ export const snapshotKeys = {
  * remounted every marker; the WS path removes that flash.
  */
 export function useMonitoringSnapshot(
-  scope: 'city' | 'rayon' | 'area' = 'city',
+  scope: 'city' | 'rayon' | 'location' = 'city',
   id?: string,
   enabled = true
 ) {

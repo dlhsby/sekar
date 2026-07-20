@@ -85,6 +85,11 @@ bottom-up, web before mobile:
 > duplicated between `AreaBoundaryMap` and `SimpleMonitoringMap`; `DayBoard` is 951 lines (over the
 > 800 ceiling). **Staging stays undeployed until 5+6 land** — note `main` now carries an unapplied
 > `is_active` migration and the `areaType`→`locationType` rename (field APKs read "N/A" until updated).
+> **Also on `main` (2026-07-20):** the monitoring drill-level value `'area'`→`'location'` — the
+> `GET /monitoring/snapshot?scope=` param + aggregate/staffing node `type` value changed, so installed
+> APKs send/read the old `'area'` value until updated (mobile never actually receives an `'area'`-type
+> node at its city/rayon scope, so runtime impact is minimal). The boundaries `?level=area` param + the
+> `.areas[]` payload are unchanged.
 
 Then revisit the parked features above. Track work in each feature spec's `## Changelog`.
 

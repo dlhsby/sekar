@@ -131,7 +131,7 @@ describe('NodeMarkerLayer unified pin', () => {
   it('renders an empty lokasi as its glyph pin (no white-dot fallback) with a label', () => {
     render(
       <NodeMarkerLayer
-        nodes={[makeNode({ variant: 'area', name: 'Taman Kosong', scheduled: 0, clocked_in: 0, active: 0 })]}
+        nodes={[makeNode({ variant: 'location', name: 'Taman Kosong', scheduled: 0, clocked_in: 0, active: 0 })]}
         zoom={16}
       />
     );
@@ -141,10 +141,10 @@ describe('NodeMarkerLayer unified pin', () => {
     expect(labelText()).toBe('Taman Kosong');
   });
 
-  it('renders a custom-glyph area even when empty (not a muted dot)', () => {
+  it('renders a custom-glyph location even when empty (not a muted dot)', () => {
     render(
       <NodeMarkerLayer
-        nodes={[makeNode({ variant: 'area', scheduled: 0, active: 0, marker_icon: 'star' })]}
+        nodes={[makeNode({ variant: 'location', scheduled: 0, active: 0, marker_icon: 'star' })]}
         zoom={16}
       />
     );

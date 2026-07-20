@@ -167,7 +167,7 @@ export default function LocationsPage() {
               fillColor={row.original.fill_color}
               fillOpacity={row.original.fill_opacity}
               markerIcon={row.original.marker_icon}
-              entityKind="area"
+              entityKind="location"
             />
           ) : (
             <span className="text-nb-gray-500">—</span>

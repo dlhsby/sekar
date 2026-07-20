@@ -1,9 +1,9 @@
 /**
  * useMonitoringSearch — client-side search across the monitoring map's three
- * entity types (petugas / area / rayon), all already in the store.
+ * entity types (petugas / location / rayon), all already in the store.
  *
  * Returns each type's matches plus a `semua` grouping (type sections) for the
- * "Semua" tab. Case-insensitive name match (+ area/rayon name for context).
+ * "Semua" tab. Case-insensitive name match (+ location/rayon name for context).
  */
 
 import { useMemo } from 'react';
@@ -11,13 +11,13 @@ import i18n from '../i18n/config';
 import { ROLE_LABELS } from '../constants/roles';
 import type { LiveUser, RayonBoundary, UserRole } from '../types/models.types';
 
-export type SearchResultType = 'petugas' | 'area' | 'rayon';
+export type SearchResultType = 'petugas' | 'location' | 'rayon';
 
 export interface SearchResult {
   id: string;
   type: SearchResultType;
   name: string;
-  /** Secondary line — role · area for petugas, parent rayon for area, area count for rayon. */
+  /** Secondary line — role · location for petugas, parent rayon for location, location count for rayon. */
   subtitle?: string;
   latitude: number;
   longitude: number;
@@ -33,7 +33,7 @@ export interface SearchSection {
 
 export interface MonitoringSearchResults {
   petugas: SearchResult[];
-  area: SearchResult[];
+  location: SearchResult[];
   rayon: SearchResult[];
   /** Grouped by type (non-empty sections only) — for the "Semua" tab. */
   semua: SearchSection[];
@@ -55,7 +55,7 @@ export function useMonitoringSearch(
     const matches = (s?: string | null): boolean => !!s && s.toLowerCase().includes(q);
 
     if (!q) {
-      return { petugas: [], area: [], rayon: [], semua: [], total: 0 };
+      return { petugas: [], location: [], rayon: [], semua: [], total: 0 };
     }
 
     const petugas: SearchResult[] = liveUsers
@@ -70,7 +70,7 @@ export function useMonitoringSearch(
         role: u.role,
       }));
 
-    const area: SearchResult[] = [];
+    const location: SearchResult[] = [];
     const rayon: SearchResult[] = [];
     for (const r of rayons ?? []) {
       if (matches(r.name)) {
@@ -85,9 +85,9 @@ export function useMonitoringSearch(
       }
       for (const a of r.areas) {
         if (matches(a.name)) {
-          area.push({
+          location.push({
             id: a.id,
-            type: 'area',
+            type: 'location',
             name: a.name,
             subtitle: a.rayon_name,
             latitude: Number(a.center_lat),
@@ -99,10 +99,10 @@ export function useMonitoringSearch(
 
     const semua: SearchSection[] = [
       { title: labels?.petugas ?? i18n.t('monitoring:search.personnelLabel'), type: 'petugas' as const, data: petugas },
-      { title: labels?.area ?? 'Area', type: 'area' as const, data: area },
+      { title: labels?.area ?? 'Area', type: 'location' as const, data: location },
       { title: labels?.rayon ?? 'Rayon', type: 'rayon' as const, data: rayon },
     ].filter((s) => s.data.length > 0);
 
-    return { petugas, area, rayon, semua, total: petugas.length + area.length + rayon.length };
+    return { petugas, location, rayon, semua, total: petugas.length + location.length + rayon.length };
   }, [liveUsers, rayons, query, labels]);
 }

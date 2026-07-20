@@ -33,9 +33,9 @@ describe('useMonitoringSearch', () => {
     expect(result.current.petugas[0].subtitle).toContain('Satgas');
   });
 
-  it('matches areas by name and rayons by name', () => {
-    const areas = renderHook(() => useMonitoringSearch(users, rayons, 'taman')).result.current.area;
-    expect(areas.map((a) => a.name).sort()).toEqual(['Taman Apsari', 'Taman Bungkul']);
+  it('matches locations by name and rayons by name', () => {
+    const locations = renderHook(() => useMonitoringSearch(users, rayons, 'taman')).result.current.location;
+    expect(locations.map((a) => a.name).sort()).toEqual(['Taman Apsari', 'Taman Bungkul']);
 
     const rs = renderHook(() => useMonitoringSearch(users, rayons, 'pusat')).result.current.rayon;
     expect(rs.map((r) => r.name)).toEqual(['Rayon Pusat']);
@@ -44,7 +44,7 @@ describe('useMonitoringSearch', () => {
 
   it('groups the Semua tab by type, dropping empty sections', () => {
     const { result } = renderHook(() => useMonitoringSearch(users, rayons, 'taman'));
-    // "taman" hits area names only (petugas match full_name only).
+    // "taman" hits location names only (petugas match full_name only).
     expect(result.current.semua.map((s) => s.title)).toEqual(['Area']);
     expect(result.current.total).toBe(2);
   });

@@ -274,7 +274,7 @@ describe('MonitoringStatsService.getAggregate', () => {
     expect(res.scope_id).toBe('rayon-1');
     expect(res.nodes).toHaveLength(1);
     const a1 = res.nodes[0];
-    expect(a1.type).toBe('area');
+    expect(a1.type).toBe('location');
     expect(a1.rayon_id).toBe('rayon-1');
     expect(a1.counts_by_status.offline).toBe(3);
     expect(a1.online_count).toBe(3); // offline counts as online (clocked-in)

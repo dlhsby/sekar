@@ -223,7 +223,7 @@ export interface LocationHistory {
 export interface StaffingSummaryItem {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'rayon' | 'location';
   roles: {
     role: string;
     active: number;
@@ -365,7 +365,7 @@ export interface PresenceBreakdown {
 export interface AggregateNode {
   id: string;
   name: string;
-  type: 'rayon' | 'area';
+  type: 'rayon' | 'location';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;

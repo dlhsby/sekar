@@ -175,15 +175,15 @@ const NODE_GLYPHS: Record<string, string> = {
 /**
  * System-default glyph per node kind (ADR-046 "bawaan sistem" marker), mirroring
  * the default pin images (rayon → orange building, kawasan/lokasi → green tree).
- * Used when an area has no explicit `marker_icon`, so every node carries a
+ * Used when a location has no explicit `marker_icon`, so every node carries a
  * kind-appropriate marker instead of a bare dot.
  */
 // Per-kind default glyph. Kawasan (trees = a grove) and lokasi (tree = a single
 // site) are deliberately DISTINCT so the two tiers read apart at a glance.
-export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'area' | 'region' | 'surabaya', string> = {
+export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'location' | 'region' | 'surabaya', string> = {
   rayon: 'building',
   region: 'trees', // kawasan = a grove of trees
-  area: 'leaf', // lokasi = a single leaf (visually distinct from the kawasan grove)
+  location: 'leaf', // lokasi = a single leaf (visually distinct from the kawasan grove)
   surabaya: 'building',
 };
 
@@ -353,15 +353,15 @@ export function teamMarkerElement(
 }
 
 /** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → leaf, team → droplets). */
-export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'area' | 'team'): string {
+export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'location' | 'team'): string {
   if (kind === 'rayon') return 'building';
   if (kind === 'team') return 'droplets';
-  if (kind === 'area') return 'leaf';
+  if (kind === 'location') return 'leaf';
   return 'trees';
 }
 
 export function nodeCountIcon(
-  variant: 'rayon' | 'area' | 'region' | 'surabaya',
+  variant: 'rayon' | 'location' | 'region' | 'surabaya',
   active: number,
   health: HealthLevel,
   opts?: { icon?: string | null }
@@ -417,7 +417,7 @@ export function nodeCountIcon(
  * Region markers use the same 76×44 size as rayon/area.
  */
 export function nodeRatioIcon(
-  variant: 'rayon' | 'area' | 'region' | 'surabaya',
+  variant: 'rayon' | 'location' | 'region' | 'surabaya',
   scheduled: number,
   clockedIn: number
 ): google.maps.Icon {
@@ -456,17 +456,17 @@ export function nodeRatioIcon(
 }
 
 /* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays */
-// The CURRENT-node icon markers (mirrors mobile's rayon office / area pin). These
+// The CURRENT-node icon markers (mirrors mobile's rayon office / location pin). These
 // are the detail-openers for the node you're inside — icon only, no ratio (the
 // ratio lives on the child bubbles). Distinct from the drill bubbles above.
-const NODE_DETAIL: Record<'rayon' | 'area', { color: string; glyph: string }> = {
+const NODE_DETAIL: Record<'rayon' | 'location', { color: string; glyph: string }> = {
   rayon: {
     color: '#2563EB',
     glyph:
       '<path d="M3 21h18"/><path d="M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16"/>' +
       '<path d="M14 21V9h4a1 1 0 0 1 1 1v11"/><path d="M8 7h2M8 11h2M8 15h2"/>',
   },
-  area: {
+  location: {
     color: '#D97706',
     glyph: '<path d="M12 22s7-6 7-12a7 7 0 1 0-14 0c0 6 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/>',
   },
@@ -474,11 +474,11 @@ const NODE_DETAIL: Record<'rayon' | 'area', { color: string; glyph: string }> = 
 /* eslint-enable sekar-design/no-inline-hex-colors */
 
 /**
- * The current node's geographic pin (selected rayon at rayon scope, selected area
- * at area scope). A colored circle with a white glyph; clicking it opens the
+ * The current node's geographic pin (selected rayon at rayon scope, selected location
+ * at location scope). A colored circle with a white glyph; clicking it opens the
  * node's detail — it does NOT drill, so it carries no ratio.
  */
-export function nodeDetailIcon(variant: 'rayon' | 'area'): google.maps.Icon {
+export function nodeDetailIcon(variant: 'rayon' | 'location'): google.maps.Icon {
   const { color, glyph } = NODE_DETAIL[variant];
   const s = 48;
   const c = s / 2;

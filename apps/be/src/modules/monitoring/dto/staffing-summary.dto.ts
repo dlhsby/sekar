@@ -67,8 +67,8 @@ export class StaffingSummaryItemDto {
   @ApiProperty({ example: 'Taman Bungkul' })
   name: string;
 
-  @ApiProperty({ example: 'area', enum: ['rayon', 'area'] })
-  type: 'rayon' | 'area';
+  @ApiProperty({ example: 'area', enum: ['rayon', 'location'] })
+  type: 'rayon' | 'location';
 
   @ApiProperty({ type: [RoleStaffingDto] })
   roles: RoleStaffingDto[];

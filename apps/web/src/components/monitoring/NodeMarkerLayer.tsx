@@ -25,7 +25,7 @@ import {
 export interface NodeMarker {
   id: string;
   name: string;
-  variant: 'rayon' | 'area' | 'region' | 'surabaya';
+  variant: 'rayon' | 'location' | 'region' | 'surabaya';
   lat: number;
   lng: number;
   scheduled: number;
@@ -36,11 +36,11 @@ export interface NodeMarker {
   active: number;
   /** Active (fresh ping) AND inside their area — a detail field (unused on the pin). */
   active_inside: number;
-  /** Configured marker glyph for this area (e.g. "trees"); null → per-kind default. */
+  /** Configured marker glyph for this location (e.g. "trees"); null → per-kind default. */
   marker_icon?: string | null;
-  /** The area's fill_color — fills the marker pin (null → white). */
+  /** The location's fill_color — fills the marker pin (null → white). */
   fill_color?: string | null;
-  /** The area's fill_opacity 0–1. */
+  /** The location's fill_opacity 0–1. */
   fill_opacity?: number | null;
 }
 

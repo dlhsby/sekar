@@ -48,8 +48,8 @@ import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
-// Drill: rayon (top) -> kawasan -> lokasi -> workers. Workers only at area scope.
-type Scope = 'city' | 'rayon' | 'region' | 'area';
+// Drill: rayon (top) -> kawasan -> lokasi -> workers. Workers only at location scope.
+type Scope = 'city' | 'rayon' | 'region' | 'location';
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 
@@ -118,7 +118,7 @@ export default function MonitoringPage() {
   // Role determines the landing view + the floor the user can never drill above.
   const roleView = useMemo<{ view: MonitoringView; floor: Scope }>(() => {
     if (user?.role === 'korlap' && user.area_id) {
-      return { view: { scope: 'area', id: user.area_id }, floor: 'area' };
+      return { view: { scope: 'location', id: user.area_id }, floor: 'location' };
     }
     if ((user?.role === 'kepala_rayon' || user?.role === 'admin_rayon') && user.rayon_id) {
       return {
@@ -166,7 +166,7 @@ export default function MonitoringPage() {
   }, [roleView]);
 
   const scope = view.scope;
-  const showWorkers = scope === 'area';  // Workers only at area scope, not region.
+  const showWorkers = scope === 'location';  // Workers only at location scope, not region.
 
   // City aggregate feeds BOTH the Surabaya summary (roster_totals) and the rayon
   // list/markers (nodes) — one fetch. Rayon aggregate feeds the region/area level.
@@ -193,21 +193,23 @@ export default function MonitoringPage() {
 
   const activeAgg = scope === 'region' ? regionAreasAgg : scope === 'rayon' ? rayonAgg : cityAgg;
 
-  // Snapshot (workers) — rendered only at area scope, but kept loaded so search
+  // Snapshot (workers) — rendered only at location scope, but kept loaded so search
   // can find people at any level. Surabaya maps to the city snapshot scope.
-  // Region scope shows areas, so snapshot is still at the parent rayon.
-  const snapshotScope: 'city' | 'rayon' | 'area' =
+  // Region scope shows locations, so snapshot is still at the parent rayon.
+  const snapshotScope: 'city' | 'rayon' | 'location' =
     scope === 'region' ? 'rayon' : scope;
   const snapshotId = scope === 'region' ? view.rayonId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
   const areaSummaries = useMemo(() => snapshot.data?.data?.area_summaries ?? [], [snapshot.data]);
 
-  // Progressive boundaries: rayon outlines at the top, that rayon's areas deeper.
+  // Progressive boundaries: rayon outlines at the top, that rayon's locations deeper.
+  // NB: the boundaries `level` param stays 'area' — it's part of the retained
+  // AreaBoundaryDto / `.areas[]` boundary contract (backend accepts 'rayon'|'area').
   const boundaryLevel: 'rayon' | 'area' =
     scope === 'city' ? 'rayon' : 'area';
   const boundaryRayonId =
-    scope === 'rayon' || scope === 'region' || scope === 'area' ? view.rayonId ?? view.id : undefined;
+    scope === 'rayon' || scope === 'region' || scope === 'location' ? view.rayonId ?? view.id : undefined;
   const {
     data: boundaries,
     isFetching: boundariesFetching,
@@ -275,7 +277,7 @@ export default function MonitoringPage() {
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_REGION);
   };
 
-  const drillToArea = (
+  const drillToLocation = (
     id: string,
     name: string,
     rayonId?: string,
@@ -284,9 +286,9 @@ export default function MonitoringPage() {
     regionId?: string
   ) => {
     const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
-    // Carry regionId so back-from-area returns to the kawasan tier (not straight
-    // to the rayon) when the area was reached via a region.
-    setView({ scope: 'area', id, rayonId, regionId, name, ...coord });
+    // Carry regionId so back-from-location returns to the kawasan tier (not straight
+    // to the rayon) when the location was reached via a region.
+    setView({ scope: 'location', id, rayonId, regionId, name, ...coord });
     setSelectedId(null);
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_AREA);
   };
@@ -296,15 +298,15 @@ export default function MonitoringPage() {
     if (node.variant === 'rayon') drillToRayon(node.id, node.name, node.lat, node.lng);
     else if (node.variant === 'region') drillToRegion(node.id, node.name, view.id, node.lat, node.lng);
     else if (scope === 'region')
-      drillToArea(node.id, node.name, view.rayonId, node.lat, node.lng, view.id);
-    else drillToArea(node.id, node.name, view.id, node.lat, node.lng);
+      drillToLocation(node.id, node.name, view.rayonId, node.lat, node.lng, view.id);
+    else drillToLocation(node.id, node.name, view.id, node.lat, node.lng);
   };
   // List row tapped (an AggregateNode).
   const onDrillListNode = (node: AggregateNode) => {
     if (node.type === 'rayon') drillToRayon(node.id, node.name, node.center_lat, node.center_lng);
     else if (node.type === 'region') drillToRegion(node.id, node.name, view.id, node.center_lat, node.center_lng);
     else
-      drillToArea(
+      drillToLocation(
         node.id,
         node.name,
         node.rayon_id ?? view.rayonId ?? view.id,
@@ -316,11 +318,11 @@ export default function MonitoringPage() {
 
   const handleSearchSelect = (result: MonitoringSearchResult) => {
     if (result.type === 'petugas') {
-      // Drill into the worker's area so the pin renders, then select + focus.
+      // Drill into the worker's location so the pin renders, then select + focus.
       const w = workers.find((x) => x.user_id === result.id);
       if (w?.location_id) {
         setView({
-          scope: 'area',
+          scope: 'location',
           id: w.location_id,
           rayonId: w.rayon_id ?? result.rayonId ?? undefined,
           name: w.location_name ?? undefined,
@@ -330,7 +332,7 @@ export default function MonitoringPage() {
       setListOpen(true);
       focusOn(result.latitude, result.longitude, 16);
     } else if (result.type === 'area') {
-      drillToArea(result.id, result.name, result.rayonId ?? view.rayonId, result.latitude, result.longitude);
+      drillToLocation(result.id, result.name, result.rayonId ?? view.rayonId, result.latitude, result.longitude);
     } else {
       drillToRayon(result.id, result.name, result.latitude, result.longitude);
     }
@@ -340,9 +342,9 @@ export default function MonitoringPage() {
   // Drilling OUT zooms back out (exact zoom) to frame the parent level.
   const goBack = () => {
     setSelectedId(null);
-    if (scope === 'area') {
-      if (roleView.floor === 'area') return;
-      // From area: go back to region (if regionId exists) or rayon.
+    if (scope === 'location') {
+      if (roleView.floor === 'location') return;
+      // From location: go back to region (if regionId exists) or rayon.
       if (view.regionId && view.rayonId) {
         setView({ scope: 'region', id: view.regionId, rayonId: view.rayonId });
         if (typeof view.lat === 'number' && typeof view.lng === 'number') {
@@ -407,7 +409,7 @@ export default function MonitoringPage() {
         onClick: scope === 'rayon' ? undefined : () => drillToRayon(rid, name),
       });
     }
-    const kid = scope === 'region' ? view.id : scope === 'area' ? view.regionId : undefined;
+    const kid = scope === 'region' ? view.id : scope === 'location' ? view.regionId : undefined;
     if (kid) {
       const name = geoNames.region.get(kid) ?? (scope === 'region' ? view.name : undefined) ?? t('monitoring:filters.kawasanLabel');
       items.push({
@@ -416,9 +418,9 @@ export default function MonitoringPage() {
         onClick: scope === 'region' ? undefined : () => drillToRegion(kid, name, view.rayonId),
       });
     }
-    if (scope === 'area') {
+    if (scope === 'location') {
       items.push({
-        key: 'area',
+        key: 'location',
         label: geoNames.area.get(view.id ?? '') ?? view.name ?? t('monitoring:filters.lokasiLabel'),
       });
     }
@@ -470,7 +472,7 @@ export default function MonitoringPage() {
         };
       }
     }
-    if (scope === 'area' && view.id) {
+    if (scope === 'location' && view.id) {
       let lat = view.lat;
       let lng = view.lng;
       const area = boundaries?.rayons.flatMap((r) => r.areas).find((a) => a.id === view.id);
@@ -480,7 +482,7 @@ export default function MonitoringPage() {
       }
       if (lat != null && lng != null) {
         return {
-          variant: 'area',
+          variant: 'location',
           id: view.id,
           name: view.name ?? area?.name ?? '',
           lat,
@@ -494,22 +496,22 @@ export default function MonitoringPage() {
 
   // Tapping the current-node pin focuses it a touch tighter and opens the list
   // sheet (its children/detail) — mirrors mobile's marker → detail.
-  // Clicking the current node's pin opens its AREA DETAIL card (not the list).
+  // Clicking the current node's pin opens its LOCATION DETAIL card (not the list).
   const onNodeDetail = (node: CurrentNodeMarker) => {
-    focusOn(node.lat, node.lng, node.variant === 'area' ? 16 : 14);
+    focusOn(node.lat, node.lng, node.variant === 'location' ? 16 : 14);
     setAreaDetailOpen(true);
   };
 
-  // Rayons list (surabaya + city), regions list (rayon), or areas list (region or rayon-without-regions),
+  // Rayons list (surabaya + city), regions list (rayon), or locations list (region or rayon-without-regions),
   // for the side panel.
   const listNodes = useMemo<AggregateNode[]>(() => {
     if (scope === 'region') {
-      // At region scope: filter the rayon's area nodes by region_id.
+      // At region scope: filter the rayon's location nodes by region_id.
       const areas = regionAreasAgg.data?.nodes ?? [];
       return areas.filter((n) => n.region_id === view.id);
     }
     if (scope === 'rayon') {
-      // At rayon scope: show region nodes if available (≥1), otherwise show area nodes (region-less fallback).
+      // At rayon scope: show region nodes if available (≥1), otherwise show location nodes (region-less fallback).
       if (regionAgg.data && regionAgg.data.nodes.length > 0) {
         return regionAgg.data.nodes;
       }
@@ -526,11 +528,11 @@ export default function MonitoringPage() {
   //            (region-less); a kawasan's own lokasi appear when you drill/zoom
   //            into that kawasan.
   //   region → that kawasan's lokasi markers
-  //   area   → no node markers (worker pins render instead)
+  //   location → no node markers (worker pins render instead)
   const nodeMarkers = useMemo<NodeMarker[]>(() => {
     const toMarkers = (nodes: AggregateNode[]) =>
       nodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
-    if (scope === 'area') return [];
+    if (scope === 'location') return [];
     if (scope === 'region') {
       return toMarkers((regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id));
     }
@@ -790,11 +792,11 @@ export default function MonitoringPage() {
 
   // Workers drawn on the map are scoped to the DRILL level, not just the filter
   // panel: at kawasan (region) scope only that kawasan's workers show; at lokasi
-  // (area) scope only that lokasi's. At rayon/city all of the fetched workers show.
+  // (location) scope only that lokasi's. At rayon/city all of the fetched workers show.
   const drillScopedWorkers = useMemo(() => {
     // Map source: base filter (no jenis split) so teams + individuals both draw.
     if (scope === 'region') return baseFilteredWorkers.filter((w) => w.region_id === view.id);
-    if (scope === 'area') return baseFilteredWorkers.filter((w) => w.location_id === view.id);
+    if (scope === 'location') return baseFilteredWorkers.filter((w) => w.location_id === view.id);
     return baseFilteredWorkers;
   }, [baseFilteredWorkers, scope, view.id]);
 
@@ -864,7 +866,7 @@ export default function MonitoringPage() {
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
-        areaId={scope === 'area' ? view.id ?? null : null}
+        areaId={scope === 'location' ? view.id ?? null : null}
         regionId={scope === 'region' ? view.id ?? null : null}
         workers={mapWorkers}
         boundaries={boundaries ?? null}
