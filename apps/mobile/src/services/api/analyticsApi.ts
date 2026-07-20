@@ -39,7 +39,7 @@ export async function getWorker(
 export async function getWorkers(params?: {
   page?: number;
   limit?: number;
-  rayon_id?: string;
+  district_id?: string;
   location_id?: string;
   sort_by?: string;
   sort_dir?: 'asc' | 'desc';
@@ -56,7 +56,7 @@ export async function getWorkers(params?: {
 export async function getAreaAnalytics(params?: {
   page?: number;
   limit?: number;
-  rayon_id?: string;
+  district_id?: string;
   sort_by?: string;
   sort_dir?: 'asc' | 'desc';
 }): Promise<ApiResponse<{ data: AreaAnalytics[]; total: number; page: number; limit: number }>> {

@@ -28,7 +28,7 @@ describe('monitoringApi', () => {
           total_areas: 10,
           staffed_areas: 8,
           understaffed_areas: 2,
-          rayons: [],
+          districts: [],
         },
       };
       mockGet.mockResolvedValue(mockResponse);
@@ -51,38 +51,38 @@ describe('monitoringApi', () => {
     });
   });
 
-  describe('getRayonMonitoring', () => {
-    it('gets rayon monitoring stats', async () => {
-      const rayonId = 'rayon-123';
+  describe('getDistrictMonitoring', () => {
+    it('gets district monitoring stats', async () => {
+      const districtId = 'district-123';
       const mockResponse = {
         data: {
-          rayon_id: rayonId,
-          rayon_name: 'Rayon Selatan',
+          district_id: districtId,
+          district_name: 'Rayon Selatan',
           total_users: 50,
           areas: [],
         },
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getRayonMonitoring(rayonId);
+      const result = await monitoringApi.getDistrictMonitoring(districtId);
 
       expect(mockGet).toHaveBeenCalledWith(
-        `/monitoring/rayon/${rayonId}`,
+        `/monitoring/district/${districtId}`,
         undefined,
       );
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets rayon monitoring stats with filters', async () => {
-      const rayonId = 'rayon-123';
+    it('gets district monitoring stats with filters', async () => {
+      const districtId = 'district-123';
       const filters = { date: '2026-01-25' };
-      const mockResponse = { data: { rayon_id: rayonId } };
+      const mockResponse = { data: { district_id: districtId } };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await monitoringApi.getRayonMonitoring(rayonId, filters);
+      const result = await monitoringApi.getDistrictMonitoring(districtId, filters);
 
       expect(mockGet).toHaveBeenCalledWith(
-        `/monitoring/rayon/${rayonId}`,
+        `/monitoring/district/${districtId}`,
         filters,
       );
       expect(result).toEqual(mockResponse);
@@ -168,8 +168,8 @@ describe('monitoringApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets live users with rayon filter', async () => {
-      const filters = { rayon_id: 'rayon-123' };
+    it('gets live users with district filter', async () => {
+      const filters = { district_id: 'district-123' };
       const mockResponse = {
         data: {
           total_online: 0,
@@ -469,8 +469,8 @@ describe('monitoringApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('gets staffing summary with rayon_id filter', async () => {
-      const filters = { rayon_id: 'rayon-789' };
+    it('gets staffing summary with district_id filter', async () => {
+      const filters = { district_id: 'district-789' };
       const mockResponse = {
         data: {
           total_areas: 5,
@@ -493,7 +493,7 @@ describe('monitoringApi', () => {
     it('exports all functions', () => {
       const defaultExport = monitoringApi.default;
       expect(defaultExport.getCityMonitoring).toBeDefined();
-      expect(defaultExport.getRayonMonitoring).toBeDefined();
+      expect(defaultExport.getDistrictMonitoring).toBeDefined();
       expect(defaultExport.getAreaMonitoring).toBeDefined();
       expect(defaultExport.getLiveUsers).toBeDefined();
       expect(defaultExport.getActiveUsers).toBeDefined();

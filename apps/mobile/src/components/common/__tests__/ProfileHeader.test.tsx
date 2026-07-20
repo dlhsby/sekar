@@ -1,5 +1,5 @@
 /**
- * ProfileHeader (PRF-1 identity strip) tests — name, role/rayon line, meta line,
+ * ProfileHeader (PRF-1 identity strip) tests — name, role/district line, meta line,
  * avatar photo vs. initials, and graceful fallbacks.
  */
 import React from 'react';
@@ -22,14 +22,14 @@ describe('ProfileHeader', () => {
     expect(getByText('Budi Santoso')).toBeTruthy();
   });
 
-  it('renders the role label only when no rayon is set', () => {
+  it('renders the role label only when no district is set', () => {
     const { getByText } = render(<ProfileHeader user={baseUser} />);
     expect(getByText('Satgas')).toBeTruthy();
   });
 
-  it('joins role and rayon with a middot when rayon is present', () => {
+  it('joins role and district with a middot when district is present', () => {
     const { getByText } = render(
-      <ProfileHeader user={{ ...baseUser, rayon: { id: 'r1', name: 'Pusat' } as any }} />,
+      <ProfileHeader user={{ ...baseUser, district: { id: 'r1', name: 'Pusat' } as any }} />,
     );
     expect(getByText('Satgas · Pusat')).toBeTruthy();
   });

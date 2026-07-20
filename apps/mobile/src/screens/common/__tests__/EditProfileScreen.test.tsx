@@ -35,7 +35,7 @@ function renderScreen(userOverrides = {}) {
         full_name: 'Budi Santoso',
         role: 'satgas',
         phone_number: '081200000006',
-        rayon: { id: 'r1', name: 'Pusat' },
+        district: { id: 'r1', name: 'Pusat' },
         ...userOverrides,
       } as any,
     }),

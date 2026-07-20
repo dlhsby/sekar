@@ -126,7 +126,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('../../../services/api', () => ({
-  getRayons: jest.fn().mockResolvedValue({
+  getDistricts: jest.fn().mockResolvedValue({
     data: [
       { id: 'r1', name: 'Pusat', code: 'PUSAT' },
       { id: 'r2', name: 'Selatan', code: 'SELATAN' },
@@ -179,8 +179,8 @@ function makeStore() {
           username: 'staff_kecamatan_pusat_1',
           full_name: 'Staff Kecamatan Pusat',
           role: 'staff_kecamatan',
-          rayon_id: 'r1',
-          rayon: { id: 'r1', name: 'Pusat', created_at: '', updated_at: '' },
+          district_id: 'r1',
+          district: { id: 'r1', name: 'Pusat', created_at: '', updated_at: '' },
           kecamatan_name: 'Tegalsari',
           created_at: '',
           updated_at: '',
@@ -215,13 +215,13 @@ describe('SubmitScreen (Phase 3 Apr 27 redesign)', () => {
     expect(getByText('Catatan (Opsional)')).toBeTruthy();
   });
 
-  it('renders rayon + kecamatan as read-only presets for staff_kecamatan (May 2026)', () => {
+  it('renders district + kecamatan as read-only presets for staff_kecamatan (May 2026)', () => {
     const { getByTestId } = render(
       <Provider store={makeStore()}>
         <SubmitScreen />
       </Provider>,
     );
-    expect(getByTestId('perantingan-rayon-readonly')).toBeTruthy();
+    expect(getByTestId('perantingan-district-readonly')).toBeTruthy();
     expect(getByTestId('perantingan-kecamatan-readonly')).toBeTruthy();
   });
 

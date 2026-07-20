@@ -29,7 +29,7 @@ export function useActivitiesActivityFilters(
     if (activityFilters.from_date || activityFilters.to_date) count++;
     if (activityFilters.activity_type_id) count++;
     if (activityFilters.location_id && activityFilters.location_id !== initialAreaId) count++;
-    if (activityFilters.rayon_id) count++;
+    if (activityFilters.district_id) count++;
     return count;
   }, [activityFilters, initialAreaId]);
 

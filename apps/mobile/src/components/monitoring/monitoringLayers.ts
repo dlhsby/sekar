@@ -2,7 +2,7 @@
  * Monitoring map layer definitions — the toggleable map layers surfaced in the
  * wrench "Tampilan" section (ToolsOverlay). Each key must gate real rendering:
  *   workers → useLiveUsersFiltering · plants → PlantOverlayLayer ·
- *   rayons/areas → MapLayerContent boundary overlays.
+ *   districts/areas → MapLayerContent boundary overlays.
  * (`overdue` is intentionally omitted — it gates nothing on mobile.)
  */
 
@@ -18,6 +18,6 @@ export interface LayerRow {
 export const LAYER_ROWS: LayerRow[] = [
   { key: 'workers', label: i18n.t('monitoring:layers.workers'), icon: 'account-hard-hat' },
   { key: 'plants', label: i18n.t('monitoring:layers.plants'), icon: 'tree' },
-  { key: 'rayons', label: i18n.t('monitoring:layers.rayons'), icon: 'map-marker-radius' },
+  { key: 'districts', label: i18n.t('monitoring:layers.districts'), icon: 'map-marker-radius' },
   { key: 'areas', label: i18n.t('monitoring:layers.areas'), icon: 'vector-polygon' },
 ];

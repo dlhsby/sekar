@@ -95,7 +95,7 @@
     "address": "Address",
     "areaType": "Area Type",
     "gpsCoordinates": "GPS Coordinates",
-    "rayonCoverage": "Rayon Coverage",
+    "districtCoverage": "District Coverage",
     "noSpecificArea": "No specific area",
     "inBoundary": "IN AREA",
     "outOfBoundary": "OUT OF AREA",

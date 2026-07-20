@@ -506,7 +506,7 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           </View>
 
-          {/* Not-assigned hint (field roles only — rayon-scoped roles excluded) */}
+          {/* Not-assigned hint (field roles only — district-scoped roles excluded) */}
           {!assignedArea && !currentShift &&
             user?.role !== 'admin_rayon' && user?.role !== 'kepala_rayon' && (
               <View style={styles.warningCard}>

@@ -1,6 +1,6 @@
 /**
  * BoundaryDetailModal Component
- * Phase 2D Gap #2: rayon/area staffing detail when a center marker is tapped.
+ * Phase 2D Gap #2: district/area staffing detail when a center marker is tapped.
  *
  * Phase 4 M3 (CP7): rebuilt onto the UserDetailSheet design language —
  * NBModal sheet + a hero header (type-tinted icon chip · name · sub-line ·
@@ -29,7 +29,7 @@ import {
 } from '../../constants/nbTokens';
 import { ROLE_LABELS } from '../../constants/roles';
 import type {
-  RayonBoundary,
+  DistrictBoundary,
   AreaBoundary,
   UserRole,
   AreaPlant,
@@ -40,8 +40,8 @@ import { listAreaPlants, listNotablePlants } from '../../services/api/plantsApi'
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BoundaryDetailModalProps {
-  type: 'rayon' | 'location';
-  data: RayonBoundary | AreaBoundary | null;
+  type: 'district' | 'location';
+  data: DistrictBoundary | AreaBoundary | null;
   visible: boolean;
   onClose: () => void;
   onReassign?: (area: AreaBoundary) => void;
@@ -57,21 +57,21 @@ export function BoundaryDetailModal({
   onReassign,
 }: BoundaryDetailModalProps): React.JSX.Element {
   const { t } = useTranslation();
-  const isRayon = type === 'rayon';
-  const rayonData = !data ? null : isRayon ? (data as RayonBoundary) : null;
-  const areaData = !data ? null : !isRayon ? (data as AreaBoundary) : null;
+  const isDistrict = type === 'district';
+  const districtData = !data ? null : isDistrict ? (data as DistrictBoundary) : null;
+  const areaData = !data ? null : !isDistrict ? (data as AreaBoundary) : null;
 
   // Phase 3 sub-phase 3-8 hookup: fetch plants for the selected area so the
-  // "Tanaman" sub-sheet shows status mix + heritage trees. The rayon-scoped
+  // "Tanaman" sub-sheet shows status mix + heritage trees. The district-scoped
   // "Permohonan Pangkas" section was intentionally dropped — pruning_requests
-  // are rayon-scoped, not area-scoped.
+  // are district-scoped, not area-scoped.
   const [plants, setPlants] = useState<AreaPlant[]>([]);
   const [notable, setNotable] = useState<NotablePlant[]>([]);
   const [loadingPlants, setLoadingPlants] = useState(false);
   const [plantsOpen, setPlantsOpen] = useState(false);
 
   useEffect(() => {
-    if (!visible || isRayon || !areaData) {
+    if (!visible || isDistrict || !areaData) {
       setPlants([]);
       setNotable([]);
       setPlantsOpen(false);
@@ -102,14 +102,14 @@ export function BoundaryDetailModal({
     // Key on the area ID, not the object — reopening the same area with a fresh
     // object reference still refetches, but an unrelated re-render won't.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, isRayon, areaData?.id]);
+  }, [visible, isDistrict, areaData?.id]);
 
   const isOpen = visible && !!data;
 
-  // Understaffed → "Understaffed" (bad); otherwise "Cukup" (ok). Both rayon and
+  // Understaffed → "Understaffed" (bad); otherwise "Cukup" (ok). Both district and
   // area carry `is_understaffed`.
-  const understaffed = isRayon
-    ? rayonData?.is_understaffed
+  const understaffed = isDistrict
+    ? districtData?.is_understaffed
     : areaData?.is_understaffed;
 
   return (
@@ -121,19 +121,19 @@ export function BoundaryDetailModal({
             <View style={styles.hero}>
               <View style={styles.iconChip}>
                 <MaterialCommunityIcons
-                  name={isRayon ? 'office-building' : 'map-marker'}
+                  name={isDistrict ? 'office-building' : 'map-marker'}
                   size={22}
-                  color={isRayon ? nbColors.requestUnderReview : nbColors.statusIdle}
+                  color={isDistrict ? nbColors.requestUnderReview : nbColors.statusIdle}
                 />
               </View>
               <View style={styles.heroInfo}>
                 <NBText variant="h3" color="black" numberOfLines={2}>
-                  {isRayon ? rayonData!.name : areaData!.name}
+                  {isDistrict ? districtData!.name : areaData!.name}
                 </NBText>
                 <NBText variant="mono-sm" color="gray600">
-                  {isRayon
-                    ? `${rayonData!.area_count} area`
-                    : areaData!.rayon_name}
+                  {isDistrict
+                    ? `${districtData!.area_count} area`
+                    : areaData!.district_name}
                 </NBText>
               </View>
               <StatusPill
@@ -145,17 +145,17 @@ export function BoundaryDetailModal({
 
             {/* KPI tiles */}
             <View style={styles.statRow}>
-              {isRayon && rayonData ? (
+              {isDistrict && districtData ? (
                 <>
                   <HomeStatTile
                     label={t('monitoring:boundaryDetail.areaLabel')}
-                    value={rayonData.area_count}
+                    value={districtData.area_count}
                     testID="boundary-stat-area-count"
                   />
                   <HomeStatTile
                     label={t('monitoring:boundaryDetail.understaffedLabel')}
-                    value={rayonData.understaffed_area_count}
-                    variant={rayonData.understaffed_area_count > 0 ? 'warn' : 'ok'}
+                    value={districtData.understaffed_area_count}
+                    variant={districtData.understaffed_area_count > 0 ? 'warn' : 'ok'}
                     testID="boundary-stat-understaffed"
                   />
                 </>
@@ -178,17 +178,17 @@ export function BoundaryDetailModal({
             </View>
 
             {/* Rayon mode: list of areas */}
-            {isRayon && rayonData ? (
+            {isDistrict && districtData ? (
               <View style={styles.section}>
                 <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
-                  {t('monitoring:boundaryDetail.areaListTitle')} ({rayonData.areas.length})
+                  {t('monitoring:boundaryDetail.areaListTitle')} ({districtData.areas.length})
                 </NBText>
-                {rayonData.areas.length === 0 ? (
+                {districtData.areas.length === 0 ? (
                   <NBText variant="body-sm" color="gray500" align="center">
                     {t('monitoring:boundaryDetail.noAreasMessage')}
                   </NBText>
                 ) : (
-                  rayonData.areas.map(area => (
+                  districtData.areas.map(area => (
                     <View key={area.id} style={styles.areaRow}>
                       <View style={styles.areaRowLeft}>
                         <NBText variant="body" color="black">{area.name}</NBText>
@@ -208,7 +208,7 @@ export function BoundaryDetailModal({
             ) : null}
 
             {/* Area mode: per-role staffing + reassign + tanaman sub-sheet */}
-            {!isRayon && areaData ? (
+            {!isDistrict && areaData ? (
               <>
                 <View style={styles.section}>
                   <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>

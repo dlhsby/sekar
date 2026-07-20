@@ -41,7 +41,7 @@ interface UseTasksFetchingOptions {
   createdFrom: string;
   createdTo: string;
   petugasFilter: string | null;
-  rayonFilter: string | null;
+  districtFilter: string | null;
   areaFilter: string | null;
   taskSort: TaskSortOption;
 }
@@ -55,7 +55,7 @@ export function useTasksFetching(options: UseTasksFetchingOptions): UseTasksFetc
     createdFrom,
     createdTo,
     petugasFilter,
-    rayonFilter,
+    districtFilter,
     areaFilter,
     taskSort,
   } = options;
@@ -82,11 +82,11 @@ export function useTasksFetching(options: UseTasksFetchingOptions): UseTasksFetc
       sort_dir,
       page,
       limit: TASKS_PAGE_LIMIT,
-      ...(rayonFilter ? { rayon_id: rayonFilter } : {}),
+      ...(districtFilter ? { district_id: districtFilter } : {}),
       ...(areaFilter ? { location_id: areaFilter } : {}),
       ...(petugasFilter ? { assigned_to: petugasFilter } : {}),
     };
-  }, [taskSort, statusFilter, dateFrom, dateTo, createdFrom, createdTo, rayonFilter, areaFilter, petugasFilter]);
+  }, [taskSort, statusFilter, dateFrom, dateTo, createdFrom, createdTo, districtFilter, areaFilter, petugasFilter]);
 
   const fetchTasks = useCallback(async (page: number, reset: boolean) => {
     if (isFetchingTasks.current) {

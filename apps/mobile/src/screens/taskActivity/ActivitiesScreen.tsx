@@ -142,7 +142,7 @@ export function ActivitiesScreen({ navigation }: Props): React.JSX.Element {
           onApplyFilters={activityFilters.handleApplyActivityFilters}
           onResetFilters={activityFilters.handleResetActivityFilters}
           userRole={user?.role}
-          userRayonId={user?.rayon_id}
+          userDistrictId={user?.district_id}
           userAreaId={user?.location_id ?? currentShift?.location_id ?? undefined}
           userId={user?.id}
         />

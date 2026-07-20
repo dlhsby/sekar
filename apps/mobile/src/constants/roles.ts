@@ -67,15 +67,15 @@ export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'a
 export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'management'];
 
 /** Monitoring access by scope */
-export const MONITORING_ROLES: Record<'city' | 'rayon' | 'area', UserRole[]> = {
+export const MONITORING_ROLES: Record<'city' | 'district' | 'area', UserRole[]> = {
   city: ['management', 'admin_system', 'superadmin'],
-  rayon: ['kepala_rayon', 'admin_rayon'],
+  district: ['kepala_rayon', 'admin_rayon'],
   area: ['korlap'],
 };
 
 /** Hierarchical task assignment rules (mirrors backend VALID_TASK_ASSIGNMENTS).
  *  May 11, 2026 — admin_rayon + kepala_rayon + management can assign
- *  across the full rayon roster; korlap may assign to self/satgas/linmas. */
+ *  across the full district roster; korlap may assign to self/satgas/linmas. */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
   korlap: ['korlap', 'satgas', 'linmas'],
   kepala_rayon: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
@@ -106,22 +106,22 @@ export const canApproveOvertime = (role: UserRole): boolean =>
   OVERTIME_APPROVERS.includes(role);
 
 export const canMonitor = (role: UserRole): boolean =>
-  [...MONITORING_ROLES.city, ...MONITORING_ROLES.rayon, ...MONITORING_ROLES.area].includes(role);
+  [...MONITORING_ROLES.city, ...MONITORING_ROLES.district, ...MONITORING_ROLES.area].includes(role);
 
-export const getMonitoringScope = (role: UserRole): 'city' | 'rayon' | 'area' | null => {
+export const getMonitoringScope = (role: UserRole): 'city' | 'district' | 'area' | null => {
   if (MONITORING_ROLES.city.includes(role)) return 'city';
-  if (MONITORING_ROLES.rayon.includes(role)) return 'rayon';
+  if (MONITORING_ROLES.district.includes(role)) return 'district';
   if (MONITORING_ROLES.area.includes(role)) return 'area';
   return null;
 };
 
-/** Roles that can select rayon freely in monitoring filter (city-scope) */
+/** Roles that can select district freely in monitoring filter (city-scope) */
 export const ROLES_WITH_RAYON: UserRole[] = [...MONITORING_ROLES.city];
 
-/** Roles with a fixed rayon assignment in monitoring filter (rayon-scope) */
-export const ROLES_WITH_FIXED_RAYON: UserRole[] = [...MONITORING_ROLES.rayon];
+/** Roles with a fixed district assignment in monitoring filter (district-scope) */
+export const ROLES_WITH_FIXED_RAYON: UserRole[] = [...MONITORING_ROLES.district];
 
-/** Roles without rayon visibility in monitoring filter (area-scope) */
+/** Roles without district visibility in monitoring filter (area-scope) */
 export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.area];
 
 /**

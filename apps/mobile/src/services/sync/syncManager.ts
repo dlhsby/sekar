@@ -55,7 +55,7 @@ interface PruningRequestData {
   target_count: number;
   photo_keys: string[];
   notes?: string;
-  rayon_id?: string;
+  district_id?: string;
 }
 
 // New format for location batch (matches backend)

@@ -30,7 +30,7 @@ export function useLiveUsersFiltering(
   visibleLayers: MonitoringV2VisibleLayers,
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
   boundaries: any,
-  scope: 'surabaya' | 'city' | 'rayon' | 'location',
+  scope: 'surabaya' | 'city' | 'district' | 'location',
   areaId: string | null,
 ): UseLiveUsersFilteringReturn {
   const visibleUsers = React.useMemo(() => {
@@ -61,8 +61,8 @@ export function useLiveUsersFiltering(
   }, [liveUsers]);
 
   const totalAreas = useMemo(() => {
-    if (!boundaries?.rayons) { return 0; }
-    return boundaries.rayons.reduce((sum: number, r: any) => sum + (r.areas?.length ?? 0), 0);
+    if (!boundaries?.districts) { return 0; }
+    return boundaries.districts.reduce((sum: number, r: any) => sum + (r.areas?.length ?? 0), 0);
   }, [boundaries]);
 
   const lastUpdated = useMemo(() => {

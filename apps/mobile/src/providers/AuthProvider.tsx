@@ -118,7 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
             const meResponse = await Promise.race([getMe(), timeoutPromise]);
 
             if (meResponse.data) {
-              // Token is valid, restore auth state with latest area/rayon data
+              // Token is valid, restore auth state with latest area/district data
               // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils
               const rawArea = meResponse.data.assigned_area;
               const rawPolygon = (rawArea as any)?.boundary_polygon;
@@ -128,7 +128,7 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
               const updatedUser = {
                 ...storedUser,
                 location_id: meResponse.data.location_id ?? storedUser.location_id,
-                rayon_id: meResponse.data.rayon_id ?? storedUser.rayon_id,
+                district_id: meResponse.data.district_id ?? storedUser.district_id,
               };
               dispatch(
                 restoreAuth({

@@ -46,9 +46,9 @@ describe('pruningRequestsSlice', () => {
     photoUrls: ['https://example.com/photo1.jpg'],
     notes: 'Pohon sudah tua',
     status: 'submitted' as const,
-    rayonId: 'rayon-1',
-    rayon: {
-      id: 'rayon-1',
+    districtId: 'district-1',
+    district: {
+      id: 'district-1',
       name: 'Rayon 1',
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',
@@ -112,7 +112,7 @@ describe('pruningRequestsSlice', () => {
         target_count: 20,
         photo_keys: ['key1', 'key2'],
         notes: 'Test notes',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       };
       store.dispatch(setDraft(newDraft));
       const state = store.getState().pruningRequests;

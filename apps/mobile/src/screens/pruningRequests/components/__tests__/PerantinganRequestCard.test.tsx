@@ -28,7 +28,7 @@ const BASE_REQUEST = {
   photoUrls: ['a.jpg', 'b.jpg'],
   notes: null,
   status: 'submitted',
-  rayonId: null,
+  districtId: null,
   reviewedBy: null,
   reviewedAt: null,
   reviewNotes: null,

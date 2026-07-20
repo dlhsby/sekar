@@ -19,15 +19,15 @@ import {
   nbSpacing,
   nbBorders,
 } from '../../constants/nbTokens';
-import { getRayons } from '../../services/api';
-import type { PruningRequestStatus, Rayon, UserRole } from '../../types/models.types';
+import { getDistricts } from '../../services/api';
+import type { PruningRequestStatus, District, UserRole } from '../../types/models.types';
 import { parseFilterDate, toFilterDateString } from '../../utils/filterHelpers';
 
 export interface PruningRequestFilterValue {
   status?: PruningRequestStatus | '';
   fromDate?: string; // ISO YYYY-MM-DD
   toDate?: string;
-  rayonId?: string;
+  districtId?: string;
   // May 2026 — admin filter UX
   referenceCode?: string;
   requesterName?: string;
@@ -40,7 +40,7 @@ interface PruningRequestFilterModalProps {
   onApplyFilters: (filters: PruningRequestFilterValue) => void;
   onResetFilters: () => void;
   userRole?: UserRole;
-  userRayonId?: string;
+  userDistrictId?: string;
 }
 
 export function PruningRequestFilterModal({
@@ -50,7 +50,7 @@ export function PruningRequestFilterModal({
   onApplyFilters,
   onResetFilters,
   userRole,
-  userRayonId,
+  userDistrictId,
 }: PruningRequestFilterModalProps): React.JSX.Element {
   const { t } = useTranslation('pruning');
 
@@ -69,20 +69,20 @@ export function PruningRequestFilterModal({
     [t],
   );
 
-  // staff_kecamatan only sees their own submissions, so rayon picker is hidden.
-  // admin_rayon is rayon-locked to their own rayon (backend forces it anyway).
-  // management / admin_system / superadmin can pick any rayon.
-  const showRayon = useMemo(
+  // staff_kecamatan only sees their own submissions, so district picker is hidden.
+  // admin_rayon is district-locked to their own district (backend forces it anyway).
+  // management / admin_system / superadmin can pick any district.
+  const showDistrict = useMemo(
     () => userRole === 'kepala_rayon' || userRole === 'admin_rayon' ||
           userRole === 'management' || userRole === 'admin_system' ||
           userRole === 'superadmin',
     [userRole],
   );
-  const isRayonFixed = useMemo(
+  const isDistrictFixed = useMemo(
     () => userRole === 'kepala_rayon' || userRole === 'admin_rayon',
     [userRole],
   );
-  const canSelectRayon = useMemo(
+  const canSelectDistrict = useMemo(
     () => userRole === 'management' || userRole === 'admin_system' ||
           userRole === 'superadmin',
     [userRole],
@@ -91,12 +91,12 @@ export function PruningRequestFilterModal({
   const [localStatus, setLocalStatus] = useState<string>(filters.status ?? '');
   const [localFromDate, setLocalFromDate] = useState<string>(filters.fromDate ?? '');
   const [localToDate, setLocalToDate] = useState<string>(filters.toDate ?? '');
-  const [localRayonId, setLocalRayonId] = useState<string>(filters.rayonId ?? '');
+  const [localDistrictId, setLocalDistrictId] = useState<string>(filters.districtId ?? '');
   const [localReferenceCode, setLocalReferenceCode] = useState<string>(filters.referenceCode ?? '');
   const [localRequesterName, setLocalRequesterName] = useState<string>(filters.requesterName ?? '');
 
-  const [rayons, setRayons] = useState<Rayon[]>([]);
-  const [loadingRayons, setLoadingRayons] = useState(false);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
 
   // Sync local state when modal opens
   useEffect(() => {
@@ -104,41 +104,41 @@ export function PruningRequestFilterModal({
       setLocalStatus(filters.status ?? '');
       setLocalFromDate(filters.fromDate ?? '');
       setLocalToDate(filters.toDate ?? '');
-      setLocalRayonId(filters.rayonId ?? '');
+      setLocalDistrictId(filters.districtId ?? '');
       setLocalReferenceCode(filters.referenceCode ?? '');
       setLocalRequesterName(filters.requesterName ?? '');
     }
   }, [visible, filters]);
 
-  // Load rayons for users who can select them
+  // Load districts for users who can select them
   useEffect(() => {
-    if (!visible || !canSelectRayon) { return; }
+    if (!visible || !canSelectDistrict) { return; }
     let cancelled = false;
-    setLoadingRayons(true);
-    getRayons()
-      .then((res) => { if (!cancelled && res.data) { setRayons(res.data); } })
+    setLoadingDistricts(true);
+    getDistricts()
+      .then((res) => { if (!cancelled && res.data) { setDistricts(res.data); } })
       .catch(() => { /* non-critical */ })
-      .finally(() => { if (!cancelled) { setLoadingRayons(false); } });
+      .finally(() => { if (!cancelled) { setLoadingDistricts(false); } });
     return () => { cancelled = true; };
-  }, [visible, canSelectRayon]);
+  }, [visible, canSelectDistrict]);
 
   const handleApply = useCallback(() => {
     const applied: PruningRequestFilterValue = {};
     if (localStatus) { applied.status = localStatus as PruningRequestStatus; }
     if (localFromDate) { applied.fromDate = localFromDate; }
     if (localToDate) { applied.toDate = localToDate; }
-    if (localRayonId) { applied.rayonId = localRayonId; }
+    if (localDistrictId) { applied.districtId = localDistrictId; }
     if (localReferenceCode.trim()) { applied.referenceCode = localReferenceCode.trim(); }
     if (localRequesterName.trim()) { applied.requesterName = localRequesterName.trim(); }
     onApplyFilters(applied);
     onClose();
-  }, [localStatus, localFromDate, localToDate, localRayonId, localReferenceCode, localRequesterName, onApplyFilters, onClose]);
+  }, [localStatus, localFromDate, localToDate, localDistrictId, localReferenceCode, localRequesterName, onApplyFilters, onClose]);
 
   const handleReset = useCallback(() => {
     setLocalStatus('');
     setLocalFromDate('');
     setLocalToDate('');
-    setLocalRayonId('');
+    setLocalDistrictId('');
     setLocalReferenceCode('');
     setLocalRequesterName('');
     onResetFilters();
@@ -227,27 +227,27 @@ export function PruningRequestFilterModal({
       </View>
 
       {/* 3. Rayon — admin roles only */}
-      {showRayon && (
+      {showDistrict && (
         <View style={styles.filterSection}>
-          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.rayon')}</NBText>
-          {isRayonFixed ? (
+          <NBText variant="mono-sm" color="gray700" uppercase style={styles.filterLabel}>{t('filter.district')}</NBText>
+          {isDistrictFixed ? (
             <NBSelect
-              value={userRayonId ?? 'all'}
+              value={userDistrictId ?? 'all'}
               onValueChange={() => {}}
               options={[
-                { label: userRayonId ? t('filter.rayonMine') : t('filter.rayonAll'), value: userRayonId ?? 'all' },
+                { label: userDistrictId ? t('filter.districtMine') : t('filter.districtAll'), value: userDistrictId ?? 'all' },
               ]}
               disabled
             />
           ) : (
             <NBSelect
-              value={localRayonId || 'all'}
-              onValueChange={(v) => setLocalRayonId(v === 'all' ? '' : String(v))}
+              value={localDistrictId || 'all'}
+              onValueChange={(v) => setLocalDistrictId(v === 'all' ? '' : String(v))}
               options={[
-                { label: t('filter.rayonAll'), value: 'all' },
-                ...rayons.map((r) => ({ label: r.name, value: r.id })),
+                { label: t('filter.districtAll'), value: 'all' },
+                ...districts.map((r) => ({ label: r.name, value: r.id })),
               ]}
-              disabled={loadingRayons}
+              disabled={loadingDistricts}
               searchable
             />
           )}

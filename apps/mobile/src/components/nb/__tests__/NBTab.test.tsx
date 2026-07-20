@@ -387,7 +387,7 @@ describe('NBTab', () => {
       { key: 'semua', label: 'SEMUA', count: 12 },
       { key: 'petugas', label: 'PETUGAS', count: 8 },
       { key: 'area', label: 'AREA', count: 3 },
-      { key: 'rayon', label: 'RAYON', count: 1 },
+      { key: 'district', label: 'RAYON', count: 1 },
     ];
 
     it('renders all tabs + counts without clipping', () => {

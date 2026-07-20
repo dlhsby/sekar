@@ -1,7 +1,7 @@
 /**
  * StaffingSummarySection Component
  * Phase 2D Gap #8: Always-visible staffing summary with day type badge.
- * Three modes: city (per-rayon accordion), rayon (per-area), area (per-role).
+ * Three modes: city (per-district accordion), district (per-area), area (per-role).
  */
 
 import React, { useState, useCallback } from 'react';
@@ -31,7 +31,7 @@ interface StaffingSummarySectionProps {
   items: StaffingSummaryItem[];
   isLoading: boolean;
   currentDayTypeLabel: string | null;
-  selectedRayonId?: string;
+  selectedDistrictId?: string;
   selectedAreaId?: string;
   onReassignPress?: (area: AreaBoundary) => void;
 }

@@ -2,7 +2,7 @@
  * AggregateBubbleLayer
  * Renders one drill-down node marker per node at the current scope: the single
  * Surabaya summary (top level), one per rayon (city scope) or one per area
- * (rayon scope). Each shows the attendance ratio `hadir/terjadwal` colored by
+ * (district scope). Each shows the attendance ratio `hadir/terjadwal` colored by
  * staffing health; tapping drills one level deeper. Mirrors the web
  * NodeMarkerLayer.
  *
@@ -18,11 +18,11 @@ import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbToke
 import { NBText } from '../nb/NBText';
 import { healthColor, rosterHealth } from './markerSpec';
 
-/** A drill-down node marker: a rayon, an area, or the whole-city Surabaya node. */
+/** A drill-down node marker: a district, an area, or the whole-city Surabaya node. */
 export interface NodeMarker {
   id: string;
   name: string;
-  variant: 'rayon' | 'area' | 'surabaya';
+  variant: 'district' | 'area' | 'surabaya';
   lat: number;
   lng: number;
   scheduled: number;

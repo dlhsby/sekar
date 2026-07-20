@@ -1,5 +1,5 @@
 /**
- * Users, roles, rayons and areas.
+ * Users, roles, districts and areas.
  * Phase 2C: ADR-009 (8-role system), ADR-010 (terminology cleanup).
  */
 import type { GeoJsonGeometry } from './geo.types';
@@ -29,8 +29,8 @@ export interface User {
   username: string;
   full_name: string;
   role: UserRole;
-  rayon_id?: string;
-  rayon?: Rayon;
+  district_id?: string;
+  district?: District;
   location_id?: string;
   area?: Area;
   phone_number?: string | null; // Phase 2E: for phone login
@@ -44,7 +44,7 @@ export interface User {
 }
 
 // Rayon (Sector)
-export interface Rayon {
+export interface District {
   id: string;
   name: string;
   description?: string;
@@ -67,8 +67,8 @@ export interface Area {
   name: string;
   area_type_id: string;
   locationType?: AreaType;
-  rayon_id?: string;
-  rayon?: Rayon;
+  district_id?: string;
+  district?: District;
   gps_lat: number;
   gps_lng: number;
   boundary_polygon?: GeoJsonGeometry;

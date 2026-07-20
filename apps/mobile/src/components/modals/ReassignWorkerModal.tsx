@@ -1,7 +1,7 @@
 /**
  * ReassignWorkerModal Component
  * Phase 2D Gap #5: Modal for reassigning workers between areas.
- * Lists active workers from source rayon, allows selection and reassignment.
+ * Lists active workers from source district, allows selection and reassignment.
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
@@ -36,7 +36,7 @@ interface ReassignWorkerModalProps {
   visible: boolean;
   onClose: () => void;
   targetArea: AreaBoundary | null;
-  sourceRayonId?: string;
+  sourceDistrictId?: string;
   onSuccess?: () => void;
 }
 
@@ -46,7 +46,7 @@ export function ReassignWorkerModal({
   visible,
   onClose,
   targetArea,
-  sourceRayonId,
+  sourceDistrictId,
   onSuccess,
 }: ReassignWorkerModalProps): React.JSX.Element {
   const { t } = useTranslation('monitoring');
@@ -58,14 +58,14 @@ export function ReassignWorkerModal({
 
   // Fetch candidates when modal opens
   useEffect(() => {
-    if (!visible || !sourceRayonId) {
+    if (!visible || !sourceDistrictId) {
       setCandidates([]);
       setSelectedUserId(null);
       setReason('');
       return;
     }
     setIsLoading(true);
-    getLiveUsers({ rayon_id: sourceRayonId, status: ['active'] })
+    getLiveUsers({ district_id: sourceDistrictId, status: ['active'] })
       .then(res => {
         if (res.data?.users) {
           // Exclude workers already in the target area
@@ -77,7 +77,7 @@ export function ReassignWorkerModal({
       })
       .catch(() => {})
       .finally(() => setIsLoading(false));
-  }, [visible, sourceRayonId, targetArea?.id]);
+  }, [visible, sourceDistrictId, targetArea?.id]);
 
   const handleSubmit = useCallback(async () => {
     if (!selectedUserId || !targetArea) return;

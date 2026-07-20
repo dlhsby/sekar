@@ -1,7 +1,7 @@
 /**
  * BoundaryOverlay Component
- * Phase 2D Gap #2: Renders rayon + area boundary polygons with center markers.
- * Layer order: rayon polygons -> area polygons -> area center markers -> rayon center markers.
+ * Phase 2D Gap #2: Renders district + area boundary polygons with center markers.
+ * Layer order: district polygons -> area polygons -> area center markers -> district center markers.
  */
 
 import React, { useMemo, useState, useEffect } from 'react';
@@ -17,40 +17,40 @@ import {
   nbShadows,
   withAlpha,
 } from '../../constants/nbTokens';
-import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
+import type { DistrictBoundary, AreaBoundary } from '../../types/models.types';
 import { geometryToRings } from '../../utils/geoJsonUtils';
-import { buildRayonColorMap, rayonColor } from './rayonColors';
+import { buildDistrictColorMap, districtColor } from './districtColors';
 import { healthColor, rosterHealth } from './markerSpec';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BoundaryOverlayProps {
-  rayons: RayonBoundary[];
+  districts: DistrictBoundary[];
   /** Detail (marker) taps — open the node's detail sheet/modal. */
-  onRayonMarkerPress: (rayon: RayonBoundary) => void;
+  onDistrictMarkerPress: (district: DistrictBoundary) => void;
   onAreaMarkerPress: (area: AreaBoundary) => void;
   /** Drill (bubble) taps — enter the child level + zoom in. */
-  onRayonBubblePress: (rayon: RayonBoundary) => void;
+  onDistrictBubblePress: (district: DistrictBoundary) => void;
   onAreaBubblePress: (area: AreaBoundary) => void;
   /**
    * Phase 3 sub-phase 3-5: layer-toggle gating. When `false`, the matching
    * boundary polygon layer is skipped entirely so the "Pengaturan" toggles
    * actually change what the user sees.
    */
-  showRayons?: boolean;
+  showDistricts?: boolean;
   showAreas?: boolean;
   /**
-   * Ratio **bubbles** — the drill-in targets for the CHILD level (rayon bubbles
-   * at city scope, area bubbles at rayon scope). Each carries `hadir/terjadwal`
+   * Ratio **bubbles** — the drill-in targets for the CHILD level (district bubbles
+   * at city scope, area bubbles at district scope). Each carries `hadir/terjadwal`
    * and drills deeper on tap. Distinct from the current-node icon markers below.
    */
-  showRayonBubbles?: boolean;
+  showDistrictBubbles?: boolean;
   showAreaBubbles?: boolean;
   /**
-   * Icon **markers** — the CURRENT node's geographic pin (selected rayon at
-   * rayon scope, selected area at area scope). Opens the detail sheet on tap.
+   * Icon **markers** — the CURRENT node's geographic pin (selected district at
+   * district scope, selected area at area scope). Opens the detail sheet on tap.
    */
-  showRayonMarker?: boolean;
+  showDistrictMarker?: boolean;
   showAreaMarker?: boolean;
   /**
    * Ratio per rayon/area id (`active-and-inside-area / terjadwal`), shown on the
@@ -63,7 +63,7 @@ type MarkerRoster = { activeInside: number; scheduled: number };
 
 // ─── Marker pin (current node → detail) ─────────────────────────────────────────
 //
-// The CURRENT node's geographic icon pin (rayon office / area pin). Tapping it
+// The CURRENT node's geographic icon pin (district office / area pin). Tapping it
 // opens the node's detail sheet — it does NOT drill (you are already here), so
 // it carries no ratio; the ratio lives on the child bubbles instead.
 
@@ -96,7 +96,7 @@ function MarkerPin({
 
 // ─── Node bubble (child aggregate → drill) ──────────────────────────────────────
 //
-// A ratio bubble for a CHILD node (a rayon at city scope, an area at rayon
+// A ratio bubble for a CHILD node (a district at city scope, an area at district
 // scope). Shows the node name + `hadir/terjadwal`, health-colored, and drills
 // one level deeper on tap. Keeps tracksViewChanges on briefly whenever the ratio
 // changes so react-native-maps captures the count into the native bitmap once
@@ -151,40 +151,40 @@ function NodeBubble({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const BoundaryOverlay = React.memo(function BoundaryOverlay({
-  rayons,
-  onRayonMarkerPress,
+  districts,
+  onDistrictMarkerPress,
   onAreaMarkerPress,
-  onRayonBubblePress,
+  onDistrictBubblePress,
   onAreaBubblePress,
-  showRayons = true,
+  showDistricts = true,
   showAreas = true,
-  showRayonBubbles = false,
+  showDistrictBubbles = false,
   showAreaBubbles = false,
-  showRayonMarker = false,
+  showDistrictMarker = false,
   showAreaMarker = false,
   rosterById,
 }: BoundaryOverlayProps): React.JSX.Element {
-  // Stable per-rayon colors (sorted-id → fixed palette), built once per rayon set.
-  const rayonColors = useMemo(
-    () => buildRayonColorMap(rayons.map(r => r.id)),
-    [rayons],
+  // Stable per-district colors (sorted-id → fixed palette), built once per rayon set.
+  const districtColors = useMemo(
+    () => buildDistrictColorMap(districts.map(r => r.id)),
+    [districts],
   );
 
   return (
     <>
-      {/* Layer 1: Rayon polygons (one <Polygon> per outer ring — handles
-          both Polygon and MultiPolygon geometries). Each rayon gets its own
+      {/* Layer 1: District polygons (one <Polygon> per outer ring — handles
+          both Polygon and MultiPolygon geometries). Each district gets its own
           fixed color so the 7 Rayon are visually separable. */}
-      {showRayons && rayons.flatMap(rayon => {
-        const rings = geometryToRings(rayon.boundary_polygon);
+      {showDistricts && districts.flatMap(district => {
+        const rings = geometryToRings(district.boundary_polygon);
         // Prefer the DB-driven color; fall back to the deterministic palette
-        // (covers rayons seeded before the color column / non-geographic ones).
-        const { stroke, fill } = rayon.color
-          ? { stroke: rayon.color, fill: withAlpha(rayon.color, 0.14) }
-          : rayonColor(rayonColors, rayon.id);
+        // (covers districts seeded before the color column / non-geographic ones).
+        const { stroke, fill } = district.color
+          ? { stroke: district.color, fill: withAlpha(district.color, 0.14) }
+          : districtColor(districtColors, district.id);
         return rings.map((ring, i) => (
           <Polygon
-            key={`rayon-poly-${rayon.id}-${i}`}
+            key={`district-poly-${district.id}-${i}`}
             coordinates={ring}
             strokeColor={stroke}
             fillColor={fill}
@@ -198,8 +198,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
           Buk Tong, Menur RSJ sisi barat/timur) emit one <Polygon> per
           member-polygon outer ring; only areas with no usable geometry at
           all fall back to a <Circle>. */}
-      {showAreas && rayons.flatMap(rayon =>
-        rayon.areas.flatMap(area => {
+      {showAreas && districts.flatMap(district =>
+        district.areas.flatMap(area => {
           const rings = geometryToRings(area.boundary_polygon);
           if (rings.length > 0) {
             return rings.map((ring, i) => (
@@ -218,10 +218,10 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
         }),
       )}
 
-      {/* Layer 3a: Area BUBBLES — a rayon's areas as ratio drill targets (rayon
+      {/* Layer 3a: Area BUBBLES — a district's areas as ratio drill targets (district
           scope). Tap → drill into the area (its workers). */}
-      {showAreaBubbles && rayons.flatMap(rayon =>
-        rayon.areas.map(area => (
+      {showAreaBubbles && districts.flatMap(district =>
+        district.areas.map(area => (
           <NodeBubble
             key={`area-bubble-${area.id}`}
             coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
@@ -235,8 +235,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
 
       {/* Layer 3b: Area MARKER — the current (selected) area's icon pin (area
           scope). Tap → open its detail modal. */}
-      {showAreaMarker && rayons.flatMap(rayon =>
-        rayon.areas.map(area => (
+      {showAreaMarker && districts.flatMap(district =>
+        district.areas.map(area => (
           <MarkerPin
             key={`area-center-${area.id}`}
             coordinate={{ latitude: Number(area.center_lat), longitude: Number(area.center_lng) }}
@@ -253,34 +253,34 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
         )),
       )}
 
-      {/* Layer 4a: Rayon BUBBLES — the 7 rayons as ratio drill targets (city
-          scope). Tap → drill into the rayon (its areas). */}
-      {showRayonBubbles && rayons.map(rayon => (
+      {/* Layer 4a: District BUBBLES — the 7 districts as ratio drill targets (city
+          scope). Tap → drill into the district (its areas). */}
+      {showDistrictBubbles && districts.map(district => (
         <NodeBubble
-          key={`rayon-bubble-${rayon.id}`}
-          coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}
-          roster={rosterById?.[rayon.id]}
-          label={rayon.name}
-          onPress={(e) => { e?.stopPropagation?.(); onRayonBubblePress(rayon); }}
+          key={`district-bubble-${district.id}`}
+          coordinate={{ latitude: Number(district.center_lat), longitude: Number(district.center_lng) }}
+          roster={rosterById?.[district.id]}
+          label={district.name}
+          onPress={(e) => { e?.stopPropagation?.(); onDistrictBubblePress(district); }}
           zIndex={10}
         />
       ))}
 
-      {/* Layer 4b: Rayon MARKER — the current (selected) rayon's office pin
-          (rayon scope). Tap → open its detail modal. */}
-      {showRayonMarker && rayons.map(rayon => (
+      {/* Layer 4b: District MARKER — the current (selected) district's office pin
+          (district scope). Tap → open its detail modal. */}
+      {showDistrictMarker && districts.map(district => (
         <MarkerPin
-          key={`rayon-center-${rayon.id}`}
-          coordinate={{ latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) }}
-          onPress={(e) => { e?.stopPropagation?.(); onRayonMarkerPress(rayon); }}
+          key={`district-center-${district.id}`}
+          coordinate={{ latitude: Number(district.center_lat), longitude: Number(district.center_lng) }}
+          onPress={(e) => { e?.stopPropagation?.(); onDistrictMarkerPress(district); }}
           zIndex={10}
         >
-          <View style={styles.rayonCenterMarker}>
+          <View style={styles.districtCenterMarker}>
             <MaterialCommunityIcons name="office-building" size={18} color={nbColors.white} />
-            {rayon.understaffed_area_count > 0 && (
+            {district.understaffed_area_count > 0 && (
               <View style={styles.understaffedBadge}>
                 <NBText variant="caption" color="white" style={{ fontSize: 9, fontWeight: 'bold' }}>
-                  {rayon.understaffed_area_count}
+                  {district.understaffed_area_count}
                 </NBText>
               </View>
             )}
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderStyle: 'dashed',
   },
-  rayonCenterMarker: {
+  districtCenterMarker: {
     width: 32,
     height: 32,
     borderRadius: 16,

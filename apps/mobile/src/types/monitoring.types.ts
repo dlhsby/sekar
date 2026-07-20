@@ -76,8 +76,8 @@ export interface LiveUser {
   location?: PresenceLocation;
   location_id: string | null;
   location_name: string;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   latitude: number;
   longitude: number;
   accuracy: number | null;
@@ -118,7 +118,7 @@ export interface AbsentUser {
   user_id: string;
   full_name: string;
   role: string;
-  rayon_id: string | null;
+  district_id: string | null;
   shift_definition_id: string | null;
   shift_name: string | null;
 }
@@ -152,8 +152,8 @@ export interface UserDaySummary {
   status: TrackingStatus;
   location_id: string | null;
   location_name: string | null;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   shift: {
     id: string;
     name: string;
@@ -223,7 +223,7 @@ export interface LocationHistory {
 export interface StaffingSummaryItem {
   id: string;
   name: string;
-  type: 'rayon' | 'location';
+  type: 'district' | 'location';
   roles: {
     role: string;
     active: number;
@@ -247,7 +247,7 @@ export interface UserStatusChangedEvent {
   role: string;
   location_id: string | null;
   location_name: string | null;
-  rayon_id: string | null;
+  district_id: string | null;
   previous_status: TrackingStatus;
   new_status: TrackingStatus;
   // Two-axis presence (CP6) — optional during backend rollout.
@@ -264,7 +264,7 @@ export interface UserAreaEvent {
   role: string;
   location_id: string;
   location_name: string;
-  rayon_id: string | null;
+  district_id: string | null;
   latitude: number;
   longitude: number;
   timestamp: string;
@@ -279,14 +279,14 @@ export interface UserReassignedEvent {
   previous_area_name: string | null;
   new_area_id: string;
   new_area_name: string;
-  rayon_id: string | null;
+  district_id: string | null;
   timestamp: string;
 }
 
 // Phase 2D: WebSocket area staffing changed event
 export interface AreaStaffingChangedEvent {
   location_id: string;
-  rayon_id: string | null;
+  district_id: string | null;
   active_count: number;
   required_count: number;
   is_met: boolean;
@@ -306,8 +306,8 @@ export interface AreaBoundary {
   center_lat: number;
   center_lng: number;
   boundary_polygon: GeoJsonGeometry | null;
-  rayon_id: string;
-  rayon_name: string;
+  district_id: string;
+  district_name: string;
   assigned_count: number;
   staffing: RoleStaffingItem[];
   is_understaffed: boolean;
@@ -315,7 +315,7 @@ export interface AreaBoundary {
   total_required: number;
 }
 
-export interface RayonBoundary {
+export interface DistrictBoundary {
   id: string;
   name: string;
   center_lat: number;
@@ -325,16 +325,16 @@ export interface RayonBoundary {
   area_count: number;
   is_understaffed: boolean;
   understaffed_area_count: number;
-  /** DB-driven hex color for the rayon polygon; falls back to a deterministic palette. */
+  /** DB-driven hex color for the district polygon; falls back to a deterministic palette. */
   color?: string | null;
 }
 
 export interface BoundariesResponse {
-  rayons: RayonBoundary[];
+  districts: DistrictBoundary[];
   generated_at: string;
 }
 
-// Aggregate ("Ringkasan") rollup — lightweight per-rayon/per-area summary
+// Aggregate ("Ringkasan") rollup — lightweight per-district/per-area summary
 // bubbles for the monitoring map (no individual worker coordinates).
 export interface AggregateStatusCounts {
   active: number;
@@ -365,7 +365,7 @@ export interface PresenceBreakdown {
 export interface AggregateNode {
   id: string;
   name: string;
-  type: 'rayon' | 'location';
+  type: 'district' | 'location';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;
@@ -377,11 +377,11 @@ export interface AggregateNode {
   roster: AggregateRosterCounts;
   presence: PresenceBreakdown;
   area_count?: number;
-  rayon_id?: string | null;
+  district_id?: string | null;
 }
 
 export interface MonitoringAggregateResponse {
-  scope: 'city' | 'rayon';
+  scope: 'city' | 'district';
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;

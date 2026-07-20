@@ -20,8 +20,8 @@ const mockPruningRequest = {
   referenceCode: 'PR-001',
   address: 'Jl. Test 1',
   status: 'submitted' as const,
-  rayon_id: 'r1',
-  rayon: { id: 'r1', name: 'Rayon 1' },
+  district_id: 'r1',
+  district: { id: 'r1', name: 'Rayon 1' },
   createdAt: new Date().toISOString(),
   photoUrls: ['url1'],
   gpsLat: -7.25,
@@ -81,19 +81,19 @@ describe('pruningRequestsApi', () => {
       );
     });
 
-    it('includes rayonId filter when provided', async () => {
+    it('includes districtId filter when provided', async () => {
       mockGet.mockResolvedValue({
         data: [],
       });
 
       await pruningRequestsApi.getAdminPruningRequests({
-        rayonId: 'r1',
+        districtId: 'r1',
       });
 
       expect(mockGet).toHaveBeenCalledWith(
         '/pruning-requests',
         expect.objectContaining({
-          rayonId: 'r1',
+          districtId: 'r1',
         }),
       );
     });

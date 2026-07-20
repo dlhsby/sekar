@@ -31,7 +31,7 @@ const pad = (n: number): string => String(n).padStart(2, '0');
 /**
  * Admin Data Home Screen (hi-fi HOME-3) — perantingan-disposition dashboard for
  * admin_rayon. Selected by the role-aware `HomeScreen` dispatcher. Reads the
- * rayon-scoped `pruningRequests.adminList`.
+ * district-scoped `pruningRequests.adminList`.
  */
 
 const EMPTY_COUNTS = {

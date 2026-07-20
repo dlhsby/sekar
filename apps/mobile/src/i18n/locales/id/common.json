@@ -34,7 +34,7 @@
   "entities": {
     "user": "Pengguna",
     "area": "Area",
-    "rayon": "Rayon",
+    "district": "Rayon",
     "task": "Tugas",
     "activity": "Aktivitas",
     "schedule": "Jadwal",

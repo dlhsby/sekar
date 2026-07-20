@@ -36,8 +36,8 @@ const makeWorker = (overrides: Partial<LiveUser> = {}): LiveUser => ({
   status: 'active',
   location_id: 'area-1',
   location_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.25,
   longitude: 112.75,
   accuracy: 10,
@@ -77,10 +77,10 @@ describe('monitoringV2Slice', () => {
       expect(state.snapshot.workers).toEqual([]);
     });
 
-    it('starts with workers and rayons layers visible', () => {
+    it('starts with workers and districts layers visible', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
       expect(state.visibleLayers.workers).toBe(true);
-      expect(state.visibleLayers.rayons).toBe(true);
+      expect(state.visibleLayers.districts).toBe(true);
       expect(state.visibleLayers.areas).toBe(true);
     });
 
@@ -201,9 +201,9 @@ describe('monitoringV2Slice', () => {
       expect(state.visibleLayers.overdue).toBe(true);
     });
 
-    it('flips rayons layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('rayons'));
-      expect(state.visibleLayers.rayons).toBe(false);
+    it('flips districts layer from true to false', () => {
+      const state = monitoringV2Reducer(undefined, toggleLayer('districts'));
+      expect(state.visibleLayers.districts).toBe(false);
     });
 
     it('flips areas layer from true to false', () => {
@@ -222,7 +222,7 @@ describe('monitoringV2Slice', () => {
       const state = monitoringV2Reducer(undefined, toggleLayer('workers'));
       expect(state.visibleLayers.plants).toBe(false);
       expect(state.visibleLayers.overdue).toBe(false);
-      expect(state.visibleLayers.rayons).toBe(true);
+      expect(state.visibleLayers.districts).toBe(true);
       expect(state.visibleLayers.areas).toBe(true);
     });
   });
@@ -329,8 +329,8 @@ describe('monitoringV2Slice', () => {
       mockGet.mockResolvedValueOnce({
         data: {
           data: {
-            scope: 'rayon',
-            scope_id: 'rayon-1',
+            scope: 'district',
+            scope_id: 'district-1',
             workers: [],
             generated_at: '2026-04-26T08:00:00Z',
           },
@@ -339,11 +339,11 @@ describe('monitoringV2Slice', () => {
 
       const dispatch = jest.fn();
       const getState = jest.fn();
-      const thunk = fetchSnapshot({ scope: 'rayon', id: 'rayon-1' });
+      const thunk = fetchSnapshot({ scope: 'district', id: 'district-1' });
       await thunk(dispatch, getState, undefined);
 
       expect(mockGet).toHaveBeenCalledWith(
-        '/monitoring/snapshot?scope=rayon&id=rayon-1',
+        '/monitoring/snapshot?scope=district&id=district-1',
       );
     });
   });

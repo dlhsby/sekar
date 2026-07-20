@@ -27,20 +27,20 @@ interface MapLayerContentProps {
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
-  scope: 'surabaya' | 'city' | 'rayon' | 'location';
-  /** The rayon being viewed (rayon/location scope) — scopes markers to it. */
-  rayonId: string | null;
+  scope: 'surabaya' | 'city' | 'district' | 'location';
+  /** The district being viewed (district/location scope) — scopes markers to it. */
+  districtId: string | null;
   /** The selected location (location scope) — only its boundary is drawn, on demand. */
   areaId: string | null;
   /** Attendance ratio per rayon/location id, shown on the geographic markers. */
   rosterById: Record<string, { activeInside: number; scheduled: number }>;
   /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
-  /** Bubble taps — drill into the child level (city→rayon, rayon→area). */
-  onRayonDrill: (rayon: any) => void;
+  /** Bubble taps — drill into the child level (city→district, district→area). */
+  onDistrictDrill: (district: any) => void;
   onAreaDrill: (area: any) => void;
   /** Marker taps — open the current node's detail sheet. */
-  onRayonDetail: (rayon: any) => void;
+  onDistrictDetail: (district: any) => void;
   onAreaDetail: (area: any) => void;
   onMarkerPress: (user: LiveUser) => void;
   onClusterPress: (center: { latitude: number; longitude: number }) => void;
@@ -58,81 +58,81 @@ export function MapLayerContent({
   currentRegion,
   boundaryKey,
   scope,
-  rayonId,
+  districtId,
   areaId,
   rosterById,
   showWorkers,
-  onRayonDrill,
+  onDistrictDrill,
   onAreaDrill,
-  onRayonDetail,
+  onDistrictDetail,
   onAreaDetail,
   onMarkerPress,
   onClusterPress,
 }: MapLayerContentProps): React.JSX.Element {
   const { t } = useTranslation();
 
-  // Scope the boundary set to the drill level. City → all rayons; rayon → the
-  // current rayon (its locations are markers, not polygons, so nothing heavy draws);
-  // location → the current rayon but ONLY the selected location's polygon (drawn on
+  // Scope the boundary set to the drill level. City → all districts; district → the
+  // current district (its locations are markers, not polygons, so nothing heavy draws);
+  // location → the current district but ONLY the selected location's polygon (drawn on
   // demand when its marker is tapped) — this keeps the map cheap.
-  const scopedRayons = useMemo(() => {
-    const all = boundaries?.rayons ?? [];
+  const scopedDistricts = useMemo(() => {
+    const all = boundaries?.districts ?? [];
     if (scope === 'location') {
       return all
-        .filter((r: any) => r.id === rayonId)
+        .filter((r: any) => r.id === districtId)
         .map((r: any) => ({ ...r, areas: (r.areas ?? []).filter((a: any) => a.id === areaId) }));
     }
-    if (scope === 'rayon') {
-      return all.filter((r: any) => r.id === rayonId);
+    if (scope === 'district') {
+      return all.filter((r: any) => r.id === districtId);
     }
     return all;
-  }, [boundaries, scope, rayonId, areaId]);
+  }, [boundaries, scope, districtId, areaId]);
 
   // Rayon outline follows its toggle from the city view down. Location outlines draw
-  // ONLY at location scope (the one selected location) — never all-at-once at rayon scope.
-  const showRayonBoundaries = visibleLayers.rayons && scope !== 'surabaya';
+  // ONLY at location scope (the one selected location) — never all-at-once at district scope.
+  const showDistrictBoundaries = visibleLayers.districts && scope !== 'surabaya';
   const showAreaBoundaries = visibleLayers.areas && scope === 'location';
 
   // Bubbles vs markers are separated by scope (gated independently of the
   // boundary toggles):
-  //   • city  → rayon BUBBLES (ratio, drill into a rayon)
-  //   • rayon → the selected rayon MARKER (detail) + its area BUBBLES (drill)
+  //   • city  → district BUBBLES (ratio, drill into a district)
+  //   • district → the selected district MARKER (detail) + its area BUBBLES (drill)
   //   • location  → the selected location MARKER (detail) + worker markers
-  const showRayonBubbles = scope === 'city';
-  const showAreaBubbles = scope === 'rayon';
-  const showRayonMarker = scope === 'rayon';
+  const showDistrictBubbles = scope === 'city';
+  const showAreaBubbles = scope === 'district';
+  const showDistrictMarker = scope === 'district';
   const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
-    showRayonBoundaries || showAreaBoundaries ||
-    showRayonBubbles || showAreaBubbles || showRayonMarker || showAreaMarker;
+    showDistrictBoundaries || showAreaBoundaries ||
+    showDistrictBubbles || showAreaBubbles || showDistrictMarker || showAreaMarker;
 
   return (
     <>
       {/* Boundary overlay — polygons (toggle-gated) + geographic drill markers
           (scope-gated). Keyed by scope so a drill-out fully remounts the layer
           and no stale markers linger. */}
-      {mapReady && scopedRayons.length > 0 && showBoundaryLayer && (
+      {mapReady && scopedDistricts.length > 0 && showBoundaryLayer && (
         <BoundaryOverlay
           key={`boundary-${scope}-${boundaryKey}`}
-          rayons={scopedRayons}
-          onRayonBubblePress={onRayonDrill}
+          districts={scopedDistricts}
+          onDistrictBubblePress={onDistrictDrill}
           onAreaBubblePress={onAreaDrill}
-          onRayonMarkerPress={onRayonDetail}
+          onDistrictMarkerPress={onDistrictDetail}
           onAreaMarkerPress={onAreaDetail}
-          showRayons={showRayonBoundaries}
+          showDistricts={showDistrictBoundaries}
           showAreas={showAreaBoundaries}
-          showRayonBubbles={showRayonBubbles}
+          showDistrictBubbles={showDistrictBubbles}
           showAreaBubbles={showAreaBubbles}
-          showRayonMarker={showRayonMarker}
+          showDistrictMarker={showDistrictMarker}
           showAreaMarker={showAreaMarker}
           rosterById={rosterById}
         />
       )}
 
-      {/* Phase 3: Area status overlay (plant health tints) — inside a rayon only */}
-      {mapReady && showAreaBoundaries && scopedRayons.length > 0 && (
+      {/* Phase 3: Area status overlay (plant health tints) — inside a district only */}
+      {mapReady && showAreaBoundaries && scopedDistricts.length > 0 && (
         <AreaStatusOverlay
-          rayons={scopedRayons}
+          districts={scopedDistricts}
           boundaryKey={boundaryKey}
         />
       )}

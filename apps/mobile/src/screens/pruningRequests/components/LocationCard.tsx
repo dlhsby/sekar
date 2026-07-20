@@ -1,5 +1,5 @@
 /**
- * LocationCard — displays location info (kecamatan, rayon, address, GPS) with map button
+ * LocationCard — displays location info (kecamatan, district, address, GPS) with map button
  */
 
 import React from 'react';
@@ -63,10 +63,10 @@ export function LocationCard({ request, onMapPress }: LocationCardProps): React.
             value={request.kecamatanName}
           />
         ) : null}
-        {request.rayon?.name ? (
+        {request.district?.name ? (
           <DetailRow
-            label={t('locationCard.rayonLabel')}
-            value={request.rayon.name}
+            label={t('locationCard.districtLabel')}
+            value={request.district.name}
           />
         ) : null}
         <DetailRow

@@ -33,7 +33,7 @@ import {
 import { getRoleIcon, SURABAYA_CITY_REGION } from '../../utils/mapUtils';
 import { userAxes } from '../../utils/statusHelpers';
 import { useMapAutoFocus } from '../../hooks/useMapAutoFocus';
-import type { RayonBoundary, AreaBoundary } from '../../types/models.types';
+import type { DistrictBoundary, AreaBoundary } from '../../types/models.types';
 import {
   toggleLayer,
   fetchAggregate,
@@ -89,8 +89,8 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
   const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
-  const [boundaryDetailType, setBoundaryDetailType] = useState<'rayon' | 'location'>('location');
-  const [boundaryDetailData, setBoundaryDetailData] = useState<RayonBoundary | AreaBoundary | null>(null);
+  const [boundaryDetailType, setBoundaryDetailType] = useState<'district' | 'location'>('location');
+  const [boundaryDetailData, setBoundaryDetailData] = useState<DistrictBoundary | AreaBoundary | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState(false);
   const [boundaryKey, setBoundaryKey] = useState(0);
 
@@ -119,35 +119,35 @@ export function MapDashboardScreen(): React.JSX.Element {
     let payload: { view: typeof view; floor: MonitoringScope };
     if (role === 'korlap' && currentUser.location_id) {
       payload = {
-        view: { scope: 'location', id: currentUser.location_id, rayonId: currentUser.rayon_id ?? null, name: null },
+        view: { scope: 'location', id: currentUser.location_id, districtId: currentUser.district_id ?? null, name: null },
         floor: 'location',
       };
-    } else if ((role === 'kepala_rayon' || role === 'admin_rayon') && currentUser.rayon_id) {
+    } else if ((role === 'kepala_rayon' || role === 'admin_rayon') && currentUser.district_id) {
       payload = {
-        view: { scope: 'rayon', id: currentUser.rayon_id, rayonId: currentUser.rayon_id, name: null },
-        floor: 'rayon',
+        view: { scope: 'district', id: currentUser.district_id, districtId: currentUser.district_id, name: null },
+        floor: 'district',
       };
     } else {
-      payload = { view: { scope: 'surabaya', id: null, rayonId: null, name: null }, floor: 'surabaya' };
+      payload = { view: { scope: 'surabaya', id: null, districtId: null, name: null }, floor: 'surabaya' };
     }
     dispatch(initMonitoringView(payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
-  // Aggregate fetch — city rollup feeds Surabaya (roster totals) + the rayon
-  // nodes; rayon rollup feeds the area nodes. No fetch at area scope (workers).
+  // Aggregate fetch — city rollup feeds Surabaya (roster totals) + the district
+  // nodes; district rollup feeds the area nodes. No fetch at area scope (workers).
   useEffect(() => {
     if (scope === 'surabaya' || scope === 'city') {
       void dispatch(fetchAggregate({ scope: 'city' }));
-    } else if (scope === 'rayon') {
-      void dispatch(fetchAggregate({ scope: 'rayon', id: view.id ?? undefined }));
-    } else if (scope === 'location' && view.rayonId) {
-      // Keep the parent rayon's location rollup loaded so the selected location's ratio
-      // shows (covers location-floored roles that never visited the rayon view).
-      void dispatch(fetchAggregate({ scope: 'rayon', id: view.rayonId }));
+    } else if (scope === 'district') {
+      void dispatch(fetchAggregate({ scope: 'district', id: view.id ?? undefined }));
+    } else if (scope === 'location' && view.districtId) {
+      // Keep the parent district's location rollup loaded so the selected location's ratio
+      // shows (covers location-floored roles that never visited the district view).
+      void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, view.id, view.rayonId]);
+  }, [scope, view.id, view.districtId]);
 
   // Always fetch workers for the current scope so search can find people at any
   // level; the map only *renders* worker markers at location scope.
@@ -165,7 +165,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     }, [handleRefresh]),
   );
 
-  // Gently zoom + recenter on a tapped marker (rayon / area / worker) so its
+  // Gently zoom + recenter on a tapped marker (district / area / worker) so its
   // detail hint is framed. Never zooms out — clamps the target to the current
   // zoom, then tightens it a bit (~45%).
   const focusOn = useCallback(
@@ -221,16 +221,16 @@ export function MapDashboardScreen(): React.JSX.Element {
   }, []);
 
   // Boundary press handlers
-  const handleRayonPress = useCallback(
-    (rayon: RayonBoundary) => {
-      focusOn(Number(rayon.center_lat), Number(rayon.center_lng));
+  const handleDistrictPress = useCallback(
+    (district: DistrictBoundary) => {
+      focusOn(Number(district.center_lat), Number(district.center_lng));
       showMarkerPreview(
-        { latitude: Number(rayon.center_lat), longitude: Number(rayon.center_lng) },
-        { title: rayon.name, typeText: t('monitoring:entityTypes.rayon'), accent: nbColors.requestUnderReview, icon: 'office-building' },
+        { latitude: Number(district.center_lat), longitude: Number(district.center_lng) },
+        { title: district.name, typeText: t('monitoring:entityTypes.district'), accent: nbColors.requestUnderReview, icon: 'office-building' },
         18,
         () => {
-          setBoundaryDetailType('rayon');
-          setBoundaryDetailData(rayon);
+          setBoundaryDetailType('district');
+          setBoundaryDetailData(district);
           setBoundaryDetailVisible(true);
           setMarkerPreview(null);
         },
@@ -268,14 +268,14 @@ export function MapDashboardScreen(): React.JSX.Element {
         const user = liveUsers.find((u) => u.id === result.id);
         if (user) { handleMarkerPress(user); }
       } else if (result.type === 'location') {
-        const area = boundaries?.rayons.flatMap((r) => r.areas).find((a) => a.id === result.id);
+        const area = boundaries?.districts.flatMap((r) => r.areas).find((a) => a.id === result.id);
         if (area) { handleAreaPress(area); }
       } else {
-        const rayon = boundaries?.rayons.find((r) => r.id === result.id);
-        if (rayon) { handleRayonPress(rayon); }
+        const district = boundaries?.districts.find((r) => r.id === result.id);
+        if (district) { handleDistrictPress(district); }
       }
     },
-    [liveUsers, boundaries, handleMarkerPress, handleAreaPress, handleRayonPress],
+    [liveUsers, boundaries, handleMarkerPress, handleAreaPress, handleDistrictPress],
   );
 
   // Filter handler
@@ -297,7 +297,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Unified drill handlers.
   const rosterTotals = aggregate?.roster_totals ?? { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
 
-  // Per-node ratio (active-and-inside-area / terjadwal) keyed by rayon/area id —
+  // Per-node ratio (active-and-inside-area / terjadwal) keyed by district/area id —
   // fed to the geographic markers so each carries its count. The numerator is the
   // hadir workers who are BOTH active (fresh ping) and inside their area.
   const rosterById = useMemo<Record<string, { activeInside: number; scheduled: number }>>(() => {
@@ -315,11 +315,11 @@ export function MapDashboardScreen(): React.JSX.Element {
     );
   }, []);
 
-  // Tapping the fixed Surabaya bubble drills into the rayon list (city scope).
+  // Tapping the fixed Surabaya bubble drills into the district list (city scope).
   const handleEnterCity = useCallback(() => dispatch(enterCity()), [dispatch]);
 
   // Bubble taps DRILL into the child level and zoom IN (never out). The current
-  // node's own detail lives on its icon marker (handleRayonPress/handleAreaPress),
+  // node's own detail lives on its icon marker (handleDistrictPress/handleAreaPress),
   // shown once you're at that scope — so a bubble tap is purely navigation.
   // Clamp so a drill-in only ever tightens the zoom (point 5: "do not zoom out").
   // If the user manually zoomed tighter than the target, keep their zoom.
@@ -328,38 +328,38 @@ export function MapDashboardScreen(): React.JSX.Element {
       animateTo(lat, lng, Math.min(currentRegion.latitudeDelta, target)),
     [animateTo, currentRegion.latitudeDelta],
   );
-  const handleRayonBubblePress = useCallback(
-    (rayon: RayonBoundary) => {
-      dispatch(drillTo({ id: rayon.id, type: 'rayon', name: rayon.name, rayonId: rayon.id }));
-      zoomInTo(Number(rayon.center_lat), Number(rayon.center_lng), 0.08);
+  const handleDistrictBubblePress = useCallback(
+    (district: DistrictBoundary) => {
+      dispatch(drillTo({ id: district.id, type: 'district', name: district.name, districtId: district.id }));
+      zoomInTo(Number(district.center_lat), Number(district.center_lng), 0.08);
     },
     [dispatch, zoomInTo],
   );
   const handleAreaBubblePress = useCallback(
     (area: AreaBoundary) => {
-      dispatch(drillTo({ id: area.id, type: 'location', name: area.name, rayonId: view.rayonId }));
+      dispatch(drillTo({ id: area.id, type: 'location', name: area.name, districtId: view.districtId }));
       zoomInTo(Number(area.center_lat), Number(area.center_lng), 0.02);
     },
-    [dispatch, zoomInTo, view.rayonId],
+    [dispatch, zoomInTo, view.districtId],
   );
   const handleDrillBack = useCallback(() => {
     const from = scope;
     dispatch(drillBack());
     // Zoom the camera back out to match the level we're returning to.
-    if (from === 'rayon' || from === 'city') {
+    if (from === 'district' || from === 'city') {
       // → city / Surabaya: show the whole city again (and the Surabaya bubble).
       animateTo(
         SURABAYA_CITY_REGION.latitude,
         SURABAYA_CITY_REGION.longitude,
         SURABAYA_CITY_REGION.latitudeDelta,
       );
-    } else if (from === 'location' && view.rayonId) {
-      const rayon = boundaries?.rayons?.find((r: RayonBoundary) => r.id === view.rayonId);
-      if (rayon) {
-        animateTo(Number(rayon.center_lat), Number(rayon.center_lng), 0.08);
+    } else if (from === 'location' && view.districtId) {
+      const district = boundaries?.districts?.find((r: DistrictBoundary) => r.id === view.districtId);
+      if (district) {
+        animateTo(Number(district.center_lat), Number(district.center_lng), 0.08);
       }
     }
-  }, [scope, view.rayonId, boundaries, dispatch, animateTo]);
+  }, [scope, view.districtId, boundaries, dispatch, animateTo]);
   const canDrillBack = scope !== floor;
 
   if (isLoading && (!liveUsers || liveUsers.length === 0)) {
@@ -441,13 +441,13 @@ export function MapDashboardScreen(): React.JSX.Element {
                 currentRegion={currentRegion}
                 boundaryKey={boundaryKey}
                 scope={scope}
-                rayonId={view.rayonId ?? view.id}
+                districtId={view.districtId ?? view.id}
                 areaId={scope === 'location' ? view.id : null}
                 rosterById={rosterById}
                 showWorkers={showWorkers}
-                onRayonDrill={handleRayonBubblePress}
+                onDistrictDrill={handleDistrictBubblePress}
                 onAreaDrill={handleAreaBubblePress}
-                onRayonDetail={handleRayonPress}
+                onDistrictDetail={handleDistrictPress}
                 onAreaDetail={handleAreaPress}
                 onMarkerPress={handleMarkerPress}
                 onClusterPress={handleClusterPress}
@@ -487,7 +487,7 @@ export function MapDashboardScreen(): React.JSX.Element {
 
           {/* Fixed Surabaya summary bubble — pinned to the screen centre at the
               top level so it stays put while the map pans. Tap to drill into the
-              rayons. */}
+              districts. */}
           {scope === 'surabaya' && (
             <View style={styles.surabayaBubbleWrap} pointerEvents="box-none">
               <TouchableOpacity
@@ -564,7 +564,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           searchModalVisible={searchModalVisible}
           setSearchModalVisible={setSearchModalVisible}
           liveUsers={liveUsers}
-          rayons={boundaries?.rayons}
+          districts={boundaries?.districts}
           onSearchSelect={handleSearchSelect}
           boundaryDetailVisible={boundaryDetailVisible}
           setBoundaryDetailVisible={setBoundaryDetailVisible}

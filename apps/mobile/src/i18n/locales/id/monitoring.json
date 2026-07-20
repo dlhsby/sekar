@@ -36,7 +36,7 @@
     "workers": "Petugas",
     "plants": "Tanaman",
     "overdue": "Jatuh Tempo",
-    "rayons": "Batas Rayon",
+    "districts": "Batas Rayon",
     "areas": "Batas Area"
   },
   "fab": {
@@ -58,13 +58,13 @@
   },
   "markerPreview": {
     "typeOfficer": "Petugas",
-    "typeRayon": "Rayon",
+    "typeDistrict": "Rayon",
     "typeArea": "Area",
     "viewDetail": "Lihat detail"
   },
   "entityTypes": {
     "area": "Area",
-    "rayon": "Rayon"
+    "district": "Rayon"
   },
   "status": {
     "title": "Status Pemantauan",
@@ -178,7 +178,7 @@
     "apply": "Terapkan",
     "sections": {
       "location": "Lokasi",
-      "rayon": "Rayon",
+      "district": "Rayon",
       "area": "Area",
       "role": "Jabatan",
       "user": "Cari Pengguna",
@@ -187,13 +187,13 @@
     },
     "placeholders": {
       "location": "Pilih Lokasi",
-      "rayon": "Pilih Rayon",
+      "district": "Pilih Rayon",
       "area": "Pilih Area",
       "role": "Pilih Jabatan",
       "user": "Pilih pengguna",
       "layers": "Pilih lapisan"
     },
-    "fixedRayon": "Rayon Anda"
+    "fixedDistrict": "Rayon Anda"
   },
   "reassignWorkerModal": {
     "title": "Pindah Petugas",

@@ -22,8 +22,8 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import type { ActivitiesFilter } from '../../types/api.types';
-import type { Area, Rayon, User, UserRole } from '../../types/models.types';
-import { getAreas, getAreasByRayonId, getRayons, getUsers } from '../../services/api';
+import type { Area, District, User, UserRole } from '../../types/models.types';
+import { getAreas, getAreasByDistrictId, getDistricts, getUsers } from '../../services/api';
 import { FILTER_SUBORDINATE_ROLES } from '../../constants/roles';
 import { parseFilterDate, toFilterDateString, toTitleCase } from '../../utils/filterHelpers';
 
@@ -36,7 +36,7 @@ interface ActivityFilterModalProps {
   onApplyFilters: (filters: ActivitiesFilter) => void;
   onResetFilters: () => void;
   userRole?: UserRole;
-  userRayonId?: string;
+  userDistrictId?: string;
   userAreaId?: string;
   userId?: string; // current user's id for "Dibuat oleh Saya" default
 }
@@ -50,7 +50,7 @@ export function ActivityFilterModal({
   onApplyFilters,
   onResetFilters,
   userRole,
-  userRayonId,
+  userDistrictId,
   userAreaId,
   userId,
 }: ActivityFilterModalProps): React.JSX.Element {
@@ -65,16 +65,16 @@ export function ActivityFilterModal({
     userRole === 'satgas' || userRole === 'linmas'
   , [userRole]);
 
-  const showRayon = useMemo(() =>
+  const showDistrict = useMemo(() =>
     userRole === 'kepala_rayon' || userRole === 'admin_rayon' ||
     userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
-  const isRayonFixed = useMemo(() =>
+  const isDistrictFixed = useMemo(() =>
     userRole === 'kepala_rayon' || userRole === 'admin_rayon'
   , [userRole]);
 
-  const canSelectRayon = useMemo(() =>
+  const canSelectDistrict = useMemo(() =>
     userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
@@ -87,14 +87,14 @@ export function ActivityFilterModal({
   const [localDateFrom, setLocalDateFrom] = useState(filters.from_date ?? '');
   const [localDateTo, setLocalDateTo] = useState(filters.to_date ?? '');
   const [localAreaId, setLocalAreaId] = useState(isAreaFixed ? (userAreaId ?? '') : (filters.location_id ?? ''));
-  const [localRayonId, setLocalRayonId] = useState(filters.rayon_id ?? '');
+  const [localDistrictId, setLocalDistrictId] = useState(filters.district_id ?? '');
   const [localUserId, setLocalUserId] = useState(filters.user_id ?? '');
 
   const [areas, setAreas] = useState<Area[]>([]);
-  const [rayons, setRayons] = useState<Rayon[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loadingAreas, setLoadingAreas] = useState(false);
-  const [loadingRayons, setLoadingRayons] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
@@ -103,22 +103,22 @@ export function ActivityFilterModal({
       setLocalDateFrom(filters.from_date ?? '');
       setLocalDateTo(filters.to_date ?? '');
       setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : (filters.location_id ?? ''));
-      setLocalRayonId(filters.rayon_id ?? '');
+      setLocalDistrictId(filters.district_id ?? '');
       setLocalUserId(filters.user_id ?? '');
     }
   }, [visible, filters, isAreaFixed, userAreaId]);
 
   useEffect(() => {
     if (!visible) return;
-    if (showRayon && (canSelectRayon || isRayonFixed)) loadRayons();
+    if (showDistrict && (canSelectDistrict || isDistrictFixed)) loadDistricts();
     if (isAreaFixed) return;
-    if (userRayonId) {
-      loadAreasByRayon(userRayonId);
+    if (userDistrictId) {
+      loadAreasByDistrict(userDistrictId);
     } else {
       loadAllAreas();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, isAreaFixed, userRayonId, showRayon, canSelectRayon, isRayonFixed]);
+  }, [visible, isAreaFixed, userDistrictId, showDistrict, canSelectDistrict, isDistrictFixed]);
 
   useEffect(() => {
     if (!visible || isFieldWorker) return;
@@ -126,15 +126,15 @@ export function ActivityFilterModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, localAreaId, isFieldWorker]);
 
-  const loadRayons = useCallback(async () => {
-    setLoadingRayons(true);
+  const loadDistricts = useCallback(async () => {
+    setLoadingDistricts(true);
     try {
-      const response = await getRayons();
-      if (response.data) setRayons(response.data);
+      const response = await getDistricts();
+      if (response.data) setDistricts(response.data);
     } catch {
       // non-critical
     } finally {
-      setLoadingRayons(false);
+      setLoadingDistricts(false);
     }
   }, []);
 
@@ -171,10 +171,10 @@ export function ActivityFilterModal({
     }
   }, []);
 
-  const loadAreasByRayon = useCallback(async (rayonId: string) => {
+  const loadAreasByDistrict = useCallback(async (districtId: string) => {
     setLoadingAreas(true);
     try {
-      const response = await getAreasByRayonId(rayonId);
+      const response = await getAreasByDistrictId(districtId);
       if (response.data) setAreas(response.data);
     } catch {
       // non-critical
@@ -189,18 +189,18 @@ export function ActivityFilterModal({
     if (localDateFrom) applied.from_date = localDateFrom;
     if (localDateTo) applied.to_date = localDateTo;
     if (localAreaId) applied.location_id = localAreaId;
-    if (localRayonId) applied.rayon_id = localRayonId;
+    if (localDistrictId) applied.district_id = localDistrictId;
     if (localUserId && localUserId !== 'all_subordinates') { applied.user_id = localUserId; }
     onApplyFilters(applied);
     onClose();
-  }, [localStatus, localDateFrom, localDateTo, localAreaId, localRayonId, localUserId, onApplyFilters, onClose]);
+  }, [localStatus, localDateFrom, localDateTo, localAreaId, localDistrictId, localUserId, onApplyFilters, onClose]);
 
   const handleReset = useCallback(() => {
     setLocalStatus('');
     setLocalDateFrom('');
     setLocalDateTo('');
     setLocalAreaId(isAreaFixed ? (userAreaId ?? '') : '');
-    setLocalRayonId('');
+    setLocalDistrictId('');
     setLocalUserId('');
     onResetFilters();
     onClose();
@@ -277,25 +277,25 @@ export function ActivityFilterModal({
       </View>
 
       {/* 3. Rayon — role-gated */}
-      {showRayon && (
+      {showDistrict && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>{t('filter.rayon')}</Text>
-          {isRayonFixed ? (
+          <Text style={styles.filterLabel}>{t('filter.district')}</Text>
+          {isDistrictFixed ? (
             <NBSelect
-              value={userRayonId ?? 'all'}
+              value={userDistrictId ?? 'all'}
               onValueChange={() => {}}
-              options={[{ label: userRayonId ? t('filter.rayonOptions.mine') : t('filter.rayonOptions.all'), value: userRayonId ?? 'all' }]}
+              options={[{ label: userDistrictId ? t('filter.districtOptions.mine') : t('filter.districtOptions.all'), value: userDistrictId ?? 'all' }]}
               disabled={true}
             />
           ) : (
             <NBSelect
-              value={localRayonId || 'all'}
-              onValueChange={(v) => { setLocalRayonId(v === 'all' ? '' : String(v)); setLocalAreaId(''); }}
+              value={localDistrictId || 'all'}
+              onValueChange={(v) => { setLocalDistrictId(v === 'all' ? '' : String(v)); setLocalAreaId(''); }}
               options={[
-                { label: t('filter.rayonOptions.all'), value: 'all' },
-                ...rayons.map(r => ({ label: r.name, value: r.id })),
+                { label: t('filter.districtOptions.all'), value: 'all' },
+                ...districts.map(r => ({ label: r.name, value: r.id })),
               ]}
-              disabled={loadingRayons}
+              disabled={loadingDistricts}
               searchable
             />
           )}

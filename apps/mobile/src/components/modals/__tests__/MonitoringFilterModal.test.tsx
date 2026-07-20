@@ -1,7 +1,7 @@
 /**
  * MonitoringFilterModal Component Tests
  * Phase 2D + Phase 4 M3 (CP6c): Full-screen filter modal for map monitoring.
- * Tests rendering, the Lokasi (location-axis) select, rayon/area pickers
+ * Tests rendering, the Lokasi (location-axis) select, district/area pickers
  * (role-gated), role chips, search input, reset, apply, and filter sync.
  * CP6c moved status (activity) onto the peek chips; the wrench filters by
  * LOCATION (Dalam area / Luar area) instead.
@@ -23,9 +23,9 @@ jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
 });
 
 jest.mock('../../../services/api', () => ({
-  getRayons: jest.fn().mockResolvedValue({ data: [] }),
+  getDistricts: jest.fn().mockResolvedValue({ data: [] }),
   getAreas: jest.fn().mockResolvedValue({ data: { areas: [] } }),
-  getAreasByRayonId: jest.fn().mockResolvedValue({ data: [] }),
+  getAreasByDistrictId: jest.fn().mockResolvedValue({ data: [] }),
 }));
 
 jest.mock('../../../services/api/monitoringApi', () => ({
@@ -104,12 +104,12 @@ jest.mock('../../nb/NBText', () => ({
   },
 }));
 
-import { getRayons, getAreas, getAreasByRayonId } from '../../../services/api';
+import { getDistricts, getAreas, getAreasByDistrictId } from '../../../services/api';
 import { getStaffingSummary } from '../../../services/api/monitoringApi';
 
-const mockGetRayons = getRayons as jest.Mock;
+const mockGetDistricts = getDistricts as jest.Mock;
 const mockGetAreas = getAreas as jest.Mock;
-const mockGetAreasByRayonId = getAreasByRayonId as jest.Mock;
+const mockGetAreasByDistrictId = getAreasByDistrictId as jest.Mock;
 const mockGetStaffingSummary = getStaffingSummary as jest.Mock;
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -119,8 +119,8 @@ const mockSuperadmin: User = {
   username: 'superadmin',
   full_name: 'Super Admin',
   role: 'superadmin',
-  rayon_id: undefined,
-  rayon: undefined,
+  district_id: undefined,
+  district: undefined,
   location_id: undefined,
   area: undefined,
   created_at: '2026-01-01T00:00:00Z',
@@ -136,15 +136,15 @@ const mockKorlap: User = {
   location_id: 'area-1',
 };
 
-const mockKepalaRayon: User = {
+const mockKepalaDistrict: User = {
   ...mockSuperadmin,
   id: 'user-3',
   username: 'kr1',
   full_name: 'Kepala Rayon 1',
   role: 'kepala_rayon',
-  rayon_id: 'rayon-1',
-  rayon: {
-    id: 'rayon-1',
+  district_id: 'district-1',
+  district: {
+    id: 'district-1',
     name: 'Rayon 1',
     created_at: '2026-01-01T00:00:00Z',
     updated_at: '2026-01-01T00:00:00Z',
@@ -182,9 +182,9 @@ function buildDefaultProps(overrides?: {
 describe('MonitoringFilterModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetRayons.mockResolvedValue({ data: [] });
+    mockGetDistricts.mockResolvedValue({ data: [] });
     mockGetAreas.mockResolvedValue({ data: { areas: [] } });
-    mockGetAreasByRayonId.mockResolvedValue({ data: [] });
+    mockGetAreasByDistrictId.mockResolvedValue({ data: [] });
     mockGetStaffingSummary.mockResolvedValue({ data: { items: [] } });
   });
 
@@ -280,8 +280,8 @@ describe('MonitoringFilterModal', () => {
 
   // ── Rayon picker (role-gated) ───────────────────────────────────────────────
 
-  describe('rayon picker - role gating', () => {
-    it('superadmin sees rayon select picker', async () => {
+  describe('district picker - role gating', () => {
+    it('superadmin sees district select picker', async () => {
       const { getByTestId } = render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockSuperadmin })} />
       );
@@ -290,7 +290,7 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('management sees rayon select picker', async () => {
+    it('management sees district select picker', async () => {
       const { getByTestId } = render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockTopManagement })} />
       );
@@ -299,7 +299,7 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('korlap does NOT see rayon picker (hideRayon)', async () => {
+    it('korlap does NOT see district picker (hideDistrict)', async () => {
       const { queryByTestId } = render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockKorlap })} />
       );
@@ -308,35 +308,35 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('kepala_rayon sees a locked/fixed rayon display (not a picker)', async () => {
+    it('kepala_rayon sees a locked/fixed district display (not a picker)', async () => {
       const { queryByTestId, getByText } = render(
         <MonitoringFilterModal
-          {...buildDefaultProps({ currentUser: mockKepalaRayon })}
+          {...buildDefaultProps({ currentUser: mockKepalaDistrict })}
         />
       );
       await waitFor(() => {
         // NBSelect stub (Pilih Rayon) should NOT appear
         expect(queryByTestId('select-Pilih Rayon')).toBeNull();
-        // Fixed rayon name or fallback text should be shown
+        // Fixed district name or fallback text should be shown
         expect(getByText(/Rayon 1|Rayon Anda/)).toBeTruthy();
       });
     });
 
-    it('loads rayon list via getRayons for roles with rayon access', async () => {
+    it('loads district list via getDistricts for roles with district access', async () => {
       render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockSuperadmin })} />
       );
       await waitFor(() => {
-        expect(mockGetRayons).toHaveBeenCalled();
+        expect(mockGetDistricts).toHaveBeenCalled();
       });
     });
 
-    it('does NOT call getRayons for korlap', async () => {
+    it('does NOT call getDistricts for korlap', async () => {
       render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockKorlap })} />
       );
       await waitFor(() => {
-        expect(mockGetRayons).not.toHaveBeenCalled();
+        expect(mockGetDistricts).not.toHaveBeenCalled();
       });
     });
   });
@@ -362,7 +362,7 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('loads all areas via getAreas when no rayon is selected and user is not kepala_rayon', async () => {
+    it('loads all areas via getAreas when no district is selected and user is not kepala_rayon', async () => {
       render(
         <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockSuperadmin })} />
       );
@@ -371,12 +371,12 @@ describe('MonitoringFilterModal', () => {
       });
     });
 
-    it('loads areas by rayon via getAreasByRayonId when kepala_rayon opens modal', async () => {
+    it('loads areas by district via getAreasByDistrictId when kepala_rayon opens modal', async () => {
       render(
-        <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockKepalaRayon })} />
+        <MonitoringFilterModal {...buildDefaultProps({ currentUser: mockKepalaDistrict })} />
       );
       await waitFor(() => {
-        expect(mockGetAreasByRayonId).toHaveBeenCalledWith('rayon-1');
+        expect(mockGetAreasByDistrictId).toHaveBeenCalledWith('district-1');
       });
     });
   });

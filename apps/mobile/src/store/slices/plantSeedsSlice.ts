@@ -132,7 +132,7 @@ export const recordTransaction = createAsyncThunk(
         unitPrice?: number;
         supplier?: string;
         receiptUrl?: string;
-        toRayonId?: string;
+        toDistrictId?: string;
         toAreaId?: string;
         recipientName?: string;
         occurredAt: string;

@@ -2,7 +2,7 @@
  * Pruning requests — Phase 3 sub-phase 3-9/3-10.
  * Staff kecamatan submits requests for pruning work; admin_rayon reviews/converts to tasks.
  */
-import type { Rayon, User } from './user.types';
+import type { District, User } from './user.types';
 import type { Task } from './task.types';
 
 // Pruning Request Status
@@ -49,8 +49,8 @@ export interface PruningRequest {
   photoUrls: string[];
   notes: string | null;
   status: PruningRequestStatus;
-  rayonId: string | null;
-  rayon?: Rayon;
+  districtId: string | null;
+  district?: District;
   reviewedBy: string | null;
   reviewer?: User;
   reviewedAt: string | null;

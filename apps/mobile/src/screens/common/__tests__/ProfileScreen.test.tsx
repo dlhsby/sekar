@@ -33,8 +33,8 @@ jest.mock('../../../hooks/useProfileLogout', () => ({
 jest.mock('../../../services/location/locationTracker', () => ({
   locationTracker: { isTracking: jest.fn(() => false), stop: jest.fn() },
 }));
-jest.mock('../../../services/api/rayonsApi', () => ({
-  getRayons: jest.fn().mockResolvedValue({ data: [] }),
+jest.mock('../../../services/api/districtsApi', () => ({
+  getDistricts: jest.fn().mockResolvedValue({ data: [] }),
 }));
 
 // Child component mocks

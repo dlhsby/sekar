@@ -81,7 +81,7 @@ export const fetchTeamAnalytics = createAsyncThunk(
     params: {
       page: number;
       limit?: number;
-      rayon_id?: string;
+      district_id?: string;
       location_id?: string;
       reset?: boolean;
     },
@@ -90,7 +90,7 @@ export const fetchTeamAnalytics = createAsyncThunk(
     const response = await analyticsApi.getWorkers({
       page: params.page,
       limit: params.limit || 10,
-      rayon_id: params.rayon_id,
+      district_id: params.district_id,
       location_id: params.location_id,
       sort_by: 'performance_score',
       sort_dir: 'desc',
@@ -108,13 +108,13 @@ export const fetchTeamAnalytics = createAsyncThunk(
 export const fetchAreas = createAsyncThunk(
   'analytics/fetchAreas',
   async (
-    params: { rayon_id?: string; limit?: number } | undefined,
+    params: { district_id?: string; limit?: number } | undefined,
     { rejectWithValue },
   ): Promise<AreaAnalytics[]> => {
     const response = await analyticsApi.getAreaAnalytics({
       page: 1,
       limit: params?.limit || 20,
-      rayon_id: params?.rayon_id,
+      district_id: params?.district_id,
     });
     if (response.error) {
       return rejectWithValue(response.error) as unknown as AreaAnalytics[];

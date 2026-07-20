@@ -123,8 +123,8 @@ describe('Role Constants', () => {
       ]);
     });
 
-    it('should have correct rayon-level monitoring roles', () => {
-      expect(MONITORING_ROLES.rayon).toEqual(['kepala_rayon', 'admin_rayon']);
+    it('should have correct district-level monitoring roles', () => {
+      expect(MONITORING_ROLES.district).toEqual(['kepala_rayon', 'admin_rayon']);
     });
 
     it('should have correct area-level monitoring roles', () => {
@@ -263,7 +263,7 @@ describe('Role Constants', () => {
       expect(canMonitor('linmas')).toBe(false);
     });
 
-    it('should return true for admin_rayon (rayon monitoring)', () => {
+    it('should return true for admin_rayon (district monitoring)', () => {
       expect(canMonitor('admin_rayon')).toBe(true);
     });
   });
@@ -275,16 +275,16 @@ describe('Role Constants', () => {
       expect(getMonitoringScope('superadmin')).toBe('city');
     });
 
-    it('should return rayon for rayon-level monitoring roles', () => {
-      expect(getMonitoringScope('kepala_rayon')).toBe('rayon');
+    it('should return district for district-level monitoring roles', () => {
+      expect(getMonitoringScope('kepala_rayon')).toBe('district');
     });
 
     it('should return area for area-level monitoring roles', () => {
       expect(getMonitoringScope('korlap')).toBe('area');
     });
 
-    it('should return rayon for admin_rayon', () => {
-      expect(getMonitoringScope('admin_rayon')).toBe('rayon');
+    it('should return district for admin_rayon', () => {
+      expect(getMonitoringScope('admin_rayon')).toBe('district');
     });
 
     it('should return null for non-monitoring roles', () => {
@@ -298,7 +298,7 @@ describe('Role Constants', () => {
       expect(FILTER_SUBORDINATE_ROLES['korlap']).toEqual(['satgas', 'linmas']);
     });
 
-    it('kepala_rayon subordinates include full rayon roster (May 11, 2026)', () => {
+    it('kepala_rayon subordinates include full district roster (May 11, 2026)', () => {
       expect(FILTER_SUBORDINATE_ROLES['kepala_rayon']).toEqual([
         'korlap', 'admin_rayon', 'satgas', 'linmas',
       ]);

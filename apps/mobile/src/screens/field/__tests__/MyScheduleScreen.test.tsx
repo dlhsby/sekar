@@ -33,7 +33,7 @@ const todayRoster: any = {
     start_time: '06:00:00',
     end_time: '15:00:00',
   },
-  rayon: { id: 'rayon-1', name: 'Rayon 1' },
+  district: { id: 'district-1', name: 'Rayon 1' },
   schedule_areas: [
     { id: 'sa-1', location_id: 'area-2', area: { id: 'area-2', name: 'Taman Roster' } },
   ],
@@ -45,7 +45,7 @@ describe('MyScheduleScreen', () => {
     jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [] } as any);
   });
 
-  it("displays today's roster (status, shift, time, areas, rayon)", async () => {
+  it("displays today's roster (status, shift, time, areas, district)", async () => {
     jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [todayRoster] } as any);
 
     const { getByText } = render(<MyScheduleScreen />);

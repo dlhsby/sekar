@@ -44,7 +44,7 @@ interface RosterCounts {
 interface MonitoringState {
   liveUsers: LiveUser[];
   cityStats: Record<string, unknown> | null;
-  rayonStats: Record<string, Record<string, unknown>>;
+  districtStats: Record<string, Record<string, unknown>>;
   areaStats: Record<string, Record<string, unknown>>;
   filters: MonitoringFilters;
   selectedUser: LiveUser | null;
@@ -83,7 +83,7 @@ const initialRosterCounts: RosterCounts = {
 const initialState: MonitoringState = {
   liveUsers: [],
   cityStats: null,
-  rayonStats: {},
+  districtStats: {},
   areaStats: {},
   filters: {},
   selectedUser: null,
@@ -185,7 +185,7 @@ export const fetchLocationHistory = createAsyncThunk(
 export const fetchStaffingSummary = createAsyncThunk(
   'monitoring/fetchStaffingSummary',
   async (
-    filters: { rayon_id?: string; location_id?: string } | undefined,
+    filters: { district_id?: string; location_id?: string } | undefined,
     { rejectWithValue },
   ) => {
     try {
@@ -207,22 +207,22 @@ export const fetchStaffingSummary = createAsyncThunk(
 export const fetchBoundaries = createAsyncThunk(
   'monitoring/fetchBoundaries',
   async (
-    filters: { rayon_id?: string; level?: 'rayon' | 'area' } | undefined,
+    filters: { district_id?: string; level?: 'district' | 'area' } | undefined,
     { rejectWithValue },
   ) => {
     try {
       // Keep full (server-simplified) area geometry by default so the current
       // city view still shows area polygons; `level` is opt-in for a future
-      // drill flow that wants rayon-outlines-only.
-      const response = await getBoundaries(filters?.rayon_id, filters?.level);
+      // drill flow that wants district-outlines-only.
+      const response = await getBoundaries(filters?.district_id, filters?.level);
       if (response.error) {
         return rejectWithValue(response.error);
       }
       // Map backend staffing_summary → mobile staffing field + compute totals
       const data = response.data;
-      if (data?.rayons) {
-        for (const rayon of data.rayons) {
-          for (const area of rayon.areas) {
+      if (data?.districts) {
+        for (const district of data.districts) {
+          for (const area of district.areas) {
             const raw = area as any;
             if (!area.staffing && raw.staffing_summary) {
               area.staffing = raw.staffing_summary;
@@ -272,11 +272,11 @@ const monitoringSlice = createSlice({
       state.cityStats = action.payload;
     },
 
-    setRayonStats(
+    setDistrictStats(
       state,
       action: PayloadAction<Record<string, Record<string, unknown>>>,
     ) {
-      state.rayonStats = action.payload;
+      state.districtStats = action.payload;
     },
 
     setAreaStats(
@@ -420,7 +420,7 @@ export const {
   setLiveUsers,
   updateLiveUser,
   setCityStats,
-  setRayonStats,
+  setDistrictStats,
   setAreaStats,
   setMonitoringFilters,
   resetMonitoringFilters,

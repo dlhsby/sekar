@@ -19,7 +19,7 @@ import { fetchLiveUsers } from '../../store/slices/monitoringSlice';
  * returns city scope for these roles), reusing the Home widgets.
  */
 
-interface RayonRow {
+interface DistrictRow {
   key: string;
   name: string;
   active: number;
@@ -62,12 +62,12 @@ export function ExecHomeScreen(): React.JSX.Element {
   const total = liveUsers.length;
   const active = statusCounts.active;
 
-  // Per-rayon active/total roll-up (the city-distinctive section).
-  const rayonRows = useMemo<RayonRow[]>(() => {
-    const map = new Map<string, RayonRow>();
+  // Per-district active/total roll-up (the city-distinctive section).
+  const districtRows = useMemo<DistrictRow[]>(() => {
+    const map = new Map<string, DistrictRow>();
     liveUsers.forEach((u) => {
-      const key = u.rayon_id ?? u.rayon_name ?? 'unknown';
-      const name = u.rayon_name ?? t('home:fallbacks.noRayon');
+      const key = u.district_id ?? u.district_name ?? 'unknown';
+      const name = u.district_name ?? t('home:fallbacks.noDistrict');
       const entry = map.get(key) ?? { key, name, active: 0, total: 0 };
       entry.total += 1;
       if (u.status === 'active') entry.active += 1;
@@ -125,19 +125,19 @@ export function ExecHomeScreen(): React.JSX.Element {
             <HomeStatTile label={t('home:exec.kpi.offline')} value={statusCounts.offline} variant="neutral" testID="city-offline" />
           </View>
 
-          {/* Per-rayon roll-up */}
-          {rayonRows.length > 0 && (
+          {/* Per-district roll-up */}
+          {districtRows.length > 0 && (
             <>
-              <HomeSectionDivider label={t('home:exec.sections.perRayon')} />
+              <HomeSectionDivider label={t('home:exec.sections.perDistrict')} />
               <View style={styles.list}>
-                {rayonRows.slice(0, 6).map((r) => (
+                {districtRows.slice(0, 6).map((r) => (
                   <HomeListRow
                     key={r.key}
-                    pill={<StatusPill tone={r.active > 0 ? 'ok' : 'neutral'} label={t('home:exec.rayon.status', { active: r.active, total: r.total })} />}
+                    pill={<StatusPill tone={r.active > 0 ? 'ok' : 'neutral'} label={t('home:exec.district.status', { active: r.active, total: r.total })} />}
                     title={r.name}
-                    subMeta={t('home:exec.rayon.detail', { active: r.active, total: r.total })}
+                    subMeta={t('home:exec.district.detail', { active: r.active, total: r.total })}
                     onPress={goToMonitoring}
-                    testID={`rayon-${r.key}`}
+                    testID={`district-${r.key}`}
                   />
                 ))}
               </View>

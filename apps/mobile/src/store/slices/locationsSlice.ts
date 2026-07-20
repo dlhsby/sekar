@@ -3,7 +3,7 @@
  *
  * Lightweight cache of master-data areas. Used by admin flows that need to
  * pick an area (e.g. AssignToTaskSheet). Areas rarely change, so the slice
- * holds the full list once and selectors filter client-side by rayon.
+ * holds the full list once and selectors filter client-side by district.
  */
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';

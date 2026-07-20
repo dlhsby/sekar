@@ -30,8 +30,8 @@
       "all": "Semua Area",
       "mine": "Area Saya"
     },
-    "rayon": "Rayon",
-    "rayonOptions": {
+    "district": "Rayon",
+    "districtOptions": {
       "all": "Semua Rayon",
       "mine": "Rayon Saya"
     },
@@ -196,7 +196,7 @@
     "submitButton": "Selesaikan Tugas",
     "cancelButton": "Batal",
     "areaLabel": "Area:",
-    "rayonLabel": "Rayon:",
+    "districtLabel": "Rayon:",
     "loadingFailed": "Gagal memuat data tugas"
   },
   "messages": {
@@ -297,13 +297,13 @@
     "title": "LOKASI",
     "autoFromProfile": "Lokasi otomatis dari profil Anda",
     "selectAssignment": "Pilih lokasi penugasan",
-    "rayonLabel": "Rayon",
-    "loadingRayon": "Memuat rayon...",
+    "districtLabel": "Rayon",
+    "loadingDistrict": "Memuat rayon...",
     "areaLabel": "Area",
     "loadingArea": "Memuat area...",
-    "yourRayon": "Rayon Anda",
+    "yourDistrict": "Rayon Anda",
     "yourArea": "Area Anda",
-    "rayonPlaceholder": "Pilih rayon...",
+    "districtPlaceholder": "Pilih rayon...",
     "areaPlaceholder": "Pilih area..."
   },
   "draft": {
@@ -317,10 +317,10 @@
     "tagged": "Tag Saya",
     "createdByMe": "Dibuat Saya",
     "date": "Tanggal",
-    "rayon": "Rayon",
+    "district": "Rayon",
     "area": "Area",
     "type": "Tipe",
-    "rayonSelected": "Rayon dipilih",
+    "districtSelected": "Rayon dipilih",
     "activityStatusPending": "Menunggu Persetujuan",
     "activityStatusApproved": "Disetujui",
     "activityStatusRejected": "Ditolak"

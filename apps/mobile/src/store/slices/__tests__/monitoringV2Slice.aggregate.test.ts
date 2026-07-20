@@ -14,11 +14,11 @@ const base = () => reducer(undefined, { type: '@@INIT' });
 describe('monitoringV2Slice drill', () => {
   it('defaults to the Surabaya view', () => {
     const s = base();
-    expect(s.view).toEqual({ scope: 'surabaya', id: null, rayonId: null, name: null });
+    expect(s.view).toEqual({ scope: 'surabaya', id: null, districtId: null, name: null });
     expect(s.floor).toBe('surabaya');
   });
 
-  it('enterCity moves Surabaya → the rayon list', () => {
+  it('enterCity moves Surabaya → the district list', () => {
     const s = reducer(base(), enterCity());
     expect(s.view.scope).toBe('city');
   });
@@ -27,31 +27,31 @@ describe('monitoringV2Slice drill', () => {
     const s = reducer(
       base(),
       initMonitoringView({
-        view: { scope: 'rayon', id: 'ry', rayonId: 'ry', name: null },
-        floor: 'rayon',
+        view: { scope: 'district', id: 'ry', districtId: 'ry', name: null },
+        floor: 'district',
       }),
     );
-    expect(s.view.scope).toBe('rayon');
-    expect(s.floor).toBe('rayon');
+    expect(s.view.scope).toBe('district');
+    expect(s.floor).toBe('district');
   });
 
-  it('drillTo rayon node → rayon view', () => {
-    const s = reducer(base(), drillTo({ id: 'ry', type: 'rayon', name: 'R', rayonId: null }));
-    expect(s.view).toEqual({ scope: 'rayon', id: 'ry', rayonId: 'ry', name: 'R' });
+  it('drillTo district node → district view', () => {
+    const s = reducer(base(), drillTo({ id: 'ry', type: 'district', name: 'R', districtId: null }));
+    expect(s.view).toEqual({ scope: 'district', id: 'ry', districtId: 'ry', name: 'R' });
   });
 
-  it('drillTo location node → location view (carries rayonId)', () => {
-    let s = reducer(base(), drillTo({ id: 'ry', type: 'rayon', name: 'R', rayonId: null }));
-    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'Area 1', rayonId: 'ry' }));
-    expect(s.view).toEqual({ scope: 'location', id: 'a1', rayonId: 'ry', name: 'Area 1' });
+  it('drillTo location node → location view (carries districtId)', () => {
+    let s = reducer(base(), drillTo({ id: 'ry', type: 'district', name: 'R', districtId: null }));
+    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'Area 1', districtId: 'ry' }));
+    expect(s.view).toEqual({ scope: 'location', id: 'a1', districtId: 'ry', name: 'Area 1' });
   });
 
-  it('drillBack location → rayon → city → surabaya, never above floor', () => {
+  it('drillBack location → district → city → surabaya, never above floor', () => {
     let s = reducer(base(), enterCity());
-    s = reducer(s, drillTo({ id: 'ry', type: 'rayon', name: 'R', rayonId: null }));
-    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'A', rayonId: 'ry' }));
+    s = reducer(s, drillTo({ id: 'ry', type: 'district', name: 'R', districtId: null }));
+    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'A', districtId: 'ry' }));
     s = reducer(s, drillBack());
-    expect(s.view.scope).toBe('rayon');
+    expect(s.view.scope).toBe('district');
     s = reducer(s, drillBack());
     expect(s.view.scope).toBe('city');
     s = reducer(s, drillBack());
@@ -61,19 +61,19 @@ describe('monitoringV2Slice drill', () => {
     expect(s.view.scope).toBe('surabaya');
   });
 
-  it('drillBack respects a rayon floor (kepala_rayon)', () => {
+  it('drillBack respects a district floor (kepala_rayon)', () => {
     let s = reducer(
       base(),
       initMonitoringView({
-        view: { scope: 'rayon', id: 'ry', rayonId: 'ry', name: null },
-        floor: 'rayon',
+        view: { scope: 'district', id: 'ry', districtId: 'ry', name: null },
+        floor: 'district',
       }),
     );
-    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'A', rayonId: 'ry' }));
-    s = reducer(s, drillBack()); // area → rayon (floor)
-    expect(s.view.scope).toBe('rayon');
+    s = reducer(s, drillTo({ id: 'a1', type: 'location', name: 'A', districtId: 'ry' }));
+    s = reducer(s, drillBack()); // area → district (floor)
+    expect(s.view.scope).toBe('district');
     s = reducer(s, drillBack()); // no-op at floor
-    expect(s.view.scope).toBe('rayon');
+    expect(s.view.scope).toBe('district');
   });
 
   it('fetchAggregate.fulfilled stores the payload', () => {

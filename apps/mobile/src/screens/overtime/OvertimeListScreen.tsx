@@ -93,12 +93,12 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
   const isFetching = useRef(false);
   const pendingFetch = useRef<{ page: number; reset: boolean } | null>(null);
 
-  // Active filter count (status, date range, rayon, area, user each count as 1)
+  // Active filter count (status, date range, district, area, user each count as 1)
   const activeFilterCount = useMemo(() => {
     let count = 0;
     if (filters.status) { count++; }
     if (filters.from_date || filters.to_date) { count++; }
-    if (filters.rayon_id) { count++; }
+    if (filters.district_id) { count++; }
     if (filters.location_id) { count++; }
     if (filters.user_id) { count++; }
     return count;
@@ -115,7 +115,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
       const toDate = filters.to_date;
       chips.push({ text: f && toDate ? `${f.slice(5)} — ${toDate.slice(5)}` : t('list.dateRangeLabel'), tone: 'date' });
     }
-    if (filters.rayon_id) { chips.push({ text: tMonitoring('entityTypes.rayon'), tone: 'location' }); }
+    if (filters.district_id) { chips.push({ text: tMonitoring('entityTypes.district'), tone: 'location' }); }
     if (filters.location_id) { chips.push({ text: tMonitoring('entityTypes.area'), tone: 'location' }); }
     if (filters.user_id) { chips.push({ text: tMonitoring('markerPreview.typeOfficer'), tone: 'assignment' }); }
     return chips;
@@ -355,7 +355,7 @@ export function OvertimeListScreen({ navigation }: Props): React.JSX.Element {
           onApplyFilters={handleApplyFilters}
           onResetFilters={handleResetFilters}
           userRole={user?.role}
-          userRayonId={user?.rayon_id}
+          userDistrictId={user?.district_id}
           userAreaId={user?.location_id}
           userId={user?.id}
         />

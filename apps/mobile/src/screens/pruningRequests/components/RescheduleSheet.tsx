@@ -46,14 +46,14 @@ export function RescheduleSheet({
 }: RescheduleSheetProps): React.JSX.Element {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  const rayonId = (request as any).rayonId ?? (request as any).rayon_id ?? null;
+  const districtId = (request as any).districtId ?? (request as any).district_id ?? null;
 
   const capacityRows = useAppSelector((state) => {
     const slice = (state as any).serviceCapacity;
-    if (!slice || !rayonId) {
+    if (!slice || !districtId) {
       return [];
     }
-    return slice.calendarByRayon?.[rayonId] ?? [];
+    return slice.calendarByDistrict?.[districtId] ?? [];
   });
   const capacityLoading = useAppSelector(
     (state) => Boolean((state as any).serviceCapacity?.loading),
@@ -94,7 +94,7 @@ export function RescheduleSheet({
   }, [preferredWeek]);
 
   useEffect(() => {
-    if (!visible || !rayonId) {
+    if (!visible || !districtId) {
       return;
     }
     // Fetch capacity for the entire visible range so cells past the current
@@ -104,14 +104,14 @@ export function RescheduleSheet({
     const { year, week } = getISOWeek(today);
     void dispatch(
       fetchCapacity({
-        rayonId,
+        districtId,
         year,
         fromWeek: week,
         toWeek: Math.min(week + 13, 53),
         serviceType: 'pruning',
       }),
     );
-  }, [dispatch, rayonId, visible]);
+  }, [dispatch, districtId, visible]);
 
   const submit = async () => {
     if (!selected) {

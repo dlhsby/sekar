@@ -1,6 +1,6 @@
 /**
  * markerSpec — shared visual spec for monitoring map markers, so worker pins,
- * rayon/area nodes and the Surabaya summary read as one consistent system and
+ * district/area nodes and the Surabaya summary read as one consistent system and
  * stay in sync with the web (`apps/web/src/lib/monitoring/markers.ts`).
  *
  * Worker pins already encode role via icon (UserMarker + getRoleIcon) and live

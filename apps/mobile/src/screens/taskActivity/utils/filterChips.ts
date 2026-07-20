@@ -14,9 +14,9 @@ export function buildTaskFilterChips(
   statusFilter: TaskStatus | 'all',
   dateFrom: string,
   dateTo: string,
-  rayonFilter: string | null,
+  districtFilter: string | null,
   areaFilter: string | null,
-  initialRayonId: string | null,
+  initialDistrictId: string | null,
   initialAreaId: string | null
 ): FilterChip[] {
   const chips: FilterChip[] = [];
@@ -42,8 +42,8 @@ export function buildTaskFilterChips(
       tone: 'date',
     });
   }
-  if (rayonFilter && rayonFilter !== initialRayonId) {
-    chips.push({ text: i18n.t('tasks:filterChips.rayon'), tone: 'location' });
+  if (districtFilter && districtFilter !== initialDistrictId) {
+    chips.push({ text: i18n.t('tasks:filterChips.district'), tone: 'location' });
   }
   if (areaFilter && areaFilter !== initialAreaId) {
     chips.push({ text: i18n.t('tasks:filterChips.area'), tone: 'location' });
@@ -83,8 +83,8 @@ export function buildActivityFilterChips(
   if (filters.location_id && filters.location_id !== initialAreaId) {
     chips.push({ text: i18n.t('tasks:filterChips.area'), tone: 'location' });
   }
-  if (filters.rayon_id) {
-    chips.push({ text: i18n.t('tasks:filterChips.rayonSelected'), tone: 'location' });
+  if (filters.district_id) {
+    chips.push({ text: i18n.t('tasks:filterChips.districtSelected'), tone: 'location' });
   }
 
   return chips;

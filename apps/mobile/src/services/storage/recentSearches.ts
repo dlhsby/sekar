@@ -1,6 +1,6 @@
 /**
  * recentSearches — persists the user's recently-selected monitoring search
- * results (petugas / area / rayon) so they can jump back to them quickly.
+ * results (petugas / area / district) so they can jump back to them quickly.
  *
  * FIFO, max 10, de-duplicated by type+id. Non-sensitive → plain AsyncStorage
  * (mirrors src/services/storage/asyncStorageKeys.ts conventions).

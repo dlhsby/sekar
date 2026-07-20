@@ -4,7 +4,7 @@
  * CP2 design-system v2.1 sweep (June 2026): raw <Text> → NBText (labels
  * mono-sm/uppercase, footer buttons body-sm), flat tokens. Uses the real NB
  * primitives (mirrors TaskFilterModal.test) so the swept markup is exercised
- * end-to-end; only icons / safe-area / the rayons API are mocked.
+ * end-to-end; only icons / safe-area / the districts API are mocked.
  */
 
 import React from 'react';
@@ -18,11 +18,11 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('../../../services/api', () => ({
-  getRayons: jest.fn(),
+  getDistricts: jest.fn(),
 }));
 
-import { getRayons } from '../../../services/api';
-const mockGetRayons = getRayons as jest.MockedFunction<typeof getRayons>;
+import { getDistricts } from '../../../services/api';
+const mockGetDistricts = getDistricts as jest.MockedFunction<typeof getDistricts>;
 
 const DEFAULT_PROPS = {
   visible: true,
@@ -31,13 +31,13 @@ const DEFAULT_PROPS = {
   onApplyFilters: jest.fn(),
   onResetFilters: jest.fn(),
   userRole: 'staff_kecamatan' as const,
-  userRayonId: undefined,
+  userDistrictId: undefined,
 };
 
 describe('PruningRequestFilterModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockGetRayons.mockResolvedValue({ data: [] } as any);
+    mockGetDistricts.mockResolvedValue({ data: [] } as any);
   });
 
   describe('Visibility', () => {
@@ -157,38 +157,38 @@ describe('PruningRequestFilterModal', () => {
       expect(queryByText('Rayon')).toBeNull();
     });
 
-    it('shows a fixed Rayon for admin_rayon and does not load the rayon list', async () => {
+    it('shows a fixed Rayon for admin_rayon and does not load the district list', async () => {
       const { getByText } = render(
         <PruningRequestFilterModal
           {...DEFAULT_PROPS}
           userRole="admin_rayon"
-          userRayonId="rayon-pusat"
+          userDistrictId="district-pusat"
         />,
       );
       expect(getByText('Rayon')).toBeTruthy();
-      // admin_rayon is rayon-locked, so the selectable rayon list is never fetched.
-      await waitFor(() => expect(mockGetRayons).not.toHaveBeenCalled());
+      // admin_rayon is district-locked, so the selectable district list is never fetched.
+      await waitFor(() => expect(mockGetDistricts).not.toHaveBeenCalled());
     });
 
-    it('shows a selectable Rayon for management and loads the rayon list', async () => {
-      mockGetRayons.mockResolvedValue({
-        data: [{ id: 'rayon-1', name: 'Rayon Utara' }],
+    it('shows a selectable Rayon for management and loads the district list', async () => {
+      mockGetDistricts.mockResolvedValue({
+        data: [{ id: 'district-1', name: 'Rayon Utara' }],
       } as any);
       const { getByText } = render(
         <PruningRequestFilterModal {...DEFAULT_PROPS} userRole="management" />,
       );
       expect(getByText('Rayon')).toBeTruthy();
-      await waitFor(() => expect(mockGetRayons).toHaveBeenCalled());
+      await waitFor(() => expect(mockGetDistricts).toHaveBeenCalled());
     });
 
-    it('does not crash when the rayon list fails to load', async () => {
-      mockGetRayons.mockRejectedValue(new Error('Network error'));
+    it('does not crash when the district list fails to load', async () => {
+      mockGetDistricts.mockRejectedValue(new Error('Network error'));
       expect(() =>
         render(
           <PruningRequestFilterModal {...DEFAULT_PROPS} userRole="management" />,
         ),
       ).not.toThrow();
-      await waitFor(() => expect(mockGetRayons).toHaveBeenCalled());
+      await waitFor(() => expect(mockGetDistricts).toHaveBeenCalled());
     });
   });
 });

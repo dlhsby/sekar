@@ -1,7 +1,7 @@
 /**
  * MonitoringFilterModal Component
  * Phase 2D: Full-screen filter modal for map monitoring.
- * Role-gated rayon/area pickers, status chips, role chips, user search, staffing summary.
+ * Role-gated district/area pickers, status chips, role chips, user search, staffing summary.
  */
 
 import React, {
@@ -28,12 +28,12 @@ import {
 import { locationLabel } from '../../utils/statusHelpers';
 import { NBSelect } from '../nb';
 import type { LiveUser } from '../../types/models.types';
-import { getAreas, getAreasByRayonId, getRayons } from '../../services/api';
+import { getAreas, getAreasByDistrictId, getDistricts } from '../../services/api';
 import { getStaffingSummary } from '../../services/api/monitoringApi';
 import { StaffingSummarySection } from '../monitoring/StaffingSummarySection';
 import type { MonitoringFilters } from '../../types/api.types';
 import type { PresenceLocation, StaffingSummaryItem, User } from '../../types/models.types';
-import type { Area, Rayon } from '../../types/models.types';
+import type { Area, District } from '../../types/models.types';
 import {
   ROLE_LABELS,
   ROLES_WITH_RAYON,
@@ -73,8 +73,8 @@ export function MonitoringFilterModal({
   const [selectedLocations, setSelectedLocations] = useState<PresenceLocation[]>(
     currentFilters.location ?? [],
   );
-  const [selectedRayonId, setSelectedRayonId] = useState<string | undefined>(
-    currentFilters.rayon_id,
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string | undefined>(
+    currentFilters.district_id,
   );
   const [selectedAreaId, setSelectedAreaId] = useState<string | undefined>(
     currentFilters.location_id,
@@ -86,7 +86,7 @@ export function MonitoringFilterModal({
     currentFilters.search ?? '',
   );
 
-  const [rayons, setRayons] = useState<Rayon[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [staffing, setStaffing] = useState<StaffingSummaryItem[]>([]);
   const [isLoadingStaffing, setIsLoadingStaffing] = useState(false);
@@ -94,45 +94,45 @@ export function MonitoringFilterModal({
 
   const userRole = currentUser.role;
 
-  const canSelectRayon = ROLES_WITH_RAYON.includes(userRole);
-  const hasFixedRayon = ROLES_WITH_FIXED_RAYON.includes(userRole);
-  const hideRayon = ROLES_WITHOUT_RAYON.includes(userRole);
+  const canSelectDistrict = ROLES_WITH_RAYON.includes(userRole);
+  const hasFixedDistrict = ROLES_WITH_FIXED_RAYON.includes(userRole);
+  const hideDistrict = ROLES_WITHOUT_RAYON.includes(userRole);
 
-  // Load rayons for roles that can select
+  // Load districts for roles that can select
   useEffect(() => {
-    if (!visible || hideRayon) { return; }
-    if (canSelectRayon) {
-      getRayons()
-        .then(res => { if (res.data) { setRayons(res.data); } })
+    if (!visible || hideDistrict) { return; }
+    if (canSelectDistrict) {
+      getDistricts()
+        .then(res => { if (res.data) { setDistricts(res.data); } })
         .catch(() => {});
     }
-  }, [visible, canSelectRayon, hideRayon]);
+  }, [visible, canSelectDistrict, hideDistrict]);
 
-  // Load areas cascading from rayon
+  // Load areas cascading from district
   useEffect(() => {
     if (!visible) { return; }
-    const rayonId = hasFixedRayon ? currentUser.rayon_id : selectedRayonId;
-    if (rayonId) {
-      getAreasByRayonId(rayonId)
+    const districtId = hasFixedDistrict ? currentUser.district_id : selectedDistrictId;
+    if (districtId) {
+      getAreasByDistrictId(districtId)
         .then(res => { if (res.data) { setAreas(res.data); } })
         .catch(() => {});
-    } else if (!hasFixedRayon) {
+    } else if (!hasFixedDistrict) {
       getAreas()
         .then(res => { if (res.data) { setAreas(Array.isArray(res.data) ? res.data : []); } })
         .catch(() => {});
     }
-  }, [visible, selectedRayonId, hasFixedRayon, currentUser.rayon_id]);
+  }, [visible, selectedDistrictId, hasFixedDistrict, currentUser.district_id]);
 
-  // Load staffing summary always on modal open (filters by rayon/area)
+  // Load staffing summary always on modal open (filters by district/area)
   useEffect(() => {
     if (!visible) {
       setStaffing([]);
       return;
     }
     setIsLoadingStaffing(true);
-    const rayonId = hasFixedRayon ? currentUser.rayon_id : selectedRayonId;
-    const filters: { rayon_id?: string; location_id?: string } = {};
-    if (rayonId) filters.rayon_id = rayonId;
+    const districtId = hasFixedDistrict ? currentUser.district_id : selectedDistrictId;
+    const filters: { district_id?: string; location_id?: string } = {};
+    if (districtId) filters.district_id = districtId;
     if (selectedAreaId) filters.location_id = selectedAreaId;
     getStaffingSummary(filters)
       .then(res => {
@@ -143,13 +143,13 @@ export function MonitoringFilterModal({
       })
       .catch(() => {})
       .finally(() => { setIsLoadingStaffing(false); });
-  }, [visible, selectedRayonId, selectedAreaId, hasFixedRayon, currentUser.rayon_id]);
+  }, [visible, selectedDistrictId, selectedAreaId, hasFixedDistrict, currentUser.district_id]);
 
   // Sync with current filters when modal opens
   useEffect(() => {
     if (visible) {
       setSelectedLocations(currentFilters.location ?? []);
-      setSelectedRayonId(currentFilters.rayon_id);
+      setSelectedDistrictId(currentFilters.district_id);
       setSelectedAreaId(currentFilters.location_id);
       setSelectedRoles(currentFilters.role ? [currentFilters.role] : []);
       setSearchText(currentFilters.search ?? '');
@@ -162,7 +162,7 @@ export function MonitoringFilterModal({
 
   const handleReset = useCallback(() => {
     setSelectedLocations([]);
-    setSelectedRayonId(undefined);
+    setSelectedDistrictId(undefined);
     setSelectedAreaId(undefined);
     setSelectedRoles([]);
     setSearchText('');
@@ -171,7 +171,7 @@ export function MonitoringFilterModal({
   const handleApply = useCallback(() => {
     const filters: MonitoringFilters = {};
     if (selectedLocations.length > 0) { filters.location = selectedLocations; }
-    if (selectedRayonId) { filters.rayon_id = selectedRayonId; }
+    if (selectedDistrictId) { filters.district_id = selectedDistrictId; }
     if (selectedAreaId) { filters.location_id = selectedAreaId; }
     if (selectedRoles.length === 1) { filters.role = selectedRoles[0]; }
     if (selectedRoles.length > 1) { (filters as any).roles = selectedRoles; }
@@ -180,7 +180,7 @@ export function MonitoringFilterModal({
     onClose();
   }, [
     selectedLocations,
-    selectedRayonId,
+    selectedDistrictId,
     selectedAreaId,
     selectedRoles,
     searchText,
@@ -188,9 +188,9 @@ export function MonitoringFilterModal({
     onClose,
   ]);
 
-  const rayonOptions = useMemo(
-    () => rayons.map(r => ({ label: r.name, value: r.id })),
-    [rayons],
+  const districtOptions = useMemo(
+    () => districts.map(r => ({ label: r.name, value: r.id })),
+    [districts],
   );
 
   const areaOptions = useMemo(
@@ -268,9 +268,9 @@ export function MonitoringFilterModal({
         </FilterSection>
 
         {/* Rayon picker */}
-        {!hideRayon && (
-          <FilterSection title={t('monitoring:filterModal.sections.rayon')}>
-            {hasFixedRayon ? (
+        {!hideDistrict && (
+          <FilterSection title={t('monitoring:filterModal.sections.district')}>
+            {hasFixedDistrict ? (
               <View style={styles.fixedValue}>
                 <MaterialCommunityIcons
                   name="lock"
@@ -278,18 +278,18 @@ export function MonitoringFilterModal({
                   color={nbColors.gray500}
                 />
                 <NBText variant="body-sm" color="gray700">
-                  {currentUser.rayon?.name ?? t('monitoring:filterModal.fixedRayon')}
+                  {currentUser.district?.name ?? t('monitoring:filterModal.fixedDistrict')}
                 </NBText>
               </View>
             ) : (
               <NBSelect
-                options={rayonOptions}
-                value={selectedRayonId}
+                options={districtOptions}
+                value={selectedDistrictId}
                 onValueChange={(val: string) => {
-                  setSelectedRayonId(val || undefined);
+                  setSelectedDistrictId(val || undefined);
                   setSelectedAreaId(undefined);
                 }}
-                placeholder={t('monitoring:filterModal.placeholders.rayon')}
+                placeholder={t('monitoring:filterModal.placeholders.district')}
               />
             )}
           </FilterSection>
@@ -338,7 +338,7 @@ export function MonitoringFilterModal({
             items={staffing}
             isLoading={isLoadingStaffing}
             currentDayTypeLabel={currentDayTypeLabel}
-            selectedRayonId={selectedRayonId}
+            selectedDistrictId={selectedDistrictId}
             selectedAreaId={selectedAreaId}
           />
         </FilterSection>

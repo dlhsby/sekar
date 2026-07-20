@@ -1,23 +1,23 @@
 /**
  * useMonitoringSearch — client-side search across the monitoring map's three
- * entity types (petugas / location / rayon), all already in the store.
+ * entity types (petugas / location / district), all already in the store.
  *
  * Returns each type's matches plus a `semua` grouping (type sections) for the
- * "Semua" tab. Case-insensitive name match (+ location/rayon name for context).
+ * "Semua" tab. Case-insensitive name match (+ location/district name for context).
  */
 
 import { useMemo } from 'react';
 import i18n from '../i18n/config';
 import { ROLE_LABELS } from '../constants/roles';
-import type { LiveUser, RayonBoundary, UserRole } from '../types/models.types';
+import type { LiveUser, DistrictBoundary, UserRole } from '../types/models.types';
 
-export type SearchResultType = 'petugas' | 'location' | 'rayon';
+export type SearchResultType = 'petugas' | 'location' | 'district';
 
 export interface SearchResult {
   id: string;
   type: SearchResultType;
   name: string;
-  /** Secondary line — role · location for petugas, parent rayon for location, location count for rayon. */
+  /** Secondary line — role · location for petugas, parent district for location, location count for district. */
   subtitle?: string;
   latitude: number;
   longitude: number;
@@ -34,7 +34,7 @@ export interface SearchSection {
 export interface MonitoringSearchResults {
   petugas: SearchResult[];
   location: SearchResult[];
-  rayon: SearchResult[];
+  district: SearchResult[];
   /** Grouped by type (non-empty sections only) — for the "Semua" tab. */
   semua: SearchSection[];
   total: number;
@@ -46,16 +46,16 @@ function roleLabel(role: string): string {
 
 export function useMonitoringSearch(
   liveUsers: LiveUser[],
-  rayons: RayonBoundary[] | undefined,
+  districts: DistrictBoundary[] | undefined,
   query: string,
-  labels?: { petugas: string; area: string; rayon: string },
+  labels?: { petugas: string; area: string; district: string },
 ): MonitoringSearchResults {
   return useMemo(() => {
     const q = query.trim().toLowerCase();
     const matches = (s?: string | null): boolean => !!s && s.toLowerCase().includes(q);
 
     if (!q) {
-      return { petugas: [], location: [], rayon: [], semua: [], total: 0 };
+      return { petugas: [], location: [], district: [], semua: [], total: 0 };
     }
 
     const petugas: SearchResult[] = liveUsers
@@ -71,12 +71,12 @@ export function useMonitoringSearch(
       }));
 
     const location: SearchResult[] = [];
-    const rayon: SearchResult[] = [];
-    for (const r of rayons ?? []) {
+    const district: SearchResult[] = [];
+    for (const r of districts ?? []) {
       if (matches(r.name)) {
-        rayon.push({
+        district.push({
           id: r.id,
-          type: 'rayon',
+          type: 'district',
           name: r.name,
           subtitle: `${r.area_count} area`,
           latitude: Number(r.center_lat),
@@ -89,7 +89,7 @@ export function useMonitoringSearch(
             id: a.id,
             type: 'location',
             name: a.name,
-            subtitle: a.rayon_name,
+            subtitle: a.district_name,
             latitude: Number(a.center_lat),
             longitude: Number(a.center_lng),
           });
@@ -100,9 +100,9 @@ export function useMonitoringSearch(
     const semua: SearchSection[] = [
       { title: labels?.petugas ?? i18n.t('monitoring:search.personnelLabel'), type: 'petugas' as const, data: petugas },
       { title: labels?.area ?? 'Area', type: 'location' as const, data: location },
-      { title: labels?.rayon ?? 'Rayon', type: 'rayon' as const, data: rayon },
+      { title: labels?.district ?? 'Rayon', type: 'district' as const, data: district },
     ].filter((s) => s.data.length > 0);
 
-    return { petugas, location, rayon, semua, total: petugas.length + location.length + rayon.length };
-  }, [liveUsers, rayons, query, labels]);
+    return { petugas, location, district, semua, total: petugas.length + location.length + district.length };
+  }, [liveUsers, districts, query, labels]);
 }

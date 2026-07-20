@@ -19,7 +19,7 @@ import i18n from '../../i18n/config';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface MonitoringV2Snapshot {
-  scope: 'city' | 'rayon' | 'location';
+  scope: 'city' | 'district' | 'location';
   scope_id: string | null;
   workers: LiveUser[];
   generated_at: string | null;
@@ -29,17 +29,17 @@ export interface MonitoringV2VisibleLayers {
   workers: boolean;
   plants: boolean;
   overdue: boolean;
-  rayons: boolean;
+  districts: boolean;
   areas: boolean;
 }
 
-export type MonitoringScope = 'surabaya' | 'city' | 'rayon' | 'location';
+export type MonitoringScope = 'surabaya' | 'city' | 'district' | 'location';
 
-/** Current drill position on the map (Surabaya → rayon → location). */
+/** Current drill position on the map (Surabaya → district → location). */
 export interface MonitoringView {
   scope: MonitoringScope;
   id: string | null;
-  rayonId: string | null;
+  districtId: string | null;
   name: string | null;
 }
 
@@ -51,7 +51,7 @@ export interface MonitoringV2State {
   clusterZoomThreshold: number;
   loading: boolean;
   error: string | null;
-  // Unified drill-down state (Surabaya → rayon → area → workers).
+  // Unified drill-down state (Surabaya → district → area → workers).
   view: MonitoringView;
   /** The scope the user's role can never drill above. */
   floor: MonitoringScope;
@@ -60,12 +60,12 @@ export interface MonitoringV2State {
 }
 
 export interface FetchSnapshotParams {
-  scope: 'city' | 'rayon' | 'location';
+  scope: 'city' | 'district' | 'location';
   id?: string;
 }
 
 export interface FetchAggregateParams {
-  scope: 'city' | 'rayon';
+  scope: 'city' | 'district';
   id?: string;
 }
 
@@ -82,7 +82,7 @@ const initialState: MonitoringV2State = {
     workers: true,
     plants: false,
     overdue: false,
-    rayons: true,
+    districts: true,
     areas: true,
   },
   selectedUserId: null,
@@ -91,7 +91,7 @@ const initialState: MonitoringV2State = {
   clusterZoomThreshold: 0.05,
   loading: false,
   error: null,
-  view: { scope: 'surabaya', id: null, rayonId: null, name: null },
+  view: { scope: 'surabaya', id: null, districtId: null, name: null },
   floor: 'surabaya',
   aggregate: null,
   aggregateLoading: false,
@@ -101,7 +101,7 @@ const initialState: MonitoringV2State = {
 
 /**
  * Fetch a fresh monitoring snapshot from the server.
- * Endpoint: GET /monitoring/snapshot?scope=city|rayon|location[&id=<uuid>]
+ * Endpoint: GET /monitoring/snapshot?scope=city|district|location[&id=<uuid>]
  */
 export const fetchSnapshot = createAsyncThunk(
   'monitoringV2/fetchSnapshot',
@@ -112,7 +112,7 @@ export const fetchSnapshot = createAsyncThunk(
         : `?scope=${params.scope}`;
       const response = await apiClient.get<{
         data?: {
-          scope: 'city' | 'rayon' | 'location';
+          scope: 'city' | 'district' | 'location';
           scope_id: string | null;
           workers: LiveUser[];
           generated_at: string;
@@ -138,7 +138,7 @@ export const fetchSnapshot = createAsyncThunk(
 
 /**
  * Fetch the aggregate ("Ringkasan") rollup for the current scope.
- * Endpoint: GET /monitoring/aggregate?scope=city|rayon[&id=<uuid>]
+ * Endpoint: GET /monitoring/aggregate?scope=city|district[&id=<uuid>]
  */
 export const fetchAggregate = createAsyncThunk(
   'monitoringV2/fetchAggregate',
@@ -223,7 +223,7 @@ const monitoringV2Slice = createSlice({
 
     /**
      * Initialise the drill view + floor from the viewer's role.
-     * korlap → area; kepala_rayon/admin_rayon → rayon; city roles → surabaya.
+     * korlap → area; kepala_rayon/admin_rayon → district; city roles → surabaya.
      */
     initMonitoringView(
       state,
@@ -234,25 +234,25 @@ const monitoringV2Slice = createSlice({
       state.selectedUserId = null;
     },
 
-    /** Surabaya → the rayon list (city scope). */
+    /** Surabaya → the district list (city scope). */
     enterCity(state) {
-      state.view = { scope: 'city', id: null, rayonId: null, name: null };
+      state.view = { scope: 'city', id: null, districtId: null, name: null };
       state.selectedUserId = null;
     },
 
-    /** Drill one level deeper from a tapped rayon/location node. */
+    /** Drill one level deeper from a tapped district/location node. */
     drillTo(
       state,
-      action: PayloadAction<{ id: string; type: 'rayon' | 'location'; name: string; rayonId: string | null }>,
+      action: PayloadAction<{ id: string; type: 'district' | 'location'; name: string; districtId: string | null }>,
     ) {
       const n = action.payload;
-      if (n.type === 'rayon') {
-        state.view = { scope: 'rayon', id: n.id, rayonId: n.id, name: n.name };
+      if (n.type === 'district') {
+        state.view = { scope: 'district', id: n.id, districtId: n.id, name: n.name };
       } else {
         state.view = {
           scope: 'location',
           id: n.id,
-          rayonId: n.rayonId ?? state.view.rayonId,
+          districtId: n.districtId ?? state.view.districtId,
           name: n.name,
         };
       }
@@ -264,15 +264,15 @@ const monitoringV2Slice = createSlice({
       if (state.view.scope === state.floor) return;
       if (state.view.scope === 'location') {
         state.view = {
-          scope: 'rayon',
-          id: state.view.rayonId,
-          rayonId: state.view.rayonId,
+          scope: 'district',
+          id: state.view.districtId,
+          districtId: state.view.districtId,
           name: null,
         };
-      } else if (state.view.scope === 'rayon') {
-        state.view = { scope: 'city', id: null, rayonId: null, name: null };
+      } else if (state.view.scope === 'district') {
+        state.view = { scope: 'city', id: null, districtId: null, name: null };
       } else if (state.view.scope === 'city') {
-        state.view = { scope: 'surabaya', id: null, rayonId: null, name: null };
+        state.view = { scope: 'surabaya', id: null, districtId: null, name: null };
       }
       state.selectedUserId = null;
     },
