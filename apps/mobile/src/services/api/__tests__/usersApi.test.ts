@@ -16,7 +16,7 @@ describe('usersApi', () => {
   describe('getUsers', () => {
     it('walks every page so no users are dropped past the limit cap', async () => {
       // Regression: staging has >1000 users; a single capped request drops the
-      // tail and assignable-user pickers miss whole rayons. getUsers must page.
+      // tail and assignable-user pickers miss whole districts. getUsers must page.
       const mockGet = jest
         .spyOn(apiClient, 'get')
         .mockResolvedValueOnce({ data: { data: [{ id: '1' }], meta: { totalPages: 2 } } } as never)

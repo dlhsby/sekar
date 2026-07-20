@@ -69,7 +69,7 @@ export async function recordTransaction(
     unitPrice?: number;          // Optional for purchases
     supplier?: string;           // Optional for purchases
     receiptUrl?: string;         // S3 URL to receipt
-    toRayonId?: string;          // For distribution
+    toDistrictId?: string;          // For distribution
     toAreaId?: string;           // For distribution
     recipientName?: string;      // For distribution
     occurredAt: string;          // YYYY-MM-DD

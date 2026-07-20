@@ -139,7 +139,7 @@ export interface ActivitiesFilter {
   to_date?: string; // YYYY-MM-DD (to date)
   location_id?: string;
   user_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   activity_type_id?: string;
   status?: 'pending' | 'approved' | 'rejected';
   sort_by?: string;
@@ -326,7 +326,7 @@ export interface CreateTaskRequest {
   priority: TaskPriority;
   deadline?: string;
   location_id?: string; // Phase 2C: optional
-  rayon_id?: string; // Phase 2C: rayon-scoped tasks
+  district_id?: string; // Phase 2C: district-scoped tasks
   assigned_to?: string;
   tagged_user_ids?: string[]; // Phase 2C: task tagging
 }
@@ -430,7 +430,7 @@ export interface OvertimeFilter {
   status?: OvertimeStatus;
   from_date?: string;
   to_date?: string;
-  rayon_id?: string;
+  district_id?: string;
   location_id?: string;
   user_id?: string;
   sort_by?: 'created_at' | 'start_datetime';
@@ -498,22 +498,22 @@ export interface BroadcastNotificationRequest {
 
 // Monitoring API
 export interface MonitoringFilter {
-  rayon_id?: string;
+  district_id?: string;
   location_id?: string;
   date?: string;
 }
 
 export interface CityMonitoringResponse extends MonitoringStats {
-  rayons: {
+  districts: {
     id: string;
     name: string;
     stats: MonitoringStats;
   }[];
 }
 
-export interface RayonMonitoringResponse extends MonitoringStats {
-  rayon_id: string;
-  rayon_name: string;
+export interface DistrictMonitoringResponse extends MonitoringStats {
+  district_id: string;
+  district_name: string;
   areas: {
     id: string;
     name: string;
@@ -533,7 +533,7 @@ export interface AreaMonitoringResponse extends MonitoringStats {
 
 export interface LiveUsersFilter {
   location_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   shift_definition_id?: string;
   status?: TrackingStatus[];
   role?: string;
@@ -542,7 +542,7 @@ export interface LiveUsersFilter {
 
 // Phase 2D: MonitoringFilters (used in filter modal and slice)
 export interface MonitoringFilters {
-  rayon_id?: string;
+  district_id?: string;
   location_id?: string;
   role?: string;
   status?: TrackingStatus[];

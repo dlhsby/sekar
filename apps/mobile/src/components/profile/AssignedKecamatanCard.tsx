@@ -1,6 +1,6 @@
 /**
  * AssignedKecamatanCard
- * Profile card shown only for `staff_kecamatan` users — surfaces the rayon
+ * Profile card shown only for `staff_kecamatan` users — surfaces the district
  * + kecamatan they are pinned to, mirroring the satgas/korlap "Area
  * Ditugaskan" card. Added May 9, 2026 (kecamatan UX review).
  */
@@ -19,13 +19,13 @@ import {
 import { NBCard } from '../nb';
 
 interface AssignedKecamatanCardProps {
-  rayonName?: string | null;
+  districtName?: string | null;
   kecamatanName?: string | null;
   testID?: string;
 }
 
 export const AssignedKecamatanCard: React.FC<AssignedKecamatanCardProps> = ({
-  rayonName,
+  districtName,
   kecamatanName,
   testID = 'assigned-kecamatan-card',
 }) => {
@@ -33,11 +33,11 @@ export const AssignedKecamatanCard: React.FC<AssignedKecamatanCardProps> = ({
   return (
     <NBCard variant="elevated" style={styles.card} testID={testID}>
       <Text style={styles.cardTitle}>{t('profile:assignedKecamatan.title')}</Text>
-      {kecamatanName || rayonName ? (
+      {kecamatanName || districtName ? (
         <View style={styles.body}>
           <View style={styles.row}>
-            <Text style={styles.label}>{t('profile:assignedKecamatan.rayon')}</Text>
-            <Text style={styles.value}>{rayonName ?? '—'}</Text>
+            <Text style={styles.label}>{t('profile:assignedKecamatan.district')}</Text>
+            <Text style={styles.value}>{districtName ?? '—'}</Text>
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>

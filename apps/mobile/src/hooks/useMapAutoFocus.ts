@@ -2,7 +2,7 @@
  * useMapAutoFocus Hook
  * Phase 2D Gap #3: Auto-focus map when filters change.
  * Area selected -> zoom to area center
- * Rayon selected -> fit to rayon bbox
+ * Rayon selected -> fit to district bbox
  * Search match -> zoom to user
  * Reset -> city view
  */
@@ -29,8 +29,8 @@ export function useMapAutoFocus(
 
     // Area selected -> animate to area center, zoom 15-16
     if (filters.location_id && filters.location_id !== prev.location_id && boundaries) {
-      for (const rayon of boundaries.rayons) {
-        const area = rayon.areas.find(a => a.id === filters.location_id);
+      for (const district of boundaries.districts) {
+        const area = district.areas.find(a => a.id === filters.location_id);
         if (area) {
           mapRef.current.animateToRegion(
             {
@@ -46,16 +46,16 @@ export function useMapAutoFocus(
       }
     }
 
-    // Rayon selected (no area) -> fit to rayon bbox
+    // Rayon selected (no area) -> fit to district bbox
     if (
-      filters.rayon_id &&
+      filters.district_id &&
       !filters.location_id &&
-      filters.rayon_id !== prev.rayon_id &&
+      filters.district_id !== prev.district_id &&
       boundaries
     ) {
-      const rayon = boundaries.rayons.find(r => r.id === filters.rayon_id);
-      if (rayon && rayon.areas.length > 0) {
-        const coords = rayon.areas.map(a => ({
+      const district = boundaries.districts.find(r => r.id === filters.district_id);
+      if (district && district.areas.length > 0) {
+        const coords = district.areas.map(a => ({
           latitude: a.center_lat,
           longitude: a.center_lng,
         }));
@@ -90,9 +90,9 @@ export function useMapAutoFocus(
 
     // All filters cleared -> reset to city view
     const hasFilters =
-      filters.location_id || filters.rayon_id || filters.search || filters.role;
+      filters.location_id || filters.district_id || filters.search || filters.role;
     const hadFilters =
-      prev.location_id || prev.rayon_id || prev.search || prev.role;
+      prev.location_id || prev.district_id || prev.search || prev.role;
     if (!hasFilters && hadFilters) {
       mapRef.current.animateToRegion(SURABAYA_CITY_REGION, 1000);
     }

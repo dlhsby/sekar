@@ -8,7 +8,7 @@ import React from 'react';
 import { MonitoringFilterModal } from '../../../components/modals/MonitoringFilterModal';
 import { MonitoringSearchModal } from '../../../components/monitoring/MonitoringSearchModal';
 import { BoundaryDetailModal } from '../../../components/modals/BoundaryDetailModal';
-import type { LiveUser, RayonBoundary, AreaBoundary, User } from '../../../types/models.types';
+import type { LiveUser, DistrictBoundary, AreaBoundary, User } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
 import type { SearchResult } from '../../../hooks/useMonitoringSearch';
 
@@ -22,12 +22,12 @@ interface FilterAndSearchModalsProps {
   searchModalVisible: boolean;
   setSearchModalVisible: (visible: boolean) => void;
   liveUsers: LiveUser[];
-  rayons: RayonBoundary[] | undefined;
+  districts: DistrictBoundary[] | undefined;
   onSearchSelect: (result: SearchResult) => void;
   boundaryDetailVisible: boolean;
   setBoundaryDetailVisible: (visible: boolean) => void;
-  boundaryDetailType: 'rayon' | 'location';
-  boundaryDetailData: RayonBoundary | AreaBoundary | null;
+  boundaryDetailType: 'district' | 'location';
+  boundaryDetailData: DistrictBoundary | AreaBoundary | null;
 }
 
 export function FilterAndSearchModals({
@@ -40,7 +40,7 @@ export function FilterAndSearchModals({
   searchModalVisible,
   setSearchModalVisible,
   liveUsers,
-  rayons,
+  districts,
   onSearchSelect,
   boundaryDetailVisible,
   setBoundaryDetailVisible,
@@ -69,12 +69,12 @@ export function FilterAndSearchModals({
         onClose={() => setBoundaryDetailVisible(false)}
       />
 
-      {/* Fullscreen search — find a petugas / location / rayon and fly to it */}
+      {/* Fullscreen search — find a petugas / location / district and fly to it */}
       <MonitoringSearchModal
         visible={searchModalVisible}
         onClose={() => setSearchModalVisible(false)}
         liveUsers={liveUsers}
-        rayons={rayons}
+        districts={districts}
         onSelect={onSearchSelect}
       />
     </>

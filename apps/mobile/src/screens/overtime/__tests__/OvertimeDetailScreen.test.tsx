@@ -65,12 +65,12 @@ const mockOvertimeData = {
     full_name: 'Ahmad Satgas',
     username: 'ahmad',
     role: 'satgas',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
   },
   area: {
     id: 'area-1',
     name: 'Taman Bungkul',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
   },
   activityType: {
     id: 'type-1',
@@ -95,7 +95,7 @@ const createTestStore = (userOverrides = {}) => {
           full_name: 'Korlap Test',
           role: 'korlap',
           location_id: 'area-1', // Same area → canApprove=true for satgas
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
           ...userOverrides,
         },
         token: 'test-token',
@@ -712,7 +712,7 @@ describe('OvertimeDetailScreen', () => {
       const differentAreaStore = createTestStore({
         role: 'korlap',
         location_id: 'area-other',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       });
 
       const { queryByText } = render(
@@ -729,11 +729,11 @@ describe('OvertimeDetailScreen', () => {
       });
     });
 
-    it('should show buttons when kepala_rayon approves korlap in same rayon', async () => {
+    it('should show buttons when kepala_rayon approves korlap in same district', async () => {
       // kepala_rayon approving korlap
       const korlapOvertime = {
         ...mockOvertimeData,
-        user: { ...mockOvertimeData.user, role: 'korlap', rayon_id: 'rayon-1' },
+        user: { ...mockOvertimeData.user, role: 'korlap', district_id: 'district-1' },
       };
       (overtimeApi.getOvertimeById as jest.Mock).mockResolvedValue({
         data: korlapOvertime,
@@ -741,7 +741,7 @@ describe('OvertimeDetailScreen', () => {
 
       const kepalaStore = createTestStore({
         role: 'kepala_rayon',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         location_id: null,
       });
 

@@ -21,7 +21,7 @@ function node(over: Partial<NodeMarker>): NodeMarker {
   return {
     id: 'r1',
     name: 'Rayon Selatan',
-    variant: 'rayon',
+    variant: 'district',
     lat: -7.3,
     lng: 112.7,
     scheduled: 6,

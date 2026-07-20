@@ -100,7 +100,7 @@ export interface SeedTransaction {
   unitPrice?: number | null; // For purchase/cost tracking
   supplier?: string | null; // For purchase
   receiptUrl?: string | null; // S3 URL to receipt
-  toRayonId?: string | null; // For distribution
+  toDistrictId?: string | null; // For distribution
   toAreaId?: string | null; // For distribution
   recipientName?: string | null; // For distribution
   occurredAt: string; // Date of transaction (YYYY-MM-DD)

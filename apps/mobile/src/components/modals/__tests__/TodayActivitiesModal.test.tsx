@@ -37,7 +37,7 @@ describe('TodayActivitiesModal', () => {
         id: 'area1',
         name: 'Taman Bungkul',
         area_type_id: 'type1',
-        rayon_id: 'rayon1',
+        district_id: 'district1',
         gps_lat: -7.250445,
         gps_lng: 112.768845,
         address: 'Jl. Raya Darmo',

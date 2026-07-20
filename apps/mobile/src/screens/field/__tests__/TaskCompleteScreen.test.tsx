@@ -62,7 +62,7 @@ const mockTask = {
   status: 'in_progress' as const,
   priority: 'high' as const,
   area: { id: 'area-1', name: 'Taman Bungkul' },
-  rayon: { id: 'rayon-1', name: 'Rayon 1' }, // Phase 2C: Added rayon
+  district: { id: 'district-1', name: 'Rayon 1' }, // Phase 2C: Added district
 };
 
 describe('TaskCompleteScreen', () => {
@@ -112,7 +112,7 @@ describe('TaskCompleteScreen', () => {
     expect(getByText('Area: Taman Bungkul')).toBeTruthy();
   }, 15000);
 
-  it('shows rayon when present (Phase 2C)', async () => {
+  it('shows district when present (Phase 2C)', async () => {
     const { getByText } = render(
       <NavigationContainer>
         <TaskCompleteScreen />

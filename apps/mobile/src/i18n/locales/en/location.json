@@ -53,7 +53,7 @@
   },
   "checkStatusFailed": "Failed to check location status",
   "selector": {
-    "selectRayonFirst": "Select a rayon first",
+    "selectDistrictFirst": "Select a district first",
     "selectArea": "Select area..."
   },
   "getFailed": "Failed to get location"

@@ -42,8 +42,8 @@ function buildLiveUser(overrides?: Partial<LiveUser>): LiveUser {
     status: 'active',
     location_id: 'area-source',
     location_name: 'Area Selatan',
-    rayon_id: 'rayon-1',
-    rayon_name: 'Rayon 1',
+    district_id: 'district-1',
+    district_name: 'Rayon 1',
     latitude: -7.25,
     longitude: 112.75,
     accuracy: 10,
@@ -72,8 +72,8 @@ const targetArea: AreaBoundary = {
   center_lat: -7.2,
   center_lng: 112.7,
   boundary_polygon: null,
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   assigned_count: 3,
   staffing: [],
   is_understaffed: true,
@@ -85,14 +85,14 @@ function buildDefaultProps(overrides?: {
   visible?: boolean;
   onClose?: jest.Mock;
   targetArea?: AreaBoundary | null;
-  sourceRayonId?: string;
+  sourceDistrictId?: string;
   onSuccess?: jest.Mock;
 }) {
   return {
     visible: overrides?.visible ?? true,
     onClose: overrides?.onClose ?? jest.fn(),
     targetArea: overrides?.targetArea !== undefined ? overrides.targetArea : targetArea,
-    sourceRayonId: overrides?.sourceRayonId !== undefined ? overrides.sourceRayonId : 'rayon-1',
+    sourceDistrictId: overrides?.sourceDistrictId !== undefined ? overrides.sourceDistrictId : 'district-1',
     onSuccess: overrides?.onSuccess ?? jest.fn(),
   };
 }
@@ -105,7 +105,7 @@ describe('ReassignWorkerModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
-    // Default: two workers in source rayon (one already in target area)
+    // Default: two workers in source district (one already in target area)
     mockGetLiveUsers.mockResolvedValue({
       data: { users: [workerA, workerB, workerC] },
     });
@@ -119,13 +119,13 @@ describe('ReassignWorkerModal', () => {
   // ── Fetching candidates ──────────────────────────────────────────────────────
 
   describe('fetching candidates', () => {
-    it('calls getLiveUsers with rayon_id and active status when visible and sourceRayonId set', async () => {
+    it('calls getLiveUsers with district_id and active status when visible and sourceDistrictId set', async () => {
       render(<ReassignWorkerModal {...buildDefaultProps()} />);
 
       await waitFor(() => {
         expect(mockGetLiveUsers).toHaveBeenCalledTimes(1);
         expect(mockGetLiveUsers).toHaveBeenCalledWith({
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
           status: ['active'],
         });
       });
@@ -139,25 +139,25 @@ describe('ReassignWorkerModal', () => {
       });
     });
 
-    it('does not call getLiveUsers when sourceRayonId is missing', () => {
+    it('does not call getLiveUsers when sourceDistrictId is missing', () => {
       render(
         <ReassignWorkerModal
           visible={true}
           onClose={jest.fn()}
           targetArea={targetArea}
-          // sourceRayonId intentionally omitted
+          // sourceDistrictId intentionally omitted
           onSuccess={jest.fn()}
         />
       );
 
-      // Synchronous assertion: effect guard fires immediately when sourceRayonId is absent
+      // Synchronous assertion: effect guard fires immediately when sourceDistrictId is absent
       expect(mockGetLiveUsers).not.toHaveBeenCalled();
     });
 
-    it('does not call getLiveUsers when both visible is false and sourceRayonId missing', async () => {
+    it('does not call getLiveUsers when both visible is false and sourceDistrictId missing', async () => {
       render(
         <ReassignWorkerModal
-          {...buildDefaultProps({ visible: false, sourceRayonId: undefined })}
+          {...buildDefaultProps({ visible: false, sourceDistrictId: undefined })}
         />
       );
 

@@ -41,12 +41,12 @@ describe('tasksApi', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('creates a task with rayon_id instead of location_id', async () => {
+    it('creates a task with district_id instead of location_id', async () => {
       const taskData = {
         title: 'Rayon Task',
         description: 'Test description',
         priority: 'medium' as const,
-        rayon_id: 'rayon-123',
+        district_id: 'district-123',
       };
       const mockResponse = { data: { id: 'task-456', ...taskData } };
       mockPost.mockResolvedValue(mockResponse);

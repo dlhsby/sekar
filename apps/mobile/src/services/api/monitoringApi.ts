@@ -12,7 +12,7 @@ import type {
   ApiResponse,
   ActiveUserData,
   CityMonitoringResponse,
-  RayonMonitoringResponse,
+  DistrictMonitoringResponse,
   AreaMonitoringResponse,
   LiveUsersResponse,
   LiveUsersFilter,
@@ -37,12 +37,12 @@ export async function getCityMonitoring(
   return get<CityMonitoringResponse>('/monitoring/city', filters);
 }
 
-export async function getRayonMonitoring(
-  rayonId: string,
+export async function getDistrictMonitoring(
+  districtId: string,
   filters?: MonitoringFilter,
-): Promise<ApiResponse<RayonMonitoringResponse>> {
-  return get<RayonMonitoringResponse>(
-    `/monitoring/rayon/${rayonId}`,
+): Promise<ApiResponse<DistrictMonitoringResponse>> {
+  return get<DistrictMonitoringResponse>(
+    `/monitoring/district/${districtId}`,
     filters,
   );
 }
@@ -118,21 +118,21 @@ export async function getUserLocationHistory(
 }
 
 export async function getStaffingSummary(
-  filters?: { rayon_id?: string; location_id?: string },
+  filters?: { district_id?: string; location_id?: string },
 ): Promise<ApiResponse<StaffingSummaryResponse>> {
   return get<StaffingSummaryResponse>('/monitoring/staffing-summary', filters);
 }
 
 // Phase 2D Gap: Boundaries endpoint.
-// `level='rayon'` returns rayon outlines only (lightest payload for the city
-// view); `level='area'` (+ rayonId) returns that rayon's area geometry.
+// `level='district'` returns district outlines only (lightest payload for the city
+// view); `level='area'` (+ districtId) returns that district's area geometry.
 export async function getBoundaries(
-  rayonId?: string,
-  level?: 'rayon' | 'area',
+  districtId?: string,
+  level?: 'district' | 'area',
 ): Promise<ApiResponse<BoundariesResponse>> {
   const params: Record<string, string> = {};
-  if (rayonId) {
-    params.rayon_id = rayonId;
+  if (districtId) {
+    params.district_id = districtId;
   }
   if (level) {
     params.level = level;
@@ -140,10 +140,10 @@ export async function getBoundaries(
   return get<BoundariesResponse>('/monitoring/boundaries', params);
 }
 
-// Aggregate ("Ringkasan") rollup — rayon nodes (scope=city) or area nodes
-// (scope=rayon) with grouped status/role counts and centers, no worker coords.
+// Aggregate ("Ringkasan") rollup — district nodes (scope=city) or area nodes
+// (scope=district) with grouped status/role counts and centers, no worker coords.
 export async function getMonitoringAggregate(
-  scope: 'city' | 'rayon' = 'city',
+  scope: 'city' | 'district' = 'city',
   id?: string,
 ): Promise<ApiResponse<MonitoringAggregateResponse>> {
   const params: Record<string, string> = { scope };
@@ -183,7 +183,7 @@ export async function getReassignmentHistory(
 
 export default {
   getCityMonitoring,
-  getRayonMonitoring,
+  getDistrictMonitoring,
   getAreaMonitoring,
   getLiveUsers,
   getActiveUsers,

@@ -16,16 +16,16 @@ jest.mock('react-native-safe-area-context', () => ({
 
 // Mock the API services module that TaskFilterModal uses
 jest.mock('../../../services/api', () => ({
-  getRayons: jest.fn(),
-  getAreasByRayonId: jest.fn(),
+  getDistricts: jest.fn(),
+  getAreasByDistrictId: jest.fn(),
   getAreas: jest.fn(),
   getUsers: jest.fn(),
 }));
 
-import { getRayons, getAreasByRayonId, getAreas, getUsers } from '../../../services/api';
+import { getDistricts, getAreasByDistrictId, getAreas, getUsers } from '../../../services/api';
 
-const mockGetRayons = getRayons as jest.MockedFunction<typeof getRayons>;
-const mockGetAreasByRayonId = getAreasByRayonId as jest.MockedFunction<typeof getAreasByRayonId>;
+const mockGetDistricts = getDistricts as jest.MockedFunction<typeof getDistricts>;
+const mockGetAreasByDistrictId = getAreasByDistrictId as jest.MockedFunction<typeof getAreasByDistrictId>;
 const mockGetAreas = getAreas as jest.MockedFunction<typeof getAreas>;
 const mockGetUsers = getUsers as jest.MockedFunction<typeof getUsers>;
 
@@ -38,7 +38,7 @@ const DEFAULT_PROPS = {
   dateTo: '',
   createdFrom: '',
   createdTo: '',
-  rayonFilter: null,
+  districtFilter: null,
   areaFilter: null,
   petugasFilter: null,
   onApplyFilters: jest.fn(),
@@ -50,8 +50,8 @@ describe('TaskFilterModal', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Return resolved promises by default so there are no dangling async updates
-    mockGetRayons.mockResolvedValue({ data: [] } as any);
-    mockGetAreasByRayonId.mockResolvedValue({ data: [] } as any);
+    mockGetDistricts.mockResolvedValue({ data: [] } as any);
+    mockGetAreasByDistrictId.mockResolvedValue({ data: [] } as any);
     mockGetAreas.mockResolvedValue({ data: [] } as any);
     mockGetUsers.mockResolvedValue({ data: [] } as any);
   });
@@ -183,7 +183,7 @@ describe('TaskFilterModal', () => {
           statusFilter="all"
           dateFrom=""
           dateTo=""
-          rayonFilter={null}
+          districtFilter={null}
           areaFilter={null}
           onApplyFilters={onApplyFilters}
           onClose={onClose}
@@ -201,7 +201,7 @@ describe('TaskFilterModal', () => {
         dateTo: '',
         createdFrom: '',
         createdTo: '',
-        rayonFilter: null,
+        districtFilter: null,
         areaFilter: null,
         petugasFilter: null,
       });
@@ -353,9 +353,9 @@ describe('TaskFilterModal', () => {
   });
 
   describe('Role-based rendering', () => {
-    it('does not show Rayon section for satgas role without userRayonId', () => {
+    it('does not show Rayon section for satgas role without userDistrictId', () => {
       const { queryByText } = render(
-        <TaskFilterModal {...DEFAULT_PROPS} userRole="satgas" userRayonId={undefined} />,
+        <TaskFilterModal {...DEFAULT_PROPS} userRole="satgas" userDistrictId={undefined} />,
       );
 
       expect(queryByText('Rayon')).toBeNull();
@@ -408,12 +408,12 @@ describe('TaskFilterModal', () => {
       });
     });
 
-    it('shows Area section for korlap role with userRayonId', async () => {
+    it('shows Area section for korlap role with userDistrictId', async () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="korlap"
-          userRayonId="rayon-1"
+          userDistrictId="district-1"
         />,
       );
 
@@ -435,24 +435,24 @@ describe('TaskFilterModal', () => {
       });
     });
 
-    it('does not show Rayon section for satgas even with userRayonId', () => {
+    it('does not show Rayon section for satgas even with userDistrictId', () => {
       const { queryByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="satgas"
-          userRayonId="rayon-1"
+          userDistrictId="district-1"
         />,
       );
 
-      // satgas cannot filter by rayon — section is hidden
+      // satgas cannot filter by district — section is hidden
       expect(queryByText('Rayon')).toBeNull();
     });
   });
 
   describe('Rayon data loading', () => {
-    it('loads rayons when visible and user has rayon filter permission', async () => {
-      mockGetRayons.mockResolvedValue({
-        data: [{ id: 'rayon-1', name: 'Rayon Utara' }],
+    it('loads districts when visible and user has district filter permission', async () => {
+      mockGetDistricts.mockResolvedValue({
+        data: [{ id: 'district-1', name: 'Rayon Utara' }],
       } as any);
 
       render(
@@ -464,11 +464,11 @@ describe('TaskFilterModal', () => {
       );
 
       await waitFor(() => {
-        expect(mockGetRayons).toHaveBeenCalled();
+        expect(mockGetDistricts).toHaveBeenCalled();
       });
     });
 
-    it('does not load rayons when user is satgas without rayon context', async () => {
+    it('does not load districts when user is satgas without district context', async () => {
       render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
@@ -479,12 +479,12 @@ describe('TaskFilterModal', () => {
 
       // Wait a tick to allow any effects to run
       await waitFor(() => {
-        expect(mockGetRayons).not.toHaveBeenCalled();
+        expect(mockGetDistricts).not.toHaveBeenCalled();
       });
     });
 
-    it('handles rayon loading error gracefully without crashing', async () => {
-      mockGetRayons.mockRejectedValue(new Error('Network error'));
+    it('handles district loading error gracefully without crashing', async () => {
+      mockGetDistricts.mockRejectedValue(new Error('Network error'));
 
       expect(() =>
         render(
@@ -497,15 +497,15 @@ describe('TaskFilterModal', () => {
       ).not.toThrow();
 
       await waitFor(() => {
-        expect(mockGetRayons).toHaveBeenCalled();
+        expect(mockGetDistricts).toHaveBeenCalled();
       });
     });
 
-    it('populates rayon section after API response', async () => {
-      mockGetRayons.mockResolvedValue({
+    it('populates district section after API response', async () => {
+      mockGetDistricts.mockResolvedValue({
         data: [
-          { id: 'rayon-1', name: 'Rayon Utara' },
-          { id: 'rayon-2', name: 'Rayon Selatan' },
+          { id: 'district-1', name: 'Rayon Utara' },
+          { id: 'district-2', name: 'Rayon Selatan' },
         ],
       } as any);
 
@@ -518,7 +518,7 @@ describe('TaskFilterModal', () => {
       );
 
       await waitFor(() => {
-        expect(mockGetRayons).toHaveBeenCalled();
+        expect(mockGetDistricts).toHaveBeenCalled();
       });
 
       // Rayon section should be present
@@ -527,8 +527,8 @@ describe('TaskFilterModal', () => {
   });
 
   describe('Areas data loading', () => {
-    it('loads areas by rayon when korlap has userRayonId', async () => {
-      mockGetAreasByRayonId.mockResolvedValue({
+    it('loads areas by district when korlap has userDistrictId', async () => {
+      mockGetAreasByDistrictId.mockResolvedValue({
         data: [{ id: 'area-1', name: 'Taman Bungkul' }],
       } as any);
 
@@ -536,48 +536,48 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="korlap"
-          userRayonId="rayon-1"
+          userDistrictId="district-1"
           visible={true}
         />,
       );
 
       await waitFor(() => {
-        expect(mockGetAreasByRayonId).toHaveBeenCalledWith('rayon-1');
+        expect(mockGetAreasByDistrictId).toHaveBeenCalledWith('district-1');
       });
     });
 
     it('handles area loading error gracefully without crashing', async () => {
-      mockGetAreasByRayonId.mockRejectedValue(new Error('Area load error'));
+      mockGetAreasByDistrictId.mockRejectedValue(new Error('Area load error'));
 
       expect(() =>
         render(
           <TaskFilterModal
             {...DEFAULT_PROPS}
             userRole="korlap"
-            userRayonId="rayon-1"
+            userDistrictId="district-1"
             visible={true}
           />,
         ),
       ).not.toThrow();
 
       await waitFor(() => {
-        expect(mockGetAreasByRayonId).toHaveBeenCalled();
+        expect(mockGetAreasByDistrictId).toHaveBeenCalled();
       });
     });
 
-    it('does not load areas when korlap has no userRayonId', async () => {
+    it('does not load areas when korlap has no userDistrictId', async () => {
       render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="korlap"
-          userRayonId={undefined}
+          userDistrictId={undefined}
           visible={true}
         />,
       );
 
       // Wait a tick to confirm no call was made
       await waitFor(() => {
-        expect(mockGetAreasByRayonId).not.toHaveBeenCalled();
+        expect(mockGetAreasByDistrictId).not.toHaveBeenCalled();
       });
     });
   });
@@ -678,13 +678,13 @@ describe('TaskFilterModal', () => {
       );
     });
 
-    it('syncs rayonFilter prop into local state when modal opens', async () => {
+    it('syncs districtFilter prop into local state when modal opens', async () => {
       const onApplyFilters = jest.fn();
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="management"
-          rayonFilter="rayon-1"
+          districtFilter="district-1"
           onApplyFilters={onApplyFilters}
         />,
       );
@@ -694,7 +694,7 @@ describe('TaskFilterModal', () => {
       });
 
       expect(onApplyFilters).toHaveBeenCalledWith(
-        expect.objectContaining({ rayonFilter: 'rayon-1' }),
+        expect.objectContaining({ districtFilter: 'district-1' }),
       );
     });
   });
@@ -729,9 +729,9 @@ describe('TaskFilterModal', () => {
   });
 
   describe('Rayon and area selection via NBSelect', () => {
-    it('selecting a rayon option calls handleRayonChange and applies to filters', async () => {
-      mockGetRayons.mockResolvedValue({
-        data: [{ id: 'rayon-1', name: 'Rayon Utara' }],
+    it('selecting a district option calls handleDistrictChange and applies to filters', async () => {
+      mockGetDistricts.mockResolvedValue({
+        data: [{ id: 'district-1', name: 'Rayon Utara' }],
       } as any);
 
       const onApplyFilters = jest.fn();
@@ -739,17 +739,17 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="management"
-          rayonFilter={null}
+          districtFilter={null}
           onApplyFilters={onApplyFilters}
         />,
       );
 
-      // Wait for rayon data to load
+      // Wait for district data to load
       await waitFor(() => {
-        expect(mockGetRayons).toHaveBeenCalled();
+        expect(mockGetDistricts).toHaveBeenCalled();
       });
 
-      // Open the rayon NBSelect (trigger shows "Semua Rayon")
+      // Open the district NBSelect (trigger shows "Semua Rayon")
       await act(async () => {
         fireEvent.press(getByText('Semua Rayon'));
       });
@@ -759,19 +759,19 @@ describe('TaskFilterModal', () => {
         fireEvent.press(getByText('Rayon Utara'));
       });
 
-      // Apply filters and verify rayon-1 was set
+      // Apply filters and verify district-1 was set
       await act(async () => {
         fireEvent.press(getByText('Terapkan'));
       });
 
       expect(onApplyFilters).toHaveBeenCalledWith(
-        expect.objectContaining({ rayonFilter: 'rayon-1' }),
+        expect.objectContaining({ districtFilter: 'district-1' }),
       );
     });
 
-    it('selecting "Semua Rayon" resets rayon filter to null', async () => {
-      mockGetRayons.mockResolvedValue({
-        data: [{ id: 'rayon-1', name: 'Rayon Utara' }],
+    it('selecting "Semua Rayon" resets district filter to null', async () => {
+      mockGetDistricts.mockResolvedValue({
+        data: [{ id: 'district-1', name: 'Rayon Utara' }],
       } as any);
 
       const onApplyFilters = jest.fn();
@@ -779,16 +779,16 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="management"
-          rayonFilter={null}
+          districtFilter={null}
           onApplyFilters={onApplyFilters}
         />,
       );
 
       await waitFor(() => {
-        expect(mockGetRayons).toHaveBeenCalled();
+        expect(mockGetDistricts).toHaveBeenCalled();
       });
 
-      // Open the rayon NBSelect — trigger shows "Semua Rayon" since rayonFilter is null
+      // Open the district NBSelect — trigger shows "Semua Rayon" since districtFilter is null
       await act(async () => {
         fireEvent.press(getByText('Semua Rayon'));
       });
@@ -808,18 +808,18 @@ describe('TaskFilterModal', () => {
         fireEvent.press(getAllByText('Semua Rayon')[0]);
       });
 
-      // Apply and verify rayonFilter is null
+      // Apply and verify districtFilter is null
       await act(async () => {
         fireEvent.press(getByText('Terapkan'));
       });
 
       expect(onApplyFilters).toHaveBeenCalledWith(
-        expect.objectContaining({ rayonFilter: null }),
+        expect.objectContaining({ districtFilter: null }),
       );
     });
 
     it('selecting an area option applies area filter', async () => {
-      mockGetAreasByRayonId.mockResolvedValue({
+      mockGetAreasByDistrictId.mockResolvedValue({
         data: [{ id: 'area-1', name: 'Taman Bungkul' }],
       } as any);
 
@@ -828,14 +828,14 @@ describe('TaskFilterModal', () => {
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="korlap"
-          userRayonId="rayon-1"
+          userDistrictId="district-1"
           areaFilter={null}
           onApplyFilters={onApplyFilters}
         />,
       );
 
       await waitFor(() => {
-        expect(mockGetAreasByRayonId).toHaveBeenCalled();
+        expect(mockGetAreasByDistrictId).toHaveBeenCalled();
       });
 
       // Open the area NBSelect (trigger shows "Semua Area")
@@ -860,12 +860,12 @@ describe('TaskFilterModal', () => {
   });
 
   describe('Fixed value display for restricted roles', () => {
-    it('area filter shows NBSelect for satgas with userRayonId', async () => {
+    it('area filter shows NBSelect for satgas with userDistrictId', async () => {
       const { getByText } = render(
         <TaskFilterModal
           {...DEFAULT_PROPS}
           userRole="satgas"
-          userRayonId="rayon-1"
+          userDistrictId="district-1"
         />,
       );
 

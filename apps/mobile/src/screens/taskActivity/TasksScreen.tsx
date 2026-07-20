@@ -38,14 +38,14 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
   ];
 
   const initialAreaId = user?.location_id ?? currentShift?.location_id ?? null;
-  const initialRayonId = user?.rayon_id ?? null;
+  const initialDistrictId = user?.district_id ?? null;
 
   const [taskSort, setTaskSort] = useState<TaskSortOption>('created_at_desc');
   const [isSortModalOpen, setIsSortModalOpen] = useState(false);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const taskFilters = useTasksActivityFilters({ initialRayonId, initialAreaId });
+  const taskFilters = useTasksActivityFilters({ initialDistrictId, initialAreaId });
   const tasksFetching = useTasksFetching({
     taskFilter: taskFilters.taskFilter,
     statusFilter: taskFilters.statusFilter,
@@ -54,7 +54,7 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
     createdFrom: taskFilters.createdFrom,
     createdTo: taskFilters.createdTo,
     petugasFilter: taskFilters.petugasFilter,
-    rayonFilter: taskFilters.rayonFilter,
+    districtFilter: taskFilters.districtFilter,
     areaFilter: taskFilters.areaFilter,
     taskSort,
   });
@@ -98,9 +98,9 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
     taskFilters.statusFilter,
     taskFilters.dateFrom,
     taskFilters.dateTo,
-    taskFilters.rayonFilter,
+    taskFilters.districtFilter,
     taskFilters.areaFilter,
-    initialRayonId,
+    initialDistrictId,
     initialAreaId,
   );
 
@@ -172,13 +172,13 @@ export function TasksScreen({ navigation }: Props): React.JSX.Element {
           dateTo={taskFilters.dateTo}
           createdFrom={taskFilters.createdFrom}
           createdTo={taskFilters.createdTo}
-          rayonFilter={taskFilters.rayonFilter}
+          districtFilter={taskFilters.districtFilter}
           areaFilter={taskFilters.areaFilter}
           petugasFilter={taskFilters.petugasFilter}
           onApplyFilters={taskFilters.handleApplyFilters}
           onResetFilters={taskFilters.handleResetFilters}
           userRole={user?.role || 'satgas'}
-          userRayonId={user?.rayon_id}
+          userDistrictId={user?.district_id}
           userAreaId={user?.location_id ?? currentShift?.location_id ?? undefined}
         />
       </View>

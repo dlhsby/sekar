@@ -32,9 +32,9 @@
     "dateRange": "Date Range",
     "dateFrom": "From",
     "dateTo": "To",
-    "rayon": "District",
-    "rayonAll": "All Districts",
-    "rayonMine": "My District",
+    "district": "District",
+    "districtAll": "All Districts",
+    "districtMine": "My District",
     "referenceCodeLabel": "Request Number",
     "reset": "Reset",
     "resetLabel": "Reset request filter",
@@ -47,8 +47,8 @@
     "pageTitle": "Create Pruning Request",
     "locationCardTitle": "Pruning Location",
     "locationCardTitleRequired": "Location *",
-    "rayonLabel": "District",
-    "rayonPlaceholder": "Select District",
+    "districtLabel": "District",
+    "districtPlaceholder": "Select District",
     "notSetLabel": "Not set",
     "kecamatanLabel": "Sub-district",
     "kecamatanPlaceholder": "Example: Tegalsari",
@@ -308,7 +308,7 @@
   },
   "filterChip": {
     "dateLabel": "Date",
-    "rayonLabel": "District"
+    "districtLabel": "District"
   },
   "listScreen": {
     "sortLabel": "Sort: {{label}}",
@@ -327,7 +327,7 @@
   "locationCard": {
     "sectionTitle": "📍 LOCATION",
     "kecamatanLabel": "Sub-district",
-    "rayonLabel": "District",
+    "districtLabel": "District",
     "addressLabel": "Address",
     "gpsLabel": "GPS Coordinates",
     "mapButtonLabel": "View on Map",

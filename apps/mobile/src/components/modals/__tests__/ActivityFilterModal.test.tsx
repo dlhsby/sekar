@@ -22,15 +22,15 @@ jest.mock('../../../services/api/activityTypesApi', () => ({
 
 jest.mock('../../../services/api', () => ({
   getAreas: jest.fn(),
-  getAreasByRayonId: jest.fn(),
-  getRayons: jest.fn(),
+  getAreasByDistrictId: jest.fn(),
+  getDistricts: jest.fn(),
   getUsers: jest.fn(),
 }));
 
 import { getMyActivityTypes } from '../../../services/api/activityTypesApi';
-import { getAreas, getAreasByRayonId, getRayons, getUsers } from '../../../services/api';
+import { getAreas, getAreasByDistrictId, getDistricts, getUsers } from '../../../services/api';
 
-const mockGetAreasByRayonId = getAreasByRayonId as jest.Mock;
+const mockGetAreasByDistrictId = getAreasByDistrictId as jest.Mock;
 
 const mockOnClose = jest.fn();
 const mockOnApply = jest.fn();
@@ -48,8 +48,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   (getMyActivityTypes as jest.Mock).mockResolvedValue({ data: { data: [] } });
   (getAreas as jest.Mock).mockResolvedValue({ data: [] });
-  mockGetAreasByRayonId.mockResolvedValue({ data: [] });
-  (getRayons as jest.Mock).mockResolvedValue({ data: [] });
+  mockGetAreasByDistrictId.mockResolvedValue({ data: [] });
+  (getDistricts as jest.Mock).mockResolvedValue({ data: [] });
   (getUsers as jest.Mock).mockResolvedValue({ data: [] });
 });
 
@@ -164,7 +164,7 @@ describe('ActivityFilterModal', () => {
       });
       // Should NOT load areas (area is fixed)
       expect(getAreas).not.toHaveBeenCalled();
-      expect(mockGetAreasByRayonId).not.toHaveBeenCalled();
+      expect(mockGetAreasByDistrictId).not.toHaveBeenCalled();
     });
 
     it('shows disabled area select for linmas with userAreaId', async () => {
@@ -180,23 +180,23 @@ describe('ActivityFilterModal', () => {
       });
     });
 
-    it('loads areas by rayon for satgas with userRayonId but no userAreaId', async () => {
-      mockGetAreasByRayonId.mockResolvedValue({
+    it('loads areas by district for satgas with userDistrictId but no userAreaId', async () => {
+      mockGetAreasByDistrictId.mockResolvedValue({
         data: [{ id: 'area-1', name: 'Taman Bungkul' }],
       } as any);
       render(
         <ActivityFilterModal
           {...defaultProps}
           userRole="satgas"
-          userRayonId="rayon-1"
+          userDistrictId="district-1"
         />
       );
       await waitFor(() => {
-        expect(mockGetAreasByRayonId).toHaveBeenCalledWith('rayon-1');
+        expect(mockGetAreasByDistrictId).toHaveBeenCalledWith('district-1');
       });
     });
 
-    it('loads all areas when no userRayonId and no userAreaId', async () => {
+    it('loads all areas when no userDistrictId and no userAreaId', async () => {
       render(<ActivityFilterModal {...defaultProps} />);
       await waitFor(() => {
         expect(getAreas).toHaveBeenCalled();

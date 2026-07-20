@@ -12,7 +12,7 @@
  *   - `FlatList` of `PerantinganRequestCard` (NBCard variant="elevated") —
  *     same card the staff_kecamatan list uses
  *   - Generic `SortModal` + dedicated `PruningRequestFilterModal` (admin
- *     surface; rayon picker hidden for admin_rayon because the backend forces
+ *     surface; district picker hidden for admin_rayon because the backend forces
  *     scoping)
  *
  * Approve / reject / assign-to-task happen on `RequestDetailScreen` (passed
@@ -122,7 +122,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
 
   // ── Data fetching ────────────────────────────────────────────────────────
   // We refetch whenever the *server-side* status filter changes; the rest
-  // (referenceCode / requesterName / dates / rayon) we apply locally so the
+  // (referenceCode / requesterName / dates / district) we apply locally so the
   // list responds without a network round-trip.
   const loadRequests = useCallback(async () => {
     try {
@@ -196,7 +196,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
     let count = 0;
     if (filters.status) { count++; }
     if (filters.fromDate || filters.toDate) { count++; }
-    if (filters.rayonId) { count++; }
+    if (filters.districtId) { count++; }
     if (filters.referenceCode) { count++; }
     if (filters.requesterName) { count++; }
     return count;
@@ -218,7 +218,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
         chipStyle: 'date',
       });
     }
-    if (filters.rayonId) { chips.push({ text: t('filterChip.rayonLabel'), chipStyle: 'location' }); }
+    if (filters.districtId) { chips.push({ text: t('filterChip.districtLabel'), chipStyle: 'location' }); }
     if (filters.referenceCode) { chips.push({ text: `# ${filters.referenceCode}`, chipStyle: 'status' }); }
     if (filters.requesterName) { chips.push({ text: `🧑 ${filters.requesterName}`, chipStyle: 'status' }); }
     return chips;
@@ -239,8 +239,8 @@ export function ReviewQueueScreen(): React.JSX.Element {
       const to = new Date(filters.toDate + 'T23:59:59').getTime();
       list = list.filter((r) => new Date(r.createdAt).getTime() <= to);
     }
-    if (filters.rayonId) {
-      list = list.filter((r) => r.rayonId === filters.rayonId);
+    if (filters.districtId) {
+      list = list.filter((r) => r.districtId === filters.districtId);
     }
     if (filters.referenceCode) {
       const needle = filters.referenceCode.toLowerCase();
@@ -482,7 +482,7 @@ export function ReviewQueueScreen(): React.JSX.Element {
           onApplyFilters={handleApplyFilters}
           onResetFilters={handleResetFilters}
           userRole={user?.role}
-          userRayonId={user?.rayon_id ?? undefined}
+          userDistrictId={user?.district_id ?? undefined}
         />
       </SafeAreaView>
     </NBBackgroundPattern>

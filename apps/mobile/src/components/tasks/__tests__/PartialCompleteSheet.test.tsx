@@ -27,7 +27,7 @@ const mockTask = {
   created_at: '2026-04-01T00:00:00Z',
   updated_at: '2026-04-27T00:00:00Z',
   deadline: '2026-05-01T00:00:00Z',
-  rayon_id: 'rayon-1',
+  district_id: 'district-1',
   location_id: 'area-1',
   completion_notes: undefined,
   completion_photo_urls: [],
@@ -40,7 +40,7 @@ const mockTask = {
   verifier: undefined,
   verified_at: undefined,
   area: undefined,
-  rayon: undefined,
+  district: undefined,
   creator: undefined,
   assignee: undefined,
 } as unknown as Task;

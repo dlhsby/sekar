@@ -31,7 +31,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
       username: 'test-user',
       full_name: 'Test User',
       role: 'satgas',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
     });
   });
 
@@ -401,7 +401,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       });
 
       const count = await offlineQueue.getPendingCount();
@@ -437,7 +437,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       });
 
       const count = await offlineQueue.getFailedCount();
@@ -482,7 +482,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       });
 
       const orphanedItems = await offlineQueue.getOrphanedItems();
@@ -637,7 +637,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
         username: 'user1',
         full_name: 'User 1',
         role: 'satgas',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       });
 
       const count = await offlineQueue.retryFailedItems();

@@ -11,7 +11,7 @@ import type { ApiResponse } from '../../types/api.types';
  */
 export interface CapacityRow {
   id: string;
-  rayon_id: string;
+  district_id: string;
   year: number;
   week: number;
   service_type: 'pruning' | 'other';
@@ -22,11 +22,11 @@ export interface CapacityRow {
 }
 
 /**
- * Get capacity calendar for a rayon
+ * Get capacity calendar for a district
  * Returns array of capacity rows for the specified date range
  */
 export async function getCapacityCalendar(
-  rayonId: string,
+  districtId: string,
   filters?: {
     year?: number;
     fromWeek?: number;
@@ -34,7 +34,7 @@ export async function getCapacityCalendar(
     serviceType?: 'pruning' | 'other';
   },
 ): Promise<ApiResponse<CapacityRow[]>> {
-  return get<CapacityRow[]>(`/rayons/${rayonId}/capacity`, filters);
+  return get<CapacityRow[]>(`/districts/${districtId}/capacity`, filters);
 }
 
 export default {

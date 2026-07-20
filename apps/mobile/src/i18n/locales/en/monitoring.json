@@ -9,7 +9,7 @@
   },
   "surabaya": {
     "title": "Surabaya",
-    "tapHint": "Tap to view rayons"
+    "tapHint": "Tap to view districts"
   },
   "screen": {
     "title": "Monitoring",
@@ -36,7 +36,7 @@
     "workers": "Workers",
     "plants": "Plants",
     "overdue": "Overdue",
-    "rayons": "Rayon Border",
+    "districts": "District Border",
     "areas": "Area Border"
   },
   "fab": {
@@ -58,13 +58,13 @@
   },
   "markerPreview": {
     "typeOfficer": "Officer",
-    "typeRayon": "Rayon",
+    "typeDistrict": "District",
     "typeArea": "Area",
     "viewDetail": "View details"
   },
   "entityTypes": {
     "area": "Area",
-    "rayon": "Rayon"
+    "district": "District"
   },
   "status": {
     "title": "Monitoring Status",
@@ -139,7 +139,7 @@
   },
   "search": {
     "title": "Search",
-    "placeholder": "Search officers, areas, rayons…",
+    "placeholder": "Search officers, areas, districts…",
     "searchLabel": "Search: {{value}}",
     "clearLabel": "Clear search",
     "all": "All",
@@ -147,7 +147,7 @@
     "noResults": "No Results",
     "noResultsMsg": "Nothing matches \"{{query}}\".",
     "startSearch": "Start Searching",
-    "startSearchDescription": "Search for officers, areas, or rayons to find them on the map.",
+    "startSearchDescription": "Search for officers, areas, or districts to find them on the map.",
     "recents": "Recently viewed",
     "clearAll": "Clear all",
     "clearAllLabel": "Clear all recent searches",
@@ -178,7 +178,7 @@
     "apply": "Apply",
     "sections": {
       "location": "Location",
-      "rayon": "Rayon",
+      "district": "District",
       "area": "Area",
       "role": "Role",
       "user": "Search User",
@@ -187,13 +187,13 @@
     },
     "placeholders": {
       "location": "Select Location",
-      "rayon": "Select Rayon",
+      "district": "Select District",
       "area": "Select Area",
       "role": "Select Role",
       "user": "Select user",
       "layers": "Select layers"
     },
-    "fixedRayon": "Your Rayon"
+    "fixedDistrict": "Your District"
   },
   "reassignWorkerModal": {
     "title": "Reassign Worker",
@@ -255,7 +255,7 @@
     "assignedLabel": "Officers",
     "assignedDetail": "assigned",
     "areaListTitle": "Area List",
-    "noAreasMessage": "No areas in this rayon yet",
+    "noAreasMessage": "No areas in this district yet",
     "activeCount": "active",
     "understaffedCount": "Understaffed",
     "staffingTitle": "Staffing by Role",

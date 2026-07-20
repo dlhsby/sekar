@@ -56,7 +56,7 @@ export interface AreaStaffRequirement {
 }
 
 // Schedule — the daily roster (the single schedule concept, ADR-013). A standing
-// shift+rayon+area assignment lives on the user; the roster is one row per WIB day.
+// shift+district+area assignment lives on the user; the roster is one row per WIB day.
 export type ScheduleStatus =
   | 'planned' // scheduled to work
   | 'present' // clocked in
@@ -83,7 +83,7 @@ export interface Schedule {
   // Full definition (the API returns the whole relation) so crosses_midnight is
   // available for the lateness check instead of being defaulted.
   shift_definition: ShiftDefinition | null;
-  rayon: {
+  district: {
     id: string;
     name: string;
   } | null;

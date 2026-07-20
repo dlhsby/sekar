@@ -15,7 +15,7 @@ import { ProfileStatsRow } from '../../components/profile/ProfileStatsRow';
 import { SyncStatusCard } from '../../components/common/SyncStatusCard';
 import { AssignedAreaCard } from '../../components/profile/AssignedAreaCard';
 import { AssignedKecamatanCard } from '../../components/profile/AssignedKecamatanCard';
-import { getRayons } from '../../services/api/rayonsApi';
+import { getDistricts } from '../../services/api/districtsApi';
 import { ChangePasswordModal } from '../../components/common';
 import { useProfileData } from '../../hooks/useProfileData';
 import { useProfileSync } from '../../hooks/useProfileSync';
@@ -86,25 +86,25 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
     loadProfileData();
   }, [loadProfileData]);
 
-  // Resolve rayon name for the staff_kecamatan card. /auth/me only emits
-  // rayon_id, so fetch the rayon list lazily and look up the display name.
+  // Resolve district name for the staff_kecamatan card. /auth/me only emits
+  // district_id, so fetch the district list lazily and look up the display name.
   // (Declared above the isLoading early-return to keep hook order stable.)
-  const [rayonName, setRayonName] = useState<string | null>(null);
+  const [districtName, setDistrictName] = useState<string | null>(null);
   useEffect(() => {
-    if (!isStaffKecamatan || !user?.rayon_id) return;
+    if (!isStaffKecamatan || !user?.district_id) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await getRayons();
+        const res = await getDistricts();
         if (cancelled || !res || !res.data) return;
-        const match = res.data.find((r: { id: string; name: string }) => r.id === user.rayon_id);
-        if (match) setRayonName(match.name);
+        const match = res.data.find((r: { id: string; name: string }) => r.id === user.district_id);
+        if (match) setDistrictName(match.name);
       } catch {
         /* non-critical — card will show "—" if the lookup fails */
       }
     })();
     return () => { cancelled = true; };
-  }, [isStaffKecamatan, user?.rayon_id]);
+  }, [isStaffKecamatan, user?.district_id]);
 
   if (isLoading) {
     return (
@@ -159,7 +159,7 @@ export function ProfileScreen({ navigation }: any): React.JSX.Element {
         {isField && <AssignedAreaCard area={areaData} />}
         {isStaffKecamatan && (
           <AssignedKecamatanCard
-            rayonName={rayonName}
+            districtName={districtName}
             kecamatanName={user?.kecamatan_name ?? null}
           />
         )}

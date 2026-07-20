@@ -70,7 +70,7 @@
   },
   "fallbacks": {
     "you": "You",
-    "noRayon": "No rayon"
+    "noDistrict": "No district"
   },
   "coordinator": {
     "sections": {
@@ -180,7 +180,7 @@
   "exec": {
     "sections": {
       "summary": "Today's Summary",
-      "perRayon": "By Rayon"
+      "perDistrict": "By District"
     },
     "hero": {
       "button": {
@@ -197,7 +197,7 @@
       "offline": "Offline",
       "outOfArea": "Out of Area"
     },
-    "rayon": {
+    "district": {
       "detail": "{{active}} Active of {{total}} Officers",
       "status": "{{active}}/{{total}}"
     }

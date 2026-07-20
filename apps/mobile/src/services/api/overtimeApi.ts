@@ -22,7 +22,7 @@ function buildQuery(filters?: OvertimeFilter): string {
   if (filters.from_date) params.append('from_date', filters.from_date);
   if (filters.to_date) params.append('to_date', filters.to_date);
   if (filters.location_id) params.append('location_id', filters.location_id);
-  if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
+  if (filters.district_id) params.append('district_id', filters.district_id);
   if (filters.user_id) params.append('user_id', filters.user_id);
   if (filters.sort_by) params.append('sort_by', filters.sort_by);
   if (filters.sort_dir) params.append('sort_dir', filters.sort_dir);

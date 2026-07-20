@@ -9,7 +9,7 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { MonitoringSearchModal } from '../MonitoringSearchModal';
-import type { LiveUser, RayonBoundary } from '../../../types/models.types';
+import type { LiveUser, DistrictBoundary } from '../../../types/models.types';
 
 jest.mock('react-native-vector-icons/MaterialCommunityIcons', () => {
   const React = require('react');
@@ -28,15 +28,15 @@ const mockClear = clearRecentSearches as jest.MockedFunction<typeof clearRecentS
 
 const user = (id: string, name: string): LiveUser =>
   ({ id, full_name: name, role: 'satgas', location_name: 'Taman A', latitude: 1, longitude: 2 } as unknown as LiveUser);
-const rayons: RayonBoundary[] = [
+const districts: DistrictBoundary[] = [
   ({
     id: 'r1',
     name: 'Rayon Pusat',
     center_lat: 3,
     center_lng: 4,
     area_count: 1,
-    areas: [{ id: 'a1', name: 'Taman Bungkul', center_lat: 5, center_lng: 6, rayon_name: 'Rayon Pusat' }],
-  } as unknown as RayonBoundary),
+    areas: [{ id: 'a1', name: 'Taman Bungkul', center_lat: 5, center_lng: 6, district_name: 'Rayon Pusat' }],
+  } as unknown as DistrictBoundary),
 ];
 const liveUsers = [user('u1', 'Budi Santoso')];
 
@@ -46,7 +46,7 @@ function renderModal(overrides?: { onSelect?: jest.Mock }) {
       visible
       onClose={jest.fn()}
       liveUsers={liveUsers}
-      rayons={rayons}
+      districts={districts}
       onSelect={overrides?.onSelect ?? jest.fn()}
     />,
   );

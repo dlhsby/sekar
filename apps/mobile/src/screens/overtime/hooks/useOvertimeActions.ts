@@ -53,11 +53,11 @@ export function useOvertimeActions(
              user.location_id != null && overtime.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
-      if (!user.rayon_id) return false;
-      const inSameRayon =
-        overtime.area?.rayon_id === user.rayon_id ||
-        overtime.user?.rayon_id === user.rayon_id;
-      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
+      if (!user.district_id) return false;
+      const inSameDistrict =
+        overtime.area?.district_id === user.district_id ||
+        overtime.user?.district_id === user.district_id;
+      return inSameDistrict && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
     }
     return false;
   }, [overtime, user]);

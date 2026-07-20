@@ -125,7 +125,7 @@ function LoginScreen(): React.JSX.Element {
             enrichedUser = {
               ...loginData.user,
               location_id: meResponse.data.location_id ?? loginData.user.location_id,
-              rayon_id: meResponse.data.rayon_id ?? loginData.user.rayon_id,
+              district_id: meResponse.data.district_id ?? loginData.user.district_id,
             };
             if (meResponse.data.assigned_area) {
               // Transform GeoJSON Polygon → flat [lng, lat][] for mobile gpsUtils.

@@ -270,7 +270,7 @@ describe('OvertimeListScreen', () => {
       canCreateTask: true,
       canReceiveTask: false,
       canMonitor: true,
-      monitoringScope: 'rayon',
+      monitoringScope: 'district',
       role: 'kepala_rayon',
     });
 
@@ -317,7 +317,7 @@ describe('OvertimeListScreen', () => {
       canCreateTask: true,
       canReceiveTask: false,
       canMonitor: true,
-      monitoringScope: 'rayon',
+      monitoringScope: 'district',
       role: 'kepala_rayon',
     });
 

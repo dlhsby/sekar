@@ -126,12 +126,12 @@ export function ActivityDetailScreen(): React.JSX.Element {
              user.location_id != null && activity.location_id === user.location_id;
     }
     if (user.role === 'kepala_rayon') {
-      if (!user.rayon_id) {return false;}
-      // Check rayon scope: activity area's rayon or submitter's rayon must match
-      const inSameRayon =
-        activity.area?.rayon_id === user.rayon_id ||
-        activity.user?.rayon_id === user.rayon_id;
-      return inSameRayon && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
+      if (!user.district_id) {return false;}
+      // Check district scope: activity area's district or submitter's district must match
+      const inSameDistrict =
+        activity.area?.district_id === user.district_id ||
+        activity.user?.district_id === user.district_id;
+      return inSameDistrict && (submitterRole === 'korlap' || submitterRole === 'admin_rayon');
     }
     return false;
   }, [activity, user]);

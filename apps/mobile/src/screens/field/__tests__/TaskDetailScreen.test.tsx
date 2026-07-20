@@ -54,7 +54,7 @@ const mockTask = {
   priority: 'high' as const,
   deadline: '2026-01-30T10:00:00Z',
   area: { id: 'area-1', name: 'Taman Bungkul' },
-  rayon: { id: 'rayon-1', name: 'Rayon 1' }, // Phase 2C: Added rayon
+  district: { id: 'district-1', name: 'Rayon 1' }, // Phase 2C: Added district
   activity_type: { id: 'at-1', name: 'Penyiraman', code: 'WATERING' },
   created_at: '2026-01-25T08:00:00Z',
   assigned_to: 'assignee-1', // Phase 2C: for isAssignee check
@@ -204,7 +204,7 @@ describe('TaskDetailScreen', () => {
     });
   });
 
-  it('shows rayon when present (Phase 2C)', async () => {
+  it('shows district when present (Phase 2C)', async () => {
     (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: mockTask });
 
     const { findByText } = renderWithNav(<TaskDetailScreen />);
@@ -239,9 +239,9 @@ describe('TaskDetailScreen', () => {
     expect(queryByText('Worker 3')).toBeNull();
   });
 
-  it('handles task without rayon gracefully (Phase 2C)', async () => {
-    const taskWithoutRayon = { ...mockTask, rayon: null };
-    (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: taskWithoutRayon });
+  it('handles task without district gracefully (Phase 2C)', async () => {
+    const taskWithoutDistrict = { ...mockTask, district: null };
+    (tasksApi.getTaskById as jest.Mock).mockResolvedValue({ data: taskWithoutDistrict });
 
     const { queryByText } = renderWithNav(<TaskDetailScreen />);
 
@@ -249,7 +249,7 @@ describe('TaskDetailScreen', () => {
       expect(tasksApi.getTaskById).toHaveBeenCalled();
     });
 
-    // Rayon name should not be in output when rayon is absent
+    // Rayon name should not be in output when district is absent
     expect(queryByText('Rayon 1')).toBeNull();
   });
 

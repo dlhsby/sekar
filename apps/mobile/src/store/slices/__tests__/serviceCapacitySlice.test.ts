@@ -1,6 +1,6 @@
 /**
  * Service Capacity Slice Tests
- * State management for rayon capacity calendars
+ * State management for district capacity calendars
  * Phase 3 sub-phase 3-10
  */
 
@@ -18,7 +18,7 @@ const mockServiceCapacityApi = serviceCapacityApi as jest.Mocked<typeof serviceC
 
 const mockCapacityRow = {
   id: 'cap-1',
-  rayon_id: 'r1',
+  district_id: 'r1',
   year: 2026,
   week: 18,
   service_type: 'pruning' as const,
@@ -43,7 +43,7 @@ describe('serviceCapacitySlice', () => {
   describe('Initial State', () => {
     it('has correct initial state', () => {
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon).toEqual({});
+      expect(state.calendarByDistrict).toEqual({});
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
     });
@@ -66,7 +66,7 @@ describe('serviceCapacitySlice', () => {
 
       const promise = store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -78,14 +78,14 @@ describe('serviceCapacitySlice', () => {
       await promise;
     });
 
-    it('stores capacity data by rayon on success', async () => {
+    it('stores capacity data by district on success', async () => {
       mockServiceCapacityApi.getCapacityCalendar.mockResolvedValue({
         data: [mockCapacityRow],
       });
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -94,12 +94,12 @@ describe('serviceCapacitySlice', () => {
       );
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon['r1']).toEqual([mockCapacityRow]);
+      expect(state.calendarByDistrict['r1']).toEqual([mockCapacityRow]);
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
     });
 
-    it('stores multiple rayons separately', async () => {
+    it('stores multiple districts separately', async () => {
       mockServiceCapacityApi.getCapacityCalendar
         .mockResolvedValueOnce({
           data: [mockCapacityRow],
@@ -110,7 +110,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -120,7 +120,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r2',
+          districtId: 'r2',
           year: 2027,
           fromWeek: 18,
           toWeek: 18,
@@ -129,8 +129,8 @@ describe('serviceCapacitySlice', () => {
       );
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon['r1']).toEqual([mockCapacityRow]);
-      expect(state.calendarByRayon['r2']).toEqual([
+      expect(state.calendarByDistrict['r1']).toEqual([mockCapacityRow]);
+      expect(state.calendarByDistrict['r2']).toEqual([
         { ...mockCapacityRow, year: 2027 },
       ]);
     });
@@ -143,7 +143,7 @@ describe('serviceCapacitySlice', () => {
         },
         preloadedState: {
           serviceCapacity: {
-            calendarByRayon: {},
+            calendarByDistrict: {},
             loading: false,
             error: { error: 'Previous error', code: 'ERR_PREVIOUS' },
           },
@@ -156,7 +156,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -176,7 +176,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -198,7 +198,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -218,7 +218,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -237,7 +237,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 20,
@@ -263,7 +263,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -272,7 +272,7 @@ describe('serviceCapacitySlice', () => {
       );
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon['r1']).toEqual([]);
+      expect(state.calendarByDistrict['r1']).toEqual([]);
       expect(state.error).toBeNull();
     });
 
@@ -283,7 +283,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -292,7 +292,7 @@ describe('serviceCapacitySlice', () => {
       );
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon['r1']).toEqual([]);
+      expect(state.calendarByDistrict['r1']).toEqual([]);
       expect(state.error).toBeNull();
     });
   });
@@ -305,7 +305,7 @@ describe('serviceCapacitySlice', () => {
         },
         preloadedState: {
           serviceCapacity: {
-            calendarByRayon: {},
+            calendarByDistrict: {},
             loading: false,
             error: { error: 'Test error', code: 'ERR_TEST' },
           },
@@ -325,7 +325,7 @@ describe('serviceCapacitySlice', () => {
         },
         preloadedState: {
           serviceCapacity: {
-            calendarByRayon: { r1: [mockCapacityRow] },
+            calendarByDistrict: { r1: [mockCapacityRow] },
             loading: false,
             error: { error: 'Test error', code: 'ERR_TEST' },
           },
@@ -335,7 +335,7 @@ describe('serviceCapacitySlice', () => {
       store.dispatch(clearError());
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon).toEqual({ r1: [mockCapacityRow] });
+      expect(state.calendarByDistrict).toEqual({ r1: [mockCapacityRow] });
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
     });
@@ -349,7 +349,7 @@ describe('serviceCapacitySlice', () => {
         },
         preloadedState: {
           serviceCapacity: {
-            calendarByRayon: { r1: [mockCapacityRow] },
+            calendarByDistrict: { r1: [mockCapacityRow] },
             loading: true,
             error: { error: 'Test error', code: 'ERR_TEST' },
           },
@@ -359,14 +359,14 @@ describe('serviceCapacitySlice', () => {
       store.dispatch(resetState());
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon).toEqual({});
+      expect(state.calendarByDistrict).toEqual({});
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
     });
   });
 
   describe('State Immutability', () => {
-    it('does not mutate existing calendar entries when adding new rayon', async () => {
+    it('does not mutate existing calendar entries when adding new district', async () => {
       mockServiceCapacityApi.getCapacityCalendar
         .mockResolvedValueOnce({
           data: [mockCapacityRow],
@@ -377,7 +377,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -387,11 +387,11 @@ describe('serviceCapacitySlice', () => {
 
       const r1DataBefore = store
         .getState()
-        .serviceCapacity.calendarByRayon['r1'];
+        .serviceCapacity.calendarByDistrict['r1'];
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r2',
+          districtId: 'r2',
           year: 2026,
           fromWeek: 19,
           toWeek: 19,
@@ -401,11 +401,11 @@ describe('serviceCapacitySlice', () => {
 
       const r1DataAfter = store
         .getState()
-        .serviceCapacity.calendarByRayon['r1'];
+        .serviceCapacity.calendarByDistrict['r1'];
       expect(r1DataAfter).toEqual(r1DataBefore);
     });
 
-    it('replaces calendar data when fetching same rayon again', async () => {
+    it('replaces calendar data when fetching same district again', async () => {
       mockServiceCapacityApi.getCapacityCalendar
         .mockResolvedValueOnce({
           data: [mockCapacityRow],
@@ -416,7 +416,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -426,7 +426,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -435,7 +435,7 @@ describe('serviceCapacitySlice', () => {
       );
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon['r1']).toEqual([
+      expect(state.calendarByDistrict['r1']).toEqual([
         { ...mockCapacityRow, booked_units: 7 },
       ]);
     });
@@ -455,7 +455,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 20,
@@ -464,8 +464,8 @@ describe('serviceCapacitySlice', () => {
       );
 
       const state = store.getState().serviceCapacity;
-      expect(state.calendarByRayon['r1']).toEqual(multiWeekData);
-      expect(state.calendarByRayon['r1'].length).toBe(3);
+      expect(state.calendarByDistrict['r1']).toEqual(multiWeekData);
+      expect(state.calendarByDistrict['r1'].length).toBe(3);
     });
   });
 
@@ -477,7 +477,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -497,7 +497,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,
@@ -517,7 +517,7 @@ describe('serviceCapacitySlice', () => {
 
       await store.dispatch(
         fetchCapacity({
-          rayonId: 'r1',
+          districtId: 'r1',
           year: 2026,
           fromWeek: 18,
           toWeek: 18,

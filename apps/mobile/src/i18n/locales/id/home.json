@@ -70,7 +70,7 @@
   },
   "fallbacks": {
     "you": "Anda",
-    "noRayon": "Tanpa rayon"
+    "noDistrict": "Tanpa rayon"
   },
   "coordinator": {
     "sections": {
@@ -180,7 +180,7 @@
   "exec": {
     "sections": {
       "summary": "Ringkasan hari ini",
-      "perRayon": "Per rayon"
+      "perDistrict": "Per rayon"
     },
     "hero": {
       "button": {
@@ -197,7 +197,7 @@
       "offline": "Offline",
       "outOfArea": "Di luar area"
     },
-    "rayon": {
+    "district": {
       "detail": "{{active}} aktif dari {{total}} petugas",
       "status": "{{active}}/{{total}}"
     }

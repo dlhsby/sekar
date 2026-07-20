@@ -8,7 +8,7 @@ import monitoringReducer, {
   setLiveUsers,
   updateLiveUser,
   setCityStats,
-  setRayonStats,
+  setDistrictStats,
   setAreaStats,
   setMonitoringFilters,
   resetMonitoringFilters,
@@ -63,8 +63,8 @@ const mockLiveUser: LiveUser = {
   status: 'active',
   location_id: 'area-123',
   location_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   latitude: -7.250445,
   longitude: 112.768845,
   accuracy: 10,
@@ -122,8 +122,8 @@ const mockUserDaySummary: UserDaySummary = {
   status: 'active',
   location_id: 'area-123',
   location_name: 'Taman A',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon 1',
+  district_id: 'district-1',
+  district_name: 'Rayon 1',
   shift: {
     id: 'shift-123',
     name: 'Shift Pagi',
@@ -177,9 +177,9 @@ const mockLocationHistory: LocationHistory = {
 };
 
 const mockStaffingItem: StaffingSummaryItem = {
-  id: 'rayon-1',
+  id: 'district-1',
   name: 'Rayon 1',
-  type: 'rayon',
+  type: 'district',
   roles: [
     {
       role: 'satgas',
@@ -203,7 +203,7 @@ const mockStaffingItem: StaffingSummaryItem = {
 const initialState = {
   liveUsers: [],
   cityStats: null,
-  rayonStats: {},
+  districtStats: {},
   areaStats: {},
   filters: {},
   selectedUser: null,
@@ -439,22 +439,22 @@ describe('monitoringSlice', () => {
     });
   });
 
-  // ── setRayonStats ──────────────────────────────────────────────────────────
+  // ── setDistrictStats ──────────────────────────────────────────────────────────
 
-  describe('setRayonStats', () => {
-    it('should set rayon stats map', () => {
-      const rayonStats = { 'rayon-1': { active: 3 }, 'rayon-2': { active: 1 } };
-      const state = monitoringReducer(initialState, setRayonStats(rayonStats));
-      expect(state.rayonStats).toEqual(rayonStats);
+  describe('setDistrictStats', () => {
+    it('should set district stats map', () => {
+      const districtStats = { 'district-1': { active: 3 }, 'district-2': { active: 1 } };
+      const state = monitoringReducer(initialState, setDistrictStats(districtStats));
+      expect(state.districtStats).toEqual(districtStats);
     });
 
-    it('should overwrite existing rayon stats', () => {
-      const oldStats = { 'rayon-1': { active: 3 } };
-      const newStats = { 'rayon-2': { active: 1 } };
-      const stateWithOld = { ...initialState, rayonStats: oldStats };
-      const state = monitoringReducer(stateWithOld, setRayonStats(newStats));
-      expect(state.rayonStats).toEqual(newStats);
-      expect(state.rayonStats['rayon-1']).toBeUndefined();
+    it('should overwrite existing district stats', () => {
+      const oldStats = { 'district-1': { active: 3 } };
+      const newStats = { 'district-2': { active: 1 } };
+      const stateWithOld = { ...initialState, districtStats: oldStats };
+      const state = monitoringReducer(stateWithOld, setDistrictStats(newStats));
+      expect(state.districtStats).toEqual(newStats);
+      expect(state.districtStats['district-1']).toBeUndefined();
     });
   });
 
@@ -474,14 +474,14 @@ describe('monitoringSlice', () => {
     it('should merge partial filters into existing filters', () => {
       const stateWithFilters = {
         ...initialState,
-        filters: { rayon_id: 'rayon-1', role: 'satgas' },
+        filters: { district_id: 'district-1', role: 'satgas' },
       };
       const state = monitoringReducer(
         stateWithFilters,
         setMonitoringFilters({ location_id: 'area-1' }),
       );
       expect(state.filters).toEqual({
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         role: 'satgas',
         location_id: 'area-1',
       });
@@ -499,13 +499,13 @@ describe('monitoringSlice', () => {
     it('should overwrite an existing filter key with the new value', () => {
       const stateWithFilters = {
         ...initialState,
-        filters: { rayon_id: 'rayon-1' },
+        filters: { district_id: 'district-1' },
       };
       const state = monitoringReducer(
         stateWithFilters,
-        setMonitoringFilters({ rayon_id: 'rayon-2' }),
+        setMonitoringFilters({ district_id: 'district-2' }),
       );
-      expect(state.filters.rayon_id).toBe('rayon-2');
+      expect(state.filters.district_id).toBe('district-2');
     });
   });
 
@@ -515,7 +515,7 @@ describe('monitoringSlice', () => {
     it('should reset filters to empty object', () => {
       const stateWithFilters = {
         ...initialState,
-        filters: { rayon_id: 'rayon-1', role: 'satgas', search: 'ahmad' },
+        filters: { district_id: 'district-1', role: 'satgas', search: 'ahmad' },
       };
       const state = monitoringReducer(stateWithFilters, resetMonitoringFilters());
       expect(state.filters).toEqual({});
@@ -720,9 +720,9 @@ describe('monitoringSlice', () => {
       });
       const dispatch = jest.fn();
       const getState = jest.fn();
-      const thunk = fetchLiveUsers({ rayon_id: 'rayon-1' });
+      const thunk = fetchLiveUsers({ district_id: 'district-1' });
       await thunk(dispatch, getState, undefined);
-      expect(mockGetLiveUsers).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
+      expect(mockGetLiveUsers).toHaveBeenCalledWith({ district_id: 'district-1' });
     });
 
     it('should reject with error message when getLiveUsers returns an error field', async () => {
@@ -921,9 +921,9 @@ describe('monitoringSlice', () => {
       });
       const dispatch = jest.fn();
       const getState = jest.fn();
-      const thunk = fetchStaffingSummary({ rayon_id: 'rayon-1' });
+      const thunk = fetchStaffingSummary({ district_id: 'district-1' });
       await thunk(dispatch, getState, undefined);
-      expect(mockGetStaffingSummary).toHaveBeenCalledWith({ rayon_id: 'rayon-1' });
+      expect(mockGetStaffingSummary).toHaveBeenCalledWith({ district_id: 'district-1' });
     });
 
     it('should return empty items when getStaffingSummary response has no items', async () => {
@@ -974,9 +974,9 @@ describe('monitoringSlice', () => {
     it('should handle filter apply and reset flow', () => {
       let state = monitoringReducer(
         initialState,
-        setMonitoringFilters({ rayon_id: 'rayon-1', role: 'satgas' }),
+        setMonitoringFilters({ district_id: 'district-1', role: 'satgas' }),
       );
-      expect(state.filters.rayon_id).toBe('rayon-1');
+      expect(state.filters.district_id).toBe('district-1');
 
       state = monitoringReducer(state, resetMonitoringFilters());
       expect(state.filters).toEqual({});

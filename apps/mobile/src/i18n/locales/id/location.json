@@ -53,7 +53,7 @@
   },
   "checkStatusFailed": "Gagal memeriksa status lokasi",
   "selector": {
-    "selectRayonFirst": "Pilih rayon terlebih dahulu",
+    "selectDistrictFirst": "Pilih rayon terlebih dahulu",
     "selectArea": "Pilih area..."
   },
   "getFailed": "Gagal mendapatkan lokasi"

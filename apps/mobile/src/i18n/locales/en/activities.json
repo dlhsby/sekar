@@ -21,10 +21,10 @@
       "all": "All Areas",
       "mine": "My Area"
     },
-    "rayon": "Rayon",
-    "rayonOptions": {
-      "all": "All Rayons",
-      "mine": "My Rayon"
+    "district": "District",
+    "districtOptions": {
+      "all": "All Districts",
+      "mine": "My District"
     },
     "createdBy": "Created By",
     "createdByOptions": {

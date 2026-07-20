@@ -88,9 +88,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   // No hard block for a missing area: ad-hoc / patrol workers with no assigned
   // area may still clock in (GPS is recorded, geofencing stays soft, and the
   // shift is created with location_id = null). The form surfaces "no area" inline;
-  // rayon-scoped roles show a "no specific area" note instead.
+  // district-scoped roles show a "no specific area" note instead.
   const userRole = useAppSelector((state) => state.auth.user?.role);
-  const isRayonScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
+  const isDistrictScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
 
   // Loading GPS
   if (location.loading && !location.latitude) {
@@ -182,8 +182,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                     />
                   )}
                 </>
-              ) : isRayonScoped ? (
-                <InfoTableRow label={t('attendance:clockInOut.rayonCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />
+              ) : isDistrictScoped ? (
+                <InfoTableRow label={t('attendance:clockInOut.districtCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />
               ) : (
                 <NBText variant="body-sm" color="gray600">{t('attendance:clockInOut.noAreaAssigned')}</NBText>
               )}

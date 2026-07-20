@@ -225,7 +225,7 @@ function createMockStore(
           full_name: 'Admin Pusat',
           username: 'admin_rayon_pusat_1',
           role: 'admin_rayon',
-          rayon_id: 'rayon-pusat',
+          district_id: 'district-pusat',
         },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any -- partial auth fixture
       } as any,

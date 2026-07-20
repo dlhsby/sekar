@@ -1,6 +1,6 @@
 /**
  * MarkerCalloutCard — the NB bubble shown over a tapped map marker (petugas /
- * area / rayon), rendered by MarkerPreview (a custom overlay, NOT a native
+ * area / district), rendered by MarkerPreview (a custom overlay, NOT a native
  * react-native-maps Callout, which crashes on Fabric/Android with custom markers).
  *
  * Content: a type-tinted icon chip, the name, a "Type · Role" meta line (role only

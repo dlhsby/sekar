@@ -1,8 +1,8 @@
 /**
  * Tasks and task tags.
- * Phase 2C: accept/decline + verify/revision support, optional location_id, rayon support.
+ * Phase 2C: accept/decline + verify/revision support, optional location_id, district support.
  */
-import type { Area, Rayon, User } from './user.types';
+import type { Area, District, User } from './user.types';
 
 // Task status - 8 values (Phase 2C: accept/decline + verify/revision)
 export type TaskStatus =
@@ -27,7 +27,7 @@ export interface TaskTag {
   created_at: string;
 }
 
-// Task (Phase 2C: accept/decline + verify/revision support, optional location_id, rayon support)
+// Task (Phase 2C: accept/decline + verify/revision support, optional location_id, district support)
 export interface Task {
   id: string;
   title: string;
@@ -37,8 +37,8 @@ export interface Task {
   deadline?: string;
   location_id?: string;
   area?: Area;
-  rayon_id?: string;
-  rayon?: Rayon;
+  district_id?: string;
+  district?: District;
   assigned_to?: string;
   assignee?: User;
   created_by: string;

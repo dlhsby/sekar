@@ -20,7 +20,7 @@ interface TaskCardProps {
 
 function buildMeta(task: Task): ListItemMeta[] {
   const meta: ListItemMeta[] = [];
-  const location = task.area?.name ?? task.rayon?.name;
+  const location = task.area?.name ?? task.district?.name;
   if (location) { meta.push({ icon: 'map-marker', label: location }); }
   if (task.deadline) { meta.push({ icon: 'clock-outline', label: formatDate(task.deadline) }); }
   if (task.priority) { meta.push({ icon: 'flag-outline', label: getPriorityLabel(task.priority) }); }

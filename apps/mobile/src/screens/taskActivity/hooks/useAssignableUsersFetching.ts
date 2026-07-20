@@ -13,7 +13,7 @@ import type { User, UserRole } from '../../../types/models.types';
 export const useAssignableUsersFetching = (
   role: UserRole | null,
   areaId: string,
-  rayonId: string,
+  districtId: string,
 ) => {
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [assignableUsers, setAssignableUsers] = useState<User[]>([]);
@@ -41,8 +41,8 @@ export const useAssignableUsersFetching = (
             if (!assignableRoles.includes(u.role as UserRole)) return false;
             // Filter by area — user must be in the selected area
             if (u.location_id && u.location_id === areaId) return true;
-            // Also include users in the same rayon but no specific area (rayon-level users)
-            if (!u.location_id && u.rayon_id && u.rayon_id === rayonId) return true;
+            // Also include users in the same district but no specific area (district-level users)
+            if (!u.location_id && u.district_id && u.district_id === districtId) return true;
             return false;
           });
 
@@ -56,7 +56,7 @@ export const useAssignableUsersFetching = (
     };
 
     fetchAssignableUsers();
-  }, [role, areaId, rayonId]);
+  }, [role, areaId, districtId]);
 
   return {
     isLoadingUsers,

@@ -1,8 +1,8 @@
 /**
- * Rayons API Service Tests
+ * Districts API Service Tests
  */
 
-import * as rayonsApi from '../rayonsApi';
+import * as districtsApi from '../districtsApi';
 import * as apiClient from '../apiClient';
 
 // Mock the API client
@@ -15,23 +15,23 @@ jest.mock('../apiClient', () => ({
 
 const mockGet = apiClient.get as jest.MockedFunction<typeof apiClient.get>;
 
-describe('rayonsApi', () => {
+describe('districtsApi', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('getRayons', () => {
-    it('gets all rayons', async () => {
+  describe('getDistricts', () => {
+    it('gets all districts', async () => {
       const mockResponse = {
         data: [
           {
-            id: 'rayon-1',
+            id: 'district-1',
             name: 'Rayon Utara',
             created_at: new Date(),
             updated_at: new Date(),
           },
           {
-            id: 'rayon-2',
+            id: 'district-2',
             name: 'Rayon Selatan',
             created_at: new Date(),
             updated_at: new Date(),
@@ -40,19 +40,19 @@ describe('rayonsApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getRayons();
+      const result = await districtsApi.getDistricts();
 
-      expect(mockGet).toHaveBeenCalledWith('/rayons');
+      expect(mockGet).toHaveBeenCalledWith('/districts');
       expect(result).toEqual(mockResponse);
     });
 
-    it('returns empty array when no rayons', async () => {
+    it('returns empty array when no districts', async () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getRayons();
+      const result = await districtsApi.getDistricts();
 
-      expect(mockGet).toHaveBeenCalledWith('/rayons');
+      expect(mockGet).toHaveBeenCalledWith('/districts');
       expect(result).toEqual({ data: [] });
     });
 
@@ -60,26 +60,26 @@ describe('rayonsApi', () => {
       const error = new Error('Network error');
       mockGet.mockRejectedValue(error);
 
-      await expect(rayonsApi.getRayons()).rejects.toThrow('Network error');
+      await expect(districtsApi.getDistricts()).rejects.toThrow('Network error');
     });
 
     it('calls the correct endpoint', async () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      await rayonsApi.getRayons();
+      await districtsApi.getDistricts();
 
       expect(mockGet).toHaveBeenCalledTimes(1);
-      expect(mockGet).toHaveBeenCalledWith('/rayons');
+      expect(mockGet).toHaveBeenCalledWith('/districts');
     });
   });
 
-  describe('getRayonById', () => {
-    it('gets rayon by ID', async () => {
-      const rayonId = 'rayon-123';
+  describe('getDistrictById', () => {
+    it('gets district by ID', async () => {
+      const districtId = 'district-123';
       const mockResponse = {
         data: {
-          id: rayonId,
+          id: districtId,
           name: 'Rayon Tengah',
           created_at: new Date(),
           updated_at: new Date(),
@@ -87,84 +87,84 @@ describe('rayonsApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getRayonById(rayonId);
+      const result = await districtsApi.getDistrictById(districtId);
 
-      expect(mockGet).toHaveBeenCalledWith(`/rayons/${rayonId}`);
+      expect(mockGet).toHaveBeenCalledWith(`/districts/${districtId}`);
       expect(result).toEqual(mockResponse);
     });
 
-    it('calls correct endpoint with rayon ID interpolated', async () => {
-      const rayonId = 'rayon-abc-456';
-      const mockResponse = { data: { id: rayonId, name: 'Test Rayon' } };
+    it('calls correct endpoint with district ID interpolated', async () => {
+      const districtId = 'district-abc-456';
+      const mockResponse = { data: { id: districtId, name: 'Test Rayon' } };
       mockGet.mockResolvedValue(mockResponse);
 
-      await rayonsApi.getRayonById(rayonId);
+      await districtsApi.getDistrictById(districtId);
 
-      expect(mockGet).toHaveBeenCalledWith('/rayons/rayon-abc-456');
+      expect(mockGet).toHaveBeenCalledWith('/districts/district-abc-456');
     });
 
     it('propagates API errors', async () => {
       const error = new Error('Not found');
       mockGet.mockRejectedValue(error);
 
-      await expect(rayonsApi.getRayonById('nonexistent')).rejects.toThrow('Not found');
+      await expect(districtsApi.getDistrictById('nonexistent')).rejects.toThrow('Not found');
     });
 
-    it('returns single rayon data', async () => {
+    it('returns single district data', async () => {
       const mockResponse = {
         data: {
-          id: 'rayon-1',
+          id: 'district-1',
           name: 'Rayon Utara',
         },
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getRayonById('rayon-1');
+      const result = await districtsApi.getDistrictById('district-1');
 
       expect(result.data).toEqual(mockResponse.data);
     });
   });
 
-  describe('getAreasByRayonId', () => {
-    it('gets all areas for a given rayon ID', async () => {
-      const rayonId = 'rayon-1';
+  describe('getAreasByDistrictId', () => {
+    it('gets all areas for a given district ID', async () => {
+      const districtId = 'district-1';
       const mockResponse = {
         data: [
           {
             id: 'area-1',
             name: 'Taman Bungkul',
-            rayon_id: rayonId,
+            district_id: districtId,
           },
           {
             id: 'area-2',
             name: 'Taman Surya',
-            rayon_id: rayonId,
+            district_id: districtId,
           },
         ],
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getAreasByRayonId(rayonId);
+      const result = await districtsApi.getAreasByDistrictId(districtId);
 
-      expect(mockGet).toHaveBeenCalledWith(`/rayons/${rayonId}/areas`);
+      expect(mockGet).toHaveBeenCalledWith(`/districts/${districtId}/areas`);
       expect(result).toEqual(mockResponse);
     });
 
     it('calls correct nested endpoint', async () => {
-      const rayonId = 'rayon-xyz';
+      const districtId = 'district-xyz';
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      await rayonsApi.getAreasByRayonId(rayonId);
+      await districtsApi.getAreasByDistrictId(districtId);
 
-      expect(mockGet).toHaveBeenCalledWith('/rayons/rayon-xyz/areas');
+      expect(mockGet).toHaveBeenCalledWith('/districts/district-xyz/areas');
     });
 
-    it('returns empty array when no areas in rayon', async () => {
+    it('returns empty array when no areas in district', async () => {
       const mockResponse = { data: [] };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getAreasByRayonId('rayon-empty');
+      const result = await districtsApi.getAreasByDistrictId('district-empty');
 
       expect(result).toEqual({ data: [] });
     });
@@ -173,7 +173,7 @@ describe('rayonsApi', () => {
       const error = new Error('Server error');
       mockGet.mockRejectedValue(error);
 
-      await expect(rayonsApi.getAreasByRayonId('rayon-1')).rejects.toThrow('Server error');
+      await expect(districtsApi.getAreasByDistrictId('district-1')).rejects.toThrow('Server error');
     });
 
     it('returns area list data', async () => {
@@ -182,7 +182,7 @@ describe('rayonsApi', () => {
       };
       mockGet.mockResolvedValue(mockResponse);
 
-      const result = await rayonsApi.getAreasByRayonId('rayon-1');
+      const result = await districtsApi.getAreasByDistrictId('district-1');
 
       expect(Array.isArray(result.data)).toBe(true);
       expect(result.data).toHaveLength(1);

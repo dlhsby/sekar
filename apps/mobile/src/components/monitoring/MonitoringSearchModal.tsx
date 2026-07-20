@@ -1,6 +1,6 @@
 /**
  * MonitoringSearchModal — fullscreen search over the monitoring map's petugas /
- * location / rayon, opened from the map search bar.
+ * location / district, opened from the map search bar.
  *
  * - Autofocused search field (typing happens here, not on the map bar).
  * - Empty query → "Terakhir dilihat" recents list + "Hapus semua".
@@ -30,14 +30,14 @@ import {
   type SearchResultType,
 } from '../../hooks/useMonitoringSearch';
 import { getRecentSearches, clearRecentSearches } from '../../services/storage/recentSearches';
-import type { LiveUser, RayonBoundary } from '../../types/models.types';
+import type { LiveUser, DistrictBoundary } from '../../types/models.types';
 
 // ─── Type metadata (icon + accent per entity type) ─────────────────────────────
 
 const TYPE_META: Record<SearchResultType, { icon: string; accent: string }> = {
   petugas: { icon: 'account', accent: nbColors.primary },
   location: { icon: 'map-marker', accent: nbColors.warning },
-  rayon: { icon: 'office-building', accent: nbColors.requestUnderReview },
+  district: { icon: 'office-building', accent: nbColors.requestUnderReview },
 };
 
 type Tab = 'semua' | SearchResultType;
@@ -46,7 +46,7 @@ interface MonitoringSearchModalProps {
   visible: boolean;
   onClose: () => void;
   liveUsers: LiveUser[];
-  rayons: RayonBoundary[] | undefined;
+  districts: DistrictBoundary[] | undefined;
   onSelect: (result: SearchResult) => void;
 }
 
@@ -98,7 +98,7 @@ export function MonitoringSearchModal({
   visible,
   onClose,
   liveUsers,
-  rayons,
+  districts,
   onSelect,
 }: MonitoringSearchModalProps): React.JSX.Element {
   const { t } = useTranslation();
@@ -110,11 +110,11 @@ export function MonitoringSearchModal({
     () => ({
       petugas: t('monitoring:layers.workers'),
       area: t('monitoring:layers.areas'),
-      rayon: t('monitoring:layers.rayons'),
+      district: t('monitoring:layers.districts'),
     }),
     [t],
   );
-  const results = useMonitoringSearch(liveUsers, rayons, query, searchLabels);
+  const results = useMonitoringSearch(liveUsers, districts, query, searchLabels);
   const hasQuery = query.trim().length > 0;
 
   // Load recents + reset query/tab whenever the modal opens. Guard the async
@@ -139,7 +139,7 @@ export function MonitoringSearchModal({
       { key: 'semua', label: t('monitoring:search.all'), count: results.total },
       { key: 'petugas', label: t('monitoring:layers.workers'), count: results.petugas.length },
       { key: 'location', label: t('monitoring:layers.areas'), count: results.location.length },
-      { key: 'rayon', label: t('monitoring:layers.rayons'), count: results.rayon.length },
+      { key: 'district', label: t('monitoring:layers.districts'), count: results.district.length },
     ],
     [results, t],
   );

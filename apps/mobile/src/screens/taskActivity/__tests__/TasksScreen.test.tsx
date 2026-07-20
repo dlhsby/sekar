@@ -37,7 +37,7 @@ jest.mock('../hooks', () => ({
     createdFrom: null,
     createdTo: null,
     petugasFilter: null,
-    rayonFilter: null,
+    districtFilter: null,
     areaFilter: null,
     activeFilterCount: 0,
     handleResetFilters: jest.fn(),

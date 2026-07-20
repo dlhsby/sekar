@@ -20,8 +20,8 @@ const makeArea = (id: string, lat: number, lng: number) => ({
   center_lng: lng,
   boundary_polygon: null,
   radius_meters: 200,
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon rayon-1',
+  district_id: 'district-1',
+  district_name: 'Rayon district-1',
   assigned_count: 2,
   staffing: [],
   is_understaffed: false,
@@ -29,7 +29,7 @@ const makeArea = (id: string, lat: number, lng: number) => ({
   total_required: 2,
 });
 
-const makeRayon = (
+const makeDistrict = (
   id: string,
   areas: ReturnType<typeof makeArea>[],
 ) => ({
@@ -46,12 +46,12 @@ const makeRayon = (
 });
 
 const boundaries: BoundariesResponse = {
-  rayons: [
-    makeRayon('rayon-1', [
+  districts: [
+    makeDistrict('district-1', [
       makeArea('area-1', -7.2500, 112.7400),
       makeArea('area-2', -7.2600, 112.7500),
     ]),
-    makeRayon('rayon-2', [
+    makeDistrict('district-2', [
       makeArea('area-3', -7.2700, 112.7600),
     ]),
   ],
@@ -71,8 +71,8 @@ const makeLiveUser = (
   status: 'active',
   location_id: 'area-1',
   location_name: 'Area area-1',
-  rayon_id: 'rayon-1',
-  rayon_name: 'Rayon rayon-1',
+  district_id: 'district-1',
+  district_name: 'Rayon district-1',
   latitude: lat,
   longitude: lng,
   accuracy: null,
@@ -186,10 +186,10 @@ describe('useMapAutoFocus', () => {
     });
   });
 
-  describe('rayon selected (no area)', () => {
+  describe('district selected (no area)', () => {
     it('calls fitToCoordinates with all area centers and edge padding', () => {
       const ref = makeMapRef();
-      const filters: MonitoringFilters = { rayon_id: 'rayon-1' };
+      const filters: MonitoringFilters = { district_id: 'district-1' };
 
       renderHook(() =>
         useMapAutoFocus(ref, filters, boundaries, liveUsers),
@@ -207,7 +207,7 @@ describe('useMapAutoFocus', () => {
 
     it('does not fitToCoordinates when location_id is also set (area takes priority)', () => {
       const ref = makeMapRef();
-      const filters: MonitoringFilters = { rayon_id: 'rayon-1', location_id: 'area-1' };
+      const filters: MonitoringFilters = { district_id: 'district-1', location_id: 'area-1' };
 
       renderHook(() =>
         useMapAutoFocus(ref, filters, boundaries, liveUsers),
@@ -218,9 +218,9 @@ describe('useMapAutoFocus', () => {
       expect(ref._animateToRegion).toHaveBeenCalledTimes(1);
     });
 
-    it('does not animate when rayon_id is set but boundaries is null', () => {
+    it('does not animate when district_id is set but boundaries is null', () => {
       const ref = makeMapRef();
-      const filters: MonitoringFilters = { rayon_id: 'rayon-1' };
+      const filters: MonitoringFilters = { district_id: 'district-1' };
 
       renderHook(() =>
         useMapAutoFocus(ref, filters, null, liveUsers),
@@ -229,16 +229,16 @@ describe('useMapAutoFocus', () => {
       expect(ref._fitToCoordinates).not.toHaveBeenCalled();
     });
 
-    it('does not animate when rayon has no areas', () => {
+    it('does not animate when district has no areas', () => {
       const ref = makeMapRef();
-      const emptyRayonBoundaries: BoundariesResponse = {
-        rayons: [makeRayon('rayon-empty', [])],
+      const emptyDistrictBoundaries: BoundariesResponse = {
+        districts: [makeDistrict('district-empty', [])],
         generated_at: '2026-03-08T00:00:00Z',
       };
-      const filters: MonitoringFilters = { rayon_id: 'rayon-empty' };
+      const filters: MonitoringFilters = { district_id: 'district-empty' };
 
       renderHook(() =>
-        useMapAutoFocus(ref, filters, emptyRayonBoundaries, liveUsers),
+        useMapAutoFocus(ref, filters, emptyDistrictBoundaries, liveUsers),
       );
 
       expect(ref._fitToCoordinates).not.toHaveBeenCalled();
@@ -318,7 +318,7 @@ describe('useMapAutoFocus', () => {
       const { rerender } = renderHook(
         (props: MonitoringFilters) =>
           useMapAutoFocus(ref, props, boundaries, liveUsers),
-        { initialProps: { rayon_id: 'rayon-1' } as MonitoringFilters },
+        { initialProps: { district_id: 'district-1' } as MonitoringFilters },
       );
 
       ref._animateToRegion.mockClear();
@@ -354,9 +354,9 @@ describe('useMapAutoFocus', () => {
       ).not.toThrow();
     });
 
-    it('does not crash when mapRef.current is null and rayon filter is set', () => {
+    it('does not crash when mapRef.current is null and district filter is set', () => {
       const nullRef = { current: null } as React.RefObject<import('react-native-maps').default | null>;
-      const filters: MonitoringFilters = { rayon_id: 'rayon-1' };
+      const filters: MonitoringFilters = { district_id: 'district-1' };
 
       expect(() =>
         renderHook(() =>
@@ -379,13 +379,13 @@ describe('useMapAutoFocus', () => {
   });
 
   describe('empty boundaries', () => {
-    it('does not crash when boundaries has no rayons', () => {
+    it('does not crash when boundaries has no districts', () => {
       const ref = makeMapRef();
       const emptyBoundaries: BoundariesResponse = {
-        rayons: [],
+        districts: [],
         generated_at: '2026-03-08T00:00:00Z',
       };
-      const filters: MonitoringFilters = { location_id: 'area-1', rayon_id: 'rayon-1' };
+      const filters: MonitoringFilters = { location_id: 'area-1', district_id: 'district-1' };
 
       expect(() =>
         renderHook(() =>

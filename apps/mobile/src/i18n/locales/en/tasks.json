@@ -30,10 +30,10 @@
       "all": "All Areas",
       "mine": "My Area"
     },
-    "rayon": "Rayon",
-    "rayonOptions": {
-      "all": "All Rayons",
-      "mine": "My Rayon"
+    "district": "District",
+    "districtOptions": {
+      "all": "All Districts",
+      "mine": "My District"
     },
     "assignment": "Assignment",
     "assignmentOptions": {
@@ -196,7 +196,7 @@
     "submitButton": "Complete Task",
     "cancelButton": "Cancel",
     "areaLabel": "Area:",
-    "rayonLabel": "Rayon:",
+    "districtLabel": "District:",
     "loadingFailed": "Failed to load task data"
   },
   "messages": {
@@ -237,7 +237,7 @@
     "rolePlaceholder": "Select role",
     "assigneeLabel": "Assign To",
     "assigneePlaceholder": "Select user",
-    "noAssignees": "No {{role}} in this rayon",
+    "noAssignees": "No {{role}} in this district",
     "dateLabel": "Scheduling Date",
     "notScheduled": "Not scheduled",
     "dateHint": "To change, use \"Reschedule\" after assignment.",
@@ -297,13 +297,13 @@
     "title": "LOCATION",
     "autoFromProfile": "Location auto-set from your profile",
     "selectAssignment": "Select assignment location",
-    "rayonLabel": "Rayon",
-    "loadingRayon": "Loading rayons...",
+    "districtLabel": "District",
+    "loadingDistrict": "Loading districts...",
     "areaLabel": "Area",
     "loadingArea": "Loading areas...",
-    "yourRayon": "Your rayon",
+    "yourDistrict": "Your district",
     "yourArea": "Your area",
-    "rayonPlaceholder": "Select rayon...",
+    "districtPlaceholder": "Select district...",
     "areaPlaceholder": "Select area..."
   },
   "draft": {
@@ -317,10 +317,10 @@
     "tagged": "Tag Me",
     "createdByMe": "Created by Me",
     "date": "Date",
-    "rayon": "Rayon",
+    "district": "District",
     "area": "Area",
     "type": "Type",
-    "rayonSelected": "Rayon selected",
+    "districtSelected": "District selected",
     "activityStatusPending": "Pending Approval",
     "activityStatusApproved": "Approved",
     "activityStatusRejected": "Rejected"

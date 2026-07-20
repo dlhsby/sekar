@@ -95,7 +95,7 @@
     "address": "Alamat",
     "areaType": "Tipe Area",
     "gpsCoordinates": "Koordinat GPS",
-    "rayonCoverage": "Cakupan Rayon",
+    "districtCoverage": "Cakupan Rayon",
     "noSpecificArea": "Tanpa area spesifik",
     "inBoundary": "DI AREA",
     "outOfBoundary": "LUAR AREA",

@@ -37,7 +37,7 @@ import { AssigneeSection } from './components/AssigneeSection';
 import { TaggedUsersSection } from './components/TaggedUsersSection';
 import { styles } from './styles';
 
-/** Roles where rayon is fixed from user profile */
+/** Roles where district is fixed from user profile */
 const RAYON_FIXED_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
 
 /** Roles where area is fixed from user profile */
@@ -55,7 +55,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
 
   const { form, setForm, errors, validateForm, resetForm, updateField, clearAssigneeAndTagged } = useTaskCreateForm(
     user?.location_id,
-    user?.rayon_id,
+    user?.district_id,
   );
 
   const { clearDraft, restoreDraft, formRef, saveDraftRef } = useDraftPersistence(
@@ -65,19 +65,19 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     },
   );
 
-  const isRayonFixed = role ? RAYON_FIXED_ROLES.includes(role as UserRole) : false;
+  const isDistrictFixed = role ? RAYON_FIXED_ROLES.includes(role as UserRole) : false;
   const isAreaFixed = role ? AREA_FIXED_ROLES.includes(role as UserRole) : false;
 
-  const { isLoadingRayons, isLoadingAreas, rayonOptions, areaOptions } = useLocationFetching(
-    form.rayonId,
-    isRayonFixed,
+  const { isLoadingDistricts, isLoadingAreas, districtOptions, areaOptions } = useLocationFetching(
+    form.districtId,
+    isDistrictFixed,
     isAreaFixed,
   );
 
   const { isLoadingUsers, assignableUsers, prevAreaIdRef } = useAssignableUsersFetching(
     role as UserRole | null,
     form.areaId,
-    form.rayonId,
+    form.districtId,
   );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,16 +98,16 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     // eslint-disable-next-line react-hooks/exhaustive-deps -- prevAreaIdRef is mutated, not dependency tracked
   }, [form.areaId, clearAssigneeAndTagged]);
 
-  // Initialize rayon/area from user profile and check access
+  // Initialize district/area from user profile and check access
   useEffect(() => {
     if (!user || !role) return;
-    if (isRayonFixed && user.rayon_id) {
-      updateField('rayonId', user.rayon_id);
+    if (isDistrictFixed && user.district_id) {
+      updateField('districtId', user.district_id);
     }
     if (isAreaFixed && user.location_id) {
       updateField('areaId', user.location_id);
     }
-  }, [user, role, isRayonFixed, isAreaFixed, updateField]);
+  }, [user, role, isDistrictFixed, isAreaFixed, updateField]);
 
   useEffect(() => {
     if (!canCreateTask) {
@@ -171,7 +171,7 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
         priority: form.priority as TaskPriority,
         deadline: form.deadline ? form.deadline.toISOString() : undefined,
         location_id: form.areaId || undefined,
-        rayon_id: form.rayonId || undefined,
+        district_id: form.districtId || undefined,
         assigned_to: form.assignedTo || undefined,
         tagged_user_ids: form.taggedUserIds.length > 0 ? form.taggedUserIds : undefined,
       };
@@ -203,8 +203,8 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
     }));
   }, [setForm]);
 
-  const handleRayonChange = useCallback((rayonId: string) => {
-    setForm((prev) => ({ ...prev, rayonId, areaId: '' }));
+  const handleDistrictChange = useCallback((districtId: string) => {
+    setForm((prev) => ({ ...prev, districtId, areaId: '' }));
   }, [setForm]);
 
   return (
@@ -250,13 +250,13 @@ export const TaskCreateScreen: React.FC<MainTabScreenProps<'TaskCreate'>> = () =
           />
 
           <LocationSection
-            rayonId={form.rayonId}
-            onRayonChange={handleRayonChange}
-            isRayonFixed={isRayonFixed}
-            isLoadingRayons={isLoadingRayons}
-            rayonOptions={rayonOptions}
-            userRayonId={user?.rayon_id}
-            userRayonName={user?.rayon?.name}
+            districtId={form.districtId}
+            onDistrictChange={handleDistrictChange}
+            isDistrictFixed={isDistrictFixed}
+            isLoadingDistricts={isLoadingDistricts}
+            districtOptions={districtOptions}
+            userDistrictId={user?.district_id}
+            userDistrictName={user?.district?.name}
             areaId={form.areaId}
             onAreaChange={(areaId) => updateField('areaId', areaId)}
             isAreaFixed={isAreaFixed}

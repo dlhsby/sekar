@@ -1,6 +1,6 @@
 /**
  * ContactChannelCard — a tappable contact row (WhatsApp / phone) used on the
- * forgot-password screen (AS-4) to reach a rayon admin.
+ * forgot-password screen (AS-4) to reach a district admin.
  */
 
 import React from 'react';

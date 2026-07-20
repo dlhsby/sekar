@@ -1,6 +1,6 @@
 /**
  * TaskMetadata Component
- * Renders deadline, area, and rayon information
+ * Renders deadline, area, and district information
  */
 
 import React from 'react';
@@ -33,10 +33,10 @@ export function TaskMetadata({ task, isDeadlinePast }: TaskMetadataProps): React
           <NBText variant="caption" style={styles.metaTextStyle}>{task.area.name}</NBText>
         </View>
       )}
-      {task.rayon && (
+      {task.district && (
         <View style={styles.metaItem}>
           <Icon name="map" size={14} color={nbColors.gray500} />
-          <NBText variant="caption" style={styles.metaTextStyle}>{task.rayon.name}</NBText>
+          <NBText variant="caption" style={styles.metaTextStyle}>{task.district.name}</NBText>
         </View>
       )}
     </View>

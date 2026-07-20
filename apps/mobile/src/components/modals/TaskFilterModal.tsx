@@ -21,8 +21,8 @@ import {
   nbType,
   nbBorders,
 } from '../../constants/nbTokens';
-import type { TaskStatus, UserRole, Rayon, Area, User } from '../../types/models.types';
-import { getRayons, getAreasByRayonId, getAreas, getUsers } from '../../services/api';
+import type { TaskStatus, UserRole, District, Area, User } from '../../types/models.types';
+import { getDistricts, getAreasByDistrictId, getAreas, getUsers } from '../../services/api';
 import { FILTER_SUBORDINATE_ROLES, TASK_CREATORS } from '../../constants/roles';
 import { parseFilterDate, toFilterDateString, toTitleCase } from '../../utils/filterHelpers';
 
@@ -37,7 +37,7 @@ interface TaskFilterModalProps {
   dateTo: string; // YYYY-MM-DD (deadline to)
   createdFrom: string; // YYYY-MM-DD (created_at from)
   createdTo: string; // YYYY-MM-DD (created_at to)
-  rayonFilter: string | null;
+  districtFilter: string | null;
   areaFilter: string | null;
   petugasFilter: string | null;
   onApplyFilters: (filters: {
@@ -47,13 +47,13 @@ interface TaskFilterModalProps {
     dateTo: string;
     createdFrom: string;
     createdTo: string;
-    rayonFilter: string | null;
+    districtFilter: string | null;
     areaFilter: string | null;
     petugasFilter: string | null;
   }) => void;
   onResetFilters: () => void;
   userRole: UserRole;
-  userRayonId?: string;
+  userDistrictId?: string;
   userAreaId?: string;
   userId?: string;
 }
@@ -76,13 +76,13 @@ export function TaskFilterModal({
   dateTo,
   createdFrom,
   createdTo,
-  rayonFilter,
+  districtFilter,
   areaFilter,
   petugasFilter,
   onApplyFilters,
   onResetFilters,
   userRole,
-  userRayonId,
+  userDistrictId,
   userAreaId,
   userId,
 }: TaskFilterModalProps): React.JSX.Element {
@@ -92,16 +92,16 @@ export function TaskFilterModal({
     (userRole === 'satgas' || userRole === 'linmas' || userRole === 'korlap') && !!userAreaId
   , [userRole, userAreaId]);
 
-  const showRayon = useMemo(() =>
+  const showDistrict = useMemo(() =>
     userRole === 'kepala_rayon' || userRole === 'admin_rayon' ||
     userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
-  const isRayonFixed = useMemo(() =>
+  const isDistrictFixed = useMemo(() =>
     userRole === 'kepala_rayon' || userRole === 'admin_rayon'
   , [userRole]);
 
-  const canFilterRayon = useMemo(() =>
+  const canFilterDistrict = useMemo(() =>
     userRole === 'management' || userRole === 'admin_system' || userRole === 'superadmin'
   , [userRole]);
 
@@ -127,32 +127,32 @@ export function TaskFilterModal({
   const [localDateTo, setLocalDateTo] = useState(dateTo);
   const [localCreatedFrom, setLocalCreatedFrom] = useState(createdFrom);
   const [localCreatedTo, setLocalCreatedTo] = useState(createdTo);
-  const [localRayonFilter, setLocalRayonFilter] = useState(rayonFilter);
+  const [localDistrictFilter, setLocalDistrictFilter] = useState(districtFilter);
   const [localAreaFilter, setLocalAreaFilter] = useState(areaFilter);
 
-  const [rayons, setRayons] = useState<Rayon[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [loadingRayons, setLoadingRayons] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [loadingAreas, setLoadingAreas] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
   useEffect(() => {
-    if (visible && (canFilterRayon || isRayonFixed)) loadRayons();
+    if (visible && (canFilterDistrict || isDistrictFixed)) loadDistricts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, canFilterRayon, isRayonFixed]);
+  }, [visible, canFilterDistrict, isDistrictFixed]);
 
   useEffect(() => {
     if (!visible) return;
     if (isAreaFixed) return;
-    const effectiveRayon = localRayonFilter ?? (isRayonFixed ? userRayonId : null) ?? userRayonId;
-    if (effectiveRayon) {
-      loadAreasByRayon(effectiveRayon);
-    } else if (canFilterRayon) {
+    const effectiveDistrict = localDistrictFilter ?? (isDistrictFixed ? userDistrictId : null) ?? userDistrictId;
+    if (effectiveDistrict) {
+      loadAreasByDistrict(effectiveDistrict);
+    } else if (canFilterDistrict) {
       loadAllAreas();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, localRayonFilter, canFilterRayon, isAreaFixed, isRayonFixed, userRayonId]);
+  }, [visible, localDistrictFilter, canFilterDistrict, isAreaFixed, isDistrictFixed, userDistrictId]);
 
   useEffect(() => {
     if (!visible || !hasSubordinates) { return; }
@@ -168,20 +168,20 @@ export function TaskFilterModal({
       setLocalDateTo(dateTo);
       setLocalCreatedFrom(createdFrom);
       setLocalCreatedTo(createdTo);
-      setLocalRayonFilter(rayonFilter);
+      setLocalDistrictFilter(districtFilter);
       setLocalAreaFilter(isAreaFixed ? (userAreaId ?? null) : areaFilter);
     }
-  }, [visible, taskFilter, statusFilter, dateFrom, dateTo, createdFrom, createdTo, rayonFilter, areaFilter, petugasFilter, isAreaFixed, userAreaId]);
+  }, [visible, taskFilter, statusFilter, dateFrom, dateTo, createdFrom, createdTo, districtFilter, areaFilter, petugasFilter, isAreaFixed, userAreaId]);
 
-  const loadRayons = useCallback(async () => {
-    setLoadingRayons(true);
+  const loadDistricts = useCallback(async () => {
+    setLoadingDistricts(true);
     try {
-      const response = await getRayons();
-      if (response.data) setRayons(response.data);
+      const response = await getDistricts();
+      if (response.data) setDistricts(response.data);
     } catch (error) {
-      if (__DEV__) { console.error('[TaskFilterModal] Error loading rayons:', error); }
+      if (__DEV__) { console.error('[TaskFilterModal] Error loading districts:', error); }
     } finally {
-      setLoadingRayons(false);
+      setLoadingDistricts(false);
     }
   }, []);
 
@@ -219,13 +219,13 @@ export function TaskFilterModal({
     }
   }, []);
 
-  const loadAreasByRayon = useCallback(async (rayonId: string) => {
+  const loadAreasByDistrict = useCallback(async (districtId: string) => {
     setLoadingAreas(true);
     try {
-      const response = await getAreasByRayonId(rayonId);
+      const response = await getAreasByDistrictId(districtId);
       if (response.data) setAreas(response.data);
     } catch (error) {
-      if (__DEV__) { console.error('[TaskFilterModal] Error loading areas by rayon:', error); }
+      if (__DEV__) { console.error('[TaskFilterModal] Error loading areas by district:', error); }
       setAreas([]);
     } finally {
       setLoadingAreas(false);
@@ -253,12 +253,12 @@ export function TaskFilterModal({
       dateTo: localDateTo,
       createdFrom: localCreatedFrom,
       createdTo: localCreatedTo,
-      rayonFilter: localRayonFilter,
+      districtFilter: localDistrictFilter,
       areaFilter: localAreaFilter,
       petugasFilter: derivedPetugasFilter,
     });
     onClose();
-  }, [localAssigneeFilter, localStatusFilter, localDateFrom, localDateTo, localCreatedFrom, localCreatedTo, localRayonFilter, localAreaFilter, onApplyFilters, onClose]);
+  }, [localAssigneeFilter, localStatusFilter, localDateFrom, localDateTo, localCreatedFrom, localCreatedTo, localDistrictFilter, localAreaFilter, onApplyFilters, onClose]);
 
   const handleReset = useCallback(() => {
     setLocalAssigneeFilter('all');
@@ -267,20 +267,20 @@ export function TaskFilterModal({
     setLocalDateTo('');
     setLocalCreatedFrom('');
     setLocalCreatedTo('');
-    setLocalRayonFilter(null);
+    setLocalDistrictFilter(null);
     setLocalAreaFilter(isAreaFixed ? (userAreaId ?? null) : null);
     onResetFilters();
     onClose();
   }, [isAreaFixed, userAreaId, onResetFilters, onClose]);
 
-  const handleRayonChange = useCallback((rayonId: string | number) => {
-    const newRayonId = rayonId === 'all' ? null : String(rayonId);
-    setLocalRayonFilter(newRayonId);
+  const handleDistrictChange = useCallback((districtId: string | number) => {
+    const newDistrictId = districtId === 'all' ? null : String(districtId);
+    setLocalDistrictFilter(newDistrictId);
     setLocalAreaFilter(null);
     setAreas([]);
-    if (newRayonId) loadAreasByRayon(newRayonId);
+    if (newDistrictId) loadAreasByDistrict(newDistrictId);
     else loadAllAreas();
-  }, [loadAreasByRayon, loadAllAreas]);
+  }, [loadAreasByDistrict, loadAllAreas]);
 
   const handleAreaChange = useCallback((areaId: string | number) => {
     const newAreaId = areaId === 'all' ? null : String(areaId);
@@ -392,25 +392,25 @@ export function TaskFilterModal({
       </View>
 
       {/* 4. Rayon — role-gated */}
-      {showRayon && (
+      {showDistrict && (
         <View style={styles.filterSection}>
-          <Text style={styles.filterLabel}>{t('tasks:filter.rayon')}</Text>
-          {isRayonFixed ? (
+          <Text style={styles.filterLabel}>{t('tasks:filter.district')}</Text>
+          {isDistrictFixed ? (
             <NBSelect
-              value={userRayonId ?? 'all'}
+              value={userDistrictId ?? 'all'}
               onValueChange={() => {}}
-              options={[{ label: userRayonId ? t('tasks:filter.rayonOptions.mine') : t('tasks:filter.rayonOptions.all'), value: userRayonId ?? 'all' }]}
+              options={[{ label: userDistrictId ? t('tasks:filter.districtOptions.mine') : t('tasks:filter.districtOptions.all'), value: userDistrictId ?? 'all' }]}
               disabled={true}
             />
           ) : (
             <NBSelect
-              value={localRayonFilter || 'all'}
-              onValueChange={handleRayonChange}
+              value={localDistrictFilter || 'all'}
+              onValueChange={handleDistrictChange}
               options={[
-                { label: t('tasks:filter.rayonOptions.all'), value: 'all' },
-                ...rayons.map(r => ({ label: r.name, value: r.id })),
+                { label: t('tasks:filter.districtOptions.all'), value: 'all' },
+                ...districts.map(r => ({ label: r.name, value: r.id })),
               ]}
-              disabled={loadingRayons}
+              disabled={loadingDistricts}
               searchable
             />
           )}
@@ -427,7 +427,7 @@ export function TaskFilterModal({
             options={[{ label: userAreaId ? t('tasks:filter.areaOptions.mine') : t('tasks:filter.areaOptions.all'), value: userAreaId ?? 'all' }]}
             disabled={true}
           />
-        ) : canFilterRayon || isRayonFixed || userRayonId ? (
+        ) : canFilterDistrict || isDistrictFixed || userDistrictId ? (
           <NBSelect
             value={localAreaFilter || 'all'}
             onValueChange={handleAreaChange}

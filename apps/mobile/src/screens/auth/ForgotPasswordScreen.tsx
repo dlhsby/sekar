@@ -6,8 +6,8 @@
  * Reached from Login → "Lupa Kata Sandi?"; exit via "Kembali ke Login" or the
  * device back button (no in-screen app-bar).
  *
- * NOTE: contacts are static for now. `/rayons` is auth-protected and this is a
- * pre-login screen, and we can't infer the caller's rayon anyway — so a single
+ * NOTE: contacts are static for now. `/districts` is auth-protected and this is a
+ * pre-login screen, and we can't infer the caller's district anyway — so a single
  * hotline is shown. TODO: source these from env or a public config/DB endpoint.
  */
 

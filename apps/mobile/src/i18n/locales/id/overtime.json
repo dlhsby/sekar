@@ -16,8 +16,8 @@
       "all": "Semua Area",
       "mine": "Area Saya"
     },
-    "rayon": "Rayon",
-    "rayonOptions": {
+    "district": "Rayon",
+    "districtOptions": {
       "all": "Semua Rayon",
       "mine": "Rayon Saya"
     },

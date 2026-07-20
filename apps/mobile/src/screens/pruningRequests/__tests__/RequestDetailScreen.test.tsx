@@ -363,9 +363,9 @@ describe('RequestDetailScreen', () => {
     photoUrls: ['https://example.com/photo1.jpg', 'https://example.com/photo2.jpg'],
     notes: 'Pohon sudah tua',
     status: 'submitted' as const,
-    rayonId: 'rayon-1',
-    rayon: {
-      id: 'rayon-1',
+    districtId: 'district-1',
+    district: {
+      id: 'district-1',
       name: 'Rayon 1',
       created_at: '2026-01-01T00:00:00Z',
       updated_at: '2026-01-01T00:00:00Z',

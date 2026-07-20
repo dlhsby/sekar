@@ -83,7 +83,7 @@ function makeRole(
 
 function makeItem(overrides: Partial<StaffingSummaryItem> & { id: string; name: string }): StaffingSummaryItem {
   return {
-    type: 'rayon',
+    type: 'district',
     roles: [],
     total_active: 0,
     total_absent: 0,

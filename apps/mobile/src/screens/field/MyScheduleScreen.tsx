@@ -97,7 +97,7 @@ function RosterRow({
       </View>
 
       {team && (
-        <View style={styles.rayonRow}>
+        <View style={styles.districtRow}>
           <MaterialCommunityIcons
             name="account-group-outline"
             size={16}
@@ -133,15 +133,15 @@ function RosterRow({
         </NBText>
       </View>
 
-      {roster.rayon && (
-        <View style={styles.rayonRow}>
+      {roster.district && (
+        <View style={styles.districtRow}>
           <MaterialCommunityIcons
             name="map-outline"
             size={16}
             color={nbColors.gray600}
           />
           <NBText variant="caption" color="gray600" style={styles.shiftText}>
-            {roster.rayon.name}
+            {roster.district.name}
           </NBText>
         </View>
       )}
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
   },
   shiftRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
   shiftText: {flexShrink: 1},
-  rayonRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
+  districtRow: {flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs},
 });
 
 export default MyScheduleScreen;
