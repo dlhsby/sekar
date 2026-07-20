@@ -33,7 +33,7 @@ describe('PruningRequestsService', () => {
   let userRepository: jest.Mocked<Repository<User>>;
 
   const mockRequestId = '11111111-1111-1111-1111-111111111101';
-  const mockRayonId = '22222222-2222-2222-2222-222222222201';
+  const mockDistrictId = '22222222-2222-2222-2222-222222222201';
   const mockUserId = '33333333-3333-3333-3333-333333333301';
   const mockAdminId = '44444444-4444-4444-4444-444444444401';
 
@@ -45,7 +45,7 @@ describe('PruningRequestsService', () => {
     phone_number: '081200000001',
     profile_picture_url: null,
     role: UserRole.STAFF_KECAMATAN,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
@@ -60,14 +60,14 @@ describe('PruningRequestsService', () => {
     phone_number: '081200000002',
     profile_picture_url: null,
     role: UserRole.ADMIN_RAYON,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
     updated_at: new Date(),
   };
 
-  const mockKepalaRayon: User = {
+  const mockKepalaDistrict: User = {
     id: '55555555-5555-5555-5555-555555555501',
     username: 'kepala_rayon1',
     password_hash: 'hashed',
@@ -75,7 +75,7 @@ describe('PruningRequestsService', () => {
     phone_number: '081200000003',
     profile_picture_url: null,
     role: UserRole.KEPALA_RAYON,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
@@ -104,7 +104,7 @@ describe('PruningRequestsService', () => {
     phone_number: '081200000005',
     profile_picture_url: null,
     role: UserRole.SATGAS,
-    rayon_id: 'different-rayon-id',
+    district_id: 'different-district-id',
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
@@ -138,7 +138,7 @@ describe('PruningRequestsService', () => {
     ],
     notes: 'Urgent: trees blocking the street',
     status: 'submitted',
-    rayonId: mockRayonId,
+    districtId: mockDistrictId,
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
@@ -246,7 +246,7 @@ describe('PruningRequestsService', () => {
         detail_date: futureDateString(7),
         target_count: 15,
         notes: 'Urgent: trees blocking the street',
-        rayon_id: mockRayonId,
+        district_id: mockDistrictId,
       };
 
       mockPruningRequestRepository.create.mockReturnValue(mockPruningRequest);
@@ -386,7 +386,7 @@ describe('PruningRequestsService', () => {
         order: { createdAt: 'DESC' },
         take: 20,
         skip: 0,
-        relations: ['submitter', 'reviewer', 'rayon'],
+        relations: ['submitter', 'reviewer', 'district'],
         // Audit H1: project list trims joined user rows to public-safe columns.
         select: expect.any(Object),
       });
@@ -403,7 +403,7 @@ describe('PruningRequestsService', () => {
         order: { createdAt: 'DESC' },
         take: 50,
         skip: 100,
-        relations: ['submitter', 'reviewer', 'rayon'],
+        relations: ['submitter', 'reviewer', 'district'],
         // Audit H1: project list trims joined user rows to public-safe columns.
         select: expect.any(Object),
       });
@@ -428,13 +428,13 @@ describe('PruningRequestsService', () => {
       expect(result).toEqual(mockPruningRequest);
       expect(mockPruningRequestRepository.findOne).toHaveBeenCalledWith({
         where: { id: mockRequestId },
-        relations: ['submitter', 'reviewer', 'rayon'],
+        relations: ['submitter', 'reviewer', 'district'],
         // Audit H1: project list trims joined user rows to public-safe columns.
         select: expect.any(Object),
       });
     });
 
-    it('should return request for rayon-scoped admin_rayon with matching rayon', async () => {
+    it('should return request for district-scoped admin_rayon with matching district', async () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
       const result = await service.findById(mockRequestId, mockAdminData);
@@ -442,28 +442,28 @@ describe('PruningRequestsService', () => {
       expect(result).toEqual(mockPruningRequest);
     });
 
-    it('should deny access for rayon-scoped admin_rayon with non-matching rayon', async () => {
-      const differentRayonId = 'different-rayon-id-99999999';
-      const requestDifferentRayon = {
+    it('should deny access for district-scoped admin_rayon with non-matching district', async () => {
+      const differentDistrictId = 'different-district-id-99999999';
+      const requestDifferentDistrict = {
         ...mockPruningRequest,
-        rayonId: 'request-rayon-id-11111111',
+        districtId: 'request-district-id-11111111',
       };
-      mockPruningRequestRepository.findOne.mockResolvedValue(requestDifferentRayon);
+      mockPruningRequestRepository.findOne.mockResolvedValue(requestDifferentDistrict);
 
-      const adminDifferentRayon = {
+      const adminDifferentDistrict = {
         ...mockAdminData,
-        rayon_id: differentRayonId, // Different from request's rayon
+        district_id: differentDistrictId, // Different from request's district
       };
 
-      await expect(service.findById(mockRequestId, adminDifferentRayon)).rejects.toThrow(
+      await expect(service.findById(mockRequestId, adminDifferentDistrict)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('should return request for kepala_rayon with matching rayon', async () => {
+    it('should return request for kepala_rayon with matching district', async () => {
       mockPruningRequestRepository.findOne.mockResolvedValue(mockPruningRequest);
 
-      const result = await service.findById(mockRequestId, mockKepalaRayon);
+      const result = await service.findById(mockRequestId, mockKepalaDistrict);
 
       expect(result).toEqual(mockPruningRequest);
     });
@@ -583,11 +583,11 @@ describe('PruningRequestsService', () => {
       expect(mockPruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should deny admin_rayon review access for mismatched rayon', async () => {
+    it('should deny admin_rayon review access for mismatched district', async () => {
       const dto = { decision: 'approve' as const };
       const mismatchedRequest = {
         ...mockPruningRequest,
-        rayonId: 'different-rayon-id',
+        districtId: 'different-district-id',
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
 
@@ -633,7 +633,7 @@ describe('PruningRequestsService', () => {
       const approvedRequest = {
         ...mockPruningRequest,
         status: 'approved',
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
       };
 
       const mockTask = {
@@ -698,7 +698,7 @@ describe('PruningRequestsService', () => {
       expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
     });
 
-    it('should deny admin_rayon convert access for mismatched rayon', async () => {
+    it('should deny admin_rayon convert access for mismatched district', async () => {
       const dto = {
         areaId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
@@ -709,7 +709,7 @@ describe('PruningRequestsService', () => {
 
       const mismatchedRequest = {
         ...mockPruningRequest,
-        rayonId: 'different-rayon-id',
+        districtId: 'different-district-id',
         status: 'approved',
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(mismatchedRequest);
@@ -751,7 +751,7 @@ describe('PruningRequestsService', () => {
       const approvedRequest = {
         ...mockPruningRequest,
         status: 'approved',
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
       mockServiceCapacityService.bookAtomic.mockRejectedValue(
@@ -781,7 +781,7 @@ describe('PruningRequestsService', () => {
       const approvedRequest = {
         ...mockPruningRequest,
         status: 'approved',
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         expectedYear: futureYear,
         expectedIsoWeek: 25,
         expectedDate: null,
@@ -837,7 +837,7 @@ describe('PruningRequestsService', () => {
       const approvedRequest = {
         ...mockPruningRequest,
         status: 'approved',
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         expectedYear: null,
         expectedIsoWeek: null,
         expectedDate: null,
@@ -896,7 +896,7 @@ describe('PruningRequestsService', () => {
       expect(result.page).toBe(1);
     });
 
-    it('should auto-filter admin_rayon by their rayon', async () => {
+    it('should auto-filter admin_rayon by their district', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
         // Audit H1: findAll now also calls leftJoin + addSelect to project
@@ -919,11 +919,11 @@ describe('PruningRequestsService', () => {
       });
 
       // Since no status filter is provided, should call where (not andWhere)
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.rayonId = :rayonId', {
-        rayonId: mockRayonId,
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.districtId = :districtId', {
+        districtId: mockDistrictId,
       });
-      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith('pr.rayonId = :rayonId', {
-        rayonId: mockRayonId,
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith('pr.districtId = :districtId', {
+        districtId: mockDistrictId,
       });
     });
 
@@ -1015,7 +1015,7 @@ describe('PruningRequestsService', () => {
       expect(toCalls.length).toBe(1);
     });
 
-    it('should use where (not andWhere) for rayon filter when no status filter', async () => {
+    it('should use where (not andWhere) for district filter when no status filter', async () => {
       const mockQueryBuilder = {
         andWhere: jest.fn().mockReturnThis(),
         // Audit H1: findAll now also calls leftJoin + addSelect to project
@@ -1033,14 +1033,14 @@ describe('PruningRequestsService', () => {
 
       await service.findAll(mockAdminData, { page: 1, limit: 20 });
 
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.rayonId = :rayonId', {
-        rayonId: mockRayonId,
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('pr.districtId = :districtId', {
+        districtId: mockDistrictId,
       });
     });
   });
 
   describe('assignToTask edge cases', () => {
-    it('should reject conversion when request has no rayonId', async () => {
+    it('should reject conversion when request has no districtId', async () => {
       const dto = {
         areaId: '11111111-1111-1111-1111-111111111101',
         assignedTo: '33333333-3333-3333-3333-333333333301',
@@ -1051,7 +1051,7 @@ describe('PruningRequestsService', () => {
       const approvedRequest = {
         ...mockPruningRequest,
         status: 'approved',
-        rayonId: null,
+        districtId: null,
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
       mockDataSource.transaction.mockImplementation(async (cb) => cb({}));
@@ -1072,7 +1072,7 @@ describe('PruningRequestsService', () => {
       const approvedRequest = {
         ...mockPruningRequest,
         status: 'approved',
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
       };
       mockPruningRequestRepository.findOne.mockResolvedValue(approvedRequest);
       mockServiceCapacityService.bookAtomic.mockRejectedValue(
@@ -1104,7 +1104,7 @@ describe('PruningRequestsService', () => {
       const result = await service.reschedule(
         mockRequestId,
         { expectedDate: futureIso },
-        mockKepalaRayon,
+        mockKepalaDistrict,
       );
 
       // May 9, 2026 — Atur Jadwal reschedule now writes `scheduled_date`.
@@ -1113,10 +1113,10 @@ describe('PruningRequestsService', () => {
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('throws ForbiddenException for admin_rayon on different rayon', async () => {
+    it('throws ForbiddenException for admin_rayon on different district', async () => {
       pruningRequestRepository.findOne.mockResolvedValue({
         ...mockPruningRequest,
-        rayonId: 'other-rayon-id',
+        districtId: 'other-district-id',
         status: 'submitted',
       });
 
@@ -1135,7 +1135,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockKepalaRayon),
+        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockKepalaDistrict),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -1146,7 +1146,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockKepalaRayon),
+        service.reschedule(mockRequestId, { expectedDate: futureIso }, mockKepalaDistrict),
       ).rejects.toThrow(ConflictException);
     });
 
@@ -1157,7 +1157,7 @@ describe('PruningRequestsService', () => {
       });
 
       await expect(
-        service.reschedule(mockRequestId, { expectedDate: '2020-01-01' }, mockKepalaRayon),
+        service.reschedule(mockRequestId, { expectedDate: '2020-01-01' }, mockKepalaDistrict),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -1201,7 +1201,7 @@ describe('PruningRequestsService', () => {
         const result = await service.reschedule(
           mockRequestId,
           { expectedDate: newIso },
-          mockKepalaRayon,
+          mockKepalaDistrict,
         );
 
         expect(result.scheduledDate).toEqual(new Date(newIso));
@@ -1227,7 +1227,7 @@ describe('PruningRequestsService', () => {
         await service.reschedule(
           mockRequestId,
           { expectedDate: newDate.toISOString().slice(0, 10) },
-          mockKepalaRayon,
+          mockKepalaDistrict,
         );
 
         expect(mockServiceCapacityService.bookAtomic).not.toHaveBeenCalled();
@@ -1245,7 +1245,7 @@ describe('PruningRequestsService', () => {
           service.reschedule(
             mockRequestId,
             { expectedDate: newDate.toISOString().slice(0, 10) },
-            mockKepalaRayon,
+            mockKepalaDistrict,
           ),
         ).rejects.toThrow(ConflictException);
 
@@ -1271,7 +1271,7 @@ describe('PruningRequestsService', () => {
         const result = await service.reschedule(
           mockRequestId,
           { expectedDate: newDate.toISOString().slice(0, 10) },
-          mockKepalaRayon,
+          mockKepalaDistrict,
         );
 
         expect(result.scheduledDate).toEqual(new Date(newDate.toISOString().slice(0, 10)));
@@ -1289,7 +1289,7 @@ describe('PruningRequestsService', () => {
         const result = await service.reschedule(
           mockRequestId,
           { expectedDate: newDate.toISOString().slice(0, 10) },
-          mockKepalaRayon,
+          mockKepalaDistrict,
         );
 
         expect(result.scheduledDate).toEqual(new Date(newDate.toISOString().slice(0, 10)));
@@ -1525,7 +1525,7 @@ describe('PruningRequestsService', () => {
       expect(savedArg.address).toEqual('New Address');
     });
 
-    it('should allow admin_rayon with matching rayon', async () => {
+    it('should allow admin_rayon with matching district', async () => {
       const dto = { address: 'New Address' };
       pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
       pruningRequestRepository.save.mockResolvedValue({
@@ -1539,20 +1539,20 @@ describe('PruningRequestsService', () => {
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should deny admin_rayon with different rayon', async () => {
+    it('should deny admin_rayon with different district', async () => {
       const dto = { address: 'New Address' };
-      const adminDifferentRayon = {
+      const adminDifferentDistrict = {
         ...mockAdminData,
-        rayon_id: 'different-rayon-id',
+        district_id: 'different-district-id',
       };
       pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
 
-      await expect(service.update(mockRequestId, dto, adminDifferentRayon)).rejects.toThrow(
+      await expect(service.update(mockRequestId, dto, adminDifferentDistrict)).rejects.toThrow(
         ForbiddenException,
       );
     });
 
-    it('should allow kepala_rayon regardless of rayon', async () => {
+    it('should allow kepala_rayon regardless of district', async () => {
       const dto = { address: 'New Address' };
       pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
       pruningRequestRepository.save.mockResolvedValue({
@@ -1560,13 +1560,13 @@ describe('PruningRequestsService', () => {
         address: 'New Address',
       });
 
-      const result = await service.update(mockRequestId, dto, mockKepalaRayon);
+      const result = await service.update(mockRequestId, dto, mockKepalaDistrict);
 
       expect(result).toBeDefined();
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should allow superadmin regardless of rayon', async () => {
+    it('should allow superadmin regardless of district', async () => {
       const dto = { address: 'New Address' };
       pruningRequestRepository.findOne.mockResolvedValue(baseSave() as any);
       pruningRequestRepository.save.mockResolvedValue({
@@ -1580,7 +1580,7 @@ describe('PruningRequestsService', () => {
       expect(pruningRequestRepository.save).toHaveBeenCalled();
     });
 
-    it('should allow management regardless of rayon', async () => {
+    it('should allow management regardless of district', async () => {
       const dto = { address: 'New Address' };
       const topMgmt: User = {
         ...mockAdminData,

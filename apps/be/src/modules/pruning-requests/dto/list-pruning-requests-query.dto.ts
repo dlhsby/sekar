@@ -55,17 +55,17 @@ export class ListPruningRequestsQueryDto {
   status?: string;
 
   /**
-   * Filter by rayon ID. Auto-forced for admin_rayon users to match their rayon.
+   * Filter by district ID. Auto-forced for admin_rayon users to match their district.
    *
    * @example '22222222-2222-2222-2222-222222222201'
    */
   @ApiPropertyOptional({
-    description: 'Filter by rayon ID',
+    description: 'Filter by district ID',
     example: '22222222-2222-2222-2222-222222222201',
   })
   @IsUUID()
   @IsOptional()
-  rayonId?: string;
+  districtId?: string;
 
   /**
    * Filter by creation date (inclusive, ISO 8601).

@@ -22,32 +22,34 @@ export class PruningRequestNotificationsService {
   ) {}
 
   /**
-   * Notify every admin_rayon + kepala_rayon in `rayonId` about a state change
+   * Notify every admin_rayon + kepala_rayon in `districtId` about a state change
    * on `request`. Used on submit, cancel — anywhere the kecamatan-side
    * surface changes and admins need a heads-up without polling the queue.
    */
-  async notifyRayonAdmins(
-    rayonId: string | null,
+  async notifyDistrictAdmins(
+    districtId: string | null,
     title: string,
     body: string,
     request: PruningRequest,
   ): Promise<void> {
-    if (!rayonId) {
-      this.logger.warn(`Skipping rayon-admin notification for request ${request.id} — no rayon_id`);
+    if (!districtId) {
+      this.logger.warn(
+        `Skipping district-admin notification for request ${request.id} — no district_id`,
+      );
       return;
     }
     try {
-      const admins = await this.findActiveRayonAdmins(rayonId);
+      const admins = await this.findActiveDistrictAdmins(districtId);
       if (admins.length === 0) {
         this.logger.warn(
-          `No active admin_rayon/kepala_rayon found for rayon ${rayonId} (request ${request.referenceCode})`,
+          `No active admin_rayon/kepala_rayon found for district ${districtId} (request ${request.referenceCode})`,
         );
         return;
       }
       await Promise.all(admins.map((admin) => this.pushToAdmin(admin.id, title, body, request)));
     } catch (err) {
       this.logger.error(
-        `notifyRayonAdmins lookup failed for rayon ${rayonId}: ${(err as Error).message}`,
+        `notifyDistrictAdmins lookup failed for district ${districtId}: ${(err as Error).message}`,
       );
     }
   }
@@ -94,11 +96,11 @@ export class PruningRequestNotificationsService {
       );
   }
 
-  private findActiveRayonAdmins(rayonId: string): Promise<User[]> {
+  private findActiveDistrictAdmins(districtId: string): Promise<User[]> {
     return this.userRepository.find({
       where: [
-        { rayon_id: rayonId, role: UserRole.ADMIN_RAYON, is_active: true },
-        { rayon_id: rayonId, role: UserRole.KEPALA_RAYON, is_active: true },
+        { district_id: districtId, role: UserRole.ADMIN_RAYON, is_active: true },
+        { district_id: districtId, role: UserRole.KEPALA_RAYON, is_active: true },
       ],
       select: ['id'],
     });
@@ -120,7 +122,7 @@ export class PruningRequestNotificationsService {
       })
       .catch((err) =>
         this.logger.warn(
-          `notifyRayonAdmins push failed (admin ${adminId}, request ${request.id}): ${err.message}`,
+          `notifyDistrictAdmins push failed (admin ${adminId}, request ${request.id}): ${err.message}`,
         ),
       );
   }

@@ -32,13 +32,13 @@ describe('ScheduleMaterializerService', () => {
   const mockLocation = {
     id: 'loc-1',
     name: 'Location 1',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
   };
 
   const mockRegion = {
     id: 'region-1',
     name: 'Region 1',
-    rayon_id: 'rayon-2',
+    district_id: 'district-2',
   };
 
   beforeEach(async () => {

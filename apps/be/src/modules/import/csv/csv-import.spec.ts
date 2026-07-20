@@ -158,7 +158,7 @@ describe('validateAreas', () => {
       {
         name: 'Taman Baru',
         location_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '-7.29',
         longitude: '112.73',
       },
@@ -172,7 +172,7 @@ describe('validateAreas', () => {
       {
         name: 'Bad',
         location_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '999',
         longitude: '0',
       },
@@ -186,14 +186,14 @@ describe('validateAreas', () => {
       {
         name: 'Taman Baru',
         location_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '-7.29',
         longitude: '112.73',
       },
       {
         name: 'Taman Baru',
         location_type_id: VALID_UUID,
-        rayon_id: VALID_UUID,
+        district_id: VALID_UUID,
         latitude: '-7.30',
         longitude: '112.74',
       },
@@ -334,7 +334,7 @@ describe('CsvImportService', () => {
       await expect(service.confirm('sess-1', 'user-1')).rejects.toBeInstanceOf(ForbiddenException);
     });
 
-    it('assigns rayon_id after creating an area', async () => {
+    it('assigns district_id after creating an area', async () => {
       redisClient.get.mockResolvedValue(
         JSON.stringify({
           userId: 'user-1',
@@ -343,7 +343,7 @@ describe('CsvImportService', () => {
             {
               name: 'Taman',
               location_type_id: VALID_UUID,
-              rayon_id: VALID_UUID,
+              district_id: VALID_UUID,
               latitude: -7.29,
               longitude: 112.73,
             },
@@ -355,7 +355,7 @@ describe('CsvImportService', () => {
       const result = await service.confirm('sess-1', 'user-1');
 
       expect(locationsService.create).toHaveBeenCalledTimes(1);
-      expect(locationRepo.update).toHaveBeenCalledWith('a1', { rayon_id: VALID_UUID });
+      expect(locationRepo.update).toHaveBeenCalledWith('a1', { district_id: VALID_UUID });
       expect(result.imported).toBe(1);
     });
   });

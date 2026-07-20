@@ -5,7 +5,7 @@ import { BadRequestException, ForbiddenException, NotFoundException } from '@nes
 import { S3Service } from '../../shared/services/s3.service';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../districts/entities/district.entity';
 import { Task } from '../tasks/entities/task.entity';
 import { Activity } from '../activities/entities/activity.entity';
 import { Overtime } from '../overtime/entities/overtime.entity';
@@ -35,7 +35,7 @@ const admin: User = { id: 'admin-1', role: UserRole.ADMIN_SYSTEM } as User;
 const kepala: User = {
   id: 'kr-1',
   role: UserRole.KEPALA_RAYON,
-  rayon_id: 'rayon-9',
+  district_id: 'district-9',
 } as User;
 
 describe('ExportService', () => {
@@ -67,7 +67,7 @@ describe('ExportService', () => {
         { provide: getRepositoryToken(ExportJob), useValue: exportJobRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(Location), useValue: stubRepo() },
-        { provide: getRepositoryToken(Rayon), useValue: stubRepo() },
+        { provide: getRepositoryToken(District), useValue: stubRepo() },
         { provide: getRepositoryToken(Task), useValue: taskRepo },
         { provide: getRepositoryToken(Activity), useValue: stubRepo() },
         { provide: getRepositoryToken(Overtime), useValue: stubRepo() },
@@ -130,14 +130,14 @@ describe('ExportService', () => {
       );
     });
 
-    it('scopes kepala_rayon task export to their own rayon', async () => {
+    it('scopes kepala_rayon task export to their own district', async () => {
       const qb = makeQb(1, []);
       taskRepo.createQueryBuilder.mockReturnValue(qb);
 
       await service.requestExport({ entityType: 'tasks' }, kepala);
 
-      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('rayon_id'), {
-        rayonId: 'rayon-9',
+      expect(qb.andWhere).toHaveBeenCalledWith(expect.stringContaining('district_id'), {
+        districtId: 'district-9',
       });
     });
 
@@ -160,9 +160,12 @@ describe('ExportService', () => {
       expect(params?.endDate).toBe('2025-02-01');
     });
 
-    it('forbids a kepala_rayon with no rayon assignment', async () => {
+    it('forbids a kepala_rayon with no district assignment', async () => {
       await expect(
-        service.requestExport({ entityType: 'tasks' }, { ...kepala, rayon_id: undefined } as User),
+        service.requestExport({ entityType: 'tasks' }, {
+          ...kepala,
+          district_id: undefined,
+        } as User),
       ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });

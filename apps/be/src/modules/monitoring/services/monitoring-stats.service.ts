@@ -6,7 +6,7 @@ import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import {
@@ -14,8 +14,9 @@ import {
   DayType,
 } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
-import { CityStatsDto, RayonSummaryDto } from '../dto/city-stats.dto';
-import { RayonStatsDto, AreaSummaryDto, ShiftSummaryDto } from '../dto/rayon-stats.dto';
+import { DistrictStatsDto } from '../dto/district-stats.dto';
+import { CityStatsDto, DistrictSummaryDto } from '../dto/city-stats.dto';
+import { AreaSummaryDto, ShiftSummaryDto } from '../dto/district-stats.dto';
 import {
   AggregateResponseDto,
   AggregateNodeDto,
@@ -39,7 +40,7 @@ import {
 } from '../dto/area-stats.dto';
 import {
   BoundariesResponseDto,
-  RayonBoundaryDto,
+  DistrictBoundaryDto,
   RegionBoundaryDto,
   AreaBoundaryDto,
   RoleStaffingItemDto,
@@ -64,8 +65,8 @@ export class MonitoringStatsService {
     private readonly activityRepository: Repository<Activity>,
     @InjectRepository(LocationLog)
     private readonly locationRepository: Repository<LocationLog>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepository: Repository<District>,
     @InjectRepository(Region)
     private readonly regionRepository: Repository<Region>,
     @InjectRepository(ShiftDefinition)
@@ -88,13 +89,15 @@ export class MonitoringStatsService {
     this.logger.log('Generating city-wide statistics');
 
     const today = this.getTodayRange();
-    const rayons = await this.rayonRepository.find();
-    const rayonSummaries = await Promise.all(rayons.map((rayon) => this.getRayonSummary(rayon)));
+    const districts = await this.districtRepository.find();
+    const districtSummaries = await Promise.all(
+      districts.map((district) => this.getDistrictSummary(district)),
+    );
 
-    const totalWorkers = rayonSummaries.reduce((sum, s) => sum + s.worker_count, 0);
-    const workersOnline = rayonSummaries.reduce((sum, s) => sum + s.workers_online, 0);
-    const workersOffline = rayonSummaries.reduce((sum, s) => sum + s.workers_offline, 0);
-    const totalAreas = rayonSummaries.reduce((sum, s) => sum + s.area_count, 0);
+    const totalWorkers = districtSummaries.reduce((sum, s) => sum + s.worker_count, 0);
+    const workersOnline = districtSummaries.reduce((sum, s) => sum + s.workers_online, 0);
+    const workersOffline = districtSummaries.reduce((sum, s) => sum + s.workers_offline, 0);
+    const totalAreas = districtSummaries.reduce((sum, s) => sum + s.area_count, 0);
 
     const activeShifts = await this.shiftRepository.count({
       where: { clock_out_time: IsNull() },
@@ -116,7 +119,7 @@ export class MonitoringStatsService {
     });
 
     return {
-      total_rayons: rayons.length,
+      total_districts: districts.length,
       total_areas: totalAreas,
       total_workers: totalWorkers,
       workers_online: workersOnline,
@@ -126,22 +129,22 @@ export class MonitoringStatsService {
       tasks_in_progress: tasksInProgress,
       tasks_completed_today: tasksCompletedToday,
       activities_submitted_today: activitiesSubmittedToday,
-      rayons: rayonSummaries,
+      districts: districtSummaries,
       generated_at: new Date(),
     };
   }
 
-  async getRayonStats(rayonId: string): Promise<RayonStatsDto> {
-    this.logger.log(`Generating statistics for rayon: ${rayonId}`);
+  async getDistrictStats(districtId: string): Promise<DistrictStatsDto> {
+    this.logger.log(`Generating statistics for district: ${districtId}`);
 
-    const rayon = await this.rayonRepository.findOne({ where: { id: rayonId } });
-    if (!rayon) {
-      throw new NotFoundException(`Rayon with ID ${rayonId} not found`);
+    const district = await this.districtRepository.findOne({ where: { id: districtId } });
+    if (!district) {
+      throw new NotFoundException(`District with ID ${districtId} not found`);
     }
 
     const today = this.getTodayRange();
     const areas = await this.areaRepository.find({
-      where: { rayon_id: rayonId },
+      where: { district_id: districtId },
       relations: ['locationType'],
     });
 
@@ -182,8 +185,8 @@ export class MonitoringStatsService {
     const activeShifts = await this.countActiveShiftsByAreaIds(locationIds);
 
     return {
-      id: rayon.id,
-      name: rayon.name,
+      id: district.id,
+      name: district.name,
       total_areas: areas.length,
       total_workers: totalWorkers,
       workers_online: workersOnline,
@@ -212,9 +215,9 @@ export class MonitoringStatsService {
     }
 
     let rayonName = 'Unassigned';
-    if (area.rayon_id) {
-      const rayon = await this.rayonRepository.findOne({ where: { id: area.rayon_id } });
-      rayonName = rayon?.name || 'Unassigned';
+    if (area.district_id) {
+      const district = await this.districtRepository.findOne({ where: { id: area.district_id } });
+      rayonName = district?.name || 'Unassigned';
     }
 
     const today = this.getTodayRange();
@@ -287,8 +290,8 @@ export class MonitoringStatsService {
       // as neither ACTIVE nor PASSIVE. Harmless while the field is decorative;
       // a trap the moment anything branches on it.
       area_type_category: area.locationType?.category || 'ACTIVE',
-      rayon_id: area.rayon_id || '',
-      rayon_name: rayonName,
+      district_id: area.district_id || '',
+      district_name: rayonName,
       latitude: parseFloat(area.gps_lat?.toString() || '0'),
       longitude: parseFloat(area.gps_lng?.toString() || '0'),
       coverage_area: area.coverage_area ? parseFloat(area.coverage_area.toString()) : null,
@@ -313,25 +316,25 @@ export class MonitoringStatsService {
 
   /**
    * Lightweight aggregate for the monitoring map's "Ringkasan" mode.
-   * `scope=city` → one node per rayon; `scope=rayon` → one node per area in that rayon;
-   * `scope=region` → one node per region (kawasan) in that rayon.
+   * `scope=city` → one node per district; `scope=district` → one node per area in that district;
+   * `scope=region` → one node per region (kawasan) in that district.
    * Returns only centers + grouped counts (never worker coordinates), built with a
    * fixed set of grouped queries (no per-node fan-out).
    */
   async getAggregate(
-    scope: 'city' | 'rayon' | 'region',
-    rayonId?: string,
+    scope: 'city' | 'district' | 'region',
+    districtId?: string,
   ): Promise<AggregateResponseDto> {
-    const key = `aggregate:${scope}:${rayonId ?? ''}`;
+    const key = `aggregate:${scope}:${districtId ?? ''}`;
     if (typeof this.cacheService?.getOrCompute === 'function') {
-      return this.cacheService.getOrCompute(key, () => this.computeAggregate(scope, rayonId));
+      return this.cacheService.getOrCompute(key, () => this.computeAggregate(scope, districtId));
     }
-    return this.computeAggregate(scope, rayonId);
+    return this.computeAggregate(scope, districtId);
   }
 
   private async computeAggregate(
-    scope: 'city' | 'rayon' | 'region',
-    rayonId?: string,
+    scope: 'city' | 'district' | 'region',
+    districtId?: string,
   ): Promise<AggregateResponseDto> {
     const currentShift = await this.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
@@ -350,11 +353,11 @@ export class MonitoringStatsService {
       return n;
     };
 
-    if (scope === 'rayon') {
-      if (!rayonId) throw new NotFoundException('rayon id is required for rayon scope');
-      const clockedInSet = await this.clockedInUserSet({ rayonId });
+    if (scope === 'district') {
+      if (!districtId) throw new NotFoundException('district id is required for district scope');
+      const clockedInSet = await this.clockedInUserSet({ districtId });
       const nodes = await this.buildLocationNodes(
-        rayonId,
+        districtId,
         currentShift?.id,
         currentDayType,
         today,
@@ -363,14 +366,14 @@ export class MonitoringStatsService {
       );
       return {
         scope,
-        scope_id: rayonId,
+        scope_id: districtId,
         nodes,
         totals: this.sumStatusCounts(nodes),
-        // Scope-wide (not Σ nodes): a rayon's rostered workers assigned to
+        // Scope-wide (not Σ nodes): a district's rostered workers assigned to
         // several areas must not be double-counted.
         roster_totals: await this.rosterTotalsForScope(
-          'rayon',
-          rayonId,
+          'district',
+          districtId,
           today,
           currentShift?.id,
           clockedInSet,
@@ -383,10 +386,10 @@ export class MonitoringStatsService {
     }
 
     if (scope === 'region') {
-      if (!rayonId) throw new NotFoundException('rayon id is required for region scope');
-      const clockedInSet = await this.clockedInUserSet({ rayonId });
+      if (!districtId) throw new NotFoundException('district id is required for region scope');
+      const clockedInSet = await this.clockedInUserSet({ districtId });
       const nodes = await this.buildRegionNodes(
-        rayonId,
+        districtId,
         currentShift?.id,
         currentDayType,
         today,
@@ -395,12 +398,12 @@ export class MonitoringStatsService {
       );
       return {
         scope,
-        scope_id: rayonId,
+        scope_id: districtId,
         nodes,
         totals: this.sumStatusCounts(nodes),
         roster_totals: await this.rosterTotalsForScope(
-          'rayon',
-          rayonId,
+          'district',
+          districtId,
           today,
           currentShift?.id,
           clockedInSet,
@@ -413,7 +416,7 @@ export class MonitoringStatsService {
     }
 
     const clockedInSet = await this.clockedInUserSet({});
-    const nodes = await this.buildRayonNodes(
+    const nodes = await this.buildDistrictNodes(
       currentShift?.id,
       currentDayType,
       today,
@@ -426,7 +429,7 @@ export class MonitoringStatsService {
       nodes,
       totals: this.sumStatusCounts(nodes),
       // Scope-wide so the Surabaya summary matches the snapshot's roster count,
-      // including rostered workers not assigned to any rayon (Σ nodes would miss).
+      // including rostered workers not assigned to any district (Σ nodes would miss).
       roster_totals: await this.rosterTotalsForScope(
         'city',
         undefined,
@@ -441,36 +444,37 @@ export class MonitoringStatsService {
     };
   }
 
-  /** City scope: one aggregate node per rayon, grouped by `area.rayon_id`. */
-  private async buildRayonNodes(
+  /** City scope: one aggregate node per district, grouped by `area.district_id`. */
+  private async buildDistrictNodes(
     shiftDefinitionId: string | undefined,
     dayType: DayType,
     today: string,
     clockedInSet: Set<string>,
     beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
-    const rayons = await this.rayonRepository.find();
+    const districts = await this.districtRepository.find();
 
     const areas = await this.areaRepository.find({
       where: { is_active: true },
-      select: ['id', 'rayon_id'],
+      select: ['id', 'district_id'],
     });
-    const areaCountByRayon = new Map<string, number>();
+    const areaCountByDistrict = new Map<string, number>();
     for (const a of areas) {
-      if (a.rayon_id) areaCountByRayon.set(a.rayon_id, (areaCountByRayon.get(a.rayon_id) ?? 0) + 1);
+      if (a.district_id)
+        areaCountByDistrict.set(a.district_id, (areaCountByDistrict.get(a.district_id) ?? 0) + 1);
     }
 
-    const [statusRows, roleRows, requiredMap, scheduledByRayon, countableOnlineByRayon] =
+    const [statusRows, roleRows, requiredMap, scheduledByDistrict, countableOnlineByDistrict] =
       await Promise.all([
         this.trackingRepository
           .createQueryBuilder('uts')
           .innerJoin('uts.area', 'area')
-          .select('area.rayon_id', 'group_id')
+          .select('area.district_id', 'group_id')
           .addSelect('uts.status', 'status')
           .addSelect('uts.is_within_area', 'is_within_area')
           .addSelect('COUNT(*)', 'count')
           .where('uts.shift_id IS NOT NULL')
-          .groupBy('area.rayon_id')
+          .groupBy('area.district_id')
           .addGroupBy('uts.status')
           .addGroupBy('uts.is_within_area')
           .getRawMany(),
@@ -478,50 +482,54 @@ export class MonitoringStatsService {
           .createQueryBuilder('uts')
           .innerJoin('uts.area', 'area')
           .innerJoin('uts.user', 'user')
-          .select('area.rayon_id', 'group_id')
+          .select('area.district_id', 'group_id')
           .addSelect('user.role', 'role')
           .addSelect('COUNT(*)', 'count')
           .where('uts.shift_id IS NOT NULL')
-          .groupBy('area.rayon_id')
+          .groupBy('area.district_id')
           .addGroupBy('user.role')
           .getRawMany(),
-        this.requiredCountByGroup('rayon', shiftDefinitionId, dayType),
-        this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
-        this.countableOnlineByGroup('rayon'),
+        this.requiredCountByGroup('district', shiftDefinitionId, dayType),
+        this.scheduledUserSetsByGroup('district', today, shiftDefinitionId, {}),
+        this.countableOnlineByGroup('district'),
       ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
-    const scheduledIds = this.flattenUserSets(scheduledByRayon);
-    const presenceByRayon = await this.presenceByGroup('rayon', scheduledIds, {});
+    const scheduledIds = this.flattenUserSets(scheduledByDistrict);
+    const presenceByDistrict = await this.presenceByGroup('district', scheduledIds, {});
 
-    return rayons.map((rayon) =>
+    return districts.map((district) =>
       this.assembleNode({
-        id: rayon.id,
-        name: rayon.name,
-        type: 'rayon',
-        center_lat: this.toNum(rayon.center_lat),
-        center_lng: this.toNum(rayon.center_lng),
-        marker_icon: (rayon as any).marker_icon ?? null,
-        fill_color: (rayon as any).fill_color ?? null,
-        fill_opacity: (rayon as any).fill_opacity ?? null,
-        counts_by_status: statusByGroup.get(rayon.id),
-        counts_by_role: roleByGroup.get(rayon.id),
-        required: requiredMap.get(rayon.id) ?? 0,
+        id: district.id,
+        name: district.name,
+        type: 'district',
+        center_lat: this.toNum(district.center_lat),
+        center_lng: this.toNum(district.center_lng),
+        marker_icon: (district as any).marker_icon ?? null,
+        fill_color: (district as any).fill_color ?? null,
+        fill_opacity: (district as any).fill_opacity ?? null,
+        counts_by_status: statusByGroup.get(district.id),
+        counts_by_role: roleByGroup.get(district.id),
+        required: requiredMap.get(district.id) ?? 0,
         countable_online: this.countScheduledOnline(
-          countableOnlineByRayon.get(rayon.id),
-          scheduledByRayon.get(rayon.id),
+          countableOnlineByDistrict.get(district.id),
+          scheduledByDistrict.get(district.id),
         ),
-        roster: this.rosterCountsFor(scheduledByRayon.get(rayon.id), clockedInSet, beforeGrace),
-        presence: presenceByRayon.get(rayon.id) ?? this.emptyPresence(),
-        area_count: areaCountByRayon.get(rayon.id) ?? 0,
+        roster: this.rosterCountsFor(
+          scheduledByDistrict.get(district.id),
+          clockedInSet,
+          beforeGrace,
+        ),
+        presence: presenceByDistrict.get(district.id) ?? this.emptyPresence(),
+        area_count: areaCountByDistrict.get(district.id) ?? 0,
       }),
     );
   }
 
-  /** Rayon scope: one aggregate node per location in the rayon, grouped by `uts.location_id`. */
+  /** District scope: one aggregate node per location in the district, grouped by `uts.location_id`. */
   private async buildLocationNodes(
-    rayonId: string,
+    districtId: string,
     shiftDefinitionId: string | undefined,
     dayType: DayType,
     today: string,
@@ -529,10 +537,10 @@ export class MonitoringStatsService {
     beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
     const areas = await this.areaRepository.find({
-      where: { rayon_id: rayonId, is_active: true },
+      where: { district_id: districtId, is_active: true },
     });
 
-    // A rayon can legitimately have zero active areas — skip the grouped
+    // A district can legitimately have zero active areas — skip the grouped
     // queries entirely (an empty `IN ()` on the uuid column would otherwise
     // throw) and return no nodes.
     if (areas.length === 0) return [];
@@ -544,7 +552,7 @@ export class MonitoringStatsService {
       requiredMap,
       scheduledByLocation,
       countableOnlineByLocation,
-      scheduledByRayon,
+      scheduledByDistrict,
     ] = await Promise.all([
       this.trackingRepository
         .createQueryBuilder('uts')
@@ -553,8 +561,8 @@ export class MonitoringStatsService {
         .addSelect('uts.is_within_area', 'is_within_area')
         .addSelect('COUNT(*)', 'count')
         .where('uts.shift_id IS NOT NULL')
-        .andWhere('(uts.rayon_id = :rayonId OR uts.location_id IN (:...locationIds))', {
-          rayonId,
+        .andWhere('(uts.district_id = :districtId OR uts.location_id IN (:...locationIds))', {
+          districtId,
           locationIds,
         })
         .groupBy('uts.location_id')
@@ -577,23 +585,23 @@ export class MonitoringStatsService {
       this.requiredCountByGroup('location', shiftDefinitionId, dayType, locationIds),
       this.scheduledUserSetsByGroup('location', today, shiftDefinitionId, { locationIds }),
       this.countableOnlineByGroup('location', locationIds),
-      this.scheduledUserSetsByGroup('rayon', today, shiftDefinitionId, {}),
+      this.scheduledUserSetsByGroup('district', today, shiftDefinitionId, {}),
     ]);
 
     const statusByGroup = this.indexStatusRows(statusRows);
     const roleByGroup = this.indexRoleRows(roleRows);
     // Presence (live aktif/tidak-aktif) is grouped by the worker's LIVE location
-    // (`uts.location_id`), so a worker rostered rayon-wide (no schedule_location)
-    // — or filed under another rayon — but physically standing in a lokasi here is
-    // counted there, matching the rayon node instead of vanishing at lokasi scope.
-    // Uses the SAME scheduled set the rayon node does (all scheduled-today users,
-    // flattened), gated to this rayon's lokasi by `locationIds` inside the query.
+    // (`uts.location_id`), so a worker rostered district-wide (no schedule_location)
+    // — or filed under another district — but physically standing in a lokasi here is
+    // counted there, matching the district node instead of vanishing at lokasi scope.
+    // Uses the SAME scheduled set the district node does (all scheduled-today users,
+    // flattened), gated to this district's lokasi by `locationIds` inside the query.
     // The per-location ROSTER (`scheduledByLocation`, driving belum/tidak-hadir) stays
     // location-based.
     const scheduledIds = Array.from(
       new Set([
         ...this.flattenUserSets(scheduledByLocation),
-        ...this.flattenUserSets(scheduledByRayon),
+        ...this.flattenUserSets(scheduledByDistrict),
       ]),
     );
     const presenceByLocation = await this.presenceByGroup('location', scheduledIds, {
@@ -619,15 +627,15 @@ export class MonitoringStatsService {
         ),
         roster: this.rosterCountsFor(scheduledByLocation.get(area.id), clockedInSet, beforeGrace),
         presence: presenceByLocation.get(area.id) ?? this.emptyPresence(),
-        rayon_id: rayonId,
+        district_id: districtId,
         region_id: area.region_id ?? null,
       }),
     );
   }
 
-  /** Rayon scope: one aggregate node per region (kawasan) in the rayon, grouped by `area.region_id`. */
+  /** District scope: one aggregate node per region (kawasan) in the district, grouped by `area.region_id`. */
   private async buildRegionNodes(
-    rayonId: string,
+    districtId: string,
     shiftDefinitionId: string | undefined,
     dayType: DayType,
     today: string,
@@ -635,10 +643,10 @@ export class MonitoringStatsService {
     beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
     const regions = await this.regionRepository.find({
-      where: { rayon_id: rayonId, is_active: true },
+      where: { district_id: districtId, is_active: true },
     });
 
-    // A rayon can legitimately have zero active regions.
+    // A district can legitimately have zero active regions.
     if (regions.length === 0) return [];
 
     const regionIds = regions.map((r) => r.id);
@@ -719,27 +727,27 @@ export class MonitoringStatsService {
   }
 
   /**
-   * Sum required_count grouped by rayon or location for the current shift + day type.
+   * Sum required_count grouped by district or location for the current shift + day type.
    *
    * Requirements are **polymorphic** (ADR-045/Phase 4): exactly one of
-   * `location_id` / `region_id` / `rayon_id` is set, decided by the rayon's
-   * `staffing_level`. A rayon's total is therefore the sum across all three
-   * tiers — its own rayon-level rows, its kawasan's rows, and its lokasi's rows.
+   * `location_id` / `region_id` / `district_id` is set, decided by the district's
+   * `staffing_level`. A district's total is therefore the sum across all three
+   * tiers — its own district-level rows, its kawasan's rows, and its lokasi's rows.
    *
-   * This used to `innerJoin('req.area')` and group by `area.rayon_id`, which
+   * This used to `innerJoin('req.area')` and group by `area.district_id`, which
    * silently dropped every requirement whose `location_id` is NULL. Once Phase 4
    * moved the workbook targets to the **kawasan** tier, that join stopped seeing
    * 147 of 195 rows: monitoring summed **245** of the city's **1033** required
-   * and reported `required: 0` for **8 of 9 rayons**, so their bubbles could
+   * and reported `required: 0` for **8 of 9 districts**, so their bubbles could
    * never read understaffed.
    *
    * `location` grouping stays location-keyed on purpose: a lokasi under a
-   * kawasan-scoped rayon genuinely has no target of its own (the kawasan owns
+   * kawasan-scoped district genuinely has no target of its own (the kawasan owns
    * it), exactly as the day board renders it. The kawasan's own bubble is the
    * region tier (Phase 5.5).
    */
   private async requiredCountByGroup(
-    groupBy: 'rayon' | 'location' | 'region',
+    groupBy: 'district' | 'location' | 'region',
     shiftDefinitionId: string | undefined,
     dayType: DayType,
     groupIds?: string[],
@@ -774,18 +782,18 @@ export class MonitoringStatsService {
       return this.toCountMap(rows);
     }
 
-    // Rayon total = its lokasi's + its kawasan's + its own rows. LEFT JOINs so a
+    // District total = its lokasi's + its kawasan's + its own rows. LEFT JOINs so a
     // row on any single tier survives; COALESCE picks whichever tier resolved.
     const rows = await this.staffRequirementRepository
       .createQueryBuilder('req')
       .leftJoin('locations', 'loc', 'loc.id = req.location_id')
       .leftJoin('regions', 'reg', 'reg.id = req.region_id')
-      .select('COALESCE(loc.rayon_id, reg.rayon_id, req.rayon_id)', 'group_id')
+      .select('COALESCE(loc.district_id, reg.district_id, req.district_id)', 'group_id')
       .addSelect('SUM(req.required_count)', 'total')
       .where('req.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
       .andWhere('req.day_type = :dayType', { dayType })
-      .andWhere('COALESCE(loc.rayon_id, reg.rayon_id, req.rayon_id) IS NOT NULL')
-      .groupBy('COALESCE(loc.rayon_id, reg.rayon_id, req.rayon_id)')
+      .andWhere('COALESCE(loc.district_id, reg.district_id, req.district_id) IS NOT NULL')
+      .groupBy('COALESCE(loc.district_id, reg.district_id, req.district_id)')
       .getRawMany();
     return this.toCountMap(rows);
   }
@@ -804,12 +812,12 @@ export class MonitoringStatsService {
    * because a phone lost GPS. ABSENT cannot appear (it requires no shift).
    */
   private async countableOnlineByGroup(
-    groupBy: 'rayon' | 'location' | 'region',
+    groupBy: 'district' | 'location' | 'region',
     groupIds?: string[],
   ): Promise<Map<string, Set<string>>> {
     const groupCol =
-      groupBy === 'rayon'
-        ? 'area.rayon_id'
+      groupBy === 'district'
+        ? 'area.district_id'
         : groupBy === 'region'
           ? 'area.region_id'
           : 'uts.location_id';
@@ -892,7 +900,7 @@ export class MonitoringStatsService {
   private assembleNode(input: {
     id: string;
     name: string;
-    type: 'rayon' | 'location' | 'region';
+    type: 'district' | 'location' | 'region';
     center_lat: number | null;
     center_lng: number | null;
     counts_by_status?: AggregateStatusCountsDto;
@@ -904,7 +912,7 @@ export class MonitoringStatsService {
     presence: PresenceBreakdownDto;
     area_count?: number;
     location_count?: number;
-    rayon_id?: string | null;
+    district_id?: string | null;
     region_id?: string | null;
     marker_icon?: string | null;
     fill_color?: string | null;
@@ -939,9 +947,9 @@ export class MonitoringStatsService {
       marker_icon: input.marker_icon ?? null,
       fill_color: input.fill_color ?? null,
       fill_opacity: input.fill_opacity ?? null,
-      ...(input.type === 'rayon' ? { area_count: input.area_count ?? 0 } : {}),
+      ...(input.type === 'district' ? { area_count: input.area_count ?? 0 } : {}),
       ...(input.type === 'region' ? { location_count: input.location_count ?? 0 } : {}),
-      ...(input.type === 'location' ? { rayon_id: input.rayon_id ?? null } : {}),
+      ...(input.type === 'location' ? { district_id: input.district_id ?? null } : {}),
       ...(input.type === 'location' ? { region_id: input.region_id ?? null } : {}),
     };
   }
@@ -1029,18 +1037,18 @@ export class MonitoringStatsService {
    * The SCOPE of each user's current-shift schedule, so the map/list can show a
    * worker only at their matching drill level. A schedule scoped to a lokasi
    * (`schedule_locations`) is `location`; else `region_id` → `region`;
-   * else `rayon_id` → `rayon`; else `city` (city-wide / unassigned). Most
+   * else `district_id` → `district`; else `city` (city-wide / unassigned). Most
    * specific wins if a schedule somehow carries several. Returns user_id →
    * `{ scope, scope_id }`.
    */
   async scheduleScopesForCurrentShift(
     shiftDefinitionId: string | undefined,
   ): Promise<
-    Map<string, { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null }>
+    Map<string, { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }>
   > {
     const map = new Map<
       string,
-      { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null }
+      { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }
     >();
     if (!shiftDefinitionId) return map;
     const today = TimezoneUtil.jakartaDateString();
@@ -1048,7 +1056,7 @@ export class MonitoringStatsService {
       .createQueryBuilder('s')
       .leftJoin('schedule_locations', 'sl', 'sl.schedule_id = s.id')
       .select('s.user_id', 'user_id')
-      .addSelect('s.rayon_id', 'rayon_id')
+      .addSelect('s.district_id', 'district_id')
       .addSelect('s.region_id', 'region_id')
       .addSelect('sl.location_id', 'location_id')
       .where('s.schedule_date = :today', { today })
@@ -1059,21 +1067,23 @@ export class MonitoringStatsService {
       .andWhere('s.deleted_at IS NULL')
       .getRawMany()) as Array<{
       user_id: string;
-      rayon_id: string | null;
+      district_id: string | null;
       region_id: string | null;
       location_id: string | null;
     }>;
     // Rank most-specific → least so a user with several rows keeps the deepest.
-    const rank = { location: 3, region: 2, rayon: 1, city: 0 } as const;
+    const rank = { location: 3, region: 2, district: 1, city: 0 } as const;
     for (const r of rows) {
-      const resolved: { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null } =
-        r.location_id
-          ? { scope: 'location', scope_id: r.location_id }
-          : r.region_id
-            ? { scope: 'region', scope_id: r.region_id }
-            : r.rayon_id
-              ? { scope: 'rayon', scope_id: r.rayon_id }
-              : { scope: 'city', scope_id: null };
+      const resolved: {
+        scope: 'city' | 'district' | 'region' | 'location';
+        scope_id: string | null;
+      } = r.location_id
+        ? { scope: 'location', scope_id: r.location_id }
+        : r.region_id
+          ? { scope: 'region', scope_id: r.region_id }
+          : r.district_id
+            ? { scope: 'district', scope_id: r.district_id }
+            : { scope: 'city', scope_id: null };
       const prev = map.get(r.user_id);
       if (!prev || rank[resolved.scope] > rank[prev.scope]) map.set(r.user_id, resolved);
     }
@@ -1082,12 +1092,12 @@ export class MonitoringStatsService {
 
   /**
    * Activity×location breakdown of HADIR workers (scheduled + clocked-in),
-   * grouped by rayon, region, or location. Restricting to `scheduledUserIds` excludes ad-hoc
+   * grouped by district, region, or location. Restricting to `scheduledUserIds` excludes ad-hoc
    * clock-ins from the counts. active→aktif/dalam, outside_area→aktif/luar,
    * inactive|missing→tidak_aktif (dalam/luar by is_within_area).
    */
   private async presenceByGroup(
-    groupBy: 'rayon' | 'location' | 'region',
+    groupBy: 'district' | 'location' | 'region',
     scheduledUserIds: string[],
     opts: { locationIds?: string[]; regionIds?: string[] },
   ): Promise<Map<string, PresenceBreakdownDto>> {
@@ -1095,8 +1105,8 @@ export class MonitoringStatsService {
     if (scheduledUserIds.length === 0) return map;
 
     const qb = this.trackingRepository.createQueryBuilder('uts');
-    if (groupBy === 'rayon') {
-      qb.innerJoin('uts.area', 'area').select('area.rayon_id', 'group_id');
+    if (groupBy === 'district') {
+      qb.innerJoin('uts.area', 'area').select('area.district_id', 'group_id');
     } else if (groupBy === 'region') {
       qb.innerJoin('uts.area', 'area').select('area.region_id', 'group_id');
     } else {
@@ -1153,12 +1163,12 @@ export class MonitoringStatsService {
   }
 
   /**
-   * Distinct rostered (planned/present) user ids for today, grouped by rayon,
+   * Distinct rostered (planned/present) user ids for today, grouped by district,
    * region, or location. Location grouping goes through the schedule_areas join
    * (a worker can be assigned to several areas in a day).
    */
   private async scheduledUserSetsByGroup(
-    groupBy: 'rayon' | 'location' | 'region',
+    groupBy: 'district' | 'location' | 'region',
     today: string,
     shiftDefinitionId: string | undefined,
     opts: { locationIds?: string[]; regionIds?: string[] },
@@ -1169,15 +1179,15 @@ export class MonitoringStatsService {
     if (!shiftDefinitionId) return map;
     const statuses = [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT];
 
-    if (groupBy === 'rayon') {
+    if (groupBy === 'district') {
       const rows = await this.scheduleRepository
         .createQueryBuilder('s')
-        .select('s.rayon_id', 'group_id')
+        .select('s.district_id', 'group_id')
         .addSelect('s.user_id', 'user_id')
         .where('s.schedule_date = :today', { today })
         .andWhere('s.status IN (:...statuses)', { statuses })
         .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
-        .andWhere('s.rayon_id IS NOT NULL')
+        .andWhere('s.district_id IS NOT NULL')
         .andWhere('s.deleted_at IS NULL')
         .getRawMany();
       for (const r of rows) this.addToSetMap(map, r.group_id, r.user_id);
@@ -1220,11 +1230,11 @@ export class MonitoringStatsService {
 
   /** Distinct user ids that have clocked in (active shift), optionally scoped. */
   private async clockedInUserSet(opts: {
-    rayonId?: string;
+    districtId?: string;
     locationIds?: string[];
   }): Promise<Set<string>> {
     const where: FindOptionsWhere<UserTrackingStatus> = { shift_id: Not(IsNull()) };
-    if (opts.rayonId) where.rayon_id = opts.rayonId;
+    if (opts.districtId) where.district_id = opts.districtId;
     else if (opts.locationIds && opts.locationIds.length > 0)
       where.location_id = In(opts.locationIds);
     const rows = await this.trackingRepository.find({
@@ -1287,12 +1297,12 @@ export class MonitoringStatsService {
   /**
    * Scope-wide roster trio (distinct users), independent of the per-node
    * breakdown so it matches the snapshot's expected/present/absent — including
-   * rostered workers with no rayon (city) and never double-counting a worker
-   * assigned to several areas in a rayon.
+   * rostered workers with no district (city) and never double-counting a worker
+   * assigned to several areas in a district.
    */
   private async rosterTotalsForScope(
-    scope: 'city' | 'rayon',
-    rayonId: string | undefined,
+    scope: 'city' | 'district',
+    districtId: string | undefined,
     today: string,
     shiftDefinitionId: string | undefined,
     clockedInSet: Set<string>,
@@ -1308,7 +1318,7 @@ export class MonitoringStatsService {
       })
       .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
       .andWhere('s.deleted_at IS NULL');
-    if (scope === 'rayon') qb.andWhere('s.rayon_id = :rayonId', { rayonId });
+    if (scope === 'district') qb.andWhere('s.district_id = :districtId', { districtId });
     const rows = await qb.getRawMany();
     const scheduled = new Set(rows.map((r) => r.user_id));
     return this.rosterCountsFor(scheduled, clockedInSet, beforeGrace);
@@ -1330,16 +1340,16 @@ export class MonitoringStatsService {
     return { start, end };
   }
 
-  async getRayonSummary(rayon: Rayon): Promise<RayonSummaryDto> {
-    const areas = await this.areaRepository.find({ where: { rayon_id: rayon.id } });
+  async getDistrictSummary(district: District): Promise<DistrictSummaryDto> {
+    const areas = await this.areaRepository.find({ where: { district_id: district.id } });
     const locationIds = areas.map((a) => a.id);
     const workerCount = await this.countWorkersByAreaIds(locationIds);
     const workersOnline = await this.countOnlineWorkersByAreaIds(locationIds);
     const workersRequired = await this.countRequiredWorkersByAreaIds(locationIds);
 
     return {
-      id: rayon.id,
-      name: rayon.name,
+      id: district.id,
+      name: district.name,
       area_count: areas.length,
       worker_count: workerCount,
       workers_online: workersOnline,
@@ -1626,82 +1636,82 @@ export class MonitoringStatsService {
   }
 
   async getBoundaries(filters?: {
-    rayon_id?: string;
+    district_id?: string;
     area_ids?: string[];
     /**
-     * `rayon` → rayon outlines only (area geometry omitted; lightest payload for
+     * `district` → district outlines only (area geometry omitted; lightest payload for
      * the city-level map). `area` (default) → full area geometry for drill-down.
      */
-    level?: 'rayon' | 'area';
+    level?: 'district' | 'area';
   }): Promise<BoundariesResponseDto> {
     const level = filters?.level ?? 'area';
-    const rayonWhere: Record<string, any> = {};
-    if (filters?.rayon_id) {
-      rayonWhere.id = filters.rayon_id;
+    const districtWhere: Record<string, any> = {};
+    if (filters?.district_id) {
+      districtWhere.id = filters.district_id;
     }
 
-    const rayons = await this.rayonRepository.find({ where: rayonWhere });
+    const districts = await this.districtRepository.find({ where: districtWhere });
 
-    const rayonBoundaries: RayonBoundaryDto[] = await Promise.all(
-      rayons.map(async (rayon) => {
-        const rayonCenterLat = (rayon as any).center_lat
-          ? parseFloat((rayon as any).center_lat.toString())
+    const districtBoundaries: DistrictBoundaryDto[] = await Promise.all(
+      districts.map(async (district) => {
+        const districtCenterLat = (district as any).center_lat
+          ? parseFloat((district as any).center_lat.toString())
           : null;
-        const rayonCenterLng = (rayon as any).center_lng
-          ? parseFloat((rayon as any).center_lng.toString())
+        const districtCenterLng = (district as any).center_lng
+          ? parseFloat((district as any).center_lng.toString())
           : null;
 
         // Rayon-level payload: outlines only, no area geometry. Staffing rollups
         // come from /monitoring/aggregate at the city zoom, so this path stays a
-        // single cheap count per rayon.
-        if (level === 'rayon') {
+        // single cheap count per district.
+        if (level === 'district') {
           const area_count = await this.areaRepository.count({
-            where: { rayon_id: rayon.id, is_active: true },
+            where: { district_id: district.id, is_active: true },
           });
           return {
-            id: rayon.id,
-            name: rayon.name,
-            ...this.styleOf(rayon),
-            boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
-            center_lat: rayonCenterLat,
-            center_lng: rayonCenterLng,
+            id: district.id,
+            name: district.name,
+            ...this.styleOf(district),
+            boundary_polygon: simplifyGeometry((district as any).boundary_polygon) || null,
+            center_lat: districtCenterLat,
+            center_lng: districtCenterLng,
             area_count,
             is_understaffed: false,
             understaffed_area_count: 0,
             regions: [],
             areas: [],
-          } as RayonBoundaryDto;
+          } as DistrictBoundaryDto;
         }
 
         const areaWhere: Record<string, any> = {
-          rayon_id: rayon.id,
+          district_id: district.id,
           is_active: true,
         };
         // Korlap-style area scoping: when caller passes area_ids, only return
-        // those areas (still grouped under their rayon). Empty filter list ⇒ no areas.
+        // those areas (still grouped under their district). Empty filter list ⇒ no areas.
         if (filters?.area_ids) {
           if (filters.area_ids.length === 0) {
             return {
-              id: rayon.id,
-              name: rayon.name,
-              ...this.styleOf(rayon),
-              boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
-              center_lat: rayonCenterLat,
-              center_lng: rayonCenterLng,
+              id: district.id,
+              name: district.name,
+              ...this.styleOf(district),
+              boundary_polygon: simplifyGeometry((district as any).boundary_polygon) || null,
+              center_lat: districtCenterLat,
+              center_lng: districtCenterLng,
               area_count: 0,
               is_understaffed: false,
               understaffed_area_count: 0,
               regions: [],
               areas: [],
-            } as RayonBoundaryDto;
+            } as DistrictBoundaryDto;
           }
           areaWhere.id = In(filters.area_ids);
         }
         const areas = await this.areaRepository.find({ where: areaWhere });
 
-        // Kawasan (region) outlines within this rayon — drawn tinted at rayon zoom.
+        // Kawasan (region) outlines within this district — drawn tinted at district zoom.
         const regionEntities =
-          (await this.regionRepository.find({ where: { rayon_id: rayon.id } })) ?? [];
+          (await this.regionRepository.find({ where: { district_id: district.id } })) ?? [];
         const regionBoundaries: RegionBoundaryDto[] = regionEntities.map((rg) => ({
           id: rg.id,
           name: rg.name,
@@ -1745,8 +1755,8 @@ export class MonitoringStatsService {
             ...this.styleOf(area),
             center_lat: parseFloat(area.gps_lat?.toString() || '0'),
             center_lng: parseFloat(area.gps_lng?.toString() || '0'),
-            rayon_id: rayon.id,
-            rayon_name: rayon.name,
+            district_id: district.id,
+            district_name: district.name,
             assigned_count: assigned,
             is_understaffed: assigned < required,
             staffing_summary: staffingByArea.get(area.id) || [],
@@ -1756,12 +1766,12 @@ export class MonitoringStatsService {
         const understaffedCount = areaBoundaries.filter((a) => a.is_understaffed).length;
 
         return {
-          id: rayon.id,
-          name: rayon.name,
-          ...this.styleOf(rayon),
-          boundary_polygon: simplifyGeometry((rayon as any).boundary_polygon) || null,
-          center_lat: rayonCenterLat,
-          center_lng: rayonCenterLng,
+          id: district.id,
+          name: district.name,
+          ...this.styleOf(district),
+          boundary_polygon: simplifyGeometry((district as any).boundary_polygon) || null,
+          center_lat: districtCenterLat,
+          center_lng: districtCenterLng,
           area_count: areas.length,
           is_understaffed: understaffedCount > 0,
           understaffed_area_count: understaffedCount,
@@ -1771,16 +1781,16 @@ export class MonitoringStatsService {
       }),
     );
 
-    // When the caller requested specific area_ids, suppress rayons that
+    // When the caller requested specific area_ids, suppress districts that
     // ended up with no matching areas (otherwise korlap would still see
-    // empty rayon polygons from across the city).
-    const finalRayons =
+    // empty district polygons from across the city).
+    const finalDistricts =
       filters?.area_ids && level === 'area'
-        ? rayonBoundaries.filter((r) => r.areas.length > 0)
-        : rayonBoundaries;
+        ? districtBoundaries.filter((r) => r.areas.length > 0)
+        : districtBoundaries;
 
     return {
-      rayons: finalRayons,
+      districts: finalDistricts,
       generated_at: new Date(),
     };
   }
@@ -1821,7 +1831,7 @@ export class MonitoringStatsService {
 
     const result = new Map<string, RoleStaffingItemDto[]>();
     for (const req of requirements) {
-      // Monitoring understaffing is location-level for now; region/rayon-level
+      // Monitoring understaffing is location-level for now; region/district-level
       // requirements (polymorphic) are consumed by the day board + Phase-5 map.
       if (!req.location_id) continue;
       const areaStaffing = result.get(req.location_id) || [];

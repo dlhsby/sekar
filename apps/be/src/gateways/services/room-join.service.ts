@@ -8,7 +8,7 @@ import { UserLocationsService } from '../../modules/user-locations/user-location
 /** Roles that watch the whole city */
 const CITY_ROLES: string[] = [UserRole.SUPERADMIN, UserRole.ADMIN_SYSTEM, UserRole.MANAGEMENT];
 
-/** Roles scoped to a rayon */
+/** Roles scoped to a district */
 const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
 
 /**
@@ -19,7 +19,7 @@ const RAYON_ROLES: string[] = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON];
  * - `user:{userId}` — personal room (basis of the multi-instance-safe
  *   emitToUser pattern, ADR-016)
  * - `monitoring:city` — city-wide roles
- * - `monitoring:rayon:{rayonId}` — rayon-scoped roles
+ * - `monitoring:district:{districtId}` — district-scoped roles
  * - `monitoring:area:{areaId}` — korlap's assigned areas (multi-area aware)
  */
 @Injectable()
@@ -51,13 +51,13 @@ export class RoomJoinService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
-        select: ['id', 'rayon_id', 'location_id', 'region_id'],
+        select: ['id', 'district_id', 'location_id', 'region_id'],
       });
 
       if (!user) return rooms;
 
-      if (RAYON_ROLES.includes(role) && user.rayon_id) {
-        rooms.push(`monitoring:rayon:${user.rayon_id}`);
+      if (RAYON_ROLES.includes(role) && user.district_id) {
+        rooms.push(`monitoring:district:${user.district_id}`);
       }
 
       // TODO (Phase 5.5c): when a REGION-scope role is introduced, push monitoring:region:${user.region_id} here

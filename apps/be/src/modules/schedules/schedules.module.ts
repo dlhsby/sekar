@@ -6,7 +6,7 @@ import { ScheduleEventMember } from './entities/schedule-event-member.entity';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { Region } from '../regions/entities/region.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { District } from '../districts/entities/district.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { TeamCategory } from '../teams/entities/team-category.entity';
 import { SchedulesService } from './schedules.service';
@@ -35,7 +35,7 @@ import { SettingsModule } from '../settings/settings.module';
       User,
       Location,
       Region,
-      Rayon,
+      District,
       ShiftDefinition,
       TeamCategory,
     ]),

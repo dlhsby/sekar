@@ -9,7 +9,7 @@ import { DataSource, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { District } from '../districts/entities/district.entity';
 import { UserLocation } from '../user-locations/entities/user-location.entity';
 import { RedisService } from '../../common/services/redis.service';
 import { PerformanceScoreService } from './services/performance-score.service';
@@ -32,7 +32,7 @@ export class AnalyticsService {
     private dataSource: DataSource,
     @InjectRepository(User) private userRepo: Repository<User>,
     @InjectRepository(Location) private locationRepo: Repository<Location>,
-    @InjectRepository(Rayon) private rayonRepo: Repository<Rayon>,
+    @InjectRepository(District) private districtRepo: Repository<District>,
     @InjectRepository(UserLocation) private userLocationRepo: Repository<UserLocation>,
     private redis: RedisService,
     private performanceScoreService: PerformanceScoreService,
@@ -89,8 +89,8 @@ export class AnalyticsService {
     if (query.location_id) {
       qb.andWhere('u.location_id = :areaId', { areaId: query.location_id });
     }
-    if (query.rayon_id) {
-      qb.andWhere('u.rayon_id = :rayonId', { rayonId: query.rayon_id });
+    if (query.district_id) {
+      qb.andWhere('u.district_id = :districtId', { districtId: query.district_id });
     }
     if (query.search) {
       qb.andWhere('LOWER(u.full_name) LIKE LOWER(:search)', {
@@ -131,8 +131,8 @@ export class AnalyticsService {
 
     this.applyAreaScope(qb, user);
 
-    if (query.rayon_id) {
-      qb.andWhere('a.rayon_id = :rayonId', { rayonId: query.rayon_id });
+    if (query.district_id) {
+      qb.andWhere('a.district_id = :districtId', { districtId: query.district_id });
     }
     if (query.search) {
       qb.andWhere('LOWER(a.name) LIKE LOWER(:search)', { search: `%${query.search}%` });
@@ -403,7 +403,7 @@ export class AnalyticsService {
 
     if (!adminRoles.includes(user.role)) {
       if (user.role === UserRole.KEPALA_RAYON) {
-        qb.andWhere('u.rayon_id = :rayonId', { rayonId: user.rayon_id });
+        qb.andWhere('u.district_id = :districtId', { districtId: user.district_id });
       } else if (user.role === UserRole.KORLAP) {
         qb.andWhere('u.location_id = :areaId', { areaId: user.location_id });
       } else if (user.role === UserRole.ADMIN_RAYON) {
@@ -417,7 +417,7 @@ export class AnalyticsService {
 
     if (!adminRoles.includes(user.role)) {
       if (user.role === UserRole.KEPALA_RAYON) {
-        qb.andWhere('a.rayon_id = :rayonId', { rayonId: user.rayon_id });
+        qb.andWhere('a.district_id = :districtId', { districtId: user.district_id });
       } else if (user.role === UserRole.KORLAP) {
         qb.andWhere('a.id = :areaId', { areaId: user.location_id });
       }
@@ -435,7 +435,7 @@ export class AnalyticsService {
   /**
    * Enforce per-role area scoping for area analytics:
    * - management / admin_system / superadmin → all areas (global)
-   * - kepala_rayon / admin_rayon → their own rayon (admin_rayon is rayon-scoped, ADR-033)
+   * - kepala_rayon / admin_rayon → their own district (admin_rayon is district-scoped, ADR-033)
    * - korlap → their assigned areas (user_areas), not a single location_id
    */
   private async enforceAreaAccess(user: User, area: Location): Promise<void> {
@@ -449,8 +449,8 @@ export class AnalyticsService {
     }
 
     if (role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_RAYON) {
-      if (area.rayon_id !== user.rayon_id) {
-        throw new ForbiddenException('Cannot access areas outside your rayon');
+      if (area.district_id !== user.district_id) {
+        throw new ForbiddenException('Cannot access areas outside your district');
       }
       return;
     }

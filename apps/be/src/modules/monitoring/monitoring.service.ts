@@ -9,7 +9,7 @@ import { LocationStaffRequirement } from '../location-staff-requirements/entitie
 import { DayType } from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { CityStatsDto } from './dto/city-stats.dto';
-import { RayonStatsDto } from './dto/rayon-stats.dto';
+import { DistrictStatsDto } from './dto/district-stats.dto';
 import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryResponseDto } from './dto/location-history.dto';
@@ -39,19 +39,19 @@ export interface SnapshotWorker {
   status: TrackingStatus;
   location_id: string | null;
   location_name: string | null;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   region_id: string | null;
   region_name: string | null;
   /**
    * The drill level this worker belongs to — the SCOPE of their current-shift
-   * schedule (`location` if rostered to a lokasi, `region` a kawasan, `rayon` a
-   * rayon, `city` if city-wide / unassigned). Ad-hoc (unscheduled) workers fall
+   * schedule (`location` if rostered to a lokasi, `region` a kawasan, `district` a
+   * district, `city` if city-wide / unassigned). Ad-hoc (unscheduled) workers fall
    * back to their live position's deepest scope. The web shows a worker only at
    * the matching drill level (a lokasi-scheduled worker never appears at city).
    */
-  display_scope: 'city' | 'rayon' | 'region' | 'location';
-  /** The id of the scope entity (rayon/region/location); null at city scope. */
+  display_scope: 'city' | 'district' | 'region' | 'location';
+  /** The id of the scope entity (district/region/location); null at city scope. */
   display_scope_id: string | null;
   last_update: string;
   is_within_area: boolean;
@@ -77,8 +77,8 @@ export interface SnapshotWorker {
 export interface SnapshotAreaSummary {
   location_id: string;
   location_name: string;
-  rayon_id: string;
-  rayon_name: string;
+  district_id: string;
+  district_name: string;
   active_count: number;
   /** Total required staff summed across ALL roles (satgas + linmas) for the current shift + day type. */
   required_count: number;
@@ -142,8 +142,8 @@ export class MonitoringService {
     return this.statsService.getCityStats();
   }
 
-  async getRayonStats(rayonId: string): Promise<RayonStatsDto> {
-    return this.statsService.getRayonStats(rayonId);
+  async getDistrictStats(districtId: string): Promise<DistrictStatsDto> {
+    return this.statsService.getDistrictStats(districtId);
   }
 
   async getAreaStats(locationId: string): Promise<AreaStatsDto> {
@@ -184,7 +184,7 @@ export class MonitoringService {
    * Contract matches apps/web/src/lib/api/monitoring-v2.ts.
    */
   async getSnapshot(
-    scope: 'city' | 'rayon' | 'location',
+    scope: 'city' | 'district' | 'location',
     id?: string,
   ): Promise<{
     success: boolean;
@@ -198,11 +198,11 @@ export class MonitoringService {
   }
 
   private async computeSnapshot(
-    scope: 'city' | 'rayon' | 'location',
+    scope: 'city' | 'district' | 'location',
     id?: string,
   ): Promise<{ success: boolean; data: SnapshotData }> {
     const filters: LiveUsersFilterDto = {};
-    if (scope === 'rayon' && id) filters.rayon_id = id;
+    if (scope === 'district' && id) filters.district_id = id;
     if (scope === 'location' && id) filters.location_id = id;
 
     const result = await this.userService.getLiveUsers(filters);
@@ -213,8 +213,8 @@ export class MonitoringService {
     // them distinctly and the counts can exclude them.
     const scheduledIds = await this.statsService.scheduledUserIdsForCurrentShift(currentShift?.id);
     // Each worker's drill level = the SCOPE of their current-shift schedule, so a
-    // lokasi-scheduled worker shows only at that lokasi, a rayon-scheduled worker
-    // only at that rayon, and a city-wide/unassigned worker only at the city view.
+    // lokasi-scheduled worker shows only at that lokasi, a district-scheduled worker
+    // only at that district, and a city-wide/unassigned worker only at the city view.
     const scheduleScopes = await this.statsService.scheduleScopesForCurrentShift(currentShift?.id);
 
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
@@ -223,14 +223,17 @@ export class MonitoringService {
       // Display scope: the schedule scope when rostered; ad-hoc clock-ins fall back
       // to their live position's deepest known scope.
       const sched = scheduleScopes.get(u.id);
-      const display: { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null } =
+      const display: {
+        scope: 'city' | 'district' | 'region' | 'location';
+        scope_id: string | null;
+      } =
         sched ??
         (u.location_id
           ? { scope: 'location', scope_id: u.location_id }
           : u.region_id
             ? { scope: 'region', scope_id: u.region_id }
-            : u.rayon_id
-              ? { scope: 'rayon', scope_id: u.rayon_id }
+            : u.district_id
+              ? { scope: 'district', scope_id: u.district_id }
               : { scope: 'city', scope_id: null });
       // `ad_hoc` is decided here, where the roster check lives — the per-worker
       // lifecycle computed in getLiveUsers used a `scheduled: true` placeholder.
@@ -247,8 +250,8 @@ export class MonitoringService {
         status: u.status,
         location_id: u.location_id,
         location_name: u.location_name,
-        rayon_id: u.rayon_id,
-        rayon_name: u.rayon_name,
+        district_id: u.district_id,
+        district_name: u.district_name,
         region_id: u.region_id,
         region_name: u.region_name,
         display_scope: display.scope,
@@ -307,10 +310,10 @@ export class MonitoringService {
     currentShift: ShiftDefinition | null,
     currentDayType: DayType,
   ): Promise<SnapshotAreaSummary[]> {
-    // Group workers by location_id; track distinct areas with (id, name, rayon_id, rayon_name)
+    // Group workers by location_id; track distinct areas with (id, name, district_id, district_name)
     const areaMap = new Map<
       string,
-      { name: string; rayon_id: string; rayon_name: string; activeCount: number }
+      { name: string; district_id: string; district_name: string; activeCount: number }
     >();
 
     for (const w of workers) {
@@ -334,8 +337,8 @@ export class MonitoringService {
       } else {
         areaMap.set(w.location_id, {
           name: w.location_name ?? 'Unknown',
-          rayon_id: w.rayon_id ?? '',
-          rayon_name: w.rayon_name ?? 'Unknown',
+          district_id: w.district_id ?? '',
+          district_name: w.district_name ?? 'Unknown',
           activeCount: clockedIn,
         });
       }
@@ -344,7 +347,7 @@ export class MonitoringService {
     // Batch the requirement lookup for every area in ONE query (was a per-area
     // find → N+1: a 100-area city snapshot fired 100 queries). Requirements are
     // per-role (satgas + linmas); sum across roles per location. Stays
-    // location-keyed on purpose — a lokasi under a kawasan-scoped rayon has no
+    // location-keyed on purpose — a lokasi under a kawasan-scoped district has no
     // location-tier target (the kawasan owns it), matching the aggregate.
     const requiredByLocation = new Map<string, number>();
     if (currentShift && areaMap.size > 0) {
@@ -370,8 +373,8 @@ export class MonitoringService {
       summaries.push({
         location_id: locationId,
         location_name: areaData.name,
-        rayon_id: areaData.rayon_id,
-        rayon_name: areaData.rayon_name,
+        district_id: areaData.district_id,
+        district_name: areaData.district_name,
         active_count: areaData.activeCount,
         required_count: requiredCount,
         is_understaffed: areaData.activeCount < requiredCount,
@@ -384,7 +387,7 @@ export class MonitoringService {
   // ---- Staffing Summary (combines user & stats concerns, stays here) ----
 
   async getStaffingSummary(filters: {
-    rayon_id?: string;
+    district_id?: string;
     location_id?: string;
   }): Promise<StaffingSummaryResponseDto> {
     const areas = await this.resolveAreas(filters);
@@ -408,7 +411,7 @@ export class MonitoringService {
   // ---- Private helpers ----
 
   private async resolveAreas(filters: {
-    rayon_id?: string;
+    district_id?: string;
     location_id?: string;
   }): Promise<Location[]> {
     if (filters.location_id) {
@@ -419,7 +422,7 @@ export class MonitoringService {
     }
 
     const where: Record<string, any> = { is_active: true };
-    if (filters.rayon_id) where.rayon_id = filters.rayon_id;
+    if (filters.district_id) where.district_id = filters.district_id;
 
     return this.areaRepository.find({ where });
   }

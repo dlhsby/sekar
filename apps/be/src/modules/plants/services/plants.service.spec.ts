@@ -40,7 +40,7 @@ describe('PlantsService', () => {
     gps_lng: 112.75,
     is_active: true,
     location_type_id: '33333333-3333-3333-3333-333333333301',
-    rayon_id: '44444444-4444-4444-4444-444444444401',
+    district_id: '44444444-4444-4444-4444-444444444401',
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),
   } as Location;
@@ -50,7 +50,7 @@ describe('PlantsService', () => {
     username: 'testuser',
     full_name: 'Test User',
     role: UserRole.KORLAP,
-    rayon_id: '44444444-4444-4444-4444-444444444401',
+    district_id: '44444444-4444-4444-4444-444444444401',
     location_id: '11111111-1111-1111-1111-111111111101',
     created_at: new Date('2024-01-01'),
     updated_at: new Date('2024-01-01'),

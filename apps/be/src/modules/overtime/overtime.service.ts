@@ -370,15 +370,15 @@ export class OvertimeService {
     if (requesterRole === UserRole.KORLAP && requester?.location_id) {
       qb.andWhere('overtime.location_id = :areaId', { areaId: requester.location_id });
     } else if (requesterRole === UserRole.KEPALA_RAYON) {
-      if (!requester?.rayon_id) {
-        throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
+      if (!requester?.district_id) {
+        throw new ForbiddenException('Kepala Rayon account has no assigned district');
       }
-      qb.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
+      qb.andWhere('area.district_id = :districtId', { districtId: requester.district_id });
     } else if (requesterRole === UserRole.ADMIN_RAYON) {
-      if (!requester?.rayon_id) {
-        throw new ForbiddenException('Admin Data account has no assigned rayon');
+      if (!requester?.district_id) {
+        throw new ForbiddenException('Admin Data account has no assigned district');
       }
-      qb.andWhere('area.rayon_id = :rayonId', { rayonId: requester.rayon_id });
+      qb.andWhere('area.district_id = :districtId', { districtId: requester.district_id });
     }
     // ADMIN_SYSTEM, SUPERADMIN see all
 
@@ -416,8 +416,8 @@ export class OvertimeService {
         throw new ForbiddenException('You can only approve overtime for your area');
       }
     } else if (approver.role === UserRole.KEPALA_RAYON) {
-      if (!approver.rayon_id) {
-        throw new ForbiddenException('Kepala Rayon account has no assigned rayon');
+      if (!approver.district_id) {
+        throw new ForbiddenException('Kepala Rayon account has no assigned district');
       }
       if (!['korlap', 'admin_rayon'].includes(submitterRole)) {
         throw new ForbiddenException(
@@ -426,16 +426,16 @@ export class OvertimeService {
       }
       if (
         !overtime.area ||
-        !overtime.area.rayon_id ||
-        overtime.area.rayon_id !== approver.rayon_id
+        !overtime.area.district_id ||
+        overtime.area.district_id !== approver.district_id
       ) {
-        throw new ForbiddenException('You can only approve overtime for your rayon');
+        throw new ForbiddenException('You can only approve overtime for your district');
       }
     } else if (approver.role === UserRole.MANAGEMENT) {
       if (submitterRole !== 'kepala_rayon') {
         throw new ForbiddenException('Top management can only approve overtime from kepala_rayon');
       }
-      // No area/rayon scope check — management has city-wide visibility
+      // No area/district scope check — management has city-wide visibility
     } else {
       throw new ForbiddenException('You do not have authority to approve overtime');
     }

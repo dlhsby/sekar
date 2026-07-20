@@ -15,7 +15,7 @@ import { User } from '../../users/entities/user.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { RecurrenceType } from '../enums/recurrence-type.enum';
 import { ScheduleScope } from '../enums/schedule-scope.enum';
@@ -95,11 +95,11 @@ export class ScheduleEvent {
   region_id: string | null;
 
   @ApiProperty({
-    description: 'Rayon (required for rayon scope, null for static/mobile)',
+    description: 'District (required for district scope, null for static/mobile)',
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  district_id: string | null;
 
   @ApiProperty({ description: 'Is team event (true) or individual (false)', default: false })
   @Column({ type: 'boolean', default: false })
@@ -165,9 +165,9 @@ export class ScheduleEvent {
   @JoinColumn({ name: 'region_id' })
   region?: Region | null;
 
-  @ManyToOne(() => Rayon, { nullable: true, eager: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon | null;
+  @ManyToOne(() => District, { nullable: true, eager: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'district_id' })
+  district?: District | null;
 
   @ManyToOne(() => TeamCategory, { nullable: true, eager: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'team_category_id' })

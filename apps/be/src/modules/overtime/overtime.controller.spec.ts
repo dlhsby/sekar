@@ -114,7 +114,7 @@ describe('OvertimeController', () => {
       const adminDataUser = {
         id: 'admin-data-uuid-1',
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'rayon-uuid-1',
+        district_id: 'district-uuid-1',
       } as User;
       const filterDto: OvertimeFilterDto = {};
       const mockResponse = new PaginatedResponseDto(

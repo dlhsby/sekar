@@ -93,7 +93,7 @@ async function seedRegionGeometry() {
     const rows = (await queryRunner.query(
       `SELECT r.id,
               r.name,
-              r.rayon_id,
+              r.district_id,
               COALESCE(
                 json_agg(json_build_array(l.gps_lng, l.gps_lat))
                   FILTER (WHERE l.id IS NOT NULL AND l.gps_lat IS NOT NULL),
@@ -102,12 +102,12 @@ async function seedRegionGeometry() {
          FROM regions r
          LEFT JOIN locations l ON l.region_id = r.id AND l.deleted_at IS NULL
         WHERE r.deleted_at IS NULL AND r.boundary_polygon IS NULL
-        GROUP BY r.id, r.name, r.rayon_id
+        GROUP BY r.id, r.name, r.district_id
         ORDER BY r.id`,
     )) as Array<{
       id: string;
       name: string;
-      rayon_id: string;
+      district_id: string;
       pts: Array<[number, number]>;
     }>;
 

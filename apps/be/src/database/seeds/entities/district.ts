@@ -1,29 +1,29 @@
 import type { SeedContext } from '../lib/context';
-import { loadRayonSnapshot } from '../load-seed-data';
+import { loadDistrictSnapshot } from '../load-seed-data';
 
 /**
- * Seed the 8 rayons from the live-staging snapshot (`data/rayons.snapshot.json`).
+ * Seed the 8 districts from the live-staging snapshot (`data/districts.snapshot.json`).
  *
- * Staging is the source of truth: the client validated each rayon's name,
+ * Staging is the source of truth: the client validated each district's name,
  * description, colour, centre and boundary polygon there via the UI, so we pull
  * those rows verbatim instead of deriving boundaries from the KMZ. The snapshot
- * keeps every rayon's stable `id` + `rayon_code`, so downstream entities
- * (areas/users/kecamatans) that resolve a rayon by code are unaffected — only
+ * keeps every district's stable `id` + `rayon_code`, so downstream entities
+ * (areas/users/kecamatans) that resolve a district by code are unaffected — only
  * the display data (names/colours/descriptions/geometry) reflects staging.
  *
- * Populates `ctx.maps.rayonIdByCode` for downstream entities. Idempotent:
+ * Populates `ctx.maps.districtIdByCode` for downstream entities. Idempotent:
  * re-seeding refreshes the mutable columns so a stale local DB catches up.
  */
-export async function seedRayons(ctx: SeedContext): Promise<void> {
-  ctx.log('📍 Seeding Rayons (from live-staging snapshot)…');
+export async function seedDistricts(ctx: SeedContext): Promise<void> {
+  ctx.log('📍 Seeding Districts (from live-staging snapshot)…');
 
-  const rayons = loadRayonSnapshot();
-  for (const r of rayons) {
+  const districts = loadDistrictSnapshot();
+  for (const r of districts) {
     // The snapshot's single boundary `color` maps onto the per-level styling
     // (ADR-045) — the legacy `color` column was retired; monitoring derives the
     // boundary tint from border_color/fill_color.
     await ctx.qr.query(
-      `INSERT INTO rayons
+      `INSERT INTO districts
          (id, name, description, border_color, fill_color, marker_icon, center_lat, center_lng, boundary_polygon, staffing_level)
        VALUES ($1, $2, $3, $4, $4, 'building', $5, $6, $7::jsonb, $8)
        ON CONFLICT (id) DO UPDATE SET
@@ -31,7 +31,7 @@ export async function seedRayons(ctx: SeedContext): Promise<void> {
          description = EXCLUDED.description,
          border_color = EXCLUDED.border_color,
          fill_color = EXCLUDED.fill_color,
-         marker_icon = COALESCE(rayons.marker_icon, EXCLUDED.marker_icon),
+         marker_icon = COALESCE(districts.marker_icon, EXCLUDED.marker_icon),
          center_lat = EXCLUDED.center_lat,
          center_lng = EXCLUDED.center_lng,
          boundary_polygon = EXCLUDED.boundary_polygon,
@@ -47,8 +47,8 @@ export async function seedRayons(ctx: SeedContext): Promise<void> {
         r.staffing_level || 'region',
       ],
     );
-    if (r.rayon_code) ctx.maps.rayonIdByCode.set(r.rayon_code, r.id);
+    if (r.rayon_code) ctx.maps.districtIdByCode.set(r.rayon_code, r.id);
   }
 
-  ctx.log(`  ✓ ${rayons.length} rayons (name/colour/boundary from staging)`);
+  ctx.log(`  ✓ ${districts.length} districts (name/colour/boundary from staging)`);
 }

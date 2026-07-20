@@ -130,7 +130,7 @@ export class MonitoringConfigService {
    * a fixed allowlist keyed by scope (never interpolate a caller string into SQL).
    */
   private async loadBoundary(scope: BoundaryScope, id: string): Promise<number[][][] | null> {
-    const table = { location: 'locations', region: 'regions', rayon: 'rayons' }[scope];
+    const table = { location: 'locations', region: 'regions', district: 'districts' }[scope];
     const rows = await this.configRepository.manager.query(
       `SELECT boundary_polygon FROM ${table} WHERE id = $1`,
       [id],

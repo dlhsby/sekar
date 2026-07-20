@@ -97,11 +97,11 @@ const korlapCanRead: ReadRule = (task, user) =>
   task.assigned_to === user.id ||
   isTagged(task, user.id);
 
-// May 11, 2026 — admin_rayon joined the rayon-scoped admin path (was falling
+// May 11, 2026 — admin_rayon joined the district-scoped admin path (was falling
 // through to "no restriction", which was incorrect).
-const rayonAdminCanRead: ReadRule = (task, user) =>
-  task.area?.rayon_id === user.rayon_id ||
-  task.rayon_id === user.rayon_id ||
+const districtAdminCanRead: ReadRule = (task, user) =>
+  task.area?.district_id === user.district_id ||
+  task.district_id === user.district_id ||
   task.created_by === user.id ||
   task.assigned_to === user.id;
 
@@ -109,6 +109,6 @@ const TASK_READ_RULES: Partial<Record<UserRole, ReadRule>> = {
   [UserRole.SATGAS]: fieldWorkerCanRead,
   [UserRole.LINMAS]: fieldWorkerCanRead,
   [UserRole.KORLAP]: korlapCanRead,
-  [UserRole.KEPALA_RAYON]: rayonAdminCanRead,
-  [UserRole.ADMIN_RAYON]: rayonAdminCanRead,
+  [UserRole.KEPALA_RAYON]: districtAdminCanRead,
+  [UserRole.ADMIN_RAYON]: districtAdminCanRead,
 };

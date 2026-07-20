@@ -59,12 +59,12 @@ export class CreateTaskDto {
   location_id?: string;
 
   @ApiPropertyOptional({
-    description: 'Rayon ID for rayon-scoped tasks (optional)',
+    description: 'District ID for district-scoped tasks (optional)',
     example: 'r1r2r3r4-a5b6-7890-abcd-ef1234567890',
   })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'User ID to assign the task to (optional at creation)',

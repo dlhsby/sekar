@@ -64,11 +64,11 @@ export class UpdateUserDto {
   role?: string;
 
   @ApiPropertyOptional({
-    description: 'Rayon ID (single). Optional for all roles.',
+    description: 'District ID (single). Optional for all roles.',
   })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'Region (Kawasan) ID for region-scoped roles (korlap). ADR-045.',

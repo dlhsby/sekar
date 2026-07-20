@@ -27,8 +27,8 @@ export enum StaffRole {
  * LocationStaffRequirement Entity — a **polymorphic** staffing target.
  *
  * A requirement attaches to exactly one subject: a location, a region (kawasan),
- * or a rayon — decided by the parent rayon's `staffing_level` (ADR: grouped
- * rayons define KEBUTUHAN per kawasan; Taman Aktif per park). All three ids
+ * or a district — decided by the parent district's `staffing_level` (ADR: grouped
+ * districts define KEBUTUHAN per kawasan; Taman Aktif per park). All three ids
  * nullable → a city-wide target (rare). The table keeps its historical name.
  *
  * Example: Taman Bungkul, Shift 1, Weekday needs 6 Satgas and 2 Linmas.
@@ -58,11 +58,11 @@ export class LocationStaffRequirement {
   region_id?: string | null;
 
   @ApiProperty({
-    description: 'Rayon ID (set when the requirement is rayon-level)',
+    description: 'District ID (set when the requirement is district-level)',
     nullable: true,
   })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @ApiProperty({
     description: 'Shift definition ID',

@@ -10,7 +10,13 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-export type ExportEntityType = 'users' | 'areas' | 'rayons' | 'tasks' | 'activities' | 'overtime';
+export type ExportEntityType =
+  | 'users'
+  | 'areas'
+  | 'districts'
+  | 'tasks'
+  | 'activities'
+  | 'overtime';
 
 export type ExportFormat = 'csv' | 'xlsx' | 'kmz';
 
@@ -55,7 +61,7 @@ export class ExportJob {
   @Column({ type: 'int', default: 0 })
   retry_count: number;
 
-  /** Filter snapshot used to build the export (date range, area, rayon) — for audit. */
+  /** Filter snapshot used to build the export (date range, area, district) — for audit. */
   @Column({ type: 'jsonb', nullable: true })
   filters: Record<string, unknown> | null;
 

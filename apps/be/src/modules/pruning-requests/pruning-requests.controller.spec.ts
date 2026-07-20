@@ -14,7 +14,7 @@ describe('PruningRequestsController', () => {
 
   const mockUserId = '33333333-3333-3333-3333-333333333301';
   const mockRequestId = '11111111-1111-1111-1111-111111111101';
-  const mockRayonId = '22222222-2222-2222-2222-222222222201';
+  const mockDistrictId = '22222222-2222-2222-2222-222222222201';
 
   const mockStaffKecamatan: User = {
     id: mockUserId,
@@ -24,7 +24,7 @@ describe('PruningRequestsController', () => {
     phone_number: '081200000001',
     profile_picture_url: null,
     role: UserRole.STAFF_KECAMATAN,
-    rayon_id: mockRayonId,
+    district_id: mockDistrictId,
     is_active: true,
     password_must_change: false,
     created_at: new Date(),
@@ -58,7 +58,7 @@ describe('PruningRequestsController', () => {
     ],
     notes: 'Urgent: trees blocking the street',
     status: 'submitted',
-    rayonId: mockRayonId,
+    districtId: mockDistrictId,
     reviewedBy: null,
     reviewedAt: null,
     reviewNotes: null,
@@ -116,7 +116,7 @@ describe('PruningRequestsController', () => {
         detail_date: '2026-04-28',
         target_count: 15,
         notes: 'Urgent: trees blocking the street',
-        rayon_id: mockRayonId,
+        district_id: mockDistrictId,
       };
 
       service.create.mockResolvedValue(mockPruningRequest);

@@ -20,12 +20,12 @@ export class AreaAnalyticsQueryDto extends PaginationDto {
   date_to?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by rayon ID',
-    example: 'rayon-1',
+    description: 'Filter by district ID',
+    example: 'district-1',
   })
   @IsOptional()
   @IsUUID()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({
     description: 'Search by area name',

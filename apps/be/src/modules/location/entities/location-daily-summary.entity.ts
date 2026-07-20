@@ -54,9 +54,9 @@ export class LocationDailySummary {
   @Column({ type: 'uuid', nullable: true })
   location_id?: string | null;
 
-  @ApiPropertyOptional({ description: 'Rayon of the assigned area' })
+  @ApiPropertyOptional({ description: 'District of the assigned area' })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id?: string | null;
+  district_id?: string | null;
 
   @ApiProperty({ description: 'True when written by the retention backfill, not the daily cron' })
   @Column({ type: 'boolean', default: false })

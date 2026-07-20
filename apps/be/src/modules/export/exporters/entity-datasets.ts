@@ -2,7 +2,7 @@ import type { CellValue, Dataset } from './dataset';
 import type { KmlPlacemark } from './kmz.exporter';
 import type { User } from '../../users/entities/user.entity';
 import type { Location } from '../../locations/entities/location.entity';
-import type { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import type { Task } from '../../tasks/entities/task.entity';
 import type { Activity } from '../../activities/entities/activity.entity';
 import type { Overtime } from '../../overtime/entities/overtime.entity';
@@ -28,7 +28,7 @@ export function usersDataset(rows: User[]): Dataset {
     { header: 'full_name', value: (u) => u.full_name },
     { header: 'phone_number', value: (u) => u.phone_number ?? '' },
     { header: 'role', value: (u) => u.role },
-    { header: 'rayon_id', value: (u) => u.rayon_id ?? '' },
+    { header: 'district_id', value: (u) => u.district_id ?? '' },
     { header: 'location_id', value: (u) => u.location_id ?? '' },
     { header: 'is_active', value: (u) => u.is_active },
     { header: 'created_at', value: (u) => iso(u.created_at) },
@@ -40,7 +40,7 @@ export function areasDataset(rows: Location[]): Dataset {
     { header: 'id', value: (a) => a.id },
     { header: 'name', value: (a) => a.name },
     { header: 'location_type_id', value: (a) => a.location_type_id },
-    { header: 'rayon_id', value: (a) => a.rayon_id ?? '' },
+    { header: 'district_id', value: (a) => a.district_id ?? '' },
     { header: 'gps_lat', value: (a) => a.gps_lat },
     { header: 'gps_lng', value: (a) => a.gps_lng },
     { header: 'address', value: (a) => a.address ?? '' },
@@ -49,7 +49,7 @@ export function areasDataset(rows: Location[]): Dataset {
   ]);
 }
 
-export function rayonsDataset(rows: Rayon[]): Dataset {
+export function districtDataset(rows: District[]): Dataset {
   return build(rows, [
     { header: 'id', value: (r) => r.id },
     { header: 'name', value: (r) => r.name },
@@ -69,7 +69,7 @@ export function tasksDataset(rows: Task[]): Dataset {
     { header: 'priority', value: (t) => t.priority },
     { header: 'task_type', value: (t) => t.taskType },
     { header: 'location_id', value: (t) => t.location_id ?? '' },
-    { header: 'rayon_id', value: (t) => t.rayon_id ?? '' },
+    { header: 'district_id', value: (t) => t.district_id ?? '' },
     { header: 'assigned_to', value: (t) => t.assigned_to ?? '' },
     { header: 'created_by', value: (t) => t.created_by },
     { header: 'deadline', value: (t) => iso(t.deadline) },

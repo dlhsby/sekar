@@ -130,7 +130,7 @@ export class CsvImportService {
           role: row.role,
           phone_number: row.phone_number,
           area_ids: row.location_id ? [row.location_id] : undefined,
-          rayon_id: row.rayon_id,
+          district_id: row.district_id,
         });
         // A password omitted from the CSV is auto-generated and returned once —
         // collect it so the admin can hand the temp password to the worker.
@@ -166,8 +166,8 @@ export class CsvImportService {
           gps_lat: row.latitude,
           gps_lng: row.longitude,
         });
-        // CreateLocationDto carries no rayon_id — assign it directly post-create.
-        await this.areaRepository.update(area.id, { rayon_id: row.rayon_id });
+        // CreateLocationDto carries no district_id — assign it directly post-create.
+        await this.areaRepository.update(area.id, { district_id: row.district_id });
         imported++;
       } catch (error) {
         skippedReasons.push(this.skipReason(row.name, error));

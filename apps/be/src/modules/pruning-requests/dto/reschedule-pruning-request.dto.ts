@@ -4,7 +4,7 @@ import { ApiProperty } from '@nestjs/swagger';
 /**
  * DTO for rescheduling the expected date of a pruning request.
  *
- * Round 4 (Apr 28): admin_rayon (rayon-scoped), kepala_rayon, management,
+ * Round 4 (Apr 28): admin_rayon (district-scoped), kepala_rayon, management,
  * admin_system, and superadmin can adjust `expected_date` independent of the
  * assign-to-task flow.
  */

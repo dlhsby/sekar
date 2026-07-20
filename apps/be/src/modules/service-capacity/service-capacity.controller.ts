@@ -23,7 +23,7 @@ import { BookCapacityDto } from './dto/book-capacity.dto';
 
 @ApiTags('Service Capacity')
 @ApiBearerAuth('JWT-auth')
-@Controller('rayons/:rayonId/capacity')
+@Controller('districts/:districtId/capacity')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ServiceCapacityController {
   constructor(private readonly service: ServiceCapacityService) {}
@@ -40,28 +40,28 @@ export class ServiceCapacityController {
   @ApiOperation({
     summary: 'Get service capacity calendar',
     description:
-      'Retrieve capacity and booking info for a rayon. admin_rayon and staff_kecamatan are scoped to own rayon.',
+      'Retrieve capacity and booking info for a district. admin_rayon and staff_kecamatan are scoped to own district.',
   })
-  @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
+  @ApiParam({ name: 'districtId', description: 'District ID' })
   @ApiResponse({
     status: 200,
     description: 'Capacity records (filled with placeholders for missing weeks)',
     type: [ServiceCapacity],
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Cross-rayon access' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Cross-district access' })
   async findCalendar(
-    @Param('rayonId') rayonId: string,
+    @Param('districtId') districtId: string,
     @Query() query: QueryCapacityDto,
     @GetUser() user: User,
   ): Promise<ServiceCapacity[]> {
     const scopedRoles = [UserRole.ADMIN_RAYON, UserRole.STAFF_KECAMATAN];
-    if (scopedRoles.includes(user.role as UserRole) && user.rayon_id !== rayonId) {
-      throw new ForbiddenException('Cannot access other rayon');
+    if (scopedRoles.includes(user.role as UserRole) && user.district_id !== districtId) {
+      throw new ForbiddenException('Cannot access other district');
     }
 
     return this.service.findCalendar({
-      rayonId,
+      districtId,
       ...query,
     });
   }
@@ -72,7 +72,7 @@ export class ServiceCapacityController {
     summary: 'Override capacity units',
     description: 'Set capacity units for a week/service-type. admin_rayon cannot override.',
   })
-  @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
+  @ApiParam({ name: 'districtId', description: 'District ID' })
   @ApiResponse({
     status: 200,
     description: 'Updated capacity record',
@@ -81,11 +81,11 @@ export class ServiceCapacityController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - admin_rayon cannot override' })
   async upsertCapacity(
-    @Param('rayonId') rayonId: string,
+    @Param('districtId') districtId: string,
     @Body() dto: UpsertCapacityDto,
   ): Promise<ServiceCapacity> {
     return this.service.upsertCapacity({
-      rayonId,
+      districtId,
       ...dto,
     });
   }
@@ -96,7 +96,7 @@ export class ServiceCapacityController {
     summary: 'Book capacity units',
     description: 'Atomically book units; throws ConflictException if capacity exceeded.',
   })
-  @ApiParam({ name: 'rayonId', description: 'Rayon ID' })
+  @ApiParam({ name: 'districtId', description: 'District ID' })
   @ApiResponse({
     status: 201,
     description: 'Updated capacity record',
@@ -105,11 +105,11 @@ export class ServiceCapacityController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 409, description: 'Conflict - Capacity exceeded' })
   async bookCapacity(
-    @Param('rayonId') rayonId: string,
+    @Param('districtId') districtId: string,
     @Body() dto: BookCapacityDto,
   ): Promise<ServiceCapacity> {
     return this.service.bookAtomic({
-      rayonId,
+      districtId,
       ...dto,
     });
   }

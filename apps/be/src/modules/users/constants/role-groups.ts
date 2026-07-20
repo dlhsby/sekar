@@ -68,14 +68,18 @@ export const ACTIVITY_APPROVERS = [UserRole.KORLAP, UserRole.KEPALA_RAYON];
 
 export const MONITORING_CITY = [UserRole.MANAGEMENT, UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
 
-export const MONITORING_RAYON = [UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON, ...MONITORING_CITY];
+export const MONITORING_DISTRICT = [
+  UserRole.KEPALA_RAYON,
+  UserRole.ADMIN_RAYON,
+  ...MONITORING_CITY,
+];
 
-export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_RAYON];
+export const MONITORING_AREA = [UserRole.KORLAP, ...MONITORING_DISTRICT];
 
 export const USER_MANAGERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN];
 
 // Daily roster managers — admin_system/superadmin act globally; kepala_rayon and
-// admin_rayon are scoped to their own rayon (enforced in the controller/service).
+// admin_rayon are scoped to their own district (enforced in the controller/service).
 export const ROSTER_MANAGERS = [
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
@@ -90,7 +94,7 @@ export const ROSTER_VIEWERS = [...ROSTER_MANAGERS, UserRole.KORLAP, UserRole.MAN
 // Roster editors — roles that may edit SOME rows; the exact rows are decided by
 // the target-role hierarchy + scope in SchedulesService.assertCanEdit
 // (korlap→satgas/linmas in own areas; kepala_rayon/admin_rayon→below in own
-// rayon; management→kepala_rayon/admin_rayon; admin_system/superadmin→all).
+// district; management→kepala_rayon/admin_rayon; admin_system/superadmin→all).
 export const ROSTER_EDITORS = [
   UserRole.ADMIN_SYSTEM,
   UserRole.SUPERADMIN,
@@ -101,13 +105,13 @@ export const ROSTER_EDITORS = [
 ];
 
 // Phase 4-5 — data export. admin_system/superadmin export anything; kepala_rayon
-// is limited (in the service) to tasks/activities/overtime scoped to their rayon.
+// is limited (in the service) to tasks/activities/overtime scoped to their district.
 export const EXPORTERS = [UserRole.ADMIN_SYSTEM, UserRole.SUPERADMIN, UserRole.KEPALA_RAYON];
 
 // May 11, 2026 — extended per the user clarification:
 //  - `admin_rayon` can assign to themselves (centralized-recap pattern),
 //    to kepala_rayon (delegating up the chain isn't normal but legal for
-//    the rayon-level peer), and to korlap/satgas/linmas (field workers).
+//    the district-level peer), and to korlap/satgas/linmas (field workers).
 //  - `management` gains admin_rayon + kepala_rayon as legal targets so
 //    the top-mgmt → admin_rayon delegation chain (user point 5) works.
 //  - `kepala_rayon` gains admin_rayon + satgas + linmas (they previously

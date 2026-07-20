@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
- * Location summary within a rayon
+ * Location summary within a district
  */
 export class AreaSummaryDto {
   @ApiProperty({ example: 'area-uuid' })
@@ -36,7 +36,7 @@ export class AreaSummaryDto {
 }
 
 /**
- * Shift summary within a rayon
+ * Shift summary within a district
  */
 export class ShiftSummaryDto {
   @ApiProperty({ example: 'shift-uuid' })
@@ -62,10 +62,10 @@ export class ShiftSummaryDto {
 }
 
 /**
- * Rayon-level statistics DTO
+ * District-level statistics DTO
  */
-export class RayonStatsDto {
-  @ApiProperty({ example: 'rayon-uuid' })
+export class DistrictStatsDto {
+  @ApiProperty({ example: 'district-uuid' })
   id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })

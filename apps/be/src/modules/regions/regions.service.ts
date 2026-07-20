@@ -10,7 +10,7 @@ import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Not, Repository } from 'typeorm';
 import { Region } from './entities/region.entity';
-import { Rayon } from '../rayons/entities/rayon.entity';
+import { District } from '../districts/entities/district.entity';
 import { Location } from '../locations/entities/location.entity';
 import { CreateRegionDto } from './dto/create-region.dto';
 import { UpdateRegionDto } from './dto/update-region.dto';
@@ -21,32 +21,32 @@ import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-val
 /**
  * Regions (Kawasan) master data (ADR-045). Region delete nulls child areas'
  * `region_id` (soft-delete won't trigger the FK), and re-parenting an area into
- * a region requires the area and region to share a rayon.
+ * a region requires the area and region to share a district.
  */
 @Injectable()
 export class RegionsService {
   constructor(
     @InjectRepository(Region)
     private readonly regionRepo: Repository<Region>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepo: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepo: Repository<District>,
     @InjectRepository(Location)
     private readonly locationRepo: Repository<Location>,
   ) {}
 
   /** List regions; non-city-scope callers (kepala_rayon/admin_rayon/korlap)
-   * only ever see their own rayon's regions — mirroring the locations list.
+   * only ever see their own district's regions — mirroring the locations list.
    * Active-only by default (pickers/filters); the admin management grid passes
    * `includeInactive` so a deactivated kawasan stays reactivatable. */
-  findAll(requester: User, rayonId?: string, includeInactive = false): Promise<Region[]> {
-    let effectiveRayonId = rayonId;
+  findAll(requester: User, districtId?: string, includeInactive = false): Promise<Region[]> {
+    let effectiveDistrictId = districtId;
     if (!MONITORING_CITY.includes(requester.role as UserRole)) {
-      if (!requester.rayon_id) return Promise.resolve([]);
-      effectiveRayonId = requester.rayon_id;
+      if (!requester.district_id) return Promise.resolve([]);
+      effectiveDistrictId = requester.district_id;
     }
     return this.regionRepo.find({
       where: {
-        ...(effectiveRayonId ? { rayon_id: effectiveRayonId } : {}),
+        ...(effectiveDistrictId ? { district_id: effectiveDistrictId } : {}),
         ...(includeInactive ? {} : { is_active: true }),
       },
       order: { name: 'ASC' },
@@ -60,28 +60,28 @@ export class RegionsService {
   }
 
   async create(dto: CreateRegionDto): Promise<Region> {
-    await this.assertRayonExists(dto.rayon_id);
-    await this.assertNameFree(dto.rayon_id, dto.name);
+    await this.assertDistrictExists(dto.district_id);
+    await this.assertNameFree(dto.district_id, dto.name);
     const region = this.regionRepo.create(dto);
     return this.regionRepo.save(region);
   }
 
   async update(id: string, dto: UpdateRegionDto): Promise<Region> {
     const region = await this.findOne(id);
-    if (dto.rayon_id && dto.rayon_id !== region.rayon_id) {
-      await this.assertRayonExists(dto.rayon_id);
-      // Moving a region across rayons would break the `region.rayon_id ==
-      // location.rayon_id` invariant for its children — require detaching them
-      // first (locations can't follow: their rayon assignment is master data).
+    if (dto.district_id && dto.district_id !== region.district_id) {
+      await this.assertDistrictExists(dto.district_id);
+      // Moving a region across districts would break the `region.district_id ==
+      // location.district_id` invariant for its children — require detaching them
+      // first (locations can't follow: their district assignment is master data).
       const children = await this.locationRepo.count({ where: { region_id: id } });
       if (children > 0) {
         throw new BadRequestException(
-          'Region has assigned areas; detach or reassign them before moving the region to another rayon',
+          'Region has assigned areas; detach or reassign them before moving the region to another district',
         );
       }
     }
     if (dto.name && dto.name !== region.name) {
-      await this.assertNameFree(dto.rayon_id ?? region.rayon_id, dto.name, id);
+      await this.assertNameFree(dto.district_id ?? region.district_id, dto.name, id);
     }
     // Regions are drawn fresh in the editor as simple Polygons; validate them
     // like location boundaries (MultiPolygon isn't modelled by the validator).
@@ -99,7 +99,7 @@ export class RegionsService {
   /**
    * Deactivate a region (is_active=false) — reversible; distinct from delete.
    *
-   * Guarded like the rayon: a kawasan with active lokasi under it would vanish
+   * Guarded like the district: a kawasan with active lokasi under it would vanish
    * from every picker while its children kept referencing it. Note this is
    * deliberately stricter than `remove()`, which per ADR-045 detaches children
    * (`region_id = NULL`) rather than refusing — delete re-parents, deactivate
@@ -149,12 +149,12 @@ export class RegionsService {
     await this.regionRepo.softRemove(region);
   }
 
-  /** Re-parent areas into this region (all must share the region's rayon). */
+  /** Re-parent areas into this region (all must share the region's district). */
   /**
    * Set the region's areas to EXACTLY `locationIds` (replace semantics): selected
    * areas are re-parented in, and any area currently in this region but no longer
    * selected is un-parented (region_id → NULL). All selected areas must share the
-   * region's rayon. Passing an empty list clears the region's areas.
+   * region's district. Passing an empty list clears the region's areas.
    */
   async assignLocations(id: string, locationIds: string[]): Promise<{ updated: number }> {
     const region = await this.findOne(id);
@@ -164,10 +164,10 @@ export class RegionsService {
       if (areas.length !== locationIds.length) {
         throw new NotFoundException('One or more areas not found');
       }
-      const mismatched = areas.filter((a) => a.rayon_id !== region.rayon_id);
+      const mismatched = areas.filter((a) => a.district_id !== region.district_id);
       if (mismatched.length > 0) {
         throw new BadRequestException(
-          `Areas must belong to the region's rayon: ${mismatched.map((a) => a.name).join(', ')}`,
+          `Areas must belong to the region's district: ${mismatched.map((a) => a.name).join(', ')}`,
         );
       }
     }
@@ -191,19 +191,24 @@ export class RegionsService {
     return { updated: locationIds.length };
   }
 
-  private async assertRayonExists(rayonId: string): Promise<void> {
-    const exists = await this.rayonRepo.findOne({ where: { id: rayonId } });
-    if (!exists) throw new BadRequestException('Parent rayon not found');
+  private async assertDistrictExists(districtId: string): Promise<void> {
+    const exists = await this.districtRepo.findOne({ where: { id: districtId } });
+    if (!exists) throw new BadRequestException('Parent district not found');
   }
 
-  private async assertNameFree(rayonId: string, name: string, excludeId?: string): Promise<void> {
+  private async assertNameFree(
+    districtId: string,
+    name: string,
+    excludeId?: string,
+  ): Promise<void> {
     const clash = await this.regionRepo.findOne({
       where: {
-        rayon_id: rayonId,
+        district_id: districtId,
         name,
         ...(excludeId ? { id: Not(excludeId) } : {}),
       },
     });
-    if (clash) throw new ConflictException('A region with this name already exists in the rayon');
+    if (clash)
+      throw new ConflictException('A region with this name already exists in the district');
   }
 }

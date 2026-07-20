@@ -37,7 +37,7 @@ describe('AssetsService', () => {
     id: 'user-1',
     role: UserRole.KORLAP,
     location_id: 'area-1',
-    rayon_id: null,
+    district_id: null,
   } as unknown as User;
 
   const mockCategory = {
@@ -55,7 +55,7 @@ describe('AssetsService', () => {
     status: AssetStatus.AVAILABLE,
     condition: AssetCondition.GOOD,
     location_id: 'area-1',
-    rayon_id: 'rayon-1',
+    district_id: 'district-1',
     qr_code_url: null,
     photo_url: null,
     deleted_at: null,
@@ -108,7 +108,7 @@ describe('AssetsService', () => {
     };
 
     mockAreaRepo = {
-      findOne: jest.fn().mockResolvedValue({ id: 'area-1', rayon_id: 'rayon-1' }),
+      findOne: jest.fn().mockResolvedValue({ id: 'area-1', district_id: 'district-1' }),
     };
 
     mockQrCodeService = {
@@ -263,7 +263,7 @@ describe('AssetsService', () => {
       };
 
       mockCategoryRepo.findOne.mockResolvedValue(mockCategory);
-      mockAssetRepo.manager.findOne.mockResolvedValue({ id: 'rayon-1' });
+      mockAssetRepo.manager.findOne.mockResolvedValue({ id: 'district-1' });
       mockAssetRepo.create.mockReturnValue(mockAsset);
       mockAssetRepo.save.mockResolvedValue(mockAsset);
       mockQrCodeService.generate.mockResolvedValue('qr-code-key');
@@ -615,13 +615,15 @@ describe('AssetsService', () => {
     });
 
     it('should deny KEPALA_RAYON user viewing (not in ASSET_VIEWERS)', async () => {
-      const kepalaRayonUser = {
-        id: 'rayon-1',
+      const kepalaDistrictUser = {
+        id: 'district-1',
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       } as User;
 
-      await expect(service.findOne('asset-1', kepalaRayonUser)).rejects.toThrow(ForbiddenException);
+      await expect(service.findOne('asset-1', kepalaDistrictUser)).rejects.toThrow(
+        ForbiddenException,
+      );
     });
 
     it('should deny admin_system user viewing (not in ASSET_VIEWERS)', async () => {

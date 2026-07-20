@@ -1,5 +1,5 @@
 export * from './city-stats.dto';
-export * from './rayon-stats.dto';
+export * from './district-stats.dto';
 export * from './area-stats.dto';
 export * from './live-users.dto';
 export * from './location-history.dto';

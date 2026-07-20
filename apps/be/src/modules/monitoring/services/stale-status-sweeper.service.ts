@@ -95,7 +95,7 @@ export class StaleStatusSweeperService {
         void this.statusCalculator.notifyMissingWorker(
           record.user_id,
           record.location_id,
-          record.rayon_id,
+          record.district_id,
         );
       }
 

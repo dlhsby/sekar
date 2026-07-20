@@ -44,8 +44,10 @@ export class RegionsController {
 
   @Get()
   @RequirePermissions('region:read')
-  @ApiOperation({ summary: 'List regions (optionally filtered by rayon); active-only by default' })
-  @ApiQuery({ name: 'rayon_id', required: false })
+  @ApiOperation({
+    summary: 'List regions (optionally filtered by district); active-only by default',
+  })
+  @ApiQuery({ name: 'district_id', required: false })
   @ApiQuery({
     name: 'include_inactive',
     required: false,
@@ -58,10 +60,10 @@ export class RegionsController {
   @ApiResponse({ status: 200, type: [Region] })
   findAll(
     @GetUser() user: User,
-    @Query('rayon_id') rayonId?: string,
+    @Query('district_id') districtId?: string,
     @Query('include_inactive') includeInactive?: string,
   ): Promise<Region[]> {
-    return this.regionsService.findAll(user, rayonId, includeInactive === 'true');
+    return this.regionsService.findAll(user, districtId, includeInactive === 'true');
   }
 
   @Patch(':id/deactivate')
@@ -115,9 +117,9 @@ export class RegionsController {
 
   @Patch(':id/areas')
   @RequirePermissions('region:update')
-  @ApiOperation({ summary: 'Re-parent areas into this region (same rayon only)' })
+  @ApiOperation({ summary: 'Re-parent areas into this region (same district only)' })
   @ApiResponse({ status: 200, description: '{ updated: number }' })
-  @ApiResponse({ status: 400, description: 'Location rayon mismatch' })
+  @ApiResponse({ status: 400, description: 'Location district mismatch' })
   assignLocations(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignAreasDto,

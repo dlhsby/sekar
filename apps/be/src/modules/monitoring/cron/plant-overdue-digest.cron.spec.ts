@@ -14,15 +14,15 @@ describe('PlantOverdueDigestCron', () => {
   let notifications: { sendToUser: jest.Mock };
   let redisSet: jest.Mock;
 
-  const RAYON_A = 'rayon-a';
-  const RAYON_B = 'rayon-b';
+  const DISTRICT_A = 'district-a';
+  const DISTRICT_B = 'district-b';
 
   const summaryWithOverdue = {
     generated_at: new Date(),
-    rayons: [
+    districts: [
       {
-        rayon_id: RAYON_A,
-        rayon_name: 'Rayon Selatan',
+        district_id: DISTRICT_A,
+        district_name: 'Rayon Selatan',
         ok: 4,
         due_soon: 1,
         overdue: 3,
@@ -30,8 +30,8 @@ describe('PlantOverdueDigestCron', () => {
         overdue_areas: [{ location_id: 'a1', location_name: 'Taman Bungkul', overdue: 3 }],
       },
       {
-        rayon_id: RAYON_B,
-        rayon_name: 'Rayon Utara',
+        district_id: DISTRICT_B,
+        district_name: 'Rayon Utara',
         ok: 9,
         due_soon: 0,
         overdue: 0,
@@ -44,10 +44,18 @@ describe('PlantOverdueDigestCron', () => {
   const topManagement = {
     id: 'tm-1',
     role: UserRole.MANAGEMENT,
-    rayon_id: null,
+    district_id: null,
   } as unknown as User;
-  const kepalaA = { id: 'kr-a', role: UserRole.KEPALA_RAYON, rayon_id: RAYON_A } as unknown as User;
-  const kepalaB = { id: 'kr-b', role: UserRole.KEPALA_RAYON, rayon_id: RAYON_B } as unknown as User;
+  const kepalaA = {
+    id: 'kr-a',
+    role: UserRole.KEPALA_RAYON,
+    district_id: DISTRICT_A,
+  } as unknown as User;
+  const kepalaB = {
+    id: 'kr-b',
+    role: UserRole.KEPALA_RAYON,
+    district_id: DISTRICT_B,
+  } as unknown as User;
 
   beforeEach(async () => {
     userRepository = { find: jest.fn().mockResolvedValue([topManagement, kepalaA, kepalaB]) };
@@ -68,10 +76,10 @@ describe('PlantOverdueDigestCron', () => {
     cron = module.get(PlantOverdueDigestCron);
   });
 
-  it('should send nothing when no rayon has overdue plants', async () => {
+  it('should send nothing when no district has overdue plants', async () => {
     statusService.getSummary.mockResolvedValue({
       generated_at: new Date(),
-      rayons: [{ ...summaryWithOverdue.rayons[1] }],
+      districts: [{ ...summaryWithOverdue.districts[1] }],
     });
 
     const sent = await cron.sendDigest();
@@ -80,7 +88,7 @@ describe('PlantOverdueDigestCron', () => {
     expect(notifications.sendToUser).not.toHaveBeenCalled();
   });
 
-  it('should digest management for all overdue rayons', async () => {
+  it('should digest management for all overdue districts', async () => {
     await cron.sendDigest();
 
     const tmCall = notifications.sendToUser.mock.calls.find(
@@ -91,10 +99,10 @@ describe('PlantOverdueDigestCron', () => {
       type: NotificationType.AREA_PLANT_OVERDUE,
       title: 'Tanaman melewati jadwal perantingan',
     });
-    expect(tmCall![0].data.rayons).toHaveLength(1); // only rayon A is overdue
+    expect(tmCall![0].data.districts).toHaveLength(1); // only district A is overdue
   });
 
-  it('should digest kepala_rayon only for their own overdue rayon', async () => {
+  it('should digest kepala_rayon only for their own overdue district', async () => {
     const sent = await cron.sendDigest();
 
     expect(sent).toBe(2); // management + kepala A; kepala B is clean

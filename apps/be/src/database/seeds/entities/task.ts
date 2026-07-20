@@ -1,10 +1,10 @@
 import type { SeedContext } from '../lib/context';
-import { TASK_1_ID, RAYON_SELATAN_ID } from '../lib/ids';
+import { TASK_1_ID, DISTRICT_SELATAN_ID } from '../lib/ids';
 
 /**
  * Seed tasks (Section B).
  *
- * ~50 tasks across satgas (8+25), linmas (4), korlap (3), and rayon-scoped (4).
+ * ~50 tasks across satgas (8+25), linmas (4), korlap (3), and district-scoped (4).
  * Covers all task statuses (pending, assigned, accepted, in_progress, completed, declined, verified, revision_needed).
  */
 export async function seedTasks(ctx: SeedContext): Promise<void> {
@@ -40,7 +40,7 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
   );
   const taskTopMgmt = await ctx.qr.query(`SELECT id FROM users WHERE role = 'management' LIMIT 1`);
   const taskAreas = await ctx.qr.query(
-    `SELECT id FROM locations WHERE rayon_id = (SELECT id FROM rayons WHERE name = 'Rayon Pusat')
+    `SELECT id FROM locations WHERE district_id = (SELECT id FROM districts WHERE name = 'Rayon Pusat')
      ORDER BY name LIMIT 5`,
   );
 
@@ -77,8 +77,8 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
     const KORLAP_TASK_2_ID = 'e4f5a6b7-c8d9-4e0f-9a2b-2c3d4e5f6a7b';
     const KORLAP_TASK_3_ID = 'f5a6b7c8-d9e0-4f1a-8b3c-3d4e5f6a7b8c';
 
-    const RAYON_TASK_1_ID = 'a6b7c8d9-e0f1-4a2b-9c4d-4e5f6a7b8c9d';
-    const RAYON_TASK_2_ID = 'b7c8d9e0-f1a2-4b3c-8d5e-5f6a7b8c9d0e';
+    const DISTRICT_TASK_1_ID = 'a6b7c8d9-e0f1-4a2b-9c4d-4e5f6a7b8c9d';
+    const DISTRICT_TASK_2_ID = 'b7c8d9e0-f1a2-4b3c-8d5e-5f6a7b8c9d0e';
     const RAYON_TASK_3_ID = 'c8d9e0f1-a2b3-4c4d-ae6f-6a7b8c9d0e1f';
     const RAYON_TASK_4_ID = 'd9e0f1a2-b3c4-4d5e-bf7a-7b8c9d0e1f2a';
 
@@ -185,21 +185,21 @@ export async function seedTasks(ctx: SeedContext): Promise<void> {
 
     // Rayon-scoped + kepala_rayon tasks (2+2)
     await ctx.qr.query(`
-      INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, location_id, assigned_to, created_by, created_at, updated_at) VALUES
-        ('${RAYON_TASK_1_ID}', 'Audit Semua Location di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '7 days', '${RAYON_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW()),
-        ('${RAYON_TASK_2_ID}', 'Koordinasi Event Weekend Rayon', 'Persiapan event di semua taman dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '3 days', '${RAYON_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW())
+      INSERT INTO tasks (id, title, description, status, priority, deadline, district_id, location_id, assigned_to, created_by, created_at, updated_at) VALUES
+        ('${DISTRICT_TASK_1_ID}', 'Audit Semua Location di Rayon Selatan', 'Periksa kondisi fasilitas di seluruh area dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '7 days', '${DISTRICT_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW()),
+        ('${DISTRICT_TASK_2_ID}', 'Koordinasi Event Weekend Rayon', 'Persiapan event di semua taman dalam rayon.', 'pending', 'medium', NOW() + INTERVAL '3 days', '${DISTRICT_SELATAN_ID}', NULL, NULL, '${cId}', NOW(), NOW())
       ON CONFLICT (id) DO NOTHING;
     `);
     if (kId && tmId) {
       await ctx.qr.query(`
-        INSERT INTO tasks (id, title, description, status, priority, deadline, rayon_id, location_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
-          ('${RAYON_TASK_3_ID}', 'Laporan Bulanan Rayon Selatan', 'Compile laporan bulanan dari semua area di rayon.', 'assigned', 'high', NOW() + INTERVAL '5 days', '${RAYON_SELATAN_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '1 day', NOW(), NOW()),
-          ('${RAYON_TASK_4_ID}', 'Review Kinerja Korlap', 'Evaluasi kinerja korlap di rayon untuk kuartal ini.', 'in_progress', 'medium', NOW() + INTERVAL '5 days', '${RAYON_SELATAN_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW())
+        INSERT INTO tasks (id, title, description, status, priority, deadline, district_id, location_id, assigned_to, created_by, assigned_at, created_at, updated_at) VALUES
+          ('${RAYON_TASK_3_ID}', 'Laporan Bulanan Rayon Selatan', 'Compile laporan bulanan dari semua area di district.', 'assigned', 'high', NOW() + INTERVAL '5 days', '${DISTRICT_SELATAN_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '1 day', NOW(), NOW()),
+          ('${RAYON_TASK_4_ID}', 'Review Kinerja Korlap', 'Evaluasi kinerja korlap di district untuk kuartal ini.', 'in_progress', 'medium', NOW() + INTERVAL '5 days', '${DISTRICT_SELATAN_ID}', NULL, '${kId}', '${tmId}', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day', NOW())
         ON CONFLICT (id) DO NOTHING;
       `);
-      ctx.log('  ✓ Created 4 rayon-scoped tasks (2 plain + 2 kepala_rayon)');
+      ctx.log('  ✓ Created 4 district-scoped tasks (2 plain + 2 kepala_rayon)');
     } else {
-      ctx.log('  ✓ Created 2 rayon-scoped tasks');
+      ctx.log('  ✓ Created 2 district-scoped tasks');
     }
 
     // 25 extended tasks for scroll/filter testing (IDs via gen_random_uuid — Section B DELETE clears first)

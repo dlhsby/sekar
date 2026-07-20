@@ -43,7 +43,7 @@ describe('StatusCalculatorService', () => {
       getAreaBoundary: jest.fn().mockResolvedValue(null),
       // 5.4e: geofence is scope-generic. Route 'location' to the existing
       // getAreaBoundary mock so its per-test overrides still drive lokasi checks;
-      // region/rayon boundaries default to null (fail-open) unless a test sets them.
+      // region/district boundaries default to null (fail-open) unless a test sets them.
       getBoundary: jest.fn((scope: string, id: string) =>
         scope === 'location'
           ? (cacheService.getAreaBoundary as jest.Mock)(id)
@@ -389,7 +389,7 @@ describe('StatusCalculatorService', () => {
 
     it('should broadcast user-left-area via WebSocket when transitioning outside', async () => {
       const mockUser = { id: 'user-1', full_name: 'Test User', role: 'satgas' };
-      const mockArea = { id: 'area-1', name: 'Test Location', rayon_id: 'rayon-1' };
+      const mockArea = { id: 'area-1', name: 'Test Location', district_id: 'district-1' };
 
       trackingRepository.findOne.mockResolvedValue({
         user_id: 'user-1',
@@ -471,7 +471,7 @@ describe('StatusCalculatorService', () => {
         ),
       );
       userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'T', role: 'satgas' });
-      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', rayon_id: 'r1' });
+      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', district_id: 'r1' });
 
       await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
 
@@ -527,7 +527,7 @@ describe('StatusCalculatorService', () => {
         ),
       );
       userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'M', role: 'satgas' });
-      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', rayon_id: 'r1' });
+      areaRepository.findOne.mockResolvedValue({ id: 'area-1', name: 'A', district_id: 'r1' });
 
       await service.onLocationPing('user-1', -7.5, 112.9, 10, 80, new Date());
 
@@ -726,7 +726,7 @@ describe('StatusCalculatorService', () => {
       return mod.get(StatusCalculatorService);
     };
 
-    it('notifies kepala_rayon of the rayon in addition to korlap', async () => {
+    it('notifies kepala_rayon of the district in addition to korlap', async () => {
       const sendToUser = jest.fn().mockResolvedValue({});
       const svc = await buildWithNotificationsAndRedis(sendToUser, 'OK');
 
@@ -734,9 +734,9 @@ describe('StatusCalculatorService', () => {
       userRepository.find = jest
         .fn()
         .mockResolvedValueOnce([{ id: 'korlap-1' }]) // korlap (area)
-        .mockResolvedValueOnce([{ id: 'kepala-1' }]); // kepala_rayon (rayon)
+        .mockResolvedValueOnce([{ id: 'kepala-1' }]); // kepala_rayon (district)
 
-      await svc.notifyMissingWorker('user-1', 'area-1', 'rayon-1');
+      await svc.notifyMissingWorker('user-1', 'area-1', 'district-1');
 
       const recipients = sendToUser.mock.calls.map((c) => c[0].user_id).sort();
       expect(recipients).toEqual(['kepala-1', 'korlap-1']);
@@ -749,7 +749,7 @@ describe('StatusCalculatorService', () => {
       userRepository.findOne.mockResolvedValue({ id: 'user-1', full_name: 'Bob' });
       userRepository.find = jest.fn().mockResolvedValue([{ id: 'korlap-1' }]);
 
-      await svc.notifyMissingWorker('user-1', 'area-1', 'rayon-1');
+      await svc.notifyMissingWorker('user-1', 'area-1', 'district-1');
 
       expect(sendToUser).not.toHaveBeenCalled();
     });

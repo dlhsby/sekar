@@ -118,7 +118,7 @@ describe('UsersController', () => {
       });
     });
 
-    it('should pass admin_rayon user context for rayon filtering', async () => {
+    it('should pass admin_rayon user context for district filtering', async () => {
       const adminDataUser: User = {
         id: 'admin-data-uuid',
         username: 'admindata1',
@@ -127,7 +127,7 @@ describe('UsersController', () => {
         phone_number: null,
         profile_picture_url: null,
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'rayon-uuid-1',
+        district_id: 'district-uuid-1',
         is_active: true,
         password_must_change: false,
         created_at: new Date(),
@@ -149,16 +149,16 @@ describe('UsersController', () => {
       });
     });
 
-    it('should pass kepala_rayon user context for rayon filtering', async () => {
-      const kepalaRayonUser: User = {
-        id: 'kepala-rayon-uuid',
+    it('should pass kepala_rayon user context for district filtering', async () => {
+      const kepalaDistrictUser: User = {
+        id: 'kepala-district-uuid',
         username: 'kepalarayon1',
         password_hash: 'hashedpassword',
         full_name: 'Kepala Rayon One',
         phone_number: null,
         profile_picture_url: null,
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-uuid-2',
+        district_id: 'district-uuid-2',
         is_active: true,
         password_must_change: false,
         created_at: new Date(),
@@ -171,10 +171,10 @@ describe('UsersController', () => {
       };
       mockUsersService.findAllPaginated.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 50 }, kepalaRayonUser);
+      const result = await controller.findAll({ page: 1, limit: 50 }, kepalaDistrictUser);
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaRayonUser, {
+      expect(mockUsersService.findAllPaginated).toHaveBeenCalledWith(1, 50, kepalaDistrictUser, {
         search: undefined,
         roles: undefined,
       });

@@ -2,7 +2,7 @@ import type { SeedContext } from '../lib/context';
 import {
   ADMIN_USER_ID,
   RESET_TEST_USER_ID,
-  RAYON_SELATAN_ID,
+  DISTRICT_SELATAN_ID,
   RAYON_UTARA_ID,
   RAYON_PUSAT_ID,
   RAYON_TIMUR1_ID,
@@ -30,11 +30,11 @@ import { loadSeedUsers } from '../load-seed-data';
  * Seed users (mode-dependent):
  *
  * Demo: ~60 users (Phase 1 + Phase 2 + Phase 3 test users). Combines superadmin,
- * resettest, per-rayon managers (korlap/admin_rayon), field workers (satgas/linmas),
+ * resettest, per-district managers (korlap/admin_rayon), field workers (satgas/linmas),
  * and 31 staff_kecamatan users.
  *
- * Staging: 1125 users. Superadmin + admin system + top management + per-rayon
- * dummies (14 test per rayon = ~140) + real roster from CSV (~1041) + 31
+ * Staging: 1125 users. Superadmin + admin system + top management + per-district
+ * dummies (14 test per district = ~140) + real roster from CSV (~1041) + 31
  * staff_kecamatan. Full UAT dataset.
  */
 export async function seedUsers(ctx: SeedContext): Promise<void> {
@@ -73,8 +73,8 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const USER_JIHAN_ID = '56d4e5f6-a7b8-4090-1234-567879809102';
     const USER_DENI_ID = '56e5f6a7-b8c9-4101-2345-678980910213';
     const USER_AGUS_ID = '56f6a7b8-c9d0-4212-3456-789091021324';
-    // Per-rayon dummies: 5 roles × 6 non-Pusat rayons = 30 stable ids.
-    const PER_RAYON_USER_IDS = [
+    // Per-district dummies: 5 roles × 6 non-Pusat districts = 30 stable ids.
+    const PER_DISTRICT_USER_IDS = [
       '5a010101-0000-4001-8001-000000000001',
       '5a010102-0000-4001-8001-000000000002',
       '5a010103-0000-4001-8001-000000000003',
@@ -110,7 +110,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // Resolve real Pusat + Timur 2 locations for the dummy assignments.
     const pusatDummyAreaIds: string[] = (
       (await ctx.qr.query(
-        `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
+        `SELECT id FROM locations WHERE district_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 12`,
         [RAYON_PUSAT_ID],
       )) as Array<{ id: string }>
     ).map((r) => r.id);
@@ -118,7 +118,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const timur2DummyAreaId =
       (
         (await ctx.qr.query(
-          `SELECT id FROM locations WHERE rayon_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
+          `SELECT id FROM locations WHERE district_id = $1 AND deleted_at IS NULL ORDER BY name LIMIT 1`,
           [RAYON_TIMUR2_ID],
         )) as Array<{ id: string }>
       )[0]?.id ?? null;
@@ -131,13 +131,13 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       fullName: string,
       role: string,
       phone: string,
-      rayonId: string | null = null,
+      districtId: string | null = null,
       areaId: string | null = null,
       kecamatanName: string | null = null,
       opts: { passwordHash?: string; mustChange?: boolean } = {},
     ) => {
       const result = await ctx.qr.query(
-        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, kecamatan_name, is_active, password_must_change)
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, district_id, location_id, kecamatan_name, is_active, password_must_change)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, TRUE, $10)
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,
@@ -148,7 +148,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
           fullName,
           phone,
           role,
-          rayonId,
+          districtId,
           areaId,
           kecamatanName,
           opts.mustChange ?? true,
@@ -340,26 +340,26 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       'Tegalsari',
     );
 
-    // Per-rayon dummy matrix (5 roles × 6 non-Pusat rayons = 30).
-    const perRayonRoster: Array<{
+    // Per-district dummy matrix (5 roles × 6 non-Pusat districts = 30).
+    const perDistrictRoster: Array<{
       slug: string;
-      rayonId: string;
+      districtId: string;
       label: string;
       defaultAreaId: string | null;
     }> = [
-      { slug: 'selatan', rayonId: RAYON_SELATAN_ID, label: 'Selatan', defaultAreaId: null },
-      { slug: 'utara', rayonId: RAYON_UTARA_ID, label: 'Utara', defaultAreaId: null },
-      { slug: 'timur_1', rayonId: RAYON_TIMUR1_ID, label: 'Timur 1', defaultAreaId: null },
+      { slug: 'selatan', districtId: DISTRICT_SELATAN_ID, label: 'Selatan', defaultAreaId: null },
+      { slug: 'utara', districtId: RAYON_UTARA_ID, label: 'Utara', defaultAreaId: null },
+      { slug: 'timur_1', districtId: RAYON_TIMUR1_ID, label: 'Timur 1', defaultAreaId: null },
       {
         slug: 'timur_2',
-        rayonId: RAYON_TIMUR2_ID,
+        districtId: RAYON_TIMUR2_ID,
         label: 'Timur 2',
         defaultAreaId: timur2DummyAreaId,
       },
-      { slug: 'barat_1', rayonId: RAYON_BARAT1_ID, label: 'Barat 1', defaultAreaId: null },
-      { slug: 'barat_2', rayonId: RAYON_BARAT2_ID, label: 'Barat 2', defaultAreaId: null },
+      { slug: 'barat_1', districtId: RAYON_BARAT1_ID, label: 'Barat 1', defaultAreaId: null },
+      { slug: 'barat_2', districtId: RAYON_BARAT2_ID, label: 'Barat 2', defaultAreaId: null },
     ];
-    const PER_RAYON_ROLES: Array<{
+    const PER_DISTRICT_ROLES: Array<{
       role: string;
       usernamePrefix: string;
       fullNamePrefix: string;
@@ -381,25 +381,25 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       { role: 'satgas', usernamePrefix: 'satgas', fullNamePrefix: 'Satgas', assignArea: true },
       { role: 'linmas', usernamePrefix: 'linmas', fullNamePrefix: 'Linmas', assignArea: true },
     ];
-    let perRayonIdx = 0;
-    let perRayonPhone = 30;
-    for (const roleDef of PER_RAYON_ROLES) {
-      for (const r of perRayonRoster) {
+    let perDistrictIdx = 0;
+    let perDistrictPhone = 30;
+    for (const roleDef of PER_DISTRICT_ROLES) {
+      for (const r of perDistrictRoster) {
         const username = `${roleDef.usernamePrefix}_${r.slug}_1`;
         const fullName = `${roleDef.fullNamePrefix} ${r.label} Satu`;
-        const phone = `0812000${String(perRayonPhone).padStart(5, '0')}`;
+        const phone = `0812000${String(perDistrictPhone).padStart(5, '0')}`;
         const areaId = roleDef.assignArea ? r.defaultAreaId : null;
         await insertUser(
-          PER_RAYON_USER_IDS[perRayonIdx],
+          PER_DISTRICT_USER_IDS[perDistrictIdx],
           username,
           fullName,
           roleDef.role,
           phone,
-          r.rayonId,
+          r.districtId,
           areaId,
         );
-        perRayonIdx += 1;
-        perRayonPhone += 1;
+        perDistrictIdx += 1;
+        perDistrictPhone += 1;
       }
     }
 
@@ -500,13 +500,13 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     const tamanAktifAreaIdByName = new Map<string, string>(
       (
-        (await ctx.qr.query(`SELECT id, name FROM locations WHERE rayon_id = $1`, [
+        (await ctx.qr.query(`SELECT id, name FROM locations WHERE district_id = $1`, [
           RAYON_TAMAN_AKTIF_ID,
         ])) as Array<{ id: string; name: string }>
       ).map((r) => [r.name, r.id]),
     );
     for (const u of roster) {
-      const rayonId = RAYON_ID_BY_CODE[u.rayon_code] ?? null;
+      const districtId = RAYON_ID_BY_CODE[u.rayon_code] ?? null;
       let phone: string | null = u.phone || null;
       if (phone && existingPhones.has(phone)) phone = null;
       if (phone) existingPhones.add(phone);
@@ -521,13 +521,13 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       // by a DIFFERENT username, mint a fresh one instead of hitting users_pkey.
       // Non-colliding rows keep their deterministic id.
       await ctx.qr.query(
-        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active, password_must_change)
+        `INSERT INTO users (id, username, password_hash, full_name, phone_number, role, district_id, location_id, is_active, password_must_change)
          VALUES (
            CASE WHEN EXISTS (SELECT 1 FROM users WHERE id = $1::uuid AND username <> $2)
                 THEN gen_random_uuid() ELSE $1::uuid END,
            $2, $3, $4, $5, $6, $7, $8, TRUE, TRUE)
          ON CONFLICT (username) DO NOTHING`,
-        [u.id, u.username, PASSWORD_HASH, u.full_name, phone, u.role, rayonId, primaryAreaId],
+        [u.id, u.username, PASSWORD_HASH, u.full_name, phone, u.role, districtId, primaryAreaId],
       );
       const uidRows = (await ctx.qr.query(`SELECT id FROM users WHERE username = $1`, [
         u.username,
@@ -547,15 +547,15 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     // Per-kecamatan staff_kecamatan_<code>_1 (31), from the seeded kecamatans.
     const kecRows = (await ctx.qr.query(
-      `SELECT id, name, code, rayon_id FROM kecamatans ORDER BY name`,
-    )) as Array<{ id: string; name: string; code: string; rayon_id: string }>;
+      `SELECT id, name, code, district_id FROM kecamatans ORDER BY name`,
+    )) as Array<{ id: string; name: string; code: string; district_id: string }>;
     let kecPhoneSeq = 100;
     for (const k of kecRows) {
       const username = `staff_kecamatan_${k.code}_1`;
       const phone = `0812000${String(kecPhoneSeq).padStart(5, '0')}`;
       kecPhoneSeq += 1;
       await ctx.qr.query(
-        `INSERT INTO users (username, password_hash, full_name, phone_number, role, rayon_id, location_id, kecamatan_name, kecamatan_id, is_active, password_must_change)
+        `INSERT INTO users (username, password_hash, full_name, phone_number, role, district_id, location_id, kecamatan_name, kecamatan_id, is_active, password_must_change)
          VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, $7, TRUE, TRUE)
          ON CONFLICT (username) DO NOTHING`,
         [
@@ -563,7 +563,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
           PASSWORD_HASH,
           `Staff Kecamatan ${k.name} Satu`,
           phone,
-          k.rayon_id,
+          k.district_id,
           k.name,
           k.id,
         ],
@@ -573,7 +573,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       `UPDATE users u SET kecamatan_id = k.id FROM kecamatans k WHERE u.role = 'staff_kecamatan' AND u.kecamatan_id IS NULL AND u.kecamatan_name IS NOT NULL AND lower(k.name) = lower(u.kecamatan_name)`,
     );
     await ctx.qr.query(
-      `UPDATE users u SET rayon_id = k.rayon_id FROM kecamatans k WHERE u.role = 'staff_kecamatan' AND u.kecamatan_id = k.id AND (u.rayon_id IS DISTINCT FROM k.rayon_id)`,
+      `UPDATE users u SET district_id = k.district_id FROM kecamatans k WHERE u.role = 'staff_kecamatan' AND u.kecamatan_id = k.id AND (u.district_id IS DISTINCT FROM k.district_id)`,
     );
     ctx.log('  ✓ 31 per-kecamatan staff_kecamatan users');
 
@@ -582,9 +582,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       `UPDATE users SET shift_definition_id = $1 WHERE role IN ('satgas', 'linmas', 'korlap') AND deleted_at IS NULL`,
       [SHIFT_1_ID],
     );
-    // STEP 10: derive rayon_id for field workers from their area.
+    // STEP 10: derive district_id for field workers from their area.
     await ctx.qr.query(
-      `UPDATE users u SET rayon_id = a.rayon_id FROM locations a WHERE u.location_id = a.id AND u.rayon_id IS NULL AND u.role IN ('satgas', 'linmas', 'korlap')`,
+      `UPDATE users u SET district_id = a.district_id FROM locations a WHERE u.location_id = a.id AND u.district_id IS NULL AND u.role IN ('satgas', 'linmas', 'korlap')`,
     );
     ctx.log('✅ Staging users seeding complete');
   } else {
@@ -664,9 +664,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     // Initial Phase 2C users (11)
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, district_id, location_id, is_active) VALUES
       ('${USER_PHASE2_1_ID}', 'management_1', '${passwordHash}', 'Management Satu', '081234567890', 'management', NULL, NULL, TRUE),
-      ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan_1', '${passwordHash}', 'Kepala Rayon Selatan Satu', '081234567891', 'kepala_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
+      ('${USER_PHASE2_2_ID}', 'kepala_rayon_selatan_1', '${passwordHash}', 'Kepala Rayon Selatan Satu', '081234567891', 'kepala_rayon', '${DISTRICT_SELATAN_ID}', NULL, TRUE),
       ('${USER_PHASE2_3_ID}', 'kepala_rayon_utara_1', '${passwordHash}', 'Kepala Rayon Utara Satu', '081234567892', 'kepala_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_PHASE2_4_ID}', 'korlap_pusat_1', '${passwordHash}', 'Korlap Pusat Satu', '081234567893', 'korlap', NULL, '${DEMO_PUSAT_AREA_3}', TRUE),
       ('${USER_LINMAS_BUNGKUL_1_ID}', 'linmas_pusat_1', '${passwordHash}', 'Linmas Pusat Satu', '081234567894', 'linmas', NULL, NULL, TRUE),
@@ -687,9 +687,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     ctx.log('  ✓ Seeded 17 Phase 2C users (incl. taman_aktif role matrix)');
 
-    // 15 users for 5 missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)
+    // 15 users for 5 missing districts (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, district_id, location_id, is_active) VALUES
       ('${USER_NEW_1_ID}',  'kepala_rayon_pusat_1',  '${passwordHash}', 'Kepala Rayon Pusat Satu',   '081300000001', 'kepala_rayon', '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_NEW_2_ID}',  'satgas_pusat_1',      '${passwordHash}', 'Satgas Pusat Satu',    '081300000002', 'satgas',       '${RAYON_PUSAT_ID}', NULL, TRUE),
       ('${USER_NEW_3_ID}',  'satgas_pusat_2',      '${passwordHash}', 'Satgas Pusat Dua',     '081300000003', 'satgas',       '${RAYON_PUSAT_ID}', NULL, TRUE),
@@ -708,18 +708,18 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     ON CONFLICT (username) DO NOTHING;
   `);
 
-    ctx.log('  ✓ Seeded 15 users for missing rayons (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)');
+    ctx.log('  ✓ Seeded 15 users for missing districts (PUSAT, TIMUR1, TIMUR2, BARAT1, BARAT2)');
 
-    // 12 users: admin_rayon + korlap for 6 remaining rayons
+    // 12 users: admin_rayon + korlap for 6 remaining districts
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
-      ('${USER_ADMIN_RAYON_SELATAN_ID}', 'admin_rayon_selatan_1', '${passwordHash}', 'Admin Rayon Selatan Satu', '081300000018', 'admin_rayon', '${RAYON_SELATAN_ID}', NULL, TRUE),
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, district_id, location_id, is_active) VALUES
+      ('${USER_ADMIN_RAYON_SELATAN_ID}', 'admin_rayon_selatan_1', '${passwordHash}', 'Admin Rayon Selatan Satu', '081300000018', 'admin_rayon', '${DISTRICT_SELATAN_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_UTARA_ID}',   'admin_rayon_utara_1',   '${passwordHash}', 'Admin Rayon Utara Satu',   '081300000019', 'admin_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_TIMUR1_ID}',  'admin_rayon_timur_1_1',  '${passwordHash}', 'Admin Rayon Timur 1 Satu', '081300000020', 'admin_rayon', '${RAYON_TIMUR1_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_TIMUR2_ID}',  'admin_rayon_timur_2_1',  '${passwordHash}', 'Admin Rayon Timur 2 Satu', '081300000021', 'admin_rayon', '${RAYON_TIMUR2_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_BARAT1_ID}',  'admin_rayon_barat_1_1',  '${passwordHash}', 'Admin Rayon Barat 1 Satu', '081300000022', 'admin_rayon', '${RAYON_BARAT1_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_BARAT2_ID}',  'admin_rayon_barat_2_1',  '${passwordHash}', 'Admin Rayon Barat 2 Satu', '081300000023', 'admin_rayon', '${RAYON_BARAT2_ID}', NULL, TRUE),
-      ('${USER_KORLAP_HARMONI_ID}', 'korlap_selatan_1', '${passwordHash}', 'Korlap Selatan Satu', '081300000024', 'korlap', '${RAYON_SELATAN_ID}', NULL, TRUE),
+      ('${USER_KORLAP_HARMONI_ID}', 'korlap_selatan_1', '${passwordHash}', 'Korlap Selatan Satu', '081300000024', 'korlap', '${DISTRICT_SELATAN_ID}', NULL, TRUE),
       ('${USER_KORLAP_UTARA_ID}',   'korlap_utara_1',   '${passwordHash}', 'Korlap Utara Satu',   '081300000025', 'korlap', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur_1_1',  '${passwordHash}', 'Korlap Timur 1 Satu', '081300000026', 'korlap', '${RAYON_TIMUR1_ID}', NULL, TRUE),
       ('${USER_KORLAP_TIMUR2_ID}',  'korlap_timur_2_1',  '${passwordHash}', 'Korlap Timur 2 Satu', '081300000027', 'korlap', '${RAYON_TIMUR2_ID}', NULL, TRUE),
@@ -728,14 +728,14 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     ON CONFLICT (username) DO NOTHING;
   `);
 
-    ctx.log('  ✓ Seeded 12 admin_rayon + korlap users for 6 remaining rayons');
+    ctx.log('  ✓ Seeded 12 admin_rayon + korlap users for 6 remaining districts');
 
-    // 8 fill-in users: satgas Selatan/Utara + linmas for all 6 non-Pusat rayons
+    // 8 fill-in users: satgas Selatan/Utara + linmas for all 6 non-Pusat districts
     await ctx.qr.query(`
-    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active) VALUES
-      ('5a020001-0000-4002-8001-000000000001', 'satgas_selatan_1',  '${passwordHash}', 'Satgas Selatan Satu',  '081300000030', 'satgas', '${RAYON_SELATAN_ID}', NULL, TRUE),
+    INSERT INTO users (id, username, password_hash, full_name, phone_number, role, district_id, location_id, is_active) VALUES
+      ('5a020001-0000-4002-8001-000000000001', 'satgas_selatan_1',  '${passwordHash}', 'Satgas Selatan Satu',  '081300000030', 'satgas', '${DISTRICT_SELATAN_ID}', NULL, TRUE),
       ('5a020002-0000-4002-8001-000000000002', 'satgas_utara_1',    '${passwordHash}', 'Satgas Utara Satu',    '081300000031', 'satgas', '${RAYON_UTARA_ID}', NULL, TRUE),
-      ('5a020003-0000-4002-8002-000000000003', 'linmas_selatan_1',  '${passwordHash}', 'Linmas Selatan Satu',  '081300000032', 'linmas', '${RAYON_SELATAN_ID}', NULL, TRUE),
+      ('5a020003-0000-4002-8002-000000000003', 'linmas_selatan_1',  '${passwordHash}', 'Linmas Selatan Satu',  '081300000032', 'linmas', '${DISTRICT_SELATAN_ID}', NULL, TRUE),
       ('5a020004-0000-4002-8002-000000000004', 'linmas_utara_1',    '${passwordHash}', 'Linmas Utara Satu',    '081300000033', 'linmas', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('5a020005-0000-4002-8002-000000000005', 'linmas_timur_1_1',  '${passwordHash}', 'Linmas Timur 1 Satu',  '081300000034', 'linmas', '${RAYON_TIMUR1_ID}', NULL, TRUE),
       ('5a020006-0000-4002-8002-000000000006', 'linmas_timur_2_1',  '${passwordHash}', 'Linmas Timur 2 Satu',  '081300000035', 'linmas', '${RAYON_TIMUR2_ID}', '${DEMO_BUK_TONG_ID}', TRUE),
@@ -752,7 +752,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     const STAFF_KEC_PWD_HASH = DEFAULT_PASSWORD_HASH;
 
     // May 2026 — one staff_kecamatan user per kecamatan (31 total) so the
-    // submit form can pre-fill rayon + kecamatan from the logged-in user.
+    // submit form can pre-fill district + kecamatan from the logged-in user.
     // Username pattern: `staff_kecamatan_<code>_<n>` (e.g.
     // `staff_kecamatan_tegalsari_1`)
     const kecBlueprint: Array<[string, string, string, string]> = [
@@ -795,9 +795,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ['Karang Pilang', 'karang_pilang', 'SELATAN', 'selatan'],
     ];
 
-    // Build map from rayon code to rayon ID for lookups
-    const codeToRayonId: Record<string, string> = {
-      SELATAN: RAYON_SELATAN_ID,
+    // Build map from district code to district ID for lookups
+    const codeToDistrictId: Record<string, string> = {
+      SELATAN: DISTRICT_SELATAN_ID,
       UTARA: RAYON_UTARA_ID,
       PUSAT: RAYON_PUSAT_ID,
       TIMUR1: RAYON_TIMUR1_ID,
@@ -812,15 +812,15 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       const fullName = `Staff Kecamatan ${_name} Satu`;
       const phone = `0812000${String(phoneSeq).padStart(5, '0')}`;
       phoneSeq += 1;
-      const rayonId = codeToRayonId[rcode];
+      const districtId = codeToDistrictId[rcode];
 
       await ctx.qr.query(
         `INSERT INTO users
          (username, password_hash, full_name, phone_number,
-          role, rayon_id, location_id, kecamatan_name, is_active)
+          role, district_id, location_id, kecamatan_name, is_active)
        VALUES ($1, $2, $3, $4, 'staff_kecamatan', $5, NULL, $6, TRUE)
        ON CONFLICT (username) DO NOTHING`,
-        [username, STAFF_KEC_PWD_HASH, fullName, phone, rayonId, _name],
+        [username, STAFF_KEC_PWD_HASH, fullName, phone, districtId, _name],
       );
     }
 
@@ -837,7 +837,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       `UPDATE users SET location_id = '${DEMO_PUSAT_AREA_2}' WHERE username = 'satgas_pusat_2';`,
     );
     await ctx.qr.query(`
-    UPDATE users SET rayon_id = '${RAYON_TIMUR2_ID}', location_id = '${DEMO_BUK_TONG_ID}'
+    UPDATE users SET district_id = '${RAYON_TIMUR2_ID}', location_id = '${DEMO_BUK_TONG_ID}'
     WHERE username = 'satgas_timur_1_2';
   `);
     await ctx.qr.query(`
@@ -853,9 +853,9 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
 
     // ==========================================
-    // STEP 8.5: Assign location_id + rayon_id to field workers missing them.
+    // STEP 8.5: Assign location_id + district_id to field workers missing them.
     // ==========================================
-    ctx.log('📍 Assigning location_id and rayon_id to field workers...');
+    ctx.log('📍 Assigning location_id and district_id to field workers...');
     await ctx.qr.query(
       `UPDATE users SET location_id = $1
      WHERE username IN ('korlap_pusat_1', 'linmas_pusat_1')
@@ -870,10 +870,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     );
     await ctx.qr.query(`
     UPDATE users u
-    SET rayon_id = a.rayon_id
+    SET district_id = a.district_id
     FROM locations a
     WHERE u.location_id = a.id
-      AND u.rayon_id IS NULL
+      AND u.district_id IS NULL
       AND u.role IN ('satgas', 'linmas', 'korlap');
   `);
     await ctx.qr.query(
@@ -881,7 +881,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
      WHERE username = 'korlap_timur_2_1' AND location_id IS NULL`,
       [DEMO_BUK_TONG_ID],
     );
-    ctx.log('  ✓ Assigned location_id + rayon_id to field workers');
+    ctx.log('  ✓ Assigned location_id + district_id to field workers');
 
     // ==========================================
     // STEP 9: Assign each worker a default shift

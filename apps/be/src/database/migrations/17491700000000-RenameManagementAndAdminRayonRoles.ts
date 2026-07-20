@@ -13,8 +13,8 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * `lainnya_admin_rayon` (activities reference activity_types by id, not slug, so
  * this is reference-safe). Idempotent + guarded — safe on live staging.
  */
-export class RenameManagementAndAdminRayonRoles17491700000000 implements MigrationInterface {
-  name = 'RenameManagementAndAdminRayonRoles17491700000000';
+export class RenameManagementAndAdminDistrictRoles17491700000000 implements MigrationInterface {
+  name = 'RenameManagementAndAdminDistrictRoles17491700000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. Drop the three role CHECK constraints so the rows can be renamed.

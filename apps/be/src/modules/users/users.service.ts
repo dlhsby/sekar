@@ -48,7 +48,7 @@ export class UsersService {
     private readonly userValidation: UserValidationService,
     // Phase 4-4 (C2): account mutations are audit-logged
     private readonly auditLogService: AuditLogService,
-    // Simplified assignment: rayon + permanent areas + one shift set in user mgmt
+    // Simplified assignment: district + permanent areas + one shift set in user mgmt
     private readonly userAreasService: UserLocationsService,
   ) {}
 
@@ -57,13 +57,13 @@ export class UsersService {
    * code is checked against the data-driven `roles` table (replaces the static
    * enum/CHECK constraint; undefined role is allowed — create falls back to the
    * column default). Scope rules: a
-   * district/region-scope role needs a rayon; a region assignment is only valid
-   * for region/location-scope roles and must belong to the user's rayon.
+   * district/region-scope role needs a district; a region assignment is only valid
+   * for region/location-scope roles and must belong to the user's district.
    * Returns the role's monitoring_scope so callers can reconcile stale fields.
    */
   private async assertScopeConsistent(effective: {
     role?: string;
-    rayon_id?: string | null;
+    district_id?: string | null;
     region_id?: string | null;
   }): Promise<string | undefined> {
     let scope: string | undefined;
@@ -71,8 +71,8 @@ export class UsersService {
       const roleRow = await this.roleRepository.findOne({ where: { code: effective.role } });
       if (!roleRow) throw new BadRequestException(`Unknown role: ${effective.role}`);
       scope = roleRow.monitoring_scope;
-      if ((scope === 'district' || scope === 'region') && !effective.rayon_id) {
-        throw new BadRequestException(`Role '${effective.role}' requires a rayon assignment`);
+      if ((scope === 'district' || scope === 'region') && !effective.district_id) {
+        throw new BadRequestException(`Role '${effective.role}' requires a district assignment`);
       }
       if (effective.region_id && scope !== 'region' && scope !== 'location') {
         throw new BadRequestException(
@@ -82,12 +82,12 @@ export class UsersService {
     }
     if (effective.region_id) {
       const rows = (await this.userRepository.manager.query(
-        `SELECT rayon_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
+        `SELECT district_id FROM regions WHERE id = $1 AND deleted_at IS NULL`,
         [effective.region_id],
-      )) as Array<{ rayon_id: string }>;
+      )) as Array<{ district_id: string }>;
       if (rows.length === 0) throw new BadRequestException('Region not found');
-      if (!effective.rayon_id || rows[0].rayon_id !== effective.rayon_id) {
-        throw new BadRequestException("Region must belong to the user's rayon");
+      if (!effective.district_id || rows[0].district_id !== effective.district_id) {
+        throw new BadRequestException("Region must belong to the user's district");
       }
     }
     return scope;
@@ -113,7 +113,7 @@ export class UsersService {
       full_name,
       role,
       phone_number,
-      rayon_id,
+      district_id,
       region_id,
       shift_definition_id,
     } = createUserDto;
@@ -121,7 +121,7 @@ export class UsersService {
 
     this.logger.log(`Creating new user: ${username}`);
 
-    await this.assertScopeConsistent({ role, rayon_id, region_id });
+    await this.assertScopeConsistent({ role, district_id, region_id });
     await this.userValidation.assertUsernameAvailable(username);
     if (phone_number) {
       await this.userValidation.assertPhoneAvailable(phone_number);
@@ -144,7 +144,7 @@ export class UsersService {
       role: role as UserRole,
       phone_number: phone_number || null,
       password_must_change: true,
-      rayon_id: rayon_id ?? undefined,
+      district_id: district_id ?? undefined,
       region_id: region_id ?? undefined,
       shift_definition_id: shift_definition_id ?? undefined,
       // Primary area = first assigned area (legacy `users.location_id` fallback).
@@ -172,7 +172,7 @@ export class UsersService {
         username,
         full_name,
         role,
-        rayon_id,
+        district_id,
         region_id,
         shift_definition_id,
         area_ids: locationIds,
@@ -229,7 +229,7 @@ export class UsersService {
         'role',
         'is_active',
         'location_id',
-        'rayon_id',
+        'district_id',
         'region_id',
         'created_at',
         'updated_at',
@@ -271,20 +271,20 @@ export class UsersService {
     const search = filters?.search?.trim();
     const roles = filters?.roles?.filter(Boolean);
 
-    // Rayon-scoped roles see only users in their rayon.
-    // May 11, 2026 — switched from `area.rayon_id` (which required users to
-    // have an `location_id` set) to `user.rayon_id` directly. The old form
-    // excluded rayon-scoped roles (`admin_rayon`, `kepala_rayon`) and any
+    // Rayon-scoped roles see only users in their district.
+    // May 11, 2026 — switched from `area.district_id` (which required users to
+    // have an `location_id` set) to `user.district_id` directly. The old form
+    // excluded district-scoped roles (`admin_rayon`, `kepala_rayon`) and any
     // satgas/korlap not yet placed in an area, so the Tugaskan ke Petugas
-    // assignee dropdown rendered "Tidak ada Admin Data di rayon ini" even
-    // when those users existed in the rayon. We OR the area-derived
-    // rayon too so satgas with only an `location_id` (no direct `rayon_id`)
+    // assignee dropdown rendered "Tidak ada Admin Data di district ini" even
+    // when those users existed in the district. We OR the area-derived
+    // district too so satgas with only an `location_id` (no direct `district_id`)
     // still appear — defensive for legacy rows.
     if (
       requestingUser &&
       (requestingUser.role === UserRole.ADMIN_RAYON ||
         requestingUser.role === UserRole.KEPALA_RAYON) &&
-      requestingUser.rayon_id
+      requestingUser.district_id
     ) {
       const qb = this.userRepository
         .createQueryBuilder('user')
@@ -296,7 +296,7 @@ export class UsersService {
           'user.role',
           'user.is_active',
           'user.location_id',
-          'user.rayon_id',
+          'user.district_id',
           'user.region_id',
           'user.phone_number',
           'user.shift_definition_id',
@@ -307,8 +307,8 @@ export class UsersService {
           'user.created_by',
           'user.updated_by',
         ])
-        .where('(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)', {
-          rayonId: requestingUser.rayon_id,
+        .where('(user.district_id = :districtId OR area.district_id = :districtId)', {
+          districtId: requestingUser.district_id,
         });
 
       if (roles?.length) qb.andWhere('user.role IN (:...roles)', { roles });
@@ -347,7 +347,7 @@ export class UsersService {
         'role',
         'is_active',
         'location_id',
-        'rayon_id',
+        'district_id',
         'region_id',
         'phone_number',
         'shift_definition_id',
@@ -402,7 +402,7 @@ export class UsersService {
         'role',
         'is_active',
         'location_id',
-        'rayon_id',
+        'district_id',
         'region_id',
         'phone_number',
         'shift_definition_id',
@@ -460,12 +460,12 @@ export class UsersService {
     // Validate role + scope against the EFFECTIVE post-update state (a partial
     // PATCH inherits current values for anything it omits).
     const effectiveRole = updateData.role ?? user.role;
-    const effectiveRayonId =
-      updateData.rayon_id !== undefined ? updateData.rayon_id : user.rayon_id;
+    const effectiveDistrictId =
+      updateData.district_id !== undefined ? updateData.district_id : user.district_id;
     let effectiveRegionId: string | null | undefined =
       updateData.region_id !== undefined ? updateData.region_id : user.region_id;
     const roleChanged = !!updateData.role && updateData.role !== user.role;
-    if (roleChanged || updateData.rayon_id !== undefined || updateData.region_id !== undefined) {
+    if (roleChanged || updateData.district_id !== undefined || updateData.region_id !== undefined) {
       // Safety net: a role change away from region/location scope clears a
       // stale inherited region instead of failing on it (the form sends
       // explicit values, but the API must not rely on that).
@@ -479,7 +479,7 @@ export class UsersService {
       }
       await this.assertScopeConsistent({
         role: effectiveRole,
-        rayon_id: effectiveRayonId,
+        district_id: effectiveDistrictId,
         region_id: effectiveRegionId,
       });
     }

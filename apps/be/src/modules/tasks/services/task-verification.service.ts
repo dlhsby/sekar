@@ -155,7 +155,7 @@ export class TaskVerificationService {
     const assignee = await this.usersService.findOne(assigneeId);
     this.assertRoleCanVerify(verifier.role, assignee.role);
     this.assertKorlapScope(verifier, assignee);
-    await this.assertKepalaRayonScope(verifier, assignee);
+    await this.assertKepalaDistrictScope(verifier, assignee);
     // management: no scope restriction
   }
 
@@ -173,17 +173,17 @@ export class TaskVerificationService {
     }
   }
 
-  private async assertKepalaRayonScope(verifier: User, assignee: User): Promise<void> {
+  private async assertKepalaDistrictScope(verifier: User, assignee: User): Promise<void> {
     if (verifier.role !== UserRole.KEPALA_RAYON) return;
-    if (!verifier.rayon_id) {
-      throw new ForbiddenException('Your Kepala Rayon account has no rayon assigned');
+    if (!verifier.district_id) {
+      throw new ForbiddenException('Your Kepala Rayon account has no district assigned');
     }
     if (!assignee.location_id) {
       throw new ForbiddenException('The task assignee has no valid area');
     }
     const area = await this.locationsService.findOne(assignee.location_id);
-    if (area.rayon_id !== verifier.rayon_id) {
-      throw new ForbiddenException('You can only verify tasks in your rayon');
+    if (area.district_id !== verifier.district_id) {
+      throw new ForbiddenException('You can only verify tasks in your district');
     }
   }
 

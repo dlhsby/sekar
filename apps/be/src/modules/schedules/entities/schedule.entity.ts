@@ -12,7 +12,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
@@ -43,12 +43,12 @@ export type ScheduleSource = 'template' | 'manual' | 'event';
 
 /**
  * Schedule — one materialized roster row per worker per WIB day,
- * generated from the worker's standing template (rayon + permanent areas + one
+ * generated from the worker's standing template (district + permanent areas + one
  * shift) and editable per-day by admins. See ADR-013.
  */
 @Entity('schedules')
 @Index('IDX_schedules_date', ['schedule_date'])
-@Index('IDX_schedules_rayon_date', ['rayon_id', 'schedule_date'])
+@Index('IDX_schedules_rayon_date', ['district_id', 'schedule_date'])
 // Roster uniqueness is now time-based, not per (user, day): a user can have
 // multiple non-overlapping shifts. The overlap guard enforces real conflicts.
 @Index('UQ_schedules_user_date_shift', ['user_id', 'schedule_date', 'shift_definition_id'], {
@@ -68,9 +68,9 @@ export class Schedule {
   @Column({ type: 'date' })
   schedule_date: string;
 
-  @ApiProperty({ description: 'Single rayon for the day (null = none)', required: false })
+  @ApiProperty({ description: 'Single district for the day (null = none)', required: false })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  district_id: string | null;
 
   @ApiProperty({ description: 'Single shift for the day (null = no shift / off)', required: false })
   @Column({ type: 'uuid', nullable: true })
@@ -159,9 +159,9 @@ export class Schedule {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon | null;
+  @ManyToOne(() => District, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'district_id' })
+  district?: District | null;
 
   @ManyToOne(() => ShiftDefinition, { eager: true, nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'shift_definition_id' })

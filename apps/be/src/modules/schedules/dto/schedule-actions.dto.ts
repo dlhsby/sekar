@@ -45,7 +45,7 @@ export class ReplaceWorkerDto {
 export class UpdateRosterAreasDto {
   @ApiProperty({ type: [String], description: 'Location ids for the day (may be empty)' })
   @IsArray()
-  // Location ids are deterministic UUID v5 (minted from rayon:name), so accept any
+  // Location ids are deterministic UUID v5 (minted from district:name), so accept any
   // version — 'v4' wrongly rejects every seeded area id (the "Ubah Location" 400).
   @IsUUID('all', { each: true })
   area_ids: string[];

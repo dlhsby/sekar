@@ -11,14 +11,14 @@ describe('ServiceCapacityService', () => {
   let repository: jest.Mocked<Repository<ServiceCapacity>>;
   let dataSource: jest.Mocked<DataSource>;
 
-  const mockRayonId = 'rayon-11111111-1111-1111-1111-111111111111';
+  const mockDistrictId = 'district-11111111-1111-1111-1111-111111111111';
   const mockYear = 2026;
   const mockIsoWeek = 20;
   const mockServiceType = 'pruning';
 
   const mockCapacity: ServiceCapacity = {
     id: 'cap-11111111-1111-1111-1111-111111111111',
-    rayonId: mockRayonId,
+    districtId: mockDistrictId,
     year: mockYear,
     isoWeek: mockIsoWeek,
     serviceType: mockServiceType,
@@ -79,7 +79,7 @@ describe('ServiceCapacityService', () => {
   });
 
   describe('findCalendar', () => {
-    it('should return rows for given rayon/year', async () => {
+    it('should return rows for given district/year', async () => {
       mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.where.mockReturnValue(mockQueryBuilder as any);
       mockQueryBuilder.andWhere.mockReturnValue(mockQueryBuilder as any);
@@ -87,7 +87,7 @@ describe('ServiceCapacityService', () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockCapacity]);
 
       const result = await service.findCalendar({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
       });
 
@@ -106,7 +106,7 @@ describe('ServiceCapacityService', () => {
       ]);
 
       const result = await service.findCalendar({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         fromWeek: 20,
         toWeek: 22,
@@ -127,7 +127,7 @@ describe('ServiceCapacityService', () => {
       mockQueryBuilder.getMany.mockResolvedValue([mockCapacity]);
 
       await service.findCalendar({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         serviceType: mockServiceType,
       });
@@ -145,7 +145,7 @@ describe('ServiceCapacityService', () => {
       mockRepository.save.mockResolvedValue(mockCapacity);
 
       const result = await service.upsertCapacity({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: mockIsoWeek,
         serviceType: mockServiceType,
@@ -165,7 +165,7 @@ describe('ServiceCapacityService', () => {
       });
 
       const result = await service.upsertCapacity({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: mockIsoWeek,
         serviceType: mockServiceType,
@@ -197,7 +197,7 @@ describe('ServiceCapacityService', () => {
       );
 
       const result = await service.bookAtomic({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: mockIsoWeek,
         serviceType: mockServiceType,
@@ -227,7 +227,7 @@ describe('ServiceCapacityService', () => {
 
       await expect(
         service.bookAtomic({
-          rayonId: mockRayonId,
+          districtId: mockDistrictId,
           year: mockYear,
           isoWeek: mockIsoWeek,
           serviceType: mockServiceType,
@@ -252,7 +252,7 @@ describe('ServiceCapacityService', () => {
 
       await expect(
         service.bookAtomic({
-          rayonId: mockRayonId,
+          districtId: mockDistrictId,
           year: mockYear,
           isoWeek: mockIsoWeek,
           serviceType: mockServiceType,
@@ -280,7 +280,7 @@ describe('ServiceCapacityService', () => {
 
       await expect(
         service.bookAtomic({
-          rayonId: mockRayonId,
+          districtId: mockDistrictId,
           year: mockYear,
           isoWeek: mockIsoWeek,
           serviceType: mockServiceType,
@@ -311,7 +311,7 @@ describe('ServiceCapacityService', () => {
       );
 
       const result = await service.releaseAtomic({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: mockIsoWeek,
         serviceType: mockServiceType,
@@ -344,7 +344,7 @@ describe('ServiceCapacityService', () => {
       );
 
       const result = await service.releaseAtomic({
-        rayonId: mockRayonId,
+        districtId: mockDistrictId,
         year: mockYear,
         isoWeek: mockIsoWeek,
         serviceType: mockServiceType,
@@ -370,7 +370,7 @@ describe('ServiceCapacityService', () => {
 
       await expect(
         service.releaseAtomic({
-          rayonId: mockRayonId,
+          districtId: mockDistrictId,
           year: mockYear,
           isoWeek: mockIsoWeek,
           serviceType: mockServiceType,

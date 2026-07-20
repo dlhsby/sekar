@@ -44,7 +44,7 @@ describe('ActivitiesService', () => {
     full_name: 'Worker One',
     is_active: true,
     location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-    rayon_id: 'rayon-uuid-1',
+    district_id: 'district-uuid-1',
   };
 
   const mockActivityType = {
@@ -62,7 +62,7 @@ describe('ActivitiesService', () => {
     area: {
       id: mockUser.location_id,
       name: 'Taman Bungkul',
-      rayon_id: 'rayon-uuid-1',
+      district_id: 'district-uuid-1',
     },
     clock_in_time: new Date('2026-01-09T08:00:00Z'),
     clock_out_time: null,
@@ -386,15 +386,15 @@ describe('ActivitiesService', () => {
       );
     });
 
-    it('should return paginated activities for KEPALA_RAYON (rayon-scoped)', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
+    it('should return paginated activities for KEPALA_RAYON (district-scoped)', async () => {
+      const kepalaDistrictUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 10]);
 
-      const result = await service.findAllPaginated({}, kepalaRayonUser as any, 1, 50);
+      const result = await service.findAllPaginated({}, kepalaDistrictUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: kepalaRayonUser.rayon_id,
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.district_id = :districtId', {
+        districtId: kepalaDistrictUser.district_id,
       });
     });
 
@@ -409,15 +409,19 @@ describe('ActivitiesService', () => {
       // Should not have scope-based andWhere calls for admin
     });
 
-    it('should return paginated activities for ADMIN_RAYON (rayon-scoped)', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON, rayon_id: 'rayon-uuid-1' };
+    it('should return paginated activities for ADMIN_RAYON (district-scoped)', async () => {
+      const adminDataUser = {
+        ...mockUser,
+        role: UserRole.ADMIN_RAYON,
+        district_id: 'district-uuid-1',
+      };
       mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 15]);
 
       const result = await service.findAllPaginated({}, adminDataUser as any, 1, 50);
 
       expect(result.data).toHaveLength(1);
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.rayon_id = :rayonId', {
-        rayonId: adminDataUser.rayon_id,
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('area.district_id = :districtId', {
+        districtId: adminDataUser.district_id,
       });
     });
 
@@ -608,49 +612,49 @@ describe('ActivitiesService', () => {
       }
     });
 
-    it('should allow KEPALA_RAYON to access activities from their rayon', async () => {
-      const kepalaRayonUser = {
+    it('should allow KEPALA_RAYON to access activities from their district', async () => {
+      const kepalaDistrictUser = {
         ...mockUser,
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-uuid-1',
+        district_id: 'district-uuid-1',
       };
-      const activityWithRayon = {
+      const activityWithDistrict = {
         ...mockActivity,
         shift: {
           ...mockActiveShift,
-          area: { ...mockActiveShift.area, rayon_id: 'rayon-uuid-1' },
+          area: { ...mockActiveShift.area, district_id: 'district-uuid-1' },
         },
       };
-      mockActivitiesRepo.findOne.mockResolvedValue(activityWithRayon);
+      mockActivitiesRepo.findOne.mockResolvedValue(activityWithDistrict);
 
-      const result = await service.findOne(mockActivity.id, kepalaRayonUser as any);
+      const result = await service.findOne(mockActivity.id, kepalaDistrictUser as any);
 
       expect(result).toBeDefined();
     });
 
-    it('should throw ApiException when KEPALA_RAYON tries to access activity outside their rayon', async () => {
-      const kepalaRayonUser = {
+    it('should throw ApiException when KEPALA_RAYON tries to access activity outside their district', async () => {
+      const kepalaDistrictUser = {
         ...mockUser,
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'different-rayon-uuid',
+        district_id: 'different-district-uuid',
       };
-      const activityWithRayon = {
+      const activityWithDistrict = {
         ...mockActivity,
         shift: {
           ...mockActiveShift,
-          area: { ...mockActiveShift.area, rayon_id: 'rayon-uuid-1' },
+          area: { ...mockActiveShift.area, district_id: 'district-uuid-1' },
         },
       };
-      mockActivitiesRepo.findOne.mockResolvedValue(activityWithRayon);
+      mockActivitiesRepo.findOne.mockResolvedValue(activityWithDistrict);
 
       try {
-        await service.findOne(mockActivity.id, kepalaRayonUser as any);
+        await service.findOne(mockActivity.id, kepalaDistrictUser as any);
         fail('Should have thrown ApiException');
       } catch (error) {
         expect(error).toBeInstanceOf(ApiException);
         expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
         expect(error.getCode()).toBe(ApiErrorCode.ACTIVITY_ACCESS_DENIED);
-        expect(error.message).toContain('assigned rayon');
+        expect(error.message).toContain('assigned district');
       }
     });
 
@@ -663,36 +667,40 @@ describe('ActivitiesService', () => {
       expect(result).toBeDefined();
     });
 
-    it('should allow ADMIN_RAYON to access activities from their rayon', async () => {
-      const adminDataUser = { ...mockUser, role: UserRole.ADMIN_RAYON, rayon_id: 'rayon-uuid-1' };
-      const activityWithRayon = {
+    it('should allow ADMIN_RAYON to access activities from their district', async () => {
+      const adminDataUser = {
+        ...mockUser,
+        role: UserRole.ADMIN_RAYON,
+        district_id: 'district-uuid-1',
+      };
+      const activityWithDistrict = {
         ...mockActivity,
         shift: {
           ...mockActiveShift,
-          area: { ...mockActiveShift.area, rayon_id: 'rayon-uuid-1' },
+          area: { ...mockActiveShift.area, district_id: 'district-uuid-1' },
         },
       };
-      mockActivitiesRepo.findOne.mockResolvedValue(activityWithRayon);
+      mockActivitiesRepo.findOne.mockResolvedValue(activityWithDistrict);
 
       const result = await service.findOne(mockActivity.id, adminDataUser as any);
 
       expect(result).toBeDefined();
     });
 
-    it('should throw ApiException when ADMIN_RAYON tries to access activity outside their rayon', async () => {
+    it('should throw ApiException when ADMIN_RAYON tries to access activity outside their district', async () => {
       const adminDataUser = {
         ...mockUser,
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'different-rayon-uuid',
+        district_id: 'different-district-uuid',
       };
-      const activityWithRayon = {
+      const activityWithDistrict = {
         ...mockActivity,
         shift: {
           ...mockActiveShift,
-          area: { ...mockActiveShift.area, rayon_id: 'rayon-uuid-1' },
+          area: { ...mockActiveShift.area, district_id: 'district-uuid-1' },
         },
       };
-      mockActivitiesRepo.findOne.mockResolvedValue(activityWithRayon);
+      mockActivitiesRepo.findOne.mockResolvedValue(activityWithDistrict);
 
       try {
         await service.findOne(mockActivity.id, adminDataUser as any);
@@ -701,7 +709,7 @@ describe('ActivitiesService', () => {
         expect(error).toBeInstanceOf(ApiException);
         expect(error.getStatus()).toBe(HttpStatus.FORBIDDEN);
         expect(error.getCode()).toBe(ApiErrorCode.ACTIVITY_ACCESS_DENIED);
-        expect(error.message).toContain('assigned rayon');
+        expect(error.message).toContain('assigned district');
       }
     });
   });
@@ -880,14 +888,14 @@ describe('ActivitiesService', () => {
       id: 'korlap-uuid-1',
       role: UserRole.KORLAP,
       location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-      rayon_id: 'rayon-uuid-1',
+      district_id: 'district-uuid-1',
     };
 
-    const kepalaRayonReviewer = {
-      id: 'kepala-rayon-uuid-1',
+    const kepalaDistrictReviewer = {
+      id: 'kepala-district-uuid-1',
       role: UserRole.KEPALA_RAYON,
       location_id: null,
-      rayon_id: 'rayon-uuid-1',
+      district_id: 'district-uuid-1',
     };
 
     /** Build a fresh pending activity object to avoid cross-test mutation */
@@ -900,7 +908,10 @@ describe('ActivitiesService', () => {
       reviewed_at: null,
       rejection_reason: null,
       location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-      area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
+      area: {
+        id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+        district_id: 'district-uuid-1',
+      },
       user: { ...mockUser, role: UserRole.SATGAS },
       photo_urls: [],
       description: 'Test activity',
@@ -971,39 +982,42 @@ describe('ActivitiesService', () => {
       );
     });
 
-    it('should allow Kepala Rayon to approve Korlap activity in same rayon', async () => {
-      const activity = buildPendingActivity({
-        user: { ...mockUser, role: UserRole.KORLAP },
-        area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
-      });
-      const approvedActivity = {
-        ...activity,
-        status: ActivityStatus.APPROVED,
-        reviewed_by: kepalaRayonReviewer.id,
-        reviewed_at: new Date(),
-      };
-      mockActivitiesRepo.findOne.mockResolvedValue(activity);
-      mockUsersService.findOne.mockResolvedValue(kepalaRayonReviewer as any);
-      mockActivitiesRepo.save.mockResolvedValue(approvedActivity);
-      mockActivitiesRepo.findOneOrFail.mockResolvedValue(approvedActivity);
-
-      const result = await service.approveActivity(activity.id, kepalaRayonReviewer.id);
-
-      expect(result.status).toBe(ActivityStatus.APPROVED);
-    });
-
-    it('should throw ForbiddenException when Kepala Rayon rayon does not match Korlap area rayon', async () => {
+    it('should allow Kepala Rayon to approve Korlap activity in same district', async () => {
       const activity = buildPendingActivity({
         user: { ...mockUser, role: UserRole.KORLAP },
         area: {
           id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-          rayon_id: 'different-rayon-uuid',
+          district_id: 'district-uuid-1',
+        },
+      });
+      const approvedActivity = {
+        ...activity,
+        status: ActivityStatus.APPROVED,
+        reviewed_by: kepalaDistrictReviewer.id,
+        reviewed_at: new Date(),
+      };
+      mockActivitiesRepo.findOne.mockResolvedValue(activity);
+      mockUsersService.findOne.mockResolvedValue(kepalaDistrictReviewer as any);
+      mockActivitiesRepo.save.mockResolvedValue(approvedActivity);
+      mockActivitiesRepo.findOneOrFail.mockResolvedValue(approvedActivity);
+
+      const result = await service.approveActivity(activity.id, kepalaDistrictReviewer.id);
+
+      expect(result.status).toBe(ActivityStatus.APPROVED);
+    });
+
+    it('should throw ForbiddenException when Kepala Rayon district does not match Korlap area district', async () => {
+      const activity = buildPendingActivity({
+        user: { ...mockUser, role: UserRole.KORLAP },
+        area: {
+          id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+          district_id: 'different-district-uuid',
         },
       });
       mockActivitiesRepo.findOne.mockResolvedValue(activity);
-      mockUsersService.findOne.mockResolvedValue(kepalaRayonReviewer as any);
+      mockUsersService.findOne.mockResolvedValue(kepalaDistrictReviewer as any);
 
-      await expect(service.approveActivity(activity.id, kepalaRayonReviewer.id)).rejects.toThrow(
+      await expect(service.approveActivity(activity.id, kepalaDistrictReviewer.id)).rejects.toThrow(
         ForbiddenException,
       );
     });
@@ -1014,7 +1028,7 @@ describe('ActivitiesService', () => {
       id: 'korlap-uuid-1',
       role: UserRole.KORLAP,
       location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-      rayon_id: 'rayon-uuid-1',
+      district_id: 'district-uuid-1',
     };
 
     /** Build a fresh pending activity object to avoid cross-test mutation */
@@ -1027,7 +1041,10 @@ describe('ActivitiesService', () => {
       reviewed_at: null,
       rejection_reason: null,
       location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-      area: { id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012', rayon_id: 'rayon-uuid-1' },
+      area: {
+        id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
+        district_id: 'district-uuid-1',
+      },
       user: { ...mockUser, role: UserRole.SATGAS },
       photo_urls: [],
       description: 'Test activity',
@@ -1086,7 +1103,7 @@ describe('ActivitiesService', () => {
         id: 'user-uuid',
         role: UserRole.SATGAS,
         location_id: null,
-        rayon_id: null,
+        district_id: null,
       };
       mockActivitiesRepo.findOne.mockResolvedValue(activity);
       mockUsersService.findOne.mockResolvedValue(invalidReviewer as any);

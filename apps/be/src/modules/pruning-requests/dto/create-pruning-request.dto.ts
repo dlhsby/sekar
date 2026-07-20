@@ -191,18 +191,18 @@ export class CreatePruningRequestDto {
   notes?: string;
 
   /**
-   * Optional rayon ID. If not provided, the rayon will be resolved by GPS-to-area lookup.
+   * Optional district ID. If not provided, the district will be resolved by GPS-to-area lookup.
    * For now, recommend providing this explicitly to avoid complex geo-resolution logic.
    *
    * @example '11111111-1111-1111-1111-111111111101'
    */
   @ApiPropertyOptional({
-    description: 'Rayon ID (optional; auto-resolved from submitter profile if not provided)',
+    description: 'District ID (optional; auto-resolved from submitter profile if not provided)',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   /**
    * Optional kecamatan name. If not provided, server falls back to the

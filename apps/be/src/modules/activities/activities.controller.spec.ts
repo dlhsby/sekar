@@ -20,7 +20,7 @@ describe('ActivitiesController', () => {
     full_name: 'Worker One',
     is_active: true,
     location_id: 'area-uuid-3c4d5e6f-a7b8-9012-cdef-123456789012',
-    rayon_id: 'rayon-uuid-1',
+    district_id: 'district-uuid-1',
   };
 
   const mockActivity: any = {
@@ -204,20 +204,20 @@ describe('ActivitiesController', () => {
       expect(service.findAllPaginated).toHaveBeenCalledWith(expect.any(Object), korlapUser, 1, 50);
     });
 
-    it('should return paginated activities for KEPALA_RAYON (rayon-scoped)', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
+    it('should return paginated activities for KEPALA_RAYON (district-scoped)', async () => {
+      const kepalaDistrictUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
       const filterDto: ActivitiesFilterDto = {
         page: 1,
         limit: 50,
       };
       mockService.findAllPaginated.mockResolvedValue(mockPaginatedResponse);
 
-      const result = await controller.findAll(filterDto, kepalaRayonUser as any);
+      const result = await controller.findAll(filterDto, kepalaDistrictUser as any);
 
       expect(result).toEqual(mockPaginatedResponse);
       expect(service.findAllPaginated).toHaveBeenCalledWith(
         expect.any(Object),
-        kepalaRayonUser,
+        kepalaDistrictUser,
         1,
         50,
       );
@@ -398,14 +398,14 @@ describe('ActivitiesController', () => {
       expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, korlapUser);
     });
 
-    it('should return activity by ID for KEPALA_RAYON (rayon-scoped)', async () => {
-      const kepalaRayonUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
+    it('should return activity by ID for KEPALA_RAYON (district-scoped)', async () => {
+      const kepalaDistrictUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
       mockService.findOne.mockResolvedValue(mockActivity);
 
-      const result = await controller.findOne(mockActivity.id, kepalaRayonUser as any);
+      const result = await controller.findOne(mockActivity.id, kepalaDistrictUser as any);
 
       expect(result).toEqual(mockActivity);
-      expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, kepalaRayonUser);
+      expect(service.findOne).toHaveBeenCalledWith(mockActivity.id, kepalaDistrictUser);
     });
 
     it('should return activity by ID for ADMIN_SYSTEM (no scope restriction)', async () => {

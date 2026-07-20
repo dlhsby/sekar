@@ -184,7 +184,7 @@ async function bootstrap() {
     .addTag('location', 'Location tracking endpoints')
     .addTag('supervisor', 'Management dashboard endpoints (Korlap, Kepala Rayon, Top Management)')
     // Phase 2 tags
-    .addTag('rayons', 'Rayon (geographic sector) management endpoints')
+    .addTag('districts', 'District (geographic sector) management endpoints')
     .addTag('shift-definitions', 'Shift definition endpoints')
     .addTag('activity-types', 'Activity type management endpoints')
     .addTag('area-staff-requirements', 'Location staff requirements endpoints')

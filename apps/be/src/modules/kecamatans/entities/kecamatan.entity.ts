@@ -9,7 +9,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 
 export type KecamatanRegion = 'pusat' | 'timur' | 'barat' | 'utara' | 'selatan';
 
@@ -28,12 +28,12 @@ export class Kecamatan {
   code: string;
 
   @ApiProperty()
-  @Column({ type: 'uuid', name: 'rayon_id' })
-  rayon_id: string;
+  @Column({ type: 'uuid', name: 'district_id' })
+  district_id: string;
 
-  @ManyToOne(() => Rayon, { onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon;
+  @ManyToOne(() => District, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'district_id' })
+  district?: District;
 
   @ApiProperty({ enum: ['pusat', 'timur', 'barat', 'utara', 'selatan'] })
   @Column({ length: 20 })

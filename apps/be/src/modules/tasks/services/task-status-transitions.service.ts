@@ -204,7 +204,7 @@ export class TaskStatusTransitionsService {
         'title',
         'description',
         'location_id',
-        'rayon_id',
+        'district_id',
         'taskType',
         'assigned_to',
         'deadline',

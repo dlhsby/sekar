@@ -7,7 +7,7 @@ import { Shift } from '../../shifts/entities/shift.entity';
 import { Task, TaskStatus } from '../../tasks/entities/task.entity';
 import { Activity } from '../../activities/entities/activity.entity';
 import { LocationLog } from '../../location/entities/location-log.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { Role } from '../../rbac/entities/role.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
@@ -50,8 +50,8 @@ export class MonitoringUserService {
     private readonly activityRepository: Repository<Activity>,
     @InjectRepository(LocationLog)
     private readonly locationRepository: Repository<LocationLog>,
-    @InjectRepository(Rayon)
-    private readonly rayonRepository: Repository<Rayon>,
+    @InjectRepository(District)
+    private readonly districtRepository: Repository<District>,
     @InjectRepository(Region)
     private readonly regionRepository: Repository<Region>,
     @InjectRepository(Role)
@@ -91,8 +91,8 @@ export class MonitoringUserService {
         qb.andWhere('uts.location_id IN (:...scopedAreaIds)', { scopedAreaIds });
       }
     }
-    if (filters?.rayon_id) {
-      qb.andWhere('area.rayon_id = :rayonId', { rayonId: filters.rayon_id });
+    if (filters?.district_id) {
+      qb.andWhere('area.district_id = :districtId', { districtId: filters.district_id });
     }
     if (filters?.role) {
       qb.andWhere('user.role = :role', { role: filters.role });
@@ -129,19 +129,21 @@ export class MonitoringUserService {
       ...new Set(trackingRecords.map((r) => r.area?.region_id).filter(Boolean)),
     ] as string[];
 
-    const [rayonMap, regionMap, taskMap, thresholds, teamMap, roleMarkerMap] = await Promise.all([
-      this.buildRayonMap(locationIds as string[]),
-      this.buildRegionMap(regionIds),
-      this.buildCurrentTaskMap(userIds),
-      this.cacheService.getThresholds(),
-      this.dailySchedulesService
-        ? this.dailySchedulesService.getTeamMembership(userIds, TimezoneUtil.jakartaDateString())
-        : Promise.resolve(new Map()),
-      this.buildRoleMarkerMap(),
-    ]);
+    const [districtMap, regionMap, taskMap, thresholds, teamMap, roleMarkerMap] = await Promise.all(
+      [
+        this.buildDistrictMap(locationIds as string[]),
+        this.buildRegionMap(regionIds),
+        this.buildCurrentTaskMap(userIds),
+        this.cacheService.getThresholds(),
+        this.dailySchedulesService
+          ? this.dailySchedulesService.getTeamMembership(userIds, TimezoneUtil.jakartaDateString())
+          : Promise.resolve(new Map()),
+        this.buildRoleMarkerMap(),
+      ],
+    );
 
     const users: LiveUserDto[] = trackingRecords.map((uts) => {
-      const rayonId = uts.area?.rayon_id || null;
+      const districtId = uts.area?.district_id || null;
       const axes = this.statusCalculator.calculateAxes(
         {
           hasActiveShift: !!uts.shift_id,
@@ -158,8 +160,8 @@ export class MonitoringUserService {
         role_marker_icon: roleMarkerMap.get(uts.user.role) ?? null,
         location_id: uts.location_id,
         location_name: uts.area?.name || 'Unknown',
-        rayon_id: rayonId,
-        rayon_name: rayonId ? rayonMap.get(rayonId) || null : null,
+        district_id: districtId,
+        district_name: districtId ? districtMap.get(districtId) || null : null,
         region_id: uts.area?.region_id ?? null,
         region_name: uts.area?.region_id ? (regionMap.get(uts.area.region_id) ?? null) : null,
         latitude: uts.last_latitude || 0,
@@ -206,7 +208,7 @@ export class MonitoringUserService {
 
   /**
    * Roster-derived "expected vs actual" for today (ADR-013): compares the
-   * materialized roster to who has clocked in. Rayon-scoped when a rayon_id
+   * materialized roster to who has clocked in. Rayon-scoped when a district_id
    * filter is present; otherwise global. Returns zeros when the roster service
    * isn't wired (legacy specs).
    */
@@ -229,12 +231,12 @@ export class MonitoringUserService {
     if (!this.dailySchedulesService) return empty;
 
     const today = TimezoneUtil.jakartaDateString();
-    const rayonId = filters?.rayon_id ?? null;
-    const roster = await this.dailySchedulesService.getRosterForMonitoring(today, rayonId);
+    const districtId = filters?.district_id ?? null;
+    const roster = await this.dailySchedulesService.getRosterForMonitoring(today, districtId);
     if (roster.length === 0) return empty;
 
     const clockedRows = await this.trackingRepository.find({
-      where: { shift_id: Not(IsNull()), ...(rayonId ? { rayon_id: rayonId } : {}) },
+      where: { shift_id: Not(IsNull()), ...(districtId ? { district_id: districtId } : {}) },
       select: ['user_id'],
     });
     const clockedIn = new Set(clockedRows.map((r) => r.user_id));
@@ -267,7 +269,7 @@ export class MonitoringUserService {
         user_id: r.user_id,
         full_name: r.user?.full_name ?? '',
         role: r.user?.role ?? '',
-        rayon_id: r.rayon_id,
+        district_id: r.district_id,
         shift_definition_id: r.shift_definition_id,
         shift_name: r.shift_definition?.name ?? null,
       });
@@ -340,9 +342,9 @@ export class MonitoringUserService {
         ? await this.areaRepository.findOne({ where: { id: user.location_id } })
         : null);
 
-    const effectiveRayonId = area?.rayon_id ?? user.rayon_id ?? null;
-    const rayon = effectiveRayonId
-      ? await this.rayonRepository.findOne({ where: { id: effectiveRayonId } })
+    const effectiveDistrictId = area?.district_id ?? user.district_id ?? null;
+    const district = effectiveDistrictId
+      ? await this.districtRepository.findOne({ where: { id: effectiveDistrictId } })
       : null;
 
     const shiftInfo = await this.buildShiftInfo(tracking);
@@ -363,8 +365,8 @@ export class MonitoringUserService {
       status: tracking?.status || TrackingStatus.OFFLINE,
       location_id: area?.id || null,
       location_name: area?.name || null,
-      rayon_id: rayon?.id || null,
-      rayon_name: rayon?.name || null,
+      district_id: district?.id || null,
+      district_name: district?.name || null,
       shift: shiftInfo,
       last_location: lastLocation,
       activities_today: activitiesToday,
@@ -446,23 +448,23 @@ export class MonitoringUserService {
     return counts;
   }
 
-  private async buildRayonMap(locationIds: string[]): Promise<Map<string, string>> {
+  private async buildDistrictMap(locationIds: string[]): Promise<Map<string, string>> {
     if (locationIds.length === 0) return new Map();
 
     const areas = await this.areaRepository
       .createQueryBuilder('area')
       .where('area.id IN (:...locationIds)', { locationIds })
-      .andWhere('area.rayon_id IS NOT NULL')
+      .andWhere('area.district_id IS NOT NULL')
       .getMany();
 
-    const rayonIds = [...new Set(areas.map((a) => a.rayon_id).filter(Boolean))] as string[];
-    if (rayonIds.length === 0) return new Map();
+    const districtIds = [...new Set(areas.map((a) => a.district_id).filter(Boolean))] as string[];
+    if (districtIds.length === 0) return new Map();
 
-    const rayons = await this.rayonRepository.find({
-      where: { id: In(rayonIds) },
+    const districts = await this.districtRepository.find({
+      where: { id: In(districtIds) },
     });
 
-    return new Map(rayons.map((r) => [r.id, r.name]));
+    return new Map(districts.map((r) => [r.id, r.name]));
   }
 
   private async buildRegionMap(regionIds: string[]): Promise<Map<string, string>> {

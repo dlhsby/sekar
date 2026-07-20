@@ -158,7 +158,7 @@ export class TasksService {
       priority: dto.priority || TaskPriority.MEDIUM,
       deadline: dto.deadline ? new Date(dto.deadline) : null,
       location_id: dto.location_id || null,
-      rayon_id: dto.rayon_id || null,
+      district_id: dto.district_id || null,
       assigned_to: dto.assigned_to || null,
       status: assignee ? TaskStatus.ASSIGNED : TaskStatus.PENDING,
       created_by: creatorId,
@@ -224,7 +224,7 @@ export class TasksService {
     return this.taskRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
@@ -277,15 +277,15 @@ export class TasksService {
     });
   }
 
-  /** Kepala Rayon: tasks in their rayon + tasks they created. */
+  /** Kepala Rayon: tasks in their district + tasks they created. */
   private scopeToKepalaRayon(qb: SelectQueryBuilder<Task>, user: User): void {
-    if (!user.rayon_id) {
+    if (!user.district_id) {
       qb.andWhere('task.created_by = :scopeUserId', { scopeUserId: user.id });
       return;
     }
     qb.andWhere(
-      '(area.rayon_id = :scopeRayonId OR task.rayon_id = :scopeRayonId OR task.created_by = :scopeUserId)',
-      { scopeRayonId: user.rayon_id, scopeUserId: user.id },
+      '(area.district_id = :scopeDistrictId OR task.district_id = :scopeDistrictId OR task.created_by = :scopeUserId)',
+      { scopeDistrictId: user.district_id, scopeUserId: user.id },
     );
   }
 
@@ -377,7 +377,7 @@ export class TasksService {
     return this.taskRepository
       .createQueryBuilder('task')
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
       .leftJoinAndSelect('tags.user', 'taggedUser')
@@ -500,7 +500,7 @@ export class TasksService {
     this.logger.log(`Fetching tasks for area: ${areaId}`);
     const queryBuilder = this.taskRepository
       .createQueryBuilder('task')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.tags', 'tags')
@@ -554,7 +554,7 @@ export class TasksService {
       .createQueryBuilder('task')
       .innerJoin('task.tags', 'tag', 'tag.user_id = :userId', { userId })
       .leftJoinAndSelect('task.area', 'area')
-      .leftJoinAndSelect('task.rayon', 'rayon')
+      .leftJoinAndSelect('task.district', 'district')
       .leftJoinAndSelect('task.creator', 'creator')
       .leftJoinAndSelect('task.assignee', 'assignee')
       .leftJoinAndSelect('task.tags', 'tags')
@@ -626,14 +626,14 @@ export class TasksService {
 
   /**
    * Validate geographic scope for task creation:
-   * kepala_rayon may only target areas in their rayon; korlap only their area.
+   * kepala_rayon may only target areas in their district; korlap only their area.
    */
   private async validateScope(creator: User, areaId?: string): Promise<void> {
-    if (creator.role === UserRole.KEPALA_RAYON && creator.rayon_id && areaId) {
+    if (creator.role === UserRole.KEPALA_RAYON && creator.district_id && areaId) {
       const area = await this.locationsService.findOne(areaId);
-      if (area.rayon_id !== creator.rayon_id) {
+      if (area.district_id !== creator.district_id) {
         throw new ForbiddenException(
-          'Kepala Rayon can only create tasks for areas within their rayon',
+          'Kepala Rayon can only create tasks for areas within their district',
         );
       }
     }

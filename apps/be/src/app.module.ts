@@ -21,7 +21,7 @@ import { LocationModule } from './modules/location/location.module';
 import { SupervisorModule } from './modules/supervisor/supervisor.module';
 import { SharedModule } from './shared/shared.module';
 // Phase 2 modules
-import { RayonsModule } from './modules/rayons/rayons.module';
+import { DistrictsModule } from './modules/districts/districts.module';
 import { RegionsModule } from './modules/regions/regions.module';
 import { TeamsModule } from './modules/teams/teams.module';
 import { KecamatansModule } from './modules/kecamatans/kecamatans.module';
@@ -134,10 +134,10 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     LocationModule, // Depends on Shifts
     SupervisorModule, // Depends on all above modules
     // Phase 2 modules
-    RayonsModule, // Geographic sectors
-    RegionsModule, // Kawasan — level between rayon and area (ADR-045)
+    DistrictsModule, // Geographic sectors
+    RegionsModule, // Kawasan — level between district and area (ADR-045)
     TeamsModule, // Teams (crews) + team-category catalog (ADR-048)
-    KecamatansModule, // Surabaya kecamatans (FK to rayon)
+    KecamatansModule, // Surabaya kecamatans (FK to district)
     ShiftDefinitionsModule, // Fixed shift definitions
     ActivityTypesModule, // Activity types with role filtering
     LocationStaffRequirementsModule, // Staff requirements per area/shift

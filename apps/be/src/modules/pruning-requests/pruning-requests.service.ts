@@ -25,7 +25,7 @@ import {
 import { PruningRequestNotificationsService } from './services/pruning-request-notifications.service';
 import { PruningRequestWorkflowService } from './services/pruning-request-workflow.service';
 import {
-  assertAdminDataRayonScope,
+  assertAdminDataDistrictScope,
   assertCanCancel,
   assertCancellableStatus,
   canReadPruningRequest,
@@ -33,7 +33,7 @@ import {
 
 interface PruningRequestListQuery {
   status?: string;
-  rayonId?: string;
+  districtId?: string;
   from?: string;
   to?: string;
   page?: number;
@@ -80,9 +80,9 @@ export class PruningRequestsService {
       `Pruning request ${saved.id} created with reference code ${saved.referenceCode}`,
     );
     // May 13 — heads-up push to every admin_rayon / kepala_rayon in the
-    // request's rayon. Fire-and-forget; submit must not block on FCM.
-    void this.notifications.notifyRayonAdmins(
-      saved.rayonId,
+    // request's district. Fire-and-forget; submit must not block on FCM.
+    void this.notifications.notifyDistrictAdmins(
+      saved.districtId,
       'Permohonan Perantingan Baru',
       `${saved.kecamatanName || 'Kecamatan'} mengajukan permohonan ${saved.referenceCode}. Mohon ditinjau.`,
       saved,
@@ -129,9 +129,9 @@ export class PruningRequestsService {
     user: User,
     requestedWeek: RequestedWeek,
   ): PruningRequest {
-    // Phase 3 Apr 27 — kecamatan_name + rayon_id auto-derive from the user's
+    // Phase 3 Apr 27 — kecamatan_name + district_id auto-derive from the user's
     // profile, with client override allowed (admin-style submissions on
-    // behalf of a different kecamatan / rayon are valid).
+    // behalf of a different kecamatan / district are valid).
     const kecamatanName = dto.kecamatan_name?.trim() || user.kecamatan_name || user.full_name;
     return this.pruningRequestRepository.create({
       referenceCode: `PR-${Date.now()}-${uuidv4().slice(0, 8)}`,
@@ -156,7 +156,7 @@ export class PruningRequestsService {
       rtLeaderPhone: dto.rt_leader_phone ?? null,
       notes: dto.notes || null,
       status: 'submitted',
-      rayonId: dto.rayon_id ?? user.rayon_id ?? null,
+      districtId: dto.district_id ?? user.district_id ?? null,
     });
   }
 
@@ -170,15 +170,15 @@ export class PruningRequestsService {
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,
-      relations: ['submitter', 'reviewer', 'rayon'],
+      relations: ['submitter', 'reviewer', 'district'],
       // Audit H1 (2026-05-23): safe user columns only on the joined rows.
       select: SAFE_PRUNING_REQUEST_SELECT,
     });
   }
 
   /**
-   * Get a single pruning request by ID. Access: the submitter, rayon-scoped
-   * admins (admin_rayon / kepala_rayon with matching rayon) and read-all
+   * Get a single pruning request by ID. Access: the submitter, district-scoped
+   * admins (admin_rayon / kepala_rayon with matching district) and read-all
    * roles (management / admin_system / superadmin).
    */
   async findById(id: string, user: User): Promise<PruningRequest> {
@@ -186,7 +186,7 @@ export class PruningRequestsService {
     const request = await this.finder.getWithPartiesOrFail(id);
     if (!canReadPruningRequest(request, user)) {
       this.logger.warn(
-        `Access denied for user ${user.id} to request ${id}. Submitter: ${request.submittedBy}, Request rayon: ${request.rayonId}, User rayon: ${user.rayon_id}`,
+        `Access denied for user ${user.id} to request ${id}. Submitter: ${request.submittedBy}, Request district: ${request.districtId}, User district: ${user.district_id}`,
       );
       throw new ForbiddenException('You do not have permission to access this pruning request');
     }
@@ -195,14 +195,14 @@ export class PruningRequestsService {
 
   /**
    * Review a pruning request (approve or reject). Only 'submitted' /
-   * 'under_review' requests are reviewable; admin_rayon is rayon-scoped.
+   * 'under_review' requests are reviewable; admin_rayon is district-scoped.
    */
   async review(id: string, dto: ReviewPruningRequestDto, user: User): Promise<PruningRequest> {
     this.logger.log(
       `Reviewing pruning request ${id} (decision: ${dto.decision}) by user ${user.id}`,
     );
     const request = await this.finder.getOrFail(id);
-    assertAdminDataRayonScope(request, user, 'review');
+    assertAdminDataDistrictScope(request, user, 'review');
     this.assertReviewable(request, dto);
 
     const updated = await this.pruningRequestRepository.save(this.withReview(request, dto, user));
@@ -277,7 +277,7 @@ export class PruningRequestsService {
 
   /**
    * List pruning requests with filtering and pagination. For admin_rayon
-   * users, rayonId is auto-forced to their rayon_id.
+   * users, districtId is auto-forced to their district_id.
    */
   async findAll(
     user: User,
@@ -288,7 +288,7 @@ export class PruningRequestsService {
     const limit = Math.min(query.limit ?? 20, 100);
 
     const qb = this.buildAdminListQuery();
-    this.applyStatusAndRayonFilters(qb, user, query);
+    this.applyStatusAndDistrictFilters(qb, user, query);
     this.applyDateAndSearchFilters(qb, query);
 
     const [items, total] = await qb
@@ -305,7 +305,7 @@ export class PruningRequestsService {
         .createQueryBuilder('pr')
         .leftJoin('pr.submitter', 'submitter')
         .leftJoin('pr.reviewer', 'reviewer')
-        .leftJoinAndSelect('pr.rayon', 'rayon')
+        .leftJoinAndSelect('pr.district', 'district')
         // Audit H1: cherry-pick the public-safe User columns (mirrors
         // SAFE_PRUNING_REQUEST_SELECT used by the find/findOne paths).
         .addSelect([
@@ -325,7 +325,7 @@ export class PruningRequestsService {
     );
   }
 
-  private applyStatusAndRayonFilters(
+  private applyStatusAndDistrictFilters(
     qb: SelectQueryBuilder<PruningRequest>,
     user: User,
     query: PruningRequestListQuery,
@@ -333,12 +333,12 @@ export class PruningRequestsService {
     if (query.status) {
       qb.where('pr.status = :status', { status: query.status });
     }
-    const rayonId = user.role === UserRole.ADMIN_RAYON ? user.rayon_id : query.rayonId;
-    if (!rayonId) return;
+    const districtId = user.role === UserRole.ADMIN_RAYON ? user.district_id : query.districtId;
+    if (!districtId) return;
     if (query.status) {
-      qb.andWhere('pr.rayonId = :rayonId', { rayonId });
+      qb.andWhere('pr.districtId = :districtId', { districtId });
     } else {
-      qb.where('pr.rayonId = :rayonId', { rayonId });
+      qb.where('pr.districtId = :districtId', { districtId });
     }
   }
 
@@ -376,10 +376,10 @@ export class PruningRequestsService {
     assertCancellableStatus(request);
 
     const saved = await this.pruningRequestRepository.save(this.withCancellation(request, reason));
-    // May 13 — notify admins in the rayon when the submitter cancels so they
+    // May 13 — notify admins in the district when the submitter cancels so they
     // remove it from the queue without having to refresh.
-    void this.notifications.notifyRayonAdmins(
-      saved.rayonId,
+    void this.notifications.notifyDistrictAdmins(
+      saved.districtId,
       'Permohonan Perantingan Dibatalkan',
       `${user.full_name || user.username} membatalkan permohonan ${saved.referenceCode}.`,
       saved,
@@ -402,12 +402,12 @@ export class PruningRequestsService {
 
   /**
    * Update editable fields on a pruning request (address, notes, tree details, contacts).
-   * Admin roles only; admin_rayon is rayon-scoped.
+   * Admin roles only; admin_rayon is district-scoped.
    */
   async update(id: string, dto: UpdatePruningRequestDto, user: User): Promise<PruningRequest> {
     this.logger.log(`Updating pruning request ${id} by user ${user.id}`);
     const request = await this.finder.getOrFail(id);
-    assertAdminDataRayonScope(request, user, 'update');
+    assertAdminDataDistrictScope(request, user, 'update');
 
     const updated = await this.pruningRequestRepository.save(this.withUpdate(request, dto));
     this.logger.log(`Pruning request ${id} updated by ${user.id}`);

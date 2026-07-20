@@ -88,7 +88,7 @@ describe('SupervisorController', () => {
       expect(result.meta.total).toBe(0);
     });
 
-    it('should work for admin_rayon role (rayon-scoped access)', async () => {
+    it('should work for admin_rayon role (district-scoped access)', async () => {
       const mockActiveWorker: ActiveUserDto = {
         id: 'worker-uuid-1',
         username: 'worker1',

@@ -4,7 +4,7 @@ import { seedPermissions } from '../entities/permission';
 import { seedRoles } from '../entities/role';
 import { seedTeams } from '../entities/team';
 import { seedAreaTypes } from '../entities/area-type';
-import { seedRayons } from '../entities/rayon';
+import { seedDistricts } from '../entities/district';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedAreas } from '../entities/area';
@@ -48,7 +48,7 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await seedRoles(ctx);
   await seedTeams(ctx);
   await seedAreaTypes(ctx);
-  await seedRayons(ctx);
+  await seedDistricts(ctx);
   await seedShiftDefinitions(ctx);
   await seedActivityTypes(ctx);
   await seedAreas(ctx);

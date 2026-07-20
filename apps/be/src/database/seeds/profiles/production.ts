@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { runProfileCli, type SeedContext } from '../lib/context';
 import { seedAreaTypes } from '../entities/area-type';
-import { seedRayons } from '../entities/rayon';
+import { seedDistricts } from '../entities/district';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedSpecialDayOverrides } from '../entities/special-day';
@@ -42,7 +42,7 @@ async function seedProduction(ctx: SeedContext): Promise<void> {
 
   // Reference data (all idempotent via ON CONFLICT DO NOTHING).
   await seedAreaTypes(ctx);
-  await seedRayons(ctx);
+  await seedDistricts(ctx);
   await seedShiftDefinitions(ctx);
   await seedActivityTypes(ctx);
   await seedSpecialDayOverrides(ctx);

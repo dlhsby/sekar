@@ -28,7 +28,7 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
   canEditTargetRole,
   isGlobalRosterEditor,
-  isRayonManagerRole,
+  isDistrictManagerRole,
   isNonRosteredRole,
 } from './schedule-edit.policy';
 
@@ -59,7 +59,7 @@ const BUSY_STATUSES = [
  * whose schedule_locations include it.
  */
 export interface RangeFilters {
-  rayonId?: string | null;
+  districtId?: string | null;
   regionId?: string | null;
   locationId?: string | null;
   userId?: string | null;
@@ -106,7 +106,7 @@ export class SchedulesService {
   /**
    * Enforce the roster edit hierarchy: the `editor` may only edit a row whose
    * worker role is below theirs (see schedule-edit.policy) AND within their
-   * scope — rayon for kepala_rayon/admin_rayon, assigned areas for korlap.
+   * scope — district for kepala_rayon/admin_rayon, assigned areas for korlap.
    * admin_system/superadmin/management act globally. Throws otherwise.
    */
   private async assertCanEdit(editor: User, row: Schedule): Promise<void> {
@@ -119,14 +119,14 @@ export class SchedulesService {
     if (isGlobalRosterEditor(editor.role)) return;
 
     const rowAreas = row.schedule_areas ?? [];
-    if (isRayonManagerRole(editor.role)) {
-      if (!editor.rayon_id) {
-        throw new ForbiddenException('Your account is missing a rayon assignment');
+    if (isDistrictManagerRole(editor.role)) {
+      if (!editor.district_id) {
+        throw new ForbiddenException('Your account is missing a district assignment');
       }
-      const inRayon =
-        row.rayon_id === editor.rayon_id ||
-        rowAreas.some((a) => a.area?.rayon_id === editor.rayon_id);
-      if (!inRayon) throw new ForbiddenException('This worker is outside your rayon');
+      const inDistrict =
+        row.district_id === editor.district_id ||
+        rowAreas.some((a) => a.area?.district_id === editor.district_id);
+      if (!inDistrict) throw new ForbiddenException('This worker is outside your district');
       return;
     }
     // korlap: the row's areas must overlap the coordinator's own assigned areas.
@@ -138,19 +138,19 @@ export class SchedulesService {
   /**
    * Authorize scheduling a NEW row for `target` (no existing row to gate on).
    * Mirrors assertCanEdit's hierarchy + scope, but keyed off the target user's
-   * own rayon / permanent areas rather than a row's.
+   * own district / permanent areas rather than a row's.
    */
   private async assertCanScheduleUser(editor: User, target: User): Promise<void> {
     if (!canEditTargetRole(editor.role, target.role)) {
       throw new ForbiddenException('You cannot schedule this worker');
     }
     if (isGlobalRosterEditor(editor.role)) return;
-    if (isRayonManagerRole(editor.role)) {
-      if (!editor.rayon_id) {
-        throw new ForbiddenException('Your account is missing a rayon assignment');
+    if (isDistrictManagerRole(editor.role)) {
+      if (!editor.district_id) {
+        throw new ForbiddenException('Your account is missing a district assignment');
       }
-      if (target.rayon_id !== editor.rayon_id) {
-        throw new ForbiddenException('This worker is outside your rayon');
+      if (target.district_id !== editor.district_id) {
+        throw new ForbiddenException('This worker is outside your district');
       }
       return;
     }
@@ -223,7 +223,7 @@ export class SchedulesService {
       this.rosterRepo.create({
         user_id: dto.user_id,
         schedule_date: dto.date,
-        rayon_id: target.rayon_id ?? null,
+        district_id: target.district_id ?? null,
         shift_definition_id: shiftId,
         status: shiftId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
         source: 'manual',
@@ -310,25 +310,25 @@ export class SchedulesService {
     return totalCreated;
   }
 
-  /** Map each rayon id → the ids of all areas in it (for whole-rayon assignment). */
-  private async buildRayonAreaMap(rayonIds: string[]): Promise<Map<string, string[]>> {
+  /** Map each district id → the ids of all areas in it (for whole-district assignment). */
+  private async buildDistrictAreaMap(districtIds: string[]): Promise<Map<string, string[]>> {
     const map = new Map<string, string[]>();
-    if (rayonIds.length === 0) return map;
+    if (districtIds.length === 0) return map;
     const areas = await this.locationRepo.find({
-      where: { rayon_id: In(rayonIds) },
-      select: ['id', 'rayon_id'],
+      where: { district_id: In(districtIds) },
+      select: ['id', 'district_id'],
     });
     for (const a of areas) {
-      if (!a.rayon_id) continue;
-      const list = map.get(a.rayon_id) ?? [];
+      if (!a.district_id) continue;
+      const list = map.get(a.district_id) ?? [];
       list.push(a.id);
-      map.set(a.rayon_id, list);
+      map.set(a.district_id, list);
     }
     return map;
   }
 
-  /** All roster rows for a WIB day, optionally scoped to one rayon. */
-  async findByDate(date: string, rayonId?: string | null): Promise<Schedule[]> {
+  /** All roster rows for a WIB day, optionally scoped to one district. */
+  async findByDate(date: string, districtId?: string | null): Promise<Schedule[]> {
     const qb = this.rosterRepo
       .createQueryBuilder('ds')
       // `user` is eager on the entity, but createQueryBuilder ignores eager
@@ -341,8 +341,8 @@ export class SchedulesService {
       .leftJoinAndSelect('ds.replacement_user', 'ru')
       .where('ds.schedule_date = :date', { date })
       .andWhere('ds.deleted_at IS NULL');
-    if (rayonId) {
-      qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
+    if (districtId) {
+      qb.andWhere('ds.district_id = :districtId', { districtId });
     }
     return qb.orderBy('ds.status', 'ASC').addOrderBy('ds.created_at', 'ASC').getMany();
   }
@@ -354,7 +354,7 @@ export class SchedulesService {
   async findAllByUserAndDate(userId: string, date: string): Promise<Schedule[]> {
     const rows = await this.rosterRepo.find({
       where: { user_id: userId, schedule_date: date },
-      relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'rayon'],
+      relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'district'],
     });
     return rows.sort((a, b) =>
       (a.shift_definition?.start_time ?? '99:99:99').localeCompare(
@@ -401,7 +401,7 @@ export class SchedulesService {
   }
 
   /**
-   * All roster rows for a date range [from, to] inclusive, rayon-scoped.
+   * All roster rows for a date range [from, to] inclusive, district-scoped.
    * Relations: user, shift_definition, schedule_areas/locations, region, team_category.
    *
    * Phase 4 (ADR-047 amended): includes materialized rows + projected rows from
@@ -500,13 +500,13 @@ export class SchedulesService {
               projected.team_category_id = event.is_team ? event.team_category_id : null;
               projected.team_category = event.is_team ? event.team_category : null;
 
-              const rayon_id =
+              const district_id =
                 event.scope === 'static'
-                  ? event.location?.rayon_id
+                  ? event.location?.district_id
                   : event.scope === 'mobile'
-                    ? event.region?.rayon_id
-                    : event.rayon_id;
-              projected.rayon_id = rayon_id ?? null;
+                    ? event.region?.district_id
+                    : event.district_id;
+              projected.district_id = district_id ?? null;
               projected.is_detached = false;
               projected.is_projected = true;
 
@@ -557,9 +557,9 @@ export class SchedulesService {
     to: string,
     filters?: RangeFilters | string | null,
   ): Promise<Schedule[]> {
-    // Back-compat: a bare rayonId string is still accepted.
-    const f: RangeFilters = typeof filters === 'string' ? { rayonId: filters } : (filters ?? {});
-    const { rayonId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+    // Back-compat: a bare districtId string is still accepted.
+    const f: RangeFilters = typeof filters === 'string' ? { districtId: filters } : (filters ?? {});
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
 
     // Fetch materialized rows for the range
     const qb = this.rosterRepo
@@ -573,7 +573,7 @@ export class SchedulesService {
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL');
-    if (rayonId) qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
+    if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
     if (shiftDefinitionId)
@@ -622,13 +622,13 @@ export class SchedulesService {
       const eventRegionId =
         event.scope === 'mobile' ? event.region_id : (event.location?.region_id ?? null);
       if (regionId && eventRegionId !== regionId) continue;
-      const eventRayonForFilter =
+      const eventDistrictForFilter =
         event.scope === 'static'
-          ? event.location?.rayon_id
+          ? event.location?.district_id
           : event.scope === 'mobile'
-            ? event.region?.rayon_id
-            : event.rayon_id;
-      if (rayonId && eventRayonForFilter !== rayonId) continue;
+            ? event.region?.district_id
+            : event.district_id;
+      if (districtId && eventDistrictForFilter !== districtId) continue;
 
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
@@ -664,14 +664,14 @@ export class SchedulesService {
             if (!materializedKey.has(key)) {
               // Also check withDeleted to avoid resurrecting tombstones
               if (!existingKey.has(`${memberId}:${dateStr}`)) {
-                // Filter by rayon if needed
-                const rayon_id =
+                // Filter by district if needed
+                const district_id =
                   event.scope === 'static'
-                    ? event.location?.rayon_id
+                    ? event.location?.district_id
                     : event.scope === 'mobile'
-                      ? event.region?.rayon_id
-                      : event.rayon_id;
-                if (rayonId && rayon_id !== rayonId) continue;
+                      ? event.region?.district_id
+                      : event.district_id;
+                if (districtId && district_id !== districtId) continue;
 
                 // Emit a virtual projected row
                 const projected = new Schedule();
@@ -687,7 +687,7 @@ export class SchedulesService {
                 projected.region = event.scope === 'mobile' ? event.region : null;
                 projected.team_category_id = event.is_team ? event.team_category_id : null;
                 projected.team_category = event.is_team ? event.team_category : null;
-                projected.rayon_id = rayon_id ?? null;
+                projected.district_id = district_id ?? null;
                 projected.is_detached = false;
                 projected.is_projected = true;
 
@@ -749,7 +749,7 @@ export class SchedulesService {
     filters?: RangeFilters,
   ): Promise<Array<{ date: string; count: number }>> {
     const f: RangeFilters = filters ?? {};
-    const { rayonId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
 
     // getRawMany returns `date` columns as JS Date; normalize to YYYY-MM-DD so
     // keys/sorting line up with the projection's string dates.
@@ -763,7 +763,7 @@ export class SchedulesService {
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL');
-    if (rayonId) qb.andWhere('ds.rayon_id = :rayonId', { rayonId });
+    if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
     if (shiftDefinitionId)
@@ -815,13 +815,13 @@ export class SchedulesService {
       const eventRegionId =
         event.scope === 'mobile' ? event.region_id : (event.location?.region_id ?? null);
       if (regionId && eventRegionId !== regionId) continue;
-      const eventRayon =
+      const eventDistrict =
         event.scope === 'static'
-          ? event.location?.rayon_id
+          ? event.location?.district_id
           : event.scope === 'mobile'
-            ? event.region?.rayon_id
-            : event.rayon_id;
-      if (rayonId && eventRayon !== rayonId) continue;
+            ? event.region?.district_id
+            : event.district_id;
+      if (districtId && eventDistrict !== districtId) continue;
 
       let memberIds = event.is_team
         ? Array.from(
@@ -892,7 +892,7 @@ export class SchedulesService {
   /**
    * Replace the rostered worker for the day. The original row is marked
    * `replaced`; the covering worker's row for the same day is upserted to take
-   * over the original's rayon/shift/areas, with `original_user_id` set.
+   * over the original's district/shift/areas, with `original_user_id` set.
    */
   async replaceWorker(
     id: string,
@@ -951,7 +951,7 @@ export class SchedulesService {
         this.rosterRepo.create({
           user_id: replacementUserId,
           schedule_date: original.schedule_date,
-          rayon_id: original.rayon_id,
+          district_id: original.district_id,
           shift_definition_id: original.shift_definition_id,
           original_user_id: original.user_id,
           status: coverStatus,
@@ -963,12 +963,12 @@ export class SchedulesService {
       coverRowId = saved.id;
     } else {
       // Raw column UPDATE, not `save(coverRow)` — findByUserAndDate() eager/
-      // explicitly loads `shift_definition`/`rayon`/`schedule_areas`, so
+      // explicitly loads `shift_definition`/`district`/`schedule_areas`, so
       // `coverRow` holds stale relation objects; saving the entity would let
       // TypeORM reconcile those FKs from the stale objects and revert them.
       coverRowId = coverRow.id;
       await this.rosterRepo.update(coverRowId, {
-        rayon_id: original.rayon_id,
+        district_id: original.district_id,
         shift_definition_id: original.shift_definition_id,
         original_user_id: original.user_id,
         status: coverStatus,
@@ -1040,13 +1040,13 @@ export class SchedulesService {
   /**
    * Override today's roster for a worker (used by monitoring reassign): ensure a
    * row exists for the day, set its single area to `areaId`, and optionally its
-   * rayon/shift. Replaces the legacy range-based `schedules` override layer.
+   * district/shift. Replaces the legacy range-based `schedules` override layer.
    * Returns the affected roster row id.
    */
   async overrideForDay(
     userId: string,
     date: string,
-    params: { locationId: string; rayonId?: string | null; shiftDefinitionId?: string | null },
+    params: { locationId: string; districtId?: string | null; shiftDefinitionId?: string | null },
     actorId: string,
   ): Promise<string> {
     // NOTE: monitoring-reassign is authorized by its own guard; this path
@@ -1059,7 +1059,7 @@ export class SchedulesService {
         this.rosterRepo.create({
           user_id: userId,
           schedule_date: date,
-          rayon_id: params.rayonId ?? null,
+          district_id: params.districtId ?? null,
           shift_definition_id: shiftId,
           // Mirror generateRoster: a row with no shift is OFF, not PLANNED.
           status: shiftId ? ScheduleStatus.PLANNED : ScheduleStatus.OFF,
@@ -1124,16 +1124,16 @@ export class SchedulesService {
   }
 
   /**
-   * All live roster rows for a day (any status), optionally rayon-scoped. The
+   * All live roster rows for a day (any status), optionally district-scoped. The
    * monitoring service derives expected / present / absent / on-leave from this
    * (single query) without a new tracking column. `user` is eager-loaded.
    */
-  async getRosterForMonitoring(date: string, rayonId?: string | null): Promise<Schedule[]> {
+  async getRosterForMonitoring(date: string, districtId?: string | null): Promise<Schedule[]> {
     return this.rosterRepo.find({
       where: {
         schedule_date: date,
         deleted_at: IsNull(),
-        ...(rayonId ? { rayon_id: rayonId } : {}),
+        ...(districtId ? { district_id: districtId } : {}),
       },
       // `user` is eager on the entity; list it explicitly so the monitoring
       // absent_users mapping (full_name/role) never depends on that subtlety.

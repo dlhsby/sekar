@@ -11,13 +11,13 @@ import { DEFAULT_PASSWORD_HASH } from './constants';
  * Each user gets:
  *   - role:           'satgas'
  *   - password:       12345678 (shared bcrypt hash with the rest of the seeds)
- *   - rayon_id:       first existing rayon row (queried at runtime)
- *   - location_id:        first existing area row in that rayon
+ *   - district_id:       first existing district row (queried at runtime)
+ *   - location_id:        first existing area row in that district
  *   - phone_number:   `0812LT0NNNN` (zero-padded VU index, kept unique by UNIQUE on phone)
  *
  * Usage: LOADTEST_USERS=500 npm run db:seed:loadtest
  *   - LOADTEST_USERS defaults to 50 to keep local seed runs fast.
- *   - Run AFTER `npm run db:seed` so a rayon + area exist.
+ *   - Run AFTER `npm run db:seed` so a district + area exist.
  */
 
 const PASSWORD_HASH = DEFAULT_PASSWORD_HASH;
@@ -26,25 +26,25 @@ const LOADTEST_USER_COUNT = parseInt(process.env.LOADTEST_USERS || '50', 10);
 const USERNAME_PREFIX = process.env.LOADTEST_PREFIX || 'loadtest_satgas';
 
 interface SeedTargets {
-  rayonId: string;
+  districtId: string;
   areaId: string;
 }
 
 async function pickTargets(qr: QueryRunner): Promise<SeedTargets> {
-  const rayonRows = await qr.query(`SELECT id FROM rayons ORDER BY created_at ASC LIMIT 1`);
-  if (!rayonRows.length) {
-    throw new Error('No rayons found — run `npm run db:seed` first.');
+  const districtRows = await qr.query(`SELECT id FROM districts ORDER BY created_at ASC LIMIT 1`);
+  if (!districtRows.length) {
+    throw new Error('No districts found — run `npm run db:seed` first.');
   }
-  const rayonId = rayonRows[0].id;
+  const districtId = districtRows[0].id;
 
   const areaRows = await qr.query(
-    `SELECT id FROM locations WHERE rayon_id = $1 ORDER BY created_at ASC LIMIT 1`,
-    [rayonId],
+    `SELECT id FROM locations WHERE district_id = $1 ORDER BY created_at ASC LIMIT 1`,
+    [districtId],
   );
   if (!areaRows.length) {
-    throw new Error(`No locations found for rayon ${rayonId} — seed broken.`);
+    throw new Error(`No locations found for district ${districtId} — seed broken.`);
   }
-  return { rayonId, areaId: areaRows[0].id };
+  return { districtId, areaId: areaRows[0].id };
 }
 
 export async function seedLoadtest(dataSource: DataSource): Promise<void> {
@@ -55,8 +55,8 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
     console.log(
       `🔧 Load-test seed: generating ${LOADTEST_USER_COUNT} ${USERNAME_PREFIX}{N} users…`,
     );
-    const { rayonId, areaId } = await pickTargets(qr);
-    console.log(`   target rayon=${rayonId} area=${areaId}`);
+    const { districtId, areaId } = await pickTargets(qr);
+    console.log(`   target district=${districtId} area=${areaId}`);
 
     let inserted = 0;
     let skipped = 0;
@@ -70,11 +70,11 @@ export async function seedLoadtest(dataSource: DataSource): Promise<void> {
 
       const result = await qr.query(
         `INSERT INTO users
-           (username, password_hash, full_name, phone_number, role, rayon_id, location_id, is_active)
+           (username, password_hash, full_name, phone_number, role, district_id, location_id, is_active)
          VALUES ($1, $2, $3, $4, 'satgas', $5, $6, TRUE)
          ON CONFLICT (username) DO NOTHING
          RETURNING id`,
-        [username, PASSWORD_HASH, fullName, phone, rayonId, areaId],
+        [username, PASSWORD_HASH, fullName, phone, districtId, areaId],
       );
       if (result.length > 0) inserted++;
       else skipped++;

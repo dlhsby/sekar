@@ -12,17 +12,17 @@ export class ServiceCapacityService {
   ) {}
 
   async findCalendar(params: {
-    rayonId: string;
+    districtId: string;
     year: number;
     fromWeek?: number;
     toWeek?: number;
     serviceType?: string;
   }): Promise<ServiceCapacity[]> {
-    const { rayonId, year, fromWeek, toWeek, serviceType } = params;
+    const { districtId, year, fromWeek, toWeek, serviceType } = params;
 
     const query = this.repository
       .createQueryBuilder('sc')
-      .where('sc.rayonId = :rayonId', { rayonId })
+      .where('sc.districtId = :districtId', { districtId })
       .andWhere('sc.year = :year', { year });
 
     if (fromWeek) {
@@ -56,7 +56,7 @@ export class ServiceCapacityService {
             filled.push(existing);
           } else {
             const placeholder = new ServiceCapacity();
-            placeholder.rayonId = rayonId;
+            placeholder.districtId = districtId;
             placeholder.year = year;
             placeholder.isoWeek = w;
             placeholder.serviceType = st;
@@ -73,21 +73,21 @@ export class ServiceCapacityService {
   }
 
   async upsertCapacity(params: {
-    rayonId: string;
+    districtId: string;
     year: number;
     isoWeek: number;
     serviceType: string;
     capacityUnits: number;
   }): Promise<ServiceCapacity> {
-    const { rayonId, year, isoWeek, serviceType, capacityUnits } = params;
+    const { districtId, year, isoWeek, serviceType, capacityUnits } = params;
 
     let capacity = await this.repository.findOne({
-      where: { rayonId, year, isoWeek, serviceType },
+      where: { districtId, year, isoWeek, serviceType },
     });
 
     if (!capacity) {
       capacity = this.repository.create({
-        rayonId,
+        districtId,
         year,
         isoWeek,
         serviceType,
@@ -102,21 +102,21 @@ export class ServiceCapacityService {
   }
 
   async bookAtomic(params: {
-    rayonId: string;
+    districtId: string;
     year: number;
     isoWeek: number;
     serviceType: string;
     units: number;
   }): Promise<ServiceCapacity> {
-    const { rayonId, year, isoWeek, serviceType, units } = params;
+    const { districtId, year, isoWeek, serviceType, units } = params;
 
     return this.dataSource.transaction(async (tm) => {
-      // Use the entity-aware QB so column-name mapping (rayonId → rayon_id, etc.)
+      // Use the entity-aware QB so column-name mapping (districtId → district_id, etc.)
       // is loaded from metadata. The previous from()/getOne() form returned raw
       // rows TypeORM couldn't hydrate, so the lookup always missed.
       const capacity = await tm
         .createQueryBuilder(ServiceCapacity, 'sc')
-        .where('sc.rayonId = :rayonId', { rayonId })
+        .where('sc.districtId = :districtId', { districtId })
         .andWhere('sc.year = :year', { year })
         .andWhere('sc.isoWeek = :isoWeek', { isoWeek })
         .andWhere('sc.serviceType = :serviceType', { serviceType })
@@ -141,18 +141,18 @@ export class ServiceCapacityService {
   }
 
   async releaseAtomic(params: {
-    rayonId: string;
+    districtId: string;
     year: number;
     isoWeek: number;
     serviceType: string;
     units: number;
   }): Promise<ServiceCapacity> {
-    const { rayonId, year, isoWeek, serviceType, units } = params;
+    const { districtId, year, isoWeek, serviceType, units } = params;
 
     return this.dataSource.transaction(async (tm) => {
       const capacity = await tm
         .createQueryBuilder(ServiceCapacity, 'sc')
-        .where('sc.rayonId = :rayonId', { rayonId })
+        .where('sc.districtId = :districtId', { districtId })
         .andWhere('sc.year = :year', { year })
         .andWhere('sc.isoWeek = :isoWeek', { isoWeek })
         .andWhere('sc.serviceType = :serviceType', { serviceType })

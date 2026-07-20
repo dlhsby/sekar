@@ -4,7 +4,7 @@ import { User } from '../../users/entities/user.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 import { Location } from '../../locations/entities/location.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 
 /**
  * A monitored worker's state — three values (ADR-046 amendment, 2026-07-16).
@@ -137,13 +137,13 @@ export class UserTrackingStatus {
   @JoinColumn({ name: 'location_id' })
   area: Location;
 
-  @ApiProperty({ description: 'Rayon ID for admin_rayon/kepala_rayon tracking', nullable: true })
-  @Column({ name: 'rayon_id', type: 'uuid', nullable: true })
-  rayon_id: string | null;
+  @ApiProperty({ description: 'District ID for admin_rayon/kepala_rayon tracking', nullable: true })
+  @Column({ name: 'district_id', type: 'uuid', nullable: true })
+  district_id: string | null;
 
-  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon: Rayon;
+  @ManyToOne(() => District, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'district_id' })
+  district: District;
 
   @UpdateDateColumn()
   updated_at: Date;

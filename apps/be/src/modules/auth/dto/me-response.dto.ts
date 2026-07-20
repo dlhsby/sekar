@@ -35,7 +35,7 @@ class AssignedAreaDto {
 /**
  * Response DTO for GET /auth/me
  *
- * Returns current user profile with resolved area/rayon assignment.
+ * Returns current user profile with resolved area/district assignment.
  */
 export class MeResponseDto {
   @ApiProperty({ example: 'user-uuid' })
@@ -63,8 +63,8 @@ export class MeResponseDto {
   @ApiPropertyOptional({ example: 'area-uuid', nullable: true })
   location_id: string | null;
 
-  @ApiPropertyOptional({ example: 'rayon-uuid', nullable: true })
-  rayon_id: string | null;
+  @ApiPropertyOptional({ example: 'district-uuid', nullable: true })
+  district_id: string | null;
 
   @ApiPropertyOptional({ example: 'Tegalsari', nullable: true })
   kecamatan_name?: string | null;

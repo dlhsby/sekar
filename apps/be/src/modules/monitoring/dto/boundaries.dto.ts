@@ -41,11 +41,11 @@ export class AreaBoundaryDto {
   @ApiProperty({ example: 112.7521 })
   center_lng: number;
 
-  @ApiProperty({ example: 'rayon-uuid' })
-  rayon_id: string | null;
+  @ApiProperty({ example: 'district-uuid' })
+  district_id: string | null;
 
   @ApiProperty({ example: 'Rayon Selatan' })
-  rayon_name: string;
+  district_name: string;
 
   @ApiProperty({ example: 6 })
   assigned_count: number;
@@ -86,8 +86,8 @@ export class RegionBoundaryDto {
   center_lng: number | null;
 }
 
-export class RayonBoundaryDto {
-  @ApiProperty({ example: 'rayon-uuid' })
+export class DistrictBoundaryDto {
+  @ApiProperty({ example: 'district-uuid' })
   id: string;
 
   @ApiProperty({ example: 'Rayon Selatan' })
@@ -123,7 +123,7 @@ export class RayonBoundaryDto {
   @ApiProperty({ example: 1 })
   understaffed_area_count: number;
 
-  /** Kawasan (region) outlines within the rayon — drawn tinted at rayon zoom. */
+  /** Kawasan (region) outlines within the district — drawn tinted at district zoom. */
   @ApiProperty({ type: [RegionBoundaryDto] })
   regions: RegionBoundaryDto[];
 
@@ -132,8 +132,8 @@ export class RayonBoundaryDto {
 }
 
 export class BoundariesResponseDto {
-  @ApiProperty({ type: [RayonBoundaryDto] })
-  rayons: RayonBoundaryDto[];
+  @ApiProperty({ type: [DistrictBoundaryDto] })
+  districts: DistrictBoundaryDto[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

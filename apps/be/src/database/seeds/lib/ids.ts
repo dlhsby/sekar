@@ -12,8 +12,8 @@ export const ADMIN_USER_ID = 'e8f9a0b1-c2d3-4e5f-a6b7-c8d9e0f1a2b3';
 /** Dummy account exercising the forced password-change flow (demo only). */
 export const RESET_TEST_USER_ID = 'a0000000-0000-4000-8000-000000000099';
 
-/** Rayon UUIDs — must match data/rayons.snapshot.json (rayon.ts, area.ts, user.ts, kecamatan.ts). */
-export const RAYON_SELATAN_ID = '085a298f-d8e9-435c-8a3b-998ffa47a26e';
+/** Rayon UUIDs — must match data/districts.snapshot.json (district.ts, area.ts, user.ts, kecamatan.ts). */
+export const DISTRICT_SELATAN_ID = '085a298f-d8e9-435c-8a3b-998ffa47a26e';
 export const RAYON_UTARA_ID = '861a7e7c-8bd5-4e73-8aa7-e92988959dca';
 export const RAYON_PUSAT_ID = 'd564809d-316f-4a2a-a1c6-671eebb49653';
 export const RAYON_TIMUR1_ID = '42934ad5-4ea0-4537-abb6-cf7e984e2d39';
@@ -22,10 +22,10 @@ export const RAYON_BARAT1_ID = 'bf040137-fce4-4016-b5e7-704ad82c1594';
 export const RAYON_BARAT2_ID = '7422e6ee-0693-4565-9016-d4f759bdeed2';
 export const RAYON_TAMAN_AKTIF_ID = '8a8a8a8a-1111-4222-9333-444444444444';
 
-/** rayon code → id (stable internal keys; codes stay fixed even after the
+/** district code → id (stable internal keys; codes stay fixed even after the
  * staging Barat 1 ↔ Barat 2 rename, preserving downstream membership). */
 export const RAYON_ID_BY_CODE: Record<string, string> = {
-  SELATAN: RAYON_SELATAN_ID,
+  SELATAN: DISTRICT_SELATAN_ID,
   UTARA: RAYON_UTARA_ID,
   PUSAT: RAYON_PUSAT_ID,
   TIMUR1: RAYON_TIMUR1_ID,

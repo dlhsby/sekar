@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { LocationType } from '../../location-types/entities/location-type.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District } from '../../districts/entities/district.entity';
 
 /**
  * Location Entity
@@ -89,18 +89,22 @@ export class Location {
 
   // Phase 2 additions
   @ApiProperty({
-    description: 'Rayon ID this area belongs to',
+    description: 'District ID this area belongs to',
     example: '11111111-1111-1111-1111-111111111101',
     required: false,
   })
   @Column({ type: 'uuid', nullable: true })
-  rayon_id?: string;
+  district_id?: string;
 
-  /** Parent rayon. Nullable; SET NULL so removing a rayon doesn't block. */
-  @ApiProperty({ description: 'Rayon this area belongs to', type: () => Rayon, required: false })
-  @ManyToOne(() => Rayon, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'rayon_id' })
-  rayon?: Rayon | null;
+  /** Parent district. Nullable; SET NULL so removing a district doesn't block. */
+  @ApiProperty({
+    description: 'District this area belongs to',
+    type: () => District,
+    required: false,
+  })
+  @ManyToOne(() => District, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'district_id' })
+  district?: District | null;
 
   // Region (Kawasan) parent — ADR-045. Nullable; areas re-parented in the UI.
   @ApiProperty({ description: 'Region (Kawasan) this area belongs to', required: false })

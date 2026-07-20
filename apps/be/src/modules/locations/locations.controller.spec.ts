@@ -115,7 +115,7 @@ describe('LocationsController', () => {
       id: 'u1',
       username: 'superadmin',
       role: 'superadmin',
-      rayon_id: null,
+      district_id: null,
     } as any;
 
     it('should return an array of areas', async () => {

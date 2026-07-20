@@ -4,7 +4,7 @@ import { seedPermissions } from '../entities/permission';
 import { seedRoles } from '../entities/role';
 import { seedTeams } from '../entities/team';
 import { seedAreaTypes } from '../entities/area-type';
-import { seedRayons } from '../entities/rayon';
+import { seedDistricts } from '../entities/district';
 import { seedShiftDefinitions } from '../entities/shift-definition';
 import { seedActivityTypes } from '../entities/activity-type';
 import { seedAreas } from '../entities/area';
@@ -32,7 +32,7 @@ import { seedServiceCapacity } from '../entities/service-capacity';
  *   - regions 129 (kawasan from the client workbook — data/kawasan.snapshot.json)
  *   - monitoring_configs 9
  *   - location_staff_requirements 332
- *   - user_locations 717 (280 from CSV + 27 multi-area + korlap rayons)
+ *   - user_locations 717 (280 from CSV + 27 multi-area + korlap districts)
  *   - user_tracking_status 1028
  *   - schedules 1075 (daily roster materialized, one per active user)
  *   - schedule_locations 692 (today's area assignments from user_locations)
@@ -53,7 +53,7 @@ async function seedStaging(ctx: SeedContext): Promise<void> {
   await seedRoles(ctx);
   await seedTeams(ctx);
   await seedAreaTypes(ctx);
-  await seedRayons(ctx);
+  await seedDistricts(ctx);
   await seedShiftDefinitions(ctx);
   await seedActivityTypes(ctx);
   await seedSpecialDayOverrides(ctx);

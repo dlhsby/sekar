@@ -499,7 +499,7 @@ export class ImportService {
     area.gps_lng = parsedArea.center.longitude;
     area.coverage_area = parsedArea.coverage_area;
     area.location_type_id = selection.location_type_id;
-    area.rayon_id = selection.rayon_id;
+    area.district_id = selection.district_id;
     area.is_active = true;
 
     return this.areaRepository.save(area);
@@ -535,8 +535,8 @@ export class ImportService {
       area.location_type_id = selection.location_type_id;
     }
 
-    if (selection.rayon_id) {
-      area.rayon_id = selection.rayon_id;
+    if (selection.district_id) {
+      area.district_id = selection.district_id;
     }
 
     return this.areaRepository.save(area);

@@ -51,7 +51,7 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'location_types',
   'activity_types',
   'kecamatans',
-  'rayons',
+  'districts',
   'users',
 ];
 

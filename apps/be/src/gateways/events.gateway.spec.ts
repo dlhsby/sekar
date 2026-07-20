@@ -268,25 +268,25 @@ describe('EventsGateway', () => {
     });
   });
 
-  describe('subscribe:rayon', () => {
-    it('should subscribe client to rayon room', () => {
-      const result = gateway.handleSubscribeRayon(mockClient, {
-        rayon_id: 'rayon-1',
+  describe('subscribe:district', () => {
+    it('should subscribe client to district room', () => {
+      const result = gateway.handleSubscribeDistrict(mockClient, {
+        district_id: 'district-1',
       });
 
-      expect(mockClient.join).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
-      expect(result).toEqual({ success: true, room: 'monitoring:rayon:rayon-1' });
+      expect(mockClient.join).toHaveBeenCalledWith('monitoring:district:district-1');
+      expect(result).toEqual({ success: true, room: 'monitoring:district:district-1' });
     });
   });
 
-  describe('unsubscribe:rayon', () => {
-    it('should unsubscribe client from rayon room', () => {
-      const result = gateway.handleUnsubscribeRayon(mockClient, {
-        rayon_id: 'rayon-1',
+  describe('unsubscribe:district', () => {
+    it('should unsubscribe client from district room', () => {
+      const result = gateway.handleUnsubscribeDistrict(mockClient, {
+        district_id: 'district-1',
       });
 
-      expect(mockClient.leave).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
-      expect(result).toEqual({ success: true, room: 'monitoring:rayon:rayon-1' });
+      expect(mockClient.leave).toHaveBeenCalledWith('monitoring:district:district-1');
+      expect(result).toEqual({ success: true, room: 'monitoring:district:district-1' });
     });
   });
 
@@ -321,7 +321,7 @@ describe('EventsGateway', () => {
       shift_name: 'Shift Pagi',
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       latitude: -7.2905,
       longitude: 112.7398,
@@ -341,10 +341,10 @@ describe('EventsGateway', () => {
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_LOCATION, locationEvent);
     });
 
-    it('should emit to rayon room', () => {
+    it('should emit to district room', () => {
       gateway.emitUserLocation(locationEvent);
 
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
     });
 
     it('should NOT emit to city room (WS-3: high-frequency location pings excluded)', () => {
@@ -357,16 +357,16 @@ describe('EventsGateway', () => {
       expect(cityCalls.length).toBe(0);
     });
 
-    it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...locationEvent, rayon_id: null };
+    it('should not emit to district room if district_id is null', () => {
+      const eventNoDistrict = { ...locationEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitUserLocation(eventNoRayon);
+      gateway.emitUserLocation(eventNoDistrict);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
@@ -378,7 +378,7 @@ describe('EventsGateway', () => {
       shift_id: 'shift-1',
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       latitude: -7.2905,
       longitude: 112.7398,
@@ -389,21 +389,21 @@ describe('EventsGateway', () => {
       gateway.emitUserClockIn(clockInEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_CLOCK_IN, clockInEvent);
     });
 
-    it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...clockInEvent, rayon_id: null };
+    it('should not emit to district room if district_id is null', () => {
+      const eventNoDistrict = { ...clockInEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitUserClockIn(eventNoRayon);
+      gateway.emitUserClockIn(eventNoDistrict);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
@@ -414,7 +414,7 @@ describe('EventsGateway', () => {
       shift_id: 'shift-1',
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       timestamp: new Date(),
       duration_minutes: 480,
@@ -424,21 +424,21 @@ describe('EventsGateway', () => {
       gateway.emitUserClockOut(clockOutEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_CLOCK_OUT, clockOutEvent);
     });
 
-    it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...clockOutEvent, rayon_id: null };
+    it('should not emit to district room if district_id is null', () => {
+      const eventNoDistrict = { ...clockOutEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitUserClockOut(eventNoRayon);
+      gateway.emitUserClockOut(eventNoDistrict);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
@@ -446,7 +446,7 @@ describe('EventsGateway', () => {
     const staffingEvent: AreaStaffingEvent = {
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       workers_required: 5,
       workers_online: 3,
       workers_offline: 1,
@@ -459,21 +459,21 @@ describe('EventsGateway', () => {
       gateway.emitAreaStaffing(staffingEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.AREA_STAFFING, staffingEvent);
     });
 
-    it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...staffingEvent, rayon_id: null };
+    it('should not emit to district room if district_id is null', () => {
+      const eventNoDistrict = { ...staffingEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitAreaStaffing(eventNoRayon);
+      gateway.emitAreaStaffing(eventNoDistrict);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
@@ -483,7 +483,7 @@ describe('EventsGateway', () => {
       title: 'Water plants',
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       assigned_to: 'worker-1',
       assignee_name: 'Worker One',
       priority: 'high',
@@ -495,21 +495,21 @@ describe('EventsGateway', () => {
       gateway.emitTaskAssigned(taskAssignedEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.TASK_ASSIGNED, taskAssignedEvent);
     });
 
-    it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...taskAssignedEvent, rayon_id: null };
+    it('should not emit to district room if district_id is null', () => {
+      const eventNoDistrict = { ...taskAssignedEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitTaskAssigned(eventNoRayon);
+      gateway.emitTaskAssigned(eventNoDistrict);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
 
     it('should emit to assigned user via their per-user room', () => {
@@ -527,7 +527,7 @@ describe('EventsGateway', () => {
       title: 'Water plants',
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       completed_by: 'worker-1',
       completer_name: 'Worker One',
       timestamp: new Date(),
@@ -537,21 +537,21 @@ describe('EventsGateway', () => {
       gateway.emitTaskCompleted(taskCompletedEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.TASK_COMPLETED, taskCompletedEvent);
     });
 
-    it('should not emit to rayon room if rayon_id is null', () => {
-      const eventNoRayon = { ...taskCompletedEvent, rayon_id: null };
+    it('should not emit to district room if district_id is null', () => {
+      const eventNoDistrict = { ...taskCompletedEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitTaskCompleted(eventNoRayon);
+      gateway.emitTaskCompleted(eventNoDistrict);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
-        call[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((call) =>
+        call[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
@@ -562,17 +562,21 @@ describe('EventsGateway', () => {
       userRepo = mockUserRepository;
     });
 
-    it('should auto-join rayon room for kepala_rayon', async () => {
+    it('should auto-join district room for kepala_rayon', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'kr-1',
         role: UserRole.KEPALA_RAYON,
       });
-      userRepo.findOne.mockResolvedValue({ id: 'kr-1', rayon_id: 'rayon-3', location_id: null });
+      userRepo.findOne.mockResolvedValue({
+        id: 'kr-1',
+        district_id: 'district-3',
+        location_id: null,
+      });
 
       await gateway.handleConnection(mockClient);
 
       expect(mockClient.join).toHaveBeenCalledWith('user:kr-1');
-      expect(mockClient.join).toHaveBeenCalledWith('monitoring:rayon:rayon-3');
+      expect(mockClient.join).toHaveBeenCalledWith('monitoring:district:district-3');
       expect(mockClient.join).not.toHaveBeenCalledWith('monitoring:city');
     });
 
@@ -581,7 +585,11 @@ describe('EventsGateway', () => {
         sub: 'korlap-1',
         role: UserRole.KORLAP,
       });
-      userRepo.findOne.mockResolvedValue({ id: 'korlap-1', rayon_id: null, location_id: 'area-5' });
+      userRepo.findOne.mockResolvedValue({
+        id: 'korlap-1',
+        district_id: null,
+        location_id: 'area-5',
+      });
 
       await gateway.handleConnection(mockClient);
 
@@ -615,16 +623,20 @@ describe('EventsGateway', () => {
       expect(mockClient.disconnect).not.toHaveBeenCalled();
     });
 
-    it('should auto-join rayon room for admin_rayon', async () => {
+    it('should auto-join district room for admin_rayon', async () => {
       jwtService.verify.mockReturnValue({
         sub: 'ad-1',
         role: UserRole.ADMIN_RAYON,
       });
-      userRepo.findOne.mockResolvedValue({ id: 'ad-1', rayon_id: 'rayon-2', location_id: null });
+      userRepo.findOne.mockResolvedValue({
+        id: 'ad-1',
+        district_id: 'district-2',
+        location_id: null,
+      });
 
       await gateway.handleConnection(mockClient);
 
-      expect(mockClient.join).toHaveBeenCalledWith('monitoring:rayon:rayon-2');
+      expect(mockClient.join).toHaveBeenCalledWith('monitoring:district:district-2');
     });
 
     it('should auto-join city room for admin_system', async () => {
@@ -646,7 +658,7 @@ describe('EventsGateway', () => {
       role: UserRole.SATGAS,
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       previous_status: TrackingStatus.ACTIVE,
       new_status: TrackingStatus.OFFLINE,
@@ -657,11 +669,11 @@ describe('EventsGateway', () => {
       timestamp: new Date(),
     };
 
-    it('should emit to area, rayon, and city rooms', () => {
+    it('should emit to area, district, and city rooms', () => {
       gateway.emitUserStatusChanged(statusEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_STATUS_CHANGED, statusEvent);
     });
@@ -678,16 +690,16 @@ describe('EventsGateway', () => {
       expect(areaCalls.length).toBe(0);
     });
 
-    it('should skip rayon room when rayon_id is null', () => {
-      const noRayonEvent = { ...statusEvent, rayon_id: null };
+    it('should skip district room when district_id is null', () => {
+      const noDistrictEvent = { ...statusEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitUserStatusChanged(noRayonEvent);
+      gateway.emitUserStatusChanged(noDistrictEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
-        c[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
 
     it('should emit to region room when region_id is present', () => {
@@ -720,44 +732,44 @@ describe('EventsGateway', () => {
       role: UserRole.SATGAS,
       location_id: 'area-1',
       location_name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       latitude: -7.5,
       longitude: 112.9,
       timestamp: new Date(),
     };
 
-    it('should emit to area, rayon, and city rooms', () => {
+    it('should emit to area, district, and city rooms', () => {
       gateway.emitUserLeftArea(leftAreaEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_LEFT_AREA, leftAreaEvent);
     });
 
-    it('should skip rayon room when rayon_id is null', () => {
-      const noRayonEvent = { ...leftAreaEvent, rayon_id: null };
+    it('should skip district room when district_id is null', () => {
+      const noDistrictEvent = { ...leftAreaEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitUserLeftArea(noRayonEvent);
+      gateway.emitUserLeftArea(noDistrictEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
-        c[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
   describe('emitUserEnteredArea', () => {
-    it('should emit to area, rayon, and city rooms', () => {
+    it('should emit to area, district, and city rooms', () => {
       const event: UserAreaEvent = {
         user_id: 'user-1',
         user_name: 'Test User',
         role: UserRole.SATGAS,
         location_id: 'area-1',
         location_name: 'Taman Bungkul',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         latitude: -7.29,
         longitude: 112.74,
         timestamp: new Date(),
@@ -766,7 +778,7 @@ describe('EventsGateway', () => {
       gateway.emitUserEnteredArea(event);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_ENTERED_AREA, event);
     });
@@ -781,17 +793,17 @@ describe('EventsGateway', () => {
       previous_area_name: 'Old Location',
       new_area_id: 'area-new',
       new_area_name: 'New Location',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       timestamp: new Date(),
     };
 
-    it('should emit to old area, new area, rayon, and city rooms', () => {
+    it('should emit to old area, new area, district, and city rooms', () => {
       gateway.emitUserReassigned(reassignedEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-old');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-new');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(EventType.USER_REASSIGNED, reassignedEvent);
     });
@@ -810,23 +822,23 @@ describe('EventsGateway', () => {
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-new');
     });
 
-    it('should skip rayon room when rayon_id is null', () => {
-      const noRayonEvent = { ...reassignedEvent, rayon_id: null };
+    it('should skip district room when district_id is null', () => {
+      const noDistrictEvent = { ...reassignedEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitUserReassigned(noRayonEvent);
+      gateway.emitUserReassigned(noDistrictEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
-        c[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 
   describe('emitAreaStaffingChanged', () => {
     const staffingChangedEvent: AreaStaffingChangedEvent = {
       location_id: 'area-1',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       region_id: null,
       active_count: 3,
       required_count: 5,
@@ -834,11 +846,11 @@ describe('EventsGateway', () => {
       timestamp: new Date(),
     };
 
-    it('should emit to area, rayon, and city rooms', () => {
+    it('should emit to area, district, and city rooms', () => {
       gateway.emitAreaStaffingChanged(staffingChangedEvent);
 
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:area:area-1');
-      expect(mockServer.to).toHaveBeenCalledWith('monitoring:rayon:rayon-1');
+      expect(mockServer.to).toHaveBeenCalledWith('monitoring:district:district-1');
       expect(mockServer.to).toHaveBeenCalledWith('monitoring:city');
       expect(mockServer.emit).toHaveBeenCalledWith(
         EventType.AREA_STAFFING_CHANGED,
@@ -846,16 +858,16 @@ describe('EventsGateway', () => {
       );
     });
 
-    it('should skip rayon room when rayon_id is null', () => {
-      const noRayonEvent = { ...staffingChangedEvent, rayon_id: null };
+    it('should skip district room when district_id is null', () => {
+      const noDistrictEvent = { ...staffingChangedEvent, district_id: null };
       mockServer.to.mockClear();
 
-      gateway.emitAreaStaffingChanged(noRayonEvent);
+      gateway.emitAreaStaffingChanged(noDistrictEvent);
 
-      const rayonCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
-        c[0]?.startsWith('monitoring:rayon:'),
+      const districtCalls = (mockServer.to as jest.Mock).mock.calls.filter((c) =>
+        c[0]?.startsWith('monitoring:district:'),
       );
-      expect(rayonCalls.length).toBe(0);
+      expect(districtCalls.length).toBe(0);
     });
   });
 

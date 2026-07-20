@@ -35,11 +35,11 @@ export class LiveUserDto {
   @ApiProperty({ example: 'Taman Bungkul' })
   location_name: string;
 
-  @ApiProperty({ example: 'rayon-uuid' })
-  rayon_id: string | null;
+  @ApiProperty({ example: 'district-uuid' })
+  district_id: string | null;
 
   @ApiProperty({ example: 'Rayon Selatan' })
-  rayon_name: string | null;
+  district_name: string | null;
 
   @ApiProperty({ example: 'region-uuid', nullable: true })
   region_id: string | null;
@@ -134,10 +134,10 @@ export class LiveUserDto {
 }
 
 export class LiveUsersFilterDto {
-  @ApiPropertyOptional({ description: 'Filter by rayon ID' })
+  @ApiPropertyOptional({ description: 'Filter by district ID' })
   @IsUUID()
   @IsOptional()
-  rayon_id?: string;
+  district_id?: string;
 
   @ApiPropertyOptional({ description: 'Filter by area ID' })
   @IsUUID()
@@ -179,8 +179,8 @@ export class AbsentUserDto {
   @ApiProperty({ example: 'satgas' })
   role: string;
 
-  @ApiProperty({ example: 'rayon-uuid', nullable: true })
-  rayon_id: string | null;
+  @ApiProperty({ example: 'district-uuid', nullable: true })
+  district_id: string | null;
 
   @ApiProperty({ example: 'shift-def-uuid', nullable: true })
   shift_definition_id: string | null;
@@ -217,7 +217,7 @@ export class LiveUsersResponseDto {
 
   // ── Roster-derived "expected vs actual" (ADR-013). Counts compare today's
   // materialized roster to who has actually clocked in. Rayon-scoped when a
-  // rayon_id filter is supplied; otherwise global.
+  // district_id filter is supplied; otherwise global.
   @ApiProperty({ example: 40, description: 'Workers expected on the roster today (have a shift)' })
   expected_count: number;
 

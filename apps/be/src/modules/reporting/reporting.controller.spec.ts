@@ -24,7 +24,7 @@ describe('ReportingController', () => {
     email: 'admin@test.com',
     role: UserRole.ADMIN_SYSTEM,
     location_id: undefined,
-    rayon_id: undefined,
+    district_id: undefined,
     phone: '081234567890',
     full_name: 'Admin Test',
     password_hash: 'hash',

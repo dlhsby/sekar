@@ -76,7 +76,7 @@ describe('StaleStatusSweeperService', () => {
       const staleWorker = {
         user_id: 'user-1',
         location_id: 'area-1',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         status: TrackingStatus.ACTIVE,
         last_location_at: new Date(Date.now() - 1000 * 1000),
         updated_at: new Date(),
@@ -86,7 +86,7 @@ describe('StaleStatusSweeperService', () => {
 
       await service.sweep();
 
-      expect(mockNotifyMissingWorker).toHaveBeenCalledWith('user-1', 'area-1', 'rayon-1');
+      expect(mockNotifyMissingWorker).toHaveBeenCalledWith('user-1', 'area-1', 'district-1');
     });
 
     it('should only query for ACTIVE workers (not MISSING/OFFLINE)', async () => {

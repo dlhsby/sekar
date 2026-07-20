@@ -21,7 +21,7 @@ export class TaskFinderService {
   async getOrFail(id: string): Promise<Task> {
     const task = await this.taskRepository.findOne({
       where: { id },
-      relations: ['area', 'rayon', 'assignee', 'creator', 'verifier', 'tags', 'tags.user'],
+      relations: ['area', 'district', 'assignee', 'creator', 'verifier', 'tags', 'tags.user'],
     });
     if (!task) {
       this.logger.warn(`Task with ID ${id} not found`);

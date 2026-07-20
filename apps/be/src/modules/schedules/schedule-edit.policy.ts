@@ -4,9 +4,9 @@ import { UserRole } from '../users/entities/user.entity';
  * Roster edit hierarchy (target-role based). Who may edit whose daily-schedule:
  *   - admin_system / superadmin / management → anyone (management has full
  *     admin_system parity)
- *   - kepala_rayon / admin_rayon → korlap, satgas, linmas (everyone below, own rayon)
+ *   - kepala_rayon / admin_rayon → korlap, satgas, linmas (everyone below, own district)
  *   - korlap                    → satgas, linmas (own assigned areas)
- * Scope (rayon / area) is enforced separately — see `isGlobalRosterEditor`.
+ * Scope (district / area) is enforced separately — see `isGlobalRosterEditor`.
  */
 export function canEditTargetRole(editorRole: UserRole, targetRole: UserRole): boolean {
   switch (editorRole) {
@@ -28,15 +28,15 @@ export function canEditTargetRole(editorRole: UserRole, targetRole: UserRole): b
   }
 }
 
-/** Editors who act globally (no rayon/area scope): the top of the chain. */
+/** Editors who act globally (no district/area scope): the top of the chain. */
 export function isGlobalRosterEditor(role: UserRole): boolean {
   return (
     role === UserRole.ADMIN_SYSTEM || role === UserRole.SUPERADMIN || role === UserRole.MANAGEMENT
   );
 }
 
-/** Roles whose own roster is a fixed whole-rayon assignment (managed tier). */
-export function isRayonManagerRole(role: UserRole): boolean {
+/** Roles whose own roster is a fixed whole-district assignment (managed tier). */
+export function isDistrictManagerRole(role: UserRole): boolean {
   return role === UserRole.KEPALA_RAYON || role === UserRole.ADMIN_RAYON;
 }
 

@@ -65,7 +65,7 @@ describe('UsersService', () => {
     softRemove: jest.fn(),
     createQueryBuilder: jest.fn(),
     update: jest.fn(),
-    // Region-belongs-to-rayon cross-check (scope validation) issues a raw query.
+    // Region-belongs-to-district cross-check (scope validation) issues a raw query.
     manager: { query: jest.fn().mockResolvedValue([]) },
   };
 
@@ -344,7 +344,7 @@ describe('UsersService', () => {
           'role',
           'is_active',
           'location_id',
-          'rayon_id',
+          'district_id',
           'created_at',
         ]),
       });
@@ -370,7 +370,7 @@ describe('UsersService', () => {
           'role',
           'is_active',
           'location_id',
-          'rayon_id',
+          'district_id',
           'created_at',
         ]),
         skip: 0,
@@ -421,7 +421,7 @@ describe('UsersService', () => {
           'role',
           'is_active',
           'location_id',
-          'rayon_id',
+          'district_id',
           'created_at',
         ]),
         skip: 5,
@@ -440,12 +440,12 @@ describe('UsersService', () => {
       expect(result.meta.totalPages).toBe(0);
     });
 
-    it('should filter users by rayon for admin_rayon user', async () => {
+    it('should filter users by district for admin_rayon user', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid',
         username: 'admindata1',
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'rayon-uuid-1',
+        district_id: 'district-uuid-1',
       };
       const users = [mockUser];
       const mockQueryBuilder = {
@@ -464,19 +464,19 @@ describe('UsersService', () => {
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
         {
-          rayonId: 'rayon-uuid-1',
+          districtId: 'district-uuid-1',
         },
       );
     });
 
-    it('should filter users by rayon for kepala_rayon user', async () => {
-      const kepalaRayonUser = {
-        id: 'kepala-rayon-uuid',
+    it('should filter users by district for kepala_rayon user', async () => {
+      const kepalaDistrictUser = {
+        id: 'kepala-district-uuid',
         username: 'kepalarayon1',
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'rayon-uuid-2',
+        district_id: 'district-uuid-2',
       };
       const users = [mockUser];
       const mockQueryBuilder = {
@@ -490,14 +490,14 @@ describe('UsersService', () => {
       };
       mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
 
-      await service.findAllPaginated(1, 50, kepalaRayonUser as any);
+      await service.findAllPaginated(1, 50, kepalaDistrictUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('user.area', 'area');
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
         {
-          rayonId: 'rayon-uuid-2',
+          districtId: 'district-uuid-2',
         },
       );
     });
@@ -521,7 +521,7 @@ describe('UsersService', () => {
           'role',
           'is_active',
           'location_id',
-          'rayon_id',
+          'district_id',
           'created_at',
         ]),
         skip: 0,
@@ -530,12 +530,12 @@ describe('UsersService', () => {
       });
     });
 
-    it('should return empty array for admin_rayon when no users in their rayon', async () => {
+    it('should return empty array for admin_rayon when no users in their district', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid-2',
         username: 'admindata2',
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'empty-rayon-uuid',
+        district_id: 'empty-district-uuid',
       };
       const mockQueryBuilder = {
         leftJoin: jest.fn().mockReturnThis(),
@@ -552,21 +552,21 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
         {
-          rayonId: 'empty-rayon-uuid',
+          districtId: 'empty-district-uuid',
         },
       );
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
     });
 
-    it('should return empty array for kepala_rayon when no users in their rayon', async () => {
-      const kepalaRayonUser = {
-        id: 'kepala-rayon-uuid-2',
+    it('should return empty array for kepala_rayon when no users in their district', async () => {
+      const kepalaDistrictUser = {
+        id: 'kepala-district-uuid-2',
         username: 'kepalarayon2',
         role: UserRole.KEPALA_RAYON,
-        rayon_id: 'empty-rayon-uuid-2',
+        district_id: 'empty-district-uuid-2',
       };
       const mockQueryBuilder = {
         leftJoin: jest.fn().mockReturnThis(),
@@ -579,27 +579,27 @@ describe('UsersService', () => {
       };
       mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
 
-      const result = await service.findAllPaginated(1, 50, kepalaRayonUser as any);
+      const result = await service.findAllPaginated(1, 50, kepalaDistrictUser as any);
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
         {
-          rayonId: 'empty-rayon-uuid-2',
+          districtId: 'empty-district-uuid-2',
         },
       );
       expect(result.data).toHaveLength(0);
       expect(result.meta.total).toBe(0);
     });
 
-    it('should properly scope admin_rayon to only their rayon users', async () => {
+    it('should properly scope admin_rayon to only their district users', async () => {
       const adminDataUser = {
         id: 'admin-data-uuid',
         username: 'admindata1',
         role: UserRole.ADMIN_RAYON,
-        rayon_id: 'rayon-uuid-1',
+        district_id: 'district-uuid-1',
       };
-      const rayon1Users = [
+      const district1Users = [
         { ...mockUser, id: 'user-1', username: 'worker1' },
         { ...mockUser, id: 'user-2', username: 'worker2' },
       ];
@@ -610,7 +610,7 @@ describe('UsersService', () => {
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
-        getManyAndCount: jest.fn().mockResolvedValue([rayon1Users, 2]),
+        getManyAndCount: jest.fn().mockResolvedValue([district1Users, 2]),
       };
       mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder);
 
@@ -618,9 +618,9 @@ describe('UsersService', () => {
 
       expect(mockUserRepository.createQueryBuilder).toHaveBeenCalled();
       expect(mockQueryBuilder.where).toHaveBeenCalledWith(
-        '(user.rayon_id = :rayonId OR area.rayon_id = :rayonId)',
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
         {
-          rayonId: 'rayon-uuid-1',
+          districtId: 'district-uuid-1',
         },
       );
       expect(result.data).toHaveLength(2);
@@ -629,14 +629,14 @@ describe('UsersService', () => {
   });
 
   describe('role/scope consistency (ADR-044/045)', () => {
-    it('rejects creating a region-scope role without a rayon', async () => {
+    it('rejects creating a region-scope role without a district', async () => {
       mockRoleRepository.findOne.mockResolvedValueOnce({
         code: 'korlap',
         monitoring_scope: 'region',
       });
       await expect(
         service.create({ username: 'k1', full_name: 'K', role: 'korlap' } as never),
-      ).rejects.toThrow('requires a rayon assignment');
+      ).rejects.toThrow('requires a district assignment');
     });
 
     it('rejects a region assignment on a role without region scope', async () => {
@@ -649,34 +649,34 @@ describe('UsersService', () => {
           username: 'k1',
           full_name: 'K',
           role: 'kepala_rayon',
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
           region_id: 'region-1',
         } as never),
       ).rejects.toThrow('does not take a region');
     });
 
-    it('rejects a region that belongs to a different rayon', async () => {
+    it('rejects a region that belongs to a different district', async () => {
       mockRoleRepository.findOne.mockResolvedValueOnce({
         code: 'korlap',
         monitoring_scope: 'region',
       });
-      mockUserRepository.manager.query.mockResolvedValueOnce([{ rayon_id: 'rayon-other' }]);
+      mockUserRepository.manager.query.mockResolvedValueOnce([{ district_id: 'district-other' }]);
       await expect(
         service.create({
           username: 'k1',
           full_name: 'K',
           role: 'korlap',
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
           region_id: 'region-1',
         } as never),
-      ).rejects.toThrow("Region must belong to the user's rayon");
+      ).rejects.toThrow("Region must belong to the user's district");
     });
 
     it('clears a stale region when the role changes away from region scope', async () => {
       const korlap = {
         ...mockUser,
         role: 'korlap',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
         region_id: 'region-1',
       };
       mockUserRepository.findOne.mockResolvedValue(korlap);

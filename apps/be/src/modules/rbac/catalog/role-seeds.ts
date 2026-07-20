@@ -21,7 +21,7 @@ export interface RoleSeed {
 }
 
 // Rayon-scoped base set shared by kepala_rayon and admin_rayon (equalized per UAT).
-const RAYON_ADMIN_PERMISSIONS: string[] = [
+const DISTRICT_ADMIN_PERMISSIONS: string[] = [
   'monitoring:read',
   'user:read',
   'user:create',
@@ -31,7 +31,7 @@ const RAYON_ADMIN_PERMISSIONS: string[] = [
   'area:update',
   'area:delete',
   'region:read',
-  'rayon:read',
+  'district:read',
   'schedule:read',
   'schedule:create',
   'schedule:update',
@@ -53,7 +53,7 @@ const RAYON_ADMIN_PERMISSIONS: string[] = [
   'pruning-request:convert',
 ];
 
-// Management: broad cross-rayon visibility + data management, but NOT the
+// Management: broad cross-district visibility + data management, but NOT the
 // system-administration surfaces — role/permission editing and system settings
 // belong to admin_system only (UAT). Roles/permissions are read-only here so the
 // management page renders; settings are read-only too.
@@ -62,7 +62,7 @@ const MANAGEMENT_PERMISSIONS: string[] = [
   'role:read',
   'permission:read',
   'city:*',
-  'rayon:*',
+  'district:*',
   'region:*',
   'area:*',
   'schedule:*',
@@ -111,7 +111,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     monitoring_scope: MonitoringScope.DISTRICT,
     marker_icon: 'building',
     marker_color: '#F48572',
-    permissions: RAYON_ADMIN_PERMISSIONS,
+    permissions: DISTRICT_ADMIN_PERMISSIONS,
   },
   {
     code: 'admin_rayon',
@@ -120,7 +120,7 @@ export const ROLE_SEEDS: RoleSeed[] = [
     monitoring_scope: MonitoringScope.DISTRICT,
     marker_icon: 'clipboard',
     marker_color: '#9333EA',
-    permissions: RAYON_ADMIN_PERMISSIONS,
+    permissions: DISTRICT_ADMIN_PERMISSIONS,
   },
   {
     code: 'korlap',

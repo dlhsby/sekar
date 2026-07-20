@@ -61,7 +61,7 @@ describe('Pruning CSV importer — pure helpers', () => {
 
   describe('rowFromCsv', () => {
     // Header order from the real CSV (2026-05-23):
-    // 0 Timestamp, 1 reference, 2 Tanggal, 3 Rayon, 4 Lokasi, 5 Pohon,
+    // 0 Timestamp, 1 reference, 2 Tanggal, 3 District, 4 Lokasi, 5 Pohon,
     // 6 Jumlah, 7 Penanganan(empty), 8 Keterangan Lokasi, 9 Penanganan(case),
     // 10 Waktu Laporan, 11 Waktu Penanganan, 12 Foto Sebelum, 13 Foto Sesudah,
     // 14 Taruna, 15 Penyebab Tumbang, 16 Keterangan.
@@ -102,7 +102,7 @@ describe('Pruning CSV importer — pure helpers', () => {
       expect(rowFromCsv(r, 3)).toBeNull();
     });
 
-    it('rejects rows missing rayon', () => {
+    it('rejects rows missing district', () => {
       const r = [...sample];
       r[3] = '';
       expect(rowFromCsv(r, 4)).toBeNull();

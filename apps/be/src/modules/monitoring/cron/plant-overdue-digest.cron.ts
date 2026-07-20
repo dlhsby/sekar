@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
 import {
   AreaPlantStatusService,
-  RayonPlantStatusSummary,
+  DistrictPlantStatusSummary,
 } from '../services/area-plant-status.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { NotificationType } from '../../notifications/entities/notification.entity';
@@ -17,8 +17,8 @@ import { RedisService } from '../../../common/services/redis.service';
  * Daily at 08:00 WIB: aggregates areas with overdue plant maintenance via
  * AreaPlantStatusService.getSummary() and pushes one AREA_PLANT_OVERDUE
  * digest per recipient:
- *  - management: city-wide digest (every rayon with overdue species)
- *  - kepala_rayon:   own-rayon digest only
+ *  - management: city-wide digest (every district with overdue species)
+ *  - kepala_rayon:   own-district digest only
  * Preference enforcement happens inside NotificationsService.sendToUser.
  * Redis SET-NX dedup (per user per Jakarta date) guards against re-fires.
  */
@@ -51,8 +51,8 @@ export class PlantOverdueDigestCron {
     const dateStr = jakarta.toISOString().slice(0, 10);
 
     const summary = await this.areaPlantStatusService.getSummary();
-    const overdueRayons = summary.rayons.filter((r) => r.overdue > 0);
-    if (overdueRayons.length === 0) {
+    const overdueDistricts = summary.districts.filter((r) => r.overdue > 0);
+    if (overdueDistricts.length === 0) {
       this.logger.debug('Plant overdue digest: nothing overdue today');
       return 0;
     }
@@ -62,15 +62,15 @@ export class PlantOverdueDigestCron {
         { role: UserRole.MANAGEMENT, is_active: true },
         { role: UserRole.KEPALA_RAYON, is_active: true },
       ],
-      select: ['id', 'role', 'rayon_id'],
+      select: ['id', 'role', 'district_id'],
     });
 
     let sent = 0;
     for (const user of recipients) {
       const scoped =
         user.role === UserRole.KEPALA_RAYON
-          ? overdueRayons.filter((r) => r.rayon_id === user.rayon_id)
-          : overdueRayons;
+          ? overdueDistricts.filter((r) => r.district_id === user.district_id)
+          : overdueDistricts;
       if (scoped.length === 0) continue;
 
       const dedupKey = `plant-overdue:${dateStr}:${user.id}`;
@@ -84,9 +84,9 @@ export class PlantOverdueDigestCron {
           type: NotificationType.AREA_PLANT_OVERDUE,
           data: {
             date: dateStr,
-            rayons: scoped.map((r) => ({
-              rayon_id: r.rayon_id,
-              rayon_name: r.rayon_name,
+            districts: scoped.map((r) => ({
+              district_id: r.district_id,
+              district_name: r.district_name,
               overdue: r.overdue,
               top_areas: r.overdue_areas.slice(0, 3),
             })),
@@ -106,18 +106,18 @@ export class PlantOverdueDigestCron {
     return sent;
   }
 
-  /** Indonesian one-line digest body, e.g. "12 jenis tanaman terlambat dipangkas di 3 rayon." */
-  private buildBody(rayons: RayonPlantStatusSummary[]): string {
-    const totalOverdue = rayons.reduce((sum, r) => sum + r.overdue, 0);
-    if (rayons.length === 1) {
-      const r = rayons[0];
+  /** Indonesian one-line digest body, e.g. "12 jenis tanaman terlambat dipangkas di 3 district." */
+  private buildBody(districts: DistrictPlantStatusSummary[]): string {
+    const totalOverdue = districts.reduce((sum, r) => sum + r.overdue, 0);
+    if (districts.length === 1) {
+      const r = districts[0];
       const topArea = r.overdue_areas[0]?.location_name;
       return (
-        `${r.overdue} jenis tanaman terlambat dipangkas di ${r.rayon_name ?? 'rayon Anda'}` +
+        `${r.overdue} jenis tanaman terlambat dipangkas di ${r.district_name ?? 'district Anda'}` +
         (topArea ? `, terbanyak di ${topArea}.` : '.')
       );
     }
-    return `${totalOverdue} jenis tanaman terlambat dipangkas di ${rayons.length} rayon.`;
+    return `${totalOverdue} jenis tanaman terlambat dipangkas di ${districts.length} district.`;
   }
 
   /** Atomic once-per-key claim (SET NX EX); fails safe on Redis errors. */

@@ -9,43 +9,43 @@ import {
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
- * The tier a rayon's staffing requirements (and understaffing) attach to.
- * Grouped rayons define KEBUTUHAN per kawasan (`region`); Taman Aktif defines it
- * per park (`location`); a rayon may also carry a single whole-rayon target
- * (`rayon`). Drives where the "Kebutuhan Petugas" editor + day-board pills sit.
+ * The tier a district's staffing requirements (and understaffing) attach to.
+ * Grouped districts define KEBUTUHAN per kawasan (`region`); Taman Aktif defines it
+ * per park (`location`); a district may also carry a single whole-district target
+ * (`district`). Drives where the "Kebutuhan Petugas" editor + day-board pills sit.
  */
 export enum StaffingLevel {
   REGION = 'region',
   LOCATION = 'location',
-  RAYON = 'rayon',
+  DISTRICT = 'district',
 }
 
 /**
- * Rayon Entity
+ * District Entity
  *
  * Represents geographic sectors/districts in Surabaya.
- * Each rayon contains multiple areas and has a KepalaRayon assigned.
+ * Each district contains multiple locations and has a KepalaDistrict assigned.
  *
- * Phase 2: 7 Rayons - Selatan, Utara, Pusat, Timur 1, Timur 2, Barat 1, Barat 2
+ * Phase 2: 7 Districts - Selatan, Utara, Pusat, Timur 1, Timur 2, Barat 1, Barat 2
  */
-@Entity('rayons')
-export class Rayon {
+@Entity('districts')
+export class District {
   @ApiProperty({
-    description: 'Unique identifier for the rayon',
+    description: 'Unique identifier for the district',
     example: '11111111-1111-1111-1111-111111111101',
   })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @ApiProperty({
-    description: 'Name of the rayon',
+    description: 'Name of the district',
     example: 'Rayon Selatan',
   })
   @Column({ length: 100, unique: true })
   name: string;
 
   @ApiProperty({
-    description: 'Description of the rayon',
+    description: 'Description of the district',
     example: 'Covers southern Surabaya districts',
     required: false,
   })
@@ -60,7 +60,7 @@ export class Rayon {
   boundary_polygon?: object;
 
   @ApiProperty({
-    description: 'Whether the rayon is active',
+    description: 'Whether the district is active',
     example: true,
     default: true,
   })
@@ -89,7 +89,7 @@ export class Rayon {
   marker_icon?: string;
 
   @ApiProperty({
-    description: 'Center latitude of the rayon boundary',
+    description: 'Center latitude of the district boundary',
     example: -7.2575,
     required: false,
   })
@@ -97,7 +97,7 @@ export class Rayon {
   center_lat?: number;
 
   @ApiProperty({
-    description: 'Center longitude of the rayon boundary',
+    description: 'Center longitude of the district boundary',
     example: 112.7521,
     required: false,
   })
@@ -105,7 +105,7 @@ export class Rayon {
   center_lng?: number;
 
   @ApiProperty({
-    description: 'Tier its staffing requirements attach to (region=kawasan / location / rayon)',
+    description: 'Tier its staffing requirements attach to (region=kawasan / location / district)',
     enum: StaffingLevel,
     default: StaffingLevel.REGION,
   })
@@ -113,13 +113,13 @@ export class Rayon {
   staffing_level: StaffingLevel;
 
   @ApiProperty({
-    description: 'Timestamp when the rayon was created',
+    description: 'Timestamp when the district was created',
   })
   @CreateDateColumn({ type: 'timestamptz' })
   created_at: Date;
 
   @ApiProperty({
-    description: 'Timestamp when the rayon was last updated',
+    description: 'Timestamp when the district was last updated',
   })
   @UpdateDateColumn({ type: 'timestamptz' })
   updated_at: Date;

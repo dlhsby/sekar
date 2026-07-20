@@ -35,7 +35,7 @@ export class ScheduleEventsController {
   async list(
     @Query('from') from?: string,
     @Query('to') to?: string,
-    @Query('rayon_id') rayonId?: string,
+    @Query('district_id') districtId?: string,
     @Query('user_id') userId?: string,
     @Query('team_category_id') teamCategoryId?: string,
     @Query('shift_definition_id') shiftDefinitionId?: string,
@@ -46,7 +46,7 @@ export class ScheduleEventsController {
       {
         from,
         to,
-        rayon_id: rayonId,
+        district_id: districtId,
         user_id: userId,
         team_category_id: teamCategoryId,
         shift_definition_id: shiftDefinitionId,

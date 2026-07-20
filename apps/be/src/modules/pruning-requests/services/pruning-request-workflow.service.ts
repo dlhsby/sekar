@@ -13,7 +13,7 @@ import { getIsoWeek, isoWeekDays } from '../utils/iso-week.util';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { PruningRequestFinderService } from './pruning-request-finder.service';
 import { PruningRequestNotificationsService } from './pruning-request-notifications.service';
-import { assertAdminDataRayonScope } from '../pruning-request.policies';
+import { assertAdminDataDistrictScope } from '../pruning-request.policies';
 
 interface ResolvedSchedule {
   /** Admin-confirmed concrete day; null when the day is auto-picked from the week. */
@@ -77,15 +77,15 @@ export class PruningRequestWorkflowService {
   ): Promise<{ request: PruningRequest; task: Task }> {
     this.logger.log(`Converting pruning request ${id} to task by user ${user.id}`);
     const request = await this.finder.getOrFail(id);
-    assertAdminDataRayonScope(request, user, 'convert');
+    assertAdminDataDistrictScope(request, user, 'convert');
 
     const existing = await this.findExistingConversion(request);
     if (existing) return existing;
     this.assertConvertible(request);
 
     const schedule = this.resolveSchedule(request, dto);
-    if (!request.rayonId) {
-      throw new ConflictException('Pruning request has no rayon assigned');
+    if (!request.districtId) {
+      throw new ConflictException('Pruning request has no district assigned');
     }
     return this.convertInTransaction(request, dto, user, schedule);
   }
@@ -106,7 +106,7 @@ export class PruningRequestWorkflowService {
   ): Promise<PruningRequest> {
     this.logger.log(`Rescheduling pruning request ${id} to ${dto.expectedDate} by user ${user.id}`);
     const request = await this.finder.getOrFail(id);
-    assertAdminDataRayonScope(request, user, 'reschedule');
+    assertAdminDataDistrictScope(request, user, 'reschedule');
     this.assertReschedulable(request);
 
     const newDate = this.parseFutureDate(dto.expectedDate);
@@ -181,7 +181,7 @@ export class PruningRequestWorkflowService {
   ): Promise<{ request: PruningRequest; task: Task }> {
     const units = dto.units ?? 1;
     return this.dataSource.transaction(async (tm) => {
-      const scheduledDate = await this.bookCapacity(request.rayonId!, schedule, units);
+      const scheduledDate = await this.bookCapacity(request.districtId!, schedule, units);
       const savedTask = await this.createAssignedTask(tm, request, dto, user, scheduledDate);
       await this.recordDelegationHop(tm, savedTask.id, user, dto.assignedTo, null);
       const updatedRequest = await this.linkRequestToTask(
@@ -207,26 +207,26 @@ export class PruningRequestWorkflowService {
   }
 
   private async bookCapacity(
-    rayonId: string,
+    districtId: string,
     schedule: ResolvedSchedule,
     units: number,
   ): Promise<Date> {
     if (schedule.scheduledDate) {
-      await this.bookWeek(rayonId, schedule, units, 'Capacity booking failed: ');
+      await this.bookWeek(districtId, schedule, units, 'Capacity booking failed: ');
       return schedule.scheduledDate;
     }
-    return this.bookFirstAvailableDay(rayonId, schedule, units);
+    return this.bookFirstAvailableDay(districtId, schedule, units);
   }
 
   private async bookWeek(
-    rayonId: string,
+    districtId: string,
     schedule: Pick<ResolvedSchedule, 'year' | 'isoWeek'>,
     units: number,
     conflictPrefix: string,
   ): Promise<void> {
     try {
       await this.serviceCapacityService.bookAtomic({
-        rayonId,
+        districtId,
         year: schedule.year,
         isoWeek: schedule.isoWeek,
         serviceType: 'pruning',
@@ -246,7 +246,7 @@ export class PruningRequestWorkflowService {
    * scheduled day (a 409 means the entire week is full).
    */
   private async bookFirstAvailableDay(
-    rayonId: string,
+    districtId: string,
     schedule: Pick<ResolvedSchedule, 'year' | 'isoWeek'>,
     units: number,
   ): Promise<Date> {
@@ -258,7 +258,7 @@ export class PruningRequestWorkflowService {
       );
     }
     await this.bookWeek(
-      rayonId,
+      districtId,
       schedule,
       units,
       'Capacity booking failed for the preferred week: ',
@@ -269,8 +269,8 @@ export class PruningRequestWorkflowService {
   /**
    * Create the task pre-assigned (`assigned` + `assigned_at`) so the satgas
    * can accept/start/complete. May 11, 2026: `location_id` is optional (pruning
-   * often happens in neighborhoods / private yards); `rayon_id` is stamped
-   * from the request so monitoring + rayon-scoped queries keep working.
+   * often happens in neighborhoods / private yards); `district_id` is stamped
+   * from the request so monitoring + district-scoped queries keep working.
    */
   private createAssignedTask(
     tm: EntityManager,
@@ -283,7 +283,7 @@ export class PruningRequestWorkflowService {
       title: `Permintaan Perantingan ${request.referenceCode}`,
       description: this.buildTaskDescription(request),
       location_id: dto.areaId ?? null,
-      rayon_id: request.rayonId ?? null,
+      district_id: request.districtId ?? null,
       assigned_to: dto.assignedTo,
       deadline: scheduledDate,
       created_by: user.id,
@@ -405,8 +405,8 @@ export class PruningRequestWorkflowService {
       oldIso == null || oldIso.year !== newIso.year || oldIso.isoWeek !== newIso.isoWeek;
 
     return this.dataSource.transaction(async (tm) => {
-      if (weekChanged && request.rayonId) {
-        await this.rebookCapacity(request.rayonId, oldIso, newIso);
+      if (weekChanged && request.districtId) {
+        await this.rebookCapacity(request.districtId, oldIso, newIso);
       }
       task.deadline = newDate;
       await tm.save(task);
@@ -426,13 +426,13 @@ export class PruningRequestWorkflowService {
    * touching the old week's ledger, so the original booking stays intact.
    */
   private async rebookCapacity(
-    rayonId: string,
+    districtId: string,
     oldIso: { year: number; isoWeek: number } | null,
     newIso: { year: number; isoWeek: number },
   ): Promise<void> {
     const units = 1;
-    await this.bookWeek(rayonId, newIso, units, 'Capacity penuh untuk minggu yang dipilih: ');
-    await this.releaseOldWeek(rayonId, oldIso, units);
+    await this.bookWeek(districtId, newIso, units, 'Capacity penuh untuk minggu yang dipilih: ');
+    await this.releaseOldWeek(districtId, oldIso, units);
   }
 
   /**
@@ -440,14 +440,14 @@ export class PruningRequestWorkflowService {
    * don't reverse the new booking; the old row is stale once we've moved on.
    */
   private async releaseOldWeek(
-    rayonId: string,
+    districtId: string,
     oldIso: { year: number; isoWeek: number } | null,
     units: number,
   ): Promise<void> {
     if (!oldIso) return;
     try {
       await this.serviceCapacityService.releaseAtomic({
-        rayonId,
+        districtId,
         year: oldIso.year,
         isoWeek: oldIso.isoWeek,
         serviceType: 'pruning',

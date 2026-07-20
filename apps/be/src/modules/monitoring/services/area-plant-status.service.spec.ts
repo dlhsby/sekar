@@ -7,7 +7,7 @@ import { PlantDueDateService } from '../../plants/services/plant-due-date.servic
 import { LocationPlant } from '../../plants/entities/location-plant.entity';
 import { PlantSpecies } from '../../plants/entities/plant-species.entity';
 import { Location } from '../../locations/entities/location.entity';
-import { Rayon } from '../../rayons/entities/rayon.entity';
+import { District, StaffingLevel } from '../../districts/entities/district.entity';
 import { LocationType } from '../../location-types/entities/location-type.entity';
 
 describe('AreaPlantStatusService', () => {
@@ -112,7 +112,7 @@ describe('AreaPlantStatusService', () => {
           },
         },
         {
-          provide: getRepositoryToken(Rayon),
+          provide: getRepositoryToken(District),
           useValue: {
             find: jest.fn().mockResolvedValue([]),
           },
@@ -369,24 +369,24 @@ describe('AreaPlantStatusService', () => {
   });
 
   describe('getSummary (Phase 3-8 close-out)', () => {
-    const RAYON_A = 'rayon-a';
-    const RAYON_B = 'rayon-b';
+    const DISTRICT_A = 'district-a';
+    const DISTRICT_B = 'district-b';
     const areaA1 = {
       id: 'area-a1',
       name: 'Taman Bungkul',
-      rayon_id: RAYON_A,
+      district_id: DISTRICT_A,
       locationType: {},
     } as unknown as Location;
     const areaA2 = {
       id: 'area-a2',
       name: 'Taman Flora',
-      rayon_id: RAYON_A,
+      district_id: DISTRICT_A,
       locationType: {},
     } as unknown as Location;
     const areaB1 = {
       id: 'area-b1',
       name: 'Taman Apsari',
-      rayon_id: RAYON_B,
+      district_id: DISTRICT_B,
       locationType: {},
     } as unknown as Location;
 
@@ -398,17 +398,18 @@ describe('AreaPlantStatusService', () => {
       (areaRepository as unknown as { find: jest.Mock }).find = jest
         .fn()
         .mockResolvedValue([areaA1, areaA2, areaB1]);
-      const rayonRepo = {
+      const districtRepo = {
         find: jest.fn().mockResolvedValue([
-          { id: RAYON_A, name: 'Rayon Selatan' },
-          { id: RAYON_B, name: 'Rayon Utara' },
+          { id: DISTRICT_A, name: 'Rayon Selatan' },
+          { id: DISTRICT_B, name: 'Rayon Utara' },
         ]),
       };
       // Re-wire the injected mock's behavior
-      (service as unknown as { rayonRepository: typeof rayonRepo }).rayonRepository = rayonRepo;
+      (service as unknown as { districtRepository: typeof districtRepo }).districtRepository =
+        districtRepo;
     });
 
-    it('should group recomputed statuses per rayon with overdue area breakdown', async () => {
+    it('should group recomputed statuses per district with overdue area breakdown', async () => {
       areaPlantRepository.find.mockResolvedValue([
         plantRow('area-a1', 's1'),
         plantRow('area-a1', 's2'),
@@ -423,18 +424,18 @@ describe('AreaPlantStatusService', () => {
 
       const summary = await service.getSummary();
 
-      expect(summary.rayons).toHaveLength(2);
-      const south = summary.rayons.find((r) => r.rayon_id === RAYON_A)!;
-      expect(south).toMatchObject({ rayon_name: 'Rayon Selatan', ok: 1, overdue: 2 });
+      expect(summary.districts).toHaveLength(2);
+      const south = summary.districts.find((r) => r.district_id === DISTRICT_A)!;
+      expect(south).toMatchObject({ district_name: 'Rayon Selatan', ok: 1, overdue: 2 });
       expect(south.overdue_areas).toEqual([
         { location_id: 'area-a1', location_name: 'Taman Bungkul', overdue: 1 },
         { location_id: 'area-a2', location_name: 'Taman Flora', overdue: 1 },
       ]);
-      const north = summary.rayons.find((r) => r.rayon_id === RAYON_B)!;
+      const north = summary.districts.find((r) => r.district_id === DISTRICT_B)!;
       expect(north).toMatchObject({ due_soon: 1, overdue: 0, overdue_areas: [] });
     });
 
-    it('should scope to a single rayon when rayonId is provided', async () => {
+    it('should scope to a single district when districtId is provided', async () => {
       (areaRepository as unknown as { find: jest.Mock }).find.mockResolvedValue([areaA1, areaA2]);
       areaPlantRepository.find.mockResolvedValue([
         plantRow('area-a1', 's1'),
@@ -442,19 +443,19 @@ describe('AreaPlantStatusService', () => {
       ]);
       plantDueDateService.recomputeAreaPlant.mockReturnValue({ nextDueAt: null, status: 'ok' });
 
-      const summary = await service.getSummary(RAYON_A);
+      const summary = await service.getSummary(DISTRICT_A);
 
       expect((areaRepository as unknown as { find: jest.Mock }).find).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { rayon_id: RAYON_A } }),
+        expect.objectContaining({ where: { district_id: DISTRICT_A } }),
       );
-      expect(summary.rayons).toHaveLength(1);
-      expect(summary.rayons[0].ok).toBe(1);
+      expect(summary.districts).toHaveLength(1);
+      expect(summary.districts[0].ok).toBe(1);
     });
 
     it('should return an empty rollup when no plants exist', async () => {
       areaPlantRepository.find.mockResolvedValue([]);
       const summary = await service.getSummary();
-      expect(summary.rayons).toEqual([]);
+      expect(summary.districts).toEqual([]);
     });
   });
 });

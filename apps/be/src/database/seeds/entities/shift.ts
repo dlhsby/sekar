@@ -90,7 +90,7 @@ export async function seedShifts(ctx: SeedContext): Promise<void> {
           clock_in_photo_url, clock_out_time, clock_out_gps_lat, clock_out_gps_lng, created_at, updated_at)
         VALUES
           ('${kepalaId}', '${areaId}', NOW() - INTERVAL '2 days 8 hours', -7.2905, 112.7398,
-            'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/kepala-rayon-001.jpg',
+            'https://sekar-media.s3.ap-southeast-1.amazonaws.com/clock-in/kepala-district-001.jpg',
             NOW() - INTERVAL '2 days', -7.2906, 112.7399, NOW() - INTERVAL '2 days 8 hours', NOW() - INTERVAL '2 days')
       `);
       shiftCount += 1;
