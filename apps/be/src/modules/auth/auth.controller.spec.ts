@@ -34,6 +34,7 @@ describe('AuthController', () => {
 
   const mockUserAreasService = {
     getEffectiveLocations: jest.fn().mockResolvedValue([]),
+    getPermanentLocationIds: jest.fn().mockResolvedValue([]),
   };
 
   const mockAreaRepository = {
@@ -42,6 +43,7 @@ describe('AuthController', () => {
 
   const mockRolePermissionsService = {
     getRolePermissionKeys: jest.fn().mockResolvedValue([]),
+    getMonitoringScope: jest.fn().mockResolvedValue('none'),
   };
 
   beforeEach(async () => {

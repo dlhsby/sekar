@@ -1417,6 +1417,11 @@ describe('MonitoringService', () => {
       jest
         .spyOn(service['statsService'], 'getCurrentShiftDefinition')
         .mockResolvedValue(mockShiftDefinition);
+      // Both are on the roster, so ROLE is the only reason korlap is excluded from
+      // the count (ad-hoc exclusion, ADR-050 5.4d, is exercised separately).
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue(new Set<string>(['u-satgas', 'u-korlap']));
       // Target of 2 satgas at this lokasi.
       staffRequirementRepository.find.mockResolvedValue([
         { ...mockStaffRequirement, required_count: 2 },
@@ -1481,6 +1486,16 @@ describe('MonitoringService', () => {
   });
 
   describe('getSnapshot', () => {
+    // Staffing (`active_count`) counts only SCHEDULED satgas+linmas (ADR-050 5.4d);
+    // ad-hoc clock-ins are excluded. These fixtures model rostered workers, so mark
+    // everyone scheduled by default (a `has()`-always-true stand-in). Tests that
+    // exercise ad-hoc behavior override this locally.
+    beforeEach(() => {
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue({ has: () => true } as unknown as Set<string>);
+    });
+
     it('should return snapshot with correct contract shape', async () => {
       const mockLiveUsersResult = {
         total_active: 2,

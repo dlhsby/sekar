@@ -44,6 +44,17 @@ export class RolePermissionsService {
     return keys;
   }
 
+  /**
+   * The role's `monitoring_scope` (city|district|region|location|none), which drives
+   * where a caller lands + what they may view on the monitoring map (ADR-044/046).
+   * Defaults to `none` for an unknown role. Not cached — read once per `/me`.
+   */
+  async getMonitoringScope(roleCode: string): Promise<string> {
+    if (!roleCode) return 'none';
+    const role = await this.roleRepo.findOne({ where: { code: roleCode } });
+    return role?.monitoring_scope ?? 'none';
+  }
+
   /** Drop the cached permission set for a role (call after editing its perms). */
   async invalidateRole(roleCode: string): Promise<void> {
     try {
