@@ -3,7 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { rayonCountsFor, type BoardMasterData } from '@/lib/schedules/dayBoard';
+import { districtCountsFor, type BoardMasterData } from '@/lib/schedules/dayBoard';
 import {
   formatISO,
   startOfMonth,
@@ -22,11 +22,11 @@ interface MonthGridProps {
   onDayClick: (date: Date) => void;
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
   /** When a single subject (worker/location) is filtered, show chips (a personal
-   * calendar); otherwise show a per-rayon coverage summary. */
+   * calendar); otherwise show a per-district coverage summary. */
   subjectFiltered?: boolean;
 }
 
-/** How many rayon rows fit in a day cell before collapsing to "+N". */
+/** How many district rows fit in a day cell before collapsing to "+N". */
 const MAX_RAYON_ROWS = 3;
 
 export function MonthGrid({
@@ -93,7 +93,7 @@ export function MonthGrid({
             {days.map((day) => {
               const dateStr = formatISO(day, { representation: 'date' });
               const dayOccurrences = occurrencesByDate.get(dateStr) || [];
-              const rayonCounts = subjectFiltered ? [] : rayonCountsFor(dayOccurrences, master);
+              const districtCounts = subjectFiltered ? [] : districtCountsFor(dayOccurrences, master);
               const isDayInMonth = isSameMonth(day, currentMonth);
               // Roster days are WIB days — highlight WIB "today", not the
               // browser's local today (they differ outside UTC+7).
@@ -143,19 +143,19 @@ export function MonthGrid({
                           </span>
                         </div>
                         <ul className="space-y-0.5">
-                          {rayonCounts.slice(0, MAX_RAYON_ROWS).map((r) => (
+                          {districtCounts.slice(0, MAX_RAYON_ROWS).map((r) => (
                             <li
-                              key={r.rayonId}
+                              key={r.districtId}
                               className="flex items-center justify-between gap-1 rounded-nb-sm bg-nb-gray-50 px-1 text-nb-caption"
                             >
-                              <span className="truncate">{r.rayonName}</span>
+                              <span className="truncate">{r.districtName}</span>
                               <span className="shrink-0 font-bold tabular-nums">{r.count}</span>
                             </li>
                           ))}
-                          {rayonCounts.length > MAX_RAYON_ROWS && (
+                          {districtCounts.length > MAX_RAYON_ROWS && (
                             <li className="text-nb-caption text-nb-gray-500">
                               {t('schedules:calendar.moreCount', {
-                                count: rayonCounts.length - MAX_RAYON_ROWS,
+                                count: districtCounts.length - MAX_RAYON_ROWS,
                               })}
                             </li>
                           )}

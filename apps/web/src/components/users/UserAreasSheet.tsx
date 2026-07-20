@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { LocationListSheet, type LocationListSheetItem } from '@/components/locations/LocationListSheet';
 import { useUserAreas } from '@/lib/api/user-locations';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 
 export interface UserAreasSheetTarget {
   id: string;
@@ -27,10 +27,10 @@ interface UserAreasSheetProps {
 export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
   const { t } = useTranslation();
   const { data: areas = [], isLoading, isError } = useUserAreas(user?.id);
-  // Resolves the rayon name for a user's existing locations — a deactivated
-  // rayon must still resolve.
-  const { data: rayons = [] } = useRayons(true);
-  const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
+  // Resolves the district name for a user's existing locations — a deactivated
+  // district must still resolve.
+  const { data: districts = [] } = useDistricts(true);
+  const districtNameById = useMemo(() => new Map(districts.map((r) => [r.id, r.name])), [districts]);
 
   const items: LocationListSheetItem[] = useMemo(
     () =>
@@ -39,13 +39,13 @@ export function UserAreasSheet({ user, onClose }: UserAreasSheetProps) {
         name: area.name,
         meta:
           [
-            area.rayon?.name ?? (area.rayon_id ? rayonNameById.get(area.rayon_id) : undefined),
+            area.district?.name ?? (area.district_id ? districtNameById.get(area.district_id) : undefined),
             area.locationType?.name ?? area.locationType?.code,
           ]
             .filter(Boolean)
             .join(' · ') || undefined,
       })),
-    [areas, rayonNameById],
+    [areas, districtNameById],
   );
 
   return (

@@ -81,7 +81,7 @@ export function TaskKanban({ tasks, loading }: TaskKanbanProps) {
 
 function TaskCard({ task }: { task: Task }) {
   const { t } = useTranslation();
-  const place = task.area?.name ?? task.rayon?.name ?? null;
+  const place = task.area?.name ?? task.district?.name ?? null;
   const due = task.due_date ? new Date(task.due_date).toLocaleDateString(intlLocale()) : null;
 
   return (

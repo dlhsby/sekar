@@ -130,7 +130,7 @@ export const ROLE_ABBREVIATIONS: Record<string, string> = {
 
 // Polygon styles for boundary layers
 export const POLYGON_STYLES = {
-  rayon: {
+  district: {
     fill: '#60A5FA',
     fillOpacity: 0.08,
     stroke: '#2563EB',
@@ -142,7 +142,7 @@ export const POLYGON_STYLES = {
 
 // Center marker styles for polygon centroids
 export const CENTER_MARKER_STYLES = {
-  rayon: { bg: '#2563EB', size: 32, label: 'R' },
+  district: { bg: '#2563EB', size: 32, label: 'R' },
   area: { bg: '#D97706', size: 28, label: 'A' },
 } as const;
 

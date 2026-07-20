@@ -23,16 +23,16 @@ export interface SnapshotWorker {
   /** The worker's location (lokasi) id — the backend field is `location_id`. */
   location_id: string | null;
   location_name: string | null;
-  rayon_id: string | null;
-  rayon_name: string | null;
+  district_id: string | null;
+  district_name: string | null;
   /** The worker's kawasan (region) id + name, for the Kawasan filter. */
   region_id?: string | null;
   region_name?: string | null;
   /** The drill level this worker belongs to — the SCOPE of their current-shift
-   *  schedule (`location`/`region`/`rayon`/`city`); ad-hoc falls back to live
+   *  schedule (`location`/`region`/`district`/`city`); ad-hoc falls back to live
    *  position. The worker is shown only at the matching drill level. */
-  display_scope?: 'city' | 'rayon' | 'region' | 'location';
-  /** Scope entity id (rayon/region/location); null at city scope. */
+  display_scope?: 'city' | 'district' | 'region' | 'location';
+  /** Scope entity id (district/region/location); null at city scope. */
   display_scope_id?: string | null;
   last_update: string;
   is_within_area: boolean;
@@ -57,8 +57,8 @@ export interface SnapshotWorker {
 export interface SnapshotAreaSummary {
   location_id: string;
   location_name: string;
-  rayon_id: string;
-  rayon_name: string;
+  district_id: string;
+  district_name: string;
   active_count: number;
   required_count: number;
   is_understaffed: boolean;
@@ -134,7 +134,7 @@ export interface AggregateNodeMarker {
 export interface AggregateNode extends AggregateNodeMarker {
   id: string;
   name: string;
-  type: 'rayon' | 'location' | 'region';
+  type: 'district' | 'location' | 'region';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;
@@ -147,12 +147,12 @@ export interface AggregateNode extends AggregateNodeMarker {
   presence: PresenceBreakdown;
   area_count?: number;
   location_count?: number;
-  rayon_id?: string | null;
+  district_id?: string | null;
   region_id?: string | null;
 }
 
 export interface AggregateResponse {
-  scope: 'city' | 'rayon' | 'region';
+  scope: 'city' | 'district' | 'region';
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;
@@ -170,13 +170,13 @@ export const aggregateKeys = {
 };
 
 /**
- * useMonitoringAggregate — rayon rollups (city scope), region rollups (rayon scope),
+ * useMonitoringAggregate — district rollups (city scope), region rollups (district scope),
  * or area rollups (region scope) for the map's "Ringkasan" bubbles. No worker coordinates,
  * so it stays light even city-wide. WS staffing events invalidate it; a slow poll is the
  * safety net.
  */
 export function useMonitoringAggregate(
-  scope: 'city' | 'rayon' | 'region',
+  scope: 'city' | 'district' | 'region',
   id?: string,
   enabled = true
 ) {
@@ -232,7 +232,7 @@ export const snapshotKeys = {
  * remounted every marker; the WS path removes that flash.
  */
 export function useMonitoringSnapshot(
-  scope: 'city' | 'rayon' | 'location' = 'city',
+  scope: 'city' | 'district' | 'location' = 'city',
   id?: string,
   enabled = true
 ) {

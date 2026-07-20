@@ -73,7 +73,7 @@ import {
 } from '@/lib/api/location-staff-requirements';
 import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
 import { usePermissions } from '@/lib/auth/usePermissions';
@@ -84,7 +84,7 @@ import { todayJakartaISODate } from '@/lib/utils/formatters';
 /** Calendar range, ordered highest → lowest; drilling zooms in a level. */
 type CalendarView = 'year' | 'month' | 'week' | 'day';
 
-/** Roles pinned to their own rayon server-side — they can't pick a rayon. */
+/** Roles pinned to their own district server-side — they can't pick a district. */
 const RAYON_SCOPED_ROLES = ['kepala_rayon', 'admin_rayon'];
 
 const isoDate = (d: Date): string => formatISO(d, { representation: 'date' });
@@ -105,7 +105,7 @@ export default function SchedulesPage() {
   const [anchor, setAnchor] = useState<Date>(() => wibTodayDate());
   const [filters, setFilters] = useState<ScheduleRangeFilters>({});
 
-  const lockRayon = !!user && RAYON_SCOPED_ROLES.includes(user.role);
+  const lockDistrict = !!user && RAYON_SCOPED_ROLES.includes(user.role);
   // Only admin_system/superadmin can set capacity (matches the backend gate).
   const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
@@ -200,7 +200,7 @@ export default function SchedulesPage() {
   );
 
   const { data: shifts = [] } = useShiftDefinitions();
-  const { data: rayons = [] } = useRayons();
+  const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const allLocations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
@@ -235,14 +235,14 @@ export default function SchedulesPage() {
   const boardMaster = useMemo<BoardMasterData>(
     () => ({
       // staffing_level must survive this mapping: it decides which single tier
-      // (rayon / kawasan / lokasi) may edit capacity. Dropping it here is what
-      // made the board offer the capacity control on every tier but the rayon.
-      rayons: rayons.map((r) => ({ id: r.id, name: r.name, staffing_level: r.staffing_level })),
-      regions: regions.map((r) => ({ id: r.id, name: r.name, rayon_id: r.rayon_id })),
+      // (district / kawasan / lokasi) may edit capacity. Dropping it here is what
+      // made the board offer the capacity control on every tier but the district.
+      districts: districts.map((r) => ({ id: r.id, name: r.name, staffing_level: r.staffing_level })),
+      regions: regions.map((r) => ({ id: r.id, name: r.name, district_id: r.district_id })),
       locations: allLocations.map((l) => ({
         id: l.id,
         name: l.name,
-        rayon_id: l.rayon_id,
+        district_id: l.district_id,
         region_id: l.region_id ?? null,
       })),
       shifts: shifts.map((s) => ({
@@ -252,7 +252,7 @@ export default function SchedulesPage() {
         end_time: s.end_time,
       })),
     }),
-    [rayons, regions, allLocations, shifts]
+    [districts, regions, allLocations, shifts]
   );
 
   const updateShift = useUpdateRosterShift();
@@ -370,7 +370,7 @@ export default function SchedulesPage() {
           <ScheduleSearch
             filters={filters}
             onChange={setFilters}
-            lockRayon={lockRayon}
+            lockDistrict={lockDistrict}
             onNavigateDate={(iso) => {
               setAnchor(new Date(`${iso}T00:00:00`));
               setCalendarView('day');
@@ -413,7 +413,7 @@ export default function SchedulesPage() {
         </div>
       </div>
 
-      <ScheduleFilterChips filters={filters} onChange={setFilters} lockRayon={lockRayon} />
+      <ScheduleFilterChips filters={filters} onChange={setFilters} lockDistrict={lockDistrict} />
 
       {calendarView === 'year' ? (
         <YearView
@@ -512,7 +512,7 @@ export default function SchedulesPage() {
           open={createOpen}
           onOpenChange={setCreateOpen}
           initialDate={createDate}
-          initialRayonId={createCtx?.rayon_id}
+          initialDistrictId={createCtx?.district_id}
           initialRegionId={createCtx?.region_id}
           initialLocationId={createCtx?.location_id}
           initialShiftId={createCtx?.shiftId}
@@ -560,7 +560,7 @@ export default function SchedulesPage() {
         shiftLoading={updateShift.isPending}
         areasLoading={updateAreas.isPending}
         shifts={shifts}
-        allRayons={rayons}
+        allDistricts={districts}
         allAreas={allLocations}
       />
 

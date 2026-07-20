@@ -44,8 +44,8 @@ describe('Pruning Requests API (admin web)', () => {
       submittedBy: 'u-1',
       submitter: { id: 'u-1', full_name: 'Staff Kecamatan', role: 'staff_kecamatan' },
       kecamatanName: 'Wiyung',
-      rayonId: 'r-1',
-      rayon: { id: 'r-1', name: 'Rayon Selatan' },
+      districtId: 'r-1',
+      district: { id: 'r-1', name: 'Rayon Selatan' },
       address: 'Jl. Test',
       gpsLat: -7.29,
       gpsLng: 112.74,
@@ -90,14 +90,14 @@ describe('Pruning Requests API (admin web)', () => {
       mockAxios.onGet('/pruning-requests').reply((config) => {
         expect(config.params).toMatchObject({
           status: 'submitted',
-          rayon_id: 'r-1',
+          district_id: 'r-1',
         });
         expect(config.params).not.toHaveProperty('admin');
         return [200, raw];
       });
 
       const { result } = renderHook(
-        () => usePruningRequests({ status: 'submitted', rayon_id: 'r-1' }),
+        () => usePruningRequests({ status: 'submitted', district_id: 'r-1' }),
         { wrapper: createWrapper() },
       );
 

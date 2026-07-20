@@ -34,7 +34,7 @@ async function fetchLocationsPage(
   const params = new URLSearchParams();
 
   if (filters.search) params.append('search', filters.search);
-  if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
+  if (filters.district_id) params.append('district_id', filters.district_id);
   if (filters.location_type_id) params.append('location_type_id', filters.location_type_id);
   if (filters.include_inactive) params.append('include_inactive', 'true');
   // Only send page/limit for explicit pagination — omitting them makes the
@@ -68,7 +68,7 @@ async function fetchLocationsPage(
  *
  * With no explicit `page` the caller wants EVERY location (tables/dropdowns pass a
  * high `limit` to "load all"). The backend caps `limit` at 100 and orders by
- * `id`, so a single capped request silently drops whole rayons (e.g. Rayon
+ * `id`, so a single capped request silently drops whole districts (e.g. Rayon
  * Barat 2, ~35 locations that all sort past the first 100) — they then vanish from
  * the location table and can't be picked when assigning a user. So we fetch the full
  * array (page/limit omitted) and page through defensively if the API ever caps.

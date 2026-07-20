@@ -109,7 +109,7 @@ export interface WorkerAnalyticsFilters {
   date_from?: string;
   date_to?: string;
   area_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -121,7 +121,7 @@ export interface WorkerAnalyticsFilters {
 export interface AreaAnalyticsFilters {
   date_from?: string;
   date_to?: string;
-  rayon_id?: string;
+  district_id?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -186,7 +186,7 @@ async function fetchWorkerAnalytics(
   if (filters.date_from) params.append('date_from', filters.date_from);
   if (filters.date_to) params.append('date_to', filters.date_to);
   if (filters.area_id) params.append('area_id', filters.area_id);
-  if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
+  if (filters.district_id) params.append('district_id', filters.district_id);
   if (filters.search) params.append('search', filters.search);
   if (filters.page) params.append('page', String(filters.page));
   if (filters.limit) params.append('limit', String(filters.limit));
@@ -247,7 +247,7 @@ async function fetchAreaAnalytics(
   const params = new URLSearchParams();
   if (filters.date_from) params.append('date_from', filters.date_from);
   if (filters.date_to) params.append('date_to', filters.date_to);
-  if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
+  if (filters.district_id) params.append('district_id', filters.district_id);
   if (filters.search) params.append('search', filters.search);
   if (filters.page) params.append('page', String(filters.page));
   if (filters.limit) params.append('limit', String(filters.limit));

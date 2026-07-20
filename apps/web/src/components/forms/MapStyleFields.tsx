@@ -18,7 +18,7 @@ interface MapStyleFieldsProps {
 /**
  * Reusable per-level map styling controls (ADR-045): separate border + fill
  * color, each with a 0–1 opacity, plus a marker icon + color. Shared by the
- * rayon / region / area forms.
+ * district / region / area forms.
  */
 export function MapStyleFields({
   value,

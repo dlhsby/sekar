@@ -1,22 +1,22 @@
 /**
- * RayonStatsCards Component
- * Display detailed statistics for a rayon in card format
+ * DistrictStatsCards Component
+ * Display detailed statistics for a district in card format
  */
 
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { RayonStats } from '@/types/models';
+import { DistrictStats } from '@/types/models';
 import { Card, CardContent } from '@/components/ui';
 import { formatArea } from '@/lib/utils/geo';
 import { Map, Users, UserCheck, Square } from 'lucide-react';
 
-interface RayonStatsCardsProps {
-  stats?: RayonStats;
+interface DistrictStatsCardsProps {
+  stats?: DistrictStats;
   loading?: boolean;
 }
 
-export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps) {
+export default function DistrictStatsCards({ stats, loading }: DistrictStatsCardsProps) {
   const { t } = useTranslation();
 
   if (loading) {
@@ -48,19 +48,19 @@ export default function RayonStatsCards({ stats, loading }: RayonStatsCardsProps
       icon: <Map className="w-6 h-6" />,
     },
     {
-      label: t('admin:rayons.stats.totalUsers'),
+      label: t('admin:districts.stats.totalUsers'),
       value: stats.total_users,
       color: 'green',
       icon: <Users className="w-6 h-6" />,
     },
     {
-      label: t('admin:rayons.stats.activeUsers'),
+      label: t('admin:districts.stats.activeUsers'),
       value: stats.active_users,
       color: 'purple',
       icon: <UserCheck className="w-6 h-6" />,
     },
     {
-      label: t('admin:rayons.stats.totalCoverageArea'),
+      label: t('admin:districts.stats.totalCoverageArea'),
       value: formatArea(stats.total_coverage_area || 0),
       color: 'orange',
       icon: <Square className="w-6 h-6" />,

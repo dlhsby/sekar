@@ -23,7 +23,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, hasRole } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
 import { useLocationTypes } from '@/lib/api/location-types';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import {
   useUploadKmz,
   useConfirmKmz,
@@ -64,15 +64,15 @@ function KmzImport() {
 
   const [preview, setPreview] = useState<KmzUploadResponse | null>(null);
   const [locationTypeId, setAreaTypeId] = useState(SENTINEL);
-  const [rayonId, setRayonId] = useState(SENTINEL);
+  const [districtId, setDistrictId] = useState(SENTINEL);
 
   const uploadKmz = useUploadKmz();
   const confirmKmz = useConfirmKmz();
   const { data: locationTypes } = useLocationTypes();
-  const { data: rayons } = useRayons();
+  const { data: districts } = useDistricts();
 
   const hasNewAreas = useMemo(() => (preview?.new_areas ?? 0) > 0, [preview]);
-  const needsDefaults = hasNewAreas && (!locationTypeId || !rayonId);
+  const needsDefaults = hasNewAreas && (!locationTypeId || !districtId);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -96,7 +96,7 @@ function KmzImport() {
       index,
       action: area.match_status === 'update' ? 'update' : 'create',
       location_type_id: area.match_status === 'update' ? undefined : locationTypeId,
-      rayon_id: area.match_status === 'update' ? undefined : rayonId,
+      district_id: area.match_status === 'update' ? undefined : districtId,
     }));
     try {
       const result = await confirmKmz.mutateAsync({ sessionId: preview.session_id, areas: selections });
@@ -109,7 +109,7 @@ function KmzImport() {
   };
 
   const locationTypeOptions = (locationTypes ?? []).map((t) => ({ value: t.id, label: t.name }));
-  const rayonOptions = (rayons ?? []).map((r) => ({ value: r.id, label: r.name }));
+  const districtOptions = (districts ?? []).map((r) => ({ value: r.id, label: r.name }));
 
   return (
     <div className="space-y-5">
@@ -156,11 +156,11 @@ function KmzImport() {
                 placeholder={t('kmz.locationTypePlaceholder')}
               />
               <FormSelect
-                label={t('kmz.rayonLabel')}
-                options={rayonOptions}
-                value={rayonId}
-                onChange={setRayonId}
-                placeholder={t('kmz.rayonPlaceholder')}
+                label={t('kmz.districtLabel')}
+                options={districtOptions}
+                value={districtId}
+                onChange={setDistrictId}
+                placeholder={t('kmz.districtPlaceholder')}
               />
             </div>
           )}

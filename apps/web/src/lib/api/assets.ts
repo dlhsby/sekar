@@ -59,8 +59,8 @@ export interface Asset extends Record<string, unknown> {
     id: string;
     name: string;
   };
-  rayon_id?: string;
-  rayon?: {
+  district_id?: string;
+  district?: {
     id: string;
     name: string;
   };
@@ -146,7 +146,7 @@ export interface AssetFilters {
   category_id?: string;
   status?: AssetStatus;
   area_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -158,7 +158,7 @@ export interface AssetFilters {
 export interface CreateAssetDto {
   category_id: string;
   area_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   name: string;
   description?: string;
   purchase_date?: string;
@@ -171,7 +171,7 @@ export interface CreateAssetDto {
 export interface UpdateAssetDto {
   category_id?: string;
   area_id?: string;
-  rayon_id?: string;
+  district_id?: string;
   name?: string;
   description?: string;
   purchase_date?: string;
@@ -274,7 +274,7 @@ async function fetchAssetsPage(
   if (filters.category_id) params.append('category_id', filters.category_id);
   if (filters.status) params.append('status', filters.status);
   if (filters.area_id) params.append('area_id', filters.area_id);
-  if (filters.rayon_id) params.append('rayon_id', filters.rayon_id);
+  if (filters.district_id) params.append('district_id', filters.district_id);
   if (filters.search) params.append('search', filters.search);
   if (page) {
     params.append('page', page.toString());

@@ -140,11 +140,11 @@ export const navigationItems: NavItem[] = [
     icon: FolderIcon,
     roles: [...ADMIN_ROLES, 'management', 'admin_rayon'],
     children: [
-      // Location hierarchy, top → bottom: Rayon → Kawasan → Lokasi → Tim.
+      // Location hierarchy, top → bottom: District → Kawasan → Lokasi → Tim.
       {
-        id: 'rayons',
-        label: 'common:nav.rayons',
-        href: '/rayons',
+        id: 'districts',
+        label: 'common:nav.districts',
+        href: '/districts',
         icon: BuildingOfficeIcon,
         roles: [...ADMIN_ROLES, 'management'],
       },
@@ -392,7 +392,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/users': 'Pengguna',
   '/roles': 'Peran',
   '/locations': 'Lokasi',
-  '/rayons': 'Rayon',
+  '/districts': 'Rayon',
   '/regions': 'Kawasan',
   '/team-categories': 'Kategori Tim',
   '/assets': 'Aset',
@@ -445,7 +445,7 @@ const ROUTE_BREADCRUMB: Record<string, string[]> = {
   '/users': ['Pengguna & Hak Akses', 'Pengguna'],
   '/roles': ['Pengguna & Hak Akses', 'Peran'],
   '/locations': ['Data Master', 'Lokasi'],
-  '/rayons': ['Data Master', 'Rayon'],
+  '/districts': ['Data Master', 'Rayon'],
   '/regions': ['Data Master', 'Kawasan'],
   '/team-categories': ['Data Master', 'Kategori Tim'],
   '/plants': ['Data Master', 'Tanaman'],

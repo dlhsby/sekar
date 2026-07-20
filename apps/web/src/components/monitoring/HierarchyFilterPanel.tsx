@@ -12,18 +12,18 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui';
 import { FormSelect } from '@/components/ui';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useLocations } from '@/lib/api/locations';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type FilterScope = 'city' | 'rayon' | 'location';
+export type FilterScope = 'city' | 'district' | 'location';
 
 export interface HierarchyFilterState {
   scope: FilterScope;
-  rayonId?: string;
+  districtId?: string;
   areaId?: string;
 }
 
@@ -45,12 +45,12 @@ export function HierarchyFilterPanel({
   className,
 }: HierarchyFilterPanelProps) {
   const { t } = useTranslation(['monitoring']);
-  // Monitoring deliberately still sees deactivated rayons: hiding one here
+  // Monitoring deliberately still sees deactivated districts: hiding one here
   // would remove its live workers from the map. Revisit in the Phase-5
   // monitoring revamp.
-  const { data: rayons } = useRayons(true);
+  const { data: districts } = useDistricts(true);
   const { data: areasData } = useLocations({
-    rayon_id: value.rayonId,
+    district_id: value.districtId,
   });
   const areas = areasData?.data ?? [];
 
@@ -61,10 +61,10 @@ export function HierarchyFilterPanel({
     [onChange]
   );
 
-  const handleRayonChange = useCallback(
-    (rayonId: string) => {
-      const id = rayonId === 'none' ? undefined : rayonId;
-      onChange({ scope: 'rayon', rayonId: id, areaId: undefined });
+  const handleDistrictChange = useCallback(
+    (districtId: string) => {
+      const id = districtId === 'none' ? undefined : districtId;
+      onChange({ scope: 'district', districtId: id, areaId: undefined });
     },
     [onChange]
   );
@@ -72,9 +72,9 @@ export function HierarchyFilterPanel({
   const handleAreaChange = useCallback(
     (areaId: string) => {
       const id = areaId === 'none' ? undefined : areaId;
-      onChange({ scope: 'location', rayonId: value.rayonId, areaId: id });
+      onChange({ scope: 'location', districtId: value.districtId, areaId: id });
     },
-    [onChange, value.rayonId]
+    [onChange, value.districtId]
   );
 
   const handleReset = useCallback(() => {
@@ -99,7 +99,7 @@ export function HierarchyFilterPanel({
         aria-label={t('monitoring:hierarchy.scopeLabel')}
         className="flex items-center border-2 border-nb-black rounded-nb-base overflow-hidden shadow-nb-xs"
       >
-        {(['city', 'rayon', 'location'] as FilterScope[]).map((s) => (
+        {(['city', 'district', 'location'] as FilterScope[]).map((s) => (
           <button
             key={s}
             type="button"
@@ -113,21 +113,21 @@ export function HierarchyFilterPanel({
                 : 'bg-nb-white text-nb-black hover:bg-nb-gray-100'
             )}
           >
-            {s === 'city' ? t('monitoring:hierarchy.city') : s === 'rayon' ? t('monitoring:hierarchy.rayon') : t('monitoring:hierarchy.area')}
+            {s === 'city' ? t('monitoring:hierarchy.city') : s === 'district' ? t('monitoring:hierarchy.district') : t('monitoring:hierarchy.area')}
           </button>
         ))}
       </div>
 
-      {/* Rayon dropdown — shown for rayon/location scope */}
-      {(value.scope === 'rayon' || value.scope === 'location') && (
+      {/* Rayon dropdown — shown for district/location scope */}
+      {(value.scope === 'district' || value.scope === 'location') && (
         <div className="w-40">
           <FormSelect
             label=""
-            value={value.rayonId ?? 'none'}
-            onChange={(v) => handleRayonChange(v as string)}
+            value={value.districtId ?? 'none'}
+            onChange={(v) => handleDistrictChange(v as string)}
             options={[
-              { value: 'none', label: t('monitoring:hierarchy.rayonLabel') },
-              ...(rayons ?? []).map((r) => ({ value: r.id, label: r.name })),
+              { value: 'none', label: t('monitoring:hierarchy.districtLabel') },
+              ...(districts ?? []).map((r) => ({ value: r.id, label: r.name })),
             ]}
           />
         </div>
@@ -140,9 +140,9 @@ export function HierarchyFilterPanel({
             label=""
             value={value.areaId ?? 'none'}
             onChange={(v) => handleAreaChange(v as string)}
-            disabled={!value.rayonId}
+            disabled={!value.districtId}
             options={[
-              { value: 'none', label: value.rayonId ? t('monitoring:hierarchy.areaLabel') : t('monitoring:hierarchy.areaDisabled') },
+              { value: 'none', label: value.districtId ? t('monitoring:hierarchy.areaLabel') : t('monitoring:hierarchy.areaDisabled') },
               ...areas.map((a) => ({ value: a.id, label: a.name })),
             ]}
           />

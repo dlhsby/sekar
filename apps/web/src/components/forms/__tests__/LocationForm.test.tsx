@@ -7,15 +7,15 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { LocationForm } from '../LocationForm';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useLocationTypes } from '@/lib/api/location-types';
 import { isValidPolygon, calculatePolygonCenter, formatCoordinates } from '@/lib/utils/geo';
 import type { Location } from '@/types/models';
 import { ReactNode } from 'react';
 
 // Mock API hooks
-jest.mock('@/lib/api/rayons', () => ({
-  useRayons: jest.fn(),
+jest.mock('@/lib/api/districts', () => ({
+  useDistricts: jest.fn(),
 }));
 jest.mock('@/lib/api/location-types', () => ({
   useLocationTypes: jest.fn(),
@@ -78,9 +78,9 @@ jest.mock('@/lib/utils/geo', () => ({
   formatCoordinates: jest.fn(() => '112.740000°E, 7.280000°S'),
 }));
 
-const mockRayons = [
-  { id: 'rayon-1', name: 'Rayon Utara', code: 'RU' },
-  { id: 'rayon-2', name: 'Rayon Selatan', code: 'RS' },
+const mockDistricts = [
+  { id: 'district-1', name: 'Rayon Utara', code: 'RU' },
+  { id: 'district-2', name: 'Rayon Selatan', code: 'RS' },
 ];
 
 const mockLocationTypes = [
@@ -116,8 +116,8 @@ describe('LocationForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useRayons as jest.Mock).mockReturnValue({
-      data: mockRayons,
+    (useDistricts as jest.Mock).mockReturnValue({
+      data: mockDistricts,
       isLoading: false,
     });
     (useLocationTypes as jest.Mock).mockReturnValue({
@@ -146,7 +146,7 @@ describe('LocationForm', () => {
       expect(screen.getByRole('button', { name: /buat lokasi/i })).toBeInTheDocument();
     });
 
-    it('shows rayons in dropdown', async () => {
+    it('shows districts in dropdown', async () => {
       const user = userEvent.setup();
       render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
@@ -164,22 +164,22 @@ describe('LocationForm', () => {
         wrapper: createWrapper(),
       });
 
-      // Open the Tipe Lokasi combobox — comboboxes are rayon[0], region[1], type[2].
+      // Open the Tipe Lokasi combobox — comboboxes are district[0], region[1], type[2].
       await user.click(screen.getAllByRole('combobox')[2]);
       expect(await screen.findByText(/taman kota/i)).toBeInTheDocument();
       expect(screen.getByText(/jalur hijau/i)).toBeInTheDocument();
     });
 
-    it('shows loading state when rayons are loading', () => {
-      (useRayons as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
+    it('shows loading state when districts are loading', () => {
+      (useDistricts as jest.Mock).mockReturnValue({ data: undefined, isLoading: true });
 
       render(<LocationForm formId={FORM_ID} mode="create" onSubmit={mockOnSubmit} />, {
         wrapper: createWrapper(),
       });
 
       // Rayon select should show empty options while loading
-      const rayonSelects = screen.getAllByRole('combobox');
-      expect(rayonSelects.length).toBeGreaterThan(0);
+      const districtSelects = screen.getAllByRole('combobox');
+      expect(districtSelects.length).toBeGreaterThan(0);
     });
 
     it('shows loading state when location types are loading', () => {
@@ -197,7 +197,7 @@ describe('LocationForm', () => {
     const mockLocation: Location = {
       id: 'loc-1',
       name: 'Taman Bungkul',
-      rayon_id: 'rayon-1',
+      district_id: 'district-1',
       location_type_id: 'type-1',
       address: 'Jl. Taman Bungkul No. 1',
       boundary_polygon: {
@@ -239,7 +239,7 @@ describe('LocationForm', () => {
       const withRegion: Location = {
         ...mockLocation,
         id: '11111111-1111-4111-8111-111111111111',
-        rayon_id: '22222222-2222-4222-8222-222222222222',
+        district_id: '22222222-2222-4222-8222-222222222222',
         location_type_id: '33333333-3333-4333-8333-333333333333',
         region_id: '44444444-4444-4444-4444-444444444444',
       };

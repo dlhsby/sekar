@@ -2,7 +2,7 @@
  * Unit tests: MonthGrid + WeekGrid.
  *
  * Both switch body rendering on `subjectFiltered` (a personal chip calendar vs a
- * per-rayon coverage summary), and MonthGrid must NOT let you create on a
+ * per-district coverage summary), and MonthGrid must NOT let you create on a
  * spill-over day belonging to the neighbouring month.
  *
  * "Today" is the WIB (Jakarta) day, not the browser's local day — mocked here so
@@ -22,9 +22,9 @@ jest.mock('@/lib/utils/formatters', () => ({
 }));
 
 const master: BoardMasterData = {
-  rayons: [{ id: 'ry1', name: 'Rayon Pusat' }],
+  districts: [{ id: 'ry1', name: 'Rayon Pusat' }],
   regions: [],
-  locations: [{ id: 'loc1', name: 'Taman Bungkul', rayon_id: 'ry1', region_id: null }],
+  locations: [{ id: 'loc1', name: 'Taman Bungkul', district_id: 'ry1', region_id: null }],
   shifts: [{ id: 's1', name: 'Shift 1', start_time: '06:00:00', end_time: '15:00:00' }],
 };
 
@@ -38,7 +38,7 @@ const occ = (date: string, name = 'Budi'): ScheduleOccurrence =>
     status: 'planned',
     is_detached: false,
     location_id: 'loc1',
-    rayon_id: 'ry1',
+    district_id: 'ry1',
     user: { id: 'u1', full_name: name, username: 'budi', role: 'satgas' },
     shift_definition: { id: 's1', name: 'Shift 1' },
   }) as ScheduleOccurrence;
@@ -109,10 +109,10 @@ describe('MonthGrid', () => {
     expect(onOccurrenceClick).toHaveBeenCalled();
   });
 
-  it('shows a per-rayon coverage summary instead of chips by default', () => {
+  it('shows a per-district coverage summary instead of chips by default', () => {
     setup({ occurrences: [occ('2026-07-13')], subjectFiltered: false });
 
-    // Coverage mode names the rayon, not the individual worker.
+    // Coverage mode names the district, not the individual worker.
     expect(screen.queryByText('Budi')).not.toBeInTheDocument();
     expect(screen.getByText(/Rayon Pusat/)).toBeInTheDocument();
   });
@@ -137,8 +137,8 @@ describe('WeekGrid', () => {
     return { onDayClick, onOccurrenceClick };
   };
 
-  /** The coverage row for a rayon; cell 0 is its label, cells 1–7 are Mon–Sun. */
-  const rayonRow = (name: string) => screen.getByText(name).closest('tr')!;
+  /** The coverage row for a district; cell 0 is its label, cells 1–7 are Mon–Sun. */
+  const districtRow = (name: string) => screen.getByText(name).closest('tr')!;
 
   describe('coverage grid (no subject filter)', () => {
     it('renders the Monday-first week containing the date', () => {
@@ -149,9 +149,9 @@ describe('WeekGrid', () => {
       }
     });
 
-    it('lists a rayon even when it has no schedule at all, so gaps are visible', () => {
+    it('lists a district even when it has no schedule at all, so gaps are visible', () => {
       setup();
-      const row = rayonRow('Rayon Pusat');
+      const row = districtRow('Rayon Pusat');
       // Every day cell reads as empty rather than the row being dropped.
       expect(within(row).getAllByText('–')).toHaveLength(7);
     });
@@ -161,7 +161,7 @@ describe('WeekGrid', () => {
       const { onDayClick } = setup();
 
       // Cell index 3 = the 3rd day column (Wed 15), since cell 0 is the label.
-      await user.click(within(rayonRow('Rayon Pusat')).getAllByRole('cell')[3]);
+      await user.click(within(districtRow('Rayon Pusat')).getAllByRole('cell')[3]);
 
       expect(onDayClick).toHaveBeenCalledTimes(1);
       expect(onDayClick.mock.calls[0][0].getDate()).toBe(15);
@@ -169,7 +169,7 @@ describe('WeekGrid', () => {
 
     it('summarizes a cell by shift and role rather than naming people', () => {
       setup({ occurrences: [occ('2026-07-15')] });
-      const row = rayonRow('Rayon Pusat');
+      const row = districtRow('Rayon Pusat');
 
       expect(within(row).getByText('S1')).toBeInTheDocument();
       expect(within(row).getByText(/Satgas/i)).toBeInTheDocument();

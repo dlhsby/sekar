@@ -28,7 +28,7 @@ export interface FormComboboxProps {
 /**
  * FormCombobox — the standard form select: a labelled, type-to-search single
  * select (wraps `Combobox`). Use this instead of `FormSelect` for any list the
- * user might want to filter (roles, rayon, shift, area, worker…). Default state
+ * user might want to filter (roles, district, shift, area, worker…). Default state
  * is nothing-selected (placeholder shown) unless a value is passed.
  */
 export function FormCombobox({

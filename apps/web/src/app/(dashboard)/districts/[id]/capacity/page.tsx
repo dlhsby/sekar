@@ -1,7 +1,7 @@
 /**
  * Rayon Capacity Calendar — CAP-1 (Phase 3-11)
  *
- * Weekly service-capacity grid for one rayon. Read: admin_rayon (own rayon,
+ * Weekly service-capacity grid for one district. Read: admin_rayon (own district,
  * server-enforced), kepala_rayon, management, admin_system, superadmin.
  * Write (PUT upsert): kepala_rayon, management, superadmin — matches
  * apps/be/src/modules/service-capacity/service-capacity.controller.ts.
@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useRayon } from '@/lib/api/rayons';
+import { useDistrict } from '@/lib/api/districts';
 import { getRolling12WeekWindow } from '@/lib/utils/iso-week';
 import { CapacityWeeklyGrid } from '@/components/capacity/CapacityWeeklyGrid';
 import { FormSelect, PageHeader, StatusPill } from '@/components/ui';
@@ -37,7 +37,7 @@ interface CapacityPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function RayonCapacityPage({ params }: CapacityPageProps) {
+export default function DistrictCapacityPage({ params }: CapacityPageProps) {
   const { t } = useTranslation();
   const { id } = use(params);
   const { user, loading: authLoading } = useAuth();
@@ -46,7 +46,7 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
   const currentWindow = useMemo(() => getRolling12WeekWindow(), []);
   const [year, setYear] = useState(currentWindow.year);
 
-  const { data: rayon, isLoading: rayonLoading } = useRayon(id);
+  const { data: district, isLoading: districtLoading } = useDistrict(id);
 
   const allowed = !!user && ALLOWED_ROLES.includes(user.role);
   const canEdit = !!user && WRITE_ROLES.includes(user.role);
@@ -91,9 +91,9 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
         data-testid="page-header"
         title={t('schedules:capacity.pageTitle')}
         description={
-          rayonLoading
+          districtLoading
             ? t('schedules:capacity.pageDescriptionLoading')
-            : t('schedules:capacity.pageDescription', { name: rayon?.name ?? '' })
+            : t('schedules:capacity.pageDescription', { name: district?.name ?? '' })
         }
         actions={
           !canEdit ? <StatusPill tone="neutral">{t('schedules:capacity.readOnlyStatus')}</StatusPill> : undefined
@@ -113,7 +113,7 @@ export default function RayonCapacityPage({ params }: CapacityPageProps) {
       </div>
 
       <CapacityWeeklyGrid
-        rayonId={id}
+        districtId={id}
         year={year}
         fromWeek={fromWeek}
         toWeek={toWeek}

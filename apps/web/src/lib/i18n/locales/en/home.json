@@ -20,7 +20,7 @@
     "present": "Present",
     "absent": "Absent",
     "onLeave": "On Leave",
-    "perRayon": "Per District"
+    "perDistrict": "Per District"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -33,7 +33,7 @@
     "viewAll": "Plants →",
     "allOnSchedule": "All plants pruned on schedule. 🌿",
     "overdueCount": "{{count}} plant species overdue in {{districts}} district",
-    "noRayon": "No District"
+    "noDistrict": "No District"
   },
   "notifications": {
     "title": "Latest Notifications",

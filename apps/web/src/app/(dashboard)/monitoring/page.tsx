@@ -1,8 +1,8 @@
 /**
  * Monitoring — unified hierarchical drill-down.
  *
- * One flow, no modes: the map opens directly on the 7 rayons (ADR-046 — no
- * Surabaya bubble). Tapping a rayon reveals its kawasan (or areas if it has
+ * One flow, no modes: the map opens directly on the 7 districts (ADR-046 — no
+ * Surabaya bubble). Tapping a district reveals its kawasan (or areas if it has
  * none); tapping an area focuses its bounds
  * and shows the individual workers. Each non-worker level carries the same
  * attendance trio. Worker positions arrive incrementally over WebSocket;
@@ -31,7 +31,7 @@ import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearc
 import {
   MonitoringFilters,
   type MonitoringFilterState,
-  type RayonOption,
+  type DistrictOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
@@ -45,15 +45,15 @@ import { cn } from '@/lib/utils/cn';
 import type { TrackingStatus } from '@/lib/api/monitoring-types';
 import type { UserRole } from '@/types/models';
 
-// Drill: rayon (top) -> kawasan -> lokasi -> workers. Workers only at location scope.
-type Scope = 'city' | 'rayon' | 'region' | 'location';
+// Drill: district (top) -> kawasan -> lokasi -> workers. Workers only at location scope.
+type Scope = 'city' | 'district' | 'region' | 'location';
 
 const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 
 interface MonitoringView {
   scope: Scope;
   id?: string;
-  rayonId?: string;
+  districtId?: string;
   regionId?: string;
   name?: string;
   /** Center of the drilled node — anchors the current-node pin + drill-back zoom. */
@@ -116,13 +116,13 @@ export default function MonitoringPage() {
     if (user?.role === 'korlap' && user.area_id) {
       return { view: { scope: 'location', id: user.area_id }, floor: 'location' };
     }
-    if ((user?.role === 'kepala_rayon' || user?.role === 'admin_rayon') && user.rayon_id) {
+    if ((user?.role === 'kepala_rayon' || user?.role === 'admin_rayon') && user.district_id) {
       return {
-        view: { scope: 'rayon', id: user.rayon_id, rayonId: user.rayon_id },
-        floor: 'rayon',
+        view: { scope: 'district', id: user.district_id, districtId: user.district_id },
+        floor: 'district',
       };
     }
-    // Top level opens directly on the rayons (ADR-046: no Surabaya bubble).
+    // Top level opens directly on the districts (ADR-046: no Surabaya bubble).
     return { view: { scope: 'city' }, floor: 'city' };
   }, [user]);
 
@@ -130,7 +130,7 @@ export default function MonitoringPage() {
   const [filters, setFilters] = useState<MonitoringFilterState>({
     search: '',
     statuses: new Set(),
-    rayonId: 'all',
+    districtId: 'all',
     regionId: 'all',
     locationId: 'all',
     jenis: 'individu',
@@ -163,52 +163,52 @@ export default function MonitoringPage() {
   const scope = view.scope;
   const showWorkers = scope === 'location';  // Workers only at location scope, not region.
 
-  // City aggregate feeds BOTH the Surabaya summary (roster_totals) and the rayon
+  // City aggregate feeds BOTH the Surabaya summary (roster_totals) and the district
   // list/markers (nodes) — one fetch. Rayon aggregate feeds the region/area level.
   const cityAgg = useMonitoringAggregate(
     'city',
     undefined,
     canMonitor && scope === 'city'
   );
-  // `view.id` is the rayon id only at rayon scope. At region/area scope the rayon
-  // aggregate is fetched by `view.rayonId` via `regionAreasAgg` below.
-  const rayonAgg = useMonitoringAggregate('rayon', view.id, canMonitor && scope === 'rayon');
-  // At rayon scope, fetch region aggregate to check if this rayon has regions.
+  // `view.id` is the district id only at district scope. At region/area scope the district
+  // aggregate is fetched by `view.districtId` via `regionAreasAgg` below.
+  const districtAgg = useMonitoringAggregate('district', view.id, canMonitor && scope === 'district');
+  // At district scope, fetch region aggregate to check if this district has regions.
   const regionAgg = useMonitoringAggregate(
     'region',
     view.id,
-    canMonitor && scope === 'rayon'
+    canMonitor && scope === 'district'
   );
-  // At region scope, fetch the rayon aggregate to filter areas by region_id.
+  // At region scope, fetch the district aggregate to filter areas by region_id.
   const regionAreasAgg = useMonitoringAggregate(
-    'rayon',
-    view.rayonId,
+    'district',
+    view.districtId,
     canMonitor && scope === 'region'
   );
 
-  const activeAgg = scope === 'region' ? regionAreasAgg : scope === 'rayon' ? rayonAgg : cityAgg;
+  const activeAgg = scope === 'region' ? regionAreasAgg : scope === 'district' ? districtAgg : cityAgg;
 
   // Snapshot (workers) — rendered only at location scope, but kept loaded so search
   // can find people at any level. Surabaya maps to the city snapshot scope.
-  // Region scope shows locations, so snapshot is still at the parent rayon.
-  const snapshotScope: 'city' | 'rayon' | 'location' =
-    scope === 'region' ? 'rayon' : scope;
-  const snapshotId = scope === 'region' ? view.rayonId : view.id;
+  // Region scope shows locations, so snapshot is still at the parent district.
+  const snapshotScope: 'city' | 'district' | 'location' =
+    scope === 'region' ? 'district' : scope;
+  const snapshotId = scope === 'region' ? view.districtId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
 
-  // Progressive boundaries: rayon outlines at the top, that rayon's locations deeper.
+  // Progressive boundaries: district outlines at the top, that district's locations deeper.
   // NB: the boundaries `level` param stays 'area' — it's part of the retained
-  // AreaBoundaryDto / `.areas[]` boundary contract (backend accepts 'rayon'|'area').
-  const boundaryLevel: 'rayon' | 'area' =
-    scope === 'city' ? 'rayon' : 'area';
-  const boundaryRayonId =
-    scope === 'rayon' || scope === 'region' || scope === 'location' ? view.rayonId ?? view.id : undefined;
+  // AreaBoundaryDto / `.areas[]` boundary contract (backend accepts 'district'|'area').
+  const boundaryLevel: 'district' | 'area' =
+    scope === 'city' ? 'district' : 'area';
+  const boundaryDistrictId =
+    scope === 'district' || scope === 'region' || scope === 'location' ? view.districtId ?? view.id : undefined;
   const {
     data: boundaries,
     isFetching: boundariesFetching,
     refetch: refetchBoundaries,
-  } = useBoundaries(canMonitor, boundaryLevel, boundaryRayonId);
+  } = useBoundaries(canMonitor, boundaryLevel, boundaryDistrictId);
 
   // Live incremental updates (replaces the old 30 s full-refresh flash).
   useMonitoringSocket(canMonitor);
@@ -252,21 +252,21 @@ export default function MonitoringPage() {
     setFocusTarget((cur) => ({ lat, lng, zoom, exact, key: cur ? cur.key + 1 : 1 }));
 
   // ---- Drill navigation (scope only; no modes) ----------------------------
-  const drillToRayon = (id: string, name: string, lat?: number | null, lng?: number | null) => {
+  const drillToDistrict = (id: string, name: string, lat?: number | null, lng?: number | null) => {
     const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
-    setView({ scope: 'rayon', id, rayonId: id, name, ...coord });
+    setView({ scope: 'district', id, districtId: id, name, ...coord });
     setSelectedId(null);
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_RAYON);
   };
   const drillToRegion = (
     id: string,
     name: string,
-    rayonId?: string,
+    districtId?: string,
     lat?: number | null,
     lng?: number | null
   ) => {
     const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
-    setView({ scope: 'region', id, rayonId, regionId: id, name, ...coord });
+    setView({ scope: 'region', id, districtId, regionId: id, name, ...coord });
     setSelectedId(null);
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_REGION);
   };
@@ -274,36 +274,36 @@ export default function MonitoringPage() {
   const drillToLocation = (
     id: string,
     name: string,
-    rayonId?: string,
+    districtId?: string,
     lat?: number | null,
     lng?: number | null,
     regionId?: string
   ) => {
     const coord = typeof lat === 'number' && typeof lng === 'number' ? { lat, lng } : {};
     // Carry regionId so back-from-location returns to the kawasan tier (not straight
-    // to the rayon) when the location was reached via a region.
-    setView({ scope: 'location', id, rayonId, regionId, name, ...coord });
+    // to the district) when the location was reached via a region.
+    setView({ scope: 'location', id, districtId, regionId, name, ...coord });
     setSelectedId(null);
     if ('lat' in coord) focusOn(coord.lat!, coord.lng!, ZOOM_AREA);
   };
 
   // Map marker tapped.
   const onDrillMarker = (node: NodeMarker) => {
-    if (node.variant === 'rayon') drillToRayon(node.id, node.name, node.lat, node.lng);
+    if (node.variant === 'district') drillToDistrict(node.id, node.name, node.lat, node.lng);
     else if (node.variant === 'region') drillToRegion(node.id, node.name, view.id, node.lat, node.lng);
     else if (scope === 'region')
-      drillToLocation(node.id, node.name, view.rayonId, node.lat, node.lng, view.id);
+      drillToLocation(node.id, node.name, view.districtId, node.lat, node.lng, view.id);
     else drillToLocation(node.id, node.name, view.id, node.lat, node.lng);
   };
   // List row tapped (an AggregateNode).
   const onDrillListNode = (node: AggregateNode) => {
-    if (node.type === 'rayon') drillToRayon(node.id, node.name, node.center_lat, node.center_lng);
+    if (node.type === 'district') drillToDistrict(node.id, node.name, node.center_lat, node.center_lng);
     else if (node.type === 'region') drillToRegion(node.id, node.name, view.id, node.center_lat, node.center_lng);
     else
       drillToLocation(
         node.id,
         node.name,
-        node.rayon_id ?? view.rayonId ?? view.id,
+        node.district_id ?? view.districtId ?? view.id,
         node.center_lat,
         node.center_lng,
         node.region_id ?? undefined
@@ -320,15 +320,15 @@ export default function MonitoringPage() {
       const sid = w?.display_scope_id ?? null;
       if (ds === 'city') {
         setView({ scope: 'city' });
-      } else if (ds === 'rayon' && sid) {
-        setView({ scope: 'rayon', id: sid, rayonId: sid, name: w?.rayon_name ?? undefined });
+      } else if (ds === 'district' && sid) {
+        setView({ scope: 'district', id: sid, districtId: sid, name: w?.district_name ?? undefined });
       } else if (ds === 'region' && sid) {
-        setView({ scope: 'region', id: sid, rayonId: w?.rayon_id ?? undefined, name: w?.region_name ?? undefined });
+        setView({ scope: 'region', id: sid, districtId: w?.district_id ?? undefined, name: w?.region_name ?? undefined });
       } else if (sid ?? w?.location_id) {
         setView({
           scope: 'location',
           id: (sid ?? w?.location_id)!,
-          rayonId: w?.rayon_id ?? result.rayonId ?? undefined,
+          districtId: w?.district_id ?? result.districtId ?? undefined,
           name: w?.location_name ?? undefined,
         });
       }
@@ -336,9 +336,9 @@ export default function MonitoringPage() {
       setListOpen(true);
       focusOn(result.latitude, result.longitude, 16);
     } else if (result.type === 'area') {
-      drillToLocation(result.id, result.name, result.rayonId ?? view.rayonId, result.latitude, result.longitude);
+      drillToLocation(result.id, result.name, result.districtId ?? view.districtId, result.latitude, result.longitude);
     } else {
-      drillToRayon(result.id, result.name, result.latitude, result.longitude);
+      drillToDistrict(result.id, result.name, result.latitude, result.longitude);
     }
   };
 
@@ -348,30 +348,30 @@ export default function MonitoringPage() {
     setSelectedId(null);
     if (scope === 'location') {
       if (roleView.floor === 'location') return;
-      // From location: go back to region (if regionId exists) or rayon.
-      if (view.regionId && view.rayonId) {
-        setView({ scope: 'region', id: view.regionId, rayonId: view.rayonId });
+      // From location: go back to region (if regionId exists) or district.
+      if (view.regionId && view.districtId) {
+        setView({ scope: 'region', id: view.regionId, districtId: view.districtId });
         if (typeof view.lat === 'number' && typeof view.lng === 'number') {
           focusOn(view.lat, view.lng, ZOOM_REGION, true);
         }
       } else {
-        setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
+        setView({ scope: 'district', id: view.districtId, districtId: view.districtId });
         if (typeof view.lat === 'number' && typeof view.lng === 'number') {
           focusOn(view.lat, view.lng, ZOOM_RAYON, true);
         }
       }
     } else if (scope === 'region') {
-      if (roleView.floor === 'rayon') return;
-      setView({ scope: 'rayon', id: view.rayonId, rayonId: view.rayonId });
+      if (roleView.floor === 'district') return;
+      setView({ scope: 'district', id: view.districtId, districtId: view.districtId });
       if (typeof view.lat === 'number' && typeof view.lng === 'number') {
         focusOn(view.lat, view.lng, ZOOM_RAYON, true);
       }
-    } else if (scope === 'rayon') {
-      if (roleView.floor === 'rayon') return;
+    } else if (scope === 'district') {
+      if (roleView.floor === 'district') return;
       setView({ scope: 'city' });
       focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
     }
-    // city is the top level — no drill-up above the rayons.
+    // city is the top level — no drill-up above the districts.
   };
 
   // Jump straight back to the city (Surabaya) view — used by the breadcrumb root.
@@ -381,18 +381,18 @@ export default function MonitoringPage() {
     focusOn(SURABAYA.lat, SURABAYA.lng, ZOOM_CITY, true);
   };
 
-  // Resolve rayon/kawasan/lokasi names from the loaded boundaries so the
+  // Resolve district/kawasan/lokasi names from the loaded boundaries so the
   // breadcrumb can label each drill level (view only carries the current name).
   const geoNames = useMemo(() => {
-    const rayon = new Map<string, string>();
+    const district = new Map<string, string>();
     const region = new Map<string, string>();
     const area = new Map<string, string>();
-    for (const r of boundaries?.rayons ?? []) {
-      rayon.set(r.id, r.name);
+    for (const r of boundaries?.districts ?? []) {
+      district.set(r.id, r.name);
       for (const k of r.regions ?? []) region.set(k.id, k.name);
       for (const a of r.areas ?? []) area.set(a.id, a.name);
     }
-    return { rayon, region, area };
+    return { district, region, area };
   }, [boundaries]);
 
   // Breadcrumb trail: Surabaya › Rayon › Kawasan › Lokasi. Each ancestor is a
@@ -404,13 +404,13 @@ export default function MonitoringPage() {
       label: t('monitoring:breadcrumb.city'),
       onClick: scope === 'city' ? undefined : resetToCity,
     });
-    const rid = scope === 'rayon' ? view.id : view.rayonId;
+    const rid = scope === 'district' ? view.id : view.districtId;
     if (rid) {
-      const name = geoNames.rayon.get(rid) ?? (scope === 'rayon' ? view.name : undefined) ?? t('common:entities.rayon');
+      const name = geoNames.district.get(rid) ?? (scope === 'district' ? view.name : undefined) ?? t('common:entities.district');
       items.push({
-        key: 'rayon',
+        key: 'district',
         label: name,
-        onClick: scope === 'rayon' ? undefined : () => drillToRayon(rid, name),
+        onClick: scope === 'district' ? undefined : () => drillToDistrict(rid, name),
       });
     }
     const kid = scope === 'region' ? view.id : scope === 'location' ? view.regionId : undefined;
@@ -419,7 +419,7 @@ export default function MonitoringPage() {
       items.push({
         key: 'region',
         label: name,
-        onClick: scope === 'region' ? undefined : () => drillToRegion(kid, name, view.rayonId),
+        onClick: scope === 'region' ? undefined : () => drillToRegion(kid, name, view.districtId),
       });
     }
     if (scope === 'location') {
@@ -432,11 +432,11 @@ export default function MonitoringPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, view, geoNames, t]);
 
-  // The current node's own pin (rayon at rayon scope / area at area scope) — the
+  // The current node's own pin (district at district scope / area at area scope) — the
   // detail-opener. Coords come from the drill; fall back to the aggregate node /
   // boundary centre so it also renders on role-landing + drill-back.
   const currentNode = useMemo<CurrentNodeMarker | null>(() => {
-    if (scope === 'rayon' && view.id) {
+    if (scope === 'district' && view.id) {
       let lat = view.lat;
       let lng = view.lng;
       const node = cityAgg.data?.nodes.find((n) => n.id === view.id);
@@ -446,7 +446,7 @@ export default function MonitoringPage() {
       }
       if (lat != null && lng != null) {
         return {
-          variant: 'rayon',
+          variant: 'district',
           id: view.id,
           name: view.name ?? node?.name ?? '',
           lat,
@@ -458,7 +458,7 @@ export default function MonitoringPage() {
     if (scope === 'region' && view.id) {
       let lat = view.lat;
       let lng = view.lng;
-      const region = boundaries?.rayons
+      const region = boundaries?.districts
         .flatMap((r) => r.regions ?? [])
         .find((rg) => rg.id === view.id);
       if ((lat == null || lng == null) && region?.center_lat != null && region?.center_lng != null) {
@@ -479,7 +479,7 @@ export default function MonitoringPage() {
     if (scope === 'location' && view.id) {
       let lat = view.lat;
       let lng = view.lng;
-      const area = boundaries?.rayons.flatMap((r) => r.areas).find((a) => a.id === view.id);
+      const area = boundaries?.districts.flatMap((r) => r.areas).find((a) => a.id === view.id);
       if ((lat == null || lng == null) && area?.center_lat != null && area?.center_lng != null) {
         lat = area.center_lat;
         lng = area.center_lng;
@@ -506,29 +506,29 @@ export default function MonitoringPage() {
     setAreaDetailOpen(true);
   };
 
-  // Rayons list (surabaya + city), regions list (rayon), or locations list (region or rayon-without-regions),
+  // Districts list (surabaya + city), regions list (district), or locations list (region or district-without-regions),
   // for the side panel.
   const listNodes = useMemo<AggregateNode[]>(() => {
     if (scope === 'region') {
-      // At region scope: filter the rayon's location nodes by region_id.
+      // At region scope: filter the district's location nodes by region_id.
       const areas = regionAreasAgg.data?.nodes ?? [];
       return areas.filter((n) => n.region_id === view.id);
     }
-    if (scope === 'rayon') {
-      // At rayon scope: show region nodes if available (≥1), otherwise show location nodes (region-less fallback).
+    if (scope === 'district') {
+      // At district scope: show region nodes if available (≥1), otherwise show location nodes (region-less fallback).
       if (regionAgg.data && regionAgg.data.nodes.length > 0) {
         return regionAgg.data.nodes;
       }
-      return rayonAgg.data?.nodes ?? [];
+      return districtAgg.data?.nodes ?? [];
     }
     if (scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
-  }, [scope, view.id, regionAgg.data, regionAreasAgg.data, rayonAgg.data, cityAgg.data]);
+  }, [scope, view.id, regionAgg.data, regionAreasAgg.data, districtAgg.data, cityAgg.data]);
 
   // Map markers for the current scope (ADR-046 count+ring markers, not ratio
-  // bubbles). Zoom-gated tiers keep dense rayons legible:
-  //   city   → rayon markers
-  //   rayon  → kawasan markers + the lokasi that belong to NO kawasan
+  // bubbles). Zoom-gated tiers keep dense districts legible:
+  //   city   → district markers
+  //   district  → kawasan markers + the lokasi that belong to NO kawasan
   //            (region-less); a kawasan's own lokasi appear when you drill/zoom
   //            into that kawasan.
   //   region → that kawasan's lokasi markers
@@ -540,16 +540,16 @@ export default function MonitoringPage() {
     if (scope === 'region') {
       return toMarkers((regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id));
     }
-    if (scope === 'rayon') {
+    if (scope === 'district') {
       const kawasan = regionAgg.data?.nodes ?? [];
-      const regionlessLokasi = (rayonAgg.data?.nodes ?? []).filter((n) => !n.region_id);
+      const regionlessLokasi = (districtAgg.data?.nodes ?? []).filter((n) => !n.region_id);
       return toMarkers([...kawasan, ...regionlessLokasi]);
     }
-    return toMarkers(listNodes); // city → rayon markers
-  }, [scope, view.id, regionAgg.data, rayonAgg.data, regionAreasAgg.data, listNodes]);
+    return toMarkers(listNodes); // city → district markers
+  }, [scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
 
   // At region (kawasan) scope the aggregate's top-level totals cover the whole
-  // parent rayon; sum just this kawasan's lokasi nodes so the stats pills match
+  // parent district; sum just this kawasan's lokasi nodes so the stats pills match
   // the selected kawasan (the roster panel already lists only its lokasi).
   const regionTotals = useMemo(() => {
     if (scope !== 'region') return null;
@@ -605,12 +605,12 @@ export default function MonitoringPage() {
 
   }, [showWorkers, workers, regionTotals, activeAgg.data]);
 
-  // ALL rayons from the city aggregate (not just those with live workers), so
-  // the cascade root lists every rayon. Fetched independently of the view scope
+  // ALL districts from the city aggregate (not just those with live workers), so
+  // the cascade root lists every district. Fetched independently of the view scope
   // (react-query dedupes with the city-scope view fetch); falls back to the
   // snapshot/boundaries until it loads.
   const allRayonsAgg = useMonitoringAggregate('city', undefined, canMonitor);
-  const rayonOptions = useMemo<RayonOption[]>(() => {
+  const districtOptions = useMemo<DistrictOption[]>(() => {
     const nodes = allRayonsAgg.data?.nodes ?? [];
     if (nodes.length > 0) {
       return nodes
@@ -620,48 +620,48 @@ export default function MonitoringPage() {
     // Fallback before the aggregate resolves.
     const map = new Map<string, string>();
     for (const w of workers) {
-      if (w.rayon_id && w.rayon_name && !map.has(w.rayon_id)) map.set(w.rayon_id, w.rayon_name);
+      if (w.district_id && w.district_name && !map.has(w.district_id)) map.set(w.district_id, w.district_name);
     }
-    if (map.size === 0 && boundaries?.rayons) {
-      for (const r of boundaries.rayons) if (!map.has(r.id)) map.set(r.id, r.name);
+    if (map.size === 0 && boundaries?.districts) {
+      for (const r of boundaries.districts) if (!map.has(r.id)) map.set(r.id, r.name);
     }
     return [...map.entries()]
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [allRayonsAgg.data, workers, boundaries]);
 
-  // Full geo hierarchy for the FILTER-selected rayon (independent of the current
+  // Full geo hierarchy for the FILTER-selected district (independent of the current
   // view + of who is on shift): its kawasan (`region` aggregate) + its lokasi
-  // (`rayon` aggregate). Reuses the monitoring aggregate — perm-safe for every
+  // (`district` aggregate). Reuses the monitoring aggregate — perm-safe for every
   // monitoring role, and react-query dedupes with the view's own fetches when
-  // the ids align. Gated on a concrete rayon selection (the cascade root).
-  const filterRayonId = filters.rayonId !== 'all' ? filters.rayonId : undefined;
-  const filterKawasanAgg = useMonitoringAggregate('region', filterRayonId, canMonitor && !!filterRayonId);
-  const filterLokasiAgg = useMonitoringAggregate('rayon', filterRayonId, canMonitor && !!filterRayonId);
+  // the ids align. Gated on a concrete district selection (the cascade root).
+  const filterDistrictId = filters.districtId !== 'all' ? filters.districtId : undefined;
+  const filterKawasanAgg = useMonitoringAggregate('region', filterDistrictId, canMonitor && !!filterDistrictId);
+  const filterLokasiAgg = useMonitoringAggregate('district', filterDistrictId, canMonitor && !!filterDistrictId);
 
-  // Kawasan options — EMPTY until a rayon is picked, then ALL kawasan in that
-  // rayon (even ones with no live worker). A rayon like Taman Aktif has none →
+  // Kawasan options — EMPTY until a district is picked, then ALL kawasan in that
+  // district (even ones with no live worker). A district like Taman Aktif has none →
   // stays empty and the panel disables the select.
-  const regionOptions = useMemo<RayonOption[]>(() => {
-    if (!filterRayonId) return [];
+  const regionOptions = useMemo<DistrictOption[]>(() => {
+    if (!filterDistrictId) return [];
     return (filterKawasanAgg.data?.nodes ?? [])
       .map((n) => ({ id: n.id, name: n.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [filterRayonId, filterKawasanAgg.data]);
+  }, [filterDistrictId, filterKawasanAgg.data]);
 
-  // Lokasi options — EMPTY until a rayon is picked; then ALL lokasi in the rayon
+  // Lokasi options — EMPTY until a district is picked; then ALL lokasi in the district
   // (direct + under-kawasan), narrowed to a single kawasan's lokasi (by the
   // node's region_id) once a kawasan is selected.
-  const locationOptions = useMemo<RayonOption[]>(() => {
-    if (!filterRayonId) return [];
+  const locationOptions = useMemo<DistrictOption[]>(() => {
+    if (!filterDistrictId) return [];
     return (filterLokasiAgg.data?.nodes ?? [])
       .filter((n) => filters.regionId === 'all' || n.region_id === filters.regionId)
       .map((n) => ({ id: n.id, name: n.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [filterRayonId, filters.regionId, filterLokasiAgg.data]);
+  }, [filterDistrictId, filters.regionId, filterLokasiAgg.data]);
 
-  const regionLoading = !!filterRayonId && filterKawasanAgg.isLoading;
-  const locationLoading = !!filterRayonId && filterLokasiAgg.isLoading;
+  const regionLoading = !!filterDistrictId && filterKawasanAgg.isLoading;
+  const locationLoading = !!filterDistrictId && filterLokasiAgg.isLoading;
 
   const roleOptions = useMemo<UserRole[]>(() => {
     const set = new Set<string>();
@@ -669,7 +669,7 @@ export default function MonitoringPage() {
     return [...set] as UserRole[];
   }, [workers]);
 
-  const teamOptions = useMemo<RayonOption[]>(() => {
+  const teamOptions = useMemo<DistrictOption[]>(() => {
     const map = new Map<string, string>();
     for (const w of workers) {
       if (w.team_id && w.team_name && !map.has(w.team_id)) map.set(w.team_id, w.team_name);
@@ -683,7 +683,7 @@ export default function MonitoringPage() {
   // workers that everything ELSE would keep (the userId filter itself is excluded
   // so picking a worker never empties its own list).
   // Cascade / stale-selection guard: drop a kawasan / lokasi / team selection
-  // once it is no longer a valid option — after the parent rayon changes, or
+  // once it is no longer a valid option — after the parent district changes, or
   // when the entity leaves the live snapshot (WS churn) — so a select never
   // silently filters to nothing while showing a blank value.
   useEffect(() => {
@@ -727,19 +727,19 @@ export default function MonitoringPage() {
 
   // The geo selection that scopes the node bubbles at the current drill level.
   // Each level's nodes are CHILDREN of the current view, so we match only the
-  // child tier: city → rayon; rayon → kawasan (or region-less lokasi); region →
+  // child tier: city → district; district → kawasan (or region-less lokasi); region →
   // lokasi. At region scope, `regionId` is the parent view (not a child), so it
   // must NOT drive dimming or every lokasi bubble would fade. Null = no filter.
   const activeGeoId = useMemo<string | null>(() => {
-    if (scope === 'city') return filters.rayonId !== 'all' ? filters.rayonId : null;
-    if (scope === 'rayon') {
+    if (scope === 'city') return filters.districtId !== 'all' ? filters.districtId : null;
+    if (scope === 'district') {
       if (filters.locationId !== 'all') return filters.locationId;
       if (filters.regionId !== 'all') return filters.regionId;
       return null;
     }
     if (scope === 'region') return filters.locationId !== 'all' ? filters.locationId : null;
     return null;
-  }, [scope, filters.rayonId, filters.regionId, filters.locationId]);
+  }, [scope, filters.districtId, filters.regionId, filters.locationId]);
 
   // Base filter (status + geo + search) — shared by the MAP and the list. The
   // Individu/Tim (jenis) split is deliberately NOT applied here: the map must
@@ -749,13 +749,13 @@ export default function MonitoringPage() {
     const q = filters.search.trim().toLowerCase();
     return workers.filter((w) => {
       if (filters.statuses.size > 0 && !filters.statuses.has(w.status as TrackingStatus)) return false;
-      if (filters.rayonId !== 'all' && w.rayon_id !== filters.rayonId) return false;
+      if (filters.districtId !== 'all' && w.district_id !== filters.districtId) return false;
       if (filters.regionId !== 'all' && w.region_id !== filters.regionId) return false;
       if (filters.locationId !== 'all' && w.location_id !== filters.locationId) return false;
       if (q && !w.full_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [workers, filters.statuses, filters.rayonId, filters.regionId, filters.locationId, filters.search]);
+  }, [workers, filters.statuses, filters.districtId, filters.regionId, filters.locationId, filters.search]);
 
   // LIST view of workers: the Individu/Tim toggle applies HERE ONLY. Individu =
   // individually-assigned (no team) + Peran (role); Tim = team-assigned + team
@@ -783,14 +783,14 @@ export default function MonitoringPage() {
 
   // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
   // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
-  // rayon-scheduled worker only at that rayon, a city-wide/unassigned worker only
+  // district-scheduled worker only at that district, a city-wide/unassigned worker only
   // at the city view — never at the levels above. So each level shows its own
   // scoped crews (not every worker that happens to sit inside the geography).
   const scopeMatches = useCallback(
     (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
       const s = w.display_scope ?? 'location';
       if (scope === 'city') return s === 'city';
-      if (scope === 'rayon') return s === 'rayon' && w.display_scope_id === view.id;
+      if (scope === 'district') return s === 'district' && w.display_scope_id === view.id;
       if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
       if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
       return true;
@@ -1002,7 +1002,7 @@ export default function MonitoringPage() {
           {/* Search (recent + grouped results + click-to-locate) */}
           <MonitoringSearch
             workers={workers}
-            rayons={boundaries?.rayons}
+            districts={boundaries?.districts}
             onSelect={handleSearchSelect}
             className="max-w-md flex-1"
           />
@@ -1023,7 +1023,7 @@ export default function MonitoringPage() {
             <Settings className="h-4 w-4" />
             <span className="hidden sm:inline">{t('monitoring:layers.title')}</span>
           </button>
-          {/* Filter toggle (status / role / rayon worker filters) */}
+          {/* Filter toggle (status / role / district worker filters) */}
           <button
             type="button"
             onClick={() => {
@@ -1070,7 +1070,7 @@ export default function MonitoringPage() {
           <MonitoringFilters
             filters={filters}
             onChange={setFilters}
-            rayonOptions={rayonOptions}
+            districtOptions={districtOptions}
             regionOptions={regionOptions}
             locationOptions={locationOptions}
             regionLoading={regionLoading}

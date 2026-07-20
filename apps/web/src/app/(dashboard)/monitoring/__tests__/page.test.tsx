@@ -55,8 +55,8 @@ const worker = (over: Record<string, unknown>) => ({
   status: 'active',
   location_id: 'a1',
   location_name: 'Taman A',
-  rayon_id: 'r1',
-  rayon_name: 'Rayon Pusat',
+  district_id: 'r1',
+  district_name: 'Rayon Pusat',
   // City-scheduled by default so they render at the default (city) drill scope.
   display_scope: 'city',
   display_scope_id: null,
@@ -71,10 +71,10 @@ const snapshotData = {
     data: {
       workers: [
         worker({ user_id: 'w1', full_name: 'Andi', status: 'active' }),
-        worker({ user_id: 'w2', full_name: 'Budi', status: 'missing', rayon_id: 'r2', rayon_name: 'Rayon Timur' }),
+        worker({ user_id: 'w2', full_name: 'Budi', status: 'missing', district_id: 'r2', district_name: 'Rayon Timur' }),
       ],
       area_summaries: [
-        { location_id: 'a1', location_name: 'Taman A', rayon_id: 'r1', rayon_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
+        { location_id: 'a1', location_name: 'Taman A', district_id: 'r1', district_name: 'Rayon Pusat', active_count: 1, required_count: 3, is_understaffed: true },
       ],
       total_active: 1,
       total_inactive: 0,

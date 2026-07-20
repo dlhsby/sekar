@@ -33,15 +33,15 @@ interface ShiftRoleTableProps {
   canAssign?: boolean;
   /**
    * `${shiftId}:${role}` → target headcount, for the subject that OWNS this
-   * capacity (the tier the rayon's `staffing_level` names). Absent for every
-   * other container — a lokasi under a kawasan-scoped rayon has no target of its
+   * capacity (the tier the district's `staffing_level` names). Absent for every
+   * other container — a lokasi under a kawasan-scoped district has no target of its
    * own, and inventing one would show a number nobody set. Only satgas/linmas
    * ever have targets, so korlap simply never matches.
    */
   roleTargets?: Map<string, number>;
   /**
    * `${shiftId}:${role}` → headcount counted toward the target, for a SUBTREE
-   * subject: a kawasan/rayon target is met by everything inside it, so its
+   * subject: a kawasan/district target is met by everything inside it, so its
    * coverage is the subtree's, not this table's own rows. Omit for a lokasi —
    * its own group already knows its countable-by-role (teams included).
    */
@@ -95,7 +95,7 @@ export function ShiftRoleTable({
                   // countableByRole, not the column's own rows: a team's members
                   // are real satgas/linmas but are listed under Tim, so counting
                   // rows would report a staffed lokasi as empty. `roleCounts`
-                  // only overrides it for a SUBTREE subject (kawasan/rayon).
+                  // only overrides it for a SUBTREE subject (kawasan/district).
                   covered={
                     roleCounts?.get(`${group.shift.id}:${role}`) ??
                     group.countableByRole?.[role] ??
@@ -112,7 +112,7 @@ export function ShiftRoleTable({
                   roles. A team is a COMBINATION of roles, so it can't be filed
                   under satgas or linmas — and rendering it only once populated
                   meant a team had nowhere to be assigned from, so the column
-                  never appeared (the same chicken-and-egg the rayon/kawasan
+                  never appeared (the same chicken-and-egg the district/kawasan
                   assign tables had). Its members still count toward the role
                   targets; see `countableByRole`. */}
               <div className="flex flex-col overflow-hidden rounded-nb-base border-2 border-nb-black bg-nb-gray-50">
@@ -175,7 +175,7 @@ interface RoleColumnProps {
   /** Target headcount for this shift+role; absent when nothing is required. */
   target?: number;
   /** Headcount counted toward `target` when it differs from this column's own
-   *  rows (a kawasan/rayon counts its whole subtree). Defaults to the rows. */
+   *  rows (a kawasan/district counts its whole subtree). Defaults to the rows. */
   covered?: number;
   /** Spelled-out "Shift 1 · Satgas" for the understaffed title/aria text. */
   shortLabel?: string;
@@ -196,7 +196,7 @@ function RoleColumn({
     () => [...occurrences].sort((a, b) => a.user.full_name.localeCompare(b.user.full_name)),
     [occurrences]
   );
-  // Coverage defaults to this column's own rows; a kawasan/rayon passes its
+  // Coverage defaults to this column's own rows; a kawasan/district passes its
   // subtree total, which is what its target is measured against.
   const countedToward = covered ?? sorted.length;
   const understaffed = target != null && target > 0 && countedToward < target;

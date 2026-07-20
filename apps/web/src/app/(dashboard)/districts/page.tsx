@@ -1,5 +1,5 @@
 /**
- * Rayons List Page — rayon master data on the standardized DataTable.
+ * Districts List Page — district master data on the standardized DataTable.
  * Create/edit happen in a modal; delete actions are permission-gated.
  * Access: Admin System / Superadmin only.
  */
@@ -21,32 +21,32 @@ import {
   type ColumnDef,
   type DataTableRowAction,
 } from '@/components/ui';
-import { RayonFormModal } from '@/components/rayons/RayonFormModal';
+import { DistrictFormModal } from '@/components/districts/DistrictFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import {
-  useRayons,
-  useDeleteRayon,
-  useDeactivateRayon,
-  useActivateRayon,
-} from '@/lib/api/rayons';
+  useDistricts,
+  useDeleteDistrict,
+  useDeactivateDistrict,
+  useActivateDistrict,
+} from '@/lib/api/districts';
 import { useUsers } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatDate } from '@/lib/utils/time';
-import type { Rayon } from '@/types/models';
+import type { District } from '@/types/models';
 
 export default function RayonsPage() {
   const { t } = useTranslation(['admin', 'common', 'schedules', 'validation']);
   const { user } = useAuth();
   const isAdmin = user && ADMIN_ROLES.includes(user.role);
 
-  // Management grid shows deactivated rayons too — pickers/filters elsewhere
+  // Management grid shows deactivated districts too — pickers/filters elsewhere
   // keep the active-only default.
-  const { data: rayonsData, isLoading, error, refetch } = useRayons(true);
-  const rayons = useMemo(() => rayonsData || [], [rayonsData]);
+  const { data: districtsData, isLoading, error, refetch } = useDistricts(true);
+  const districts = useMemo(() => districtsData || [], [districtsData]);
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
   const { data: usersData } = useUsers({ limit: 1000 });
@@ -62,38 +62,38 @@ export default function RayonsPage() {
   const staffingLabel = useCallback(
     (level?: string | null): string => {
       const key =
-        level === 'rayon'
-          ? 'staffingLevelRayon'
+        level === 'district'
+          ? 'staffingLevelDistrict'
           : level === 'location'
             ? 'staffingLevelLocation'
             : level === 'region'
               ? 'staffingLevelRegion'
               : null;
-      return key ? t(`admin:rayons.form.${key}`) : '—';
+      return key ? t(`admin:districts.form.${key}`) : '—';
     },
     [t]
   );
 
-  const deleteRayon = useDeleteRayon();
-  const deactivateRayon = useDeactivateRayon();
-  const activateRayon = useActivateRayon();
+  const deleteDistrict = useDeleteDistrict();
+  const deactivateDistrict = useDeactivateDistrict();
+  const activateDistrict = useActivateDistrict();
 
   const [formOpen, setFormOpen] = useState(false);
-  const [editingRayon, setEditingRayon] = useState<Rayon | null>(null);
-  const view = useViewModal<Rayon>();
+  const [editingDistrict, setEditingDistrict] = useState<District | null>(null);
+  const view = useViewModal<District>();
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [deletingRayon, setDeletingRayon] = useState<Rayon | null>(null);
+  const [deletingDistrict, setDeletingDistrict] = useState<District | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
-  const columns = useMemo<ColumnDef<Rayon>[]>(
+  const columns = useMemo<ColumnDef<District>[]>(
     () => [
       {
         id: 'id',
         accessorKey: 'id',
-        header: t('admin:rayons.columnId'),
+        header: t('admin:districts.columnId'),
         enableSorting: false,
-        meta: { label: t('admin:rayons.columnId'), defaultHidden: true, filterVariant: 'text' },
+        meta: { label: t('admin:districts.columnId'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="font-mono text-[11px] text-nb-gray-600">{row.original.id}</span>
         ),
@@ -101,28 +101,28 @@ export default function RayonsPage() {
       {
         id: 'name',
         accessorKey: 'name',
-        header: t('admin:rayons.columnName'),
+        header: t('admin:districts.columnName'),
         enableSorting: true,
-        meta: { label: t('admin:rayons.columnName'), filterVariant: 'text' },
+        meta: { label: t('admin:districts.columnName'), filterVariant: 'text' },
         cell: ({ row }) => <span className="font-semibold">{row.original.name}</span>,
       },
       {
         id: 'staffing_level',
         accessorKey: 'staffing_level',
-        header: t('admin:rayons.form.staffingLevel'),
+        header: t('admin:districts.form.staffingLevel'),
         enableSorting: false,
         meta: {
-          label: t('admin:rayons.form.staffingLevel'),
+          label: t('admin:districts.form.staffingLevel'),
           filterVariant: 'enum',
           filterOptions: [
-            { value: 'rayon', label: t('admin:rayons.form.staffingLevelRayon') },
-            { value: 'region', label: t('admin:rayons.form.staffingLevelRegion') },
-            { value: 'location', label: t('admin:rayons.form.staffingLevelLocation') },
+            { value: 'district', label: t('admin:districts.form.staffingLevelDistrict') },
+            { value: 'region', label: t('admin:districts.form.staffingLevelRegion') },
+            { value: 'location', label: t('admin:districts.form.staffingLevelLocation') },
           ],
         },
         cell: ({ row }) => <span className="text-nb-body-sm">{staffingLabel(row.original.staffing_level)}</span>,
       },
-      mapStyleColorColumn<Rayon>(t('common:color')),
+      mapStyleColorColumn<District>(t('common:color')),
       {
         id: 'coordinates',
         accessorFn: (r) =>
@@ -145,7 +145,7 @@ export default function RayonsPage() {
             fillColor={row.original.fill_color}
             fillOpacity={row.original.fill_opacity}
             markerIcon={row.original.marker_icon}
-            entityKind="rayon"
+            entityKind="district"
           />
         ),
       },
@@ -211,8 +211,8 @@ export default function RayonsPage() {
       {
         id: 'created_by',
         accessorFn: (r) => actorName(r.created_by),
-        header: t('admin:rayons.columnCreatedBy'),
-        meta: { label: t('admin:rayons.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:districts.columnCreatedBy'),
+        meta: { label: t('admin:districts.columnCreatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.created_by)}
@@ -222,8 +222,8 @@ export default function RayonsPage() {
       {
         id: 'created_at',
         accessorKey: 'created_at',
-        header: t('admin:rayons.columnCreated'),
-        meta: { label: t('admin:rayons.columnCreated'), defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:districts.columnCreated'),
+        meta: { label: t('admin:districts.columnCreated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.created_at)}
@@ -233,8 +233,8 @@ export default function RayonsPage() {
       {
         id: 'updated_by',
         accessorFn: (r) => actorName(r.updated_by),
-        header: t('admin:rayons.columnUpdatedBy'),
-        meta: { label: t('admin:rayons.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
+        header: t('admin:districts.columnUpdatedBy'),
+        meta: { label: t('admin:districts.columnUpdatedBy'), defaultHidden: true, filterVariant: 'text' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {actorName(row.original.updated_by)}
@@ -244,8 +244,8 @@ export default function RayonsPage() {
       {
         id: 'updated_at',
         accessorKey: 'updated_at',
-        header: t('admin:rayons.columnUpdated'),
-        meta: { label: t('admin:rayons.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
+        header: t('admin:districts.columnUpdated'),
+        meta: { label: t('admin:districts.columnUpdated'), defaultHidden: true, filterVariant: 'date' },
         cell: ({ row }) => (
           <span className="text-nb-body-sm text-nb-gray-600">
             {formatDate(row.original.updated_at)}
@@ -257,18 +257,18 @@ export default function RayonsPage() {
   );
 
   /**
-   * Toggle a rayon's active flag. Deactivation is guarded server-side (409 while
+   * Toggle a district's active flag. Deactivation is guarded server-side (409 while
    * active kawasan/lokasi/petugas still reference it) — `getErrorMessage`
    * localizes that by its error code, so the toast explains why it was refused.
    */
   const handleToggleActive = useCallback(
-    async (r: Rayon) => {
+    async (r: District) => {
       try {
         if (r.is_active) {
-          await deactivateRayon.mutateAsync(r.id);
+          await deactivateDistrict.mutateAsync(r.id);
           toast.success(t('admin:shared.successDeactivated', { name: r.name }));
         } else {
-          await activateRayon.mutateAsync(r.id);
+          await activateDistrict.mutateAsync(r.id);
           toast.success(t('admin:shared.successActivated', { name: r.name }));
         }
         refetch();
@@ -276,14 +276,14 @@ export default function RayonsPage() {
         toast.error(getErrorMessage(err));
       }
     },
-    [activateRayon, deactivateRayon, refetch, t]
+    [activateDistrict, deactivateDistrict, refetch, t]
   );
 
   const rowActions = useCallback(
-    (r: Rayon): DataTableRowAction<Rayon>[] => [
+    (r: District): DataTableRowAction<District>[] => [
       {
         key: 'view',
-        label: t('admin:rayons.actionView'),
+        label: t('admin:districts.actionView'),
         icon: Eye,
         onClick: () => {
           view.openWith(r);
@@ -291,11 +291,11 @@ export default function RayonsPage() {
       },
       {
         key: 'edit',
-        label: t('admin:rayons.actionEdit'),
+        label: t('admin:districts.actionEdit'),
         icon: Pencil,
         disabled: !isAdmin,
         onClick: () => {
-          setEditingRayon(r);
+          setEditingDistrict(r);
           setFormOpen(true);
         },
       },
@@ -303,10 +303,10 @@ export default function RayonsPage() {
         key: 'capacity',
         label: t('schedules:staffCapacity.title'),
         icon: Settings2,
-        // Capacity lives on exactly the tier this rayon nominates; `region` is
+        // Capacity lives on exactly the tier this district nominates; `region` is
         // the column default when unset.
-        hidden: !isAdmin || (r.staffing_level ?? 'region') !== 'rayon',
-        onClick: () => setCapacitySubject({ type: 'rayon', id: r.id, name: r.name }),
+        hidden: !isAdmin || (r.staffing_level ?? 'region') !== 'district',
+        onClick: () => setCapacitySubject({ type: 'district', id: r.id, name: r.name }),
       },
       {
         key: 'toggle-active',
@@ -319,12 +319,12 @@ export default function RayonsPage() {
       },
       {
         key: 'delete',
-        label: t('admin:rayons.actionDelete'),
+        label: t('admin:districts.actionDelete'),
         icon: Trash2,
         variant: 'danger',
         hidden: !isAdmin,
         onClick: () => {
-          setDeletingRayon(r);
+          setDeletingDistrict(r);
           setDeleteOpen(true);
         },
       },
@@ -333,21 +333,21 @@ export default function RayonsPage() {
   );
 
   const handleDelete = async () => {
-    if (!deletingRayon) return;
+    if (!deletingDistrict) return;
 
     setDeleteError(null);
     try {
-      await deleteRayon.mutateAsync(deletingRayon.id);
-      toast.success(t('admin:rayons.successDeleted', { name: deletingRayon.name }));
+      await deleteDistrict.mutateAsync(deletingDistrict.id);
+      toast.success(t('admin:districts.successDeleted', { name: deletingDistrict.name }));
       setDeleteOpen(false);
-      setDeletingRayon(null);
+      setDeletingDistrict(null);
       refetch();
     } catch (err: unknown) {
       const errorMsg = getErrorMessage(err);
       // Surface inline (dialog stays open), matching the Area/User delete flows.
       setDeleteError(
         errorMsg.includes('masih memiliki') || errorMsg.includes('area')
-          ? t('admin:shared.rayonHasAreas', { name: deletingRayon.name })
+          ? t('admin:shared.districtHasAreas', { name: deletingDistrict.name })
           : errorMsg,
       );
     }
@@ -356,53 +356,53 @@ export default function RayonsPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        description={rayons.length ? t('admin:rayons.totalCount', { count: rayons.length }) : undefined}
+        description={districts.length ? t('admin:districts.totalCount', { count: districts.length }) : undefined}
       />
 
       <DataTable
         columns={columns}
-        data={rayons}
+        data={districts}
         loading={isLoading}
         error={!!error}
         onRetry={() => refetch()}
         onRefresh={() => refetch()}
         getRowId={(r) => r.id}
-        searchPlaceholder={t('admin:rayons.searchPlaceholder')}
+        searchPlaceholder={t('admin:districts.searchPlaceholder')}
         rowActions={rowActions}
         createAction={{
-          label: t('admin:rayons.buttonAdd'),
+          label: t('admin:districts.buttonAdd'),
           hidden: !isAdmin,
           onClick: () => {
-            setEditingRayon(null);
+            setEditingDistrict(null);
             setFormOpen(true);
           },
         }}
-        emptyTitle={t('admin:rayons.emptyTitle')}
-        emptyDescription={t('admin:rayons.emptyDescription')}
+        emptyTitle={t('admin:districts.emptyTitle')}
+        emptyDescription={t('admin:districts.emptyDescription')}
         emptyAction={
           isAdmin ? (
             <Button
               onClick={() => {
-                setEditingRayon(null);
+                setEditingDistrict(null);
                 setFormOpen(true);
               }}
               leftIcon={<Plus className="h-5 w-5" />}
             >
-              {t('admin:rayons.buttonAddFirst')}
+              {t('admin:districts.buttonAddFirst')}
             </Button>
           ) : undefined
         }
       />
 
-      <RayonFormModal
+      <DistrictFormModal
         open={formOpen}
         onOpenChange={setFormOpen}
-        rayon={editingRayon}
+        district={editingDistrict}
         onSuccess={() => refetch()}
       />
 
       {/* Detail = the edit form, read-only (shows the map + boundary + pin). */}
-      <RayonFormModal open={view.open} onOpenChange={view.onOpenChange} rayon={view.item} readOnly />
+      <DistrictFormModal open={view.open} onOpenChange={view.onOpenChange} district={view.item} readOnly />
 
       {/* Same editor the Jadwal board uses — capacity is one concept, one modal. */}
       <CapacityModal
@@ -417,18 +417,18 @@ export default function RayonsPage() {
           if (!open) setDeleteError(null);
           setDeleteOpen(open);
         }}
-        title={t('admin:shared.deleteRayon')}
+        title={t('admin:shared.deleteDistrict')}
         description={
-          deletingRayon && (
+          deletingDistrict && (
             <>
-              {t('admin:shared.deleteConfirmation', { name: deletingRayon.name })}
+              {t('admin:shared.deleteConfirmation', { name: deletingDistrict.name })}
             </>
           )
         }
         confirmLabel={t('admin:shared.delete')}
         cancelLabel={t('admin:shared.cancel')}
         variant="destructive"
-        loading={deleteRayon.isPending}
+        loading={deleteDistrict.isPending}
         onConfirm={handleDelete}
       >
         {deleteError && (

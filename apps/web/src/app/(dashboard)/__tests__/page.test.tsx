@@ -10,7 +10,7 @@ jest.mock('@/lib/auth/hooks', () => ({
 }));
 
 // Current-shift aggregate: 10 scheduled, 8 hadir (7 aktif + 1 tidak-aktif),
-// 2 tidak hadir — for one rayon (Pusat).
+// 2 tidak hadir — for one district (Pusat).
 const aggregate = {
   data: {
     scope: 'city',
@@ -19,7 +19,7 @@ const aggregate = {
       {
         id: 'r1',
         name: 'Pusat',
-        type: 'rayon',
+        type: 'district',
         center_lat: -7.3,
         center_lng: 112.7,
         counts_by_status: { active: 6, inactive: 1, outside_area: 1, missing: 0, offline: 0 },
@@ -55,10 +55,10 @@ jest.mock('@/lib/api/plants', () => ({
   usePlantStatusSummary: () => ({
     data: {
       generated_at: new Date().toISOString(),
-      rayons: [
+      districts: [
         {
-          rayon_id: 'r1',
-          rayon_name: 'Rayon Selatan',
+          district_id: 'r1',
+          district_name: 'Rayon Selatan',
           ok: 4,
           due_soon: 1,
           overdue: 3,
@@ -103,7 +103,7 @@ describe('DashboardPage', () => {
     expect(screen.getByText('5')).toBeInTheDocument(); // lembur
   });
 
-  it('renders the per-rayon hadir/scheduled breakdown from aggregate nodes', () => {
+  it('renders the per-district hadir/scheduled breakdown from aggregate nodes', () => {
     render(<DashboardPage />);
     expect(screen.getByText('Pusat')).toBeInTheDocument();
     expect(screen.getByText('8/10')).toBeInTheDocument();

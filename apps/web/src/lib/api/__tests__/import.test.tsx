@@ -97,7 +97,7 @@ describe('Import API', () => {
     await act(async () => {
       response = await result.current.mutateAsync({
         sessionId: 'kmz-1',
-        areas: [{ index: 0, action: 'create', location_type_id: 't1', rayon_id: 'r1' }],
+        areas: [{ index: 0, action: 'create', location_type_id: 't1', district_id: 'r1' }],
       });
     });
 

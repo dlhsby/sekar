@@ -7,7 +7,7 @@
  * draws the polygon with the entity's configured border/fill colors and frames
  * the map to it, and renders the entity's configured marker image (or the
  * per-kind system default) instead of Google's generic pin — a faithful preview
- * of how the rayon/region/lokasi is styled. Falls back to an external link when
+ * of how the district/region/lokasi is styled. Falls back to an external link when
  * no Google Maps key is configured. Opened by CoordinateLink from the Rayon +
  * Area tables / detail modals.
  */

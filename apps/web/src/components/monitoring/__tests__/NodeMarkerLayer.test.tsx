@@ -1,5 +1,5 @@
 /**
- * Unit tests: NodeMarkerLayer node markers (ADR-051). Each rayon/kawasan/lokasi
+ * Unit tests: NodeMarkerLayer node markers (ADR-051). Each district/kawasan/lokasi
  * renders ONE unified pin — a code-drawn teardrop filled with the area's identity
  * color, its glyph, a staffing-health outline + active-count badge — the same
  * builder the editor uses. Empty lokasi draw their glyph pin (no muted dot).
@@ -35,7 +35,7 @@ beforeEach(() => {
 const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
   id: 'n1',
   name: 'Rayon X',
-  variant: 'rayon',
+  variant: 'district',
   lat: -7.2,
   lng: 112.7,
   scheduled: 2,
@@ -60,11 +60,11 @@ const asCss = (color: string) => {
 };
 
 describe('NodeMarkerLayer unified pin', () => {
-  it('draws a white pin whose glyph identifies the type (rayon → building)', () => {
-    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon' })]} />);
+  it('draws a white pin whose glyph identifies the type (district → building)', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'district' })]} />);
     const s = svg();
     expect(s).toContain('#FFFFFF'); // fill is white for all area types
-    expect(s).toContain('M6 22V4'); // building glyph identifies rayon
+    expect(s).toContain('M6 22V4'); // building glyph identifies district
   });
 
   it('keeps the ring NEUTRAL (identity = fill_color) with staffing health on the badge', () => {
@@ -119,7 +119,7 @@ describe('NodeMarkerLayer unified pin', () => {
     expect([opacity(0), opacity(1)]).toEqual(['1', '1']);
   });
 
-  it('labels kawasan at every zoom, like rayon', () => {
+  it('labels kawasan at every zoom, like district', () => {
     const kawasan = makeNode({ variant: 'region', name: 'Kawasan Mulyosari', active: 1 });
     const { rerender } = render(<NodeMarkerLayer nodes={[kawasan]} zoom={13} />);
     expect(labelText()).toBe('Kawasan Mulyosari');

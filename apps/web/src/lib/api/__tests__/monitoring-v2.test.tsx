@@ -51,8 +51,8 @@ describe('Monitoring v2 API', () => {
     status: 'active',
     location_id: 'a-1',
     location_name: 'Taman Bungkul',
-    rayon_id: 'r-1',
-    rayon_name: 'Rayon Pusat',
+    district_id: 'r-1',
+    district_name: 'Rayon Pusat',
     last_update: '2026-05-23T08:00:00Z',
     is_within_area: true,
     battery_level: 78,
@@ -61,8 +61,8 @@ describe('Monitoring v2 API', () => {
   const mockArea: SnapshotAreaSummary = {
     location_id: 'a-1',
     location_name: 'Taman Bungkul',
-    rayon_id: 'r-1',
-    rayon_name: 'Rayon Pusat',
+    district_id: 'r-1',
+    district_name: 'Rayon Pusat',
     active_count: 3,
     required_count: 4,
     is_understaffed: true,
@@ -101,10 +101,10 @@ describe('Monitoring v2 API', () => {
         'city',
         undefined,
       ]);
-      expect(snapshotKeys.byScope('rayon', 'r-1')).toEqual([
+      expect(snapshotKeys.byScope('district', 'r-1')).toEqual([
         'monitoring',
         'snapshot',
-        'rayon',
+        'district',
         'r-1',
       ]);
       expect(snapshotKeys.byScope('area', 'a-1')).toEqual([
@@ -208,14 +208,14 @@ describe('Monitoring v2 API', () => {
       expect(result.current.data?.data.area_summaries[0].is_understaffed).toBe(true);
     });
 
-    it('passes scope + id query params when rayon-scoped', async () => {
+    it('passes scope + id query params when district-scoped', async () => {
       mockAxios.onGet('/monitoring/snapshot').reply((config) => {
-        expect(config.params).toEqual({ scope: 'rayon', id: 'r-1' });
+        expect(config.params).toEqual({ scope: 'district', id: 'r-1' });
         return [200, mockResponse];
       });
 
       const { result } = renderHook(
-        () => useMonitoringSnapshot('rayon', 'r-1'),
+        () => useMonitoringSnapshot('district', 'r-1'),
         { wrapper: createWrapper() },
       );
 
@@ -299,8 +299,8 @@ describe('Monitoring v2 API', () => {
             status: 'active',
             location_id: 'a-1',
             location_name: 'Taman Bungkul',
-            rayon_id: 'r-1',
-            rayon_name: 'Rayon Pusat',
+            district_id: 'r-1',
+            district_name: 'Rayon Pusat',
             latitude: -7.29,
             longitude: 112.74,
             accuracy: 10,

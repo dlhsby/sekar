@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ScheduleEventModal } from '../ScheduleEventModal';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
 
@@ -59,7 +59,7 @@ jest.mock('@/components/forms/AsyncUserCombobox', () => ({
   },
 }));
 
-jest.mock('@/lib/api/rayons', () => ({ useRayons: jest.fn(() => ({ data: [] })) }));
+jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn(() => ({ data: [] })) }));
 jest.mock('@/lib/api/locations', () => ({ useLocations: jest.fn(() => ({ data: { data: [] } })) }));
 jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn(() => ({ data: [] })) }));
 
@@ -75,16 +75,16 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 
 /**
  * Rayon Taman Aktif is the shape that broke: a kawasan is an OPTIONAL parent
- * (ADR-045), so its lokasi hang straight off the rayon with region_id null.
+ * (ADR-045), so its lokasi hang straight off the district with region_id null.
  */
-const RAYONS = [{ id: 'ry-aktif', name: 'Rayon Taman Aktif' }];
-const REGIONS = [{ id: 'kw1', name: 'Kawasan Pusat', rayon_id: 'ry-other' }];
+const DISTRICTS = [{ id: 'ry-aktif', name: 'Rayon Taman Aktif' }];
+const REGIONS = [{ id: 'kw1', name: 'Kawasan Pusat', district_id: 'ry-other' }];
 const LOCATIONS = [
-  { id: 'loc-direct', name: 'Taman Bungkul', rayon_id: 'ry-aktif', region_id: null },
+  { id: 'loc-direct', name: 'Taman Bungkul', district_id: 'ry-aktif', region_id: null },
 ];
 
 function withGeography() {
-  (useRayons as jest.Mock).mockReturnValue({ data: RAYONS });
+  (useDistricts as jest.Mock).mockReturnValue({ data: DISTRICTS });
   (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
   (useLocations as jest.Mock).mockReturnValue({ data: { data: LOCATIONS } });
 }
@@ -139,7 +139,7 @@ describe('ScheduleEventModal', () => {
     it('shows no geography field, because no scope has been chosen', () => {
       render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
 
-      expect(screen.queryByText('schedules:calendar.event.rayonLabel')).not.toBeInTheDocument();
+      expect(screen.queryByText('schedules:calendar.event.districtLabel')).not.toBeInTheDocument();
       expect(screen.queryByText('schedules:calendar.event.locationLabel')).not.toBeInTheDocument();
     });
 
@@ -187,11 +187,11 @@ describe('ScheduleEventModal', () => {
     });
 
     it('locks the scope and the geography it was assigned from', () => {
-      render(<ScheduleEventModal {...defaultProps} initialRayonId="ry1" />, { wrapper: Wrapper });
+      render(<ScheduleEventModal {...defaultProps} initialDistrictId="ry1" />, { wrapper: Wrapper });
 
       expect(comboboxNamed('schedules:calendar.event.scopeLabel')).toBeDisabled();
-      // Rayon prefill resolves the scope to 'rayon', so the rayon field shows.
-      expect(screen.getByText('schedules:calendar.event.rayonLabel')).toBeInTheDocument();
+      // Rayon prefill resolves the scope to 'district', so the district field shows.
+      expect(screen.getByText('schedules:calendar.event.districtLabel')).toBeInTheDocument();
     });
 
     it('leaves the shift open when it was NOT prefilled', () => {
@@ -204,19 +204,19 @@ describe('ScheduleEventModal', () => {
 
 // ---------------------------------------------------------------------------
 // A kawasan is an OPTIONAL parent (ADR-045). Rayon Taman Aktif hangs its lokasi
-// straight off the rayon (region_id null), and the form demanded a kawasan
+// straight off the district (region_id null), and the form demanded a kawasan
 // before showing any lokasi — so those lokasi were unreachable, on create AND
 // on edit. The board always rendered them (`looseLocations`); only this form
 // couldn't.
 // ---------------------------------------------------------------------------
 
-describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
+describe('ScheduleEventModal — district-direct lokasi (no kawasan)', () => {
   const props = { open: true, onOpenChange: jest.fn() };
 
   beforeEach(() => withGeography());
 
   it('offers a lokasi that has no kawasan, without one being chosen', () => {
-    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+    render(<ScheduleEventModal {...props} initialDistrictId="ry-aktif" initialLocationId="loc-direct" />, {
       wrapper: Wrapper,
     });
 
@@ -226,7 +226,7 @@ describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
   });
 
   it('treats kawasan as an optional filter under a lokasi scope', () => {
-    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+    render(<ScheduleEventModal {...props} initialDistrictId="ry-aktif" initialLocationId="loc-direct" />, {
       wrapper: Wrapper,
     });
 
@@ -236,7 +236,7 @@ describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
   });
 
   it('still calls kawasan a required step under the mobile (kawasan) scope', () => {
-    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialRegionId="kw1" />, {
+    render(<ScheduleEventModal {...props} initialDistrictId="ry-aktif" initialRegionId="kw1" />, {
       wrapper: Wrapper,
     });
 
@@ -286,13 +286,13 @@ describe('ScheduleEventModal — Peran gates Pekerja', () => {
   });
 });
 
-describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
+describe('ScheduleEventModal — district-direct lokasi (no kawasan)', () => {
   const props = { open: true, onOpenChange: jest.fn() };
 
   beforeEach(() => withGeography());
 
   it('offers a lokasi that has no kawasan, without one being chosen', () => {
-    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+    render(<ScheduleEventModal {...props} initialDistrictId="ry-aktif" initialLocationId="loc-direct" />, {
       wrapper: Wrapper,
     });
 
@@ -302,7 +302,7 @@ describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
   });
 
   it('treats kawasan as an optional filter under a lokasi scope', () => {
-    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialLocationId="loc-direct" />, {
+    render(<ScheduleEventModal {...props} initialDistrictId="ry-aktif" initialLocationId="loc-direct" />, {
       wrapper: Wrapper,
     });
 
@@ -312,7 +312,7 @@ describe('ScheduleEventModal — rayon-direct lokasi (no kawasan)', () => {
   });
 
   it('still calls kawasan a required step under the mobile (kawasan) scope', () => {
-    render(<ScheduleEventModal {...props} initialRayonId="ry-aktif" initialRegionId="kw1" />, {
+    render(<ScheduleEventModal {...props} initialDistrictId="ry-aktif" initialRegionId="kw1" />, {
       wrapper: Wrapper,
     });
 

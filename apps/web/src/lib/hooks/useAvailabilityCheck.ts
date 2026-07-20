@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Live-availability state for a unique field (username, phone, rayon name, …).
+ * Live-availability state for a unique field (username, phone, district name, …).
  * `invalid` = failed the format predicate (no network call was made).
  */
 export type AvailabilityStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';

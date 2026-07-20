@@ -6,7 +6,7 @@ import { Search, X } from 'lucide-react';
 import { parse, isValid, format, type Locale } from 'date-fns';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { useUsers } from '@/lib/api/users';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
@@ -18,12 +18,12 @@ interface ScheduleSearchProps {
   onChange: (next: ScheduleRangeFilters) => void;
   /** Jump the board to a specific WIB day (from a date search). */
   onNavigateDate: (isoDate: string) => void;
-  lockRayon?: boolean;
+  lockDistrict?: boolean;
 }
 
 type Hit =
   | {
-      kind: 'user' | 'location' | 'region' | 'rayon' | 'shift' | 'team';
+      kind: 'user' | 'location' | 'region' | 'district' | 'shift' | 'team';
       id: string;
       label: string;
       meta?: string;
@@ -37,13 +37,13 @@ const FILTER_KEY: Record<Exclude<Hit['kind'], 'date'>, keyof ScheduleRangeFilter
   user: 'userId',
   location: 'locationId',
   region: 'regionId',
-  rayon: 'rayonId',
+  district: 'districtId',
   shift: 'shiftDefinitionId',
   team: 'teamCategoryId',
 };
 
 /** Group render order — people first, then geography narrowing outward. */
-const GROUP_ORDER: Hit['kind'][] = ['user', 'location', 'region', 'rayon', 'shift', 'team', 'date'];
+const GROUP_ORDER: Hit['kind'][] = ['user', 'location', 'region', 'district', 'shift', 'team', 'date'];
 
 /** Try to read a date out of the query (ISO or a few day-month formats). */
 function parseQueryDate(query: string, locale: Locale): string | null {
@@ -80,7 +80,7 @@ export function ScheduleSearch({
   filters,
   onChange,
   onNavigateDate,
-  lockRayon,
+  lockDistrict,
 }: ScheduleSearchProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const [query, setQuery] = useState('');
@@ -90,7 +90,7 @@ export function ScheduleSearch({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { data: usersResp } = useUsers({ limit: 1000 });
-  const { data: rayons = [] } = useRayons();
+  const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: shifts = [] } = useShiftDefinitions();
@@ -137,11 +137,11 @@ export function ScheduleSearch({
       .filter((r) => match(r.name))
       .slice(0, MAX_PER_GROUP)
       .forEach((r) => out.push({ kind: 'region', id: r.id, label: r.name }));
-    if (!lockRayon) {
-      rayons
+    if (!lockDistrict) {
+      districts
         .filter((r) => match(r.name))
         .slice(0, MAX_PER_GROUP)
-        .forEach((r) => out.push({ kind: 'rayon', id: r.id, label: r.name }));
+        .forEach((r) => out.push({ kind: 'district', id: r.id, label: r.name }));
     }
     shifts
       .filter((s) => match(s.name))
@@ -160,7 +160,7 @@ export function ScheduleSearch({
       });
     }
     return out;
-  }, [q, query, users, locations, regions, rayons, shifts, teamCategories, locale, lockRayon]);
+  }, [q, query, users, locations, regions, districts, shifts, teamCategories, locale, lockDistrict]);
 
   const grouped = useMemo(() => {
     const g: Record<string, Hit[]> = {};
@@ -178,7 +178,7 @@ export function ScheduleSearch({
     user: t('schedules:filters.userLabel'),
     location: t('schedules:filters.locationLabel'),
     region: t('schedules:filters.regionLabel'),
-    rayon: t('schedules:filters.rayonLabel'),
+    district: t('schedules:filters.districtLabel'),
     shift: t('schedules:filters.shiftLabel'),
     team: t('schedules:filters.teamCategoryLabel'),
     date: t('schedules:search.groupDate'),

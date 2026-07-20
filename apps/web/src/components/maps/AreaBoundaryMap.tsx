@@ -9,13 +9,13 @@ import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import { geometryToPaths } from '@/lib/maps/geometry';
 
 /** The tier being shown — decides the fallback styling when nothing is set. */
-export type AreaLevel = 'rayon' | 'region' | 'location';
+export type AreaLevel = 'district' | 'region' | 'location';
 
 export interface AreaBoundaryMapProps {
   /** Shown when Google Maps is unavailable (no key / load failure). */
   mapsFallback: React.ReactNode;
   boundary?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
-  /** Centre pin (rayon centre / lokasi GPS). */
+  /** Centre pin (district centre / lokasi GPS). */
   pin?: { lat: number; lng: number } | null;
   level: AreaLevel;
   /** Per-level map styling (ADR-045). Falls back to monitoring's palette. */
@@ -73,14 +73,14 @@ export function AreaBoundaryMap({
     return pin ?? SURABAYA;
   }, [paths, pin]);
 
-  const fallback = level === 'rayon' ? POLYGON_STYLES.rayon : POLYGON_STYLES.area;
+  const fallback = level === 'district' ? POLYGON_STYLES.district : POLYGON_STYLES.area;
   const stroke = borderColor ?? fallback.stroke;
   const fill = fillColor ?? fallback.fill;
 
   const onLoad = (map: google.maps.Map) => {
     const points = paths.flat();
     if (points.length === 0) return;
-    // Fit the whole outline rather than guessing a zoom — a rayon and a lokasi
+    // Fit the whole outline rather than guessing a zoom — a district and a lokasi
     // differ by orders of magnitude in size.
     const bounds = new google.maps.LatLngBounds();
     points.forEach((p) => bounds.extend(p));

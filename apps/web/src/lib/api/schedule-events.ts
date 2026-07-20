@@ -8,7 +8,7 @@ import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
 
 export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
-export type ScheduleScope = 'static' | 'mobile' | 'rayon' | 'city';
+export type ScheduleScope = 'static' | 'mobile' | 'district' | 'city';
 export type EditScope = 'this' | 'this_and_future' | 'series';
 
 export interface RecurrenceConfig {
@@ -27,7 +27,7 @@ export interface CreateScheduleEventInput {
   scope: ScheduleScope;
   location_id?: string | null;
   region_id?: string | null;
-  rayon_id?: string | null;
+  district_id?: string | null;
   is_team: boolean;
   user_id?: string | null;
   team_category_id?: string | null;
@@ -46,7 +46,7 @@ export interface UpdateScheduleEventInput {
   scope?: ScheduleScope;
   location_id?: string | null;
   region_id?: string | null;
-  rayon_id?: string | null;
+  district_id?: string | null;
   member_ids?: string[];
   notes?: string;
 }
@@ -62,7 +62,7 @@ export interface ScheduleEvent {
   scope: ScheduleScope;
   location_id: string | null;
   region_id: string | null;
-  rayon_id: string | null;
+  district_id: string | null;
   is_team: boolean;
   team_category_id: string | null;
   pic_user_id: string | null;
@@ -88,7 +88,7 @@ export interface ScheduleEvent {
     id: string;
     name: string;
   } | null;
-  rayon?: {
+  district?: {
     id: string;
     name: string;
   } | null;
@@ -127,7 +127,7 @@ export interface ScheduleOccurrence {
   status: string;
   location_id?: string | null;
   region_id?: string | null;
-  rayon_id?: string | null;
+  district_id?: string | null;
   schedule_event_id?: string | null;
   is_detached: boolean;
   is_projected?: boolean;
@@ -168,7 +168,7 @@ interface RawScheduleRangeRow {
   shift_definition_id: string | null;
   status: string;
   region_id?: string | null;
-  rayon_id?: string | null;
+  district_id?: string | null;
   team_category_id?: string | null;
   schedule_event_id?: string | null;
   is_detached?: boolean;
@@ -184,14 +184,14 @@ interface RawScheduleRangeRow {
 function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
   const firstArea = row.schedule_areas?.[0];
   // Derive scope from the row's binding: region → mobile, a location →
-  // static, a rayon-only row → rayon (roving crew), else no binding at all →
+  // static, a district-only row → district (roving crew), else no binding at all →
   // city (a Tim Patroli covering all Surabaya).
   const scope: ScheduleScope = row.region_id
     ? 'mobile'
     : firstArea
       ? 'static'
-      : row.rayon_id
-        ? 'rayon'
+      : row.district_id
+        ? 'district'
         : 'city';
   return {
     id: row.id,
@@ -202,7 +202,7 @@ function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
     status: row.status,
     location_id: firstArea?.location_id ?? null,
     region_id: row.region_id ?? null,
-    rayon_id: row.rayon_id ?? null,
+    district_id: row.district_id ?? null,
     schedule_event_id: row.schedule_event_id ?? null,
     is_detached: row.is_detached ?? false,
     is_projected: row.is_projected ?? false,
@@ -264,7 +264,7 @@ export const scheduleOccurrenceKeys = {
  */
 /** Calendar range filters (query-param names match the backend, camelCase). */
 export interface ScheduleRangeFilters {
-  rayonId?: string;
+  districtId?: string;
   regionId?: string;
   locationId?: string;
   userId?: string;
@@ -280,7 +280,7 @@ async function fetchScheduleRange(
   const params = new URLSearchParams();
   params.append('from', from);
   params.append('to', to);
-  if (filters?.rayonId) params.append('rayonId', filters.rayonId);
+  if (filters?.districtId) params.append('districtId', filters.districtId);
   if (filters?.regionId) params.append('regionId', filters.regionId);
   if (filters?.locationId) params.append('locationId', filters.locationId);
   if (filters?.userId) params.append('userId', filters.userId);
@@ -299,7 +299,7 @@ async function fetchScheduleRange(
 async function fetchScheduleEvents(filters?: {
   from?: string;
   to?: string;
-  rayon_id?: string;
+  district_id?: string;
   user_id?: string;
   team_id?: string;
   shift_definition_id?: string;
@@ -308,7 +308,7 @@ async function fetchScheduleEvents(filters?: {
   const params = new URLSearchParams();
   if (filters?.from) params.append('from', filters.from);
   if (filters?.to) params.append('to', filters.to);
-  if (filters?.rayon_id) params.append('rayon_id', filters.rayon_id);
+  if (filters?.district_id) params.append('district_id', filters.district_id);
   if (filters?.user_id) params.append('user_id', filters.user_id);
   if (filters?.team_id) params.append('team_id', filters.team_id);
   if (filters?.shift_definition_id)
@@ -399,7 +399,7 @@ async function fetchYearSummary(
   const params = new URLSearchParams();
   params.append('from', from);
   params.append('to', to);
-  if (filters?.rayonId) params.append('rayonId', filters.rayonId);
+  if (filters?.districtId) params.append('districtId', filters.districtId);
   if (filters?.regionId) params.append('regionId', filters.regionId);
   if (filters?.locationId) params.append('locationId', filters.locationId);
   if (filters?.userId) params.append('userId', filters.userId);
@@ -433,7 +433,7 @@ export function useScheduleEvents(
   filters?: {
     from?: string;
     to?: string;
-    rayon_id?: string;
+    district_id?: string;
     user_id?: string;
     team_id?: string;
     shift_definition_id?: string;

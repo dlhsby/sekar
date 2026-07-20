@@ -24,11 +24,11 @@ import {
 import { useMonitoringSearchQuery } from '@/lib/api/monitoring-v2';
 import { getRecentSearches, addRecentSearch, clearRecentSearches } from '@/lib/monitoring/recentSearches';
 import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
-import type { RayonBoundary } from '@/lib/api/monitoring-types';
+import type { DistrictBoundary } from '@/lib/api/monitoring-types';
 
 export interface MonitoringSearchProps {
   workers: SnapshotWorker[];
-  rayons: RayonBoundary[] | undefined;
+  districts: DistrictBoundary[] | undefined;
   onSelect: (result: MonitoringSearchResult) => void;
   className?: string;
 }
@@ -36,7 +36,7 @@ export interface MonitoringSearchProps {
 const TYPE_ICON: Record<SearchResultType, typeof MapPin> = {
   petugas: User,
   area: MapPin,
-  rayon: Building2,
+  district: Building2,
 };
 
 function ResultRow({
@@ -66,7 +66,7 @@ function ResultRow({
   );
 }
 
-export function MonitoringSearch({ workers, rayons, onSelect, className }: MonitoringSearchProps) {
+export function MonitoringSearch({ workers, districts, onSelect, className }: MonitoringSearchProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -86,13 +86,13 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
     () => ({
       petugas: t('monitoring:search.personnelLabel'),
       area: t('monitoring:search.areaLabel'),
-      rayon: t('monitoring:search.rayonLabel'),
+      district: t('monitoring:search.districtLabel'),
     }),
     [t]
   );
 
-  // Client-side search (area + rayon) and local petugas from snapshot.
-  const clientResults = useMonitoringSearch(workers, rayons, query, labels);
+  // Client-side search (area + district) and local petugas from snapshot.
+  const clientResults = useMonitoringSearch(workers, districts, query, labels);
 
   // Merge server petugas with client petugas, deduped by id (server wins).
   const mergedResults = useMemo(() => {
@@ -110,7 +110,7 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
           latitude: user.latitude,
           longitude: user.longitude,
           role: user.role,
-          rayonId: user.rayon_id,
+          districtId: user.district_id,
         });
         seen.add(user.id);
       }
@@ -124,19 +124,19 @@ export function MonitoringSearch({ workers, rayons, onSelect, className }: Monit
       }
     }
 
-    // Area and rayon sections (client-side only).
+    // Area and district sections (client-side only).
     const sections = [
       { title: labels.petugas, type: 'petugas' as const, data: merged },
       { title: labels.area, type: 'area' as const, data: clientResults.area },
-      { title: labels.rayon, type: 'rayon' as const, data: clientResults.rayon },
+      { title: labels.district, type: 'district' as const, data: clientResults.district },
     ].filter((s) => s.data.length > 0);
 
     return {
       petugas: merged,
       area: clientResults.area,
-      rayon: clientResults.rayon,
+      district: clientResults.district,
       sections,
-      total: merged.length + clientResults.area.length + clientResults.rayon.length,
+      total: merged.length + clientResults.area.length + clientResults.district.length,
     };
   }, [serverSearchResult, clientResults, labels]);
 

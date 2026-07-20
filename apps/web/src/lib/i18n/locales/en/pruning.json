@@ -90,7 +90,7 @@
     },
     "fields": {
       "kecamatan": "Kecamatan",
-      "rayon": "District",
+      "district": "District",
       "submitter": "Submitter",
       "expectedWeek": "Expected Week",
       "treeCount": "Number of Trees",
@@ -160,7 +160,7 @@
   "columns": {
     "referenceCode": "Reference Code",
     "kecamatan": "Sub-district",
-    "rayon": "District",
+    "district": "District",
     "dateRange": "Week / Date",
     "status": "Status",
     "createdAt": "Created",

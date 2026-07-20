@@ -27,8 +27,8 @@ interface EditScheduleModalProps {
   shiftLoading?: boolean;
   areasLoading?: boolean;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
-  allRayons: Array<{ id: string; name: string }>;
-  allAreas: Array<{ id: string; name: string; rayon_id: string }>;
+  allDistricts: Array<{ id: string; name: string }>;
+  allAreas: Array<{ id: string; name: string; district_id: string }>;
   error?: string | null;
 }
 
@@ -41,36 +41,36 @@ export function EditScheduleModal({
   shiftLoading,
   areasLoading,
   shifts,
-  allRayons,
+  allDistricts,
   allAreas,
   error,
 }: EditScheduleModalProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const formId = useId();
 
-  const [selectedRayonId, setSelectedRayonId] = useState<string>('');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
   const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
   const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
 
-  // Filter areas by selected rayon
+  // Filter areas by selected district
   const filteredAreas = useMemo(() => {
-    if (!selectedRayonId) return [];
-    return allAreas.filter((a) => a.rayon_id === selectedRayonId);
-  }, [allAreas, selectedRayonId]);
+    if (!selectedDistrictId) return [];
+    return allAreas.filter((a) => a.district_id === selectedDistrictId);
+  }, [allAreas, selectedDistrictId]);
 
-  // Change rayon → prune any selected areas that don't belong to the new rayon.
+  // Change district → prune any selected areas that don't belong to the new district.
   // Done in the handler (not an effect) so it never fights the preselect effect
   // or loops on a fresh `.filter()` array reference.
-  const handleRayonChange = (rayonId: string) => {
-    setSelectedRayonId(rayonId);
+  const handleDistrictChange = (districtId: string) => {
+    setSelectedDistrictId(districtId);
     setSelectedAreaIds((prev) =>
-      prev.filter((id) => allAreas.some((a) => a.id === id && a.rayon_id === rayonId)),
+      prev.filter((id) => allAreas.some((a) => a.id === id && a.district_id === districtId)),
     );
   };
 
   useEffect(() => {
     if (roster && open) {
-      setSelectedRayonId(roster.rayon_id || '');
+      setSelectedDistrictId(roster.district_id || '');
       setSelectedShiftId(roster.shift_definition_id);
       setSelectedAreaIds(roster.schedule_areas.map((a) => a.area_id));
     }
@@ -129,10 +129,10 @@ export function EditScheduleModal({
               />
 
               <FormCombobox
-                label={t('modals.edit.rayonLabel')}
-                value={selectedRayonId}
-                onChange={handleRayonChange}
-                options={allRayons.map((r) => ({
+                label={t('modals.edit.districtLabel')}
+                value={selectedDistrictId}
+                onChange={handleDistrictChange}
+                options={allDistricts.map((r) => ({
                   value: r.id,
                   label: r.name,
                 }))}

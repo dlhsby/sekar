@@ -32,7 +32,7 @@ interface BuilderState {
   startDate: string;
   endDate: string;
   areaId: string;
-  rayonId: string;
+  districtId: string;
   workerId: string;
 }
 
@@ -65,7 +65,7 @@ export default function ReportBuilderPage() {
     startDate: '',
     endDate: '',
     areaId: '',
-    rayonId: '',
+    districtId: '',
     workerId: '',
   });
 
@@ -114,7 +114,7 @@ export default function ReportBuilderPage() {
           start_date: state.startDate || undefined,
           end_date: state.endDate || undefined,
           area_id: state.areaId || undefined,
-          rayon_id: state.rayonId || undefined,
+          district_id: state.districtId || undefined,
           worker_id: state.workerId || undefined,
         },
       });
@@ -188,11 +188,11 @@ export default function ReportBuilderPage() {
           />
 
           <FormInput
-            label={t('builder.rayonLabel')}
+            label={t('builder.districtLabel')}
             type="text"
-            placeholder={t('builder.rayonPlaceholder')}
-            value={state.rayonId}
-            onChange={(e) => setState((s) => ({ ...s, rayonId: e.target.value }))}
+            placeholder={t('builder.districtPlaceholder')}
+            value={state.districtId}
+            onChange={(e) => setState((s) => ({ ...s, districtId: e.target.value }))}
           />
 
           {showWorkerSelect && (

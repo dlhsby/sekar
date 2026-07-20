@@ -21,9 +21,9 @@ describe('DeleteLocationModal', () => {
     name: 'Taman Bungkul',
     address: 'Jl. Taman Bungkul',
     location_type_id: 'type-1',
-    rayon_id: 'rayon-1',
-    rayon: {
-      id: 'rayon-1',
+    district_id: 'district-1',
+    district: {
+      id: 'district-1',
       name: 'Rayon Utara',
       code: 'RU',
       is_active: true,

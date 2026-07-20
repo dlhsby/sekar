@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { FormInput, FormCombobox, Button } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import type { User } from '@/types/models';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
 import { useUserAreas } from '@/lib/api/user-locations';
@@ -19,7 +19,7 @@ import { useAvailabilityCheck } from '@/lib/hooks/useAvailabilityCheck';
 import { normalizePhone, INDO_MOBILE_REGEX } from '@/lib/utils/phone';
 
 /**
- * User form (simplified assignment model): rayon (single) + areas (multi,
+ * User form (simplified assignment model): district (single) + areas (multi,
  * permanent) + one shift are set here and become the worker's default roster.
  * No password field — the backend generates a one-time temp password on create
  * and the user is forced to change it on first login; admins use Reset Password.
@@ -38,7 +38,7 @@ function createUserSchema(t: TFn) {
     // Roles are data-driven (ADR-044) — any code present in the /roles catalog
     // is valid; membership is enforced by the options list + the backend.
     role: z.string().min(1, t('validation:roleRequired')),
-    rayon_id: z.string().uuid().optional().or(z.literal('')),
+    district_id: z.string().uuid().optional().or(z.literal('')),
     region_id: z.string().uuid().optional().or(z.literal('')),
     shift_definition_id: z.string().uuid().optional().or(z.literal('')),
   });
@@ -49,26 +49,26 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 /** Which scope inputs a role uses, derived from its monitoring_scope (ADR-044). */
 function scopeFromMonitoring(ms: MonitoringScope | undefined): {
-  rayon: boolean;
+  district: boolean;
   region: boolean;
   location: boolean;
 } {
   switch (ms) {
     case 'region':
     case 'location':
-      return { rayon: true, region: true, location: true };
+      return { district: true, region: true, location: true };
     case 'district':
-      return { rayon: true, region: false, location: false };
+      return { district: true, region: false, location: false };
     default: // city | none | undefined → no scope inputs
-      return { rayon: false, region: false, location: false };
+      return { district: false, region: false, location: false };
   }
 }
 
 export interface UserFormSubmit
-  extends Omit<UserFormData, 'rayon_id' | 'region_id' | 'shift_definition_id'> {
+  extends Omit<UserFormData, 'district_id' | 'region_id' | 'shift_definition_id'> {
   location_ids: string[];
   /** `null` = explicitly clear on the server (create treats null as unset). */
-  rayon_id: string | null;
+  district_id: string | null;
   region_id: string | null;
   /** Shift moves to schedules (Phase 4) — always cleared from the user form now. */
   shift_definition_id: string | null;
@@ -95,7 +95,7 @@ export function UserForm({
 
   const userSchema = useMemo(() => createUserSchema(t), [t]);
 
-  const { data: rayons = [], isLoading: rayonsLoading } = useRayons();
+  const { data: districts = [], isLoading: districtsLoading } = useDistricts();
   const { data: areasData, isLoading: areasLoading } = useLocations({ limit: 1000 });
   const { data: roles = [] } = useRoles();
 
@@ -135,7 +135,7 @@ export function UserForm({
       // Unselected by default on create; comboboxes start empty (shift is
       // defaulted to Shift 1 once the definitions load — see effect below).
       role: initialData?.role ?? '',
-      rayon_id: initialData?.rayon_id || '',
+      district_id: initialData?.district_id || '',
       region_id: initialData?.region_id || '',
       shift_definition_id: '',
     },
@@ -192,7 +192,7 @@ export function UserForm({
     const scope = scopeFor(data.role);
     const submitData: UserFormSubmit = {
       ...data,
-      rayon_id: scope.rayon ? data.rayon_id || null : null,
+      district_id: scope.district ? data.district_id || null : null,
       region_id: scope.region ? data.region_id || null : null,
       // Shift + satgas/linmas work area come from schedules now (Phase 4) —
       // always cleared here; korlap keeps a single optional location.
@@ -202,14 +202,14 @@ export function UserForm({
     await onSubmit(submitData);
   };
 
-  const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
+  const districtOptions = districts.map((r) => ({ value: r.id, label: r.name }));
 
   const allAreas = useMemo(() => areasData?.data || [], [areasData]);
-  const selectedRayonId = watch('rayon_id') || '';
+  const selectedDistrictId = watch('district_id') || '';
   const selectedRegionId = watch('region_id') || '';
 
-  // Regions cascade from the selected rayon (korlap).
-  const { data: regions = [] } = useRegions(selectedRayonId || undefined);
+  // Regions cascade from the selected district (korlap).
+  const { data: regions = [] } = useRegions(selectedDistrictId || undefined);
   const regionOptions = regions.map((r) => ({ value: r.id, label: r.name }));
 
   // The optional single location (korlap) is picked from the selected region's
@@ -222,14 +222,14 @@ export function UserForm({
     [allAreas, selectedRegionId],
   );
 
-  // Which scope fields this role uses (rayon / region / location) — from the
+  // Which scope fields this role uses (district / region / location) — from the
   // selected role's monitoring_scope.
   const scope = scopeFor(selectedRole);
 
   // When the role changes so a field no longer applies, clear its value so we
-  // never submit a stale rayon/region/location for e.g. a management role.
+  // never submit a stale district/region/location for e.g. a management role.
   useEffect(() => {
-    if (!scope.rayon && watch('rayon_id')) setValue('rayon_id', '');
+    if (!scope.district && watch('district_id')) setValue('district_id', '');
     if (!scope.region && watch('region_id')) setValue('region_id', '');
     if (!scope.location) setAreaIds((prev) => (prev.length ? [] : prev));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -317,25 +317,25 @@ export function UserForm({
         disabled={fieldsDisabled}
       />
 
-      {scope.rayon && (
+      {scope.district && (
         <FormCombobox
-          label={t('admin:users.form.rayon')}
-          options={rayonOptions}
-          value={watch('rayon_id') || ''}
+          label={t('admin:users.form.district')}
+          options={districtOptions}
+          value={watch('district_id') || ''}
           onChange={(value) => {
-            setValue('rayon_id', value);
-            // Region + location belong to a rayon — clear them when it changes.
+            setValue('district_id', value);
+            // Region + location belong to a district — clear them when it changes.
             setValue('region_id', '');
             setAreaIds([]);
           }}
-          placeholder={rayonsLoading ? t('admin:shared.loading') : t('admin:users.form.rayonPlaceholder')}
-          error={errors.rayon_id?.message}
+          placeholder={districtsLoading ? t('admin:shared.loading') : t('admin:users.form.districtPlaceholder')}
+          error={errors.district_id?.message}
           required
-          disabled={fieldsDisabled || rayonsLoading}
+          disabled={fieldsDisabled || districtsLoading}
         />
       )}
 
-      {/* Region (Kawasan) — cascaded from the rayon (korlap). */}
+      {/* Region (Kawasan) — cascaded from the district (korlap). */}
       {scope.region && (
         <FormCombobox
           label={t('admin:users.form.region')}
@@ -346,13 +346,13 @@ export function UserForm({
             setAreaIds([]); // location belongs to a region — clear on change
           }}
           placeholder={
-            !selectedRayonId
-              ? t('admin:users.form.regionSelectRayon')
+            !selectedDistrictId
+              ? t('admin:users.form.regionSelectDistrict')
               : t('admin:users.form.regionPlaceholder')
           }
           error={errors.region_id?.message}
           required
-          disabled={fieldsDisabled || !selectedRayonId}
+          disabled={fieldsDisabled || !selectedDistrictId}
         />
       )}
 

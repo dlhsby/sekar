@@ -209,7 +209,7 @@ describe('Sidebar Component', () => {
         href: '#',
         children: [
           { id: 'areas', label: 'Areas', href: '/locations' },
-          { id: 'rayons', label: 'Rayons', href: '/rayons' },
+          { id: 'districts', label: 'Districts', href: '/districts' },
         ],
       },
     ];
@@ -230,15 +230,15 @@ describe('Sidebar Component', () => {
       await user.click(screen.getByRole('button', { name: /data/i }));
 
       expect(screen.getByText('Areas')).toBeInTheDocument();
-      expect(screen.getByText('Rayons')).toBeInTheDocument();
+      expect(screen.getByText('Districts')).toBeInTheDocument();
     });
 
     it('auto-expands a group whose child matches the active route', () => {
-      render(<Sidebar items={groupedItems} currentPath="/rayons" />);
+      render(<Sidebar items={groupedItems} currentPath="/districts" />);
 
       // Active child is visible without a manual click.
-      const rayonsLink = screen.getByText('Rayons').closest('a');
-      expect(rayonsLink).toHaveClass('bg-nb-primary', 'text-nb-ink');
+      const districtsLink = screen.getByText('Districts').closest('a');
+      expect(districtsLink).toHaveClass('bg-nb-primary', 'text-nb-ink');
     });
   });
 

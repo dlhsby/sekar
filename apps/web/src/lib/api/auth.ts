@@ -12,7 +12,7 @@ export interface User {
   role: UserRole;
   phone_number?: string;
   profile_picture_url?: string;
-  rayon_id?: string;
+  district_id?: string;
   area_id?: string;
   /**
    * Set true when an admin reset this user's password (ADR-041, Phase 4-7).

@@ -45,7 +45,7 @@ import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
 import { useLocations } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -57,7 +57,7 @@ export interface ScheduleEventModalProps {
   fromDate?: string;
   initialDate?: string;
   /** Pre-fill the placement cascade when created from a specific board row. */
-  initialRayonId?: string;
+  initialDistrictId?: string;
   initialRegionId?: string;
   initialLocationId?: string;
   initialShiftId?: string;
@@ -93,12 +93,12 @@ function createSchema(t: TFn) {
       member_ids: z.array(z.string()),
       shift_definition_id: z.string().min(1, t('validation:required')),
       // Explicit scope ("Ruang Lingkup") drives which geography selects show and
-      // which are required: city → none · rayon → rayon · region → rayon+kawasan ·
-      // location → rayon+kawasan+lokasi. Maps to the API scope on save.
-      scope: z.enum(['city', 'rayon', 'region', 'location']).or(z.literal('')),
+      // which are required: city → none · district → district · region → district+kawasan ·
+      // location → district+kawasan+lokasi. Maps to the API scope on save.
+      scope: z.enum(['city', 'district', 'region', 'location']).or(z.literal('')),
       location_id: z.string().optional(),
       region_id: z.string().optional(),
-      rayon_id: z.string().optional(),
+      district_id: z.string().optional(),
       recurrence_type: z
         .enum(['none', 'daily', 'every_n_days', 'weekly', 'specific_dates'])
         .or(z.literal('')),
@@ -160,15 +160,15 @@ function createSchema(t: TFn) {
       }
       // Each scope requires the geography down to its level. No scope chosen yet
       // → the scope's own "required" above is the message; don't pile on.
-      if (data.scope && data.scope !== 'city' && !data.rayon_id) {
+      if (data.scope && data.scope !== 'city' && !data.district_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['rayon_id'],
+          path: ['district_id'],
           message: t('validation:required'),
         });
       }
       // Only the mobile (kawasan-wide) scope needs a kawasan. For a lokasi scope
-      // it is just a filter — demanding it made rayon-direct lokasi impossible.
+      // it is just a filter — demanding it made district-direct lokasi impossible.
       if (data.scope === 'region' && !data.region_id) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
@@ -221,12 +221,12 @@ function createSchema(t: TFn) {
 export type FormValues = z.infer<ReturnType<typeof createSchema>>;
 type ScopeValue = FormValues['scope'];
 
-/** Map an event's API scope (static/mobile/rayon/city) to the form scope. */
+/** Map an event's API scope (static/mobile/district/city) to the form scope. */
 function eventToFormScope(scope: ScheduleEvent['scope']): ScopeValue {
   if (scope === 'static') return 'location';
   if (scope === 'mobile') return 'region';
   if (scope === 'city') return 'city';
-  return 'rayon';
+  return 'district';
 }
 
 /**
@@ -238,12 +238,12 @@ function initialFormScope(opts: {
   cityWide?: boolean;
   locationId?: string;
   regionId?: string;
-  rayonId?: string;
+  districtId?: string;
 }): ScopeValue | '' {
   if (opts.locationId) return 'location';
   if (opts.regionId) return 'region';
   if (opts.cityWide) return 'city';
-  if (opts.rayonId) return 'rayon';
+  if (opts.districtId) return 'district';
   return '';
 }
 
@@ -254,7 +254,7 @@ export function ScheduleEventModal({
   editScope = 'series',
   fromDate,
   initialDate,
-  initialRayonId,
+  initialDistrictId,
   initialRegionId,
   initialLocationId,
   initialShiftId,
@@ -294,14 +294,14 @@ export function ScheduleEventModal({
       shift_definition_id: event?.shift_definition_id ?? initialShiftId ?? '',
       location_id: event?.location_id ?? initialLocationId ?? '',
       region_id: event?.region_id ?? initialRegionId ?? '',
-      rayon_id: event?.rayon_id ?? initialRayonId ?? '',
+      district_id: event?.district_id ?? initialDistrictId ?? '',
       scope: event
         ? eventToFormScope(event.scope)
         : initialFormScope({
             cityWide: initialCityWide,
             locationId: initialLocationId,
             regionId: initialRegionId,
-            rayonId: initialRayonId,
+            districtId: initialDistrictId,
           }),
       // 'Sekali' was preselected, so a one-off could be saved without the
       // operator ever choosing the recurrence.
@@ -324,7 +324,7 @@ export function ScheduleEventModal({
   );
   const { data: locationsResp } = useLocations({ limit: 1000 });
   const { data: regions = [] } = useRegions();
-  const { data: rayons = [] } = useRayons();
+  const { data: districts = [] } = useDistricts();
 
   /**
    * Names/roles of users this form has actually touched — picked from a combobox
@@ -367,15 +367,15 @@ export function ScheduleEventModal({
 
   const formKind = watch('kind');
   const formScope = watch('scope');
-  const formRayon = watch('rayon_id');
+  const formDistrict = watch('district_id');
   const formRegion = watch('region_id');
   const formRecurrence = watch('recurrence_type');
   const formPic = watch('pic_user_id');
   const [dateDraft, setDateDraft] = useState('');
 
-  // Created from a specific rayon/kawasan/lokasi board row → the schedule belongs
+  // Created from a specific district/kawasan/lokasi board row → the schedule belongs
   // to that geography, so "Surabaya" (city) isn't a sensible option.
-  const lockGeoScope = !isEditing && !!(initialRayonId || initialRegionId || initialLocationId);
+  const lockGeoScope = !isEditing && !!(initialDistrictId || initialRegionId || initialLocationId);
 
   /**
    * Assigning from a board cell answers the where/when/who-kind already — the
@@ -388,14 +388,14 @@ export function ScheduleEventModal({
   const lockKind = !isEditing && !!(initialTeam || initialRole);
   const lockRole = !isEditing && !!initialRole;
   const lockScope = !isEditing && !!(lockGeoScope || initialCityWide);
-  const lockRayon = !isEditing && !!initialRayonId;
+  const lockDistrict = !isEditing && !!initialDistrictId;
   const lockRegion = !isEditing && !!initialRegionId;
   const lockLocation = !isEditing && !!initialLocationId;
   const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
     ...(lockGeoScope
       ? []
       : [{ value: 'city' as const, label: t('schedules:calendar.event.scopeCity') }]),
-    { value: 'rayon', label: t('schedules:calendar.event.scopeRayon') },
+    { value: 'district', label: t('schedules:calendar.event.scopeDistrict') },
     { value: 'region', label: t('schedules:calendar.event.scopeKawasan') },
     { value: 'location', label: t('schedules:calendar.event.scopeLokasi') },
   ];
@@ -404,10 +404,10 @@ export function ScheduleEventModal({
     setValue('scope', v, { shouldValidate: true });
     // Clear geography deeper than the new scope so stale ids don't leak on save.
     if (v === 'city') {
-      setValue('rayon_id', '');
+      setValue('district_id', '');
       setValue('region_id', '');
       setValue('location_id', '');
-    } else if (v === 'rayon') {
+    } else if (v === 'district') {
       setValue('region_id', '');
       setValue('location_id', '');
     } else if (v === 'region') {
@@ -419,23 +419,23 @@ export function ScheduleEventModal({
   const teamCategoryOptions = teamCategories
     .filter((tt) => tt.is_active)
     .map((tt) => ({ value: tt.id, label: tt.name }));
-  const rayonOptions = rayons.map((r) => ({ value: r.id, label: r.name }));
-  // Kawasan options cascade from the chosen rayon; lokasi from the chosen kawasan.
+  const districtOptions = districts.map((r) => ({ value: r.id, label: r.name }));
+  // Kawasan options cascade from the chosen district; lokasi from the chosen kawasan.
   const regionOptions = regions
-    .filter((r) => r.rayon_id === formRayon)
+    .filter((r) => r.district_id === formDistrict)
     .map((r) => ({ value: r.id, label: r.name }));
   // A lokasi belongs to a RAYON; a kawasan is an optional parent (ADR-045), so
-  // Rayon Taman Aktif hangs its lokasi straight off the rayon with region_id
+  // Rayon Taman Aktif hangs its lokasi straight off the district with region_id
   // NULL. Filtering on `region_id === formRegion` therefore matched nothing for
-  // them and made every rayon-direct lokasi unreachable — the board renders them
+  // them and made every district-direct lokasi unreachable — the board renders them
   // as `looseLocations`, but this form could not offer them at all.
   // Kawasan is a NARROWING filter here, not a required step.
   const locationOptions = locations
-    .filter((l) => l.rayon_id === formRayon)
+    .filter((l) => l.district_id === formDistrict)
     .filter((l) => !formRegion || l.region_id === formRegion)
     .map((l) => ({ value: l.id, label: l.name }));
 
-  // Editing a static/mobile event: backfill the rayon → kawasan cascade from the
+  // Editing a static/mobile event: backfill the district → kawasan cascade from the
   // event's location/region once master data is loaded, so the selects show the
   // current placement (the event only carries the deepest id).
   const backfilled = useRef(false);
@@ -452,7 +452,7 @@ export function ScheduleEventModal({
         return;
       }
       if (loc.region_id) setValue('region_id', loc.region_id);
-      setValue('rayon_id', loc.rayon_id);
+      setValue('district_id', loc.district_id);
       backfilled.current = true;
     } else if (event.region_id) {
       const reg = regions.find((r) => r.id === event.region_id);
@@ -462,10 +462,10 @@ export function ScheduleEventModal({
         toast.warning(t('schedules:calendar.event.placementUnresolved'));
         return;
       }
-      setValue('rayon_id', reg.rayon_id);
+      setValue('district_id', reg.district_id);
       backfilled.current = true;
     } else {
-      backfilled.current = true; // rayon/city scope or manual — defaults already suffice
+      backfilled.current = true; // district/city scope or manual — defaults already suffice
     }
   }, [event, locations, regions, setValue, t]);
   const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
@@ -534,7 +534,7 @@ export function ScheduleEventModal({
               : undefined;
 
       // Map the explicit form scope to the API scope:
-      // location → static · region (kawasan) → mobile · rayon → rayon · city → city.
+      // location → static · region (kawasan) → mobile · district → district · city → city.
       const scope =
         data.scope === 'location'
           ? 'static'
@@ -542,7 +542,7 @@ export function ScheduleEventModal({
             ? 'mobile'
             : data.scope === 'city'
               ? 'city'
-              : 'rayon';
+              : 'district';
 
       const payload: CreateScheduleEventInput = {
         title: data.title || undefined,
@@ -554,7 +554,7 @@ export function ScheduleEventModal({
         scope,
         location_id: scope === 'static' ? data.location_id : null,
         region_id: scope === 'mobile' ? data.region_id : null,
-        rayon_id: scope === 'rayon' ? data.rayon_id : null,
+        district_id: scope === 'district' ? data.district_id : null,
         is_team: data.kind === 'team',
         user_id: data.kind === 'individual' ? data.user_id : null,
         team_category_id: data.kind === 'team' ? data.team_category_id : null,
@@ -621,14 +621,14 @@ export function ScheduleEventModal({
               scope={formScope}
               onScopeChange={handleScopeChange}
               scopeOptions={scopeOptions}
-              rayonId={formRayon || ''}
+              districtId={formDistrict || ''}
               regionId={formRegion || ''}
               locationId={watch('location_id') || ''}
-              rayonOptions={rayonOptions}
+              districtOptions={districtOptions}
               regionOptions={regionOptions}
               locationOptions={locationOptions}
               lockScope={lockScope}
-              lockRayon={lockRayon}
+              lockDistrict={lockDistrict}
               lockRegion={lockRegion}
               lockLocation={lockLocation}
             />

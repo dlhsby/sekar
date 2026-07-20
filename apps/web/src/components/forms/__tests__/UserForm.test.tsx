@@ -9,14 +9,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserForm } from '../UserForm';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useLocations } from '@/lib/api/locations';
 import type { User } from '@/types/models';
 import { ReactNode } from 'react';
 
 // Mock the API hooks
-jest.mock('@/lib/api/rayons', () => ({
-  useRayons: jest.fn(),
+jest.mock('@/lib/api/districts', () => ({
+  useDistricts: jest.fn(),
 }));
 jest.mock('@/lib/api/locations', () => ({
   useLocations: jest.fn(),
@@ -58,9 +58,9 @@ function ExternalSubmitButton() {
 }
 
 describe('UserForm', () => {
-  const mockRayons = [
-    { id: 'rayon-1', name: 'Rayon Utara', code: 'RU' },
-    { id: 'rayon-2', name: 'Rayon Selatan', code: 'RS' },
+  const mockDistricts = [
+    { id: 'district-1', name: 'Rayon Utara', code: 'RU' },
+    { id: 'district-2', name: 'Rayon Selatan', code: 'RS' },
   ];
 
   const defaultProps = {
@@ -85,8 +85,8 @@ describe('UserForm', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (useRayons as jest.Mock).mockReturnValue({
-      data: mockRayons,
+    (useDistricts as jest.Mock).mockReturnValue({
+      data: mockDistricts,
       isLoading: false,
     });
     (useLocations as jest.Mock).mockReturnValue({
@@ -249,25 +249,25 @@ describe('UserForm', () => {
   });
 
   describe('Role Selection', () => {
-    it.skip('should show rayon field when kepala_rayon is selected', async () => {
+    it.skip('should show district field when kepala_rayon is selected', async () => {
       const user = userEvent.setup();
       render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
-      // Initially rayon field should not be visible
-      expect(screen.queryByLabelText(/^rayon$/i)).not.toBeInTheDocument();
+      // Initially district field should not be visible
+      expect(screen.queryByLabelText(/^district$/i)).not.toBeInTheDocument();
 
       // Change role to kepala_rayon
       const roleSelect = screen.getByLabelText(/role/i);
       await user.click(roleSelect);
       await user.click(screen.getByText('Kepala Rayon'));
 
-      // Now rayon field should be visible
+      // Now district field should be visible
       await waitFor(() => {
-        expect(screen.getByLabelText(/^rayon$/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^district$/i)).toBeInTheDocument();
       });
     });
 
-    it.skip('should hide rayon field when role is not kepala_rayon', async () => {
+    it.skip('should hide district field when role is not kepala_rayon', async () => {
       const user = userEvent.setup();
       render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
@@ -276,7 +276,7 @@ describe('UserForm', () => {
       await user.click(screen.getByText('Kepala Rayon'));
 
       await waitFor(() => {
-        expect(screen.getByLabelText(/^rayon$/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^district$/i)).toBeInTheDocument();
       });
 
       // Change to worker
@@ -285,11 +285,11 @@ describe('UserForm', () => {
 
       // Rayon field should be hidden
       await waitFor(() => {
-        expect(screen.queryByLabelText(/^rayon$/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/^district$/i)).not.toBeInTheDocument();
       });
     });
 
-    it.skip('should require rayon when kepala_rayon is selected', async () => {
+    it.skip('should require district when kepala_rayon is selected', async () => {
       const user = userEvent.setup();
       render(<UserForm {...defaultProps} />, { wrapper: createWrapper() });
 
@@ -304,7 +304,7 @@ describe('UserForm', () => {
 
       await waitFor(() => {
         expect(
-          screen.getByText(/rayon wajib dipilih untuk role kepala rayon/i)
+          screen.getByText(/district wajib dipilih untuk role kepala rayon/i)
         ).toBeInTheDocument();
       });
     });
@@ -398,7 +398,7 @@ describe('UserForm', () => {
       });
     });
 
-    it('clears rayon/shift/area (explicit null / []) for a role without that scope', async () => {
+    it('clears district/shift/area (explicit null / []) for a role without that scope', async () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
@@ -407,7 +407,7 @@ describe('UserForm', () => {
         username: 'boss',
         full_name: 'Boss',
         phone_number: '081200000000',
-        role: 'admin_system', // scope: no rayon / area / shift
+        role: 'admin_system', // scope: no district / area / shift
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
       };
@@ -426,7 +426,7 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
             role: 'admin_system',
-            rayon_id: null,
+            district_id: null,
             shift_definition_id: null,
             location_ids: [],
           }),
@@ -434,18 +434,18 @@ describe('UserForm', () => {
       });
     });
 
-    it('keeps rayon but clears shift for a rayon+area role (korlap)', async () => {
+    it('keeps district but clears shift for a district+area role (korlap)', async () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
-      const rayonId = '11111111-1111-4111-8111-111111111111';
+      const districtId = '11111111-1111-4111-8111-111111111111';
       const initialData: User = {
         id: '1',
         username: 'koord',
         full_name: 'Koordinator',
         phone_number: '081200000000',
-        role: 'korlap', // scope: rayon + area, no shift
-        rayon_id: rayonId,
+        role: 'korlap', // scope: district + area, no shift
+        district_id: districtId,
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
       };
@@ -464,14 +464,14 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
             role: 'korlap',
-            rayon_id: rayonId,
+            district_id: districtId,
             shift_definition_id: null,
           }),
         );
       });
     });
 
-    it.skip('should include rayon_id when kepala_rayon is selected', async () => {
+    it.skip('should include district_id when kepala_rayon is selected', async () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
@@ -484,12 +484,12 @@ describe('UserForm', () => {
       await user.click(screen.getByLabelText(/role/i));
       await user.click(screen.getByText('Kepala Rayon'));
 
-      // Wait for rayon field to appear and select it
+      // Wait for district field to appear and select it
       await waitFor(() => {
-        expect(screen.getByLabelText(/^rayon$/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/^district$/i)).toBeInTheDocument();
       });
 
-      await user.click(screen.getByLabelText(/^rayon$/i));
+      await user.click(screen.getByLabelText(/^district$/i));
       await user.click(screen.getByText(/rayon utara/i));
 
       await user.click(screen.getByRole('button', { name: /simpan/i }));
@@ -500,7 +500,7 @@ describe('UserForm', () => {
           email: 'kepala@example.com',
           password: '12345678',
           role: 'kepala_rayon',
-          rayon_id: 'rayon-1',
+          district_id: 'district-1',
         });
       });
     });
@@ -516,14 +516,14 @@ describe('UserForm', () => {
       expect(screen.getByLabelText(/role/i)).toBeDisabled();
     });
 
-    it('should show placeholder when rayons are loading', () => {
-      (useRayons as jest.Mock).mockReturnValue({
+    it('should show placeholder when districts are loading', () => {
+      (useDistricts as jest.Mock).mockReturnValue({
         data: [],
         isLoading: true,
       });
 
-      // Rayon is shown only for roles with a rayon scope — render a kepala_rayon
-      // user (district scope) so the rayon field is present. (satgas has no scope
+      // Rayon is shown only for roles with a district scope — render a kepala_rayon
+      // user (district scope) so the district field is present. (satgas has no scope
       // inputs now; its work area comes from schedules.)
       const initialData: User = {
         id: '1',

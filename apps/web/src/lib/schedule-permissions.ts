@@ -7,7 +7,7 @@ import type { UserRole } from '@/types/models';
  *
  *   - admin_system / superadmin / management → anyone (management has
  *     full admin_system parity)
- *   - kepala_rayon / admin_rayon → korlap, satgas, linmas (own rayon)
+ *   - kepala_rayon / admin_rayon → korlap, satgas, linmas (own district)
  *   - korlap                    → satgas, linmas (own assigned areas)
  */
 export function canEditTargetRole(editorRole: UserRole, targetRole: UserRole): boolean {
@@ -26,7 +26,7 @@ export function canEditTargetRole(editorRole: UserRole, targetRole: UserRole): b
   }
 }
 
-/** Editors who act globally (no rayon/area scope). */
+/** Editors who act globally (no district/area scope). */
 export function isGlobalRosterEditor(role: UserRole): boolean {
   return role === 'admin_system' || role === 'superadmin' || role === 'management';
 }

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { makeCrudHooks } from './crud-hooks';
 
-/** Per-level map styling (ADR-045) — shared by region/rayon/area. */
+/** Per-level map styling (ADR-045) — shared by region/district/area. */
 export interface MapStyle {
   border_color?: string | null;
   fill_color?: string | null;
@@ -14,7 +14,7 @@ export interface MapStyle {
 export interface Region extends MapStyle {
   id: string;
   name: string;
-  rayon_id: string;
+  district_id: string;
   description?: string | null;
   boundary_polygon?: GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
   center_lat?: number | null;
@@ -27,7 +27,7 @@ export interface Region extends MapStyle {
 
 export interface CreateRegionDto extends MapStyle {
   name: string;
-  rayon_id: string;
+  district_id: string;
   description?: string | null;
   center_lat?: number | null;
   center_lng?: number | null;
@@ -40,25 +40,25 @@ export interface UpdateRegionDto extends Partial<CreateRegionDto> {
 export const regionKeys = {
   all: ['regions'] as const,
   lists: () => [...regionKeys.all, 'list'] as const,
-  list: (rayonId?: string, includeInactive = false) =>
-    [...regionKeys.lists(), rayonId ?? 'all', { includeInactive }] as const,
+  list: (districtId?: string, includeInactive = false) =>
+    [...regionKeys.lists(), districtId ?? 'all', { includeInactive }] as const,
   detail: (id: string) => [...regionKeys.all, 'detail', id] as const,
 };
 
 /**
- * List regions, optionally filtered by rayon (for cascade selects).
+ * List regions, optionally filtered by district (for cascade selects).
  *
  * Active-only by default so a deactivated kawasan never reaches a picker; the
  * admin management grid opts in to keep it visible and reactivatable.
  */
-export function useRegions(rayonId?: string, includeInactive = false) {
+export function useRegions(districtId?: string, includeInactive = false) {
   return useQuery({
-    queryKey: regionKeys.list(rayonId, includeInactive),
+    queryKey: regionKeys.list(districtId, includeInactive),
     queryFn: async () =>
       (
         await apiClient.get<Region[]>('/regions', {
           params: {
-            ...(rayonId ? { rayon_id: rayonId } : {}),
+            ...(districtId ? { district_id: districtId } : {}),
             ...(includeInactive ? { include_inactive: 'true' } : {}),
           },
         })
@@ -117,7 +117,7 @@ export const useCreateRegion = regionCrudHooks.useCreate;
 export const useUpdateRegion = regionCrudHooks.useUpdate;
 export const useDeleteRegion = regionCrudHooks.useDelete;
 
-/** Re-parent areas into a region (all must share the region's rayon). */
+/** Re-parent areas into a region (all must share the region's district). */
 export function useAssignRegionAreas() {
   const qc = useQueryClient();
   return useMutation({

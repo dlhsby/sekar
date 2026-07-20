@@ -67,15 +67,15 @@ export default function PruningRequestDetailPage() {
   }, [user, authLoading, router]);
 
   const { data: request, isLoading, isError } = usePruningRequest(id);
-  // Areas + users — fetched once, filtered client-side by request.rayonId so
+  // Areas + users — fetched once, filtered client-side by request.districtId so
   // the dropdowns only show in-scope options.
-  const { data: areasResponse } = useLocations({ rayon_id: request?.rayonId ?? undefined });
-  // useUsers' filter doesn't accept rayon_id; fetch a generous page and filter client-side.
+  const { data: areasResponse } = useLocations({ district_id: request?.districtId ?? undefined });
+  // useUsers' filter doesn't accept district_id; fetch a generous page and filter client-side.
   const { data: usersResponse } = useUsers({ limit: 200 });
 
   // Hoist the optional-chain read to a stable value so the memo deps are plain
   // identifiers (the React Compiler can't preserve a member-expression dep).
-  const requestRayonId = request?.rayonId;
+  const requestDistrictId = request?.districtId;
   const areaOptions = useMemo(
     () => (areasResponse?.data ?? []).map((a) => ({ label: a.name, value: a.id })),
     [areasResponse],
@@ -84,9 +84,9 @@ export default function PruningRequestDetailPage() {
     const all = usersResponse?.data ?? [];
     return all
       .filter((u) => ASSIGNEE_ROLES.includes(u.role as UserRole))
-      .filter((u) => !requestRayonId || u.rayon_id === requestRayonId)
+      .filter((u) => !requestDistrictId || u.district_id === requestDistrictId)
       .map((u) => ({ label: `${u.full_name} (${u.role})`, value: u.id }));
-  }, [usersResponse, requestRayonId]);
+  }, [usersResponse, requestDistrictId]);
 
   // Build case types and pruning actions from i18n
   const caseTypeOptions = useMemo<Array<{ label: string; value: CaseType }>>(() => [
@@ -195,7 +195,7 @@ export default function PruningRequestDetailPage() {
           <SectionCard title={t('pruning:detail.sections.details')}>
             <dl className="space-y-2.5 text-nb-body-sm">
               <Field label={t('pruning:detail.fields.kecamatan')} value={request.kecamatanName ?? '-'} />
-              <Field label={t('pruning:detail.fields.rayon')} value={request.rayon?.name ?? '-'} />
+              <Field label={t('pruning:detail.fields.district')} value={request.district?.name ?? '-'} />
               <Field label={t('pruning:detail.fields.submitter')} value={request.submitter?.full_name ?? '-'} />
               <Field label={t('pruning:detail.fields.expectedWeek')} value={expectedLabel} />
               <Field

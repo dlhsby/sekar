@@ -11,7 +11,7 @@ import { AlertTriangle, Users, ChevronDown, ChevronRight, ArrowRightLeft } from 
 import type { UserRole } from '@/types/models';
 
 export interface StaffingSummaryCardProps {
-  filters: { rayon_id?: string; location_id?: string };
+  filters: { district_id?: string; location_id?: string };
   boundaries?: BoundariesResponse;
   dayType?: DayType;
   onReassign?: (areaId: string) => void;
@@ -152,22 +152,22 @@ function AreaView({ areaId, onReassign }: AreaViewProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Rayon View (rayon_id filter selected) — per-area expandable rows
+// Rayon View (district_id filter selected) — per-area expandable rows
 // ---------------------------------------------------------------------------
 
-interface RayonViewProps {
-  rayonId: string;
+interface DistrictViewProps {
+  districtId: string;
   boundaries?: BoundariesResponse;
   onReassign?: (areaId: string) => void;
 }
 
-function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
+function DistrictView({ districtId, boundaries, onReassign }: DistrictViewProps) {
   const { t } = useTranslation(['monitoring']);
   const [expandedAreaIds, setExpandedAreaIds] = useState<Set<string>>(new Set());
-  const rayon = boundaries?.rayons.find((r) => r.id === rayonId);
+  const district = boundaries?.districts.find((r) => r.id === districtId);
 
-  if (!rayon) {
-    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.rayonDataUnavailable')}</p>;
+  if (!district) {
+    return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.districtDataUnavailable')}</p>;
   }
 
   const toggleArea = (areaId: string) => {
@@ -184,7 +184,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
 
   return (
     <div className="space-y-1">
-      {rayon.areas.map((area) => {
+      {district.areas.map((area) => {
         const isExpanded = expandedAreaIds.has(area.id);
         const activeCount = area.staffing_summary.reduce((acc, s) => acc + s.active, 0);
         const requiredCount = area.staffing_summary.reduce((acc, s) => acc + s.required, 0);
@@ -262,7 +262,7 @@ function RayonView({ rayonId, boundaries, onReassign }: RayonViewProps) {
 }
 
 // ---------------------------------------------------------------------------
-// City View (no filters) — per-rayon expandable accordion rows
+// City View (no filters) — per-district expandable accordion rows
 // ---------------------------------------------------------------------------
 
 interface CityViewProps {
@@ -272,19 +272,19 @@ interface CityViewProps {
 
 function CityView({ boundaries, onReassign }: CityViewProps) {
   const { t } = useTranslation(['monitoring']);
-  const [expandedRayonIds, setExpandedRayonIds] = useState<Set<string>>(new Set());
+  const [expandedDistrictIds, setExpandedDistrictIds] = useState<Set<string>>(new Set());
 
-  if (!boundaries?.rayons?.length) {
+  if (!boundaries?.districts?.length) {
     return <p className="text-xs text-nb-gray-400 italic">{t('monitoring:staffing.cityDataUnavailable')}</p>;
   }
 
-  const toggleRayon = (rayonId: string) => {
-    setExpandedRayonIds((prev) => {
+  const toggleDistrict = (districtId: string) => {
+    setExpandedDistrictIds((prev) => {
       const next = new Set(prev);
-      if (next.has(rayonId)) {
-        next.delete(rayonId);
+      if (next.has(districtId)) {
+        next.delete(districtId);
       } else {
-        next.add(rayonId);
+        next.add(districtId);
       }
       return next;
     });
@@ -292,27 +292,27 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
 
   return (
     <div className="space-y-1">
-      {boundaries.rayons.map((rayon) => {
-        const isExpanded = expandedRayonIds.has(rayon.id);
-        const totalActive = rayon.areas.reduce(
+      {boundaries.districts.map((district) => {
+        const isExpanded = expandedDistrictIds.has(district.id);
+        const totalActive = district.areas.reduce(
           (acc, a) => acc + a.staffing_summary.reduce((s, r) => s + r.active, 0),
           0
         );
-        const totalRequired = rayon.areas.reduce(
+        const totalRequired = district.areas.reduce(
           (acc, a) => acc + a.staffing_summary.reduce((s, r) => s + r.required, 0),
           0
         );
 
         return (
           <div
-            key={rayon.id}
+            key={district.id}
             className={cn(
               'border-2 border-nb-black rounded-nb-base overflow-hidden',
-              rayon.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
+              district.is_understaffed && 'border-l-4 border-l-[var(--color-status-missing)]'
             )}
           >
             <button
-              onClick={() => toggleRayon(rayon.id)}
+              onClick={() => toggleDistrict(district.id)}
               className="w-full flex items-center gap-2 px-2.5 py-2 bg-nb-white hover:bg-nb-gray-50 transition-colors text-left"
             >
               {isExpanded ? (
@@ -321,19 +321,19 @@ function CityView({ boundaries, onReassign }: CityViewProps) {
                 <ChevronRight className="w-3.5 h-3.5 text-nb-gray-500 flex-shrink-0" />
               )}
               <span className="flex-1 text-xs font-semibold text-nb-black truncate">
-                {rayon.name}
+                {district.name}
               </span>
               <span className="text-xs font-mono text-nb-gray-600 tabular-nums">
                 {totalActive}/{totalRequired}
               </span>
-              {rayon.is_understaffed && (
-                <UnderstaffedBadge shortage={rayon.understaffed_area_count} />
+              {district.is_understaffed && (
+                <UnderstaffedBadge shortage={district.understaffed_area_count} />
               )}
             </button>
 
             {isExpanded && (
               <div className="border-t-2 border-nb-black bg-nb-gray-50 px-2 py-2 space-y-1">
-                {rayon.areas.map((area) => {
+                {district.areas.map((area) => {
                   const areaActive = area.staffing_summary.reduce((acc, s) => acc + s.active, 0);
                   const areaRequired = area.staffing_summary.reduce(
                     (acc, s) => acc + s.required,
@@ -383,10 +383,10 @@ export function StaffingSummaryCard({
   const { t } = useTranslation(['monitoring']);
   const dayTypeLabels = getDayTypeLabels();
   const hasAreaFilter = !!filters.location_id;
-  const hasRayonFilter = !!filters.rayon_id && !hasAreaFilter;
-  const isCityView = !hasAreaFilter && !hasRayonFilter;
+  const hasDistrictFilter = !!filters.district_id && !hasAreaFilter;
+  const isCityView = !hasAreaFilter && !hasDistrictFilter;
 
-  const viewLabel = hasAreaFilter ? 'Area' : hasRayonFilter ? 'Rayon' : t('monitoring:staffing.cityViewLabel');
+  const viewLabel = hasAreaFilter ? 'Area' : hasDistrictFilter ? 'Rayon' : t('monitoring:staffing.cityViewLabel');
 
   return (
     <div className="border-2 border-nb-black rounded-nb-base shadow-nb-sm bg-nb-white overflow-hidden">
@@ -414,8 +414,8 @@ export function StaffingSummaryCard({
       {/* Body */}
       <div className="px-3 py-2.5">
         {hasAreaFilter && <AreaView areaId={filters.location_id!} onReassign={onReassign} />}
-        {hasRayonFilter && (
-          <RayonView rayonId={filters.rayon_id!} boundaries={boundaries} onReassign={onReassign} />
+        {hasDistrictFilter && (
+          <DistrictView districtId={filters.district_id!} boundaries={boundaries} onReassign={onReassign} />
         )}
         {isCityView && <CityView boundaries={boundaries} onReassign={onReassign} />}
       </div>

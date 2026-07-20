@@ -1,6 +1,6 @@
 /**
  * Unit tests: ShiftRoleTable — the shared roster layout every board container
- * renders (rayon placement, kawasan placement, location).
+ * renders (district placement, kawasan placement, location).
  *
  * The contract: every shift renders even when empty, the core role columns
  * always exist so an empty one can be filled, and "+ Tugaskan" reports the
@@ -141,7 +141,7 @@ describe('ShiftRoleTable', () => {
   // A team is a COMBINATION of roles, so it can't be filed under satgas or
   // linmas — it gets a column of its own, always present like the core roles.
   // Rendering it only once populated meant a team had nowhere to be assigned
-  // FROM, so the column never appeared: the same chicken-and-egg the rayon and
+  // FROM, so the column never appeared: the same chicken-and-egg the district and
   // kawasan assign tables had.
   // A lokasi is handed roleTargets but NO roleCounts (its own group is the whole
   // subject). Before the fix the column counted its own rows — individuals only —
@@ -169,7 +169,7 @@ describe('ShiftRoleTable', () => {
       expect(within(column(/satgas/i)).getByText('5/10')).toBeInTheDocument();
     });
 
-    it('still lets a subtree roleCounts win, for a kawasan/rayon', () => {
+    it('still lets a subtree roleCounts win, for a kawasan/district', () => {
       render(
         <ShiftRoleTable
           shifts={[group({ countableByRole: { satgas: 2 } })]}

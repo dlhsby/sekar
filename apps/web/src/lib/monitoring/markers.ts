@@ -1,6 +1,6 @@
 /**
  * Monitoring map marker builders — the single source of truth for how every
- * marker on the web monitoring map looks, so workers, rayon/area nodes and the
+ * marker on the web monitoring map looks, so workers, district/area nodes and the
  * Surabaya summary read as one consistent, distinguishable system (mirrors the
  * mobile `markerSpec`).
  *
@@ -155,10 +155,10 @@ export function workerPinIcon(
 }
 
 /**
- * A compact node marker (rayon / region / lokasi): a white dot with a
+ * A compact node marker (district / region / lokasi): a white dot with a
  * status-tinted ring and the **active worker count** — ADR-046's replacement for
  * the disliked attendance-ratio bubble. Empty nodes (nothing scheduled, nobody
- * active) render as a small muted dot so a rayon's many idle lokasi don't clutter
+ * active) render as a small muted dot so a district's many idle lokasi don't clutter
  * the map. The ring color comes from the roster (clocked_in vs scheduled), so a
  * fully-attended node reads green even when a worker's signal has gone stale.
  */
@@ -174,14 +174,14 @@ const NODE_GLYPHS: Record<string, string> = {
 
 /**
  * System-default glyph per node kind (ADR-046 "bawaan sistem" marker), mirroring
- * the default pin images (rayon → orange building, kawasan/lokasi → green tree).
+ * the default pin images (district → orange building, kawasan/lokasi → green tree).
  * Used when a location has no explicit `marker_icon`, so every node carries a
  * kind-appropriate marker instead of a bare dot.
  */
 // Per-kind default glyph. Kawasan (trees = a grove) and lokasi (tree = a single
 // site) are deliberately DISTINCT so the two tiers read apart at a glance.
-export const KIND_DEFAULT_GLYPH: Record<'rayon' | 'location' | 'region' | 'surabaya', string> = {
-  rayon: 'building',
+export const KIND_DEFAULT_GLYPH: Record<'district' | 'location' | 'region' | 'surabaya', string> = {
+  district: 'building',
   region: 'trees', // kawasan = a grove of trees
   location: 'leaf', // lokasi = a single leaf (visually distinct from the kawasan grove)
   surabaya: 'building',
@@ -201,7 +201,7 @@ export const DEFAULT_MARKER_COLOR = '#78716C';
 
 /**
  * The unified marker (ADR-051, revised): one code-drawn teardrop pin. **Fill is
- * white** for every kind (rayon/kawasan/lokasi/worker) so the marker never
+ * white** for every kind (district/kawasan/lokasi/worker) so the marker never
  * competes with the base map — the **glyph alone identifies the type/role**.
  * ALL live status rides the **outline ring + the count number** (`opts.outline`
  * = staffing health for areas / activity for workers; `opts.count` = the
@@ -258,7 +258,7 @@ function pinSvg(glyphPath: string | null, opts: PinOpts): { svg: string; w: numb
 
 /** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path).
  *  Callers sometimes only need the data-URI (`.url`) for an `<img>` preview on a
- *  page with NO loaded map (rayon/kawasan/lokasi style forms), so the
+ *  page with NO loaded map (district/kawasan/lokasi style forms), so the
  *  `google.maps.Size`/`Point` objects are attached only when the Maps API is
  *  present — otherwise building them throws `google is not defined`. */
 function pinMarkerFromPath(glyphPath: string | null, opts: PinOpts): google.maps.Icon {
@@ -352,16 +352,16 @@ export function teamMarkerElement(
   );
 }
 
-/** System-default glyph per marker-entity kind (rayon → building, kawasan → trees, lokasi → leaf, team → droplets). */
-export function entityDefaultGlyph(kind: 'rayon' | 'region' | 'location' | 'team'): string {
-  if (kind === 'rayon') return 'building';
+/** System-default glyph per marker-entity kind (district → building, kawasan → trees, lokasi → leaf, team → droplets). */
+export function entityDefaultGlyph(kind: 'district' | 'region' | 'location' | 'team'): string {
+  if (kind === 'district') return 'building';
   if (kind === 'team') return 'droplets';
   if (kind === 'location') return 'leaf';
   return 'trees';
 }
 
 export function nodeCountIcon(
-  variant: 'rayon' | 'location' | 'region' | 'surabaya',
+  variant: 'district' | 'location' | 'region' | 'surabaya',
   active: number,
   health: HealthLevel,
   opts?: { icon?: string | null }
@@ -369,7 +369,7 @@ export function nodeCountIcon(
   const color = HEALTH_COLORS[health];
   const glyph = opts?.icon ? (NODE_GLYPHS[opts.icon] ?? null) : null;
   // Nothing scheduled + nobody active + no configured icon → a small muted dot
-  // (dense rayons stay legible). A configured icon always renders.
+  // (dense districts stay legible). A configured icon always renders.
   if (health === 'empty' && active <= 0 && !glyph) {
     const s = 12;
     const svg =
@@ -383,8 +383,8 @@ export function nodeCountIcon(
       labelOrigin: new google.maps.Point(s / 2, s + 8),
     };
   }
-  // Kawasan/rayon a touch larger than lokasi so tiers read at a glance.
-  const big = variant === 'rayon' || variant === 'region';
+  // Kawasan/district a touch larger than lokasi so tiers read at a glance.
+  const big = variant === 'district' || variant === 'region';
   const d = big ? 40 : 30;
   const r = d / 2 - 2;
   const fs = big ? 16 : 13;
@@ -414,10 +414,10 @@ export function nodeCountIcon(
  * A node marker showing the attendance ratio `hadir/terjadwal`, colored by
  * staffing health — a white rounded bubble with a health-colored border, exactly
  * matching the mobile node bubbles. Surabaya is a wider bubble with a label.
- * Region markers use the same 76×44 size as rayon/area.
+ * Region markers use the same 76×44 size as district/area.
  */
 export function nodeRatioIcon(
-  variant: 'rayon' | 'location' | 'region' | 'surabaya',
+  variant: 'district' | 'location' | 'region' | 'surabaya',
   scheduled: number,
   clockedIn: number
 ): google.maps.Icon {
@@ -440,7 +440,7 @@ export function nodeRatioIcon(
     };
   }
 
-  // rayon + area — one consistent rounded ratio bubble (matches mobile).
+  // district + area — one consistent rounded ratio bubble (matches mobile).
   const w = 76;
   const h = 44;
   const svg =
@@ -456,11 +456,11 @@ export function nodeRatioIcon(
 }
 
 /* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays */
-// The CURRENT-node icon markers (mirrors mobile's rayon office / location pin). These
+// The CURRENT-node icon markers (mirrors mobile's district office / location pin). These
 // are the detail-openers for the node you're inside — icon only, no ratio (the
 // ratio lives on the child bubbles). Distinct from the drill bubbles above.
-const NODE_DETAIL: Record<'rayon' | 'location', { color: string; glyph: string }> = {
-  rayon: {
+const NODE_DETAIL: Record<'district' | 'location', { color: string; glyph: string }> = {
+  district: {
     color: '#2563EB',
     glyph:
       '<path d="M3 21h18"/><path d="M5 21V5a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v16"/>' +
@@ -474,11 +474,11 @@ const NODE_DETAIL: Record<'rayon' | 'location', { color: string; glyph: string }
 /* eslint-enable sekar-design/no-inline-hex-colors */
 
 /**
- * The current node's geographic pin (selected rayon at rayon scope, selected location
+ * The current node's geographic pin (selected district at district scope, selected location
  * at location scope). A colored circle with a white glyph; clicking it opens the
  * node's detail — it does NOT drill, so it carries no ratio.
  */
-export function nodeDetailIcon(variant: 'rayon' | 'location'): google.maps.Icon {
+export function nodeDetailIcon(variant: 'district' | 'location'): google.maps.Icon {
   const { color, glyph } = NODE_DETAIL[variant];
   const s = 48;
   const c = s / 2;

@@ -29,7 +29,7 @@ import {
   useActivateRegion,
   type Region,
 } from '@/lib/api/regions';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { RegionFormModal } from '@/components/regions/RegionFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
@@ -40,9 +40,9 @@ export default function RegionsPage() {
   // Management grid shows deactivated kawasan too — pickers elsewhere keep the
   // active-only default.
   const { data: regions = [], isLoading, error, refetch } = useRegions(undefined, true);
-  // Resolver, not a picker: include deactivated rayons or a kawasan under one
+  // Resolver, not a picker: include deactivated districts or a kawasan under one
   // would show a raw id and lose its staffing level.
-  const { data: rayons = [] } = useRayons(true);
+  const { data: districts = [] } = useDistricts(true);
   const deleteRegion = useDeleteRegion();
   const deactivateRegion = useDeactivateRegion();
   const activateRegion = useActivateRegion();
@@ -54,18 +54,18 @@ export default function RegionsPage() {
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
 
   const canManage = can('region:create') || can('region:update') || can('region:delete');
-  const rayonName = useMemo(
-    () => new Map(rayons.map((r) => [r.id, r.name])),
-    [rayons],
+  const districtName = useMemo(
+    () => new Map(districts.map((r) => [r.id, r.name])),
+    [districts],
   );
-  const rayonFilterOptions = useMemo(
-    () => rayons.map((r) => ({ label: r.name, value: r.name })),
-    [rayons],
+  const districtFilterOptions = useMemo(
+    () => districts.map((r) => ({ label: r.name, value: r.name })),
+    [districts],
   );
   // Which tier owns capacity is the parent RAYON's call, not the kawasan's.
-  const rayonLevel = useMemo(
-    () => new Map(rayons.map((r) => [r.id, r.staffing_level ?? 'region'])),
-    [rayons],
+  const districtLevel = useMemo(
+    () => new Map(districts.map((r) => [r.id, r.staffing_level ?? 'region'])),
+    [districts],
   );
 
   const columns = useMemo<ColumnDef<Region>[]>(
@@ -78,13 +78,13 @@ export default function RegionsPage() {
         cell: ({ row }) => <span className="font-bold text-nb-black">{row.original.name}</span>,
       },
       {
-        id: 'rayon',
-        accessorFn: (r) => rayonName.get(r.rayon_id) ?? r.rayon_id,
-        header: t('admin:regions.columnRayon'),
+        id: 'district',
+        accessorFn: (r) => districtName.get(r.district_id) ?? r.district_id,
+        header: t('admin:regions.columnDistrict'),
         meta: {
-          label: t('admin:regions.columnRayon'),
+          label: t('admin:regions.columnDistrict'),
           filterVariant: 'enum',
-          filterOptions: rayonFilterOptions,
+          filterOptions: districtFilterOptions,
         },
       },
       mapStyleColorColumn<Region>(t('common:color')),
@@ -171,7 +171,7 @@ export default function RegionsPage() {
         ),
       },
     ],
-    [t, rayonName, rayonFilterOptions],
+    [t, districtName, districtFilterOptions],
   );
 
   /**
@@ -210,7 +210,7 @@ export default function RegionsPage() {
       key: 'capacity',
       label: t('schedules:staffCapacity.title'),
       icon: Settings2,
-      hidden: !can('region:update') || rayonLevel.get(r.rayon_id) !== 'region',
+      hidden: !can('region:update') || districtLevel.get(r.district_id) !== 'region',
       onClick: () => setCapacitySubject({ type: 'region', id: r.id, name: r.name }),
     },
     {

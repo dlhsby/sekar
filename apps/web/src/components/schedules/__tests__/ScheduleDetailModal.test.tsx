@@ -3,16 +3,16 @@
  * is clicked (Ubah/Hapus route onward from here).
  *
  * The interesting logic is the placement line, which must resolve to the
- * DEEPEST geography the occurrence carries (lokasi → kawasan → rayon), and the
+ * DEEPEST geography the occurrence carries (lokasi → kawasan → district), and the
  * permission gating on Ubah/Hapus.
  */
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ScheduleDetailModal } from '../ScheduleDetailModal';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
 
-jest.mock('@/lib/api/rayons', () => ({ useRayons: jest.fn() }));
+jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn() }));
 
 const occ = (o: Partial<ScheduleOccurrence> = {}): ScheduleOccurrence =>
   ({
@@ -52,7 +52,7 @@ function setup(
 }
 
 beforeEach(() => {
-  (useRayons as jest.Mock).mockReturnValue({
+  (useDistricts as jest.Mock).mockReturnValue({
     data: [{ id: 'ry1', name: 'Rayon Pusat' }],
   });
 });
@@ -91,7 +91,7 @@ describe('ScheduleDetailModal', () => {
       setup({
         location: { id: 'loc1', name: 'Taman Bungkul' },
         region: { id: 'kw1', name: 'Kawasan Pusat' },
-        rayon_id: 'ry1',
+        district_id: 'ry1',
       } as Partial<ScheduleOccurrence>);
       expect(screen.getByText(/Taman Bungkul/)).toBeInTheDocument();
       expect(screen.queryByText(/Kawasan Pusat/)).not.toBeInTheDocument();
@@ -100,14 +100,14 @@ describe('ScheduleDetailModal', () => {
     it('falls back to kawasan when there is no lokasi', () => {
       setup({
         region: { id: 'kw1', name: 'Kawasan Pusat' },
-        rayon_id: 'ry1',
+        district_id: 'ry1',
       } as Partial<ScheduleOccurrence>);
       expect(screen.getByText(/Kawasan Pusat/)).toBeInTheDocument();
       expect(screen.queryByText(/Rayon Pusat/)).not.toBeInTheDocument();
     });
 
-    it('falls back to the rayon name, resolved from the rayon list', () => {
-      setup({ rayon_id: 'ry1' } as Partial<ScheduleOccurrence>);
+    it('falls back to the district name, resolved from the district list', () => {
+      setup({ district_id: 'ry1' } as Partial<ScheduleOccurrence>);
       expect(screen.getByText(/Rayon Pusat/)).toBeInTheDocument();
     });
 

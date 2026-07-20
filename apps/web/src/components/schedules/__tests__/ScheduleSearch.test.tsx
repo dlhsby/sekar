@@ -12,14 +12,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ScheduleSearch } from '../ScheduleSearch';
 import { useUsers } from '@/lib/api/users';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocations } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
 
 jest.mock('@/lib/api/users', () => ({ useUsers: jest.fn() }));
-jest.mock('@/lib/api/rayons', () => ({ useRayons: jest.fn() }));
+jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn() }));
 jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn() }));
 jest.mock('@/lib/api/locations', () => ({ useLocations: jest.fn() }));
 jest.mock('@/lib/api/shift-definitions', () => ({ useShiftDefinitions: jest.fn() }));
@@ -29,7 +29,7 @@ const USERS = [
   { id: 'u1', full_name: 'Budi Santoso', username: 'budi', role: 'satgas' },
   { id: 'u2', full_name: 'Sari Dewi', username: 'sari', role: 'linmas' },
 ];
-const RAYONS = [{ id: 'ry1', name: 'Rayon Pusat' }];
+const DISTRICTS = [{ id: 'ry1', name: 'Rayon Pusat' }];
 const REGIONS = [{ id: 'kw1', name: 'Kawasan Tunjungan' }];
 const LOCATIONS = [{ id: 'loc1', name: 'Taman Bungkul' }];
 const SHIFTS = [{ id: 's1', name: 'Shift 1' }];
@@ -37,14 +37,14 @@ const TEAMS = [{ id: 't1', name: 'Tim Bungkul' }];
 
 beforeEach(() => {
   (useUsers as jest.Mock).mockReturnValue({ data: { data: USERS } });
-  (useRayons as jest.Mock).mockReturnValue({ data: RAYONS });
+  (useDistricts as jest.Mock).mockReturnValue({ data: DISTRICTS });
   (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
   (useLocations as jest.Mock).mockReturnValue({ data: { data: LOCATIONS } });
   (useShiftDefinitions as jest.Mock).mockReturnValue({ data: SHIFTS });
   (useTeamCategories as jest.Mock).mockReturnValue({ data: TEAMS });
 });
 
-function setup(filters = {}, lockRayon = false) {
+function setup(filters = {}, lockDistrict = false) {
   const onChange = jest.fn();
   const onNavigateDate = jest.fn();
   render(
@@ -52,7 +52,7 @@ function setup(filters = {}, lockRayon = false) {
       filters={filters}
       onChange={onChange}
       onNavigateDate={onNavigateDate}
-      lockRayon={lockRayon}
+      lockDistrict={lockDistrict}
     />
   );
   return { onChange, onNavigateDate, user: userEvent.setup() };
@@ -196,9 +196,9 @@ describe('ScheduleSearch', () => {
       expect(screen.getByText('Tim Bungkul')).toBeInTheDocument();
     });
 
-    it('never offers a rayon hit to a rayon-scoped role', async () => {
-      // The rayon is pinned server-side; offering it here let a scoped user
-      // filter to a rayon that is not theirs (the old panel hid its select but
+    it('never offers a district hit to a district-scoped role', async () => {
+      // The district is pinned server-side; offering it here let a scoped user
+      // filter to a district that is not theirs (the old panel hid its select but
       // the autocomplete still listed them).
       const { user } = setup({}, true);
       await search(user, 'Rayon Pusat');

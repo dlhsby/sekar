@@ -2,7 +2,7 @@
 
 /**
  * AggregateNodeList — the side-panel list for the drill-down view. Shows one
- * row per node (rayon or area) with today's attendance trio
+ * row per node (district or area) with today's attendance trio
  * (Terjadwal / Hadir / Belum Hadir); clicking a row drills into it, mirroring a
  * map node tap.
  */
@@ -15,7 +15,7 @@ import type { AggregateNode } from '@/lib/api/monitoring-v2';
 export interface AggregateNodeListProps {
   nodes: AggregateNode[];
   onDrill: (node: AggregateNode) => void;
-  /** Geo-filter selection (rayon/kawasan/lokasi id). Non-matching rows dim to
+  /** Geo-filter selection (district/kawasan/lokasi id). Non-matching rows dim to
    *  match the map's spotlight. Null = no geo filter (all rows full strength). */
   activeGeoId?: string | null;
   /** Bare mode drops the bordered card chrome — for embedding inside a tab panel

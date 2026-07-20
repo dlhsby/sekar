@@ -3,7 +3,7 @@
 /**
  * MonitoringSidebar — right panel for the monitoring page (mobile parity), shown
  * at EVERY drill level. Two tabs:
- *  - Wilayah (first): the current level's child nodes (rayons at city, kawasan/
+ *  - Wilayah (first): the current level's child nodes (districts at city, kawasan/
  *    lokasi deeper) with today's attendance trio; tapping a row drills in.
  *  - Petugas (second): the scoped worker list; selecting a worker opens an inline
  *    detail card (snapshot fields only — no extra fetch).
@@ -141,11 +141,11 @@ function WorkerDetail({ worker, onBack }: { worker: SnapshotWorker; onBack: () =
               {statusLabels[status] ?? worker.status}
             </span>
           </div>
-          {(worker.rayon_name || worker.location_name) && (
+          {(worker.district_name || worker.location_name) && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
-              {worker.rayon_name && (
+              {worker.district_name && (
                 <span>
-                  {t('monitoring:sidebar.rayonLabel')} <strong className="text-nb-black">{worker.rayon_name}</strong>
+                  {t('monitoring:sidebar.districtLabel')} <strong className="text-nb-black">{worker.district_name}</strong>
                 </span>
               )}
               {worker.location_name && (

@@ -3,7 +3,7 @@
 /**
  * NodeMarkerLayer — the drill-down node markers on the monitoring map. One
  * marker per node at the current scope: the single Surabaya summary (top level),
- * one per rayon (city scope) or one per area (rayon scope). Each shows the
+ * one per rayon (city scope) or one per area (district scope). Each shows the
  * attendance ratio `hadir/terjadwal` colored by staffing health; clicking drills
  * one level deeper. Replaces the old status-only "Ringkasan" bubbles.
  *
@@ -25,7 +25,7 @@ import {
 export interface NodeMarker {
   id: string;
   name: string;
-  variant: 'rayon' | 'location' | 'region' | 'surabaya';
+  variant: 'district' | 'location' | 'region' | 'surabaya';
   lat: number;
   lng: number;
   scheduled: number;
@@ -49,7 +49,7 @@ export interface NodeMarkerLayerProps {
   onDrill?: (node: NodeMarker) => void;
   /** Accepted for API compatibility; labels now show at every zoom. */
   zoom?: number;
-  /** Geo filter selection (rayon/kawasan/lokasi id). When set, node bubbles that
+  /** Geo filter selection (district/kawasan/lokasi id). When set, node bubbles that
    *  don't match are dimmed to spotlight the selection. Null = no geo filter. */
   activeGeoId?: string | null;
 }
@@ -74,7 +74,7 @@ export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayer
         // health outline and no count badge. The name label rides below the pin,
         // health-tinted so per-node status reads too.
         const health = rosterHealth(node.scheduled, node.clocked_in);
-        const big = node.variant === 'rayon' || node.variant === 'region';
+        const big = node.variant === 'district' || node.variant === 'region';
         // Geo-filter spotlight: dim the nodes that don't match the selection so the
         // selected one stands out; the name label stays readable either way.
         const dimmed = activeGeoId != null && node.id !== activeGeoId;

@@ -190,20 +190,20 @@ describe('Auth API', () => {
       await expect(authApi.getCurrentUser()).rejects.toThrow();
     });
 
-    it('should get user with rayon assignment', async () => {
+    it('should get user with district assignment', async () => {
       const mockUser: User = {
         id: '2',
         username: 'kepala_rayon',
         full_name: 'Kepala Rayon',
         role: 'kepala_rayon',
-        rayon_id: 'rayon-1',
+        district_id: 'district-1',
       };
 
       mockAxios.onGet('/auth/me').reply(200, mockUser);
 
       const user = await authApi.getCurrentUser();
 
-      expect(user.rayon_id).toBe('rayon-1');
+      expect(user.district_id).toBe('district-1');
     });
 
     it('should get user with assigned area', async () => {

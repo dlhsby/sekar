@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { pageMetadata } from '@/lib/i18n/server-metadata';
 
 export async function generateMetadata(): Promise<Metadata> {
-  return pageMetadata('rayons');
+  return pageMetadata('districts');
 }
 
 export default function RayonsLayout({ children }: { children: ReactNode }) {

@@ -50,7 +50,7 @@ export function WeekGrid({
     t('schedules:calendar.event.weekdaysSun'),
   ];
 
-  // Show every rayon (even with no schedule) so gaps are visible.
+  // Show every district (even with no schedule) so gaps are visible.
   const coverage = useMemo(
     () => buildWeekCoverage(occurrences, master, dateStrs),
     [occurrences, master, dateStrs]
@@ -103,7 +103,7 @@ export function WeekGrid({
             <thead>
               <tr>
                 <th className="sticky left-0 border-b-2 border-r-2 border-nb-black bg-nb-gray-50 px-3 py-2 text-left text-nb-caption font-bold uppercase tracking-wide text-nb-gray-500">
-                  {t('schedules:filters.rayonLabel')}
+                  {t('schedules:filters.districtLabel')}
                 </th>
                 {days.map((day, i) => (
                   <th
@@ -120,9 +120,9 @@ export function WeekGrid({
             </thead>
             <tbody>
               {coverage.map((row) => (
-                <tr key={row.rayonId}>
+                <tr key={row.districtId}>
                   <td className="sticky left-0 border-b border-r-2 border-nb-black bg-nb-white px-3 py-2 align-top font-bold">
-                    {row.rayonName}
+                    {row.districtName}
                     <span className="mt-0.5 block text-nb-caption font-medium tabular-nums text-nb-gray-500">
                       {t('schedules:board.petugasCount', { count: row.total })}
                     </span>

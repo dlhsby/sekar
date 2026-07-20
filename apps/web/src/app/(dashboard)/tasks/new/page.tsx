@@ -1,5 +1,5 @@
 /**
- * Create Task Page (Phase 2C - rayon, hierarchical assignment)
+ * Create Task Page (Phase 2C - district, hierarchical assignment)
  * Access: TASK_MANAGER_ROLES
  */
 
@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
 import { useLocations } from '@/lib/api/locations';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -45,7 +45,7 @@ export default function CreateTaskPage() {
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('none');
   const [areaId, setAreaId] = useState('none');
-  const [rayonId, setRayonId] = useState('none');
+  const [districtId, setDistrictId] = useState('none');
   const [priority, setPriority] = useState<TaskPriority>('normal');
   const [dueDate, setDueDate] = useState('');
   const [error, setError] = useState('');
@@ -53,7 +53,7 @@ export default function CreateTaskPage() {
   // Data fetching hooks - always call (enabled by query client)
   const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useLocations({ limit: 1000 });
-  const { data: rayonsData } = useRayons();
+  const { data: districtsData } = useDistricts();
 
   const createMutation = useCreateTask();
 
@@ -93,7 +93,7 @@ export default function CreateTaskPage() {
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
         area_id: areaId !== 'none' ? areaId : undefined,
-        rayon_id: rayonId !== 'none' ? rayonId : undefined,
+        district_id: districtId !== 'none' ? districtId : undefined,
         priority,
         due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
@@ -109,7 +109,7 @@ export default function CreateTaskPage() {
   );
 
   const areas = areasData?.data || [];
-  const rayons = rayonsData || [];
+  const districts = districtsData || [];
 
   const priorityOptions = [
     { value: 'low', label: t('form.priorityLow') },
@@ -181,12 +181,12 @@ export default function CreateTaskPage() {
               />
 
               <FormSelect
-                label={t('newPage.formRayonLabel')}
-                value={rayonId}
-                onChange={(value) => setRayonId(value)}
+                label={t('newPage.formDistrictLabel')}
+                value={districtId}
+                onChange={(value) => setDistrictId(value)}
                 options={[
-                  { value: 'none', label: t('newPage.formRayonPlaceholder') },
-                  ...rayons.map((r) => ({
+                  { value: 'none', label: t('newPage.formDistrictPlaceholder') },
+                  ...districts.map((r) => ({
                     value: r.id,
                     label: r.name,
                   })),

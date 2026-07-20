@@ -12,7 +12,7 @@ const DATABASE_SHEET_URLS: Record<string, string> = {
     'https://docs.google.com/spreadsheets/d/1Wq93QZ4y1BfYtzxHwr1josUK7bpTais3ayIfTNd3Bmk/edit?gid=1939591880#gid=1939591880',
   rekapPengadaan:
     'https://docs.google.com/spreadsheets/d/1iEj-cSVTAv-kWMoGSCvp17dJNfq07q-O6Kq8mDpq6oA/edit?gid=1296016472#gid=1296016472',
-  dataKendaraanRayon:
+  dataKendaraanDistrict:
     'https://docs.google.com/spreadsheets/d/1LMu_9j_ksENeITOZQrqSSEQF6YKT_6KmhUhDF_mFEJk/edit?gid=322916706#gid=322916706',
   dataInventoryTaman:
     'https://docs.google.com/spreadsheets/d/1yhwXZhgLcGvn_-RznFAdg_ZtL81zcjn_pEN3kb9dnx8/edit?gid=854545279#gid=854545279',
@@ -30,7 +30,7 @@ const DATABASE_SHEET_ORDER = [
   'simontana',
   'simonsinis',
   'rekapPengadaan',
-  'dataKendaraanRayon',
+  'dataKendaraanDistrict',
   'dataInventoryTaman',
   'databaseBuMaria',
   'dataPersonilSatgasAsb',

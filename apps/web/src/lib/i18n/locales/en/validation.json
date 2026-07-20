@@ -13,7 +13,7 @@
   "nameMin": "Name must be at least {{count}} characters",
   "phoneRequired": "Phone number is required",
   "roleRequired": "Role is required",
-  "rayonRequired": "District is required",
+  "districtRequired": "District is required",
   "areaTypeRequired": "Area type is required",
   "boundaryRequired": "Area boundary must be drawn on the map",
   "locationPointRequired": "A location point is required — place a pin or draw a boundary on the map",

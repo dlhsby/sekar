@@ -32,7 +32,7 @@ import {
   useActivateUser,
   useResetUserPassword,
 } from '@/lib/api/users';
-import { useRayons } from '@/lib/api/rayons';
+import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useRoles } from '@/lib/api/roles';
 import { useLocations } from '@/lib/api/locations';
@@ -56,15 +56,15 @@ export default function UsersPage() {
   const deactivateUser = useDeactivateUser();
   const activateUser = useActivateUser();
   const resetPassword = useResetUserPassword();
-  // Rayon has no entity relation on User (only rayon_id) — resolve the name via a map.
-  const { data: rayons = [] } = useRayons();
-  const rayonNameById = useMemo(() => new Map(rayons.map((r) => [r.id, r.name])), [rayons]);
-  const rayonFilterOptions = useMemo(
-    () => rayons.map((r) => ({ value: r.name, label: r.name })),
-    [rayons]
+  // Rayon has no entity relation on User (only district_id) — resolve the name via a map.
+  const { data: districts = [] } = useDistricts();
+  const districtNameById = useMemo(() => new Map(districts.map((r) => [r.id, r.name])), [districts]);
+  const districtFilterOptions = useMemo(
+    () => districts.map((r) => ({ value: r.name, label: r.name })),
+    [districts]
   );
-  // Kawasan (region) — like rayon, only region_id is on the user; resolve the
-  // name via the full regions catalog (no rayon filter → every region).
+  // Kawasan (region) — like district, only region_id is on the user; resolve the
+  // name via the full regions catalog (no district filter → every region).
   const { data: regions = [] } = useRegions();
   const regionNameById = useMemo(() => new Map(regions.map((r) => [r.id, r.name])), [regions]);
   const regionFilterOptions = useMemo(
@@ -206,17 +206,17 @@ export default function UsersPage() {
         ),
       },
       {
-        id: 'rayon',
-        accessorFn: (u) => (u.rayon_id ? (rayonNameById.get(u.rayon_id) ?? '') : ''),
-        header: t('admin:users.columnRayon'),
+        id: 'district',
+        accessorFn: (u) => (u.district_id ? (districtNameById.get(u.district_id) ?? '') : ''),
+        header: t('admin:users.columnDistrict'),
         meta: {
-          label: t('admin:users.columnRayon'),
+          label: t('admin:users.columnDistrict'),
           filterVariant: 'enum',
-          filterOptions: rayonFilterOptions,
+          filterOptions: districtFilterOptions,
         },
         cell: ({ row }) => {
-          const id = row.original.rayon_id;
-          return <span className="text-nb-body-sm">{id ? (rayonNameById.get(id) ?? '—') : '—'}</span>;
+          const id = row.original.district_id;
+          return <span className="text-nb-body-sm">{id ? (districtNameById.get(id) ?? '—') : '—'}</span>;
         },
       },
       {
@@ -355,9 +355,9 @@ export default function UsersPage() {
     ],
     [
       actorName,
-      rayonNameById,
+      districtNameById,
       t,
-      rayonFilterOptions,
+      districtFilterOptions,
       regionNameById,
       regionFilterOptions,
       roleFilterOptions,

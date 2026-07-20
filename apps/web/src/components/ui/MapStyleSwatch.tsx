@@ -3,7 +3,7 @@
 import type { ColumnDef } from '@tanstack/react-table';
 
 /**
- * Shared colour rendering for the map-style grids (rayon / kawasan / lokasi) and
+ * Shared colour rendering for the map-style grids (district / kawasan / lokasi) and
  * anywhere a per-level colour is shown. Renders a swatch that reflects the border
  * + fill colours AT their opacities, plus a compact hex · opacity readout so the
  * grid "Warna" column is identical everywhere. See `mapStyleColorColumn` for the
@@ -78,7 +78,7 @@ export function MapStyleSwatch({
 
 /**
  * Standardized "Warna" column for a map-style grid: swatch + hex · opacity, no
- * sort, NO filter (a hex-text filter is useless). Same behaviour across rayon,
+ * sort, NO filter (a hex-text filter is useless). Same behaviour across district,
  * kawasan and lokasi grids. `get` extracts the four colour fields from a row
  * (defaults to identity for entities that already carry them).
  */
