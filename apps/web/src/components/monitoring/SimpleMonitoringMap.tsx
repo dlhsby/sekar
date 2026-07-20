@@ -9,9 +9,11 @@
  * Wrapped in GoogleMapsGate so it degrades to a placeholder when no key is set.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleMap, Marker, Polygon, Polyline, InfoWindow } from '@react-google-maps/api';
+import { GoogleMap, Polygon, Polyline, InfoWindow } from '@react-google-maps/api';
 import { useTranslation } from 'react-i18next';
 import { GoogleMapsGate } from '@/components/maps/GoogleMapsGate';
+import { AdvancedMarker } from '@/components/maps/AdvancedMarker';
+import { useMapId } from '@/lib/api/config';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
@@ -19,7 +21,7 @@ import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer } from './WorkerClusterLayer';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
-import { pinMarker, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
+import { pinElement, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 
 /** The current node's own pin (selected rayon at rayon scope / area at area scope). */
 export interface CurrentNodeMarker {
@@ -93,6 +95,10 @@ const SURABAYA = { lat: -7.2575, lng: 112.7521 };
 // buildings) and transit so only our own area markers + labels stand out. Park
 // geometry stays visible (green context matters for a parks dept); only its
 // labels/icons are muted.
+// NOTE: JSON `styles` are IGNORED on a vector map (one with a `mapId`), which the
+// AdvancedMarker layers now require. These rules therefore only take effect on the
+// raster fallback (no Map ID configured); on the vector map the same decluttering
+// must be replicated in the cloud Map Style bound to the Map ID.
 const DECLUTTER_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
   { featureType: 'poi.business', stylers: [{ visibility: 'off' }] },
@@ -191,6 +197,14 @@ function MonitoringMapInner({
   onTeamClick,
 }: SimpleMonitoringMapProps) {
   const { t } = useTranslation();
+  // Vector Map ID — required for AdvancedMarkers (the node/worker layers). When
+  // unset the map falls back to raster (JSON declutter styles apply) but the
+  // marker layers won't render, so a Map ID must be configured for monitoring.
+  const mapId = useMapId();
+  const mapOptions = useMemo<google.maps.MapOptions>(
+    () => ({ ...MAP_OPTIONS, mapId: mapId ?? undefined }),
+    [mapId]
+  );
   const mapRef = useRef<google.maps.Map | null>(null);
   const locateMeRef = useRef<() => void>(() => {});
   const locateAddedRef = useRef(false);
@@ -373,6 +387,17 @@ function MonitoringMapInner({
     fittedAreaRef.current = areaId;
   }, [scope, areaId, visibleAreaPaths]);
 
+  // The current-node pin as a stable AdvancedMarker element (rebuilt only when the
+  // node's identity/variant/name changes), so drilling doesn't recreate it.
+  const currentNodeEl = useMemo(() => {
+    if (!currentNode) return null;
+    return pinElement(
+      KIND_DEFAULT_GLYPH[currentNode.variant],
+      { outline: MARKER_NEUTRAL_OUTLINE, big: true },
+      { text: currentNode.name, className: 'node-marker-label', color: MARKER_NEUTRAL_OUTLINE }
+    );
+  }, [currentNode]);
+
   return (
     <div style={{ position: 'absolute', inset: 0 }}>
       <GoogleMap
@@ -381,7 +406,7 @@ function MonitoringMapInner({
         zoom={DEFAULT_ZOOM}
         onLoad={handleMapLoad}
         onIdle={handleIdle}
-        options={MAP_OPTIONS}
+        options={mapOptions}
       >
         {/* Rayon boundaries — the rayon's own border_color + fill_color (ADR-045),
             drawn separately; sensible defaults only when unset. */}
@@ -481,15 +506,12 @@ function MonitoringMapInner({
 
         {/* Current-node pin (the rayon/area you drilled into): a glyph teardrop
             (kind default glyph) that opens the node's detail — never drills. */}
-        {currentNode && (
-          <Marker
+        {currentNode && currentNodeEl && (
+          <AdvancedMarker
             key={`current-node-${currentNode.id}`}
             position={{ lat: currentNode.lat, lng: currentNode.lng }}
+            content={currentNodeEl}
             onClick={() => onNodeDetail?.(currentNode)}
-            icon={pinMarker(KIND_DEFAULT_GLYPH[currentNode.variant], {
-              outline: MARKER_NEUTRAL_OUTLINE,
-              big: true,
-            })}
             zIndex={50}
             title={currentNode.name}
           />

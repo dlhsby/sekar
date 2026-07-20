@@ -470,6 +470,23 @@ body {
    ============================================ */
 
 @layer utilities {
+  /* AdvancedMarker content container: the pin SVG fills it and its bottom-center
+     (the pin tip) is what Advanced Markers anchor to the LatLng. The name label
+     is positioned BELOW, out of flow, so it never shifts that anchor. */
+  .am-marker {
+    position: relative;
+    cursor: pointer;
+  }
+  .am-marker > .am-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 1px;
+    font-size: 12px;
+    font-weight: 700;
+    pointer-events: none;
+  }
   /* Google-style place label under a monitoring node marker: dark text with a
      white halo so an area's name reads over any base-map color. */
   .node-marker-label {

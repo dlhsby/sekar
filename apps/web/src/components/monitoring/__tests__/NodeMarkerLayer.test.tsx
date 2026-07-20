@@ -2,48 +2,34 @@
  * Unit tests: NodeMarkerLayer node markers (ADR-051). Each rayon/kawasan/lokasi
  * renders ONE unified pin — a code-drawn teardrop filled with the area's identity
  * color, its glyph, a staffing-health outline + active-count badge — the same
- * builder the editor uses. Empty lokasi collapse to a muted dot.
+ * builder the editor uses. Empty lokasi draw their glyph pin (no muted dot).
+ *
+ * Rendered on AdvancedMarkerElement: the pin SVG + name label live in the marker's
+ * `content` DOM element, which these tests inspect (was: a legacy `Marker` icon URL).
  */
 /* eslint-disable sekar-design/no-inline-hex-colors -- test fixtures for marker fill colors, not UI tokens */
 import { render } from '@testing-library/react';
 import { NodeMarkerLayer, type NodeMarker } from '../NodeMarkerLayer';
 import { HEALTH_COLORS } from '@/lib/monitoring/markers';
 
-const mockIcons: Array<{ url: string }> = [];
-const mockLabels: Array<{ text: string; color?: string } | undefined> = [];
-const mockOpacities: Array<number | undefined> = [];
-jest.mock('@react-google-maps/api', () => ({
-  Marker: ({
-    icon,
-    label,
-    opacity,
-    onClick,
-  }: {
-    icon: { url: string };
-    label?: { text: string; color?: string };
-    opacity?: number;
-    onClick?: () => void;
-  }) => {
-    mockIcons.push(icon);
-    mockLabels.push(label);
-    mockOpacities.push(opacity);
-    return <button data-testid="marker" onClick={() => onClick?.()} />;
+interface CapturedMarker {
+  content: HTMLElement;
+  onClick?: () => void;
+  zIndex?: number;
+  title?: string;
+}
+const markers: CapturedMarker[] = [];
+jest.mock('@/components/maps/AdvancedMarker', () => ({
+  AdvancedMarker: (p: CapturedMarker) => {
+    markers.push(p);
+    return <button data-testid="marker" onClick={() => p.onClick?.()} />;
   },
-  InfoWindow: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));
 
-beforeAll(() => {
-  (global as unknown as { google: unknown }).google = {
-    maps: { Size: class {}, Point: class {} },
-  };
-});
-
 beforeEach(() => {
-  mockIcons.length = 0;
-  mockLabels.length = 0;
-  mockOpacities.length = 0;
+  markers.length = 0;
 });
 
 const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
@@ -60,19 +46,30 @@ const makeNode = (over: Partial<NodeMarker>): NodeMarker => ({
   ...over,
 });
 
-const svg = () => decodeURIComponent(mockIcons[0].url);
+// The pin SVG lives inside the marker's content element.
+const svg = (i = 0) => markers[i].content.innerHTML;
+const labelEl = (i = 0) => markers[i].content.querySelector('.am-label') as HTMLElement | null;
+const labelText = (i = 0) => labelEl(i)?.textContent ?? undefined;
+const opacity = (i = 0) => markers[i].content.style.opacity;
+// Normalize an expected color through jsdom's CSSOM so the comparison is agnostic
+// to whether it stores hex or rgb().
+const asCss = (color: string) => {
+  const d = document.createElement('div');
+  d.style.color = color;
+  return d.style.color;
+};
 
 describe('NodeMarkerLayer unified pin', () => {
   it('draws a white pin whose glyph identifies the type (rayon → building)', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ variant: 'rayon' })]} />);
     const s = svg();
-    expect(s).toContain('fill="#FFFFFF"'); // fill is white for all area types
+    expect(s).toContain('#FFFFFF'); // fill is white for all area types
     expect(s).toContain('M6 22V4'); // building glyph identifies rayon
   });
 
   it('puts staffing health on the outline ring, not the fill', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2 })]} />);
-    expect(svg()).toContain(`stroke="${HEALTH_COLORS.ok}"`); // health = outline
+    expect(svg()).toContain(HEALTH_COLORS.ok); // health = outline stroke
   });
 
   it('draws the configured glyph over the default (marker_icon = star)', () => {
@@ -94,8 +91,8 @@ describe('NodeMarkerLayer unified pin', () => {
 
   it('labels the node with its name, colored by staffing health', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ scheduled: 2, clocked_in: 2 })]} />);
-    expect(mockLabels[0]?.text).toBe('Rayon X');
-    expect(mockLabels[0]?.color).toBe(HEALTH_COLORS.ok);
+    expect(labelText()).toBe('Rayon X');
+    expect(labelEl()?.style.color).toBe(asCss(HEALTH_COLORS.ok));
   });
 
   it('dims non-matching nodes when a geo filter spotlights one (labels stay)', () => {
@@ -105,24 +102,24 @@ describe('NodeMarkerLayer unified pin', () => {
         activeGeoId="r1"
       />
     );
-    expect(mockOpacities).toEqual([1, 0.3]); // match full, other dimmed
-    // Every node keeps its name label (dimming only lowers the icon opacity).
-    expect(mockLabels[0]?.text).toBe('Match');
-    expect(mockLabels[1]?.text).toBe('Other');
+    expect([opacity(0), opacity(1)]).toEqual(['1', '0.3']); // match full, other dimmed
+    // Every node keeps its name label (dimming only lowers the container opacity).
+    expect(labelText(0)).toBe('Match');
+    expect(labelText(1)).toBe('Other');
   });
 
   it('keeps every node at full opacity when no geo filter is set', () => {
     render(<NodeMarkerLayer nodes={[makeNode({ id: 'r1' }), makeNode({ id: 'r2' })]} />);
-    expect(mockOpacities).toEqual([1, 1]);
+    expect([opacity(0), opacity(1)]).toEqual(['1', '1']);
   });
 
   it('labels kawasan at every zoom, like rayon', () => {
     const kawasan = makeNode({ variant: 'region', name: 'Kawasan Mulyosari', active: 1 });
     const { rerender } = render(<NodeMarkerLayer nodes={[kawasan]} zoom={13} />);
-    expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari');
-    mockLabels.length = 0;
+    expect(labelText()).toBe('Kawasan Mulyosari');
+    markers.length = 0;
     rerender(<NodeMarkerLayer nodes={[kawasan]} zoom={15} />);
-    expect(mockLabels[0]?.text).toBe('Kawasan Mulyosari');
+    expect(labelText()).toBe('Kawasan Mulyosari');
   });
 
   it('renders an empty lokasi as its glyph pin (no white-dot fallback) with a label', () => {
@@ -135,7 +132,7 @@ describe('NodeMarkerLayer unified pin', () => {
     // The unified teardrop pin, not the old 12px muted dot.
     expect(svg()).toContain('M24 2C12.4 2');
     expect(svg()).not.toContain('width="12"');
-    expect(mockLabels[0]?.text).toBe('Taman Kosong');
+    expect(labelText()).toBe('Taman Kosong');
   });
 
   it('renders a custom-glyph area even when empty (not a muted dot)', () => {
