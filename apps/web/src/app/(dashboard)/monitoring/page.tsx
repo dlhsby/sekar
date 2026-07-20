@@ -10,7 +10,7 @@
  */
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -312,14 +312,24 @@ export default function MonitoringPage() {
 
   const handleSearchSelect = (result: MonitoringSearchResult) => {
     if (result.type === 'petugas') {
-      // Drill into the worker's location so the pin renders, then select + focus.
+      // Drill to the worker's OWN scope level (their display_scope), so their row
+      // appears in the scoped list; then select + focus. (Detail still shows even
+      // if scope resolution is imperfect — it's looked up from the full snapshot.)
       const w = workers.find((x) => x.user_id === result.id);
-      if (w?.location_id) {
+      const ds = w?.display_scope ?? 'location';
+      const sid = w?.display_scope_id ?? null;
+      if (ds === 'city') {
+        setView({ scope: 'city' });
+      } else if (ds === 'rayon' && sid) {
+        setView({ scope: 'rayon', id: sid, rayonId: sid, name: w?.rayon_name ?? undefined });
+      } else if (ds === 'region' && sid) {
+        setView({ scope: 'region', id: sid, rayonId: w?.rayon_id ?? undefined, name: w?.region_name ?? undefined });
+      } else if (sid ?? w?.location_id) {
         setView({
           scope: 'location',
-          id: w.location_id,
-          rayonId: w.rayon_id ?? result.rayonId ?? undefined,
-          name: w.location_name ?? undefined,
+          id: (sid ?? w?.location_id)!,
+          rayonId: w?.rayon_id ?? result.rayonId ?? undefined,
+          name: w?.location_name ?? undefined,
         });
       }
       setSelectedId(result.id);
@@ -771,23 +781,34 @@ export default function MonitoringPage() {
     return q ? listNodes.filter((n) => n.name.toLowerCase().includes(q)) : listNodes;
   }, [listNodes, filters.search]);
 
-  // Workers drawn on the map are scoped to the DRILL level, not just the filter
-  // panel: at kawasan (region) scope only that kawasan's workers show; at lokasi
-  // (location) scope only that lokasi's. At rayon/city all of the fetched workers show.
-  const drillScopedWorkers = useMemo(() => {
-    // Map source: base filter (no jenis split) so teams + individuals both draw.
-    if (scope === 'region') return baseFilteredWorkers.filter((w) => w.region_id === view.id);
-    if (scope === 'location') return baseFilteredWorkers.filter((w) => w.location_id === view.id);
-    return baseFilteredWorkers;
-  }, [baseFilteredWorkers, scope, view.id]);
+  // A worker belongs to the drill level that matches THEIR SCHEDULE SCOPE
+  // (`display_scope`): a lokasi-scheduled worker shows only at that lokasi, a
+  // rayon-scheduled worker only at that rayon, a city-wide/unassigned worker only
+  // at the city view — never at the levels above. So each level shows its own
+  // scoped crews (not every worker that happens to sit inside the geography).
+  const scopeMatches = useCallback(
+    (w: { display_scope?: string; display_scope_id?: string | null }): boolean => {
+      const s = w.display_scope ?? 'location';
+      if (scope === 'city') return s === 'city';
+      if (scope === 'rayon') return s === 'rayon' && w.display_scope_id === view.id;
+      if (scope === 'region') return s === 'region' && w.display_scope_id === view.id;
+      if (scope === 'location') return s === 'location' && w.display_scope_id === view.id;
+      return true;
+    },
+    [scope, view.id]
+  );
 
-  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), drill-scoped so
-  // it matches the current level (rayon → that rayon, kawasan → that kawasan, …).
-  const listScopedWorkers = useMemo(() => {
-    if (scope === 'region') return filteredWorkers.filter((w) => w.region_id === view.id);
-    if (scope === 'location') return filteredWorkers.filter((w) => w.location_id === view.id);
-    return filteredWorkers;
-  }, [filteredWorkers, scope, view.id]);
+  // Map source: base filter (no jenis split) so teams + individuals both draw.
+  const drillScopedWorkers = useMemo(
+    () => baseFilteredWorkers.filter(scopeMatches),
+    [baseFilteredWorkers, scopeMatches]
+  );
+
+  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), same scope match.
+  const listScopedWorkers = useMemo(
+    () => filteredWorkers.filter(scopeMatches),
+    [filteredWorkers, scopeMatches]
+  );
 
   const mapWorkers = useMemo<SimpleWorker[]>(
     () =>
@@ -1100,6 +1121,9 @@ export default function MonitoringPage() {
             onDrillNode={onDrillListNode}
             activeGeoId={activeGeoId}
             selectedId={selectedId}
+            selectedWorker={
+              selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null
+            }
             onSelect={selectWorker}
             className="min-h-0 flex-1 shadow-nb-lg"
           />

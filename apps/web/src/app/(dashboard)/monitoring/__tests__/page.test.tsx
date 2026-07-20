@@ -57,6 +57,9 @@ const worker = (over: Record<string, unknown>) => ({
   location_name: 'Taman A',
   rayon_id: 'r1',
   rayon_name: 'Rayon Pusat',
+  // City-scheduled by default so they render at the default (city) drill scope.
+  display_scope: 'city',
+  display_scope_id: null,
   last_update: new Date().toISOString(),
   is_within_area: true,
   battery_level: 80,
@@ -135,12 +138,8 @@ describe('MonitoringPage', () => {
     expect(screen.getByRole('heading', { name: 'Andi' })).toBeInTheDocument();
   });
 
-  // A korlap floors at area scope, so the unified drill-down lands directly on
-  // the worker view (no mode toggle) — the individual worker list renders.
-  const korlapUser = { id: 'k1', full_name: 'Korlap', role: 'korlap', area_id: 'a1', rayon_id: 'r1' };
-
   it('opens the worker sheet and shows detail when a worker is selected', () => {
-    mockUseAuth.mockReturnValue({ user: korlapUser, loading: false });
+    // Admin at city scope; the mock workers are city-scheduled so they list here.
     render(<MonitoringPage />, { wrapper: createWrapper() });
     fireEvent.click(screen.getByRole('button', { name: /daftar petugas/i }));
     fireEvent.click(screen.getByRole('button', { name: /andi/i }));

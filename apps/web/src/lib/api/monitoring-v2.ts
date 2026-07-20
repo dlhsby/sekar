@@ -28,6 +28,12 @@ export interface SnapshotWorker {
   /** The worker's kawasan (region) id + name, for the Kawasan filter. */
   region_id?: string | null;
   region_name?: string | null;
+  /** The drill level this worker belongs to — the SCOPE of their current-shift
+   *  schedule (`location`/`region`/`rayon`/`city`); ad-hoc falls back to live
+   *  position. The worker is shown only at the matching drill level. */
+  display_scope?: 'city' | 'rayon' | 'region' | 'location';
+  /** Scope entity id (rayon/region/location); null at city scope. */
+  display_scope_id?: string | null;
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;

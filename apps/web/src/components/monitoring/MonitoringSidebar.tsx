@@ -32,6 +32,10 @@ export interface MonitoringSidebarProps {
   /** Geo-filter spotlight id — dims non-matching Wilayah rows. */
   activeGeoId?: string | null;
   selectedId: string | null;
+  /** The selected worker, resolved from the FULL snapshot (not the scoped list) so
+   *  a searched worker still shows their detail even if they sit outside the
+   *  current drill scope. Null when nothing is selected. */
+  selectedWorker: SnapshotWorker | null;
   onSelect: (id: string | null) => void;
   className?: string;
 }
@@ -201,6 +205,7 @@ export function MonitoringSidebar({
   onDrillNode,
   activeGeoId,
   selectedId,
+  selectedWorker,
   onSelect,
   className,
 }: MonitoringSidebarProps) {
@@ -210,7 +215,6 @@ export function MonitoringSidebar({
   const hasNodes = nodes.length > 0;
   const [tab, setTab] = useState<SidebarTab>(hasNodes ? 'wilayah' : 'petugas');
   const activeTab: SidebarTab = hasNodes ? tab : 'petugas';
-  const selectedWorker = selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null;
 
   const workerList =
     workers.length === 0 ? (

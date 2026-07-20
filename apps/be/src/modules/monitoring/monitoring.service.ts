@@ -43,6 +43,16 @@ export interface SnapshotWorker {
   rayon_name: string | null;
   region_id: string | null;
   region_name: string | null;
+  /**
+   * The drill level this worker belongs to — the SCOPE of their current-shift
+   * schedule (`location` if rostered to a lokasi, `region` a kawasan, `rayon` a
+   * rayon, `city` if city-wide / unassigned). Ad-hoc (unscheduled) workers fall
+   * back to their live position's deepest scope. The web shows a worker only at
+   * the matching drill level (a lokasi-scheduled worker never appears at city).
+   */
+  display_scope: 'city' | 'rayon' | 'region' | 'location';
+  /** The id of the scope entity (rayon/region/location); null at city scope. */
+  display_scope_id: string | null;
   last_update: string;
   is_within_area: boolean;
   battery_level: number | null;
@@ -202,10 +212,26 @@ export class MonitoringService {
     // workers clocked in without a schedule) are flagged so the map can style
     // them distinctly and the counts can exclude them.
     const scheduledIds = await this.statsService.scheduledUserIdsForCurrentShift(currentShift?.id);
+    // Each worker's drill level = the SCOPE of their current-shift schedule, so a
+    // lokasi-scheduled worker shows only at that lokasi, a rayon-scheduled worker
+    // only at that rayon, and a city-wide/unassigned worker only at the city view.
+    const scheduleScopes = await this.statsService.scheduleScopesForCurrentShift(currentShift?.id);
 
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
     const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => {
       const isScheduled = scheduledIds.has(u.id);
+      // Display scope: the schedule scope when rostered; ad-hoc clock-ins fall back
+      // to their live position's deepest known scope.
+      const sched = scheduleScopes.get(u.id);
+      const display: { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null } =
+        sched ??
+        (u.location_id
+          ? { scope: 'location', scope_id: u.location_id }
+          : u.region_id
+            ? { scope: 'region', scope_id: u.region_id }
+            : u.rayon_id
+              ? { scope: 'rayon', scope_id: u.rayon_id }
+              : { scope: 'city', scope_id: null });
       // `ad_hoc` is decided here, where the roster check lives — the per-worker
       // lifecycle computed in getLiveUsers used a `scheduled: true` placeholder.
       // `?? []` guards partial payloads during rollout.
@@ -225,6 +251,8 @@ export class MonitoringService {
         rayon_name: u.rayon_name,
         region_id: u.region_id,
         region_name: u.region_name,
+        display_scope: display.scope,
+        display_scope_id: display.scope_id,
         last_update: u.last_update.toISOString(),
         is_within_area: u.is_within_area,
         battery_level: u.battery_level,

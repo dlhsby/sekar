@@ -1026,6 +1026,61 @@ export class MonitoringStatsService {
   }
 
   /**
+   * The SCOPE of each user's current-shift schedule, so the map/list can show a
+   * worker only at their matching drill level. A schedule scoped to a lokasi
+   * (`schedule_locations`) is `location`; else `region_id` → `region`;
+   * else `rayon_id` → `rayon`; else `city` (city-wide / unassigned). Most
+   * specific wins if a schedule somehow carries several. Returns user_id →
+   * `{ scope, scope_id }`.
+   */
+  async scheduleScopesForCurrentShift(
+    shiftDefinitionId: string | undefined,
+  ): Promise<
+    Map<string, { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null }>
+  > {
+    const map = new Map<
+      string,
+      { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null }
+    >();
+    if (!shiftDefinitionId) return map;
+    const today = TimezoneUtil.jakartaDateString();
+    const rows = (await this.scheduleRepository
+      .createQueryBuilder('s')
+      .leftJoin('schedule_locations', 'sl', 'sl.schedule_id = s.id')
+      .select('s.user_id', 'user_id')
+      .addSelect('s.rayon_id', 'rayon_id')
+      .addSelect('s.region_id', 'region_id')
+      .addSelect('sl.location_id', 'location_id')
+      .where('s.schedule_date = :today', { today })
+      .andWhere('s.status IN (:...statuses)', {
+        statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
+      })
+      .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('s.deleted_at IS NULL')
+      .getRawMany()) as Array<{
+      user_id: string;
+      rayon_id: string | null;
+      region_id: string | null;
+      location_id: string | null;
+    }>;
+    // Rank most-specific → least so a user with several rows keeps the deepest.
+    const rank = { location: 3, region: 2, rayon: 1, city: 0 } as const;
+    for (const r of rows) {
+      const resolved: { scope: 'city' | 'rayon' | 'region' | 'location'; scope_id: string | null } =
+        r.location_id
+          ? { scope: 'location', scope_id: r.location_id }
+          : r.region_id
+            ? { scope: 'region', scope_id: r.region_id }
+            : r.rayon_id
+              ? { scope: 'rayon', scope_id: r.rayon_id }
+              : { scope: 'city', scope_id: null };
+      const prev = map.get(r.user_id);
+      if (!prev || rank[resolved.scope] > rank[prev.scope]) map.set(r.user_id, resolved);
+    }
+    return map;
+  }
+
+  /**
    * Activity×location breakdown of HADIR workers (scheduled + clocked-in),
    * grouped by rayon, region, or location. Restricting to `scheduledUserIds` excludes ad-hoc
    * clock-ins from the counts. active→aktif/dalam, outside_area→aktif/luar,
