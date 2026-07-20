@@ -26,11 +26,14 @@ import { useThemeStore } from '@/stores/theme';
 
 /** The current node's own pin (selected rayon at rayon scope / area at area scope). */
 export interface CurrentNodeMarker {
-  variant: 'rayon' | 'area';
+  variant: 'rayon' | 'region' | 'area';
   id: string;
   name: string;
   lat: number;
   lng: number;
+  /** The node's own fill_color — fills the drilled-in pin (matches the drill-node
+   *  markers); null → white. */
+  fill_color?: string | null;
 }
 
 export interface SimpleWorker {
@@ -421,9 +424,11 @@ function MonitoringMapInner({
   // node's identity/variant/name changes), so drilling doesn't recreate it.
   const currentNodeEl = useMemo(() => {
     if (!currentNode) return null;
+    // Filled with the node's own fill_color (neutral ring), so the drilled-in pin
+    // reads the same as the drill-node markers at every level (rayon/kawasan/lokasi).
     return pinElement(
       KIND_DEFAULT_GLYPH[currentNode.variant],
-      { outline: MARKER_NEUTRAL_OUTLINE, big: true },
+      { outline: MARKER_NEUTRAL_OUTLINE, fill: currentNode.fill_color ?? undefined, big: true },
       { text: currentNode.name, className: 'node-marker-label', color: MARKER_NEUTRAL_OUTLINE }
     );
   }, [currentNode]);

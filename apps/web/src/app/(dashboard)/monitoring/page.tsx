@@ -439,7 +439,35 @@ export default function MonitoringPage() {
         lng = node.center_lng;
       }
       if (lat != null && lng != null) {
-        return { variant: 'rayon', id: view.id, name: view.name ?? node?.name ?? '', lat, lng };
+        return {
+          variant: 'rayon',
+          id: view.id,
+          name: view.name ?? node?.name ?? '',
+          lat,
+          lng,
+          fill_color: node?.fill_color ?? null,
+        };
+      }
+    }
+    if (scope === 'region' && view.id) {
+      let lat = view.lat;
+      let lng = view.lng;
+      const region = boundaries?.rayons
+        .flatMap((r) => r.regions ?? [])
+        .find((rg) => rg.id === view.id);
+      if ((lat == null || lng == null) && region?.center_lat != null && region?.center_lng != null) {
+        lat = region.center_lat;
+        lng = region.center_lng;
+      }
+      if (lat != null && lng != null) {
+        return {
+          variant: 'region',
+          id: view.id,
+          name: view.name ?? region?.name ?? '',
+          lat,
+          lng,
+          fill_color: region?.fill_color ?? null,
+        };
       }
     }
     if (scope === 'area' && view.id) {
@@ -451,7 +479,14 @@ export default function MonitoringPage() {
         lng = area.center_lng;
       }
       if (lat != null && lng != null) {
-        return { variant: 'area', id: view.id, name: view.name ?? area?.name ?? '', lat, lng };
+        return {
+          variant: 'area',
+          id: view.id,
+          name: view.name ?? area?.name ?? '',
+          lat,
+          lng,
+          fill_color: area?.fill_color ?? null,
+        };
       }
     }
     return null;

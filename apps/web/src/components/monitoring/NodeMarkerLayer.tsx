@@ -19,6 +19,7 @@ import {
   rosterHealth,
   HEALTH_COLORS,
   KIND_DEFAULT_GLYPH,
+  MARKER_NEUTRAL_OUTLINE,
 } from '@/lib/monitoring/markers';
 
 export interface NodeMarker {
@@ -92,10 +93,14 @@ export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayer
               const el = pinElement(
                 node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null,
                 {
-                  outline: HEALTH_COLORS[health],
+                  // Ring is NEUTRAL — the marker's identity is its fill_color alone;
+                  // the entity's border color never rides the ring. Staffing health
+                  // stays visible on the count badge (badgeColor), not the ring.
+                  outline: MARKER_NEUTRAL_OUTLINE,
                   fill: node.fill_color ?? undefined,
                   fillOpacity: node.fill_opacity ?? undefined,
                   count: node.active,
+                  badgeColor: HEALTH_COLORS[health],
                   big,
                 },
                 { text: node.name, className: 'node-marker-label', color: HEALTH_COLORS[health] }

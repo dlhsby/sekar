@@ -216,10 +216,16 @@ export function pinMarker(
 }
 
 export interface PinOpts {
+  /** Ring/outline stroke color. For node markers this is a NEUTRAL color — the
+   *  entity's own border/fill color never rides the ring (identity = fill only). */
   outline: string;
+  /** Marker body fill (the entity's `fill_color`); white when unset. */
   fill?: string;
   fillOpacity?: number;
   count?: number;
+  /** Count-badge color; defaults to `outline`. Node markers pass the staffing-
+   *  health color here so the ring stays neutral but the signal still shows. */
+  badgeColor?: string;
   big?: boolean;
   dashed?: boolean;
 }
@@ -243,18 +249,26 @@ function pinSvg(glyphPath: string | null, opts: PinOpts): { svg: string; w: numb
       ? `<g transform="translate(24 22) scale(0.92) translate(-12 -12)" fill="none" stroke="${PIN_INK}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${glyphPath}</g>`
       : '') +
     (count > 0
-      ? `<circle cx="39" cy="10" r="9" fill="${outline}" stroke="${WHITE}" stroke-width="1.5"/>` +
+      ? `<circle cx="39" cy="10" r="9" fill="${opts.badgeColor ?? outline}" stroke="${WHITE}" stroke-width="1.5"/>` +
         `<text x="39" y="14" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="11" font-weight="800" fill="${WHITE}">${count}</text>`
       : '') +
     `</svg>`;
   return { svg, w, h };
 }
 
-/** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path). */
+/** Core pin builder taking a raw glyph PATH (worker pins already resolve to a path).
+ *  Callers sometimes only need the data-URI (`.url`) for an `<img>` preview on a
+ *  page with NO loaded map (rayon/kawasan/lokasi style forms), so the
+ *  `google.maps.Size`/`Point` objects are attached only when the Maps API is
+ *  present — otherwise building them throws `google is not defined`. */
 function pinMarkerFromPath(glyphPath: string | null, opts: PinOpts): google.maps.Icon {
   const { svg, w, h } = pinSvg(glyphPath, opts);
+  const url = svgUrl(svg);
+  if (typeof google === 'undefined' || !google.maps?.Size) {
+    return { url };
+  }
   return {
-    url: svgUrl(svg),
+    url,
     scaledSize: new google.maps.Size(w, h),
     anchor: new google.maps.Point(w / 2, Math.round(h * 0.95)),
     labelOrigin: new google.maps.Point(w / 2, h + 2),

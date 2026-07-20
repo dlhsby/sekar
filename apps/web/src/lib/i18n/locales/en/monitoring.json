@@ -204,6 +204,7 @@
   },
   "areaDetail": {
     "rayon": "Rayon",
+    "region": "Region",
     "area": "Location"
   },
   "pruningStatus": {
