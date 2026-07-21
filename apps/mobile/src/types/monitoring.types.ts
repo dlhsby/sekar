@@ -358,11 +358,14 @@ export interface AggregateStatusCounts {
   outside_area: number;
 }
 
-/** Roster attendance trio for a node (or the whole scope), for today. */
+/** Roster attendance breakdown for a node (or the whole scope), for today (ADR-050).
+ *  `scheduled = clocked_in + belum_hadir + tidak_hadir`. Not-clocked-in is split into
+ *  `belum_hadir` (shift not started / within grace) vs `tidak_hadir` (past grace = no-show). */
 export interface AggregateRosterCounts {
   scheduled: number;
   clocked_in: number;
-  not_clocked_in: number;
+  belum_hadir: number;
+  tidak_hadir: number;
 }
 
 /** Dalam/luar (inside/outside area) split for one activity bucket. */

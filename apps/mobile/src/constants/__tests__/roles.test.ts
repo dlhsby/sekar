@@ -128,7 +128,7 @@ describe('Role Constants', () => {
     });
 
     it('should have correct area-level monitoring roles', () => {
-      expect(MONITORING_ROLES.area).toEqual(['korlap']);
+      expect(MONITORING_ROLES.location).toEqual(['korlap']);
     });
   });
 
@@ -280,7 +280,7 @@ describe('Role Constants', () => {
     });
 
     it('should return area for area-level monitoring roles', () => {
-      expect(getMonitoringScope('korlap')).toBe('area');
+      expect(getMonitoringScope('korlap')).toBe('location');
     });
 
     it('should return district for admin_rayon', () => {

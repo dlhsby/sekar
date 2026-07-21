@@ -67,7 +67,10 @@ export interface Area {
   id: string;
   name: string;
   area_type_id: string;
+  /** From a Shift's `area` relation (backend loads `area.locationType`). */
   locationType?: AreaType;
+  /** From `/me` `assigned_area` (backend DTO serialises the type as `area_type`). */
+  area_type?: { id: string; name: string } | null;
   district_id?: string;
   district?: District;
   gps_lat: number;

@@ -39,7 +39,7 @@ export function SurabayaSummaryCard({
     {
       key: 'not_clocked_in',
       label: t('monitoring:aggregate.notClockedInLabel'),
-      value: roster.not_clocked_in,
+      value: (roster.belum_hadir ?? 0) + (roster.tidak_hadir ?? 0),
       color: nbColors.dangerDark,
     },
   ];

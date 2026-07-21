@@ -13,14 +13,14 @@ describe('AssignedAreaCard', () => {
 
   it('renders the area name', () => {
     const { getByText } = render(
-      <AssignedAreaCard area={{ name: 'Taman Bungkul', locationType: { name: 'Taman Kota' } }} />,
+      <AssignedAreaCard area={{ name: 'Taman Bungkul', area_type: { name: 'Taman Kota' } }} />,
     );
     expect(getByText('Taman Bungkul')).toBeTruthy();
   });
 
   it('shows the lokasi type', () => {
     const { getByText } = render(
-      <AssignedAreaCard area={{ name: 'Taman Bungkul', locationType: { name: 'Taman Kota' } }} />,
+      <AssignedAreaCard area={{ name: 'Taman Bungkul', area_type: { name: 'Taman Kota' } }} />,
     );
     expect(getByText('Taman Kota')).toBeTruthy();
   });

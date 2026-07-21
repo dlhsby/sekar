@@ -39,7 +39,7 @@ jest.mock('../../constants/roles', () => ({
   getMonitoringScope: jest.fn((role: string) => {
     if (['management', 'admin_system', 'superadmin'].includes(role)) return 'city';
     if (['kepala_rayon', 'admin_rayon'].includes(role)) return 'district';
-    if (role === 'korlap') return 'area';
+    if (role === 'korlap') return 'location';
     return null;
   }),
 }));
@@ -99,7 +99,7 @@ describe('useRoleAccess', () => {
       expect(result.current.canSubmitOvertime).toBe(true);
       expect(result.current.canApproveOvertime).toBe(true);
       expect(result.current.canMonitor).toBe(true);
-      expect(result.current.monitoringScope).toBe('area');
+      expect(result.current.monitoringScope).toBe('location');
     });
   });
 

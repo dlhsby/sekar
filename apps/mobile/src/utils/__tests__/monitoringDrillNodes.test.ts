@@ -26,7 +26,7 @@ function agg(over: Partial<AggregateNode>): AggregateNode {
     online_count: 0,
     required: 0,
     is_understaffed: false,
-    roster: { scheduled: 4, clocked_in: 2, not_clocked_in: 2 },
+    roster: { scheduled: 4, clocked_in: 2, belum_hadir: 1, tidak_hadir: 1 },
     presence: { aktif: { dalam: 0, luar: 0 }, tidak_aktif: { dalam: 0, luar: 0 } },
     ...over,
   };
