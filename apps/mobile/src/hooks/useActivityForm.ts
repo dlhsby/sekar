@@ -347,7 +347,7 @@ export function useActivityForm() {
         i18n.t('activities:submitAlerts.failureTitle'),
         i18n.t('activities:submitAlerts.failureMessage'),
         [
-          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
+          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities, onValidationFail, taskId) },
           { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );
