@@ -63,7 +63,7 @@ export type MainTabParamList = {
   // Phase 5-3 Assets
   Assets: undefined;                 // assets list
   // Hidden stack screens
-  ActivitySubmission: undefined;
+  ActivitySubmission: { taskId?: string } | undefined;
   ActivityDetail: { activityId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskDetail: { taskId: string; from?: string; fromParams?: Record<string, unknown> };
   TaskComplete: { taskId: string };

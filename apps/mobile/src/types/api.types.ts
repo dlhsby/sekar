@@ -128,6 +128,9 @@ export interface AttendanceDayDetail {
   shifts: Shift[];
 }
 
+// Assignment Scope (Phase 3: scope-aware task + activity assignment)
+export type AssignmentScope = 'city' | 'district' | 'region' | 'location' | 'none';
+
 // Activities API (was Reports)
 export interface CreateActivityRequest {
   activity_type_id: string;
@@ -138,6 +141,8 @@ export interface CreateActivityRequest {
   // ADR-038 (May 2026) — tag involved users on this activity. Owner remains
   // the sole writer; tagged users gain feed visibility on `?involving_me=true`.
   tagged_user_ids?: string[];
+  // Phase 3: when activity is submitted against a task, send task_id to inherit task's scope
+  task_id?: string;
 }
 
 export interface CreateActivityResponse {
@@ -336,10 +341,12 @@ export interface CreateTaskRequest {
   description?: string;
   priority: TaskPriority;
   deadline?: string;
-  location_id?: string; // Phase 2C: optional
+  location_id?: string; // Phase 2C: optional; Phase 3: location scope
   district_id?: string; // Phase 2C: district-scoped tasks
+  region_id?: string; // Phase 3: region scope (Kawasan)
   assigned_to?: string;
   tagged_user_ids?: string[]; // Phase 2C: task tagging
+  scope?: AssignmentScope; // Phase 3: scope (auto-derived if omitted)
 }
 
 export interface UpdateTaskRequest {

@@ -278,6 +278,7 @@ export function useActivityForm() {
     onNavigateClockIn: () => void,
     onNavigateActivities: () => void,
     onValidationFail?: () => void,
+    taskId?: string,
   ) => {
     if (!currentShift) {
       Alert.alert(
@@ -313,6 +314,8 @@ export function useActivityForm() {
         gps_lng: form.location!.longitude,
         // ADR-038: include tagged users (omitted when empty so old payload shape is preserved)
         ...(form.taggedUserIds.length > 0 ? { tagged_user_ids: form.taggedUserIds } : {}),
+        // Phase 3: include task_id when submitting activity from task context
+        ...(taskId ? { task_id: taskId } : {}),
       };
 
       if (isOnline) {
@@ -344,7 +347,7 @@ export function useActivityForm() {
         i18n.t('activities:submitAlerts.failureTitle'),
         i18n.t('activities:submitAlerts.failureMessage'),
         [
-          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities) },
+          { text: i18n.t('activities:submitAlerts.retryButton'), onPress: () => handleSubmit(onNavigateClockIn, onNavigateActivities, onValidationFail, taskId) },
           { text: i18n.t('activities:submitAlerts.saveDraftButton'), onPress: () => saveDraft() },
         ]
       );

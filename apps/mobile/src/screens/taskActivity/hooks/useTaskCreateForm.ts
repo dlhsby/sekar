@@ -16,6 +16,8 @@ export interface FormState {
   deadline: Date | null;
   areaId: string;
   districtId: string;
+  regionId: string;
+  scope: 'auto' | 'city' | 'district' | 'region' | 'location' | 'none';
   assignedTo: string;
   taggedUserIds: string[];
 }
@@ -35,6 +37,8 @@ const INITIAL_FORM_STATE: FormState = {
   deadline: null,
   areaId: '',
   districtId: '',
+  regionId: '',
+  scope: 'auto',
   assignedTo: '',
   taggedUserIds: [],
 };
@@ -48,6 +52,8 @@ export const useTaskCreateForm = (userAreaId?: string, userDistrictId?: string) 
     ...INITIAL_FORM_STATE,
     areaId: userAreaId || '',
     districtId: userDistrictId || '',
+    regionId: '',
+    scope: 'auto',
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -72,6 +78,8 @@ export const useTaskCreateForm = (userAreaId?: string, userDistrictId?: string) 
       ...INITIAL_FORM_STATE,
       areaId: userAreaId || '',
       districtId: userDistrictId || '',
+      regionId: '',
+      scope: 'auto',
     });
     setErrors({});
   }, [userAreaId, userDistrictId]);

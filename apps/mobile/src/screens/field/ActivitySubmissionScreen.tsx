@@ -14,7 +14,7 @@ import {
   Alert,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBAlert, NBBackgroundPattern, NBText } from '../../components/nb';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBSelect, NBCardTextInput, type NBSelectOption } from '../../components/nb';
@@ -23,6 +23,10 @@ import { PhotoUploader } from '../../components/common';
 import { useActivityForm } from '../../hooks';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import type { MainTabScreenProps } from '../../types/navigation.types';
+import type { RouteProp } from '@react-navigation/native';
+import type { MainTabParamList } from '../../types/navigation.types';
+
+type ActivitySubmissionRouteProp = RouteProp<MainTabParamList, 'ActivitySubmission'>;
 
 /**
  * Activity Submission Screen Component
@@ -30,6 +34,8 @@ import type { MainTabScreenProps } from '../../types/navigation.types';
 export function ActivitySubmissionScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'ActivitySubmission'>['navigation']>();
+  const route = useRoute<ActivitySubmissionRouteProp>();
+  const taskId = route.params?.taskId;
   const scrollViewRef = useRef<ScrollView>(null);
 
   const {
@@ -135,8 +141,9 @@ export function ActivitySubmissionScreen(): React.JSX.Element {
       () => navigation.navigate('Absensi'),
       () => navigation.navigate('Activities'),
       () => scrollViewRef.current?.scrollTo({ y: 0, animated: true }),
+      taskId,
     );
-  }, [handleSubmit, navigation]);
+  }, [handleSubmit, navigation, taskId]);
 
   return (
     <NBBackgroundPattern
