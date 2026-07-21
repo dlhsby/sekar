@@ -323,6 +323,11 @@ export class MonitoringService {
       // staffing (ADR-050 5.4d) — a patrol worker who happens to stand in a park
       // must not mask that park's real shortfall. The aggregate path excludes them
       // too; keep the two in lock-step.
+      // Consequence (intended): a lokasi whose ONLY clocked-in workers are ad-hoc
+      // produces NO area_summary — exactly like a lokasi with no workers at all.
+      // area_summaries is a present-worker rollup, never a complete lokasi list;
+      // understaffing of unmanned/ad-hoc-only lokasi is surfaced by the AGGREGATE
+      // (which walks every lokasi with a requirement), the authoritative coverage view.
       if (!w.is_scheduled) continue;
 
       const existing = areaMap.get(w.location_id);

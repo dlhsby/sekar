@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../../users/entities/user.entity';
+import { MonitoringScope } from '../../rbac/enums/monitoring-scope.enum';
 
 class AssignedAreaTypeDto {
   @ApiProperty({ example: 'area-type-uuid' })
@@ -74,12 +75,13 @@ export class MeResponseDto {
   region_id?: string | null;
 
   @ApiProperty({
+    enum: MonitoringScope,
     description:
       "The role's monitoring scope (ADR-044/046): where the caller lands + what they may view on " +
       'the map — city | district | region | location | none.',
-    example: 'region',
+    example: MonitoringScope.REGION,
   })
-  monitoring_scope: string;
+  monitoring_scope: MonitoringScope;
 
   @ApiProperty({
     description:

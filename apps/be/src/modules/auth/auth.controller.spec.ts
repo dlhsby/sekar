@@ -208,6 +208,34 @@ describe('AuthController', () => {
           });
         });
 
+        it('should expose monitoring_scope + region_id + assigned_location_ids (ADR-044/046)', async () => {
+          const korlapUser: User = {
+            ...mockUser,
+            role: UserRole.KORLAP,
+            location_id: 'area-123',
+            district_id: 'district-456',
+            region_id: 'region-789',
+          };
+          mockAreaRepository.findOne.mockResolvedValue({
+            id: 'area-123',
+            name: 'Taman Bungkul',
+            gps_lat: -7.281234,
+            gps_lng: 112.734567,
+            boundary_polygon: null,
+            locationType: null,
+          });
+          mockRolePermissionsService.getMonitoringScope.mockResolvedValue('region');
+          mockUserAreasService.getPermanentLocationIds.mockResolvedValue(['area-123', 'area-999']);
+
+          const result = await controller.getMe(korlapUser);
+
+          expect(result.monitoring_scope).toBe('region');
+          expect(result.region_id).toBe('region-789');
+          expect(result.assigned_location_ids).toEqual(['area-123', 'area-999']);
+          expect(mockRolePermissionsService.getMonitoringScope).toHaveBeenCalledWith('korlap');
+          expect(mockUserAreasService.getPermanentLocationIds).toHaveBeenCalledWith(korlapUser.id);
+        });
+
         it('should return location_id but no assigned_area when area is deleted', async () => {
           const korlapUser: User = {
             ...mockUser,
