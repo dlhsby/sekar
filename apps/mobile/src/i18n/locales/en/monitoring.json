@@ -310,5 +310,11 @@
   "team": {
     "chip": "Team: {{name}}",
     "exit": "Exit team view"
+  },
+  "lifecycle": {
+    "late": "Late",
+    "luarJadwal": "Off-schedule",
+    "lembur": "Overtime",
+    "lupaClockOut": "Forgot clock-out"
   }
 }

@@ -25,7 +25,7 @@ import { StatusPill } from '../home/StatusPill';
 import { HomeStatTile } from '../home/HomeStatTile';
 import { ListItemCard, type ListItemMeta } from '../common';
 import { LocationMapModal } from '../modals/LocationMapModal';
-import { userAxes, presenceActivityPill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort, formatDateIndonesian } from '../../utils/statusHelpers';
+import { userAxes, presenceActivityPill, lifecycleFlagPills, overtimePill, activityPill, formatDate, formatTime as formatTimeShort, formatDateIndonesian } from '../../utils/statusHelpers';
 import { taskPill, isTaskScopedToday } from '../../utils/taskStatus';
 import { ROLE_LABELS } from '../../constants/roles';
 import { getOvertimes } from '../../services/api/overtimeApi';
@@ -293,12 +293,19 @@ export function UserDetailSheet({
                 {(() => {
                   const { activity, location } = userAxes(user);
                   const pill = presenceActivityPill(activity);
+                  const lifePills = lifecycleFlagPills(user);
                   return (
                     <>
                       <StatusPill dot tone={pill.tone} label={pill.label} />
                       {location === 'luar_area' ? (
                         <StatusPill dot tone="bad" label={t('monitoring:userDetail.outsideArea')} />
                       ) : null}
+                      {/* Third axis (ADR-050): lifecycle flags — terlambat, luar jadwal, lembur, lupa clock-out. */}
+                      {lifePills.map((p, i) => (
+                        // Stable position key — order is fixed by lifecycleFlagPills, so it
+                        // won't churn when the language (and thus the label) changes.
+                        <StatusPill key={`life-${i}`} dot tone={p.tone} label={p.label} />
+                      ))}
                     </>
                   );
                 })()}

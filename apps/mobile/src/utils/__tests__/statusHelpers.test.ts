@@ -21,6 +21,7 @@ import {
   deriveAxes,
   userAxes,
   presenceActivityPill,
+  lifecycleFlagPills,
   locationLabel,
   pruningPill,
   getPruningRequestStatusColor,
@@ -237,7 +238,7 @@ describe('statusHelpers', () => {
   describe('presencePill', () => {
     it.each([
       ['active',   'ok',      'Aktif'],
-      ['offline',  'neutral', 'Offline'],
+      ['offline',  'neutral', 'Tidak Aktif'],
       ['absent',   'bad',     'Tidak Hadir'],
     ] as const)('maps %s → %s / %s', (status, tone, label) => {
       expect(presencePill(status as any)).toEqual({ tone, label });
@@ -355,7 +356,7 @@ describe('statusHelpers', () => {
   describe('presenceActivityPill', () => {
     it('maps each activity to a tone + label', () => {
       expect(presenceActivityPill('aktif')).toEqual({ tone: 'ok', label: 'Aktif' });
-      expect(presenceActivityPill('offline')).toEqual({ tone: 'neutral', label: 'Offline' });
+      expect(presenceActivityPill('offline')).toEqual({ tone: 'neutral', label: 'Tidak Aktif' });
       expect(presenceActivityPill('absent')).toEqual({ tone: 'bad', label: 'Tidak Hadir' });
     });
   });
@@ -433,5 +434,43 @@ describe('statusHelpers', () => {
     test.each(cases)('maps %s → %s', (status, label) => {
       expect(getPruningRequestStatusLabel(status)).toBe(label);
     });
+  });
+});
+
+describe('lifecycleFlagPills (ADR-050 third axis)', () => {
+  it('returns no pills for an on-time scheduled worker', () => {
+    expect(lifecycleFlagPills({ is_late: false, is_scheduled: true })).toEqual([]);
+    expect(lifecycleFlagPills({})).toEqual([]);
+  });
+
+  it('flags a late worker (warn)', () => {
+    const pills = lifecycleFlagPills({ is_late: true });
+    expect(pills).toEqual([{ tone: 'warn', label: 'Terlambat' }]);
+  });
+
+  it('flags an off-schedule worker as Luar Jadwal (is_scheduled=false OR ad_hoc flag)', () => {
+    expect(lifecycleFlagPills({ is_scheduled: false })).toEqual([
+      { tone: 'info', label: 'Luar Jadwal' },
+    ]);
+    expect(lifecycleFlagPills({ lifecycle_flags: ['ad_hoc'] })).toEqual([
+      { tone: 'info', label: 'Luar Jadwal' },
+    ]);
+  });
+
+  it('reads flags from lifecycle_flags too (lembur, lupa_clock_out)', () => {
+    const pills = lifecycleFlagPills({ lifecycle_flags: ['lembur', 'lupa_clock_out'] });
+    expect(pills).toEqual([
+      { tone: 'info', label: 'Lembur' },
+      { tone: 'bad', label: 'Lupa Clock-out' },
+    ]);
+  });
+
+  it('orders multiple flags: late → luar jadwal → lembur → lupa clock-out', () => {
+    const pills = lifecycleFlagPills({
+      is_late: true,
+      is_scheduled: false,
+      lifecycle_flags: ['is_late', 'ad_hoc', 'lembur', 'lupa_clock_out'],
+    });
+    expect(pills.map(p => p.label)).toEqual(['Terlambat', 'Luar Jadwal', 'Lembur', 'Lupa Clock-out']);
   });
 });
