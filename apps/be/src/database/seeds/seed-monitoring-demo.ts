@@ -18,6 +18,20 @@ import { v4 as uuidv4 } from 'uuid';
  * Usage: npm run db:seed:monitoring-demo
  */
 
+/**
+ * Map the demo's legacy 5-value scenarios to the current 3-value tracking status
+ * (ADR-050 / Phase 5.3): inside/outside is a separate axis (`is_within_area`), not a
+ * status. `inactive`/`missing` → `offline` (clocked in, unreachable); `outside_area`
+ * stays clocked-in-and-reachable (`active`) with `is_within_area=false`.
+ */
+const TRACKING_STATUS_MAP: Record<string, string> = {
+  active: 'active',
+  inactive: 'offline',
+  outside_area: 'active',
+  missing: 'offline',
+  offline: 'offline',
+};
+
 async function seedMonitoringDemo() {
   console.log('🌱 Monitoring Demo Seeding Started...');
   console.log('');
@@ -228,7 +242,7 @@ async function seedMonitoringDemo() {
             [
               worker.id,
               shiftId,
-              status.name,
+              TRACKING_STATUS_MAP[status.name] ?? 'offline',
               gpsLat,
               gpsLng,
               12.5,
@@ -260,6 +274,58 @@ async function seedMonitoringDemo() {
           console.log(`  ✓ ${worker.username} (${worker.role}) → offline (no shift)`);
         }
       }
+    }
+
+    // ─── Demo team (ADR-048) ────────────────────────────────────────────────
+    // Put two co-located active workers on one team so the monitoring map shows a
+    // team bubble that expands to its members. Idempotent (rewrites today's rows).
+    console.log('');
+    console.log('👥 Seeding a demo team...');
+    const teamDate = new Date().toISOString().slice(0, 10);
+    let teamCatId: string;
+    const existingCat = await queryRunner.query(
+      `SELECT id FROM team_categories WHERE name = 'Penyiraman' LIMIT 1`,
+    );
+    if (existingCat.length > 0) {
+      teamCatId = existingCat[0].id;
+    } else {
+      teamCatId = uuidv4();
+      await queryRunner.query(
+        `INSERT INTO team_categories (id, name, marker_color, marker_icon, is_active)
+         VALUES ($1, 'Penyiraman', '#69D2E7', 'droplets', true)`,
+        [teamCatId],
+      );
+    }
+    // Two active satgas that share a location (so they group into one bubble).
+    const teamPair = await queryRunner.query(`
+      SELECT s.user_id, s.location_id
+      FROM shifts s
+      JOIN users u ON u.id = s.user_id
+      WHERE s.clock_out_time IS NULL AND u.role = 'satgas' AND s.location_id IS NOT NULL
+        AND s.location_id IN (
+          SELECT location_id FROM shifts
+          WHERE clock_out_time IS NULL AND location_id IS NOT NULL
+          GROUP BY location_id HAVING COUNT(*) >= 2
+        )
+      ORDER BY s.location_id, s.user_id
+      LIMIT 2
+    `);
+    if (teamPair.length >= 2 && teamPair[0].location_id === teamPair[1].location_id) {
+      for (const m of teamPair) {
+        await queryRunner.query(`DELETE FROM schedules WHERE user_id = $1 AND schedule_date = $2`, [
+          m.user_id,
+          teamDate,
+        ]);
+        await queryRunner.query(
+          `INSERT INTO schedules (user_id, schedule_date, status, source, team_category_id,
+             is_overtime, is_detached, created_at, updated_at)
+           VALUES ($1, $2, 'planned', 'template', $3, false, false, now(), now())`,
+          [m.user_id, teamDate, teamCatId],
+        );
+      }
+      console.log(`  ✓ Team "Penyiraman" → ${teamPair.length} members at one location`);
+    } else {
+      console.log('  ⚠️  No location with 2+ active workers — skipped team demo');
     }
 
     console.log('');
