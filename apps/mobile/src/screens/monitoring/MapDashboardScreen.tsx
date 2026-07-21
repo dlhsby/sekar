@@ -78,7 +78,10 @@ export function MapDashboardScreen(): React.JSX.Element {
   const floor = useSelector((state: RootState) => state.monitoringV2.floor);
   const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
   const scope = view.scope;
-  const showWorkers = scope === 'location';
+  // Workers render at EVERY drill tier now (city/district/region/location), each
+  // filtered to the current scope by `display_scope` (see useLiveUsersFiltering).
+  // Gated only by the layer toggle.
+  const showWorkers = visibleLayers.workers;
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -97,7 +100,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   useWebSocketUpdates(dispatch);
   useMapAutoFocus(mapRef, filters, boundaries, liveUsers);
 
-  const { attendance, fetchLiveUsersWithFilters, handleRefresh } = useMonitoringFetchData(dispatch, filters);
+  const { attendance, fetchWorkers, handleRefresh } = useMonitoringFetchData(dispatch, view);
 
   const { markerPreview, setMarkerPreview, showMarkerPreview, dismissPreview, setMapLayout } =
     useMarkerPreview(mapRef, currentRegion);
@@ -108,7 +111,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
-    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, scope === 'location' ? view.id : null);
+    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id);
 
 
   // Initialise the unified drill view + floor from the viewer's role.
@@ -168,14 +171,14 @@ export function MapDashboardScreen(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scope, view.id, view.districtId]);
 
-  // Always fetch workers for the current scope so search can find people at any
-  // level; the map only *renders* worker markers at location scope.
+  // Fetch the snapshot for the current drill scope (workers carry display_scope so
+  // the map renders each at their own tier). Re-fetch on any scope/node change only —
+  // the activity/location `filters` are applied CLIENT-SIDE in useLiveUsersFiltering
+  // (the snapshot endpoint takes no such params), so a filter change needs no re-fetch.
   useEffect(() => {
-    void fetchLiveUsersWithFilters(
-      scope === 'location' && view.id ? { ...filters, location_id: view.id } : filters,
-    );
+    void fetchWorkers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scope, view.id, filters]);
+  }, [scope, view.id, view.districtId]);
 
   // Focus effect: refresh all data and remount boundary overlays
   useFocusEffect(

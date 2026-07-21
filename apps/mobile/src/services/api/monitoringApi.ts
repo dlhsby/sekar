@@ -30,6 +30,8 @@ import type {
   AreaPlantStatusResponse,
   ReassignmentHistory,
 } from '../../types/models.types';
+import type { LiveUser } from '../../types/monitoring.types';
+import { snapshotWorkerToLiveUser, type SnapshotWorker } from '../../utils/monitoringScope';
 
 export async function getCityMonitoring(
   filters?: MonitoringFilter,
@@ -58,6 +60,25 @@ export async function getLiveUsers(
   filters?: LiveUsersFilter,
 ): Promise<ApiResponse<LiveUsersResponse>> {
   return get<LiveUsersResponse>('/monitoring/live-users', filters);
+}
+
+/**
+ * Fetch a monitoring snapshot and adapt it to `LiveUser[]`. Unlike `/live-users`,
+ * the snapshot carries `display_scope`/`display_scope_id`, so the map can render
+ * workers at their own drill tier (city/district/region/location) via `scopeMatches`.
+ * The snapshot endpoint scope enum is `city|district|location` (no `region`) — the
+ * caller fetches a region tier via its district snapshot, then filters by scope.
+ */
+export async function getSnapshotWorkers(
+  scope: 'city' | 'district' | 'location',
+  id?: string,
+): Promise<ApiResponse<LiveUser[]>> {
+  const res = await get<{ workers?: SnapshotWorker[] }>(
+    '/monitoring/snapshot',
+    id ? { scope, id } : { scope },
+  );
+  const workers = (res.data?.workers ?? []).map(snapshotWorkerToLiveUser);
+  return { ...res, data: workers };
 }
 
 export async function getActiveUsers(): Promise<
