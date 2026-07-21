@@ -302,7 +302,9 @@ export function UserDetailSheet({
                       ) : null}
                       {/* Third axis (ADR-050): lifecycle flags — terlambat, luar jadwal, lembur, lupa clock-out. */}
                       {lifePills.map((p, i) => (
-                        <StatusPill key={`life-${p.label}-${i}`} dot tone={p.tone} label={p.label} />
+                        // Stable position key — order is fixed by lifecycleFlagPills, so it
+                        // won't churn when the language (and thus the label) changes.
+                        <StatusPill key={`life-${i}`} dot tone={p.tone} label={p.label} />
                       ))}
                     </>
                   );
