@@ -918,16 +918,16 @@ describe('ActivitiesPage', () => {
   // ── korlap Area Auto-scope ─────────────────────────────────────────────────
 
   describe('korlap Area Auto-scope', () => {
-    it('should call useActivities with korlap area_id when user is korlap', async () => {
+    it('should call useActivities with korlap location_id when user is korlap', async () => {
       mockUseAuth.mockReturnValue({ user: mockKorlapUser, loading: false });
 
       render(<ActivitiesPage />, { wrapper: createWrapper() });
 
-      // After the auto-scope effect fires, the API should be called with the korlap's area_id
+      // After the auto-scope effect fires, the API should be called with the korlap's location_id
       await waitFor(() => {
         const calls = (activitiesApi.useActivities as jest.Mock).mock.calls;
         const lastCallFilters = calls[calls.length - 1][0];
-        expect(lastCallFilters.area_id).toBe('area-1');
+        expect(lastCallFilters.location_id).toBe('area-1');
       });
     });
   });

@@ -97,7 +97,7 @@ export default function ActivitiesPage() {
   const apiFilters: ActivityFilters = {
     activity_type_id: filters.activityTypeId !== 'all' ? filters.activityTypeId : undefined,
     status: filters.statusFilter !== 'all' ? filters.statusFilter : undefined,
-    area_id: filters.areaId !== 'all' ? filters.areaId : undefined,
+    location_id: filters.areaId !== 'all' ? filters.areaId : undefined,
     from_date: filters.fromDate || undefined,
     to_date: filters.toDate || undefined,
     page: filters.page,
