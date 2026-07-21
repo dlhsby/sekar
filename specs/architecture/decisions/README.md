@@ -46,7 +46,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [043](./ADR-043-production-gap-closure.md) | Production gap-closure decisions — offline sync / push / background location / message broker | Proposed |
 | [044](./ADR-044-dynamic-rbac.md) | Dynamic RBAC — data-driven roles, permissions, monitoring scope | Active · amends 009/032/033 |
 | [045](./ADR-045-four-level-location-hierarchy.md) | Four-Level Location Hierarchy — Region (Kawasan) + per-level styling | Active · amends 010/013 |
-| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 · **amended 2026-07-16** (5 → 3 status); **status portion superseded by [050](./ADR-050-presence-attendance-model.md)** |
+| [046](./ADR-046-monitoring-subject-model.md) | Monitoring Subject Model & Revamp — monitorable vs scheduled, static vs mobile | Accepted (impl. Phase 5) · extends 029 · **amended 2026-07-16** (status enum 5→3); **subject/static-mobile model stays Active; status-enum portion superseded by [050](./ADR-050-presence-attendance-model.md)** |
 | [047](./ADR-047-schedule-redesign.md) | Schedule Redesign — rule-based recurrence + occurrences, calendar, teams | Active · amends 013 |
 | [048](./ADR-048-teams.md) | Teams — grouped monitoring subjects with typed markers | Active |
 | [049](./ADR-049-settings-architecture.md) | Settings Architecture — personal preferences vs system settings | Active |

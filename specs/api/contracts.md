@@ -20,7 +20,7 @@ Endpoint specifications for the SEKAR Backend.
 - **Database:** PostgreSQL 14+ with TypeORM
 - **Error Codes:** 53 standardized codes (see `error-handling.md` §Standardized Error Codes)
 - **Rate Limiting:** 100 req/min global, 5 req/min auth endpoints
-- **Last Updated:** 2026-06-20
+- **Last Updated:** 2026-07-21
 - **Phase 2C Note:** Terminology cleanup (ADR-010) has implemented route renames: `/aktivitas`→`/activities`, `/worker-schedules`→`/schedules`. Dropped `/workers/:id/assign`. Flattened overtime DTO. See Phase 2C specs for full details.
 - **Phase 2D Note:** Monitoring enhancements — 9 new endpoints (location history, day summary, config CRUD, staffing summary, area boundary GET/PUT, boundaries, reassign), 4 enhanced endpoints (live-users filters + new fields, area/:id per-role counts).
 
@@ -237,6 +237,11 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   "username": "worker1",
   "full_name": "Pekerja Satu",
   "role": "satgas",
+  "monitoring_scope": "location",
+  "region_id": null,
+  "assigned_location_ids": [
+    "c3d4e5f6-a7b8-9012-cdef-123456789012"
+  ],
   "created_at": "2026-01-09T10:00:00.000Z",
   "assigned_area": {
     "id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
@@ -265,6 +270,12 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
   "username": "supervisor1",
   "full_name": "Supervisor Satu",
   "role": "korlap",
+  "monitoring_scope": "region",
+  "region_id": "22222222-2222-2222-2222-222222222202",
+  "assigned_location_ids": [
+    "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "c3d4e5f6-a7b8-9012-cdef-123456789013"
+  ],
   "created_at": "2026-01-09T10:00:00.000Z"
 }
 ```
@@ -278,6 +289,9 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 **Notes:**
+- `monitoring_scope` is one of `city`, `district`, `region`, `location`, or `none` (per ADR-044); determines dashboard visibility
+- `region_id` is the user's assigned region (nullable); korlap/kepala_rayon may have a region scope for drill-down
+- `assigned_location_ids` lists the user's directly assigned locations (used by korlap to determine coverage)
 - For workers, includes full assigned area details with area type
 - GPS coordinates returned as numbers (not strings)
 - Password field never included in response
@@ -821,6 +835,8 @@ Authorization: Bearer {admin_token}
 ---
 
 ## Locations Module
+
+**Route alias:** Backend serves the canonical `/locations` route and the `/areas` legacy alias via `@Controller(['locations','areas'])`. Use `/locations` for new code. The boundary `?level=area` parameter is a deliberate seam (see Rayons Module note).
 
 ### POST /api/v1/locations
 
@@ -2323,6 +2339,8 @@ curl -X POST http://localhost:3000/api/v1/location/batch \
 
 ### Rayons Module
 
+**Route alias & terminology:** The canonical route is `/districts` (`@Controller(['districts','rayons'])` serves both paths per ADR-052). The code and database use English "district"; Indonesian UI labels keep "Rayon" for user familiarity. Use `/districts` for new code. The boundary `?level=area` parameter stays unchanged as a deliberate seam (English code-side tiers are district/region/location; the `?level` param is an old name kept for backward compatibility).
+
 #### POST /api/v1/rayons
 
 Create a new rayon (admin_system/superadmin only).
@@ -2397,8 +2415,8 @@ Authorization: Bearer {token}
 ```
 
 **Notes:**
-- All authenticated users can view rayons
-- `area_count` shows number of areas assigned to rayon
+- All authenticated users can view districts (rayons)
+- `area_count` shows number of areas assigned to district
 
 ---
 
@@ -3186,18 +3204,12 @@ Mobile and web clients must update type definitions before backend deployment.
       {
         "role": "satgas",
         "required_count": 6,
-        "active_count": 4,
-        "inactive_count": 1,
-        "outside_area_count": 0,
-        "missing_count": 1
+        "active_count": 4
       },
       {
         "role": "linmas",
         "required_count": 2,
-        "active_count": 2,
-        "inactive_count": 0,
-        "outside_area_count": 0,
-        "missing_count": 0
+        "active_count": 2
       }
     ],
     "status": "understaffed"
@@ -3243,7 +3255,7 @@ Get real-time user positions for map display.
 |-----------|------|---------|-------------|
 | `rayon_id` | UUID | - | Filter by rayon |
 | `location_id` | UUID | - | Filter by area |
-| `status` | TrackingStatus | - | Filter by tracking status: `active`, `inactive`, `outside_area`, `missing`, `offline` |
+| `status` | TrackingStatus | - | Filter by tracking status: `active`, `offline`, `absent`. Inside/outside area is a separate axis (`is_within_area`), not a status (ADR-050). |
 
 **Response (200 OK):**
 ```json
@@ -3270,10 +3282,8 @@ Get real-time user positions for map display.
     }
   ],
   "total_active": 98,
-  "total_inactive": 12,
-  "total_outside_area": 5,
-  "total_missing": 3,
-  "total_offline": 2
+  "total_offline": 2,
+  "total_absent": 15
 }
 ```
 
@@ -3283,7 +3293,7 @@ Get real-time user positions for map display.
 
 ## Phase 2D Monitoring Enhancements
 
-> **Phase 2D** adds 9 new monitoring endpoints and enhances 4 existing ones. New database tables: `monitoring_configs`, `user_tracking_status`. New TypeScript enum: `TrackingStatus` (`active | inactive | outside_area | missing | offline`).
+> **Phase 2D** adds 9 new monitoring endpoints and enhances 4 existing ones. New database tables: `monitoring_configs`, `user_tracking_status`. Status model (ADR-050): three derived axes — attendance lifecycle | live presence (`active`/`offline`) | counting (staffing = scheduled satgas+linmas only; ad-hoc clock-ins excluded). Inside/outside area (`is_within_area`) is a separate axis, not a status.
 
 ### GET /api/v1/monitoring/users/:userId/location-history
 
@@ -5062,18 +5072,19 @@ All endpoints using old role names must update:
 | Room | Pattern | Access |
 |------|---------|--------|
 | City-wide | `monitoring:city` | management, admin_system, superadmin |
-| Rayon | `monitoring:rayon:{rayonId}` | kepala_rayon (own rayon), management, admin_system, superadmin |
-| Area | `monitoring:area:{locationId}` | korlap (own area), kepala_rayon (own rayon), management, admin_system, superadmin |
+| District | `monitoring:rayon:{rayonId}` | kepala_rayon (own rayon), management, admin_system, superadmin |
+| Region | `monitoring:region:{regionId}` | korlap (own region), kepala_rayon (own rayon), management, admin_system, superadmin |
+| Location | `monitoring:area:{locationId}` | korlap (own location), kepala_rayon (own rayon), management, admin_system, superadmin |
 
 **Events (Server to Client):**
 
 | Event | Payload | Rooms | Description |
 |-------|---------|-------|-------------|
-| `USER_STATUS_CHANGED` | `{ userId, previousStatus, newStatus, timestamp }` | city, rayon, area | User tracking status changed (active/inactive/outside_area/missing/offline) |
-| `USER_LEFT_AREA` | `{ userId, locationId, timestamp, lastLocation: { lat, lng } }` | city, rayon, area | User exited area boundary polygon |
-| `USER_ENTERED_AREA` | `{ userId, locationId, timestamp }` | city, rayon, area | User entered area boundary polygon |
-| `AREA_STAFFING_CHANGED` | `{ locationId, activeCount, requiredCount }` | city, rayon | Area staffing level changed (understaffed/fully staffed) |
-| `USER_REASSIGNED` | `{ userId, fromAreaId, toAreaId, reason }` | city, rayon (both), area (both) | Worker reassigned to a different area |
+| `USER_STATUS_CHANGED` | `{ userId, previousStatus, newStatus, timestamp }` | city, rayon, region, area | User tracking status changed (active/offline/absent; see ADR-050 for the 3-axis model) |
+| `USER_LEFT_AREA` | `{ userId, locationId, timestamp, lastLocation: { lat, lng } }` | city, rayon, region, area | User exited location boundary polygon (is_within_area changed) |
+| `USER_ENTERED_AREA` | `{ userId, locationId, timestamp }` | city, rayon, region, area | User entered location boundary polygon (is_within_area changed) |
+| `AREA_STAFFING_CHANGED` | `{ locationId, activeCount, requiredCount }` | city, rayon, region | Location staffing level changed (understaffed/fully staffed; counts scheduled satgas+linmas only) |
+| `USER_REASSIGNED` | `{ userId, fromAreaId, toAreaId, reason }` | city, rayon (both), region (both), area (both) | Worker reassigned to a different location |
 
 **Events (Client to Server):**
 
@@ -5108,7 +5119,16 @@ socket.on('USER_LEFT_AREA', (payload) => {
 socket.emit('JOIN_ROOM', { room: 'monitoring:rayon:rayon-uuid' });
 
 socket.on('AREA_STAFFING_CHANGED', (payload) => {
-  console.log(`Area ${payload.locationId}: ${payload.activeCount}/${payload.requiredCount} staff`);
+  console.log(`Location ${payload.locationId}: ${payload.activeCount}/${payload.requiredCount} staff`);
+});
+```
+
+**Example: Subscribing to region-level events**
+```javascript
+socket.emit('JOIN_ROOM', { room: 'monitoring:region:region-uuid' });
+
+socket.on('USER_STATUS_CHANGED', (payload) => {
+  console.log(`User ${payload.userId}: ${payload.previousStatus} → ${payload.newStatus}`);
 });
 ```
 

@@ -220,21 +220,17 @@ export class MonitoringService {
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
     const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => {
       const isScheduled = scheduledIds.has(u.id);
-      // Display scope: the schedule scope when rostered; ad-hoc clock-ins fall back
-      // to their live position's deepest known scope.
+      // Display scope: the schedule scope when rostered. An ad-hoc clock-in (no
+      // occurrence on the current shift) is placed flat at CITY scope and rendered
+      // as a distinct "Luar Jadwal" marker there — a deliberate simplification
+      // (was: fall back to the deepest static assignment). This keeps unscheduled
+      // workers easy to identify and avoids scattering them across tiers where
+      // their static assignment may not reflect where they actually are.
       const sched = scheduleScopes.get(u.id);
       const display: {
         scope: 'city' | 'district' | 'region' | 'location';
         scope_id: string | null;
-      } =
-        sched ??
-        (u.location_id
-          ? { scope: 'location', scope_id: u.location_id }
-          : u.region_id
-            ? { scope: 'region', scope_id: u.region_id }
-            : u.district_id
-              ? { scope: 'district', scope_id: u.district_id }
-              : { scope: 'city', scope_id: null });
+      } = sched ?? { scope: 'city', scope_id: null };
       // `ad_hoc` is decided here, where the roster check lives — the per-worker
       // lifecycle computed in getLiveUsers used a `scheduled: true` placeholder.
       // `?? []` guards partial payloads during rollout.
@@ -323,6 +319,16 @@ export class MonitoringService {
       // here let a supervisor standing in a park mask a real shortfall, since
       // `required_count` below sums satgas+linmas requirements only.
       if (!STAFFING_COUNTED_ROLES.includes(w.role as UserRole)) continue;
+      // Ad-hoc clock-ins (not on the current shift's roster) never count toward
+      // staffing (ADR-050 5.4d) — a patrol worker who happens to stand in a park
+      // must not mask that park's real shortfall. The aggregate path excludes them
+      // too; keep the two in lock-step.
+      // Consequence (intended): a lokasi whose ONLY clocked-in workers are ad-hoc
+      // produces NO area_summary — exactly like a lokasi with no workers at all.
+      // area_summaries is a present-worker rollup, never a complete lokasi list;
+      // understaffing of unmanned/ad-hoc-only lokasi is surfaced by the AGGREGATE
+      // (which walks every lokasi with a requirement), the authoritative coverage view.
+      if (!w.is_scheduled) continue;
 
       const existing = areaMap.get(w.location_id);
       // Staffing counts whoever CLOCKED IN — active + offline — matching the

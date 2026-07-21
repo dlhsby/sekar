@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from '../entities/role.entity';
+import { MonitoringScope } from '../enums/monitoring-scope.enum';
 import { RedisService } from '../../../common/services/redis.service';
 
 const CACHE_PREFIX = 'rbac:role:';
@@ -42,6 +43,19 @@ export class RolePermissionsService {
 
     await this.writeCache(roleCode, keys);
     return keys;
+  }
+
+  /**
+   * The role's `monitoring_scope` (city|district|region|location|none), which drives
+   * where a caller lands + what they may view on the monitoring map (ADR-044/046).
+   * Defaults to `NONE` for an unknown role. Not cached (unlike the permission keys):
+   * it is read at most once per `/me`, so a cache round-trip would cost more than the
+   * single indexed lookup it saves.
+   */
+  async getMonitoringScope(roleCode: string): Promise<MonitoringScope> {
+    if (!roleCode) return MonitoringScope.NONE;
+    const role = await this.roleRepo.findOne({ where: { code: roleCode } });
+    return role?.monitoring_scope ?? MonitoringScope.NONE;
   }
 
   /** Drop the cached permission set for a role (call after editing its perms). */

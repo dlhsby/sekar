@@ -17,9 +17,10 @@ passes.
 | 2 | Geography — Kawasan tier + per-level styling (ADR-045) | ✅ merged (+ #227 data from live staging) |
 | 3 | Users & Teams — role-driven scope, team categories (ADR-044/048) | ✅ merged |
 | 4 | Scheduling — rule + occurrences, calendar, teams (ADR-047) | ✅ merged; **consolidation in progress** (staffing model + city scope + polish + tests) |
-| 5 | Monitoring revamp (web) — ADR-046 | 🚧 partial — see checklist below |
-| 6 | Mobile parity | ⏳ deferred — see below |
-| — | Staging deploy / cutover | ⏳ deferred until 5+6 land + dress-rehearsal |
+| 5 | Monitoring revamp (web) — ADR-046 | ✅ merged to `main` (PRs #279–#294 backend + #324–#326 web) |
+| 6 | Mobile parity | 🚧 in progress — contract-sync done; monitoring drill-UX + all-feature sweep underway |
+| — | `rayon`→`district` rename (ADR-052) | ✅ merged — DB/backend/web/mobile (PRs #339/#341/#342) |
+| — | Staging deploy / cutover | ⏳ deferred until 6 lands + dress-rehearsal |
 
 ## Area hierarchy (settled)
 
@@ -37,7 +38,13 @@ requirement. Seeded from the client "Kebutuhan Satgas" workbook (satgas-only; li
 
 ---
 
-## Phase 5 — Monitoring revamp (web), ADR-046 — remaining checklist
+## Phase 5 — Monitoring revamp (web), ADR-046 — ✅ COMPLETE (merged to `main`, not deployed)
+
+**All web-frontend items landed** (PRs #324–#326): the top-level **Surabaya bubble was dropped** (city lands
+on rayon bubbles; `'surabaya'` removed from the `Scope` union, `SurabayaSummaryCard` deleted), **team bubbles**
+with member expansion, the **Advanced Markers** migration (node/worker/team layers on `AdvancedMarkerElement`,
+reposition-on-patch, browser-profiled), and WS/refresh hardening. Verified end-to-end via Playwright after a
+clean reseed. What follows is the historical landing record.
 
 **Landed so far (backend/data groundwork, no staging deploy):** 5.0 staffing correctness (the live
 regression — monitoring was blind to 76% of the city's target) · 5.1 `radius_meters` retired (geofencing
@@ -64,31 +71,26 @@ settings catalog already allowed ample headroom, so no catalog-max change was ne
   monitorable-but-unscheduled) · 5.7b web search box wired to it.
 - ✅ **Understaffing uses the polymorphic subject** (landed in 5.0, refined in 5.4d/5.5a).
 
-**Remaining — browser-verification-dependent frontend (needs a real browser, not runnable headless here):**
-- **Drop the Surabaya bubble** + draw all rayon boundaries on first load (partly covered by the drill; the
-  top-level bubble rework is visual).
-- **Team bubbles** — group marker that expands to members on click/zoom (needs a team-node aggregation on the
-  backend first, then the visual bubble). Team-keyword search also lands here.
-- **Advanced Markers** rewrite — `AdvancedMarker` migration whose acceptance is **pan/zoom perf with
-  hundreds of pins in a real browser** (the explicit reason it was deferred). Implementable + tsc/unit-green
-  but NOT perf-verifiable without a browser.
-- **WS/refresh hardening** under load (no remounts) — verify in a browser.
-- **Advanced Markers (deferred here on purpose, 2026-07-15).** `google.maps.Marker` is deprecated (warning
-  only — still supported, 12+ months' notice). The **foundation is already in `main`**: a configurable Map ID
-  (System Settings key `maps.map_id` + `GOOGLE_MAPS_MAP_ID` / `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID`, served via
-  `GET /config/maps`, resolved by `useMapId()`), the `marker` library is loaded in `GoogleMapsGate`, and a
-  reusable imperative `components/maps/AdvancedMarker.tsx` wrapper exists. **Already migrated:**
-  `GoogleBoundaryEditor` (#257, verified in-browser) + `MapDisplayModal` (#258).
-  **Still on legacy `Marker` → do them as part of this revamp:** `SimpleMonitoringMap`, `NodeMarkerLayer`,
-  `WorkerClusterLayer`. Deferred deliberately because (a) `AdvancedMarkerElement` renders **DOM nodes** vs the
-  legacy marker's optimized layer, so hundreds of worker pins risk a **pan/zoom perf regression** that needs
-  in-browser profiling, and (b) the icon layer here is a real rewrite (SVG-string pins + `SymbolPath.CIRCLE`
-  cluster/area circles + hover). Build them with Advanced Markers **from the start** in this revamp and
-  perf-test. Note `@react-google-maps/api` has **no** `AdvancedMarker` component — use the imperative wrapper
-  (or evaluate `@vis.gl/react-google-maps`).
+**Follow-on consistency fixes (in progress with Phase 6, cross-platform):** an audit while starting mobile
+parity surfaced a few web/backend items reconciled alongside mobile — ad-hoc clock-ins excluded from staffing
+counts (`buildAreaSummaries`), ad-hoc `display_scope` flattened to `city` + rendered as "Luar Jadwal" markers,
+workers rendered at their own `display_scope` tier (not only lokasi), a dead `outside_area` branch removed, and
+`/me` extended with `monitoring_scope` + korlap fallback sets. See `specs/features/monitoring/README.md`.
 
-## Phase 6 — Mobile parity (after web design ack)
+## Phase 6 — Mobile parity — 🚧 in progress (started 2026-07-20)
 
+**Contract-sync already absorbed by mobile** (merged earlier): area→location, rayon→district (ADR-052),
+status 5→3 collapse, `radius_meters` retire, role renames. **Now underway — mobile monitoring drill-UX parity
++ an all-feature sweep**, staged as PRs to `main` (plan: monitoring/`should-sweep-all-features`):
+- **PR0 canon (cross-platform)** — backend/web consistency fixes done first so mobile builds on canon:
+  ad-hoc staffing exclusion, ad-hoc `display_scope='city'`, `/me` gains `monitoring_scope`+`region_id`+
+  `assigned_location_ids`, web dead-branch cleanup. (korlap occurrence-union coverage auth + the web all-tier/
+  ad-hoc *rendering* are their own follow-ups: `PR0b` backend-auth, `PR0c` browser-verified web.)
+- **PR1–4 (mobile)** — contract/type + all-9-role sweep → region drill tier + `/monitoring/snapshot` with
+  `display_scope` scope-matching (drop the Surabaya bubble) → node markers + 3-axis presence pills → WS
+  `subscribe:region` + `user:clock-out` + hybrid server search (online, client-fallback offline).
+
+Remaining scope items below stay as designed:
 - **Monitoring parity** — mirror the ADR-046 revamp on React Native (native Google Maps controls).
 - **Worker week/month switcher** — the worker `MyScheduleScreen` is **day-only today** (date picker +
   prev/next). A Hari/Minggu/Bulan switcher was *claimed* in commit `c3434c9d` + an earlier changelog line

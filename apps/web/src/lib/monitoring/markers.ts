@@ -25,9 +25,13 @@ const ACTIVITY_COLORS = {
 } as const;
 const ADHOC = '#57534E'; // ad-hoc / off-schedule (gray-600)
 
-/** Map the 5-status tracking model onto the 2-activity presence model. */
+/**
+ * Map the 3-state tracking model (active | offline | absent) onto the 2-activity
+ * presence ring. Inside/outside area is a SEPARATE axis (`is_within_area`), not a
+ * status — so only `active` reads as aktif; offline/absent are tidak_aktif.
+ */
 export function statusToActivity(status: string): 'aktif' | 'tidak_aktif' {
-  return status === 'active' || status === 'outside_area' ? 'aktif' : 'tidak_aktif';
+  return status === 'active' ? 'aktif' : 'tidak_aktif';
 }
 
 /** Staffing-health colors (kept in sync with mobile markerSpec.healthColor). */

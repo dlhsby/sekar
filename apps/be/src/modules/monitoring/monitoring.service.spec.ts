@@ -1417,6 +1417,11 @@ describe('MonitoringService', () => {
       jest
         .spyOn(service['statsService'], 'getCurrentShiftDefinition')
         .mockResolvedValue(mockShiftDefinition);
+      // Both are on the roster, so ROLE is the only reason korlap is excluded from
+      // the count (ad-hoc exclusion, ADR-050 5.4d, is exercised separately).
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue(new Set<string>(['u-satgas', 'u-korlap']));
       // Target of 2 satgas at this lokasi.
       staffRequirementRepository.find.mockResolvedValue([
         { ...mockStaffRequirement, required_count: 2 },
@@ -1429,6 +1434,70 @@ describe('MonitoringService', () => {
       expect(summary?.active_count).toBe(1);
       expect(summary?.required_count).toBe(2);
       expect(summary?.is_understaffed).toBe(true);
+    });
+
+    it('omits a lokasi whose only clocked-in workers are ad-hoc from area_summaries (ADR-050 5.4d)', async () => {
+      // Two satgas standing in a park, NEITHER on today's roster (ad-hoc). They must
+      // not count toward staffing, so the lokasi produces no summary — its shortfall
+      // is surfaced by the aggregate, not this present-worker rollup.
+      const liveUsers = {
+        total_active: 2,
+        total_absent: 0,
+        total_outside_area: 0,
+        total_offline: 0,
+        total_online: 2,
+        users: [
+          {
+            id: 'u-adhoc-1',
+            full_name: 'Satgas Adhoc Satu',
+            role: 'satgas',
+            location_id: 'area-1',
+            location_name: 'Taman Bungkul',
+            district_id: 'district-1',
+            district_name: 'Rayon Pusat',
+            status: TrackingStatus.ACTIVE,
+            lat: -7.2,
+            lng: 112.7,
+            last_update: new Date(),
+            is_within_area: true,
+          },
+          {
+            id: 'u-adhoc-2',
+            full_name: 'Satgas Adhoc Dua',
+            role: 'satgas',
+            location_id: 'area-1',
+            location_name: 'Taman Bungkul',
+            district_id: 'district-1',
+            district_name: 'Rayon Pusat',
+            status: TrackingStatus.ACTIVE,
+            lat: -7.2,
+            lng: 112.7,
+            last_update: new Date(),
+            is_within_area: true,
+          },
+        ],
+        generated_at: new Date(),
+      };
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(liveUsers as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
+      // Neither worker is on the roster → both ad-hoc.
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue(new Set<string>());
+      staffRequirementRepository.find.mockResolvedValue([
+        { ...mockStaffRequirement, required_count: 2 },
+      ] as any);
+
+      const result = await service.getSnapshot({} as any);
+
+      // No summary for area-1 (only ad-hoc present), but the two ad-hoc clock-ins
+      // are still counted as "Luar jadwal".
+      expect(
+        result.data.area_summaries.find((a: any) => a.location_id === 'area-1'),
+      ).toBeUndefined();
+      expect(result.data.off_schedule_count).toBe(2);
     });
 
     it('appends ad_hoc to a worker who is not on the current-shift roster (5.4c)', async () => {
@@ -1481,6 +1550,16 @@ describe('MonitoringService', () => {
   });
 
   describe('getSnapshot', () => {
+    // Staffing (`active_count`) counts only SCHEDULED satgas+linmas (ADR-050 5.4d);
+    // ad-hoc clock-ins are excluded. These fixtures model rostered workers, so mark
+    // everyone scheduled by default (a `has()`-always-true stand-in). Tests that
+    // exercise ad-hoc behavior override this locally.
+    beforeEach(() => {
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue({ has: () => true } as unknown as Set<string>);
+    });
+
     it('should return snapshot with correct contract shape', async () => {
       const mockLiveUsersResult = {
         total_active: 2,

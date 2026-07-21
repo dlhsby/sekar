@@ -290,6 +290,11 @@ export class AuthController {
     },
   })
   async getMe(@GetUser() user: User): Promise<MeResponseDto> {
+    const [permissions, monitoringScope, assignedLocationIds] = await Promise.all([
+      this.rolePermissions.getRolePermissionKeys(user.role),
+      this.rolePermissions.getMonitoringScope(user.role),
+      this.userAreasService.getPermanentLocationIds(user.id),
+    ]);
     const userData: MeResponseDto = {
       id: user.id,
       username: user.username,
@@ -299,11 +304,17 @@ export class AuthController {
       role: user.role,
       location_id: user.location_id || null,
       district_id: user.district_id || null,
+      // Region (Kawasan) + monitoring scope drive where the caller lands and what
+      // they may view on the map (ADR-044/046). `assigned_location_ids` is the
+      // STATIC fallback for korlap coverage; live coverage is occurrence-derived.
+      region_id: user.region_id || null,
+      monitoring_scope: monitoringScope,
+      assigned_location_ids: assignedLocationIds,
       kecamatan_id: user.kecamatan_id || null,
       kecamatan_name: user.kecamatan_name || null,
       created_at: user.created_at,
       password_must_change: user.password_must_change ?? false,
-      permissions: await this.rolePermissions.getRolePermissionKeys(user.role),
+      permissions,
     };
 
     // Include area info for field roles
