@@ -306,5 +306,9 @@
   },
   "location": {
     "noPoints": "Tidak ada titik lokasi"
+  },
+  "team": {
+    "chip": "Tim: {{name}}",
+    "exit": "Keluar dari tampilan tim"
   }
 }

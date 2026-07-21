@@ -12,6 +12,8 @@ import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOver
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
 import { AggregateBubbleLayer, type NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
+import { TeamMarkerLayer } from '../../../components/monitoring/TeamMarkerLayer';
+import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
 import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
@@ -41,6 +43,10 @@ interface MapLayerContentProps {
   nodeMarkers: NodeMarker[];
   /** Bubble tap → drill into that node (variant decides the target scope). */
   onNodeDrill: (node: NodeMarker) => void;
+  /** Collapsed team bubbles (ADR-048) to render alongside worker pins. */
+  teamGroups: TeamGroup[];
+  /** Team bubble tap → select the team (members-only view). */
+  onTeamPress: (team: TeamGroup) => void;
   /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
   /** Bubble taps — drill into the child level (city→district, district→area). */
@@ -70,6 +76,8 @@ export function MapLayerContent({
   rosterById,
   nodeMarkers,
   onNodeDrill,
+  teamGroups,
+  onTeamPress,
   showWorkers,
   onDistrictDrill,
   onAreaDrill,
@@ -149,6 +157,12 @@ export function MapLayerContent({
           latitudeDelta={currentRegion.latitudeDelta}
           onClusterPress={onClusterPress}
         />
+      )}
+
+      {/* Team bubbles (ADR-048) — a ≥2-member team collapses to one team-colored
+          marker; tapping it shows the team's members and hides the other workers. */}
+      {mapReady && showWorkers && teamGroups.length > 0 && (
+        <TeamMarkerLayer teams={teamGroups} onTeamPress={onTeamPress} />
       )}
 
       {/* Phase 3: Area status overlay (plant health tints) — inside a district only */}

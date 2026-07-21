@@ -306,5 +306,9 @@
   },
   "location": {
     "noPoints": "No location points"
+  },
+  "team": {
+    "chip": "Team: {{name}}",
+    "exit": "Exit team view"
   }
 }
