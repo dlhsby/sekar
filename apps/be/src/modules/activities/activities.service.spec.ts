@@ -23,6 +23,9 @@ import { AuditLogService } from '../audit/audit.service';
 import { ActivityPlantItem } from '../plants/entities/activity-plant-item.entity';
 import { ActivityTag } from './entities/activity-tag.entity';
 import { TaskTypeRegistry } from '../tasks/registry/task-type-registry';
+import { Task } from '../tasks/entities/task.entity';
+import { ScheduleScopeResolverService } from '../schedules/services/schedule-scope-resolver.service';
+import { AssignmentScope, NO_SCOPE } from '../../common/enums/assignment-scope.enum';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 
@@ -131,6 +134,14 @@ describe('ActivitiesService', () => {
     delete: jest.fn(),
   };
 
+  const mockTasksRepo = {
+    findOne: jest.fn().mockResolvedValue(null),
+  };
+
+  const mockScheduleScopeResolver = {
+    resolveForUserOnDate: jest.fn().mockResolvedValue(NO_SCOPE),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -138,6 +149,14 @@ describe('ActivitiesService', () => {
         // Real sub-service — behavior is exercised through the façade
         // against the same mocked repositories/services below.
         ActivityQueryService,
+        {
+          provide: getRepositoryToken(Task),
+          useValue: mockTasksRepo,
+        },
+        {
+          provide: ScheduleScopeResolverService,
+          useValue: mockScheduleScopeResolver,
+        },
         {
           provide: getRepositoryToken(Activity),
           useValue: mockActivitiesRepo,
@@ -248,6 +267,72 @@ describe('ActivitiesService', () => {
         }),
       );
       expect(mockActivitiesRepo.save).toHaveBeenCalledWith(mockActivity);
+    });
+
+    describe('scope derivation (ADR-046)', () => {
+      const createArgs = () =>
+        (mockActivitiesRepo.create as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+
+      beforeEach(() => {
+        mockShiftsRepo.findOne.mockResolvedValue(mockActiveShift);
+        mockActivityTypeRepo.findOne.mockResolvedValue(mockActivityType as any);
+        mockActivitiesRepo.create.mockImplementation((row) => row);
+        mockActivitiesRepo.save.mockImplementation(async (row) => ({ ...row, id: 'a1' }));
+        mockScheduleScopeResolver.resolveForUserOnDate.mockResolvedValue(NO_SCOPE);
+        mockTasksRepo.findOne.mockResolvedValue(null);
+      });
+
+      it('inherits the linked task scope when submitted against a task', async () => {
+        mockTasksRepo.findOne.mockResolvedValue({
+          id: 'task-1',
+          scope: AssignmentScope.DISTRICT,
+          district_id: 'd1',
+          region_id: null,
+          location_id: null,
+        });
+        await service.createActivity(mockUser.id, mockUser.role, {
+          ...createDto,
+          task_id: 'task-1',
+        });
+        expect(createArgs()).toMatchObject({
+          scope: AssignmentScope.DISTRICT,
+          district_id: 'd1',
+          region_id: null,
+          location_id: null,
+          task_id: 'task-1',
+        });
+        // Task scope wins — the schedule resolver is not consulted.
+        expect(mockScheduleScopeResolver.resolveForUserOnDate).not.toHaveBeenCalled();
+      });
+
+      it('derives scope from the active shift occurrence when there is no task', async () => {
+        mockScheduleScopeResolver.resolveForUserOnDate.mockResolvedValue({
+          scope: AssignmentScope.REGION,
+          district_id: 'd1',
+          region_id: 'r1',
+          location_id: null,
+        });
+        await service.createActivity(mockUser.id, mockUser.role, createDto);
+        expect(mockScheduleScopeResolver.resolveForUserOnDate).toHaveBeenCalledWith(
+          mockUser.id,
+          expect.any(String),
+          mockActiveShift.shift_definition_id,
+        );
+        expect(createArgs()).toMatchObject({
+          scope: AssignmentScope.REGION,
+          region_id: 'r1',
+          district_id: 'd1',
+        });
+      });
+
+      it('falls back to the shift location for an unscheduled worker (submission not blocked)', async () => {
+        mockScheduleScopeResolver.resolveForUserOnDate.mockResolvedValue(NO_SCOPE);
+        await service.createActivity(mockUser.id, mockUser.role, createDto);
+        expect(createArgs()).toMatchObject({
+          scope: AssignmentScope.LOCATION,
+          location_id: mockActiveShift.location_id,
+        });
+      });
     });
 
     it('should throw BadRequestException when no active shift found', async () => {

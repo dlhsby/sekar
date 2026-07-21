@@ -16,6 +16,7 @@ import { LocationsModule } from '../locations/locations.module';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UserLocationsModule } from '../user-locations/user-locations.module';
+import { ScheduleScopeModule } from '../schedules/schedule-scope.module';
 
 /**
  * Module for task management
@@ -31,6 +32,7 @@ import { UserLocationsModule } from '../user-locations/user-locations.module';
     AuditModule,
     NotificationsModule,
     UserLocationsModule,
+    ScheduleScopeModule,
   ],
   controllers: [TasksController],
   providers: [

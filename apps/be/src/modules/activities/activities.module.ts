@@ -17,6 +17,8 @@ import { AuditModule } from '../audit/audit.module';
 // this the JSONB column silently admits any shape on the activity side, even
 // though it's validated on the task side.
 import { TasksModule } from '../tasks/tasks.module';
+import { ScheduleScopeModule } from '../schedules/schedule-scope.module';
+import { Task } from '../tasks/entities/task.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 /**
@@ -36,12 +38,21 @@ import { NotificationsModule } from '../notifications/notifications.module';
  */
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Activity, ActivityTag, Shift, ActivityType, User, ActivityPlantItem]),
+    TypeOrmModule.forFeature([
+      Activity,
+      ActivityTag,
+      Shift,
+      ActivityType,
+      User,
+      ActivityPlantItem,
+      Task,
+    ]),
     SharedModule, // For S3Service
     UsersModule,
     AuditModule,
     TasksModule, // Audit M7: re-exports TaskTypeRegistry
     NotificationsModule, // Phase 4-3 (M2): activity approve/reject FCM triggers
+    ScheduleScopeModule, // ADR-046: derive activity scope from the active shift occurrence
   ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService, ActivityQueryService],

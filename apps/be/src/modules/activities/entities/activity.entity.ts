@@ -15,6 +15,7 @@ import { Shift } from '../../shifts/entities/shift.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Task } from '../../tasks/entities/task.entity';
 import { ActivityType } from '../../activity-types/entities/activity-type.entity';
+import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
 
 /**
  * Activity Approval Status Enum
@@ -60,6 +61,29 @@ export class Activity {
   @ApiProperty({ description: 'Location UUID where work was performed', nullable: true })
   @Column({ type: 'uuid', nullable: true })
   location_id: string | null;
+
+  @ApiProperty({
+    description:
+      'Geographic scope of this activity (ADR-046). Inherited from the linked task ' +
+      'when submitted against one, otherwise derived from the active shift occurrence; ' +
+      '`none` for an ad-hoc submission with no location context.',
+    enum: AssignmentScope,
+    default: AssignmentScope.NONE,
+  })
+  @Column({
+    type: 'enum',
+    enum: AssignmentScope,
+    default: AssignmentScope.NONE,
+  })
+  scope: AssignmentScope;
+
+  @ApiProperty({ description: 'Region (Kawasan) UUID for region-scoped work', nullable: true })
+  @Column({ type: 'uuid', nullable: true })
+  region_id: string | null;
+
+  @ApiProperty({ description: 'District UUID for district-scoped work', nullable: true })
+  @Column({ type: 'uuid', nullable: true })
+  district_id: string | null;
 
   @ApiProperty({
     description: 'Task UUID (if activity is linked to a task)',

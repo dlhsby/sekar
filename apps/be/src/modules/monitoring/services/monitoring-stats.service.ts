@@ -29,6 +29,7 @@ import {
   ScheduleStatus,
   ScheduleLocation,
 } from '../../schedules/entities/schedule.entity';
+import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
 
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { resolveShiftWindow } from '../lib/presence-lifecycle';
@@ -1101,6 +1102,54 @@ export class MonitoringStatsService {
           );
         }
         map.set(r.user_id, resolved);
+      }
+    }
+    return map;
+  }
+
+  /**
+   * In-progress tasks extend a worker's monitored placement (user-directed,
+   * ADR-046): once a worker STARTS a task, that task's scope becomes a candidate
+   * for where they render on the map — so an unscheduled worker running a
+   * district task shows at that district, not flat at city. Returns the deepest
+   * task scope per user (`location` > `region` > `district` > `city`); `none`
+   * tasks contribute nothing. Merged with the schedule scope by the caller.
+   */
+  async inProgressTaskScopesForUsers(
+    userIds: string[],
+  ): Promise<
+    Map<string, { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }>
+  > {
+    const map = new Map<
+      string,
+      { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }
+    >();
+    if (!userIds.length) return map;
+    const tasks = await this.taskRepository.find({
+      where: {
+        assigned_to: In(userIds),
+        status: TaskStatus.IN_PROGRESS,
+        scope: Not(AssignmentScope.NONE),
+      },
+      select: ['assigned_to', 'scope', 'district_id', 'region_id', 'location_id'],
+    });
+    const rank: Record<string, number> = { location: 3, region: 2, district: 1, city: 0 };
+    for (const t of tasks) {
+      if (!t.assigned_to) continue;
+      const resolved =
+        t.scope === AssignmentScope.LOCATION && t.location_id
+          ? { scope: 'location' as const, scope_id: t.location_id }
+          : t.scope === AssignmentScope.REGION && t.region_id
+            ? { scope: 'region' as const, scope_id: t.region_id }
+            : t.scope === AssignmentScope.DISTRICT && t.district_id
+              ? { scope: 'district' as const, scope_id: t.district_id }
+              : t.scope === AssignmentScope.CITY
+                ? { scope: 'city' as const, scope_id: null }
+                : null;
+      if (!resolved) continue;
+      const prev = map.get(t.assigned_to);
+      if (!prev || rank[resolved.scope] > rank[prev.scope]) {
+        map.set(t.assigned_to, resolved);
       }
     }
     return map;

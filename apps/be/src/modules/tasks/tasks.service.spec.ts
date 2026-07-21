@@ -8,6 +8,8 @@ import { TaskDelegationService } from './services/task-delegation.service';
 import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
 import { TaskVerificationService } from './services/task-verification.service';
 import { TaskAreaSyncService } from './services/task-area-sync.service';
+import { ScheduleScopeResolverService } from '../schedules/services/schedule-scope-resolver.service';
+import { AssignmentScope, NO_SCOPE } from '../../common/enums/assignment-scope.enum';
 import { UserLocationsService } from '../user-locations/user-locations.service';
 import { Task, TaskStatus, TaskPriority } from './entities/task.entity';
 import { TaskTag } from './entities/task-tag.entity';
@@ -28,6 +30,7 @@ describe('TasksService', () => {
   let notificationsService: jest.Mocked<NotificationsService>;
   let usersService: jest.Mocked<UsersService>;
   let locationsService: jest.Mocked<LocationsService>;
+  let scopeResolver: { resolveForUserOnDate: jest.Mock };
 
   const mockUser: Partial<User> = {
     id: 'user-uuid',
@@ -87,6 +90,10 @@ describe('TasksService', () => {
         TaskStatusTransitionsService,
         TaskVerificationService,
         TaskAreaSyncService,
+        {
+          provide: ScheduleScopeResolverService,
+          useValue: { resolveForUserOnDate: jest.fn().mockResolvedValue(NO_SCOPE) },
+        },
         {
           provide: UserLocationsService,
           useValue: { syncTaskBasedAreas: jest.fn().mockResolvedValue(undefined) },
@@ -159,6 +166,7 @@ describe('TasksService', () => {
     }).compile();
 
     service = module.get<TasksService>(TasksService);
+    scopeResolver = module.get(ScheduleScopeResolverService);
     taskRepository = module.get(getRepositoryToken(Task));
     taskTagRepository = module.get(getRepositoryToken(TaskTag));
     taskDelegationRepository = module.get(getRepositoryToken(TaskDelegation));
@@ -194,6 +202,83 @@ describe('TasksService', () => {
       expect(taskRepository.create).toHaveBeenCalled();
       expect(taskRepository.save).toHaveBeenCalled();
       expect(result).toEqual(createdTask);
+    });
+
+    describe('scope derivation (ADR-046)', () => {
+      const buildArgs = () =>
+        (taskRepository.create as jest.Mock).mock.calls[0][0] as Record<string, unknown>;
+
+      beforeEach(() => {
+        usersService.findOne.mockResolvedValue(mockCreator as User);
+        locationsService.findOne.mockResolvedValue(mockArea as any);
+        taskRepository.create.mockImplementation((row) => row as Task);
+        taskRepository.save.mockImplementation(async (row) => ({ ...(row as Task), id: 't' }));
+        taskRepository.findOne.mockResolvedValue(mockTask as Task);
+      });
+
+      it('honors an explicit district-scope override and ignores the schedule', async () => {
+        await service.create(
+          { title: 'T', scope: AssignmentScope.DISTRICT, district_id: 'd1' },
+          'creator-uuid',
+        );
+        expect(buildArgs()).toMatchObject({
+          scope: AssignmentScope.DISTRICT,
+          district_id: 'd1',
+          region_id: null,
+          location_id: null,
+        });
+        expect(scopeResolver.resolveForUserOnDate).not.toHaveBeenCalled();
+      });
+
+      it('rejects a location-scope override with no location_id', async () => {
+        await expect(
+          service.create({ title: 'T', scope: AssignmentScope.LOCATION }, 'creator-uuid'),
+        ).rejects.toThrow(/location_id/);
+      });
+
+      it('derives scope from the assignee schedule when no override is given', async () => {
+        const worker = { ...mockUser, id: 'worker-uuid' };
+        usersService.findOne
+          .mockResolvedValueOnce(mockCreator as User)
+          .mockResolvedValueOnce(worker as User);
+        scopeResolver.resolveForUserOnDate.mockResolvedValue({
+          scope: AssignmentScope.LOCATION,
+          district_id: 'd1',
+          region_id: 'r1',
+          location_id: 'l1',
+        });
+        await service.create({ title: 'T', assigned_to: 'worker-uuid' }, 'creator-uuid');
+        expect(scopeResolver.resolveForUserOnDate).toHaveBeenCalledWith(
+          'worker-uuid',
+          expect.any(String),
+        );
+        expect(buildArgs()).toMatchObject({
+          scope: AssignmentScope.LOCATION,
+          location_id: 'l1',
+          region_id: 'r1',
+          district_id: 'd1',
+        });
+      });
+
+      it('falls back to none for an unscheduled assignee (ad-hoc task still created)', async () => {
+        const worker = { ...mockUser, id: 'worker-uuid' };
+        usersService.findOne
+          .mockResolvedValueOnce(mockCreator as User)
+          .mockResolvedValueOnce(worker as User);
+        scopeResolver.resolveForUserOnDate.mockResolvedValue(NO_SCOPE);
+        await service.create({ title: 'T', assigned_to: 'worker-uuid' }, 'creator-uuid');
+        expect(buildArgs()).toMatchObject({
+          scope: AssignmentScope.NONE,
+          location_id: null,
+          region_id: null,
+          district_id: null,
+        });
+      });
+
+      it('is none when there is neither an override nor an assignee', async () => {
+        await service.create({ title: 'T' }, 'creator-uuid');
+        expect(buildArgs()).toMatchObject({ scope: AssignmentScope.NONE });
+      });
     });
 
     it('should create task with assigned user', async () => {

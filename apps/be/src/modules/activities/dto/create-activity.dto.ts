@@ -53,6 +53,16 @@ export class CreateActivityDto {
   @IsNotEmpty()
   activity_type_id: string;
 
+  @ApiPropertyOptional({
+    description:
+      'Task this activity is submitted against (ADR-046). When set, the activity ' +
+      "inherits the task's geographic scope instead of the active shift occurrence.",
+    example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+  })
+  @IsUUID()
+  @IsOptional()
+  task_id?: string;
+
   @ApiProperty({
     description: 'Description of work done (5-500 characters)',
     example: 'Melakukan penyiraman tanaman di area Taman Bungkul',

@@ -12,6 +12,7 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { Task, TaskStatus, TaskPriority } from '../tasks/entities/task.entity';
+import { AssignmentScope } from '../../common/enums/assignment-scope.enum';
 import { Activity } from '../activities/entities/activity.entity';
 import { LocationLog } from '../location/entities/location-log.entity';
 import { District, StaffingLevel } from '../districts/entities/district.entity';
@@ -142,7 +143,9 @@ describe('MonitoringService', () => {
     status: TaskStatus.PENDING,
     priority: TaskPriority.MEDIUM,
     deadline: new Date(),
+    scope: AssignmentScope.LOCATION,
     location_id: 'area-1',
+    region_id: null,
     district_id: null,
     assigned_to: null,
     created_by: 'user-1',
@@ -160,6 +163,7 @@ describe('MonitoringService', () => {
     deleted_at: null,
     area: mockArea,
     district: null as any,
+    region: null,
     tags: [],
     assignee: null as any,
     creator: mockUser,
@@ -364,6 +368,9 @@ describe('MonitoringService', () => {
     jest
       .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
       .mockResolvedValue(new Set<string>());
+    jest
+      .spyOn(service['statsService'], 'inProgressTaskScopesForUsers')
+      .mockResolvedValue(new Map());
     userRepository = module.get(getRepositoryToken(User));
     areaRepository = module.get(getRepositoryToken(Location));
     shiftRepository = module.get(getRepositoryToken(Shift));
