@@ -568,4 +568,55 @@ describe('MonitoringStatsService', () => {
       expect(result).toBeDefined();
     });
   });
+
+  describe('korlap coverage resolvers (PR0b)', () => {
+    it('occurrenceCoverageForCurrentShift collects distinct location/region/district ids, uncollapsed', async () => {
+      const qb = {
+        leftJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          { location_id: 'loc-1', region_id: null, district_id: 'd1' },
+          { location_id: 'loc-2', region_id: null, district_id: 'd1' },
+          { location_id: null, region_id: 'reg-1', district_id: 'd1' },
+          { location_id: null, region_id: null, district_id: 'd2' },
+        ]),
+      };
+      (service as any).scheduleRepository.createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+      const res = await service.occurrenceCoverageForCurrentShift('korlap-1', 'shift-1');
+
+      // Multiple lokasi at the same shift are ALL kept (uncollapsed, unlike
+      // scheduleScopesForCurrentShift). A region- or district-scoped occurrence
+      // (no sl.location_id) records its coarser scope instead.
+      expect(res.locationIds.sort()).toEqual(['loc-1', 'loc-2']);
+      expect(res.regionIds).toEqual(['reg-1']);
+      expect(res.districtIds).toEqual(['d2']);
+    });
+
+    it('occurrenceCoverageForCurrentShift returns empty without a shift', async () => {
+      const res = await service.occurrenceCoverageForCurrentShift('korlap-1', undefined);
+      expect(res).toEqual({ locationIds: [], regionIds: [], districtIds: [] });
+    });
+
+    it('locationIdsForRegions expands to active member lokasi', async () => {
+      areaRepository.find.mockResolvedValue([{ id: 'a1' }, { id: 'a2' }] as any);
+
+      const ids = await service.locationIdsForRegions(['reg-1']);
+
+      expect(ids).toEqual(['a1', 'a2']);
+      expect(areaRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ is_active: true }) }),
+      );
+    });
+
+    it('region/district expansion short-circuits on empty input (no query)', async () => {
+      areaRepository.find.mockClear();
+      expect(await service.locationIdsForRegions([])).toEqual([]);
+      expect(await service.locationIdsForDistricts([])).toEqual([]);
+      expect(areaRepository.find).not.toHaveBeenCalled();
+    });
+  });
 });

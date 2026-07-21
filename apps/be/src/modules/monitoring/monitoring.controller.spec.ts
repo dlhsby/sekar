@@ -271,6 +271,14 @@ describe('MonitoringController', () => {
           useValue: {
             getBoundaries: jest.fn(),
             getAggregate: jest.fn(),
+            // korlap coverage resolver (PR0b): default to "no shift / no occurrence"
+            // so coverage falls back to the static assignment the other mocks provide.
+            getCurrentShiftDefinition: jest.fn().mockResolvedValue(null),
+            occurrenceCoverageForCurrentShift: jest
+              .fn()
+              .mockResolvedValue({ locationIds: [], regionIds: [], districtIds: [] }),
+            locationIdsForRegions: jest.fn().mockResolvedValue([]),
+            locationIdsForDistricts: jest.fn().mockResolvedValue([]),
           },
         },
         {
@@ -574,14 +582,16 @@ describe('MonitoringController', () => {
       expect(result.users[0]).toHaveProperty('clock_in_time');
     });
 
-    it('should force location_id scope for KORLAP user', async () => {
+    it('should scope KORLAP to their coverage area_ids', async () => {
       service.getLiveUsers.mockResolvedValue(mockLiveUsers);
       const filters: LiveUsersFilterDto = {};
 
       await controller.getLiveUsers(filters, mockKorlap);
 
+      // Korlap coverage is a location-id union (PR0b) — a lone legacy `location_id`
+      // now surfaces as a single-element `area_ids` list, not `location_id`.
       expect(service.getLiveUsers).toHaveBeenCalledWith(
-        expect.objectContaining({ location_id: 'area-1' }),
+        expect.objectContaining({ area_ids: ['area-1'] }),
       );
     });
 
@@ -636,6 +646,29 @@ describe('MonitoringController', () => {
       await expect(
         controller.getLocationHistory('user-2', { date: '2026-03-04' }, mockKorlap),
       ).rejects.toThrow(ForbiddenException);
+    });
+
+    // PR0b: the worker-detail boundary uses the SAME coverage as the roster — a
+    // korlap may open the detail of a worker in a lokasi they are only scheduled to.
+    it('allows korlap to view a user in a lokasi they are scheduled to (occurrence coverage)', async () => {
+      const statsService = controller['statsService'] as any;
+      const userAreasService = controller['userAreasService'] as any;
+      service.getLocationHistory.mockResolvedValue({ user_id: 'user-3', points: [] } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        location_id: 'area-scheduled',
+        district_id: 'district-1',
+      } as any);
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+
+      await controller.getLocationHistory('user-3', { date: '2026-03-04' }, mockKorlap);
+
+      expect(service.getLocationHistory).toHaveBeenCalledWith('user-3', '2026-03-04', undefined);
     });
 
     it('should deny kepala_rayon access to user in different district', async () => {
@@ -771,8 +804,9 @@ describe('MonitoringController', () => {
 
       await controller.getStaffingSummary({}, mockKorlap);
 
+      // Korlap coverage → area_ids union (PR0b); lone legacy location_id becomes ['area-1'].
       expect(service.getStaffingSummary).toHaveBeenCalledWith(
-        expect.objectContaining({ location_id: 'area-1' }),
+        expect.objectContaining({ area_ids: ['area-1'] }),
       );
     });
   });
@@ -818,6 +852,59 @@ describe('MonitoringController', () => {
       userAreasService.getPermanentLocationIds.mockResolvedValue([]);
 
       await expect(controller.getAreaPlantStatus('area-other', mockKorlap)).rejects.toThrow(
+        ForbiddenException,
+      );
+    });
+
+    // PR0b: coverage is the union of static assignment AND today's schedule
+    // occurrences (individual or team). A korlap SCHEDULED to a lokasi/kawasan they
+    // are not statically assigned to may view it.
+    it('allows korlap to access an occurrence lokasi outside their static assignment', async () => {
+      const statsService = controller['statsService'] as any;
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+      plantStatusService.getAreaPlantStatus.mockResolvedValue({ location_id: 'area-scheduled' });
+
+      await controller.getAreaPlantStatus('area-scheduled', mockKorlap);
+
+      expect(plantStatusService.getAreaPlantStatus).toHaveBeenCalledWith('area-scheduled');
+    });
+
+    it('allows korlap to access a kawasan-scheduled lokasi via region expansion', async () => {
+      const statsService = controller['statsService'] as any;
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: [],
+        regionIds: ['kawasan-1'],
+        districtIds: [],
+      });
+      // The kawasan expands to its member lokasi, which authorizes them.
+      statsService.locationIdsForRegions.mockResolvedValue(['area-in-kawasan']);
+      plantStatusService.getAreaPlantStatus.mockResolvedValue({ location_id: 'area-in-kawasan' });
+
+      await controller.getAreaPlantStatus('area-in-kawasan', mockKorlap);
+
+      expect(statsService.locationIdsForRegions).toHaveBeenCalledWith(['kawasan-1']);
+      expect(plantStatusService.getAreaPlantStatus).toHaveBeenCalledWith('area-in-kawasan');
+    });
+
+    it('still denies a lokasi neither statically assigned nor scheduled', async () => {
+      const statsService = controller['statsService'] as any;
+      userAreasService.getPermanentLocationIds.mockResolvedValue(['area-9']);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+
+      await expect(controller.getAreaPlantStatus('area-unrelated', mockKorlap)).rejects.toThrow(
         ForbiddenException,
       );
     });
