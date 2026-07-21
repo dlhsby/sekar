@@ -27,7 +27,7 @@ interface MapLayerContentProps {
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number };
   boundaryKey: number;
   /** Current drill scope — gates which boundary layers + markers show. */
-  scope: 'surabaya' | 'city' | 'district' | 'location';
+  scope: 'city' | 'district' | 'region' | 'location';
   /** The district being viewed (district/location scope) — scopes markers to it. */
   districtId: string | null;
   /** The selected location (location scope) — only its boundary is drawn, on demand. */
@@ -90,7 +90,9 @@ export function MapLayerContent({
 
   // Rayon outline follows its toggle from the city view down. Location outlines draw
   // ONLY at location scope (the one selected location) — never all-at-once at district scope.
-  const showDistrictBoundaries = visibleLayers.districts && scope !== 'surabaya';
+  // The Surabaya top level was retired (PR2) — district boundaries show at every
+  // tier when toggled (city is now the top, and it draws the district outlines).
+  const showDistrictBoundaries = visibleLayers.districts;
   const showAreaBoundaries = visibleLayers.areas && scope === 'location';
 
   // Bubbles vs markers are separated by scope (gated independently of the
