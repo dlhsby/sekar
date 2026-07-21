@@ -648,6 +648,29 @@ describe('MonitoringController', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
+    // PR0b: the worker-detail boundary uses the SAME coverage as the roster — a
+    // korlap may open the detail of a worker in a lokasi they are only scheduled to.
+    it('allows korlap to view a user in a lokasi they are scheduled to (occurrence coverage)', async () => {
+      const statsService = controller['statsService'] as any;
+      const userAreasService = controller['userAreasService'] as any;
+      service.getLocationHistory.mockResolvedValue({ user_id: 'user-3', points: [] } as any);
+      service.getUserDaySummary.mockResolvedValue({
+        location_id: 'area-scheduled',
+        district_id: 'district-1',
+      } as any);
+      userAreasService.getPermanentLocationIds.mockResolvedValue([]);
+      statsService.getCurrentShiftDefinition.mockResolvedValue({ id: 'shift-1' });
+      statsService.occurrenceCoverageForCurrentShift.mockResolvedValue({
+        locationIds: ['area-scheduled'],
+        regionIds: [],
+        districtIds: [],
+      });
+
+      await controller.getLocationHistory('user-3', { date: '2026-03-04' }, mockKorlap);
+
+      expect(service.getLocationHistory).toHaveBeenCalledWith('user-3', '2026-03-04', undefined);
+    });
+
     it('should deny kepala_rayon access to user in different district', async () => {
       service.getUserDaySummary.mockResolvedValue({
         location_id: 'area-1',

@@ -504,13 +504,12 @@ export class MonitoringController {
     if (viewer.role === UserRole.KORLAP) {
       // Allow if target area is unknown (not yet clocked in or district-scoped)
       if (!target.location_id) return;
-      const assignedAreaIds = await this.userAreasService.getPermanentLocationIds(viewer.id);
-      if (assignedAreaIds.length > 0) {
-        if (!assignedAreaIds.includes(target.location_id)) {
-          throw new ForbiddenException('You can only view users in your assigned areas');
-        }
-      } else if (target.location_id !== viewer.location_id) {
-        throw new ForbiddenException('You can only view users in your own area');
+      // Use the SAME coverage the list/aggregate paths use (PR0b) so a korlap can
+      // open the detail of any worker they can already see in the roster — including
+      // workers in a kawasan/lokasi the korlap is only *scheduled* to today.
+      const coverage = await this.resolveKorlapCoverage(viewer);
+      if (!coverage.includes(target.location_id)) {
+        throw new ForbiddenException('You can only view users in your assigned or scheduled areas');
       }
       return;
     }
