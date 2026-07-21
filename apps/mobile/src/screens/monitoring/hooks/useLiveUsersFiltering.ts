@@ -7,6 +7,7 @@
 import React, { useMemo } from 'react';
 import { clusterUsers, shouldCluster } from '../../../utils/mapUtils';
 import { userAxes } from '../../../utils/statusHelpers';
+import { scopeMatches } from '../../../utils/monitoringScope';
 import type { LiveUser, UserRole, PresenceActivity } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
 import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
@@ -31,17 +32,16 @@ export function useLiveUsersFiltering(
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
   boundaries: any,
   scope: 'city' | 'district' | 'region' | 'location',
-  areaId: string | null,
+  viewId: string | null,
 ): UseLiveUsersFilteringReturn {
   const visibleUsers = React.useMemo(() => {
     if (!visibleLayers.workers) { return []; }
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
-    // Worker pins only render at location scope — scope them to the SELECTED location so
-    // the map shows exactly the people working / scheduled in that location.
-    if (scope === 'location' && areaId) {
-      users = users.filter(u => u.location_id === areaId);
-    }
+    // Render each worker at their OWN drill tier: keep only those whose occurrence
+    // `display_scope` matches the current scope (+ node id below city). City scope
+    // thus shows city/ad-hoc "Luar Jadwal" workers; a location shows its own crew.
+    users = users.filter(u => scopeMatches(u, scope, viewId));
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);
     }
@@ -50,7 +50,7 @@ export function useLiveUsersFiltering(
       users = users.filter(u => locs.includes(userAxes(u).location));
     }
     return users;
-  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, areaId]);
+  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, viewId]);
 
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }
