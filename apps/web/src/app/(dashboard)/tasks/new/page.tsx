@@ -6,7 +6,8 @@
 'use client';
 
 import { useAuth } from '@/lib/auth/hooks';
-import { useCreateTask, type TaskPriority, type AssignmentScope, type CreateTaskDto } from '@/lib/api/tasks';
+import { useCreateTask, type TaskPriority, type AssignmentScope } from '@/lib/api/tasks';
+import { useTaskScopeField } from '@/lib/hooks/useTaskScopeField';
 import { useUsers } from '@/lib/api/users';
 import { useLocations } from '@/lib/api/locations';
 import { useDistricts } from '@/lib/api/districts';
@@ -40,6 +41,7 @@ export default function CreateTaskPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const { t } = useTranslation('tasks');
+  const { scopeOptions, validate: validateScope, buildScopePayload } = useTaskScopeField();
 
   // State hooks - must be called unconditionally (Rules of Hooks)
   const [title, setTitle] = useState('');
@@ -93,43 +95,23 @@ export default function CreateTaskPage() {
       return;
     }
 
-    // Validate scope-specific id fields
-    if (scope === 'district' && districtId === 'none') {
-      setScopeError(t('newPage.scopeIdRequired'));
-      return;
-    }
-    if (scope === 'region' && regionId === 'none') {
-      setScopeError(t('newPage.scopeIdRequired'));
-      return;
-    }
-    if (scope === 'location' && areaId === 'none') {
-      setScopeError(t('newPage.scopeIdRequired'));
+    const scopeValidationError = validateScope(scope, { districtId, regionId, areaId });
+    if (scopeValidationError) {
+      setScopeError(scopeValidationError);
       return;
     }
 
     try {
-      const basePayload: CreateTaskDto = {
+      const basePayload = {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
         priority,
         deadline: dueDate ? new Date(dueDate).toISOString() : undefined,
+        ...buildScopePayload(scope, { districtId, regionId, areaId }),
       };
 
-      // Only add scope and id fields if not 'auto'
-      if (scope !== 'auto') {
-        basePayload.scope = scope;
-        if (scope === 'district') {
-          basePayload.district_id = districtId !== 'none' ? districtId : undefined;
-        } else if (scope === 'region') {
-          basePayload.region_id = regionId !== 'none' ? regionId : undefined;
-        } else if (scope === 'location') {
-          basePayload.location_id = areaId !== 'none' ? areaId : undefined;
-        }
-        // city and none don't need id fields
-      }
-
-      await createMutation.mutateAsync(basePayload);
+      await createMutation.mutateAsync(basePayload as Parameters<typeof createMutation.mutateAsync>[0]);
       router.push('/tasks');
     } catch (err) {
       setError(getErrorMessage(err));
@@ -144,15 +126,6 @@ export default function CreateTaskPage() {
   const areas = areasData?.data || [];
   const districts = districtsData || [];
   const regions = regionsData || [];
-
-  const scopeOptions = [
-    { value: 'auto', label: t('newPage.scopeAuto') },
-    { value: 'city', label: t('newPage.scopeCity') },
-    { value: 'district', label: t('newPage.scopeDistrict') },
-    { value: 'region', label: t('newPage.scopeRegion') },
-    { value: 'location', label: t('newPage.scopeLocation') },
-    { value: 'none', label: t('newPage.scopeNone') },
-  ];
 
   const priorityOptions = [
     { value: 'low', label: t('form.priorityLow') },
