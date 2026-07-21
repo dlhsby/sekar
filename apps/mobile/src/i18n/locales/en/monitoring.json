@@ -139,6 +139,7 @@
   },
   "search": {
     "title": "Search",
+    "offline": "No connection — showing cached data",
     "placeholder": "Search officers, areas, districts…",
     "searchLabel": "Search: {{value}}",
     "clearLabel": "Clear search",

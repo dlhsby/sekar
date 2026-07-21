@@ -153,6 +153,15 @@ export async function getMonitoringAggregate(
   return get<MonitoringAggregateResponse>('/monitoring/aggregate', params);
 }
 
+// Server-side monitoring search (5.7a) — workers clocked in with a fix in the last
+// 24h whose name/lokasi matches, scope-filtered by the caller's role (surfaces
+// off-screen + monitorable-but-unscheduled clock-ins the loaded snapshot omits).
+export async function searchMonitoring(
+  query: string,
+): Promise<ApiResponse<LiveUsersResponse>> {
+  return get<LiveUsersResponse>('/monitoring/search', { q: query });
+}
+
 // Phase 2D Gap: Reassign worker endpoint
 export async function reassignWorker(
   payload: ReassignWorkerPayload,
