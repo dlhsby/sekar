@@ -30,7 +30,7 @@ export function useLiveUsersFiltering(
   visibleLayers: MonitoringV2VisibleLayers,
   currentRegion: { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number },
   boundaries: any,
-  scope: 'surabaya' | 'city' | 'district' | 'location',
+  scope: 'city' | 'district' | 'region' | 'location',
   areaId: string | null,
 ): UseLiveUsersFilteringReturn {
   const visibleUsers = React.useMemo(() => {

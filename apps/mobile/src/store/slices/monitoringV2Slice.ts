@@ -33,13 +33,21 @@ export interface MonitoringV2VisibleLayers {
   areas: boolean;
 }
 
-export type MonitoringScope = 'surabaya' | 'city' | 'district' | 'location';
+export type MonitoringScope = 'city' | 'district' | 'region' | 'location';
 
-/** Current drill position on the map (Surabaya → district → location). */
+/**
+ * Current drill position on the map: city → district (rayon) → region (kawasan) →
+ * location (lokasi) → workers. The top level is `city` (the Surabaya summary bubble
+ * was retired in PR2, matching web — the map opens directly on the district bubbles).
+ * A district with no kawasan (e.g. Taman Aktif) drills district → location directly;
+ * `regionId` is null in that region-less bucket and drives the back-drill target.
+ */
 export interface MonitoringView {
   scope: MonitoringScope;
   id: string | null;
   districtId: string | null;
+  /** Kawasan context — set at region scope and carried into a location inside a kawasan. */
+  regionId: string | null;
   name: string | null;
 }
 
@@ -65,7 +73,7 @@ export interface FetchSnapshotParams {
 }
 
 export interface FetchAggregateParams {
-  scope: 'city' | 'district';
+  scope: 'city' | 'district' | 'region';
   id?: string;
 }
 
@@ -91,8 +99,8 @@ const initialState: MonitoringV2State = {
   clusterZoomThreshold: 0.05,
   loading: false,
   error: null,
-  view: { scope: 'surabaya', id: null, districtId: null, name: null },
-  floor: 'surabaya',
+  view: { scope: 'city', id: null, districtId: null, regionId: null, name: null },
+  floor: 'city',
   aggregate: null,
   aggregateLoading: false,
 };
@@ -223,7 +231,8 @@ const monitoringV2Slice = createSlice({
 
     /**
      * Initialise the drill view + floor from the viewer's role.
-     * korlap → area; kepala_rayon/admin_rayon → district; city roles → surabaya.
+     * korlap → location (their kawasan/lokasi); kepala_rayon/admin_rayon → district;
+     * city roles (management/admin_system/superadmin) → city (the district bubbles).
      */
     initMonitoringView(
       state,
@@ -234,48 +243,92 @@ const monitoringV2Slice = createSlice({
       state.selectedUserId = null;
     },
 
-    /** Surabaya → the district list (city scope). */
+    /** Reset to the top (city scope = the district bubbles). */
     enterCity(state) {
-      state.view = { scope: 'city', id: null, districtId: null, name: null };
+      state.view = { scope: 'city', id: null, districtId: null, regionId: null, name: null };
       state.selectedUserId = null;
     },
 
-    /** Drill one level deeper from a tapped district/location node. */
+    /**
+     * Drill one level deeper from a tapped node. The node's `type` (from the
+     * aggregate) decides the target scope, so the caller doesn't special-case the
+     * region-less bucket: a district with kawasan yields `region` child nodes, a
+     * district without (Taman Aktif) yields `location` nodes directly.
+     */
     drillTo(
       state,
-      // Mobile drills surabaya→district→location only; the `region` (Kawasan) tier
-      // lands in PR2, which adds a `drillToRegion` action. Until then this payload is
-      // intentionally narrowed to district|location and never receives a region node.
-      action: PayloadAction<{ id: string; type: 'district' | 'location'; name: string; districtId: string | null }>,
+      action: PayloadAction<{
+        id: string;
+        type: 'district' | 'region' | 'location';
+        name: string;
+        districtId: string | null;
+      }>,
     ) {
       const n = action.payload;
       if (n.type === 'district') {
-        state.view = { scope: 'district', id: n.id, districtId: n.id, name: n.name };
+        state.view = {
+          scope: 'district',
+          id: n.id,
+          districtId: n.id,
+          regionId: null,
+          name: n.name,
+        };
+      } else if (n.type === 'region') {
+        state.view = {
+          scope: 'region',
+          id: n.id,
+          districtId: n.districtId ?? state.view.districtId,
+          regionId: n.id,
+          name: n.name,
+        };
       } else {
         state.view = {
           scope: 'location',
           id: n.id,
           districtId: n.districtId ?? state.view.districtId,
+          // Carry the kawasan context so the back-drill returns to the region (if
+          // the lokasi was reached via a kawasan) rather than skipping to district.
+          regionId: state.view.scope === 'region' ? state.view.regionId : null,
           name: n.name,
         };
       }
       state.selectedUserId = null;
     },
 
-    /** Drill back up one level, never above the role floor. */
+    /**
+     * Drill back up one level, never above the role floor. A lokasi returns to its
+     * kawasan when it has one (`regionId` set), else to the district — the region-less
+     * fallback. Region → district → city. There is no level above city (Surabaya
+     * bubble retired).
+     */
     drillBack(state) {
       if (state.view.scope === state.floor) return;
       if (state.view.scope === 'location') {
+        state.view = state.view.regionId
+          ? {
+              scope: 'region',
+              id: state.view.regionId,
+              districtId: state.view.districtId,
+              regionId: state.view.regionId,
+              name: null,
+            }
+          : {
+              scope: 'district',
+              id: state.view.districtId,
+              districtId: state.view.districtId,
+              regionId: null,
+              name: null,
+            };
+      } else if (state.view.scope === 'region') {
         state.view = {
           scope: 'district',
           id: state.view.districtId,
           districtId: state.view.districtId,
+          regionId: null,
           name: null,
         };
       } else if (state.view.scope === 'district') {
-        state.view = { scope: 'city', id: null, districtId: null, name: null };
-      } else if (state.view.scope === 'city') {
-        state.view = { scope: 'surabaya', id: null, districtId: null, name: null };
+        state.view = { scope: 'city', id: null, districtId: null, regionId: null, name: null };
       }
       state.selectedUserId = null;
     },

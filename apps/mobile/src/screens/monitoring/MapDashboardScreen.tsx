@@ -38,7 +38,6 @@ import {
   toggleLayer,
   fetchAggregate,
   initMonitoringView,
-  enterCity,
   drillTo,
   drillBack,
 } from '../../store/slices/monitoringV2Slice';
@@ -119,31 +118,51 @@ export function MapDashboardScreen(): React.JSX.Element {
     let payload: { view: typeof view; floor: MonitoringScope };
     if (role === 'korlap' && currentUser.location_id) {
       payload = {
-        view: { scope: 'location', id: currentUser.location_id, districtId: currentUser.district_id ?? null, name: null },
+        view: {
+          scope: 'location',
+          id: currentUser.location_id,
+          districtId: currentUser.district_id ?? null,
+          regionId: currentUser.region_id ?? null,
+          name: null,
+        },
         floor: 'location',
       };
     } else if ((role === 'kepala_rayon' || role === 'admin_rayon') && currentUser.district_id) {
       payload = {
-        view: { scope: 'district', id: currentUser.district_id, districtId: currentUser.district_id, name: null },
+        view: {
+          scope: 'district',
+          id: currentUser.district_id,
+          districtId: currentUser.district_id,
+          regionId: null,
+          name: null,
+        },
         floor: 'district',
       };
     } else {
-      payload = { view: { scope: 'surabaya', id: null, districtId: null, name: null }, floor: 'surabaya' };
+      // City roles land on the district bubbles (the Surabaya summary bubble was
+      // retired in PR2, matching web).
+      payload = {
+        view: { scope: 'city', id: null, districtId: null, regionId: null, name: null },
+        floor: 'city',
+      };
     }
     dispatch(initMonitoringView(payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
 
-  // Aggregate fetch — city rollup feeds Surabaya (roster totals) + the district
-  // nodes; district rollup feeds the area nodes. No fetch at area scope (workers).
+  // Aggregate fetch — city rollup feeds the district nodes; district rollup feeds
+  // the lokasi nodes. (The `region`/kawasan aggregate tier + its bubble rendering is
+  // a coupled follow-up — see PR2-visual — because switching the district-scope fetch
+  // to `region` without rendering kawasan bubbles would strip the lokasi bubbles'
+  // ratios. Until then a district drills straight to its lokasi, region-less.)
   useEffect(() => {
-    if (scope === 'surabaya' || scope === 'city') {
+    if (scope === 'city') {
       void dispatch(fetchAggregate({ scope: 'city' }));
-    } else if (scope === 'district') {
-      void dispatch(fetchAggregate({ scope: 'district', id: view.id ?? undefined }));
+    } else if (scope === 'district' && view.id) {
+      void dispatch(fetchAggregate({ scope: 'district', id: view.id }));
+    } else if (scope === 'region' && view.districtId) {
+      void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
     } else if (scope === 'location' && view.districtId) {
-      // Keep the parent district's location rollup loaded so the selected location's ratio
-      // shows (covers location-floored roles that never visited the district view).
       void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -294,9 +313,6 @@ export function MapDashboardScreen(): React.JSX.Element {
     [dispatch],
   );
 
-  // Unified drill handlers.
-  const rosterTotals = aggregate?.roster_totals ?? { scheduled: 0, clocked_in: 0, not_clocked_in: 0 };
-
   // Per-node ratio (active-and-inside-area / terjadwal) keyed by district/area id —
   // fed to the geographic markers so each carries its count. The numerator is the
   // hadir workers who are BOTH active (fresh ping) and inside their area.
@@ -314,9 +330,6 @@ export function MapDashboardScreen(): React.JSX.Element {
       350,
     );
   }, []);
-
-  // Tapping the fixed Surabaya bubble drills into the district list (city scope).
-  const handleEnterCity = useCallback(() => dispatch(enterCity()), [dispatch]);
 
   // Bubble taps DRILL into the child level and zoom IN (never out). The current
   // node's own detail lives on its icon marker (handleDistrictPress/handleAreaPress),
@@ -347,7 +360,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     dispatch(drillBack());
     // Zoom the camera back out to match the level we're returning to.
     if (from === 'district' || from === 'city') {
-      // → city / Surabaya: show the whole city again (and the Surabaya bubble).
+      // → city: show the whole city again (the district bubbles).
       animateTo(
         SURABAYA_CITY_REGION.latitude,
         SURABAYA_CITY_REGION.longitude,
@@ -485,29 +498,8 @@ export function MapDashboardScreen(): React.JSX.Element {
             </View>
           )}
 
-          {/* Fixed Surabaya summary bubble — pinned to the screen centre at the
-              top level so it stays put while the map pans. Tap to drill into the
-              districts. */}
-          {scope === 'surabaya' && (
-            <View style={styles.surabayaBubbleWrap} pointerEvents="box-none">
-              <TouchableOpacity
-                style={styles.surabayaBubble}
-                onPress={handleEnterCity}
-                activeOpacity={0.85}
-                accessibilityRole="button"
-                accessibilityLabel={`${t('monitoring:surabaya.title')} — ${t('monitoring:surabaya.tapHint')}`}
-                testID="surabaya-bubble"
-              >
-                <NBText variant="mono-sm" uppercase style={styles.surabayaBubbleLabel}>
-                  {t('monitoring:surabaya.title')}
-                </NBText>
-                <NBText variant="h2" color="black">
-                  {rosterTotals.clocked_in}/{rosterTotals.scheduled}
-                </NBText>
-                <NBText variant="caption" color="gray600">{t('monitoring:surabaya.tapHint')}</NBText>
-              </TouchableOpacity>
-            </View>
-          )}
+          {/* The top-level Surabaya summary bubble was retired in PR2 (matching web):
+              the map opens directly on the district bubbles at `city` scope. */}
 
           {/* FAB column — MON-3 refactored with tools overlay */}
           <FABColumn
@@ -582,32 +574,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
-  },
-  // Screen-fixed Surabaya bubble: full-bleed catcher centred over the map so the
-  // bubble stays pinned to the screen centre while the map pans underneath.
-  surabayaBubbleWrap: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  surabayaBubble: {
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: nbSpacing.lg,
-    paddingVertical: nbSpacing.sm,
-    borderRadius: nbRadius.lg,
-    borderWidth: nbBorders.widthThick,
-    borderColor: nbColors.black,
-    backgroundColor: nbColors.white,
-    ...nbShadows.md,
-  },
-  surabayaBubbleLabel: {
-    letterSpacing: 1,
-    color: nbColors.black,
   },
   centerContainer: {
     flex: 1,

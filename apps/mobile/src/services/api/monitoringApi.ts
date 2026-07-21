@@ -140,10 +140,11 @@ export async function getBoundaries(
   return get<BoundariesResponse>('/monitoring/boundaries', params);
 }
 
-// Aggregate ("Ringkasan") rollup — district nodes (scope=city) or area nodes
-// (scope=district) with grouped status/role counts and centers, no worker coords.
+// Aggregate ("Ringkasan") rollup — district nodes (scope=city), kawasan nodes
+// (scope=region, id=districtId) or lokasi nodes (scope=district) with grouped
+// status/role counts and centers, no worker coords.
 export async function getMonitoringAggregate(
-  scope: 'city' | 'district' = 'city',
+  scope: 'city' | 'district' | 'region' = 'city',
   id?: string,
 ): Promise<ApiResponse<MonitoringAggregateResponse>> {
   const params: Record<string, string> = { scope };
