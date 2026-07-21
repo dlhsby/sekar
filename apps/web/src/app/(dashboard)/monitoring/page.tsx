@@ -113,8 +113,8 @@ export default function MonitoringPage() {
 
   // Role determines the landing view + the floor the user can never drill above.
   const roleView = useMemo<{ view: MonitoringView; floor: Scope }>(() => {
-    if (user?.role === 'korlap' && user.area_id) {
-      return { view: { scope: 'location', id: user.area_id }, floor: 'location' };
+    if (user?.role === 'korlap' && user.location_id) {
+      return { view: { scope: 'location', id: user.location_id }, floor: 'location' };
     }
     if ((user?.role === 'kepala_rayon' || user?.role === 'admin_rayon') && user.district_id) {
       return {

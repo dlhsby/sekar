@@ -57,7 +57,7 @@ export const TASK_STATUS_TONES: Record<TaskStatus, PillTone> = {
 
 export const TASK_PRIORITY_TONES: Record<TaskPriority, PillTone> = {
   low: 'neutral',
-  normal: 'info',
+  medium: 'info',
   high: 'warn',
   urgent: 'bad',
 };

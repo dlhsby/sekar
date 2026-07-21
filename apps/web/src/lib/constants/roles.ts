@@ -62,8 +62,8 @@ export const REASSIGN_ROLES: UserRole[] = ['superadmin', 'admin_system', 'kepala
  */
 export const SCHEDULABLE_WORKER_ROLES: UserRole[] = ['satgas', 'linmas'];
 
-/** Roles that can clock in/out (field roles with area assignments only) */
-export const CLOCKABLE_ROLES: UserRole[] = ['satgas', 'linmas', 'korlap'];
+/** Roles that can clock in/out (mirrors backend CLOCKABLE_ROLES). */
+export const CLOCKABLE_ROLES: UserRole[] = ['satgas', 'linmas', 'korlap', 'admin_rayon', 'kepala_rayon'];
 
 /** Roles that can approve overtime */
 export const OVERTIME_APPROVER_ROLES: UserRole[] = ['korlap', 'kepala_rayon'];
@@ -147,9 +147,10 @@ export const ROLE_HIERARCHY_ORDER: UserRole[] = [
 
 /** Valid assignment targets per role (who can assign to whom) */
 export const VALID_TASK_ASSIGNMENTS: Partial<Record<UserRole, UserRole[]>> = {
-  korlap: ['satgas', 'linmas'],
-  kepala_rayon: ['korlap'],
-  management: ['kepala_rayon', 'korlap'],
+  korlap: ['korlap', 'satgas', 'linmas'],
+  kepala_rayon: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
+  admin_rayon: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
+  management: ['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas'],
   admin_system: ['kepala_rayon', 'korlap'],
   superadmin: ['kepala_rayon', 'korlap'],
 };

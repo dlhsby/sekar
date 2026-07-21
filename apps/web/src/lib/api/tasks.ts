@@ -22,7 +22,7 @@ export type TaskStatus =
 /**
  * Task Priority
  */
-export type TaskPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 /**
  * Task Interface (Phase 2C)
@@ -57,7 +57,7 @@ export interface Task extends Record<string, unknown> {
   tags?: TaskTag[];
   priority: TaskPriority;
   status: TaskStatus;
-  due_date?: string;
+  deadline?: string;
   assigned_at?: string;
   accepted_at?: string;
   declined_at?: string;
@@ -81,10 +81,10 @@ export interface TaskFilters {
   status?: TaskStatus;
   priority?: TaskPriority;
   assigned_to?: string;
-  area_id?: string;
+  location_id?: string;
   district_id?: string;
-  due_date_from?: string;
-  due_date_to?: string;
+  deadline_after?: string;
+  deadline_before?: string;
   page?: number;
   limit?: number;
 }
@@ -96,11 +96,11 @@ export interface CreateTaskDto {
   title: string;
   description?: string;
   assigned_to?: string;
-  area_id?: string;
+  location_id?: string;
   district_id?: string;
   activity_type_id?: string;
   priority?: TaskPriority;
-  due_date?: string;
+  deadline?: string;
   tagged_user_ids?: string[];
 }
 
@@ -111,11 +111,11 @@ export interface UpdateTaskDto {
   title?: string;
   description?: string;
   assigned_to?: string;
-  area_id?: string;
+  location_id?: string;
   district_id?: string;
   activity_type_id?: string;
   priority?: TaskPriority;
-  due_date?: string;
+  deadline?: string;
   status?: TaskStatus;
 }
 

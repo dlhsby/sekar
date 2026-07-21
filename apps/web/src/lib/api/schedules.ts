@@ -63,7 +63,7 @@ export interface Schedule {
   } | null;
   schedule_areas: Array<{
     id: string;
-    area_id: string;
+    location_id: string;
     area: {
       id: string;
       name: string;

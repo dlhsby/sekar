@@ -67,7 +67,7 @@ describe('Daily Schedules API', () => {
     schedule_areas: [
       {
         id: 'area-1',
-        area_id: 'area-1',
+        location_id: 'area-1',
         area: {
           id: 'area-1',
           name: 'Taman Bungkul',
@@ -321,7 +321,7 @@ describe('Daily Schedules API', () => {
     it('should update areas on roster entry', async () => {
       const area2 = {
         id: 'area-2',
-        area_id: 'area-2',
+        location_id: 'area-2',
         area: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
       };
       const updatedSchedule: Schedule = {

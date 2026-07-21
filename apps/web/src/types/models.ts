@@ -360,7 +360,7 @@ export interface Activity extends Record<string, unknown> {
     role: UserRole;
   };
   shift_id: string;
-  area_id: string;
+  location_id: string;
   area?: {
     id: string;
     name: string;
@@ -388,7 +388,7 @@ export interface Activity extends Record<string, unknown> {
  */
 export interface ActivityFilters {
   activity_type_id?: string;
-  area_id?: string;
+  location_id?: string;
   user_id?: string;
   status?: ActivityStatus;
   district_id?: string;
@@ -436,7 +436,7 @@ export interface Overtime extends Record<string, unknown> {
     full_name: string;
     role: UserRole;
   };
-  area_id: string;
+  location_id: string;
   area?: {
     id: string;
     name: string;
@@ -470,7 +470,7 @@ export interface Overtime extends Record<string, unknown> {
  */
 export interface OvertimeFilters {
   status?: OvertimeStatus;
-  area_id?: string;
+  location_id?: string;
   district_id?: string;
   user_id?: string;
   from_date?: string;
