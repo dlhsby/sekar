@@ -151,6 +151,31 @@ describe('websocketService', () => {
       );
     });
 
+    it('subscribes to region (kawasan)', () => {
+      websocketService.subscribeToRegion('region-789');
+
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'subscribe:region',
+        { region_id: 'region-789' },
+        expect.any(Function)
+      );
+      expect(websocketService.getSubscribedRooms()).toContain('region:region-789');
+    });
+
+    it('unsubscribes from region (kawasan)', () => {
+      websocketService.subscribeToRegion('region-789');
+      mockSocket.emit.mockClear();
+
+      websocketService.unsubscribeFromRegion('region-789');
+
+      expect(mockSocket.emit).toHaveBeenCalledWith(
+        'unsubscribe:region',
+        { region_id: 'region-789' },
+        expect.any(Function)
+      );
+      expect(websocketService.getSubscribedRooms()).not.toContain('region:region-789');
+    });
+
     it('adds event listeners', () => {
       const handler = jest.fn();
 

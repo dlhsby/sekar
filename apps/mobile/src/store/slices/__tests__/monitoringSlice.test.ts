@@ -7,6 +7,7 @@
 import monitoringReducer, {
   setLiveUsers,
   updateLiveUser,
+  removeLiveUser,
   setCityStats,
   setDistrictStats,
   setAreaStats,
@@ -276,6 +277,35 @@ describe('monitoringSlice', () => {
         setLiveUsers([]),
       );
       expect(state.liveUsers).toEqual([]);
+    });
+  });
+
+  // ── removeLiveUser (clock-out) ─────────────────────────────────────────────
+
+  describe('removeLiveUser', () => {
+    it('drops the worker from liveUsers on clock-out', () => {
+      const other = { ...mockLiveUser, id: 'other-user' };
+      const state = monitoringReducer(
+        { ...initialState, liveUsers: [mockLiveUser, other] },
+        removeLiveUser({ id: mockLiveUser.id }),
+      );
+      expect(state.liveUsers.map((u) => u.id)).toEqual(['other-user']);
+    });
+
+    it('clears the selected user when they are the one removed', () => {
+      const state = monitoringReducer(
+        { ...initialState, liveUsers: [mockLiveUser], selectedUser: mockLiveUser },
+        removeLiveUser({ id: mockLiveUser.id }),
+      );
+      expect(state.selectedUser).toBeNull();
+    });
+
+    it('is a no-op when the user is not present', () => {
+      const state = monitoringReducer(
+        { ...initialState, liveUsers: [mockLiveUser] },
+        removeLiveUser({ id: 'ghost' }),
+      );
+      expect(state.liveUsers).toHaveLength(1);
     });
   });
 

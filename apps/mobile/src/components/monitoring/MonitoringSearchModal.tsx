@@ -29,6 +29,7 @@ import {
   type SearchResult,
   type SearchResultType,
 } from '../../hooks/useMonitoringSearch';
+import { useServerMonitoringSearch } from '../../hooks/useServerMonitoringSearch';
 import { getRecentSearches, clearRecentSearches } from '../../services/storage/recentSearches';
 import type { LiveUser, DistrictBoundary } from '../../types/models.types';
 
@@ -114,8 +115,14 @@ export function MonitoringSearchModal({
     }),
     [t],
   );
-  const results = useMonitoringSearch(liveUsers, districts, query, searchLabels);
+  // Hybrid petugas search: server (scope-filtered, incl. off-screen + unscheduled
+  // clock-ins) when online, cached in-store liveUsers when offline. Locations +
+  // districts always come from the loaded boundaries client-side.
+  const server = useServerMonitoringSearch(query);
+  const petugasSource = server.users ?? liveUsers;
+  const results = useMonitoringSearch(petugasSource, districts, query, searchLabels);
   const hasQuery = query.trim().length > 0;
+  const showOfflineNotice = hasQuery && server.isOffline;
 
   // Load recents + reset query/tab whenever the modal opens. Guard the async
   // setState so it can't fire after the modal closes/unmounts.
@@ -200,6 +207,14 @@ export function MonitoringSearchModal({
 
         {hasQuery ? (
           <>
+            {showOfflineNotice && (
+              <View style={styles.offlineNotice}>
+                <MaterialCommunityIcons name="wifi-off" size={14} color={nbColors.gray600} />
+                <NBText variant="caption" color="gray600" style={styles.offlineNoticeText}>
+                  {t('monitoring:search.offline')}
+                </NBText>
+              </View>
+            )}
             <NBTab
               scrollable
               tabs={tabs}
@@ -303,6 +318,20 @@ const styles = StyleSheet.create({
   },
   tabs: {
     marginBottom: nbSpacing.sm,
+  },
+  offlineNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginHorizontal: 16,
+    marginBottom: nbSpacing.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: nbRadius.sm,
+    backgroundColor: nbColors.gray100,
+  },
+  offlineNoticeText: {
+    flex: 1,
   },
   list: {
     flex: 1,

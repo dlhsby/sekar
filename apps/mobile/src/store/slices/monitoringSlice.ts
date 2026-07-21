@@ -268,6 +268,21 @@ const monitoringSlice = createSlice({
       }
     },
 
+    /**
+     * Remove a worker from the live set — used when they clock out (the map should
+     * drop their pin immediately, mirroring web's snapshot-removal on `user:clock-out`).
+     * Defensive: a no-op if the user isn't present (e.g. already filtered out).
+     */
+    removeLiveUser(state, action: PayloadAction<{ id: string }>) {
+      const { id } = action.payload;
+      if (!state.liveUsers.some((u) => u.id === id)) return;
+      state.liveUsers = state.liveUsers.filter((u) => u.id !== id);
+      state.statusCounts = computeStatusCounts(state.liveUsers);
+      if (state.selectedUser?.id === id) {
+        state.selectedUser = null;
+      }
+    },
+
     setCityStats(state, action: PayloadAction<Record<string, unknown> | null>) {
       state.cityStats = action.payload;
     },
@@ -419,6 +434,7 @@ const monitoringSlice = createSlice({
 export const {
   setLiveUsers,
   updateLiveUser,
+  removeLiveUser,
   setCityStats,
   setDistrictStats,
   setAreaStats,

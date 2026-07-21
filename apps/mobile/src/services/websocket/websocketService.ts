@@ -427,6 +427,66 @@ class WebSocketService {
   }
 
   /**
+   * Subscribe to region (Kawasan) events — the monitoring region drill tier (ADR-045).
+   *
+   * @param regionId - Region (Kawasan) UUID to subscribe to
+   */
+  subscribeToRegion(regionId: string): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Not connected, cannot subscribe to region');
+      return;
+    }
+
+    const room = `region:${regionId}`;
+
+    if (this.subscribedRooms.has(room)) {
+      console.debug('[WebSocket] Already subscribed to', room);
+      return;
+    }
+
+    console.debug('[WebSocket] Subscribing to region:', regionId);
+
+    this.socket.emit('subscribe:region', { region_id: regionId }, (response: any) => {
+      if (response?.success) {
+        this.subscribedRooms.add(room);
+        console.debug('[WebSocket] Subscribed to region:', regionId);
+      } else {
+        console.error('[WebSocket] Failed to subscribe to region:', response);
+      }
+    });
+  }
+
+  /**
+   * Unsubscribe from region (Kawasan) events
+   *
+   * @param regionId - Region (Kawasan) UUID to unsubscribe from
+   */
+  unsubscribeFromRegion(regionId: string): void {
+    if (!this.socket?.connected) {
+      console.warn('[WebSocket] Not connected, cannot unsubscribe from region');
+      return;
+    }
+
+    const room = `region:${regionId}`;
+
+    if (!this.subscribedRooms.has(room)) {
+      console.debug('[WebSocket] Not subscribed to', room);
+      return;
+    }
+
+    console.debug('[WebSocket] Unsubscribing from region:', regionId);
+
+    this.socket.emit('unsubscribe:region', { region_id: regionId }, (response: any) => {
+      if (response?.success) {
+        this.subscribedRooms.delete(room);
+        console.debug('[WebSocket] Unsubscribed from region:', regionId);
+      } else {
+        console.error('[WebSocket] Failed to unsubscribe from region:', response);
+      }
+    });
+  }
+
+  /**
    * Add listener for user clock-in events
    */
   onUserClockIn(handler: EventHandler<UserClockInEvent>): () => void {
@@ -631,6 +691,10 @@ class WebSocketService {
         const districtId = room.replace('district:', '');
         this.subscribedRooms.delete(room); // Remove to avoid duplicate check
         this.subscribeToDistrict(districtId);
+      } else if (room.startsWith('region:')) {
+        const regionId = room.replace('region:', '');
+        this.subscribedRooms.delete(room); // Remove to avoid duplicate check
+        this.subscribeToRegion(regionId);
       }
     });
   }

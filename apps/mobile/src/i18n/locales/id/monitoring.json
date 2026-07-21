@@ -139,6 +139,7 @@
   },
   "search": {
     "title": "Pencarian",
+    "offline": "Tidak ada koneksi — menampilkan data tersimpan",
     "placeholder": "Cari petugas, area, rayon…",
     "searchLabel": "Pencarian: {{value}}",
     "clearLabel": "Hapus pencarian",
