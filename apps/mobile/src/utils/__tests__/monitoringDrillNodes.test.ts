@@ -7,9 +7,11 @@
 import {
   aggregateNodeToNodeMarker,
   composeDrillNodes,
+  clusterNodes,
   type DrillView,
 } from '../monitoringDrillNodes';
 import type { AggregateNode } from '../../types/monitoring.types';
+import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
 
 function agg(over: Partial<AggregateNode>): AggregateNode {
   return {
@@ -155,5 +157,85 @@ describe('composeDrillNodes', () => {
       [],
     );
     expect(out).toEqual([]);
+  });
+});
+
+describe('clusterNodes', () => {
+  const nm = (id: string, lat: number, lng: number): NodeMarker => ({
+    id,
+    name: id,
+    variant: 'location',
+    lat,
+    lng,
+    scheduled: 0,
+    clocked_in: 0,
+    not_clocked_in: 0,
+  });
+
+  it('collapses coincident/near nodes into one cluster with the members', () => {
+    const out = clusterNodes(
+      [nm('a', -7.25, 112.75), nm('b', -7.2501, 112.7501), nm('c', -7.2502, 112.7499)],
+      0.1, // zoomed out → ~0.006° radius, all three merge
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0].kind).toBe('cluster');
+    if (out[0].kind === 'cluster') {
+      expect(out[0].cluster.count).toBe(3);
+      expect(out[0].cluster.nodes.map(n => n.id).sort()).toEqual(['a', 'b', 'c']);
+    }
+  });
+
+  it('keeps far-apart nodes as individual nodes', () => {
+    const out = clusterNodes([nm('a', -7.2, 112.7), nm('b', -7.4, 112.9)], 0.1);
+    expect(out).toHaveLength(2);
+    expect(out.every(o => o.kind === 'node')).toBe(true);
+  });
+
+  it('breaks a cluster apart as you zoom in (smaller latitudeDelta)', () => {
+    const nodes = [nm('a', -7.25, 112.75), nm('b', -7.2508, 112.7508)];
+    // zoomed out → merged
+    expect(clusterNodes(nodes, 0.2)).toHaveLength(1);
+    // zoomed way in → separate
+    const zoomed = clusterNodes(nodes, 0.002);
+    expect(zoomed).toHaveLength(2);
+    expect(zoomed.every(o => o.kind === 'node')).toBe(true);
+  });
+
+  it('centres a cluster on its members’ centroid', () => {
+    const out = clusterNodes([nm('a', -7.2, 112.7), nm('b', -7.4, 112.9)], 4); // huge delta → 0.24° radius → merge
+    expect(out).toHaveLength(1);
+    if (out[0].kind === 'cluster') {
+      expect(out[0].cluster.lat).toBeCloseTo(-7.3, 5);
+      expect(out[0].cluster.lng).toBeCloseTo(112.8, 5);
+    }
+  });
+
+  it('chains transitively: a node near a member (not the seed) still joins the cluster', () => {
+    // a—b—c strung 0.009° apart; threshold ≈ 0.01 (delta 0.166). c is 0.018 from
+    // the seed a (> threshold) but 0.009 from b, so it must still cluster, not float.
+    const out = clusterNodes(
+      [nm('a', -7.25, 112.75), nm('b', -7.259, 112.75), nm('c', -7.268, 112.75)],
+      0.1667,
+    );
+    expect(out).toHaveLength(1);
+    if (out[0].kind === 'cluster') {
+      expect(out[0].cluster.count).toBe(3);
+    }
+  });
+
+  it('gives a cluster the same id regardless of input order (stable React key)', () => {
+    const a = nm('a', -7.25, 112.75);
+    const b = nm('b', -7.2504, 112.7504);
+    const id1 = clusterNodes([a, b], 0.1)[0];
+    const id2 = clusterNodes([b, a], 0.1)[0];
+    expect(id1.kind).toBe('cluster');
+    expect(id2.kind).toBe('cluster');
+    if (id1.kind === 'cluster' && id2.kind === 'cluster') {
+      expect(id1.cluster.id).toBe(id2.cluster.id);
+    }
+  });
+
+  it('returns [] for no nodes', () => {
+    expect(clusterNodes([], 0.1)).toEqual([]);
   });
 });

@@ -12,12 +12,13 @@
  * stable (no per-pan redraw jank — mirrors UserMarker).
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
 import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import { healthColor, rosterHealth } from './markerSpec';
+import { clusterNodes, type NodeCluster } from '../../utils/monitoringDrillNodes';
 
 /** A drill-down node marker: a district (rayon), a region (kawasan), or a location (lokasi). */
 export interface NodeMarker {
@@ -34,6 +35,11 @@ export interface NodeMarker {
 interface AggregateBubbleLayerProps {
   nodes: NodeMarker[];
   onDrill: (node: NodeMarker) => void;
+  /** Current map zoom (region latitudeDelta) — drives proximity clustering so a
+   *  dense tier doesn't stack into an unreadable pile. */
+  latitudeDelta: number;
+  /** Tap a cluster → zoom in toward its centre (declutter, NOT a drill). */
+  onClusterPress: (center: { latitude: number; longitude: number }) => void;
 }
 
 function Bubble({
@@ -78,15 +84,56 @@ function Bubble({
   );
 }
 
+/** A collapsed group of nearby nodes: a neutral count bubble; tap zooms in. */
+function ClusterBubble({
+  cluster,
+  onPress,
+}: {
+  cluster: NodeCluster;
+  onPress: (center: { latitude: number; longitude: number }) => void;
+}): React.JSX.Element {
+  const [tracks, setTracks] = useState(true);
+  useEffect(() => {
+    const id = setTimeout(() => setTracks(false), 400);
+    return () => clearTimeout(id);
+  }, []);
+  return (
+    <Marker
+      coordinate={{ latitude: cluster.lat, longitude: cluster.lng }}
+      onPress={() => onPress({ latitude: cluster.lat, longitude: cluster.lng })}
+      tracksViewChanges={tracks}
+      anchor={{ x: 0.5, y: 0.5 }}
+      testID={`node-cluster-${cluster.id}`}
+    >
+      <View style={styles.cluster}>
+        <NBText variant="body-sm" style={styles.clusterCount}>
+          {cluster.count}
+        </NBText>
+      </View>
+    </Marker>
+  );
+}
+
 export function AggregateBubbleLayer({
   nodes,
   onDrill,
+  latitudeDelta,
+  onClusterPress,
 }: AggregateBubbleLayerProps): React.JSX.Element {
+  const items = useMemo(() => clusterNodes(nodes, latitudeDelta), [nodes, latitudeDelta]);
   return (
     <>
-      {nodes.map(node => (
-        <Bubble key={`node-${node.id}`} node={node} onDrill={onDrill} />
-      ))}
+      {items.map(item =>
+        item.kind === 'cluster' ? (
+          <ClusterBubble
+            key={`cluster-${item.cluster.id}`}
+            cluster={item.cluster}
+            onPress={onClusterPress}
+          />
+        ) : (
+          <Bubble key={`node-${item.node.id}`} node={item.node} onDrill={onDrill} />
+        ),
+      )}
     </>
   );
 }
@@ -112,6 +159,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   ratio: {
+    fontWeight: '800',
+  },
+  cluster: {
+    minWidth: 40,
+    height: 40,
+    paddingHorizontal: 8,
+    borderRadius: nbRadius.full,
+    borderWidth: nbBorders.widthThick,
+    borderColor: nbColors.black,
+    backgroundColor: nbColors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...nbShadows.sm,
+  },
+  clusterCount: {
+    color: nbColors.black,
     fontWeight: '800',
   },
 });

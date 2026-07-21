@@ -143,7 +143,12 @@ export function MapLayerContent({
       {/* Drill bubbles from the aggregate — district nodes (city), regions ∪
           region-less lokasi (district), a kawasan's lokasi (region). Tap → drill. */}
       {mapReady && nodeMarkers.length > 0 && (
-        <AggregateBubbleLayer nodes={nodeMarkers} onDrill={onNodeDrill} />
+        <AggregateBubbleLayer
+          nodes={nodeMarkers}
+          onDrill={onNodeDrill}
+          latitudeDelta={currentRegion.latitudeDelta}
+          onClusterPress={onClusterPress}
+        />
       )}
 
       {/* Phase 3: Area status overlay (plant health tints) — inside a district only */}
