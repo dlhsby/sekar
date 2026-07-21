@@ -18,6 +18,9 @@ export type TaskStatus =
 // Task priority
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+// Assignment Scope (Phase 3: scope-aware task assignment)
+export type AssignmentScope = 'city' | 'district' | 'region' | 'location' | 'none';
+
 // Task Tag (Phase 2C)
 export interface TaskTag {
   id: string;
@@ -27,7 +30,7 @@ export interface TaskTag {
   created_at: string;
 }
 
-// Task (Phase 2C: accept/decline + verify/revision support, optional location_id, district support)
+// Task (Phase 2C: accept/decline + verify/revision support, optional location_id, district support; Phase 3: scope-aware)
 export interface Task {
   id: string;
   title: string;
@@ -39,6 +42,8 @@ export interface Task {
   area?: Area;
   district_id?: string;
   district?: District;
+  region_id?: string; // Phase 3: Kawasan scope
+  scope?: AssignmentScope; // Phase 3: scope assignment
   assigned_to?: string;
   assignee?: User;
   created_by: string;

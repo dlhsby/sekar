@@ -80,6 +80,9 @@ jest.mock('@react-navigation/native', () => ({
     dispatch: jest.fn(),
     setOptions: jest.fn(),
   }),
+  useRoute: () => ({
+    params: undefined,
+  }),
   useFocusEffect: (cb: () => void) => {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const React = require('react');

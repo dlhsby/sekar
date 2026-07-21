@@ -157,6 +157,7 @@
     "notFoundMessage": "Tugas yang Anda cari tidak ditemukan atau telah dihapus",
     "backButtonTitle": "Kembali",
     "taskHistory": "Riwayat Tugas",
+    "submitActivity": "Submit Aktivitas",
     "assignment": "Penugasan",
     "completionDetails": "Detail Penyelesaian",
     "assignmentHistory": "Riwayat Penugasan",
@@ -301,10 +302,23 @@
     "loadingDistrict": "Memuat rayon...",
     "areaLabel": "Area",
     "loadingArea": "Memuat area...",
+    "regionLabel": "Kawasan",
+    "loadingRegion": "Memuat kawasan...",
     "yourDistrict": "Rayon Anda",
     "yourArea": "Area Anda",
     "districtPlaceholder": "Pilih rayon...",
-    "areaPlaceholder": "Pilih area..."
+    "areaPlaceholder": "Pilih area...",
+    "regionPlaceholder": "Pilih kawasan..."
+  },
+  "scope": {
+    "title": "Cakupan Area",
+    "auto": "Auto (ikuti jadwal)",
+    "city": "Kota (Surabaya)",
+    "district": "Rayon",
+    "region": "Kawasan",
+    "location": "Lokasi",
+    "none": "Tanpa area",
+    "required": "Pilih cakupan area"
   },
   "draft": {
     "foundTitle": "Draft Ditemukan",

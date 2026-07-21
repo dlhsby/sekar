@@ -211,6 +211,15 @@ export function TaskDetailScreen(): React.JSX.Element {
         />
 
         <View style={styles.actionContainer}>
+          {/* Submit Activity button — visible when task is assigned to current user and is in progress */}
+          {task && task.assigned_to === user?.id && ['assigned', 'accepted', 'in_progress'].includes(task.status) && (
+            <NBButton
+              title={t('tasks:detail.submitActivity')}
+              variant="primary"
+              onPress={() => (navigation as any).navigate('ActivitySubmission', { taskId: task.id })}
+            />
+          )}
+
           <NBButton
             title={t('tasks:detail.taskHistory')}
             variant="secondary"

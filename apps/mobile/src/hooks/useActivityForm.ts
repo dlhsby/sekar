@@ -278,6 +278,7 @@ export function useActivityForm() {
     onNavigateClockIn: () => void,
     onNavigateActivities: () => void,
     onValidationFail?: () => void,
+    taskId?: string,
   ) => {
     if (!currentShift) {
       Alert.alert(
@@ -313,6 +314,8 @@ export function useActivityForm() {
         gps_lng: form.location!.longitude,
         // ADR-038: include tagged users (omitted when empty so old payload shape is preserved)
         ...(form.taggedUserIds.length > 0 ? { tagged_user_ids: form.taggedUserIds } : {}),
+        // Phase 3: include task_id when submitting activity from task context
+        ...(taskId ? { task_id: taskId } : {}),
       };
 
       if (isOnline) {

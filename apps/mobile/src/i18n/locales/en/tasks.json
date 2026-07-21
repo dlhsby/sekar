@@ -157,6 +157,7 @@
     "notFoundMessage": "The task you are looking for was not found or has been deleted",
     "backButtonTitle": "Back",
     "taskHistory": "Task History",
+    "submitActivity": "Submit Activity",
     "assignment": "Assignment",
     "completionDetails": "Completion Details",
     "assignmentHistory": "Assignment History",
@@ -301,10 +302,23 @@
     "loadingDistrict": "Loading districts...",
     "areaLabel": "Area",
     "loadingArea": "Loading areas...",
+    "regionLabel": "Region",
+    "loadingRegion": "Loading regions...",
     "yourDistrict": "Your district",
     "yourArea": "Your area",
     "districtPlaceholder": "Select district...",
-    "areaPlaceholder": "Select area..."
+    "areaPlaceholder": "Select area...",
+    "regionPlaceholder": "Select region..."
+  },
+  "scope": {
+    "title": "Scope",
+    "auto": "Auto (follow schedule)",
+    "city": "City (Surabaya)",
+    "district": "District",
+    "region": "Region",
+    "location": "Location",
+    "none": "No area",
+    "required": "Select area scope"
   },
   "draft": {
     "foundTitle": "Draft Found",
