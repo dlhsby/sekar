@@ -29,7 +29,11 @@ import {
   ScheduleStatus,
   ScheduleLocation,
 } from '../../schedules/entities/schedule.entity';
-import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
+import {
+  AssignmentScope,
+  ASSIGNMENT_SCOPE_RANK,
+  DisplayScope,
+} from '../../../common/enums/assignment-scope.enum';
 
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { resolveShiftWindow } from '../lib/presence-lifecycle';
@@ -1044,13 +1048,8 @@ export class MonitoringStatsService {
    */
   async scheduleScopesForCurrentShift(
     shiftDefinitionId: string | undefined,
-  ): Promise<
-    Map<string, { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }>
-  > {
-    const map = new Map<
-      string,
-      { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }
-    >();
+  ): Promise<Map<string, DisplayScope>> {
+    const map = new Map<string, DisplayScope>();
     if (!shiftDefinitionId) return map;
     const today = TimezoneUtil.jakartaDateString();
     const rows = (await this.scheduleRepository
@@ -1075,14 +1074,10 @@ export class MonitoringStatsService {
       location_id: string | null;
       sl_id: string | null;
     }>;
-    // Rank most-specific → least so a user with several rows keeps the deepest.
-    // ORDER BY ensures deterministic output when a user has multiple locations at same depth.
-    const rank = { location: 3, region: 2, district: 1, city: 0 } as const;
+    // ORDER BY sl.id keeps output deterministic when a user has multiple rows at
+    // the same depth; ASSIGNMENT_SCOPE_RANK picks the deepest across rows.
     for (const r of rows) {
-      const resolved: {
-        scope: 'city' | 'district' | 'region' | 'location';
-        scope_id: string | null;
-      } = r.location_id
+      const resolved: DisplayScope = r.location_id
         ? { scope: 'location', scope_id: r.location_id }
         : r.region_id
           ? { scope: 'region', scope_id: r.region_id }
@@ -1090,10 +1085,10 @@ export class MonitoringStatsService {
             ? { scope: 'district', scope_id: r.district_id }
             : { scope: 'city', scope_id: null };
       const prev = map.get(r.user_id);
-      if (!prev || rank[resolved.scope] > rank[prev.scope]) {
+      if (!prev || ASSIGNMENT_SCOPE_RANK[resolved.scope] > ASSIGNMENT_SCOPE_RANK[prev.scope]) {
         if (
           prev &&
-          rank[resolved.scope] === rank[prev.scope] &&
+          ASSIGNMENT_SCOPE_RANK[resolved.scope] === ASSIGNMENT_SCOPE_RANK[prev.scope] &&
           prev.scope_id !== resolved.scope_id
         ) {
           this.logger.warn(
@@ -1115,15 +1110,8 @@ export class MonitoringStatsService {
    * task scope per user (`location` > `region` > `district` > `city`); `none`
    * tasks contribute nothing. Merged with the schedule scope by the caller.
    */
-  async inProgressTaskScopesForUsers(
-    userIds: string[],
-  ): Promise<
-    Map<string, { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }>
-  > {
-    const map = new Map<
-      string,
-      { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null }
-    >();
+  async inProgressTaskScopesForUsers(userIds: string[]): Promise<Map<string, DisplayScope>> {
+    const map = new Map<string, DisplayScope>();
     if (!userIds.length) return map;
     const tasks = await this.taskRepository.find({
       where: {
@@ -1133,7 +1121,6 @@ export class MonitoringStatsService {
       },
       select: ['assigned_to', 'scope', 'district_id', 'region_id', 'location_id'],
     });
-    const rank: Record<string, number> = { location: 3, region: 2, district: 1, city: 0 };
     for (const t of tasks) {
       if (!t.assigned_to) continue;
       const resolved =
@@ -1148,7 +1135,7 @@ export class MonitoringStatsService {
                 : null;
       if (!resolved) continue;
       const prev = map.get(t.assigned_to);
-      if (!prev || rank[resolved.scope] > rank[prev.scope]) {
+      if (!prev || ASSIGNMENT_SCOPE_RANK[resolved.scope] > ASSIGNMENT_SCOPE_RANK[prev.scope]) {
         map.set(t.assigned_to, resolved);
       }
     }

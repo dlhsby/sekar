@@ -10,18 +10,9 @@ import {
 } from '../../../common/enums/assignment-scope.enum';
 
 /**
- * ScheduleScopeResolverService — turns a user's schedule occurrence(s) on a given
- * day into a single {@link ResolvedScope} (the tier + ids), so tasks and activities
- * can "follow the schedule assigned" (user-directed, ADR-046).
- *
- * The scope of one occurrence is its deepest bound level: a `schedule_locations`
- * row → `location`, else `region_id` → `region`, else `district_id` → `district`,
- * else `city`. When a user has several occurrences that day we keep the DEEPEST one
- * (a lokasi placement is more specific than a district one). No occurrence → `none`,
- * so an unscheduled worker is never blocked — the caller decides the fallback.
- *
- * This is the write-side sibling of MonitoringStatsService.scheduleScopesForCurrentShift
- * (which powers live map placement); both derive scope from the same occurrence shape.
+ * Resolves a user's deepest schedule scope on a day, so tasks/activities can
+ * "follow the schedule assigned" (ADR-046). Write-side sibling of
+ * MonitoringStatsService.scheduleScopesForCurrentShift.
  */
 @Injectable()
 export class ScheduleScopeResolverService {

@@ -1,6 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
+import { DisplayScope, deeperDisplayScope } from '../../common/enums/assignment-scope.enum';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
@@ -221,7 +222,6 @@ export class MonitoringService {
     const taskScopes = await this.statsService.inProgressTaskScopesForUsers(
       (result?.users ?? []).map((u) => u.id),
     );
-    const scopeRank: Record<string, number> = { location: 3, region: 2, district: 1, city: 0 };
 
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
     const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => {
@@ -236,17 +236,11 @@ export class MonitoringService {
       const task = taskScopes.get(u.id);
       // Deepest-wins across the schedule occurrence and any in-progress task; a
       // worker with neither is an ad-hoc clock-in placed flat at city scope.
-      const candidates = [sched, task].filter(
-        (c): c is { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null } =>
-          Boolean(c),
-      );
-      const display: {
-        scope: 'city' | 'district' | 'region' | 'location';
-        scope_id: string | null;
-      } =
+      const candidates = [sched, task].filter((c): c is DisplayScope => Boolean(c));
+      const display: DisplayScope =
         candidates.length === 0
           ? { scope: 'city', scope_id: null }
-          : candidates.reduce((best, c) => (scopeRank[c.scope] > scopeRank[best.scope] ? c : best));
+          : candidates.reduce(deeperDisplayScope);
       // `ad_hoc` is decided here, where the roster check lives — the per-worker
       // lifecycle computed in getLiveUsers used a `scheduled: true` placeholder.
       // `?? []` guards partial payloads during rollout.

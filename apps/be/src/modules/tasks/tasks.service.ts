@@ -267,6 +267,7 @@ export class TasksService {
     }
   }
 
+  /** Require the id that an explicit scope needs, or 400. */
   private requireScopeId(id: string | undefined, scope: string, field: string): void {
     if (!id) {
       throw new BadRequestException(`A ${scope}-scoped task requires ${field}.`);
