@@ -46,7 +46,7 @@ export default function CreateTaskPage() {
   const [assignedTo, setAssignedTo] = useState('none');
   const [areaId, setAreaId] = useState('none');
   const [districtId, setDistrictId] = useState('none');
-  const [priority, setPriority] = useState<TaskPriority>('normal');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
   const [dueDate, setDueDate] = useState('');
   const [error, setError] = useState('');
 
@@ -92,10 +92,10 @@ export default function CreateTaskPage() {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
-        area_id: areaId !== 'none' ? areaId : undefined,
+        location_id: areaId !== 'none' ? areaId : undefined,
         district_id: districtId !== 'none' ? districtId : undefined,
         priority,
-        due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
+        deadline: dueDate ? new Date(dueDate).toISOString() : undefined,
       });
       router.push('/tasks');
     } catch (err) {
@@ -113,7 +113,7 @@ export default function CreateTaskPage() {
 
   const priorityOptions = [
     { value: 'low', label: t('form.priorityLow') },
-    { value: 'normal', label: t('form.priorityNormal') },
+    { value: 'medium', label: t('form.priorityNormal') },
     { value: 'high', label: t('form.priorityHigh') },
     { value: 'urgent', label: t('form.priorityUrgent') },
   ];

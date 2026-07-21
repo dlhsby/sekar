@@ -116,16 +116,18 @@ describe('Role Constants', () => {
   });
 
   describe('CLOCKABLE_ROLES', () => {
-    it('should include only field roles with area assignments', () => {
+    it('mirrors backend CLOCKABLE_ROLES (field + district supervisors)', () => {
       expect(CLOCKABLE_ROLES).toContain('satgas');
       expect(CLOCKABLE_ROLES).toContain('linmas');
       expect(CLOCKABLE_ROLES).toContain('korlap');
-      expect(CLOCKABLE_ROLES).toHaveLength(3);
+      expect(CLOCKABLE_ROLES).toContain('admin_rayon');
+      expect(CLOCKABLE_ROLES).toContain('kepala_rayon');
+      expect(CLOCKABLE_ROLES).toHaveLength(5);
     });
 
-    it('should not include admin_rayon or kepala_rayon', () => {
-      expect(CLOCKABLE_ROLES).not.toContain('admin_rayon');
-      expect(CLOCKABLE_ROLES).not.toContain('kepala_rayon');
+    it('excludes non-clockable roles (management/admin_system/superadmin/staff_kecamatan)', () => {
+      expect(CLOCKABLE_ROLES).not.toContain('management');
+      expect(CLOCKABLE_ROLES).not.toContain('staff_kecamatan');
     });
   });
 
@@ -193,11 +195,11 @@ describe('Role Constants', () => {
 
   describe('VALID_TASK_ASSIGNMENTS', () => {
     it('should define assignment rules for korlap', () => {
-      expect(VALID_TASK_ASSIGNMENTS.korlap).toEqual(['satgas', 'linmas']);
+      expect(VALID_TASK_ASSIGNMENTS.korlap).toEqual(['korlap', 'satgas', 'linmas']);
     });
 
     it('should define assignment rules for kepala_rayon', () => {
-      expect(VALID_TASK_ASSIGNMENTS.kepala_rayon).toEqual(['korlap']);
+      expect(VALID_TASK_ASSIGNMENTS.kepala_rayon).toEqual(['kepala_rayon', 'admin_rayon', 'korlap', 'satgas', 'linmas']);
     });
 
     it('should define assignment rules for management', () => {

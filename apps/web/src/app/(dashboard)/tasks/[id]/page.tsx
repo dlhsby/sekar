@@ -242,11 +242,11 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
                   <div className="text-nb-gray-700">{task.description}</div>
                 </div>
               )}
-              {task.due_date && (
+              {task.deadline && (
                 <div>
                   <div className="text-sm font-semibold text-nb-gray-600">{t('tasks:fields.dueDate')}</div>
                   <div className="font-bold text-nb-black">
-                    {new Date(task.due_date).toLocaleDateString(intlLocale())}
+                    {new Date(task.deadline).toLocaleDateString(intlLocale())}
                   </div>
                 </div>
               )}
