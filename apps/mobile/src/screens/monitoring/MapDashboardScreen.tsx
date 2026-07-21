@@ -47,6 +47,7 @@ import type {
 } from '../../store/slices/monitoringV2Slice';
 import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
 import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
+import type { TeamGroup } from '../../utils/teamGrouping';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
@@ -89,6 +90,12 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
   const [activityFilter, setActivityFilter] = useState<PresenceActivity | null>(null);
+  // Team drill-in (ADR-048): when a team bubble is tapped we show ONLY that team's
+  // members (as individual pins) and hide the other workers — keeping boundaries/nodes.
+  // The name is kept alongside the id so the exit chip stays labelled even if the
+  // team's members momentarily drop out of the snapshot (WS churn).
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [selectedTeamName, setSelectedTeamName] = useState<string>('');
   const [filterModalVisible, setFilterModalVisible] = useState(false);
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
@@ -113,8 +120,8 @@ export function MapDashboardScreen(): React.JSX.Element {
   const { resetHeading, handleClusterPress, handleMyLocation, handleZoomIn, handleZoomOut } =
     useMapOperations(mapRef, currentRegion);
 
-  const { visibleUsers, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
-    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id);
+  const { visibleUsers, teamBubbles, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
+    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId);
 
 
   // Initialise the unified drill view + floor from the viewer's role.
@@ -292,6 +299,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   const handleSearchSelect = useCallback(
     (result: SearchResult) => {
       setSearchModalVisible(false);
+      // Leaving the team view — navigating to a result shouldn't keep hiding workers.
+      setSelectedTeamId(null);
+      setSelectedTeamName('');
       addRecentSearch(result);
       if (result.type === 'petugas') {
         const user = liveUsers.find((u) => u.id === result.id);
@@ -310,6 +320,10 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Filter handler
   const handleApplyFilters = useCallback(
     (newFilters: MonitoringFilters) => {
+      // A filter change re-scopes the worker set; drop the team view so it can't
+      // hide a now-filtered set (the effect doesn't fire — the drill view is unchanged).
+      setSelectedTeamId(null);
+      setSelectedTeamName('');
       dispatch(setMonitoringFilters(newFilters));
     },
     [dispatch],
@@ -380,13 +394,33 @@ export function MapDashboardScreen(): React.JSX.Element {
   const handleNodeDrill = useCallback(
     (node: NodeMarker) => {
       const target = node.variant === 'district' ? 0.08 : node.variant === 'region' ? 0.04 : 0.02;
+      setSelectedTeamId(null);
       dispatch(drillTo({ id: node.id, type: node.variant, name: node.name, districtId: view.districtId }));
       zoomInTo(node.lat, node.lng, target);
     },
     [dispatch, zoomInTo, view.districtId],
   );
+
+  // Tap a team bubble → select it (members-only view, handled in useLiveUsersFiltering);
+  // zoom toward the team so its members spread out.
+  const handleTeamPress = useCallback(
+    (team: TeamGroup) => {
+      setSelectedTeamId(team.team_id);
+      setSelectedTeamName(team.team_name);
+      zoomInTo(team.latitude, team.longitude, 0.01);
+    },
+    [zoomInTo],
+  );
+
+  // Any drill/back changes the view → the team selection no longer applies. One
+  // effect covers every navigation path that changes scope (node drill, back, init).
+  useEffect(() => {
+    setSelectedTeamId(null);
+    setSelectedTeamName('');
+  }, [scope, view.id, view.districtId, view.regionId]);
   const handleDrillBack = useCallback(() => {
     const from = scope;
+    setSelectedTeamId(null);
     dispatch(drillBack());
     // Zoom the camera back out to match the level we're returning to.
     if (from === 'district' || from === 'city') {
@@ -489,6 +523,8 @@ export function MapDashboardScreen(): React.JSX.Element {
                 rosterById={rosterById}
                 nodeMarkers={nodeMarkers}
                 onNodeDrill={handleNodeDrill}
+                teamGroups={teamBubbles}
+                onTeamPress={handleTeamPress}
                 showWorkers={showWorkers}
                 onDistrictDrill={handleDistrictBubblePress}
                 onAreaDrill={handleAreaBubblePress}
@@ -518,6 +554,19 @@ export function MapDashboardScreen(): React.JSX.Element {
                 <NBText variant="caption" numberOfLines={1} style={styles.backChipText}>
                   {view.name ?? t('monitoring:page.backLabel')}
                 </NBText>
+              </TouchableOpacity>
+            )}
+            {selectedTeamId && (
+              <TouchableOpacity
+                style={styles.teamChip}
+                onPress={() => { setSelectedTeamId(null); setSelectedTeamName(''); }}
+                accessibilityRole="button"
+                accessibilityLabel={t('monitoring:team.exit')}
+              >
+                <NBText variant="caption" numberOfLines={1} style={styles.backChipText}>
+                  {t('monitoring:team.chip', { name: selectedTeamName })}
+                </NBText>
+                <MaterialCommunityIcons name="close" size={16} color={nbColors.black} />
               </TouchableOpacity>
             )}
           </View>
@@ -640,6 +689,20 @@ const styles = StyleSheet.create({
     paddingVertical: nbSpacing.xs,
     paddingHorizontal: nbSpacing.sm,
     backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.base,
+    ...nbShadows.xs,
+  },
+  teamChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    maxWidth: '55%',
+    marginLeft: nbSpacing.xs,
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    backgroundColor: nbColors.bgAccentLilac,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
     borderRadius: nbRadius.base,

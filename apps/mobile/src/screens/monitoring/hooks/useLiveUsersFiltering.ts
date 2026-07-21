@@ -8,6 +8,7 @@ import React, { useMemo } from 'react';
 import { clusterUsers, shouldCluster } from '../../../utils/mapUtils';
 import { userAxes } from '../../../utils/statusHelpers';
 import { scopeMatches } from '../../../utils/monitoringScope';
+import { groupWorkersByTeam, isTeamGroup, type TeamGroup } from '../../../utils/teamGrouping';
 import type { LiveUser, UserRole, PresenceActivity } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
 import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
@@ -15,7 +16,10 @@ import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoring
 type LabelMode = 'none' | 'abbrev' | 'full';
 
 interface UseLiveUsersFilteringReturn {
+  /** Individual worker pins to render (team members collapsed out, unless a team is selected). */
   visibleUsers: LiveUser[];
+  /** Collapsed team bubbles (≥2 members) to render alongside the pins (empty when a team is selected). */
+  teamBubbles: TeamGroup[];
   useClustering: boolean;
   clusters: any[];
   labelMode: LabelMode;
@@ -33,8 +37,10 @@ export function useLiveUsersFiltering(
   boundaries: any,
   scope: 'city' | 'district' | 'region' | 'location',
   viewId: string | null,
+  /** When set, show ONLY that team's members (as pins) and hide the rest (ADR-048). */
+  selectedTeamId: string | null = null,
 ): UseLiveUsersFilteringReturn {
-  const visibleUsers = React.useMemo(() => {
+  const scopedUsers = React.useMemo(() => {
     if (!visibleLayers.workers) { return []; }
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
@@ -51,6 +57,23 @@ export function useLiveUsersFiltering(
     }
     return users;
   }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, viewId]);
+
+  // Collapse ≥2-member teams into team bubbles (ADR-048). With a team selected,
+  // show ONLY its members as individual pins and no team bubbles — so `visibleUsers`
+  // (and thus clustering below) stays consistent with what's on the map.
+  const { visibleUsers, teamBubbles } = React.useMemo(() => {
+    if (selectedTeamId) {
+      return {
+        visibleUsers: scopedUsers.filter(u => u.team_id === selectedTeamId),
+        teamBubbles: [] as TeamGroup[],
+      };
+    }
+    const renderables = groupWorkersByTeam(scopedUsers);
+    return {
+      visibleUsers: renderables.filter((r): r is LiveUser => !isTeamGroup(r)),
+      teamBubbles: renderables.filter(isTeamGroup),
+    };
+  }, [scopedUsers, selectedTeamId]);
 
   const staffedAreas = useMemo(() => {
     if (!Array.isArray(liveUsers)) { return 0; }
@@ -76,8 +99,10 @@ export function useLiveUsersFiltering(
   }, [liveUsers]);
 
   const useClustering = React.useMemo(
-    () => shouldCluster(currentRegion, visibleUsers.length),
-    [currentRegion, visibleUsers.length],
+    // Never cluster while a team is selected — the whole point is to see its
+    // individual members, so keep them as pins regardless of zoom.
+    () => (selectedTeamId ? false : shouldCluster(currentRegion, visibleUsers.length)),
+    [currentRegion, visibleUsers.length, selectedTeamId],
   );
 
   const clusters = React.useMemo(
@@ -107,6 +132,7 @@ export function useLiveUsersFiltering(
 
   return {
     visibleUsers,
+    teamBubbles,
     useClustering,
     clusters,
     labelMode,
