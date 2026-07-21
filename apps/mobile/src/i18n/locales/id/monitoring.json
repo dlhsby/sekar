@@ -310,5 +310,11 @@
   "team": {
     "chip": "Tim: {{name}}",
     "exit": "Keluar dari tampilan tim"
+  },
+  "lifecycle": {
+    "late": "Terlambat",
+    "luarJadwal": "Luar Jadwal",
+    "lembur": "Lembur",
+    "lupaClockOut": "Lupa Clock-out"
   }
 }

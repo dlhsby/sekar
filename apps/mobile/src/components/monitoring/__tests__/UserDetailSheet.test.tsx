@@ -234,7 +234,7 @@ describe('UserDetailSheet (CP1)', () => {
 
     it.each([
       ['active',   'Aktif'],
-      ['offline',  'Offline'],
+      ['offline',  'Tidak Aktif'],
       ['absent',   'Tidak Hadir'],
     ] as const)('renders the presencePill label "%s" → "%s"', async (status, label) => {
       const { getByText } = render(

@@ -246,6 +246,36 @@ export function presenceActivityPill(activity: PresenceActivity): { tone: Status
   }
 }
 
+/**
+ * The lifecycle axis (ADR-050) as StatusPill descriptors — the third axis beside
+ * activity (aktif/tidak-aktif) and location (dalam/luar area) in the worker detail.
+ * Reads the explicit `lifecycle_flags` set plus the `is_late`/`is_scheduled`
+ * booleans (either source is honoured during rollout). Returns [] for a plain
+ * on-time scheduled worker (no extra pill). Order: late → luar jadwal → lembur →
+ * lupa clock-out.
+ */
+export function lifecycleFlagPills(user: {
+  is_late?: boolean;
+  is_scheduled?: boolean;
+  lifecycle_flags?: string[];
+}): { tone: StatusTone; label: string }[] {
+  const flags = new Set(user.lifecycle_flags ?? []);
+  const pills: { tone: StatusTone; label: string }[] = [];
+  if (user.is_late || flags.has('is_late')) {
+    pills.push({ tone: 'warn', label: i18n.t('monitoring:lifecycle.late') });
+  }
+  if (user.is_scheduled === false || flags.has('ad_hoc')) {
+    pills.push({ tone: 'info', label: i18n.t('monitoring:lifecycle.luarJadwal') });
+  }
+  if (flags.has('lembur')) {
+    pills.push({ tone: 'info', label: i18n.t('monitoring:lifecycle.lembur') });
+  }
+  if (flags.has('lupa_clock_out')) {
+    pills.push({ tone: 'bad', label: i18n.t('monitoring:lifecycle.lupaClockOut') });
+  }
+  return pills;
+}
+
 export function locationLabel(location: PresenceLocation): string {
   switch (location) {
     case 'dalam_area': return i18n.t('status:location.dalam_area');
