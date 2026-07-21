@@ -42,7 +42,8 @@ export function aggregateNodeToNodeMarker(node: AggregateNode): NodeMarker | nul
     lng: node.center_lng,
     scheduled: node.roster?.scheduled ?? 0,
     clocked_in: node.roster?.clocked_in ?? 0,
-    not_clocked_in: node.roster?.not_clocked_in ?? 0,
+    // Not-clocked-in = belum_hadir (within grace) + tidak_hadir (no-show), ADR-050.
+    not_clocked_in: (node.roster?.belum_hadir ?? 0) + (node.roster?.tidak_hadir ?? 0),
   };
 }
 

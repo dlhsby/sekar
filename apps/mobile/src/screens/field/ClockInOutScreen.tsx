@@ -174,7 +174,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   {assignedArea.address ? (
                     <InfoTableRow label={t('attendance:clockInOut.address')} value={assignedArea.address} numberOfLines={2} />
                   ) : null}
-                  <InfoTableRow label={t('attendance:clockInOut.areaType')} value={assignedArea.locationType?.name || 'N/A'} />
+                  <InfoTableRow label={t('attendance:clockInOut.areaType')} value={assignedArea.area_type?.name || 'N/A'} />
                   {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
                     <InfoTableRow
                       label={t('attendance:clockInOut.gpsCoordinates')}

@@ -66,11 +66,11 @@ export const OVERTIME_SUBMITTERS: UserRole[] = ['satgas', 'linmas', 'korlap', 'a
 /** Roles that can approve overtime */
 export const OVERTIME_APPROVERS: UserRole[] = ['korlap', 'kepala_rayon', 'management'];
 
-/** Monitoring access by scope */
-export const MONITORING_ROLES: Record<'city' | 'district' | 'area', UserRole[]> = {
+/** Monitoring access by scope (ADR-052: the leaf tier is `location`, not `area`). */
+export const MONITORING_ROLES: Record<'city' | 'district' | 'location', UserRole[]> = {
   city: ['management', 'admin_system', 'superadmin'],
   district: ['kepala_rayon', 'admin_rayon'],
-  area: ['korlap'],
+  location: ['korlap'],
 };
 
 /** Hierarchical task assignment rules (mirrors backend VALID_TASK_ASSIGNMENTS).
@@ -106,12 +106,12 @@ export const canApproveOvertime = (role: UserRole): boolean =>
   OVERTIME_APPROVERS.includes(role);
 
 export const canMonitor = (role: UserRole): boolean =>
-  [...MONITORING_ROLES.city, ...MONITORING_ROLES.district, ...MONITORING_ROLES.area].includes(role);
+  [...MONITORING_ROLES.city, ...MONITORING_ROLES.district, ...MONITORING_ROLES.location].includes(role);
 
-export const getMonitoringScope = (role: UserRole): 'city' | 'district' | 'area' | null => {
+export const getMonitoringScope = (role: UserRole): 'city' | 'district' | 'location' | null => {
   if (MONITORING_ROLES.city.includes(role)) return 'city';
   if (MONITORING_ROLES.district.includes(role)) return 'district';
-  if (MONITORING_ROLES.area.includes(role)) return 'area';
+  if (MONITORING_ROLES.location.includes(role)) return 'location';
   return null;
 };
 
@@ -122,7 +122,7 @@ export const ROLES_WITH_DISTRICT: UserRole[] = [...MONITORING_ROLES.city];
 export const ROLES_WITH_FIXED_DISTRICT: UserRole[] = [...MONITORING_ROLES.district];
 
 /** Roles without district visibility in monitoring filter (area/region-scope) */
-export const ROLES_WITHOUT_DISTRICT: UserRole[] = [...MONITORING_ROLES.area];
+export const ROLES_WITHOUT_DISTRICT: UserRole[] = [...MONITORING_ROLES.location];
 
 /**
  * Maps each role to its direct subordinate roles for filter scoping
