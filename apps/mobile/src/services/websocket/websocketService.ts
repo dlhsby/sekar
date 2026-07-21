@@ -369,7 +369,7 @@ class WebSocketService {
   /**
    * Subscribe to district events
    *
-   * @param districtId - Rayon UUID to subscribe to
+   * @param districtId - District (Kawasan parent) UUID to subscribe to
    */
   subscribeToDistrict(districtId: string): void {
     if (!this.socket?.connected) {
@@ -399,7 +399,7 @@ class WebSocketService {
   /**
    * Unsubscribe from district events
    *
-   * @param districtId - Rayon UUID to unsubscribe from
+   * @param districtId - District (Kawasan parent) UUID to unsubscribe from
    */
   unsubscribeFromDistrict(districtId: string): void {
     if (!this.socket?.connected) {

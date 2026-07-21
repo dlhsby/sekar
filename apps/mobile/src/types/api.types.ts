@@ -40,6 +40,17 @@ export interface LoginResponse {
 
 export interface MeResponse extends User {
   assigned_area?: Area;
+  /**
+   * The role's monitoring scope (ADR-044/046): city | district | region | location | none.
+   * Drives where the caller lands + what they may view on the map. Always sent by /me.
+   */
+  monitoring_scope: 'city' | 'district' | 'region' | 'location' | 'none';
+  /**
+   * Permanent location assignments (korlap multi-location) — the STATIC fallback for
+   * monitoring coverage; live coverage is derived server-side from today's schedule.
+   * Always sent by /me (empty array for non-korlap roles).
+   */
+  assigned_location_ids: string[];
 }
 
 // Users API
@@ -492,7 +503,7 @@ export interface BroadcastNotificationRequest {
   body: string;
   target_roles?: UserRole[];
   target_area_id?: string;
-  target_rayon_id?: string;
+  target_district_id?: string;
   data?: Record<string, unknown>;
 }
 

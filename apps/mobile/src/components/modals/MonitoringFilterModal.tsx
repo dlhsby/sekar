@@ -36,9 +36,9 @@ import type { PresenceLocation, StaffingSummaryItem, User } from '../../types/mo
 import type { Area, District } from '../../types/models.types';
 import {
   ROLE_LABELS,
-  ROLES_WITH_RAYON,
-  ROLES_WITH_FIXED_RAYON,
-  ROLES_WITHOUT_RAYON,
+  ROLES_WITH_DISTRICT,
+  ROLES_WITH_FIXED_DISTRICT,
+  ROLES_WITHOUT_DISTRICT,
   FILTER_SUBORDINATE_ROLES,
 } from '../../constants/roles';
 
@@ -94,9 +94,9 @@ export function MonitoringFilterModal({
 
   const userRole = currentUser.role;
 
-  const canSelectDistrict = ROLES_WITH_RAYON.includes(userRole);
-  const hasFixedDistrict = ROLES_WITH_FIXED_RAYON.includes(userRole);
-  const hideDistrict = ROLES_WITHOUT_RAYON.includes(userRole);
+  const canSelectDistrict = ROLES_WITH_DISTRICT.includes(userRole);
+  const hasFixedDistrict = ROLES_WITH_FIXED_DISTRICT.includes(userRole);
+  const hideDistrict = ROLES_WITHOUT_DISTRICT.includes(userRole);
 
   // Load districts for roles that can select
   useEffect(() => {

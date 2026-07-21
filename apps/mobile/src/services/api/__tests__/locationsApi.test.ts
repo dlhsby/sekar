@@ -42,7 +42,7 @@ describe('locationsApi', () => {
 
       const result = await locationsApi.getAreas();
 
-      expect(mockGet).toHaveBeenCalledWith('/areas', undefined);
+      expect(mockGet).toHaveBeenCalledWith('/locations', undefined);
       expect(result).toEqual(mockResponse);
     });
 
@@ -67,7 +67,7 @@ describe('locationsApi', () => {
 
       const result = await locationsApi.getAreas('RTH');
 
-      expect(mockGet).toHaveBeenCalledWith('/areas', { area_type: 'RTH' });
+      expect(mockGet).toHaveBeenCalledWith('/locations', { area_type: 'RTH' });
       expect(result).toEqual(mockResponse);
     });
 
@@ -77,7 +77,7 @@ describe('locationsApi', () => {
 
       await locationsApi.getAreas();
 
-      expect(mockGet).toHaveBeenCalledWith('/areas', undefined);
+      expect(mockGet).toHaveBeenCalledWith('/locations', undefined);
     });
 
     it('passes area_type param when area type is provided', async () => {
@@ -86,7 +86,7 @@ describe('locationsApi', () => {
 
       await locationsApi.getAreas('TAMAN');
 
-      expect(mockGet).toHaveBeenCalledWith('/areas', { area_type: 'TAMAN' });
+      expect(mockGet).toHaveBeenCalledWith('/locations', { area_type: 'TAMAN' });
     });
 
     it('handles empty response', async () => {
@@ -127,7 +127,7 @@ describe('locationsApi', () => {
 
       const result = await locationsApi.getAreaById(areaId);
 
-      expect(mockGet).toHaveBeenCalledWith(`/areas/${areaId}`);
+      expect(mockGet).toHaveBeenCalledWith(`/locations/${areaId}`);
       expect(result).toEqual(mockResponse);
     });
 
@@ -138,7 +138,7 @@ describe('locationsApi', () => {
 
       await locationsApi.getAreaById(areaId);
 
-      expect(mockGet).toHaveBeenCalledWith('/areas/area-xyz-789');
+      expect(mockGet).toHaveBeenCalledWith('/locations/area-xyz-789');
     });
 
     it('propagates API errors', async () => {

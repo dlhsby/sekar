@@ -71,7 +71,7 @@ export function useMapDashboard(mapRef: React.RefObject<MapView | null>) {
   // Fetch areas
   const fetchAreas = useCallback(async () => {
     try {
-      const response = await get<Area[]>('/areas');
+      const response = await get<Area[]>('/locations');
       if (response.data) { setAreas(Array.isArray(response.data) ? response.data : []); }
     } catch (err) {
       console.error('Failed to fetch areas:', err);
