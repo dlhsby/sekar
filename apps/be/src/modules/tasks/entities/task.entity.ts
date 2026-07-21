@@ -13,7 +13,9 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { District } from '../../districts/entities/district.entity';
+import { Region } from '../../regions/entities/region.entity';
 import { TaskTag } from './task-tag.entity';
+import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
 
 /**
  * Task status enum
@@ -78,9 +80,26 @@ export class Task {
   @Column({ type: 'timestamptz', nullable: true })
   deadline: Date | null;
 
-  // Foreign keys
+  /**
+   * Geographic scope this task is bound to (ADR-046). Follows the assignee's
+   * schedule occurrence by default (city/district/region/location), can be
+   * overridden by the creator, or `none` for an ad-hoc task with no location
+   * context (e.g. assigned to an unscheduled worker). Drives where the task —
+   * and, once started, the worker running it — appears on the monitoring map.
+   */
+  @Column({
+    type: 'enum',
+    enum: AssignmentScope,
+    default: AssignmentScope.NONE,
+  })
+  scope: AssignmentScope;
+
+  // Foreign keys — the id for each level down to `scope` is populated.
   @Column({ name: 'location_id', type: 'uuid', nullable: true })
   location_id: string | null;
+
+  @Column({ name: 'region_id', type: 'uuid', nullable: true })
+  region_id: string | null;
 
   @Column({ name: 'district_id', type: 'uuid', nullable: true })
   district_id: string | null;
@@ -167,6 +186,10 @@ export class Task {
   @ManyToOne(() => District, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'district_id' })
   district: District | null;
+
+  @ManyToOne(() => Region, { onDelete: 'RESTRICT', nullable: true })
+  @JoinColumn({ name: 'region_id' })
+  region: Region | null;
 
   @ManyToOne(() => User, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'assigned_to' })

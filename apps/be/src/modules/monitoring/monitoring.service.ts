@@ -216,6 +216,12 @@ export class MonitoringService {
     // lokasi-scheduled worker shows only at that lokasi, a district-scheduled worker
     // only at that district, and a city-wide/unassigned worker only at the city view.
     const scheduleScopes = await this.statsService.scheduleScopesForCurrentShift(currentShift?.id);
+    // A worker who has STARTED a task is monitored wherever that task is scoped,
+    // extending (or, for the unscheduled, providing) their map placement (ADR-046).
+    const taskScopes = await this.statsService.inProgressTaskScopesForUsers(
+      (result?.users ?? []).map((u) => u.id),
+    );
+    const scopeRank: Record<string, number> = { location: 3, region: 2, district: 1, city: 0 };
 
     // Map LiveUserDto → SnapshotWorker (rename latitude/longitude → lat/lng, id → user_id)
     const workers: SnapshotWorker[] = (result?.users ?? []).map((u) => {
@@ -227,10 +233,20 @@ export class MonitoringService {
       // workers easy to identify and avoids scattering them across tiers where
       // their static assignment may not reflect where they actually are.
       const sched = scheduleScopes.get(u.id);
+      const task = taskScopes.get(u.id);
+      // Deepest-wins across the schedule occurrence and any in-progress task; a
+      // worker with neither is an ad-hoc clock-in placed flat at city scope.
+      const candidates = [sched, task].filter(
+        (c): c is { scope: 'city' | 'district' | 'region' | 'location'; scope_id: string | null } =>
+          Boolean(c),
+      );
       const display: {
         scope: 'city' | 'district' | 'region' | 'location';
         scope_id: string | null;
-      } = sched ?? { scope: 'city', scope_id: null };
+      } =
+        candidates.length === 0
+          ? { scope: 'city', scope_id: null }
+          : candidates.reduce((best, c) => (scopeRank[c.scope] > scopeRank[best.scope] ? c : best));
       // `ad_hoc` is decided here, where the roster check lives — the per-worker
       // lifecycle computed in getLiveUsers used a `scheduled: true` placeholder.
       // `?? []` guards partial payloads during rollout.

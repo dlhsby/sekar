@@ -26,6 +26,15 @@ import { AuditLogService } from '../audit/audit.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationType } from '../notifications/entities/notification.entity';
 import { ActivityQueryService, ActivityListFilters } from './services/activity-query.service';
+import { Task } from '../tasks/entities/task.entity';
+import { ScheduleScopeResolverService } from '../schedules/services/schedule-scope-resolver.service';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
+import {
+  AssignmentScope,
+  NO_SCOPE,
+  ResolvedScope,
+  scopeFromIds,
+} from '../../common/enums/assignment-scope.enum';
 
 /** Generate a reference code in the format SEKAR-YYYYMM + 6 random alphanumeric chars. */
 function generateReferenceCode(): string {
@@ -60,6 +69,9 @@ export class ActivitiesService {
     private plantItemRepository: Repository<ActivityPlantItem>,
     @InjectRepository(ActivityTag)
     private activityTagRepository: Repository<ActivityTag>,
+    @InjectRepository(Task)
+    private tasksRepository: Repository<Task>,
+    private readonly scheduleScopeResolver: ScheduleScopeResolverService,
     private readonly usersService: UsersService,
     private readonly auditLogService: AuditLogService,
     // Audit M7 (2026-05-23): validate `custom_fields` against the registry
@@ -91,7 +103,7 @@ export class ActivitiesService {
     this.validateCustomFields(dto);
 
     const savedActivity = await this.activitiesRepository.save(
-      this.buildActivity(userId, activeShift, dto),
+      await this.buildActivity(userId, activeShift, dto),
     );
     this.logger.log(`Activity created successfully: ${savedActivity.id}`);
 
@@ -149,11 +161,21 @@ export class ActivitiesService {
     }
   }
 
-  private buildActivity(userId: string, activeShift: Shift, dto: CreateActivityDto): Activity {
+  private async buildActivity(
+    userId: string,
+    activeShift: Shift,
+    dto: CreateActivityDto,
+  ): Promise<Activity> {
+    const scope = await this.resolveActivityScope(userId, activeShift, dto);
     return this.activitiesRepository.create({
       user_id: userId,
       shift_id: activeShift.id,
-      location_id: activeShift.location_id,
+      // Scope + ids come from resolveActivityScope; location_id stays populated
+      // for the common location/shift case (unchanged behaviour).
+      scope: scope.scope,
+      location_id: scope.location_id,
+      region_id: scope.region_id,
+      district_id: scope.district_id,
       activity_type_id: dto.activity_type_id,
       description: dto.description,
       photo_urls: dto.photo_urls,
@@ -166,7 +188,51 @@ export class ActivitiesService {
       photoAfterUrl: dto.photo_after_url ?? null,
       referenceCode: dto.reference_code ?? generateReferenceCode(),
       pruningRequestId: dto.pruning_request_id ?? null,
+      task_id: dto.task_id,
     });
+  }
+
+  /**
+   * Resolve an activity's scope (ADR-046):
+   *   1. Linked to a task (`task_id`) → inherit the task's scope + ids. Submitting
+   *      an activity against a task records it wherever the task is bound, even for
+   *      an unscheduled worker.
+   *   2. Otherwise → derive from the active shift's schedule occurrence today.
+   *   3. Fallback → the shift's own `location_id` as a location binding (an ad-hoc
+   *      clock-in still worked somewhere), else `none`. Submission is never blocked.
+   */
+  private async resolveActivityScope(
+    userId: string,
+    activeShift: Shift,
+    dto: CreateActivityDto,
+  ): Promise<ResolvedScope> {
+    if (dto.task_id) {
+      const task = await this.tasksRepository.findOne({
+        where: { id: dto.task_id },
+        select: ['id', 'scope', 'district_id', 'region_id', 'location_id'],
+      });
+      if (task) {
+        return {
+          scope: task.scope ?? AssignmentScope.NONE,
+          district_id: task.district_id,
+          region_id: task.region_id,
+          location_id: task.location_id,
+        };
+      }
+    }
+
+    const today = TimezoneUtil.jakartaDateString();
+    const derived = await this.scheduleScopeResolver.resolveForUserOnDate(
+      userId,
+      today,
+      activeShift.shift_definition_id,
+    );
+    if (derived.scope !== AssignmentScope.NONE) return derived;
+
+    // Unscheduled: bind to the shift's clock-in location when there is one.
+    return activeShift.location_id
+      ? scopeFromIds({ location_id: activeShift.location_id })
+      : NO_SCOPE;
   }
 
   /** Phase 3: persist plant item line-items when provided. */

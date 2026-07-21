@@ -28,6 +28,14 @@ import { TaskDelegationService } from './services/task-delegation.service';
 import { TaskStatusTransitionsService } from './services/task-status-transitions.service';
 import { TaskVerificationService } from './services/task-verification.service';
 import { TaskAreaSyncService } from './services/task-area-sync.service';
+import { ScheduleScopeResolverService } from '../schedules/services/schedule-scope-resolver.service';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
+import {
+  AssignmentScope,
+  NO_SCOPE,
+  ResolvedScope,
+  scopeFromIds,
+} from '../../common/enums/assignment-scope.enum';
 import {
   assertTaskReadAccess,
   assertValidAssignee,
@@ -83,6 +91,7 @@ export class TasksService {
     private readonly transitionsService: TaskStatusTransitionsService,
     private readonly verificationService: TaskVerificationService,
     private readonly taskAreaSync: TaskAreaSyncService,
+    private readonly scheduleScopeResolver: ScheduleScopeResolverService,
   ) {}
 
   /**
@@ -100,9 +109,10 @@ export class TasksService {
     await this.validateCreateTarget(creator, createTaskDto.location_id);
     const assignee = await this.resolveInitialAssignee(createTaskDto.assigned_to, creator);
     const typedFields = this.validateTypedFields(createTaskDto);
+    const scope = await this.resolveTaskScope(createTaskDto, assignee);
 
     const savedTask = await this.taskRepository.save(
-      this.buildTask(createTaskDto, creatorId, assignee, typedFields),
+      this.buildTask(createTaskDto, creatorId, assignee, typedFields, scope),
     );
     await this.recordInitialDelegation(savedTask, creator, assignee);
     await this.createInitialTags(savedTask.id, createTaskDto.tagged_user_ids);
@@ -151,20 +161,116 @@ export class TasksService {
     creatorId: string,
     assignee: User | null,
     typedFields: Pick<Task, 'taskType' | 'customFields' | 'targetPlantCount'>,
+    scope: ResolvedScope,
   ): Task {
     return this.taskRepository.create({
       title: dto.title,
       description: dto.description,
       priority: dto.priority || TaskPriority.MEDIUM,
       deadline: dto.deadline ? new Date(dto.deadline) : null,
-      location_id: dto.location_id || null,
-      district_id: dto.district_id || null,
+      // Scope + its ids come from resolveTaskScope (override → derive → none), so
+      // the persisted binding is always internally consistent.
+      scope: scope.scope,
+      location_id: scope.location_id,
+      region_id: scope.region_id,
+      district_id: scope.district_id,
       assigned_to: dto.assigned_to || null,
       status: assignee ? TaskStatus.ASSIGNED : TaskStatus.PENDING,
       created_by: creatorId,
       assigned_at: dto.assigned_to ? new Date() : null,
       ...typedFields,
     });
+  }
+
+  /**
+   * Resolve a new task's scope (ADR-046), hybrid per the user directive:
+   *   1. Explicit override — the creator passed `scope` and/or a level id.
+   *   2. Derive from the assignee's schedule occurrence on the task date
+   *      (deadline day, else today) — "follows the schedule assigned".
+   *   3. `none` — no override and no scheduled assignee (e.g. an ad-hoc task for
+   *      an unscheduled worker). Assignment + taking are never blocked by this.
+   */
+  private async resolveTaskScope(
+    dto: CreateTaskDto,
+    assignee: User | null,
+  ): Promise<ResolvedScope> {
+    const hasExplicitScope =
+      dto.scope !== undefined ||
+      Boolean(dto.location_id) ||
+      Boolean(dto.region_id) ||
+      Boolean(dto.district_id);
+
+    if (hasExplicitScope) {
+      return this.coerceExplicitScope(dto);
+    }
+
+    if (assignee) {
+      const date = TimezoneUtil.jakartaDateString(
+        dto.deadline ? new Date(dto.deadline) : undefined,
+      );
+      const derived = await this.scheduleScopeResolver.resolveForUserOnDate(assignee.id, date);
+      if (derived.scope !== AssignmentScope.NONE) return derived;
+    }
+
+    return NO_SCOPE;
+  }
+
+  /**
+   * Turn a creator-supplied scope override into a consistent {@link ResolvedScope}.
+   * When `scope` is given explicitly it wins and the matching id is required
+   * (a `location` scope with no `location_id` is a client error); when only ids
+   * are given the deepest one decides the tier.
+   */
+  private coerceExplicitScope(dto: CreateTaskDto): ResolvedScope {
+    if (dto.scope === undefined) {
+      return scopeFromIds({
+        district_id: dto.district_id,
+        region_id: dto.region_id,
+        location_id: dto.location_id,
+      });
+    }
+    switch (dto.scope) {
+      case AssignmentScope.LOCATION:
+        this.requireScopeId(dto.location_id, 'location', 'location_id');
+        return {
+          scope: AssignmentScope.LOCATION,
+          district_id: dto.district_id ?? null,
+          region_id: dto.region_id ?? null,
+          location_id: dto.location_id!,
+        };
+      case AssignmentScope.REGION:
+        this.requireScopeId(dto.region_id, 'region', 'region_id');
+        return {
+          scope: AssignmentScope.REGION,
+          district_id: dto.district_id ?? null,
+          region_id: dto.region_id!,
+          location_id: null,
+        };
+      case AssignmentScope.DISTRICT:
+        this.requireScopeId(dto.district_id, 'district', 'district_id');
+        return {
+          scope: AssignmentScope.DISTRICT,
+          district_id: dto.district_id!,
+          region_id: null,
+          location_id: null,
+        };
+      case AssignmentScope.CITY:
+        return {
+          scope: AssignmentScope.CITY,
+          district_id: null,
+          region_id: null,
+          location_id: null,
+        };
+      case AssignmentScope.NONE:
+      default:
+        return NO_SCOPE;
+    }
+  }
+
+  private requireScopeId(id: string | undefined, scope: string, field: string): void {
+    if (!id) {
+      throw new BadRequestException(`A ${scope}-scoped task requires ${field}.`);
+    }
   }
 
   /**
