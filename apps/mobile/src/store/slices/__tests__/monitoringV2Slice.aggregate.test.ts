@@ -126,4 +126,28 @@ describe('monitoringV2Slice drill', () => {
     expect(s.aggregate).toEqual(payload);
     expect(s.aggregateLoading).toBe(false);
   });
+
+  it('fetchAggregate.fulfilled routes a region scope into aggregateRegion (not aggregate)', () => {
+    const payload = {
+      scope: 'region' as const,
+      scope_id: 'ry',
+      nodes: [],
+      totals: {} as any,
+      roster_totals: { scheduled: 0, clocked_in: 0, not_clocked_in: 0 },
+      generated_at: '',
+    };
+    // meta-driven (the real thunk supplies meta.arg.scope)
+    const viaMeta = reducer(base(), {
+      type: fetchAggregate.fulfilled.type,
+      payload,
+      meta: { arg: { scope: 'region', id: 'ry' } },
+    });
+    expect(viaMeta.aggregateRegion).toEqual(payload);
+    expect(viaMeta.aggregate).toBeNull();
+
+    // fallback: no meta → use the response's own scope
+    const viaPayload = reducer(base(), { type: fetchAggregate.fulfilled.type, payload });
+    expect(viaPayload.aggregateRegion).toEqual(payload);
+    expect(viaPayload.aggregate).toBeNull();
+  });
 });

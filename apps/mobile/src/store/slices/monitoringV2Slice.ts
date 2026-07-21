@@ -63,7 +63,11 @@ export interface MonitoringV2State {
   view: MonitoringView;
   /** The scope the user's role can never drill above. */
   floor: MonitoringScope;
+  /** City/district rollup (scope=city → districts; scope=district → lokasi). */
   aggregate: MonitoringAggregateResponse | null;
+  /** Kawasan rollup for the current district (scope=region), kept separate so a
+   *  district can render regions ∪ region-less lokasi together (PR2-visual). */
+  aggregateRegion: MonitoringAggregateResponse | null;
   aggregateLoading: boolean;
 }
 
@@ -102,6 +106,7 @@ const initialState: MonitoringV2State = {
   view: { scope: 'city', id: null, districtId: null, regionId: null, name: null },
   floor: 'city',
   aggregate: null,
+  aggregateRegion: null,
   aggregateLoading: false,
 };
 
@@ -241,12 +246,16 @@ const monitoringV2Slice = createSlice({
       state.view = action.payload.view;
       state.floor = action.payload.floor;
       state.selectedUserId = null;
+      state.aggregateRegion = null;
     },
 
     /** Reset to the top (city scope = the district bubbles). */
     enterCity(state) {
       state.view = { scope: 'city', id: null, districtId: null, regionId: null, name: null };
       state.selectedUserId = null;
+      // The kawasan rollup is district-specific — drop it so the next district
+      // never briefly shows the previous one's kawasan (refetched on district drill).
+      state.aggregateRegion = null;
     },
 
     /**
@@ -273,6 +282,9 @@ const monitoringV2Slice = createSlice({
           regionId: null,
           name: n.name,
         };
+        // Entering a NEW district — drop the previous district's kawasan rollup so
+        // it can't render on this one before the fresh scope=region fetch lands.
+        state.aggregateRegion = null;
       } else if (n.type === 'region') {
         state.view = {
           scope: 'region',
@@ -329,6 +341,8 @@ const monitoringV2Slice = createSlice({
         };
       } else if (state.view.scope === 'district') {
         state.view = { scope: 'city', id: null, districtId: null, regionId: null, name: null };
+        // Back at city — the kawasan rollup no longer applies.
+        state.aggregateRegion = null;
       }
       state.selectedUserId = null;
     },
@@ -339,7 +353,15 @@ const monitoringV2Slice = createSlice({
     });
     builder.addCase(fetchAggregate.fulfilled, (state, action) => {
       state.aggregateLoading = false;
-      state.aggregate = action.payload;
+      // Region rollups live in their own slot so the district view can hold the
+      // kawasan nodes AND the lokasi nodes at once (PR2-visual). Fall back to the
+      // response's own scope when the thunk meta is absent (e.g. hand-built actions).
+      const scope = action.meta?.arg?.scope ?? action.payload?.scope;
+      if (scope === 'region') {
+        state.aggregateRegion = action.payload;
+      } else {
+        state.aggregate = action.payload;
+      }
     });
     builder.addCase(fetchAggregate.rejected, state => {
       state.aggregateLoading = false;

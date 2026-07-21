@@ -45,6 +45,8 @@ import type {
   MonitoringV2VisibleLayers,
   MonitoringScope,
 } from '../../store/slices/monitoringV2Slice';
+import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
+import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import {
@@ -77,6 +79,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   const view = useSelector((state: RootState) => state.monitoringV2.view);
   const floor = useSelector((state: RootState) => state.monitoringV2.floor);
   const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
+  const aggregateRegion = useSelector((state: RootState) => state.monitoringV2.aggregateRegion);
   const scope = view.scope;
   // Workers render at EVERY drill tier now (city/district/region/location), each
   // filtered to the current scope by `display_scope` (see useLiveUsersFiltering).
@@ -162,8 +165,12 @@ export function MapDashboardScreen(): React.JSX.Element {
     if (scope === 'city') {
       void dispatch(fetchAggregate({ scope: 'city' }));
     } else if (scope === 'district' && view.id) {
+      // District view renders regions ∪ region-less lokasi, so fetch BOTH the lokasi
+      // rollup (scope=district) and the kawasan rollup (scope=region) for the district.
       void dispatch(fetchAggregate({ scope: 'district', id: view.id }));
+      void dispatch(fetchAggregate({ scope: 'region', id: view.id }));
     } else if (scope === 'region' && view.districtId) {
+      // Region view filters the district's lokasi by region_id (no separate fetch).
       void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
     } else if (scope === 'location' && view.districtId) {
       void dispatch(fetchAggregate({ scope: 'district', id: view.districtId }));
@@ -358,6 +365,26 @@ export function MapDashboardScreen(): React.JSX.Element {
     },
     [dispatch, zoomInTo, view.districtId],
   );
+
+  // Drill bubbles are sourced from the AGGREGATE (not boundary geometry) so kawasan —
+  // which have no polygon in the boundaries payload — can render: district shows
+  // regions ∪ region-less lokasi, region shows the kawasan's lokasi. See composeDrillNodes.
+  const nodeMarkers = useMemo<NodeMarker[]>(() => {
+    const cityNodes = scope === 'city' ? (aggregate?.nodes ?? []) : [];
+    const districtNodes = scope !== 'city' ? (aggregate?.nodes ?? []) : [];
+    const regionNodes = aggregateRegion?.nodes ?? [];
+    return composeDrillNodes(scope, view, cityNodes, districtNodes, regionNodes);
+  }, [scope, view, aggregate, aggregateRegion]);
+
+  // A bubble tap drills into that node (variant → target scope) and zooms in.
+  const handleNodeDrill = useCallback(
+    (node: NodeMarker) => {
+      const target = node.variant === 'district' ? 0.08 : node.variant === 'region' ? 0.04 : 0.02;
+      dispatch(drillTo({ id: node.id, type: node.variant, name: node.name, districtId: view.districtId }));
+      zoomInTo(node.lat, node.lng, target);
+    },
+    [dispatch, zoomInTo, view.districtId],
+  );
   const handleDrillBack = useCallback(() => {
     const from = scope;
     dispatch(drillBack());
@@ -460,6 +487,8 @@ export function MapDashboardScreen(): React.JSX.Element {
                 districtId={view.districtId ?? view.id}
                 areaId={scope === 'location' ? view.id : null}
                 rosterById={rosterById}
+                nodeMarkers={nodeMarkers}
+                onNodeDrill={handleNodeDrill}
                 showWorkers={showWorkers}
                 onDistrictDrill={handleDistrictBubblePress}
                 onAreaDrill={handleAreaBubblePress}

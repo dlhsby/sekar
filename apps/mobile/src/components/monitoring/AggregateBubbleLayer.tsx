@@ -1,10 +1,12 @@
 /**
  * AggregateBubbleLayer
- * Renders one drill-down node marker per node at the current scope: the single
- * Surabaya summary (top level), one per rayon (city scope) or one per area
- * (district scope). Each shows the attendance ratio `hadir/terjadwal` colored by
- * staffing health; tapping drills one level deeper. Mirrors the web
- * NodeMarkerLayer.
+ * Renders one drill-down node marker per aggregate node at the current scope:
+ * one per district (city scope), one per kawasan ∪ region-less lokasi (district
+ * scope), or one per lokasi (region scope). Each bubble shows the node name +
+ * attendance ratio `hadir/terjadwal` colored by staffing health; tapping drills
+ * one level deeper (district → region/location, region → location). Sourced from
+ * the aggregate (not boundary geometry) so kawasan — which have no polygon in the
+ * boundaries payload — can render. Mirrors the web NodeMarkerLayer.
  *
  * tracksViewChanges is disabled after first paint so the native marker bitmap is
  * stable (no per-pan redraw jank — mirrors UserMarker).
@@ -13,16 +15,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { useTranslation } from 'react-i18next';
 import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import { healthColor, rosterHealth } from './markerSpec';
 
-/** A drill-down node marker: a district, an area, or the whole-city Surabaya node. */
+/** A drill-down node marker: a district (rayon), a region (kawasan), or a location (lokasi). */
 export interface NodeMarker {
   id: string;
   name: string;
-  variant: 'district' | 'area' | 'surabaya';
+  variant: 'district' | 'region' | 'location';
   lat: number;
   lng: number;
   scheduled: number;
@@ -42,7 +43,6 @@ function Bubble({
   node: NodeMarker;
   onDrill: (node: NodeMarker) => void;
 }): React.JSX.Element | null {
-  const { t } = useTranslation();
   // Let the first frame render the label, then freeze the bitmap.
   const [tracks, setTracks] = useState(true);
   useEffect(() => {
@@ -55,7 +55,8 @@ function Bubble({
   }
 
   const color = healthColor(rosterHealth(node.scheduled, node.clocked_in));
-  const isSurabaya = node.variant === 'surabaya';
+  // District + region bubbles read as area rollups (bigger); a lokasi is a leaf.
+  const big = node.variant === 'district' || node.variant === 'region';
 
   return (
     <Marker
@@ -65,12 +66,10 @@ function Bubble({
       anchor={{ x: 0.5, y: 0.5 }}
       testID={`node-marker-${node.id}`}
     >
-      <View style={[styles.bubble, isSurabaya && styles.bubbleSurabaya, { borderColor: color }]}>
-        {isSurabaya && (
-          <NBText variant="caption" style={styles.surabayaLabel}>
-            {t('monitoring:surabaya.title').toUpperCase()}
-          </NBText>
-        )}
+      <View style={[styles.bubble, big && styles.bubbleBig, { borderColor: color }]}>
+        <NBText variant="caption" style={styles.name} numberOfLines={1}>
+          {node.name}
+        </NBText>
         <NBText variant="body-sm" style={[styles.ratio, { color }]}>
           {node.clocked_in}/{node.scheduled}
         </NBText>
@@ -95,6 +94,7 @@ export function AggregateBubbleLayer({
 const styles = StyleSheet.create({
   bubble: {
     minWidth: 44,
+    maxWidth: 160,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: nbRadius.lg,
@@ -104,14 +104,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     ...nbShadows.sm,
   },
-  bubbleSurabaya: {
-    minWidth: 96,
+  bubbleBig: {
     paddingVertical: 6,
   },
-  surabayaLabel: {
+  name: {
     color: nbColors.black,
-    fontWeight: '800',
-    letterSpacing: 1,
+    fontWeight: '700',
   },
   ratio: {
     fontWeight: '800',
