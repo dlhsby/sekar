@@ -82,8 +82,10 @@ export interface UserClockInEvent {
  * User clock-out event data
  */
 export interface UserClockOutEvent {
-  worker_id: string;
-  worker_name: string;
+  // Match the backend gateway DTO (gateways/dto/events.dto.ts): the payload keys
+  // are user_id/user_name, NOT worker_id/worker_name.
+  user_id: string;
+  user_name: string;
   shift_id: string;
   location_id: string;
   location_name: string;

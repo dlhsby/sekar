@@ -120,7 +120,15 @@ export function MonitoringSearchModal({
   // districts always come from the loaded boundaries client-side.
   const server = useServerMonitoringSearch(query);
   const petugasSource = server.users ?? liveUsers;
-  const results = useMonitoringSearch(petugasSource, districts, query, searchLabels);
+  // When petugas come from the server they're already matched (name/lokasi/team) —
+  // skip the client name re-filter so lokasi/team matches aren't dropped.
+  const results = useMonitoringSearch(
+    petugasSource,
+    districts,
+    query,
+    searchLabels,
+    server.users != null,
+  );
   const hasQuery = query.trim().length > 0;
   const showOfflineNotice = hasQuery && server.isOffline;
 

@@ -49,6 +49,12 @@ export function useMonitoringSearch(
   districts: DistrictBoundary[] | undefined,
   query: string,
   labels?: { petugas: string; area: string; district: string },
+  /**
+   * When true, `liveUsers` is already the server's scope-filtered search result
+   * (matched on worker name OR lokasi OR team) — so DON'T re-filter petugas by name
+   * client-side, which would drop workers the server matched on lokasi/team.
+   */
+  petugasPreMatched = false,
 ): MonitoringSearchResults {
   return useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -59,7 +65,7 @@ export function useMonitoringSearch(
     }
 
     const petugas: SearchResult[] = liveUsers
-      .filter((u) => matches(u.full_name))
+      .filter((u) => petugasPreMatched || matches(u.full_name))
       .map((u) => ({
         id: u.id,
         type: 'petugas' as const,

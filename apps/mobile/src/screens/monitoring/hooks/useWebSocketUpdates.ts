@@ -84,10 +84,10 @@ export function useWebSocketUpdates(dispatch: AppDispatch): void {
     });
 
     // When a worker clocks out, drop their pin immediately (mirrors web's snapshot
-    // removal). The event carries `worker_id`; removeLiveUser no-ops if absent.
+    // removal). The event carries `user_id`; removeLiveUser no-ops if absent.
     const unsubClockOut = websocketService.onUserClockOut((data) => {
       if (!mounted) return;
-      dispatch(removeLiveUser({ id: data.worker_id }));
+      dispatch(removeLiveUser({ id: data.user_id }));
     });
 
     return () => {

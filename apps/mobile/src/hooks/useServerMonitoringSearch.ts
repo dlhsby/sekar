@@ -32,6 +32,14 @@ export function useServerMonitoringSearch(query: string): ServerMonitoringSearch
   });
   // Guards against out-of-order responses: only the latest query's result wins.
   const latestQuery = useRef('');
+  // Prevents a setState after unmount when a request resolves late.
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const q = query.trim();
@@ -46,8 +54,8 @@ export function useServerMonitoringSearch(query: string): ServerMonitoringSearch
     const timer = setTimeout(() => {
       void (async () => {
         const res = await searchMonitoring(q);
-        // A newer keystroke superseded this request — drop the stale result.
-        if (latestQuery.current !== q) return;
+        // Skip if unmounted, or a newer keystroke superseded this request.
+        if (!mounted.current || latestQuery.current !== q) return;
         if (res.error || !res.data) {
           setState({ users: null, isSearching: false, isOffline: true });
           return;
