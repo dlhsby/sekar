@@ -360,7 +360,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     dispatch(drillBack());
     // Zoom the camera back out to match the level we're returning to.
     if (from === 'district' || from === 'city') {
-      // → city / Surabaya: show the whole city again (and the Surabaya bubble).
+      // → city: show the whole city again (the district bubbles).
       animateTo(
         SURABAYA_CITY_REGION.latitude,
         SURABAYA_CITY_REGION.longitude,
