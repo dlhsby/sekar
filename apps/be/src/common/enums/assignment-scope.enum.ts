@@ -36,6 +36,20 @@ export interface ResolvedScope {
   location_id: string | null;
 }
 
+/**
+ * A worker's monitoring map placement: the drill tier plus the id of the matching
+ * node (null at city). The renderable tiers only — never `none`.
+ */
+export interface DisplayScope {
+  scope: 'city' | 'district' | 'region' | 'location';
+  scope_id: string | null;
+}
+
+/** Deepest-wins pick between display-scope candidates (higher rank = more specific). */
+export function deeperDisplayScope(a: DisplayScope, b: DisplayScope): DisplayScope {
+  return ASSIGNMENT_SCOPE_RANK[b.scope] > ASSIGNMENT_SCOPE_RANK[a.scope] ? b : a;
+}
+
 /** The empty/no-binding scope. */
 export const NO_SCOPE: ResolvedScope = {
   scope: AssignmentScope.NONE,

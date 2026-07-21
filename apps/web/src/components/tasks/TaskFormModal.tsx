@@ -17,7 +17,8 @@ import {
 } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { useAuth } from '@/lib/auth/hooks';
-import { useCreateTask, type TaskPriority, type AssignmentScope, type CreateTaskDto } from '@/lib/api/tasks';
+import { useCreateTask, type TaskPriority, type AssignmentScope } from '@/lib/api/tasks';
+import { useTaskScopeField } from '@/lib/hooks/useTaskScopeField';
 import { useUsers } from '@/lib/api/users';
 import { useLocations } from '@/lib/api/locations';
 import { useDistricts } from '@/lib/api/districts';
@@ -43,6 +44,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   const formId = useId();
   const { user } = useAuth();
   const createMutation = useCreateTask();
+  const { scopeOptions, validate: validateScope, buildScopePayload } = useTaskScopeField();
   const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useLocations({ limit: 1000 });
   const { data: districtsData } = useDistricts();
@@ -78,14 +80,6 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   }, [open]);
 
   const assignableRoles = user ? VALID_TASK_ASSIGNMENTS[user.role] || [] : [];
-  const SCOPE_OPTIONS = [
-    { value: 'auto', label: t('tasks:newPage.scopeAuto') },
-    { value: 'city', label: t('tasks:newPage.scopeCity') },
-    { value: 'district', label: t('tasks:newPage.scopeDistrict') },
-    { value: 'region', label: t('tasks:newPage.scopeRegion') },
-    { value: 'location', label: t('tasks:newPage.scopeLocation') },
-    { value: 'none', label: t('tasks:newPage.scopeNone') },
-  ];
   const PRIORITY_OPTIONS = [
     { value: 'low', label: t('tasks:form.priorityLow') },
     { value: 'medium', label: t('tasks:form.priorityNormal') },
@@ -108,43 +102,23 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
       return;
     }
 
-    // Validate scope-specific id fields
-    if (scope === 'district' && districtId === 'none') {
-      setScopeError(t('tasks:newPage.scopeIdRequired'));
-      return;
-    }
-    if (scope === 'region' && regionId === 'none') {
-      setScopeError(t('tasks:newPage.scopeIdRequired'));
-      return;
-    }
-    if (scope === 'location' && areaId === 'none') {
-      setScopeError(t('tasks:newPage.scopeIdRequired'));
+    const scopeValidationError = validateScope(scope, { districtId, regionId, areaId });
+    if (scopeValidationError) {
+      setScopeError(scopeValidationError);
       return;
     }
 
     try {
-      const basePayload: CreateTaskDto = {
+      const basePayload = {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
         priority,
         deadline: dueDate ? new Date(dueDate).toISOString() : undefined,
+        ...buildScopePayload(scope, { districtId, regionId, areaId }),
       };
 
-      // Only add scope and id fields if not 'auto'
-      if (scope !== 'auto') {
-        basePayload.scope = scope;
-        if (scope === 'district') {
-          basePayload.district_id = districtId !== 'none' ? districtId : undefined;
-        } else if (scope === 'region') {
-          basePayload.region_id = regionId !== 'none' ? regionId : undefined;
-        } else if (scope === 'location') {
-          basePayload.location_id = areaId !== 'none' ? areaId : undefined;
-        }
-        // city and none don't need id fields
-      }
-
-      await createMutation.mutateAsync(basePayload);
+      await createMutation.mutateAsync(basePayload as Parameters<typeof createMutation.mutateAsync>[0]);
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {
@@ -205,7 +179,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                   setScope(value as AssignmentScope | 'auto');
                   setScopeError('');
                 }}
-                options={SCOPE_OPTIONS}
+                options={scopeOptions}
               />
 
               {scopeError && (
