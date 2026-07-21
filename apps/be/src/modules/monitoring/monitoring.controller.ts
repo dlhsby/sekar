@@ -424,17 +424,41 @@ export class MonitoringController {
     }
   }
 
+  /**
+   * A korlap's monitoring coverage (ADR-046, PR0b) = the union of location ids they
+   * may view: their STATIC assignment (permanent lokasi ∪ member lokasi of their
+   * `region_id` ∪ their `location_id`) PLUS today's SCHEDULE occurrences (individual
+   * or team) expanded to concrete lokasi — occurrence lokasi, member lokasi of any
+   * kawasan-scoped occurrence, and member lokasi of any rayon-scoped occurrence.
+   * Static assignment is the fallback when there is no occurrence that day.
+   */
+  private async resolveKorlapCoverage(user: User): Promise<string[]> {
+    const shift = await this.statsService.getCurrentShiftDefinition();
+    const [permanent, occ] = await Promise.all([
+      this.userAreasService.getPermanentLocationIds(user.id),
+      this.statsService.occurrenceCoverageForCurrentShift(user.id, shift?.id),
+    ]);
+    const regionIds = [...(user.region_id ? [user.region_id] : []), ...occ.regionIds];
+    const [regionLocs, districtLocs] = await Promise.all([
+      this.statsService.locationIdsForRegions(regionIds),
+      this.statsService.locationIdsForDistricts(occ.districtIds),
+    ]);
+    // Permanent (multi-location) assignment supersedes the legacy single
+    // `location_id`; the latter is only a fallback when no permanent rows exist.
+    const staticLocations =
+      permanent.length > 0 ? permanent : user.location_id ? [user.location_id] : [];
+    return [
+      ...new Set<string>([...staticLocations, ...occ.locationIds, ...regionLocs, ...districtLocs]),
+    ];
+  }
+
   private async enforceScopeArea(user: User, locationId: string): Promise<void> {
     if (user.role === UserRole.KORLAP) {
-      // Multi-area: check if korlap is assigned to this area
-      const assignedAreaIds = await this.userAreasService.getPermanentLocationIds(user.id);
-      if (assignedAreaIds.length > 0) {
-        if (!assignedAreaIds.includes(locationId)) {
-          throw new ForbiddenException('You can only view monitoring for your assigned areas');
-        }
-      } else if (user.location_id !== locationId) {
-        // Fallback to legacy single area
-        throw new ForbiddenException('You can only view monitoring for your own area');
+      const coverage = await this.resolveKorlapCoverage(user);
+      if (!coverage.includes(locationId)) {
+        throw new ForbiddenException(
+          'You can only view monitoring for your assigned or scheduled areas',
+        );
       }
     }
   }
@@ -449,15 +473,17 @@ export class MonitoringController {
     }
 
     if (user.role === UserRole.KORLAP) {
-      // Multi-area: get all assigned area IDs
-      const assignedAreaIds = await this.userAreasService.getPermanentLocationIds(user.id);
-      if (assignedAreaIds.length > 0) {
-        filters.area_ids = assignedAreaIds;
+      // Coverage = static assignment ∪ today's schedule occurrences (see above).
+      const coverage = await this.resolveKorlapCoverage(user);
+      if (coverage.length > 0) {
+        filters.area_ids = coverage;
       } else if (user.location_id) {
         filters.location_id = user.location_id;
       }
-      // Always anchor to the korlap's district as well so endpoints that only
-      // honor `district_id` (e.g. boundaries) never leak other-district data.
+      // Anchor to the korlap's district so endpoints that honor only `district_id`
+      // (e.g. boundaries) never leak other-district data. (Cross-district coverage
+      // via an occurrence in another rayon is out of scope; the common case is
+      // kawasan/lokasi within the korlap's own district.)
       if (user.district_id) {
         filters.district_id = user.district_id;
       }

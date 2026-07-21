@@ -1107,6 +1107,78 @@ export class MonitoringStatsService {
   }
 
   /**
+   * A single user's OWN schedule-occurrence scopes for the current shift today,
+   * uncollapsed (unlike `scheduleScopesForCurrentShift`, which keeps only the
+   * deepest scope per user). Used to widen korlap monitoring coverage to every
+   * kawasan/lokasi they are scheduled to that day (ADR-046, PR0b) — individual OR
+   * team occurrences both surface here, since teams fan out to per-member rows.
+   * Returns the distinct location / region / district ids across those occurrences.
+   */
+  async occurrenceCoverageForCurrentShift(
+    userId: string,
+    shiftDefinitionId: string | undefined,
+  ): Promise<{ locationIds: string[]; regionIds: string[]; districtIds: string[] }> {
+    const empty = { locationIds: [], regionIds: [], districtIds: [] };
+    if (!userId || !shiftDefinitionId) return empty;
+    const today = TimezoneUtil.jakartaDateString();
+    const rows = (await this.scheduleRepository
+      .createQueryBuilder('s')
+      .leftJoin('schedule_locations', 'sl', 'sl.schedule_id = s.id')
+      .select('s.district_id', 'district_id')
+      .addSelect('s.region_id', 'region_id')
+      .addSelect('sl.location_id', 'location_id')
+      .where('s.user_id = :userId', { userId })
+      .andWhere('s.schedule_date = :today', { today })
+      .andWhere('s.status IN (:...statuses)', {
+        statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
+      })
+      .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('s.deleted_at IS NULL')
+      .getRawMany()) as Array<{
+      district_id: string | null;
+      region_id: string | null;
+      location_id: string | null;
+    }>;
+    const locationIds = new Set<string>();
+    const regionIds = new Set<string>();
+    const districtIds = new Set<string>();
+    for (const r of rows) {
+      if (r.location_id) locationIds.add(r.location_id);
+      // A region- or district-scoped occurrence carries no sl.location_id; record
+      // the coarser scope so coverage can expand it to member lokasi / the district.
+      else if (r.region_id) regionIds.add(r.region_id);
+      else if (r.district_id) districtIds.add(r.district_id);
+    }
+    return {
+      locationIds: [...locationIds],
+      regionIds: [...regionIds],
+      districtIds: [...districtIds],
+    };
+  }
+
+  /** Member lokasi ids of the given kawasan (region) ids — expands a region-scope */
+  /* coverage entry into the concrete lokasi it authorizes. Active lokasi only. */
+  async locationIdsForRegions(regionIds: string[]): Promise<string[]> {
+    if (!regionIds.length) return [];
+    const rows = await this.areaRepository.find({
+      where: { region_id: In(regionIds), is_active: true },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+
+  /** Member lokasi ids of the given district (rayon) ids — expands a rayon-scope */
+  /* coverage entry into its concrete lokasi. Active lokasi only. */
+  async locationIdsForDistricts(districtIds: string[]): Promise<string[]> {
+    if (!districtIds.length) return [];
+    const rows = await this.areaRepository.find({
+      where: { district_id: In(districtIds), is_active: true },
+      select: { id: true },
+    });
+    return rows.map((r) => r.id);
+  }
+
+  /**
    * Activity×location breakdown of HADIR workers (scheduled + clocked-in),
    * grouped by district, region, or location. Restricting to `scheduledUserIds` excludes ad-hoc
    * clock-ins from the counts. active→aktif/dalam, outside_area→aktif/luar,
