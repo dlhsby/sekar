@@ -68,10 +68,24 @@ export interface KawasanSnapshotRow {
   district_name: string;
 }
 
-/** The Kawasan (regions) grouped by district, from the client's workbook. */
+/**
+ * The Kawasan (regions) grouped by district, from the client's workbook.
+ *
+ * The snapshot file still carries the pre-ADR-052 `rayon_id`/`rayon_name` keys;
+ * normalise them to `district_id`/`district_name` here so callers see one shape
+ * regardless of when the file was regenerated.
+ */
 export function loadKawasanSnapshot(): KawasanSnapshotRow[] {
   const file = path.join(DATA_DIR, 'kawasan.snapshot.json');
-  return JSON.parse(fs.readFileSync(file, 'utf8')) as KawasanSnapshotRow[];
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Array<
+    Partial<KawasanSnapshotRow> & { rayon_id?: string; rayon_name?: string }
+  >;
+  return raw.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    district_id: (r.district_id ?? r.rayon_id) as string,
+    district_name: (r.district_name ?? r.rayon_name) as string,
+  }));
 }
 
 /**
