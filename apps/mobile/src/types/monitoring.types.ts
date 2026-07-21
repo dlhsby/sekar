@@ -78,6 +78,17 @@ export interface LiveUser {
   location_name: string;
   district_id: string | null;
   district_name: string | null;
+  /** Region (Kawasan) the worker belongs to, for the region drill tier (ADR-045). */
+  region_id?: string | null;
+  region_name?: string | null;
+  /**
+   * The SCOPE of the worker's current-shift schedule (ADR-046). Drives which drill
+   * level renders their marker: a worker shows only where `display_scope` matches
+   * the current view (`display_scope_id` matching the drilled node; null at city).
+   * Ad-hoc clock-ins carry `display_scope: 'city'` (rendered "Luar Jadwal").
+   */
+  display_scope?: 'city' | 'district' | 'region' | 'location';
+  display_scope_id?: string | null;
   latitude: number;
   longitude: number;
   accuracy: number | null;
@@ -111,6 +122,10 @@ export interface LiveUser {
   team_name?: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color?: string | null;
+  /** Team glyph (from team_category.marker_icon). */
+  team_icon?: string | null;
+  /** Per-role marker glyph override (from the role's marker_icon). */
+  role_marker_icon?: string | null;
 }
 
 // Absent User for daily roster monitoring — Phase 3 (roster monitoring)
@@ -365,7 +380,7 @@ export interface PresenceBreakdown {
 export interface AggregateNode {
   id: string;
   name: string;
-  type: 'district' | 'location';
+  type: 'district' | 'region' | 'location';
   center_lat: number | null;
   center_lng: number | null;
   counts_by_status: AggregateStatusCounts;
@@ -377,11 +392,16 @@ export interface AggregateNode {
   roster: AggregateRosterCounts;
   presence: PresenceBreakdown;
   area_count?: number;
+  /** Number of child lokasi (present on a district/region node). */
+  location_count?: number;
   district_id?: string | null;
+  /** Region (Kawasan) id — present on region nodes + on lokasi within a kawasan. */
+  region_id?: string | null;
 }
 
 export interface MonitoringAggregateResponse {
-  scope: 'city' | 'district';
+  /** `region` = one node per kawasan in a district (id = districtId). */
+  scope: 'city' | 'district' | 'region';
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;

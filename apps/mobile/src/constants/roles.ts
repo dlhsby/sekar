@@ -116,13 +116,13 @@ export const getMonitoringScope = (role: UserRole): 'city' | 'district' | 'area'
 };
 
 /** Roles that can select district freely in monitoring filter (city-scope) */
-export const ROLES_WITH_RAYON: UserRole[] = [...MONITORING_ROLES.city];
+export const ROLES_WITH_DISTRICT: UserRole[] = [...MONITORING_ROLES.city];
 
 /** Roles with a fixed district assignment in monitoring filter (district-scope) */
-export const ROLES_WITH_FIXED_RAYON: UserRole[] = [...MONITORING_ROLES.district];
+export const ROLES_WITH_FIXED_DISTRICT: UserRole[] = [...MONITORING_ROLES.district];
 
-/** Roles without district visibility in monitoring filter (area-scope) */
-export const ROLES_WITHOUT_RAYON: UserRole[] = [...MONITORING_ROLES.area];
+/** Roles without district visibility in monitoring filter (area/region-scope) */
+export const ROLES_WITHOUT_DISTRICT: UserRole[] = [...MONITORING_ROLES.area];
 
 /**
  * Maps each role to its direct subordinate roles for filter scoping

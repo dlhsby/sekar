@@ -33,6 +33,7 @@ export interface User {
   district?: District;
   location_id?: string;
   area?: Area;
+  region_id?: string | null; // Region (Kawasan) scope — korlap's static fallback (ADR-045)
   phone_number?: string | null; // Phase 2E: for phone login
   profile_picture_url?: string | null; // Phase 2E: profile photo
   kecamatan_name?: string | null; // Phase 3 Apr 27: staff_kecamatan attribution
