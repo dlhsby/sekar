@@ -17,10 +17,11 @@ import {
 } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
 import { useAuth } from '@/lib/auth/hooks';
-import { useCreateTask, type TaskPriority } from '@/lib/api/tasks';
+import { useCreateTask, type TaskPriority, type AssignmentScope, type CreateTaskDto } from '@/lib/api/tasks';
 import { useUsers } from '@/lib/api/users';
 import { useLocations } from '@/lib/api/locations';
 import { useDistricts } from '@/lib/api/districts';
+import { useRegions } from '@/lib/api/regions';
 import { getErrorMessage } from '@/lib/api/client';
 import { VALID_TASK_ASSIGNMENTS, ROLE_LABELS } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -45,14 +46,18 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   const { data: usersData } = useUsers({ limit: 1000 });
   const { data: areasData } = useLocations({ limit: 1000 });
   const { data: districtsData } = useDistricts();
+  const { data: regionsData } = useRegions();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [assignedTo, setAssignedTo] = useState('none');
-  const [areaId, setAreaId] = useState('none');
+  const [scope, setScope] = useState<AssignmentScope | 'auto'>('auto');
   const [districtId, setDistrictId] = useState('none');
+  const [regionId, setRegionId] = useState('none');
+  const [areaId, setAreaId] = useState('none');
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [dueDate, setDueDate] = useState('');
+  const [scopeError, setScopeError] = useState('');
   const [error, setError] = useState('');
 
   // Reset the form each time the modal opens (create-only).
@@ -62,14 +67,25 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     setTitle('');
     setDescription('');
     setAssignedTo('none');
-    setAreaId('none');
+    setScope('auto');
     setDistrictId('none');
+    setRegionId('none');
+    setAreaId('none');
     setPriority('medium');
     setDueDate('');
+    setScopeError('');
     setError('');
   }, [open]);
 
   const assignableRoles = user ? VALID_TASK_ASSIGNMENTS[user.role] || [] : [];
+  const SCOPE_OPTIONS = [
+    { value: 'auto', label: t('tasks:newPage.scopeAuto') },
+    { value: 'city', label: t('tasks:newPage.scopeCity') },
+    { value: 'district', label: t('tasks:newPage.scopeDistrict') },
+    { value: 'region', label: t('tasks:newPage.scopeRegion') },
+    { value: 'location', label: t('tasks:newPage.scopeLocation') },
+    { value: 'none', label: t('tasks:newPage.scopeNone') },
+  ];
   const PRIORITY_OPTIONS = [
     { value: 'low', label: t('tasks:form.priorityLow') },
     { value: 'medium', label: t('tasks:form.priorityNormal') },
@@ -81,24 +97,54 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   );
   const areas = areasData?.data || [];
   const districts = districtsData || [];
+  const regions = regionsData || [];
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
     setError('');
+    setScopeError('');
     if (!title) {
       setError(t('tasks:form.requiredError'));
       return;
     }
+
+    // Validate scope-specific id fields
+    if (scope === 'district' && districtId === 'none') {
+      setScopeError(t('tasks:newPage.scopeIdRequired'));
+      return;
+    }
+    if (scope === 'region' && regionId === 'none') {
+      setScopeError(t('tasks:newPage.scopeIdRequired'));
+      return;
+    }
+    if (scope === 'location' && areaId === 'none') {
+      setScopeError(t('tasks:newPage.scopeIdRequired'));
+      return;
+    }
+
     try {
-      await createMutation.mutateAsync({
+      const basePayload: CreateTaskDto = {
         title,
         description: description || undefined,
         assigned_to: assignedTo !== 'none' ? assignedTo : undefined,
-        location_id: areaId !== 'none' ? areaId : undefined,
-        district_id: districtId !== 'none' ? districtId : undefined,
         priority,
         deadline: dueDate ? new Date(dueDate).toISOString() : undefined,
-      });
+      };
+
+      // Only add scope and id fields if not 'auto'
+      if (scope !== 'auto') {
+        basePayload.scope = scope;
+        if (scope === 'district') {
+          basePayload.district_id = districtId !== 'none' ? districtId : undefined;
+        } else if (scope === 'region') {
+          basePayload.region_id = regionId !== 'none' ? regionId : undefined;
+        } else if (scope === 'location') {
+          basePayload.location_id = areaId !== 'none' ? areaId : undefined;
+        }
+        // city and none don't need id fields
+      }
+
+      await createMutation.mutateAsync(basePayload);
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {
@@ -153,26 +199,62 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                 ]}
               />
               <FormSelect
-                label={t("tasks:form.districtLabel")}
-                value={districtId}
-                onChange={setDistrictId}
-                options={[
-                  { value: 'none', label: t('tasks:form.districtPlaceholder') },
-                  ...districts.map((r) => ({ value: r.id, label: r.name })),
-                ]}
+                label={t("tasks:newPage.formScopeLabel")}
+                value={scope}
+                onChange={(value) => {
+                  setScope(value as AssignmentScope | 'auto');
+                  setScopeError('');
+                }}
+                options={SCOPE_OPTIONS}
               />
-              <FormSelect
-                label={t("tasks:form.areaLabel")}
-                value={areaId}
-                onChange={setAreaId}
-                options={[
-                  { value: 'none', label: t('tasks:form.areaPlaceholder') },
-                  ...areas.map((a) => ({
-                    value: a.id,
-                    label: a.locationType?.name ? `${a.name} (${a.locationType.name})` : a.name,
-                  })),
-                ]}
-              />
+
+              {scopeError && (
+                <div className="p-3 bg-nb-danger-light border-2 border-nb-danger rounded-nb-base">
+                  <p className="text-nb-danger font-semibold text-nb-body-sm">{scopeError}</p>
+                </div>
+              )}
+
+              {scope === 'district' && (
+                <FormSelect
+                  label={t('tasks:newPage.scopeDistrictPlaceholder')}
+                  value={districtId}
+                  onChange={setDistrictId}
+                  options={[
+                    { value: 'none', label: t('tasks:newPage.scopeDistrictPlaceholder') },
+                    ...districts.map((r) => ({ value: r.id, label: r.name })),
+                  ]}
+                />
+              )}
+
+              {scope === 'region' && (
+                <FormSelect
+                  label={t('tasks:newPage.scopeRegionPlaceholder')}
+                  value={regionId}
+                  onChange={setRegionId}
+                  options={[
+                    { value: 'none', label: t('tasks:newPage.scopeRegionPlaceholder') },
+                    ...regions.map((r) => ({
+                      value: r.id,
+                      label: r.name,
+                    })),
+                  ]}
+                />
+              )}
+
+              {scope === 'location' && (
+                <FormSelect
+                  label={t('tasks:newPage.scopeLocationPlaceholder')}
+                  value={areaId}
+                  onChange={setAreaId}
+                  options={[
+                    { value: 'none', label: t('tasks:newPage.scopeLocationPlaceholder') },
+                    ...areas.map((a) => ({
+                      value: a.id,
+                      label: a.locationType?.name ? `${a.name} (${a.locationType.name})` : a.name,
+                    })),
+                  ]}
+                />
+              )}
               <FormSelect
                 label={t("tasks:form.priorityLabel")}
                 value={priority}

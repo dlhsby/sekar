@@ -25,6 +25,11 @@ export type TaskStatus =
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent';
 
 /**
+ * Assignment Scope - geographic scope for task assignment
+ */
+export type AssignmentScope = 'city' | 'district' | 'region' | 'location' | 'none';
+
+/**
  * Task Interface (Phase 2C)
  */
 export interface Task extends Record<string, unknown> {
@@ -57,6 +62,8 @@ export interface Task extends Record<string, unknown> {
   tags?: TaskTag[];
   priority: TaskPriority;
   status: TaskStatus;
+  scope?: AssignmentScope;
+  region_id?: string | null;
   deadline?: string;
   assigned_at?: string;
   accepted_at?: string;
@@ -98,6 +105,8 @@ export interface CreateTaskDto {
   assigned_to?: string;
   location_id?: string;
   district_id?: string;
+  region_id?: string;
+  scope?: AssignmentScope;
   activity_type_id?: string;
   priority?: TaskPriority;
   deadline?: string;
