@@ -243,6 +243,9 @@ const monitoringV2Slice = createSlice({
     /** Drill one level deeper from a tapped district/location node. */
     drillTo(
       state,
+      // Mobile drills surabaya→district→location only; the `region` (Kawasan) tier
+      // lands in PR2, which adds a `drillToRegion` action. Until then this payload is
+      // intentionally narrowed to district|location and never receives a region node.
       action: PayloadAction<{ id: string; type: 'district' | 'location'; name: string; districtId: string | null }>,
     ) {
       const n = action.payload;
