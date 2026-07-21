@@ -206,7 +206,9 @@ describe('UserDetailPanel', () => {
 
     it('should show "Dalam area" when is_within_area is true', () => {
       render(<UserDetailPanel {...defaultProps} />);
-      expect(screen.getByText('Dalam area')).toBeInTheDocument();
+      // Appears twice by design: the header presence pill (ADR-050 location axis)
+      // and the last-location block.
+      expect(screen.getAllByText('Dalam area').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should show "Di luar area" when is_within_area is false', () => {
@@ -215,7 +217,7 @@ describe('UserDetailPanel', () => {
         last_location: { ...MOCK_SUMMARY.last_location!, is_within_area: false },
       };
       render(<UserDetailPanel {...defaultProps} summary={summary} />);
-      expect(screen.getByText('Di luar area')).toBeInTheDocument();
+      expect(screen.getAllByText('Di luar area').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should call onViewLocationHistory when location history button is clicked', async () => {
