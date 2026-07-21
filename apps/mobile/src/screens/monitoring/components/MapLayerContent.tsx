@@ -11,6 +11,7 @@ import { ClusteredUserMarkers } from '../../../components/monitoring/ClusteredUs
 import { AreaStatusOverlay } from '../../../components/monitoring/AreaStatusOverlay';
 import { PlantOverlayLayer } from '../../../components/monitoring/PlantOverlayLayer';
 import { BoundaryOverlay } from '../../../components/monitoring/BoundaryOverlay';
+import { AggregateBubbleLayer, type NodeMarker } from '../../../components/monitoring/AggregateBubbleLayer';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
 import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
@@ -34,6 +35,12 @@ interface MapLayerContentProps {
   areaId: string | null;
   /** Attendance ratio per rayon/location id, shown on the geographic markers. */
   rosterById: Record<string, { activeInside: number; scheduled: number }>;
+  /** Drill bubbles composed from the aggregate (district → regions ∪ region-less
+   *  lokasi; region → the kawasan's lokasi). Replaces the boundary-derived bubbles
+   *  so kawasan (no polygon) can render. */
+  nodeMarkers: NodeMarker[];
+  /** Bubble tap → drill into that node (variant decides the target scope). */
+  onNodeDrill: (node: NodeMarker) => void;
   /** Unified drill-down: true → worker markers (location scope). */
   showWorkers: boolean;
   /** Bubble taps — drill into the child level (city→district, district→area). */
@@ -61,6 +68,8 @@ export function MapLayerContent({
   districtId,
   areaId,
   rosterById,
+  nodeMarkers,
+  onNodeDrill,
   showWorkers,
   onDistrictDrill,
   onAreaDrill,
@@ -95,18 +104,18 @@ export function MapLayerContent({
   const showDistrictBoundaries = visibleLayers.districts;
   const showAreaBoundaries = visibleLayers.areas && scope === 'location';
 
-  // Bubbles vs markers are separated by scope (gated independently of the
-  // boundary toggles):
-  //   • city  → district BUBBLES (ratio, drill into a district)
-  //   • district → the selected district MARKER (detail) + its area BUBBLES (drill)
+  // Drill BUBBLES now come from the aggregate (AggregateBubbleLayer below) so the
+  // kawasan tier — which has no boundary polygon — can render. BoundaryOverlay keeps
+  // the polygons + the current node's DETAIL marker:
+  //   • district → the selected district MARKER (detail)
   //   • location  → the selected location MARKER (detail) + worker markers
-  const showDistrictBubbles = scope === 'city';
-  const showAreaBubbles = scope === 'district';
+  const showDistrictBubbles = false;
+  const showAreaBubbles = false;
   const showDistrictMarker = scope === 'district';
   const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
     showDistrictBoundaries || showAreaBoundaries ||
-    showDistrictBubbles || showAreaBubbles || showDistrictMarker || showAreaMarker;
+    showDistrictMarker || showAreaMarker;
 
   return (
     <>
@@ -129,6 +138,12 @@ export function MapLayerContent({
           showAreaMarker={showAreaMarker}
           rosterById={rosterById}
         />
+      )}
+
+      {/* Drill bubbles from the aggregate — district nodes (city), regions ∪
+          region-less lokasi (district), a kawasan's lokasi (region). Tap → drill. */}
+      {mapReady && nodeMarkers.length > 0 && (
+        <AggregateBubbleLayer nodes={nodeMarkers} onDrill={onNodeDrill} />
       )}
 
       {/* Phase 3: Area status overlay (plant health tints) — inside a district only */}
