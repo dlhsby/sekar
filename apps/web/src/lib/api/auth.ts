@@ -13,7 +13,7 @@ export interface User {
   phone_number?: string;
   profile_picture_url?: string;
   district_id?: string;
-  area_id?: string;
+  location_id?: string;
   /**
    * Set true when an admin reset this user's password (ADR-041, Phase 4-7).
    * Forces the user through `/change-password` before reaching the dashboard;

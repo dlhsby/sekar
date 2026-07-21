@@ -71,7 +71,7 @@ const mockKorlapUser = {
   username: 'korlap1',
   full_name: 'Koordinator Lapangan',
   role: 'korlap' as const,
-  area_id: 'area-1',
+  location_id: 'area-1',
   created_at: '2026-01-01T00:00:00Z',
 };
 

@@ -85,9 +85,9 @@ export default function ActivitiesPage() {
 
   // Auto-scope korlap to their area
   useEffect(() => {
-    if (user && user.role === 'korlap' && user.area_id && filters.areaId === 'all') {
+    if (user && user.role === 'korlap' && user.location_id && filters.areaId === 'all') {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setFilters((prev) => ({ ...prev, areaId: user.area_id as string }));
+      setFilters((prev) => ({ ...prev, areaId: user.location_id as string }));
     }
   }, [user, filters.areaId]);
 
