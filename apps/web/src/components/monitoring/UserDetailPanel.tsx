@@ -112,6 +112,33 @@ export function UserDetailPanel({
                 >
                   {statusLabel}
                 </span>
+                {/* Presence is two axes (ADR-050): the status pill above is the
+                    live/activity axis; this is the inside/outside-area axis, shown
+                    alongside it (matching mobile's worker detail) instead of buried
+                    in the last-location block. */}
+                {summary.last_location && (
+                  <span
+                    role="status"
+                    aria-label={
+                      summary.last_location.is_within_area
+                        ? t('monitoring:userDetail.withinArea')
+                        : t('monitoring:userDetail.outsideArea')
+                    }
+                    className={cn(
+                      'text-xs font-semibold border px-2 py-0.5 rounded-nb-sm',
+                      // Outside uses the dedicated `outside` token (purple), NOT
+                      // `missing` (red) — it's a location axis, not a critical status,
+                      // and stays consistent with the last-location block below.
+                      summary.last_location.is_within_area
+                        ? 'bg-[var(--color-status-active-bg)] text-[var(--color-status-active)] border-[var(--color-status-active)]'
+                        : 'bg-[var(--color-status-outside-bg)] text-[var(--color-status-outside)] border-[var(--color-status-outside)]'
+                    )}
+                  >
+                    {summary.last_location.is_within_area
+                      ? t('monitoring:userDetail.withinArea')
+                      : t('monitoring:userDetail.outsideArea')}
+                  </span>
+                )}
               </div>
             </div>
           </div>
