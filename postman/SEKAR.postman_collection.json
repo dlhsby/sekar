@@ -235,7 +235,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+              "raw": "{\n  \"identifier\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
             },
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
@@ -295,7 +295,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+              "raw": "{\n  \"identifier\": \"{{admin_username}}\",\n  \"password\": \"{{admin_password}}\"\n}"
             },
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
@@ -355,7 +355,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"username\": \"{{supervisor_username}}\",\n  \"password\": \"{{supervisor_password}}\"\n}"
+              "raw": "{\n  \"identifier\": \"{{korlap_username}}\",\n  \"password\": \"{{supervisor_password}}\"\n}"
             },
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/auth/login",
@@ -2007,7 +2007,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"activity_type_id\": \"{{activity_type_id}}\",\n  \"description\": \"Completed cleaning task in the park area. All debris removed.\",\n  \"photo_urls\": [\n    \"https://s3.amazonaws.com/sekar-media-dev/photo1.jpg\"\n  ],\n  \"gps_lat\": -7.2905,\n  \"gps_lng\": 112.7398\n}"
+              "raw": "{\n  \"activity_type_id\": \"{{activity_type_id}}\",\n  \"description\": \"Completed cleaning task in the park area. All debris removed.\",\n  \"photo_urls\": [\n    \"https://s3.amazonaws.com/sekar-media-dev/photo1.jpg\"\n  ],\n  \"gps_lat\": -7.2905,\n  \"gps_lng\": 112.7398,\n  \"task_id\": \"{{created_task_id}}\"\n}\n\n// Example 2: Activity without task (inherits scope from active shift occurrence)\n// {\n//   \"activity_type_id\": \"{{activity_type_id}}\",\n//   \"description\": \"Lakukan pemeriksaan kondisi taman umum.\",\n//   \"photo_urls\": [\n//     \"https://s3.amazonaws.com/sekar-media-dev/photo1.jpg\"\n//   ],\n//   \"gps_lat\": -7.2905,\n//   \"gps_lng\": 112.7398\n// }"
             },
             "url": {
               "raw": "{{host}}://{{base_url}}{{port}}/api/{{version}}/activities",
@@ -2018,10 +2018,10 @@
               "path": [
                 "api",
                 "{{version}}",
-                "aktivitas"
+                "activities"
               ]
             },
-            "description": "Create aktivitas report (satgas, linmas, korlap, admin_data). Requires active shift."
+            "description": "Create activity report (satgas, linmas, korlap, admin_rayon). ADR-046: optional task_id to inherit task's scope. When omitted, derives scope from active shift occurrence."
           }
         },
         {
@@ -2064,7 +2064,7 @@
               "path": [
                 "api",
                 "{{version}}",
-                "aktivitas",
+                "activities",
                 "my-reports"
               ]
             },
@@ -2111,7 +2111,7 @@
               "path": [
                 "api",
                 "{{version}}",
-                "aktivitas",
+                "activities",
                 "{{created_activity_id}}"
               ]
             }
@@ -2166,7 +2166,7 @@
               "path": [
                 "api",
                 "{{version}}",
-                "aktivitas",
+                "activities",
                 "{{created_activity_id}}"
               ]
             }
@@ -2218,7 +2218,7 @@
               "path": [
                 "api",
                 "{{version}}",
-                "aktivitas"
+                "activities"
               ]
             },
             "description": "Get all aktivitas (filtered by role scope: korlap→area, kepala_rayon→rayon, admin→city)"
@@ -2256,7 +2256,7 @@
               "path": [
                 "api",
                 "{{version}}",
-                "aktivitas",
+                "activities",
                 "{{created_activity_id}}"
               ]
             },
@@ -4346,10 +4346,10 @@
                 "tasks"
               ]
             },
-            "description": "Create a new task (korlap, kepala_rayon, top_management, admin_system, superadmin)",
+            "description": "Create a new task (korlap, kepala_rayon, management, admin_system, superadmin). ADR-046: scope-aware tasks with location_id, region_id, or auto-derived scope.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Test Task\",\n  \"description\": \"Test task created via Postman\",\n  \"priority\": \"medium\",\n  \"area_id\": \"{{created_area_id}}\",\n  \"deadline\": \"2026-02-15T17:00:00.000Z\",\n  \"tagged_user_ids\": []\n}"
+              "raw": "{\n  \"title\": \"Penyiraman Taman Bungkul\",\n  \"description\": \"Siram semua tanaman di area Taman Bungkul. Fokus pada tanaman baru yang baru ditanam minggu lalu.\",\n  \"priority\": \"medium\",\n  \"location_id\": \"{{created_area_id}}\",\n  \"scope\": \"location\",\n  \"deadline\": \"2026-02-15T17:00:00.000Z\",\n  \"tagged_user_ids\": []\n}\n\n// Example 2: District-scoped task (omit scope to derive from assignee's schedule)\n// {\n//   \"title\": \"Inspeksi Pohon Besar\",\n//   \"description\": \"Lakukan inspeksi kelayakan pohon besar di seluruh Rayon Timur\",\n//   \"priority\": \"high\",\n//   \"scope\": \"district\",\n//   \"region_id\": \"{{region_id}}\",\n//   \"deadline\": \"2026-02-20T17:00:00.000Z\",\n//   \"assigned_to\": \"{{worker_id}}\"\n// }"
             }
           },
           "response": []

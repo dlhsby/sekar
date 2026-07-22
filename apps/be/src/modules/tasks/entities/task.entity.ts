@@ -15,6 +15,7 @@ import { Location } from '../../locations/entities/location.entity';
 import { District } from '../../districts/entities/district.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { TaskTag } from './task-tag.entity';
+import { ApiProperty } from '@nestjs/swagger';
 import { AssignmentScope } from '../../../common/enums/assignment-scope.enum';
 
 /**
@@ -87,6 +88,7 @@ export class Task {
    * context (e.g. assigned to an unscheduled worker). Drives where the task —
    * and, once started, the worker running it — appears on the monitoring map.
    */
+  @ApiProperty({ description: 'Geographic scope (ADR-046)', enum: AssignmentScope })
   @Column({
     type: 'enum',
     enum: AssignmentScope,
@@ -95,12 +97,15 @@ export class Task {
   scope: AssignmentScope;
 
   // Foreign keys — the id for each level down to `scope` is populated.
+  @ApiProperty({ description: 'Location UUID (location scope)', nullable: true })
   @Column({ name: 'location_id', type: 'uuid', nullable: true })
   location_id: string | null;
 
+  @ApiProperty({ description: 'Region/Kawasan UUID (region scope)', nullable: true })
   @Column({ name: 'region_id', type: 'uuid', nullable: true })
   region_id: string | null;
 
+  @ApiProperty({ description: 'District UUID (district scope)', nullable: true })
   @Column({ name: 'district_id', type: 'uuid', nullable: true })
   district_id: string | null;
 

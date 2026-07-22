@@ -41,13 +41,13 @@ export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
     { title: 'menu:sections.supervision', items: [MONITORING, TIM] },
   ],
   admin_rayon: [
-    { title: 'menu:sections.operations', items: [ABSENSI, TUGAS, AKTIVITAS, ASET] },
+    { title: 'menu:sections.operations', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET] },
     { title: 'menu:sections.treeCare', items: [PERANTINGAN_REVIEW, BIBIT] },
     { title: 'menu:sections.reportsMonitoring', items: [LAPORAN, MONITORING] },
   ],
   kepala_rayon: [
     { title: 'menu:sections.supervision', items: [MONITORING, TIM, LAPORAN] },
-    { title: 'menu:sections.operations', items: [LEMBUR, ASET] },
+    { title: 'menu:sections.operations', items: [TUGAS, AKTIVITAS, LEMBUR, ASET] },
   ],
   management: [
     { title: 'menu:sections.supervision', items: [MONITORING, LAPORAN, ANALITIK] },
