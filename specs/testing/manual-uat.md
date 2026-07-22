@@ -36,7 +36,7 @@ correct first run applies all 80 migrations and seeds without error.
 | Service | URL / detail |
 |---|---|
 | Backend API | `http://localhost:4110/api/v1` (Swagger UI: `/api/v1/docs`) |
-| Web | `http://localhost:3001` |
+| Web | `http://localhost:4120` |
 | Mobile (emulator) | Metro on `:8081`; app points at `API_BASE_URL=http://10.0.2.2:4110` |
 | Postgres · Adminer · MinIO | `:15432` · `:8082` · `:9000/9001` (creds in `infra/.env`) |
 
@@ -72,7 +72,7 @@ cd apps/be && npm run db:seed          # demo profile — safe to re-run anytime
 
 **Login convention (all platforms):** authenticate with **`identifier`** (username *or*
 phone) + **`password`**. **Every seeded account uses password `12345678`** (superadmin may
-use `SEED_SUPERADMIN_PASSWORD` if configured). Phone login also works (e.g. `081200000006`).
+use `SEED_SUPERADMIN_PASSWORD` if configured). Phone login also works (e.g. satgas_pusat_1 → `081300000002`).
 
 ---
 
@@ -271,7 +271,7 @@ Smoke via Swagger (`/api/v1/docs`) or the **Postman** collection (`postman/`, en
 
 ---
 
-## 6. Web UAT (`http://localhost:3001`)
+## 6. Web UAT (`http://localhost:4120`)
 
 Login per role; verify **nav visibility** first (a role should only see permitted items),
 then the page cases. `(dashboard)` roles = korlap, admin_rayon, kepala_rayon, management,
