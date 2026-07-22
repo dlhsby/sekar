@@ -13,8 +13,14 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * `lainnya_admin_rayon` (activities reference activity_types by id, not slug, so
  * this is reference-safe). Idempotent + guarded — safe on live staging.
  */
-export class RenameManagementAndAdminDistrictRoles17491700000000 implements MigrationInterface {
-  name = 'RenameManagementAndAdminDistrictRoles17491700000000';
+// NOTE: This class MUST stay named `RenameManagementAndAdminRayonRoles17491700000000`.
+// TypeORM keys applied migrations by class-name+timestamp (the `typeorm_migrations.name`
+// column). Every environment (dev/staging/production) already recorded this original name,
+// so renaming the class (e.g. the ADR-052 rayon→district sweep) makes TypeORM treat it as a
+// NEW pending migration and re-run this destructive `up()` against a schema that has moved on
+// (`area_staff_requirements` is renamed away by 17499). Do NOT rename shipped migration classes.
+export class RenameManagementAndAdminRayonRoles17491700000000 implements MigrationInterface {
+  name = 'RenameManagementAndAdminRayonRoles17491700000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // 1. Drop the three role CHECK constraints so the rows can be renamed.

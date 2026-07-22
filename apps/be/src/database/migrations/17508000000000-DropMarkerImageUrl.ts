@@ -5,7 +5,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
  * entities now that markers are rendered as glyph+color pins. The image-based
  * system is retired; only marker_icon (glyph) and marker_color (pin fill) remain.
  */
-export class DropMarkerImageUrl1750800000000 implements MigrationInterface {
+// Timestamp MUST be 14 digits (17508000000000) to match the filename and sort AFTER
+// 17507 / before 17509. A 13-digit typo (1750800000000) sorts it before the Phase-3
+// schema, so a from-scratch run executes it before `regions` exists and fails.
+export class DropMarkerImageUrl17508000000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const tables = ['rayons', 'regions', 'locations', 'roles', 'team_categories'];
     for (const table of tables) {

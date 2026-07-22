@@ -19,12 +19,19 @@ Web → Mobile; finish with the **role × feature matrix** and **sign-off**.
 
 ## 0. Environment setup
 
+### 0.1 From scratch (first run on a clean machine)
+
 ```bash
-# From project root
-./scripts/setup.sh          # first time only (env, installs, infra, migrations)
+# From project root — one command does env files, all installs, infra, migrations, seed.
+./scripts/setup.sh          # prompts before the destructive seed (or --yes to auto-seed / --skip-seed)
 ./scripts/start.sh          # backend + web (background) + Metro (foreground)
 # or individually: ./scripts/start-be.sh · start-web.sh · start-mobile.sh [--android]
 ```
+
+`setup.sh` runs, in order: prerequisite check → env files → root install → **infra up**
+(Postgres, MinIO, Redis, Adminer via Docker) → backend install → **`migration:run`** (builds
+the whole schema from the 80-migration ledger) → optional **`db:seed`** (demo profile). A
+correct first run applies all 80 migrations and seeds without error.
 
 | Service | URL / detail |
 |---|---|
@@ -33,9 +40,34 @@ Web → Mobile; finish with the **role × feature matrix** and **sign-off**.
 | Mobile (emulator) | Metro on `:8081`; app points at `API_BASE_URL=http://10.0.2.2:4110` |
 | Postgres · Adminer · MinIO | `:15432` · `:8082` · `:9000/9001` (creds in `infra/.env`) |
 
-**Reseed to a clean baseline (destructive):**
+### 0.2 Clean reset / recovering from a migration error
+
+The schema is built **only** by the migration ledger (`DATABASE_SYNCHRONIZE=false`). Two
+situations leave a database that `migration:run` cannot advance — both fixed by dropping and
+recreating the DB, then re-running setup:
+
+- **"relation … already exists"** — the DB was built by a prior `db:seed`/`start.sh`
+  auto-sync (which fills the schema but leaves `typeorm_migrations` empty), so migrations
+  can't run over it.
+- **"relation … does *not* exist"** (e.g. `area_staff_requirements`, `regions`) — a
+  half-migrated or stale DB from an older checkout.
+
 ```bash
-cd apps/be && npm run db:seed          # demo profile
+# Destructive full reset — wipes all local data, then rebuilds from the ledger + reseeds.
+docker exec sekar-postgres psql -U postgres -c 'DROP DATABASE sekar_db; CREATE DATABASE sekar_db;'
+./scripts/setup.sh --yes        # re-migrate + seed non-interactively
+```
+
+> **Migration hygiene (why the above happens):** TypeORM keys each applied migration by
+> **class-name + timestamp**. Never rename a *shipped* migration class or edit its timestamp —
+> every deployed DB recorded the original name, so a rename makes TypeORM re-run a destructive
+> `up()` against a schema that has moved on. Two such defects were fixed (a class renamed by the
+> rayon→district sweep, and a 13-digit timestamp typo that mis-sorted a migration before its
+> dependencies) so that **a from-scratch `migration:run` completes cleanly**.
+
+### 0.3 Reseed to a clean baseline (destructive — keeps schema, replaces data)
+```bash
+cd apps/be && npm run db:seed          # demo profile — safe to re-run anytime the schema is current
 ```
 
 **Login convention (all platforms):** authenticate with **`identifier`** (username *or*
@@ -123,6 +155,54 @@ curl -s -X POST $API/tasks -H "Authorization: Bearer $KTOK" -H 'Content-Type: ap
 curl -s -X POST $API/tasks -H "Authorization: Bearer $KTOK" -H 'Content-Type: application/json' \
   -d '{"title":"Cek tanaman baru","assigned_to":"<satgas_uuid>","priority":"medium"}'
 ```
+
+---
+
+## 2.6 How it works (conceptual primer — read before testing §6–§7)
+
+### How schedules work (the occurrence model, ADR-047/048)
+Two layers, generated forward:
+
+1. **`schedule_events`** = the *recurring definition*. Each event carries a **scope** and a
+   **recurrence**, and is either an individual or a **team** (members in `schedule_event_members`):
+   - **Scope** — `city` (Seluruh Surabaya, no geo) · `district` (a rayon) · `region`/"mobile"
+     (a kawasan) · `location`/"static" (one location). This scope is what places the worker on
+     the monitoring map (`display_scope`).
+   - **Recurrence** — `none` · `daily` · `every_n_days` · `weekly` · `specific_dates`.
+   - **Team** — a `team_category` (Penanaman / Penyapuan / Penyiraman / Penyiraman-Perawatan),
+     a PIC, and members; produces **one occurrence per member** but they render grouped.
+2. **`schedules`** = the *materialized occurrences* — one row **per user per day**, linked back
+   to its `schedule_event_id`, carrying `district_id`/`region_id`/`shift_definition_id`/`status`.
+   Generated via `POST /schedules/generate`; the seed pre-materializes **today's** occurrences.
+
+Read them: `GET /schedules/date/:date` (day board) · `/schedules/my` · `/schedules/range` ·
+`/schedule-events` (definitions). The **day board** (`/schedules`, web) drills
+Rayon ▸ Kawasan ▸ Lokasi with shift columns (S1/S2/S3) × role rows and `n/target` staffing.
+**Only `satgas` + `linmas` are scheduled/counted**; other clock-in roles are monitorable but
+never counted toward staffing. A worker may also **clock in with no schedule** (ad-hoc).
+
+### How monitoring works (drill-down + 3-axis presence, ADR-050)
+**Aggregate-first, tap-driven drill** — identical on web and mobile:
+`city → district → region(kawasan) → location → workers`. Tapping narrows scope; **zoom never
+changes scope**. At each tier you see the child aggregate bubbles **plus** any worker whose own
+`display_scope` matches that tier (individuals single, team occurrences grouped). Region-less
+locations hang directly off their district (the "regions ∪ region-less" district-drill case).
+
+A worker's presence is **three independent axes** — don't collapse them:
+- **Lifecycle** (roster state): `tidak_bertugas` (not scheduled) · `belum_hadir` (scheduled, not
+  yet in) · `terlambat` (late) · `bertugas` (on duty) · `pulang` (clocked out) · `tidak_hadir`
+  (absent) · **excused** (on approved leave — cuti/sakit/izin/libur).
+- **Live** (right now): `aktif` vs `offline`, crossed with `dalam_area` vs `luar_area`.
+- **Counting** (staffing): counts **only** when `bertugas ∧ scheduled ∧ (satgas|linmas)`.
+
+Consequences you'll verify: **ad-hoc / unscheduled clock-ins** render as distinct **"Luar
+Jadwal"** markers at **city** scope (with a count chip) and are **excluded from staffing**;
+**excused** workers surface in `GET /monitoring/live-users` → `on_leave_users[]` (each with its
+`leave_reason`) and render as a **"Berhalangan" pill** in the roster on web + mobile.
+
+> **Reproducing time/data-driven presence states:** the base seed shows the roster pre-shift
+> (everyone `belum_hadir`/absent). To exercise `bertugas`, `terlambat`, `pulang`, excused, etc.,
+> run the presence-scenario staging script — see **§11**.
 
 ---
 
@@ -421,8 +501,9 @@ docker exec sekar-postgres psql -U postgres -d sekar_db -c \
 # GET /monitoring/live-users → on_leave_users[] includes them with leave_reason='sakit'
 ```
 > `libur` (rest-day) has no schedule-status source and is not mapped; the `on_leave_count`
-> total is unchanged. A dedicated web/mobile "excused" pill in the roster list is a UI
-> follow-up (the data is now available; no per-worker roster list is rendered yet).
+> total is unchanged. **The "excused" pill is now rendered** on both platforms — web
+> `OnLeaveList` and mobile `MonitoringStatusSheet` show a **"Berhalangan"** section with a
+> per-reason pill (sakit/cuti/izin) driven by `on_leave_users[].leave_reason`.
 
 ---
 
@@ -439,4 +520,5 @@ docker exec sekar-postgres psql -U postgres -d sekar_db -c \
 **Blocking issues:** _______  **UAT verdict:** ☐ Pass ☐ Pass-with-notes ☐ Fail
 
 ## Changelog
+- 2026-07-22 — Added **§0 from-scratch setup + clean-reset recovery** (documents the two migration-run failure modes and the drop-recreate fix) and a **§2.6 conceptual primer** ("how schedules work" — event→occurrence model; "how monitoring works" — drill-down + 3-axis presence). Fixed two from-scratch **migration bugs**: a shipped class renamed by the rayon→district sweep (`RenameManagementAndAdmin**District**Roles`→ restored to `…RayonRoles`) and a 13-digit timestamp typo on `DropMarkerImageUrl` (→14-digit) that mis-sorted it before its dependencies — a clean `migration:run` now applies all 80 in order. Marked the excused-pill note done (shipped in web `OnLeaveList` / mobile `MonitoringStatusSheet`). Verified end-to-end: fresh drop→migrate→seed (exit 0), backend boots, login + `/monitoring/{city,live-users}` + `/schedules/date/:date` + `/districts` all 200.
 - 2026-07-22 — Created. Covers ADR-044…052 revamp across be/web/mobile for all 9 roles, with real seed credentials + step/expected/result cases. Shipped alongside a **task seeder** (18 tasks, all statuses + scopes) and fixes to the region/location seed loaders (`rayon_id`→`district_id`) so the demo data seeds completely.
