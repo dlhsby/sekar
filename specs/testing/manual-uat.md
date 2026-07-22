@@ -371,7 +371,56 @@ Tick each cell you exercised. ✓ = should work · — = not available to that r
 
 ---
 
-## 11. Sign-off
+## 11. Presence model — reproduce every state (ADR-050)
+
+The presence model has ~15 lifecycle states + 5 live sub-states + counting cases
+(authoritative matrix: [`presence-model-matrix.md`](presence-model-matrix.md)). **Most
+are time-relative or action-driven, so they are NOT visible from the static seed** — a
+tester at 10:00 only naturally sees a few. Use the **staging script** to make them appear
+at once, then open `/monitoring`:
+
+```bash
+cd apps/be && npx ts-node scripts/stage-presence-scenarios.ts
+# then open web /monitoring as admin_system_1 — the bertugas pins appear
+# cleanup: DELETE FROM shifts WHERE created_at > now() - interval '2 hours';  (staged rows only)
+```
+
+| State (lifecycle / live) | How it's produced | Watch | Expected on the map |
+|---|---|---|---|
+| **bertugas · aktif · dalam_area** | staged: on-time clock-in + fresh ping inside geofence | `satgas_taman_bungkul_1` | live pin, green, "Dalam area" |
+| **bertugas · is_late (terlambat flag)** | staged: clock-in past start+grace | `satgas_taman_flora_1` | live pin + Terlambat |
+| **bertugas · aktif · luar_area** | staged: fresh ping ~2 km outside geofence | `satgas_pusat_2` | live pin, dashed "Di luar area" ring |
+| **bertugas · offline · dalam (last-known)** | staged: stale ping (>10 min) | `satgas_timur_1_2` | pin shows Tidak Aktif, keeps last area |
+| **pulang** | staged: clock-in + clock-out | `korlap_pusat_1` | **not** a live pin (in history) |
+| **pulang · early** | staged: clock-out before shift end | `linmas_pusat_1` | not a live pin, early flag |
+| **bertugas · ad_hoc ("Luar Jadwal")** | staged: clock-in with no schedule | `satgas_pusat_1` | city-scope "Luar Jadwal" marker, **excluded from staffing** |
+| **bertugas · lupa_clock_out** | staged: clock-in on an ended shift, no clock-out | `satgas_taman_bungkul_1` | pin-warn |
+| **bertugas · lembur** | staged: approved overtime + ping past shift end | `satgas_taman_flora_1` | pin-lembur |
+| **belum_hadir** | auto-derived: scheduled, not clocked in, **within grace** | any scheduled satgas early in the shift | roster "Belum hadir" |
+| **terlambat** (roster) | auto-derived: scheduled, not clocked in, **past grace** | same, later | roster flagged |
+| **tidak_hadir** | auto-derived: scheduled, not clocked in, **after window** | same, after shift end | roster "Tidak hadir" |
+| **tidak_bertugas** | a clockable worker with no schedule today (8+ exist) | any unscheduled satgas | not on the roster/map |
+| **Counting** | 2 satgas `bertugas` at one lokasi (1 counted per PM-C); korlap not counted; ad-hoc not counted | — | staffing = scheduled satgas/linmas only |
+
+> The three auto-derived roster states depend on **now** vs the shift window — run the pass
+> **during Shift 1 (06:00–15:00)** to catch belum_hadir → terlambat → tidak_hadir across the
+> morning, or re-point the staging script at the shift whose window contains "now".
+
+### ⚠️ Known presence gap — excused leave not surfaced
+The lib [`presence-lifecycle.ts`](../../apps/be/src/modules/monitoring/lib/presence-lifecycle.ts)
+**supports** excused states (`cuti`/`sakit`/`izin`/`libur` → `excused` flag, matrix
+PM-L02/L07), and the roster **counts** on-leave (`on_leave_count`), but the monitoring
+snapshot never passes a worker's `Schedule.status` (`LEAVE_SICK`/`LEAVE_ANNUAL`/
+`LEAVE_PERMIT`) into the derivation — it hardcodes `leave: 'none'`
+(`monitoring-user.service.ts`). So a worker on leave today renders as **`tidak_hadir`, not
+excused**, and there's no excused marker/pill. **These 4 states can't be UAT-tested until
+wired** (follow-up: map `Schedule.status` → `LeaveReason` in the absent-roster path + expose
+`leaveReason` in the DTO + a web/mobile "excused" pill). The staging script documents this
+as un-stageable.
+
+---
+
+## 12. Sign-off
 
 | Area | Owner | Result | Notes |
 |---|---|---|---|
