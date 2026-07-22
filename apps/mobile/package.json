@@ -105,6 +105,7 @@
     "@react-native/jest-preset": {
       "jest-environment-node": "^30.4.1"
     },
-    "joi": "^18.2.1"
+    "joi": "^18.2.1",
+    "brace-expansion": "^5.0.7"
   }
 }
