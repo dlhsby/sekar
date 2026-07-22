@@ -130,7 +130,7 @@
   },
   "overrides": {
     "@nestjs/swagger": {
-      "js-yaml": "^4.2.0"
+      "js-yaml": "^4.3.0"
     },
     "uuid": "^14.0.0",
     "lodash": "^4.17.21",
@@ -141,7 +141,10 @@
     "http-proxy-agent": "^7.0.0",
     "@mapbox/node-pre-gyp": {
       "tar": "^7.5.10"
-    }
+    },
+    "fast-uri": "3.1.4",
+    "protobufjs": "7.6.5",
+    "brace-expansion": "5.0.7"
   },
   "jest": {
     "moduleFileExtensions": [
