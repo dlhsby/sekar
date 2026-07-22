@@ -180,7 +180,8 @@ async function openMonitoring(page: Page, role: 'admin' | 'korlap' = 'admin') {
     })
   );
   await page.reload();
-  await expect(page.getByPlaceholder('Cari petugas…')).toBeVisible({ timeout: 10000 });
+  // Search placeholder updated: now includes area + rayon (Phase 5 drill-down redesign)
+  await expect(page.getByPlaceholder('Cari petugas, area, rayon…')).toBeVisible({ timeout: 10000 });
 }
 
 test.describe('Monitoring page', () => {
@@ -190,17 +191,18 @@ test.describe('Monitoring page', () => {
     await expect(page.getByRole('button', { name: /daftar petugas/i })).toBeVisible();
   });
 
-  test('lists workers and opens the inline detail card', async ({ page }) => {
+  test('lists workers and opens the sidebar', async ({ page }) => {
     await openMonitoring(page);
     await page.getByRole('button', { name: /daftar petugas/i }).click();
-    await expect(page.getByText('Budi Santoso')).toBeVisible();
-
-    await page.getByText('Budi Santoso').click();
-    await expect(page.getByText(/kembali ke daftar/i)).toBeVisible();
-    await expect(page.getByText(/dalam area/i)).toBeVisible();
+    // Sidebar opens with tabs for Wilayah (regions) and Petugas (workers)
+    await expect(page.getByRole('tab', { name: /petugas/i })).toBeVisible();
+    await expect(page.getByRole('tab', { name: /wilayah/i })).toBeVisible();
   });
 
-  test('area tab shows capacity indicators and understaffed badge', async ({ page }) => {
+  test.skip('area tab shows capacity (removed in Phase 5 drill-down)', async ({ page }) => {
+    // The Area tab was removed in Phase 5 monitoring redesign. Areas are now
+    // shown in the drill-down hierarchy (city → district → region → location).
+    // This test is skipped pending the area detail view implementation.
     await openMonitoring(page);
     await page.getByRole('button', { name: /daftar petugas/i }).click();
     await page.getByRole('tab', { name: /area/i }).click();
@@ -210,7 +212,9 @@ test.describe('Monitoring page', () => {
     await expect(page.getByText(/kurang 2/i)).toBeVisible();
   });
 
-  test('bulk reassign: select 2 workers → 2 reassign calls → success toast', async ({ page }) => {
+  test.skip('bulk reassign removed in Phase 5 (redesign pending)', async ({ page }) => {
+    // Bulk reassign was part of the old area-tab interface. Phase 5 drill-down
+    // may reintroduce it via a different UX. Skipped pending redesign.
     await openMonitoring(page);
 
     const reassignCalls: unknown[] = [];
@@ -239,7 +243,8 @@ test.describe('Monitoring page', () => {
     expect(reassignCalls[0]).toMatchObject({ target_area_id: AREA_BUNGKUL });
   });
 
-  test('korlap does not see the bulk-reassign trigger', async ({ page }) => {
+  test.skip('korlap RBAC for bulk-reassign (redesign pending)', async ({ page }) => {
+    // See bulk-reassign test skip reason above.
     await openMonitoring(page, 'korlap');
     await page.getByRole('button', { name: /daftar petugas/i }).click();
     await page.getByRole('tab', { name: /area/i }).click();

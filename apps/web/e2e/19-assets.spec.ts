@@ -127,7 +127,10 @@ async function setupMockAssetRoutes(page: Page) {
   });
 }
 
-test.describe('Assets Pages (Phase 5-3)', () => {
+// PARKED (built, hidden from nav) — see specs/features/_archived/. Navigation.ts line 190-196.
+// Route still accessible at /assets, but feature was archived 2026-07-07 per request.
+// Re-enable when restored to active navigation.
+test.describe.skip('Assets Pages (Phase 5-3)', () => {
   test('asset list renders with heading and search', async ({ page }) => {
     await quickLogin(page, 'korlap', '/assets');
     await setupMockAssetRoutes(page);

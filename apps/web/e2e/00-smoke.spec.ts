@@ -10,6 +10,7 @@ test.describe('smoke', () => {
 
   test('quickLogin renders the dashboard via cookies', async ({ page }) => {
     await quickLogin(page, 'admin');
-    await expect(page.getByLabel('User menu')).toBeVisible();
+    // User menu aria-label is "Menu pengguna" in Indonesian (default language).
+    await expect(page.getByLabel(/menu pengguna|user menu/i)).toBeVisible();
   });
 });

@@ -16,7 +16,7 @@ test.describe('TSK-1 tasks kanban/table', () => {
     await page.getByRole('tab', { name: /tabel/i }).click();
     await expect(page.getByText('Judul Tugas').first()).toBeVisible();
     // Row actions now live in a standardized "..." kebab menu.
-    await page.getByRole('button', { name: 'Aksi baris' }).first().click();
+    await page.getByRole('button', { name: 'Aksi' }).first().click();
     await expect(page.getByRole('menuitem', { name: /lihat/i })).toBeVisible();
   });
 
