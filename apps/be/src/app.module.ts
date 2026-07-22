@@ -69,8 +69,12 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
     // Rate limiting module (high limits in test environment to prevent interference)
     ThrottlerModule.forRoot([
       {
+        // Static fallback only — AppThrottlerGuard overrides these at request time from
+        // the settings catalog (ratelimit.global_ttl_ms / ratelimit.global_per_min). Env
+        // keys here MUST match the catalog envKeys (THROTTLE_TTL / RATE_LIMIT_GLOBAL_PER_MIN)
+        // so the static default and the guard's env fallback resolve to the same value.
         ttl: parseInt(process.env.THROTTLE_TTL || '60000', 10), // Time window in milliseconds
-        limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10), // Maximum requests per time window
+        limit: parseInt(process.env.RATE_LIMIT_GLOBAL_PER_MIN || '100', 10), // Max requests / window
       },
     ]),
 

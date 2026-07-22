@@ -55,10 +55,14 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  // Env-driven so dev/e2e can raise or disable the limit (default 5/min for prod safety).
+  // Static fallback only — AppThrottlerGuard resolves the effective login limit at
+  // request time as `ratelimit.login_per_min` (DB Setting → env RATE_LIMIT_LOGIN_PER_MIN →
+  // default 5), so operators tune it live in System Settings without a restart (ADR-049).
+  // These env keys MUST match the catalog envKeys so the static default and the guard's
+  // env fallback resolve to the same value.
   @Throttle({
     default: {
-      limit: parseInt(process.env.AUTH_LOGIN_THROTTLE_LIMIT || '5', 10),
+      limit: parseInt(process.env.RATE_LIMIT_LOGIN_PER_MIN || '5', 10),
       ttl: parseInt(process.env.AUTH_LOGIN_THROTTLE_TTL || '60000', 10),
     },
   })

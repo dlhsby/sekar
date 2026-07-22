@@ -4,6 +4,7 @@ import {
   Get,
   Patch,
   Param,
+  ParseUUIDPipe,
   Body,
   Query,
   UseGuards,
@@ -263,7 +264,10 @@ export class PruningRequestsController {
     status: 404,
     description: 'Pruning request not found',
   })
-  async findOne(@Param('id') id: string, @GetUser() user: User): Promise<PruningRequest> {
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ): Promise<PruningRequest> {
     return this.pruningRequestsService.findById(id, user);
   }
 
@@ -323,7 +327,7 @@ export class PruningRequestsController {
     description: 'Conflict - Request is not reviewable (wrong status)',
   })
   async review(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReviewPruningRequestDto,
     @GetUser() user: User,
   ): Promise<PruningRequest> {
@@ -392,7 +396,7 @@ export class PruningRequestsController {
     description: 'Conflict - Request is not approved, or capacity booking failed',
   })
   async assignToTask(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: AssignPruningRequestDto,
     @GetUser() user: User,
   ): Promise<{ request: PruningRequest; task: any }> {
@@ -426,7 +430,7 @@ export class PruningRequestsController {
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
   async reschedule(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ReschedulePruningRequestDto,
     @GetUser() user: User,
   ): Promise<PruningRequest> {
@@ -452,7 +456,7 @@ export class PruningRequestsController {
   @ApiResponse({ status: 404 })
   @ApiResponse({ status: 409 })
   async cancel(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @GetUser() user: User,
     @Body('reason') reason?: string,
   ): Promise<PruningRequest> {
@@ -515,7 +519,7 @@ export class PruningRequestsController {
     description: 'Pruning request not found',
   })
   async update(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePruningRequestDto,
     @GetUser() user: User,
   ): Promise<PruningRequest> {
