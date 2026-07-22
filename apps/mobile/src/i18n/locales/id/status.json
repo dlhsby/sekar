@@ -70,5 +70,12 @@
     "outside_area": "Di Luar Area",
     "inside_area": "Di Dalam Area",
     "unknown_area": "Lokasi Tidak Diketahui"
+  },
+  "leave": {
+    "cuti": "Cuti",
+    "sakit": "Sakit",
+    "izin": "Izin",
+    "libur": "Libur",
+    "unknown": "Berhalangan"
   }
 }

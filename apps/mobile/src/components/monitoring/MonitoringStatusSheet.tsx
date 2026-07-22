@@ -4,11 +4,13 @@ import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBText } from '../nb/NBText';
 import { NBModal } from '../nb/NBModal';
+import { StatusPill } from '../home/StatusPill';
 import { StatusSummaryBar } from './StatusSummaryBar';
 import { WorkerTile } from './WorkerTile';
 import { PersonnelGroupCard, type PersonnelGroup } from './PersonnelGroupCard';
 import { AttendanceDetailModal } from './AttendanceDetailModal';
 import { ROLE_LABELS } from '../../constants/roles';
+import { leaveReasonPill } from '../../utils/statusHelpers';
 import {
   nbColors,
   nbBorders,
@@ -16,7 +18,7 @@ import {
   nbSpacing,
   nbShadows,
 } from '../../constants/nbTokens';
-import type { LiveUser, PresenceActivity, UserRole } from '../../types/models.types';
+import type { LiveUser, PresenceActivity, UserRole, AbsentUser } from '../../types/models.types';
 import type { AttendanceResponse } from '../../types/api.types';
 import i18n from '../../i18n/config';
 
@@ -36,6 +38,8 @@ interface MonitoringStatusSheetProps {
   onUserPress?: (user: LiveUser) => void;
   /** Today's attendance summary; renders the "Kehadiran" section + detail modal. */
   attendance?: AttendanceResponse | null;
+  /** Scheduled workers on approved leave today (ADR-050). */
+  onLeaveUsers?: AbsentUser[];
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -73,6 +77,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   staffedAreas,
   onUserPress,
   attendance,
+  onLeaveUsers,
 }: MonitoringStatusSheetProps): React.JSX.Element {
   const { t } = useTranslation();
   const [selectedGroup, setSelectedGroup] = useState<PersonnelGroup | null>(null);
@@ -146,6 +151,30 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         </View>
       )}
 
+      {/* Berhalangan — on-leave workers with leave reason pills */}
+      {onLeaveUsers && onLeaveUsers.length > 0 && (
+        <View style={styles.section}>
+          <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
+            {t('monitoring:status.sections.onLeave')}
+          </NBText>
+          <View style={styles.onLeaveList}>
+            {onLeaveUsers.map(user => {
+              const pill = leaveReasonPill(user.leave_reason);
+              return (
+                <View key={user.user_id} style={styles.onLeaveRow}>
+                  <NBText variant="body-sm" color="black" style={styles.onLeaveName}>
+                    {user.full_name}
+                  </NBText>
+                  <View style={styles.leaveReasonPill}>
+                    <StatusPill tone={pill.tone} label={pill.label} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      )}
+
       {/* Operasional — info card */}
       <View style={styles.section}>
         <NBText variant="mono-sm" uppercase color="gray600" style={styles.sectionTitle}>
@@ -185,7 +214,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
       </View>
     </>
-  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance]);
+  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance, onLeaveUsers, t]);
 
   const groupLabel = selectedGroup
     ? ROLE_LABELS[selectedGroup.role as UserRole] ?? selectedGroup.role
@@ -424,5 +453,25 @@ const styles = StyleSheet.create({
   attendanceStatLabel: {
     fontSize: 10,
     letterSpacing: 0.3,
+  },
+  onLeaveList: {
+    gap: nbSpacing.xs,
+  },
+  onLeaveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    borderWidth: nbBorders.widthThin,
+    borderColor: nbColors.gray200,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.gray100,
+  },
+  onLeaveName: {
+    flex: 1,
+  },
+  leaveReasonPill: {
+    marginLeft: nbSpacing.sm,
   },
 });

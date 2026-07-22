@@ -73,7 +73,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   const dispatch = useDispatch<AppDispatch>();
 
   // Redux state
-  const { liveUsers, selectedUser, filters, userDaySummary, isLoadingDaySummary, isLoading, error, boundaries } =
+  const { liveUsers, selectedUser, filters, userDaySummary, isLoadingDaySummary, isLoading, error, boundaries, onLeaveUsers } =
     useSelector((state: RootState) => state.monitoring);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const visibleLayers = useSelector((state: RootState) => state.monitoringV2.visibleLayers);
@@ -624,6 +624,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           lastUpdated={lastUpdated}
           totalAreas={totalAreas}
           staffedAreas={staffedAreas}
+          onLeaveUsers={onLeaveUsers}
         />
 
         {/* Filter modal, boundary detail modal, search modal */}

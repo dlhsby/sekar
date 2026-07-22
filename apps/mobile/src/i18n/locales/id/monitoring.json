@@ -70,6 +70,7 @@
     "title": "Status Pemantauan",
     "sections": {
       "attendance": "Kehadiran",
+      "onLeave": "Berhalangan",
       "operations": "Operasional",
       "staffList": "Daftar Petugas"
     },

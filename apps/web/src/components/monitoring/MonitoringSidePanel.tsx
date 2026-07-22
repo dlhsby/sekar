@@ -18,8 +18,8 @@ import {
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { StatusCard } from './StatusCard';
 import { UserListItem } from './UserListItem';
+import { OnLeaveList } from './OnLeaveList';
 import type { LiveUser, LiveUsersResponse, TrackingStatus } from '@/lib/api/monitoring';
-import type { UserRole } from '@/types/models';
 
 export interface MonitoringSidePanelProps {
   data: LiveUsersResponse | undefined;
@@ -128,6 +128,9 @@ export function MonitoringSidePanel({
           })}
         </div>
       </div>
+
+      {/* On-leave section */}
+      <OnLeaveList users={data?.on_leave_users} />
 
       {/* Search + Role chips */}
       <div className="px-3 py-2 flex-shrink-0 border-b border-nb-gray-200">

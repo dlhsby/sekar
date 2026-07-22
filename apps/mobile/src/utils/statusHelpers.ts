@@ -364,3 +364,26 @@ export function getPriorityVariant(priority: string): 'danger' | 'warning' | 'pr
 export function getPriorityLabel(priority: string): string {
   return i18n.exists(`status:priority.${priority}`) ? i18n.t(`status:priority.${priority}`) : priority;
 }
+
+// ─── Leave Reason Pill (ADR-050: on-leave workers) ──────────────────────────
+
+/**
+ * Maps leave reason to StatusPill tone + localized label.
+ * Used in the "Berhalangan" (on-leave) section of the monitoring status sheet.
+ */
+export function leaveReasonPill(
+  reason: 'cuti' | 'sakit' | 'izin' | 'libur' | null | undefined,
+): { tone: StatusTone; label: string } {
+  switch (reason) {
+    case 'sakit':
+      return { tone: 'warn', label: i18n.t('status:leave.sakit') };
+    case 'cuti':
+      return { tone: 'info', label: i18n.t('status:leave.cuti') };
+    case 'izin':
+      return { tone: 'neutral', label: i18n.t('status:leave.izin') };
+    case 'libur':
+      return { tone: 'neutral', label: i18n.t('status:leave.libur') };
+    default:
+      return { tone: 'neutral', label: i18n.t('status:leave.unknown') };
+  }
+}
