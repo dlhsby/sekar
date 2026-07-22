@@ -31,7 +31,15 @@ import {
   resolveShiftWindow,
   type LifecycleState,
   type LifecycleFlag,
+  type LeaveReason,
 } from '../lib/presence-lifecycle';
+
+/** Map a roster row's leave status to the presence-model leave reason (ADR-050). */
+const SCHEDULE_STATUS_TO_LEAVE: Partial<Record<ScheduleStatus, LeaveReason>> = {
+  [ScheduleStatus.LEAVE_SICK]: 'sakit',
+  [ScheduleStatus.LEAVE_ANNUAL]: 'cuti',
+  [ScheduleStatus.LEAVE_PERMIT]: 'izin',
+};
 
 @Injectable()
 export class MonitoringUserService {
@@ -219,6 +227,7 @@ export class MonitoringUserService {
     on_leave_count: number;
     off_schedule_count: number;
     absent_users: AbsentUserDto[];
+    on_leave_users: AbsentUserDto[];
   }> {
     const empty = {
       expected_count: 0,
@@ -227,6 +236,7 @@ export class MonitoringUserService {
       on_leave_count: 0,
       off_schedule_count: 0,
       absent_users: [] as AbsentUserDto[],
+      on_leave_users: [] as AbsentUserDto[],
     };
     if (!this.dailySchedulesService) return empty;
 
@@ -259,21 +269,90 @@ export class MonitoringUserService {
     );
     const offSchedule = distinctUsers(roster.filter((r) => r.status === ScheduleStatus.OFF));
 
+    // Presence lifecycle for each non-present scheduled worker (ADR-050): the
+    // expected-but-not-clocked (belum_hadir/terlambat/tidak_hadir) AND those on
+    // approved leave (excused, with a reason). derivePresenceState resolves both
+    // from the same facts — we only feed it the right `leave`.
+    const grace = (await this.getRosterGraceMs()) ?? 0;
+    const now = new Date();
+    const leaveRows = roster.filter((r) => r.status in SCHEDULE_STATUS_TO_LEAVE);
     const absentRows = expected.filter((r) => !clockedIn.has(r.user_id));
-    const seenAbsent = new Set<string>();
-    const absent_users: AbsentUserDto[] = [];
-    for (const r of absentRows) {
-      if (seenAbsent.has(r.user_id)) continue;
-      seenAbsent.add(r.user_id);
-      absent_users.push({
+
+    const toAbsentUser = (r: (typeof roster)[number], leave: LeaveReason): AbsentUserDto => {
+      const sd = r.shift_definition;
+      let lifecycle: LifecycleState = 'tidak_hadir';
+      let leaveReason: LeaveReason | null = null;
+      if (sd?.start_time && sd?.end_time) {
+        const window = resolveShiftWindow(
+          r.schedule_date,
+          sd.start_time,
+          sd.end_time,
+          sd.crosses_midnight ?? false,
+        );
+        const res = derivePresenceState(
+          {
+            scheduled: true,
+            clockIn: null,
+            clockOut: null,
+            shiftStart: window.start,
+            shiftEnd: window.end,
+            graceMs: grace,
+            overtimeApproved: false,
+            leave,
+          },
+          now,
+        );
+        lifecycle = res.state;
+        leaveReason = res.leaveReason;
+      } else if (leave !== 'none') {
+        // On leave with no resolvable window still reads as excused.
+        const res = derivePresenceState(
+          {
+            scheduled: true,
+            clockIn: null,
+            clockOut: null,
+            shiftStart: null,
+            shiftEnd: null,
+            graceMs: grace,
+            overtimeApproved: false,
+            leave,
+          },
+          now,
+        );
+        lifecycle = res.state;
+        leaveReason = res.leaveReason;
+      }
+      return {
         user_id: r.user_id,
         full_name: r.user?.full_name ?? '',
         role: r.user?.role ?? '',
         district_id: r.district_id,
         shift_definition_id: r.shift_definition_id,
         shift_name: r.shift_definition?.name ?? null,
-      });
-    }
+        lifecycle_state: lifecycle,
+        leave_reason: leaveReason,
+      };
+    };
+
+    const buildList = (
+      rows: typeof roster,
+      leaveFor: (r: (typeof roster)[number]) => LeaveReason,
+    ) => {
+      const seen = new Set<string>();
+      const out: AbsentUserDto[] = [];
+      for (const r of rows) {
+        if (seen.has(r.user_id)) continue;
+        seen.add(r.user_id);
+        out.push(toAbsentUser(r, leaveFor(r)));
+      }
+      return out;
+    };
+
+    const absent_users = buildList(absentRows, () => 'none');
+    const on_leave_users = buildList(
+      leaveRows,
+      (r) => SCHEDULE_STATUS_TO_LEAVE[r.status as ScheduleStatus] ?? 'none',
+    );
 
     return {
       expected_count: expectedCount,
@@ -282,7 +361,19 @@ export class MonitoringUserService {
       on_leave_count: onLeave,
       off_schedule_count: offSchedule,
       absent_users,
+      on_leave_users,
     };
+  }
+
+  /** Late-grace window in ms from system settings; falls back to null when unavailable. */
+  private async getRosterGraceMs(): Promise<number | null> {
+    if (!this.cacheService) return null;
+    try {
+      const t = await this.cacheService.getThresholds();
+      return t.late_grace_seconds * 1000;
+    } catch {
+      return null;
+    }
   }
 
   async getLocationHistory(

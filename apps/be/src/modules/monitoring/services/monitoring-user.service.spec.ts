@@ -401,6 +401,13 @@ describe('MonitoringUserService', () => {
       expect(result.on_leave_count).toBe(1);
       expect(result.off_schedule_count).toBe(1);
       expect(result.absent_users.map((a) => a.user_id)).toEqual(['u2']);
+      // ADR-050 excused: the on-leave worker is now surfaced per-worker with a
+      // leave reason + lifecycle (not just a count), separate from plain absences.
+      expect(result.on_leave_users.map((a) => a.user_id)).toEqual(['u3']);
+      expect(result.on_leave_users[0].leave_reason).toBe('sakit');
+      expect(result.on_leave_users[0].lifecycle_state).toBe('tidak_hadir');
+      expect(result.absent_users[0].leave_reason).toBeNull();
+      expect(result.absent_users[0].lifecycle_state).toBeDefined();
     });
 
     it('should filter users by area ID', async () => {
