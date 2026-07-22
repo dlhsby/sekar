@@ -229,6 +229,7 @@ const initialState = {
     off_schedule_count: 0,
   },
   absentUsers: [],
+  onLeaveUsers: [],
   isLoading: false,
   isLoadingDaySummary: false,
   isLoadingLocationHistory: false,

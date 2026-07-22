@@ -70,5 +70,12 @@
     "outside_area": "Outside Area",
     "inside_area": "Inside Area",
     "unknown_area": "Location Unknown"
+  },
+  "leave": {
+    "cuti": "Leave",
+    "sakit": "Sick",
+    "izin": "Permission",
+    "libur": "Holiday",
+    "unknown": "On Leave"
   }
 }

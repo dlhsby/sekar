@@ -333,5 +333,14 @@
   },
   "teamDetail": {
     "title": "Team Members"
+  },
+  "onLeave": {
+    "title": "On Leave",
+    "reasons": {
+      "cuti": "Leave",
+      "sakit": "Sick",
+      "izin": "Permission",
+      "libur": "Holiday"
+    }
   }
 }

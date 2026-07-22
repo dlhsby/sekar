@@ -333,5 +333,14 @@
   },
   "teamDetail": {
     "title": "Anggota Tim"
+  },
+  "onLeave": {
+    "title": "Berhalangan",
+    "reasons": {
+      "cuti": "Cuti",
+      "sakit": "Sakit",
+      "izin": "Izin",
+      "libur": "Libur"
+    }
   }
 }

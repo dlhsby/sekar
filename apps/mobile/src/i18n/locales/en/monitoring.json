@@ -70,6 +70,7 @@
     "title": "Monitoring Status",
     "sections": {
       "attendance": "Attendance",
+      "onLeave": "On Leave",
       "operations": "Operations",
       "staffList": "Staff List"
     },

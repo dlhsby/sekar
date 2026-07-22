@@ -58,6 +58,7 @@ interface MonitoringState {
   statusCounts: StatusCounts;
   rosterCounts: RosterCounts;
   absentUsers: AbsentUser[];
+  onLeaveUsers: AbsentUser[];
   isLoading: boolean;
   isLoadingDaySummary: boolean;
   isLoadingLocationHistory: boolean;
@@ -97,6 +98,7 @@ const initialState: MonitoringState = {
   statusCounts: initialStatusCounts,
   rosterCounts: initialRosterCounts,
   absentUsers: [],
+  onLeaveUsers: [],
   isLoading: false,
   isLoadingDaySummary: false,
   isLoadingLocationHistory: false,
@@ -370,6 +372,7 @@ const monitoringSlice = createSlice({
           off_schedule_count: action.payload.off_schedule_count ?? 0,
         };
         state.absentUsers = action.payload.absent_users ?? [];
+        state.onLeaveUsers = action.payload.on_leave_users ?? [];
       }
     });
     builder.addCase(fetchLiveUsers.rejected, (state, action) => {

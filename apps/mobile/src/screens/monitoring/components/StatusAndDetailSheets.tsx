@@ -8,7 +8,7 @@ import React from 'react';
 import { MonitoringStatusSheet } from '../../../components/monitoring/MonitoringStatusSheet';
 import { UserDetailSheet } from '../../../components/monitoring/UserDetailSheet';
 import { LocationTrailModal } from '../../../components/monitoring/LocationTrailModal';
-import type { LiveUser, PresenceActivity } from '../../../types/models.types';
+import type { LiveUser, PresenceActivity, AbsentUser } from '../../../types/models.types';
 import type { AttendanceResponse } from '../../../types/api.types';
 
 interface StatusAndDetailSheetsProps {
@@ -29,6 +29,7 @@ interface StatusAndDetailSheetsProps {
   lastUpdated: string | null;
   totalAreas: number;
   staffedAreas: number;
+  onLeaveUsers?: AbsentUser[];
 }
 
 export function StatusAndDetailSheets({
@@ -49,6 +50,7 @@ export function StatusAndDetailSheets({
   lastUpdated,
   totalAreas,
   staffedAreas,
+  onLeaveUsers,
 }: StatusAndDetailSheetsProps): React.JSX.Element {
   return (
     <>
@@ -64,6 +66,7 @@ export function StatusAndDetailSheets({
         staffedAreas={staffedAreas}
         onUserPress={onUserPress}
         attendance={attendance}
+        onLeaveUsers={onLeaveUsers}
       />
 
       {/* User detail bottom sheet */}
