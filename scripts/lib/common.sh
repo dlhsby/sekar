@@ -281,6 +281,74 @@ PS
   echo -e "    ${GREEN}New-NetFirewallRule -DisplayName \"SEKAR LAN ($port)\" -Direction Inbound -Action Allow -Protocol TCP -LocalPort $port${NC}"
 }
 
+# adb_server_is_windows — true when `adb` is (or wraps) a Windows adb.exe. This
+# matters a lot on WSL2: `adb reverse` tunnels the device port to the machine
+# running the ADB SERVER. With a Windows adb.exe that machine is WINDOWS, not
+# WSL, so `adb reverse tcp:8081 tcp:$METRO_PORT` lands on Windows' localhost —
+# where our dev servers are NOT listening. Each WSL port then needs a Windows
+# portproxy (see wsl_portproxy_ensure).
+adb_server_is_windows() {
+  is_wsl || return 1
+  local p
+  p="$(command -v adb 2>/dev/null)" || return 1
+  # Direct .exe on PATH, a /mnt/c path, or a shell wrapper that execs adb.exe.
+  case "$p" in *.exe|/mnt/[a-z]/*) return 0 ;; esac
+  head -c 400 "$p" 2>/dev/null | grep -qiE "adb\.exe|/mnt/[a-z]/" && return 0
+  return 1
+}
+
+# wsl_portproxy_ensure PORT... — make sure Windows forwards each PORT to the
+# CURRENT WSL IP, so `adb reverse` (which resolves on Windows) reaches our WSL
+# dev servers. Fully env-driven: callers pass $METRO_PORT/$BE_PORT, nothing is
+# hardcoded. Idempotent — only touches ports that are missing or STALE (pointing
+# at an old WSL IP, which happens on every WSL/PC restart). Batches all fixes
+# into ONE elevated PowerShell call (a single UAC prompt). No-op unless the ADB
+# server is on Windows.
+wsl_portproxy_ensure() {
+  adb_server_is_windows || return 0
+  local wsl_ip table cmds="" need=() port existing
+  wsl_ip="$(ip -4 addr show eth0 2>/dev/null | grep -oP 'inet \K[0-9.]+' | head -1 || true)"
+  [ -n "$wsl_ip" ] || { print_warning "WSL IP not detected — skipping Windows port-forward check."; return 0; }
+
+  table="$(powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null | tr -d '\r' || true)"
+
+  for port in "$@"; do
+    [ -n "$port" ] || continue
+    # Correct iff some entry for this listenport already points at the current WSL IP.
+    existing="$(awk -v p="$port" '$2==p {print $3}' <<<"$table" | grep -Fx "$wsl_ip" | head -1 || true)"
+    [ -n "$existing" ] && continue
+    need+=("$port")
+    # Drop any stale entry for this port on either common listen address first.
+    cmds+="netsh interface portproxy delete v4tov4 listenport=$port listenaddress=127.0.0.1 2>\$null; "
+    cmds+="netsh interface portproxy delete v4tov4 listenport=$port listenaddress=0.0.0.0 2>\$null; "
+    cmds+="netsh interface portproxy add v4tov4 listenport=$port listenaddress=127.0.0.1 connectport=$port connectaddress=$wsl_ip; "
+  done
+
+  if [ ${#need[@]} -eq 0 ]; then
+    print_success "Windows port-forwards OK for: $* → WSL $wsl_ip"
+    return 0
+  fi
+
+  print_warning "WSL2 + Windows adb: ports ${need[*]} are not forwarded to this WSL IP ($wsl_ip) — the app can't reach them. Requesting elevation to fix (accept the UAC prompt)..."
+  powershell.exe -NoProfile -Command \
+    "Start-Process powershell -Verb RunAs -Wait -ArgumentList '-NoProfile','-Command','$cmds'" >/dev/null 2>&1 || true
+
+  # Re-read and report honestly rather than assuming the elevation succeeded.
+  table="$(powershell.exe -NoProfile -Command "netsh interface portproxy show v4tov4" 2>/dev/null | tr -d '\r' || true)"
+  local still=()
+  for port in "${need[@]}"; do
+    awk -v p="$port" '$2==p {print $3}' <<<"$table" | grep -qFx "$wsl_ip" || still+=("$port")
+  done
+  if [ ${#still[@]} -eq 0 ]; then
+    print_success "Windows port-forwards added: ${need[*]} → WSL $wsl_ip"
+  else
+    print_error "Still not forwarded: ${still[*]}. Run ONCE in an ELEVATED PowerShell:"
+    for port in "${still[@]}"; do
+      echo -e "    ${GREEN}netsh interface portproxy add v4tov4 listenport=$port listenaddress=127.0.0.1 connectport=$port connectaddress=$wsl_ip${NC}"
+    done
+  fi
+}
+
 # print_web_lan_help — phone URL + WSL2 port-forward help for the WEB port.
 # Uses the LAN_IP + WEB_PORT globals.
 print_web_lan_help() {

@@ -3,9 +3,9 @@
   "version": "0.1.3",
   "private": true,
   "scripts": {
-    "android": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && DEVICE=${ANDROID_SERIAL:-$(adb devices 2>&1 | sed -n '2p' | awk '{print $1}')} && adb -s \"$DEVICE\" install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s \"$DEVICE\" reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s \"$DEVICE\" shell am start -n com.wahyutrip.sekar/.MainActivity",
-    "android:all": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && adb devices 2>&1 | grep -w device | grep -v 'List of' | awk '{print $1}' | xargs -I{} sh -c 'adb -s {} install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s {} reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s {} shell am start -n com.wahyutrip.sekar/.MainActivity'",
-    "android:clean": "rm -rf android/.gradle android/app/.cxx android/app/build android/build node_modules/.cache && npm run android",
+    "android": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && METRO_PORT=${METRO_PORT:-$(sed -n 's/^METRO_PORT=//p' .env.local 2>/dev/null | tr -d '\"\\r' | head -1)} && DEVICE=${ANDROID_SERIAL:-$(adb devices 2>&1 | sed -n '2p' | awk '{print $1}')} && adb -s \"$DEVICE\" install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s \"$DEVICE\" reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s \"$DEVICE\" shell am start -n com.wahyutrip.sekar/.MainActivity",
+    "android:all": "cd android && ./gradlew assembleDebug -x installDebug && cd .. && export METRO_PORT=${METRO_PORT:-$(sed -n 's/^METRO_PORT=//p' .env.local 2>/dev/null | tr -d '\"\\r' | head -1)} && adb devices 2>&1 | grep -w device | grep -v 'List of' | awk '{print $1}' | xargs -I{} sh -c 'adb -s {} install -r android/app/build/outputs/apk/debug/app-debug.apk && adb -s {} reverse tcp:8081 tcp:${METRO_PORT:-8081} && adb -s {} shell am start -n com.wahyutrip.sekar/.MainActivity'",
+    "android:clean": "rm -rf android/.gradle android/app/.cxx android/app/build android/build node_modules/.cache node_modules/*/android/.cxx node_modules/@*/*/android/.cxx && npm run android",
     "ios": "react-native run-ios",
     "env:encrypt": "dotenvx encrypt -f .env.staging -f .env.production",
     "env:decrypt:runtime": "node scripts/decrypt-env.js",
