@@ -100,6 +100,10 @@ export interface AbsentUser {
   district_id: string | null;
   shift_definition_id: string | null;
   shift_name: string | null;
+  /** Roster lifecycle (ADR-050): belum_hadir · terlambat · tidak_hadir · tidak_bertugas. */
+  lifecycle_state?: 'belum_hadir' | 'terlambat' | 'tidak_hadir' | 'tidak_bertugas';
+  /** Excused-leave reason when on leave; null/undefined for a plain absence. */
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
 }
 
 export interface LiveUsersResponse {
@@ -116,6 +120,8 @@ export interface LiveUsersResponse {
   on_leave_count?: number;
   off_schedule_count?: number;
   absent_users?: AbsentUser[];
+  /** Scheduled workers on approved leave today (excused), each with its leave_reason. */
+  on_leave_users?: AbsentUser[];
   generated_at: string;
 }
 

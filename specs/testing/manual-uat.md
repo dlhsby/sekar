@@ -406,17 +406,23 @@ cd apps/be && npx ts-node scripts/stage-presence-scenarios.ts
 > **during Shift 1 (06:00–15:00)** to catch belum_hadir → terlambat → tidak_hadir across the
 > morning, or re-point the staging script at the shift whose window contains "now".
 
-### ⚠️ Known presence gap — excused leave not surfaced
-The lib [`presence-lifecycle.ts`](../../apps/be/src/modules/monitoring/lib/presence-lifecycle.ts)
-**supports** excused states (`cuti`/`sakit`/`izin`/`libur` → `excused` flag, matrix
-PM-L02/L07), and the roster **counts** on-leave (`on_leave_count`), but the monitoring
-snapshot never passes a worker's `Schedule.status` (`LEAVE_SICK`/`LEAVE_ANNUAL`/
-`LEAVE_PERMIT`) into the derivation — it hardcodes `leave: 'none'`
-(`monitoring-user.service.ts`). So a worker on leave today renders as **`tidak_hadir`, not
-excused**, and there's no excused marker/pill. **These 4 states can't be UAT-tested until
-wired** (follow-up: map `Schedule.status` → `LeaveReason` in the absent-roster path + expose
-`leaveReason` in the DTO + a web/mobile "excused" pill). The staging script documents this
-as un-stageable.
+### Excused leave (cuti / sakit / izin) — now surfaced
+`GET /monitoring/live-users` returns **`on_leave_users[]`** — scheduled workers on approved
+leave today, each with `lifecycle_state` + **`leave_reason`** (the roster path maps
+`Schedule.status` `LEAVE_ANNUAL`→`cuti` · `LEAVE_SICK`→`sakit` · `LEAVE_PERMIT`→`izin` and
+runs it through `derivePresenceState`, so they read as **excused**, not plain `tidak_hadir`).
+`absent_users[]` now also carries `lifecycle_state` (belum_hadir / terlambat / tidak_hadir)
++ `leave_reason: null`.
+
+**Stage it:** set a scheduled worker's roster row to a leave status, then check the API:
+```bash
+docker exec sekar-postgres psql -U postgres -d sekar_db -c \
+  "UPDATE schedules SET status='leave_sick' WHERE user_id=(SELECT id FROM users WHERE username='satgas_pusat_1') AND schedule_date=(NOW() AT TIME ZONE 'Asia/Jakarta')::date;"
+# GET /monitoring/live-users → on_leave_users[] includes them with leave_reason='sakit'
+```
+> `libur` (rest-day) has no schedule-status source and is not mapped; the `on_leave_count`
+> total is unchanged. A dedicated web/mobile "excused" pill in the roster list is a UI
+> follow-up (the data is now available; no per-worker roster list is rendered yet).
 
 ---
 

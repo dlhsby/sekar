@@ -6,7 +6,7 @@ import {
   ActivityStatus,
   LocationStatus,
 } from '../entities/user-tracking-status.entity';
-import type { LifecycleState, LifecycleFlag } from '../lib/presence-lifecycle';
+import type { LifecycleState, LifecycleFlag, LeaveReason } from '../lib/presence-lifecycle';
 
 export class LiveUserDto {
   @ApiProperty({ example: 'user-uuid' })
@@ -187,6 +187,21 @@ export class AbsentUserDto {
 
   @ApiProperty({ example: 'Shift 1', nullable: true })
   shift_name: string | null;
+
+  @ApiProperty({
+    example: 'belum_hadir',
+    description:
+      'Roster lifecycle (ADR-050): belum_hadir · terlambat · tidak_hadir · tidak_bertugas (excused leave).',
+  })
+  lifecycle_state: LifecycleState;
+
+  @ApiProperty({
+    example: 'sakit',
+    nullable: true,
+    description:
+      'Excused-leave reason when on leave (cuti/sakit/izin/libur); null for a plain absence.',
+  })
+  leave_reason: LeaveReason | null;
 }
 
 export class LiveUsersResponseDto {
@@ -233,8 +248,17 @@ export class LiveUsersResponseDto {
   @ApiProperty({ example: 5, description: 'Active workers with no shift scheduled today' })
   off_schedule_count: number;
 
-  @ApiProperty({ type: [AbsentUserDto] })
+  @ApiProperty({
+    type: [AbsentUserDto],
+    description: 'Expected-but-not-present (belum_hadir/terlambat/tidak_hadir).',
+  })
   absent_users: AbsentUserDto[];
+
+  @ApiProperty({
+    type: [AbsentUserDto],
+    description: 'Scheduled workers on approved leave today (excused), each with its leave_reason.',
+  })
+  on_leave_users: AbsentUserDto[];
 
   @ApiProperty({ example: '2024-01-24T10:30:00Z' })
   generated_at: Date;

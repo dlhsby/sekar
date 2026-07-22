@@ -144,6 +144,7 @@ export class MonitoringController {
         on_leave_count: 0,
         off_schedule_count: 0,
         absent_users: [],
+        on_leave_users: [],
         generated_at: new Date(),
       };
     }
