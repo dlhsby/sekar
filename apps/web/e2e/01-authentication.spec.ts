@@ -14,7 +14,8 @@ test.describe('Authentication', () => {
   test('logs in and lands on the dashboard home', async ({ page }) => {
     await login(page, testUsers.admin);
     await expect(page).not.toHaveURL(/\/login/);
-    await expect(page.getByLabel('User menu')).toBeVisible();
+    // User menu aria-label is "Menu pengguna" in Indonesian (default language)
+    await expect(page.getByLabel(/menu pengguna|user menu/i)).toBeVisible();
   });
 
   test('links to the forgot-password page', async ({ page }) => {

@@ -56,7 +56,14 @@ export function SettingsGroupRail({
                 {g.label}
               </span>
               {g.hint && (
-                <span className="hidden truncate text-nb-caption text-nb-gray-600 lg:block">
+                <span
+                  className={cn(
+                    'hidden truncate text-nb-caption lg:block',
+                    // Darker on the active (primary) background so the hint keeps
+                    // WCAG 2.1 AA contrast (gray-600 on nb-primary is only 3.44:1).
+                    isActive ? 'text-nb-gray-700' : 'text-nb-gray-600',
+                  )}
+                >
                   {g.hint}
                 </span>
               )}

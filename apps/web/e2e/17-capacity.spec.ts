@@ -9,7 +9,7 @@ import { test, expect, Page, Route } from '@playwright/test';
 import { quickLogin } from './auth.setup';
 import { getRolling12WeekWindow } from '../src/lib/utils/iso-week';
 
-const RAYON_ID = '950e8400-0000-0000-0000-000000000001';
+const DISTRICT_ID = '950e8400-0000-0000-0000-000000000001';
 
 // Drive the mock weeks from the SAME util the capacity page uses, so the data always
 // lands inside the rendered rolling 12-week window. (Previously hardcoded W24/W25,
@@ -17,15 +17,15 @@ const RAYON_ID = '950e8400-0000-0000-0000-000000000001';
 const { year: CURRENT_YEAR, fromWeek: WEEK_A } = getRolling12WeekWindow();
 const WEEK_B = WEEK_A + 1;
 
-const RAYON = {
-  id: RAYON_ID,
+const DISTRICT = {
+  id: DISTRICT_ID,
   name: 'Rayon Selatan',
 };
 
 const CAPACITY_DATA = [
   {
     id: 'cap-1',
-    rayonId: RAYON_ID,
+    districtId: DISTRICT_ID,
     year: CURRENT_YEAR,
     isoWeek: WEEK_A,
     serviceType: 'pruning',
@@ -36,7 +36,7 @@ const CAPACITY_DATA = [
   },
   {
     id: 'cap-2',
-    rayonId: RAYON_ID,
+    districtId: DISTRICT_ID,
     year: CURRENT_YEAR,
     isoWeek: WEEK_B,
     serviceType: 'pruning',
@@ -51,18 +51,18 @@ const json = (route: Route, body: unknown, status = 200) =>
   route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
 
 async function setupCapacityRoutes(page: Page) {
-  // Rayon detail
-  await page.route(`**/api/v1/rayons/${RAYON_ID}`, async (route: Route) => {
-    return json(route, RAYON);
+  // District detail
+  await page.route(`**/api/v1/districts/${DISTRICT_ID}`, async (route: Route) => {
+    return json(route, DISTRICT);
   });
 
   // Capacity list — returns array for all weeks in query params
-  await page.route(`**/api/v1/rayons/${RAYON_ID}/capacity**`, async (route: Route) => {
+  await page.route(`**/api/v1/districts/${DISTRICT_ID}/capacity**`, async (route: Route) => {
     return json(route, CAPACITY_DATA);
   });
 
   // Capacity PUT (upsert)
-  await page.route(`**/api/v1/rayons/${RAYON_ID}/capacity`, async (route: Route) => {
+  await page.route(`**/api/v1/districts/${DISTRICT_ID}/capacity`, async (route: Route) => {
     if (route.request().method() === 'PUT') {
       const payload = await route.request().postDataJSON();
       return json(route, { ...payload, id: 'new-id' }, 201);
@@ -73,7 +73,7 @@ async function setupCapacityRoutes(page: Page) {
 
 test.describe('Capacity Management (CAP-1)', () => {
   test('renders page header and capacity grid for admin_data role (read-only)', async ({ page }) => {
-    await quickLogin(page, 'adminData', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'adminData', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
     await page.reload();
 
@@ -89,7 +89,7 @@ test.describe('Capacity Management (CAP-1)', () => {
   });
 
   test('displays weeks and service types in grid', async ({ page }) => {
-    await quickLogin(page, 'adminData', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'adminData', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
     await page.reload();
 
@@ -103,7 +103,7 @@ test.describe('Capacity Management (CAP-1)', () => {
   });
 
   test('displays booked/capacity values in grid cells', async ({ page }) => {
-    await quickLogin(page, 'adminData', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'adminData', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
     await page.reload();
 
@@ -116,11 +116,11 @@ test.describe('Capacity Management (CAP-1)', () => {
   test('kepala_rayon can edit capacity and save', async ({ page }) => {
     const putCalls: unknown[] = [];
 
-    await quickLogin(page, 'kepalaRayon', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'kepalaRayon', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
 
     // Track PUT requests (must be registered before reload)
-    await page.route(`**/api/v1/rayons/${RAYON_ID}/capacity`, async (route: Route) => {
+    await page.route(`**/api/v1/districts/${DISTRICT_ID}/capacity`, async (route: Route) => {
       if (route.request().method() === 'PUT') {
         putCalls.push(await route.request().postDataJSON());
         return json(route, { success: true }, 201);
@@ -156,7 +156,7 @@ test.describe('Capacity Management (CAP-1)', () => {
   });
 
   test('admin_data role does not see edit inputs (read-only)', async ({ page }) => {
-    await quickLogin(page, 'adminData', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'adminData', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
     await page.reload();
 
@@ -169,7 +169,7 @@ test.describe('Capacity Management (CAP-1)', () => {
   });
 
   test('year selector works and persists state', async ({ page }) => {
-    await quickLogin(page, 'kepalaRayon', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'kepalaRayon', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
     await page.reload();
 
@@ -185,10 +185,10 @@ test.describe('Capacity Management (CAP-1)', () => {
   test('capacity PUT sends correct payload on edit + save', async ({ page }) => {
     let putPayload: unknown | null = null;
 
-    await quickLogin(page, 'topManagement', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'topManagement', `/districts/${DISTRICT_ID}/capacity`);
 
     // Intercept and record PUT
-    await page.route(`**/api/v1/rayons/${RAYON_ID}/capacity`, async (route: Route) => {
+    await page.route(`**/api/v1/districts/${DISTRICT_ID}/capacity`, async (route: Route) => {
       if (route.request().method() === 'PUT') {
         putPayload = await route.request().postDataJSON();
         return json(route, { success: true }, 201);
@@ -196,9 +196,9 @@ test.describe('Capacity Management (CAP-1)', () => {
       return json(route, CAPACITY_DATA);
     });
 
-    // Also need rayon route
-    await page.route(`**/api/v1/rayons/${RAYON_ID}`, async (route: Route) => {
-      return json(route, RAYON);
+    // Also need district route
+    await page.route(`**/api/v1/districts/${DISTRICT_ID}`, async (route: Route) => {
+      return json(route, DISTRICT);
     });
 
     // Wait for page to load
@@ -229,7 +229,7 @@ test.describe('Capacity Management (CAP-1)', () => {
   test('mobile viewport renders capacity layout', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
 
-    await quickLogin(page, 'adminData', `/rayons/${RAYON_ID}/capacity`);
+    await quickLogin(page, 'adminData', `/districts/${DISTRICT_ID}/capacity`);
     await setupCapacityRoutes(page);
     await page.reload();
     await page.waitForLoadState('networkidle', { timeout: 8000 }).catch(() => {});

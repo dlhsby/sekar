@@ -147,7 +147,10 @@ async function setupMockAnalyticsRoutes(page: Page) {
   });
 }
 
-test.describe('Analytics Pages (Phase 5-2)', () => {
+// PARKED (built, hidden from nav) — see specs/features/_archived/. Navigation.ts line 249-282.
+// Routes still accessible at /analytics, /analytics/workers, /analytics/locations, but feature was archived 2026-07-07 per request.
+// Re-enable when restored to active navigation.
+test.describe.skip('Analytics Pages (Phase 5-2)', () => {
   test('analytics dashboard renders title', async ({ page }) => {
     await quickLogin(page, 'korlap', '/analytics');
     await setupMockAnalyticsRoutes(page);

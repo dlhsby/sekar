@@ -26,6 +26,7 @@ export const mockUsers = {
     phone_number: '081200000000',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['*', 'settings:read', 'settings:manage', 'tasks:*', 'overtime:*'],
   },
   superadmin: {
     id: '550e8400-e29b-41d4-a716-446655440009',
@@ -35,6 +36,7 @@ export const mockUsers = {
     phone_number: '081200000009',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['*'],
   },
   korlap: {
     id: '550e8400-e29b-41d4-a716-446655440001',
@@ -44,6 +46,7 @@ export const mockUsers = {
     phone_number: '081200000001',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['tasks:*', 'overtime:*', 'monitoring:read'],
   },
   kepalaRayon: {
     id: '550e8400-e29b-41d4-a716-446655440002',
@@ -53,6 +56,7 @@ export const mockUsers = {
     phone_number: '081200000002',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['tasks:*', 'overtime:*', 'monitoring:read', 'schedules:*'],
   },
   topManagement: {
     id: '550e8400-e29b-41d4-a716-446655440004',
@@ -62,6 +66,7 @@ export const mockUsers = {
     phone_number: '081200000004',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['*', 'settings:read', 'settings:manage'],
   },
   adminData: {
     id: '550e8400-e29b-41d4-a716-446655440006',
@@ -72,6 +77,7 @@ export const mockUsers = {
     rayon_id: '950e8400-0000-0000-0000-000000000001',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['pruning_requests:*', 'tasks:*', 'monitoring:read'],
   },
   staffKecamatan: {
     id: '550e8400-e29b-41d4-a716-446655440007',
@@ -83,6 +89,7 @@ export const mockUsers = {
     rayon_id: '950e8400-0000-0000-0000-000000000001',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['pruning_requests:submit'],
   },
   satgas: {
     id: '550e8400-e29b-41d4-a716-446655440010',
@@ -93,6 +100,7 @@ export const mockUsers = {
     rayon_id: '950e8400-0000-0000-0000-000000000001',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['monitoring:read', 'activities:*'],
   },
   linmas: {
     id: '550e8400-e29b-41d4-a716-446655440011',
@@ -103,19 +111,22 @@ export const mockUsers = {
     rayon_id: '950e8400-0000-0000-0000-000000000001',
     profile_picture_url: null,
     created_at: '2026-01-01T00:00:00.000Z',
+    permissions: ['monitoring:read', 'activities:*'],
   },
 } as const;
 
 export type MockUserKey = keyof typeof mockUsers;
 
-const RAYON = { id: '950e8400-0000-0000-0000-000000000001', name: 'Rayon Selatan' };
-const AREA = {
+const DISTRICT = { id: '950e8400-0000-0000-0000-000000000001', name: 'Surabaya Selatan' };
+const REGION = { id: 'reg-001', name: 'Kawasan Utara' };
+const LOCATION = {
   id: '850e8400-0000-0000-0000-000000000001',
   name: 'Taman Bungkul',
   code: 'TB-01',
   coverage_area: '15000.00',
-  area_type: { id: 'at1', name: 'Taman Kota', category: 'ACTIVE' },
-  rayon: RAYON,
+  location_type: { id: 'lt1', name: 'Taman Kota', category: 'ACTIVE' },
+  district: DISTRICT,
+  region: REGION,
 };
 
 const SHIFT = {
@@ -144,9 +155,9 @@ export const mockData = {
       description: 'Pangkas dahan kering',
       status: 'assigned',
       priority: 'high',
-      assigned_to: { id: mockUsers.korlap.id, full_name: 'Koordinator Lapangan' },
-      area: { id: AREA.id, name: AREA.name },
-      rayon: RAYON,
+      assigned_to: { id: mockUsers.korlap.id, full_name: mockUsers.korlap.full_name },
+      location: { id: LOCATION.id, name: LOCATION.name },
+      district: DISTRICT,
       due_date: '2026-06-20',
       created_at: '2026-06-01T08:00:00.000Z',
       updated_at: '2026-06-01T08:00:00.000Z',
@@ -158,9 +169,9 @@ export const mockData = {
       description: 'Siram seluruh area',
       status: 'in_progress',
       priority: 'normal',
-      assigned_to: { id: mockUsers.korlap.id, full_name: 'Koordinator Lapangan' },
-      area: { id: AREA.id, name: AREA.name },
-      rayon: RAYON,
+      assigned_to: { id: mockUsers.korlap.id, full_name: mockUsers.korlap.full_name },
+      location: { id: LOCATION.id, name: LOCATION.name },
+      district: DISTRICT,
       due_date: '2026-06-18',
       created_at: '2026-06-02T08:00:00.000Z',
       updated_at: '2026-06-02T08:00:00.000Z',
@@ -170,8 +181,8 @@ export const mockData = {
   overtime: paginated([
     {
       id: 'ot1',
-      user: { id: mockUsers.korlap.id, full_name: 'Koordinator Lapangan' },
-      area: { id: AREA.id, name: AREA.name },
+      user: { id: mockUsers.korlap.id, full_name: mockUsers.korlap.full_name },
+      location: { id: LOCATION.id, name: LOCATION.name },
       date: '2026-06-10',
       start_time: '18:00',
       end_time: '21:00',
@@ -186,23 +197,24 @@ export const mockData = {
       id: 'ac1',
       title: 'Aktivitas Pembersihan',
       activity_type: { id: 'act1', name: 'Pembersihan' },
-      user: { id: mockUsers.korlap.id, full_name: 'Koordinator Lapangan' },
-      area: { id: AREA.id, name: AREA.name },
+      user: { id: mockUsers.korlap.id, full_name: mockUsers.korlap.full_name },
+      location: { id: LOCATION.id, name: LOCATION.name },
       status: 'pending',
       created_at: '2026-06-05T08:00:00.000Z',
     },
   ]),
-  areas: paginated([AREA]),
-  areaTypes: [AREA.area_type],
-  rayons: [RAYON],
-  rayonStats: { total_users: 12, total_areas: 4, active_tasks: 3, total_area_coverage: '60000.00' },
+  locations: paginated([LOCATION]),
+  locationTypes: [LOCATION.location_type],
+  districts: [DISTRICT],
+  regions: [REGION],
+  districtStats: { total_users: 12, total_locations: 4, active_tasks: 3, total_location_coverage: '60000.00' },
   schedules: paginated([
     {
       id: 'sc1',
       user_id: mockUsers.korlap.id,
-      user: { id: mockUsers.korlap.id, full_name: 'Koordinator Lapangan', username: 'korlap1', role: 'korlap' },
-      area_id: AREA.id,
-      area: { id: AREA.id, name: AREA.name, code: AREA.code },
+      user: { id: mockUsers.korlap.id, full_name: mockUsers.korlap.full_name, username: 'korlap1', role: 'korlap' },
+      location_id: LOCATION.id,
+      location: { id: LOCATION.id, name: LOCATION.name, code: LOCATION.code },
       shift_definition_id: SHIFT.id,
       shift_definition: SHIFT,
       effective_date: '2026-06-01',
@@ -220,8 +232,8 @@ export const mockData = {
         submittedBy: mockUsers.staffKecamatan.id,
         submitter: { id: mockUsers.staffKecamatan.id, full_name: 'Staff Kecamatan Tegalsari', role: 'staff_kecamatan' },
         kecamatanName: 'Tegalsari',
-        rayonId: RAYON.id,
-        rayon: RAYON,
+        districtId: DISTRICT.id,
+        district: DISTRICT,
         address: 'Jalan Darmo No. 1, Surabaya',
         gpsLat: -7.2756,
         gpsLng: 112.7512,
@@ -277,6 +289,10 @@ export const mockData = {
       read_at: null,
       created_at: '2026-06-10T08:00:00.000Z',
     },
+  ],
+  teamCategories: [
+    { id: 'tc1', name: 'Tim Pemeliharaan', is_active: true, created_at: '2026-01-01T00:00:00.000Z' },
+    { id: 'tc2', name: 'Tim Pembersihan', is_active: true, created_at: '2026-01-01T00:00:00.000Z' },
   ],
   notificationPreferences: [
     { type: 'task_assigned', enabled: true },
@@ -352,21 +368,53 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
   await page.route('**/api/v1/overtime**', (route) => json(route, mockData.overtime));
   await page.route('**/api/v1/activities**', (route) => json(route, mockData.activities));
 
-  // 5) Areas / area-types / rayons
-  await page.route('**/api/v1/area-types**', (route) => json(route, mockData.areaTypes));
-  await page.route('**/api/v1/areas?**', (route) => json(route, mockData.areas));
-  await page.route('**/api/v1/areas', (route) => json(route, mockData.areas));
-  await page.route('**/api/v1/areas/*', (route) => json(route, AREA));
-  // Precise → general ordering matters (Playwright: last-registered wins, so the
-  // most specific patterns are registered LAST).
-  await page.route('**/api/v1/rayons', (route) => json(route, mockData.rayons));
-  await page.route('**/api/v1/rayons?**', (route) => json(route, mockData.rayons));
-  await page.route('**/api/v1/rayons/*', (route) => json(route, RAYON));
-  await page.route('**/api/v1/rayons/*/areas**', (route) => json(route, mockData.areas));
-  await page.route('**/api/v1/rayons/*/stats', (route) => json(route, mockData.rayonStats));
+  // 5) Districts + Regions + Locations / area-types (Phase 5+ geography: city→district→region→location)
+  // Districts endpoint (renamed from rayons at backend; UI still calls it rayon/district)
+  await page.route('**/api/v1/districts?**', (route) => json(route, mockData.districts));
+  await page.route('**/api/v1/districts', (route) => json(route, mockData.districts));
+  await page.route('**/api/v1/districts/*', (route) => json(route, mockData.districts[0]));
 
-  // 6) Schedules + shifts
+  // Regions (kawasan) endpoint
+  await page.route('**/api/v1/regions?**', (route) => json(route, mockData.regions));
+  await page.route('**/api/v1/regions', (route) => json(route, mockData.regions));
+  await page.route('**/api/v1/regions/*', (route) => json(route, mockData.regions[0]));
+
+  // Locations (lokasi, formerly areas) endpoint
+  await page.route('**/api/v1/location-types**', (route) => json(route, mockData.locationTypes));
+  await page.route('**/api/v1/locations?**', (route) => json(route, mockData.locations));
+  await page.route('**/api/v1/locations', (route) => json(route, mockData.locations));
+  await page.route('**/api/v1/locations/*', (route) => json(route, LOCATION));
+
+  // Legacy area endpoints (deprecated but kept for compatibility)
+  await page.route('**/api/v1/area-types**', (route) => json(route, mockData.locationTypes));
+  // Backward compatibility: old area/rayon routes now point to new location/district responses
+  await page.route('**/api/v1/areas?**', (route) => json(route, mockData.locations));
+  await page.route('**/api/v1/areas', (route) => json(route, mockData.locations));
+  await page.route('**/api/v1/areas/*', (route) => json(route, LOCATION));
+  await page.route('**/api/v1/rayons', (route) => json(route, mockData.districts));
+  await page.route('**/api/v1/rayons?**', (route) => json(route, mockData.districts));
+  await page.route('**/api/v1/rayons/*', (route) => json(route, DISTRICT));
+  await page.route('**/api/v1/rayons/*/locations**', (route) => json(route, mockData.locations));
+  await page.route('**/api/v1/rayons/*/stats', (route) => json(route, mockData.districtStats));
+
+  // 6) Schedules + shifts + team categories + staff requirements
   await page.route('**/api/v1/shift-definitions**', (route) => json(route, mockData.shiftDefinitions));
+  await page.route('**/api/v1/team-categories?**', (route) => json(route, mockData.teamCategories));
+  await page.route('**/api/v1/team-categories', (route) => json(route, mockData.teamCategories));
+  await page.route('**/api/v1/team-categories/*', (route) => json(route, mockData.teamCategories[0]));
+
+  // Staff requirements (for capacity planning)
+  await page.route('**/api/v1/staff-requirements**', (route) => json(route, []));
+
+  // Special day overrides (holidays, etc.)
+  await page.route('**/api/v1/special-day-overrides**', (route) => json(route, []));
+
+  // Schedule range and date-specific queries
+  await page.route('**/api/v1/schedules/range**', (route) => json(route, []));
+  await page.route('**/api/v1/schedules/date/**', (route) => json(route, []));
+  await page.route('**/api/v1/schedules/year-summary**', (route) => json(route, []));
+
+  // Standard schedules endpoints
   await page.route('**/api/v1/schedules?**', (route) => json(route, mockData.schedules));
   await page.route('**/api/v1/schedules', (route) => json(route, mockData.schedules));
   await page.route('**/api/v1/schedules/*', (route) => json(route, mockData.schedules.data[0]));
@@ -429,10 +477,10 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
       });
     }
 
-    // Rayon scope: return both regions and areas (with region_id)
-    if (scope === 'rayon' && id) {
+    // District scope: return both regions and locations (with region_id)
+    if (scope === 'district' && id) {
       return json(route, {
-        scope: 'rayon',
+        scope: 'district',
         scope_id: id,
         nodes: [
           {
@@ -455,9 +503,9 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
             location_count: 2,
           },
           {
-            id: AREA.id,
-            name: AREA.name,
-            type: 'area',
+            id: LOCATION.id,
+            name: LOCATION.name,
+            type: 'location',
             center_lat: -7.2915,
             center_lng: 112.7395,
             counts_by_status: { active: 1, offline: 0, absent: 0, outside_area: 0 },
@@ -471,7 +519,7 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
               aktif: { dalam: 1, luar: 0 },
               tidak_aktif: { dalam: 0, luar: 0 },
             },
-            rayon_id: id,
+            district_id: id,
             region_id: 'region-1',
           },
         ],
@@ -485,15 +533,15 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
       });
     }
 
-    // City scope: return rayons
+    // City scope: return districts
     return json(route, {
       scope: 'city',
       scope_id: null,
       nodes: [
         {
-          id: RAYON.id,
-          name: RAYON.name,
-          type: 'rayon',
+          id: DISTRICT.id,
+          name: DISTRICT.name,
+          type: 'district',
           center_lat: -7.29,
           center_lng: 112.74,
           counts_by_status: { active: 3, offline: 1, absent: 0, outside_area: 0 },
@@ -507,7 +555,7 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
             aktif: { dalam: 3, luar: 0 },
             tidak_aktif: { dalam: 0, luar: 1 },
           },
-          area_count: 1,
+          location_count: 1,
         },
       ],
       totals: { active: 3, offline: 1, absent: 0, outside_area: 0 },
