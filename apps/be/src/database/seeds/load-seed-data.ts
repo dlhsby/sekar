@@ -110,10 +110,30 @@ export interface AreaSnapshotRow {
   boundary_polygon: GeoJsonPolygon | null;
 }
 
-/** All areas (locations) as they currently live in staging. */
+/** All areas (locations) as they currently live in staging.
+ *
+ * The snapshot file carries the pre-ADR-052 `rayon_id` key in some versions;
+ * normalise it to `district_id` here so callers see one shape regardless of when
+ * the file was regenerated.
+ */
 export function loadAreaSnapshot(): AreaSnapshotRow[] {
   const file = path.join(DATA_DIR, 'areas.snapshot.json');
-  return JSON.parse(fs.readFileSync(file, 'utf8')) as AreaSnapshotRow[];
+  const raw = JSON.parse(fs.readFileSync(file, 'utf8')) as Array<
+    Partial<AreaSnapshotRow> & { rayon_id?: string }
+  >;
+  return raw.map((r) => ({
+    id: r.id as string,
+    name: r.name as string,
+    district_id: (r.district_id ?? r.rayon_id) as string,
+    area_type_code: r.area_type_code as string,
+    gps_lat: r.gps_lat ?? null,
+    gps_lng: r.gps_lng ?? null,
+    radius_meters: r.radius_meters ?? null,
+    address: r.address ?? null,
+    is_active: r.is_active as boolean,
+    coverage_area: r.coverage_area ?? null,
+    boundary_polygon: r.boundary_polygon ?? null,
+  }));
 }
 
 /**
