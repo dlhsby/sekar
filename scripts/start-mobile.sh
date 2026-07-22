@@ -91,6 +91,19 @@ adb_reverse_backend() {
   fi
 }
 
+# adb_reverse_metro SERIAL — the app always asks for its bundle on device:8081,
+# so map that to whatever METRO_PORT this checkout runs Metro on. Without this,
+# starting Metro on a non-8081 port leaves the device pointing at a dead 8081
+# and the app dies with "Unable to load script".
+adb_reverse_metro() {
+  local s="$1"
+  if adb -s "$s" reverse "tcp:8081" "tcp:$METRO_PORT" >/dev/null 2>&1; then
+    print_success "adb reverse on $s: device:8081 → Metro :$METRO_PORT"
+  else
+    print_warning "adb reverse failed on $s — the app may not find Metro on :$METRO_PORT"
+  fi
+}
+
 cd "$ROOT/apps/mobile"
 if [ "$MODE" = "android" ]; then
   if [ -z "${ANDROID_HOME:-}${ANDROID_SDK_ROOT:-}" ] && [ ! -d "$HOME/Android/Sdk" ]; then
@@ -163,6 +176,9 @@ if [ "$MODE" = "android" ]; then
     wsl_portproxy_hint "$METRO_PORT" "Metro"
     print_info "Wi-Fi debug build: in the app's dev menu set 'Debug server host & port' to $LAN_IP:$METRO_PORT (or install a release build)."
   else
+    # On WSL2 + Windows adb.exe these reverses resolve on WINDOWS, so ensure
+    # Windows forwards both ports into WSL before wiring them up.
+    wsl_portproxy_ensure "$METRO_PORT" "$BE_PORT"
     if [ "$RUN_ALL" = true ]; then
       mapfile -t _RTARGETS < <(adb devices 2>/dev/null | tr -d '\r' | tail -n +2 | awk '$2=="device"{print $1}')
     else
@@ -187,11 +203,18 @@ else
     print_info "On the device's dev menu, set 'Debug server host & port' to $LAN_IP:$METRO_PORT."
     npm start -- --port "$METRO_PORT" --host 0.0.0.0
   else
-    # USB/emulator: tunnel the backend port to every connected device so the app
-    # reaches http://localhost:$BE_PORT (its baked API base).
+    # USB/emulator: tunnel the backend AND Metro ports to every connected device
+    # so the app reaches http://localhost:$BE_PORT (its baked API base) and finds
+    # its bundle. On WSL2 with a Windows adb.exe those reverses resolve on
+    # WINDOWS, so make sure Windows forwards both ports into WSL first.
     if resolve_adb; then
+      wsl_portproxy_ensure "$METRO_PORT" "$BE_PORT"
       mapfile -t _RTARGETS < <(adb devices 2>/dev/null | tr -d '\r' | tail -n +2 | awk '$2=="device"{print $1}')
-      for s in "${_RTARGETS[@]}"; do [ -n "$s" ] && adb_reverse_backend "$s"; done
+      for s in "${_RTARGETS[@]}"; do
+        [ -n "$s" ] || continue
+        adb_reverse_backend "$s"
+        adb_reverse_metro "$s"
+      done
     else
       print_warning "adb not found — if using a USB device, run 'adb reverse tcp:$BE_PORT tcp:$BE_PORT' yourself so the app reaches the backend."
     fi
