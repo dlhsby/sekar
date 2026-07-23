@@ -72,6 +72,8 @@ export interface SnapshotWorker {
   team_name: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color: string | null;
+  /** Alpha for `team_color` (from team_category.marker_opacity); null → opaque. */
+  team_opacity: number | null;
   /** Marker glyph name (from team_category.marker_icon). */
   team_icon: string | null;
 }
@@ -273,6 +275,7 @@ export class MonitoringService {
         team_id: u.team_id ?? null,
         team_name: u.team_name ?? null,
         team_color: u.team_color ?? null,
+        team_opacity: u.team_opacity ?? null,
         team_icon: u.team_icon ?? null,
       };
     });

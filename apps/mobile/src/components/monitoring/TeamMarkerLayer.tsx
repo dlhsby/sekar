@@ -11,7 +11,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Marker } from 'react-native-maps';
-import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { nbColors, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import type { TeamGroup } from '../../utils/teamGrouping';
 
@@ -36,7 +36,18 @@ function TeamBubble({
   if (!Number.isFinite(team.latitude) || !Number.isFinite(team.longitude)) {
     return null;
   }
-  const color = team.team_color ?? nbColors.gray400;
+  const baseColor = team.team_color ?? nbColors.gray400;
+  // The category's own `marker_opacity` (Master → Kategori Tim), so a category
+  // set to 65% draws a translucent bubble here exactly as it does on web and in
+  // the admin grid's swatch. Null → opaque, the same rule everywhere.
+  //
+  // Alpha goes on the COLOURS, not on the bubble View: a container `opacity`
+  // would fade the team name and member count too, and a half-legible label is
+  // not what an operator asked for when they tinted a category.
+  const color =
+    team.team_color && team.team_opacity != null
+      ? withAlpha(baseColor, team.team_opacity)
+      : baseColor;
 
   return (
     <Marker

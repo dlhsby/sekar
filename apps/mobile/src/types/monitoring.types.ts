@@ -122,6 +122,8 @@ export interface LiveUser {
   team_name?: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color?: string | null;
+  /** Alpha for `team_color` (team category `marker_opacity`); null → opaque. */
+  team_opacity?: number | null;
   /** Team glyph (from team_category.marker_icon). */
   team_icon?: string | null;
   /** Per-role marker glyph override (from the role's marker_icon). */

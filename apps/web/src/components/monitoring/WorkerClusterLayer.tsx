@@ -69,17 +69,20 @@ export function WorkerClusterLayer({
       {renderables.map((r) => {
         if (isTeam(r)) {
           // Team marker (≥2-member team, Tim layer on) — click reveals members.
-          const signature = `team|${r.team_color ?? ''}|${r.team_icon ?? ''}|${r.member_count}|${r.team_name}`;
+          const signature = `team|${r.team_color ?? ''}|${r.team_opacity ?? ''}|${r.team_icon ?? ''}|${r.member_count}|${r.team_name}`;
           return (
             <AdvancedPinMarker
               key={`team-${r.team_id}`}
               position={{ lat: r.lat, lng: r.lng }}
               signature={signature}
               build={() =>
-                teamMarkerElement(r.team_color, r.member_count, r.team_icon, {
-                  text: r.team_name,
-                  className: 'worker-marker-label',
-                })
+                teamMarkerElement(
+                  r.team_color,
+                  r.member_count,
+                  r.team_icon,
+                  { text: r.team_name, className: 'worker-marker-label' },
+                  r.team_opacity,
+                )
               }
               onClick={() => onTeamClick?.(r)}
               title={r.team_name}

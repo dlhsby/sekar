@@ -825,6 +825,7 @@ export default function MonitoringPage() {
         team_id: w.team_id ?? null,
         team_name: w.team_name ?? null,
         team_color: w.team_color ?? null,
+        team_opacity: w.team_opacity ?? null,
         team_icon: w.team_icon ?? null,
       })),
     [drillScopedWorkers]
@@ -1211,7 +1212,12 @@ export default function MonitoringPage() {
             <div className="flex items-center gap-2">
               <span
                 className="h-3 w-3 shrink-0 rounded-full border border-nb-black"
-                style={{ backgroundColor: teamDetail.team_color ?? 'var(--color-nb-gray-400)' }}
+                style={{
+                  backgroundColor: teamDetail.team_color ?? 'var(--color-nb-gray-400)',
+                  // Same alpha the map pin uses, so the panel dot and the marker
+                  // it was opened from are never two different colours.
+                  opacity: teamDetail.team_color ? (teamDetail.team_opacity ?? 1) : 1,
+                }}
                 aria-hidden="true"
               />
               <div>

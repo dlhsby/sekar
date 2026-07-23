@@ -208,6 +208,7 @@ export class MonitoringUserService {
         team_id: teamMap.get(uts.user_id)?.team_id ?? null,
         team_name: teamMap.get(uts.user_id)?.team_name ?? null,
         team_color: teamMap.get(uts.user_id)?.team_color ?? null,
+        team_opacity: teamMap.get(uts.user_id)?.team_opacity ?? null,
         team_icon: teamMap.get(uts.user_id)?.team_icon ?? null,
       };
     });

@@ -29,17 +29,39 @@ function hexToRgba(hex: string, alpha: number): string | null {
   return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
-const pct = (o?: number | null): number => Math.round((o ?? 1) * 100);
+/**
+ * EFFECTIVE opacity when the field is null, matching exactly what each renderer
+ * draws — so the grid never claims a percentage the map does not use.
+ *
+ * A boundary FILL is the odd one out: `GoogleBoundaryEditor` / `MapDisplayModal`
+ * draw an unset fill at 0.25 (a light tint), not opaque. This swatch used to show
+ * it as "100%", which made an unset fill look solid in the grid and translucent on
+ * the map. Strokes, pins and single-colour entities are all opaque when unset.
+ */
+export const UNSET_OPACITY = { border: 1, fill: 0.25, single: 1 } as const;
+
+const pct = (o: number | null | undefined, fallback: number): number =>
+  Math.round((o ?? fallback) * 100);
 
 /** Compact "#hex · 80%" line, or a dash when the colour is unset. */
-function ColorLine({ label, hex, opacity }: { label?: string; hex?: string | null; opacity?: number | null }) {
+function ColorLine({
+  label,
+  hex,
+  opacity,
+  fallback,
+}: {
+  label?: string;
+  hex?: string | null;
+  opacity?: number | null;
+  fallback: number;
+}) {
   return (
     <span className="flex items-center gap-1 whitespace-nowrap font-mono text-nb-caption text-nb-gray-600">
       {label ? <span className="text-nb-gray-400">{label}</span> : null}
       {hex ? (
         <>
           <span>{hex}</span>
-          <span className="text-nb-gray-400">· {pct(opacity)}%</span>
+          <span className="text-nb-gray-400">· {pct(opacity, fallback)}%</span>
         </>
       ) : (
         <span className="text-nb-gray-400">—</span>
@@ -71,17 +93,22 @@ export function MapStyleSwatch({
       <span className="inline-flex items-center gap-2">
         <span
           className="h-5 w-5 shrink-0 rounded-nb-sm"
-          style={{ backgroundColor: hexToRgba(fill_color, fill_opacity ?? 1) ?? fill_color }}
+          style={{
+            backgroundColor:
+              hexToRgba(fill_color, fill_opacity ?? UNSET_OPACITY.single) ?? fill_color,
+          }}
           aria-hidden
         />
-        <ColorLine hex={fill_color} opacity={fill_opacity} />
+        <ColorLine hex={fill_color} opacity={fill_opacity} fallback={UNSET_OPACITY.single} />
       </span>
     );
   }
 
   const borderCss =
-    (border_color && hexToRgba(border_color, border_opacity ?? 1)) ?? 'var(--color-nb-black)';
-  const fillCss = (fill_color && hexToRgba(fill_color, fill_opacity ?? 1)) ?? 'transparent';
+    (border_color && hexToRgba(border_color, border_opacity ?? UNSET_OPACITY.border)) ??
+    'var(--color-nb-black)';
+  const fillCss =
+    (fill_color && hexToRgba(fill_color, fill_opacity ?? UNSET_OPACITY.fill)) ?? 'transparent';
   const hasAny = !!(border_color || fill_color);
 
   if (!hasAny) return <span className="text-nb-gray-500">—</span>;
@@ -94,8 +121,13 @@ export function MapStyleSwatch({
         aria-hidden
       />
       <span className="flex flex-col leading-tight">
-        <ColorLine label="B" hex={border_color} opacity={border_opacity} />
-        <ColorLine label="F" hex={fill_color} opacity={fill_opacity} />
+        <ColorLine
+          label="B"
+          hex={border_color}
+          opacity={border_opacity}
+          fallback={UNSET_OPACITY.border}
+        />
+        <ColorLine label="F" hex={fill_color} opacity={fill_opacity} fallback={UNSET_OPACITY.fill} />
       </span>
     </span>
   );

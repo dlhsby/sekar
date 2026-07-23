@@ -393,17 +393,26 @@ export function workerPinElement(
   return pinElementFromPath(glyphPath, { outline, dashed: opts.outside, big: opts.selected }, label);
 }
 
-/** {@link teamMarkerIcon} as an AdvancedMarker DOM element. */
+/**
+ * {@link teamMarkerIcon} as an AdvancedMarker DOM element.
+ *
+ * Fill opacity is the CATEGORY's own `marker_opacity` (Master → Kategori Tim),
+ * so a category configured at 65% draws a translucent pin and the map matches
+ * the swatch in the admin grid. Null → opaque, the same rule the grid and the
+ * DTO use; it replaces the flat 0.9 this used to hard-code, which no operator
+ * could see or change.
+ */
 export function teamMarkerElement(
   teamColor: string | null,
   memberCount: number,
   glyph: string | null | undefined,
-  label?: PinLabel
+  label?: PinLabel,
+  teamOpacity?: number | null
 ): HTMLElement {
   const color = teamColor ?? TEAM_DEFAULT;
   return pinElement(
     glyph ?? entityDefaultGlyph('team'),
-    { outline: color, fill: color, fillOpacity: 0.9, count: memberCount, big: true },
+    { outline: color, fill: color, fillOpacity: teamOpacity ?? 1, count: memberCount, big: true },
     label
   );
 }
