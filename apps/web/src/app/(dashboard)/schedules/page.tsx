@@ -48,7 +48,10 @@ import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
 import { DeleteScopeChooser } from '@/components/schedules/DeleteScopeChooser';
-import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
+import {
+  EditScheduleModal,
+  type PendingScheduleEdit,
+} from '@/components/schedules/EditScheduleModal';
 import {
   scheduleOccurrenceKeys,
   useDeleteScheduleEvent,
@@ -172,6 +175,13 @@ export default function SchedulesPage() {
   const [chosen, setChosen] = useState<ScheduleOccurrence | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [editChooserOpen, setEditChooserOpen] = useState(false);
+  /**
+   * The edit the form collected, held UNWRITTEN until "Ubah Yang Mana?" is
+   * answered. Cancelling that dialog drops it; nothing reaches the API.
+   */
+  const [pendingEdit, setPendingEdit] = useState<PendingScheduleEdit | null>(null);
+  /** Which scope button is mid-write, so it alone shows a spinner. */
+  const [pendingScope, setPendingScope] = useState<EditScope | null>(null);
   const [eventEdit, setEventEdit] = useState<{ scope: EditScope; fromDate?: string } | null>(null);
   const [rowEditOpen, setRowEditOpen] = useState(false);
   const [deleteChooserOpen, setDeleteChooserOpen] = useState(false);
@@ -290,13 +300,47 @@ export default function SchedulesPage() {
    * change should touch; a manual row has no rule, so what was just saved is all
    * there is.
    */
-  const onRowEditSaved = () => {
+  const onRowEditSubmit = (change: PendingScheduleEdit) => {
     setRowEditOpen(false);
+    // A row backed by a rule asks WHICH occurrences first — and nothing is
+    // written until that question is answered, so cancelling it leaves the
+    // schedule untouched (it used to save first and ask afterwards).
     if (chosen?.schedule_event_id) {
+      setPendingEdit(change);
       setEditChooserOpen(true);
-    } else {
-      setChosen(null);
+      return;
     }
+    void applyRowEdit(change).then((ok) => {
+      if (ok) setChosen(null);
+    });
+  };
+
+  /**
+   * Persist a confirmed edit. Returns false when either write fails, so the
+   * caller can keep the dialog open instead of reporting success over an error.
+   */
+  const applyRowEdit = async (change: PendingScheduleEdit): Promise<boolean> => {
+    let ok = true;
+    if (change.shiftChanged) {
+      ok = await runAction(() =>
+        updateShift.mutateAsync({ id: change.rosterId, shift_definition_id: change.shiftId }),
+      );
+    }
+    if (ok && change.scopeChanged) {
+      ok = await runAction(() =>
+        updateAreas.mutateAsync({
+          id: change.rosterId,
+          location_ids: change.locationIds,
+          district_id: change.districtId,
+          // At most one kawasan per occurrence (ADR-053).
+          region_id: change.regionIds[0] ?? null,
+        }),
+      );
+    }
+    // One toast for the whole edit, not one per field that happened to change.
+    if (ok) toast.success(t('schedules:messages.editSuccess'));
+    refreshCalendar();
+    return ok;
   };
 
   const onDetailDelete = () => {
@@ -308,10 +352,18 @@ export default function SchedulesPage() {
     }
   };
 
-  const onEditScope = (scope: EditScope, fromDate?: string) => {
+  const onEditScope = async (scope: EditScope, fromDate?: string) => {
+    // Answering this dialog is what WRITES the edit the form collected.
+    if (pendingEdit) {
+      setPendingScope(scope);
+      const ok = await applyRowEdit(pendingEdit);
+      setPendingScope(null);
+      // Failed → stay open on the same choice so the error is actionable.
+      if (!ok) return;
+      setPendingEdit(null);
+    }
     setEditChooserOpen(false);
     if (scope === 'this') {
-      // Already saved by the form — this occurrence is detached and done.
       setChosen(null);
       return;
     }
@@ -568,30 +620,9 @@ export default function SchedulesPage() {
           setRowEditOpen(false);
           setChosen(null);
         }}
-        onSaved={onRowEditSaved}
+        onSubmit={onRowEditSubmit}
         roster={rowUnderEdit}
-        onUpdateShift={async (id, shiftId) => {
-          await runAction(() => updateShift.mutateAsync({ id, shift_definition_id: shiftId }), {
-        success: t('common:messages.updated'),
-      });
-          refreshCalendar();
-        }}
-        onUpdateAreas={async (id, locationIds, regionIds, districtId) => {
-          await runAction(
-            () =>
-              updateAreas.mutateAsync({
-                id,
-                location_ids: locationIds,
-                district_id: districtId,
-                // At most one kawasan per occurrence (ADR-053).
-                region_id: regionIds[0] ?? null,
-              }),
-            { success: t('common:messages.updated') },
-          );
-          refreshCalendar();
-        }}
-        shiftLoading={updateShift.isPending}
-        areasLoading={updateAreas.isPending}
+        loading={updateShift.isPending || updateAreas.isPending}
         shifts={shifts}
         allDistricts={districts}
         allAreas={allLocations}
@@ -602,11 +633,14 @@ export default function SchedulesPage() {
         open={editChooserOpen}
         onOpenChange={(open) => {
           setEditChooserOpen(open);
+          // Cancelling DISCARDS the collected edit — nothing was written.
+          if (!open) setPendingEdit(null);
           if (!open && !eventEdit && !rowEditOpen && !deleteChooserOpen) setChosen(null);
         }}
         onSelect={onEditScope}
         onDelete={can('schedule:delete') ? () => setDeleteChooserOpen(true) : undefined}
         selectedDate={chosen?.schedule_date}
+        pendingScope={pendingScope}
       />
 
       <DeleteScopeChooser

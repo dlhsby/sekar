@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useId } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -17,30 +16,40 @@ import {
 import { FormActions } from '@/components/forms/FormActions';
 import { ScopeFields } from '@/components/schedules/ScopeFields';
 import type { FormValues } from '@/components/schedules/ScheduleEventModal';
-import { getErrorMessage } from '@/lib/api/client';
 import type { Schedule } from '@/lib/api/schedules';
 
 type ScopeValue = FormValues['scope'];
+
+/**
+ * A submitted-but-NOT-YET-PERSISTED edit.
+ *
+ * The modal used to write straight to the API and only then ask "Ubah Yang
+ * Mana?" — so cancelling that question left the change already applied, and
+ * answering it could not influence what was written. The form now hands the
+ * change up untouched; the caller persists it once a scope is confirmed.
+ */
+export interface PendingScheduleEdit {
+  rosterId: string;
+  /** Null clears the shift (the row becomes `off`). */
+  shiftId: string | null;
+  shiftChanged: boolean;
+  locationIds: string[];
+  regionIds: string[];
+  districtId: string | null;
+  scopeChanged: boolean;
+}
 
 interface EditScheduleModalProps {
   open: boolean;
   onClose: () => void;
   /**
-   * Fired after a SUCCESSFUL save (distinct from `onClose`, which also covers
-   * cancel). The caller uses it to ask which occurrences a recurring change
-   * should touch — a question that only makes sense once the change is known.
+   * The form was submitted. Nothing has been written yet — the caller decides
+   * whether to ask which occurrences to touch first, and persists either way.
    */
-  onSaved?: () => void;
+  onSubmit: (change: PendingScheduleEdit) => void;
   roster: Schedule | null;
-  onUpdateShift: (id: string, shiftId: string | null) => Promise<void>;
-  onUpdateAreas: (
-    id: string,
-    locationIds: string[],
-    regionIds: string[],
-    districtId: string | null,
-  ) => Promise<void>;
-  shiftLoading?: boolean;
-  areasLoading?: boolean;
+  /** True while the caller is persisting a confirmed change. */
+  loading?: boolean;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
   allDistricts: Array<{ id: string; name: string }>;
   allAreas: Array<{ id: string; name: string; district_id: string; region_id?: string | null }>;
@@ -65,12 +74,9 @@ interface EditScheduleModalProps {
 export function EditScheduleModal({
   open,
   onClose,
-  onSaved,
+  onSubmit,
   roster,
-  onUpdateShift,
-  onUpdateAreas,
-  shiftLoading,
-  areasLoading,
+  loading,
   shifts,
   allDistricts,
   allAreas,
@@ -196,23 +202,20 @@ export function EditScheduleModal({
     payload.districtId !== (roster?.district_id ?? null);
   const isShiftChanged = (shiftId || null) !== (roster?.shift_definition_id ?? null);
 
-  const loading = shiftLoading || areasLoading;
-
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!roster) return;
-    try {
-      // The worker is fixed for an occurrence — replacing them is a delete +
-      // create, not an edit (see the disabled Pekerja field).
-      if (isShiftChanged) await onUpdateShift(roster.id, shiftId || null);
-      if (isScopeChanged) {
-        await onUpdateAreas(roster.id, payload.locationIds, payload.regionIds, payload.districtId);
-      }
-      toast.success(t('messages.editSuccess'));
-      if (onSaved) onSaved();
-      else onClose();
-    } catch (err) {
-      toast.error(getErrorMessage(err));
-    }
+    // Hand the change up UNWRITTEN. The worker is fixed for an occurrence —
+    // replacing them is a delete + create, not an edit (see the disabled
+    // Pekerja field) — so only scope and shift can have moved.
+    onSubmit({
+      rosterId: roster.id,
+      shiftId: shiftId || null,
+      shiftChanged: isShiftChanged,
+      locationIds: payload.locationIds,
+      regionIds: payload.regionIds,
+      districtId: payload.districtId,
+      scopeChanged: isScopeChanged,
+    });
   };
 
   return (

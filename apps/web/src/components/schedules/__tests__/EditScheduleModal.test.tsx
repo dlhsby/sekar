@@ -1,7 +1,7 @@
 /**
  * Unit Tests: EditScheduleModal
  *
- * Regression coverage for two UAT-reported bugs:
+ * Regression coverage for three UAT-reported bugs:
  * 1. The worker (Pekerja) field must be READ-ONLY — changing the assigned
  *    worker via this modal used to call replaceWorker(), which is a data
  *    integrity risk. Reassignment is now only offered via delete + Tambah
@@ -10,6 +10,9 @@
  *    EVERY role (kepala_rayon, admin_rayon, management, etc.), not just
  *    satgas/linmas/korlap — it used to look up the name in a role-filtered
  *    list and silently show nothing for other roles.
+ * 3. Submitting must NOT write. The modal used to persist and only then ask
+ *    "Ubah Yang Mana?", so cancelling that question left the change already
+ *    applied. It now hands the change up unwritten via `onSubmit`.
  */
 
 import { render, screen } from '@testing-library/react';
@@ -49,8 +52,7 @@ describe('EditScheduleModal', () => {
   const baseProps = {
     open: true,
     onClose: jest.fn(),
-    onUpdateShift: jest.fn().mockResolvedValue(undefined),
-    onUpdateAreas: jest.fn().mockResolvedValue(undefined),
+    onSubmit: jest.fn(),
     shifts,
     allDistricts,
     allRegions,
@@ -90,13 +92,13 @@ describe('EditScheduleModal', () => {
     expect(screen.getByText(/tidak dapat diubah|cannot be changed/i)).toBeInTheDocument();
   });
 
-  it('submits an area change via onUpdateAreas, never a worker-replace call', async () => {
+  it('emits the area change via onSubmit, never a worker-replace call', async () => {
     const user = userEvent.setup();
-    const onUpdateAreas = jest.fn().mockResolvedValue(undefined);
+    const onSubmit = jest.fn();
     render(
       <EditScheduleModal
         {...baseProps}
-        onUpdateAreas={onUpdateAreas}
+        onSubmit={onSubmit}
         roster={makeRoster({ location_id: null, location: null })}
         allAreas={[...allAreas, { id: 'area-2', name: 'Taman B', district_id: 'district-1' }]}
       />
@@ -115,6 +117,15 @@ describe('EditScheduleModal', () => {
 
     expect(submit).not.toBeDisabled();
     await user.click(submit);
-    expect(onUpdateAreas).toHaveBeenCalledWith('sched-1', ['area-2'], [], 'district-1');
+    // Handed UP, not written: the caller persists once the scope is confirmed.
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        rosterId: 'sched-1',
+        locationIds: ['area-2'],
+        regionIds: [],
+        districtId: 'district-1',
+        scopeChanged: true,
+      })
+    );
   });
 });

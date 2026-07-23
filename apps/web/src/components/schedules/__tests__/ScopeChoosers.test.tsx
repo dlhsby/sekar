@@ -30,14 +30,26 @@ describe('EditScopeChooser', () => {
     return { onSelect, onOpenChange };
   };
 
-  it('selects "this" and closes', async () => {
+  it('selects "this" WITHOUT self-closing — the caller closes once the write lands', async () => {
     const user = userEvent.setup();
     const { onSelect, onOpenChange } = setup();
 
     await user.click(screen.getByRole('button', { name: /hanya hari ini/i }));
 
     expect(onSelect).toHaveBeenCalledWith('this');
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    // Answering this dialog is what PERSISTS the edit. Closing on click would
+    // hide the spinner and, on failure, dismiss the only actionable surface.
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('locks every choice while a scope is being applied', async () => {
+    const user = userEvent.setup();
+    const { onSelect } = setup({ pendingScope: 'series' });
+
+    // Mid-write: no second choice, and no cancel that would orphan the request.
+    await user.click(screen.getByRole('button', { name: /hanya hari ini/i }));
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /batal/i })).toBeDisabled();
   });
 
   it('passes the selected date with "this and future" (the split point)', async () => {
