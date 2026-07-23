@@ -54,7 +54,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [050](./ADR-050-presence-attendance-model.md) | Presence & Attendance Model — lifecycle · live presence · counting axes | Accepted (impl. Phase 5.4) · supersedes 046's status model · extends 046 · depends on 047/013 |
 | [052](./ADR-052-rayon-to-district-rename.md) | `rayon` → `district` — code/DB English-canonical; UI keeps "Rayon" | Accepted (**implemented** — DB/be/web/mobile) · extends 010 |
 | [053](./ADR-053-schedule-row-per-place.md) | One schedule row = one worker, one shift, one **place**; presence belongs to the worker, not the row | Accepted · **implemented** · rests on 050 · settles korlap scope in 046 |
-| [054](./ADR-054-unscheduled-workers.md) | "Belum Dijadwalkan" — the complement of the day's roster, so a gap is visible before it becomes an understaffed lokasi | **Proposed** (design only) · rests on 053 + 047 |
+| [054](./ADR-054-unscheduled-workers.md) | "Belum Dijadwalkan" — the complement of the day's roster, so a gap is visible before it becomes an understaffed lokasi | **Accepted** (design settled, not built) · rests on 053 + 047 |
 
 ## By domain
 

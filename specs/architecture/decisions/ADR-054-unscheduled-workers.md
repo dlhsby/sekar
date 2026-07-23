@@ -2,8 +2,8 @@
 
 ## Status
 
-Proposed — **design only, not implemented**. Awaiting approval on the four open
-questions in §Decisions.
+Accepted — **design settled, not yet implemented**. Every open question was
+decided by the product owner on 2026-07-23; see §Decisions.
 
 ## Date
 
@@ -40,17 +40,20 @@ Two things make the complement less obvious than it sounds:
 Add a **read-only "Belum Dijadwalkan" view** — one endpoint, one panel — that
 answers "who is not on this day's roster, and which of them can I still place?"
 
-### 1. The unit is (worker, date, shift?)
+### 1. The unit is (worker, date, shift?) — day by default, shift as a filter
 
-Unscheduled is evaluated **per date**, optionally narrowed **per shift**.
+**Decided 2026-07-23.** The panel opens on **today** and carries **its own date
+picker**, so the admin can look ahead without first moving the board. Shift is
+one of several **filters they apply**, not something inherited silently:
 
-- No shift selected → "has no row at all on this date".
-- Shift selected → "has no row for THIS shift on this date". A satgas on Shift 2
-  is genuinely free for Shift 1, and under ADR-053 they may already hold several
-  rows without that making them unavailable.
+- No shift filter → "has no row at all on this date". This is the default.
+- Shift filter applied → "has no row for THIS shift". A satgas on Shift 2 is
+  genuinely free for Shift 1, and under ADR-053 holding several rows does not
+  make a worker unavailable.
 
-The panel inherits the board's current date and shift filter, so it always
-answers the question about the day the admin is looking at.
+Rejected: inheriting the board's shift filter implicitly. The panel is its own
+workspace — a filter the user did not set in *this* panel should not change what
+the list means.
 
 ### 2. Projected occurrences count as scheduled
 
@@ -75,16 +78,20 @@ place and a list that quietly invites double-booking someone on cuti. The second
 bucket is collapsed by default — it explains a short roster without competing
 with the work.
 
-### 4. Only schedulable roles
+### 4. Only the three worker roles — the rest are excluded outright
 
-Drawn from `satgas`, `linmas`, `korlap` — the roles that receive roster rows.
-`isNonRosteredRole` (management / admin_system / superadmin / staff_kecamatan) is
-excluded by definition: they never get a row, so they would permanently fill the
-list.
+**Decided 2026-07-23.** The list is `satgas`, `linmas`, `korlap`. Nothing else,
+with **no filter escape hatch**:
 
-`kepala_rayon` / `admin_rayon` are **excluded by default** — `isDistrictManagerRole`
-treats their assignment as a fixed whole-district posting rather than a per-day
-one — but remain reachable behind the role filter. *(Open question 2.)*
+- `isNonRosteredRole` (management / admin_system / superadmin / staff_kecamatan)
+  never receives a row at all.
+- `kepala_rayon` / `admin_rayon` hold a **standing whole-district posting**
+  (`isDistrictManagerRole`), not a per-day assignment. Scheduling is for workers.
+  Listing them would put two names in the list every single day that no one
+  should ever act on — noise that trains the admin to ignore the panel.
+
+**Role is a first-class column**, not a subtitle: it is how the admin decides who
+to place, and it is filterable.
 
 ### 5. Scope follows the existing rules
 
@@ -94,6 +101,43 @@ kepala_rayon / admin_rayon, assigned lokasi for korlap. An admin never sees
 workers they could not schedule anyway.
 
 Only `is_active` workers appear — deactivated accounts are not a staffing gap.
+
+### 6. Freshness: live within the session, not across users (yet)
+
+**Decided 2026-07-23**, with a correction to the premise. The count is computed
+**on open**, and stays correct for the rest of the session **through the existing
+TanStack Query invalidation** — scheduling someone from the panel already
+invalidates the schedules queries, so the row leaves the list and the count drops
+with no extra machinery.
+
+**Cross-user live updates need work that does not exist yet.** The WebSocket
+gateway (`/events`) is real but carries **monitoring traffic only** — `monitoring:*`
+rooms, presence and staffing events. The schedules module never touches it, so
+there is no `schedule:changed` broadcast for a panel to listen to. Making another
+admin's assignment update this list live means adding that channel: a room, an
+emit on every schedule create / update / delete, and a client subscription.
+
+That is a worthwhile follow-up — it would also let two admins share a board
+without stepping on each other — but it is a **separate change**, not part of
+this feature. Scoped as such rather than smuggled in.
+
+### 7. One assignment at a time
+
+**Decided 2026-07-23.** Each row has a `Jadwalkan` action that opens the normal
+Buat Jadwal flow, prefilled with that worker and the panel's date (and shift, if
+filtered). No bulk multi-select in v1: it needs a new bulk endpoint, partial-
+failure semantics and its own conflict reporting, and is worth building only once
+the single-row flow has proven the list is used.
+
+### 8. A wide right sheet, not a modal
+
+**Decided 2026-07-23.** The grid lives in a `Sheet` widened to ~800 px, so the
+board stays visible on the left while the list is worked — seeing the gap you are
+filling is the entire point of the feature, and a modal covers it.
+
+`Sheet` is currently fixed at `max-w-md` (448 px), too narrow for name + role +
+rayon + action. It gains a `size` prop (additive, defaulting to today's width so
+no existing sheet moves).
 
 ## Shape
 
@@ -124,19 +168,27 @@ A **`Belum Dijadwalkan (N)` button between "Hari Libur" and "Buat Jadwal"**, as
 requested. `N` is the actionable bucket only; the button reads neutral at 0 and
 draws attention above it.
 
-It opens a **side sheet**, not a modal: the admin needs to see the board while
-working the list. Contents, top to bottom:
+The panel is a **`DataTable`**, not a hand-rolled list — the project already has
+one with per-column enum filters, global search, sorting and row actions, and the
+whole point of this view is *filtering to the worker you want to place*. Building
+a bespoke list here would mean re-earning all of that and drifting from the
+master-data grids the admin already knows.
 
-- date + shift context line (inherited, not re-chosen)
-- search + role filter + rayon filter
-- workers **grouped by rayon**, each row `Nama · @username · Peran`
-- per-row **`Jadwalkan`** → opens Buat Jadwal prefilled with that worker, the
-  panel's date and shift; on save the row leaves the list and the count drops
-- a collapsed **`Tidak tersedia (M)`** section at the bottom, each row showing
-  its reason
+Contents, top to bottom:
+
+- **Date picker** (defaults to today) — the panel is its own workspace, so it
+  moves through days without touching the board
+- **Filters:** Peran (enum: satgas / linmas / korlap) · Rayon (enum) · Shift
+  (enum, blank = whole day) · global search over name + username
+- **Columns:** `Nama` · `@username` · **`Peran`** · `Rayon` · action
+- Row action **`Jadwalkan`** → the normal Buat Jadwal flow, prefilled with that
+  worker, the panel's date, and the shift if one is filtered. On save the row
+  leaves the table and the total drops.
+- a collapsed **`Tidak tersedia (M)`** section beneath the table, each row
+  showing its reason (cuti / sakit / izin / libur)
 
 Empty state — "Semua petugas sudah dijadwalkan" — is a real answer and gets the
-same care as the list.
+same care as the table.
 
 ## Consequences
 
@@ -149,29 +201,16 @@ places. That is an argument for it, not against — the alternative is a second,
 subtly different definition of "scheduled".
 
 **Cost is a full-workforce scan per open.** Bounded by active schedulable workers
-in scope (hundreds, not thousands) and only on demand. If the button's count is
-made live it needs the same short-TTL cache the monitoring summary uses, rather
-than a query per board render. *(Open question 3.)*
+in scope (hundreds, not thousands) and only on demand.
 
 **It does not schedule anyone.** Strictly a lens onto existing data plus a
 prefilled hand-off into the existing create flow. No new write path, no new
 permission, nothing to migrate.
 
-## Open questions (need a decision before implementation)
-
-1. **Whole-day or per-shift default?** Proposed: inherit the board's shift
-   filter, falling back to whole-day when none is set. The alternative — always
-   whole-day — is simpler but tells a Shift-1 planner that a Shift-2 satgas is
-   already handled.
-2. **Do `kepala_rayon` / `admin_rayon` belong in the list?** Proposed: excluded
-   by default, reachable via the role filter. They do receive rows, but their
-   posting is standing rather than daily.
-3. **Live count on the button, or only on open?** Proposed: compute on open
-   (cheap, always correct). A live badge is nicer but adds a query to every board
-   render and a cache to keep honest.
-4. **Bulk assign?** Out of scope as proposed — one `Jadwalkan` at a time. A
-   multi-select "assign these five to Lokasi X on Shift 1" is the obvious next
-   ask, and worth building only once the single-row flow is proven.
+**Two admins can still disagree.** Without the schedule broadcast (§6), a second
+admin's assignment is invisible until refresh. Acceptable because the create flow
+enforces uniqueness server-side — the worst case is a stale row that fails
+loudly on `Jadwalkan`, not a double-booking.
 
 ## Related
 
