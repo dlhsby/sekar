@@ -264,12 +264,15 @@ export class UsersService {
     page: number = 1,
     limit: number = 50,
     requestingUser?: User,
-    filters?: { search?: string; roles?: string[] },
+    filters?: { search?: string; roles?: string[]; isActive?: boolean },
   ): Promise<PaginatedResponseDto<User>> {
     this.logger.log(`Fetching users with pagination: page=${page}, limit=${limit}`);
 
     const search = filters?.search?.trim();
     const roles = filters?.roles?.filter(Boolean);
+    // Opt-in: the admin grid wants everyone, assignment pickers (scheduling,
+    // tasks) pass is_active=true so a deactivated account can't be rostered.
+    const isActive = filters?.isActive;
 
     // Rayon-scoped roles see only users in their district.
     // May 11, 2026 — switched from `area.district_id` (which required users to
@@ -312,6 +315,7 @@ export class UsersService {
         });
 
       if (roles?.length) qb.andWhere('user.role IN (:...roles)', { roles });
+      if (isActive !== undefined) qb.andWhere('user.is_active = :isActive', { isActive });
       if (search) {
         qb.andWhere('(user.full_name ILIKE :s OR user.username ILIKE :s)', { s: `%${search}%` });
       }
@@ -329,12 +333,13 @@ export class UsersService {
     // attach `where` when a filter is present (keeps the unfiltered path clean).
     const base: FindOptionsWhere<User> = {};
     if (roles?.length) base.role = In(roles) as unknown as FindOptionsWhere<User>['role'];
+    if (isActive !== undefined) base.is_active = isActive;
     const where: FindOptionsWhere<User> | FindOptionsWhere<User>[] | undefined = search
       ? [
           { ...base, full_name: ILike(`%${search}%`) },
           { ...base, username: ILike(`%${search}%`) },
         ]
-      : roles?.length
+      : Object.keys(base).length
         ? base
         : undefined;
 

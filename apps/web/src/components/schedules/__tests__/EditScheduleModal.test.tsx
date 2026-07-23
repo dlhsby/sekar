@@ -34,13 +34,15 @@ function makeRoster(overrides: Partial<Schedule> = {}): Schedule {
     user: { id: 'user-1', full_name: 'Budi Santoso', username: 'budi_s', role: 'satgas' },
     shift_definition: { id: 'shift-1', name: 'Shift 1', start_time: '06:00', end_time: '14:00' },
     replacement_user: null,
-    schedule_areas: [{ id: 'sa-1', location_id: 'area-1', area: { id: 'area-1', name: 'Taman A', code: 'A' } }],
+    location_id: 'area-1',
+    location: { id: 'area-1', name: 'Taman A', code: 'A' },
     ...overrides,
   };
 }
 
 const shifts = [{ id: 'shift-1', name: 'Shift 1', start_time: '06:00', end_time: '14:00' }];
 const allDistricts = [{ id: 'district-1', name: 'Rayon Pusat' }];
+const allRegions = [{ id: 'region-1', name: 'Kawasan A', district_id: 'district-1' }];
 const allAreas = [{ id: 'area-1', name: 'Taman A', district_id: 'district-1' }];
 
 describe('EditScheduleModal', () => {
@@ -51,6 +53,7 @@ describe('EditScheduleModal', () => {
     onUpdateAreas: jest.fn().mockResolvedValue(undefined),
     shifts,
     allDistricts,
+    allRegions,
     allAreas,
   };
 
@@ -94,7 +97,7 @@ describe('EditScheduleModal', () => {
       <EditScheduleModal
         {...baseProps}
         onUpdateAreas={onUpdateAreas}
-        roster={makeRoster({ schedule_areas: [] })}
+        roster={makeRoster({ location_id: null, location: null })}
         allAreas={[...allAreas, { id: 'area-2', name: 'Taman B', district_id: 'district-1' }]}
       />
     );
@@ -102,13 +105,16 @@ describe('EditScheduleModal', () => {
     const submit = screen.getByRole('button', { name: /simpan|save/i });
     expect(submit).toBeDisabled();
 
-    // The roster's district_id ('district-1') is preselected on mount, so its areas
-    // are already in the cascade — just open the area field and pick one.
-    await user.click(screen.getByRole('combobox', { name: /area/i }));
+    // Scope drives the form now: pick "Lokasi" before the lokasi field exists.
+    // The roster's district_id ('district-1') is preselected on mount, so its
+    // lokasi are already in the cascade.
+    await user.click(screen.getByRole('combobox', { name: /ruang lingkup|lingkup|scope/i }));
+    await user.click(screen.getByRole('option', { name: /^lokasi$|^location$/i }));
+    await user.click(screen.getByRole('combobox', { name: /lokasi|location/i }));
     await user.click(screen.getByRole('option', { name: 'Taman B' }));
 
     expect(submit).not.toBeDisabled();
     await user.click(submit);
-    expect(onUpdateAreas).toHaveBeenCalledWith('sched-1', ['area-2']);
+    expect(onUpdateAreas).toHaveBeenCalledWith('sched-1', ['area-2'], [], 'district-1');
   });
 });

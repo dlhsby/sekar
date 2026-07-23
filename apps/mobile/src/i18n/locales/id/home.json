@@ -5,7 +5,8 @@
     },
     "sections": {
       "attendance": "Kehadiran saya",
-      "summary": "Ringkasan hari ini"
+      "summary": "Ringkasan hari ini",
+      "schedule": "Jadwal Saya"
     },
     "alerts": {
       "permissionRevoked": "Izin lokasi dicabut. Pelacakan lokasi tidak aktif.",
@@ -66,6 +67,17 @@
     },
     "warning": {
       "noAssignedArea": "Anda belum ditugaskan ke area manapun."
+    },
+    "schedule": {
+      "shift": "Shift",
+      "assignment": "Penugasan",
+      "team": "Tim",
+      "noAssignment": "Tanpa penugasan",
+      "none": "Tidak ada jadwal hari ini",
+      "viewAll": "Lihat jadwal lengkap →",
+      "a11y": {
+        "open": "Buka jadwal saya"
+      }
     }
   },
   "fallbacks": {

@@ -34,9 +34,8 @@ const todayRoster: any = {
     end_time: '15:00:00',
   },
   district: { id: 'district-1', name: 'Rayon 1' },
-  schedule_areas: [
-    { id: 'sa-1', location_id: 'area-2', area: { id: 'area-2', name: 'Taman Roster' } },
-  ],
+  location_id: 'area-2',
+  location: { id: 'area-2', name: 'Taman Roster' },
 };
 
 describe('MyScheduleScreen', () => {

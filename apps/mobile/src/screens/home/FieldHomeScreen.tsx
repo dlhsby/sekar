@@ -31,6 +31,7 @@ import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission, useCollapsible } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
+import { resolveScheduleScope } from '../../utils/scheduleScope';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
 /**
@@ -98,7 +99,10 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Today's roster — the "am I scheduled?" signal (shared with the clock-in
   // screen so both agree on lateness / area semantics).
-  const { rosterShift, hasScheduleToday } = useTodayRoster();
+  const { roster, rosterShift, hasScheduleToday, allToday } = useTodayRoster();
+  // A city/rayon/kawasan-scope roster row assigns the worker without naming a
+  // lokasi — it must NOT read as "not assigned to any area".
+  const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
 
   // Defensive Array.isArray guards: stale HMR/hydration snapshots have crashed
   // this tree before when a list briefly hydrated as a non-array.
@@ -287,16 +291,34 @@ export function FieldHomeScreen(): React.JSX.Element {
   // In-area pill tone/label for the active-shift hero. A worker with no assigned
   // area has no boundary to be inside/outside of — show a neutral "no area".
   const hasArea = !!(currentShift?.area || assignedArea);
+  // A kota/rayon/kawasan-scope day has no polygon but IS an assignment. Reporting
+  // "Tanpa area" for it contradicted the worker's own Jadwal Saya card.
+  const scopeLabelText =
+    scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+      ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
+      : null;
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
-  const areaTone: StatusTone = !hasArea ? 'neutral' : locUnknown ? 'neutral' : homeLocation.isWithinArea ? 'ok' : 'bad';
+  const areaTone: StatusTone = !hasArea
+    ? scopeLabelText
+      ? 'info'
+      : 'neutral'
+    : locUnknown
+      ? 'neutral'
+      : homeLocation.isWithinArea
+        ? 'ok'
+        : 'bad';
   const areaLabel = !hasArea
-    ? t('home:field.hero.location.noArea')
+    ? (scopeLabelText ?? t('home:field.hero.location.noArea'))
     : locUnknown
       ? t('home:field.hero.location.loading')
       : homeLocation.isWithinArea
         ? t('home:field.hero.location.inArea')
         : t('home:field.hero.location.outArea');
-  const heroAreaName = currentShift?.area?.name ?? assignedArea?.name ?? t('home:field.hero.location.noArea');
+  const heroAreaName =
+    currentShift?.area?.name ??
+    assignedArea?.name ??
+    scopeLabelText ??
+    t('home:field.hero.location.noArea');
 
   return (
     <NBBackgroundPattern
@@ -478,6 +500,66 @@ export function FieldHomeScreen(): React.JSX.Element {
             </View>
           )}
 
+          {/* Jadwal saya — today's roster row at a glance. A worker could not see
+              their own assignment from the home screen at all; "Jadwal Saya" was
+              buried in Profil. Tapping opens the full day view. */}
+          {isClockable && (
+            <>
+              <HomeSectionDivider label={t('home:field.sections.schedule')} />
+              <TouchableOpacity
+                style={styles.scheduleCard}
+                onPress={() => navigation.navigate('MySchedule' as never)}
+                activeOpacity={0.8}
+                accessibilityRole="button"
+                accessibilityLabel={t('home:field.schedule.a11y.open')}
+                testID="home-schedule-card"
+              >
+                {rosterShift ? (
+                  <>
+                    {/* One line per assignment: a worker can cover several places
+                        in one shift (ADR-053), and showing only the first would
+                        hide the rest of their day. */}
+                    {allToday.map((row) => {
+                      const rowScope = resolveScheduleScope(row);
+                      const sd = row.shift_definition;
+                      return (
+                        <InfoTableRow
+                          key={row.id}
+                          label={
+                            sd
+                              ? `${sd.name} · ${sd.start_time.slice(0, 5)}–${sd.end_time.slice(0, 5)}`
+                              : t('home:field.schedule.shift')
+                          }
+                          value={
+                            rowScope.scope === 'none'
+                              ? t('home:field.schedule.noAssignment')
+                              : t(`attendance:clockInOut.scope.${rowScope.scope}`, {
+                                  name: rowScope.name ?? '',
+                                })
+                          }
+                          numberOfLines={2}
+                        />
+                      );
+                    })}
+                    {roster?.team_category?.name ? (
+                      <InfoTableRow
+                        label={t('home:field.schedule.team')}
+                        value={roster.team_category.name}
+                      />
+                    ) : null}
+                  </>
+                ) : (
+                  <NBText variant="body-sm" color="gray700">
+                    {t('home:field.schedule.none')}
+                  </NBText>
+                )}
+                <NBText variant="body-sm" color="primary" style={styles.scheduleLink}>
+                  {t('home:field.schedule.viewAll')}
+                </NBText>
+              </TouchableOpacity>
+            </>
+          )}
+
           {/* Ringkasan hari ini — at-a-glance counters; each tile opens its detail sheet */}
           <HomeSectionDivider label={t('home:field.sections.summary')} />
           <View style={styles.tiles}>
@@ -507,7 +589,10 @@ export function FieldHomeScreen(): React.JSX.Element {
           </View>
 
           {/* Not-assigned hint (field roles only — district-scoped roles excluded) */}
-          {!assignedArea && !currentShift &&
+          {/* Only the genuinely-unassigned case warrants a warning. The scope of an
+              assignment is already stated by the "Jadwal Saya" card above —
+              repeating it here as a second banner was pure duplication. */}
+          {!assignedArea && !currentShift && scheduleScope.scope === 'none' &&
             user?.role !== 'admin_rayon' && user?.role !== 'kepala_rayon' && (
               <View style={styles.warningCard}>
                 <NBText variant="body-sm" color="statusIdle" align="center">
@@ -519,7 +604,12 @@ export function FieldHomeScreen(): React.JSX.Element {
       </View>
 
       {/* Modals */}
-      <ShiftDetailModal visible={detailShift !== null} onClose={() => setDetailShift(null)} shift={detailShift} />
+      <ShiftDetailModal
+        visible={detailShift !== null}
+        onClose={() => setDetailShift(null)}
+        shift={detailShift}
+        scopeLabel={scopeLabelText}
+      />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
         onClose={() => setActivitiesModalVisible(false)}
@@ -542,7 +632,24 @@ export function FieldHomeScreen(): React.JSX.Element {
         visible={locationMapVisible}
         onClose={() => setLocationMapVisible(false)}
         location={homeLocation}
-        area={currentShift?.area ?? assignedArea ?? undefined}
+        // Priority: the lokasi the ACTIVE clock-in is bound to → the lokasi
+        // TODAY'S roster assigns → the standing permanent lokasi. The old order
+        // skipped the roster entirely, so a worker whose schedule sent them
+        // somewhere other than their permanent lokasi saw the wrong boundary —
+        // or none at all, on the very screen meant to answer "am I in my area?".
+        area={
+          currentShift?.area ??
+          (roster?.location?.gps_lat != null && roster.location.gps_lng != null
+            ? {
+                gps_lat: roster.location.gps_lat,
+                gps_lng: roster.location.gps_lng,
+                boundary_polygon: roster.location.boundary_polygon ?? null,
+                name: roster.location.name,
+              }
+            : undefined) ??
+          assignedArea ??
+          undefined
+        }
       />
     </NBBackgroundPattern>
   );
@@ -601,6 +708,17 @@ const styles = StyleSheet.create({
   /* Tiles */
   tiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
 
+  scheduleCard: {
+    backgroundColor: nbColors.bgSurface,
+    borderColor: nbColors.black,
+    borderWidth: nbBorders.widthBase,
+    borderRadius: nbRadius.base,
+    padding: nbSpacing.md,
+    gap: nbSpacing.xs,
+  },
+  scheduleLink: {
+    marginTop: nbSpacing.xs,
+  },
   warningCard: {
     backgroundColor: withAlpha(nbColors.warningLight, 0.125),
     borderColor: nbColors.warning,

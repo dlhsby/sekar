@@ -47,6 +47,7 @@ import {
 } from '@/lib/api/pruning-requests';
 import { useLocations } from '@/lib/api/locations';
 import { useUsers } from '@/lib/api/users';
+import { runAction } from '@/lib/hooks/use-action';
 
 type CaseType = ConvertToTaskDto['caseType'];
 type PruningAction = ConvertToTaskDto['pruningAction'];
@@ -147,20 +148,26 @@ export default function PruningRequestDetailPage() {
   const canConvert = request.status === 'approved';
 
   const handleReview = (decision: 'approve' | 'reject') => {
-    reviewMutation.mutate({ decision, reviewNotes: reviewNotes || undefined });
+    void runAction(() => reviewMutation.mutateAsync({ decision, reviewNotes: reviewNotes || undefined }), {
+      success: decision === 'approve' ? t('common:messages.approved') : t('common:messages.rejected'),
+    });
   };
 
   const handleConvert = () => {
     if (!areaId || !assignedTo) return;
-    convertMutation.mutate(
+    void runAction(
+      () =>
+        convertMutation.mutateAsync({
+          areaId,
+          assignedTo,
+          caseType,
+          pruningAction,
+          scheduledDate: scheduledDate || undefined,
+        }),
       {
-        areaId,
-        assignedTo,
-        caseType,
-        pruningAction,
-        scheduledDate: scheduledDate || undefined,
+        success: t('common:messages.converted'),
+        onSuccess: () => router.push('/pruning-requests'),
       },
-      { onSuccess: () => router.push('/pruning-requests') },
     );
   };
 

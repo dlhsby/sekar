@@ -5,7 +5,8 @@
     },
     "sections": {
       "attendance": "My Attendance",
-      "summary": "Today's Summary"
+      "summary": "Today's Summary",
+      "schedule": "My Schedule"
     },
     "alerts": {
       "permissionRevoked": "Location permission was revoked. Location tracking is inactive.",
@@ -66,6 +67,17 @@
     },
     "warning": {
       "noAssignedArea": "You have not been assigned to any area yet."
+    },
+    "schedule": {
+      "shift": "Shift",
+      "assignment": "Assignment",
+      "team": "Team",
+      "noAssignment": "No assignment",
+      "none": "No schedule today",
+      "viewAll": "View full schedule →",
+      "a11y": {
+        "open": "Open my schedule"
+      }
     }
   },
   "fallbacks": {

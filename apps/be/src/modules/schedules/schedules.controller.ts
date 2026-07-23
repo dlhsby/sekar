@@ -58,6 +58,23 @@ export class SchedulesController {
     return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON;
   }
 
+  /**
+   * Every roster row for a day, not just the most relevant one.
+   *
+   * Under ADR-053 a worker can hold several rows in one shift (lokasi A, then
+   * lokasi B, then a kawasan). `GET /schedules/my` still answers "what am I on
+   * right now" with a single row — the clock-in screen needs exactly one — but
+   * anything that LISTS the day (the mobile Jadwal Saya card, the day view) has
+   * to see all of them or it silently hides assignments.
+   */
+  @Get('my/day')
+  @ApiOperation({ summary: "All of the caller's roster rows for a day (defaults to today, WIB)" })
+  @ApiQuery({ name: 'date', required: false, description: 'WIB day (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, type: [Schedule] })
+  getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
+    return this.service.findAllByUserAndDate(user.id, date ?? TimezoneUtil.jakartaDateString());
+  }
+
   @Get('my')
   @ApiOperation({
     summary:
@@ -70,8 +87,10 @@ export class SchedulesController {
   })
   @ApiResponse({ status: 200, type: Schedule })
   getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
-    const day = date ?? TimezoneUtil.jakartaDateString();
-    return this.service.findByUserAndDate(user.id, day);
+    // No date → "what am I on right now", which at 03:00 is still yesterday's
+    // cross-midnight shift. An explicit date stays a plain calendar-day lookup.
+    if (!date) return this.service.findCurrentForUser(user.id);
+    return this.service.findByUserAndDate(user.id, date);
   }
 
   @Get('date/:date')
@@ -268,14 +287,16 @@ export class SchedulesController {
 
   @Patch(':id/areas')
   @Roles(...ROSTER_EDITORS)
-  @ApiOperation({ summary: 'Set the areas for the day (0..N)' })
+  @ApiOperation({
+    summary: 'Set the coverage for the day — lokasi (0..N) and optionally kawasan (0..N)',
+  })
   @ApiResponse({ status: 200, type: Schedule })
   async updateAreas(
     @Param('id') id: string,
     @Body() dto: UpdateRosterAreasDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
-    return this.service.updateAreas(id, dto.area_ids, user);
+    return this.service.updateAreas(id, dto.area_ids, user, dto.district_id, dto.region_id);
   }
 
   @Patch(':id/shift')

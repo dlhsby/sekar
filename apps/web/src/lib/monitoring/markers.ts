@@ -13,6 +13,7 @@
  * the attendance ratio `hadir/terjadwal` colored by staffing health.
  */
 import { ROLE_MARKER_ICONS } from '@/lib/constants/monitoring';
+import { presenceTone, type PresenceTone } from '@/lib/presence/tone';
 
 /* eslint-disable sekar-design/no-inline-hex-colors -- SVG icon fills for Google overlays, not rendered style tokens */
 const BLACK = '#1C1917';
@@ -24,6 +25,26 @@ const ACTIVITY_COLORS = {
   tidak_aktif: '#92400E', // offline or stale ping (status.idle)
 } as const;
 const ADHOC = '#57534E'; // ad-hoc / off-schedule (gray-600)
+
+/**
+ * Worker pin outline per THE presence colour standard (`lib/presence/tone`).
+ *
+ * Pins were coloured by the activity axis alone — green for a fresh ping, brown
+ * for anything else — so the same worker could read one colour on the map and
+ * another on their schedule card or roster pill, because those read the
+ * lifecycle and the map did not. One worker, one colour, wherever you look.
+ */
+const PRESENCE_PIN_COLORS: Record<PresenceTone, string> = {
+  grey: '#A8A29E',
+  green: '#15803D',
+  amber: '#92400E',
+  orange: '#9A3412',
+  yellow: '#A16207',
+  red: '#991B1B',
+  blue: '#0E7490',
+  darkGrey: '#44403C',
+  purple: '#3730A3',
+};
 
 /**
  * Map the 3-state tracking model (active | offline | absent) onto the 2-activity
@@ -145,12 +166,28 @@ export function workerPinIcon(
     outside?: boolean;
     adHoc?: boolean;
     selected?: boolean;
+    /** Presence axes — drive the pin colour when supplied (ADR-050/053). */
+    lifecycleState?: string | null;
+    leaveReason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
     /** The role's configured marker icon; overrides the built-in role glyph. */
     markerIcon?: string | null;
   }
 ): google.maps.Icon {
   const glyphPath = resolveWorkerGlyph(role, opts.markerIcon);
-  const outline = opts.adHoc ? ADHOC : ACTIVITY_COLORS[opts.activity];
+  // Fall back to the old activity mapping only when no lifecycle is known yet
+  // (a payload from before ADR-050 rollout), so nothing renders colourless.
+  const outline = opts.lifecycleState
+    ? PRESENCE_PIN_COLORS[
+        presenceTone({
+          lifecycleState: opts.lifecycleState,
+          leaveReason: opts.leaveReason,
+          isWithinArea: !opts.outside,
+          isAdHoc: opts.adHoc,
+        })
+      ]
+    : opts.adHoc
+      ? ADHOC
+      : ACTIVITY_COLORS[opts.activity];
   return pinMarkerFromPath(glyphPath, {
     outline,
     dashed: opts.outside,
@@ -333,11 +370,26 @@ export function workerPinElement(
     adHoc?: boolean;
     selected?: boolean;
     markerIcon?: string | null;
+    /** Presence axes — drive the pin colour when supplied (ADR-050/053). */
+    lifecycleState?: string | null;
+    leaveReason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
   },
   label?: PinLabel
 ): HTMLElement {
   const glyphPath = resolveWorkerGlyph(role, opts.markerIcon);
-  const outline = opts.adHoc ? ADHOC : ACTIVITY_COLORS[opts.activity];
+  // Same standard as `workerPinIcon` — see PRESENCE_PIN_COLORS.
+  const outline = opts.lifecycleState
+    ? PRESENCE_PIN_COLORS[
+        presenceTone({
+          lifecycleState: opts.lifecycleState,
+          leaveReason: opts.leaveReason,
+          isWithinArea: !opts.outside,
+          isAdHoc: opts.adHoc,
+        })
+      ]
+    : opts.adHoc
+      ? ADHOC
+      : ACTIVITY_COLORS[opts.activity];
   return pinElementFromPath(glyphPath, { outline, dashed: opts.outside, big: opts.selected }, label);
 }
 

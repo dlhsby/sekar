@@ -66,15 +66,6 @@ export type ScheduleStatus =
   | 'replaced' // replaced by another worker
   | 'off'; // active worker but no shift today
 
-export interface ScheduleArea {
-  id: string;
-  location_id: string;
-  area: {
-    id: string;
-    name: string;
-  };
-}
-
 export interface Schedule {
   id: string;
   user_id: string;
@@ -83,11 +74,34 @@ export interface Schedule {
   // Full definition (the API returns the whole relation) so crosses_midnight is
   // available for the lateness check instead of being defaulted.
   shift_definition: ShiftDefinition | null;
+  district_id?: string | null;
   district: {
     id: string;
     name: string;
   } | null;
-  schedule_areas: ScheduleArea[];
+  // Kawasan scope (ADR-046) — set when the assignment covers a whole region
+  // rather than a single lokasi.
+  region_id?: string | null;
+  region?: {
+    id: string;
+    name: string;
+  } | null;
+  /**
+   * Lokasi this occurrence is scoped to — ADR-053: exactly ONE place per row.
+   * Geometry is included so the client can geofence against today's assignment.
+   */
+  location_id?: string | null;
+  location?: {
+    id: string;
+    name: string;
+    address?: string | null;
+    gps_lat?: number | null;
+    gps_lng?: number | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
+  } | null;
   // Team (regu) context when the assignment belongs to a crew (ADR-047/048).
   team_category?: {
     id: string;

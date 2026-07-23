@@ -265,6 +265,7 @@ export class UsersController {
     return this.usersService.findAllPaginated(query.page, query.limit, user, {
       search: query.search,
       roles: roleList,
+      isActive: query.is_active === undefined ? undefined : query.is_active === 'true',
     });
   }
 

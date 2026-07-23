@@ -56,7 +56,7 @@ export interface ScheduleEventModalProps {
   editScope?: EditScope;
   fromDate?: string;
   initialDate?: string;
-  /** Pre-fill the placement cascade when created from a specific board row. */
+  /** Pre-fill the assignment cascade when created from a specific board row. */
   initialDistrictId?: string;
   initialRegionId?: string;
   initialLocationId?: string;
@@ -70,7 +70,25 @@ export interface ScheduleEventModalProps {
 }
 
 /** Roles that can appear on a schedule (ADR-047). */
-const SCHEDULABLE_ROLES = ['satgas', 'linmas', 'korlap'];
+/**
+ * Schedulable roles, ordered by RANK (highest first), then alphabetically within
+ * a rank. A flat source order made the picker read as an arbitrary list; rank
+ * order matches how the org actually reads its own roles.
+ */
+const ROLE_RANK: Record<string, number> = {
+  superadmin: 0,
+  admin_system: 1,
+  management: 2,
+  kepala_rayon: 3,
+  admin_rayon: 4,
+  korlap: 5,
+  linmas: 6,
+  satgas: 7,
+};
+export const byRoleRank = (a: string, b: string): number =>
+  (ROLE_RANK[a] ?? 99) - (ROLE_RANK[b] ?? 99) || a.localeCompare(b);
+
+const SCHEDULABLE_ROLES = ['satgas', 'linmas', 'korlap'].sort(byRoleRank);
 
 /** Display order Mon..Sun; values are JS getDay() (0=Sunday). */
 
@@ -437,7 +455,7 @@ export function ScheduleEventModal({
 
   // Editing a static/mobile event: backfill the district → kawasan cascade from the
   // event's location/region once master data is loaded, so the selects show the
-  // current placement (the event only carries the deepest id).
+  // current assignment (the event only carries the deepest id).
   const backfilled = useRef(false);
   useEffect(() => {
     if (!event || backfilled.current) return;
@@ -448,7 +466,7 @@ export function ScheduleEventModal({
         // surface it (the cascade can't be resolved) instead of failing silent.
         if (locations.length === 0) return;
         backfilled.current = true;
-        toast.warning(t('schedules:calendar.event.placementUnresolved'));
+        toast.warning(t('schedules:calendar.event.assignmentUnresolved'));
         return;
       }
       if (loc.region_id) setValue('region_id', loc.region_id);
@@ -459,7 +477,7 @@ export function ScheduleEventModal({
       if (!reg) {
         if (regions.length === 0) return;
         backfilled.current = true;
-        toast.warning(t('schedules:calendar.event.placementUnresolved'));
+        toast.warning(t('schedules:calendar.event.assignmentUnresolved'));
         return;
       }
       setValue('district_id', reg.district_id);

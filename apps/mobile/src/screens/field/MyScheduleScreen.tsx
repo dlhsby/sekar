@@ -27,6 +27,8 @@ import {
   nbBorders,
 } from '../../constants/nbTokens';
 import type {Schedule} from '../../types/shift.types';
+import {resolveScheduleScope} from '../../utils/scheduleScope';
+import {presenceTone} from '../../utils/statusHelpers';
 
 // ─── Date helpers (WIB-naive YYYY-MM-DD, matching the API's DATE columns) ─────
 
@@ -57,6 +59,10 @@ const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
     tone: 'warn' as const,
     label: t('schedules:status.leave_annual'),
   },
+  leave_permit: {
+    tone: 'warn' as const,
+    label: t('schedules:status.leave_permit'),
+  },
   replaced: {tone: 'neutral' as const, label: t('schedules:status.replaced')},
   off: {tone: 'neutral' as const, label: t('schedules:status.off')},
 });
@@ -71,11 +77,24 @@ function RosterRow({
   t: ReturnType<typeof useTranslation>['t'];
 }): React.JSX.Element {
   const ROSTER_STATUS_PILL = getRosterStatusPill(t);
-  const pill = ROSTER_STATUS_PILL[roster.status];
+  // Label from the roster status, TONE from the shared presence standard, so a
+  // schedule card, the map and the monitoring roster all agree on the colour.
+  const label =
+    ROSTER_STATUS_PILL[roster.status]?.label ?? roster.status;
+  const pill = {
+    tone: presenceTone({ scheduleStatus: roster.status }),
+    label,
+  };
   const shift = roster.shift_definition;
+  // "Area belum ditetapkan" was shown for every kawasan/rayon/kota assignment —
+  // those name no lokasi by design, but they are still assignments. Fall back to
+  // the scope label instead of implying nothing was assigned.
+  const scope = resolveScheduleScope(roster);
   const areasText =
-    roster.schedule_areas.map(a => a.area.name).join(', ') ||
-    t('schedules:mySchedule.noAreasAssigned');
+    roster.location?.name ||
+    (scope.scope !== 'none' && scope.scope !== 'location'
+      ? t(`attendance:clockInOut.scope.${scope.scope}`, {name: scope.name ?? ''})
+      : t('schedules:mySchedule.noAreasAssigned'));
 
   const team = roster.team_category;
   return (
@@ -145,6 +164,14 @@ function RosterRow({
           </NBText>
         </View>
       )}
+
+      {/* What the status actually MEANS. "Direncanakan" on its own tells a
+          worker nothing — spell out the consequence for the day. */}
+      <View style={styles.statusHint}>
+        <NBText variant="caption" color="gray600">
+          {t(`schedules:mySchedule.statusHint.${roster.status}`)}
+        </NBText>
+      </View>
     </View>
   );
 }
@@ -217,8 +244,11 @@ export function MyScheduleScreen(): React.JSX.Element {
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
-      <NBBackgroundPattern />
-
+      {/* WRAPS the content: this component is `flex: 1`, so rendering it as a
+          childless sibling made it claim half the screen — which is what pushed
+          the date nav into the middle of the page and left the day's card
+          colliding with the "Hari ini" chip. */}
+      <NBBackgroundPattern pattern="grid" backgroundColor={nbColors.bgCanvas}>
       <View style={styles.navRow}>
         <Pressable
           onPress={() => stepDay(-1)}
@@ -334,6 +364,7 @@ export function MyScheduleScreen(): React.JSX.Element {
         }}
         onRequestClose={() => setPickerOpen(false)}
       />
+      </NBBackgroundPattern>
     </SafeAreaView>
   );
 }
@@ -395,6 +426,11 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   rosterCard: {borderColor: nbColors.primary},
+  statusHint: {
+    borderTopWidth: nbBorders.widthBase,
+    borderTopColor: nbColors.gray200,
+    paddingTop: nbSpacing.xs,
+  },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',

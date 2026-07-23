@@ -30,8 +30,9 @@
     "petugasCount": "{{count}} workers",
     "areaCount": "{{kawasan}} kawasan · {{lokasi}} locations",
     "lokasiCount": "{{count}} locations",
-    "placementKawasan": "Kawasan placement",
-    "placementDistrict": "District placement",
+    "assignmentKawasan": "Kawasan assignment",
+    "assignmentDistrict": "District assignment",
+    "assignmentCity": "City assignment",
     "emptyDistrict": "No kawasan or locations yet",
     "petugasShort": "staff",
     "shiftStaffTooltip": "{{shift}} — {{countable}} of {{target}} staff ({{breakdown}})",
@@ -53,7 +54,7 @@
     "groupDate": "Date"
   },
   "detail": {
-    "placement": "Placement",
+    "assignment": "Assignment",
     "endDate": "Ends",
     "pic": "PIC",
     "members": "Members",
@@ -138,7 +139,17 @@
       "districtLabel": "District",
       "shiftLabel": "Shift",
       "areaLabel": "Areas",
-      "submit": "Save"
+      "submit": "Save",
+      "scopeLabel": "Scope",
+      "scopeHelp": "Choose the assignment scope first — the fields below follow it.",
+      "scopeCity": "City (Surabaya)",
+      "scopeDistrict": "District",
+      "scopeRegion": "Region",
+      "scopeLocation": "Location",
+      "regionLabel": "Region",
+      "regionPlaceholder": "Select regions…",
+      "locationLabel": "Location",
+      "locationPlaceholder": "Select locations…"
     },
     "areaList": {
       "title": "Schedule Areas"
@@ -246,13 +257,13 @@
       "scopeDistrict": "District",
       "districtLabel": "District",
       "districtPlaceholder": "Select district…",
-      "scopeHelp": "Schedule coverage — determines which placement fields are needed.",
+      "scopeHelp": "Schedule coverage — determines which assignment fields are needed.",
       "scopeCity": "Surabaya",
       "scopeKawasan": "Kawasan",
       "scopeLokasi": "Location",
       "regionScopeHint": "Mobile coverage across the whole kawasan (workers roam within it).",
       "locationScopeHint": "Static coverage at a single location.",
-      "placementUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the placement.",
+      "assignmentUnresolved": "This schedule's location/kawasan isn't in the data — re-pick the assignment.",
       "kindPlaceholder": "Select type...",
       "rolePlaceholder": "Select role...",
       "roleLabel": "Role",
@@ -261,7 +272,8 @@
       "regionFilterPlaceholder": "All kawasan (optional)",
       "regionFilterHint": "Optional — narrows the location list. Locations with no kawasan still appear.",
       "picRoleLabel": "PIC role",
-      "memberEmpty": "No members yet. Pick a role, then a worker, then Add."
+      "memberEmpty": "No members yet. Pick a role, then a worker, then Add.",
+      "locationMultiHint": "Pick more than one — a single assignment can cover several locations."
     },
     "editScope": {
       "title": "Edit What?",

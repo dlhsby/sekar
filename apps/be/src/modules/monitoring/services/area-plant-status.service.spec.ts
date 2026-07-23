@@ -446,7 +446,7 @@ describe('AreaPlantStatusService', () => {
       const summary = await service.getSummary(DISTRICT_A);
 
       expect((areaRepository as unknown as { find: jest.Mock }).find).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { district_id: DISTRICT_A } }),
+        expect.objectContaining({ where: { district_id: DISTRICT_A, is_active: true } }),
       );
       expect(summary.districts).toHaveLength(1);
       expect(summary.districts[0].ok).toBe(1);

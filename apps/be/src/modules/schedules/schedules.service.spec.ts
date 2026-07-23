@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ForbiddenException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
-import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -79,7 +79,6 @@ describe('SchedulesService', () => {
       providers: [
         SchedulesService,
         { provide: getRepositoryToken(Schedule), useValue: rosterRepo },
-        { provide: getRepositoryToken(ScheduleLocation), useValue: locationRepo },
         { provide: getRepositoryToken(ScheduleEvent), useValue: eventRepo },
         { provide: getRepositoryToken(Location), useValue: areaEntityRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
@@ -121,12 +120,12 @@ describe('SchedulesService', () => {
       });
     });
 
-    it('joins user, shift_definition, schedule_areas, region, and team_category relations (Phase 4)', async () => {
+    it('joins user, shift_definition, location, region, and team_category relations (Phase 4)', async () => {
       await service.findByDateRange('2026-06-30', '2026-07-05');
       const joinCalls = rosterRepo.qb.leftJoinAndSelect.mock.calls;
       expect(joinCalls.some((c) => c[0] === 'ds.user')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.shift_definition')).toBe(true);
-      expect(joinCalls.some((c) => c[0] === 'ds.schedule_areas')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.location')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.region')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.team_category')).toBe(true);
     });
@@ -194,7 +193,7 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [],
+          location_id: null,
         })
         .mockResolvedValueOnce({ id: 'd1', status: ScheduleStatus.LEAVE_SICK });
 
@@ -222,7 +221,7 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [],
+          location_id: null,
         })
         .mockResolvedValueOnce({ id: 'd1', status: expected });
 
@@ -242,7 +241,7 @@ describe('SchedulesService', () => {
         district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       };
       rosterRepo.findOne
         .mockResolvedValueOnce(original) // findOne(id)
@@ -273,7 +272,7 @@ describe('SchedulesService', () => {
         district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       };
       const existingCoverRow = {
         id: 'cover1',
@@ -305,7 +304,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.replaceWorker('d1', 'A', undefined, ADMIN)).rejects.toThrow();
     });
@@ -319,7 +318,7 @@ describe('SchedulesService', () => {
         district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [],
+        location_id: null,
       });
       // findAllByUserAndDate(replacement_id, date) returns rows with BUSY status
       rosterRepo.find.mockResolvedValueOnce([
@@ -354,7 +353,7 @@ describe('SchedulesService', () => {
       });
       overlapService.findConflict.mockResolvedValue(null); // No conflict
       rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', location_id: null }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay(
@@ -388,7 +387,7 @@ describe('SchedulesService', () => {
       // Shiftless add: check findAllByUserAndDate, which returns empty
       rosterRepo.find.mockResolvedValue([]);
       rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', location_id: null }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN);
@@ -432,7 +431,7 @@ describe('SchedulesService', () => {
       // First shift exists (06:00-15:00), candidate is 15:00-23:00 (touching, not overlapping)
       overlapService.findConflict.mockResolvedValue(null);
       rosterRepo.save.mockResolvedValue({ id: 'new2', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new2', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      rosterRepo.findOne.mockResolvedValue({ id: 'new2', user_id: 'W', location_id: null }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay(
@@ -469,7 +468,7 @@ describe('SchedulesService', () => {
         shift_name: 'Shift 2',
       });
       rosterRepo.save.mockResolvedValue({ id: 'new-overlap', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new-overlap', user_id: 'W', schedule_areas: [] });
+      rosterRepo.findOne.mockResolvedValue({ id: 'new-overlap', user_id: 'W', location_id: null });
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       // Should not throw — creates the row anyway
@@ -736,9 +735,9 @@ describe('SchedulesService', () => {
 
   describe('updateAreas', () => {
     it('replaces the areas via setAreas() and updates via update(), not save()', async () => {
-      // `schedule_areas` has `cascade: true`, so `row.schedule_areas` (loaded by
-      // findOne()) is a stale array once setAreas() has raw-deleted the old
-      // rows — save(row) would cascade-reinsert them. Must use update().
+      // `row` holds relation objects from findOne(); entity save would reconcile
+      // FK columns back from those stale objects and revert the write. Must use
+      // update().
       rosterRepo.findOne
         .mockResolvedValueOnce({
           id: 'd1',
@@ -746,13 +745,12 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [{ location_id: 'area1' }],
+          location_id: 'area1',
         })
-        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [] });
+        .mockResolvedValueOnce({ id: 'd1', location_id: null });
 
       await service.updateAreas('d1', [], ADMIN);
 
-      expect(locationRepo.delete).toHaveBeenCalledWith({ schedule_id: 'd1' });
       expect(rosterRepo.update).toHaveBeenCalledWith(
         'd1',
         expect.objectContaining({ source: 'manual' }),
@@ -768,17 +766,14 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [],
+          location_id: null,
         })
-        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [{ location_id: 'area2' }] });
+        .mockResolvedValueOnce({ id: 'd1', location_id: 'area2' });
 
       await service.updateAreas('d1', ['area2'], ADMIN);
 
-      expect(locationRepo.save).toHaveBeenCalled();
-      const inserted = locationRepo.save.mock.calls[0][0];
-      expect(inserted).toEqual([
-        expect.objectContaining({ schedule_id: 'd1', location_id: 'area2' }),
-      ]);
+      // The place lives on the row now (ADR-053), so setting it is a column write.
+      expect(rosterRepo.update).toHaveBeenCalledWith('d1', { location_id: 'area2' });
     });
   });
 
@@ -787,11 +782,13 @@ describe('SchedulesService', () => {
       rosterRepo.find.mockResolvedValue([
         {
           id: 'd1',
-          schedule_areas: [{ area: { id: 'area1' } }, { area: { id: 'area2' } }],
+          // ONE place per row (ADR-053) — several lokasi means several rows.
+          location_id: 'area1',
+          location: { id: 'area1' },
         },
       ]);
       const areas = await service.getActiveAreasForDay('A', '2026-06-30');
-      expect(areas.map((a) => a.id)).toEqual(['area1', 'area2']);
+      expect(areas.map((a) => a.id)).toEqual(['area1']);
     });
 
     it('returns empty when there is no roster row', async () => {
@@ -804,7 +801,7 @@ describe('SchedulesService', () => {
     it('creates a PLANNED row with the shift when one is provided', async () => {
       // findAllByUserAndDate returns empty array (no existing row)
       rosterRepo.find.mockResolvedValue([]);
-      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', location_id: null });
 
       await service.overrideForDay(
         'u1',
@@ -821,7 +818,7 @@ describe('SchedulesService', () => {
 
     it('creates an OFF row (not PLANNED) when no shift is provided', async () => {
       rosterRepo.find.mockResolvedValue([]);
-      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', location_id: null });
 
       await service.overrideForDay('u1', '2026-07-01', { locationId: 'a1' }, 'admin');
 
@@ -832,7 +829,7 @@ describe('SchedulesService', () => {
 
     it('sets the day to exactly the target area', async () => {
       rosterRepo.find.mockResolvedValue([]);
-      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', location_id: null });
 
       await service.overrideForDay(
         'u1',
@@ -841,8 +838,10 @@ describe('SchedulesService', () => {
         'admin',
       );
 
-      const createdAreaIds = locationRepo.create.mock.calls.map((c) => c[0].location_id);
-      expect(createdAreaIds).toEqual(['a9']);
+      const written = rosterRepo.update.mock.calls
+        .map((c) => c[1]?.location_id)
+        .filter((v) => v !== undefined);
+      expect(written).toEqual(['a9']);
     });
 
     it('updates an EXISTING row via update(), not save() (same stale-eager-relation pitfall)', async () => {
@@ -851,7 +850,7 @@ describe('SchedulesService', () => {
         status: ScheduleStatus.OFF,
         shift_definition_id: null,
         shift_definition: null,
-        schedule_areas: [],
+        location_id: null,
       };
       // findAllByUserAndDate returns the existing row
       rosterRepo.find.mockResolvedValue([existingRow]);
@@ -890,7 +889,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).resolves.toBeDefined();
     });
@@ -901,7 +900,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
         ForbiddenException,
@@ -913,7 +912,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.KORLAP },
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
         ForbiddenException,
@@ -926,7 +925,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.KORLAP },
         district_id: 'r1',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).resolves.toBeDefined();
     });
@@ -937,7 +936,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.SATGAS },
         district_id: 'r2',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).rejects.toThrow(
         ForbiddenException,
@@ -950,7 +949,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.KEPALA_RAYON },
         district_id: 'r1',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d1', 'sick', undefined, TOP)).resolves.toBeDefined();
 
@@ -959,7 +958,7 @@ describe('SchedulesService', () => {
         user_id: 'B',
         user: { role: UserRole.SATGAS },
         district_id: 'r1',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d2', 'sick', undefined, TOP)).resolves.toBeDefined();
     });

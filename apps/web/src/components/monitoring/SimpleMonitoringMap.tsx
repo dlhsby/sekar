@@ -47,6 +47,9 @@ export interface SimpleWorker {
   role_marker_icon?: string | null;
   is_within_area: boolean;
   is_scheduled: boolean;
+  /** Presence axes (ADR-050) — drive the pin colour via the shared standard. */
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
   team_id?: string | null;
   team_name?: string | null;
   team_color?: string | null;

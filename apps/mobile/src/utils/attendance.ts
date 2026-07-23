@@ -17,14 +17,14 @@ export interface AttendanceSummary {
 }
 
 /** Attendance state relative to today's roster. */
-export type AttendanceState = 'no_schedule' | 'on_time' | 'late';
+export type AttendanceState = 'no_schedule' | 'on_time' | 'late' | 'outside_window';
 
 export interface AttendanceStatus extends AttendanceSummary {
   /** Whether the worker has a roster (schedule) row for today. */
   hasScheduleToday: boolean;
   /** The roster shift for today (null when unscheduled — e.g. patrol / ad-hoc). */
   scheduledShift: ShiftDefinition | null;
-  /** Coarse state driving the badge: no_schedule vs on_time vs late. */
+  /** Coarse state driving the badge: no_schedule / on_time / late / outside_window. */
   state: AttendanceState;
 }
 
@@ -67,23 +67,61 @@ export function summarizeAttendance(
  * @param currentShift the active shift (fallback when history is empty)
  * @param rosterShift today's roster shift definition, or null when unscheduled
  */
+/**
+ * Whether `now` is past the roster shift's end — i.e. the window to clock in for
+ * that shift has closed. A crosses-midnight shift ends the following morning, so
+ * only an after-end, before-noon time counts as over.
+ */
+function isShiftWindowOver(now: Date, shift: ShiftDefinition | null): boolean {
+  if (!shift?.end_time) return false;
+  const match = /^(\d{1,2}):(\d{2})/.exec(shift.end_time);
+  if (!match) return false;
+  const endMinutes = Number(match[1]) * 60 + Number(match[2]);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  if (shift.crosses_midnight) {
+    const NOON = 12 * 60;
+    return nowMinutes > endMinutes && nowMinutes < NOON;
+  }
+  return nowMinutes > endMinutes;
+}
+
 export function deriveAttendanceStatus(
   todayShifts: Shift[],
   currentShift: Shift | null,
   rosterShift: ShiftDefinition | null,
+  now: Date = new Date(),
 ): AttendanceStatus {
   const summary = summarizeAttendance(todayShifts, currentShift);
   const hasScheduleToday = !!rosterShift;
   const isOvertime = !!currentShift?.is_overtime;
+  // BEFORE the first clock-in there is no time to judge, and the old code read
+  // that as "on time" — so a Shift 1 (06:00–15:00) worker opening Clock In at
+  // 21:54 was told TEPAT WAKTU. Project against `now` instead: the badge answers
+  // "if I clock in right now, am I late?".
+  const reference = summary.firstClockIn ?? (hasScheduleToday ? now.toISOString() : undefined);
   const isLate =
     hasScheduleToday &&
     !isOvertime &&
-    isClockInLate(summary.firstClockIn, rosterShift?.start_time, rosterShift?.crosses_midnight);
+    isClockInLate(reference, rosterShift?.start_time, rosterShift?.crosses_midnight);
   const isEarlyLeave =
     hasScheduleToday &&
     !isOvertime &&
     isClockOutEarly(summary.lastClockOut, rosterShift?.end_time, rosterShift?.crosses_midnight);
-  const state: AttendanceState = !hasScheduleToday ? 'no_schedule' : isLate ? 'late' : 'on_time';
+  // Past the shift's own end and still not clocked in is not "late" — the window
+  // is gone. Surfaced separately so the UI can say so instead of implying the
+  // worker can still make the shift.
+  const outsideWindow =
+    hasScheduleToday &&
+    !summary.firstClockIn &&
+    !isOvertime &&
+    isShiftWindowOver(now, rosterShift);
+  const state: AttendanceState = !hasScheduleToday
+    ? 'no_schedule'
+    : outsideWindow
+      ? 'outside_window'
+      : isLate
+        ? 'late'
+        : 'on_time';
   return {
     ...summary,
     isLate,

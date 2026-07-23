@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  Between,
   In,
   IsNull,
   LessThanOrEqual,
@@ -14,7 +15,7 @@ import {
   Repository,
   type FindOptionsWhere,
 } from 'typeorm';
-import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
@@ -56,7 +57,7 @@ const BUSY_STATUSES = [
 /**
  * Optional filters for the calendar range query (materialized + projected rows).
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
- * whose schedule_locations include it.
+ * whose location_id matches.
  */
 export interface RangeFilters {
   districtId?: string | null;
@@ -85,8 +86,6 @@ export class SchedulesService {
   constructor(
     @InjectRepository(Schedule)
     private readonly rosterRepo: Repository<Schedule>,
-    @InjectRepository(ScheduleLocation)
-    private readonly rosterAreaRepo: Repository<ScheduleLocation>,
     @InjectRepository(ScheduleEvent)
     private readonly eventRepo: Repository<ScheduleEvent>,
     @InjectRepository(User)
@@ -118,20 +117,19 @@ export class SchedulesService {
     }
     if (isGlobalRosterEditor(editor.role)) return;
 
-    const rowAreas = row.schedule_areas ?? [];
+    const rowLocationIds = row.location_id ? [row.location_id] : [];
     if (isDistrictManagerRole(editor.role)) {
       if (!editor.district_id) {
         throw new ForbiddenException('Your account is missing a district assignment');
       }
       const inDistrict =
-        row.district_id === editor.district_id ||
-        rowAreas.some((a) => a.area?.district_id === editor.district_id);
+        row.district_id === editor.district_id || row.location?.district_id === editor.district_id;
       if (!inDistrict) throw new ForbiddenException('This worker is outside your district');
       return;
     }
     // korlap: the row's areas must overlap the coordinator's own assigned areas.
     const editorAreaIds = await this.userAreasService.getPermanentLocationIds(editor.id);
-    const overlap = rowAreas.some((a) => editorAreaIds.includes(a.location_id));
+    const overlap = !!row.location_id && editorAreaIds.includes(row.location_id);
     if (!overlap) throw new ForbiddenException('This worker is outside your assigned areas');
   }
 
@@ -232,7 +230,7 @@ export class SchedulesService {
     );
     const locationIds =
       dto.area_ids ?? (await this.userAreasService.getPermanentLocationIds(dto.user_id));
-    await this.setAreas(row.id, locationIds, actor.id);
+    await this.setAreas(row.id, locationIds);
     await this.audit(
       row,
       'add_schedule',
@@ -241,6 +239,29 @@ export class SchedulesService {
       { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: locationIds },
     );
     return this.findOne(row.id);
+  }
+
+  /**
+   * `user:date:shift` for every LIVE roster row in the range, regardless of which
+   * event (or none) produced it.
+   *
+   * `UQ_schedules_user_date_shift` makes a second row for the same triple
+   * impossible, so an event that would produce one can never materialize. Without
+   * this set the projection still emitted it — a greyed "projected" duplicate that
+   * showed forever, could not be deleted (its id is `projected:…`, not a row), and
+   * silently inflated the board's role counts. Projection now skips any triple a
+   * live row already owns.
+   */
+  private async occupiedShiftKeys(from: string, to: string): Promise<Set<string>> {
+    const rows = await this.rosterRepo.find({
+      where: { schedule_date: Between(from, to) },
+      select: ['user_id', 'schedule_date', 'shift_definition_id'],
+    });
+    return new Set(
+      rows
+        .filter((r) => r.shift_definition_id)
+        .map((r) => `${r.user_id}:${r.schedule_date}:${r.shift_definition_id}`),
+    );
   }
 
   /**
@@ -336,8 +357,7 @@ export class SchedulesService {
       // (the web table reads row.user.full_name and crashes).
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.location', 'location')
       .leftJoinAndSelect('ds.replacement_user', 'ru')
       .where('ds.schedule_date = :date', { date })
       .andWhere('ds.deleted_at IS NULL');
@@ -354,13 +374,59 @@ export class SchedulesService {
   async findAllByUserAndDate(userId: string, date: string): Promise<Schedule[]> {
     const rows = await this.rosterRepo.find({
       where: { user_id: userId, schedule_date: date },
-      relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'district'],
+      // `region` is loaded so the mobile clock-in screen can name a kawasan-scope
+      // assignment instead of falling back to "no area".
+      relations: ['shift_definition', 'location', 'district', 'region'],
     });
     return rows.sort((a, b) =>
       (a.shift_definition?.start_time ?? '99:99:99').localeCompare(
         b.shift_definition?.start_time ?? '99:99:99',
       ),
     );
+  }
+
+  /**
+   * The roster row that is OPERATIVE RIGHT NOW — today's, or a still-running
+   * cross-midnight shift started yesterday.
+   *
+   * `/schedules/my` defaulted to today's WIB date, so at 03:26 a satgas on
+   * Shift 3 (21:00–05:00, started yesterday) was told "belum ada jadwal hari
+   * ini" and read as unassigned — mid-shift. The service day for a crossing
+   * shift does not end at midnight; the row that owns it belongs to the START
+   * date. Today wins when it has a covering/upcoming row, so an early-morning
+   * shift starting today is never shadowed by yesterday's tail.
+   */
+  async findCurrentForUser(userId: string): Promise<Schedule | null> {
+    const now = TimezoneUtil.jakartaNow();
+    const today = TimezoneUtil.jakartaDateString();
+    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    const minutesOf = (hms: string): number => {
+      const [h, m] = hms.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    // Yesterday's crossing tail first: it is the only row that can be *running*
+    // before its own start time reads as "upcoming" on today's clock.
+    const yesterday = this.addDaysToDate(today, -1);
+    const carried = (await this.findAllByUserAndDate(userId, yesterday)).find((r) => {
+      const sd = r.shift_definition;
+      if (!sd?.crosses_midnight) return false;
+      return nowMin < minutesOf(sd.end_time);
+    });
+
+    const todays = await this.findByUserAndDate(userId, today);
+    if (!carried) return todays;
+    if (!todays?.shift_definition) return carried;
+
+    // Both exist: today's row wins only once it has actually started.
+    return nowMin >= minutesOf(todays.shift_definition.start_time) ? todays : carried;
+  }
+
+  private addDaysToDate(dateStr: string, days: number): string {
+    const d = new Date(dateStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().split('T')[0];
   }
 
   /**
@@ -402,7 +468,7 @@ export class SchedulesService {
 
   /**
    * All roster rows for a date range [from, to] inclusive, district-scoped.
-   * Relations: user, shift_definition, schedule_areas/locations, region, team_category.
+   * Relations: user, shift_definition, location, region, team_category.
    *
    * Phase 4 (ADR-047 amended): includes materialized rows + projected rows from
    * active events that expand beyond the materialization horizon. Projected rows
@@ -414,8 +480,7 @@ export class SchedulesService {
       .createQueryBuilder('ds')
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.location', 'location')
       .leftJoinAndSelect('ds.region', 'r')
       .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.user_id = :userId', { userId })
@@ -449,6 +514,7 @@ export class SchedulesService {
       ],
     });
 
+    const shiftOccupied = await this.occupiedShiftKeys(from, to);
     const projectedRows: Schedule[] = [];
     for (const event of events) {
       // Expand the event's recurrence into concrete dates
@@ -484,7 +550,11 @@ export class SchedulesService {
           const key = `${event.id}:${userId}:${dateStr}`;
           if (!materializedKey.has(key)) {
             // Also check withDeleted to avoid resurrecting tombstones
-            if (!existingKey.has(`${userId}:${dateStr}`)) {
+            if (existingKey.has(`${userId}:${dateStr}`)) continue;
+            // …and never project a triple a live row already owns (see
+            // `occupiedShiftKeys`) — it could never materialize anyway.
+            if (shiftOccupied.has(`${userId}:${dateStr}:${event.shift_definition_id}`)) continue;
+            {
               // Emit a virtual projected row
               const projected = new Schedule();
               projected.id = `projected:${event.id}:${userId}:${dateStr}`;
@@ -524,16 +594,10 @@ export class SchedulesService {
                 projected.user = event.user;
               }
 
-              // For static scope, add schedule_areas
+              // Static scope → the occurrence's single lokasi (ADR-053).
               if (event.scope === 'static' && event.location) {
-                projected.schedule_areas = [
-                  {
-                    id: `projected:${event.id}:${userId}:${dateStr}:area`,
-                    schedule_id: projected.id,
-                    location_id: event.location_id,
-                    area: event.location,
-                  } as ScheduleLocation,
-                ];
+                projected.location_id = event.location_id ?? null;
+                projected.location = event.location;
               }
 
               projectedRows.push(projected);
@@ -566,25 +630,23 @@ export class SchedulesService {
       .createQueryBuilder('ds')
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.location', 'location')
       .leftJoinAndSelect('ds.region', 'r')
       .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
-      .andWhere('ds.deleted_at IS NULL');
+      .andWhere('ds.deleted_at IS NULL')
+      // Deactivated workers drop off the board: their rows stay in the DB for
+      // history, but the roster only shows people who can actually work.
+      .andWhere('u.is_active = TRUE');
     if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
     if (shiftDefinitionId)
       qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
     if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
-    // A location filter matches static rows whose schedule_areas include it.
-    if (locationId)
-      qb.andWhere(
-        'EXISTS (SELECT 1 FROM schedule_locations sl WHERE sl.schedule_id = ds.id AND sl.location_id = :locationId)',
-        { locationId },
-      );
+    // One place per row (ADR-053), so the filter is a plain column match.
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
     const materialized = await qb
       .orderBy('ds.schedule_date', 'ASC')
       .addOrderBy('ds.status', 'ASC')
@@ -612,6 +674,7 @@ export class SchedulesService {
       ],
     });
 
+    const shiftOccupied = await this.occupiedShiftKeys(from, to);
     const projectedRows: Schedule[] = [];
     for (const event of events) {
       // Event-level filter gate — skip whole events that can't match, so we
@@ -647,6 +710,14 @@ export class SchedulesService {
           : [];
       // A user filter narrows to just that member (and drops events they aren't on).
       if (userId) memberIds = memberIds.filter((id) => id === userId);
+      // Never project an occurrence for a deactivated member — the materialized
+      // path already excludes them, so projections must match.
+      const activeById = new Map<string, boolean>(
+        [event.user, ...(event.members?.map((m) => m.user) ?? [])]
+          .filter((u): u is NonNullable<typeof u> => !!u)
+          .map((u) => [u.id, u.is_active !== false]),
+      );
+      memberIds = memberIds.filter((id) => activeById.get(id) !== false);
 
       // Check which (member, date) pairs are already in DB with this event
       if (dates.length > 0) {
@@ -663,7 +734,12 @@ export class SchedulesService {
             const key = `${event.id}:${memberId}:${dateStr}`;
             if (!materializedKey.has(key)) {
               // Also check withDeleted to avoid resurrecting tombstones
-              if (!existingKey.has(`${memberId}:${dateStr}`)) {
+              if (existingKey.has(`${memberId}:${dateStr}`)) continue;
+              // …and never project a triple a live row already owns (see
+              // `occupiedShiftKeys`) — it could never materialize anyway.
+              if (shiftOccupied.has(`${memberId}:${dateStr}:${event.shift_definition_id}`))
+                continue;
+              {
                 // Filter by district if needed
                 const district_id =
                   event.scope === 'static'
@@ -707,16 +783,10 @@ export class SchedulesService {
                   projected.user = event.user;
                 }
 
-                // For static scope, add schedule_areas
+                // Static scope → the occurrence's single lokasi (ADR-053).
                 if (event.scope === 'static' && event.location) {
-                  projected.schedule_areas = [
-                    {
-                      id: `projected:${event.id}:${memberId}:${dateStr}:area`,
-                      schedule_id: projected.id,
-                      location_id: event.location_id,
-                      area: event.location,
-                    } as ScheduleLocation,
-                  ];
+                  projected.location_id = event.location_id ?? null;
+                  projected.location = event.location;
                 }
 
                 projectedRows.push(projected);
@@ -769,20 +839,24 @@ export class SchedulesService {
     if (shiftDefinitionId)
       qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
     if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
-    if (locationId)
-      qb.andWhere(
-        'EXISTS (SELECT 1 FROM schedule_locations sl WHERE sl.schedule_id = ds.id AND sl.location_id = :locationId)',
-        { locationId },
-      );
+    // One place per row (ADR-053) — a plain column match, no junction.
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
     const materialized = await qb.getRawMany<{
       ds_schedule_date: string;
       ds_user_id: string;
       ds_schedule_event_id: string | null;
     }>();
 
-    const counts = new Map<string, number>();
-    const bump = (date: string) => counts.set(date, (counts.get(date) ?? 0) + 1);
-    for (const r of materialized) bump(toDay(r.ds_schedule_date));
+    // PEOPLE per day, not rows (ADR-053): a worker covering two lokasi on one
+    // day holds two occurrences, and the year heatmap reads as headcount. The
+    // set also makes the projection pass below idempotent per (user, date).
+    const workersByDate = new Map<string, Set<string>>();
+    const bump = (date: string, userId: string) => {
+      const set = workersByDate.get(date);
+      if (set) set.add(userId);
+      else workersByDate.set(date, new Set([userId]));
+    };
+    for (const r of materialized) bump(toDay(r.ds_schedule_date), r.ds_user_id);
 
     // Every (event, user, date) key in the range, INCLUDING tombstones, so
     // projection never double-counts a materialized/deleted occurrence.
@@ -843,13 +917,13 @@ export class SchedulesService {
         const dateStr = toDay(rawDate);
         for (const memberId of memberIds) {
           if (existingKey.has(`${event.id}:${memberId}:${dateStr}`)) continue;
-          bump(dateStr);
+          bump(dateStr, memberId);
         }
       }
     }
 
-    return Array.from(counts.entries())
-      .map(([date, count]) => ({ date, count }))
+    return Array.from(workersByDate.entries())
+      .map(([date, workers]) => ({ date, count: workers.size }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
@@ -857,7 +931,7 @@ export class SchedulesService {
     const row = await this.rosterRepo.findOne({
       where: { id },
       // `user` is loaded so the edit-permission hierarchy can read the target's role.
-      relations: ['user', 'shift_definition', 'schedule_areas', 'schedule_areas.area'],
+      relations: ['user', 'shift_definition', 'location'],
     });
     if (!row) throw new NotFoundException(`Daily schedule ${id} not found`);
     return row;
@@ -913,7 +987,7 @@ export class SchedulesService {
       throw new ForbiddenException('You cannot assign this replacement worker');
     }
 
-    const locationIds = (original.schedule_areas ?? []).map((dsa) => dsa.location_id);
+    const locationIds = original.location_id ? [original.location_id] : [];
 
     // Mark the original as replaced.
     const prevStatus = original.status;
@@ -963,7 +1037,7 @@ export class SchedulesService {
       coverRowId = saved.id;
     } else {
       // Raw column UPDATE, not `save(coverRow)` — findByUserAndDate() eager/
-      // explicitly loads `shift_definition`/`district`/`schedule_areas`, so
+      // explicitly loads `shift_definition`/`district`/`location`, so
       // `coverRow` holds stale relation objects; saving the entity would let
       // TypeORM reconcile those FKs from the stale objects and revert them.
       coverRowId = coverRow.id;
@@ -976,7 +1050,7 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(coverRowId, locationIds, actorId);
+    await this.setAreas(coverRowId, locationIds);
 
     await this.audit(
       original,
@@ -988,18 +1062,34 @@ export class SchedulesService {
     return this.findOne(original.id);
   }
 
-  /** Set the day's areas (0..N). */
-  async updateAreas(id: string, locationIds: string[], actor: User): Promise<Schedule> {
+  /**
+   * Set the day's coverage — lokasi (0..N) and, optionally, kawasan (0..N).
+   *
+   * One worker still gets ONE occurrence per shift (the attendance anchor), but
+   * that occurrence can span several lokasi and several kawasan: a crew working
+   * a handful of small taman, or moving across kawasan during the shift, is a
+   * single assignment, not several. Passing `regionIds` undefined leaves the
+   * kawasan set untouched.
+   */
+  async updateAreas(
+    id: string,
+    locationIds: string[],
+    actor: User,
+    districtId?: string | null,
+    regionId?: string | null,
+  ): Promise<Schedule> {
     const actorId = actor.id;
     const row = await this.findOne(id);
     await this.assertCanEdit(actor, row);
-    const before = (row.schedule_areas ?? []).map((dsa) => dsa.location_id);
-    await this.setAreas(row.id, locationIds, actorId);
-    // Raw column UPDATE, not `save(row)` — `schedule_areas` is a `cascade: true`
-    // relation and `row` still holds the now-stale in-memory array from
-    // `findOne()` above. Saving the full entity would cascade-reinsert those
-    // rows right after `setAreas()` just deleted them, silently reverting the
-    // change (the bug: areas appeared to save but reverted on refresh).
+    const before = row.location_id ? [row.location_id] : [];
+    await this.setAreas(row.id, locationIds);
+    // The edit modal let an operator pick a Rayon that was never persisted — it
+    // only filtered the lokasi list. A rayon-scope assignment needs the column set.
+    if (districtId !== undefined) await this.rosterRepo.update(id, { district_id: districtId });
+    if (regionId !== undefined) await this.rosterRepo.update(id, { region_id: regionId });
+    // Raw column UPDATE, not `save(row)` — `row` holds relation objects loaded by
+    // `findOne()` above, and entity save would reconcile FK columns back from
+    // those stale objects, silently reverting what was just written.
     await this.rosterRepo.update(id, { source: 'manual', updated_by: actorId });
     await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: locationIds });
     return this.findOne(id);
@@ -1082,24 +1172,103 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(row.id, [params.locationId], actorId);
+    await this.setAreas(row.id, [params.locationId]);
     return row.id;
   }
 
   /** Soft-delete a roster row (admin). */
   async remove(id: string, actorId: string): Promise<void> {
+    // A PROJECTED occurrence has no row to delete — its id is
+    // `projected:<eventId>:<userId>:<date>`. "Hanya hari ini" on one used to hit
+    // `DELETE /schedules/projected:…` and fail, so the chip could not be removed
+    // at all. Write the tombstone the materializer already understands (a
+    // soft-deleted row for that event/user/date) so the day is skipped forever
+    // without touching the rest of the recurrence.
+    if (id.startsWith('projected:')) {
+      return this.tombstoneProjected(id, actorId);
+    }
     const row = await this.findOne(id);
     row.deleted_by = actorId;
     await this.rosterRepo.save(row);
     await this.rosterRepo.softDelete(id);
   }
 
+  /**
+   * Materialize a tombstone for a single projected occurrence, so that day is
+   * dropped from the recurrence while every other date keeps projecting.
+   * The unique index on (user, date, shift) is partial (`WHERE deleted_at IS
+   * NULL`), so a tombstone never collides with a live row.
+   */
+  private async tombstoneProjected(id: string, actorId: string): Promise<void> {
+    const [, eventId, userId, date] = id.split(':');
+    if (!eventId || !userId || !date) {
+      throw new BadRequestException('Malformed projected occurrence id');
+    }
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Schedule event not found');
+
+    const existing = await this.rosterRepo.findOne({
+      where: { schedule_event_id: eventId, user_id: userId, schedule_date: date },
+      withDeleted: true,
+    });
+    if (existing) {
+      // Already materialized (or already tombstoned) — fall back to the normal path.
+      if (!existing.deleted_at) await this.remove(existing.id, actorId);
+      return;
+    }
+
+    const row = await this.rosterRepo.save(
+      this.rosterRepo.create({
+        user_id: userId,
+        schedule_date: date,
+        shift_definition_id: event.shift_definition_id,
+        district_id: event.district_id ?? null,
+        region_id: event.scope === 'mobile' ? (event.region_id ?? null) : null,
+        team_category_id: event.is_team ? (event.team_category_id ?? null) : null,
+        status: ScheduleStatus.PLANNED,
+        source: 'event',
+        schedule_event_id: eventId,
+        created_by: actorId,
+        deleted_by: actorId,
+      }),
+    );
+    await this.rosterRepo.softDelete(row.id);
+  }
+
   // ---- Read helpers for clock-in ----
 
   /** Today's rostered areas for a worker (empty when no roster row / no areas). */
   async getActiveAreasForDay(userId: string, date: string): Promise<Location[]> {
-    const row = await this.findByUserAndDate(userId, date);
-    return (row?.schedule_areas ?? []).map((dsa) => dsa.area).filter(Boolean);
+    return this.areasOf(await this.findByUserAndDate(userId, date));
+  }
+
+  /**
+   * Areas for the roster row operative RIGHT NOW — includes a cross-midnight
+   * shift still running from yesterday, which the plain per-day lookup misses.
+   */
+  async getActiveAreasNow(userId: string): Promise<Location[]> {
+    return this.areasOf(await this.findCurrentForUser(userId));
+  }
+
+  private async areasOf(row: Schedule | null): Promise<Location[]> {
+    if (!row) return [];
+
+    const byId = new Map<string, Location>();
+    if (row.location) byId.set(row.location.id, row.location);
+
+    // A KAWASAN-scoped occurrence names no lokasi, so the geofence had nothing to
+    // check and the worker read as "no area" — even though the assignment covers
+    // every lokasi in that kawasan. Expand each assigned kawasan (the junction,
+    // falling back to the single `region_id`) into its active lokasi.
+    const regionIds = row.region_id ? [row.region_id] : [];
+    if (regionIds.length > 0) {
+      const inRegions = await this.locationRepo.find({
+        where: { region_id: In(regionIds), is_active: true },
+      });
+      for (const area of inRegions) byId.set(area.id, area);
+    }
+
+    return [...byId.values()];
   }
 
   /** Today's rostered shift for a worker, or null. */
@@ -1206,22 +1375,13 @@ export class SchedulesService {
   // ---- internals ----
 
   /** Reconcile a row's area set to exactly `locationIds`. */
-  private async setAreas(
-    rosterId: string,
-    locationIds: string[],
-    actorId: string | null,
-  ): Promise<void> {
-    const desired = [...new Set(locationIds)];
-    await this.rosterAreaRepo.delete({ schedule_id: rosterId });
-    if (!desired.length) return;
-    const rows = desired.map((areaId) =>
-      this.rosterAreaRepo.create({
-        schedule_id: rosterId,
-        location_id: areaId,
-        assigned_by: actorId,
-      }),
-    );
-    await this.rosterAreaRepo.save(rows);
+  /**
+   * Set the occurrence's lokasi. ONE place per row (ADR-053), so anything past
+   * the first id is dropped rather than silently split across places — callers
+   * that want wider coverage create another schedule.
+   */
+  private async setAreas(rosterId: string, locationIds: string[]): Promise<void> {
+    await this.rosterRepo.update(rosterId, { location_id: locationIds[0] ?? null });
   }
 
   private async audit(

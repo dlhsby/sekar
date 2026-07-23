@@ -276,6 +276,84 @@ export function lifecycleFlagPills(user: {
   return pills;
 }
 
+/**
+ * The LIFECYCLE axis itself (ADR-050) — where the worker sits in the day, as
+ * distinct from the flags that decorate it. Mobile rendered only the flags
+ * (terlambat / luar jadwal / lembur / lupa clock-out), so a roster entry could
+ * not say whether the person was `belum_hadir`, `tidak_hadir`, already `pulang`
+ * or simply `tidak_bertugas` — every non-live worker looked the same.
+ *
+ * `leave_reason` refines `tidak_bertugas`/`tidak_hadir` into cuti / sakit / izin
+ * / libur, which is the only way an operator can tell an excused absence from a
+ * no-show.
+ */
+export function lifecycleStatePill(user: {
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
+}): { tone: StatusTone; label: string } | null {
+  const state = user.lifecycle_state;
+  if (!state) return null;
+  if (user.leave_reason) {
+    return {
+      tone: 'info',
+      label: i18n.t(`monitoring:lifecycle.leave.${user.leave_reason}`),
+    };
+  }
+  // Tone comes from the shared standard — not a second hand-rolled switch that
+  // could drift from the board and the schedule cards.
+  return {
+    tone: presenceTone({
+      lifecycleState: state,
+      isWithinArea: user.is_within_area,
+      isAdHoc: user.is_scheduled === false,
+    }),
+    label: i18n.t(`monitoring:lifecycle.state.${state}`, state),
+  };
+}
+
+/**
+ * THE presence colour standard (ADR-050) — the mobile twin of the web's
+ * `lib/presence/tone.ts`. Same inputs, same ordering, so the same worker never
+ * reads one colour on the map and another on a card.
+ *
+ * planned/not started → neutral · bertugas inside → ok · bertugas outside → warn
+ * · terlambat → warn · belum_hadir → warn · tidak_hadir → bad · leave → info
+ * · pulang → neutral · ad-hoc (luar jadwal) → info
+ *
+ * The mobile palette has five tones, not nine, so `amber`/`orange`/`yellow`
+ * collapse onto `warn`; the accompanying LABEL always disambiguates them.
+ */
+export function presenceTone(facts: {
+  lifecycleState?: string | null;
+  scheduleStatus?: string | null;
+  leaveReason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  isWithinArea?: boolean | null;
+  isAdHoc?: boolean;
+}): StatusTone {
+  if (facts.isAdHoc) return 'info';
+  if (facts.leaveReason && facts.leaveReason !== 'libur') return 'info';
+
+  switch (facts.lifecycleState ?? facts.scheduleStatus) {
+    case 'bertugas':
+    case 'present':
+      return facts.isWithinArea === false ? 'warn' : 'ok';
+    case 'terlambat':
+    case 'belum_hadir':
+      return 'warn';
+    case 'tidak_hadir':
+    case 'absent':
+      return 'bad';
+    case 'leave_sick':
+    case 'leave_annual':
+    case 'leave_permit':
+      return 'info';
+    default:
+      return 'neutral';
+  }
+}
+
 export function locationLabel(location: PresenceLocation): string {
   switch (location) {
     case 'dalam_area': return i18n.t('status:location.dalam_area');

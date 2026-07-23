@@ -35,7 +35,7 @@ import { seedServiceCapacity } from '../entities/service-capacity';
  *   - user_locations 717 (280 from CSV + 27 multi-area + korlap districts)
  *   - user_tracking_status 1028
  *   - schedules 1075 (daily roster materialized, one per active user)
- *   - schedule_locations 692 (today's area assignments from user_locations)
+ *   - schedules.location_id pointed at each worker's permanent lokasi
  *   - plant_species 128
  *   - service_capacity 96
  *   - All others per spec

@@ -11,7 +11,8 @@
     "monitoring": "Monitoring",
     "reports": "Laporan",
     "seeds": "Bibit",
-    "pruning": "Perantingan"
+    "pruning": "Perantingan",
+    "mySchedule": "Jadwal Saya"
   },
   "sections": {
     "operations": "Operasional",

@@ -19,9 +19,16 @@ interface ShiftDetailModalProps {
   visible: boolean;
   onClose: () => void;
   shift: Shift | null;
+  /**
+   * Assignment scope label when the shift has no lokasi (kota/rayon/kawasan
+   * scope). Without it the modal said "Area: Tidak diketahui" and flagged
+   * "Luar Area / 0m" for a worker who was correctly assigned city-wide — there
+   * was simply no polygon to be inside of.
+   */
+  scopeLabel?: string | null;
 }
 
-export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalProps) {
+export function ShiftDetailModal({ visible, onClose, shift, scopeLabel }: ShiftDetailModalProps) {
   const { t: tAttendance } = useTranslation('attendance');
   const { t } = useTranslation();
 
@@ -75,7 +82,9 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             label={tAttendance('shiftDetail.area')}
             even
           >
-            <NBText variant="body" color="black">{shift.area?.name || tAttendance('shifts.unknown')}</NBText>
+            <NBText variant="body" color="black">
+              {shift.area?.name || scopeLabel || tAttendance('shifts.unknown')}
+            </NBText>
             {!!shift.area?.address && (
               <NBText variant="caption" color="gray600">{shift.area.address}</NBText>
             )}
@@ -104,7 +113,10 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
             </NBText>
           </InfoRow>
 
-          {/* Location validation */}
+          {/* Location validation — only meaningful when there IS a boundary.
+              A kota/rayon/kawasan-scope shift has none, so showing "Luar Area, 0m"
+              was reporting a violation that cannot exist. */}
+          {!shift.area ? null : (
           <View
             style={[
               styles.validationSection,
@@ -155,6 +167,7 @@ export function ShiftDetailModal({ visible, onClose, shift }: ShiftDetailModalPr
               </View>
             </View>
           </View>
+          )}
         </View>
       )}
     </NBModal>

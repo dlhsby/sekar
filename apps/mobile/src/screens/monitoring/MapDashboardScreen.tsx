@@ -348,6 +348,25 @@ export function MapDashboardScreen(): React.JSX.Element {
     return map;
   }, [aggregate]);
 
+  /**
+   * Roster lifecycle split for the scope currently on screen — summed over the
+   * child nodes the aggregate returned. "Belum hadir" (still inside the arrival
+   * grace) and "tidak hadir" (no-show) were previously collapsed into one
+   * "belum clock in" number, which hid the only distinction that changes what a
+   * supervisor does next.
+   */
+  const rosterSplit = useMemo(() => {
+    const nodes = aggregate?.nodes ?? [];
+    if (nodes.length === 0) return null;
+    return nodes.reduce(
+      (acc, n) => ({
+        belum_hadir: acc.belum_hadir + (n.roster?.belum_hadir ?? 0),
+        tidak_hadir: acc.tidak_hadir + (n.roster?.tidak_hadir ?? 0),
+      }),
+      { belum_hadir: 0, tidak_hadir: 0 },
+    );
+  }, [aggregate]);
+
   const animateTo = useCallback((lat: number, lng: number, delta: number) => {
     mapRef.current?.animateToRegion(
       { latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta },
@@ -625,6 +644,7 @@ export function MapDashboardScreen(): React.JSX.Element {
           totalAreas={totalAreas}
           staffedAreas={staffedAreas}
           onLeaveUsers={onLeaveUsers}
+          rosterSplit={rosterSplit}
         />
 
         {/* Filter modal, boundary detail modal, search modal */}

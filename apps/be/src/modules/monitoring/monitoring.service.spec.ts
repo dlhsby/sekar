@@ -26,7 +26,6 @@ import {
 } from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
-import { ScheduleLocation } from '../schedules/entities/schedule.entity';
 
 describe('MonitoringService', () => {
   let service: MonitoringService;
@@ -328,13 +327,6 @@ describe('MonitoringService', () => {
         },
         {
           provide: getRepositoryToken(Schedule),
-          useValue: {
-            find: jest.fn(),
-            createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
-          },
-        },
-        {
-          provide: getRepositoryToken(ScheduleLocation),
           useValue: {
             find: jest.fn(),
             createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
@@ -1314,7 +1306,9 @@ describe('MonitoringService', () => {
 
       const result = await statsService.getBoundaries({ district_id: 'district-1' });
 
-      expect(districtRepository.find).toHaveBeenCalledWith({ where: { id: 'district-1' } });
+      expect(districtRepository.find).toHaveBeenCalledWith({
+        where: { id: 'district-1', is_active: true },
+      });
       expect(result.districts).toHaveLength(1);
       expect(result.districts[0].areas).toHaveLength(0);
       expect(result.districts[0].area_count).toBe(0);

@@ -316,6 +316,20 @@
     "late": "Terlambat",
     "luarJadwal": "Luar Jadwal",
     "lembur": "Lembur",
-    "lupaClockOut": "Lupa Clock-out"
+    "lupaClockOut": "Lupa Clock-out",
+    "state": {
+      "tidak_bertugas": "Tidak Bertugas",
+      "belum_hadir": "Belum Hadir",
+      "terlambat": "Terlambat",
+      "bertugas": "Bertugas",
+      "pulang": "Pulang",
+      "tidak_hadir": "Tidak Hadir"
+    },
+    "leave": {
+      "cuti": "Cuti",
+      "sakit": "Sakit",
+      "izin": "Izin",
+      "libur": "Libur"
+    }
   }
 }

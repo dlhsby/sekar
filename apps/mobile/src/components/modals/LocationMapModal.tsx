@@ -120,8 +120,13 @@ function fitRegion(points: { latitude: number; longitude: number }[]): Region {
 }
 
 // Map area boundary overlay — blue-700 tone; closest token is requestUnderReview (#2563EB)
-const AREA_FILL = withAlpha(nbColors.requestUnderReview, 0.12);
-const AREA_STROKE = nbColors.requestUnderReview;
+// Boundary styling matches the monitoring map (`markerSpec` / BoundaryOverlay)
+// rather than borrowing the pruning-request palette, so the polygon a worker sees
+// around their own lokasi is the same one a supervisor sees around it.
+const AREA_FILL_INSIDE = withAlpha(nbColors.statusActive, 0.12);
+const AREA_FILL_OUTSIDE = withAlpha(nbColors.statusIdle, 0.12);
+const AREA_STROKE_INSIDE = nbColors.statusActive;
+const AREA_STROKE_OUTSIDE = nbColors.statusIdle;
 
 export function LocationMapModal({
   visible,
@@ -239,9 +244,21 @@ export function LocationMapModal({
             {polygonCoords ? (
               <Polygon
                 coordinates={polygonCoords}
-                fillColor={AREA_FILL}
-                strokeColor={AREA_STROKE}
+                // Tinted by whether the worker is inside it — the same question
+                // the badge above the map answers, so the two cannot disagree.
+                fillColor={location.isWithinArea ? AREA_FILL_INSIDE : AREA_FILL_OUTSIDE}
+                strokeColor={location.isWithinArea ? AREA_STROKE_INSIDE : AREA_STROKE_OUTSIDE}
                 strokeWidth={2}
+              />
+            ) : null}
+
+            {/* The lokasi's own pin, so the boundary is identifiable even when
+                the worker is far outside it (or the polygon is off-screen). */}
+            {area?.gps_lat != null && area?.gps_lng != null ? (
+              <Marker
+                coordinate={{ latitude: area.gps_lat, longitude: area.gps_lng }}
+                title={area.name}
+                pinColor={nbColors.statusActive}
               />
             ) : null}
 

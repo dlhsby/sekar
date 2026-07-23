@@ -14,6 +14,9 @@ import type { MenuSection } from '../types/menu.types';
 // Distinct icons (no shared illustration): attendance = clock-check, overtime = clock-plus.
 // "Kehadiran" opens the attendance history list; clock-in/out is reached from there.
 const ABSENSI = { route: 'Attendance', label: 'menu:tiles.attendance', icon: 'clock-check-outline' } as const;
+// "Jadwal Saya" was only reachable from Profil → menu, where nobody looked for it.
+// Every schedulable (clockable) role gets it on the Menu grid too.
+const JADWAL = { route: 'MySchedule', label: 'menu:tiles.mySchedule', icon: 'calendar-month-outline' } as const;
 const LEMBUR = { route: 'Lembur', label: 'menu:tiles.overtime', icon: 'clock-plus-outline' } as const;
 const TUGAS = { route: 'Tasks', label: 'menu:tiles.tasks', icon: 'clipboard-list-outline' } as const;
 const AKTIVITAS = { route: 'Activities', label: 'menu:tiles.activities', icon: 'notebook-outline' } as const;
@@ -29,19 +32,19 @@ const PERANTINGAN_SUBMIT = { route: 'Perantingan', label: 'menu:tiles.pruning', 
 
 const FIELD_OPS: MenuSection = {
   title: 'menu:sections.operations',
-  items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA],
+  items: [ABSENSI, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA],
 };
 
 export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
   // satgas has no Aset / Kinerja access.
-  satgas: [{ title: 'menu:sections.operations', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS] }],
+  satgas: [{ title: 'menu:sections.operations', items: [ABSENSI, JADWAL, LEMBUR, TUGAS, AKTIVITAS] }],
   linmas: [FIELD_OPS],
   korlap: [
-    { title: 'menu:sections.operations', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA] },
+    { title: 'menu:sections.operations', items: [ABSENSI, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA] },
     { title: 'menu:sections.supervision', items: [MONITORING, TIM] },
   ],
   admin_rayon: [
-    { title: 'menu:sections.operations', items: [ABSENSI, LEMBUR, TUGAS, AKTIVITAS, ASET] },
+    { title: 'menu:sections.operations', items: [ABSENSI, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET] },
     { title: 'menu:sections.treeCare', items: [PERANTINGAN_REVIEW, BIBIT] },
     { title: 'menu:sections.reportsMonitoring', items: [LAPORAN, MONITORING] },
   ],

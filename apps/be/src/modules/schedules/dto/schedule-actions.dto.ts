@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsIn, IsOptional, IsString, IsUUID, MaxLength, Matches } from 'class-validator';
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -49,6 +49,26 @@ export class UpdateRosterAreasDto {
   // version — 'v4' wrongly rejects every seeded area id (the "Ubah Location" 400).
   @IsUUID('all', { each: true })
   area_ids: string[];
+
+  @ApiPropertyOptional({
+    description:
+      'Rayon the occurrence is scoped to, or null for a city-wide assignment. ' +
+      'Omit to leave unchanged.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID('all')
+  district_id?: string | null;
+
+  @ApiPropertyOptional({
+    description:
+      'Kawasan the occurrence is scoped to, or null. At most one (ADR-053). ' +
+      'Omit to leave unchanged.',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID('all')
+  region_id?: string | null;
 }
 
 /**

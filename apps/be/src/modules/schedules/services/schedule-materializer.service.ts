@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, MoreThanOrEqual } from 'typeorm';
 import { ScheduleEvent } from '../entities/schedule-event.entity';
 import { Schedule, ScheduleStatus } from '../entities/schedule.entity';
-import { ScheduleLocation } from '../entities/schedule-area.entity';
 import { ScheduleRecurrenceUtil } from '../utils/schedule-recurrence.util';
 import { ScheduleOverlapService } from './schedule-overlap.service';
 import { SystemConfigService } from '../../settings/services/system-config.service';
@@ -35,8 +34,6 @@ export class ScheduleMaterializerService {
   constructor(
     @InjectRepository(Schedule)
     private readonly scheduleRepo: Repository<Schedule>,
-    @InjectRepository(ScheduleLocation)
-    private readonly scheduleLocationRepo: Repository<ScheduleLocation>,
     @InjectRepository(ScheduleEvent)
     private readonly eventRepo: Repository<ScheduleEvent>,
     @InjectRepository(User)
@@ -92,11 +89,31 @@ export class ScheduleMaterializerService {
           });
     const occupied = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
 
+    // A row for the same (user, date, shift) owned by ANOTHER event (or added
+    // manually) makes this occurrence impossible — `UQ_schedules_user_date_shift`
+    // is a partial unique index. Without this the insert threw on every cron run
+    // and boot self-heal, logging a constraint violation for a row that can never
+    // exist. Duplicates are now rejected at assignment time; this covers events
+    // created before that guard.
+    const takenRows =
+      dates.length === 0 || memberIds.length === 0 || !event.shift_definition_id
+        ? []
+        : ((await this.scheduleRepo.find({
+            where: {
+              user_id: In(memberIds),
+              schedule_date: In(dates),
+              shift_definition_id: event.shift_definition_id,
+            },
+            select: ['user_id', 'schedule_date'],
+          })) ?? []);
+    const takenTriples = new Set(takenRows.map((r) => `${r.user_id}:${r.schedule_date}`));
+
     // For each (member, date) tuple, create or skip a schedule row
     for (const memberId of memberIds) {
       for (const dateStr of dates) {
-        if (occupied.has(`${memberId}:${dateStr}`)) {
-          // Tombstone, detached override, or already-materialized occurrence.
+        if (occupied.has(`${memberId}:${dateStr}`) || takenTriples.has(`${memberId}:${dateStr}`)) {
+          // Tombstone, detached override, already-materialized occurrence, or the
+          // same shift already owned by another event / a manual row.
           skipped.push({ user_id: memberId, date: dateStr, reason: 'exists' });
           continue;
         }
@@ -126,6 +143,10 @@ export class ScheduleMaterializerService {
           source: 'event',
           schedule_event_id: event.id,
           region_id: event.scope === 'mobile' ? event.region_id : null,
+          // The occurrence's single place (ADR-053) — was written into the
+          // schedule_locations junction; now it lives on the row, which is what
+          // the uniqueness key indexes.
+          location_id: event.scope === 'static' ? event.location_id : null,
           team_category_id: event.is_team ? event.team_category_id : null,
           district_id,
           created_by: event.created_by,
@@ -142,15 +163,6 @@ export class ScheduleMaterializerService {
             continue;
           }
           throw err;
-        }
-
-        // For static scope, add schedule_locations row
-        if (event.scope === 'static' && event.location_id) {
-          const schedLocation = this.scheduleLocationRepo.create({
-            schedule_id: schedule.id,
-            location_id: event.location_id,
-          });
-          await this.scheduleLocationRepo.save(schedLocation);
         }
 
         created++;

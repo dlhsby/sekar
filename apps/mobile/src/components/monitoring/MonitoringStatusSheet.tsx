@@ -17,6 +17,7 @@ import {
   nbRadius,
   nbSpacing,
   nbShadows,
+  withAlpha,
 } from '../../constants/nbTokens';
 import type { LiveUser, PresenceActivity, UserRole, AbsentUser } from '../../types/models.types';
 import type { AttendanceResponse } from '../../types/api.types';
@@ -38,6 +39,14 @@ interface MonitoringStatusSheetProps {
   onUserPress?: (user: LiveUser) => void;
   /** Today's attendance summary; renders the "Kehadiran" section + detail modal. */
   attendance?: AttendanceResponse | null;
+  /**
+   * Roster lifecycle split for the CURRENT drill scope (ADR-050). The attendance
+   * summary only knows "not clocked in", which lumps a worker still inside their
+   * arrival grace (`belum_hadir`) together with a confirmed no-show
+   * (`tidak_hadir`) — two states that call for completely different action.
+   * Supplied from the monitoring aggregate, which already carries both.
+   */
+  rosterSplit?: { belum_hadir: number; tidak_hadir: number } | null;
   /** Scheduled workers on approved leave today (ADR-050). */
   onLeaveUsers?: AbsentUser[];
 }
@@ -77,6 +86,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
   staffedAreas,
   onUserPress,
   attendance,
+  rosterSplit,
   onLeaveUsers,
 }: MonitoringStatusSheetProps): React.JSX.Element {
   const { t } = useTranslation();
@@ -146,6 +156,8 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
           <KehadiranCard
             clockedIn={attendance.clocked_in_count}
             notClockedIn={attendance.not_clocked_in.meta.total}
+            belumHadir={rosterSplit?.belum_hadir}
+            tidakHadir={rosterSplit?.tidak_hadir}
             onPress={() => setAttendanceOpen(true)}
           />
         </View>
@@ -214,7 +226,7 @@ export const MonitoringStatusSheet = React.memo(function MonitoringStatusSheet({
         <NBText variant="caption" color="gray500">{liveUsers.length} {t('monitoring:status.staffCount')}</NBText>
       </View>
     </>
-  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance, onLeaveUsers, t]);
+  ), [activeActivity, onActivityChange, liveUsers, staffedAreas, totalAreas, staleCount, lastUpdated, attendance, rosterSplit, onLeaveUsers, t]);
 
   const groupLabel = selectedGroup
     ? ROLE_LABELS[selectedGroup.role as UserRole] ?? selectedGroup.role
@@ -310,13 +322,20 @@ function SummaryRow({
 function KehadiranCard({
   clockedIn,
   notClockedIn,
+  belumHadir,
+  tidakHadir,
   onPress,
 }: {
   clockedIn: number;
   notClockedIn: number;
+  belumHadir?: number;
+  tidakHadir?: number;
   onPress: () => void;
 }): React.JSX.Element {
   const { t } = useTranslation();
+  // Show the split when the aggregate supplied it; fall back to the single
+  // lumped counter otherwise (e.g. a scope with no aggregate loaded yet).
+  const hasSplit = belumHadir !== undefined || tidakHadir !== undefined;
 
   return (
     <TouchableOpacity
@@ -329,7 +348,22 @@ function KehadiranCard({
     >
       <View style={styles.attendanceStats}>
         <AttendanceStat tone="ok" value={clockedIn} label={t('monitoring:status.attendance.clockedIn')} />
-        <AttendanceStat tone="warn" value={notClockedIn} label={t('monitoring:status.attendance.notClockedIn')} />
+        {hasSplit ? (
+          <>
+            <AttendanceStat
+              tone="warn"
+              value={belumHadir ?? 0}
+              label={t('monitoring:lifecycle.state.belum_hadir')}
+            />
+            <AttendanceStat
+              tone="bad"
+              value={tidakHadir ?? 0}
+              label={t('monitoring:lifecycle.state.tidak_hadir')}
+            />
+          </>
+        ) : (
+          <AttendanceStat tone="warn" value={notClockedIn} label={t('monitoring:status.attendance.notClockedIn')} />
+        )}
       </View>
       <MaterialCommunityIcons name="chevron-right" size={20} color={nbColors.gray400} />
     </TouchableOpacity>
@@ -341,12 +375,18 @@ function AttendanceStat({
   value,
   label,
 }: {
-  tone: 'ok' | 'warn';
+  tone: 'ok' | 'warn' | 'bad';
   value: number;
   label: string;
 }): React.JSX.Element {
-  const accent = tone === 'ok' ? nbColors.statusActive : nbColors.statusIdle;
-  const bg = tone === 'ok' ? nbColors.statusActiveBg : nbColors.statusIdleBg;
+  const accent =
+    tone === 'ok' ? nbColors.statusActive : tone === 'bad' ? nbColors.danger : nbColors.statusIdle;
+  const bg =
+    tone === 'ok'
+      ? nbColors.statusActiveBg
+      : tone === 'bad'
+        ? withAlpha(nbColors.danger, 0.125)
+        : nbColors.statusIdleBg;
   return (
     <View style={[styles.attendanceStat, { backgroundColor: bg, borderColor: accent }]}>
       <NBText variant="h2" color="black">{String(value)}</NBText>

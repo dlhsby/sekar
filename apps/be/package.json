@@ -19,7 +19,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/demo.ts",
+    "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/demo.ts && ts-node -r tsconfig-paths/register scripts/stage-presence-scenarios.ts",
     "db:seed:staging": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/staging.ts",
     "db:seed:reference": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/reference.ts",
     "db:seed:production": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/production.ts",
@@ -49,7 +49,8 @@
     "test:watch": "jest --watch --forceExit",
     "test:cov": "jest --coverage --forceExit",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:seed:only": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/demo.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1066.0",

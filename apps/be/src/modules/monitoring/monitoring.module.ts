@@ -21,7 +21,7 @@ import { SpecialDayOverride } from '../special-day-overrides/entities/special-da
 import { MonitoringConfig } from './entities/monitoring-config.entity';
 import { UserTrackingStatus } from './entities/user-tracking-status.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
-import { ScheduleLocation } from '../schedules/entities/schedule.entity';
+import {} from '../schedules/entities/schedule.entity';
 import { MonitoringCacheService } from './services/monitoring-cache.service';
 import { MonitoringConfigService } from './services/monitoring-config.service';
 import { StatusCalculatorService } from './services/status-calculator.service';
@@ -63,7 +63,6 @@ import { SettingsModule } from '../settings/settings.module';
       UserTrackingStatus,
       LocationPlant,
       Schedule,
-      ScheduleLocation,
     ]),
     forwardRef(() => EventsModule),
     UserLocationsModule,

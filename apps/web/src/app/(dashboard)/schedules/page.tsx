@@ -80,6 +80,7 @@ import { usePermissions } from '@/lib/auth/usePermissions';
 import { useUser } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
+import { runAction } from '@/lib/hooks/use-action';
 
 /** Calendar range, ordered highest → lowest; drilling zooms in a level. */
 type CalendarView = 'year' | 'month' | 'week' | 'day';
@@ -270,13 +271,31 @@ export default function SchedulesPage() {
     setDetailOpen(true);
   };
 
+  /**
+   * Editing ALWAYS opens the form first.
+   *
+   * An event-backed occurrence used to open "Ubah Yang Mana?" *before* the form,
+   * while a manual row went straight to it — two different flows for the same
+   * button. Worse, it asked for the blast radius before the user knew what they
+   * were changing. The recurrence question now comes on SAVE (see
+   * `onRowEditSaved`), and only when there is a recurrence behind the row.
+   */
   const onDetailEdit = () => {
     setDetailOpen(false);
+    setRowEditOpen(true);
+  };
+
+  /**
+   * The form was submitted. A row backed by a rule now asks which occurrences the
+   * change should touch; a manual row has no rule, so what was just saved is all
+   * there is.
+   */
+  const onRowEditSaved = () => {
+    setRowEditOpen(false);
     if (chosen?.schedule_event_id) {
       setEditChooserOpen(true);
     } else {
-      // Manual/ad-hoc row — no rule behind it, edit the row directly.
-      setRowEditOpen(true);
+      setChosen(null);
     }
   };
 
@@ -292,10 +311,11 @@ export default function SchedulesPage() {
   const onEditScope = (scope: EditScope, fromDate?: string) => {
     setEditChooserOpen(false);
     if (scope === 'this') {
-      setRowEditOpen(true);
-    } else {
-      setEventEdit({ scope, fromDate: fromDate ?? chosen?.schedule_date });
+      // Already saved by the form — this occurrence is detached and done.
+      setChosen(null);
+      return;
     }
+    setEventEdit({ scope, fromDate: fromDate ?? chosen?.schedule_date });
   };
 
   const onDeleteScope = async (scope: EditScope, date?: string) => {
@@ -548,13 +568,26 @@ export default function SchedulesPage() {
           setRowEditOpen(false);
           setChosen(null);
         }}
+        onSaved={onRowEditSaved}
         roster={rowUnderEdit}
         onUpdateShift={async (id, shiftId) => {
-          await updateShift.mutateAsync({ id, shift_definition_id: shiftId });
+          await runAction(() => updateShift.mutateAsync({ id, shift_definition_id: shiftId }), {
+        success: t('common:messages.updated'),
+      });
           refreshCalendar();
         }}
-        onUpdateAreas={async (id, locationIds) => {
-          await updateAreas.mutateAsync({ id, location_ids: locationIds });
+        onUpdateAreas={async (id, locationIds, regionIds, districtId) => {
+          await runAction(
+            () =>
+              updateAreas.mutateAsync({
+                id,
+                location_ids: locationIds,
+                district_id: districtId,
+                // At most one kawasan per occurrence (ADR-053).
+                region_id: regionIds[0] ?? null,
+              }),
+            { success: t('common:messages.updated') },
+          );
           refreshCalendar();
         }}
         shiftLoading={updateShift.isPending}
@@ -562,6 +595,7 @@ export default function SchedulesPage() {
         shifts={shifts}
         allDistricts={districts}
         allAreas={allLocations}
+        allRegions={regions}
       />
 
       <EditScopeChooser

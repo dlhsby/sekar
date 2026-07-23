@@ -64,6 +64,12 @@ export class ScheduleOverlapService {
     const relevant = existingRows.filter(
       (row) =>
         row.shift_definition_id != null &&
+        // SIBLINGS ARE NOT CONFLICTS (ADR-053). Another row for the SAME shift is
+        // the same stretch of time at a different place — the worker covering
+        // lokasi A then lokasi B during one shift. Flagging those as overlapping
+        // would warn on every multi-place day, which is now the normal case. A
+        // genuine conflict is a DIFFERENT shift whose window overlaps.
+        row.shift_definition_id !== shift.id &&
         (!opts?.excludeScheduleId || row.id !== opts.excludeScheduleId) &&
         (!opts?.excludeEventId || row.schedule_event_id !== opts.excludeEventId),
     );

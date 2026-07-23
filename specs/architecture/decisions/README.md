@@ -53,6 +53,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [051](./ADR-051-unified-icon-color-markers.md) | Unified Icon + Color Marker System — one glyph+color pin everywhere; retire marker_image_url | Accepted (impl. in progress) · supersedes image-marker part of 045 |
 | [050](./ADR-050-presence-attendance-model.md) | Presence & Attendance Model — lifecycle · live presence · counting axes | Accepted (impl. Phase 5.4) · supersedes 046's status model · extends 046 · depends on 047/013 |
 | [052](./ADR-052-rayon-to-district-rename.md) | `rayon` → `district` — code/DB English-canonical; UI keeps "Rayon" | Accepted (**implemented** — DB/be/web/mobile) · extends 010 |
+| [053](./ADR-053-schedule-row-per-place.md) | One schedule row = one worker, one shift, one **place**; presence belongs to the worker, not the row | Accepted (in progress) · rests on 050 · settles korlap scope in 046 |
 
 ## By domain
 
@@ -79,5 +80,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **029 extended by 046** — event-sourced status gains the monitorable-vs-scheduled subject model + static/mobile.
 - **046 amended (2026-07-16)** — status model collapsed 5 → 3; retires `inactive`/`missing` + their thresholds, and `outside_area` stops being a status.
 - **046 status model superseded by 050 (2026-07-16)** — the flat status enum splits into three axes (attendance lifecycle · live presence · counting); the six-state lifecycle is *derived*, not stored, so it can't drift the way the 5.3 enum did.
+
+- **046 korlap scope settled by 053 (2026-07-23)** — monitoring coverage is schedule-driven only; the static user assignment stops being a monitoring-scope source.
 
 **Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)

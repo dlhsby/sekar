@@ -12,7 +12,17 @@
     "prevDay": "Previous day",
     "nextDay": "Next day",
     "team": "Team: {{name}}",
-    "projected": "Planned"
+    "projected": "Planned",
+    "statusHint": {
+      "planned": "Scheduled to work — not clocked in yet.",
+      "present": "Clocked in today.",
+      "absent": "Absent — the shift ended with no clock-in.",
+      "leave_sick": "Approved sick leave — not counted as absent.",
+      "leave_annual": "Approved annual leave — not counted as absent.",
+      "leave_permit": "Approved permit — not counted as absent.",
+      "replaced": "Replaced by another worker for the day.",
+      "off": "Day off — no shift today."
+    }
   },
   "status": {
     "present": "Present",

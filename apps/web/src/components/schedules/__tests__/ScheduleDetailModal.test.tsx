@@ -2,7 +2,7 @@
  * Unit tests: ScheduleDetailModal — the read-only detail shown when a schedule
  * is clicked (Ubah/Hapus route onward from here).
  *
- * The interesting logic is the placement line, which must resolve to the
+ * The interesting logic is the assignment line, which must resolve to the
  * DEEPEST geography the occurrence carries (lokasi → kawasan → district), and the
  * permission gating on Ubah/Hapus.
  */
@@ -86,7 +86,7 @@ describe('ScheduleDetailModal', () => {
     expect(screen.getByText(/Tim · Tim Patroli/)).toBeInTheDocument();
   });
 
-  describe('placement resolves to the deepest geography', () => {
+  describe('assignment resolves to the deepest geography', () => {
     it('prefers lokasi', () => {
       setup({
         location: { id: 'loc1', name: 'Taman Bungkul' },

@@ -367,6 +367,25 @@ export default function UsersPage() {
     ]
   );
 
+  /** Toggle a user's active flag, surfacing both outcomes. */
+  const handleToggleActive = useCallback(
+    async (u: User) => {
+      try {
+        if (u.is_active) {
+          await deactivateUser.mutateAsync(u.id);
+          toast.success(t('admin:shared.successDeactivated', { name: u.full_name }));
+        } else {
+          await activateUser.mutateAsync(u.id);
+          toast.success(t('admin:shared.successActivated', { name: u.full_name }));
+        }
+        refetch();
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [activateUser, deactivateUser, refetch, t]
+  );
+
   const rowActions = useCallback(
     (u: User): DataTableRowAction<User>[] => [
       {
@@ -400,7 +419,9 @@ export default function UsersPage() {
         label: u.is_active ? t('admin:users.actionDeactivate') : t('admin:users.actionActivate'),
         icon: Power,
         hidden: !canManage,
-        onClick: () => (u.is_active ? deactivateUser.mutate(u.id) : activateUser.mutate(u.id)),
+        // Same reasoning as the districts/lokasi toggle: `mutate` reported
+        // neither success nor refusal, so the row just sat there.
+        onClick: () => void handleToggleActive(u),
       },
       {
         key: 'delete',
@@ -411,7 +432,7 @@ export default function UsersPage() {
         onClick: () => setUserToDelete(u),
       },
     ],
-    [canManage, deactivateUser, activateUser, t]
+    [canManage, handleToggleActive, t]
   );
 
   return (

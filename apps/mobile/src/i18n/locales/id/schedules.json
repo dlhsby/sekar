@@ -12,7 +12,17 @@
     "prevDay": "Hari sebelumnya",
     "nextDay": "Hari berikutnya",
     "team": "Tim: {{name}}",
-    "projected": "Rencana"
+    "projected": "Rencana",
+    "statusHint": {
+      "planned": "Dijadwalkan bertugas — belum clock in.",
+      "present": "Sudah clock in hari ini.",
+      "absent": "Tidak hadir — jam shift berakhir tanpa clock in.",
+      "leave_sick": "Izin sakit disetujui — tidak dihitung tidak hadir.",
+      "leave_annual": "Cuti disetujui — tidak dihitung tidak hadir.",
+      "leave_permit": "Izin disetujui — tidak dihitung tidak hadir.",
+      "replaced": "Digantikan petugas lain untuk hari ini.",
+      "off": "Libur — tidak ada shift hari ini."
+    }
   },
   "status": {
     "present": "Hadir",

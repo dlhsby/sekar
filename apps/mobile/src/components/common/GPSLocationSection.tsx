@@ -14,8 +14,14 @@ export interface GPSLocationSectionProps {
   onRefresh: () => void;
   error?: string | null;
   isWithinBoundary?: boolean;
-  /** Worker has no assigned area — show a neutral note, not within/outside. */
+  /** Worker has no assigned area at all (ad-hoc) — neutral note, not within/outside. */
   noArea?: boolean;
+  /**
+   * Assigned city/rayon/kawasan-wide: there is no polygon to test against, but
+   * the worker IS assigned. Shown instead of the "no area" note, which was
+   * telling a city-scope satgas he had no assignment.
+   */
+  scopeLabel?: string;
   areaName?: string;
 }
 
@@ -28,6 +34,7 @@ export function GPSLocationSection({
   error,
   isWithinBoundary,
   noArea,
+  scopeLabel,
   areaName,
 }: GPSLocationSectionProps) {
   const { t } = useTranslation('attendance');
@@ -74,7 +81,9 @@ export function GPSLocationSection({
       </View>
 
       {/* Area status alert — neutral note when unassigned, else within/outside */}
-      {hasLocation && noArea ? (
+      {hasLocation && scopeLabel ? (
+        <NBAlert variant="info" message={t('gpsSection.scopeAssigned', { scope: scopeLabel })} />
+      ) : hasLocation && noArea ? (
         <NBAlert variant="info" message={t('gpsSection.noArea')} />
       ) : hasLocation && isWithinBoundary !== undefined ? (
         <View>

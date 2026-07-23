@@ -15,6 +15,7 @@ import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryResponseDto } from './dto/location-history.dto';
 import { UserDaySummaryDto } from './dto/user-day-summary.dto';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
   StaffingSummaryResponseDto,
   StaffingSummaryItemDto,
@@ -322,7 +323,27 @@ export class MonitoringService {
       { name: string; district_id: string; district_name: string; activeCount: number }
     >();
 
+    // Which lokasi each worker is ROSTERED to this shift. Staffing is
+    // `assigned ∧ present` (ADR-053), not `standing here right now`: a satgas
+    // covering A, B and X staffs all three while on duty. Falls back to their
+    // live lokasi for an ad-hoc worker with no roster row.
+    const assignedByUser = await this.statsService.scheduledLocationIdsByUser(
+      TimezoneUtil.jakartaDateString(),
+      currentShift?.id,
+    );
+    const areaMeta = new Map<
+      string,
+      { name: string; district_id: string; district_name: string }
+    >();
+
     for (const w of workers) {
+      if (w.location_id) {
+        areaMeta.set(w.location_id, {
+          name: w.location_name ?? 'Unknown',
+          district_id: w.district_id ?? '',
+          district_name: w.district_name ?? 'Unknown',
+        });
+      }
       if (!w.location_id) continue; // Skip workers without area assignment
       // Only satgas+linmas staff a place (ADR-046). korlap / kepala_rayon /
       // admin_rayon are monitorable — they render on the map — but counting them
@@ -340,7 +361,6 @@ export class MonitoringService {
       // (which walks every lokasi with a requirement), the authoritative coverage view.
       if (!w.is_scheduled) continue;
 
-      const existing = areaMap.get(w.location_id);
       // Staffing counts whoever CLOCKED IN — active + offline — matching the
       // aggregate (`assembleNode`/`countableOnlineByGroup`) and the model: a park
       // is no less staffed because a phone lost GPS. Counting ACTIVE only reported
@@ -348,15 +368,23 @@ export class MonitoringService {
       const clockedIn =
         w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OFFLINE ? 1 : 0;
 
-      if (existing) {
-        existing.activeCount += clockedIn;
-      } else {
-        areaMap.set(w.location_id, {
-          name: w.location_name ?? 'Unknown',
-          district_id: w.district_id ?? '',
-          district_name: w.district_name ?? 'Unknown',
-          activeCount: clockedIn,
-        });
+      // Credit EVERY lokasi this worker is rostered to, not just the one their
+      // GPS lands in. One worker still counts once per lokasi, and never twice
+      // in the same one.
+      const credited = assignedByUser.get(w.user_id) ?? [w.location_id];
+      for (const locationId of credited) {
+        const meta = areaMeta.get(locationId);
+        const existing = areaMap.get(locationId);
+        if (existing) {
+          existing.activeCount += clockedIn;
+        } else {
+          areaMap.set(locationId, {
+            name: meta?.name ?? w.location_name ?? 'Unknown',
+            district_id: meta?.district_id ?? w.district_id ?? '',
+            district_name: meta?.district_name ?? w.district_name ?? 'Unknown',
+            activeCount: clockedIn,
+          });
+        }
       }
     }
 

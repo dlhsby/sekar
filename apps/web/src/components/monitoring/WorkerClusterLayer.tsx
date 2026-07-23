@@ -107,6 +107,8 @@ export function WorkerClusterLayer({
                   adHoc: !r.is_scheduled,
                   selected,
                   markerIcon: r.role_marker_icon ?? null,
+                  lifecycleState: r.lifecycle_state ?? null,
+                  leaveReason: r.leave_reason ?? null,
                 },
                 { text: r.full_name, className: 'worker-marker-label' }
               )

@@ -13,6 +13,8 @@ export type AddScheduleInput = {
   date: string;
   shift_definition_id?: string | null;
   location_ids?: string[];
+  district_id?: string | null;
+  region_id?: string | null;
 };
 
 /**
@@ -61,15 +63,15 @@ export interface Schedule {
     full_name: string;
     username: string;
   } | null;
-  schedule_areas: Array<{
+  /** Lokasi this occurrence is scoped to — ADR-053: exactly one place per row. */
+  location_id?: string | null;
+  location?: {
     id: string;
-    location_id: string;
-    area: {
-      id: string;
-      name: string;
-      code: string;
-    };
-  }>;
+    name: string;
+    code?: string;
+  } | null;
+  /** Kawasan this occurrence is scoped to (ADR-053: at most one). */
+  region_id?: string | null;
 }
 
 /**
@@ -153,9 +155,18 @@ async function replaceWorker(
 /**
  * Update areas assigned to a daily schedule
  */
-async function updateAreas(id: string, location_ids: string[]): Promise<Schedule> {
+async function updateAreas(
+  id: string,
+  location_ids: string[],
+  district_id?: string | null,
+  region_id?: string | null,
+): Promise<Schedule> {
+  // The endpoint sets the occurrence's whole scope, not just lokasi: omitting a
+  // field leaves it unchanged, so callers that switch scope must send all three.
   const response = await apiClient.patch<Schedule>(`/schedules/${id}/areas`, {
-    location_ids,
+    area_ids: location_ids,
+    ...(district_id !== undefined ? { district_id } : {}),
+    ...(region_id !== undefined ? { region_id } : {}),
   });
   return response.data;
 }
@@ -254,8 +265,17 @@ export function useUpdateRosterAreas() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, location_ids }: { id: string; location_ids: string[] }) =>
-      updateAreas(id, location_ids),
+    mutationFn: ({
+      id,
+      location_ids,
+      district_id,
+      region_id,
+    }: {
+      id: string;
+      location_ids: string[];
+      district_id?: string | null;
+      region_id?: string | null;
+    }) => updateAreas(id, location_ids, district_id, region_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
     },

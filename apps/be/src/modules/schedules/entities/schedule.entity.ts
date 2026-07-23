@@ -14,10 +14,10 @@ import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { District } from '../../districts/entities/district.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
+import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { ScheduleEvent } from './schedule-event.entity';
-import { ScheduleLocation } from './schedule-area.entity';
 
 /**
  * Per-worker, per-WIB-day roster status.
@@ -51,10 +51,11 @@ export type ScheduleSource = 'template' | 'manual' | 'event';
 @Index('IDX_schedules_rayon_date', ['district_id', 'schedule_date'])
 // Roster uniqueness is now time-based, not per (user, day): a user can have
 // multiple non-overlapping shifts. The overlap guard enforces real conflicts.
-@Index('UQ_schedules_user_date_shift', ['user_id', 'schedule_date', 'shift_definition_id'], {
-  unique: true,
-  where: '"deleted_at" IS NULL',
-})
+// ADR-053: the real key is (user, date, shift, PLACE) and is a partial index over
+// COALESCE(location_id, region_id, district_id, nil) — see migration 17517.
+// TypeORM cannot express that, so it is NOT declared here; synchronize must not
+// recreate the old 3-column form.
+@Index('IDX_schedules_location', ['location_id'])
 export class Schedule {
   @ApiProperty({ description: 'Unique identifier' })
   @PrimaryGeneratedColumn('uuid')
@@ -113,6 +114,15 @@ export class Schedule {
   })
   @Column({ type: 'uuid', nullable: true })
   region_id: string | null;
+
+  @ApiProperty({
+    description:
+      'Lokasi this occurrence is scoped to. ADR-053: a row has ONE place. Part ' +
+      'of the uniqueness key (user, date, shift, place).',
+    required: false,
+  })
+  @Column({ type: 'uuid', nullable: true })
+  location_id: string | null;
 
   @ApiProperty({
     description: 'Team type (crew category; for team events)',
@@ -183,8 +193,7 @@ export class Schedule {
   @JoinColumn({ name: 'team_category_id' })
   team_category?: TeamCategory | null;
 
-  @OneToMany(() => ScheduleLocation, (dsa) => dsa.schedule, { cascade: true })
-  schedule_areas: ScheduleLocation[];
+  @ManyToOne(() => Location, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'location_id' })
+  location?: Location | null;
 }
-
-export { ScheduleLocation };

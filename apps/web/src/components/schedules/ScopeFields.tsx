@@ -72,7 +72,7 @@ export function ScopeFields({
           disabled={lockScope}
         />
 
-        {/* Placement cascade, gated by scope:
+        {/* Assignment cascade, gated by scope:
             district → Rayon · region → Rayon+Kawasan · location → Rayon+Kawasan+Lokasi.
             `formScope &&` matters now that '' is the un-chosen state — without
             it the district field appears before a scope has been picked. */}
@@ -123,6 +123,9 @@ export function ScopeFields({
         )}
 
         {formScope === 'location' && formDistrict && (
+          // ONE lokasi per assignment (ADR-053). Covering more ground means
+          // another schedule row, not a set inside this one — a row spanning
+          // several lokasi has no single home on a geography-organised board.
           <FormCombobox
             label={t('schedules:calendar.event.locationLabel')}
             options={locationOptions}

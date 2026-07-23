@@ -16,6 +16,7 @@ import Link from 'next/link';
 import { ArrowLeft, Check, X } from 'lucide-react';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
+import { runAction } from '@/lib/hooks/use-action';
 
 interface ActivityDetailPageProps {
   params: Promise<{ id: string }>;
@@ -68,13 +69,17 @@ export default function ActivityDetailPage({ params }: ActivityDetailPageProps) 
   const canApprove = hasRole(user.role, ACTIVITY_APPROVER_ROLES) && activity.status === 'pending';
 
   const handleApprove = async () => {
-    await approveMutation.mutateAsync(activityId);
+    await runAction(() => approveMutation.mutateAsync(activityId), {
+      success: t('common:messages.approved'),
+    });
     router.push('/activities');
   };
 
   const handleReject = async () => {
     if (!rejectReason.trim()) return;
-    await rejectMutation.mutateAsync({ id: activityId, reason: rejectReason });
+    await runAction(() => rejectMutation.mutateAsync({ id: activityId, reason: rejectReason }), {
+      success: t('common:messages.rejected'),
+    });
     router.push('/activities');
   };
 

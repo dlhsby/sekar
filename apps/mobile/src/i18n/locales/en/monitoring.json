@@ -316,6 +316,20 @@
     "late": "Late",
     "luarJadwal": "Off-schedule",
     "lembur": "Overtime",
-    "lupaClockOut": "Forgot clock-out"
+    "lupaClockOut": "Forgot clock-out",
+    "state": {
+      "tidak_bertugas": "Off Duty",
+      "belum_hadir": "Not Yet Present",
+      "terlambat": "Late",
+      "bertugas": "On Duty",
+      "pulang": "Clocked Out",
+      "tidak_hadir": "Absent"
+    },
+    "leave": {
+      "cuti": "Annual Leave",
+      "sakit": "Sick",
+      "izin": "Permit",
+      "libur": "Day Off"
+    }
   }
 }

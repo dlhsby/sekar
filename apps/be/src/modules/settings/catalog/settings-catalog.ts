@@ -138,9 +138,11 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     envKey: 'SCHEDULE_MATERIALIZATION_DAYS',
     label: 'Horizon materialisasi jadwal (hari)',
     help: 'Berapa hari ke depan jadwal berulang dibuat (ADR-047)',
-    default: 30,
+    // Two months: a supervisor planning next month must see rows, not an empty
+    // board. 30 days meant the far half of a month-view was always blank.
+    default: 60,
     min: 1,
-    max: 90,
+    max: 180,
   },
   {
     key: 'schedule.min_shift_duration_min',

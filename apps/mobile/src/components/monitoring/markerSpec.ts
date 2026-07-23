@@ -8,15 +8,59 @@
  * colors and the attendance-ratio helpers.
  */
 import { nbColors } from '../../constants/nbTokens';
+import { presenceTone } from '../../utils/statusHelpers';
 import type { AggregateRosterCounts, PresenceActivity } from '../../types/models.types';
 
 /**
  * Worker fill color in the 2-activity presence model: aktif (fresh ping) is
- * green; everything else (idle / missing / offline) collapses to tidak-aktif
- * amber. Ad-hoc styling (hollow/gray) is applied by the marker, not here.
+ * green; everything else collapses to tidak-aktif amber.
+ *
+ * Kept for the node/summary helpers below. Worker PINS use
+ * `presenceMarkerColor`, which reads the full presence model instead of this
+ * single axis — see its note.
  */
 export function workerActivityColor(activity: PresenceActivity): string {
   return activity === 'aktif' ? nbColors.statusActive : nbColors.statusIdle;
+}
+
+/**
+ * Worker pin fill, from THE presence colour standard (`presenceTone`).
+ *
+ * Pins used to be coloured by the activity axis alone — green for a fresh ping,
+ * amber for anything else — with ad-hoc forced grey. That contradicted every
+ * other surface: the same worker could be amber on the map while their schedule
+ * card and roster pill said `terlambat` (orange) or `tidak_hadir` (red), because
+ * those read the lifecycle and the map did not. One worker, one colour, wherever
+ * you look.
+ *
+ * The mobile palette has five tones to the standard's nine, so amber/orange/
+ * yellow share `warn`; the label beside the pin disambiguates.
+ */
+export function presenceMarkerColor(user: {
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
+}): string {
+  switch (
+    presenceTone({
+      lifecycleState: user.lifecycle_state,
+      leaveReason: user.leave_reason,
+      isWithinArea: user.is_within_area,
+      isAdHoc: user.is_scheduled === false,
+    })
+  ) {
+    case 'ok':
+      return nbColors.statusActive;
+    case 'warn':
+      return nbColors.statusIdle;
+    case 'bad':
+      return nbColors.dangerDark;
+    case 'info':
+      return nbColors.navy;
+    default:
+      return nbColors.gray500;
+  }
 }
 
 export type HealthLevel = 'ok' | 'short' | 'none' | 'empty';

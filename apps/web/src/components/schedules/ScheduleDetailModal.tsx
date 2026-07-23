@@ -70,7 +70,7 @@ export function ScheduleDetailModal({
   const districtName = occurrence.district_id
     ? (districts.find((r) => r.id === occurrence.district_id)?.name ?? '')
     : '';
-  const placement = occurrence.location
+  const assignment = occurrence.location
     ? `${t('schedules:filters.locationLabel')} · ${occurrence.location.name}`
     : occurrence.region
       ? `${t('schedules:filters.regionLabel')} · ${occurrence.region.name}`
@@ -116,7 +116,7 @@ export function ScheduleDetailModal({
         <DialogBody className="px-6">
           <dl className="grid gap-3">
             <Row k={t('schedules:filters.shiftLabel')} v={shiftLine} />
-            <Row k={t('schedules:detail.placement')} v={placement} />
+            <Row k={t('schedules:detail.assignment')} v={assignment} />
             {recurrence && <Row k={t('schedules:calendar.event.recurrenceLabel')} v={recurrence} />}
             {endDate && <Row k={t('schedules:detail.endDate')} v={endDate} />}
             {isTeam && event?.pic_user?.full_name && (

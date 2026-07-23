@@ -24,11 +24,7 @@ import {
   AggregateRosterCountsDto,
   PresenceBreakdownDto,
 } from '../dto/aggregate.dto';
-import {
-  Schedule,
-  ScheduleStatus,
-  ScheduleLocation,
-} from '../../schedules/entities/schedule.entity';
+import { Schedule, ScheduleStatus } from '../../schedules/entities/schedule.entity';
 import {
   AssignmentScope,
   ASSIGNMENT_SCOPE_RANK,
@@ -82,8 +78,6 @@ export class MonitoringStatsService {
     private readonly trackingRepository: Repository<UserTrackingStatus>,
     @InjectRepository(Schedule)
     private readonly scheduleRepository: Repository<Schedule>,
-    @InjectRepository(ScheduleLocation)
-    private readonly scheduleAreaRepository: Repository<ScheduleLocation>,
     private readonly dayTypeService: DayTypeService,
     // Optional: short-TTL response cache. Absent in unit specs; present at runtime.
     @Optional()
@@ -94,7 +88,9 @@ export class MonitoringStatsService {
     this.logger.log('Generating city-wide statistics');
 
     const today = this.getTodayRange();
-    const districts = await this.districtRepository.find();
+    // Deactivated masters are hidden from monitoring — they must not add empty
+    // cards or dilute the city roll-up.
+    const districts = await this.districtRepository.find({ where: { is_active: true } });
     const districtSummaries = await Promise.all(
       districts.map((district) => this.getDistrictSummary(district)),
     );
@@ -149,7 +145,7 @@ export class MonitoringStatsService {
 
     const today = this.getTodayRange();
     const areas = await this.areaRepository.find({
-      where: { district_id: districtId },
+      where: { district_id: districtId, is_active: true },
       relations: ['locationType'],
     });
 
@@ -457,7 +453,7 @@ export class MonitoringStatsService {
     clockedInSet: Set<string>,
     beforeGrace: boolean,
   ): Promise<AggregateNodeDto[]> {
-    const districts = await this.districtRepository.find();
+    const districts = await this.districtRepository.find({ where: { is_active: true } });
 
     const areas = await this.areaRepository.find({
       where: { is_active: true },
@@ -1040,8 +1036,8 @@ export class MonitoringStatsService {
 
   /**
    * The SCOPE of each user's current-shift schedule, so the map/list can show a
-   * worker only at their matching drill level. A schedule scoped to a lokasi
-   * (`schedule_locations`) is `location`; else `region_id` → `region`;
+   * worker only at their matching drill level. A schedule with a `location_id` is
+   * `location`; else `region_id` → `region`;
    * else `district_id` → `district`; else `city` (city-wide / unassigned). Most
    * specific wins if a schedule somehow carries several. Returns user_id →
    * `{ scope, scope_id }`.
@@ -1054,27 +1050,23 @@ export class MonitoringStatsService {
     const today = TimezoneUtil.jakartaDateString();
     const rows = (await this.scheduleRepository
       .createQueryBuilder('s')
-      .leftJoin('schedule_locations', 'sl', 'sl.schedule_id = s.id')
       .select('s.user_id', 'user_id')
       .addSelect('s.district_id', 'district_id')
       .addSelect('s.region_id', 'region_id')
-      .addSelect('sl.location_id', 'location_id')
-      .addSelect('sl.id', 'sl_id')
+      .addSelect('s.location_id', 'location_id')
       .where('s.schedule_date = :today', { today })
       .andWhere('s.status IN (:...statuses)', {
         statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
       })
       .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
       .andWhere('s.deleted_at IS NULL')
-      .orderBy('sl.id', 'ASC')
       .getRawMany()) as Array<{
       user_id: string;
       district_id: string | null;
       region_id: string | null;
       location_id: string | null;
-      sl_id: string | null;
     }>;
-    // ORDER BY sl.id keeps output deterministic when a user has multiple rows at
+    // Deterministic when a user holds several rows at
     // the same depth; ASSIGNMENT_SCOPE_RANK picks the deepest across rows.
     for (const r of rows) {
       const resolved: DisplayScope = r.location_id
@@ -1093,7 +1085,7 @@ export class MonitoringStatsService {
         ) {
           this.logger.warn(
             `User ${r.user_id} has multiple locations at same depth (${resolved.scope}). ` +
-              `Keeping first by sl.id: ${prev.scope_id}, discarding: ${resolved.scope_id}`,
+              `Keeping first seen: ${prev.scope_id}, discarding: ${resolved.scope_id}`,
           );
         }
         map.set(r.user_id, resolved);
@@ -1159,10 +1151,10 @@ export class MonitoringStatsService {
     const today = TimezoneUtil.jakartaDateString();
     const rows = (await this.scheduleRepository
       .createQueryBuilder('s')
-      .leftJoin('schedule_locations', 'sl', 'sl.schedule_id = s.id')
+
       .select('s.district_id', 'district_id')
       .addSelect('s.region_id', 'region_id')
-      .addSelect('sl.location_id', 'location_id')
+      .addSelect('s.location_id', 'location_id')
       .where('s.user_id = :userId', { userId })
       .andWhere('s.schedule_date = :today', { today })
       .andWhere('s.status IN (:...statuses)', {
@@ -1180,7 +1172,7 @@ export class MonitoringStatsService {
     const districtIds = new Set<string>();
     for (const r of rows) {
       if (r.location_id) locationIds.add(r.location_id);
-      // A region- or district-scoped occurrence carries no sl.location_id; record
+      // A region- or district-scoped occurrence carries no location_id; record
       // the coarser scope so coverage can expand it to member lokasi / the district.
       else if (r.region_id) regionIds.add(r.region_id);
       else if (r.district_id) districtIds.add(r.district_id);
@@ -1287,9 +1279,48 @@ export class MonitoringStatsService {
   }
 
   /**
+   * `user_id` → every lokasi they are rostered to for the current shift today.
+   *
+   * The inverse of `scheduledUserSetsByGroup('location')`, and the input staffing
+   * needs under ADR-053: a worker covering three lokasi in one shift is *expected*
+   * at all three, so all three are staffed while they are on duty — even though
+   * their GPS can only put them in one at a time. Keying staffing off live
+   * position instead marked the other two understaffed while their satgas was
+   * legitimately at the first.
+   */
+  async scheduledLocationIdsByUser(
+    today: string,
+    shiftDefinitionId: string | undefined,
+  ): Promise<Map<string, string[]>> {
+    const map = new Map<string, string[]>();
+    if (!shiftDefinitionId) return map;
+    const rows = (await this.scheduleRepository
+      .createQueryBuilder('s')
+      .select('s.user_id', 'user_id')
+      .addSelect('s.location_id', 'location_id')
+      .where('s.schedule_date = :today', { today })
+      .andWhere('s.location_id IS NOT NULL')
+      .andWhere('s.status IN (:...statuses)', {
+        statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
+      })
+      .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
+      .andWhere('s.deleted_at IS NULL')
+      .getRawMany()) as Array<{ user_id: string; location_id: string }>;
+    for (const r of rows) {
+      const list = map.get(r.user_id);
+      if (list) {
+        if (!list.includes(r.location_id)) list.push(r.location_id);
+      } else {
+        map.set(r.user_id, [r.location_id]);
+      }
+    }
+    return map;
+  }
+
+  /**
    * Distinct rostered (planned/present) user ids for today, grouped by district,
-   * region, or location. Location grouping goes through the schedule_areas join
-   * (a worker can be assigned to several areas in a day).
+   * region, or location. One place per row (ADR-053), so location grouping is a
+   * plain column — a worker covering several lokasi holds several rows.
    */
   private async scheduledUserSetsByGroup(
     groupBy: 'district' | 'location' | 'region',
@@ -1337,15 +1368,14 @@ export class MonitoringStatsService {
 
     const locationIds = opts.locationIds ?? [];
     if (locationIds.length === 0) return map;
-    const rows = await this.scheduleAreaRepository
-      .createQueryBuilder('sa')
-      .innerJoin('sa.schedule', 's')
-      .select('sa.location_id', 'group_id')
+    const rows = await this.scheduleRepository
+      .createQueryBuilder('s')
+      .select('s.location_id', 'group_id')
       .addSelect('s.user_id', 'user_id')
       .where('s.schedule_date = :today', { today })
       .andWhere('s.status IN (:...statuses)', { statuses })
       .andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId })
-      .andWhere('sa.location_id IN (:...locationIds)', { locationIds })
+      .andWhere('s.location_id IN (:...locationIds)', { locationIds })
       .andWhere('s.deleted_at IS NULL')
       .getRawMany();
     for (const r of rows) this.addToSetMap(map, r.group_id, r.user_id);
@@ -1465,7 +1495,9 @@ export class MonitoringStatsService {
   }
 
   async getDistrictSummary(district: District): Promise<DistrictSummaryDto> {
-    const areas = await this.areaRepository.find({ where: { district_id: district.id } });
+    const areas = await this.areaRepository.find({
+      where: { district_id: district.id, is_active: true },
+    });
     const locationIds = areas.map((a) => a.id);
     const workerCount = await this.countWorkersByAreaIds(locationIds);
     const workersOnline = await this.countOnlineWorkersByAreaIds(locationIds);
@@ -1769,7 +1801,7 @@ export class MonitoringStatsService {
     level?: 'district' | 'area';
   }): Promise<BoundariesResponseDto> {
     const level = filters?.level ?? 'area';
-    const districtWhere: Record<string, any> = {};
+    const districtWhere: Record<string, any> = { is_active: true };
     if (filters?.district_id) {
       districtWhere.id = filters.district_id;
     }
@@ -1835,7 +1867,9 @@ export class MonitoringStatsService {
 
         // Kawasan (region) outlines within this district — drawn tinted at district zoom.
         const regionEntities =
-          (await this.regionRepository.find({ where: { district_id: district.id } })) ?? [];
+          (await this.regionRepository.find({
+            where: { district_id: district.id, is_active: true },
+          })) ?? [];
         const regionBoundaries: RegionBoundaryDto[] = regionEntities.map((rg) => ({
           id: rg.id,
           name: rg.name,

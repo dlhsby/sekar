@@ -86,7 +86,9 @@ export function AsyncUserCombobox({
   // reflow as a role is chosen, but an un-narrowed query would pull the whole
   // roster — the exact cost the role step exists to avoid.
   const { data, isFetching } = useUsers(
-    { search: debounced || undefined, roles, page: 1, limit },
+    // Active accounts only: this picker assigns work (schedules, teams, tasks),
+    // and a deactivated account must not be assignable.
+    { search: debounced || undefined, roles, is_active: true, page: 1, limit },
     { enabled: !disabled }
   );
   const raw = React.useMemo(() => data?.data ?? [], [data]);
