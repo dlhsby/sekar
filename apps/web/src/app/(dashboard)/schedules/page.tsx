@@ -40,6 +40,7 @@ import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard, type AssignContext } from '@/components/schedules/DayBoard';
 import { UnscheduledWorkersSheet } from '@/components/schedules/UnscheduledWorkersSheet';
+import { unscheduledKeys } from '@/lib/api/unscheduled';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
 import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMapModal';
@@ -118,6 +119,13 @@ export default function SchedulesPage() {
   /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
   const [unscheduledOpen, setUnscheduledOpen] = useState(false);
   const [createUserId, setCreateUserId] = useState<string | undefined>();
+  /**
+   * Buat Jadwal was opened FROM the gap panel, so closing it — saved or
+   * cancelled — should hand the operator back to the list. Filling a day means
+   * placing several people, and bouncing to the board after each one turns one
+   * task into N round trips.
+   */
+  const [returnToUnscheduled, setReturnToUnscheduled] = useState(false);
   // The Year view spans >62 days (the range API's cap) so it doesn't fetch
   // occurrences — it's a month picker until an aggregate endpoint exists.
   const fetchOccurrences = calendarView !== 'year';
@@ -176,6 +184,15 @@ export default function SchedulesPage() {
     // gap panel would haunt the next Buat Jadwal opened from anywhere else.
     setCreateUserId(userId);
     setCreateOpen(true);
+  };
+
+  /** Close Buat Jadwal, returning to the gap panel when it came from there. */
+  const closeCreate = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open && returnToUnscheduled) {
+      setReturnToUnscheduled(false);
+      setUnscheduledOpen(true);
+    }
   };
 
   // ── Occurrence click → detail → edit/delete flows ────────────────────────
@@ -278,8 +295,13 @@ export default function SchedulesPage() {
   const deleteRow = useDeleteSchedule();
   const deleteEvent = useDeleteScheduleEvent();
 
-  const refreshCalendar = () =>
-    queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
+  const refreshCalendar = async () => {
+    await queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
+    // The gap panel is derived from the same rosters, so a schedule written
+    // anywhere must invalidate it too — otherwise returning to the list after a
+    // save shows the worker you just placed still sitting there.
+    await queryClient.invalidateQueries({ queryKey: unscheduledKeys.all });
+  };
 
   // Clicking a schedule opens a read-only detail first (Google-Calendar style),
   // not the scope prompt. Ubah/Hapus route onward from there.
@@ -603,7 +625,7 @@ export default function SchedulesPage() {
       {createOpen && (
         <ScheduleEventModal
           open={createOpen}
-          onOpenChange={setCreateOpen}
+          onOpenChange={closeCreate}
           initialDate={createDate}
           initialDistrictId={createCtx?.district_id}
           initialRegionId={createCtx?.region_id}
@@ -613,6 +635,9 @@ export default function SchedulesPage() {
           initialTeam={createCtx?.team}
           initialRole={createCtx?.role}
           initialUserId={createUserId}
+          // From the gap panel the geography/shift are the panel's FILTERS, not
+          // a clicked board cell — a prefill to adjust, not a fact to obey.
+          lockPrefill={!returnToUnscheduled}
           onSuccess={refreshCalendar}
         />
       )}
@@ -661,16 +686,19 @@ export default function SchedulesPage() {
         regions={regions}
         locations={allLocations}
         onSchedule={(worker, target) => {
-          // Hand off to the normal create flow, prefilled with the worker AND
-          // the whole target slot — the filters already said where this is
-          // going, so the admin should not have to say it twice. Falls back to
-          // the worker's own rayon when the target left rayon open.
+          // Hand off to the normal create flow. The WORKER and their role are
+          // facts — they were picked from the list — so they lock. The target is
+          // a suggestion: it prefills but stays editable (`lockPrefill={false}`),
+          // because the filters describe where the operator was looking, not
+          // necessarily where this particular person should go.
           setUnscheduledOpen(false);
+          setReturnToUnscheduled(true);
           openCreate(
             target.date,
             {
               shiftId: target.shiftId ?? '',
-              district_id: target.districtId ?? worker.district_id ?? undefined,
+              role: worker.role,
+              district_id: target.districtId ?? undefined,
               region_id: target.regionId ?? undefined,
               location_id: target.locationId ?? undefined,
             },

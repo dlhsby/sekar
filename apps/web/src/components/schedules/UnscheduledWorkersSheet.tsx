@@ -25,6 +25,10 @@ import {
   type ScheduleWorkerRole,
 } from '@/lib/api/unscheduled';
 import { getErrorMessage } from '@/lib/api/client';
+import { byRoleRank } from '@/components/schedules/ScheduleEventModal';
+
+/** The three roles a day's roster is built from (ADR-054 §4). */
+const SCHEDULABLE_ROLES: ScheduleWorkerRole[] = ['satgas', 'linmas', 'korlap'];
 
 interface UnscheduledWorkersSheetProps {
   open: boolean;
@@ -168,7 +172,7 @@ export function UnscheduledWorkersSheet({
         meta: {
           label: t('schedules:unscheduled.columnRole'),
           filterVariant: 'enum',
-          filterOptions: (['satgas', 'linmas', 'korlap'] as const).map((r) => ({
+          filterOptions: [...SCHEDULABLE_ROLES].sort(byRoleRank).map((r) => ({
             value: t(`roles:${r}`),
             label: t(`roles:${r}`),
           })),
@@ -225,32 +229,46 @@ export function UnscheduledWorkersSheet({
     ],
     [districts, t],
   );
-  // Kawasan narrows within the chosen rayon; lokasi within the chosen kawasan,
-  // falling back to the rayon so a district-direct lokasi (region_id null) stays
-  // reachable — the Rayon Taman Aktif case.
+  /**
+   * Strict cascade: a child lists NOTHING until its parent is chosen.
+   *
+   * Dumping every kawasan in the city into one select is not a filter, it is a
+   * haystack — and most entries would describe a slot outside the rayon you
+   * already picked. Each level therefore offers only "Semua …" until narrowed
+   * from above, which is also the honest default: no target set at that level.
+   */
   const regionOptions = useMemo(
     () => [
       { value: 'all', label: t('schedules:unscheduled.allRegions') },
-      ...regions
-        .filter((r) => districtId === 'all' || r.district_id === districtId)
-        .map((r) => ({ value: r.id, label: r.name })),
+      ...(districtId === 'all'
+        ? []
+        : regions
+            .filter((r) => r.district_id === districtId)
+            .map((r) => ({ value: r.id, label: r.name }))),
     ],
     [regions, districtId, t],
   );
   const locationOptions = useMemo(
     () => [
       { value: 'all', label: t('schedules:unscheduled.allLocations') },
-      ...locations
-        .filter((l) => districtId === 'all' || l.district_id === districtId)
-        .filter((l) => regionId === 'all' || l.region_id === regionId)
-        .map((l) => ({ value: l.id, label: l.name })),
+      // Kawasan NARROWS but never gates: Rayon Taman Aktif hangs its lokasi
+      // straight off the rayon (`region_id` null), so requiring a kawasan first
+      // would make those lokasi unreachable — the same rule ScopeFields follows.
+      ...(districtId === 'all'
+        ? []
+        : locations
+            .filter((l) => l.district_id === districtId)
+            .filter((l) => regionId === 'all' || l.region_id === regionId)
+            .map((l) => ({ value: l.id, label: l.name }))),
     ],
     [locations, districtId, regionId, t],
   );
   const roleOptions = useMemo(
     () => [
       { value: 'all', label: t('schedules:unscheduled.allRoles') },
-      ...(['satgas', 'linmas', 'korlap'] as const).map((r) => ({
+      // Highest rank first (korlap → linmas → satgas), matching every other role
+      // picker rather than an arbitrary source order.
+      ...[...SCHEDULABLE_ROLES].sort(byRoleRank).map((r) => ({
         value: r,
         label: t(`roles:${r}`),
       })),

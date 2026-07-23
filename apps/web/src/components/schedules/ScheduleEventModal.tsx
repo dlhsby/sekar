@@ -72,6 +72,17 @@ export interface ScheduleEventModalProps {
    * Implies an individual assignment, so `kind` and `role` follow from it.
    */
   initialUserId?: string;
+  /**
+   * Whether the SHIFT and GEOGRAPHY prefills are facts or suggestions.
+   *
+   * From the board's "+ Tugaskan" they are facts — the operator clicked a
+   * specific cell — so they lock. From "Belum Dijadwalkan" they are the panel's
+   * filters, which describe a target the operator may well revise once they see
+   * the form; locking them there turns a helpful prefill into a dead end.
+   * The WORKER and their role stay locked either way: those come from an
+   * explicit person choice, not a filter.
+   */
+  lockPrefill?: boolean;
   onSuccess?: () => void;
 }
 
@@ -286,6 +297,7 @@ export function ScheduleEventModal({
   initialTeam,
   initialRole,
   initialUserId,
+  lockPrefill = true,
   onSuccess,
 }: ScheduleEventModalProps) {
   const { t } = useTranslation(['schedules', 'common', 'validation', 'roles']);
@@ -417,13 +429,13 @@ export function ScheduleEventModal({
    * editable invites a silent mismatch between the cell clicked and the schedule
    * saved. Only the genuinely open fields stay fillable.
    */
-  const lockShift = !isEditing && !!initialShiftId;
-  const lockKind = !isEditing && !!(initialTeam || initialRole);
+  const lockShift = !isEditing && lockPrefill && !!initialShiftId;
+  const lockKind = !isEditing && !!(initialTeam || initialRole || initialUserId);
   const lockRole = !isEditing && !!initialRole;
-  const lockScope = !isEditing && !!(lockGeoScope || initialCityWide);
-  const lockDistrict = !isEditing && !!initialDistrictId;
-  const lockRegion = !isEditing && !!initialRegionId;
-  const lockLocation = !isEditing && !!initialLocationId;
+  const lockScope = !isEditing && lockPrefill && !!(lockGeoScope || initialCityWide);
+  const lockDistrict = !isEditing && lockPrefill && !!initialDistrictId;
+  const lockRegion = !isEditing && lockPrefill && !!initialRegionId;
+  const lockLocation = !isEditing && lockPrefill && !!initialLocationId;
   const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
     ...(lockGeoScope
       ? []
