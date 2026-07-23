@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/notifications';
 import { formatRelativeTime } from '@/lib/utils/time';
 import { cn } from '@/lib/utils/cn';
+import { runAction } from '@/lib/hooks/use-action';
 
 type NotifCategory = 'all' | 'task' | 'activity' | 'overtime' | 'system';
 
@@ -81,7 +82,11 @@ export default function NotificationsPage() {
               size="sm"
               leftIcon={<CheckCheck className="size-4" />}
               loading={markAll.isPending}
-              onClick={() => markAll.mutate()}
+              onClick={() =>
+                void runAction(() => markAll.mutateAsync(), {
+                  success: t('common:messages.markedRead'),
+                })
+              }
             >
               {t('list.markAllRead')}
             </Button>

@@ -20,7 +20,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { SchedulesService, type RangeFilters } from './schedules.service';
+import { SchedulesService, SCHEDULABLE_WORKER_ROLES, type RangeFilters } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -58,6 +58,23 @@ export class SchedulesController {
     return user.role === UserRole.KEPALA_RAYON || user.role === UserRole.ADMIN_RAYON;
   }
 
+  /**
+   * Every roster row for a day, not just the most relevant one.
+   *
+   * Under ADR-053 a worker can hold several rows in one shift (lokasi A, then
+   * lokasi B, then a kawasan). `GET /schedules/my` still answers "what am I on
+   * right now" with a single row — the clock-in screen needs exactly one — but
+   * anything that LISTS the day (the mobile Jadwal Saya card, the day view) has
+   * to see all of them or it silently hides assignments.
+   */
+  @Get('my/day')
+  @ApiOperation({ summary: "All of the caller's roster rows for a day (defaults to today, WIB)" })
+  @ApiQuery({ name: 'date', required: false, description: 'WIB day (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, type: [Schedule] })
+  getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
+    return this.service.findAllByUserAndDate(user.id, date ?? TimezoneUtil.jakartaDateString());
+  }
+
   @Get('my')
   @ApiOperation({
     summary:
@@ -70,8 +87,10 @@ export class SchedulesController {
   })
   @ApiResponse({ status: 200, type: Schedule })
   getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
-    const day = date ?? TimezoneUtil.jakartaDateString();
-    return this.service.findByUserAndDate(user.id, day);
+    // No date → "what am I on right now", which at 03:00 is still yesterday's
+    // cross-midnight shift. An explicit date stays a plain calendar-day lookup.
+    if (!date) return this.service.findCurrentForUser(user.id);
+    return this.service.findByUserAndDate(user.id, date);
   }
 
   @Get('date/:date')
@@ -94,6 +113,74 @@ export class SchedulesController {
         : Promise.resolve([]);
     }
     return this.service.findByDate(date, districtId);
+  }
+
+  /**
+   * The complement of the board: who is NOT on `date`'s roster (ADR-054).
+   *
+   * Read-only. Placing someone still goes through the normal create flow, so
+   * this adds no write path and no new permission — the same roles that may
+   * build a roster may ask what it is missing.
+   */
+  @Get('unscheduled')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({
+    summary:
+      'Workers with no occurrence on a date (ADR-054). Projected occurrences count as scheduled; ' +
+      'excused rows (off/leave) are reported separately as unavailable. satgas/linmas/korlap only.',
+  })
+  @ApiQuery({ name: 'date', example: '2026-07-23' })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false, description: 'Narrow to one shift' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'role', required: false, description: 'Repeatable: satgas|linmas|korlap' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Match on full name, username, or a team the worker is scheduled on that day',
+  })
+  getUnscheduled(
+    @GetUser() user: User,
+    @Query('date') date: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('role') role?: string | string[],
+    @Query('q') q?: string,
+  ) {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be YYYY-MM-DD');
+    }
+    // An unknown role in the query is DROPPED, not honoured: the filter can only
+    // ever narrow within the three schedulable roles (ADR-054 §4).
+    const roles = (Array.isArray(role) ? role : role ? [role] : [])
+      .map((r) => r as UserRole)
+      .filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
+    // Rayon-scoped callers see their own district's WORKERS only, whatever they
+    // ask for — same rule as `getByDate`. This goes in as `visibleDistrictId`,
+    // NOT as `districtId`: the latter describes the slot being filled and no
+    // longer narrows the workforce, so reusing it here silently stopped scoping
+    // anything. A scoped user with no district sees nothing rather than falling
+    // through to every rayon.
+    const scoped = this.isDistrictScoped(user);
+    if (scoped && !user.district_id) {
+      return Promise.resolve({
+        date,
+        shift_definition_id: shiftDefinitionId ?? null,
+        unscheduled: [],
+        unavailable: [],
+        totals: { unscheduled: 0, unavailable: 0, scheduled: 0, workforce: 0, matched: 0 },
+      });
+    }
+    return this.service.findUnscheduled(date, {
+      shiftDefinitionId: shiftDefinitionId ?? null,
+      districtId: districtId ?? null,
+      visibleDistrictId: scoped ? (user.district_id as string) : null,
+      regionId: regionId ?? null,
+      locationId: locationId ?? null,
+      roles: roles.length ? roles : null,
+      q: q ?? null,
+    });
   }
 
   @Get('range')
@@ -268,14 +355,17 @@ export class SchedulesController {
 
   @Patch(':id/areas')
   @Roles(...ROSTER_EDITORS)
-  @ApiOperation({ summary: 'Set the areas for the day (0..N)' })
+  @ApiOperation({
+    summary:
+      'Set the place for the day — at most one lokasi, or one kawasan, plus the parent rayon (ADR-053)',
+  })
   @ApiResponse({ status: 200, type: Schedule })
   async updateAreas(
     @Param('id') id: string,
     @Body() dto: UpdateRosterAreasDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
-    return this.service.updateAreas(id, dto.area_ids, user);
+    return this.service.updateAreas(id, dto.area_ids, user, dto.district_id, dto.region_id);
   }
 
   @Patch(':id/shift')

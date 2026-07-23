@@ -152,7 +152,12 @@ function FillControl({
   );
 }
 
-function OpacityField({
+/**
+ * 0–1 opacity slider with a live percentage readout. Exported so single-colour
+ * entities (team categories) get the identical control instead of a second
+ * hand-rolled slider that would drift from this one.
+ */
+export function OpacityField({
   label,
   value,
   defaultValue = 0.25,

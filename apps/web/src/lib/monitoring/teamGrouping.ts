@@ -17,6 +17,8 @@ export interface TeamGroup {
   team_id: string;
   team_name: string;
   team_color: string | null;
+  /** Alpha for `team_color` (category `marker_opacity`); null → opaque. */
+  team_opacity: number | null;
   team_icon: string | null;
   lat: number;
   lng: number;
@@ -98,6 +100,7 @@ export function groupWorkersByTeam(
             team_id: w.team_id,
             team_name: first.team_name || '',
             team_color: first.team_color ?? null,
+            team_opacity: first.team_opacity ?? null,
             team_icon: first.team_icon ?? null,
             lat,
             lng,

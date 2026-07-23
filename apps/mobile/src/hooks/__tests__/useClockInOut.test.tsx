@@ -28,7 +28,11 @@ jest.mock('../../services/api/shiftsApi', () => ({
   clockOut: jest.fn(),
   getCurrentShift: jest.fn(),
 }));
-jest.mock('../../services/api/schedulesApi', () => ({ getMyRoster: jest.fn() }));
+jest.mock('../../services/api/schedulesApi', () => ({
+  getMyRoster: jest.fn(),
+  // `useTodayRoster` also fetches the full day (ADR-053: several rows per shift).
+  getMyDay: jest.fn().mockResolvedValue({ data: [] }),
+}));
 jest.mock('../../services/permissions', () => ({
   requestClockInPermissions: jest.fn().mockResolvedValue({ success: false }),
   requestCameraPermission: jest.fn(),

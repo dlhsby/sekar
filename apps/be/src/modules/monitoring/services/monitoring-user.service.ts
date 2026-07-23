@@ -34,7 +34,17 @@ import {
   type LeaveReason,
 } from '../lib/presence-lifecycle';
 
-/** Map a roster row's leave status to the presence-model leave reason (ADR-050). */
+/**
+ * Map a roster row's leave status to the presence-model leave reason (ADR-050).
+ *
+ * NOTE: `libur` is deliberately NOT produced here. The obvious candidate,
+ * `ScheduleStatus.OFF`, already feeds `off_schedule_count`, and `on_leave_count`
+ * is computed from an explicit sick/annual/permit list — so mapping OFF here
+ * would make `on_leave_users[]` disagree with `on_leave_count` and double-count
+ * the row across two KPIs. Whether a rest day is "on leave" or "off schedule" is
+ * a product call; until it's made, `libur` stays unreachable from a roster row
+ * (derivePresenceState still handles it if a leave reason ever arrives elsewhere).
+ */
 const SCHEDULE_STATUS_TO_LEAVE: Partial<Record<ScheduleStatus, LeaveReason>> = {
   [ScheduleStatus.LEAVE_SICK]: 'sakit',
   [ScheduleStatus.LEAVE_ANNUAL]: 'cuti',
@@ -85,7 +95,10 @@ export class MonitoringUserService {
       .leftJoinAndSelect('uts.shift_definition', 'sd')
       .leftJoinAndSelect('uts.area', 'area')
       .leftJoin('area.locationType', 'locationType')
-      .where('uts.shift_id IS NOT NULL');
+      .where('uts.shift_id IS NOT NULL')
+      // Deactivated accounts never appear on the live map, even if a stale
+      // tracking row survives their deactivation.
+      .andWhere('user.is_active = TRUE');
 
     if (filters?.location_id) {
       qb.andWhere('uts.location_id = :locationId', { locationId: filters.location_id });
@@ -119,7 +132,7 @@ export class MonitoringUserService {
       qb.andWhere(
         `(user.full_name ILIKE :q OR area.name ILIKE :q OR EXISTS (
             SELECT 1 FROM schedules s
-            JOIN team_categories tc ON tc.id = s.team_category_id
+            JOIN team_categories tc ON tc.id = s.team_category_id AND tc.is_active
             WHERE s.user_id = uts.user_id
               AND s.schedule_date = :teamDate
               AND s.deleted_at IS NULL
@@ -195,6 +208,7 @@ export class MonitoringUserService {
         team_id: teamMap.get(uts.user_id)?.team_id ?? null,
         team_name: teamMap.get(uts.user_id)?.team_name ?? null,
         team_color: teamMap.get(uts.user_id)?.team_color ?? null,
+        team_opacity: teamMap.get(uts.user_id)?.team_opacity ?? null,
         team_icon: teamMap.get(uts.user_id)?.team_icon ?? null,
       };
     });

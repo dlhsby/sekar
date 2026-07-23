@@ -49,6 +49,7 @@ export interface SnapshotWorker {
   team_id?: string | null;
   team_name?: string | null;
   team_color?: string | null;
+  team_opacity?: number | null;
   team_icon?: string | null;
   role_marker_icon?: string | null;
   phone?: string | null;
@@ -97,6 +98,7 @@ export function snapshotWorkerToLiveUser(w: SnapshotWorker): LiveUser {
     team_id: w.team_id ?? null,
     team_name: w.team_name ?? null,
     team_color: w.team_color ?? null,
+    team_opacity: w.team_opacity ?? null,
     team_icon: w.team_icon ?? null,
     role_marker_icon: w.role_marker_icon ?? null,
   };

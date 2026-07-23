@@ -30,6 +30,21 @@ export class TeamCategory {
   @Column({ type: 'varchar', length: 7, nullable: true })
   marker_color?: string | null;
 
+  /**
+   * Opacity of `marker_color`, 0–1. A team category has ONE colour (unlike the
+   * geography tiers, which carry a border/fill pair — ADR-045), so this is the
+   * single alpha applied wherever that colour is drawn. Null → fully opaque,
+   * matching how the marker rendered before the field existed.
+   */
+  @ApiPropertyOptional({
+    description: 'Opacity of marker_color, 0–1. Null → 1 (opaque).',
+    example: 0.8,
+    minimum: 0,
+    maximum: 1,
+  })
+  @Column({ type: 'real', nullable: true })
+  marker_opacity?: number | null;
+
   @ApiPropertyOptional({
     description: 'Marker glyph name from the curated set (e.g. "droplets"); null → default.',
     example: 'droplets',

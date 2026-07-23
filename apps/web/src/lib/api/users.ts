@@ -30,6 +30,7 @@ const buildUserParams = (filters: UserFilters, page: number): string => {
   if (filters.search) params.append('search', filters.search);
   if (filters.role) params.append('role', filters.role);
   if (filters.roles?.length) params.append('roles', filters.roles.join(','));
+  if (filters.is_active !== undefined) params.append('is_active', String(filters.is_active));
   params.append('page', String(page));
   if (filters.limit) params.append('limit', String(filters.limit));
   return params.toString();

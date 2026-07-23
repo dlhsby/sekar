@@ -30,6 +30,8 @@ interface StatusAndDetailSheetsProps {
   totalAreas: number;
   staffedAreas: number;
   onLeaveUsers?: AbsentUser[];
+  /** belum_hadir / tidak_hadir split for the current scope (ADR-050). */
+  rosterSplit?: { belum_hadir: number; tidak_hadir: number } | null;
 }
 
 export function StatusAndDetailSheets({
@@ -51,6 +53,7 @@ export function StatusAndDetailSheets({
   totalAreas,
   staffedAreas,
   onLeaveUsers,
+  rosterSplit,
 }: StatusAndDetailSheetsProps): React.JSX.Element {
   return (
     <>
@@ -66,6 +69,7 @@ export function StatusAndDetailSheets({
         staffedAreas={staffedAreas}
         onUserPress={onUserPress}
         attendance={attendance}
+        rosterSplit={rosterSplit}
         onLeaveUsers={onLeaveUsers}
       />
 

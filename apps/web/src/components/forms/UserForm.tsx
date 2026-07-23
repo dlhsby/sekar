@@ -47,21 +47,31 @@ function createUserSchema(t: TFn) {
 /** Any UUID version — area ids are deterministic UUID v5. */
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Which scope inputs a role uses, derived from its monitoring_scope (ADR-044). */
-function scopeFromMonitoring(ms: MonitoringScope | undefined): {
+/**
+ * Which scope inputs a role uses.
+ *
+ * ADR-053 made the SCHEDULE the single answer to "where does this person work
+ * today", so a permanent lokasi (and kawasan) on the user record is a second,
+ * competing answer — the drift this project kept getting bitten by. The user form
+ * no longer asks for either.
+ *
+ * What remains is the **home rayon**, which is an org fact rather than a
+ * placement: it decides who a district-scoped manager may see and manage. Only
+ * the two roles whose authority is defined by a rayon — `kepala_rayon` and
+ * `admin_rayon` — are asked for it.
+ */
+const ROLES_WITH_DISTRICT_INPUT = ['kepala_rayon', 'admin_rayon'];
+
+function scopeForRole(role: string): {
   district: boolean;
   region: boolean;
   location: boolean;
 } {
-  switch (ms) {
-    case 'region':
-    case 'location':
-      return { district: true, region: true, location: true };
-    case 'district':
-      return { district: true, region: false, location: false };
-    default: // city | none | undefined → no scope inputs
-      return { district: false, region: false, location: false };
-  }
+  return {
+    district: ROLES_WITH_DISTRICT_INPUT.includes(role),
+    region: false,
+    location: false,
+  };
 }
 
 export interface UserFormSubmit
@@ -110,7 +120,7 @@ export function UserForm({
       .sort((a, b) => rank(a.code) - rank(b.code) || a.name.localeCompare(b.name))
       .map((r) => ({ value: r.code, label: r.name }));
   }, [roles]);
-  const scopeFor = (code: string) => scopeFromMonitoring(rolesByCode.get(code)?.monitoring_scope);
+  const scopeFor = (code: string) => scopeForRole(code);
   const { data: assignedAreas } = useUserAreas(isEditMode ? initialData?.id : undefined);
 
   const [locationIds, setAreaIds] = useState<string[]>([]);

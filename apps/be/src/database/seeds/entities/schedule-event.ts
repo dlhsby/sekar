@@ -157,26 +157,23 @@ export async function seedScheduleEvents(ctx: SeedContext): Promise<void> {
   const schedulesCreated = (materializeResult[0]?.created ?? 0) as number;
   ctx.log(`  ✓ ${schedulesCreated} schedule occurrences materialized for today (${today})`);
 
-  // Add schedule_locations for static scope events
+  // Point static-scope occurrences at their event's lokasi (ADR-053: the place
+  // lives on the row, not in a junction).
   const locationsResult = await ctx.qr.query(
-    `INSERT INTO schedule_locations (schedule_id, location_id)
-     SELECT DISTINCT
-       s.id,
-       se.location_id
-     FROM schedules s
-     JOIN schedule_events se ON s.schedule_event_id = se.id
-     WHERE
-       s.schedule_date = $1::date
-       AND se.scope = 'static'
-       AND se.location_id IS NOT NULL
-       AND s.source = 'event'
-     ON CONFLICT DO NOTHING
-     RETURNING (xmax = 0) AS inserted`,
+    `UPDATE schedules s
+        SET location_id = se.location_id
+       FROM schedule_events se
+      WHERE s.schedule_event_id = se.id
+        AND s.schedule_date = $1::date
+        AND se.scope = 'static'
+        AND se.location_id IS NOT NULL
+        AND s.source = 'event'
+        AND s.location_id IS DISTINCT FROM se.location_id
+     RETURNING s.id`,
     [today],
   );
 
-  const locationsInserted = locationsResult.filter((r: any) => r.inserted).length;
-  ctx.log(`  ✓ ${locationsInserted} schedule_locations inserted`);
+  ctx.log(`  ✓ ${locationsResult.length} occurrences pointed at a lokasi`);
 
   ctx.log('✅ Schedule events seeding complete');
 }

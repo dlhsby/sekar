@@ -51,6 +51,8 @@ export interface SnapshotWorker {
   team_name?: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color?: string | null;
+  /** Alpha for `team_color` (team category `marker_opacity`); null → opaque. */
+  team_opacity?: number | null;
   team_icon?: string | null;
 }
 

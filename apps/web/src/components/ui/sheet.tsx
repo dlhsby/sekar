@@ -31,10 +31,24 @@ const SheetOverlay = React.forwardRef<
 ));
 SheetOverlay.displayName = 'SheetOverlay';
 
+/**
+ * Sheet widths. `default` is the original `max-w-md` — every existing sheet keeps
+ * exactly the width it had. `wide` exists for sheets holding a DATA TABLE
+ * (ADR-054's Belum Dijadwalkan): name + role + rayon + action does not fit in
+ * 448 px, and the whole point of a sheet over a modal is that the page behind it
+ * stays readable, so it stops well short of full width.
+ */
+const SHEET_SIZE = {
+  default: 'max-w-md',
+  wide: 'max-w-3xl',
+} as const;
+
+export type SheetSize = keyof typeof SHEET_SIZE;
+
 const SheetContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
-  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
->(({ className, children, ...props }, ref) => {
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content> & { size?: SheetSize }
+>(({ className, children, size = 'default', ...props }, ref) => {
   const { t } = useTranslation();
   return (
     <DialogPrimitive.Portal>
@@ -42,7 +56,8 @@ const SheetContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          'fixed inset-y-0 right-0 z-50 flex h-full w-[calc(100%-2rem)] max-w-md flex-col overflow-hidden border-l-2 border-nb-black bg-nb-white shadow-nb-lg',
+          'fixed inset-y-0 right-0 z-50 flex h-full w-[calc(100%-2rem)] flex-col overflow-hidden border-l-2 border-nb-black bg-nb-white shadow-nb-lg',
+          SHEET_SIZE[size],
           'duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right',
           className
         )}

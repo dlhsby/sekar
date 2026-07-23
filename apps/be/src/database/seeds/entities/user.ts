@@ -7,8 +7,8 @@ import {
   RAYON_PUSAT_ID,
   RAYON_TIMUR1_ID,
   RAYON_TIMUR2_ID,
-  RAYON_BARAT1_ID,
-  RAYON_BARAT2_ID,
+  DISTRICT_NAMED_BARAT_1_ID,
+  DISTRICT_NAMED_BARAT_2_ID,
   RAYON_TAMAN_AKTIF_ID,
   RAYON_ID_BY_CODE,
   SHIFT_1_ID,
@@ -356,8 +356,18 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
         label: 'Timur 2',
         defaultAreaId: timur2DummyAreaId,
       },
-      { slug: 'barat_1', districtId: RAYON_BARAT1_ID, label: 'Barat 1', defaultAreaId: null },
-      { slug: 'barat_2', districtId: RAYON_BARAT2_ID, label: 'Barat 2', defaultAreaId: null },
+      {
+        slug: 'barat_1',
+        districtId: DISTRICT_NAMED_BARAT_1_ID,
+        label: 'Barat 1',
+        defaultAreaId: null,
+      },
+      {
+        slug: 'barat_2',
+        districtId: DISTRICT_NAMED_BARAT_2_ID,
+        label: 'Barat 2',
+        defaultAreaId: null,
+      },
     ];
     const PER_DISTRICT_ROLES: Array<{
       role: string;
@@ -482,7 +492,6 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       RAYON_TAMAN_AKTIF_ID,
       AREA_BUNGKUL_ID,
     );
-    ctx.log(`  ✓ ${usersInserted} system/dummy users inserted, ${usersExisting} already existed`);
 
     // Real roster from data/users.csv (login by phone or username; forced reset).
     const roster = loadSeedUsers();
@@ -699,12 +708,12 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('${USER_NEW_7_ID}',  'kepala_rayon_timur_2_1', '${passwordHash}', 'Kepala Rayon Timur 2 Satu', '081300000007', 'kepala_rayon', '${RAYON_TIMUR2_ID}', NULL, TRUE),
       ('${USER_NEW_8_ID}',  'satgas_timur_2_1',     '${passwordHash}', 'Satgas Timur 2 Satu',   '081300000008', 'satgas',       '${RAYON_TIMUR2_ID}', NULL, TRUE),
       ('${USER_NEW_9_ID}',  'satgas_timur_2_2',     '${passwordHash}', 'Satgas Timur 2 Dua',    '081300000009', 'satgas',       '${RAYON_TIMUR2_ID}', NULL, TRUE),
-      ('${USER_NEW_10_ID}', 'kepala_rayon_barat_1_1', '${passwordHash}', 'Kepala Rayon Barat 1 Satu', '081300000010', 'kepala_rayon', '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_NEW_11_ID}', 'satgas_barat_1_1',     '${passwordHash}', 'Satgas Barat 1 Satu',   '081300000011', 'satgas',       '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_NEW_12_ID}', 'satgas_barat_1_2',     '${passwordHash}', 'Satgas Barat 1 Dua',    '081300000012', 'satgas',       '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_NEW_13_ID}', 'kepala_rayon_barat_2_1', '${passwordHash}', 'Kepala Rayon Barat 2 Satu', '081300000013', 'kepala_rayon', '${RAYON_BARAT2_ID}', NULL, TRUE),
-      ('${USER_NEW_14_ID}', 'satgas_barat_2_1',     '${passwordHash}', 'Satgas Barat 2 Satu',   '081300000014', 'satgas',       '${RAYON_BARAT2_ID}', NULL, TRUE),
-      ('${USER_NEW_15_ID}', 'satgas_barat_2_2',     '${passwordHash}', 'Satgas Barat 2 Dua',    '081300000015', 'satgas',       '${RAYON_BARAT2_ID}', NULL, TRUE)
+      ('${USER_NEW_10_ID}', 'kepala_rayon_barat_1_1', '${passwordHash}', 'Kepala Rayon Barat 1 Satu', '081300000010', 'kepala_rayon', '${DISTRICT_NAMED_BARAT_1_ID}', NULL, TRUE),
+      ('${USER_NEW_11_ID}', 'satgas_barat_1_1',     '${passwordHash}', 'Satgas Barat 1 Satu',   '081300000011', 'satgas',       '${DISTRICT_NAMED_BARAT_1_ID}', NULL, TRUE),
+      ('${USER_NEW_12_ID}', 'satgas_barat_1_2',     '${passwordHash}', 'Satgas Barat 1 Dua',    '081300000012', 'satgas',       '${DISTRICT_NAMED_BARAT_1_ID}', NULL, TRUE),
+      ('${USER_NEW_13_ID}', 'kepala_rayon_barat_2_1', '${passwordHash}', 'Kepala Rayon Barat 2 Satu', '081300000013', 'kepala_rayon', '${DISTRICT_NAMED_BARAT_2_ID}', NULL, TRUE),
+      ('${USER_NEW_14_ID}', 'satgas_barat_2_1',     '${passwordHash}', 'Satgas Barat 2 Satu',   '081300000014', 'satgas',       '${DISTRICT_NAMED_BARAT_2_ID}', NULL, TRUE),
+      ('${USER_NEW_15_ID}', 'satgas_barat_2_2',     '${passwordHash}', 'Satgas Barat 2 Dua',    '081300000015', 'satgas',       '${DISTRICT_NAMED_BARAT_2_ID}', NULL, TRUE)
     ON CONFLICT (username) DO NOTHING;
   `);
 
@@ -717,14 +726,14 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('${USER_ADMIN_RAYON_UTARA_ID}',   'admin_rayon_utara_1',   '${passwordHash}', 'Admin Rayon Utara Satu',   '081300000019', 'admin_rayon', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_TIMUR1_ID}',  'admin_rayon_timur_1_1',  '${passwordHash}', 'Admin Rayon Timur 1 Satu', '081300000020', 'admin_rayon', '${RAYON_TIMUR1_ID}', NULL, TRUE),
       ('${USER_ADMIN_RAYON_TIMUR2_ID}',  'admin_rayon_timur_2_1',  '${passwordHash}', 'Admin Rayon Timur 2 Satu', '081300000021', 'admin_rayon', '${RAYON_TIMUR2_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_BARAT1_ID}',  'admin_rayon_barat_1_1',  '${passwordHash}', 'Admin Rayon Barat 1 Satu', '081300000022', 'admin_rayon', '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_ADMIN_RAYON_BARAT2_ID}',  'admin_rayon_barat_2_1',  '${passwordHash}', 'Admin Rayon Barat 2 Satu', '081300000023', 'admin_rayon', '${RAYON_BARAT2_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_BARAT1_ID}',  'admin_rayon_barat_1_1',  '${passwordHash}', 'Admin Rayon Barat 1 Satu', '081300000022', 'admin_rayon', '${DISTRICT_NAMED_BARAT_1_ID}', NULL, TRUE),
+      ('${USER_ADMIN_RAYON_BARAT2_ID}',  'admin_rayon_barat_2_1',  '${passwordHash}', 'Admin Rayon Barat 2 Satu', '081300000023', 'admin_rayon', '${DISTRICT_NAMED_BARAT_2_ID}', NULL, TRUE),
       ('${USER_KORLAP_HARMONI_ID}', 'korlap_selatan_1', '${passwordHash}', 'Korlap Selatan Satu', '081300000024', 'korlap', '${DISTRICT_SELATAN_ID}', NULL, TRUE),
       ('${USER_KORLAP_UTARA_ID}',   'korlap_utara_1',   '${passwordHash}', 'Korlap Utara Satu',   '081300000025', 'korlap', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('${USER_KORLAP_TIMUR1_ID}',  'korlap_timur_1_1',  '${passwordHash}', 'Korlap Timur 1 Satu', '081300000026', 'korlap', '${RAYON_TIMUR1_ID}', NULL, TRUE),
       ('${USER_KORLAP_TIMUR2_ID}',  'korlap_timur_2_1',  '${passwordHash}', 'Korlap Timur 2 Satu', '081300000027', 'korlap', '${RAYON_TIMUR2_ID}', NULL, TRUE),
-      ('${USER_KORLAP_BARAT1_ID}',  'korlap_barat_1_1',  '${passwordHash}', 'Korlap Barat 1 Satu', '081300000028', 'korlap', '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('${USER_KORLAP_BARAT2_ID}',  'korlap_barat_2_1',  '${passwordHash}', 'Korlap Barat 2 Satu', '081300000029', 'korlap', '${RAYON_BARAT2_ID}', NULL, TRUE)
+      ('${USER_KORLAP_BARAT1_ID}',  'korlap_barat_1_1',  '${passwordHash}', 'Korlap Barat 1 Satu', '081300000028', 'korlap', '${DISTRICT_NAMED_BARAT_1_ID}', NULL, TRUE),
+      ('${USER_KORLAP_BARAT2_ID}',  'korlap_barat_2_1',  '${passwordHash}', 'Korlap Barat 2 Satu', '081300000029', 'korlap', '${DISTRICT_NAMED_BARAT_2_ID}', NULL, TRUE)
     ON CONFLICT (username) DO NOTHING;
   `);
 
@@ -739,8 +748,8 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       ('5a020004-0000-4002-8002-000000000004', 'linmas_utara_1',    '${passwordHash}', 'Linmas Utara Satu',    '081300000033', 'linmas', '${RAYON_UTARA_ID}', NULL, TRUE),
       ('5a020005-0000-4002-8002-000000000005', 'linmas_timur_1_1',  '${passwordHash}', 'Linmas Timur 1 Satu',  '081300000034', 'linmas', '${RAYON_TIMUR1_ID}', NULL, TRUE),
       ('5a020006-0000-4002-8002-000000000006', 'linmas_timur_2_1',  '${passwordHash}', 'Linmas Timur 2 Satu',  '081300000035', 'linmas', '${RAYON_TIMUR2_ID}', '${DEMO_BUK_TONG_ID}', TRUE),
-      ('5a020007-0000-4002-8002-000000000007', 'linmas_barat_1_1',  '${passwordHash}', 'Linmas Barat 1 Satu',  '081300000036', 'linmas', '${RAYON_BARAT1_ID}', NULL, TRUE),
-      ('5a020008-0000-4002-8002-000000000008', 'linmas_barat_2_1',  '${passwordHash}', 'Linmas Barat 2 Satu',  '081300000037', 'linmas', '${RAYON_BARAT2_ID}', NULL, TRUE)
+      ('5a020007-0000-4002-8002-000000000007', 'linmas_barat_1_1',  '${passwordHash}', 'Linmas Barat 1 Satu',  '081300000036', 'linmas', '${DISTRICT_NAMED_BARAT_1_ID}', NULL, TRUE),
+      ('5a020008-0000-4002-8002-000000000008', 'linmas_barat_2_1',  '${passwordHash}', 'Linmas Barat 2 Satu',  '081300000037', 'linmas', '${DISTRICT_NAMED_BARAT_2_ID}', NULL, TRUE)
     ON CONFLICT (username) DO NOTHING;
   `);
 
@@ -802,8 +811,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
       PUSAT: RAYON_PUSAT_ID,
       TIMUR1: RAYON_TIMUR1_ID,
       TIMUR2: RAYON_TIMUR2_ID,
-      BARAT1: RAYON_BARAT1_ID,
-      BARAT2: RAYON_BARAT2_ID,
+      // People follow the DISPLAY name (see lib/ids.ts) — the BARAT codes are
+      // pinned to their pre-rename ids for geography membership only.
+      BARAT1: DISTRICT_NAMED_BARAT_1_ID,
+      BARAT2: DISTRICT_NAMED_BARAT_2_ID,
     };
 
     let phoneSeq = 100;
@@ -836,8 +847,13 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     await ctx.qr.query(
       `UPDATE users SET location_id = '${DEMO_PUSAT_AREA_2}' WHERE username = 'satgas_pusat_2';`,
     );
+    // NOT moved to Rayon Timur 2 any more. The override existed to staff Buk
+    // Tong, but `satgas_timur_2_1` and `_2_2` already cover it — so all it did was
+    // leave a user called "Timur 1 Dua" sitting inside Rayon Timur 2, which reads
+    // as a scoping bug on the board (and was reported as one). Name and rayon now
+    // agree; Buk Tong keeps its two satgas.
     await ctx.qr.query(`
-    UPDATE users SET district_id = '${RAYON_TIMUR2_ID}', location_id = '${DEMO_BUK_TONG_ID}'
+    UPDATE users SET location_id = NULL
     WHERE username = 'satgas_timur_1_2';
   `);
     await ctx.qr.query(`
@@ -907,4 +923,334 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
 
     ctx.log('✅ Users seeding complete');
   }
+  // ── Presence-scenario cohort (ADR-050) ────────────────────────────────
+  // Self-describing accounts, one per presence state / flag / scope, so a
+  // tester can log in (or watch on /monitoring) and know exactly what the row
+  // is SUPPOSED to show. The users are stable here; the time-relative facts
+  // (clock in/out, leave, overtime, pings) are applied by
+  // `npx ts-node scripts/stage-presence-scenarios.ts`, which must run for the
+  // states to materialise. All password `12345678`.
+  const PRESENCE_USERS: Array<[string, string, string, string, string, string | null]> = [
+    // id, username, full name, role, phone, locationId (null → scope-driven)
+    [
+      'b0000000-0000-4000-8000-000000000001',
+      'satgas_bertugas_1',
+      'Satgas Bertugas',
+      'satgas',
+      '081399000001',
+      DEMO_PUSAT_AREA_1,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000002',
+      'satgas_terlambat_in_1',
+      'Satgas Terlambat Masuk',
+      'satgas',
+      '081399000002',
+      DEMO_PUSAT_AREA_1,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000003',
+      'satgas_luar_area_1',
+      'Satgas Luar Area',
+      'satgas',
+      '081399000003',
+      DEMO_PUSAT_AREA_1,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000004',
+      'satgas_offline_1',
+      'Satgas Offline',
+      'satgas',
+      '081399000004',
+      DEMO_PUSAT_AREA_1,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000005',
+      'satgas_lupa_pulang_1',
+      'Satgas Lupa Pulang',
+      'satgas',
+      '081399000005',
+      DEMO_PUSAT_AREA_2,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000006',
+      'satgas_lembur_1',
+      'Satgas Lembur',
+      'satgas',
+      '081399000006',
+      DEMO_PUSAT_AREA_2,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000007',
+      'satgas_unscheduled_1',
+      'Satgas Luar Jadwal',
+      'satgas',
+      '081399000007',
+      DEMO_PUSAT_AREA_2,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000008',
+      'satgas_pulang_1',
+      'Satgas Pulang',
+      'satgas',
+      '081399000008',
+      DEMO_PUSAT_AREA_2,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000009',
+      'satgas_pulang_awal_1',
+      'Satgas Pulang Awal',
+      'satgas',
+      '081399000009',
+      DEMO_PUSAT_AREA_3,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000010',
+      'satgas_belum_hadir_1',
+      'Satgas Belum Hadir',
+      'satgas',
+      '081399000010',
+      DEMO_PUSAT_AREA_3,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000011',
+      'satgas_terlambat_1',
+      'Satgas Terlambat',
+      'satgas',
+      '081399000011',
+      DEMO_PUSAT_AREA_3,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000012',
+      'satgas_tidak_hadir_1',
+      'Satgas Tidak Hadir',
+      'satgas',
+      '081399000012',
+      DEMO_PUSAT_AREA_3,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000013',
+      'satgas_cuti_1',
+      'Satgas Cuti',
+      'satgas',
+      '081399000013',
+      DEMO_PUSAT_AREA_4,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000014',
+      'satgas_libur_1',
+      'Satgas Libur',
+      'satgas',
+      '081399000014',
+      DEMO_PUSAT_AREA_4,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000015',
+      'satgas_sakit_1',
+      'Satgas Sakit',
+      'satgas',
+      '081399000015',
+      DEMO_PUSAT_AREA_4,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000016',
+      'satgas_izin_1',
+      'Satgas Izin',
+      'satgas',
+      '081399000016',
+      DEMO_PUSAT_AREA_4,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000017',
+      'satgas_tidak_bertugas_1',
+      'Satgas Tidak Bertugas',
+      'satgas',
+      '081399000017',
+      DEMO_PUSAT_AREA_5,
+    ],
+    // Scope tiers — where the pin renders on the monitoring drill-down.
+    [
+      'b0000000-0000-4000-8000-000000000018',
+      'satgas_surabaya_1',
+      'Satgas Kota Surabaya',
+      'satgas',
+      '081399000018',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000019',
+      'satgas_rayon_1',
+      'Satgas Lingkup Rayon',
+      'satgas',
+      '081399000019',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000020',
+      'satgas_kawasan_1',
+      'Satgas Lingkup Kawasan',
+      'satgas',
+      '081399000020',
+      null,
+    ],
+    // Counting axis: linmas counts toward staffing, korlap does NOT.
+    [
+      'b0000000-0000-4000-8000-000000000021',
+      'linmas_bertugas_1',
+      'Linmas Bertugas',
+      'linmas',
+      '081399000021',
+      DEMO_PUSAT_AREA_5,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000022',
+      'korlap_bertugas_1',
+      'Korlap Bertugas',
+      'korlap',
+      '081399000022',
+      DEMO_PUSAT_AREA_5,
+    ],
+    // Rescheduling cohort — one per role per shift, always on CITY scope so the
+    // day board shows them under "Penugasan Kota" and you can drag/reschedule
+    // them between Shift 1/2/3 without disturbing any presence scenario.
+    // Schedules are applied by scripts/stage-presence-scenarios.ts.
+    [
+      'b0000000-0000-4000-8000-000000000023',
+      'satgas_shift_1',
+      'Satgas Shift 1',
+      'satgas',
+      '081399000023',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000024',
+      'satgas_shift_2',
+      'Satgas Shift 2',
+      'satgas',
+      '081399000024',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000025',
+      'satgas_shift_3',
+      'Satgas Shift 3',
+      'satgas',
+      '081399000025',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000026',
+      'linmas_shift_1',
+      'Linmas Shift 1',
+      'linmas',
+      '081399000026',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000027',
+      'linmas_shift_2',
+      'Linmas Shift 2',
+      'linmas',
+      '081399000027',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000028',
+      'linmas_shift_3',
+      'Linmas Shift 3',
+      'linmas',
+      '081399000028',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000029',
+      'korlap_shift_1',
+      'Korlap Shift 1',
+      'korlap',
+      '081399000029',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000030',
+      'korlap_shift_2',
+      'Korlap Shift 2',
+      'korlap',
+      '081399000030',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000031',
+      'korlap_shift_3',
+      'Korlap Shift 3',
+      'korlap',
+      '081399000031',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000032',
+      'tim_shift_1_1',
+      'Tim Shift 1 Anggota 1',
+      'satgas',
+      '081399000032',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000033',
+      'tim_shift_1_2',
+      'Tim Shift 1 Anggota 2',
+      'satgas',
+      '081399000033',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000034',
+      'tim_shift_2_1',
+      'Tim Shift 2 Anggota 1',
+      'satgas',
+      '081399000034',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000035',
+      'tim_shift_2_2',
+      'Tim Shift 2 Anggota 2',
+      'satgas',
+      '081399000035',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000036',
+      'tim_shift_3_1',
+      'Tim Shift 3 Anggota 1',
+      'satgas',
+      '081399000036',
+      null,
+    ],
+    [
+      'b0000000-0000-4000-8000-000000000037',
+      'tim_shift_3_2',
+      'Tim Shift 3 Anggota 2',
+      'satgas',
+      '081399000037',
+      null,
+    ],
+  ];
+  // Self-contained insert: this block runs for EVERY mode, outside the
+  // staging-only branch where `insertUser` lives.
+  let presenceInserted = 0;
+  for (const [id, username, fullName, role, phone, locationId] of PRESENCE_USERS) {
+    const res = await ctx.qr.query(
+      `INSERT INTO users (id, username, password_hash, full_name, phone_number, role,
+                          district_id, location_id, is_active, password_must_change)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, TRUE, FALSE)
+       ON CONFLICT (username) DO NOTHING
+       RETURNING id`,
+      [id, username, DEFAULT_PASSWORD_HASH, fullName, phone, role, RAYON_PUSAT_ID, locationId],
+    );
+    if (Array.isArray(res) && res.length > 0) presenceInserted += 1;
+  }
+  ctx.log(
+    `  ✓ ${presenceInserted}/${PRESENCE_USERS.length} presence-scenario users ` +
+      `(schedules applied by scripts/stage-presence-scenarios.ts)`,
+  );
 }

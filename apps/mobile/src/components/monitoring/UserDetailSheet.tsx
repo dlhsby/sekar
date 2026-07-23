@@ -25,7 +25,7 @@ import { StatusPill } from '../home/StatusPill';
 import { HomeStatTile } from '../home/HomeStatTile';
 import { ListItemCard, type ListItemMeta } from '../common';
 import { LocationMapModal } from '../modals/LocationMapModal';
-import { userAxes, presenceActivityPill, lifecycleFlagPills, overtimePill, activityPill, formatDate, formatTime as formatTimeShort, formatDateIndonesian } from '../../utils/statusHelpers';
+import { userAxes, presenceActivityPill, lifecycleFlagPills, lifecycleStatePill, overtimePill, activityPill, formatDate, formatTime as formatTimeShort, formatDateIndonesian } from '../../utils/statusHelpers';
 import { taskPill, isTaskScopedToday } from '../../utils/taskStatus';
 import { ROLE_LABELS } from '../../constants/roles';
 import { getOvertimes } from '../../services/api/overtimeApi';
@@ -294,9 +294,15 @@ export function UserDetailSheet({
                   const { activity, location } = userAxes(user);
                   const pill = presenceActivityPill(activity);
                   const lifePills = lifecycleFlagPills(user);
+                  const statePill = lifecycleStatePill(user);
                   return (
                     <>
                       <StatusPill dot tone={pill.tone} label={pill.label} />
+                      {/* Lifecycle axis itself (bertugas / belum hadir / terlambat /
+                          pulang / tidak hadir), refined by an approved leave reason. */}
+                      {statePill ? (
+                        <StatusPill dot tone={statePill.tone} label={statePill.label} />
+                      ) : null}
                       {location === 'luar_area' ? (
                         <StatusPill dot tone="bad" label={t('monitoring:userDetail.outsideArea')} />
                       ) : null}

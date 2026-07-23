@@ -30,14 +30,26 @@ describe('EditScopeChooser', () => {
     return { onSelect, onOpenChange };
   };
 
-  it('selects "this" and closes', async () => {
+  it('selects "this" WITHOUT self-closing — the caller closes once the write lands', async () => {
     const user = userEvent.setup();
     const { onSelect, onOpenChange } = setup();
 
     await user.click(screen.getByRole('button', { name: /hanya hari ini/i }));
 
     expect(onSelect).toHaveBeenCalledWith('this');
-    expect(onOpenChange).toHaveBeenCalledWith(false);
+    // Answering this dialog is what PERSISTS the edit. Closing on click would
+    // hide the spinner and, on failure, dismiss the only actionable surface.
+    expect(onOpenChange).not.toHaveBeenCalled();
+  });
+
+  it('locks every choice while a scope is being applied', async () => {
+    const user = userEvent.setup();
+    const { onSelect } = setup({ pendingScope: 'series' });
+
+    // Mid-write: no second choice, and no cancel that would orphan the request.
+    await user.click(screen.getByRole('button', { name: /hanya hari ini/i }));
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: /batal/i })).toBeDisabled();
   });
 
   it('passes the selected date with "this and future" (the split point)', async () => {
@@ -67,20 +79,21 @@ describe('EditScopeChooser', () => {
     expect(screen.getByRole('button', { name: /seluruh rangkaian/i })).toBeInTheDocument();
   });
 
-  it('hands off to the delete flow and closes itself first', async () => {
+  it('goes BACK to the form without selecting a scope', async () => {
     const user = userEvent.setup();
-    const onDelete = jest.fn();
-    const { onOpenChange, onSelect } = setup({ onDelete });
+    const onBack = jest.fn();
+    const { onSelect } = setup({ onBack });
 
-    await user.click(screen.getByRole('button', { name: /^hapus$/i }));
+    await user.click(screen.getByRole('button', { name: /^kembali$/i }));
 
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onDelete).toHaveBeenCalled();
+    expect(onBack).toHaveBeenCalled();
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('shows no delete entry when no delete handler is given', () => {
-    setup();
+  it('never offers DELETE mid-edit — that belongs to the row detail modal', () => {
+    // Asking "delete?" part-way through an edit answers a question the user did
+    // not ask, and used to sit where Kembali does now.
+    setup({ onBack: jest.fn() });
     expect(screen.queryByRole('button', { name: /^hapus$/i })).not.toBeInTheDocument();
   });
 

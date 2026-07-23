@@ -30,8 +30,9 @@
     "petugasCount": "{{count}} petugas",
     "areaCount": "{{kawasan}} kawasan · {{lokasi}} lokasi",
     "lokasiCount": "{{count}} lokasi",
-    "placementKawasan": "Penempatan Kawasan",
-    "placementDistrict": "Penempatan Rayon",
+    "assignmentKawasan": "Penugasan Kawasan",
+    "assignmentDistrict": "Penugasan Rayon",
+    "assignmentCity": "Penugasan Kota",
     "emptyDistrict": "Belum ada kawasan atau lokasi",
     "petugasShort": "petugas",
     "shiftStaffTooltip": "{{shift}} — {{countable}} dari {{target}} petugas ({{breakdown}})",
@@ -53,7 +54,7 @@
     "groupDate": "Tanggal"
   },
   "detail": {
-    "placement": "Penempatan",
+    "assignment": "Penugasan",
     "endDate": "Berakhir",
     "pic": "PIC",
     "members": "Anggota",
@@ -138,7 +139,17 @@
       "districtLabel": "Rayon",
       "shiftLabel": "Shift",
       "areaLabel": "Area",
-      "submit": "Simpan"
+      "submit": "Simpan",
+      "scopeLabel": "Lingkup",
+      "scopeHelp": "Tentukan cakupan penugasan dulu — kolom di bawah menyesuaikan.",
+      "scopeCity": "Kota Surabaya",
+      "scopeDistrict": "Rayon",
+      "scopeRegion": "Kawasan",
+      "scopeLocation": "Lokasi",
+      "regionLabel": "Kawasan",
+      "regionPlaceholder": "Pilih kawasan…",
+      "locationLabel": "Lokasi",
+      "locationPlaceholder": "Pilih lokasi…"
     },
     "areaList": {
       "title": "Area Jadwal"
@@ -246,13 +257,13 @@
       "scopeDistrict": "Rayon",
       "districtLabel": "Rayon",
       "districtPlaceholder": "Pilih rayon…",
-      "scopeHelp": "Cakupan jadwal — menentukan bidang penempatan yang perlu diisi.",
+      "scopeHelp": "Cakupan jadwal — menentukan bidang penugasan yang perlu diisi.",
       "scopeCity": "Surabaya",
       "scopeKawasan": "Kawasan",
       "scopeLokasi": "Lokasi",
       "regionScopeHint": "Cakupan mobile se-kawasan (petugas berpindah dalam kawasan).",
       "locationScopeHint": "Cakupan statis di satu lokasi.",
-      "placementUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penempatan.",
+      "assignmentUnresolved": "Lokasi/kawasan jadwal ini tidak ditemukan di data — pilih ulang penugasan.",
       "kindPlaceholder": "Pilih jenis...",
       "rolePlaceholder": "Pilih peran...",
       "roleLabel": "Peran",
@@ -261,7 +272,8 @@
       "regionFilterPlaceholder": "Semua kawasan (opsional)",
       "regionFilterHint": "Opsional — menyaring daftar lokasi. Lokasi tanpa kawasan tetap tampil.",
       "picRoleLabel": "Peran PIC",
-      "memberEmpty": "Belum ada anggota. Pilih peran, lalu pekerja, lalu Tambah."
+      "memberEmpty": "Belum ada anggota. Pilih peran, lalu pekerja, lalu Tambah.",
+      "locationMultiHint": "Bisa pilih lebih dari satu lokasi — satu penugasan bisa mencakup beberapa taman."
     },
     "editScope": {
       "title": "Ubah Yang Mana?",
@@ -343,5 +355,41 @@
       "SPECIAL": "Hari Khusus"
     },
     "typePlaceholder": "Pilih jenis hari…"
+  },
+  "unscheduled": {
+    "title": "Belum Dijadwalkan",
+    "description": "Petugas yang belum punya jadwal sesuai kriteria di bawah. Atur target (tanggal, shift, rayon, kawasan, lokasi), lalu jadwalkan langsung dari daftar.",
+    "buttonLabel": "Belum Dijadwalkan",
+    "dateLabel": "Tanggal",
+    "shiftLabel": "Shift",
+    "districtLabel": "Rayon",
+    "roleLabel": "Peran",
+    "allShifts": "Semua shift",
+    "allDistricts": "Semua rayon",
+    "allRoles": "Semua peran",
+    "columnName": "Nama",
+    "columnRole": "Peran",
+    "columnDistrict": "Rayon",
+    "actionSchedule": "Jadwalkan",
+    "searchPlaceholder": "Cari nama, username, atau tim…",
+    "pillUnscheduled": "{{count}} belum dijadwalkan",
+    "pillScheduled": "{{count}} sudah dijadwalkan",
+    "ofWorkforce": "dari {{count}} petugas",
+    "emptyTitle": "Semua petugas sudah dijadwalkan",
+    "emptyDescription": "Tidak ada petugas yang terlewat pada tanggal ini.",
+    "unavailableTitle": "Tidak tersedia ({{count}})",
+    "reason": {
+      "off": "Libur",
+      "leave_sick": "Sakit",
+      "leave_annual": "Cuti",
+      "leave_permit": "Izin"
+    },
+    "regionLabel": "Kawasan",
+    "locationLabel": "Lokasi",
+    "allRegions": "Semua kawasan",
+    "allLocations": "Semua lokasi",
+    "columnTeam": "Tim",
+    "searchLabel": "Cari",
+    "matched": "{{count}} cocok dengan pencarian"
   }
 }

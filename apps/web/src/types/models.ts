@@ -104,6 +104,8 @@ export interface UserFilters {
   role?: UserRole;
   /** Filter to any of these role codes (server-side, comma-joined). */
   roles?: string[];
+  /** true → active accounts only; omit → both (the admin grid needs both). */
+  is_active?: boolean;
   page?: number;
   limit?: number;
 }

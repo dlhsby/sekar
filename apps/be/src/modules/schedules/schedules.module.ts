@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Schedule, ScheduleLocation } from './entities/schedule.entity';
+import { Schedule } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { ScheduleEventMember } from './entities/schedule-event-member.entity';
 import { User } from '../users/entities/user.entity';
@@ -29,7 +29,6 @@ import { SettingsModule } from '../settings/settings.module';
   imports: [
     TypeOrmModule.forFeature([
       Schedule,
-      ScheduleLocation,
       ScheduleEvent,
       ScheduleEventMember,
       User,

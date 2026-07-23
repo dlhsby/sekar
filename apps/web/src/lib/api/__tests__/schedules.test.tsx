@@ -64,17 +64,9 @@ describe('Daily Schedules API', () => {
       end_time: '14:00',
     },
     replacement_user: null,
-    schedule_areas: [
-      {
-        id: 'area-1',
-        location_id: 'area-1',
-        area: {
-          id: 'area-1',
-          name: 'Taman Bungkul',
-          code: 'TB',
-        },
-      },
-    ],
+    // ADR-053: one place per row, on the row itself.
+    location_id: 'area-1',
+    location: { id: 'area-1', name: 'Taman Bungkul', code: 'TB' },
   };
 
   beforeEach(() => {
@@ -318,18 +310,11 @@ describe('Daily Schedules API', () => {
   });
 
   describe('useUpdateRosterAreas', () => {
-    it('should update areas on roster entry', async () => {
-      const area2 = {
-        id: 'area-2',
-        location_id: 'area-2',
-        area: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
-      };
+    it('should update the roster entry to a new lokasi', async () => {
       const updatedSchedule: Schedule = {
         ...mockSchedule,
-        schedule_areas: [
-          mockSchedule.schedule_areas[0],
-          area2,
-        ],
+        location_id: 'area-2',
+        location: { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
       };
       mockAxios.onPatch(`/schedules/daily-1/areas`).reply(200, updatedSchedule);
 
@@ -339,14 +324,14 @@ describe('Daily Schedules API', () => {
 
       result.current.mutate({
         id: 'daily-1',
-        location_ids: ['area-1', 'area-2'],
+        location_ids: ['area-2'],
       });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(result.current.data?.schedule_areas).toHaveLength(2);
+      expect(result.current.data?.location_id).toBe('area-2');
     });
   });
 

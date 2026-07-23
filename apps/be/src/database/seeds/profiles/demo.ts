@@ -28,7 +28,6 @@ import { seedPruningRequests } from '../entities/pruning-request';
 import { seedPlantSeeds } from '../entities/plant-seed';
 import { seedServiceCapacity } from '../entities/service-capacity';
 import { seedNotifications } from '../entities/notification';
-import { seedScheduleEvents, seedScheduleEventVariants } from '../entities/schedule-event';
 
 /**
  * DEMO profile — the full local dev seed (`npm run db:seed`).
@@ -73,11 +72,11 @@ async function seedDemo(ctx: SeedContext): Promise<void> {
   await seedUserTrackingStatus(ctx);
   await seedUserAreas(ctx);
 
-  // Schedule events (Phase-4 demo data).
-  await seedScheduleEvents(ctx);
-  // After the per-user daily events, so the variants don't collide with the
-  // (user, date, shift) slots those already own.
-  await seedScheduleEventVariants(ctx);
+  // NOTE: schedules/assignments are deliberately NOT seeded here. They are
+  // time-relative (a roster only means something against "now") and they must be
+  // COHERENT — the old variant seeder picked users with `ORDER BY username LIMIT`,
+  // which put e.g. a Rayon-Barat-2 korlap on CITY scope. All schedule assignment
+  // now lives in scripts/stage-presence-scenarios.ts, which owns it end-to-end.
 
   // Plants / pruning / capacity (Phase-3 demo data).
   await seedPlantSpecies(ctx);

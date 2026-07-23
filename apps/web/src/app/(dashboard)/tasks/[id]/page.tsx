@@ -30,6 +30,7 @@ import { useRouter } from 'next/navigation';
 import { use, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, Check, RotateCcw, Send, X } from 'lucide-react';
 import { TASK_MANAGER_ROLES, TASK_VERIFIER_ROLES, hasRole } from '@/lib/constants/roles';
+import { runAction } from '@/lib/hooks/use-action';
 import {
   getTaskStatusLabel,
   getTaskPriorityLabel,
@@ -126,23 +127,31 @@ export default function TaskDetailPage({ params }: TaskDetailPageProps) {
     !!DELEGATION_TARGETS[user.role];
 
   const handleVerify = async () => {
-    await verifyMutation.mutateAsync(taskId);
+    await runAction(() => verifyMutation.mutateAsync(taskId), {
+      success: t('common:messages.verified'),
+    });
   };
 
   const handleRevision = async () => {
     if (!revisionReason.trim()) return;
-    await revisionMutation.mutateAsync({ taskId, reason: revisionReason });
+    await runAction(() => revisionMutation.mutateAsync({ taskId, reason: revisionReason }), {
+      success: t('common:messages.revisionRequested'),
+    });
     setShowRevisionForm(false);
     setRevisionReason('');
   };
 
   const handleUntag = async (userId: string) => {
-    await untagMutation.mutateAsync({ taskId, userId });
+    await runAction(() => untagMutation.mutateAsync({ taskId, userId }), {
+      success: t('common:messages.removed'),
+    });
   };
 
   const handleDelegate = async () => {
     if (!delegateUserId) return;
-    await assignMutation.mutateAsync({ taskId, assignedTo: delegateUserId });
+    await runAction(() => assignMutation.mutateAsync({ taskId, assignedTo: delegateUserId }), {
+      success: t('common:messages.assigned'),
+    });
     setShowDelegateForm(false);
     setDelegateUserId('');
   };

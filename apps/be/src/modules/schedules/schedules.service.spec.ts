@@ -1,9 +1,9 @@
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
-import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
@@ -79,7 +79,6 @@ describe('SchedulesService', () => {
       providers: [
         SchedulesService,
         { provide: getRepositoryToken(Schedule), useValue: rosterRepo },
-        { provide: getRepositoryToken(ScheduleLocation), useValue: locationRepo },
         { provide: getRepositoryToken(ScheduleEvent), useValue: eventRepo },
         { provide: getRepositoryToken(Location), useValue: areaEntityRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
@@ -121,12 +120,12 @@ describe('SchedulesService', () => {
       });
     });
 
-    it('joins user, shift_definition, schedule_areas, region, and team_category relations (Phase 4)', async () => {
+    it('joins user, shift_definition, location, region, and team_category relations (Phase 4)', async () => {
       await service.findByDateRange('2026-06-30', '2026-07-05');
       const joinCalls = rosterRepo.qb.leftJoinAndSelect.mock.calls;
       expect(joinCalls.some((c) => c[0] === 'ds.user')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.shift_definition')).toBe(true);
-      expect(joinCalls.some((c) => c[0] === 'ds.schedule_areas')).toBe(true);
+      expect(joinCalls.some((c) => c[0] === 'ds.location')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.region')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.team_category')).toBe(true);
     });
@@ -194,7 +193,7 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [],
+          location_id: null,
         })
         .mockResolvedValueOnce({ id: 'd1', status: ScheduleStatus.LEAVE_SICK });
 
@@ -222,7 +221,7 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [],
+          location_id: null,
         })
         .mockResolvedValueOnce({ id: 'd1', status: expected });
 
@@ -242,7 +241,7 @@ describe('SchedulesService', () => {
         district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       };
       rosterRepo.findOne
         .mockResolvedValueOnce(original) // findOne(id)
@@ -273,7 +272,7 @@ describe('SchedulesService', () => {
         district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       };
       const existingCoverRow = {
         id: 'cover1',
@@ -305,7 +304,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.replaceWorker('d1', 'A', undefined, ADMIN)).rejects.toThrow();
     });
@@ -319,7 +318,7 @@ describe('SchedulesService', () => {
         district_id: 'r1',
         shift_definition_id: 's1',
         status: ScheduleStatus.PLANNED,
-        schedule_areas: [],
+        location_id: null,
       });
       // findAllByUserAndDate(replacement_id, date) returns rows with BUSY status
       rosterRepo.find.mockResolvedValueOnce([
@@ -354,7 +353,7 @@ describe('SchedulesService', () => {
       });
       overlapService.findConflict.mockResolvedValue(null); // No conflict
       rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', location_id: null }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay(
@@ -388,7 +387,7 @@ describe('SchedulesService', () => {
       // Shiftless add: check findAllByUserAndDate, which returns empty
       rosterRepo.find.mockResolvedValue([]);
       rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', location_id: null }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay({ user_id: 'W', date: '2026-07-04' }, ADMIN);
@@ -432,7 +431,7 @@ describe('SchedulesService', () => {
       // First shift exists (06:00-15:00), candidate is 15:00-23:00 (touching, not overlapping)
       overlapService.findConflict.mockResolvedValue(null);
       rosterRepo.save.mockResolvedValue({ id: 'new2', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new2', user_id: 'W', schedule_areas: [] }); // findOne refresh
+      rosterRepo.findOne.mockResolvedValue({ id: 'new2', user_id: 'W', location_id: null }); // findOne refresh
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       await service.addForDay(
@@ -469,7 +468,7 @@ describe('SchedulesService', () => {
         shift_name: 'Shift 2',
       });
       rosterRepo.save.mockResolvedValue({ id: 'new-overlap', user_id: 'W' });
-      rosterRepo.findOne.mockResolvedValue({ id: 'new-overlap', user_id: 'W', schedule_areas: [] });
+      rosterRepo.findOne.mockResolvedValue({ id: 'new-overlap', user_id: 'W', location_id: null });
       userAreas.getPermanentLocationIds.mockResolvedValue(['areaP']);
 
       // Should not throw — creates the row anyway
@@ -736,9 +735,9 @@ describe('SchedulesService', () => {
 
   describe('updateAreas', () => {
     it('replaces the areas via setAreas() and updates via update(), not save()', async () => {
-      // `schedule_areas` has `cascade: true`, so `row.schedule_areas` (loaded by
-      // findOne()) is a stale array once setAreas() has raw-deleted the old
-      // rows — save(row) would cascade-reinsert them. Must use update().
+      // `row` holds relation objects from findOne(); entity save would reconcile
+      // FK columns back from those stale objects and revert the write. Must use
+      // update().
       rosterRepo.findOne
         .mockResolvedValueOnce({
           id: 'd1',
@@ -746,13 +745,12 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [{ location_id: 'area1' }],
+          location_id: 'area1',
         })
-        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [] });
+        .mockResolvedValueOnce({ id: 'd1', location_id: null });
 
       await service.updateAreas('d1', [], ADMIN);
 
-      expect(locationRepo.delete).toHaveBeenCalledWith({ schedule_id: 'd1' });
       expect(rosterRepo.update).toHaveBeenCalledWith(
         'd1',
         expect.objectContaining({ source: 'manual' }),
@@ -768,17 +766,349 @@ describe('SchedulesService', () => {
           schedule_date: '2026-06-30',
           user_id: 'A',
           user: { role: UserRole.SATGAS },
-          schedule_areas: [],
+          location_id: null,
         })
-        .mockResolvedValueOnce({ id: 'd1', schedule_areas: [{ location_id: 'area2' }] });
+        .mockResolvedValueOnce({ id: 'd1', location_id: 'area2' });
 
       await service.updateAreas('d1', ['area2'], ADMIN);
 
-      expect(locationRepo.save).toHaveBeenCalled();
-      const inserted = locationRepo.save.mock.calls[0][0];
-      expect(inserted).toEqual([
-        expect.objectContaining({ schedule_id: 'd1', location_id: 'area2' }),
-      ]);
+      // The place lives on the row now (ADR-053), so setting it is a column write —
+      // one UPDATE carrying the place and the provenance together.
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({ location_id: 'area2', source: 'manual' }),
+      );
+    });
+
+    it('rejects more than one lokasi instead of silently keeping the first (ADR-053)', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        status: ScheduleStatus.PLANNED,
+        schedule_date: '2026-06-30',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        location_id: null,
+      });
+
+      // One row = one place. Truncating to `[0]` behind a 200 lost the operator's
+      // other picks silently and wrote an audit entry the row never matched.
+      await expect(service.updateAreas('d1', ['area2', 'area3'], ADMIN)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(rosterRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects a row scoped to a lokasi AND a kawasan at once (ADR-053)', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        status: ScheduleStatus.PLANNED,
+        schedule_date: '2026-06-30',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        location_id: null,
+      });
+
+      // `schedulePlaceKey` resolves lokasi first, so the kawasan would survive as
+      // unreachable state that still matched the board's region filter — the row
+      // would show up under both containers.
+      await expect(
+        service.updateAreas('d1', ['area2'], ADMIN, undefined, 'region9'),
+      ).rejects.toThrow(BadRequestException);
+      expect(rosterRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  /**
+   * ADR-054. Two rules carry the whole feature, and both are easy to get wrong:
+   * a projected occurrence must count as scheduled, and an excused row must not
+   * land in the list of people to place.
+   */
+  describe('findUnscheduled', () => {
+    const worker = (id: string, role: UserRole, name = id) => ({
+      id,
+      full_name: name,
+      username: id,
+      role,
+      district_id: 'ry1',
+      is_active: true,
+    });
+
+    /** Stub the workforce query (getRawAndEntities) and the day's occurrences. */
+    const setup = (workforce: unknown[], occurrences: unknown[]) => {
+      const uqb: Record<string, jest.Mock> = {};
+      for (const m of ['leftJoin', 'addSelect', 'where', 'andWhere', 'orderBy']) {
+        uqb[m] = jest.fn(() => uqb);
+      }
+      uqb.getRawAndEntities = jest.fn().mockResolvedValue({
+        entities: workforce,
+        raw: workforce.map(() => ({ u_district_id: 'ry1', district_name: 'Rayon Pusat' })),
+      });
+      (userRepo as unknown as { createQueryBuilder: jest.Mock }).createQueryBuilder = jest.fn(
+        () => uqb,
+      );
+      jest.spyOn(service, 'findByDateRange').mockResolvedValue(occurrences as never);
+      return uqb;
+    };
+
+    it('counts a PROJECTED occurrence as scheduled', async () => {
+      // The trap: projections are not rows, so a NOT EXISTS against `schedules`
+      // would report everyone on a daily rule as unscheduled for every future
+      // date — the list would be noise exactly where planning happens.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED, is_projected: true }],
+      );
+
+      const res = await service.findUnscheduled('2026-08-30');
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('separates an EXCUSED worker from a genuinely free one', async () => {
+      // Someone on cuti has no assignment and cannot take one; listing them
+      // beside free workers invites scheduling over approved leave.
+      setup(
+        [worker('u1', UserRole.SATGAS), worker('u2', UserRole.LINMAS)],
+        [{ user_id: 'u2', status: ScheduleStatus.LEAVE_ANNUAL }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      expect(res.unavailable.map((w) => w.id)).toEqual(['u2']);
+      expect(res.unavailable[0].status).toBe(ScheduleStatus.LEAVE_ANNUAL);
+    });
+
+    it('treats a live assignment as outranking an excused row for the same worker', async () => {
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [
+          { user_id: 'u1', status: ScheduleStatus.OFF },
+          { user_id: 'u1', status: ScheduleStatus.PLANNED },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.unavailable).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('treats a row on ANOTHER shift as not filling the target shift', async () => {
+      // ADR-053: holding rows for other shifts is normal and says nothing about
+      // availability for THIS one.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED, shift_definition_id: 'shift-2' }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { shiftDefinitionId: 'shift-1' });
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+    });
+
+    it('treats a row at ANOTHER lokasi as not filling the target lokasi', async () => {
+      // The filters describe the SLOT being filled. Being busy at Taman B does
+      // not disqualify someone from also covering Taman A (ADR-053).
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED, location_id: 'loc-b' }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { locationId: 'loc-a' });
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+    });
+
+    it('excludes a worker whose row MATCHES every target criterion', async () => {
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [
+          {
+            user_id: 'u1',
+            status: ScheduleStatus.PLANNED,
+            shift_definition_id: 'shift-1',
+            district_id: 'ry1',
+            region_id: 'kw1',
+            location_id: 'loc-a',
+          },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', {
+        shiftDefinitionId: 'shift-1',
+        districtId: 'ry1',
+        regionId: 'kw1',
+        locationId: 'loc-a',
+      });
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('keeps a worker EXCUSED for the day out of the list whatever the target', async () => {
+      // Leave does not care how the slot is described.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.LEAVE_SICK, location_id: 'loc-b' }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { locationId: 'loc-a' });
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.unavailable.map((w) => w.id)).toEqual(['u1']);
+    });
+
+    it('matches the search against a TEAM the worker is scheduled on', async () => {
+      // A team lives on the schedule, not on the person, so "Penyiraman" has to
+      // reach through today's occurrences to find that crew.
+      setup(
+        [worker('u1', UserRole.SATGAS, 'Budi'), worker('u2', UserRole.SATGAS, 'Ani')],
+        [
+          {
+            user_id: 'u1',
+            status: ScheduleStatus.PLANNED,
+            shift_definition_id: 'shift-2',
+            team_category: { name: 'Tim Penyiraman' },
+          },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', {
+        shiftDefinitionId: 'shift-1',
+        q: 'penyiraman',
+      });
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      expect(res.unscheduled[0].teams).toEqual(['Tim Penyiraman']);
+    });
+
+    it('still matches the search on name and username', async () => {
+      setup(
+        [worker('u1', UserRole.SATGAS, 'Budi Santoso'), worker('u2', UserRole.SATGAS, 'Ani')],
+        [],
+      );
+
+      const byName = await service.findUnscheduled('2026-07-23', { q: 'budi' });
+      expect(byName.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      // `workforce` is the visible set; `matched` is what the search hit.
+      expect(byName.totals.workforce).toBe(2);
+      expect(byName.totals.matched).toBe(1);
+    });
+
+    it('drops a role outside the three schedulable ones instead of honouring it', async () => {
+      const uqb = setup([worker('u1', UserRole.SATGAS)], []);
+
+      // kepala_rayon is excluded outright (ADR-054 §4) — asking for it must not
+      // widen the query, it must fall back to the schedulable three.
+      await service.findUnscheduled('2026-07-23', { roles: [UserRole.KEPALA_RAYON] });
+
+      expect(uqb.where).toHaveBeenCalledWith('u.role IN (:...roles)', {
+        roles: [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP],
+      });
+    });
+
+    it("narrows the WORKFORCE to the caller's own rayon (visibleDistrictId)", async () => {
+      // The scope guard that silently broke: `districtId` describes the SLOT and
+      // stopped narrowing people, so a kepala_rayon listed every rayon's workers.
+      const uqb = setup([worker('u1', UserRole.SATGAS)], []);
+
+      await service.findUnscheduled('2026-07-23', {
+        districtId: 'ry-target',
+        visibleDistrictId: 'ry-caller',
+      });
+
+      // The caller's rayon reaches the USER query...
+      expect(uqb.andWhere).toHaveBeenCalledWith('u.district_id = :visibleDistrictId', {
+        visibleDistrictId: 'ry-caller',
+      });
+      // ...and the target rayon does NOT.
+      expect(uqb.andWhere).not.toHaveBeenCalledWith(
+        'u.district_id = :visibleDistrictId',
+        expect.objectContaining({ visibleDistrictId: 'ry-target' }),
+      );
+    });
+
+    it('leaves the workforce unnarrowed for a globally-scoped caller', async () => {
+      const uqb = setup([worker('u1', UserRole.SATGAS)], []);
+
+      await service.findUnscheduled('2026-07-23', { districtId: 'ry-target' });
+
+      expect(uqb.andWhere).not.toHaveBeenCalledWith(
+        'u.district_id = :visibleDistrictId',
+        expect.anything(),
+      );
+    });
+
+    it('treats a BROADER assignment as already covering a narrower target', async () => {
+      // A city-wide row covers every rayon. Demanding an exact column match
+      // reported those workers as free for a place they were already committed
+      // to, and collapsed `scheduled` to 0 for any geography-narrowed target.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED }], // city scope: no geography
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { districtId: 'ry1' });
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('frees a REPLACED worker instead of counting them as scheduled', async () => {
+      // Someone else took the shift, so they are the exact person this list is
+      // for. `absent` stays busy — they hold the slot, they just did not show.
+      setup(
+        [worker('u1', UserRole.SATGAS), worker('u2', UserRole.SATGAS)],
+        [
+          { user_id: 'u1', status: ScheduleStatus.REPLACED, team_category: { name: 'Tim A' } },
+          { user_id: 'u2', status: ScheduleStatus.ABSENT },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      // ...and they are no longer tagged with the team they were replaced out of.
+      expect(res.unscheduled[0].teams).toEqual([]);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('reports workforce as the VISIBLE set and matched as the searched subset', async () => {
+      setup([worker('u1', UserRole.SATGAS, 'Budi'), worker('u2', UserRole.SATGAS, 'Ani')], []);
+
+      const res = await service.findUnscheduled('2026-07-23', { q: 'budi' });
+
+      // Reporting the search result as "workforce" made a 1-hit search read as
+      // though the whole department were one person.
+      expect(res.totals.workforce).toBe(2);
+      expect(res.totals.matched).toBe(1);
+    });
+
+    it('reports the totals the button needs', async () => {
+      setup(
+        [
+          worker('u1', UserRole.SATGAS),
+          worker('u2', UserRole.LINMAS),
+          worker('u3', UserRole.KORLAP),
+        ],
+        [
+          { user_id: 'u2', status: ScheduleStatus.PLANNED },
+          { user_id: 'u3', status: ScheduleStatus.LEAVE_SICK },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.totals).toEqual({
+        unscheduled: 1,
+        unavailable: 1,
+        scheduled: 1,
+        workforce: 3,
+        matched: 3,
+      });
     });
   });
 
@@ -787,11 +1117,13 @@ describe('SchedulesService', () => {
       rosterRepo.find.mockResolvedValue([
         {
           id: 'd1',
-          schedule_areas: [{ area: { id: 'area1' } }, { area: { id: 'area2' } }],
+          // ONE place per row (ADR-053) — several lokasi means several rows.
+          location_id: 'area1',
+          location: { id: 'area1' },
         },
       ]);
       const areas = await service.getActiveAreasForDay('A', '2026-06-30');
-      expect(areas.map((a) => a.id)).toEqual(['area1', 'area2']);
+      expect(areas.map((a) => a.id)).toEqual(['area1']);
     });
 
     it('returns empty when there is no roster row', async () => {
@@ -804,7 +1136,7 @@ describe('SchedulesService', () => {
     it('creates a PLANNED row with the shift when one is provided', async () => {
       // findAllByUserAndDate returns empty array (no existing row)
       rosterRepo.find.mockResolvedValue([]);
-      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', location_id: null });
 
       await service.overrideForDay(
         'u1',
@@ -821,7 +1153,7 @@ describe('SchedulesService', () => {
 
     it('creates an OFF row (not PLANNED) when no shift is provided', async () => {
       rosterRepo.find.mockResolvedValue([]);
-      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', location_id: null });
 
       await service.overrideForDay('u1', '2026-07-01', { locationId: 'a1' }, 'admin');
 
@@ -832,7 +1164,7 @@ describe('SchedulesService', () => {
 
     it('sets the day to exactly the target area', async () => {
       rosterRepo.find.mockResolvedValue([]);
-      rosterRepo.save.mockResolvedValue({ id: 'gen-1', schedule_areas: [] });
+      rosterRepo.save.mockResolvedValue({ id: 'gen-1', location_id: null });
 
       await service.overrideForDay(
         'u1',
@@ -841,8 +1173,10 @@ describe('SchedulesService', () => {
         'admin',
       );
 
-      const createdAreaIds = locationRepo.create.mock.calls.map((c) => c[0].location_id);
-      expect(createdAreaIds).toEqual(['a9']);
+      const written = rosterRepo.update.mock.calls
+        .map((c) => c[1]?.location_id)
+        .filter((v) => v !== undefined);
+      expect(written).toEqual(['a9']);
     });
 
     it('updates an EXISTING row via update(), not save() (same stale-eager-relation pitfall)', async () => {
@@ -851,7 +1185,7 @@ describe('SchedulesService', () => {
         status: ScheduleStatus.OFF,
         shift_definition_id: null,
         shift_definition: null,
-        schedule_areas: [],
+        location_id: null,
       };
       // findAllByUserAndDate returns the existing row
       rosterRepo.find.mockResolvedValue([existingRow]);
@@ -890,7 +1224,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).resolves.toBeDefined();
     });
@@ -901,7 +1235,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.SATGAS },
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
         ForbiddenException,
@@ -913,7 +1247,7 @@ describe('SchedulesService', () => {
         id: 'd1',
         user_id: 'A',
         user: { role: UserRole.KORLAP },
-        schedule_areas: [{ location_id: 'area1' }],
+        location_id: 'area1',
       });
       await expect(service.setLeave('d1', 'sick', undefined, KORLAP)).rejects.toThrow(
         ForbiddenException,
@@ -926,7 +1260,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.KORLAP },
         district_id: 'r1',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).resolves.toBeDefined();
     });
@@ -937,7 +1271,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.SATGAS },
         district_id: 'r2',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d1', 'sick', undefined, KEPALA)).rejects.toThrow(
         ForbiddenException,
@@ -950,7 +1284,7 @@ describe('SchedulesService', () => {
         user_id: 'A',
         user: { role: UserRole.KEPALA_RAYON },
         district_id: 'r1',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d1', 'sick', undefined, TOP)).resolves.toBeDefined();
 
@@ -959,7 +1293,7 @@ describe('SchedulesService', () => {
         user_id: 'B',
         user: { role: UserRole.SATGAS },
         district_id: 'r1',
-        schedule_areas: [],
+        location_id: null,
       });
       await expect(service.setLeave('d2', 'sick', undefined, TOP)).resolves.toBeDefined();
     });
@@ -1031,6 +1365,7 @@ describe('SchedulesService', () => {
         team_id: 'event-123',
         team_name: 'Penyiraman',
         team_color: '#22C55E',
+        team_opacity: null,
         team_icon: null,
       });
     });
@@ -1050,6 +1385,7 @@ describe('SchedulesService', () => {
         team_id: 'cat-456',
         team_name: 'Perawatan',
         team_color: '#FF6B6B',
+        team_opacity: null,
         team_icon: null,
       });
     });
@@ -1069,6 +1405,7 @@ describe('SchedulesService', () => {
         team_id: 'event-123',
         team_name: 'Penyapuan',
         team_color: null,
+        team_opacity: null,
         team_icon: null,
       });
     });
@@ -1103,6 +1440,7 @@ describe('SchedulesService', () => {
         team_id: 'event-1',
         team_name: 'Team A',
         team_color: '#22C55E',
+        team_opacity: null,
         team_icon: null,
       });
       // u2: only one (event-3, Team C)
@@ -1110,6 +1448,7 @@ describe('SchedulesService', () => {
         team_id: 'event-3',
         team_name: 'Team C',
         team_color: '#69D2E7',
+        team_opacity: null,
         team_icon: null,
       });
       expect(result.size).toBe(2);

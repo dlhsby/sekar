@@ -11,7 +11,8 @@
     "monitoring": "Monitoring",
     "reports": "Reports",
     "seeds": "Seeds",
-    "pruning": "Pruning"
+    "pruning": "Pruning",
+    "mySchedule": "My Schedule"
   },
   "sections": {
     "operations": "Operations",

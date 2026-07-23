@@ -7,7 +7,7 @@
  * subject, and — critically — that "+ Tugaskan" reports the geography of the
  * container it was clicked in (the pre-fill contract).
  */
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DayBoard } from '../DayBoard';
 import { CITY_NODE_ID, type BoardMasterData } from '@/lib/schedules/dayBoard';
@@ -249,7 +249,9 @@ describe('DayBoard', () => {
     await expand(user, /Kawasan Pusat/);
     await expand(user, /Taman Bungkul/);
 
-    await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
+    await user.click(
+      within(screen.getByTestId('board-card-ry1')).getAllByRole('button', { name: /tugaskan/i })[0],
+    );
 
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -275,9 +277,11 @@ describe('DayBoard', () => {
     });
     await expand(user, /Rayon Pusat/);
     await expand(user, /Kawasan Pusat/);
-    await expand(user, /penempatan kawasan/i);
+    await expand(user, /penugasan kawasan/i);
 
-    await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
+    await user.click(
+      within(screen.getByTestId('board-card-ry1')).getAllByRole('button', { name: /tugaskan/i })[0],
+    );
 
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({ district_id: 'ry1', region_id: 'kw1', shiftId: 's1' })
@@ -295,9 +299,13 @@ describe('DayBoard', () => {
       onAssign,
     });
     await expand(user, /Rayon Pusat/);
-    await expand(user, /penempatan rayon/i);
+    await expand(user, /penugasan rayon/i);
 
-    await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
+    // Scope to the rayon's own card: Surabaya now nests every rayon and its
+    // "Penugasan Kota" block is open, so a document-wide [0] would hit the city.
+    await user.click(
+      within(screen.getByTestId('board-card-ry1')).getAllByRole('button', { name: /tugaskan/i })[0],
+    );
 
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({ district_id: 'ry1', shiftId: 's1' })
@@ -317,7 +325,7 @@ describe('DayBoard', () => {
     await expand(user, /Kawasan Pusat/);
 
     // The kawasan's own table lists nobody, but its target is met by the lokasi.
-    await expand(user, /penempatan kawasan/i);
+    await expand(user, /penugasan kawasan/i);
     expect(screen.getAllByText('1/1').length).toBeGreaterThan(0);
   });
 
@@ -329,11 +337,14 @@ describe('DayBoard', () => {
       canAssign: true,
       onAssign,
     });
-    // Surabaya's shift+role table IS its body — no "Penempatan" wrapper, since
-    // it has no kawasan/lokasi siblings to distinguish it from.
-    await expand(user, /Surabaya/);
-
-    await user.click(screen.getAllByRole('button', { name: /tugaskan/i })[0]);
+    // Surabaya itself is always expanded, but its "Penugasan Kota" block behaves
+    // like any other assignment block and starts collapsed — open it first.
+    await expand(user, /penugasan kota/i);
+    await user.click(
+      within(screen.getByTestId(`board-card-${CITY_NODE_ID}`)).getAllByRole('button', {
+        name: /tugaskan/i,
+      })[0],
+    );
     expect(onAssign).toHaveBeenCalledWith(
       expect.objectContaining({ city: true, shiftId: 's1' })
     );
@@ -549,7 +560,7 @@ describe('group rail', () => {
 
   it('draws no rail when a container has no children to group', async () => {
     const user = userEvent.setup();
-    // A district with only city-wide placement has neither kawasan nor lokasi.
+    // A district with only city-wide assignment has neither kawasan nor lokasi.
     const { container } = renderBoard({
       master: { ...master, regions: [], locations: [] },
       occurrences: [],
@@ -685,21 +696,37 @@ describe('DayBoard — Surabaya node', () => {
   it('renders at the very top even on a day with no city-wide schedule', () => {
     renderBoard();
 
-    const headers = screen.getAllByRole('button', { expanded: false });
+    // Surabaya is always expanded now, so it is NOT in the collapsed set — assert
+    // over all card headers instead of only the collapsed ones.
+    const headers = screen.getAllByRole('button', { expanded: true });
     expect(headers[0]).toHaveAccessibleName(expect.stringContaining('Surabaya'));
   });
 
-  it('shows the shift + role table directly, with no kawasan/lokasi furniture', async () => {
+  it('collapsing Surabaya hides the rayons nested inside it', async () => {
+    const user = userEvent.setup();
+    renderBoard();
+
+    // Rayons live INSIDE the city card, so the city's collapse must take them
+    // with it — otherwise collapsing appears to do nothing.
+    expect(screen.getByRole('button', { name: /Rayon Pusat/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { expanded: true, name: /Surabaya/ }));
+    expect(screen.queryByRole('button', { name: /Rayon Pusat/ })).not.toBeInTheDocument();
+  });
+
+  it('holds its roster in a collapsible "Penugasan Kota" block, with no kawasan/lokasi furniture', async () => {
     const user = userEvent.setup();
     renderBoard({ canAssign: true, onAssign: jest.fn() });
-
-    await expand(user, /Surabaya/);
 
     // Surabaya is city-wide by definition: "0 kawasan · 0 lokasi" would read as
     // a defect, and "Belum ada kawasan atau lokasi" is simply untrue.
     expect(screen.queryByText(/0 kawasan/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/belum ada kawasan atau lokasi/i)).not.toBeInTheDocument();
-    // The table is the body — role columns are right there to assign into.
+
+    // The city roster is an assignment block like any other: collapsed by default
+    // (so it can't push the rayon list off screen), revealing the role columns
+    // once opened.
+    expect(screen.queryAllByText(/satgas/i)).toHaveLength(0);
+    await expand(user, /penugasan kota/i);
     expect(screen.getAllByText(/satgas/i).length).toBeGreaterThan(0);
   });
 });

@@ -48,21 +48,30 @@ export interface BoardShiftGroup {
   countable: number;
   /** total occurrences across all roles + teams */
   total: number;
+  /**
+   * Distinct worker ids in this group. ADR-053 lets one worker hold several
+   * occurrences in a day (different places), so occurrence counts and PEOPLE
+   * counts diverge the moment you roll them up: a satgas at two lokasi in one
+   * kawasan would be "2 petugas". Every headline count dedupes through this.
+   */
+  userIds: string[];
 }
 
 export interface BoardLocation {
   id: string;
   name: string;
   shifts: BoardShiftGroup[];
-  total: number;
+  total: number;  /** Distinct workers in this node's subtree — what "N petugas" shows. */
+  workerIds: string[];
 }
 export interface BoardRegion {
   id: string;
   name: string;
   /** mobile-in-kawasan assignments (region-scoped, no location) */
-  placement: BoardShiftGroup[];
+  assignment: BoardShiftGroup[];
   locations: BoardLocation[];
-  total: number;
+  total: number;  /** Distinct workers in this node's subtree — what "N petugas" shows. */
+  workerIds: string[];
 }
 export interface BoardDistrict {
   id: string;
@@ -71,8 +80,10 @@ export interface BoardDistrict {
   /** locations under this district with no region parent */
   looseLocations: BoardLocation[];
   /** district-wide (district-scope) assignments with no location/region */
-  placement: BoardShiftGroup[];
+  assignment: BoardShiftGroup[];
   total: number;
+  /** Distinct workers in this district's subtree — what "N petugas" shows. */
+  workerIds: string[];
   /**
    * Tier this district's staffing requirements attach to — decides which single
    * level may edit capacity (district / kawasan / lokasi, never several).
@@ -157,16 +168,25 @@ function groupByShift(occs: ScheduleOccurrence[], shifts: BoardShiftDef[]): Boar
       countableByRole,
       countable: countableOccs.length,
       total: shiftOccs.length,
+      userIds: [...new Set(shiftOccs.map((o) => o.user_id))],
     };
   });
 }
 
 const sumTotal = (groups: BoardShiftGroup[]): number => groups.reduce((acc, g) => acc + g.total, 0);
 
+/** Distinct worker ids across shift groups — the input to every "N petugas" count. */
+export const workersOf = (...groups: BoardShiftGroup[][]): string[] => [
+  ...new Set(groups.flat().flatMap((g) => g.userIds)),
+];
+
+/** Union of worker ids across already-computed node lists. */
+export const unionWorkers = (...lists: string[][]): string[] => [...new Set(lists.flat())];
+
 /**
  * Build the day board tree. Occurrences are placed by their container:
  * `location_id` → that location; else `region_id` → that kawasan's mobile
- * placement; else `district_id` → that district's district-wide placement. Empty
+ * assignment; else `district_id` → that district's district-wide assignment. Empty
  * locations/regions still render so operators can assign into them.
  */
 export function buildDayBoard(
@@ -199,10 +219,16 @@ export function buildDayBoard(
 
   const buildLocation = (loc: BoardMasterData['locations'][number]): BoardLocation => {
     const shiftGroups = groupByShift(byLocation.get(loc.id) ?? [], shifts);
-    return { id: loc.id, name: loc.name, shifts: shiftGroups, total: sumTotal(shiftGroups) };
+    return {
+      id: loc.id,
+      name: loc.name,
+      shifts: shiftGroups,
+      total: sumTotal(shiftGroups),
+      workerIds: workersOf(shiftGroups),
+    };
   };
 
-  // City-wide ("Seluruh Surabaya") node, always first — a placement-only district
+  // City-wide ("Seluruh Surabaya") node, always first — a assignment-only district
   // with the sentinel id; the component localizes its label.
   //
   // It used to render only once city occurrences existed, which made it
@@ -211,14 +237,19 @@ export function buildDayBoard(
   // district/kawasan assign tables had. It is now always present, like every other
   // empty container on the board.
   const cityPlacement = groupByShift(cityOccs, shifts);
+  // `total` stays this node's OWN occupancy (city-scope assignments only).
+  // The nested layout shows Surabaya's headline count as the whole city, but that
+  // roll-up is computed in the component: pruneDayBoard treats total===0 as empty,
+  // so folding the districts in here would make the city node un-prunable.
   const cityNode: BoardDistrict[] = [
     {
       id: CITY_NODE_ID,
       name: '',
       regions: [],
       looseLocations: [],
-      placement: cityPlacement,
+      assignment: cityPlacement,
       total: sumTotal(cityPlacement),
+      workerIds: workersOf(cityPlacement),
       // No staffing_level: the city node is a sentinel, not a district — there is
       // nothing to attach a capacity to.
     },
@@ -232,29 +263,43 @@ export function buildDayBoard(
     const districtLocations = locations.filter((l) => l.district_id === district.id).sort(byName);
 
     const regionNodes: BoardRegion[] = districtRegions.map((region) => {
-      const placement = groupByShift(byRegionMobile.get(region.id) ?? [], shifts);
+      const assignment = groupByShift(byRegionMobile.get(region.id) ?? [], shifts);
       const regionLocations = districtLocations
         .filter((l) => l.region_id === region.id)
         .map(buildLocation);
-      const total = sumTotal(placement) + regionLocations.reduce((acc, l) => acc + l.total, 0);
-      return { id: region.id, name: region.name, placement, locations: regionLocations, total };
+      const total = sumTotal(assignment) + regionLocations.reduce((acc, l) => acc + l.total, 0);
+      return {
+        id: region.id,
+        name: region.name,
+        assignment,
+        locations: regionLocations,
+        total,
+        // Union, not sum: one worker covering two lokasi in this kawasan is one
+        // person (ADR-053).
+        workerIds: unionWorkers(workersOf(assignment), ...regionLocations.map((l) => l.workerIds)),
+      };
     });
 
     const looseLocations = districtLocations.filter((l) => !l.region_id).map(buildLocation);
-    const placement = groupByShift(byDistrictMobile.get(district.id) ?? [], shifts);
+    const assignment = groupByShift(byDistrictMobile.get(district.id) ?? [], shifts);
 
     const total =
       regionNodes.reduce((acc, r) => acc + r.total, 0) +
       looseLocations.reduce((acc, l) => acc + l.total, 0) +
-      sumTotal(placement);
+      sumTotal(assignment);
 
     return {
       id: district.id,
       name: district.name,
       regions: regionNodes,
       looseLocations,
-      placement,
+      assignment,
       total,
+      workerIds: unionWorkers(
+        workersOf(assignment),
+        ...regionNodes.map((r) => r.workerIds),
+        ...looseLocations.map((l) => l.workerIds),
+      ),
       // Mirror the entity's column default so a district whose level the API
       // omitted still resolves to exactly one editable tier (kawasan) rather
       // than none.
@@ -342,11 +387,16 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
           }
 
           // A kawasan whose only match is a lokasi under it must survive as the
-          // path to that lokasi, so weigh its subtree, not just its own placement.
+          // path to that lokasi, so weigh its subtree, not just its own assignment.
           const subtreeTotal =
-            sumTotal(region.placement) + locations.reduce((a, l) => a + l.total, 0);
+            sumTotal(region.assignment) + locations.reduce((a, l) => a + l.total, 0);
           if (!keepNode(subtreeTotal) && locations.length === 0) return null;
-          return { ...region, locations, total: subtreeTotal };
+          return {
+            ...region,
+            locations,
+            total: subtreeTotal,
+            workerIds: unionWorkers(workersOf(region.assignment), ...locations.map((l) => l.workerIds)),
+          };
         })
         .filter((r): r is BoardRegion => r !== null);
 
@@ -360,23 +410,39 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
           ).filter((l) => keepNode(l.total));
 
       // A lokasi/kawasan filter is asking about a container, not about the
-      // district's own mobile placement — don't let placement smuggle it back in.
-      const placement =
+      // district's own mobile assignment — don't let assignment smuggle it back in.
+      const assignment =
         filters.locationId || filters.regionId
           ? []
-          : keepNode(sumTotal(district.placement))
-            ? district.placement
+          : keepNode(sumTotal(district.assignment))
+            ? district.assignment
             : [];
 
       const total =
         regions.reduce((a, r) => a + r.total, 0) +
         looseLocations.reduce((a, l) => a + l.total, 0) +
-        sumTotal(placement);
+        sumTotal(assignment);
 
       // Nothing left under this district at all → it isn't an answer to the query.
-      if (regions.length === 0 && looseLocations.length === 0 && placement.length === 0) return null;
+      if (regions.length === 0 && looseLocations.length === 0 && assignment.length === 0) return null;
 
-      return { ...district, regions, looseLocations, placement, total };
+      return {
+        ...district,
+        regions,
+        looseLocations,
+        assignment,
+        total,
+        // Recomputed from what SURVIVED, exactly like `total` and like the region
+        // branch above. Spreading `...district` alone carried the pre-filter
+        // worker set through, so a district filtered down to one lokasi still
+        // announced "40 petugas" beside three occurrences — and the city roll-up
+        // in DayBoard unions these same arrays, so it inherited the error.
+        workerIds: unionWorkers(
+          workersOf(assignment),
+          ...regions.map((r) => r.workerIds),
+          ...looseLocations.map((l) => l.workerIds),
+        ),
+      };
     })
     .filter((r): r is BoardDistrict => r !== null);
 }
@@ -403,6 +469,11 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
  */
 export function autoExpandedIds(tree: BoardDistrict[], filters: BoardFilters): Set<string> {
   const ids = new Set<string>();
+  // Surabaya is the board's root container — every rayon lives inside it, so a
+  // collapsed city would hide the entire board. It always starts open. Its
+  // "Penugasan Kota" block is NOT auto-opened: it is an assignment block like any
+  // other and collapses by default, so the rayon list stays reachable.
+  ids.add(CITY_NODE_ID);
   if (!hasAnyBoardFilter(filters)) return ids;
 
   // Geography-only: the tree is already pruned to the named subtree, so opening
@@ -428,15 +499,15 @@ export function autoExpandedIds(tree: BoardDistrict[], filters: BoardFilters): S
   for (const district of tree) {
     let districtHit = false;
 
-    if (sumTotal(district.placement) > 0) {
-      ids.add(`${district.id}:placement`);
+    if (sumTotal(district.assignment) > 0) {
+      ids.add(`${district.id}:assignment`);
       districtHit = true;
     }
 
     for (const region of district.regions) {
       let regionHit = false;
-      if (sumTotal(region.placement) > 0) {
-        ids.add(`${region.id}:placement`);
+      if (sumTotal(region.assignment) > 0) {
+        ids.add(`${region.id}:assignment`);
         regionHit = true;
       }
       for (const loc of region.locations) {
@@ -509,7 +580,10 @@ export function districtCountsFor(
 ): DistrictCount[] {
   const locDistrict = new Map(master.locations.map((l) => [l.id, l.district_id]));
   const regDistrict = new Map(master.regions.map((r) => [r.id, r.district_id]));
-  const counts = new Map<string, number>();
+  // PEOPLE, not occurrences (ADR-053): a worker covering two lokasi in the same
+  // rayon on one day holds two rows, and the month/week/year cells count
+  // petugas. Summing rows would have shown them twice per day.
+  const workers = new Map<string, Set<string>>();
 
   for (const o of occurrences) {
     const districtId = o.location_id
@@ -518,11 +592,13 @@ export function districtCountsFor(
         ? regDistrict.get(o.region_id)
         : (o.district_id ?? undefined);
     if (!districtId) continue;
-    counts.set(districtId, (counts.get(districtId) ?? 0) + 1);
+    const set = workers.get(districtId);
+    if (set) set.add(o.user_id);
+    else workers.set(districtId, new Set([o.user_id]));
   }
 
   return master.districts
-    .map((r) => ({ districtId: r.id, districtName: r.name, count: counts.get(r.id) ?? 0 }))
+    .map((r) => ({ districtId: r.id, districtName: r.name, count: workers.get(r.id)?.size ?? 0 }))
     .filter((r) => r.count > 0)
     .sort((a, b) => b.count - a.count);
 }
@@ -542,6 +618,9 @@ export function buildWeekCoverage(
   const regDistrict = new Map(master.regions.map((r) => [r.id, r.district_id]));
   const shiftName = new Map(master.shifts.map((s) => [s.id, s.name]));
   const dayIndex = new Map(dateStrs.map((d, i) => [d, i]));
+
+  /** Distinct workers already counted into a cell — keeps `total` a people count. */
+  const seenByCell = new Map<WeekShiftBreakdown, Set<string>>();
 
   // districtId → dayIndex → shiftId → breakdown accumulator.
   const acc = new Map<string, Map<string, WeekShiftBreakdown>[]>(
@@ -573,7 +652,15 @@ export function buildWeekCoverage(
         total: 0,
       };
       dayShifts.set(shiftId, cell);
+      seenByCell.set(cell, new Set());
     }
+    // Count PEOPLE, not rows (ADR-053): one worker covering two lokasi in the
+    // same rayon and shift holds two occurrences, and this cell reads as
+    // "N petugas". Counting rows showed them twice.
+    const seen = seenByCell.get(cell)!;
+    if (seen.has(o.user_id)) continue;
+    seen.add(o.user_id);
+
     cell.total += 1;
     if (isTeam(o)) {
       cell.teams += 1;

@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { getMyRoster } from '../services/api/schedulesApi';
+import { getMyDay, getMyRoster } from '../services/api/schedulesApi';
 import type { Schedule, ShiftDefinition } from '../types/models.types';
 
 export interface TodayRoster {
@@ -19,11 +19,18 @@ export interface TodayRoster {
   rosterShift: ShiftDefinition | null;
   /** Whether the worker is scheduled to a shift today. */
   hasScheduleToday: boolean;
+  /**
+   * EVERY roster row for today, not just the operative one — a worker can cover
+   * several places in one shift (ADR-053). `roster` stays the single row the
+   * clock-in screen needs; lists render this.
+   */
+  allToday: Schedule[];
   loading: boolean;
 }
 
 export function useTodayRoster(): TodayRoster {
   const [roster, setRoster] = useState<Schedule | null>(null);
+  const [allToday, setAllToday] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,11 +47,20 @@ export function useTodayRoster(): TodayRoster {
           setLoading(false);
         }
       });
+    // The full day is supplementary: a failure here must not blank the card, so
+    // it falls back to the single operative row.
+    getMyDay()
+      .then((res) => {
+        if (active) setAllToday(res.data ?? []);
+      })
+      .catch(() => undefined);
+
     return () => {
       active = false;
     };
   }, []);
 
   const rosterShift = roster?.shift_definition ?? null;
-  return { roster, rosterShift, hasScheduleToday: !!rosterShift, loading };
+  const rows = allToday.length > 0 ? allToday : roster ? [roster] : [];
+  return { roster, rosterShift, hasScheduleToday: !!rosterShift, allToday: rows, loading };
 }

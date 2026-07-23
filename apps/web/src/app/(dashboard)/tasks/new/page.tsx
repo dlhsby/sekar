@@ -29,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { getErrorMessage } from '@/lib/api/client';
+import { toast } from 'sonner';
 import {
   TASK_MANAGER_ROLES,
   VALID_TASK_ASSIGNMENTS,
@@ -112,6 +113,7 @@ export default function CreateTaskPage() {
       };
 
       await createMutation.mutateAsync(basePayload as Parameters<typeof createMutation.mutateAsync>[0]);
+      toast.success(t('common:messages.created'));
       router.push('/tasks');
     } catch (err) {
       setError(getErrorMessage(err));

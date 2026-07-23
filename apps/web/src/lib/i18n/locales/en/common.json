@@ -277,5 +277,19 @@
     "usingDefault": "Using system default",
     "colorHint": "Pin/label color on the map — does not recolor the icon image."
   },
-  "loading": "Loading…"
+  "loading": "Loading…",
+  "messages": {
+    "saved": "Changes saved",
+    "created": "Created",
+    "updated": "Updated",
+    "deleted": "Deleted",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "assigned": "Assigned",
+    "verified": "Verified",
+    "revisionRequested": "Revision requested",
+    "removed": "Removed",
+    "markedRead": "Marked as read",
+    "converted": "Converted"
+  }
 }

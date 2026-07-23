@@ -1,6 +1,6 @@
 /**
  * Unit tests: ShiftRoleTable — the shared roster layout every board container
- * renders (district placement, kawasan placement, location).
+ * renders (district assignment, kawasan assignment, location).
  *
  * The contract: every shift renders even when empty, the core role columns
  * always exist so an empty one can be filled, and "+ Tugaskan" reports the
@@ -63,7 +63,7 @@ describe('ShiftRoleTable', () => {
 
     expect(screen.getByText('Satgas')).toBeInTheDocument();
     expect(screen.getByText('Linmas')).toBeInTheDocument();
-    expect(screen.getByText('Koordinator Lapangan')).toBeInTheDocument();
+    expect(screen.getByText('Korlap')).toBeInTheDocument();
   });
 
   it('appends a column for a non-core role that is present', () => {

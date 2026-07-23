@@ -84,8 +84,9 @@ export class ShiftsService {
     // assignment (user_areas + active schedules) when there is no roster row.
     let candidates: Location[] = [];
     if (this.dailySchedulesService) {
-      const today = TimezoneUtil.jakartaDateString();
-      candidates = await this.dailySchedulesService.getActiveAreasForDay(userId, today);
+      // "Now", not "today": a Shift 3 worker clocking out at 03:00 is still on
+      // yesterday's roster row.
+      candidates = await this.dailySchedulesService.getActiveAreasNow(userId);
     }
     if (candidates.length === 0) {
       candidates = await this.getCandidateAreas(userId);

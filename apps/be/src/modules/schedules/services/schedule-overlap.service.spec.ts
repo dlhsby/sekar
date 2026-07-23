@@ -86,7 +86,7 @@ describe('ScheduleOverlapService', () => {
       expect(conflict).toBeNull();
     });
 
-    it('should reject shift 1 + shift 1 same day (duplicate)', async () => {
+    it('should ALLOW shift 1 + shift 1 same day — siblings at different places (ADR-053)', async () => {
       const userId = 'user-1';
       const date = '2026-07-15';
 
@@ -101,10 +101,12 @@ describe('ScheduleOverlapService', () => {
         } as unknown as Schedule,
       ]);
 
-      // Candidate: same shift 1
+      // Candidate: same shift 1. ADR-053 — a second row on the SAME shift is a
+      // sibling (the worker covering another place during that shift), not a
+      // conflict. The duplicate that is wrong (same place too) is blocked by
+      // `UQ_schedules_user_date_shift_place`, not by the overlap guard.
       const conflict = await service.findConflict(userId, date, mockShift1);
-      expect(conflict).not.toBeNull();
-      expect(conflict?.shift_name).toBe('Shift 1');
+      expect(conflict).toBeNull();
     });
 
     it('should allow prior-day shift 3 (21:00→05:00) + today shift 1 (06:00)', async () => {
@@ -224,10 +226,10 @@ describe('ScheduleOverlapService', () => {
         } as unknown as Schedule,
       ]);
 
-      // Candidate: same shift 1 (should conflict with the live row)
+      // Same shift 1 → sibling, not a conflict (ADR-053). This test's subject is
+      // the soft-delete filter, asserted via the query below.
       const conflict = await service.findConflict(userId, date, mockShift1);
-      expect(conflict).not.toBeNull(); // Live row causes conflict
-      expect(conflict?.shift_name).toBe('Shift 1');
+      expect(conflict).toBeNull();
 
       // Verify the where clause uses Between() to limit date range
       expect(scheduleRepo.find).toHaveBeenCalledWith(

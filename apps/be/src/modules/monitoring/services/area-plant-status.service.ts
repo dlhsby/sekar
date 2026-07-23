@@ -150,7 +150,7 @@ export class AreaPlantStatusService {
    */
   async getSummary(districtId?: string): Promise<PlantStatusSummaryResponse> {
     const areas = await this.areaRepository.find({
-      where: districtId ? { district_id: districtId } : {},
+      where: districtId ? { district_id: districtId, is_active: true } : { is_active: true },
       relations: ['locationType'],
     });
     const areaById = new Map(areas.map((a) => [a.id, a]));

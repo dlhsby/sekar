@@ -14,13 +14,18 @@ import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { isToday } from '../utils/dateUtils';
 import { deriveAttendanceStatus } from '../utils/attendance';
+import { resolveScheduleScope } from '../utils/scheduleScope';
 import { useTodayRoster } from './useTodayRoster';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
 
 /** Whether the worker has an area to be inside/outside of at all. */
-export type AreaState = 'within' | 'outside' | 'none';
+/**
+ * `scope` = assigned city/rayon/kawasan-wide: no polygon to test against, but
+ * NOT unassigned. `none` is reserved for a genuinely ad-hoc worker.
+ */
+export type AreaState = 'within' | 'outside' | 'none' | 'scope';
 
 export interface LocationState {
   latitude: number | null;
@@ -35,12 +40,6 @@ export function useClockInOut() {
 
   const assignedArea = useAppSelector((state) => state.auth.assignedArea);
   const assignedAreas = useAppSelector((state) => state.auth.assignedAreas);
-  // All areas the worker may clock into (multi-area); fall back to the single
-  // primary, or empty for ad-hoc workers with no fixed area.
-  const areasForGeofence = useMemo(
-    () => ((assignedAreas?.length ?? 0) > 0 ? assignedAreas : assignedArea ? [assignedArea] : []),
-    [assignedAreas, assignedArea],
-  );
   const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
   const { isOnline } = useAppSelector((state) => state.offline);
 
@@ -62,7 +61,44 @@ export function useClockInOut() {
   // Today's roster (from /schedules/my) — the single schedule concept (ADR-013).
   // This is the ONLY source of "scheduled" truth: an unscheduled patrol/ad-hoc
   // worker resolves to hasScheduleToday=false and never reads as late.
-  const { rosterShift, hasScheduleToday } = useTodayRoster();
+  const { roster, rosterShift, hasScheduleToday } = useTodayRoster();
+
+  // Where today's roster row puts the worker — a city/rayon/kawasan-scope
+  // assignment names no lokasi but is still an assignment (see resolveScheduleScope).
+  const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
+
+  /**
+   * The lokasi TODAY'S assignment covers. ADR-053: one place per row — a worker
+   * covering several holds several rows, so this stays a list for the geofence
+   * even though each row contributes at most one.
+   *
+   * Today's roster wins over the standing `assignedAreas`: the permanent
+   * assignment is where the worker usually is, the roster is where they are
+   * *today*, and clocking in was being geofenced against the wrong one whenever
+   * the two differed.
+   */
+  const rosterAreas = useMemo(
+    () => (roster?.location ? [roster.location] : []),
+    [roster],
+  );
+
+  // Fall back to the standing assignment only when today's roster names no
+  // lokasi. A kawasan/rayon/kota-scope day legitimately has none — there is no
+  // boundary to violate, and the backend resolves the actual lokasi from GPS at
+  // clock-in (it expands the scheduled kawasan into its lokasi).
+  const areasForGeofence = useMemo(
+    () =>
+      rosterAreas.length > 0
+        ? rosterAreas
+        : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+          ? []
+          : (assignedAreas?.length ?? 0) > 0
+            ? assignedAreas
+            : assignedArea
+              ? [assignedArea]
+              : [],
+    [rosterAreas, scheduleScope, assignedAreas, assignedArea],
+  );
 
   // Today's shifts (for the day's FIRST clock-in, so a clock-out+back-in later
   // never re-triggers "late").
@@ -79,6 +115,7 @@ export function useClockInOut() {
   // The scheduled window shown on screen — roster only (null when unscheduled).
   const scheduledShift = rosterShift;
   const isLate = attendance.isLate;
+  const attendanceState = attendance.state;
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 
@@ -331,10 +368,21 @@ export function useClockInOut() {
     );
   }, [currentShift, location, selfie, dispatch]);
 
-  // Area state for the boundary badge: workers with no assigned area have no
-  // boundary to be inside/outside of — show a neutral "no area", not "in area".
+  // Area state for the boundary badge. Three cases, not two:
+  //  • lokasi assigned  → within / outside its boundary
+  //  • kota/rayon/kawasan scope → 'scope': there is no polygon to be inside of,
+  //    but the worker IS assigned. Reporting 'none' here is what made a
+  //    city-scope satgas read "TANPA AREA" everywhere while his own schedule
+  //    card said "Lingkup Kota Surabaya".
+  //  • genuinely unassigned (ad-hoc) → 'none'
   const areaState: AreaState =
-    areasForGeofence.length === 0 ? 'none' : isWithinBoundary ? 'within' : 'outside';
+    areasForGeofence.length > 0
+      ? isWithinBoundary
+        ? 'within'
+        : 'outside'
+      : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+        ? 'scope'
+        : 'none';
 
   return {
     location,
@@ -349,6 +397,9 @@ export function useClockInOut() {
     currentShift,
     scheduledShift,
     isLate,
+    attendanceState,
+    scheduleScope,
+    rosterAreas,
     hasScheduleToday,
     getCurrentLocation,
     handleCaptureSelfie,

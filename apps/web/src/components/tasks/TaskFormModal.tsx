@@ -25,6 +25,7 @@ import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { getErrorMessage } from '@/lib/api/client';
 import { VALID_TASK_ASSIGNMENTS, ROLE_LABELS } from '@/lib/constants/roles';
+import { toast } from 'sonner';
 import type { UserRole } from '@/types/models';
 
 interface TaskFormModalProps {
@@ -119,6 +120,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
       };
 
       await createMutation.mutateAsync(basePayload as Parameters<typeof createMutation.mutateAsync>[0]);
+      toast.success(t('common:messages.created'));
       onSuccess?.();
       onOpenChange(false);
     } catch (err) {

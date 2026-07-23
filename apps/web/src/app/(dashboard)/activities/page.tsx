@@ -36,6 +36,7 @@ import type { Activity, ActivityFilters, ActivityStatus } from '@/types/models';
 import { MONITORING_ROLES, ACTIVITY_APPROVER_ROLES, hasRole } from '@/lib/constants/roles';
 import { getActivityStatusLabels, ACTIVITY_STATUS_BADGES } from '@/lib/constants/activities';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { runAction } from '@/lib/hooks/use-action';
 
 const isValidActivityStatus = (value: string): value is ActivityStatus | 'all' => {
   return ['all', 'pending', 'approved', 'rejected'].includes(value);
@@ -111,19 +112,25 @@ export default function ActivitiesPage() {
 
   const handleApprove = useCallback(
     async (id: string) => {
-      await approveMutation.mutateAsync(id);
+      await runAction(() => approveMutation.mutateAsync(id), {
+        success: t('common:messages.approved'),
+      });
     },
-    [approveMutation]
+    [approveMutation, t]
   );
 
   const handleReject = useCallback(
     async (id: string) => {
       if (!rejectReason.trim()) return;
-      await rejectMutation.mutateAsync({ id, reason: rejectReason });
-      setRejectingId(null);
-      setRejectReason('');
+      await runAction(() => rejectMutation.mutateAsync({ id, reason: rejectReason }), {
+        success: t('common:messages.rejected'),
+        onSuccess: () => {
+          setRejectingId(null);
+          setRejectReason('');
+        },
+      });
     },
-    [rejectReason, rejectMutation]
+    [rejectReason, rejectMutation, t]
   );
 
   const rowActions = useCallback(

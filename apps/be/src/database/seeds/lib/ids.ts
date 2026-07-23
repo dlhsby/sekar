@@ -22,6 +22,23 @@ export const RAYON_BARAT1_ID = 'bf040137-fce4-4016-b5e7-704ad82c1594';
 export const RAYON_BARAT2_ID = '7422e6ee-0693-4565-9016-d4f759bdeed2';
 export const RAYON_TAMAN_AKTIF_ID = '8a8a8a8a-1111-4222-9333-444444444444';
 
+/**
+ * Rayon ids by their CURRENT DISPLAY NAME — use these when seeding **people**.
+ *
+ * `RAYON_BARAT1_ID` / `RAYON_BARAT2_ID` above are pinned to their PRE-rename
+ * codes on purpose: that is what keeps each kawasan/lokasi attached to the row it
+ * has always belonged to, and it must not change. But the two rayon swapped
+ * display names, so the constant called `RAYON_BARAT1_ID` is the rayon an
+ * operator now reads as **"Rayon Barat 2"**.
+ *
+ * Seeding users from the stale codes is why "Satgas Barat 1 Satu" showed up
+ * inside Rayon Barat 2 on the board — and why a korlap named for Barat 1 looked
+ * like it had drifted onto the wrong scope. Geography keeps its codes; people
+ * follow the name.
+ */
+export const DISTRICT_NAMED_BARAT_1_ID = RAYON_BARAT2_ID;
+export const DISTRICT_NAMED_BARAT_2_ID = RAYON_BARAT1_ID;
+
 /** district code → id (stable internal keys; codes stay fixed even after the
  * staging Barat 1 ↔ Barat 2 rename, preserving downstream membership). */
 export const RAYON_ID_BY_CODE: Record<string, string> = {

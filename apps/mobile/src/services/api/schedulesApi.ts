@@ -12,6 +12,22 @@ import type { ApiResponse } from '../../types/api.types';
 import type { Schedule } from '../../types/shift.types';
 
 /**
+ * ALL of the caller's roster rows for a day.
+ *
+ * A worker can hold several rows in one shift (ADR-053) — lokasi A, then lokasi
+ * B, then a kawasan. `getMyRoster` deliberately returns the single most relevant
+ * row (the clock-in screen needs exactly one); anything that LISTS the day must
+ * use this or it silently hides assignments.
+ */
+export async function getMyDay(date?: string): Promise<ApiResponse<Schedule[]>> {
+  const params: Record<string, string> = {};
+  if (date) {
+    params.date = date;
+  }
+  return get<Schedule[]>('/schedules/my/day', params);
+}
+
+/**
  * Get the authenticated user's roster for a specific date (or today, WIB).
  * Returns a day-scoped row with status, shift, areas, and district (or null).
  */
@@ -36,4 +52,4 @@ export async function getMyRange(
   return get<Schedule[]>('/schedules/range', { from, to });
 }
 
-export default { getMyRoster, getMyRange };
+export default { getMyRoster, getMyDay, getMyRange };

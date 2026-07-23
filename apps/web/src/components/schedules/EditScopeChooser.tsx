@@ -8,8 +8,21 @@ interface EditScopeChooserProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSelect: (scope: EditScope, fromDate?: string) => void;
-  /** When set, a destructive delete entry hands off to the delete-scope flow. */
-  onDelete?: () => void;
+  /**
+   * The scope currently being applied, if any. Answering this dialog is what
+   * WRITES the edit (the form only collects it), so the choice has to show
+   * progress and stay un-double-clickable while the request is in flight.
+   */
+  pendingScope?: EditScope | null;
+  /**
+   * Return to the edit form with the collected change intact.
+   *
+   * This dialog used to offer DELETE here, which asked the wrong question: the
+   * user is part-way through an edit, and the only backwards move that makes
+   * sense is back to the form. Deleting stays where it belongs — the row's
+   * detail modal.
+   */
+  onBack?: () => void;
   selectedDate?: string;
   /** When true, hide the 'this' (Hanya hari ini) option (for projected occurrences). */
   hideThisOption?: boolean;
@@ -19,14 +32,23 @@ export function EditScopeChooser({
   open,
   onOpenChange,
   onSelect,
-  onDelete,
+  onBack,
   selectedDate,
   hideThisOption = false,
+  pendingScope = null,
 }: EditScopeChooserProps) {
   const { t } = useTranslation();
+  const busy = pendingScope != null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      // A write is in flight — an outside click or Esc here would orphan it.
+      onOpenChange={(next) => {
+        if (busy) return;
+        onOpenChange(next);
+      }}
+    >
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>{t('schedules:calendar.editScope.title')}</DialogTitle>
@@ -37,10 +59,9 @@ export function EditScopeChooser({
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => {
-                  onSelect('this');
-                  onOpenChange(false);
-                }}
+                loading={pendingScope === 'this'}
+                disabled={busy}
+                onClick={() => onSelect('this')}
               >
                 <div className="text-left">
                   <div className="font-bold">{t('schedules:calendar.editScope.this')}</div>
@@ -51,10 +72,9 @@ export function EditScopeChooser({
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => {
-                onSelect('this_and_future', selectedDate);
-                onOpenChange(false);
-              }}
+              loading={pendingScope === 'this_and_future'}
+              disabled={busy}
+              onClick={() => onSelect('this_and_future', selectedDate)}
             >
               <div className="text-left">
                 <div className="font-bold">{t('schedules:calendar.editScope.thisAndFuture')}</div>
@@ -64,10 +84,9 @@ export function EditScopeChooser({
             <Button
               variant="outline"
               className="w-full justify-start"
-              onClick={() => {
-                onSelect('series');
-                onOpenChange(false);
-              }}
+              loading={pendingScope === 'series'}
+              disabled={busy}
+              onClick={() => onSelect('series')}
             >
               <div className="text-left">
                 <div className="font-bold">{t('schedules:calendar.editScope.series')}</div>
@@ -76,18 +95,13 @@ export function EditScopeChooser({
           </div>
         </DialogBody>
         <DialogFooter className="justify-between">
-          {onDelete && (
-            <Button
-              variant="destructive"
-              onClick={() => {
-                onOpenChange(false);
-                onDelete();
-              }}
-            >
-              {t('common:actions.delete')}
+          {onBack && (
+            <Button variant="outline" disabled={busy} onClick={onBack}>
+              {t('common:actions.back')}
             </Button>
           )}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          {/* Cancel DISCARDS the pending edit — nothing has been written yet. */}
+          <Button variant="outline" disabled={busy} onClick={() => onOpenChange(false)}>
             {t('common:actions.cancel')}
           </Button>
         </DialogFooter>

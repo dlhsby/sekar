@@ -318,7 +318,7 @@ describe('UserForm', () => {
       expect(screen.getByText('Admin')).toBeInTheDocument();
       expect(screen.getByText('Management')).toBeInTheDocument();
       expect(screen.getByText('Kepala Rayon')).toBeInTheDocument();
-      expect(screen.getByText('Koordinator Lapangan')).toBeInTheDocument();
+      expect(screen.getByText('Korlap')).toBeInTheDocument();
       expect(screen.getByText('Worker')).toBeInTheDocument();
       expect(screen.getByText('Linmas')).toBeInTheDocument();
     });
@@ -434,7 +434,10 @@ describe('UserForm', () => {
       });
     });
 
-    it('keeps district but clears shift for a district+area role (korlap)', async () => {
+    // ADR-053: a korlap's placement comes from their SCHEDULE, so the form no
+    // longer collects a rayon (or lokasi) for them — only kepala_rayon and
+    // admin_rayon, whose authority is defined by a rayon, still get that input.
+    it('clears district AND shift for korlap — placement is schedule-driven', async () => {
       const onSubmit = jest.fn().mockResolvedValue(undefined);
       const user = userEvent.setup();
 
@@ -444,7 +447,7 @@ describe('UserForm', () => {
         username: 'koord',
         full_name: 'Koordinator',
         phone_number: '081200000000',
-        role: 'korlap', // scope: district + area, no shift
+        role: 'korlap', // no scope inputs at all now
         district_id: districtId,
         created_at: '2026-01-01',
         updated_at: '2026-01-01',
@@ -464,7 +467,7 @@ describe('UserForm', () => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
             role: 'korlap',
-            district_id: districtId,
+            district_id: null,
             shift_definition_id: null,
           }),
         );

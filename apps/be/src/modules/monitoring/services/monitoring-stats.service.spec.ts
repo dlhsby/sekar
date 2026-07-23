@@ -17,7 +17,7 @@ import {
   DayType,
 } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from '../entities/user-tracking-status.entity';
-import { Schedule, ScheduleLocation } from '../../schedules/entities/schedule.entity';
+import { Schedule } from '../../schedules/entities/schedule.entity';
 import { User } from '../../users/entities/user.entity';
 
 describe('MonitoringStatsService', () => {
@@ -166,10 +166,6 @@ describe('MonitoringStatsService', () => {
         },
         {
           provide: getRepositoryToken(Schedule),
-          useValue: { find: jest.fn(), createQueryBuilder: jest.fn() },
-        },
-        {
-          provide: getRepositoryToken(ScheduleLocation),
           useValue: { find: jest.fn(), createQueryBuilder: jest.fn() },
         },
         {

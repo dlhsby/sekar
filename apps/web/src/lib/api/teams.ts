@@ -7,6 +7,12 @@ export interface TeamCategory {
   name: string;
   is_active: boolean;
   marker_color?: string | null;
+  /**
+   * Alpha for `marker_color`, 0–1. A team category has ONE colour (no boundary
+   * to outline, unlike the geography tiers' border/fill pair), so this is the
+   * single opacity applied wherever it is drawn. Null → opaque.
+   */
+  marker_opacity?: number | null;
   marker_icon?: string | null;
 }
 
@@ -14,6 +20,7 @@ export interface CreateTeamCategoryDto {
   name: string;
   is_active: boolean;
   marker_color?: string | null;
+  marker_opacity?: number | null;
   marker_icon?: string | null;
 }
 export type UpdateTeamCategoryDto = Partial<CreateTeamCategoryDto>;

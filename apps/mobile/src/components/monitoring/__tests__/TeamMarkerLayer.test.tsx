@@ -23,6 +23,7 @@ function team(over: Partial<TeamGroup>): TeamGroup {
     team_id: 't1',
     team_name: 'Tim Sapu',
     team_color: '#FF0000',
+    team_opacity: null,
     team_icon: null,
     latitude: -7.25,
     longitude: 112.75,

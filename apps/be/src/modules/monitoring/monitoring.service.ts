@@ -15,6 +15,7 @@ import { AreaStatsDto } from './dto/area-stats.dto';
 import { LiveUsersResponseDto, LiveUsersFilterDto } from './dto/live-users.dto';
 import { LocationHistoryResponseDto } from './dto/location-history.dto';
 import { UserDaySummaryDto } from './dto/user-day-summary.dto';
+import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
   StaffingSummaryResponseDto,
   StaffingSummaryItemDto,
@@ -71,6 +72,8 @@ export interface SnapshotWorker {
   team_name: string | null;
   /** Marker color in hex format (from team_category.marker_color). */
   team_color: string | null;
+  /** Alpha for `team_color` (from team_category.marker_opacity); null → opaque. */
+  team_opacity: number | null;
   /** Marker glyph name (from team_category.marker_icon). */
   team_icon: string | null;
 }
@@ -272,12 +275,19 @@ export class MonitoringService {
         team_id: u.team_id ?? null,
         team_name: u.team_name ?? null,
         team_color: u.team_color ?? null,
+        team_opacity: u.team_opacity ?? null,
         team_icon: u.team_icon ?? null,
       };
     });
 
     // Build area_summaries from distinct areas present in workers
-    const areaSummaries = await this.buildAreaSummaries(workers, currentShift, currentDayType);
+    const areaSummaries = await this.buildAreaSummaries(
+      workers,
+      currentShift,
+      currentDayType,
+      scope,
+      id,
+    );
 
     const generatedAt = new Date().toISOString();
 
@@ -315,6 +325,8 @@ export class MonitoringService {
     workers: SnapshotWorker[],
     currentShift: ShiftDefinition | null,
     currentDayType: DayType,
+    scope: 'city' | 'district' | 'location',
+    scopeId?: string,
   ): Promise<SnapshotAreaSummary[]> {
     // Group workers by location_id; track distinct areas with (id, name, district_id, district_name)
     const areaMap = new Map<
@@ -322,25 +334,73 @@ export class MonitoringService {
       { name: string; district_id: string; district_name: string; activeCount: number }
     >();
 
-    for (const w of workers) {
-      if (!w.location_id) continue; // Skip workers without area assignment
-      // Only satgas+linmas staff a place (ADR-046). korlap / kepala_rayon /
-      // admin_rayon are monitorable — they render on the map — but counting them
-      // here let a supervisor standing in a park mask a real shortfall, since
-      // `required_count` below sums satgas+linmas requirements only.
-      if (!STAFFING_COUNTED_ROLES.includes(w.role as UserRole)) continue;
-      // Ad-hoc clock-ins (not on the current shift's roster) never count toward
-      // staffing (ADR-050 5.4d) — a patrol worker who happens to stand in a park
-      // must not mask that park's real shortfall. The aggregate path excludes them
-      // too; keep the two in lock-step.
-      // Consequence (intended): a lokasi whose ONLY clocked-in workers are ad-hoc
-      // produces NO area_summary — exactly like a lokasi with no workers at all.
-      // area_summaries is a present-worker rollup, never a complete lokasi list;
-      // understaffing of unmanned/ad-hoc-only lokasi is surfaced by the AGGREGATE
-      // (which walks every lokasi with a requirement), the authoritative coverage view.
-      if (!w.is_scheduled) continue;
+    // Which lokasi each worker is ROSTERED to this shift. Staffing is
+    // `assigned ∧ present` (ADR-053), not `standing here right now`: a satgas
+    // covering A, B and X staffs all three while on duty. Falls back to their
+    // live lokasi for an ad-hoc worker with no roster row.
+    const assignedByUser = await this.statsService.scheduledLocationIdsByUser(
+      TimezoneUtil.jakartaDateString(),
+      currentShift?.id,
+    );
 
-      const existing = areaMap.get(w.location_id);
+    // Only workers who can actually staff a place contribute. Only satgas+linmas
+    // staff one (ADR-046): counting a korlap standing in a park let a supervisor
+    // mask a real shortfall, since `required_count` below sums satgas+linmas
+    // requirements only. Ad-hoc clock-ins never count either (ADR-050 5.4d), and
+    // the aggregate path excludes them too — keep the two in lock-step.
+    //
+    // Consequence (intended): a lokasi whose ONLY clocked-in workers are ad-hoc
+    // produces NO area_summary — exactly like a lokasi with no workers at all.
+    // area_summaries is a present-worker rollup, never a complete lokasi list;
+    // understaffing of unmanned/ad-hoc-only lokasi is surfaced by the AGGREGATE
+    // (which walks every lokasi with a requirement), the authoritative coverage view.
+    const contributors = workers.filter(
+      (w) => STAFFING_COUNTED_ROLES.includes(w.role as UserRole) && w.is_scheduled,
+    );
+
+    // Every lokasi that could appear in the output. A rostered worker is credited
+    // to their ROSTER, which is known independently of GPS — so a satgas walking
+    // the road between two taman (`location_id === null`) still staffs both,
+    // instead of dropping out and reporting each one short.
+    const candidateIds = new Set<string>();
+    for (const w of contributors) {
+      const credited = assignedByUser.get(w.user_id) ?? (w.location_id ? [w.location_id] : []);
+      for (const locationId of credited) candidateIds.add(locationId);
+    }
+
+    // Authoritative metadata, straight from the lokasi rows. Deriving it from
+    // whichever worker happened to be standing there named a credited lokasi
+    // after a DIFFERENT one (a worker rostered to A and B, standing in A, made B
+    // report A's name and rayon) and made the result depend on worker ordering.
+    // This lookup doubles as the scope + is_active gate: a lokasi outside the
+    // requested scope, or deactivated, is simply absent from `areaMeta` and is
+    // therefore never credited — a district-scoped snapshot can no longer leak a
+    // lokasi from another rayon via a worker rostered across both.
+    const areaMeta = new Map<
+      string,
+      { name: string; district_id: string; district_name: string }
+    >();
+    if (candidateIds.size > 0) {
+      const scopeWhere: Record<string, unknown> = {
+        id: In([...candidateIds]),
+        is_active: true,
+      };
+      if (scope === 'district' && scopeId) scopeWhere.district_id = scopeId;
+      if (scope === 'location' && scopeId) scopeWhere.id = scopeId;
+      const locations = await this.areaRepository.find({
+        where: scopeWhere,
+        relations: ['district'],
+      });
+      for (const loc of locations) {
+        areaMeta.set(loc.id, {
+          name: loc.name,
+          district_id: loc.district_id ?? '',
+          district_name: loc.district?.name ?? 'Unknown',
+        });
+      }
+    }
+
+    for (const w of contributors) {
       // Staffing counts whoever CLOCKED IN — active + offline — matching the
       // aggregate (`assembleNode`/`countableOnlineByGroup`) and the model: a park
       // is no less staffed because a phone lost GPS. Counting ACTIVE only reported
@@ -348,15 +408,19 @@ export class MonitoringService {
       const clockedIn =
         w.status === TrackingStatus.ACTIVE || w.status === TrackingStatus.OFFLINE ? 1 : 0;
 
-      if (existing) {
-        existing.activeCount += clockedIn;
-      } else {
-        areaMap.set(w.location_id, {
-          name: w.location_name ?? 'Unknown',
-          district_id: w.district_id ?? '',
-          district_name: w.district_name ?? 'Unknown',
-          activeCount: clockedIn,
-        });
+      // Credit EVERY lokasi this worker is rostered to, not just the one their
+      // GPS lands in. One worker still counts once per lokasi, and never twice
+      // in the same one.
+      const credited = assignedByUser.get(w.user_id) ?? (w.location_id ? [w.location_id] : []);
+      for (const locationId of credited) {
+        const meta = areaMeta.get(locationId);
+        if (!meta) continue; // out of scope, deactivated, or deleted
+        const existing = areaMap.get(locationId);
+        if (existing) {
+          existing.activeCount += clockedIn;
+        } else {
+          areaMap.set(locationId, { ...meta, activeCount: clockedIn });
+        }
       }
     }
 

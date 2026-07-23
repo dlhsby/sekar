@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Plus, Users } from 'lucide-react';
 import type { BoardShiftGroup } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
+import { presenceTone, PRESENCE_TONE_CLASS } from '@/lib/presence/tone';
 
 /** Core scheduling roles always given a column so empty ones can be filled. */
 const CORE_ROLES = ['satgas', 'linmas', 'korlap'];
@@ -230,8 +231,20 @@ function RoleColumn({
           onClick={() => onOccurrenceClick(occ)}
           className={`flex items-center gap-2 border-b border-nb-black bg-nb-white px-2.5 py-1.5 text-left text-sm font-medium last:border-b-0 hover:bg-nb-gray-50 ${occ.is_projected ? 'opacity-60' : ''}`}
         >
+          {/* Presence bullet — the ONE standard (lib/presence/tone). It used to be
+              hardcoded green for everyone, so it carried no information at all. */}
           <span
-            className="size-2 shrink-0 rounded-full border border-nb-black bg-nb-success"
+            className={`size-2 shrink-0 rounded-full border border-nb-black ${
+              PRESENCE_TONE_CLASS[
+                presenceTone({
+                  lifecycleState: occ.lifecycle_state,
+                  scheduleStatus: occ.status,
+                  leaveReason: occ.leave_reason,
+                  isWithinArea: occ.is_within_area,
+                  isAdHoc: occ.is_scheduled === false,
+                })
+              ].bg
+            }`}
             aria-hidden
           />
           <span className="truncate">{occ.user.full_name}</span>

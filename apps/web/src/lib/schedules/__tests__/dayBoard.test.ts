@@ -29,10 +29,13 @@ const master: BoardMasterData = {
   shifts: [shift('s1', 'Shift 1'), shift('s2', 'Shift 2')],
 };
 
+// Counts are per DISTINCT worker (ADR-053), so fixtures must not share a
+// user_id unless a test is deliberately about one worker holding several rows.
+let occSeq = 0;
 const occ = (o: Partial<ScheduleOccurrence>): ScheduleOccurrence =>
   ({
     id: Math.random().toString(),
-    user_id: 'u',
+    user_id: `u${++occSeq}`,
     schedule_date: '2026-07-13',
     shift_definition_id: 's1',
     scope: 'static',
@@ -44,7 +47,7 @@ const occ = (o: Partial<ScheduleOccurrence>): ScheduleOccurrence =>
   }) as ScheduleOccurrence;
 
 /**
- * The city ("Surabaya") node is always tree[0] — it is a placement-only sentinel
+ * The city ("Surabaya") node is always tree[0] — it is a assignment-only sentinel
  * that must render even when empty, or a city-wide schedule has nowhere to be
  * assigned from. Districts follow it.
  */
@@ -78,7 +81,7 @@ describe('buildDayBoard', () => {
     expect(tree[0].regions).toEqual([]);
     expect(tree[0].looseLocations).toEqual([]);
     // Every shift is present so each can be assigned into.
-    expect(tree[0].placement.map((g) => g.shift.id)).toEqual(['s1', 's2']);
+    expect(tree[0].assignment.map((g) => g.shift.id)).toEqual(['s1', 's2']);
   });
 
   it('collects unbound occurrences into the city node', () => {
@@ -203,12 +206,12 @@ describe('buildDayBoard', () => {
     expect(counts).toEqual([{ districtId: 'ry1', districtName: 'Rayon Pusat', count: 3 }]);
   });
 
-  it('places district-scoped occurrences (no location/region) into district placement', () => {
+  it('places district-scoped occurrences (no location/region) into district assignment', () => {
     const tree = buildDayBoard(
       [occ({ location_id: null, region_id: null, district_id: 'ry1', scope: 'district' as never })],
       master
     );
-    expect(districtOf(tree).placement.reduce((a, s) => a + s.total, 0)).toBe(1);
+    expect(districtOf(tree).assignment.reduce((a, s) => a + s.total, 0)).toBe(1);
     expect(districtOf(tree).total).toBe(1);
     // Not double-counted into any region/location.
     expect(districtOf(tree).regions.every((r) => r.total === 0)).toBe(true);
@@ -228,13 +231,13 @@ describe('buildDayBoard', () => {
     expect(counts).toEqual([{ districtId: 'ry1', districtName: 'Rayon Pusat', count: 1 }]);
   });
 
-  it('places region-scoped (mobile, no location) occurrences into kawasan placement', () => {
+  it('places region-scoped (mobile, no location) occurrences into kawasan assignment', () => {
     const tree = buildDayBoard(
       [occ({ location_id: null, region_id: 'kw1', scope: 'mobile' })],
       master
     );
     const region = districtOf(tree).regions[0];
-    expect(region.placement[0].total).toBe(1);
+    expect(region.assignment[0].total).toBe(1);
     expect(region.total).toBe(1);
   });
 });
@@ -282,6 +285,44 @@ describe('pruneDayBoard', () => {
     expect(pruned[0].regions.map((r) => r.name)).toEqual(['Kawasan Bungkul']);
     expect(pruned[0].regions[0].locations.map((l) => l.name)).toEqual(['Taman Bungkul']);
     expect(pruned[0].looseLocations).toEqual([]);
+  });
+
+  it('recomputes district workerIds from what survived the filter', () => {
+    // `total` was always recomputed, but `workerIds` rode through on `...district`
+    // — so a district filtered down to one lokasi still announced the whole
+    // district's headcount ("N petugas") beside a handful of occurrences. The
+    // city roll-up in DayBoard unions these same arrays, so it inherited the error.
+    const tree = buildDayBoard(
+      [
+        occ({ user_id: 'alice', location_id: 'loc1' }),
+        occ({ user_id: 'bob', location_id: 'loc2' }),
+        occ({ user_id: 'carol', location_id: 'loc2' }),
+      ],
+      twoDistrictMaster
+    );
+    expect(tree.find((d) => d.id === 'ry1')!.workerIds).toHaveLength(3);
+
+    const pruned = pruneDayBoard(tree, { locationId: 'loc1' });
+
+    expect(pruned[0].workerIds).toEqual(['alice']);
+    expect(pruned[0].total).toBe(1);
+  });
+
+  it('counts a worker covering two lokasi in one district once (ADR-053)', () => {
+    // One person, two occurrences: "1 petugas", not 2. Sum-of-occurrences and
+    // distinct-people diverge the moment a row means one PLACE rather than one day.
+    const tree = buildDayBoard(
+      [
+        occ({ user_id: 'alice', location_id: 'loc1' }),
+        occ({ user_id: 'alice', location_id: 'loc2' }),
+      ],
+      twoDistrictMaster
+    );
+
+    const district = tree.find((d) => d.id === 'ry1')!;
+    expect(district.workerIds).toEqual(['alice']);
+    expect(district.total).toBe(2); // two occurrences…
+    expect(district.workerIds).toHaveLength(1); // …one person
   });
 
   it('keeps an empty lokasi that was named by a geography filter', () => {
@@ -351,8 +392,21 @@ describe('pruneDayBoard', () => {
 });
 
 /** Real usage: the board prunes first, then asks what to open. */
-const expandFor = (occs: ScheduleOccurrence[], filters: Parameters<typeof pruneDayBoard>[1]) =>
+const expandForRaw = (occs: ScheduleOccurrence[], filters: Parameters<typeof pruneDayBoard>[1]) =>
   autoExpandedIds(pruneDayBoard(buildDayBoard(occs, twoDistrictMaster), filters), filters);
+
+// Surabaya is the board's ROOT container — every rayon renders inside it — so it
+// and its own assign block are ALWAYS expanded. Drop them here so each test keeps
+// asserting only the ids its scenario is about.
+const expandFor = (
+  occs: ScheduleOccurrence[],
+  filters: Parameters<typeof pruneDayBoard>[1],
+): Set<string> => {
+  const ids = new Set(expandForRaw(occs, filters));
+  ids.delete(CITY_NODE_ID);
+  ids.delete(`${CITY_NODE_ID}:assignment`);
+  return ids;
+};
 
 describe('autoExpandedIds', () => {
   it('opens nothing when nothing is filtered', () => {
@@ -398,10 +452,10 @@ describe('autoExpandedIds', () => {
       expect(ids).not.toContain('ry2');
     });
 
-    it('opens a placement block that holds a match', () => {
+    it('opens a assignment block that holds a match', () => {
       const ids = expandFor([occ({ district_id: 'ry1' })], { userId: 'u' });
 
-      expect(ids).toContain('ry1:placement');
+      expect(ids).toContain('ry1:assignment');
       expect(ids).toContain('ry1');
     });
 

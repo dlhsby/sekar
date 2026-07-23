@@ -35,18 +35,15 @@ export class ScheduleScopeResolverService {
 
     const qb = this.scheduleRepository
       .createQueryBuilder('s')
-      .leftJoin('schedule_locations', 'sl', 'sl.schedule_id = s.id')
       .select('s.district_id', 'district_id')
       .addSelect('s.region_id', 'region_id')
-      .addSelect('sl.location_id', 'location_id')
-      .addSelect('sl.id', 'sl_id')
+      .addSelect('s.location_id', 'location_id')
       .where('s.user_id = :userId', { userId })
       .andWhere('s.schedule_date = :date', { date })
       .andWhere('s.status IN (:...statuses)', {
         statuses: [ScheduleStatus.PLANNED, ScheduleStatus.PRESENT],
       })
-      .andWhere('s.deleted_at IS NULL')
-      .orderBy('sl.id', 'ASC');
+      .andWhere('s.deleted_at IS NULL');
 
     if (shiftDefinitionId) {
       qb.andWhere('s.shift_definition_id = :shiftId', { shiftId: shiftDefinitionId });
@@ -56,7 +53,6 @@ export class ScheduleScopeResolverService {
       district_id: string | null;
       region_id: string | null;
       location_id: string | null;
-      sl_id: string | null;
     }>;
 
     let best: ResolvedScope = NO_SCOPE;

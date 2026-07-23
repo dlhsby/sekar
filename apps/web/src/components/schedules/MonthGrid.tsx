@@ -137,7 +137,9 @@ export function MonthGrid({
                     dayOccurrences.length > 0 && (
                       <div className="space-y-1">
                         <div className="text-nb-body-sm font-bold tabular-nums leading-none">
-                          {dayOccurrences.length}
+                          {/* Distinct petugas — one worker can hold several rows
+                              in a day (ADR-053), and this cell counts people. */}
+                          {new Set(dayOccurrences.map((o) => o.user_id)).size}
                           <span className="ml-1 text-nb-caption font-medium text-nb-gray-500">
                             {t('schedules:board.petugasShort')}
                           </span>

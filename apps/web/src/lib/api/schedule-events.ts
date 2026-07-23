@@ -131,6 +131,12 @@ export interface ScheduleOccurrence {
   schedule_event_id?: string | null;
   is_detached: boolean;
   is_projected?: boolean;
+  // Presence axes (ADR-050) — drive the board's status bullet. Absent on a
+  // projected occurrence (nothing has happened yet), which reads as `planned`.
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
   user: {
     id: string;
     full_name: string;
@@ -160,7 +166,7 @@ export interface ScheduleOccurrence {
 }
 
 /** Raw roster row as the backend returns it (Schedule entity: locations ride in
- * `schedule_areas[].area`; there is no `scope` field). */
+ * `location`; there is no `scope` field). */
 interface RawScheduleRangeRow {
   id: string;
   user_id: string;
@@ -175,20 +181,21 @@ interface RawScheduleRangeRow {
   is_projected?: boolean;
   user: ScheduleOccurrence['user'];
   shift_definition?: ScheduleOccurrence['shift_definition'];
-  schedule_areas?: Array<{ location_id: string; area?: { id: string; name: string } | null }>;
+  location_id?: string | null;
+  location?: { id: string; name: string } | null;
   region?: ScheduleOccurrence['region'];
   team_category?: ScheduleOccurrence['team_category'];
 }
 
 /** Normalize a raw roster row to the calendar's occurrence shape. */
 function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
-  const firstArea = row.schedule_areas?.[0];
+  // ADR-053: the row carries exactly one place.
   // Derive scope from the row's binding: region → mobile, a location →
   // static, a district-only row → district (roving crew), else no binding at all →
   // city (a Tim Patroli covering all Surabaya).
   const scope: ScheduleScope = row.region_id
     ? 'mobile'
-    : firstArea
+    : row.location_id
       ? 'static'
       : row.district_id
         ? 'district'
@@ -200,7 +207,7 @@ function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
     shift_definition_id: row.shift_definition_id,
     scope,
     status: row.status,
-    location_id: firstArea?.location_id ?? null,
+    location_id: row.location_id ?? null,
     region_id: row.region_id ?? null,
     district_id: row.district_id ?? null,
     schedule_event_id: row.schedule_event_id ?? null,
@@ -209,7 +216,7 @@ function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
     user: row.user,
     shift_definition: row.shift_definition ?? null,
     team_category: row.team_category ?? null,
-    location: firstArea?.area ?? null,
+    location: row.location ?? null,
     region: row.region ?? null,
   };
 }

@@ -4,7 +4,7 @@ import type { SeedContext } from '../lib/context';
  * Seed schedules (staging only) — materialize TODAY's daily roster from user
  * + user_locations + shift_definition_id.
  *
- * Staging: 1125 schedules (one per active user) + 378 schedule_locations (join to
+ * Staging: 1125 schedules (one per active user), each pointed at a lokasi (join to
  * user_locations with assignment_type = 'permanent'). Materialized once at seed time.
  *
  * Demo: not seeded (transactional data created dynamically in other seeders).
@@ -44,24 +44,27 @@ export async function seedSchedules(ctx: SeedContext): Promise<void> {
   const schedulesInserted = result.filter((r: any) => r.inserted).length;
   ctx.log(`  ✓ ${schedulesInserted} schedules inserted (1125 target)`);
 
-  // Insert schedule_locations for permanent user_locations assignments (378 target)
-  // Join schedules → user_locations (permanent) to populate area assignments
+  // Point each row at the worker's permanent lokasi. ONE place per row
+  // (ADR-053), so this is a column update rather than the junction insert it used
+  // to be; a worker with several permanent lokasi keeps the lowest id
+  // deterministically, and covering more means more rows.
   const areaResult = await ctx.qr.query(
-    `INSERT INTO schedule_locations (schedule_id, location_id)
-     SELECT DISTINCT
-       s.id,
-       ua.location_id
-     FROM schedules s
-     JOIN user_locations ua ON s.user_id = ua.user_id
-     WHERE s.schedule_date = $1::date
-       AND ua.assignment_type = 'permanent'
-     ON CONFLICT DO NOTHING
-     RETURNING (xmax = 0) AS inserted`,
+    `UPDATE schedules s
+        SET location_id = sub.location_id
+       FROM (
+         SELECT ua.user_id, MIN(ua.location_id::text)::uuid AS location_id
+           FROM user_locations ua
+          WHERE ua.assignment_type = 'permanent'
+          GROUP BY ua.user_id
+       ) sub
+      WHERE sub.user_id = s.user_id
+        AND s.schedule_date = $1::date
+        AND s.location_id IS NULL
+     RETURNING s.id`,
     [scheduleDate],
   );
 
-  const areasInserted = areaResult.filter((r: any) => r.inserted).length;
-  ctx.log(`  ✓ ${areasInserted} schedule_locations inserted (378 target)`);
+  ctx.log(`  ✓ ${areaResult.length} schedules pointed at a lokasi`);
 
   ctx.log('✅ Schedules seeding complete');
 }

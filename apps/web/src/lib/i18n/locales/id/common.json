@@ -277,5 +277,19 @@
     "usingDefault": "Menggunakan bawaan sistem",
     "colorHint": "Warna pin/label di peta — tidak mewarnai ikon gambar."
   },
-  "loading": "Memuat…"
+  "loading": "Memuat…",
+  "messages": {
+    "saved": "Perubahan disimpan",
+    "created": "Berhasil dibuat",
+    "updated": "Berhasil diperbarui",
+    "deleted": "Berhasil dihapus",
+    "approved": "Berhasil disetujui",
+    "rejected": "Berhasil ditolak",
+    "assigned": "Berhasil ditugaskan",
+    "verified": "Berhasil diverifikasi",
+    "revisionRequested": "Revisi diminta",
+    "removed": "Berhasil dihapus dari daftar",
+    "markedRead": "Ditandai sudah dibaca",
+    "converted": "Berhasil dikonversi"
+  }
 }

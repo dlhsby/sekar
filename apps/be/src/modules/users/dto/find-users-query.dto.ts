@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString } from 'class-validator';
+import { IsBooleanString, IsOptional, IsString } from 'class-validator';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 /**
@@ -22,4 +22,13 @@ export class FindUsersQueryDto extends PaginationDto {
   @IsOptional()
   @IsString()
   role?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Only active (`true`) or only deactivated (`false`) accounts. Omit for both — ' +
+      'assignment pickers (scheduling, tasks) pass `true`, the admin grid omits it.',
+  })
+  @IsOptional()
+  @IsBooleanString()
+  is_active?: string;
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, useMemo, useId } from 'react';
+import { useEffect, useMemo, useId } from 'react';
+import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -12,97 +12,232 @@ import {
   DialogFooter,
   FormCombobox,
   FormSelect,
-  FormMultiCombobox,
 } from '@/components/ui';
 import { FormActions } from '@/components/forms/FormActions';
-import { getErrorMessage } from '@/lib/api/client';
+import { ScopeFields } from '@/components/schedules/ScopeFields';
+import type { FormValues } from '@/components/schedules/ScheduleEventModal';
 import type { Schedule } from '@/lib/api/schedules';
+
+type ScopeValue = FormValues['scope'];
+
+/**
+ * A submitted-but-NOT-YET-PERSISTED edit.
+ *
+ * The modal used to write straight to the API and only then ask "Ubah Yang
+ * Mana?" — so cancelling that question left the change already applied, and
+ * answering it could not influence what was written. The form now hands the
+ * change up untouched; the caller persists it once a scope is confirmed.
+ */
+export interface PendingScheduleEdit {
+  rosterId: string;
+  /** Null clears the shift (the row becomes `off`). */
+  shiftId: string | null;
+  shiftChanged: boolean;
+  locationIds: string[];
+  regionIds: string[];
+  districtId: string | null;
+  scopeChanged: boolean;
+}
 
 interface EditScheduleModalProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * The form was submitted. Nothing has been written yet — the caller decides
+   * whether to ask which occurrences to touch first, and persists either way.
+   */
+  onSubmit: (change: PendingScheduleEdit) => void;
   roster: Schedule | null;
-  onUpdateShift: (id: string, shiftId: string | null) => Promise<void>;
-  onUpdateAreas: (id: string, locationIds: string[]) => Promise<void>;
-  shiftLoading?: boolean;
-  areasLoading?: boolean;
+  /**
+   * A change already collected but not yet written — set when the user came
+   * BACK from "Ubah Yang Mana?". Seeds the form from what they typed rather
+   * than from the saved row, so going back never silently discards their edit.
+   */
+  pendingEdit?: PendingScheduleEdit | null;
+  /** True while the caller is persisting a confirmed change. */
+  loading?: boolean;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
   allDistricts: Array<{ id: string; name: string }>;
-  allAreas: Array<{ id: string; name: string; district_id: string }>;
+  allAreas: Array<{ id: string; name: string; district_id: string; region_id?: string | null }>;
+  allRegions: Array<{ id: string; name: string; district_id: string }>;
   error?: string | null;
 }
 
+/**
+ * Edit ONE occurrence's assignment.
+ *
+ * The geography half is `ScopeFields` — the very same component the create form
+ * uses. It used to be a hand-rolled Rayon + Lokasi pair, which is how the two
+ * flows drifted: this modal asked for a Rayon even on a city-scope assignment
+ * (and never saved it), put Shift in the middle, and knew nothing about kawasan
+ * — including that a kawasan is an OPTIONAL narrowing step, since Rayon Taman
+ * Aktif hangs its lokasi straight off the district. Sharing the component makes
+ * that class of drift impossible rather than merely fixed.
+ *
+ * Field order matches create: where → what → when, so Shift comes LAST. Only the
+ * fields already determined by the occurrence (worker, date) are hidden.
+ */
 export function EditScheduleModal({
   open,
   onClose,
+  onSubmit,
   roster,
-  onUpdateShift,
-  onUpdateAreas,
-  shiftLoading,
-  areasLoading,
+  pendingEdit,
+  loading,
   shifts,
   allDistricts,
   allAreas,
+  allRegions,
   error,
 }: EditScheduleModalProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const formId = useId();
 
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('');
-  const [selectedShiftId, setSelectedShiftId] = useState<string | null>(null);
-  const [selectedAreaIds, setSelectedAreaIds] = useState<string[]>([]);
+  const { watch, setValue, reset, formState } = useForm<FormValues>({
+    defaultValues: {
+      scope: '' as ScopeValue,
+      district_id: '',
+      region_id: '',
+      location_id: '',
+      shift_definition_id: '',
+    } as Partial<FormValues> as FormValues,
+  });
 
-  // Filter areas by selected district
-  const filteredAreas = useMemo(() => {
-    if (!selectedDistrictId) return [];
-    return allAreas.filter((a) => a.district_id === selectedDistrictId);
-  }, [allAreas, selectedDistrictId]);
+  const scope = watch('scope');
+  const districtId = watch('district_id') || '';
+  const regionId = watch('region_id') || '';
+  const locationId = watch('location_id') || '';
+  const shiftId = watch('shift_definition_id') || '';
 
-  // Change district → prune any selected areas that don't belong to the new district.
-  // Done in the handler (not an effect) so it never fights the preselect effect
-  // or loops on a fresh `.filter()` array reference.
-  const handleDistrictChange = (districtId: string) => {
-    setSelectedDistrictId(districtId);
-    setSelectedAreaIds((prev) =>
-      prev.filter((id) => allAreas.some((a) => a.id === id && a.district_id === districtId)),
-    );
+  // Seed from the row. Most specific wins, mirroring how the backend derives
+  // display_scope, so the modal opens on the scope the assignment actually has.
+  useEffect(() => {
+    if (!roster || !open) return;
+    // A pending edit (the user pressed Kembali) wins over the saved row.
+    const locIds = pendingEdit
+      ? pendingEdit.locationIds
+      : roster.location_id
+        ? [roster.location_id]
+        : [];
+    // One kawasan per assignment (ADR-053).
+    const seededRegions = pendingEdit
+      ? pendingEdit.regionIds
+      : roster.region_id
+        ? [roster.region_id]
+        : [];
+    const seededDistrict = pendingEdit ? pendingEdit.districtId : roster.district_id;
+    const seededShift = pendingEdit ? pendingEdit.shiftId : roster.shift_definition_id;
+    reset({
+      scope: (locIds.length
+        ? 'location'
+        : seededRegions.length
+          ? 'region'
+          : seededDistrict
+            ? 'district'
+            : 'city') as ScopeValue,
+      district_id: seededDistrict || '',
+      region_id: seededRegions[0] ?? '',
+      location_id: locIds[0] ?? '',
+      shift_definition_id: seededShift ?? '',
+    } as Partial<FormValues> as FormValues);
+    // `pendingEdit` is deliberately NOT a dependency: it changes as the user
+    // edits, and re-seeding mid-typing would fight the form. It is read once,
+    // when the modal opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roster, open, reset]);
+
+  const districtOptions = useMemo(
+    () => allDistricts.map((r) => ({ value: r.id, label: r.name })),
+    [allDistricts],
+  );
+  const regionOptions = useMemo(
+    () =>
+      allRegions
+        .filter((r) => r.district_id === districtId)
+        .map((r) => ({ value: r.id, label: r.name })),
+    [allRegions, districtId],
+  );
+  // Kawasan narrows, it never gates: a district-direct lokasi (region_id NULL)
+  // must stay reachable, which is exactly the Rayon Taman Aktif case.
+  const locationOptions = useMemo(
+    () =>
+      allAreas
+        .filter((l) => l.district_id === districtId)
+        .filter((l) => !regionId || l.region_id === regionId)
+        .map((l) => ({ value: l.id, label: l.name })),
+    [allAreas, districtId, regionId],
+  );
+
+  const handleScopeChange = (v: ScopeValue) => {
+    setValue('scope', v, { shouldValidate: true });
+    // Clear geography deeper than the new scope so stale ids never leak on save.
+    if (v === 'city') {
+      setValue('district_id', '');
+      setValue('region_id', '');
+      setValue('location_id', '');
+    } else if (v === 'district') {
+      setValue('region_id', '');
+      setValue('location_id', '');
+    } else if (v === 'region') {
+      setValue('location_id', '');
+    }
   };
 
-  useEffect(() => {
-    if (roster && open) {
-      setSelectedDistrictId(roster.district_id || '');
-      setSelectedShiftId(roster.shift_definition_id);
-      setSelectedAreaIds(roster.schedule_areas.map((a) => a.location_id));
+  const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
+    { value: 'city', label: t('schedules:calendar.event.scopeCity') },
+    { value: 'district', label: t('schedules:calendar.event.scopeDistrict') },
+    { value: 'region', label: t('schedules:calendar.event.scopeKawasan') },
+    { value: 'location', label: t('schedules:calendar.event.scopeLokasi') },
+  ];
+
+  // Only what the chosen scope owns is sent; everything else is cleared.
+  const payload = useMemo(() => {
+    switch (scope) {
+      case 'location':
+        return {
+          locationIds: locationId ? [locationId] : [],
+          regionIds: [] as string[],
+          districtId: districtId || null,
+        };
+      case 'region':
+        return {
+          locationIds: [] as string[],
+          regionIds: regionId ? [regionId] : [],
+          districtId: districtId || null,
+        };
+      case 'district':
+        return {
+          locationIds: [] as string[],
+          regionIds: [] as string[],
+          districtId: districtId || null,
+        };
+      default:
+        return { locationIds: [] as string[], regionIds: [] as string[], districtId: null };
     }
-  }, [roster, open]);
+  }, [scope, locationId, regionId, districtId]);
 
-  const loading = shiftLoading || areasLoading;
-  const isShiftChanged = selectedShiftId !== roster?.shift_definition_id;
-  const isAreasChanged =
-    selectedAreaIds.length !== roster?.schedule_areas.length ||
-    !selectedAreaIds.every((id) =>
-      roster?.schedule_areas.some((a) => a.location_id === id),
-    );
+  const sameIds = (a: string[], b: string[]) =>
+    a.length === b.length && a.every((id) => b.includes(id));
+  const isScopeChanged =
+    !sameIds(payload.locationIds, roster?.location_id ? [roster.location_id] : []) ||
+    !sameIds(payload.regionIds, roster?.region_id ? [roster.region_id] : []) ||
+    payload.districtId !== (roster?.district_id ?? null);
+  const isShiftChanged = (shiftId || null) !== (roster?.shift_definition_id ?? null);
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!roster) return;
-
-    try {
-      // The worker is fixed for a schedule row — changing it is not offered
-      // here (see the disabled Pekerja field below); only shift/areas can change.
-      if (isShiftChanged) {
-        await onUpdateShift(roster.id, selectedShiftId);
-      }
-      if (isAreasChanged) {
-        await onUpdateAreas(roster.id, selectedAreaIds);
-      }
-
-      toast.success(t('messages.editSuccess'));
-      onClose();
-    } catch (err) {
-      const msg = getErrorMessage(err);
-      toast.error(msg);
-    }
+    // Hand the change up UNWRITTEN. The worker is fixed for an occurrence —
+    // replacing them is a delete + create, not an edit (see the disabled
+    // Pekerja field) — so only scope and shift can have moved.
+    onSubmit({
+      rosterId: roster.id,
+      shiftId: shiftId || null,
+      shiftChanged: isShiftChanged,
+      locationIds: payload.locationIds,
+      regionIds: payload.regionIds,
+      districtId: payload.districtId,
+      scopeChanged: isScopeChanged,
+    });
   };
 
   return (
@@ -113,7 +248,13 @@ export function EditScheduleModal({
         </DialogHeader>
 
         <DialogBody>
-          <form id={formId} onSubmit={(e) => { e.preventDefault(); handleSubmit(); }}>
+          <form
+            id={formId}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+          >
             <div className="space-y-4">
               <FormCombobox
                 label={t('modals.edit.workerLabel')}
@@ -123,25 +264,40 @@ export function EditScheduleModal({
                 helperText={t('modals.edit.workerLocked')}
                 options={
                   roster
-                    ? [{ value: roster.user_id, label: `${roster.user.full_name} (${roster.user.username})` }]
+                    ? [
+                        {
+                          value: roster.user_id,
+                          label: `${roster.user.full_name} (${roster.user.username})`,
+                        },
+                      ]
                     : []
                 }
               />
 
-              <FormCombobox
-                label={t('modals.edit.districtLabel')}
-                value={selectedDistrictId}
-                onChange={handleDistrictChange}
-                options={allDistricts.map((r) => ({
-                  value: r.id,
-                  label: r.name,
-                }))}
+              <ScopeFields
+                t={t}
+                errors={formState.errors}
+                setValue={setValue}
+                scope={scope}
+                onScopeChange={handleScopeChange}
+                scopeOptions={scopeOptions}
+                districtId={districtId}
+                regionId={regionId}
+                locationId={locationId}
+                districtOptions={districtOptions}
+                regionOptions={regionOptions}
+                locationOptions={locationOptions}
+                lockScope={false}
+                lockDistrict={false}
+                lockRegion={false}
+                lockLocation={false}
               />
 
+              {/* Shift LAST — where → what → when, same order as Buat Jadwal. */}
               <FormSelect
                 label={t('modals.edit.shiftLabel')}
-                value={selectedShiftId ?? 'none'}
-                onChange={(value) => setSelectedShiftId(value === 'none' ? null : value)}
+                value={shiftId || 'none'}
+                onChange={(value) => setValue('shift_definition_id', value === 'none' ? '' : value)}
                 options={[
                   { value: 'none', label: t('modals.add.shiftOptional') },
                   ...shifts.map((shift) => ({
@@ -149,17 +305,6 @@ export function EditScheduleModal({
                     label: `${shift.name} (${shift.start_time}-${shift.end_time})`,
                   })),
                 ]}
-              />
-
-              <FormMultiCombobox
-                label={t('modals.edit.areaLabel')}
-                options={filteredAreas.map((a) => ({ value: a.id, label: a.name }))}
-                values={selectedAreaIds}
-                onChange={setSelectedAreaIds}
-                placeholder={t('modals.areas.placeholder')}
-                searchPlaceholder={t('modals.areas.searchPlaceholder')}
-                emptyText={t('modals.areas.emptyText')}
-                hideSelectedChips
               />
 
               {error && (
@@ -176,7 +321,7 @@ export function EditScheduleModal({
             formId={formId}
             submitLabel={t('modals.edit.submit')}
             loading={loading}
-            disabled={!isShiftChanged && !isAreasChanged}
+            disabled={!isShiftChanged && !isScopeChanged}
             onCancel={onClose}
           />
         </DialogFooter>

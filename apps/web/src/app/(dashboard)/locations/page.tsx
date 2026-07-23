@@ -25,6 +25,8 @@ import { LocationFormModal } from '@/components/locations/LocationFormModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
 import { useLocations, useDeactivateLocation, useActivateLocation } from '@/lib/api/locations';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/lib/api/client';
 import { useUsers } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useLocationTypes } from '@/lib/api/location-types';
@@ -290,6 +292,28 @@ export default function LocationsPage() {
     [t, actorName, districtFilterOptions, locationTypeFilterOptions]
   );
 
+  /**
+   * Toggle a lokasi's active flag, with a toast for both outcomes. Deactivation
+   * can be refused server-side (it is guarded), so silence is never acceptable.
+   */
+  const handleToggleActive = useCallback(
+    async (a: Location) => {
+      try {
+        if (a.is_active === false) {
+          await activateArea.mutateAsync(a.id);
+          toast.success(t('admin:shared.successActivated', { name: a.name }));
+        } else {
+          await deactivateArea.mutateAsync(a.id);
+          toast.success(t('admin:shared.successDeactivated', { name: a.name }));
+        }
+        refetch();
+      } catch (err: unknown) {
+        toast.error(getErrorMessage(err));
+      }
+    },
+    [activateArea, deactivateArea, refetch, t]
+  );
+
   const rowActions = useCallback(
     (a: Location): DataTableRowAction<Location>[] => [
       {
@@ -324,8 +348,10 @@ export default function LocationsPage() {
         label: a.is_active === false ? t('admin:locations.actionActivate') : t('admin:locations.actionDeactivate'),
         icon: Power,
         hidden: !isAdmin,
-        onClick: () =>
-          a.is_active === false ? activateArea.mutate(a.id) : deactivateArea.mutate(a.id),
+        // `mutate` (fire-and-forget) gave no pending state and swallowed both
+        // outcomes — a deactivation that the server refused looked identical to
+        // one that worked. Mirrors the districts/regions toggle.
+        onClick: () => void handleToggleActive(a),
       },
       {
         key: 'delete',
@@ -336,7 +362,7 @@ export default function LocationsPage() {
         onClick: () => setDeleteModal({ isOpen: true, area: a }),
       },
     ],
-    [isAdmin, deactivateArea, activateArea, districtLevel, view, t]
+    [isAdmin, handleToggleActive, districtLevel, view, t]
   );
 
   return (

@@ -16,7 +16,11 @@ let mockLoading = false;
 jest.mock('@/lib/api/notifications', () => ({
   useNotifications: () => ({ data: mockData, isLoading: mockLoading }),
   useMarkNotificationRead: () => ({ mutate: mockMarkRead }),
-  useMarkAllNotificationsRead: () => ({ mutate: mockMarkAll, isPending: false }),
+  useMarkAllNotificationsRead: () => ({
+    mutate: mockMarkAll,
+    mutateAsync: mockMarkAll,
+    isPending: false,
+  }),
 }));
 
 const n = (over: Partial<AppNotification>): AppNotification => ({

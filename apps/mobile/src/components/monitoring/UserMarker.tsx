@@ -15,7 +15,7 @@ import {
 } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import { getRoleIcon } from '../../utils/mapUtils';
-import { workerActivityColor } from './markerSpec';
+import { presenceMarkerColor } from './markerSpec';
 import { userAxes } from '../../utils/statusHelpers';
 import { ROLE_LABELS } from '../../constants/roles';
 import type { LiveUser, UserRole } from '../../types/models.types';
@@ -88,12 +88,13 @@ export const UserMarker = React.memo(function UserMarker({
   dimmed = false,
 }: UserMarkerProps): React.JSX.Element {
   const isCluster = (clusterCount ?? 0) > 1;
-  // Presence model: fill = 2-activity color (aktif green / tidak-aktif amber);
-  // a ring marks luar_area. Ad-hoc (off-schedule) workers render gray + hollow
-  // so they read as "not counted".
-  const { activity, location } = userAxes(user);
+  // Fill comes from THE presence colour standard (presenceMarkerColor), so a
+  // worker's pin matches their pill everywhere else. A ring still marks
+  // luar_area, and ad-hoc pins stay hollow so they read as "not counted" — but
+  // their COLOUR now comes from the standard rather than a hardcoded grey.
+  const { location } = userAxes(user);
   const isAdHoc = user.is_scheduled === false;
-  const markerColor = isAdHoc ? nbColors.gray500 : workerActivityColor(activity);
+  const markerColor = presenceMarkerColor(user);
   const isOutside = location === 'luar_area';
   const roleIcon = getRoleIcon(user.role);
   const label = isCluster ? null : getMarkerLabel(user, labelMode);

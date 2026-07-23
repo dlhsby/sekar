@@ -29,7 +29,6 @@ export const TRUNCATE_ORDER: readonly string[] = [
   'location_plants',
   'plant_species',
   // Daily roster.
-  'schedule_locations',
   'schedules',
   // Core transactional + assignment tables.
   'user_locations',

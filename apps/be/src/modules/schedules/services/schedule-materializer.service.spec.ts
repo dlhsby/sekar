@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { ScheduleMaterializerService } from './schedule-materializer.service';
 import { ScheduleEvent } from '../entities/schedule-event.entity';
 import { Schedule, ScheduleStatus } from '../entities/schedule.entity';
-import { ScheduleLocation } from '../entities/schedule-area.entity';
 import { ScheduleOverlapService } from './schedule-overlap.service';
 import { SystemConfigService } from '../../settings/services/system-config.service';
 import { User } from '../../users/entities/user.entity';
@@ -14,7 +13,6 @@ import { ScheduleScope } from '../enums/schedule-scope.enum';
 describe('ScheduleMaterializerService', () => {
   let service: ScheduleMaterializerService;
   let scheduleRepo: Repository<Schedule>;
-  let scheduleLocationRepo: Repository<ScheduleLocation>;
   let eventRepo: Repository<ScheduleEvent>;
   let userRepo: Repository<User>;
   let overlapService: ScheduleOverlapService;
@@ -56,13 +54,6 @@ describe('ScheduleMaterializerService', () => {
           },
         },
         {
-          provide: getRepositoryToken(ScheduleLocation),
-          useValue: {
-            create: jest.fn(),
-            save: jest.fn(),
-          },
-        },
-        {
           provide: getRepositoryToken(ScheduleEvent),
           useValue: {
             find: jest.fn(),
@@ -91,9 +82,6 @@ describe('ScheduleMaterializerService', () => {
 
     service = module.get<ScheduleMaterializerService>(ScheduleMaterializerService);
     scheduleRepo = module.get<Repository<Schedule>>(getRepositoryToken(Schedule));
-    scheduleLocationRepo = module.get<Repository<ScheduleLocation>>(
-      getRepositoryToken(ScheduleLocation),
-    );
     overlapService = module.get<ScheduleOverlapService>(ScheduleOverlapService);
     configService = module.get<SystemConfigService>(SystemConfigService);
   });
@@ -122,8 +110,6 @@ describe('ScheduleMaterializerService', () => {
       jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null); // No conflict
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({ id: 'sched-1' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({ id: 'sched-1' } as Schedule);
-      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValueOnce({} as ScheduleLocation);
-      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValueOnce({} as ScheduleLocation);
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -134,7 +120,6 @@ describe('ScheduleMaterializerService', () => {
       expect(result.created).toBe(1);
       expect(result.skipped).toHaveLength(0);
       expect(scheduleRepo.save).toHaveBeenCalled();
-      expect(scheduleLocationRepo.save).toHaveBeenCalled(); // Static scope adds location
       // Verify batched query with In() and withDeleted: true
       expect(scheduleRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -220,8 +205,6 @@ describe('ScheduleMaterializerService', () => {
         schedule_date: '2026-07-15',
       } as any);
       // Mock create for schedule_location
-      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValueOnce({} as any);
-      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValueOnce({} as any);
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -260,8 +243,6 @@ describe('ScheduleMaterializerService', () => {
       jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
-      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValue({} as ScheduleLocation);
-      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValue({} as ScheduleLocation);
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -296,8 +277,6 @@ describe('ScheduleMaterializerService', () => {
       jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
-      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValue({} as ScheduleLocation);
-      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValue({} as ScheduleLocation);
 
       const result = await service.materializeEvent(
         event as ScheduleEvent,
@@ -342,7 +321,7 @@ describe('ScheduleMaterializerService', () => {
       );
     });
 
-    it('should NOT add schedule_locations for mobile scope', async () => {
+    it('should NOT set location_id for mobile scope', async () => {
       const event: Partial<ScheduleEvent> = {
         id: 'event-1',
         recurrence_type: RecurrenceType.NONE,
@@ -364,9 +343,6 @@ describe('ScheduleMaterializerService', () => {
       jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({ id: 'sched-1' } as Schedule);
 
       await service.materializeEvent(event as ScheduleEvent, '2026-07-15', '2026-07-15');
-
-      // scheduleLocationRepo.save should NOT be called for mobile
-      expect(scheduleLocationRepo.save).not.toHaveBeenCalled();
     });
   });
 
@@ -424,8 +400,6 @@ describe('ScheduleMaterializerService', () => {
       jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
-      jest.spyOn(scheduleLocationRepo, 'create').mockReturnValue({} as ScheduleLocation);
-      jest.spyOn(scheduleLocationRepo, 'save').mockResolvedValue({} as ScheduleLocation);
 
       const result = await service.rematerializeSeries(event as ScheduleEvent, '2026-07-15');
 

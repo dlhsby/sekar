@@ -16,7 +16,7 @@ import {
   DayType,
 } from '../../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus } from '../entities/user-tracking-status.entity';
-import { Schedule, ScheduleLocation } from '../../schedules/entities/schedule.entity';
+import { Schedule } from '../../schedules/entities/schedule.entity';
 
 /**
  * Focused unit tests for MonitoringStatsService.getAggregate — the lightweight
@@ -48,14 +48,12 @@ describe('MonitoringStatsService.getAggregate', () => {
   const districtRepo: any = { find: jest.fn() };
   const regionRepo: any = { find: jest.fn() };
   const scheduleRepo: any = { createQueryBuilder: jest.fn() };
-  const scheduleAreaRepo: any = { createQueryBuilder: jest.fn() };
 
   beforeEach(async () => {
     jest.clearAllMocks();
     // Default: no roster + nobody clocked in (tests override per-case).
     trackingRepo.find.mockResolvedValue([]);
     scheduleRepo.createQueryBuilder.mockReturnValue(makeQb([[]]));
-    scheduleAreaRepo.createQueryBuilder.mockReturnValue(makeQb([[]]));
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringStatsService,
@@ -70,7 +68,6 @@ describe('MonitoringStatsService.getAggregate', () => {
         { provide: getRepositoryToken(LocationStaffRequirement), useValue: staffRepo },
         { provide: getRepositoryToken(UserTrackingStatus), useValue: trackingRepo },
         { provide: getRepositoryToken(Schedule), useValue: scheduleRepo },
-        { provide: getRepositoryToken(ScheduleLocation), useValue: scheduleAreaRepo },
         {
           provide: DayTypeService,
           useValue: {
@@ -252,22 +249,21 @@ describe('MonitoringStatsService.getAggregate', () => {
         makeQb([[{ group_id: 'area-1', status: 'offline', within: true, count: '1' }]]),
       );
     staffRepo.createQueryBuilder.mockReturnValue(makeQb([[{ group_id: 'area-1', total: '2' }]]));
-    // Roster grouped by area: area-1 has u1,u2,u3 scheduled; only u1 clocked in.
-    scheduleAreaRepo.createQueryBuilder.mockReturnValue(
-      makeQb([
-        [
-          { group_id: 'area-1', user_id: 'u1' },
-          { group_id: 'area-1', user_id: 'u2' },
-          { group_id: 'area-1', user_id: 'u3' },
-        ],
-      ]),
-    );
+    // Roster grouped by lokasi: area-1 has u1,u2,u3 scheduled; only u1 clocked in.
+    // ADR-053 retired the schedule_locations junction — the lokasi is a column on
+    // `schedules`, so this grouping now reads scheduleRepo like every other tier.
+    const rosterByArea = [
+      { group_id: 'area-1', user_id: 'u1' },
+      { group_id: 'area-1', user_id: 'u2' },
+      { group_id: 'area-1', user_id: 'u3' },
+    ];
     // Scope-wide (district) distinct roster for roster_totals AND the district-wide
     // scheduled set that area presence now unions in (live-position counting) both
     // read scheduleRepo — return a FRESH builder per call so each query is served.
-    scheduleRepo.createQueryBuilder.mockImplementation(() =>
-      makeQb([[{ user_id: 'u1' }, { user_id: 'u2' }, { user_id: 'u3' }]]),
-    );
+    // Both the per-lokasi grouping (group_id + user_id) and the scope-wide
+    // distinct roster (user_id only) read scheduleRepo now; a fresh builder per
+    // call serves each, and the extra `group_id` is ignored by the latter.
+    scheduleRepo.createQueryBuilder.mockImplementation(() => makeQb([rosterByArea]));
     trackingRepo.find.mockResolvedValue([{ user_id: 'u1' }]);
 
     const res = await service.getAggregate('district', 'district-1');

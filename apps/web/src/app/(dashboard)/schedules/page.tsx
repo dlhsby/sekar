@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarOff, } from 'lucide-react';
+import { CalendarOff, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -39,6 +39,8 @@ import { DateNav } from '@/components/schedules/DateNav';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard, type AssignContext } from '@/components/schedules/DayBoard';
+import { UnscheduledWorkersSheet } from '@/components/schedules/UnscheduledWorkersSheet';
+import { unscheduledKeys } from '@/lib/api/unscheduled';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
 import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMapModal';
@@ -48,7 +50,10 @@ import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
 import { DeleteScopeChooser } from '@/components/schedules/DeleteScopeChooser';
-import { EditScheduleModal } from '@/components/schedules/EditScheduleModal';
+import {
+  EditScheduleModal,
+  type PendingScheduleEdit,
+} from '@/components/schedules/EditScheduleModal';
 import {
   scheduleOccurrenceKeys,
   useDeleteScheduleEvent,
@@ -80,6 +85,7 @@ import { usePermissions } from '@/lib/auth/usePermissions';
 import { useUser } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
 import { todayJakartaISODate } from '@/lib/utils/formatters';
+import { runAction } from '@/lib/hooks/use-action';
 
 /** Calendar range, ordered highest → lowest; drilling zooms in a level. */
 type CalendarView = 'year' | 'month' | 'week' | 'day';
@@ -110,6 +116,18 @@ export default function SchedulesPage() {
   const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
   const [holidayOpen, setHolidayOpen] = useState(false);
+  /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
+  const [unscheduledOpen, setUnscheduledOpen] = useState(false);
+  const [createUserId, setCreateUserId] = useState<string | undefined>();
+  /** Name for `createUserId` — the worker combobox is server-paged and can't resolve it. */
+  const [createUserName, setCreateUserName] = useState<string | undefined>();
+  /**
+   * Buat Jadwal was opened FROM the gap panel, so closing it — saved or
+   * cancelled — should hand the operator back to the list. Filling a day means
+   * placing several people, and bouncing to the board after each one turns one
+   * task into N round trips.
+   */
+  const [returnToUnscheduled, setReturnToUnscheduled] = useState(false);
   // The Year view spans >62 days (the range API's cap) so it doesn't fetch
   // occurrences — it's a month picker until an aggregate endpoint exists.
   const fetchOccurrences = calendarView !== 'year';
@@ -160,17 +178,41 @@ export default function SchedulesPage() {
   // only once one is actually asked for.
   const [mapSubject, setMapSubject] = useState<AreaMapSubject | null>(null);
 
-  const openCreate = (date?: string, ctx?: AssignContext) => {
+  const openCreate = (
+    date?: string,
+    ctx?: AssignContext,
+    user?: { id: string; name: string },
+  ) => {
     if (!can('schedule:create')) return;
     setCreateDate(date);
     setCreateCtx(ctx);
+    // Cleared unless this call prefilled one — otherwise a worker picked in the
+    // gap panel would haunt the next Buat Jadwal opened from anywhere else.
+    setCreateUserId(user?.id);
+    setCreateUserName(user?.name);
     setCreateOpen(true);
+  };
+
+  /** Close Buat Jadwal, returning to the gap panel when it came from there. */
+  const closeCreate = (open: boolean) => {
+    setCreateOpen(open);
+    if (!open && returnToUnscheduled) {
+      setReturnToUnscheduled(false);
+      setUnscheduledOpen(true);
+    }
   };
 
   // ── Occurrence click → detail → edit/delete flows ────────────────────────
   const [chosen, setChosen] = useState<ScheduleOccurrence | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [editChooserOpen, setEditChooserOpen] = useState(false);
+  /**
+   * The edit the form collected, held UNWRITTEN until "Ubah Yang Mana?" is
+   * answered. Cancelling that dialog drops it; nothing reaches the API.
+   */
+  const [pendingEdit, setPendingEdit] = useState<PendingScheduleEdit | null>(null);
+  /** Which scope button is mid-write, so it alone shows a spinner. */
+  const [pendingScope, setPendingScope] = useState<EditScope | null>(null);
   const [eventEdit, setEventEdit] = useState<{ scope: EditScope; fromDate?: string } | null>(null);
   const [rowEditOpen, setRowEditOpen] = useState(false);
   const [deleteChooserOpen, setDeleteChooserOpen] = useState(false);
@@ -260,8 +302,13 @@ export default function SchedulesPage() {
   const deleteRow = useDeleteSchedule();
   const deleteEvent = useDeleteScheduleEvent();
 
-  const refreshCalendar = () =>
-    queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
+  const refreshCalendar = async () => {
+    await queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
+    // The gap panel is derived from the same rosters, so a schedule written
+    // anywhere must invalidate it too — otherwise returning to the list after a
+    // save shows the worker you just placed still sitting there.
+    await queryClient.invalidateQueries({ queryKey: unscheduledKeys.all });
+  };
 
   // Clicking a schedule opens a read-only detail first (Google-Calendar style),
   // not the scope prompt. Ubah/Hapus route onward from there.
@@ -270,14 +317,66 @@ export default function SchedulesPage() {
     setDetailOpen(true);
   };
 
+  /**
+   * Editing ALWAYS opens the form first.
+   *
+   * An event-backed occurrence used to open "Ubah Yang Mana?" *before* the form,
+   * while a manual row went straight to it — two different flows for the same
+   * button. Worse, it asked for the blast radius before the user knew what they
+   * were changing. The recurrence question now comes on SAVE (see
+   * `onRowEditSaved`), and only when there is a recurrence behind the row.
+   */
   const onDetailEdit = () => {
     setDetailOpen(false);
+    setRowEditOpen(true);
+  };
+
+  /**
+   * The form was submitted. A row backed by a rule now asks which occurrences the
+   * change should touch; a manual row has no rule, so what was just saved is all
+   * there is.
+   */
+  const onRowEditSubmit = (change: PendingScheduleEdit) => {
+    setRowEditOpen(false);
+    // A row backed by a rule asks WHICH occurrences first — and nothing is
+    // written until that question is answered, so cancelling it leaves the
+    // schedule untouched (it used to save first and ask afterwards).
     if (chosen?.schedule_event_id) {
+      setPendingEdit(change);
       setEditChooserOpen(true);
-    } else {
-      // Manual/ad-hoc row — no rule behind it, edit the row directly.
-      setRowEditOpen(true);
+      return;
     }
+    void applyRowEdit(change).then((ok) => {
+      if (ok) setChosen(null);
+    });
+  };
+
+  /**
+   * Persist a confirmed edit. Returns false when either write fails, so the
+   * caller can keep the dialog open instead of reporting success over an error.
+   */
+  const applyRowEdit = async (change: PendingScheduleEdit): Promise<boolean> => {
+    let ok = true;
+    if (change.shiftChanged) {
+      ok = await runAction(() =>
+        updateShift.mutateAsync({ id: change.rosterId, shift_definition_id: change.shiftId }),
+      );
+    }
+    if (ok && change.scopeChanged) {
+      ok = await runAction(() =>
+        updateAreas.mutateAsync({
+          id: change.rosterId,
+          location_ids: change.locationIds,
+          district_id: change.districtId,
+          // At most one kawasan per occurrence (ADR-053).
+          region_id: change.regionIds[0] ?? null,
+        }),
+      );
+    }
+    // One toast for the whole edit, not one per field that happened to change.
+    if (ok) toast.success(t('schedules:messages.editSuccess'));
+    refreshCalendar();
+    return ok;
   };
 
   const onDetailDelete = () => {
@@ -289,13 +388,22 @@ export default function SchedulesPage() {
     }
   };
 
-  const onEditScope = (scope: EditScope, fromDate?: string) => {
+  const onEditScope = async (scope: EditScope, fromDate?: string) => {
+    // Answering this dialog is what WRITES the edit the form collected.
+    if (pendingEdit) {
+      setPendingScope(scope);
+      const ok = await applyRowEdit(pendingEdit);
+      setPendingScope(null);
+      // Failed → stay open on the same choice so the error is actionable.
+      if (!ok) return;
+      setPendingEdit(null);
+    }
     setEditChooserOpen(false);
     if (scope === 'this') {
-      setRowEditOpen(true);
-    } else {
-      setEventEdit({ scope, fromDate: fromDate ?? chosen?.schedule_date });
+      setChosen(null);
+      return;
     }
+    setEventEdit({ scope, fromDate: fromDate ?? chosen?.schedule_date });
   };
 
   const onDeleteScope = async (scope: EditScope, date?: string) => {
@@ -405,6 +513,20 @@ export default function SchedulesPage() {
             <span className="ml-1.5 hidden sm:inline">{t('schedules:holidays.manage')}</span>
           </Button>
           {can('schedule:create') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setUnscheduledOpen(true)}
+              aria-label={t('schedules:unscheduled.title')}
+              title={t('schedules:unscheduled.description')}
+            >
+              <UserPlus className="h-4 w-4" aria-hidden />
+              <span className="ml-1.5 hidden sm:inline">
+                {t('schedules:unscheduled.buttonLabel')}
+              </span>
+            </Button>
+          )}
+          {can('schedule:create') && (
             <CreateButton
               label={t('schedules:calendar.event.createTitle')}
               onClick={() => openCreate(isoDate(anchor))}
@@ -510,7 +632,7 @@ export default function SchedulesPage() {
       {createOpen && (
         <ScheduleEventModal
           open={createOpen}
-          onOpenChange={setCreateOpen}
+          onOpenChange={closeCreate}
           initialDate={createDate}
           initialDistrictId={createCtx?.district_id}
           initialRegionId={createCtx?.region_id}
@@ -519,6 +641,11 @@ export default function SchedulesPage() {
           initialCityWide={createCtx?.city}
           initialTeam={createCtx?.team}
           initialRole={createCtx?.role}
+          initialUserId={createUserId}
+          initialUserName={createUserName}
+          // From the gap panel the geography/shift are the panel's FILTERS, not
+          // a clicked board cell — a prefill to adjust, not a fact to obey.
+          lockPrefill={!returnToUnscheduled}
           onSuccess={refreshCalendar}
         />
       )}
@@ -548,31 +675,65 @@ export default function SchedulesPage() {
           setRowEditOpen(false);
           setChosen(null);
         }}
+        onSubmit={onRowEditSubmit}
         roster={rowUnderEdit}
-        onUpdateShift={async (id, shiftId) => {
-          await updateShift.mutateAsync({ id, shift_definition_id: shiftId });
-          refreshCalendar();
-        }}
-        onUpdateAreas={async (id, locationIds) => {
-          await updateAreas.mutateAsync({ id, location_ids: locationIds });
-          refreshCalendar();
-        }}
-        shiftLoading={updateShift.isPending}
-        areasLoading={updateAreas.isPending}
+        pendingEdit={pendingEdit}
+        loading={updateShift.isPending || updateAreas.isPending}
         shifts={shifts}
         allDistricts={districts}
         allAreas={allLocations}
+        allRegions={regions}
+      />
+
+      <UnscheduledWorkersSheet
+        open={unscheduledOpen}
+        onOpenChange={setUnscheduledOpen}
+        initialDate={isoDate(anchor)}
+        shifts={shifts}
+        districts={districts}
+        regions={regions}
+        locations={allLocations}
+        onSchedule={(worker, target) => {
+          // Hand off to the normal create flow. The WORKER and their role are
+          // facts — they were picked from the list — so they lock. The target is
+          // a suggestion: it prefills but stays editable (`lockPrefill={false}`),
+          // because the filters describe where the operator was looking, not
+          // necessarily where this particular person should go.
+          setUnscheduledOpen(false);
+          setReturnToUnscheduled(true);
+          openCreate(
+            target.date,
+            {
+              shiftId: target.shiftId ?? '',
+              role: worker.role,
+              district_id: target.districtId ?? undefined,
+              region_id: target.regionId ?? undefined,
+              location_id: target.locationId ?? undefined,
+            },
+            { id: worker.id, name: worker.full_name },
+          );
+        }}
       />
 
       <EditScopeChooser
         open={editChooserOpen}
         onOpenChange={(open) => {
           setEditChooserOpen(open);
+          // Cancelling DISCARDS the collected edit — nothing was written. Going
+          // BACK re-opens the form, so `rowEditOpen` guards the edit from being
+          // dropped on the way there.
+          if (!open && !rowEditOpen) setPendingEdit(null);
           if (!open && !eventEdit && !rowEditOpen && !deleteChooserOpen) setChosen(null);
         }}
         onSelect={onEditScope}
-        onDelete={can('schedule:delete') ? () => setDeleteChooserOpen(true) : undefined}
+        // Back to the form, edit intact. Deleting is NOT offered mid-edit — it
+        // lives on the row's detail modal, which is where the user meant to go.
+        onBack={() => {
+          setEditChooserOpen(false);
+          setRowEditOpen(true);
+        }}
         selectedDate={chosen?.schedule_date}
+        pendingScope={pendingScope}
       />
 
       <DeleteScopeChooser

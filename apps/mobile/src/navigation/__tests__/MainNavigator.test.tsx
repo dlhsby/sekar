@@ -123,7 +123,7 @@ const ALL_ROLES = [
 // Routes registered as tab screens (Menu items must point at one of these).
 const REGISTERED_ROUTES = new Set([
   'Home', 'Menu', 'Profile',
-  'Attendance', 'AttendanceDetail', 'Absensi', 'Lembur', 'Tasks', 'Activities',
+  'Attendance', 'AttendanceDetail', 'Absensi', 'Lembur', 'Tasks', 'Activities', 'MySchedule',
   'Monitoring', 'Reports', 'Assets',
   'WorkerAnalytics', 'TeamAnalytics', 'PlantSeeds', 'PruningReviewQueue', 'Perantingan',
 ]);

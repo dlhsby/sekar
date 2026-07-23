@@ -18,7 +18,7 @@ describe('ShiftReminderCron', () => {
     status: ScheduleStatus.PLANNED,
     shift_definition_id: 'shift-1',
     shift_definition: { name: 'Pagi', start_time: '06:00:00' },
-    schedule_areas: [{ location_id: 'area-1' }],
+    location_id: 'area-1',
   };
 
   beforeEach(async () => {

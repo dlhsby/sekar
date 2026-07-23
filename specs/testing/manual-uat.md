@@ -119,11 +119,18 @@ clocked in yet). Only **satgas + linmas** count toward staffing.
 | `satgas_pusat_3` | 2 | Jl. Ahmad Jaiz | -7.25364327, 112.73785415 |
 
 ### 2.3 Schedule scope variants (see them on the monitoring map / schedule board)
-Seeded `SEED VARIANT` schedule events cover the scope × team × recurrence matrix:
-city × individual (weekly), city × **team** (specific_dates — members `linmas_pusat_2`,
-`linmas_selatan_1`), district × individual (every_n_days), district × **team** (members
-`linmas_pusat_1`, `linmas_taman_aktif_1`), region/"mobile" × **team** (daily — members
-`linmas_barat_1_1`, `linmas_barat_2_1`), plus 13 static (location) individual dailies.
+`scripts/stage-presence-scenarios.ts` owns every demo assignment (the seeder creates none) and
+writes **recurring** `daily` events, so the board is populated today *and* every day forward to
+the materialization horizon (**60 days**) — not just the day you seeded.
+
+**`SAMPLE <level> × <role>`** — one satgas + one linmas + one korlap + one team at **each** of
+city / district / region / location, so every board tier and role column has content. Coherence
+rule: a worker is only ever scoped inside their **own rayon** (city is the deliberate exception,
+and its crew is drawn one-per-rayon so it doesn't look like a single rayon's staff).
+
+**`RESCHEDULE <shift> × <user>`** — the rescheduling cohort `satgas_shift_1..3`,
+`linmas_shift_1..3`, `korlap_shift_1..3`, `tim_shift_<n>_<1,2>`: a full role set per shift, all
+on **city** scope, for dragging between Shift 1/2/3 without disturbing a presence scenario.
 
 **Team categories (4):** Penanaman, Penyapuan, Penyiraman, Penyiraman/Perawatan — each with
 its own marker glyph + color.
@@ -143,6 +150,14 @@ were fixed so the data seeds correctly: `loadKawasanSnapshot` and `loadAreaSnaps
 reading `district_id` from a snapshot that still uses `rayon_id`, which had left **regions
 with no district** and **all 953 locations with a NULL `district_id`** (breaking the
 district drill + task/district scoping). Both now normalize the key.
+
+**Seeder gotcha worth knowing (fixed 2026-07-23).** `lib/ids.ts` pins `RAYON_BARAT1_ID` /
+`RAYON_BARAT2_ID` to their **pre-rename** codes on purpose — that is what keeps each kawasan and
+lokasi attached to the row it has always belonged to. The two rayon later swapped display names,
+so seeding *people* from those codes put "Satgas Barat 1 Satu" inside **Rayon Barat 2**, which
+read on the board like a korlap drifting onto the wrong scope. Geography keeps its codes; people
+now follow the display name (`DISTRICT_NAMED_BARAT_1_ID` / `_2_ID`). If you ever see a user whose
+name and rayon disagree, that is the class of bug to look for.
 
 If you need extra ad-hoc tasks during UAT, create them via the API — e.g. a district task:
 ```bash
@@ -171,11 +186,25 @@ Two layers, generated forward:
    - **Recurrence** — `none` · `daily` · `every_n_days` · `weekly` · `specific_dates`.
    - **Team** — a `team_category` (Penanaman / Penyapuan / Penyiraman / Penyiraman-Perawatan),
      a PIC, and members; produces **one occurrence per member** but they render grouped.
-2. **`schedules`** = the *materialized occurrences* — one row **per user per day**, linked back
-   to its `schedule_event_id`, carrying `district_id`/`region_id`/`shift_definition_id`/`status`.
+2. **`schedules`** = the *materialized occurrences* — one row per user per shift **per place**,
+   linked back to its `schedule_event_id`, carrying
+   `district_id`/`region_id`/`location_id`/`shift_definition_id`/`status`.
    Generated via `POST /schedules/generate`; the seed pre-materializes **today's** occurrences.
 
-Read them: `GET /schedules/date/:date` (day board) · `/schedules/my` · `/schedules/range` ·
+**One row = one worker, one shift, one PLACE (ADR-053).** A worker who covers several places in
+a shift (lokasi A in the morning, lokasi B later, a kawasan elsewhere) gets **several rows** —
+that is normal, not a duplicate, and the overlap warning stays silent between them. What IS
+rejected is the same worker + same shift + **same place** (`UQ_schedules_user_date_shift_place`).
+Two consequences to check while testing:
+- **Presence is per worker, per shift** — one clock-in produces ONE lifecycle state that every
+  row for that shift shares. Several rows must never produce false `tidak_hadir`.
+- **Counts are people, not rows** — a worker with two rows in a rayon shows as **1 petugas** on
+  the board and in the month/week/year views, and staffs *both* lokasi while on duty
+  (`assigned ∧ present`, not "standing here right now").
+
+Read them: `GET /schedules/date/:date` (day board) · `/schedules/my` (the single row operative
+*right now* — includes a cross-midnight shift still running from yesterday) ·
+`/schedules/my/day` (**every** row for the day) · `/schedules/range` ·
 `/schedule-events` (definitions). The **day board** (`/schedules`, web) drills
 Rayon ▸ Kawasan ▸ Lokasi with shift columns (S1/S2/S3) × role rows and `n/target` staffing.
 **Only `satgas` + `linmas` are scheduled/counted**; other clock-in roles are monitorable but
@@ -194,6 +223,17 @@ A worker's presence is **three independent axes** — don't collapse them:
   (absent) · **excused** (on approved leave — cuti/sakit/izin/libur).
 - **Live** (right now): `aktif` vs `offline`, crossed with `dalam_area` vs `luar_area`.
 - **Counting** (staffing): counts **only** when `bertugas ∧ scheduled ∧ (satgas|linmas)`.
+
+**Colour is standardised across every surface** (pills, board bullets, map pins, both platforms):
+planned/not-started **grey** · bertugas inside **green** · bertugas outside **amber** ·
+terlambat **orange** · belum_hadir **yellow** · tidak_hadir **red** · cuti/sakit/izin **blue** ·
+pulang **dark grey** · Luar Jadwal **purple**. Resolution order is ad-hoc → leave → lifecycle, so
+an excused absence never reads like a no-show. If the same worker shows one colour on the map and
+another on their card, that is a bug — report it.
+
+**Staffing is `assigned ∧ present`, not "standing here right now".** A satgas rostered to lokasi
+A, B and X staffs all three while clocked in; inside/outside stays a separate, informational axis.
+Above lokasi every count is **distinct workers**.
 
 Consequences you'll verify: **ad-hoc / unscheduled clock-ins** render as distinct **"Luar
 Jadwal"** markers at **city** scope (with a count chip) and are **excluded from staffing**;
@@ -274,7 +314,14 @@ Smoke via Swagger (`/api/v1/docs`) or the **Postman** collection (`postman/`, en
 ## 6. Web UAT (`http://localhost:4120`)
 
 Login per role; verify **nav visibility** first (a role should only see permitted items),
-then the page cases. `(dashboard)` roles = korlap, admin_rayon, kepala_rayon, management,
+then the page cases.
+
+**Changed 2026-07-23 — user form.** Pengguna no longer collects a permanent **lokasi** or
+**kawasan**: after ADR-053 the schedule is the only answer to "where does this person work
+today", and a second answer on the user record is exactly the drift that caused earlier bugs.
+Only **kepala_rayon** and **admin_rayon** are asked for a **Rayon**, because for them a rayon is
+*authority* (who they may see and manage), not placement. Verify: creating a satgas/linmas/korlap
+shows no lokasi, kawasan or rayon input; creating a kepala_rayon does show Rayon. `(dashboard)` roles = korlap, admin_rayon, kepala_rayon, management,
 admin_system, superadmin. `(kecamatan)` = staff_kecamatan. (satgas/linmas are mobile-only.)
 
 ### 6.1 Auth & nav gating
@@ -453,38 +500,110 @@ Tick each cell you exercised. ✓ = should work · — = not available to that r
 
 ## 11. Presence model — reproduce every state (ADR-050)
 
-The presence model has ~15 lifecycle states + 5 live sub-states + counting cases
-(authoritative matrix: [`presence-model-matrix.md`](presence-model-matrix.md)). **Most
-are time-relative or action-driven, so they are NOT visible from the static seed** — a
-tester at 10:00 only naturally sees a few. Use the **staging script** to make them appear
-at once, then open `/monitoring`:
+The presence model is **3 independent axes** (authoritative matrix:
+[`presence-model-matrix.md`](presence-model-matrix.md)):
+**lifecycle** (tidak_bertugas · belum_hadir · terlambat · bertugas · pulang · tidak_hadir)
+× **live** (aktif/offline × dalam_area/luar_area) × **counting** (staffing counts only
+`bertugas ∧ scheduled ∧ satgas|linmas`). Most states are **time-relative**, so they are not
+visible from the static seed alone.
+
+There is now a **dedicated, self-describing user per scenario** — the username tells you what
+the row is supposed to show. Seed them, then stage them:
 
 ```bash
-cd apps/be && npx ts-node scripts/stage-presence-scenarios.ts
-# then open web /monitoring as admin_system_1 — the bertugas pins appear
-# cleanup: DELETE FROM shifts WHERE created_at > now() - interval '2 hours';  (staged rows only)
+cd apps/be
+npm run db:seed                                   # creates the 22 presence users (idempotent)
+npx ts-node scripts/stage-presence-scenarios.ts   # applies today's clock-ins / leave / pings
+# then open web /monitoring as admin_system_1
 ```
+All use password `12345678` (no forced reset), so you can also log into the **mobile app** as
+any of them. The staging script is **idempotent** — re-run it any time to refresh "now".
 
-| State (lifecycle / live) | How it's produced | Watch | Expected on the map |
-|---|---|---|---|
-| **bertugas · aktif · dalam_area** | staged: on-time clock-in + fresh ping inside geofence | `satgas_taman_bungkul_1` | live pin, green, "Dalam area" |
-| **bertugas · is_late (terlambat flag)** | staged: clock-in past start+grace | `satgas_taman_flora_1` | live pin + Terlambat |
-| **bertugas · aktif · luar_area** | staged: fresh ping ~2 km outside geofence | `satgas_pusat_2` | live pin, dashed "Di luar area" ring |
-| **bertugas · offline · dalam (last-known)** | staged: stale ping (>10 min) | `satgas_timur_1_2` | pin shows Tidak Aktif, keeps last area |
-| **pulang** | staged: clock-in + clock-out | `korlap_pusat_1` | **not** a live pin (in history) |
-| **pulang · early** | staged: clock-out before shift end | `linmas_pusat_1` | not a live pin, early flag |
-| **bertugas · ad_hoc ("Luar Jadwal")** | staged: clock-in with no schedule | `satgas_pusat_1` | city-scope "Luar Jadwal" marker, **excluded from staffing** |
-| **bertugas · lupa_clock_out** | staged: clock-in on an ended shift, no clock-out | `satgas_taman_bungkul_1` | pin-warn |
-| **bertugas · lembur** | staged: approved overtime + ping past shift end | `satgas_taman_flora_1` | pin-lembur |
-| **belum_hadir** | auto-derived: scheduled, not clocked in, **within grace** | any scheduled satgas early in the shift | roster "Belum hadir" |
-| **terlambat** (roster) | auto-derived: scheduled, not clocked in, **past grace** | same, later | roster flagged |
-| **tidak_hadir** | auto-derived: scheduled, not clocked in, **after window** | same, after shift end | roster "Tidak hadir" |
-| **tidak_bertugas** | a clockable worker with no schedule today (8+ exist) | any unscheduled satgas | not on the roster/map |
-| **Counting** | 2 satgas `bertugas` at one lokasi (1 counted per PM-C); korlap not counted; ad-hoc not counted | — | staffing = scheduled satgas/linmas only |
+### 11.1 The roster — what each user must show
 
-> The three auto-derived roster states depend on **now** vs the shift window — run the pass
-> **during Shift 1 (06:00–15:00)** to catch belum_hadir → terlambat → tidak_hadir across the
-> morning, or re-point the staging script at the shift whose window contains "now".
+**Live on the map (`bertugas`)** — the only lifecycle state that renders a pin:
+
+| Username | Expected | Where to look |
+|---|---|---|
+| `satgas_bertugas_1` | bertugas · aktif · dalam_area | green pin, counted in staffing |
+| `satgas_terlambat_in_1` | bertugas + `is_late` | pin + Terlambat badge |
+| `satgas_luar_area_1` | bertugas · aktif · **luar_area** | pin with "Di luar area" ring |
+| `satgas_offline_1` | bertugas · **offline** | pin reads Tidak Aktif, keeps last known area |
+| `satgas_lupa_pulang_1` | bertugas + `lupa_clock_out` | still in past shift end, no overtime |
+| `satgas_lembur_1` | bertugas + `lembur` | past end **with** approved overtime |
+| `satgas_unscheduled_1` | bertugas + `ad_hoc` | **"Luar Jadwal"** marker at **city** scope, **excluded from staffing** |
+| `linmas_bertugas_1` | bertugas — **counted** | staffing includes linmas |
+| `korlap_bertugas_1` | bertugas — **NOT counted** | monitorable but never in staffing |
+
+**Scope tiers** — which drill-down level the pin renders at:
+
+| Username | Schedule scope | Renders at |
+|---|---|---|
+| `satgas_surabaya_1` | city (no district/region) | city tier |
+| `satgas_rayon_1` | district | district (Rayon) tier |
+| `satgas_kawasan_1` | region | region (Kawasan) tier |
+
+**Rescheduling cohort** — one full role set per shift, all on **city scope** (they land in
+"Penugasan Kota" on the day board). Use them to drag/reassign between shifts without
+disturbing any presence scenario. They are scheduled only — never clocked in.
+
+| Username | Role | Shift |
+|---|---|---|
+| `satgas_shift_1` · `linmas_shift_1` · `korlap_shift_1` · `tim_shift_1_1` + `tim_shift_1_2` | satgas · linmas · korlap · tim | Shift 1 |
+| `satgas_shift_2` · `linmas_shift_2` · `korlap_shift_2` · `tim_shift_2_1` + `tim_shift_2_2` | satgas · linmas · korlap · tim | Shift 2 |
+| `satgas_shift_3` · `linmas_shift_3` · `korlap_shift_3` · `tim_shift_3_1` + `tim_shift_3_2` | satgas · linmas · korlap · tim | Shift 3 |
+
+**Scope × role sample roster** (`SAMPLE …` in a schedule's notes) — `stage-presence-scenarios.ts`
+also rosters one satgas, one linmas, one korlap and one team at **each** of city / district /
+region / location, so every board tier and role column has content. The **location** tier is
+pinned to **Rayon Pusat**; the other tiers each draw from a different rayon, because a worker
+is only ever scoped inside their own rayon (city is the deliberate exception).
+
+**Not on the map** — roster / history only:
+
+| Username | Expected lifecycle | Note |
+|---|---|---|
+| `satgas_belum_hadir_1` | `belum_hadir` | scheduled, still inside the arrival grace |
+| `satgas_terlambat_1` | `terlambat` | past start+grace, before shift end |
+| `satgas_tidak_hadir_1` | `tidak_hadir` | window ended, never clocked in |
+| `satgas_pulang_1` | `pulang` | clocked in **and** out |
+| `satgas_pulang_awal_1` | `pulang` + `early` | clocked out before shift end |
+| `satgas_tidak_bertugas_1` | `tidak_bertugas` | no schedule today |
+| `satgas_cuti_1` | `tidak_bertugas` + `excused`, reason **cuti** | in `on_leave_users[]` |
+| `satgas_sakit_1` | `tidak_hadir` + `excused`, reason **sakit** | in `on_leave_users[]` |
+| `satgas_izin_1` | `tidak_hadir` + `excused`, reason **izin** | in `on_leave_users[]` |
+| `satgas_libur_1` | roster status `OFF` | counts in `off_schedule_count`, **not** `on_leave` — see the `libur` caveat below |
+
+### 11.2 Why the time-window states are deterministic
+`belum_hadir` / `terlambat` / `tidak_hadir` depend on where **now** sits in a shift
+window. The script does NOT invent shifts for this — the shift catalog stays exactly
+**Shift 1/2/3** (synthetic staging shifts would appear as extra lanes on the day board).
+Instead it picks which *real* shift plays each role at the moment you run it, e.g. at 19:50:
+
+| Role | Picked | Why |
+|---|---|---|
+| `belum_hadir` | Shift 3 (21–05) | hasn't started |
+| `terlambat` | Shift 2 (15–23) | running, past the arrival grace |
+| `tidak_hadir` / past-end | Shift 1 (06–15) | already ended |
+
+Run it at another hour and it re-maps automatically. If no real shift can fill a role at
+that moment, it says so rather than inventing one.
+
+> **On-time vs late when YOU clock in.** In schedule-only mode most of the cohort sits on
+> whichever shift is currently running. If that shift started hours ago, clocking in now is
+> genuinely **late** — you'll get `bertugas + is_late`, which is correct, not a bug. To
+> exercise a clean on-time `bertugas`, clock in within the 10-minute grace after a shift
+> boundary (06:00 / 15:00 / 21:00) — `satgas_belum_hadir_1` is parked on the *next* shift
+> precisely for this.
+
+### 11.3 Verify from the API
+```bash
+curl -s localhost:4110/api/v1/monitoring/live-users -H "Authorization: Bearer $TOK" | jq '
+  {live: [.users[].full_name],
+   absent: [.absent_users[] | {n:.full_name, s:.lifecycle_state}],
+   leave:  [.on_leave_users[] | {n:.full_name, r:.leave_reason}]}'
+```
+Verified on 2026-07-22: 18/18 expected states matched (12 live · 3 roster · 3 excused).
 
 ### Excused leave (cuti / sakit / izin) — now surfaced
 `GET /monitoring/live-users` returns **`on_leave_users[]`** — scheduled workers on approved

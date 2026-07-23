@@ -26,7 +26,6 @@ import {
 } from '../location-staff-requirements/entities/location-staff-requirement.entity';
 import { UserTrackingStatus, TrackingStatus } from './entities/user-tracking-status.entity';
 import { Schedule } from '../schedules/entities/schedule.entity';
-import { ScheduleLocation } from '../schedules/entities/schedule.entity';
 
 describe('MonitoringService', () => {
   let service: MonitoringService;
@@ -74,6 +73,17 @@ describe('MonitoringService', () => {
     created_at: new Date(),
     updated_at: new Date(),
   };
+
+  /**
+   * `mockArea` plus its parent district relation — what `buildAreaSummaries`
+   * loads (`relations: ['district']`) to label an area_summary. Metadata comes
+   * from the lokasi row so a lokasi credited to a worker standing ELSEWHERE still
+   * gets its own name and rayon.
+   */
+  const mockAreaWithDistrict = {
+    ...mockArea,
+    district: { id: 'district-1', name: 'Rayon Pusat' },
+  } as unknown as Location;
 
   const mockUser: User = {
     id: 'user-1',
@@ -328,13 +338,6 @@ describe('MonitoringService', () => {
         },
         {
           provide: getRepositoryToken(Schedule),
-          useValue: {
-            find: jest.fn(),
-            createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
-          },
-        },
-        {
-          provide: getRepositoryToken(ScheduleLocation),
           useValue: {
             find: jest.fn(),
             createQueryBuilder: jest.fn(() => createMockQueryBuilder()),
@@ -1314,7 +1317,9 @@ describe('MonitoringService', () => {
 
       const result = await statsService.getBoundaries({ district_id: 'district-1' });
 
-      expect(districtRepository.find).toHaveBeenCalledWith({ where: { id: 'district-1' } });
+      expect(districtRepository.find).toHaveBeenCalledWith({
+        where: { id: 'district-1', is_active: true },
+      });
       expect(result.districts).toHaveLength(1);
       expect(result.districts[0].areas).toHaveLength(0);
       expect(result.districts[0].area_count).toBe(0);
@@ -1376,6 +1381,12 @@ describe('MonitoringService', () => {
   });
 
   describe('getSnapshot — staffing counts only satgas+linmas (ADR-046)', () => {
+    beforeEach(() => {
+      // See the note in the `getSnapshot` describe: lokasi metadata is loaded
+      // from the lokasi row, not derived from the workers standing in it.
+      areaRepository.find.mockResolvedValue([mockAreaWithDistrict] as any);
+    });
+
     it('ignores a clocked-in korlap when counting a lokasi as staffed', async () => {
       // The defect: `active_count` counted every monitorable role while
       // `required_count` sums satgas+linmas only — so a supervisor standing in a
@@ -1556,6 +1567,118 @@ describe('MonitoringService', () => {
     });
   });
 
+  /**
+   * Staffing is `assigned ∧ present` (ADR-053), not `standing here right now`.
+   * A worker rostered to several lokasi in one shift can only ever be inside one
+   * of them, so keying staffing off live position reported every other lokasi
+   * they cover as understaffed while their satgas was legitimately at the first.
+   */
+  describe('getSnapshot — staffing credits the ROSTER, not live position (ADR-053)', () => {
+    const AREA_A = {
+      ...mockArea,
+      id: 'area-a',
+      name: 'Taman A',
+      district_id: 'district-1',
+      district: { id: 'district-1', name: 'Rayon Pusat' },
+    } as unknown as Location;
+    const AREA_B = {
+      ...mockArea,
+      id: 'area-b',
+      name: 'Taman B',
+      district_id: 'district-1',
+      district: { id: 'district-1', name: 'Rayon Pusat' },
+    } as unknown as Location;
+
+    const liveSatgas = (overrides: Record<string, unknown> = {}) => ({
+      total_active: 1,
+      total_absent: 0,
+      total_outside_area: 0,
+      total_offline: 0,
+      total_online: 1,
+      users: [
+        {
+          id: 'u-satgas',
+          full_name: 'Satgas Satu',
+          role: 'satgas',
+          location_id: 'area-a',
+          location_name: 'Taman A',
+          district_id: 'district-1',
+          district_name: 'Rayon Pusat',
+          status: TrackingStatus.ACTIVE,
+          lat: -7.2,
+          lng: 112.7,
+          last_update: new Date(),
+          is_within_area: true,
+          ...overrides,
+        },
+      ],
+      generated_at: new Date(),
+    });
+
+    beforeEach(() => {
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
+      jest
+        .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
+        .mockResolvedValue({ has: () => true } as unknown as Set<string>);
+      staffRequirementRepository.find.mockResolvedValue([]);
+    });
+
+    it('staffs EVERY rostered lokasi, each with its own name and rayon', async () => {
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(liveSatgas() as any);
+      jest
+        .spyOn(service['statsService'], 'scheduledLocationIdsByUser')
+        .mockResolvedValue(new Map([['u-satgas', ['area-a', 'area-b']]]));
+      areaRepository.find.mockResolvedValue([AREA_A, AREA_B] as any);
+
+      const result = await service.getSnapshot({} as any);
+      const a = result.data.area_summaries.find((s: any) => s.location_id === 'area-a');
+      const b = result.data.area_summaries.find((s: any) => s.location_id === 'area-b');
+
+      expect(a?.active_count).toBe(1);
+      expect(b?.active_count).toBe(1);
+      // Taman B must carry ITS OWN identity. Deriving metadata from the worker
+      // standing in Taman A labelled B "Taman A" and filed it under A's rayon.
+      expect(b?.location_name).toBe('Taman B');
+      expect(b?.district_id).toBe('district-1');
+    });
+
+    it('still staffs both when the worker is outside every lokasi boundary', async () => {
+      // Walking the road between two taman: `location_id` is null, but the roster
+      // is known independently of GPS, so neither lokasi may report a shortfall.
+      jest
+        .spyOn(service['userService'], 'getLiveUsers')
+        .mockResolvedValue(liveSatgas({ location_id: null, is_within_area: false }) as any);
+      jest
+        .spyOn(service['statsService'], 'scheduledLocationIdsByUser')
+        .mockResolvedValue(new Map([['u-satgas', ['area-a', 'area-b']]]));
+      areaRepository.find.mockResolvedValue([AREA_A, AREA_B] as any);
+
+      const result = await service.getSnapshot({} as any);
+      expect(
+        result.data.area_summaries.find((s: any) => s.location_id === 'area-a')?.active_count,
+      ).toBe(1);
+      expect(
+        result.data.area_summaries.find((s: any) => s.location_id === 'area-b')?.active_count,
+      ).toBe(1);
+    });
+
+    it('never credits a lokasi outside the requested scope', async () => {
+      // The roster is city-wide, but a district-scoped snapshot must not grow an
+      // area_summary for a lokasi in another rayon. The scope gate lives in the
+      // metadata lookup: out-of-scope lokasi simply do not come back.
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue(liveSatgas() as any);
+      jest
+        .spyOn(service['statsService'], 'scheduledLocationIdsByUser')
+        .mockResolvedValue(new Map([['u-satgas', ['area-a', 'area-elsewhere']]]));
+      areaRepository.find.mockResolvedValue([AREA_A] as any);
+
+      const result = await service.getSnapshot({ scope: 'district', id: 'district-1' } as any);
+      expect(result.data.area_summaries.map((s: any) => s.location_id)).toEqual(['area-a']);
+    });
+  });
+
   describe('getSnapshot', () => {
     // Staffing (`active_count`) counts only SCHEDULED satgas+linmas (ADR-050 5.4d);
     // ad-hoc clock-ins are excluded. These fixtures model rostered workers, so mark
@@ -1565,6 +1688,9 @@ describe('MonitoringService', () => {
       jest
         .spyOn(service['statsService'], 'scheduledUserIdsForCurrentShift')
         .mockResolvedValue({ has: () => true } as unknown as Set<string>);
+      // area_summaries take each lokasi's name/rayon from the LOKASI ROW, not from
+      // whichever worker happened to be standing in it — see `buildAreaSummaries`.
+      areaRepository.find.mockResolvedValue([mockAreaWithDistrict] as any);
     });
 
     it('should return snapshot with correct contract shape', async () => {
@@ -1679,7 +1805,11 @@ describe('MonitoringService', () => {
         location_id: 'area-1',
         location_name: 'Taman Bungkul',
         district_id: 'district-1',
-        district_name: 'Rayon Selatan',
+        // From the LOKASI's own district, not from the worker payload — the
+        // fixture's workers carry `district_name: 'Rayon Selatan'` against
+        // `district_id: 'district-1'`, a disagreement the old worker-derived
+        // labelling propagated straight into the summary.
+        district_name: 'Rayon Pusat',
         active_count: 2, // active + offline = clocked in (both satgas staff the park)
         required_count: 5, // From mockStaffRequirement
         is_understaffed: true, // 2 clocked-in < 5 required

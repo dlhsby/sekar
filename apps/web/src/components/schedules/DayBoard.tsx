@@ -16,6 +16,7 @@ import {
   type BoardDistrict,
   type BoardRegion,
   type BoardShiftGroup,
+  workersOf,
 } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import type { StaffSubject } from '@/lib/api/location-staff-requirements';
@@ -37,7 +38,7 @@ export interface AssignContext {
   district_id?: string;
   region_id?: string;
   location_id?: string;
-  /** City-wide placement (Seluruh Surabaya). */
+  /** City-wide assignment (Seluruh Surabaya). */
   city?: boolean;
   /** Assigning a TEAM rather than an individual — opens the modal's team target. */
   team?: boolean;
@@ -186,7 +187,8 @@ export function DayBoard({
           {t('schedules:board.emptyDay')}
         </p>
       ) : null}
-      {tree.map((district) => {
+      {(() => {
+        const renderCard = (district: (typeof tree)[number], nested?: React.ReactNode) => {
         const locCount =
           district.regions.reduce((a, r) => a + r.locations.length, 0) + district.looseLocations.length;
         // Exactly one tier owns capacity, decided by the district — never inferred
@@ -196,7 +198,7 @@ export function DayBoard({
         // Rayon-level understaffing: countable (satgas+linmas) across the whole
         // subtree vs the district target. Only for district-scope, else the target
         // belongs to a kawasan/lokasi and showing it here would double-count.
-        const shiftIds = district.placement.map((g) => g.shift.id);
+        const shiftIds = district.assignment.map((g) => g.shift.id);
         const districtCapPills = capacityPills(
           districtSubtree(district),
           `ray:${district.id}:`,
@@ -232,6 +234,10 @@ export function DayBoard({
         return (
           <section
             key={district.id}
+            // Stable hook so a test (or a11y tooling) can scope to ONE card. With
+            // Surabaya nesting every rayon, a document-wide getAllByRole(...)[0]
+            // now hits the city's controls first.
+            data-testid={`board-card-${district.id}`}
             className="overflow-hidden rounded-nb-base border-2 border-l-[6px] border-nb-black border-l-nb-primary bg-nb-white shadow-nb-sm"
           >
             <div className="flex items-center border-b-2 border-nb-black bg-nb-gray-200">
@@ -249,14 +255,28 @@ export function DayBoard({
                   {districtCapPills.map(({ shift, countable, target, rolledUp }) => (
                     <ShiftPill
                       key={shift.id}
-                      group={{ shift, byRole: {}, teams: [], countableByRole: {}, countable, total: countable }}
+                      group={{ shift, byRole: {}, teams: [], countableByRole: {}, countable, total: countable, userIds: [] }}
                       target={target}
                       rolledUp={rolledUp}
                       roleTargets={rolledUp ? undefined : districtRoleTargets}
                       roleCounts={districtRoleCounts}
                     />
                   ))}
-                  <Pill>{t('schedules:board.petugasCount', { count: district.total })}</Pill>
+                  <Pill>
+                    {t('schedules:board.petugasCount', {
+                      // Display-only roll-up: Surabaya visibly CONTAINS every rayon,
+                      // so a parent count smaller than its children would read as a
+                      // bug. Kept out of the data model — pruneDayBoard uses `total`
+                      // to decide emptiness.
+                      // PEOPLE, not occurrences: a worker covering two lokasi in
+                      // one day is one petugas (ADR-053). Summing `total` counted
+                      // them twice the moment multi-place days became possible.
+                      count:
+                        district.id === CITY_NODE_ID
+                          ? new Set(tree.flatMap((d) => d.workerIds)).size
+                          : district.workerIds.length,
+                    })}
+                  </Pill>
                   {/* Surabaya is city-wide by definition — it has no kawasan or
                       lokasi, so "0 kawasan · 0 lokasi" would read as a defect. */}
                   {district.id !== CITY_NODE_ID && (
@@ -293,35 +313,43 @@ export function DayBoard({
 
             {open.has(district.id) && (
               <div className="flex flex-col gap-3 p-3">
-                {/* Surabaya holds nothing but city-wide placements, so its shift
+                {/* Surabaya holds nothing but city-wide assignments, so its shift
                     + role table IS its body — no "Penempatan" wrapper to
                     distinguish it from siblings it doesn't have. Gating it on
                     already-having-content made a city-wide schedule impossible to
                     assign: no table, so no way in, so the table never appeared. */}
                 {district.id === CITY_NODE_ID ? (
-                  <ShiftRoleTable
-                    shifts={district.placement}
-                    {...tableProps}
-                    onAssign={mkAssign({ city: true })}
-                    onAssignTeam={mkAssignTeam({ city: true })}
-                  />
-                ) : (
-                  <PlacementBlock
-                    id={`${district.id}-placement`}
-                    title={t('schedules:board.placementDistrict')}
-                    count={sumTotals(district.placement)}
-                    open={open.has(`${district.id}:placement`)}
-                    onToggle={() => toggle(`${district.id}:placement`)}
+                  <AssignmentBlock
+                    id={`${district.id}-assignment`}
+                    title={t('schedules:board.assignmentCity')}
+                    count={workersOf(district.assignment).length}
+                    open={open.has(`${district.id}:assignment`)}
+                    onToggle={() => toggle(`${district.id}:assignment`)}
                   >
                     <ShiftRoleTable
-                      shifts={district.placement}
+                      shifts={district.assignment}
+                      {...tableProps}
+                      onAssign={mkAssign({ city: true })}
+                      onAssignTeam={mkAssignTeam({ city: true })}
+                    />
+                  </AssignmentBlock>
+                ) : (
+                  <AssignmentBlock
+                    id={`${district.id}-assignment`}
+                    title={t('schedules:board.assignmentDistrict')}
+                    count={workersOf(district.assignment).length}
+                    open={open.has(`${district.id}:assignment`)}
+                    onToggle={() => toggle(`${district.id}:assignment`)}
+                  >
+                    <ShiftRoleTable
+                      shifts={district.assignment}
                       {...tableProps}
                       onAssign={mkAssign({ district_id: district.id })}
                       onAssignTeam={mkAssignTeam({ district_id: district.id })}
                       roleTargets={districtRoleTargets}
                       roleCounts={districtRoleCounts}
                     />
-                  </PlacementBlock>
+                  </AssignmentBlock>
                 )}
                 {/* One continuous rail down the district's children, in the district's
                     own accent: "these belong to that". A single 2px stroke per
@@ -372,16 +400,31 @@ export function DayBoard({
                 {district.id !== CITY_NODE_ID &&
                   district.regions.length === 0 &&
                   district.looseLocations.length === 0 &&
-                  !district.placement.some((s) => s.total > 0) && (
+                  !district.assignment.some((s) => s.total > 0) && (
                     <p className="py-6 text-center text-nb-body-sm text-nb-gray-500">
                       {t('schedules:board.emptyDistrict')}
                     </p>
                   )}
               </div>
             )}
+            {/* Gated on the card's own open state — otherwise collapsing Surabaya
+                would hide its header body but leave every nested rayon on screen. */}
+            {open.has(district.id) && nested}
           </section>
         );
-      })}
+        };
+        // EXPERIMENT: Surabaya is the root container — every rayon renders INSIDE
+        // it rather than as a sibling, so the city reads as one tree instead of a
+        // city card followed by eight unrelated cards.
+        const city = tree.find((d) => d.id === CITY_NODE_ID);
+        const rayons = tree.filter((d) => d.id !== CITY_NODE_ID);
+        const nestedRayons = (
+          <div className="flex flex-col gap-3 border-t-2 border-nb-black bg-nb-gray-50 p-3">
+            {rayons.map((d) => renderCard(d))}
+          </div>
+        );
+        return city ? renderCard(city, nestedRayons) : rayons.map((d) => renderCard(d));
+      })()}
     </div>
   );
 }
@@ -391,7 +434,7 @@ export function DayBoard({
  * is allowed anywhere), so it collapses by default to keep the board scannable —
  * an empty one shouldn't push the kawasan list off screen.
  */
-function PlacementBlock({
+function AssignmentBlock({
   id,
   title,
   count,
@@ -445,7 +488,7 @@ type MkAssignTeam = (subject: AssignSubject) => ((shiftId: string) => void) | un
 /**
  * Per-role countable headcount across a whole subject's subtree, keyed
  * `<shift>:<role>`. A kawasan/district target is met by everything inside it (its
- * own placement PLUS its lokasi), so the coverage number must be the subtree's,
+ * own assignment PLUS its lokasi), so the coverage number must be the subtree's,
  * not just the rows of the table it is rendered above.
  */
 function subtreeRoleCounts(groups: BoardShiftGroup[][]): Map<string, number> {
@@ -480,13 +523,13 @@ function subjectRoleTargets(all: Map<string, number>, prefix: string): Map<strin
 }
 
 /**
- * Per-shift countable totals for a whole district subtree (its own placement + every
- * kawasan placement + every location), paired with the district-level target.
+ * Per-shift countable totals for a whole district subtree (its own assignment + every
+ * kawasan assignment + every location), paired with the district-level target.
  * Only shifts that actually have a target produce a pill.
  */
 const sumTotals = (groups: BoardShiftGroup[]): number => groups.reduce((a, g) => a + g.total, 0);
 
-/** Per-shift countable totals across a subtree (its own placement + descendants). */
+/** Per-shift countable totals across a subtree (its own assignment + descendants). */
 function shiftCountables(
   groups: BoardShiftGroup[][]
 ): Map<string, { shift: BoardShiftGroup['shift']; countable: number }> {
@@ -503,14 +546,14 @@ function shiftCountables(
 
 /** Every shift-group list under a district (itself, its kawasan, every lokasi). */
 const districtSubtree = (r: BoardDistrict): BoardShiftGroup[][] => [
-  r.placement,
+  r.assignment,
   ...r.looseLocations.map((l) => l.shifts),
-  ...r.regions.flatMap((g) => [g.placement, ...g.locations.map((l) => l.shifts)]),
+  ...r.regions.flatMap((g) => [g.assignment, ...g.locations.map((l) => l.shifts)]),
 ];
 
 /** Every shift-group list under a kawasan (itself + its lokasi). */
 const regionSubtree = (r: BoardRegion): BoardShiftGroup[][] => [
-  r.placement,
+  r.assignment,
   ...r.locations.map((l) => l.shifts),
 ];
 
@@ -611,7 +654,7 @@ function RegionCard({
 }) {
   const { t } = useTranslation(['schedules']);
   // Kawasan-level understaffing: countable (satgas+linmas) across the region's
-  // own placement + all its locations, vs the kawasan target (grouped districts
+  // own assignment + all its locations, vs the kawasan target (grouped districts
   // define KEBUTUHAN at this level). Pills show only for shifts with a target.
   const regionShifts = new Map<string, { shift: BoardShiftGroup['shift']; countable: number }>();
   const accumulate = (g: BoardShiftGroup) => {
@@ -619,13 +662,13 @@ function RegionCard({
     e.countable += g.countable;
     regionShifts.set(g.shift.id, e);
   };
-  region.placement.forEach(accumulate);
+  region.assignment.forEach(accumulate);
   region.locations.forEach((loc) => loc.shifts.forEach(accumulate));
   const regionRoleTargets =
     capacityLevel === 'region'
       ? subjectRoleTargets(roleCapacities, `reg:${region.id}:`)
       : undefined;
-  // A kawasan's target is met by its own placement PLUS its lokasi.
+  // A kawasan's target is met by its own assignment PLUS its lokasi.
   const regionRoleCounts = subtreeRoleCounts(regionSubtree(region));
   const capPills = capacityPills(
     regionSubtree(region),
@@ -637,7 +680,7 @@ function RegionCard({
           capacities,
           'loc',
           region.locations.map((l) => l.id),
-          region.placement.map((g) => g.shift.id)
+          region.assignment.map((g) => g.shift.id)
         )
       : undefined
   );
@@ -658,14 +701,14 @@ function RegionCard({
             {capPills.map(({ shift, countable, target, rolledUp }) => (
               <ShiftPill
                 key={shift.id}
-                group={{ shift, byRole: {}, teams: [], countableByRole: {}, countable, total: countable }}
+                group={{ shift, byRole: {}, teams: [], countableByRole: {}, countable, total: countable, userIds: [] }}
                 target={target}
                 rolledUp={rolledUp}
                 roleTargets={rolledUp ? undefined : regionRoleTargets}
                 roleCounts={regionRoleCounts}
               />
             ))}
-            <Pill>{t('schedules:board.petugasCount', { count: region.total })}</Pill>
+            <Pill>{t('schedules:board.petugasCount', { count: region.workerIds.length })}</Pill>
             <Pill>{t('schedules:board.lokasiCount', { count: region.locations.length })}</Pill>
           </span>
         </button>
@@ -692,22 +735,22 @@ function RegionCard({
       {open.has(region.id) && (
         <div className="flex flex-col gap-2 p-2.5">
           {/* Assign at the kawasan regardless of scope; only the target is scope-bound. */}
-          <PlacementBlock
-            id={`${region.id}-placement`}
-            title={t('schedules:board.placementKawasan')}
-            count={sumTotals(region.placement)}
-            open={open.has(`${region.id}:placement`)}
-            onToggle={() => toggle(`${region.id}:placement`)}
+          <AssignmentBlock
+            id={`${region.id}-assignment`}
+            title={t('schedules:board.assignmentKawasan')}
+            count={workersOf(region.assignment).length}
+            open={open.has(`${region.id}:assignment`)}
+            onToggle={() => toggle(`${region.id}:assignment`)}
           >
             <ShiftRoleTable
-              shifts={region.placement}
+              shifts={region.assignment}
               {...tableProps}
               onAssign={mkAssign({ district_id: districtId, region_id: region.id })}
               onAssignTeam={mkAssignTeam({ district_id: districtId, region_id: region.id })}
               roleTargets={regionRoleTargets}
               roleCounts={regionRoleCounts}
             />
-          </PlacementBlock>
+          </AssignmentBlock>
           {region.locations.length > 0 && (
             <div className="flex flex-col gap-2 border-l-2 border-nb-info/40">
               {region.locations.map((loc) => (

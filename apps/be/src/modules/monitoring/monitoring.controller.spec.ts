@@ -230,6 +230,7 @@ describe('MonitoringController', () => {
         team_id: null,
         team_name: null,
         team_color: null,
+        team_opacity: null,
         team_icon: null,
       },
     ],

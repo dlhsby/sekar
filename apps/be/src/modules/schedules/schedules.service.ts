@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
+  Between,
   In,
   IsNull,
   LessThanOrEqual,
@@ -14,9 +15,9 @@ import {
   Repository,
   type FindOptionsWhere,
 } from 'typeorm';
-import { Schedule, ScheduleStatus, ScheduleLocation } from './entities/schedule.entity';
+import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
@@ -54,9 +55,119 @@ const BUSY_STATUSES = [
 ];
 
 /**
+ * The roles a day's roster is actually built from (ADR-054 §4).
+ *
+ * NOT the same as "roles that can hold a row": kepala_rayon / admin_rayon do get
+ * rows, but theirs is a standing whole-district posting rather than a per-day
+ * assignment, so listing them as "belum dijadwalkan" every single day would be
+ * noise no one should ever act on.
+ */
+export const SCHEDULABLE_WORKER_ROLES: UserRole[] = [
+  UserRole.SATGAS,
+  UserRole.LINMAS,
+  UserRole.KORLAP,
+];
+
+/**
+ * Statuses that mean "accounted for but NOT placeable" — an excused absence.
+ * Distinguishing these from "no row at all" is what stops the panel inviting an
+ * admin to schedule someone who is on approved leave.
+ */
+/**
+ * Statuses that RELEASE the slot: the row exists, but the worker is not on it.
+ * Only replacement does this — `absent` still holds the assignment.
+ */
+const FREED_STATUSES: ScheduleStatus[] = [ScheduleStatus.REPLACED];
+
+const EXCUSED_STATUSES: ScheduleStatus[] = [
+  ScheduleStatus.OFF,
+  ScheduleStatus.LEAVE_SICK,
+  ScheduleStatus.LEAVE_ANNUAL,
+  ScheduleStatus.LEAVE_PERMIT,
+];
+
+export interface UnscheduledWorkerDto {
+  id: string;
+  full_name: string;
+  username: string;
+  role: UserRole;
+  district_id: string | null;
+  district_name: string | null;
+  /**
+   * Teams this worker is scheduled on TODAY (any shift, any place). Empty for a
+   * worker with no team occurrence. Shown as a column and matched by the search,
+   * so "Penyiraman" finds that crew even though a team lives on the schedule
+   * rather than on the person.
+   */
+  teams: string[];
+}
+
+export interface UnavailableWorkerDto extends UnscheduledWorkerDto {
+  /** Why they cannot be placed — drives the reason chip. */
+  status: ScheduleStatus;
+}
+
+export interface UnscheduledResult {
+  date: string;
+  shift_definition_id: string | null;
+  unscheduled: UnscheduledWorkerDto[];
+  unavailable: UnavailableWorkerDto[];
+  totals: {
+    unscheduled: number;
+    unavailable: number;
+    scheduled: number;
+    /** Workers the caller may see, BEFORE the search — the honest denominator. */
+    workforce: number;
+    /** How many of them the search matched; equals `workforce` when not searching. */
+    matched: number;
+  };
+}
+
+/**
+ * The PLACE half of a row's identity under ADR-053: one row = one worker, one
+ * shift, one place. Mirrors the DB expression behind
+ * `UQ_schedules_user_date_shift_place`, so an in-memory uniqueness check and the
+ * index always agree on what counts as "the same place". A row with no place at
+ * all is city-scope, which the index folds onto the nil uuid — the same sentinel
+ * is used here so city-scope rows collide with each other and nothing else.
+ */
+const NIL_PLACE_ID = '00000000-0000-0000-0000-000000000000';
+
+export function schedulePlaceKey(row: {
+  location_id?: string | null;
+  region_id?: string | null;
+  district_id?: string | null;
+}): string {
+  return row.location_id ?? row.region_id ?? row.district_id ?? NIL_PLACE_ID;
+}
+
+/**
+ * The place an event's occurrences land on — the same resolution the projection
+ * and the materializer apply, in one place so an occupancy check can never
+ * disagree with the row it is meant to predict. Constant across the event's
+ * users and dates, so callers resolve it once per event.
+ */
+export function eventPlace(event: ScheduleEvent): {
+  location_id: string | null;
+  region_id: string | null;
+  district_id: string | null;
+} {
+  return {
+    location_id: event.scope === 'static' ? (event.location_id ?? null) : null,
+    region_id: event.scope === 'mobile' ? (event.region_id ?? null) : null,
+    district_id:
+      (event.scope === 'static'
+        ? event.location?.district_id
+        : event.scope === 'mobile'
+          ? event.region?.district_id
+          : event.district_id) ?? null,
+  };
+}
+
+/**
  * Optional filters for the calendar range query (materialized + projected rows).
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
- * whose schedule_locations include it.
+ * whose location_id matches.
  */
 export interface RangeFilters {
   districtId?: string | null;
@@ -85,8 +196,6 @@ export class SchedulesService {
   constructor(
     @InjectRepository(Schedule)
     private readonly rosterRepo: Repository<Schedule>,
-    @InjectRepository(ScheduleLocation)
-    private readonly rosterAreaRepo: Repository<ScheduleLocation>,
     @InjectRepository(ScheduleEvent)
     private readonly eventRepo: Repository<ScheduleEvent>,
     @InjectRepository(User)
@@ -118,20 +227,18 @@ export class SchedulesService {
     }
     if (isGlobalRosterEditor(editor.role)) return;
 
-    const rowAreas = row.schedule_areas ?? [];
     if (isDistrictManagerRole(editor.role)) {
       if (!editor.district_id) {
         throw new ForbiddenException('Your account is missing a district assignment');
       }
       const inDistrict =
-        row.district_id === editor.district_id ||
-        rowAreas.some((a) => a.area?.district_id === editor.district_id);
+        row.district_id === editor.district_id || row.location?.district_id === editor.district_id;
       if (!inDistrict) throw new ForbiddenException('This worker is outside your district');
       return;
     }
     // korlap: the row's areas must overlap the coordinator's own assigned areas.
     const editorAreaIds = await this.userAreasService.getPermanentLocationIds(editor.id);
-    const overlap = rowAreas.some((a) => editorAreaIds.includes(a.location_id));
+    const overlap = !!row.location_id && editorAreaIds.includes(row.location_id);
     if (!overlap) throw new ForbiddenException('This worker is outside your assigned areas');
   }
 
@@ -230,9 +337,20 @@ export class SchedulesService {
         created_by: actor.id,
       }),
     );
+    // ADR-053: one place per row. An explicit multi-lokasi request is a
+    // contradiction, not something to truncate behind a 200 — say so. The
+    // permanent-assignment FALLBACK legitimately holds several (a korlap covers
+    // many taman), so it seeds this row with the first by id and leaves the rest
+    // to further rows; sorted so the pick is deterministic across calls.
+    if (dto.area_ids && dto.area_ids.length > 1) {
+      throw new BadRequestException(
+        'A schedule row covers exactly one place (ADR-053). Create one row per lokasi instead of listing several.',
+      );
+    }
     const locationIds =
-      dto.area_ids ?? (await this.userAreasService.getPermanentLocationIds(dto.user_id));
-    await this.setAreas(row.id, locationIds, actor.id);
+      dto.area_ids ??
+      [...(await this.userAreasService.getPermanentLocationIds(dto.user_id))].sort();
+    await this.setPlace(row.id, locationIds[0] ?? null);
     await this.audit(
       row,
       'add_schedule',
@@ -241,6 +359,44 @@ export class SchedulesService {
       { user_id: dto.user_id, shift_definition_id: shiftId, area_ids: locationIds },
     );
     return this.findOne(row.id);
+  }
+
+  /**
+   * `user:date:shift:place` for every LIVE roster row in the range, regardless of
+   * which event (or none) produced it.
+   *
+   * `UQ_schedules_user_date_shift_place` makes a second row for the same
+   * (user, date, shift, PLACE) impossible, so an event that would produce one can
+   * never materialize. Without this set the projection still emitted it — a
+   * greyed "projected" duplicate that showed forever, could not be deleted (its
+   * id is `projected:…`, not a row), and silently inflated the board's role
+   * counts. Projection skips any key a live row already owns.
+   *
+   * The PLACE component is what keeps this honest under ADR-053. Keying on the
+   * (user, date, shift) triple alone — as this did while the old
+   * `UQ_schedules_user_date_shift` index still existed — suppressed the second
+   * occurrence of a worker legitimately covering two places in one shift, which
+   * is precisely the case ADR-053 exists to allow.
+   */
+  private async occupiedShiftKeys(from: string, to: string): Promise<Set<string>> {
+    const rows = await this.rosterRepo.find({
+      where: { schedule_date: Between(from, to) },
+      select: [
+        'user_id',
+        'schedule_date',
+        'shift_definition_id',
+        'location_id',
+        'region_id',
+        'district_id',
+      ],
+    });
+    return new Set(
+      rows
+        .filter((r) => r.shift_definition_id)
+        .map(
+          (r) => `${r.user_id}:${r.schedule_date}:${r.shift_definition_id}:${schedulePlaceKey(r)}`,
+        ),
+    );
   }
 
   /**
@@ -336,8 +492,7 @@ export class SchedulesService {
       // (the web table reads row.user.full_name and crashes).
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.location', 'location')
       .leftJoinAndSelect('ds.replacement_user', 'ru')
       .where('ds.schedule_date = :date', { date })
       .andWhere('ds.deleted_at IS NULL');
@@ -354,13 +509,279 @@ export class SchedulesService {
   async findAllByUserAndDate(userId: string, date: string): Promise<Schedule[]> {
     const rows = await this.rosterRepo.find({
       where: { user_id: userId, schedule_date: date },
-      relations: ['shift_definition', 'schedule_areas', 'schedule_areas.area', 'district'],
+      // `region` is loaded so the mobile clock-in screen can name a kawasan-scope
+      // assignment instead of falling back to "no area".
+      relations: ['shift_definition', 'location', 'district', 'region'],
     });
     return rows.sort((a, b) =>
       (a.shift_definition?.start_time ?? '99:99:99').localeCompare(
         b.shift_definition?.start_time ?? '99:99:99',
       ),
     );
+  }
+
+  /**
+   * Who is NOT scheduled against a TARGET SLOT (ADR-054).
+   *
+   * The board shows what IS scheduled, so a worker with no row is invisible by
+   * construction: an empty column and a fully-placed rayon look identical, and
+   * the gap only surfaces the next morning as an understaffed lokasi.
+   *
+   * **The filters describe the slot being filled, not the worker.** Date, shift,
+   * rayon, kawasan and lokasi together say "this is the assignment I am trying
+   * to make"; the answer is everyone who does not already hold a schedule
+   * matching it — i.e. exactly the people you could place there. An omitted
+   * criterion matches everything, so with only a date the question degenerates
+   * to the simple one: "who has no schedule today at all".
+   *
+   * This is why geography does not narrow the workforce. Workers carry a rayon
+   * and nothing below it (`users.region_id` is unset in practice, and only a
+   * minority hold a permanent lokasi), so filtering PEOPLE by kawasan would
+   * match nobody. The kawasan belongs to the target.
+   *
+   * Three subtleties this has to get right:
+   *
+   * 1. **Projected occurrences count as scheduled.** Beyond the materialization
+   *    horizon a recurring rule yields projected rows, not DB rows (ADR-047), so
+   *    a `NOT EXISTS` against `schedules` would report everyone on a daily rule
+   *    as unscheduled for every future date. It reads the same materialized ∪
+   *    projected union the board renders.
+   * 2. **Absence is not availability.** A worker on cuti has no assignment AND
+   *    cannot take one, so they are reported separately rather than sitting in a
+   *    list of people to place. Excused is judged over the whole DAY, not the
+   *    target — leave does not care how the slot is described.
+   * 3. **Busy elsewhere is still available here.** Only a row matching the
+   *    target counts as "already on it": under ADR-053 one worker legitimately
+   *    covers several places in a shift.
+   */
+  async findUnscheduled(
+    date: string,
+    filters: {
+      shiftDefinitionId?: string | null;
+      districtId?: string | null;
+      regionId?: string | null;
+      locationId?: string | null;
+      roles?: UserRole[] | null;
+      q?: string | null;
+      /**
+       * The caller's OWN district, when they are rayon-scoped. Distinct from
+       * `districtId`: that describes the slot being filled, this describes who
+       * the caller may see at all. Conflating the two is what let a kepala_rayon
+       * list every rayon's workers once geography stopped narrowing the
+       * workforce.
+       */
+      visibleDistrictId?: string | null;
+    } = {},
+  ): Promise<UnscheduledResult> {
+    const { shiftDefinitionId, districtId, regionId, locationId, roles, q, visibleDistrictId } =
+      filters;
+
+    // The workforce a day is built from. kepala_rayon / admin_rayon are excluded
+    // outright (ADR-054 §4): their posting is a standing whole-district one, so
+    // they would sit in this list every day with no action ever appropriate.
+    //
+    // The role filter can only ever NARROW within those three. A request naming
+    // a role outside them is dropped rather than honoured — and, once dropped,
+    // falls back to all three rather than returning an empty list, which would
+    // read as "everyone is scheduled" when the truth is "you asked for a role
+    // this view never lists".
+    const requested = (roles ?? []).filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
+    const candidateRoles = requested.length ? requested : [...SCHEDULABLE_WORKER_ROLES];
+
+    // NOTE: the TARGET geography does NOT narrow the workforce. Rayon / kawasan
+    // / lokasi describe the slot being filled, not a property of the worker —
+    // workers carry a rayon and nothing below it, so filtering people by kawasan
+    // would match nobody. See the target predicate below.
+    //
+    // `visibleDistrictId` is a different thing entirely: the CALLER's own rayon.
+    // It DOES narrow the workforce, because a kepala_rayon must not see workers
+    // they could never schedule.
+    const userQb = this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('districts', 'd', 'd.id = u.district_id')
+      .addSelect('d.name', 'district_name')
+      .where('u.role IN (:...roles)', { roles: candidateRoles })
+      // A deactivated account is not a staffing gap.
+      .andWhere('u.is_active = TRUE')
+      .andWhere('u.deleted_at IS NULL');
+    if (visibleDistrictId) {
+      userQb.andWhere('u.district_id = :visibleDistrictId', { visibleDistrictId });
+    }
+    const { entities: workforce, raw } = await userQb
+      .orderBy('u.full_name', 'ASC')
+      .getRawAndEntities();
+    const districtNameById = new Map<string, string>();
+    for (const r of raw as Array<{ u_district_id?: string; district_name?: string }>) {
+      if (r.u_district_id && r.district_name)
+        districtNameById.set(r.u_district_id, r.district_name);
+    }
+
+    // The whole day as the BOARD sees it — materialized rows plus projections.
+    //
+    // Deliberately UNFILTERED, and it has to be: two different questions are
+    // asked of it. "Is this worker on the target slot" wants the target
+    // filters, but "what is this worker on at all today" — which drives the
+    // excused bucket and the team search — wants the whole day. Pushing the
+    // target into SQL would answer the first and silently break the other two:
+    // a worker on cuti at another lokasi would come back as merely unscheduled,
+    // and their team would vanish from the search.
+    //
+    // One query, filtered in memory by `matchesTarget`. The day is a single
+    // date, so this is bounded by one day's occurrences (tens to low hundreds),
+    // not by the calendar.
+    const occurrences = await this.findByDateRange(date, date);
+
+    /**
+     * Does this occurrence satisfy the target the operator described? An omitted
+     * criterion matches everything, so with no filters at all every occurrence
+     * counts and the answer degenerates to "has no schedule today".
+     */
+    const matchesTarget = (row: Schedule): boolean => {
+      if (shiftDefinitionId && row.shift_definition_id !== shiftDefinitionId) return false;
+      // A BROADER assignment already covers a narrower target. A city-wide row
+      // (no geography at all) covers every rayon; a rayon-wide row covers every
+      // lokasi in it. Requiring an exact column match reported those workers as
+      // free for every place they were already committed to — with the seeded
+      // city-scope cohort that made `scheduled` collapse to 0 for any rayon
+      // target. A row is only "not this slot" when it names a DIFFERENT place at
+      // the same level.
+      if (locationId && row.location_id && row.location_id !== locationId) return false;
+      if (regionId && row.region_id && row.region_id !== regionId) return false;
+      if (districtId && row.district_id && row.district_id !== districtId) return false;
+      return true;
+    };
+
+    const busy = new Set<string>();
+    const excusedBy = new Map<string, ScheduleStatus>();
+    /** Teams a worker is on TODAY, for the search and the Tim column. */
+    const teamsByUser = new Map<string, Set<string>>();
+    for (const row of occurrences) {
+      if (!row.user_id) continue;
+      // A REPLACED row is the one status where holding a schedule means the
+      // worker is FREE — someone else took the shift. Deciding this by "not
+      // excused" counted them as busy and hid them from the very list meant to
+      // find them; it also left them tagged with a team they no longer work.
+      // `absent` deliberately stays busy: they hold the slot, they just did not
+      // turn up.
+      if (FREED_STATUSES.includes(row.status)) continue;
+      const teamName = row.team_category?.name;
+      if (teamName) {
+        const set = teamsByUser.get(row.user_id);
+        if (set) set.add(teamName);
+        else teamsByUser.set(row.user_id, new Set([teamName]));
+      }
+      if (EXCUSED_STATUSES.includes(row.status)) {
+        // Excused is about the DAY, not the target: someone on cuti cannot be
+        // placed anywhere, however the slot is described.
+        if (!excusedBy.has(row.user_id)) excusedBy.set(row.user_id, row.status);
+        continue;
+      }
+      // Only a row matching the target means "already on this slot". A worker
+      // busy at a DIFFERENT lokasi is still a candidate here — ADR-053 lets one
+      // worker cover several places in a shift.
+      if (matchesTarget(row)) busy.add(row.user_id);
+    }
+
+    const teamsOf = (userId: string): string[] => [...(teamsByUser.get(userId) ?? [])].sort();
+
+    // Search spans name, username AND the teams the worker is scheduled on
+    // today, so "Penyiraman" pulls up that crew even though the team lives on
+    // their schedule rather than on them. Applied here rather than in SQL
+    // because the team names come from the occurrence pass above.
+    const needle = q?.trim().toLowerCase();
+    const matchesQuery = (u: User): boolean => {
+      if (!needle) return true;
+      if (u.full_name?.toLowerCase().includes(needle)) return true;
+      if (u.username?.toLowerCase().includes(needle)) return true;
+      return teamsOf(u.id).some((name) => name.toLowerCase().includes(needle));
+    };
+
+    const toDto = (u: User): UnscheduledWorkerDto => ({
+      id: u.id,
+      full_name: u.full_name,
+      username: u.username,
+      role: u.role,
+      district_id: u.district_id ?? null,
+      district_name: u.district_id ? (districtNameById.get(u.district_id) ?? null) : null,
+      teams: teamsOf(u.id),
+    });
+
+    const unscheduled: UnscheduledWorkerDto[] = [];
+    const unavailable: UnavailableWorkerDto[] = [];
+    let scheduled = 0;
+    let matched = 0;
+    for (const u of workforce) {
+      if (!matchesQuery(u)) continue;
+      matched += 1;
+      if (busy.has(u.id)) {
+        scheduled += 1;
+        continue;
+      }
+      const excused = excusedBy.get(u.id);
+      if (excused) unavailable.push({ ...toDto(u), status: excused });
+      else unscheduled.push(toDto(u));
+    }
+
+    return {
+      date,
+      shift_definition_id: shiftDefinitionId ?? null,
+      unscheduled,
+      unavailable,
+      totals: {
+        unscheduled: unscheduled.length,
+        unavailable: unavailable.length,
+        scheduled,
+        // The workforce is what the caller may see, not what they searched —
+        // reporting the search result as "workforce" made a 3-hit search read
+        // as though the whole department were 3 people.
+        workforce: workforce.length,
+        matched,
+      },
+    };
+  }
+
+  /**
+   * The roster row that is OPERATIVE RIGHT NOW — today's, or a still-running
+   * cross-midnight shift started yesterday.
+   *
+   * `/schedules/my` defaulted to today's WIB date, so at 03:26 a satgas on
+   * Shift 3 (21:00–05:00, started yesterday) was told "belum ada jadwal hari
+   * ini" and read as unassigned — mid-shift. The service day for a crossing
+   * shift does not end at midnight; the row that owns it belongs to the START
+   * date. Today wins when it has a covering/upcoming row, so an early-morning
+   * shift starting today is never shadowed by yesterday's tail.
+   */
+  async findCurrentForUser(userId: string): Promise<Schedule | null> {
+    const now = TimezoneUtil.jakartaNow();
+    const today = TimezoneUtil.jakartaDateString();
+    const nowMin = now.getUTCHours() * 60 + now.getUTCMinutes();
+
+    const minutesOf = (hms: string): number => {
+      const [h, m] = hms.split(':').map(Number);
+      return h * 60 + m;
+    };
+
+    // Yesterday's crossing tail first: it is the only row that can be *running*
+    // before its own start time reads as "upcoming" on today's clock.
+    const yesterday = this.addDaysToDate(today, -1);
+    const carried = (await this.findAllByUserAndDate(userId, yesterday)).find((r) => {
+      const sd = r.shift_definition;
+      if (!sd?.crosses_midnight) return false;
+      return nowMin < minutesOf(sd.end_time);
+    });
+
+    const todays = await this.findByUserAndDate(userId, today);
+    if (!carried) return todays;
+    if (!todays?.shift_definition) return carried;
+
+    // Both exist: today's row wins only once it has actually started.
+    return nowMin >= minutesOf(todays.shift_definition.start_time) ? todays : carried;
+  }
+
+  private addDaysToDate(dateStr: string, days: number): string {
+    const d = new Date(dateStr + 'T00:00:00Z');
+    d.setUTCDate(d.getUTCDate() + days);
+    return d.toISOString().split('T')[0];
   }
 
   /**
@@ -402,7 +823,7 @@ export class SchedulesService {
 
   /**
    * All roster rows for a date range [from, to] inclusive, district-scoped.
-   * Relations: user, shift_definition, schedule_areas/locations, region, team_category.
+   * Relations: user, shift_definition, location, region, team_category.
    *
    * Phase 4 (ADR-047 amended): includes materialized rows + projected rows from
    * active events that expand beyond the materialization horizon. Projected rows
@@ -414,8 +835,7 @@ export class SchedulesService {
       .createQueryBuilder('ds')
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.location', 'location')
       .leftJoinAndSelect('ds.region', 'r')
       .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.user_id = :userId', { userId })
@@ -449,10 +869,13 @@ export class SchedulesService {
       ],
     });
 
+    const shiftOccupied = await this.occupiedShiftKeys(from, to);
     const projectedRows: Schedule[] = [];
     for (const event of events) {
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+      // Constant across this event's users and dates (ADR-053: one place per row).
+      const eventPlaceId = schedulePlaceKey(eventPlace(event));
 
       // Resolve member IDs (same logic as materializer)
       const memberIds = event.is_team
@@ -484,7 +907,16 @@ export class SchedulesService {
           const key = `${event.id}:${userId}:${dateStr}`;
           if (!materializedKey.has(key)) {
             // Also check withDeleted to avoid resurrecting tombstones
-            if (!existingKey.has(`${userId}:${dateStr}`)) {
+            if (existingKey.has(`${userId}:${dateStr}`)) continue;
+            // …and never project a (user, date, shift, PLACE) a live row already
+            // owns (see `occupiedShiftKeys`) — it could never materialize anyway.
+            // Keyed on the place too, so a second occurrence at a DIFFERENT place
+            // in the same shift still projects (ADR-053).
+            if (
+              shiftOccupied.has(`${userId}:${dateStr}:${event.shift_definition_id}:${eventPlaceId}`)
+            )
+              continue;
+            {
               // Emit a virtual projected row
               const projected = new Schedule();
               projected.id = `projected:${event.id}:${userId}:${dateStr}`;
@@ -524,16 +956,10 @@ export class SchedulesService {
                 projected.user = event.user;
               }
 
-              // For static scope, add schedule_areas
+              // Static scope → the occurrence's single lokasi (ADR-053).
               if (event.scope === 'static' && event.location) {
-                projected.schedule_areas = [
-                  {
-                    id: `projected:${event.id}:${userId}:${dateStr}:area`,
-                    schedule_id: projected.id,
-                    location_id: event.location_id,
-                    area: event.location,
-                  } as ScheduleLocation,
-                ];
+                projected.location_id = event.location_id ?? null;
+                projected.location = event.location;
               }
 
               projectedRows.push(projected);
@@ -566,25 +992,23 @@ export class SchedulesService {
       .createQueryBuilder('ds')
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.schedule_areas', 'dsa')
-      .leftJoinAndSelect('dsa.area', 'area')
+      .leftJoinAndSelect('ds.location', 'location')
       .leftJoinAndSelect('ds.region', 'r')
       .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
-      .andWhere('ds.deleted_at IS NULL');
+      .andWhere('ds.deleted_at IS NULL')
+      // Deactivated workers drop off the board: their rows stay in the DB for
+      // history, but the roster only shows people who can actually work.
+      .andWhere('u.is_active = TRUE');
     if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
     if (shiftDefinitionId)
       qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
     if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
-    // A location filter matches static rows whose schedule_areas include it.
-    if (locationId)
-      qb.andWhere(
-        'EXISTS (SELECT 1 FROM schedule_locations sl WHERE sl.schedule_id = ds.id AND sl.location_id = :locationId)',
-        { locationId },
-      );
+    // One place per row (ADR-053), so the filter is a plain column match.
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
     const materialized = await qb
       .orderBy('ds.schedule_date', 'ASC')
       .addOrderBy('ds.status', 'ASC')
@@ -612,6 +1036,7 @@ export class SchedulesService {
       ],
     });
 
+    const shiftOccupied = await this.occupiedShiftKeys(from, to);
     const projectedRows: Schedule[] = [];
     for (const event of events) {
       // Event-level filter gate — skip whole events that can't match, so we
@@ -632,6 +1057,8 @@ export class SchedulesService {
 
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+      // Constant across this event's users and dates (ADR-053: one place per row).
+      const eventPlaceId = schedulePlaceKey(eventPlace(event));
 
       // Resolve member IDs (same logic as materializer)
       let memberIds = event.is_team
@@ -647,6 +1074,14 @@ export class SchedulesService {
           : [];
       // A user filter narrows to just that member (and drops events they aren't on).
       if (userId) memberIds = memberIds.filter((id) => id === userId);
+      // Never project an occurrence for a deactivated member — the materialized
+      // path already excludes them, so projections must match.
+      const activeById = new Map<string, boolean>(
+        [event.user, ...(event.members?.map((m) => m.user) ?? [])]
+          .filter((u): u is NonNullable<typeof u> => !!u)
+          .map((u) => [u.id, u.is_active !== false]),
+      );
+      memberIds = memberIds.filter((id) => activeById.get(id) !== false);
 
       // Check which (member, date) pairs are already in DB with this event
       if (dates.length > 0) {
@@ -663,7 +1098,18 @@ export class SchedulesService {
             const key = `${event.id}:${memberId}:${dateStr}`;
             if (!materializedKey.has(key)) {
               // Also check withDeleted to avoid resurrecting tombstones
-              if (!existingKey.has(`${memberId}:${dateStr}`)) {
+              if (existingKey.has(`${memberId}:${dateStr}`)) continue;
+              // …and never project a (user, date, shift, PLACE) a live row already
+              // owns (see `occupiedShiftKeys`) — it could never materialize anyway.
+              // Keyed on the place too, so a second occurrence at a DIFFERENT
+              // place in the same shift still projects (ADR-053).
+              if (
+                shiftOccupied.has(
+                  `${memberId}:${dateStr}:${event.shift_definition_id}:${eventPlaceId}`,
+                )
+              )
+                continue;
+              {
                 // Filter by district if needed
                 const district_id =
                   event.scope === 'static'
@@ -707,16 +1153,10 @@ export class SchedulesService {
                   projected.user = event.user;
                 }
 
-                // For static scope, add schedule_areas
+                // Static scope → the occurrence's single lokasi (ADR-053).
                 if (event.scope === 'static' && event.location) {
-                  projected.schedule_areas = [
-                    {
-                      id: `projected:${event.id}:${memberId}:${dateStr}:area`,
-                      schedule_id: projected.id,
-                      location_id: event.location_id,
-                      area: event.location,
-                    } as ScheduleLocation,
-                  ];
+                  projected.location_id = event.location_id ?? null;
+                  projected.location = event.location;
                 }
 
                 projectedRows.push(projected);
@@ -769,20 +1209,24 @@ export class SchedulesService {
     if (shiftDefinitionId)
       qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
     if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
-    if (locationId)
-      qb.andWhere(
-        'EXISTS (SELECT 1 FROM schedule_locations sl WHERE sl.schedule_id = ds.id AND sl.location_id = :locationId)',
-        { locationId },
-      );
+    // One place per row (ADR-053) — a plain column match, no junction.
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
     const materialized = await qb.getRawMany<{
       ds_schedule_date: string;
       ds_user_id: string;
       ds_schedule_event_id: string | null;
     }>();
 
-    const counts = new Map<string, number>();
-    const bump = (date: string) => counts.set(date, (counts.get(date) ?? 0) + 1);
-    for (const r of materialized) bump(toDay(r.ds_schedule_date));
+    // PEOPLE per day, not rows (ADR-053): a worker covering two lokasi on one
+    // day holds two occurrences, and the year heatmap reads as headcount. The
+    // set also makes the projection pass below idempotent per (user, date).
+    const workersByDate = new Map<string, Set<string>>();
+    const bump = (date: string, userId: string) => {
+      const set = workersByDate.get(date);
+      if (set) set.add(userId);
+      else workersByDate.set(date, new Set([userId]));
+    };
+    for (const r of materialized) bump(toDay(r.ds_schedule_date), r.ds_user_id);
 
     // Every (event, user, date) key in the range, INCLUDING tombstones, so
     // projection never double-counts a materialized/deleted occurrence.
@@ -843,13 +1287,13 @@ export class SchedulesService {
         const dateStr = toDay(rawDate);
         for (const memberId of memberIds) {
           if (existingKey.has(`${event.id}:${memberId}:${dateStr}`)) continue;
-          bump(dateStr);
+          bump(dateStr, memberId);
         }
       }
     }
 
-    return Array.from(counts.entries())
-      .map(([date, count]) => ({ date, count }))
+    return Array.from(workersByDate.entries())
+      .map(([date, workers]) => ({ date, count: workers.size }))
       .sort((a, b) => a.date.localeCompare(b.date));
   }
 
@@ -857,7 +1301,7 @@ export class SchedulesService {
     const row = await this.rosterRepo.findOne({
       where: { id },
       // `user` is loaded so the edit-permission hierarchy can read the target's role.
-      relations: ['user', 'shift_definition', 'schedule_areas', 'schedule_areas.area'],
+      relations: ['user', 'shift_definition', 'location'],
     });
     if (!row) throw new NotFoundException(`Daily schedule ${id} not found`);
     return row;
@@ -913,7 +1357,7 @@ export class SchedulesService {
       throw new ForbiddenException('You cannot assign this replacement worker');
     }
 
-    const locationIds = (original.schedule_areas ?? []).map((dsa) => dsa.location_id);
+    const locationIds = original.location_id ? [original.location_id] : [];
 
     // Mark the original as replaced.
     const prevStatus = original.status;
@@ -963,7 +1407,7 @@ export class SchedulesService {
       coverRowId = saved.id;
     } else {
       // Raw column UPDATE, not `save(coverRow)` — findByUserAndDate() eager/
-      // explicitly loads `shift_definition`/`district`/`schedule_areas`, so
+      // explicitly loads `shift_definition`/`district`/`location`, so
       // `coverRow` holds stale relation objects; saving the entity would let
       // TypeORM reconcile those FKs from the stale objects and revert them.
       coverRowId = coverRow.id;
@@ -976,7 +1420,7 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(coverRowId, locationIds, actorId);
+    await this.setPlace(coverRowId, locationIds[0] ?? null);
 
     await this.audit(
       original,
@@ -988,19 +1432,61 @@ export class SchedulesService {
     return this.findOne(original.id);
   }
 
-  /** Set the day's areas (0..N). */
-  async updateAreas(id: string, locationIds: string[], actor: User): Promise<Schedule> {
+  /**
+   * Set the day's PLACE — at most one lokasi, or one kawasan, plus the parent
+   * rayon.
+   *
+   * ADR-053: one row = one worker, one shift, one place. A worker covering three
+   * taman holds three occurrences, not one occurrence naming three lokasi.
+   * `area_ids` stays an array for wire compatibility, but more than one id is now
+   * a contradiction rather than something to silently truncate — it used to keep
+   * `[0]` and drop the rest with a 200, so an operator's second and third picks
+   * vanished without a word and the audit trail recorded ids the row never had.
+   *
+   * `district_id`/`region_id` omitted (undefined) leave those columns untouched;
+   * passing null clears them.
+   */
+  async updateAreas(
+    id: string,
+    locationIds: string[],
+    actor: User,
+    districtId?: string | null,
+    regionId?: string | null,
+  ): Promise<Schedule> {
     const actorId = actor.id;
     const row = await this.findOne(id);
     await this.assertCanEdit(actor, row);
-    const before = (row.schedule_areas ?? []).map((dsa) => dsa.location_id);
-    await this.setAreas(row.id, locationIds, actorId);
-    // Raw column UPDATE, not `save(row)` — `schedule_areas` is a `cascade: true`
-    // relation and `row` still holds the now-stale in-memory array from
-    // `findOne()` above. Saving the full entity would cascade-reinsert those
-    // rows right after `setAreas()` just deleted them, silently reverting the
-    // change (the bug: areas appeared to save but reverted on refresh).
-    await this.rosterRepo.update(id, { source: 'manual', updated_by: actorId });
+
+    if (locationIds.length > 1) {
+      throw new BadRequestException(
+        'A schedule row covers exactly one place (ADR-053). Create one row per lokasi instead of listing several.',
+      );
+    }
+
+    // A lokasi and a kawasan on the same row name two different places, and only
+    // the deeper one would ever be honoured: `schedulePlaceKey` (and the
+    // `UQ_schedules_user_date_shift_place` index behind it) resolves lokasi first,
+    // so the kawasan would linger as unreachable state that still matched the
+    // board's `region_id` filter — the row would show up under both containers.
+    const nextLocationId = locationIds[0] ?? null;
+    const nextRegionId = regionId !== undefined ? regionId : (row.region_id ?? null);
+    if (nextLocationId && nextRegionId) {
+      throw new BadRequestException(
+        'A schedule row is scoped to a lokasi OR a kawasan, not both (ADR-053).',
+      );
+    }
+
+    const before = row.location_id ? [row.location_id] : [];
+    // ONE raw column UPDATE, not `save(row)` — `row` holds relation objects loaded
+    // by `findOne()` above, and entity save would reconcile FK columns back from
+    // those stale objects, silently reverting what was just written.
+    await this.rosterRepo.update(id, {
+      location_id: nextLocationId,
+      ...(districtId !== undefined ? { district_id: districtId } : {}),
+      ...(regionId !== undefined ? { region_id: regionId } : {}),
+      source: 'manual',
+      updated_by: actorId,
+    });
     await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: locationIds });
     return this.findOne(id);
   }
@@ -1082,24 +1568,103 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(row.id, [params.locationId], actorId);
+    await this.setPlace(row.id, params.locationId);
     return row.id;
   }
 
   /** Soft-delete a roster row (admin). */
   async remove(id: string, actorId: string): Promise<void> {
+    // A PROJECTED occurrence has no row to delete — its id is
+    // `projected:<eventId>:<userId>:<date>`. "Hanya hari ini" on one used to hit
+    // `DELETE /schedules/projected:…` and fail, so the chip could not be removed
+    // at all. Write the tombstone the materializer already understands (a
+    // soft-deleted row for that event/user/date) so the day is skipped forever
+    // without touching the rest of the recurrence.
+    if (id.startsWith('projected:')) {
+      return this.tombstoneProjected(id, actorId);
+    }
     const row = await this.findOne(id);
     row.deleted_by = actorId;
     await this.rosterRepo.save(row);
     await this.rosterRepo.softDelete(id);
   }
 
+  /**
+   * Materialize a tombstone for a single projected occurrence, so that day is
+   * dropped from the recurrence while every other date keeps projecting.
+   * The unique index on (user, date, shift) is partial (`WHERE deleted_at IS
+   * NULL`), so a tombstone never collides with a live row.
+   */
+  private async tombstoneProjected(id: string, actorId: string): Promise<void> {
+    const [, eventId, userId, date] = id.split(':');
+    if (!eventId || !userId || !date) {
+      throw new BadRequestException('Malformed projected occurrence id');
+    }
+    const event = await this.eventRepo.findOne({ where: { id: eventId } });
+    if (!event) throw new NotFoundException('Schedule event not found');
+
+    const existing = await this.rosterRepo.findOne({
+      where: { schedule_event_id: eventId, user_id: userId, schedule_date: date },
+      withDeleted: true,
+    });
+    if (existing) {
+      // Already materialized (or already tombstoned) — fall back to the normal path.
+      if (!existing.deleted_at) await this.remove(existing.id, actorId);
+      return;
+    }
+
+    const row = await this.rosterRepo.save(
+      this.rosterRepo.create({
+        user_id: userId,
+        schedule_date: date,
+        shift_definition_id: event.shift_definition_id,
+        district_id: event.district_id ?? null,
+        region_id: event.scope === 'mobile' ? (event.region_id ?? null) : null,
+        team_category_id: event.is_team ? (event.team_category_id ?? null) : null,
+        status: ScheduleStatus.PLANNED,
+        source: 'event',
+        schedule_event_id: eventId,
+        created_by: actorId,
+        deleted_by: actorId,
+      }),
+    );
+    await this.rosterRepo.softDelete(row.id);
+  }
+
   // ---- Read helpers for clock-in ----
 
   /** Today's rostered areas for a worker (empty when no roster row / no areas). */
   async getActiveAreasForDay(userId: string, date: string): Promise<Location[]> {
-    const row = await this.findByUserAndDate(userId, date);
-    return (row?.schedule_areas ?? []).map((dsa) => dsa.area).filter(Boolean);
+    return this.areasOf(await this.findByUserAndDate(userId, date));
+  }
+
+  /**
+   * Areas for the roster row operative RIGHT NOW — includes a cross-midnight
+   * shift still running from yesterday, which the plain per-day lookup misses.
+   */
+  async getActiveAreasNow(userId: string): Promise<Location[]> {
+    return this.areasOf(await this.findCurrentForUser(userId));
+  }
+
+  private async areasOf(row: Schedule | null): Promise<Location[]> {
+    if (!row) return [];
+
+    const byId = new Map<string, Location>();
+    if (row.location) byId.set(row.location.id, row.location);
+
+    // A KAWASAN-scoped occurrence names no lokasi, so the geofence had nothing to
+    // check and the worker read as "no area" — even though the assignment covers
+    // every lokasi in that kawasan. Expand each assigned kawasan (the junction,
+    // falling back to the single `region_id`) into its active lokasi.
+    const regionIds = row.region_id ? [row.region_id] : [];
+    if (regionIds.length > 0) {
+      const inRegions = await this.locationRepo.find({
+        where: { region_id: In(regionIds), is_active: true },
+      });
+      for (const area of inRegions) byId.set(area.id, area);
+    }
+
+    return [...byId.values()];
   }
 
   /** Today's rostered shift for a worker, or null. */
@@ -1161,12 +1726,26 @@ export class SchedulesService {
   ): Promise<
     Map<
       string,
-      { team_id: string; team_name: string; team_color: string | null; team_icon: string | null }
+      {
+        team_id: string;
+        team_name: string;
+        team_color: string | null;
+        /** Alpha for `team_color`, 0–1; null → opaque. */
+        team_opacity: number | null;
+        team_icon: string | null;
+      }
     >
   > {
     const map = new Map<
       string,
-      { team_id: string; team_name: string; team_color: string | null; team_icon: string | null }
+      {
+        team_id: string;
+        team_name: string;
+        team_color: string | null;
+        /** Alpha for `team_color`, 0–1; null → opaque. */
+        team_opacity: number | null;
+        team_icon: string | null;
+      }
     >();
     if (userIds.length === 0) return map;
 
@@ -1196,6 +1775,7 @@ export class SchedulesService {
         team_id: teamId,
         team_name: row.team_category.name,
         team_color: row.team_category.marker_color ?? null,
+        team_opacity: row.team_category.marker_opacity ?? null,
         team_icon: row.team_category.marker_icon ?? null,
       });
     }
@@ -1206,22 +1786,13 @@ export class SchedulesService {
   // ---- internals ----
 
   /** Reconcile a row's area set to exactly `locationIds`. */
-  private async setAreas(
-    rosterId: string,
-    locationIds: string[],
-    actorId: string | null,
-  ): Promise<void> {
-    const desired = [...new Set(locationIds)];
-    await this.rosterAreaRepo.delete({ schedule_id: rosterId });
-    if (!desired.length) return;
-    const rows = desired.map((areaId) =>
-      this.rosterAreaRepo.create({
-        schedule_id: rosterId,
-        location_id: areaId,
-        assigned_by: actorId,
-      }),
-    );
-    await this.rosterAreaRepo.save(rows);
+  /**
+   * Set the occurrence's lokasi. ONE place per row (ADR-053) — callers that want
+   * wider coverage create another schedule, so this takes a single id (or null)
+   * rather than an array it would have to silently truncate.
+   */
+  private async setPlace(rosterId: string, locationId: string | null): Promise<void> {
+    await this.rosterRepo.update(rosterId, { location_id: locationId });
   }
 
   private async audit(

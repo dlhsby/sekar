@@ -129,6 +129,10 @@ export class LiveUserDto {
   @ApiPropertyOptional({ example: '#22C55E', nullable: true })
   team_color: string | null;
 
+  /** Alpha for `team_color` (team_categories.marker_opacity), 0–1; null → opaque. */
+  @ApiPropertyOptional({ example: 0.8, nullable: true, minimum: 0, maximum: 1 })
+  team_opacity: number | null;
+
   @ApiPropertyOptional({ example: 'droplets', nullable: true })
   team_icon: string | null;
 }

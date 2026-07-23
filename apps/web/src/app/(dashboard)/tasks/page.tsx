@@ -42,6 +42,7 @@ import { TASK_MANAGER_ROLES, hasRole } from '@/lib/constants/roles';
 import { TaskFormModal } from '@/components/tasks/TaskFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
+import { runAction } from '@/lib/hooks/use-action';
 import {
   getTaskStatusLabel,
   getTaskPriorityLabel,
@@ -387,10 +388,12 @@ export default function TasksPage() {
         confirmLabel={t('tasks:list.rowActionDelete')}
         loading={deleteTask.isPending}
         onConfirm={async () => {
-          if (deleteDialog.task) {
-            await deleteTask.mutateAsync(deleteDialog.task.id);
-            setDeleteDialog({ isOpen: false, task: null });
-          }
+          const task = deleteDialog.task;
+          if (!task) return;
+          await runAction(() => deleteTask.mutateAsync(task.id), {
+            success: t('common:messages.deleted'),
+            onSuccess: () => setDeleteDialog({ isOpen: false, task: null }),
+          });
         }}
       />
     </div>

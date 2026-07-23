@@ -24,6 +24,7 @@ import { RecurrenceType } from '../enums/recurrence-type.enum';
 import { ScheduleMaterializerService } from './schedule-materializer.service';
 import { AuditLogService } from '../../audit/audit.service';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
+import { ScheduleRecurrenceUtil } from '../utils/schedule-recurrence.util';
 import { MONITORING_CITY } from '../../users/constants/role-groups';
 
 /**
@@ -236,6 +237,24 @@ export class ScheduleEventsService {
       await this.validateUserRoles([dto.user_id]);
     }
 
+    // An EXACT duplicate — the same person, the same day, the same shift — is
+    // never a real assignment: `UQ_schedules_user_date_shift` makes the second
+    // occurrence impossible to materialize, so it would linger as an
+    // undeletable projected ghost. Reject it up front. A *different* shift that
+    // merely overlaps in time stays a warning (ADR-047, calendar-style).
+    await this.assertNoDuplicateOccurrence(
+      dto.is_team
+        ? [dto.pic_user_id as string, ...(dto.member_ids || [])]
+        : [dto.user_id as string],
+      dto.shift_definition_id,
+      {
+        recurrence_type: dto.recurrence_type,
+        start_date: dto.start_date,
+        end_date: dto.end_date ?? null,
+        recurrence_config: dto.recurrence_config ?? null,
+      } as ScheduleEvent,
+    );
+
     // Create event
     const event = this.eventRepo.create({
       title: dto.title || null,
@@ -262,13 +281,11 @@ export class ScheduleEventsService {
 
     // Add team members
     if (dto.is_team && dto.member_ids && dto.member_ids.length > 0) {
-      const members = dto.member_ids.map((userId) =>
-        this.memberRepo.create({
-          schedule_event_id: saved.id,
-          user_id: userId,
-        }),
+      await this.memberRepo.save(
+        dto.member_ids.map((userId) =>
+          this.memberRepo.create({ schedule_event_id: saved.id, user_id: userId }),
+        ),
       );
-      await this.memberRepo.save(members);
     }
 
     // Reload with relations
@@ -690,6 +707,61 @@ export class ScheduleEventsService {
       });
     } catch {
       // Non-fatal
+    }
+  }
+
+  /**
+   * Reject an assignment that would duplicate an existing occurrence exactly —
+   * same user, same date, same shift.
+   *
+   * The DB already refuses it (`UQ_schedules_user_date_shift`), so the row could
+   * only ever exist as a *projected* ghost: greyed on the board, impossible to
+   * delete (its id is `projected:…`, not a row), and counted in the role tally.
+   * Better to say so at assignment time than to create something that can never
+   * become real. Overlaps against a DIFFERENT shift are still allowed with a
+   * warning (ADR-047, calendar-style).
+   */
+  private async assertNoDuplicateOccurrence(
+    userIds: string[],
+    shiftDefinitionId: string,
+    recurrence: ScheduleEvent,
+    excludeEventId?: string,
+  ): Promise<void> {
+    const members = userIds.filter(Boolean);
+    if (!members.length || !shiftDefinitionId) return;
+
+    const today = TimezoneUtil.jakartaDateString();
+    const from = recurrence.start_date > today ? recurrence.start_date : today;
+    // Bounded window: an open-ended recurrence would otherwise expand forever.
+    // The horizon only has to reach far enough to catch a duplicate that would
+    // actually materialize.
+    const horizon =
+      typeof this.materializer.horizonDays === 'function' ? this.materializer.horizonDays() : 30;
+    const to = recurrence.end_date ?? this.addDays(from, horizon);
+    const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(recurrence, from, to);
+    if (!dates.length) return;
+
+    const clash = await this.scheduleRepo.findOne({
+      where: {
+        user_id: In(members),
+        schedule_date: In(dates),
+        shift_definition_id: shiftDefinitionId,
+      },
+      relations: ['user', 'shift_definition'],
+    });
+    if (clash && clash.schedule_event_id !== excludeEventId) {
+      // Verbose on purpose: the operator needs to know WHO clashes, on WHICH
+      // shift and date, and what to do instead — a second occurrence on the same
+      // shift is impossible (one clock-in per shift), but WIDENING the existing
+      // one is exactly what they want when the worker covers more ground.
+      const who = clash.user?.full_name ?? 'Petugas ini';
+      const shiftName = clash.shift_definition?.name ?? 'shift ini';
+      throw new BadRequestException(
+        `${who} sudah punya jadwal ${shiftName} pada ${clash.schedule_date}. ` +
+          'Satu petugas hanya bisa punya satu jadwal per shift per hari (satu shift = satu kehadiran). ' +
+          'Untuk menambah cakupan, ubah jadwal yang sudah ada dan tambahkan lokasi/kawasannya ' +
+          '— jangan membuat jadwal kedua.',
+      );
     }
   }
 

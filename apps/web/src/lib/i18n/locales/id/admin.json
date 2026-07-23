@@ -482,7 +482,6 @@
     "searchPlaceholder": "Cari nama kategori…",
     "columnName": "Nama",
     "columnStatus": "Status",
-    "columnMarker": "Penanda",
     "buttonAdd": "Tambah Kategori Tim",
     "actionEdit": "Ubah",
     "actionActivate": "Aktifkan",
@@ -502,7 +501,8 @@
       "name": "Nama Kategori Tim",
       "namePlaceholder": "mis. Tim Penyiraman",
       "markerColor": "Warna Penanda",
-      "markerIcon": "Ikon Penanda"
+      "markerIcon": "Ikon Penanda",
+      "markerOpacity": "Opasitas Warna"
     }
   }
 }

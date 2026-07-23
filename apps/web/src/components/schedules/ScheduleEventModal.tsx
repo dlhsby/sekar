@@ -56,7 +56,7 @@ export interface ScheduleEventModalProps {
   editScope?: EditScope;
   fromDate?: string;
   initialDate?: string;
-  /** Pre-fill the placement cascade when created from a specific board row. */
+  /** Pre-fill the assignment cascade when created from a specific board row. */
   initialDistrictId?: string;
   initialRegionId?: string;
   initialLocationId?: string;
@@ -66,11 +66,54 @@ export interface ScheduleEventModalProps {
   initialTeam?: boolean;
   /** Role column the assign came from — pins kind=individual and the role. */
   initialRole?: string;
+  /**
+   * Prefill the worker — used by "Belum Dijadwalkan" (ADR-054), where the admin
+   * has already picked WHO from the gap list and only needs to say where/when.
+   * Implies an individual assignment, so `kind` and `role` follow from it.
+   */
+  initialUserId?: string;
+  /**
+   * Display name for `initialUserId`. The worker combobox is server-paged, so
+   * nothing in this form knows a user's name until it has been searched — set
+   * the id alone and the field renders an empty "…" while silently holding a
+   * valid value, which reads as "nothing selected". Passing the name is what
+   * makes the prefill visible.
+   */
+  initialUserName?: string;
+  /**
+   * Whether the SHIFT and GEOGRAPHY prefills are facts or suggestions.
+   *
+   * From the board's "+ Tugaskan" they are facts — the operator clicked a
+   * specific cell — so they lock. From "Belum Dijadwalkan" they are the panel's
+   * filters, which describe a target the operator may well revise once they see
+   * the form; locking them there turns a helpful prefill into a dead end.
+   * The WORKER and their role stay locked either way: those come from an
+   * explicit person choice, not a filter.
+   */
+  lockPrefill?: boolean;
   onSuccess?: () => void;
 }
 
 /** Roles that can appear on a schedule (ADR-047). */
-const SCHEDULABLE_ROLES = ['satgas', 'linmas', 'korlap'];
+/**
+ * Schedulable roles, ordered by RANK (highest first), then alphabetically within
+ * a rank. A flat source order made the picker read as an arbitrary list; rank
+ * order matches how the org actually reads its own roles.
+ */
+const ROLE_RANK: Record<string, number> = {
+  superadmin: 0,
+  admin_system: 1,
+  management: 2,
+  kepala_rayon: 3,
+  admin_rayon: 4,
+  korlap: 5,
+  linmas: 6,
+  satgas: 7,
+};
+export const byRoleRank = (a: string, b: string): number =>
+  (ROLE_RANK[a] ?? 99) - (ROLE_RANK[b] ?? 99) || a.localeCompare(b);
+
+const SCHEDULABLE_ROLES = ['satgas', 'linmas', 'korlap'].sort(byRoleRank);
 
 /** Display order Mon..Sun; values are JS getDay() (0=Sunday). */
 
@@ -261,6 +304,9 @@ export function ScheduleEventModal({
   initialCityWide,
   initialTeam,
   initialRole,
+  initialUserId,
+  initialUserName,
+  lockPrefill = true,
   onSuccess,
 }: ScheduleEventModalProps) {
   const { t } = useTranslation(['schedules', 'common', 'validation', 'roles']);
@@ -284,10 +330,18 @@ export function ScheduleEventModal({
       title: event?.title ?? '',
       // Nothing is preselected. A prefill from a board row is the only thing
       // that chooses for you — and then it's locked, not merely defaulted.
-      kind: event ? (event.is_team ? 'team' : 'individual') : initialTeam ? 'team' : initialRole ? 'individual' : '',
+      kind: event
+        ? event.is_team
+          ? 'team'
+          : 'individual'
+        : initialTeam
+          ? 'team'
+          : initialRole || initialUserId
+            ? 'individual'
+            : '',
       role: initialRole ?? '',
       pic_role: event?.pic_user?.role ?? '',
-      user_id: event?.user_id ?? '',
+      user_id: event?.user_id ?? initialUserId ?? '',
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
       member_ids: event?.members?.map((m) => m.user_id) ?? [],
@@ -384,13 +438,17 @@ export function ScheduleEventModal({
    * editable invites a silent mismatch between the cell clicked and the schedule
    * saved. Only the genuinely open fields stay fillable.
    */
-  const lockShift = !isEditing && !!initialShiftId;
-  const lockKind = !isEditing && !!(initialTeam || initialRole);
+  const lockShift = !isEditing && lockPrefill && !!initialShiftId;
+  const lockKind = !isEditing && !!(initialTeam || initialRole || initialUserId);
   const lockRole = !isEditing && !!initialRole;
-  const lockScope = !isEditing && !!(lockGeoScope || initialCityWide);
-  const lockDistrict = !isEditing && !!initialDistrictId;
-  const lockRegion = !isEditing && !!initialRegionId;
-  const lockLocation = !isEditing && !!initialLocationId;
+  // The worker is a FACT wherever a prefill supplies one — they were chosen from
+  // a list before this form opened, so re-picking them here is only a way to
+  // contradict that choice.
+  const lockUser = !isEditing && !!initialUserId;
+  const lockScope = !isEditing && lockPrefill && !!(lockGeoScope || initialCityWide);
+  const lockDistrict = !isEditing && lockPrefill && !!initialDistrictId;
+  const lockRegion = !isEditing && lockPrefill && !!initialRegionId;
+  const lockLocation = !isEditing && lockPrefill && !!initialLocationId;
   const scopeOptions: Array<{ value: ScopeValue; label: string }> = [
     ...(lockGeoScope
       ? []
@@ -437,7 +495,7 @@ export function ScheduleEventModal({
 
   // Editing a static/mobile event: backfill the district → kawasan cascade from the
   // event's location/region once master data is loaded, so the selects show the
-  // current placement (the event only carries the deepest id).
+  // current assignment (the event only carries the deepest id).
   const backfilled = useRef(false);
   useEffect(() => {
     if (!event || backfilled.current) return;
@@ -448,7 +506,7 @@ export function ScheduleEventModal({
         // surface it (the cascade can't be resolved) instead of failing silent.
         if (locations.length === 0) return;
         backfilled.current = true;
-        toast.warning(t('schedules:calendar.event.placementUnresolved'));
+        toast.warning(t('schedules:calendar.event.assignmentUnresolved'));
         return;
       }
       if (loc.region_id) setValue('region_id', loc.region_id);
@@ -459,7 +517,7 @@ export function ScheduleEventModal({
       if (!reg) {
         if (regions.length === 0) return;
         backfilled.current = true;
-        toast.warning(t('schedules:calendar.event.placementUnresolved'));
+        toast.warning(t('schedules:calendar.event.assignmentUnresolved'));
         return;
       }
       setValue('district_id', reg.district_id);
@@ -687,10 +745,10 @@ export function ScheduleEventModal({
                     setValue('user_id', v, { shouldValidate: true });
                     if (u) rememberUser(u);
                   }}
-                  initialLabel={event?.user?.full_name}
+                  initialLabel={event?.user?.full_name ?? initialUserName}
                   placeholder={t('schedules:calendar.event.workerPlaceholder')}
                   error={errors.user_id?.message}
-                  disabled={isEditing || !watch('role')}
+                  disabled={isEditing || lockUser || !watch('role')}
                 />
               </div>
             )}

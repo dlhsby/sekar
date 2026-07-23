@@ -55,6 +55,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     currentShift,
     scheduledShift,
     isLate,
+    attendanceState,
+    scheduleScope,
+    rosterAreas,
     hasScheduleToday,
     getCurrentLocation,
     handleCaptureSelfie,
@@ -145,8 +148,14 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             headerRight={
               hasScheduleToday ? (
                 <NBBadge
-                  text={isLate ? t('attendance:list.statusChip.late') : t('attendance:list.statusChip.onTime')}
-                  color={isLate ? 'danger' : 'success'}
+                  text={
+                    attendanceState === 'outside_window'
+                      ? t('attendance:clockInOut.outsideWindowChip')
+                      : isLate
+                        ? t('attendance:list.statusChip.late')
+                        : t('attendance:list.statusChip.onTime')
+                  }
+                  color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
                   size="sm"
                 />
               ) : (
@@ -168,7 +177,28 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   value={t('attendance:clockInOut.noScheduleToday')}
                 />
               )}
-              {assignedArea ? (
+              {rosterAreas.length > 1 ? (
+                // Today's assignment covers several lokasi — list them all, not
+                // just the primary. Clock-in is accepted at ANY of them; the
+                // backend records whichever one the GPS lands in.
+                <>
+                  <InfoTableRow
+                    label={t('attendance:clockInOut.assignedArea')}
+                    value={t('attendance:clockInOut.multiArea', { count: rosterAreas.length })}
+                  />
+                  {rosterAreas.map((a) => (
+                    <InfoTableRow
+                      key={a.id}
+                      label=""
+                      value={`• ${a.name}`}
+                      numberOfLines={1}
+                    />
+                  ))}
+                  <NBText variant="body-sm" color="gray600">
+                    {t('attendance:clockInOut.multiAreaHint')}
+                  </NBText>
+                </>
+              ) : assignedArea ? (
                 <>
                   <InfoTableRow label={t('attendance:clockInOut.assignedArea')} value={assignedArea.name} />
                   {assignedArea.address ? (
@@ -181,6 +211,20 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                       value={`${Number(assignedArea.gps_lat).toFixed(6)}, ${Number(assignedArea.gps_lng).toFixed(6)}`}
                     />
                   )}
+                </>
+              ) : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location' ? (
+                // Scheduled city / rayon / kawasan-wide: there is no single lokasi
+                // to name, but the worker IS assigned — say which scope.
+                <>
+                  <InfoTableRow
+                    label={t('attendance:clockInOut.assignedArea')}
+                    value={t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
+                      name: scheduleScope.name ?? '',
+                    })}
+                  />
+                  <NBText variant="body-sm" color="gray600">
+                    {t(`attendance:clockInOut.scope.${scheduleScope.scope}Hint`)}
+                  </NBText>
                 </>
               ) : isDistrictScoped ? (
                 <InfoTableRow label={t('attendance:clockInOut.districtCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />
@@ -196,7 +240,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>{t('attendance:clockInOut.gpsLocation')}</NBText>
             }
             headerRight={location.latitude != null
-              ? areaState === 'none'
+              ? areaState === 'scope'
+                ? <NBBadge
+                    text={t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
+                      name: scheduleScope.name ?? '',
+                    })}
+                    color="primary"
+                    size="sm"
+                  />
+                : areaState === 'none'
                 ? <NBBadge text={t('attendance:clockInOut.noAreaChip')} color="gray" size="sm" />
                 : <NBBadge
                     text={areaState === 'within' ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
@@ -215,8 +267,17 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               isCapturing={location.loading}
               onRefresh={getCurrentLocation}
               error={location.error}
-              isWithinBoundary={areaState === 'none' ? undefined : isWithinBoundary}
+              isWithinBoundary={
+                areaState === 'none' || areaState === 'scope' ? undefined : isWithinBoundary
+              }
               noArea={areaState === 'none'}
+              scopeLabel={
+                areaState === 'scope'
+                  ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
+                      name: scheduleScope.name ?? '',
+                    })
+                  : undefined
+              }
               areaName={assignedArea?.name}
             />
             {!isClockIn && currentShift && (
