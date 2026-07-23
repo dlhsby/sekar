@@ -66,6 +66,12 @@ export interface ScheduleEventModalProps {
   initialTeam?: boolean;
   /** Role column the assign came from — pins kind=individual and the role. */
   initialRole?: string;
+  /**
+   * Prefill the worker — used by "Belum Dijadwalkan" (ADR-054), where the admin
+   * has already picked WHO from the gap list and only needs to say where/when.
+   * Implies an individual assignment, so `kind` and `role` follow from it.
+   */
+  initialUserId?: string;
   onSuccess?: () => void;
 }
 
@@ -279,6 +285,7 @@ export function ScheduleEventModal({
   initialCityWide,
   initialTeam,
   initialRole,
+  initialUserId,
   onSuccess,
 }: ScheduleEventModalProps) {
   const { t } = useTranslation(['schedules', 'common', 'validation', 'roles']);
@@ -302,10 +309,18 @@ export function ScheduleEventModal({
       title: event?.title ?? '',
       // Nothing is preselected. A prefill from a board row is the only thing
       // that chooses for you — and then it's locked, not merely defaulted.
-      kind: event ? (event.is_team ? 'team' : 'individual') : initialTeam ? 'team' : initialRole ? 'individual' : '',
+      kind: event
+        ? event.is_team
+          ? 'team'
+          : 'individual'
+        : initialTeam
+          ? 'team'
+          : initialRole || initialUserId
+            ? 'individual'
+            : '',
       role: initialRole ?? '',
       pic_role: event?.pic_user?.role ?? '',
-      user_id: event?.user_id ?? '',
+      user_id: event?.user_id ?? initialUserId ?? '',
       team_category_id: event?.team_category_id ?? '',
       pic_user_id: event?.pic_user_id ?? '',
       member_ids: event?.members?.map((m) => m.user_id) ?? [],

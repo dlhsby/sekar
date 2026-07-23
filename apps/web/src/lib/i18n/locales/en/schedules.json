@@ -355,5 +355,34 @@
       "SPECIAL": "Special"
     },
     "typePlaceholder": "Select day type…"
+  },
+  "unscheduled": {
+    "title": "Not Yet Scheduled",
+    "description": "Workers with no schedule on this date. Pick a worker to schedule them right away.",
+    "buttonLabel": "Not Yet Scheduled",
+    "dateLabel": "Date",
+    "shiftLabel": "Shift",
+    "districtLabel": "District",
+    "roleLabel": "Role",
+    "allShifts": "All shifts",
+    "allDistricts": "All districts",
+    "allRoles": "All roles",
+    "columnName": "Name",
+    "columnRole": "Role",
+    "columnDistrict": "District",
+    "actionSchedule": "Schedule",
+    "searchPlaceholder": "Search name or username…",
+    "pillUnscheduled": "{{count}} not yet scheduled",
+    "pillScheduled": "{{count}} scheduled",
+    "ofWorkforce": "of {{count}} workers",
+    "emptyTitle": "Every worker is scheduled",
+    "emptyDescription": "Nobody was missed on this date.",
+    "unavailableTitle": "Unavailable ({{count}})",
+    "reason": {
+      "off": "Day off",
+      "leave_sick": "Sick",
+      "leave_annual": "Annual leave",
+      "leave_permit": "Permit"
+    }
   }
 }

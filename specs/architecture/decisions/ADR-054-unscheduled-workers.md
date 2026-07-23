@@ -2,8 +2,8 @@
 
 ## Status
 
-Accepted — **design settled, not yet implemented**. Every open question was
-decided by the product owner on 2026-07-23; see §Decisions.
+Accepted — **implemented** (be + web, 2026-07-23). Every open question was
+decided by the product owner the same day; see §Decisions.
 
 ## Date
 
@@ -211,6 +211,24 @@ permission, nothing to migrate.
 admin's assignment is invisible until refresh. Acceptable because the create flow
 enforces uniqueness server-side — the worst case is a stale row that fails
 loudly on `Jadwalkan`, not a double-booking.
+
+## Implementation notes
+
+- **be** `SchedulesService.findUnscheduled` + `GET /schedules/unscheduled`
+  (`ROSTER_EDITORS`). Rayon-scoped callers are forced to their own district, and
+  a scoped user with no district sees nothing rather than every rayon.
+- The role filter can only **narrow within** the schedulable three. A request
+  naming an excluded role is dropped — and, once dropped, falls back to all three
+  rather than returning an empty list, which would read as "everyone is
+  scheduled" when the truth is "you asked for a role this view never lists".
+  A test pinned this: the first cut returned empty and was wrong.
+- **web** `UnscheduledWorkersSheet` (DataTable in a `Sheet size="wide"`), the
+  `useUnscheduledWorkers` query gated on `open` so the workforce scan never runs
+  on a board render, and `initialUserId` on `ScheduleEventModal` for the
+  prefilled hand-off. `openCreate` clears that prefill on every other entry
+  point, or a worker picked here would haunt the next Buat Jadwal.
+- `Sheet` gained `size` (`default` = the original `max-w-md`, `wide` = `max-w-3xl`),
+  so no existing sheet changed width.
 
 ## Related
 

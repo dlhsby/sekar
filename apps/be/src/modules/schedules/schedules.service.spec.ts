@@ -818,6 +818,129 @@ describe('SchedulesService', () => {
     });
   });
 
+  /**
+   * ADR-054. Two rules carry the whole feature, and both are easy to get wrong:
+   * a projected occurrence must count as scheduled, and an excused row must not
+   * land in the list of people to place.
+   */
+  describe('findUnscheduled', () => {
+    const worker = (id: string, role: UserRole, name = id) => ({
+      id,
+      full_name: name,
+      username: id,
+      role,
+      district_id: 'ry1',
+      is_active: true,
+    });
+
+    /** Stub the workforce query (getRawAndEntities) and the day's occurrences. */
+    const setup = (workforce: unknown[], occurrences: unknown[]) => {
+      const uqb: Record<string, jest.Mock> = {};
+      for (const m of ['leftJoin', 'addSelect', 'where', 'andWhere', 'orderBy']) {
+        uqb[m] = jest.fn(() => uqb);
+      }
+      uqb.getRawAndEntities = jest.fn().mockResolvedValue({
+        entities: workforce,
+        raw: workforce.map(() => ({ u_district_id: 'ry1', district_name: 'Rayon Pusat' })),
+      });
+      (userRepo as unknown as { createQueryBuilder: jest.Mock }).createQueryBuilder = jest.fn(
+        () => uqb,
+      );
+      jest.spyOn(service, 'findByDateRange').mockResolvedValue(occurrences as never);
+      return uqb;
+    };
+
+    it('counts a PROJECTED occurrence as scheduled', async () => {
+      // The trap: projections are not rows, so a NOT EXISTS against `schedules`
+      // would report everyone on a daily rule as unscheduled for every future
+      // date — the list would be noise exactly where planning happens.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED, is_projected: true }],
+      );
+
+      const res = await service.findUnscheduled('2026-08-30');
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('separates an EXCUSED worker from a genuinely free one', async () => {
+      // Someone on cuti has no assignment and cannot take one; listing them
+      // beside free workers invites scheduling over approved leave.
+      setup(
+        [worker('u1', UserRole.SATGAS), worker('u2', UserRole.LINMAS)],
+        [{ user_id: 'u2', status: ScheduleStatus.LEAVE_ANNUAL }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      expect(res.unavailable.map((w) => w.id)).toEqual(['u2']);
+      expect(res.unavailable[0].status).toBe(ScheduleStatus.LEAVE_ANNUAL);
+    });
+
+    it('treats a live assignment as outranking an excused row for the same worker', async () => {
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [
+          { user_id: 'u1', status: ScheduleStatus.OFF },
+          { user_id: 'u1', status: ScheduleStatus.PLANNED },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.unavailable).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('narrows to one shift when asked — other shifts do not make a worker unavailable', async () => {
+      // ADR-053: holding rows for other shifts is normal and says nothing about
+      // availability for THIS one.
+      setup([worker('u1', UserRole.SATGAS)], []);
+
+      await service.findUnscheduled('2026-07-23', { shiftDefinitionId: 'shift-1' });
+
+      expect(service.findByDateRange).toHaveBeenCalledWith(
+        '2026-07-23',
+        '2026-07-23',
+        expect.objectContaining({ shiftDefinitionId: 'shift-1' }),
+      );
+    });
+
+    it('drops a role outside the three schedulable ones instead of honouring it', async () => {
+      const uqb = setup([worker('u1', UserRole.SATGAS)], []);
+
+      // kepala_rayon is excluded outright (ADR-054 §4) — asking for it must not
+      // widen the query, it must fall back to the schedulable three.
+      await service.findUnscheduled('2026-07-23', { roles: [UserRole.KEPALA_RAYON] });
+
+      expect(uqb.where).toHaveBeenCalledWith('u.role IN (:...roles)', {
+        roles: [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP],
+      });
+    });
+
+    it('reports the totals the button needs', async () => {
+      setup(
+        [
+          worker('u1', UserRole.SATGAS),
+          worker('u2', UserRole.LINMAS),
+          worker('u3', UserRole.KORLAP),
+        ],
+        [
+          { user_id: 'u2', status: ScheduleStatus.PLANNED },
+          { user_id: 'u3', status: ScheduleStatus.LEAVE_SICK },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.totals).toEqual({ unscheduled: 1, unavailable: 1, scheduled: 1, workforce: 3 });
+    });
+  });
+
   describe('getActiveAreasForDay', () => {
     it("returns the day's areas", async () => {
       rosterRepo.find.mockResolvedValue([

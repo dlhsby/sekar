@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarOff, } from 'lucide-react';
+import { CalendarOff, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -39,6 +39,7 @@ import { DateNav } from '@/components/schedules/DateNav';
 import { MonthGrid } from '@/components/schedules/MonthGrid';
 import { WeekGrid } from '@/components/schedules/WeekGrid';
 import { DayBoard, type AssignContext } from '@/components/schedules/DayBoard';
+import { UnscheduledWorkersSheet } from '@/components/schedules/UnscheduledWorkersSheet';
 import { YearView } from '@/components/schedules/YearView';
 import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal';
 import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMapModal';
@@ -114,6 +115,9 @@ export default function SchedulesPage() {
   const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
   const [holidayOpen, setHolidayOpen] = useState(false);
+  /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
+  const [unscheduledOpen, setUnscheduledOpen] = useState(false);
+  const [createUserId, setCreateUserId] = useState<string | undefined>();
   // The Year view spans >62 days (the range API's cap) so it doesn't fetch
   // occurrences — it's a month picker until an aggregate endpoint exists.
   const fetchOccurrences = calendarView !== 'year';
@@ -164,10 +168,13 @@ export default function SchedulesPage() {
   // only once one is actually asked for.
   const [mapSubject, setMapSubject] = useState<AreaMapSubject | null>(null);
 
-  const openCreate = (date?: string, ctx?: AssignContext) => {
+  const openCreate = (date?: string, ctx?: AssignContext, userId?: string) => {
     if (!can('schedule:create')) return;
     setCreateDate(date);
     setCreateCtx(ctx);
+    // Cleared unless this call prefilled one — otherwise a worker picked in the
+    // gap panel would haunt the next Buat Jadwal opened from anywhere else.
+    setCreateUserId(userId);
     setCreateOpen(true);
   };
 
@@ -477,6 +484,20 @@ export default function SchedulesPage() {
             <span className="ml-1.5 hidden sm:inline">{t('schedules:holidays.manage')}</span>
           </Button>
           {can('schedule:create') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setUnscheduledOpen(true)}
+              aria-label={t('schedules:unscheduled.title')}
+              title={t('schedules:unscheduled.description')}
+            >
+              <UserPlus className="h-4 w-4" aria-hidden />
+              <span className="ml-1.5 hidden sm:inline">
+                {t('schedules:unscheduled.buttonLabel')}
+              </span>
+            </Button>
+          )}
+          {can('schedule:create') && (
             <CreateButton
               label={t('schedules:calendar.event.createTitle')}
               onClick={() => openCreate(isoDate(anchor))}
@@ -591,6 +612,7 @@ export default function SchedulesPage() {
           initialCityWide={createCtx?.city}
           initialTeam={createCtx?.team}
           initialRole={createCtx?.role}
+          initialUserId={createUserId}
           onSuccess={refreshCalendar}
         />
       )}
@@ -628,6 +650,25 @@ export default function SchedulesPage() {
         allDistricts={districts}
         allAreas={allLocations}
         allRegions={regions}
+      />
+
+      <UnscheduledWorkersSheet
+        open={unscheduledOpen}
+        onOpenChange={setUnscheduledOpen}
+        initialDate={isoDate(anchor)}
+        shifts={shifts}
+        districts={districts}
+        onSchedule={(worker, date, shiftId) => {
+          // Hand off to the normal create flow, prefilled. Closing the panel
+          // first keeps one dialog on screen at a time; reopening it after the
+          // save shows the shortened list, which is the feedback that matters.
+          setUnscheduledOpen(false);
+          openCreate(
+            date,
+            { shiftId: shiftId ?? '', district_id: worker.district_id ?? undefined },
+            worker.id,
+          );
+        }}
       />
 
       <EditScopeChooser

@@ -20,7 +20,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { SchedulesService, type RangeFilters } from './schedules.service';
+import { SchedulesService, SCHEDULABLE_WORKER_ROLES, type RangeFilters } from './schedules.service';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -113,6 +113,62 @@ export class SchedulesController {
         : Promise.resolve([]);
     }
     return this.service.findByDate(date, districtId);
+  }
+
+  /**
+   * The complement of the board: who is NOT on `date`'s roster (ADR-054).
+   *
+   * Read-only. Placing someone still goes through the normal create flow, so
+   * this adds no write path and no new permission — the same roles that may
+   * build a roster may ask what it is missing.
+   */
+  @Get('unscheduled')
+  @Roles(...ROSTER_EDITORS)
+  @ApiOperation({
+    summary:
+      'Workers with no occurrence on a date (ADR-054). Projected occurrences count as scheduled; ' +
+      'excused rows (off/leave) are reported separately as unavailable. satgas/linmas/korlap only.',
+  })
+  @ApiQuery({ name: 'date', example: '2026-07-23' })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false, description: 'Narrow to one shift' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'role', required: false, description: 'Repeatable: satgas|linmas|korlap' })
+  @ApiQuery({ name: 'q', required: false, description: 'Match on full name or username' })
+  getUnscheduled(
+    @GetUser() user: User,
+    @Query('date') date: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('districtId') districtId?: string,
+    @Query('role') role?: string | string[],
+    @Query('q') q?: string,
+  ) {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be YYYY-MM-DD');
+    }
+    // An unknown role in the query is DROPPED, not honoured: the filter can only
+    // ever narrow within the three schedulable roles (ADR-054 §4).
+    const roles = (Array.isArray(role) ? role : role ? [role] : [])
+      .map((r) => r as UserRole)
+      .filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
+    // Rayon-scoped callers see their own district only, whatever they ask for —
+    // same rule as `getByDate`. A scoped user with no district sees nothing
+    // rather than falling through to every rayon.
+    const scoped = this.isDistrictScoped(user);
+    if (scoped && !user.district_id) {
+      return Promise.resolve({
+        date,
+        shift_definition_id: shiftDefinitionId ?? null,
+        unscheduled: [],
+        unavailable: [],
+        totals: { unscheduled: 0, unavailable: 0, scheduled: 0, workforce: 0 },
+      });
+    }
+    return this.service.findUnscheduled(date, {
+      shiftDefinitionId: shiftDefinitionId ?? null,
+      districtId: scoped ? (user.district_id as string) : (districtId ?? null),
+      roles: roles.length ? roles : null,
+      q: q ?? null,
+    });
   }
 
   @Get('range')

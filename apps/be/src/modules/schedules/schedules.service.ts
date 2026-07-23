@@ -17,7 +17,7 @@ import {
 } from 'typeorm';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
@@ -53,6 +53,54 @@ const BUSY_STATUSES = [
   ScheduleStatus.LEAVE_ANNUAL,
   ScheduleStatus.LEAVE_PERMIT,
 ];
+
+/**
+ * The roles a day's roster is actually built from (ADR-054 §4).
+ *
+ * NOT the same as "roles that can hold a row": kepala_rayon / admin_rayon do get
+ * rows, but theirs is a standing whole-district posting rather than a per-day
+ * assignment, so listing them as "belum dijadwalkan" every single day would be
+ * noise no one should ever act on.
+ */
+export const SCHEDULABLE_WORKER_ROLES: UserRole[] = [
+  UserRole.SATGAS,
+  UserRole.LINMAS,
+  UserRole.KORLAP,
+];
+
+/**
+ * Statuses that mean "accounted for but NOT placeable" — an excused absence.
+ * Distinguishing these from "no row at all" is what stops the panel inviting an
+ * admin to schedule someone who is on approved leave.
+ */
+const EXCUSED_STATUSES: ScheduleStatus[] = [
+  ScheduleStatus.OFF,
+  ScheduleStatus.LEAVE_SICK,
+  ScheduleStatus.LEAVE_ANNUAL,
+  ScheduleStatus.LEAVE_PERMIT,
+];
+
+export interface UnscheduledWorkerDto {
+  id: string;
+  full_name: string;
+  username: string;
+  role: UserRole;
+  district_id: string | null;
+  district_name: string | null;
+}
+
+export interface UnavailableWorkerDto extends UnscheduledWorkerDto {
+  /** Why they cannot be placed — drives the reason chip. */
+  status: ScheduleStatus;
+}
+
+export interface UnscheduledResult {
+  date: string;
+  shift_definition_id: string | null;
+  unscheduled: UnscheduledWorkerDto[];
+  unavailable: UnavailableWorkerDto[];
+  totals: { unscheduled: number; unavailable: number; scheduled: number; workforce: number };
+}
 
 /**
  * The PLACE half of a row's identity under ADR-053: one row = one worker, one
@@ -449,6 +497,126 @@ export class SchedulesService {
         b.shift_definition?.start_time ?? '99:99:99',
       ),
     );
+  }
+
+  /**
+   * Who is NOT on `date`'s roster — the complement of the board (ADR-054).
+   *
+   * The board shows what IS scheduled, so a worker with no row is invisible by
+   * construction: an empty column and a fully-placed rayon look identical, and
+   * the gap only surfaces the next morning as an understaffed lokasi.
+   *
+   * Two subtleties this has to get right:
+   *
+   * 1. **Projected occurrences count as scheduled.** Beyond the materialization
+   *    horizon a recurring rule yields projected rows, not DB rows (ADR-047), so
+   *    a `NOT EXISTS` against `schedules` would report everyone on a daily rule
+   *    as unscheduled for every future date. It reads the same materialized ∪
+   *    projected union the board renders.
+   * 2. **Absence is not availability.** A worker on cuti has no assignment AND
+   *    cannot take one, so they are reported separately rather than sitting in a
+   *    list of people to place.
+   *
+   * `shiftDefinitionId` narrows to one shift: under ADR-053 holding rows for
+   * other shifts does not make a worker unavailable for this one.
+   */
+  async findUnscheduled(
+    date: string,
+    filters: {
+      shiftDefinitionId?: string | null;
+      districtId?: string | null;
+      roles?: UserRole[] | null;
+      q?: string | null;
+    } = {},
+  ): Promise<UnscheduledResult> {
+    const { shiftDefinitionId, districtId, roles, q } = filters;
+
+    // The workforce a day is built from. kepala_rayon / admin_rayon are excluded
+    // outright (ADR-054 §4): their posting is a standing whole-district one, so
+    // they would sit in this list every day with no action ever appropriate.
+    //
+    // The role filter can only ever NARROW within those three. A request naming
+    // a role outside them is dropped rather than honoured — and, once dropped,
+    // falls back to all three rather than returning an empty list, which would
+    // read as "everyone is scheduled" when the truth is "you asked for a role
+    // this view never lists".
+    const requested = (roles ?? []).filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
+    const candidateRoles = requested.length ? requested : [...SCHEDULABLE_WORKER_ROLES];
+
+    // `User` carries `district_id` but no `district` relation, so the name comes
+    // from a raw join rather than an eager load.
+    const userQb = this.userRepo
+      .createQueryBuilder('u')
+      .leftJoin('districts', 'd', 'd.id = u.district_id')
+      .addSelect('d.name', 'district_name')
+      .where('u.role IN (:...roles)', { roles: candidateRoles })
+      // A deactivated account is not a staffing gap.
+      .andWhere('u.is_active = TRUE')
+      .andWhere('u.deleted_at IS NULL');
+    if (districtId) userQb.andWhere('u.district_id = :districtId', { districtId });
+    if (q?.trim()) {
+      userQb.andWhere('(u.full_name ILIKE :q OR u.username ILIKE :q)', { q: `%${q.trim()}%` });
+    }
+    const { entities: workforce, raw } = await userQb
+      .orderBy('u.full_name', 'ASC')
+      .getRawAndEntities();
+    const districtNameById = new Map<string, string>();
+    for (const r of raw as Array<{ u_district_id?: string; district_name?: string }>) {
+      if (r.u_district_id && r.district_name)
+        districtNameById.set(r.u_district_id, r.district_name);
+    }
+
+    // The day as the BOARD sees it — materialized rows plus projections.
+    const occurrences = await this.findByDateRange(date, date, {
+      shiftDefinitionId: shiftDefinitionId ?? null,
+    });
+
+    const busy = new Set<string>();
+    const excusedBy = new Map<string, ScheduleStatus>();
+    for (const row of occurrences) {
+      if (!row.user_id) continue;
+      if (EXCUSED_STATUSES.includes(row.status)) {
+        // A live assignment elsewhere outranks an excused row: they ARE placed.
+        if (!excusedBy.has(row.user_id)) excusedBy.set(row.user_id, row.status);
+      } else {
+        busy.add(row.user_id);
+      }
+    }
+
+    const toDto = (u: User): UnscheduledWorkerDto => ({
+      id: u.id,
+      full_name: u.full_name,
+      username: u.username,
+      role: u.role,
+      district_id: u.district_id ?? null,
+      district_name: u.district_id ? (districtNameById.get(u.district_id) ?? null) : null,
+    });
+
+    const unscheduled: UnscheduledWorkerDto[] = [];
+    const unavailable: UnavailableWorkerDto[] = [];
+    let scheduled = 0;
+    for (const u of workforce) {
+      if (busy.has(u.id)) {
+        scheduled += 1;
+        continue;
+      }
+      const excused = excusedBy.get(u.id);
+      if (excused) unavailable.push({ ...toDto(u), status: excused });
+      else unscheduled.push(toDto(u));
+    }
+
+    return {
+      date,
+      shift_definition_id: shiftDefinitionId ?? null,
+      unscheduled,
+      unavailable,
+      totals: {
+        unscheduled: unscheduled.length,
+        unavailable: unavailable.length,
+        scheduled,
+        workforce: workforce.length,
+      },
+    };
   }
 
   /**

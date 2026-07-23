@@ -355,5 +355,34 @@
       "SPECIAL": "Hari Khusus"
     },
     "typePlaceholder": "Pilih jenis hari…"
+  },
+  "unscheduled": {
+    "title": "Belum Dijadwalkan",
+    "description": "Petugas yang belum punya jadwal pada tanggal ini. Pilih petugas untuk langsung menjadwalkan.",
+    "buttonLabel": "Belum Dijadwalkan",
+    "dateLabel": "Tanggal",
+    "shiftLabel": "Shift",
+    "districtLabel": "Rayon",
+    "roleLabel": "Peran",
+    "allShifts": "Semua shift",
+    "allDistricts": "Semua rayon",
+    "allRoles": "Semua peran",
+    "columnName": "Nama",
+    "columnRole": "Peran",
+    "columnDistrict": "Rayon",
+    "actionSchedule": "Jadwalkan",
+    "searchPlaceholder": "Cari nama atau username…",
+    "pillUnscheduled": "{{count}} belum dijadwalkan",
+    "pillScheduled": "{{count}} sudah dijadwalkan",
+    "ofWorkforce": "dari {{count}} petugas",
+    "emptyTitle": "Semua petugas sudah dijadwalkan",
+    "emptyDescription": "Tidak ada petugas yang terlewat pada tanggal ini.",
+    "unavailableTitle": "Tidak tersedia ({{count}})",
+    "reason": {
+      "off": "Libur",
+      "leave_sick": "Sakit",
+      "leave_annual": "Cuti",
+      "leave_permit": "Izin"
+    }
   }
 }
