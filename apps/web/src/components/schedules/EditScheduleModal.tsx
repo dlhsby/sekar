@@ -48,6 +48,12 @@ interface EditScheduleModalProps {
    */
   onSubmit: (change: PendingScheduleEdit) => void;
   roster: Schedule | null;
+  /**
+   * A change already collected but not yet written — set when the user came
+   * BACK from "Ubah Yang Mana?". Seeds the form from what they typed rather
+   * than from the saved row, so going back never silently discards their edit.
+   */
+  pendingEdit?: PendingScheduleEdit | null;
   /** True while the caller is persisting a confirmed change. */
   loading?: boolean;
   shifts: Array<{ id: string; name: string; start_time: string; end_time: string }>;
@@ -76,6 +82,7 @@ export function EditScheduleModal({
   onClose,
   onSubmit,
   roster,
+  pendingEdit,
   loading,
   shifts,
   allDistricts,
@@ -106,22 +113,37 @@ export function EditScheduleModal({
   // display_scope, so the modal opens on the scope the assignment actually has.
   useEffect(() => {
     if (!roster || !open) return;
-    const locIds = roster.location_id ? [roster.location_id] : [];
+    // A pending edit (the user pressed Kembali) wins over the saved row.
+    const locIds = pendingEdit
+      ? pendingEdit.locationIds
+      : roster.location_id
+        ? [roster.location_id]
+        : [];
     // One kawasan per assignment (ADR-053).
-    const seededRegions = roster.region_id ? [roster.region_id] : [];
+    const seededRegions = pendingEdit
+      ? pendingEdit.regionIds
+      : roster.region_id
+        ? [roster.region_id]
+        : [];
+    const seededDistrict = pendingEdit ? pendingEdit.districtId : roster.district_id;
+    const seededShift = pendingEdit ? pendingEdit.shiftId : roster.shift_definition_id;
     reset({
       scope: (locIds.length
         ? 'location'
         : seededRegions.length
           ? 'region'
-          : roster.district_id
+          : seededDistrict
             ? 'district'
             : 'city') as ScopeValue,
-      district_id: roster.district_id || '',
+      district_id: seededDistrict || '',
       region_id: seededRegions[0] ?? '',
       location_id: locIds[0] ?? '',
-      shift_definition_id: roster.shift_definition_id ?? '',
+      shift_definition_id: seededShift ?? '',
     } as Partial<FormValues> as FormValues);
+    // `pendingEdit` is deliberately NOT a dependency: it changes as the user
+    // edits, and re-seeding mid-typing would fight the form. It is read once,
+    // when the modal opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roster, open, reset]);
 
   const districtOptions = useMemo(

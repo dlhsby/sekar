@@ -79,20 +79,21 @@ describe('EditScopeChooser', () => {
     expect(screen.getByRole('button', { name: /seluruh rangkaian/i })).toBeInTheDocument();
   });
 
-  it('hands off to the delete flow and closes itself first', async () => {
+  it('goes BACK to the form without selecting a scope', async () => {
     const user = userEvent.setup();
-    const onDelete = jest.fn();
-    const { onOpenChange, onSelect } = setup({ onDelete });
+    const onBack = jest.fn();
+    const { onSelect } = setup({ onBack });
 
-    await user.click(screen.getByRole('button', { name: /^hapus$/i }));
+    await user.click(screen.getByRole('button', { name: /^kembali$/i }));
 
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-    expect(onDelete).toHaveBeenCalled();
+    expect(onBack).toHaveBeenCalled();
     expect(onSelect).not.toHaveBeenCalled();
   });
 
-  it('shows no delete entry when no delete handler is given', () => {
-    setup();
+  it('never offers DELETE mid-edit — that belongs to the row detail modal', () => {
+    // Asking "delete?" part-way through an edit answers a question the user did
+    // not ask, and used to sit where Kembali does now.
+    setup({ onBack: jest.fn() });
     expect(screen.queryByRole('button', { name: /^hapus$/i })).not.toBeInTheDocument();
   });
 

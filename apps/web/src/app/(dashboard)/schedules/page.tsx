@@ -622,6 +622,7 @@ export default function SchedulesPage() {
         }}
         onSubmit={onRowEditSubmit}
         roster={rowUnderEdit}
+        pendingEdit={pendingEdit}
         loading={updateShift.isPending || updateAreas.isPending}
         shifts={shifts}
         allDistricts={districts}
@@ -633,12 +634,19 @@ export default function SchedulesPage() {
         open={editChooserOpen}
         onOpenChange={(open) => {
           setEditChooserOpen(open);
-          // Cancelling DISCARDS the collected edit — nothing was written.
-          if (!open) setPendingEdit(null);
+          // Cancelling DISCARDS the collected edit — nothing was written. Going
+          // BACK re-opens the form, so `rowEditOpen` guards the edit from being
+          // dropped on the way there.
+          if (!open && !rowEditOpen) setPendingEdit(null);
           if (!open && !eventEdit && !rowEditOpen && !deleteChooserOpen) setChosen(null);
         }}
         onSelect={onEditScope}
-        onDelete={can('schedule:delete') ? () => setDeleteChooserOpen(true) : undefined}
+        // Back to the form, edit intact. Deleting is NOT offered mid-edit — it
+        // lives on the row's detail modal, which is where the user meant to go.
+        onBack={() => {
+          setEditChooserOpen(false);
+          setRowEditOpen(true);
+        }}
         selectedDate={chosen?.schedule_date}
         pendingScope={pendingScope}
       />

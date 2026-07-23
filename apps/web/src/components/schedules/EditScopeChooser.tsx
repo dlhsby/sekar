@@ -14,8 +14,15 @@ interface EditScopeChooserProps {
    * progress and stay un-double-clickable while the request is in flight.
    */
   pendingScope?: EditScope | null;
-  /** When set, a destructive delete entry hands off to the delete-scope flow. */
-  onDelete?: () => void;
+  /**
+   * Return to the edit form with the collected change intact.
+   *
+   * This dialog used to offer DELETE here, which asked the wrong question: the
+   * user is part-way through an edit, and the only backwards move that makes
+   * sense is back to the form. Deleting stays where it belongs — the row's
+   * detail modal.
+   */
+  onBack?: () => void;
   selectedDate?: string;
   /** When true, hide the 'this' (Hanya hari ini) option (for projected occurrences). */
   hideThisOption?: boolean;
@@ -25,7 +32,7 @@ export function EditScopeChooser({
   open,
   onOpenChange,
   onSelect,
-  onDelete,
+  onBack,
   selectedDate,
   hideThisOption = false,
   pendingScope = null,
@@ -88,16 +95,9 @@ export function EditScopeChooser({
           </div>
         </DialogBody>
         <DialogFooter className="justify-between">
-          {onDelete && (
-            <Button
-              variant="destructive"
-              disabled={busy}
-              onClick={() => {
-                onOpenChange(false);
-                onDelete();
-              }}
-            >
-              {t('common:actions.delete')}
+          {onBack && (
+            <Button variant="outline" disabled={busy} onClick={onBack}>
+              {t('common:actions.back')}
             </Button>
           )}
           {/* Cancel DISCARDS the pending edit — nothing has been written yet. */}
