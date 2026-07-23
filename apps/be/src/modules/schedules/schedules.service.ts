@@ -55,6 +55,47 @@ const BUSY_STATUSES = [
 ];
 
 /**
+ * The PLACE half of a row's identity under ADR-053: one row = one worker, one
+ * shift, one place. Mirrors the DB expression behind
+ * `UQ_schedules_user_date_shift_place`, so an in-memory uniqueness check and the
+ * index always agree on what counts as "the same place". A row with no place at
+ * all is city-scope, which the index folds onto the nil uuid — the same sentinel
+ * is used here so city-scope rows collide with each other and nothing else.
+ */
+const NIL_PLACE_ID = '00000000-0000-0000-0000-000000000000';
+
+export function schedulePlaceKey(row: {
+  location_id?: string | null;
+  region_id?: string | null;
+  district_id?: string | null;
+}): string {
+  return row.location_id ?? row.region_id ?? row.district_id ?? NIL_PLACE_ID;
+}
+
+/**
+ * The place an event's occurrences land on — the same resolution the projection
+ * and the materializer apply, in one place so an occupancy check can never
+ * disagree with the row it is meant to predict. Constant across the event's
+ * users and dates, so callers resolve it once per event.
+ */
+export function eventPlace(event: ScheduleEvent): {
+  location_id: string | null;
+  region_id: string | null;
+  district_id: string | null;
+} {
+  return {
+    location_id: event.scope === 'static' ? (event.location_id ?? null) : null,
+    region_id: event.scope === 'mobile' ? (event.region_id ?? null) : null,
+    district_id:
+      (event.scope === 'static'
+        ? event.location?.district_id
+        : event.scope === 'mobile'
+          ? event.region?.district_id
+          : event.district_id) ?? null,
+  };
+}
+
+/**
  * Optional filters for the calendar range query (materialized + projected rows).
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
  * whose location_id matches.
@@ -117,7 +158,6 @@ export class SchedulesService {
     }
     if (isGlobalRosterEditor(editor.role)) return;
 
-    const rowLocationIds = row.location_id ? [row.location_id] : [];
     if (isDistrictManagerRole(editor.role)) {
       if (!editor.district_id) {
         throw new ForbiddenException('Your account is missing a district assignment');
@@ -228,9 +268,20 @@ export class SchedulesService {
         created_by: actor.id,
       }),
     );
+    // ADR-053: one place per row. An explicit multi-lokasi request is a
+    // contradiction, not something to truncate behind a 200 — say so. The
+    // permanent-assignment FALLBACK legitimately holds several (a korlap covers
+    // many taman), so it seeds this row with the first by id and leaves the rest
+    // to further rows; sorted so the pick is deterministic across calls.
+    if (dto.area_ids && dto.area_ids.length > 1) {
+      throw new BadRequestException(
+        'A schedule row covers exactly one place (ADR-053). Create one row per lokasi instead of listing several.',
+      );
+    }
     const locationIds =
-      dto.area_ids ?? (await this.userAreasService.getPermanentLocationIds(dto.user_id));
-    await this.setAreas(row.id, locationIds);
+      dto.area_ids ??
+      [...(await this.userAreasService.getPermanentLocationIds(dto.user_id))].sort();
+    await this.setPlace(row.id, locationIds[0] ?? null);
     await this.audit(
       row,
       'add_schedule',
@@ -242,25 +293,40 @@ export class SchedulesService {
   }
 
   /**
-   * `user:date:shift` for every LIVE roster row in the range, regardless of which
-   * event (or none) produced it.
+   * `user:date:shift:place` for every LIVE roster row in the range, regardless of
+   * which event (or none) produced it.
    *
-   * `UQ_schedules_user_date_shift` makes a second row for the same triple
-   * impossible, so an event that would produce one can never materialize. Without
-   * this set the projection still emitted it — a greyed "projected" duplicate that
-   * showed forever, could not be deleted (its id is `projected:…`, not a row), and
-   * silently inflated the board's role counts. Projection now skips any triple a
-   * live row already owns.
+   * `UQ_schedules_user_date_shift_place` makes a second row for the same
+   * (user, date, shift, PLACE) impossible, so an event that would produce one can
+   * never materialize. Without this set the projection still emitted it — a
+   * greyed "projected" duplicate that showed forever, could not be deleted (its
+   * id is `projected:…`, not a row), and silently inflated the board's role
+   * counts. Projection skips any key a live row already owns.
+   *
+   * The PLACE component is what keeps this honest under ADR-053. Keying on the
+   * (user, date, shift) triple alone — as this did while the old
+   * `UQ_schedules_user_date_shift` index still existed — suppressed the second
+   * occurrence of a worker legitimately covering two places in one shift, which
+   * is precisely the case ADR-053 exists to allow.
    */
   private async occupiedShiftKeys(from: string, to: string): Promise<Set<string>> {
     const rows = await this.rosterRepo.find({
       where: { schedule_date: Between(from, to) },
-      select: ['user_id', 'schedule_date', 'shift_definition_id'],
+      select: [
+        'user_id',
+        'schedule_date',
+        'shift_definition_id',
+        'location_id',
+        'region_id',
+        'district_id',
+      ],
     });
     return new Set(
       rows
         .filter((r) => r.shift_definition_id)
-        .map((r) => `${r.user_id}:${r.schedule_date}:${r.shift_definition_id}`),
+        .map(
+          (r) => `${r.user_id}:${r.schedule_date}:${r.shift_definition_id}:${schedulePlaceKey(r)}`,
+        ),
     );
   }
 
@@ -519,6 +585,8 @@ export class SchedulesService {
     for (const event of events) {
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+      // Constant across this event's users and dates (ADR-053: one place per row).
+      const eventPlaceId = schedulePlaceKey(eventPlace(event));
 
       // Resolve member IDs (same logic as materializer)
       const memberIds = event.is_team
@@ -551,9 +619,14 @@ export class SchedulesService {
           if (!materializedKey.has(key)) {
             // Also check withDeleted to avoid resurrecting tombstones
             if (existingKey.has(`${userId}:${dateStr}`)) continue;
-            // …and never project a triple a live row already owns (see
-            // `occupiedShiftKeys`) — it could never materialize anyway.
-            if (shiftOccupied.has(`${userId}:${dateStr}:${event.shift_definition_id}`)) continue;
+            // …and never project a (user, date, shift, PLACE) a live row already
+            // owns (see `occupiedShiftKeys`) — it could never materialize anyway.
+            // Keyed on the place too, so a second occurrence at a DIFFERENT place
+            // in the same shift still projects (ADR-053).
+            if (
+              shiftOccupied.has(`${userId}:${dateStr}:${event.shift_definition_id}:${eventPlaceId}`)
+            )
+              continue;
             {
               // Emit a virtual projected row
               const projected = new Schedule();
@@ -695,6 +768,8 @@ export class SchedulesService {
 
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
+      // Constant across this event's users and dates (ADR-053: one place per row).
+      const eventPlaceId = schedulePlaceKey(eventPlace(event));
 
       // Resolve member IDs (same logic as materializer)
       let memberIds = event.is_team
@@ -735,9 +810,15 @@ export class SchedulesService {
             if (!materializedKey.has(key)) {
               // Also check withDeleted to avoid resurrecting tombstones
               if (existingKey.has(`${memberId}:${dateStr}`)) continue;
-              // …and never project a triple a live row already owns (see
-              // `occupiedShiftKeys`) — it could never materialize anyway.
-              if (shiftOccupied.has(`${memberId}:${dateStr}:${event.shift_definition_id}`))
+              // …and never project a (user, date, shift, PLACE) a live row already
+              // owns (see `occupiedShiftKeys`) — it could never materialize anyway.
+              // Keyed on the place too, so a second occurrence at a DIFFERENT
+              // place in the same shift still projects (ADR-053).
+              if (
+                shiftOccupied.has(
+                  `${memberId}:${dateStr}:${event.shift_definition_id}:${eventPlaceId}`,
+                )
+              )
                 continue;
               {
                 // Filter by district if needed
@@ -1050,7 +1131,7 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(coverRowId, locationIds);
+    await this.setPlace(coverRowId, locationIds[0] ?? null);
 
     await this.audit(
       original,
@@ -1063,13 +1144,18 @@ export class SchedulesService {
   }
 
   /**
-   * Set the day's coverage — lokasi (0..N) and, optionally, kawasan (0..N).
+   * Set the day's PLACE — at most one lokasi, or one kawasan, plus the parent
+   * rayon.
    *
-   * One worker still gets ONE occurrence per shift (the attendance anchor), but
-   * that occurrence can span several lokasi and several kawasan: a crew working
-   * a handful of small taman, or moving across kawasan during the shift, is a
-   * single assignment, not several. Passing `regionIds` undefined leaves the
-   * kawasan set untouched.
+   * ADR-053: one row = one worker, one shift, one place. A worker covering three
+   * taman holds three occurrences, not one occurrence naming three lokasi.
+   * `area_ids` stays an array for wire compatibility, but more than one id is now
+   * a contradiction rather than something to silently truncate — it used to keep
+   * `[0]` and drop the rest with a 200, so an operator's second and third picks
+   * vanished without a word and the audit trail recorded ids the row never had.
+   *
+   * `district_id`/`region_id` omitted (undefined) leave those columns untouched;
+   * passing null clears them.
    */
   async updateAreas(
     id: string,
@@ -1081,16 +1167,37 @@ export class SchedulesService {
     const actorId = actor.id;
     const row = await this.findOne(id);
     await this.assertCanEdit(actor, row);
+
+    if (locationIds.length > 1) {
+      throw new BadRequestException(
+        'A schedule row covers exactly one place (ADR-053). Create one row per lokasi instead of listing several.',
+      );
+    }
+
+    // A lokasi and a kawasan on the same row name two different places, and only
+    // the deeper one would ever be honoured: `schedulePlaceKey` (and the
+    // `UQ_schedules_user_date_shift_place` index behind it) resolves lokasi first,
+    // so the kawasan would linger as unreachable state that still matched the
+    // board's `region_id` filter — the row would show up under both containers.
+    const nextLocationId = locationIds[0] ?? null;
+    const nextRegionId = regionId !== undefined ? regionId : (row.region_id ?? null);
+    if (nextLocationId && nextRegionId) {
+      throw new BadRequestException(
+        'A schedule row is scoped to a lokasi OR a kawasan, not both (ADR-053).',
+      );
+    }
+
     const before = row.location_id ? [row.location_id] : [];
-    await this.setAreas(row.id, locationIds);
-    // The edit modal let an operator pick a Rayon that was never persisted — it
-    // only filtered the lokasi list. A rayon-scope assignment needs the column set.
-    if (districtId !== undefined) await this.rosterRepo.update(id, { district_id: districtId });
-    if (regionId !== undefined) await this.rosterRepo.update(id, { region_id: regionId });
-    // Raw column UPDATE, not `save(row)` — `row` holds relation objects loaded by
-    // `findOne()` above, and entity save would reconcile FK columns back from
+    // ONE raw column UPDATE, not `save(row)` — `row` holds relation objects loaded
+    // by `findOne()` above, and entity save would reconcile FK columns back from
     // those stale objects, silently reverting what was just written.
-    await this.rosterRepo.update(id, { source: 'manual', updated_by: actorId });
+    await this.rosterRepo.update(id, {
+      location_id: nextLocationId,
+      ...(districtId !== undefined ? { district_id: districtId } : {}),
+      ...(regionId !== undefined ? { region_id: regionId } : {}),
+      source: 'manual',
+      updated_by: actorId,
+    });
     await this.audit(row, 'update_areas', actorId, { area_ids: before }, { area_ids: locationIds });
     return this.findOne(id);
   }
@@ -1172,7 +1279,7 @@ export class SchedulesService {
         updated_by: actorId,
       });
     }
-    await this.setAreas(row.id, [params.locationId]);
+    await this.setPlace(row.id, params.locationId);
     return row.id;
   }
 
@@ -1376,12 +1483,12 @@ export class SchedulesService {
 
   /** Reconcile a row's area set to exactly `locationIds`. */
   /**
-   * Set the occurrence's lokasi. ONE place per row (ADR-053), so anything past
-   * the first id is dropped rather than silently split across places — callers
-   * that want wider coverage create another schedule.
+   * Set the occurrence's lokasi. ONE place per row (ADR-053) — callers that want
+   * wider coverage create another schedule, so this takes a single id (or null)
+   * rather than an array it would have to silently truncate.
    */
-  private async setAreas(rosterId: string, locationIds: string[]): Promise<void> {
-    await this.rosterRepo.update(rosterId, { location_id: locationIds[0] ?? null });
+  private async setPlace(rosterId: string, locationId: string | null): Promise<void> {
+    await this.rosterRepo.update(rosterId, { location_id: locationId });
   }
 
   private async audit(

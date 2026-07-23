@@ -288,7 +288,8 @@ export class SchedulesController {
   @Patch(':id/areas')
   @Roles(...ROSTER_EDITORS)
   @ApiOperation({
-    summary: 'Set the coverage for the day — lokasi (0..N) and optionally kawasan (0..N)',
+    summary:
+      'Set the place for the day — at most one lokasi, or one kawasan, plus the parent rayon (ADR-053)',
   })
   @ApiResponse({ status: 200, type: Schedule })
   async updateAreas(

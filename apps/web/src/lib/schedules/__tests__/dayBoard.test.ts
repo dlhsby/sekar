@@ -287,6 +287,44 @@ describe('pruneDayBoard', () => {
     expect(pruned[0].looseLocations).toEqual([]);
   });
 
+  it('recomputes district workerIds from what survived the filter', () => {
+    // `total` was always recomputed, but `workerIds` rode through on `...district`
+    // — so a district filtered down to one lokasi still announced the whole
+    // district's headcount ("N petugas") beside a handful of occurrences. The
+    // city roll-up in DayBoard unions these same arrays, so it inherited the error.
+    const tree = buildDayBoard(
+      [
+        occ({ user_id: 'alice', location_id: 'loc1' }),
+        occ({ user_id: 'bob', location_id: 'loc2' }),
+        occ({ user_id: 'carol', location_id: 'loc2' }),
+      ],
+      twoDistrictMaster
+    );
+    expect(tree.find((d) => d.id === 'ry1')!.workerIds).toHaveLength(3);
+
+    const pruned = pruneDayBoard(tree, { locationId: 'loc1' });
+
+    expect(pruned[0].workerIds).toEqual(['alice']);
+    expect(pruned[0].total).toBe(1);
+  });
+
+  it('counts a worker covering two lokasi in one district once (ADR-053)', () => {
+    // One person, two occurrences: "1 petugas", not 2. Sum-of-occurrences and
+    // distinct-people diverge the moment a row means one PLACE rather than one day.
+    const tree = buildDayBoard(
+      [
+        occ({ user_id: 'alice', location_id: 'loc1' }),
+        occ({ user_id: 'alice', location_id: 'loc2' }),
+      ],
+      twoDistrictMaster
+    );
+
+    const district = tree.find((d) => d.id === 'ry1')!;
+    expect(district.workerIds).toEqual(['alice']);
+    expect(district.total).toBe(2); // two occurrences…
+    expect(district.workerIds).toHaveLength(1); // …one person
+  });
+
   it('keeps an empty lokasi that was named by a geography filter', () => {
     // "Nobody is at Taman Bungkul today" is an answer, and it's where you'd assign.
     const tree = buildDayBoard([], twoDistrictMaster);

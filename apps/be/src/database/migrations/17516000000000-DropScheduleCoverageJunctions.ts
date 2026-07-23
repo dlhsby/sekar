@@ -3,11 +3,16 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 /**
  * Drop the multi-coverage junctions (ADR-053).
  *
- * `schedule_regions` (17514) and `schedule_event_locations` (17515) were built to
- * let ONE assignment span several kawasan/lokasi. ADR-053 settles the model the
- * other way: **one row = one worker, one shift, one place**, and wider coverage is
+ * `schedule_regions` and `schedule_event_locations` were built to let ONE
+ * assignment span several kawasan/lokasi. ADR-053 settles the model the other
+ * way: **one row = one worker, one shift, one place**, and wider coverage is
  * another schedule row. Keeping both shapes would mean two ways to express the
  * same thing — the exact clutter the ADR exists to remove.
+ *
+ * The migrations that CREATED these two tables were withdrawn rather than
+ * shipped-then-reverted, so a fresh database never builds them and this runs as a
+ * no-op (`IF EXISTS`). It stays for the databases that ran the withdrawn pair
+ * before ADR-053 landed — dropping it would strand those tables forever.
  *
  * Safe to drop: neither table was ever the source of truth. `schedules.region_id`
  * and `schedule_events.location_id` always held the authoritative value, and both

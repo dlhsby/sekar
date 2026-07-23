@@ -426,7 +426,23 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
       // Nothing left under this district at all → it isn't an answer to the query.
       if (regions.length === 0 && looseLocations.length === 0 && assignment.length === 0) return null;
 
-      return { ...district, regions, looseLocations, assignment, total };
+      return {
+        ...district,
+        regions,
+        looseLocations,
+        assignment,
+        total,
+        // Recomputed from what SURVIVED, exactly like `total` and like the region
+        // branch above. Spreading `...district` alone carried the pre-filter
+        // worker set through, so a district filtered down to one lokasi still
+        // announced "40 petugas" beside three occurrences — and the city roll-up
+        // in DayBoard unions these same arrays, so it inherited the error.
+        workerIds: unionWorkers(
+          workersOf(assignment),
+          ...regions.map((r) => r.workerIds),
+          ...looseLocations.map((l) => l.workerIds),
+        ),
+      };
     })
     .filter((r): r is BoardDistrict => r !== null);
 }

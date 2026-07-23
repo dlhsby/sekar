@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsIn, IsOptional, IsString, IsUUID, MaxLength, Matches } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -41,10 +50,20 @@ export class ReplaceWorkerDto {
   notes?: string;
 }
 
-/** Set the areas for the day (0..N). */
+/** Set the place for the day — at most one lokasi (ADR-053). */
 export class UpdateRosterAreasDto {
-  @ApiProperty({ type: [String], description: 'Location ids for the day (may be empty)' })
+  @ApiProperty({
+    type: [String],
+    description:
+      'Location id for the day, as a 0- or 1-element array (kept an array for wire ' +
+      'compatibility). ADR-053: one row = one place, so more than one id is rejected ' +
+      'with 400 — create one row per lokasi.',
+    maxItems: 1,
+  })
   @IsArray()
+  @ArrayMaxSize(1, {
+    message: 'A schedule row covers exactly one place (ADR-053) — send at most one location id.',
+  })
   // Location ids are deterministic UUID v5 (minted from district:name), so accept any
   // version — 'v4' wrongly rejects every seeded area id (the "Ubah Location" 400).
   @IsUUID('all', { each: true })

@@ -1,7 +1,7 @@
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
@@ -772,8 +772,49 @@ describe('SchedulesService', () => {
 
       await service.updateAreas('d1', ['area2'], ADMIN);
 
-      // The place lives on the row now (ADR-053), so setting it is a column write.
-      expect(rosterRepo.update).toHaveBeenCalledWith('d1', { location_id: 'area2' });
+      // The place lives on the row now (ADR-053), so setting it is a column write —
+      // one UPDATE carrying the place and the provenance together.
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        'd1',
+        expect.objectContaining({ location_id: 'area2', source: 'manual' }),
+      );
+    });
+
+    it('rejects more than one lokasi instead of silently keeping the first (ADR-053)', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        status: ScheduleStatus.PLANNED,
+        schedule_date: '2026-06-30',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        location_id: null,
+      });
+
+      // One row = one place. Truncating to `[0]` behind a 200 lost the operator's
+      // other picks silently and wrote an audit entry the row never matched.
+      await expect(service.updateAreas('d1', ['area2', 'area3'], ADMIN)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(rosterRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects a row scoped to a lokasi AND a kawasan at once (ADR-053)', async () => {
+      rosterRepo.findOne.mockResolvedValueOnce({
+        id: 'd1',
+        status: ScheduleStatus.PLANNED,
+        schedule_date: '2026-06-30',
+        user_id: 'A',
+        user: { role: UserRole.SATGAS },
+        location_id: null,
+      });
+
+      // `schedulePlaceKey` resolves lokasi first, so the kawasan would survive as
+      // unreachable state that still matched the board's region filter — the row
+      // would show up under both containers.
+      await expect(
+        service.updateAreas('d1', ['area2'], ADMIN, undefined, 'region9'),
+      ).rejects.toThrow(BadRequestException);
+      expect(rosterRepo.update).not.toHaveBeenCalled();
     });
   });
 

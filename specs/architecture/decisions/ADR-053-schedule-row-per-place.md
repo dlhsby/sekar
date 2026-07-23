@@ -105,6 +105,18 @@ mean two ways to express one thing, the clutter this ADR exists to remove):
 multi-select lokasi in the create form; the `schedule_regions` and
 `schedule_event_locations` junctions; `region_ids` on `PATCH /schedules/:id/areas`.
 
+The migrations that *created* those two junctions were **withdrawn rather than
+shipped-then-dropped**, so a fresh database never builds them. `17516` remains as
+a no-op `DROP … IF EXISTS` for the databases that ran the withdrawn pair before
+this ADR landed — without it those tables would be stranded forever.
+
+**One place per row is enforced, not assumed.** `PATCH /schedules/:id/areas`
+rejects more than one `area_ids` entry (400) instead of keeping `[0]` and dropping
+the rest behind a 200, and rejects a row scoped to a lokasi *and* a kawasan at
+once — `schedulePlaceKey` resolves lokasi first, so the kawasan would otherwise
+survive as unreachable state that still matched the board's region filter, putting
+one row under two containers.
+
 Unaffected and retained: the cross-midnight roster fix, the verbose duplicate
 message, `ScopeFields` reuse in the edit modal, and asking the recurrence scope
 *after* the form.
@@ -121,6 +133,28 @@ board counts union `workerIds` instead of summing occurrences →
 `GET /schedules/my/day` + mobile card lists every row → overlap guard ignores
 siblings → **`schedule_locations` retired entirely** (`17518`), so the place has
 exactly one home.
+
+**Post-review corrections.** The first cut left the *place* out of three places
+that needed it, each of which quietly cancelled part of the model:
+
+- `occupiedShiftKeys` still keyed projection on `(user, date, shift)` — the
+  uniqueness `17517` had just replaced. A second occurrence at a different place
+  beyond the materialization horizon was therefore suppressed, i.e. exactly the
+  case this ADR exists to allow. Now keyed on `(user, date, shift, place)` via a
+  shared `schedulePlaceKey`, which mirrors the index expression so the in-memory
+  check and the DB can never disagree.
+- `buildAreaSummaries` derived each lokasi's name and rayon from whichever worker
+  was standing in it, so a credited lokasi nobody occupied inherited a *different*
+  lokasi's identity (and the result depended on worker ordering). Metadata now
+  comes from the lokasi row, and that same lookup doubles as the scope + `is_active`
+  gate — a district-scoped snapshot can no longer leak a lokasi from another rayon
+  via a worker rostered across both.
+- The same function skipped any worker whose GPS put them outside every boundary,
+  so a satgas walking between two rostered taman staffed neither — restating the
+  live-position bug the rewrite was meant to remove. The roster is known
+  independently of GPS and is now credited independently of it.
+- The board's `pruneDayBoard` recomputed `total` but let `workerIds` ride through
+  on the object spread, so a filtered district kept its pre-filter headcount.
 
 **Verification (live data):** a korlap with 3 lokasi who clocks in once — one
 status, no false absences, all 3 lokasi covered, rayon and city totals show 1.
