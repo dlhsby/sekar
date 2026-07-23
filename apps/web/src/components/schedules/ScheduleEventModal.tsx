@@ -73,6 +73,14 @@ export interface ScheduleEventModalProps {
    */
   initialUserId?: string;
   /**
+   * Display name for `initialUserId`. The worker combobox is server-paged, so
+   * nothing in this form knows a user's name until it has been searched — set
+   * the id alone and the field renders an empty "…" while silently holding a
+   * valid value, which reads as "nothing selected". Passing the name is what
+   * makes the prefill visible.
+   */
+  initialUserName?: string;
+  /**
    * Whether the SHIFT and GEOGRAPHY prefills are facts or suggestions.
    *
    * From the board's "+ Tugaskan" they are facts — the operator clicked a
@@ -297,6 +305,7 @@ export function ScheduleEventModal({
   initialTeam,
   initialRole,
   initialUserId,
+  initialUserName,
   lockPrefill = true,
   onSuccess,
 }: ScheduleEventModalProps) {
@@ -432,6 +441,10 @@ export function ScheduleEventModal({
   const lockShift = !isEditing && lockPrefill && !!initialShiftId;
   const lockKind = !isEditing && !!(initialTeam || initialRole || initialUserId);
   const lockRole = !isEditing && !!initialRole;
+  // The worker is a FACT wherever a prefill supplies one — they were chosen from
+  // a list before this form opened, so re-picking them here is only a way to
+  // contradict that choice.
+  const lockUser = !isEditing && !!initialUserId;
   const lockScope = !isEditing && lockPrefill && !!(lockGeoScope || initialCityWide);
   const lockDistrict = !isEditing && lockPrefill && !!initialDistrictId;
   const lockRegion = !isEditing && lockPrefill && !!initialRegionId;
@@ -732,10 +745,10 @@ export function ScheduleEventModal({
                     setValue('user_id', v, { shouldValidate: true });
                     if (u) rememberUser(u);
                   }}
-                  initialLabel={event?.user?.full_name}
+                  initialLabel={event?.user?.full_name ?? initialUserName}
                   placeholder={t('schedules:calendar.event.workerPlaceholder')}
                   error={errors.user_id?.message}
-                  disabled={isEditing || !watch('role')}
+                  disabled={isEditing || lockUser || !watch('role')}
                 />
               </div>
             )}

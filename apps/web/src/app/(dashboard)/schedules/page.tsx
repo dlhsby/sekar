@@ -119,6 +119,8 @@ export default function SchedulesPage() {
   /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
   const [unscheduledOpen, setUnscheduledOpen] = useState(false);
   const [createUserId, setCreateUserId] = useState<string | undefined>();
+  /** Name for `createUserId` — the worker combobox is server-paged and can't resolve it. */
+  const [createUserName, setCreateUserName] = useState<string | undefined>();
   /**
    * Buat Jadwal was opened FROM the gap panel, so closing it — saved or
    * cancelled — should hand the operator back to the list. Filling a day means
@@ -176,13 +178,18 @@ export default function SchedulesPage() {
   // only once one is actually asked for.
   const [mapSubject, setMapSubject] = useState<AreaMapSubject | null>(null);
 
-  const openCreate = (date?: string, ctx?: AssignContext, userId?: string) => {
+  const openCreate = (
+    date?: string,
+    ctx?: AssignContext,
+    user?: { id: string; name: string },
+  ) => {
     if (!can('schedule:create')) return;
     setCreateDate(date);
     setCreateCtx(ctx);
     // Cleared unless this call prefilled one — otherwise a worker picked in the
     // gap panel would haunt the next Buat Jadwal opened from anywhere else.
-    setCreateUserId(userId);
+    setCreateUserId(user?.id);
+    setCreateUserName(user?.name);
     setCreateOpen(true);
   };
 
@@ -635,6 +642,7 @@ export default function SchedulesPage() {
           initialTeam={createCtx?.team}
           initialRole={createCtx?.role}
           initialUserId={createUserId}
+          initialUserName={createUserName}
           // From the gap panel the geography/shift are the panel's FILTERS, not
           // a clicked board cell — a prefill to adjust, not a fact to obey.
           lockPrefill={!returnToUnscheduled}
@@ -702,7 +710,7 @@ export default function SchedulesPage() {
               region_id: target.regionId ?? undefined,
               location_id: target.locationId ?? undefined,
             },
-            worker.id,
+            { id: worker.id, name: worker.full_name },
           );
         }}
       />
