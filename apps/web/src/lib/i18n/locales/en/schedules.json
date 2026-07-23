@@ -358,7 +358,7 @@
   },
   "unscheduled": {
     "title": "Not Yet Scheduled",
-    "description": "Workers with no schedule on this date. Pick a worker to schedule them right away.",
+    "description": "Workers with no schedule matching the criteria below. Set the target (date, shift, district, region, location), then schedule straight from the list.",
     "buttonLabel": "Not Yet Scheduled",
     "dateLabel": "Date",
     "shiftLabel": "Shift",
@@ -371,7 +371,7 @@
     "columnRole": "Role",
     "columnDistrict": "District",
     "actionSchedule": "Schedule",
-    "searchPlaceholder": "Search name or username…",
+    "searchPlaceholder": "Search name, username, or team…",
     "pillUnscheduled": "{{count}} not yet scheduled",
     "pillScheduled": "{{count}} scheduled",
     "ofWorkforce": "of {{count}} workers",
@@ -383,6 +383,12 @@
       "leave_sick": "Sick",
       "leave_annual": "Annual leave",
       "leave_permit": "Permit"
-    }
+    },
+    "regionLabel": "Region",
+    "locationLabel": "Location",
+    "allRegions": "All regions",
+    "allLocations": "All locations",
+    "columnTeam": "Team",
+    "searchLabel": "Search"
   }
 }

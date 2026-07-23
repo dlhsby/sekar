@@ -358,7 +358,7 @@
   },
   "unscheduled": {
     "title": "Belum Dijadwalkan",
-    "description": "Petugas yang belum punya jadwal pada tanggal ini. Pilih petugas untuk langsung menjadwalkan.",
+    "description": "Petugas yang belum punya jadwal sesuai kriteria di bawah. Atur target (tanggal, shift, rayon, kawasan, lokasi), lalu jadwalkan langsung dari daftar.",
     "buttonLabel": "Belum Dijadwalkan",
     "dateLabel": "Tanggal",
     "shiftLabel": "Shift",
@@ -371,7 +371,7 @@
     "columnRole": "Peran",
     "columnDistrict": "Rayon",
     "actionSchedule": "Jadwalkan",
-    "searchPlaceholder": "Cari nama atau username…",
+    "searchPlaceholder": "Cari nama, username, atau tim…",
     "pillUnscheduled": "{{count}} belum dijadwalkan",
     "pillScheduled": "{{count}} sudah dijadwalkan",
     "ofWorkforce": "dari {{count}} petugas",
@@ -383,6 +383,12 @@
       "leave_sick": "Sakit",
       "leave_annual": "Cuti",
       "leave_permit": "Izin"
-    }
+    },
+    "regionLabel": "Kawasan",
+    "locationLabel": "Lokasi",
+    "allRegions": "Semua kawasan",
+    "allLocations": "Semua lokasi",
+    "columnTeam": "Tim",
+    "searchLabel": "Cari"
   }
 }

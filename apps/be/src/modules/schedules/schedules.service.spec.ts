@@ -896,18 +896,105 @@ describe('SchedulesService', () => {
       expect(res.totals.scheduled).toBe(1);
     });
 
-    it('narrows to one shift when asked — other shifts do not make a worker unavailable', async () => {
+    it('treats a row on ANOTHER shift as not filling the target shift', async () => {
       // ADR-053: holding rows for other shifts is normal and says nothing about
       // availability for THIS one.
-      setup([worker('u1', UserRole.SATGAS)], []);
-
-      await service.findUnscheduled('2026-07-23', { shiftDefinitionId: 'shift-1' });
-
-      expect(service.findByDateRange).toHaveBeenCalledWith(
-        '2026-07-23',
-        '2026-07-23',
-        expect.objectContaining({ shiftDefinitionId: 'shift-1' }),
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED, shift_definition_id: 'shift-2' }],
       );
+
+      const res = await service.findUnscheduled('2026-07-23', { shiftDefinitionId: 'shift-1' });
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+    });
+
+    it('treats a row at ANOTHER lokasi as not filling the target lokasi', async () => {
+      // The filters describe the SLOT being filled. Being busy at Taman B does
+      // not disqualify someone from also covering Taman A (ADR-053).
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED, location_id: 'loc-b' }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { locationId: 'loc-a' });
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+    });
+
+    it('excludes a worker whose row MATCHES every target criterion', async () => {
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [
+          {
+            user_id: 'u1',
+            status: ScheduleStatus.PLANNED,
+            shift_definition_id: 'shift-1',
+            district_id: 'ry1',
+            region_id: 'kw1',
+            location_id: 'loc-a',
+          },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', {
+        shiftDefinitionId: 'shift-1',
+        districtId: 'ry1',
+        regionId: 'kw1',
+        locationId: 'loc-a',
+      });
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('keeps a worker EXCUSED for the day out of the list whatever the target', async () => {
+      // Leave does not care how the slot is described.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.LEAVE_SICK, location_id: 'loc-b' }],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { locationId: 'loc-a' });
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.unavailable.map((w) => w.id)).toEqual(['u1']);
+    });
+
+    it('matches the search against a TEAM the worker is scheduled on', async () => {
+      // A team lives on the schedule, not on the person, so "Penyiraman" has to
+      // reach through today's occurrences to find that crew.
+      setup(
+        [worker('u1', UserRole.SATGAS, 'Budi'), worker('u2', UserRole.SATGAS, 'Ani')],
+        [
+          {
+            user_id: 'u1',
+            status: ScheduleStatus.PLANNED,
+            shift_definition_id: 'shift-2',
+            team_category: { name: 'Tim Penyiraman' },
+          },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', {
+        shiftDefinitionId: 'shift-1',
+        q: 'penyiraman',
+      });
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      expect(res.unscheduled[0].teams).toEqual(['Tim Penyiraman']);
+    });
+
+    it('still matches the search on name and username', async () => {
+      setup(
+        [worker('u1', UserRole.SATGAS, 'Budi Santoso'), worker('u2', UserRole.SATGAS, 'Ani')],
+        [],
+      );
+
+      const byName = await service.findUnscheduled('2026-07-23', { q: 'budi' });
+      expect(byName.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      // `workforce` reflects the SEARCHED set, so the totals still add up.
+      expect(byName.totals.workforce).toBe(1);
     });
 
     it('drops a role outside the three schedulable ones instead of honouring it', async () => {

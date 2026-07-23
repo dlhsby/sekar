@@ -658,14 +658,22 @@ export default function SchedulesPage() {
         initialDate={isoDate(anchor)}
         shifts={shifts}
         districts={districts}
-        onSchedule={(worker, date, shiftId) => {
-          // Hand off to the normal create flow, prefilled. Closing the panel
-          // first keeps one dialog on screen at a time; reopening it after the
-          // save shows the shortened list, which is the feedback that matters.
+        regions={regions}
+        locations={allLocations}
+        onSchedule={(worker, target) => {
+          // Hand off to the normal create flow, prefilled with the worker AND
+          // the whole target slot — the filters already said where this is
+          // going, so the admin should not have to say it twice. Falls back to
+          // the worker's own rayon when the target left rayon open.
           setUnscheduledOpen(false);
           openCreate(
-            date,
-            { shiftId: shiftId ?? '', district_id: worker.district_id ?? undefined },
+            target.date,
+            {
+              shiftId: target.shiftId ?? '',
+              district_id: target.districtId ?? worker.district_id ?? undefined,
+              region_id: target.regionId ?? undefined,
+              location_id: target.locationId ?? undefined,
+            },
             worker.id,
           );
         }}

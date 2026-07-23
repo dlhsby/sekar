@@ -40,20 +40,34 @@ Two things make the complement less obvious than it sounds:
 Add a **read-only "Belum Dijadwalkan" view** — one endpoint, one panel — that
 answers "who is not on this day's roster, and which of them can I still place?"
 
-### 1. The unit is (worker, date, shift?) — day by default, shift as a filter
+### 1. The filters describe the TARGET SLOT, not the worker
 
-**Decided 2026-07-23.** The panel opens on **today** and carries **its own date
-picker**, so the admin can look ahead without first moving the board. Shift is
-one of several **filters they apply**, not something inherited silently:
+**Decided 2026-07-23, amended the same day.** Date, shift, rayon, kawasan and
+lokasi together say *"this is the assignment I am trying to make"*; the answer is
+everyone who does not already hold a schedule matching it — exactly the people
+who could fill it.
 
-- No shift filter → "has no row at all on this date". This is the default.
-- Shift filter applied → "has no row for THIS shift". A satgas on Shift 2 is
-  genuinely free for Shift 1, and under ADR-053 holding several rows does not
-  make a worker unavailable.
+An omitted criterion matches everything, so the simple question is the degenerate
+case of the general one:
 
-Rejected: inheriting the board's shift filter implicitly. The panel is its own
-workspace — a filter the user did not set in *this* panel should not change what
-the list means.
+| Filters | Question answered |
+|---|---|
+| date only | "who has no schedule at all today" |
+| date + shift | "who is free for Shift 1" |
+| date + shift + lokasi | "who could I add to Taman Bungkul on Shift 1" |
+
+The panel opens on **today** and carries **its own date picker** — an admin
+planning tomorrow should not have to move the board first, and a filter they did
+not set in *this* panel must not change what the list means.
+
+**Geography deliberately does NOT narrow the workforce.** Workers carry a rayon
+and nothing below it — `users.region_id` is unset for all 72 seeded workers and
+only 15 hold a permanent lokasi — so filtering *people* by kawasan would match
+almost nobody. The kawasan belongs to the slot.
+
+**Busy elsewhere is still available here.** Only a row matching the target counts
+as "already on it": under ADR-053 one worker legitimately covers several places in
+a shift, so being at Taman B does not disqualify them from also covering Taman A.
 
 ### 2. Projected occurrences count as scheduled
 
@@ -146,14 +160,16 @@ no existing sheet moves).
 ```
 GET /schedules/unscheduled
       ?date=YYYY-MM-DD            (required)
-      &shift_definition_id=uuid   (optional — omit for whole-day)
-      &district_id=uuid           (optional filter, within caller's scope)
+      &shiftDefinitionId=uuid     (optional — target shift)
+      &districtId=uuid            (optional — target rayon, within caller's scope)
+      &regionId=uuid              (optional — target kawasan)
+      &locationId=uuid            (optional — target lokasi)
       &role=satgas|linmas|korlap  (optional, repeatable)
-      &q=<name or username>       (optional)
+      &q=<name | username | team> (optional)
 
 200 → {
   date, shift_definition_id,
-  unscheduled: [{ id, full_name, username, role, district_id, district_name }],
+  unscheduled: [{ id, full_name, username, role, district_id, district_name, teams: [] }],
   unavailable: [{ …same…, status: 'off'|'leave_sick'|'leave_annual'|'leave_permit' }],
   totals: { unscheduled, unavailable, scheduled, workforce }
 }
@@ -178,9 +194,18 @@ Contents, top to bottom:
 
 - **Date picker** (defaults to today) — the panel is its own workspace, so it
   moves through days without touching the board
-- **Filters:** Peran (enum: satgas / linmas / korlap) · Rayon (enum) · Shift
-  (enum, blank = whole day) · global search over name + username
-- **Columns:** `Nama` · `@username` · **`Peran`** · `Rayon` · action
+- **Filters (the target):** Shift · Rayon → Kawasan → Lokasi as a **cascade**
+  (narrowing a parent clears its children, since a lokasi outside the chosen
+  kawasan describes a slot that cannot exist) · Peran · search
+- **Search spans name, username AND the teams the worker is scheduled on that
+  day.** A team lives on the schedule, not on the person (ADR-048), so
+  "Penyiraman" has to reach through today's occurrences to find that crew — which
+  is exactly how you pull up a known team and place it somewhere new. Runs
+  server-side, because the client never sees the teams of anyone off the current
+  page.
+- **Columns:** `Nama` · `@username` · **`Peran`** · `Rayon` · **`Tim`** · action
+  — `Tim` shows the teams the worker is on TODAY, which is *why* someone free for
+  this slot may still be busy elsewhere, and makes the team search discoverable
 - Row action **`Jadwalkan`** → the normal Buat Jadwal flow, prefilled with that
   worker, the panel's date, and the shift if one is filtered. On save the row
   leaves the table and the total drops.

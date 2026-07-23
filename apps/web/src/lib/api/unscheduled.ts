@@ -8,6 +8,11 @@ import { apiClient } from './client';
  * construction: an empty column and a fully-placed rayon look identical. This
  * asks the server for the other half.
  *
+ * The filters describe the SLOT being filled — date + shift + rayon + kawasan +
+ * lokasi — and the answer is everyone with no schedule matching it, i.e. the
+ * people you could place there. An omitted criterion matches everything, so a
+ * bare date answers the simple question ("who has no schedule today").
+ *
  * The heavy lifting is server-side on purpose. "Scheduled" has to include
  * PROJECTED occurrences (recurring rules beyond the materialization horizon,
  * ADR-047), which only the backend can expand — deriving this list from the
@@ -27,6 +32,12 @@ export interface UnscheduledWorker {
   role: ScheduleWorkerRole;
   district_id: string | null;
   district_name: string | null;
+  /**
+   * Teams this worker is on TODAY (any shift, any place). A team lives on the
+   * schedule rather than on the person, so this is what makes searching
+   * "Penyiraman" find that crew.
+   */
+  teams: string[];
 }
 
 export interface UnavailableWorker extends UnscheduledWorker {
@@ -43,10 +54,13 @@ export interface UnscheduledResponse {
   totals: { unscheduled: number; unavailable: number; scheduled: number; workforce: number };
 }
 
+/** All geography here is the TARGET being filled, not a property of the worker. */
 export interface UnscheduledFilters {
   date: string;
   shiftDefinitionId?: string | null;
   districtId?: string | null;
+  regionId?: string | null;
+  locationId?: string | null;
   role?: ScheduleWorkerRole | null;
   q?: string | null;
 }
@@ -60,6 +74,8 @@ async function fetchUnscheduled(f: UnscheduledFilters): Promise<UnscheduledRespo
   const params = new URLSearchParams({ date: f.date });
   if (f.shiftDefinitionId) params.set('shiftDefinitionId', f.shiftDefinitionId);
   if (f.districtId) params.set('districtId', f.districtId);
+  if (f.regionId) params.set('regionId', f.regionId);
+  if (f.locationId) params.set('locationId', f.locationId);
   if (f.role) params.set('role', f.role);
   if (f.q?.trim()) params.set('q', f.q.trim());
   const res = await apiClient.get<UnscheduledResponse>(`/schedules/unscheduled?${params}`);

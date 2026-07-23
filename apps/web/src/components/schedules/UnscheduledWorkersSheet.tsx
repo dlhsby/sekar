@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CalendarPlus, ChevronDown, ChevronRight } from 'lucide-react';
 import {
@@ -33,8 +33,29 @@ interface UnscheduledWorkersSheetProps {
   initialDate: string;
   shifts: Array<{ id: string; name: string }>;
   districts: Array<{ id: string; name: string }>;
-  /** Open Buat Jadwal prefilled with this worker + the panel's date/shift. */
-  onSchedule: (worker: UnscheduledWorker, date: string, shiftId: string | null) => void;
+  regions: Array<{ id: string; name: string; district_id: string }>;
+  locations: Array<{ id: string; name: string; district_id: string; region_id?: string | null }>;
+  /** Open Buat Jadwal prefilled with this worker and the whole target slot. */
+  onSchedule: (worker: UnscheduledWorker, target: UnscheduledTarget) => void;
+}
+
+/** The slot the filters describe — what `Jadwalkan` fills. */
+export interface UnscheduledTarget {
+  date: string;
+  shiftId: string | null;
+  districtId: string | null;
+  regionId: string | null;
+  locationId: string | null;
+}
+
+/** Debounce a changing value, so typing doesn't fire a workforce scan per keystroke. */
+function useDebounced<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return debounced;
 }
 
 /**
@@ -49,6 +70,12 @@ interface UnscheduledWorkersSheetProps {
  * The panel owns its own DATE: an admin planning tomorrow should not have to
  * move the board first. Shift is one of the filters they apply, not something
  * inherited silently from behind the sheet.
+ *
+ * **Every filter describes the TARGET SLOT**, not the worker: date + shift +
+ * rayon + kawasan + lokasi say "this is the assignment I am making", and the
+ * list answers "who has no schedule matching it". Geography could not filter
+ * PEOPLE anyway — a worker carries a rayon and nothing below it — so the
+ * cascade narrows the slot and `Jadwalkan` fills exactly that slot.
  */
 export function UnscheduledWorkersSheet({
   open,
@@ -56,6 +83,8 @@ export function UnscheduledWorkersSheet({
   initialDate,
   shifts,
   districts,
+  regions,
+  locations,
   onSchedule,
 }: UnscheduledWorkersSheetProps) {
   const { t } = useTranslation(['schedules', 'common', 'roles']);
@@ -63,17 +92,51 @@ export function UnscheduledWorkersSheet({
   const [date, setDate] = useState(initialDate);
   const [shiftId, setShiftId] = useState<string>('all');
   const [districtId, setDistrictId] = useState<string>('all');
+  const [regionId, setRegionId] = useState<string>('all');
+  const [locationId, setLocationId] = useState<string>('all');
   const [role, setRole] = useState<string>('all');
+  const [search, setSearch] = useState('');
   const [showUnavailable, setShowUnavailable] = useState(false);
+  const debouncedSearch = useDebounced(search.trim(), 300);
+
+  /**
+   * Narrowing the target cascades DOWN: a kawasan outside the chosen rayon, or a
+   * lokasi outside the chosen kawasan, describes a slot that cannot exist.
+   */
+  const onDistrictChange = (next: string) => {
+    setDistrictId(next);
+    setRegionId('all');
+    setLocationId('all');
+  };
+  const onRegionChange = (next: string) => {
+    setRegionId(next);
+    setLocationId('all');
+  };
+
+  const target = useMemo(
+    () => ({
+      date,
+      shiftId: shiftId === 'all' ? null : shiftId,
+      districtId: districtId === 'all' ? null : districtId,
+      regionId: regionId === 'all' ? null : regionId,
+      locationId: locationId === 'all' ? null : locationId,
+    }),
+    [date, shiftId, districtId, regionId, locationId],
+  );
 
   const filters = useMemo(
     () => ({
-      date,
-      shiftDefinitionId: shiftId === 'all' ? null : shiftId,
-      districtId: districtId === 'all' ? null : districtId,
+      date: target.date,
+      shiftDefinitionId: target.shiftId,
+      districtId: target.districtId,
+      regionId: target.regionId,
+      locationId: target.locationId,
       role: role === 'all' ? null : (role as ScheduleWorkerRole),
+      // Server-side because it also spans the TEAMS a worker is scheduled on,
+      // which the client never sees for anyone outside the current page.
+      q: debouncedSearch || null,
     }),
-    [date, shiftId, districtId, role],
+    [target, role, debouncedSearch],
   );
 
   // Gated on `open`: this scans the whole schedulable workforce, so it must not
@@ -117,6 +180,20 @@ export function UnscheduledWorkersSheet({
         header: t('schedules:unscheduled.columnDistrict'),
         meta: { label: t('schedules:unscheduled.columnDistrict') },
       },
+      {
+        id: 'teams',
+        accessorFn: (r) => r.teams.join(', '),
+        header: t('schedules:unscheduled.columnTeam'),
+        // Why a worker free for THIS slot may still be busy elsewhere today —
+        // and what the search matches on, so the behaviour is discoverable.
+        meta: { label: t('schedules:unscheduled.columnTeam') },
+        cell: ({ row }) =>
+          row.original.teams.length ? (
+            <span className="text-nb-body-sm">{row.original.teams.join(', ')}</span>
+          ) : (
+            <span className="text-nb-gray-400">—</span>
+          ),
+      },
     ],
     [t],
   );
@@ -127,11 +204,11 @@ export function UnscheduledWorkersSheet({
         key: 'schedule',
         label: t('schedules:unscheduled.actionSchedule'),
         icon: CalendarPlus,
-        onClick: (row: UnscheduledWorker) =>
-          onSchedule(row, date, shiftId === 'all' ? null : shiftId),
+        // Fills exactly the slot the filters describe.
+        onClick: (row: UnscheduledWorker) => onSchedule(row, target),
       },
     ],
-    [t, onSchedule, date, shiftId],
+    [t, onSchedule, target],
   );
 
   const shiftOptions = useMemo(
@@ -147,6 +224,28 @@ export function UnscheduledWorkersSheet({
       ...districts.map((d) => ({ value: d.id, label: d.name })),
     ],
     [districts, t],
+  );
+  // Kawasan narrows within the chosen rayon; lokasi within the chosen kawasan,
+  // falling back to the rayon so a district-direct lokasi (region_id null) stays
+  // reachable — the Rayon Taman Aktif case.
+  const regionOptions = useMemo(
+    () => [
+      { value: 'all', label: t('schedules:unscheduled.allRegions') },
+      ...regions
+        .filter((r) => districtId === 'all' || r.district_id === districtId)
+        .map((r) => ({ value: r.id, label: r.name })),
+    ],
+    [regions, districtId, t],
+  );
+  const locationOptions = useMemo(
+    () => [
+      { value: 'all', label: t('schedules:unscheduled.allLocations') },
+      ...locations
+        .filter((l) => districtId === 'all' || l.district_id === districtId)
+        .filter((l) => regionId === 'all' || l.region_id === regionId)
+        .map((l) => ({ value: l.id, label: l.name })),
+    ],
+    [locations, districtId, regionId, t],
   );
   const roleOptions = useMemo(
     () => [
@@ -184,14 +283,32 @@ export function UnscheduledWorkersSheet({
             <FormSelect
               label={t('schedules:unscheduled.districtLabel')}
               value={districtId}
-              onChange={setDistrictId}
+              onChange={onDistrictChange}
               options={districtOptions}
+            />
+            <FormSelect
+              label={t('schedules:unscheduled.regionLabel')}
+              value={regionId}
+              onChange={onRegionChange}
+              options={regionOptions}
+            />
+            <FormSelect
+              label={t('schedules:unscheduled.locationLabel')}
+              value={locationId}
+              onChange={setLocationId}
+              options={locationOptions}
             />
             <FormSelect
               label={t('schedules:unscheduled.roleLabel')}
               value={role}
               onChange={setRole}
               options={roleOptions}
+            />
+            <FormInput
+              label={t('schedules:unscheduled.searchLabel')}
+              placeholder={t('schedules:unscheduled.searchPlaceholder')}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
             />
           </div>
 
@@ -233,7 +350,6 @@ export function UnscheduledWorkersSheet({
                   getRowId={(r) => r.id}
                   rowActions={rowActions}
                   defaultPageSize={10}
-                  searchPlaceholder={t('schedules:unscheduled.searchPlaceholder')}
                 />
               )}
 

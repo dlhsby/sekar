@@ -87,6 +87,13 @@ export interface UnscheduledWorkerDto {
   role: UserRole;
   district_id: string | null;
   district_name: string | null;
+  /**
+   * Teams this worker is scheduled on TODAY (any shift, any place). Empty for a
+   * worker with no team occurrence. Shown as a column and matched by the search,
+   * so "Penyiraman" finds that crew even though a team lives on the schedule
+   * rather than on the person.
+   */
+  teams: string[];
 }
 
 export interface UnavailableWorkerDto extends UnscheduledWorkerDto {
@@ -500,13 +507,25 @@ export class SchedulesService {
   }
 
   /**
-   * Who is NOT on `date`'s roster — the complement of the board (ADR-054).
+   * Who is NOT scheduled against a TARGET SLOT (ADR-054).
    *
    * The board shows what IS scheduled, so a worker with no row is invisible by
    * construction: an empty column and a fully-placed rayon look identical, and
    * the gap only surfaces the next morning as an understaffed lokasi.
    *
-   * Two subtleties this has to get right:
+   * **The filters describe the slot being filled, not the worker.** Date, shift,
+   * rayon, kawasan and lokasi together say "this is the assignment I am trying
+   * to make"; the answer is everyone who does not already hold a schedule
+   * matching it — i.e. exactly the people you could place there. An omitted
+   * criterion matches everything, so with only a date the question degenerates
+   * to the simple one: "who has no schedule today at all".
+   *
+   * This is why geography does not narrow the workforce. Workers carry a rayon
+   * and nothing below it (`users.region_id` is unset in practice, and only a
+   * minority hold a permanent lokasi), so filtering PEOPLE by kawasan would
+   * match nobody. The kawasan belongs to the target.
+   *
+   * Three subtleties this has to get right:
    *
    * 1. **Projected occurrences count as scheduled.** Beyond the materialization
    *    horizon a recurring rule yields projected rows, not DB rows (ADR-047), so
@@ -515,21 +534,24 @@ export class SchedulesService {
    *    projected union the board renders.
    * 2. **Absence is not availability.** A worker on cuti has no assignment AND
    *    cannot take one, so they are reported separately rather than sitting in a
-   *    list of people to place.
-   *
-   * `shiftDefinitionId` narrows to one shift: under ADR-053 holding rows for
-   * other shifts does not make a worker unavailable for this one.
+   *    list of people to place. Excused is judged over the whole DAY, not the
+   *    target — leave does not care how the slot is described.
+   * 3. **Busy elsewhere is still available here.** Only a row matching the
+   *    target counts as "already on it": under ADR-053 one worker legitimately
+   *    covers several places in a shift.
    */
   async findUnscheduled(
     date: string,
     filters: {
       shiftDefinitionId?: string | null;
       districtId?: string | null;
+      regionId?: string | null;
+      locationId?: string | null;
       roles?: UserRole[] | null;
       q?: string | null;
     } = {},
   ): Promise<UnscheduledResult> {
-    const { shiftDefinitionId, districtId, roles, q } = filters;
+    const { shiftDefinitionId, districtId, regionId, locationId, roles, q } = filters;
 
     // The workforce a day is built from. kepala_rayon / admin_rayon are excluded
     // outright (ADR-054 §4): their posting is a standing whole-district one, so
@@ -543,8 +565,10 @@ export class SchedulesService {
     const requested = (roles ?? []).filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
     const candidateRoles = requested.length ? requested : [...SCHEDULABLE_WORKER_ROLES];
 
-    // `User` carries `district_id` but no `district` relation, so the name comes
-    // from a raw join rather than an eager load.
+    // NOTE: geography does NOT narrow the workforce. Rayon / kawasan / lokasi
+    // describe the TARGET being filled, not a property of the worker — workers
+    // carry a rayon and nothing below it, so filtering people by kawasan would
+    // match nobody. See the target predicate below.
     const userQb = this.userRepo
       .createQueryBuilder('u')
       .leftJoin('districts', 'd', 'd.id = u.district_id')
@@ -553,10 +577,6 @@ export class SchedulesService {
       // A deactivated account is not a staffing gap.
       .andWhere('u.is_active = TRUE')
       .andWhere('u.deleted_at IS NULL');
-    if (districtId) userQb.andWhere('u.district_id = :districtId', { districtId });
-    if (q?.trim()) {
-      userQb.andWhere('(u.full_name ILIKE :q OR u.username ILIKE :q)', { q: `%${q.trim()}%` });
-    }
     const { entities: workforce, raw } = await userQb
       .orderBy('u.full_name', 'ASC')
       .getRawAndEntities();
@@ -566,22 +586,61 @@ export class SchedulesService {
         districtNameById.set(r.u_district_id, r.district_name);
     }
 
-    // The day as the BOARD sees it — materialized rows plus projections.
-    const occurrences = await this.findByDateRange(date, date, {
-      shiftDefinitionId: shiftDefinitionId ?? null,
-    });
+    // The whole day as the BOARD sees it — materialized rows plus projections —
+    // fetched UNFILTERED. Two different questions are asked of it: "is this
+    // worker on the target slot" (target-filtered) and "what is this worker on
+    // at all today" (whole day), and the second drives both the excused bucket
+    // and the team search.
+    const occurrences = await this.findByDateRange(date, date);
+
+    /**
+     * Does this occurrence satisfy the target the operator described? An omitted
+     * criterion matches everything, so with no filters at all every occurrence
+     * counts and the answer degenerates to "has no schedule today".
+     */
+    const matchesTarget = (row: Schedule): boolean =>
+      (!shiftDefinitionId || row.shift_definition_id === shiftDefinitionId) &&
+      (!districtId || row.district_id === districtId) &&
+      (!regionId || row.region_id === regionId) &&
+      (!locationId || row.location_id === locationId);
 
     const busy = new Set<string>();
     const excusedBy = new Map<string, ScheduleStatus>();
+    /** Teams a worker is on TODAY, for the search and the Tim column. */
+    const teamsByUser = new Map<string, Set<string>>();
     for (const row of occurrences) {
       if (!row.user_id) continue;
-      if (EXCUSED_STATUSES.includes(row.status)) {
-        // A live assignment elsewhere outranks an excused row: they ARE placed.
-        if (!excusedBy.has(row.user_id)) excusedBy.set(row.user_id, row.status);
-      } else {
-        busy.add(row.user_id);
+      const teamName = row.team_category?.name;
+      if (teamName) {
+        const set = teamsByUser.get(row.user_id);
+        if (set) set.add(teamName);
+        else teamsByUser.set(row.user_id, new Set([teamName]));
       }
+      if (EXCUSED_STATUSES.includes(row.status)) {
+        // Excused is about the DAY, not the target: someone on cuti cannot be
+        // placed anywhere, however the slot is described.
+        if (!excusedBy.has(row.user_id)) excusedBy.set(row.user_id, row.status);
+        continue;
+      }
+      // Only a row matching the target means "already on this slot". A worker
+      // busy at a DIFFERENT lokasi is still a candidate here — ADR-053 lets one
+      // worker cover several places in a shift.
+      if (matchesTarget(row)) busy.add(row.user_id);
     }
+
+    const teamsOf = (userId: string): string[] => [...(teamsByUser.get(userId) ?? [])].sort();
+
+    // Search spans name, username AND the teams the worker is scheduled on
+    // today, so "Penyiraman" pulls up that crew even though the team lives on
+    // their schedule rather than on them. Applied here rather than in SQL
+    // because the team names come from the occurrence pass above.
+    const needle = q?.trim().toLowerCase();
+    const matchesQuery = (u: User): boolean => {
+      if (!needle) return true;
+      if (u.full_name?.toLowerCase().includes(needle)) return true;
+      if (u.username?.toLowerCase().includes(needle)) return true;
+      return teamsOf(u.id).some((name) => name.toLowerCase().includes(needle));
+    };
 
     const toDto = (u: User): UnscheduledWorkerDto => ({
       id: u.id,
@@ -590,12 +649,16 @@ export class SchedulesService {
       role: u.role,
       district_id: u.district_id ?? null,
       district_name: u.district_id ? (districtNameById.get(u.district_id) ?? null) : null,
+      teams: teamsOf(u.id),
     });
 
     const unscheduled: UnscheduledWorkerDto[] = [];
     const unavailable: UnavailableWorkerDto[] = [];
     let scheduled = 0;
+    let workforceCount = 0;
     for (const u of workforce) {
+      if (!matchesQuery(u)) continue;
+      workforceCount += 1;
       if (busy.has(u.id)) {
         scheduled += 1;
         continue;
@@ -614,7 +677,7 @@ export class SchedulesService {
         unscheduled: unscheduled.length,
         unavailable: unavailable.length,
         scheduled,
-        workforce: workforce.length,
+        workforce: workforceCount,
       },
     };
   }

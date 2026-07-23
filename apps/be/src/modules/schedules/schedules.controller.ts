@@ -133,12 +133,18 @@ export class SchedulesController {
   @ApiQuery({ name: 'shiftDefinitionId', required: false, description: 'Narrow to one shift' })
   @ApiQuery({ name: 'districtId', required: false })
   @ApiQuery({ name: 'role', required: false, description: 'Repeatable: satgas|linmas|korlap' })
-  @ApiQuery({ name: 'q', required: false, description: 'Match on full name or username' })
+  @ApiQuery({
+    name: 'q',
+    required: false,
+    description: 'Match on full name, username, or a team the worker is scheduled on that day',
+  })
   getUnscheduled(
     @GetUser() user: User,
     @Query('date') date: string,
     @Query('shiftDefinitionId') shiftDefinitionId?: string,
     @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
     @Query('role') role?: string | string[],
     @Query('q') q?: string,
   ) {
@@ -166,6 +172,8 @@ export class SchedulesController {
     return this.service.findUnscheduled(date, {
       shiftDefinitionId: shiftDefinitionId ?? null,
       districtId: scoped ? (user.district_id as string) : (districtId ?? null),
+      regionId: regionId ?? null,
+      locationId: locationId ?? null,
       roles: roles.length ? roles : null,
       q: q ?? null,
     });
