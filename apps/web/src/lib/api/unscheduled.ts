@@ -51,7 +51,15 @@ export interface UnscheduledResponse {
   unscheduled: UnscheduledWorker[];
   /** Accounted for but NOT placeable (cuti/sakit/izin/libur). */
   unavailable: UnavailableWorker[];
-  totals: { unscheduled: number; unavailable: number; scheduled: number; workforce: number };
+  totals: {
+    unscheduled: number;
+    unavailable: number;
+    scheduled: number;
+    /** Workers the caller may see, BEFORE the search — the honest denominator. */
+    workforce: number;
+    /** How many the search matched; equals `workforce` when not searching. */
+    matched: number;
+  };
 }
 
 /** All geography here is the TARGET being filled, not a property of the worker. */

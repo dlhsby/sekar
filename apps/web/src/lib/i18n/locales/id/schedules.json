@@ -389,6 +389,7 @@
     "allRegions": "Semua kawasan",
     "allLocations": "Semua lokasi",
     "columnTeam": "Tim",
-    "searchLabel": "Cari"
+    "searchLabel": "Cari",
+    "matched": "{{count}} cocok dengan pencarian"
   }
 }

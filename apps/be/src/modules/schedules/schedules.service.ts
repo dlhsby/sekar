@@ -73,6 +73,12 @@ export const SCHEDULABLE_WORKER_ROLES: UserRole[] = [
  * Distinguishing these from "no row at all" is what stops the panel inviting an
  * admin to schedule someone who is on approved leave.
  */
+/**
+ * Statuses that RELEASE the slot: the row exists, but the worker is not on it.
+ * Only replacement does this — `absent` still holds the assignment.
+ */
+const FREED_STATUSES: ScheduleStatus[] = [ScheduleStatus.REPLACED];
+
 const EXCUSED_STATUSES: ScheduleStatus[] = [
   ScheduleStatus.OFF,
   ScheduleStatus.LEAVE_SICK,
@@ -106,7 +112,15 @@ export interface UnscheduledResult {
   shift_definition_id: string | null;
   unscheduled: UnscheduledWorkerDto[];
   unavailable: UnavailableWorkerDto[];
-  totals: { unscheduled: number; unavailable: number; scheduled: number; workforce: number };
+  totals: {
+    unscheduled: number;
+    unavailable: number;
+    scheduled: number;
+    /** Workers the caller may see, BEFORE the search — the honest denominator. */
+    workforce: number;
+    /** How many of them the search matched; equals `workforce` when not searching. */
+    matched: number;
+  };
 }
 
 /**
@@ -549,9 +563,18 @@ export class SchedulesService {
       locationId?: string | null;
       roles?: UserRole[] | null;
       q?: string | null;
+      /**
+       * The caller's OWN district, when they are rayon-scoped. Distinct from
+       * `districtId`: that describes the slot being filled, this describes who
+       * the caller may see at all. Conflating the two is what let a kepala_rayon
+       * list every rayon's workers once geography stopped narrowing the
+       * workforce.
+       */
+      visibleDistrictId?: string | null;
     } = {},
   ): Promise<UnscheduledResult> {
-    const { shiftDefinitionId, districtId, regionId, locationId, roles, q } = filters;
+    const { shiftDefinitionId, districtId, regionId, locationId, roles, q, visibleDistrictId } =
+      filters;
 
     // The workforce a day is built from. kepala_rayon / admin_rayon are excluded
     // outright (ADR-054 §4): their posting is a standing whole-district one, so
@@ -565,10 +588,14 @@ export class SchedulesService {
     const requested = (roles ?? []).filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
     const candidateRoles = requested.length ? requested : [...SCHEDULABLE_WORKER_ROLES];
 
-    // NOTE: geography does NOT narrow the workforce. Rayon / kawasan / lokasi
-    // describe the TARGET being filled, not a property of the worker — workers
-    // carry a rayon and nothing below it, so filtering people by kawasan would
-    // match nobody. See the target predicate below.
+    // NOTE: the TARGET geography does NOT narrow the workforce. Rayon / kawasan
+    // / lokasi describe the slot being filled, not a property of the worker —
+    // workers carry a rayon and nothing below it, so filtering people by kawasan
+    // would match nobody. See the target predicate below.
+    //
+    // `visibleDistrictId` is a different thing entirely: the CALLER's own rayon.
+    // It DOES narrow the workforce, because a kepala_rayon must not see workers
+    // they could never schedule.
     const userQb = this.userRepo
       .createQueryBuilder('u')
       .leftJoin('districts', 'd', 'd.id = u.district_id')
@@ -577,6 +604,9 @@ export class SchedulesService {
       // A deactivated account is not a staffing gap.
       .andWhere('u.is_active = TRUE')
       .andWhere('u.deleted_at IS NULL');
+    if (visibleDistrictId) {
+      userQb.andWhere('u.district_id = :visibleDistrictId', { visibleDistrictId });
+    }
     const { entities: workforce, raw } = await userQb
       .orderBy('u.full_name', 'ASC')
       .getRawAndEntities();
@@ -586,11 +616,19 @@ export class SchedulesService {
         districtNameById.set(r.u_district_id, r.district_name);
     }
 
-    // The whole day as the BOARD sees it — materialized rows plus projections —
-    // fetched UNFILTERED. Two different questions are asked of it: "is this
-    // worker on the target slot" (target-filtered) and "what is this worker on
-    // at all today" (whole day), and the second drives both the excused bucket
-    // and the team search.
+    // The whole day as the BOARD sees it — materialized rows plus projections.
+    //
+    // Deliberately UNFILTERED, and it has to be: two different questions are
+    // asked of it. "Is this worker on the target slot" wants the target
+    // filters, but "what is this worker on at all today" — which drives the
+    // excused bucket and the team search — wants the whole day. Pushing the
+    // target into SQL would answer the first and silently break the other two:
+    // a worker on cuti at another lokasi would come back as merely unscheduled,
+    // and their team would vanish from the search.
+    //
+    // One query, filtered in memory by `matchesTarget`. The day is a single
+    // date, so this is bounded by one day's occurrences (tens to low hundreds),
+    // not by the calendar.
     const occurrences = await this.findByDateRange(date, date);
 
     /**
@@ -598,11 +636,20 @@ export class SchedulesService {
      * criterion matches everything, so with no filters at all every occurrence
      * counts and the answer degenerates to "has no schedule today".
      */
-    const matchesTarget = (row: Schedule): boolean =>
-      (!shiftDefinitionId || row.shift_definition_id === shiftDefinitionId) &&
-      (!districtId || row.district_id === districtId) &&
-      (!regionId || row.region_id === regionId) &&
-      (!locationId || row.location_id === locationId);
+    const matchesTarget = (row: Schedule): boolean => {
+      if (shiftDefinitionId && row.shift_definition_id !== shiftDefinitionId) return false;
+      // A BROADER assignment already covers a narrower target. A city-wide row
+      // (no geography at all) covers every rayon; a rayon-wide row covers every
+      // lokasi in it. Requiring an exact column match reported those workers as
+      // free for every place they were already committed to — with the seeded
+      // city-scope cohort that made `scheduled` collapse to 0 for any rayon
+      // target. A row is only "not this slot" when it names a DIFFERENT place at
+      // the same level.
+      if (locationId && row.location_id && row.location_id !== locationId) return false;
+      if (regionId && row.region_id && row.region_id !== regionId) return false;
+      if (districtId && row.district_id && row.district_id !== districtId) return false;
+      return true;
+    };
 
     const busy = new Set<string>();
     const excusedBy = new Map<string, ScheduleStatus>();
@@ -610,6 +657,13 @@ export class SchedulesService {
     const teamsByUser = new Map<string, Set<string>>();
     for (const row of occurrences) {
       if (!row.user_id) continue;
+      // A REPLACED row is the one status where holding a schedule means the
+      // worker is FREE — someone else took the shift. Deciding this by "not
+      // excused" counted them as busy and hid them from the very list meant to
+      // find them; it also left them tagged with a team they no longer work.
+      // `absent` deliberately stays busy: they hold the slot, they just did not
+      // turn up.
+      if (FREED_STATUSES.includes(row.status)) continue;
       const teamName = row.team_category?.name;
       if (teamName) {
         const set = teamsByUser.get(row.user_id);
@@ -655,10 +709,10 @@ export class SchedulesService {
     const unscheduled: UnscheduledWorkerDto[] = [];
     const unavailable: UnavailableWorkerDto[] = [];
     let scheduled = 0;
-    let workforceCount = 0;
+    let matched = 0;
     for (const u of workforce) {
       if (!matchesQuery(u)) continue;
-      workforceCount += 1;
+      matched += 1;
       if (busy.has(u.id)) {
         scheduled += 1;
         continue;
@@ -677,7 +731,11 @@ export class SchedulesService {
         unscheduled: unscheduled.length,
         unavailable: unavailable.length,
         scheduled,
-        workforce: workforceCount,
+        // The workforce is what the caller may see, not what they searched —
+        // reporting the search result as "workforce" made a 3-hit search read
+        // as though the whole department were 3 people.
+        workforce: workforce.length,
+        matched,
       },
     };
   }

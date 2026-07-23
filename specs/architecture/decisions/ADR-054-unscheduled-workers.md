@@ -69,6 +69,16 @@ almost nobody. The kawasan belongs to the slot.
 as "already on it": under ADR-053 one worker legitimately covers several places in
 a shift, so being at Taman B does not disqualify them from also covering Taman A.
 
+**A BROADER assignment already covers a narrower target.** A city-wide row covers
+every rayon; a rayon-wide row covers every lokasi in it. A row is "not this slot"
+only when it names a *different* place at the same level. Requiring an exact
+column match made every city-scope worker read as free for every rayon — with the
+seeded city-scope cohort that collapsed `scheduled` to 0 for any rayon target.
+
+**`replaced` releases the slot; `absent` does not.** Replacement is the one status
+where holding a schedule means the worker is free — someone else took the shift —
+so they belong in this list. Someone marked absent still holds the assignment.
+
 ### 2. Projected occurrences count as scheduled
 
 The query runs against the **same materialized ∪ projected union the board
@@ -107,12 +117,16 @@ with **no filter escape hatch**:
 **Role is a first-class column**, not a subtitle: it is how the admin decides who
 to place, and it is filterable.
 
-### 5. Scope follows the existing rules
+### 5. Caller scope is a SEPARATE axis from the target
 
-No new permission concept. The endpoint reuses the roster scope the caller
-already has: global for admin_system / superadmin / management, own district for
-kepala_rayon / admin_rayon, assigned lokasi for korlap. An admin never sees
-workers they could not schedule anyway.
+No new permission concept, but it must not be conflated with the target filters.
+`visibleDistrictId` narrows **who may be listed** (own district for kepala_rayon
+/ admin_rayon; unrestricted for admin_system / superadmin / management);
+`districtId` describes **the slot being filled**. They happen to be the same kind
+of value, which is exactly why the first implementation passed the caller's rayon
+in as `districtId` — and when Decision 1 stopped geography narrowing the
+workforce, the scope guard silently stopped guarding. A rayon lead could list
+every rayon's workers while the whole suite stayed green.
 
 Only `is_active` workers appear — deactivated accounts are not a staffing gap.
 
@@ -171,12 +185,15 @@ GET /schedules/unscheduled
   date, shift_definition_id,
   unscheduled: [{ id, full_name, username, role, district_id, district_name, teams: [] }],
   unavailable: [{ …same…, status: 'off'|'leave_sick'|'leave_annual'|'leave_permit' }],
-  totals: { unscheduled, unavailable, scheduled, workforce }
+  totals: { unscheduled, unavailable, scheduled, workforce, matched }
 }
 ```
 
 `totals` is what makes the button meaningful before it is pressed — the trigger
-carries the count.
+carries the count. `workforce` is the set the CALLER may see, before any search;
+`matched` is how many of them the search hit (equal when not searching). Reporting
+the search result as `workforce` made a 3-hit search read as though the whole
+department were three people.
 
 ### UI
 

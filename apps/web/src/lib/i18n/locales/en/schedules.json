@@ -389,6 +389,7 @@
     "allRegions": "All regions",
     "allLocations": "All locations",
     "columnTeam": "Team",
-    "searchLabel": "Search"
+    "searchLabel": "Search",
+    "matched": "{{count}} matched"
   }
 }

@@ -993,8 +993,9 @@ describe('SchedulesService', () => {
 
       const byName = await service.findUnscheduled('2026-07-23', { q: 'budi' });
       expect(byName.unscheduled.map((w) => w.id)).toEqual(['u1']);
-      // `workforce` reflects the SEARCHED set, so the totals still add up.
-      expect(byName.totals.workforce).toBe(1);
+      // `workforce` is the visible set; `matched` is what the search hit.
+      expect(byName.totals.workforce).toBe(2);
+      expect(byName.totals.matched).toBe(1);
     });
 
     it('drops a role outside the three schedulable ones instead of honouring it', async () => {
@@ -1007,6 +1008,83 @@ describe('SchedulesService', () => {
       expect(uqb.where).toHaveBeenCalledWith('u.role IN (:...roles)', {
         roles: [UserRole.SATGAS, UserRole.LINMAS, UserRole.KORLAP],
       });
+    });
+
+    it("narrows the WORKFORCE to the caller's own rayon (visibleDistrictId)", async () => {
+      // The scope guard that silently broke: `districtId` describes the SLOT and
+      // stopped narrowing people, so a kepala_rayon listed every rayon's workers.
+      const uqb = setup([worker('u1', UserRole.SATGAS)], []);
+
+      await service.findUnscheduled('2026-07-23', {
+        districtId: 'ry-target',
+        visibleDistrictId: 'ry-caller',
+      });
+
+      // The caller's rayon reaches the USER query...
+      expect(uqb.andWhere).toHaveBeenCalledWith('u.district_id = :visibleDistrictId', {
+        visibleDistrictId: 'ry-caller',
+      });
+      // ...and the target rayon does NOT.
+      expect(uqb.andWhere).not.toHaveBeenCalledWith(
+        'u.district_id = :visibleDistrictId',
+        expect.objectContaining({ visibleDistrictId: 'ry-target' }),
+      );
+    });
+
+    it('leaves the workforce unnarrowed for a globally-scoped caller', async () => {
+      const uqb = setup([worker('u1', UserRole.SATGAS)], []);
+
+      await service.findUnscheduled('2026-07-23', { districtId: 'ry-target' });
+
+      expect(uqb.andWhere).not.toHaveBeenCalledWith(
+        'u.district_id = :visibleDistrictId',
+        expect.anything(),
+      );
+    });
+
+    it('treats a BROADER assignment as already covering a narrower target', async () => {
+      // A city-wide row covers every rayon. Demanding an exact column match
+      // reported those workers as free for a place they were already committed
+      // to, and collapsed `scheduled` to 0 for any geography-narrowed target.
+      setup(
+        [worker('u1', UserRole.SATGAS)],
+        [{ user_id: 'u1', status: ScheduleStatus.PLANNED }], // city scope: no geography
+      );
+
+      const res = await service.findUnscheduled('2026-07-23', { districtId: 'ry1' });
+
+      expect(res.unscheduled).toHaveLength(0);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('frees a REPLACED worker instead of counting them as scheduled', async () => {
+      // Someone else took the shift, so they are the exact person this list is
+      // for. `absent` stays busy — they hold the slot, they just did not show.
+      setup(
+        [worker('u1', UserRole.SATGAS), worker('u2', UserRole.SATGAS)],
+        [
+          { user_id: 'u1', status: ScheduleStatus.REPLACED, team_category: { name: 'Tim A' } },
+          { user_id: 'u2', status: ScheduleStatus.ABSENT },
+        ],
+      );
+
+      const res = await service.findUnscheduled('2026-07-23');
+
+      expect(res.unscheduled.map((w) => w.id)).toEqual(['u1']);
+      // ...and they are no longer tagged with the team they were replaced out of.
+      expect(res.unscheduled[0].teams).toEqual([]);
+      expect(res.totals.scheduled).toBe(1);
+    });
+
+    it('reports workforce as the VISIBLE set and matched as the searched subset', async () => {
+      setup([worker('u1', UserRole.SATGAS, 'Budi'), worker('u2', UserRole.SATGAS, 'Ani')], []);
+
+      const res = await service.findUnscheduled('2026-07-23', { q: 'budi' });
+
+      // Reporting the search result as "workforce" made a 1-hit search read as
+      // though the whole department were one person.
+      expect(res.totals.workforce).toBe(2);
+      expect(res.totals.matched).toBe(1);
     });
 
     it('reports the totals the button needs', async () => {
@@ -1024,7 +1102,13 @@ describe('SchedulesService', () => {
 
       const res = await service.findUnscheduled('2026-07-23');
 
-      expect(res.totals).toEqual({ unscheduled: 1, unavailable: 1, scheduled: 1, workforce: 3 });
+      expect(res.totals).toEqual({
+        unscheduled: 1,
+        unavailable: 1,
+        scheduled: 1,
+        workforce: 3,
+        matched: 3,
+      });
     });
   });
 

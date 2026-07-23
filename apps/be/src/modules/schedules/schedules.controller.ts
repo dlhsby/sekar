@@ -156,9 +156,12 @@ export class SchedulesController {
     const roles = (Array.isArray(role) ? role : role ? [role] : [])
       .map((r) => r as UserRole)
       .filter((r) => SCHEDULABLE_WORKER_ROLES.includes(r));
-    // Rayon-scoped callers see their own district only, whatever they ask for —
-    // same rule as `getByDate`. A scoped user with no district sees nothing
-    // rather than falling through to every rayon.
+    // Rayon-scoped callers see their own district's WORKERS only, whatever they
+    // ask for — same rule as `getByDate`. This goes in as `visibleDistrictId`,
+    // NOT as `districtId`: the latter describes the slot being filled and no
+    // longer narrows the workforce, so reusing it here silently stopped scoping
+    // anything. A scoped user with no district sees nothing rather than falling
+    // through to every rayon.
     const scoped = this.isDistrictScoped(user);
     if (scoped && !user.district_id) {
       return Promise.resolve({
@@ -166,12 +169,13 @@ export class SchedulesController {
         shift_definition_id: shiftDefinitionId ?? null,
         unscheduled: [],
         unavailable: [],
-        totals: { unscheduled: 0, unavailable: 0, scheduled: 0, workforce: 0 },
+        totals: { unscheduled: 0, unavailable: 0, scheduled: 0, workforce: 0, matched: 0 },
       });
     }
     return this.service.findUnscheduled(date, {
       shiftDefinitionId: shiftDefinitionId ?? null,
-      districtId: scoped ? (user.district_id as string) : (districtId ?? null),
+      districtId: districtId ?? null,
+      visibleDistrictId: scoped ? (user.district_id as string) : null,
       regionId: regionId ?? null,
       locationId: locationId ?? null,
       roles: roles.length ? roles : null,

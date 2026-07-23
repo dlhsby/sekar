@@ -94,6 +94,13 @@ export function UnscheduledWorkersSheet({
   const { t } = useTranslation(['schedules', 'common', 'roles']);
 
   const [date, setDate] = useState(initialDate);
+  // The panel is always mounted, so `useState(initialDate)` only ever ran once:
+  // move the board to next week, reopen, and it still answered about the day the
+  // page was first loaded. Re-seed on each OPEN — after that the panel owns its
+  // date, so changing it here never drags the board along.
+  useEffect(() => {
+    if (open) setDate(initialDate);
+  }, [open, initialDate]);
   const [shiftId, setShiftId] = useState<string>('all');
   const [districtId, setDistrictId] = useState<string>('all');
   const [regionId, setRegionId] = useState<string>('all');
@@ -167,16 +174,12 @@ export function UnscheduledWorkersSheet({
         id: 'role',
         accessorFn: (r) => t(`roles:${r.role}`),
         header: t('schedules:unscheduled.columnRole'),
-        // Role is how the admin decides WHO to place, so it is a first-class
-        // filterable column rather than a subtitle (ADR-054 §4).
-        meta: {
-          label: t('schedules:unscheduled.columnRole'),
-          filterVariant: 'enum',
-          filterOptions: [...SCHEDULABLE_ROLES].sort(byRoleRank).map((r) => ({
-            value: t(`roles:${r}`),
-            label: t(`roles:${r}`),
-          })),
-        },
+        // Role is how the admin decides WHO to place (ADR-054 §4), but the
+        // filtering lives in the Peran select above, which reaches the QUERY. A
+        // column filter here could only narrow the rows the server already
+        // returned, so the two could be set to different roles and render an
+        // empty table with nothing indicating which one caused it.
+        meta: { label: t('schedules:unscheduled.columnRole') },
       },
       {
         id: 'district_name',
@@ -352,6 +355,13 @@ export function UnscheduledWorkersSheet({
                 <span className="text-nb-caption text-nb-gray-500">
                   {t('schedules:unscheduled.ofWorkforce', { count: data?.totals.workforce ?? 0 })}
                 </span>
+                {/* Searching narrows the three buckets, so say what they are OF
+                    — otherwise "1 belum dijadwalkan of 72" invites the wrong sum. */}
+                {data && data.totals.matched < data.totals.workforce && (
+                  <span className="text-nb-caption text-nb-gray-500">
+                    · {t('schedules:unscheduled.matched', { count: data.totals.matched })}
+                  </span>
+                )}
               </div>
 
               {data && data.unscheduled.length === 0 ? (
