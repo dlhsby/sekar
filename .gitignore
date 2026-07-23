@@ -35,3 +35,8 @@ prompts/
 
 # WSL/Windows alternate-data-stream junk (sit next to downloaded creds)
 *:Zone.Identifier
+
+# JVM crash dumps — Gradle/Metro can drop these in the repo root mid-build.
+# One (hs_err_pid124689.log) reached main via a broad `git add -A`.
+hs_err_pid*.log
+replay_pid*.log
