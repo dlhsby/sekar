@@ -32,10 +32,10 @@ function hexToRgba(hex: string, alpha: number): string | null {
 const pct = (o?: number | null): number => Math.round((o ?? 1) * 100);
 
 /** Compact "#hex · 80%" line, or a dash when the colour is unset. */
-function ColorLine({ label, hex, opacity }: { label: string; hex?: string | null; opacity?: number | null }) {
+function ColorLine({ label, hex, opacity }: { label?: string; hex?: string | null; opacity?: number | null }) {
   return (
     <span className="flex items-center gap-1 whitespace-nowrap font-mono text-nb-caption text-nb-gray-600">
-      <span className="text-nb-gray-400">{label}</span>
+      {label ? <span className="text-nb-gray-400">{label}</span> : null}
       {hex ? (
         <>
           <span>{hex}</span>
@@ -48,12 +48,37 @@ function ColorLine({ label, hex, opacity }: { label: string; hex?: string | null
   );
 }
 
+export interface MapStyleSwatchProps extends MapStyleColors {
+  /**
+   * Render ONE colour with no border ring — for entities that have a single
+   * colour rather than the geography tiers' border/fill pair (a team category
+   * has no boundary to outline). Reads `fill_color` / `fill_opacity` and drops
+   * the `B`/`F` prefixes, since there is nothing to tell apart.
+   */
+  single?: boolean;
+}
+
 export function MapStyleSwatch({
   border_color,
   fill_color,
   border_opacity,
   fill_opacity,
-}: MapStyleColors) {
+  single,
+}: MapStyleSwatchProps) {
+  if (single) {
+    if (!fill_color) return <span className="text-nb-gray-500">—</span>;
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span
+          className="h-5 w-5 shrink-0 rounded-nb-sm"
+          style={{ backgroundColor: hexToRgba(fill_color, fill_opacity ?? 1) ?? fill_color }}
+          aria-hidden
+        />
+        <ColorLine hex={fill_color} opacity={fill_opacity} />
+      </span>
+    );
+  }
+
   const borderCss =
     (border_color && hexToRgba(border_color, border_opacity ?? 1)) ?? 'var(--color-nb-black)';
   const fillCss = (fill_color && hexToRgba(fill_color, fill_opacity ?? 1)) ?? 'transparent';
@@ -82,9 +107,18 @@ export function MapStyleSwatch({
  * kawasan and lokasi grids. `get` extracts the four colour fields from a row
  * (defaults to identity for entities that already carry them).
  */
-export function mapStyleColorColumn<T extends MapStyleColors>(
+export function mapStyleColorColumn<T extends MapStyleColors>(colorLabel: string): ColumnDef<T>;
+export function mapStyleColorColumn<T>(
   colorLabel: string,
-  get: (row: T) => MapStyleColors = (row) => row,
+  get: (row: T) => MapStyleColors,
+  options?: { single?: boolean },
+): ColumnDef<T>;
+export function mapStyleColorColumn<T>(
+  colorLabel: string,
+  // Entities that already carry the four colour fields (the geography tiers) pass
+  // nothing; anything else maps its own fields in.
+  get: (row: T) => MapStyleColors = (row) => row as unknown as MapStyleColors,
+  options: { single?: boolean } = {},
 ): ColumnDef<T> {
   return {
     id: 'color',
@@ -92,6 +126,6 @@ export function mapStyleColorColumn<T extends MapStyleColors>(
     enableSorting: false,
     enableColumnFilter: false,
     meta: { label: colorLabel },
-    cell: ({ row }) => <MapStyleSwatch {...get(row.original)} />,
+    cell: ({ row }) => <MapStyleSwatch {...get(row.original)} single={options.single} />,
   };
 }

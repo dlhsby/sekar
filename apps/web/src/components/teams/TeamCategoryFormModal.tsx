@@ -21,6 +21,7 @@ import {
 } from '@/lib/api/teams';
 import { ColorField } from '@/components/forms/ColorField';
 import { MarkerIconPicker } from '@/components/forms/MarkerIconPicker';
+import { OpacityField } from '@/components/forms/MapStyleFields';
 
 interface TeamCategoryFormModalProps {
   open: boolean;
@@ -38,12 +39,14 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
 
   const [name, setName] = useState('');
   const [markerColor, setMarkerColor] = useState<string | null>(null);
+  const [markerOpacity, setMarkerOpacity] = useState<number | null>(null);
   const [markerIcon, setMarkerIcon] = useState<string | null>(null);
 
   // Revert the form to the loaded team category's values (also runs on open).
   const revert = () => {
     setName(teamCategory?.name ?? '');
     setMarkerColor(teamCategory?.marker_color ?? null);
+    setMarkerOpacity(teamCategory?.marker_opacity ?? null);
     setMarkerIcon(teamCategory?.marker_icon ?? null);
   };
 
@@ -59,6 +62,7 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
   const isDirty =
     name !== (teamCategory?.name ?? '') ||
     (markerColor ?? null) !== (teamCategory?.marker_color ?? null) ||
+    (markerOpacity ?? null) !== (teamCategory?.marker_opacity ?? null) ||
     (markerIcon ?? null) !== (teamCategory?.marker_icon ?? null);
 
   const handleSave = async () => {
@@ -67,6 +71,7 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
     const payload = {
       name: name.trim(),
       marker_color: markerColor,
+      marker_opacity: markerOpacity,
       marker_icon: markerIcon,
     };
     try {
@@ -100,13 +105,27 @@ export function TeamCategoryFormModal({ open, onOpenChange, teamCategory, onSucc
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <ColorField
-            label={t('admin:teamCategories.form.markerColor')}
-            value={markerColor ?? ''}
-            // eslint-disable-next-line sekar-design/no-inline-hex-colors -- fallback is placeholder colour only, not a design token
-            fallback="#7FBC8C"
-            onChange={setMarkerColor}
-          />
+          {/*
+            One colour, one opacity. The geography tiers pair a border with a
+            fill (ADR-045) because they outline a boundary; a category only
+            tints pins and chips, so it takes the same controls minus the
+            border half — `OpacityField` is the very slider those forms use.
+          */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <ColorField
+              label={t('admin:teamCategories.form.markerColor')}
+              value={markerColor ?? ''}
+              // eslint-disable-next-line sekar-design/no-inline-hex-colors -- fallback is placeholder colour only, not a design token
+              fallback="#7FBC8C"
+              onChange={setMarkerColor}
+            />
+            <OpacityField
+              label={t('admin:teamCategories.form.markerOpacity')}
+              value={markerOpacity}
+              defaultValue={1}
+              onChange={setMarkerOpacity}
+            />
+          </div>
           <div>
             <span className="mb-1 block text-nb-body-sm font-bold text-nb-black">
               {t('admin:teamCategories.form.markerIcon')}

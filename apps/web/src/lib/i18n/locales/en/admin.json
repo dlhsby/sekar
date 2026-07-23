@@ -482,7 +482,6 @@
     "searchPlaceholder": "Search category name…",
     "columnName": "Name",
     "columnStatus": "Status",
-    "columnMarker": "Marker",
     "buttonAdd": "Add Team Category",
     "actionEdit": "Edit",
     "actionActivate": "Activate",
@@ -502,7 +501,8 @@
       "name": "Team Category Name",
       "namePlaceholder": "e.g. Watering Team",
       "markerColor": "Marker Color",
-      "markerIcon": "Marker Icon"
+      "markerIcon": "Marker Icon",
+      "markerOpacity": "Color Opacity"
     }
   }
 }

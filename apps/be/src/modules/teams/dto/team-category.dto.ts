@@ -1,4 +1,14 @@
-import { IsString, IsOptional, IsBoolean, MinLength, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsNumber,
+  Min,
+  Max,
+  MinLength,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 
 const HEX = /^#[0-9A-Fa-f]{6}$/;
@@ -19,6 +29,18 @@ export class CreateTeamCategoryDto {
   @MaxLength(7)
   @Matches(HEX, { message: 'marker_color must be a 6-digit hex color' })
   marker_color?: string;
+
+  @ApiPropertyOptional({
+    description: 'Opacity of marker_color, 0–1. Omit or null for fully opaque.',
+    example: 0.8,
+    minimum: 0,
+    maximum: 1,
+  })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  @Max(1)
+  marker_opacity?: number | null;
 
   @ApiPropertyOptional({
     description: 'Marker glyph name from the curated set (e.g. "droplets")',

@@ -137,6 +137,9 @@ export async function stagePresenceScenarios(
   );
   await ensureSchedules(ds, today);
   await stageGeneralSchedules(ds, today);
+  // After the general pass (which wipes today's non-manual rows) and before the
+  // shift cohort, so it can still find unrostered people in the host district.
+  await stageMultiPlaceCoverage(ds, today);
   await stageShiftRosters(ds, today);
 
   // Clock-ins are opt-in: by default the cohort is left SCHEDULE-ONLY so the
@@ -297,7 +300,8 @@ async function stageGeneralSchedules(ds: typeof AppDataSource, today: string): P
   // The recurring rules this script owns go too, or every re-run stacks another
   // copy of the same daily assignment (and the cron would materialize all of them).
   await ds.query(
-    `DELETE FROM schedule_events WHERE notes LIKE 'SAMPLE %' OR notes LIKE 'RESCHEDULE %'`,
+    `DELETE FROM schedule_events
+      WHERE notes LIKE 'SAMPLE %' OR notes LIKE 'RESCHEDULE %' OR notes LIKE 'MULTIPLACE %'`,
   );
 
   const shift = (
@@ -418,6 +422,112 @@ async function stageGeneralSchedules(ds: typeof AppDataSource, today: string): P
     `General roster: ${rows} sample rows across city/district/region/location ` +
       `(satgas · linmas · korlap · tim each)` +
       (gaps.length ? `; gaps: ${gaps.join(', ')}` : ''),
+  );
+}
+
+/**
+ * Roster the MULTI-PLACE cohort — one worker, one shift, several lokasi.
+ *
+ * ADR-053's headline case, and the only one the rest of the demo day never
+ * produces: every other cohort gives a worker exactly one row per shift, so the
+ * board, the counts and the staffing rollup all look identical whether or not
+ * multi-place works. This stages the shape that tells them apart.
+ *
+ * A satgas covering three taman and a korlap covering two get ONE ROW EACH PER
+ * LOKASI on the SAME shift — legal only because uniqueness is now
+ * `(user, date, shift, place)`. What to look for:
+ *
+ *  - the day board shows N chips for the worker but counts them as **1 petugas**
+ *    (distinct people, not occurrences) at rayon and city level;
+ *  - all N lokasi report the worker in `active_count` once they clock in —
+ *    staffing is `assigned ∧ present`, so the two they are not standing in do
+ *    NOT read understaffed;
+ *  - each lokasi's summary carries ITS OWN name and rayon, not the one the
+ *    worker's GPS happens to sit in.
+ *
+ * Workers are drawn from people with no roster row yet, so this never collides
+ * with the SAMPLE/RESCHEDULE cohorts.
+ */
+async function stageMultiPlaceCoverage(ds: typeof AppDataSource, today: string): Promise<void> {
+  const shift = (
+    await ds.query(
+      `SELECT id FROM shift_definitions WHERE code NOT LIKE 'STG%' AND deleted_at IS NULL
+        ORDER BY start_time LIMIT 1`,
+    )
+  )[0]?.id as string | undefined;
+  if (!shift) {
+    console.log('Multi-place: skipped — no shift definitions.');
+    return;
+  }
+
+  // A district with at least 3 lokasi, preferring the demo-rich Rayon Pusat so
+  // the case is visible on the rayon everyone opens first.
+  const hosts = (await ds.query(
+    `SELECT d.id, d.name,
+            (SELECT count(*) FROM locations l
+              WHERE l.district_id = d.id AND l.deleted_at IS NULL AND l.is_active) AS lokasi
+       FROM districts d WHERE d.deleted_at IS NULL
+      ORDER BY lokasi DESC, d.name`,
+  )) as Array<{ id: string; name: string; lokasi: string }>;
+  const host = hosts.find((d) => /pusat/i.test(d.name) && Number(d.lokasi) >= 3) ?? hosts[0];
+  if (!host || Number(host.lokasi) < 2) {
+    console.log('Multi-place: skipped — no district with 2+ active lokasi.');
+    return;
+  }
+
+  const lokasi = (await ds.query(
+    `SELECT id, name FROM locations
+      WHERE district_id = $1 AND deleted_at IS NULL AND is_active
+      ORDER BY name LIMIT 3`,
+    [host.id],
+  )) as Array<{ id: string; name: string }>;
+
+  /** Free workers of `role` in the host district with NO roster row today. */
+  const freeWorkers = async (role: string, n: number): Promise<Array<{ id: string; username: string }>> =>
+    (await ds.query(
+      `SELECT u.id, u.username FROM users u
+        WHERE u.role = $1 AND u.district_id = $2 AND u.is_active AND u.deleted_at IS NULL
+          AND u.id::text NOT LIKE 'b0000000%'
+          AND NOT EXISTS (
+            SELECT 1 FROM schedules s
+             WHERE s.user_id = u.id AND s.schedule_date = $3::date AND s.deleted_at IS NULL)
+        ORDER BY u.username LIMIT $4`,
+      [role, host.id, today, n],
+    )) as Array<{ id: string; username: string }>;
+
+  const cohort: Array<{ role: string; places: number }> = [
+    { role: 'satgas', places: 3 },
+    { role: 'korlap', places: 2 },
+  ];
+
+  let rows = 0;
+  const staged: string[] = [];
+  for (const { role, places } of cohort) {
+    const [worker] = await freeWorkers(role, 1);
+    if (!worker) continue;
+    const spread = lokasi.slice(0, places);
+    if (spread.length < 2) continue;
+    for (const loc of spread) {
+      const ok = await addGeneralRow(
+        ds,
+        today,
+        worker.id,
+        host.id,
+        null,
+        loc.id,
+        null,
+        `MULTIPLACE ${role} × ${loc.name}`,
+        shift,
+      );
+      if (ok) rows += 1;
+    }
+    staged.push(`${worker.username} → ${spread.map((l) => l.name).join(' + ')}`);
+  }
+
+  console.log(
+    staged.length
+      ? `Multi-place (ADR-053): ${rows} rows in ${host.name} — ${staged.join('; ')}`
+      : 'Multi-place: skipped — no unrostered satgas/korlap left in the host district.',
   );
 }
 

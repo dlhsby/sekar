@@ -27,6 +27,7 @@ import {
   type TeamCategory,
 } from '@/lib/api/teams';
 import { TeamCategoryFormModal } from '@/components/teams/TeamCategoryFormModal';
+import { mapStyleColorColumn } from '@/components/ui/MapStyleSwatch';
 
 export default function TeamsPage() {
   const { t } = useTranslation();
@@ -81,22 +82,14 @@ export default function TeamsPage() {
             </StatusPill>
           ),
       },
-      {
-        id: 'marker',
-        header: t('admin:teamCategories.columnMarker'),
-        enableSorting: false,
-        cell: ({ row }) => {
-          // eslint-disable-next-line sekar-design/no-inline-hex-colors -- fallback for missing color
-          const color = row.original.marker_color || '#cccccc';
-          return (
-            <span
-              className="inline-flex size-9 rounded-nb-base border-2 border-nb-black"
-              style={{ backgroundColor: color }}
-              title={color}
-            />
-          );
-        },
-      },
+      // Same "Warna" column the geography grids use — swatch + `#hex · N%` —
+      // but SINGLE-colour: a category tints pins and chips, it has no boundary to
+      // outline, so there is no border half to show.
+      mapStyleColorColumn<TeamCategory>(
+        t('common:color'),
+        (r) => ({ fill_color: r.marker_color, fill_opacity: r.marker_opacity }),
+        { single: true },
+      ),
     ],
     [t],
   );
