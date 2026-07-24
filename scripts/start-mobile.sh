@@ -57,6 +57,10 @@ done
 
 load_ports
 
+# MinIO host port (for the photo-URL reverse below). From infra/.env, default 19000.
+MINIO_PORT="$(env_file_value "$ROOT/infra/.env" MINIO_PORT)"
+MINIO_PORT="${MINIO_PORT:-19000}"
+
 # Resolve the API base the app is built against, and set it in the gitignored
 # mobile env so the next build bakes it in. USB/emulator → localhost (reached via
 # `adb reverse`); Wi-Fi → the LAN IP (reached directly, needs a port-forward).
@@ -101,6 +105,20 @@ adb_reverse_metro() {
     print_success "adb reverse on $s: device:8081 → Metro :$METRO_PORT"
   else
     print_warning "adb reverse failed on $s — the app may not find Metro on :$METRO_PORT"
+  fi
+}
+
+# adb_reverse_minio SERIAL — tunnel the device's localhost:MINIO_PORT to this
+# host's MinIO, so presigned photo URLs (which the backend mints as
+# http://localhost:MINIO_PORT/…) actually resolve on the device. Without this,
+# uploads succeed but photos show as broken images. No-op against real S3
+# (staging), where presigned URLs are public.
+adb_reverse_minio() {
+  local s="$1"
+  if adb -s "$s" reverse "tcp:$MINIO_PORT" "tcp:$MINIO_PORT" >/dev/null 2>&1; then
+    print_success "adb reverse on $s: localhost:$MINIO_PORT → MinIO (photos)"
+  else
+    print_warning "adb reverse failed on $s for MinIO :$MINIO_PORT — photos may not load"
   fi
 }
 
@@ -184,7 +202,7 @@ if [ "$MODE" = "android" ]; then
     else
       _RTARGETS=("${ANDROID_SERIAL:-}")
     fi
-    for s in "${_RTARGETS[@]}"; do [ -n "$s" ] && adb_reverse_backend "$s"; done
+    for s in "${_RTARGETS[@]}"; do [ -n "$s" ] && { adb_reverse_backend "$s"; adb_reverse_minio "$s"; }; done
   fi
   print_warning "This doesn't start Metro — run ./scripts/start-mobile.sh (no --android) in another terminal first."
   if [ "$RUN_ALL" = true ]; then
@@ -214,6 +232,7 @@ else
         [ -n "$s" ] || continue
         adb_reverse_backend "$s"
         adb_reverse_metro "$s"
+        adb_reverse_minio "$s"
       done
     else
       print_warning "adb not found — if using a USB device, run 'adb reverse tcp:$BE_PORT tcp:$BE_PORT' yourself so the app reaches the backend."
