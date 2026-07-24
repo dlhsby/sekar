@@ -19,8 +19,12 @@ import { useCollapsible } from '../../hooks/useCollapsible';
 export interface NBCollapsibleCardProps {
   /** Left side of the header row — fills flex: 1 */
   headerLeft: React.ReactNode;
-  /** Optional content between the left content and the chevron */
-  headerRight?: React.ReactNode;
+  /**
+   * Optional content between the left content and the chevron. A function form
+   * receives the current `expanded` state — e.g. show a status pill only while
+   * collapsed, once its detail is visible in the body.
+   */
+  headerRight?: React.ReactNode | ((expanded: boolean) => React.ReactNode);
   defaultExpanded?: boolean;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
@@ -38,6 +42,8 @@ export function NBCollapsibleCard({
   testID,
 }: NBCollapsibleCardProps): React.JSX.Element {
   const { expanded, toggle } = useCollapsible(defaultExpanded);
+  const resolvedHeaderRight =
+    typeof headerRight === 'function' ? headerRight(expanded) : headerRight;
 
   return (
     <View style={[styles.card, style]} testID={testID}>
@@ -50,7 +56,7 @@ export function NBCollapsibleCard({
         accessibilityState={{ expanded }}
       >
         <View style={styles.headerLeft}>{headerLeft}</View>
-        {headerRight ? <View style={styles.headerRight}>{headerRight}</View> : null}
+        {resolvedHeaderRight ? <View style={styles.headerRight}>{resolvedHeaderRight}</View> : null}
         <MaterialCommunityIcons
           name={expanded ? 'chevron-up' : 'chevron-down'}
           size={18}

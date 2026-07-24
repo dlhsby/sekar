@@ -22,6 +22,7 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import { useClockInOut } from '../../hooks';
+import { getRoleIcon } from '../../utils/mapUtils';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -99,6 +100,24 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const isDistrictScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
 
+  // The on-time/late/no-schedule pill — shown in the card HEADER while collapsed
+  // (at-a-glance), and in the "Status" body row while expanded. One source.
+  const statusBadge = hasScheduleToday ? (
+    <NBBadge
+      text={
+        attendanceState === 'outside_window'
+          ? t('attendance:clockInOut.outsideWindowChip')
+          : isLate
+            ? t('attendance:list.statusChip.late')
+            : t('attendance:list.statusChip.onTime')
+      }
+      color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
+      size="sm"
+    />
+  ) : (
+    <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
+  );
+
   // Loading GPS
   if (location.loading && !location.latitude) {
     return (
@@ -141,15 +160,16 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Informasi Kehadiran — title only in the header; the status moved
-              INTO the body as a "Status" row (below Jadwal Shift) per UX review,
-              so it reads with the rest of the attendance detail. */}
+          {/* Informasi Kehadiran — the status pill shows in the header while
+              COLLAPSED (at-a-glance) and hides when open, since the "Status" body
+              row (below Jadwal Shift) then carries it. */}
           <NBCollapsibleCard
             headerLeft={
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.attendanceInfo')}
               </NBText>
             }
+            headerRight={(expanded) => (expanded ? null : statusBadge)}
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
@@ -165,28 +185,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   value={t('attendance:clockInOut.noScheduleToday')}
                 />
               )}
-              {/* Status — the on-time/late/no-schedule pill, moved here from the
-                  card header. */}
-              <InfoTableRow
-                label={t('attendance:clockInOut.statusLabel')}
-                value={
-                  hasScheduleToday ? (
-                    <NBBadge
-                      text={
-                        attendanceState === 'outside_window'
-                          ? t('attendance:clockInOut.outsideWindowChip')
-                          : isLate
-                            ? t('attendance:list.statusChip.late')
-                            : t('attendance:list.statusChip.onTime')
-                      }
-                      color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
-                      size="sm"
-                    />
-                  ) : (
-                    <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
-                  )
-                }
-              />
+              {/* Status — the on-time/late/no-schedule pill (also shown in the
+                  header while collapsed). */}
+              <InfoTableRow label={t('attendance:clockInOut.statusLabel')} value={statusBadge} />
               {rosterAreas.length > 1 ? (
                 // Today's assignment covers several lokasi — list them all, not
                 // just the primary. Clock-in is accepted at ANY of them; the
@@ -352,6 +353,30 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           }}
           area={mapArea}
           hideAreaStatus={areaState === 'none' || areaState === 'scope'}
+          // Worker pin = role glyph (matches the monitoring map), tinted by
+          // whether they're inside the boundary.
+          workerMarker={
+            userRole
+              ? {
+                  iconName: getRoleIcon(userRole),
+                  color: areaState === 'outside' ? nbColors.statusOutside : nbColors.statusActive,
+                }
+              : undefined
+          }
+          // Area pin = a glyph for the assigned scope (rayon / kawasan / lokasi).
+          areaMarker={
+            mapArea
+              ? {
+                  iconName:
+                    scheduleScope.scope === 'district'
+                      ? 'office-building'
+                      : scheduleScope.scope === 'region'
+                        ? 'forest'
+                        : 'leaf',
+                  color: nbColors.statusActive,
+                }
+              : undefined
+          }
         />
 
         {/* Submit Button — fixed at bottom, scrollable area sits above */}

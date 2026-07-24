@@ -81,38 +81,33 @@ export function GPSLocationSection({
                 : t('gpsSection.locationUnavailable')}
           </NBText>
         </View>
+        {/* Right column of the status row: open the map (where am I vs boundary). */}
+        {hasLocation && onShowMap && (
+          <Pressable
+            onPress={onShowMap}
+            accessibilityRole="button"
+            accessibilityLabel={t('clockInOut.viewOnMap')}
+            style={styles.viewMapButton}
+          >
+            <MaterialCommunityIcons name="map-search-outline" size={16} color={nbColors.primary} />
+            <NBText variant="caption" color="primary">{t('clockInOut.viewOnMap')}</NBText>
+          </Pressable>
+        )}
       </View>
 
       {/* Area status alert — neutral note when unassigned, else within/outside.
-          Tappable (when onShowMap) to open the map: where am I vs the boundary. */}
-      {hasLocation && (
-        <Pressable
-          onPress={onShowMap}
-          disabled={!onShowMap}
-          accessibilityRole={onShowMap ? 'button' : undefined}
-          accessibilityLabel={onShowMap ? t('clockInOut.viewOnMap') : undefined}
-          style={styles.areaStatus}
-        >
-          {scopeLabel ? (
-            <NBAlert variant="info" message={t('gpsSection.scopeAssigned', { scope: scopeLabel })} />
-          ) : noArea ? (
-            <NBAlert variant="info" message={t('gpsSection.noArea')} />
-          ) : isWithinBoundary !== undefined ? (
-            isWithinBoundary ? (
-              <NBAlert variant="success" message={t('gpsSection.withinBoundary')} />
-            ) : (
-              <NBAlert variant="warning" message={t('gpsSection.outsideBoundary')} />
-            )
-          ) : null}
-          {onShowMap && (
-            <View style={styles.viewMapRow}>
-              <MaterialCommunityIcons name="map-search-outline" size={16} color={nbColors.primary} />
-              <NBText variant="caption" color="primary">{t('clockInOut.viewOnMap')}</NBText>
-              <MaterialCommunityIcons name="chevron-right" size={16} color={nbColors.primary} />
-            </View>
-          )}
-        </Pressable>
-      )}
+          (The map opens from the "Lihat di peta" button in the status row.) */}
+      {hasLocation && scopeLabel ? (
+        <NBAlert variant="info" message={t('gpsSection.scopeAssigned', { scope: scopeLabel })} />
+      ) : hasLocation && noArea ? (
+        <NBAlert variant="info" message={t('gpsSection.noArea')} />
+      ) : hasLocation && isWithinBoundary !== undefined ? (
+        isWithinBoundary ? (
+          <NBAlert variant="success" message={t('gpsSection.withinBoundary')} />
+        ) : (
+          <NBAlert variant="warning" message={t('gpsSection.outsideBoundary')} />
+        )
+      ) : null}
 
       {/* Full coordinate detail */}
       {hasLocation && (
@@ -169,16 +164,18 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
   },
-  areaStatus: {
-    gap: nbSpacing.xs,
-  },
-  viewMapRow: {
+  viewMapButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: nbSpacing.xs,
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.primary,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.white,
   },
   detailRow: {
     paddingHorizontal: nbSpacing.sm,

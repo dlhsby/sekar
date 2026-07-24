@@ -62,7 +62,6 @@ export function useClockInOut() {
 
   const [selfie, setSelfie] = useState<Photo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isWithinBoundary, setIsWithinBoundary] = useState(false);
   const [timer, setTimer] = useState('00:00:00');
 
   const isClockIn = !currentShift;
@@ -134,6 +133,21 @@ export function useClockInOut() {
     [rosterAreas, scopeArea, scheduleScope, assignedAreas, assignedArea],
   );
 
+  // DERIVED (not state): within-boundary if inside ANY assigned area. Deriving it
+  // from the current location + areas — rather than setting it inside the GPS
+  // callbacks — keeps it in lock-step with both. The callback approach went stale
+  // whenever `areasForGeofence` changed after the last position update (roster
+  // loads async, and a fixed/mock GPS never emits another tick), which is how the
+  // map could read "di dalam" while the marker sat outside. No area → within
+  // (nothing to violate); no fix yet → false.
+  const isWithinBoundary = useMemo(() => {
+    if (location.latitude == null || location.longitude == null) return false;
+    if (areasForGeofence.length === 0) return true;
+    return areasForGeofence.some((area) =>
+      isWithinAreaBoundary(location.latitude!, location.longitude!, area),
+    );
+  }, [location.latitude, location.longitude, areasForGeofence]);
+
   // The single area to draw on the map modal — the boundary we geofence
   // against (today's lokasi, or the assigned rayon/kawasan). Centre falls back
   // to the polygon's first vertex so the map can still frame a scope whose
@@ -183,6 +197,7 @@ export function useClockInOut() {
   const handleLocationSuccess = useCallback((position: any) => {
     const { latitude, longitude, accuracy } = position.coords;
 
+    // Only update the location — `isWithinBoundary` is derived from it (above).
     setLocation({
       latitude,
       longitude,
@@ -190,18 +205,7 @@ export function useClockInOut() {
       loading: false,
       error: null,
     });
-
-    // Within-boundary if inside ANY assigned area. Ad-hoc workers (no area)
-    // are always considered within — there is no boundary to violate.
-    if (areasForGeofence.length === 0) {
-      setIsWithinBoundary(true);
-    } else {
-      const within = areasForGeofence.some((area) =>
-        isWithinAreaBoundary(latitude, longitude, area),
-      );
-      setIsWithinBoundary(within);
-    }
-  }, [areasForGeofence]);
+  }, []);
 
   const getCurrentLocation = useCallback(() => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
@@ -228,7 +232,10 @@ export function useClockInOut() {
       {
         enableHighAccuracy: true,
         timeout: 10000,
-        maximumAge: 5000,
+        // Fresh fix, never a cached one — the clock-in screen opens to answer
+        // "where am I right now", and a stale cache (e.g. after moving a mock
+        // GPS) would answer for where the worker just was.
+        maximumAge: 0,
         forceRequestLocation: true,
         forceLocationManager: false,
         showLocationDialog: true,
@@ -256,20 +263,12 @@ export function useClockInOut() {
         (position) => {
           if (!isMounted) { return; }
           const { latitude, longitude, accuracy } = position.coords;
+          // Location only — isWithinBoundary is derived from it.
           setLocation({
             latitude, longitude,
             accuracy: accuracy || null,
             loading: false, error: null,
           });
-
-          if (areasForGeofence.length === 0) {
-            setIsWithinBoundary(true);
-          } else {
-            const within = areasForGeofence.some((area) =>
-              isWithinAreaBoundary(latitude, longitude, area),
-            );
-            setIsWithinBoundary(within);
-          }
         },
         (error) => {
           if (!isMounted) { return; }
@@ -295,8 +294,10 @@ export function useClockInOut() {
         Geolocation.clearWatch(watchId);
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- getCurrentLocation is a stable callback; effect runs once on mount and when areas change
-  }, [areasForGeofence]);
+    // Runs once on mount: the watch callback only updates location now (the
+    // geofence is derived), so it no longer needs to re-subscribe when areas
+    // change — which also stops the clearWatch/re-watch churn on roster load.
+  }, [getCurrentLocation]);
 
   // Update timer every second when clocked in
   useEffect(() => {

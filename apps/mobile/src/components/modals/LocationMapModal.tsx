@@ -71,6 +71,28 @@ interface LocationMapModalProps {
    * Marker title shown when the user taps the pin. Defaults to "Lokasi Anda".
    */
   markerTitle?: string;
+  /**
+   * Custom pin for the USER marker (glyph + colour) — e.g. the worker's role
+   * icon, matching the monitoring map. Omitted → the default red Google pin.
+   */
+  workerMarker?: { iconName: string; color: string };
+  /**
+   * Custom pin for the AREA marker (glyph + colour) — e.g. a rayon/kawasan/lokasi
+   * icon. Omitted → the default green Google pin.
+   */
+  areaMarker?: { iconName: string; color: string };
+}
+
+/** A small teardrop pin (circle badge + downward tip) for react-native-maps. */
+function MapPin({ iconName, color }: { iconName: string; color: string }): React.JSX.Element {
+  return (
+    <View style={pinStyles.wrap}>
+      <View style={[pinStyles.badge, { backgroundColor: color }]}>
+        <MaterialCommunityIcons name={iconName} size={16} color={nbColors.white} />
+      </View>
+      <View style={[pinStyles.tip, { borderTopColor: color }]} />
+    </View>
+  );
 }
 
 function formatUpdatedAt(date: Date | null, t: (key: string, options?: Record<string, any>) => string): string {
@@ -139,6 +161,8 @@ export function LocationMapModal({
   hideAreaStatus = false,
   hideUpdatedAt = false,
   markerTitle,
+  workerMarker,
+  areaMarker,
 }: LocationMapModalProps) {
   const { t } = useTranslation();
   const defaultTitle = title ?? t('components:locationMap.defaultTitle');
@@ -252,14 +276,17 @@ export function LocationMapModal({
               />
             ) : null}
 
-            {/* The lokasi's own pin, so the boundary is identifiable even when
+            {/* The area's own pin, so the boundary is identifiable even when
                 the worker is far outside it (or the polygon is off-screen). */}
             {area?.gps_lat != null && area?.gps_lng != null ? (
               <Marker
                 coordinate={{ latitude: area.gps_lat, longitude: area.gps_lng }}
                 title={area.name}
-                pinColor={nbColors.statusActive}
-              />
+                anchor={areaMarker ? { x: 0.5, y: 1 } : undefined}
+                pinColor={areaMarker ? undefined : nbColors.statusActive}
+              >
+                {areaMarker ? <MapPin iconName={areaMarker.iconName} color={areaMarker.color} /> : undefined}
+              </Marker>
             ) : null}
 
             {/* User location marker */}
@@ -267,12 +294,15 @@ export function LocationMapModal({
               <Marker
                 coordinate={{ latitude: lat!, longitude: lng! }}
                 title={defaultMarkerTitle}
+                anchor={workerMarker ? { x: 0.5, y: 1 } : undefined}
                 description={
                   location.accuracy !== null
                     ? t('components:locationMap.accuracy', { value: Math.round(location.accuracy) })
                     : undefined
                 }
-              />
+              >
+                {workerMarker ? <MapPin iconName={workerMarker.iconName} color={workerMarker.color} /> : undefined}
+              </Marker>
             )}
           </MapView>
         ) : (
@@ -424,5 +454,28 @@ const styles = StyleSheet.create({
   },
   updatedTopMargin: {
     marginTop: nbSpacing.xs,
+  },
+});
+
+const pinStyles = StyleSheet.create({
+  wrap: { alignItems: 'center' },
+  badge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tip: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 5,
+    borderRightWidth: 5,
+    borderTopWidth: 7,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -2,
   },
 });
