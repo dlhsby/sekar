@@ -396,8 +396,8 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
-      // GPS card is collapsed by default — expand to see the soft warning.
-      fireEvent.press(getByText('Informasi Kehadiran'));
+      // The Informasi Kehadiran card is expanded by default, so the soft warning
+      // is visible without a tap.
 
       // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
       await waitFor(() => {
@@ -430,27 +430,27 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
     });
 
-    it('shows the Informasi Kehadiran card collapsed by default', async () => {
+    it('shows the Informasi Kehadiran card expanded by default', async () => {
       const store = createMockStore();
-      const { getByText, queryByText } = renderScreen(store);
+      const { getByText } = renderScreen(store);
 
-      // Title is visible…
+      // Title is visible AND the area details are shown without a tap — the card
+      // opens expanded so the attendance-type row + shift/area read at a glance.
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
-      // …but the date/time + area details are hidden until expanded.
-      expect(queryByText('Tipe Area')).toBeNull();
+      expect(getByText('Tipe Area')).toBeTruthy();
     });
 
-    it('expands the Informasi Kehadiran card on press', async () => {
+    it('collapses the Informasi Kehadiran card on press', async () => {
       const store = createMockStore();
-      const { getByText, getByLabelText } = renderScreen(store);
+      const { getByText, getByLabelText, queryByText } = renderScreen(store);
 
-      await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
+      await waitFor(() => { expect(getByText('Tipe Area')).toBeTruthy(); });
 
-      // Tap the card header to expand it → area details become visible.
+      // Tap the card header to collapse it → area details are hidden.
       fireEvent.press(getByLabelText('Informasi Kehadiran'));
 
       await waitFor(() => {
-        expect(getByText('Tipe Area')).toBeTruthy();
+        expect(queryByText('Tipe Area')).toBeNull();
       });
     });
 
@@ -463,8 +463,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
-      // GPS card is collapsed by default — expand to see the in-area banner.
-      fireEvent.press(getByText('Informasi Kehadiran'));
+      // The card is expanded by default, so the in-area banner is visible.
 
       await waitFor(() => {
         expect(getByText(/Anda berada di dalam area kerja/i)).toBeTruthy();
@@ -647,8 +646,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
-      // GPS card is collapsed by default — expand to see the soft warning.
-      fireEvent.press(getByText('Informasi Kehadiran'));
+      // The card is expanded by default, so the soft warning is visible.
 
       await waitFor(() => {
         // Phase 2C: Soft warning shown but clock-in NOT blocked
@@ -819,7 +817,6 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       // The elapsed HH:MM:SS timer lives in the (collapsed-by-default) GPS card.
-      fireEvent.press(getByText('Informasi Kehadiran'));
 
       await waitFor(() => {
         // Timer should show elapsed time

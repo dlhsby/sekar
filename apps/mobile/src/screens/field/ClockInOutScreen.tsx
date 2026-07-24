@@ -169,40 +169,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       <View style={styles.container}>
         {/* Scrollable content area — sits above the submit button */}
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          {/* Attendance-type selector — the label the punch will be recorded as.
-              Defaults from shift state; "Ubah Label Waktu" opens the picker. */}
-          <View style={styles.typeSelector}>
-            <View style={styles.typeSelectorMain}>
-              <MaterialCommunityIcons
-                name={isClockInAction ? 'login' : 'logout'}
-                size={20}
-                color={nbColors.primary}
-                style={styles.typeSelectorIcon}
-              />
-              <View>
-                <NBText variant="mono-sm" color="gray600" uppercase>
-                  {t('attendance:clockInOut.attendanceType')}
-                </NBText>
-                <NBText variant="body-lg" color="black">
-                  {isClockInAction
-                    ? t('attendance:list.button.clockIn')
-                    : t('attendance:list.button.clockOut')}
-                </NBText>
-              </View>
-            </View>
-            <TouchableOpacity
-              onPress={() => setTypeSheetVisible(true)}
-              accessibilityRole="button"
-              accessibilityLabel={t('attendance:clockInOut.changeLabel')}
-              testID="clockinout-change-label"
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <NBText variant="body-sm" color="primary" style={styles.typeSelectorLink}>
-                {t('attendance:clockInOut.changeLabel')}
-              </NBText>
-            </TouchableOpacity>
-          </View>
-
           {/* Blocked-choice warning — the selected label can't proceed given the
               current shift state (clock in with a shift open, or clock out with
               none). Explains why the button below is disabled. */}
@@ -225,10 +191,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Informasi Kehadiran — the status pill shows in the header while
-              COLLAPSED (at-a-glance) and hides when open, since the "Status" body
-              row (below Jadwal Shift) then carries it. */}
+          {/* Informasi Kehadiran — opens expanded so the attendance-type row and
+              the shift/area details are visible at a glance. The status pill shows
+              in the header only while collapsed (the "Status" body row carries it
+              when open). */}
           <NBCollapsibleCard
+            defaultExpanded
             headerLeft={
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.attendanceInfo')}
@@ -238,6 +206,28 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
+              {/* Attendance type (Clock In / Clock Out) — blended in as the first
+                  row; tap the value to open the "Ubah Label Waktu" picker. */}
+              <InfoTableRow
+                label={t('attendance:clockInOut.attendanceType')}
+                value={
+                  <TouchableOpacity
+                    onPress={() => setTypeSheetVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('attendance:clockInOut.changeLabel')}
+                    testID="clockinout-change-label"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.typeValue}
+                  >
+                    <NBText variant="body" color="black">
+                      {isClockInAction
+                        ? t('attendance:list.button.clockIn')
+                        : t('attendance:list.button.clockOut')}
+                    </NBText>
+                    <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
+                  </TouchableOpacity>
+                }
+              />
               <InfoTableRow label={t('attendance:clockInOut.currentTime')} value={<DateTimeValue source={currentTime} />} />
               {scheduledShift ? (
                 <InfoTableRow
@@ -492,30 +482,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
-  typeSelector: {
+  typeValue: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.md,
-    paddingVertical: nbSpacing.sm,
-    paddingHorizontal: nbSpacing.md,
-    marginBottom: nbSpacing.md,
-    ...nbShadows.sm,
-  },
-  typeSelectorMain: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  typeSelectorIcon: {
-    marginRight: nbSpacing.sm,
-  },
-  typeSelectorLink: {
-    fontWeight: '700',
-    textDecorationLine: 'underline',
+    gap: nbSpacing.xs,
   },
   mismatchAlert: {
     marginBottom: nbSpacing.md,
