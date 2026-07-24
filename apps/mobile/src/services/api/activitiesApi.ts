@@ -20,6 +20,32 @@ export async function createActivity(
   return post<CreateActivityResponse>('/activities', data);
 }
 
+/** Minimal local-file reference for a multipart upload (subset of `Photo`). */
+export interface UploadableFile {
+  uri: string;
+  name: string;
+  type: string;
+}
+
+/**
+ * Upload 1–3 activity photos to object storage and get back their URLs, to send
+ * in `photo_urls`. Photos are no longer posted as inline base64 (F9) — the
+ * backend rejects `data:` payloads and stores only the URL. Requires network;
+ * offline submissions upload at sync time (see syncManager.syncActivity).
+ */
+export async function uploadActivityPhotos(
+  files: UploadableFile[],
+): Promise<ApiResponse<{ urls: string[] }>> {
+  const formData = new FormData();
+  for (const f of files) {
+    // React Native FormData file part: { uri, name, type }.
+    formData.append('files', { uri: f.uri, name: f.name, type: f.type } as unknown as Blob);
+  }
+  return post<{ urls: string[] }>('/activities/photos', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
 
 /**
  * Get current user's own activities via paginated /activities endpoint.

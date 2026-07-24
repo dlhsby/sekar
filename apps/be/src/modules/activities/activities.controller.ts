@@ -8,7 +8,13 @@ import {
   Param,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
+import { randomUUID } from 'crypto';
 import {
   ApiTags,
   ApiOperation,
@@ -16,8 +22,10 @@ import {
   ApiBearerAuth,
   ApiQuery,
   ApiBody,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { ActivitiesService } from './activities.service';
+import { S3Service } from '../../shared/services/s3.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { RejectActivityDto } from './dto/reject-activity.dto';
@@ -49,7 +57,62 @@ import {
 @Controller('activities')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class ActivitiesController {
-  constructor(private readonly activitiesService: ActivitiesService) {}
+  constructor(
+    private readonly activitiesService: ActivitiesService,
+    private readonly s3Service: S3Service,
+  ) {}
+
+  /**
+   * Upload 1–3 activity photos to object storage (MinIO local/prod, S3 staging)
+   * and return their stored URLs. The client then submits those URLs in
+   * `photo_urls` on POST/PATCH /activities.
+   *
+   * This exists so photos stop being posted as inline base64 data-URIs, which are
+   * stored verbatim in a `text[]` column — that inflated `activities` to multiple
+   * GB and OOM'd the backend on list reads (F9). `photo_urls` now rejects
+   * `data:`/`blob:` payloads (`IsNotInlineMedia`), so this endpoint is the path.
+   */
+  @Post('photos')
+  @Roles(...ACTIVITY_SUBMITTERS)
+  // Same cap as the profile-picture upload — file writes are throttled per-IP.
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseInterceptors(
+    FilesInterceptor('files', 3, { limits: { fileSize: 5 * 1024 * 1024, files: 3 } }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({ summary: 'Upload activity photos to storage; returns their URLs' })
+  @ApiResponse({ status: 201, description: 'Photos uploaded; returns { urls }' })
+  @ApiResponse({ status: 400, description: 'No files, too many, or unsupported type' })
+  async uploadPhotos(@UploadedFiles() files: Express.Multer.File[]): Promise<{ urls: string[] }> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Minimal 1 foto diperlukan');
+    }
+    if (files.length > 3) {
+      throw new BadRequestException('Maksimal 3 foto diperbolehkan');
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    const extByType: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+    };
+
+    const urls = await Promise.all(
+      files.map((file) => {
+        if (!allowedTypes.includes(file.mimetype)) {
+          throw new BadRequestException('Hanya foto JPEG, PNG, atau WebP yang diperbolehkan');
+        }
+        const key = this.s3Service.generateKey(
+          'activities',
+          `${randomUUID()}.${extByType[file.mimetype]}`,
+        );
+        return this.s3Service.uploadFile(file.buffer, key, file.mimetype);
+      }),
+    );
+
+    return { urls };
+  }
 
   /**
    * Create a new activity (Phase 2C)

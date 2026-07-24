@@ -382,6 +382,41 @@ describe('syncManager', () => {
       expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });
 
+    it('uploads offline-queued local photos to storage before submitting (F9)', async () => {
+      const item = {
+        id: '9',
+        type: 'activity' as const,
+        data: {
+          activity_type_id: '1',
+          description: 'Offline capture',
+          photo_local: [{ uri: 'file:///a.jpg', name: 'a.jpg', type: 'image/jpeg' }],
+          gps_lat: -7.25,
+          gps_lng: 112.75,
+        },
+        timestamp: 123,
+        retryCount: 0,
+        status: 'pending' as const,
+      };
+
+      (offlineQueue.getQueuedItems as jest.Mock).mockResolvedValue([item]);
+      (offlineQueue.updateQueueItem as jest.Mock).mockResolvedValue(undefined);
+      (offlineQueue.removeFromQueue as jest.Mock).mockResolvedValue(undefined);
+      (activitiesApi.uploadActivityPhotos as jest.Mock).mockResolvedValue({
+        data: { urls: ['sekar-media/2026/07/activities/a.jpg'] },
+      });
+      (activitiesApi.createActivity as jest.Mock).mockResolvedValue({ data: { activity_id: 9 } });
+
+      await syncManager.processQueue();
+
+      // The local refs are uploaded, and the RETURNED url is submitted — never the
+      // local refs and never a data: URI.
+      expect(activitiesApi.uploadActivityPhotos).toHaveBeenCalledWith(item.data.photo_local);
+      const submitted = (activitiesApi.createActivity as jest.Mock).mock.calls[0][0];
+      expect(submitted.photo_urls).toEqual(['sekar-media/2026/07/activities/a.jpg']);
+      expect(submitted.photo_local).toBeUndefined();
+      expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('9');
+    });
+
     it('should sync location batch with new format', async () => {
       const shiftId = 'test-shift-123';
       const locations = [
