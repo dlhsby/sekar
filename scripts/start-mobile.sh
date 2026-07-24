@@ -195,8 +195,9 @@ if [ "$MODE" = "android" ]; then
     print_info "Wi-Fi debug build: in the app's dev menu set 'Debug server host & port' to $LAN_IP:$METRO_PORT (or install a release build)."
   else
     # On WSL2 + Windows adb.exe these reverses resolve on WINDOWS, so ensure
-    # Windows forwards both ports into WSL before wiring them up.
-    wsl_portproxy_ensure "$METRO_PORT" "$BE_PORT"
+    # Windows forwards each port into WSL before wiring them up (Metro, backend,
+    # and MinIO so presigned photo URLs on device reach WSL's MinIO).
+    wsl_portproxy_ensure "$METRO_PORT" "$BE_PORT" "$MINIO_PORT"
     if [ "$RUN_ALL" = true ]; then
       mapfile -t _RTARGETS < <(adb devices 2>/dev/null | tr -d '\r' | tail -n +2 | awk '$2=="device"{print $1}')
     else
@@ -226,7 +227,7 @@ else
     # its bundle. On WSL2 with a Windows adb.exe those reverses resolve on
     # WINDOWS, so make sure Windows forwards both ports into WSL first.
     if resolve_adb; then
-      wsl_portproxy_ensure "$METRO_PORT" "$BE_PORT"
+      wsl_portproxy_ensure "$METRO_PORT" "$BE_PORT" "$MINIO_PORT"
       mapfile -t _RTARGETS < <(adb devices 2>/dev/null | tr -d '\r' | tail -n +2 | awk '$2=="device"{print $1}')
       for s in "${_RTARGETS[@]}"; do
         [ -n "$s" ] || continue
