@@ -429,12 +429,13 @@ export function FieldHomeScreen(): React.JSX.Element {
                     }
                   />
                   <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
-                  {/* Status Area — the in/out-area pill moves here when the card
-                      is open (it's in the header while collapsed). Tap → map. */}
-                  {hasBoundary && (
-                    <InfoTableRow
-                      label={t('home:field.hero.labels.areaStatus')}
-                      value={
+                  {/* Status Area — the in/out-area pill (in the header while
+                      collapsed) with the GPS refresh beside it. The raw
+                      coordinates row was dropped as noise; tap the pill → map. */}
+                  <InfoTableRow
+                    label={t('home:field.hero.labels.areaStatus')}
+                    value={
+                      <View style={styles.heroAreaStatusValue}>
                         <TouchableOpacity
                           onPress={() => setLocationMapVisible(true)}
                           disabled={!hasActiveShift}
@@ -444,23 +445,6 @@ export function FieldHomeScreen(): React.JSX.Element {
                         >
                           <StatusPill tone={areaTone} label={areaLabel} />
                         </TouchableOpacity>
-                      }
-                    />
-                  )}
-                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.currentLocation')}
-                    value={
-                      <>
-                        <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
-                          {homeLocation.latitude !== null && homeLocation.longitude !== null
-                            ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
-                                homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
-                              }`
-                            : homeLocation.loading
-                            ? t('home:field.hero.location.searching')
-                            : t('home:field.hero.location.unavailable')}
-                        </NBText>
                         <TouchableOpacity
                           onPress={refreshLocation}
                           disabled={homeLocation.loading}
@@ -475,9 +459,10 @@ export function FieldHomeScreen(): React.JSX.Element {
                             <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
                           )}
                         </TouchableOpacity>
-                      </>
+                      </View>
                     }
                   />
+                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
                   <TouchableOpacity
                     onPress={() => setDetailShift(currentShift)}
                     activeOpacity={0.7}
@@ -716,7 +701,9 @@ const styles = StyleSheet.create({
   heroIdle: { backgroundColor: nbColors.white },
   heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    // Center so the status pill + chevron line up with the "SEDANG BERTUGAS"
+    // label (the pill is taller than the text — top-align read as misaligned).
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: nbSpacing.sm,
   },
@@ -724,18 +711,22 @@ const styles = StyleSheet.create({
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   heroMeta: { marginTop: nbSpacing.sm },
-  // Expanded hero: label:value table rows.
-  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.xs },
-  heroLocText: { flexShrink: 1 },
+  // Expanded hero: label:value table rows — sm gap so the rows breathe.
+  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
-  // Compact white refresh button beside the inline coords.
+  // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
+  heroAreaStatusValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: nbSpacing.sm,
+  },
+  // Compact white refresh button beside the area-status pill.
   heroGpsRefresh: {
     width: 30,
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    // Extra breathing room from the coords (on top of the row gap).
-    marginLeft: nbSpacing.sm,
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,
