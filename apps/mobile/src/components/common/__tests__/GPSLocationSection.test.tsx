@@ -105,6 +105,40 @@ describe('GPSLocationSection', () => {
     expect(queryByText(/akurasi/)).toBeNull();
   });
 
+  // ─── map affordance ──────────────────────────────────────────────────────────
+
+  it('shows a "view on map" affordance and fires onShowMap when the status is tapped', () => {
+    const onShowMap = jest.fn();
+    const { getByText } = render(
+      <GPSLocationSection
+        latitude={-7.25}
+        longitude={112.76}
+        accuracy={5}
+        isCapturing={false}
+        onRefresh={mockRefresh}
+        isWithinBoundary={false}
+        onShowMap={onShowMap}
+      />,
+    );
+    const affordance = getByText('Lihat di peta');
+    expect(affordance).toBeTruthy();
+    fireEvent.press(affordance);
+    expect(onShowMap).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not render the map affordance without onShowMap', () => {
+    const { queryByText } = render(
+      <GPSLocationSection
+        latitude={-7.25}
+        longitude={112.76}
+        isCapturing={false}
+        onRefresh={mockRefresh}
+        isWithinBoundary={false}
+      />,
+    );
+    expect(queryByText('Lihat di peta')).toBeNull();
+  });
+
   // ─── areaName ───────────────────────────────────────────────────────────────
 
   it('shows area name in status row when areaName is provided', () => {

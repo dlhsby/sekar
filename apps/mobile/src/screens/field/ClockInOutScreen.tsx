@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GPSLocationSection, ImagePreviewModal, InfoTableRow, DateTimeValue } from '../../components/common';
+import { LocationMapModal } from '../../components/modals/LocationMapModal';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -58,12 +59,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     attendanceState,
     scheduleScope,
     rosterAreas,
+    mapArea,
     hasScheduleToday,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
     handleClockOut,
   } = useClockInOut();
+
+  const [mapVisible, setMapVisible] = useState(false);
 
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
 
@@ -137,30 +141,14 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Informasi Kehadiran — standard card: title left, status pill right;
-              date/time + schedule + area inside the body. */}
+          {/* Informasi Kehadiran — title only in the header; the status moved
+              INTO the body as a "Status" row (below Jadwal Shift) per UX review,
+              so it reads with the rest of the attendance detail. */}
           <NBCollapsibleCard
             headerLeft={
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.attendanceInfo')}
               </NBText>
-            }
-            headerRight={
-              hasScheduleToday ? (
-                <NBBadge
-                  text={
-                    attendanceState === 'outside_window'
-                      ? t('attendance:clockInOut.outsideWindowChip')
-                      : isLate
-                        ? t('attendance:list.statusChip.late')
-                        : t('attendance:list.statusChip.onTime')
-                  }
-                  color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
-                  size="sm"
-                />
-              ) : (
-                <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
-              )
             }
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
@@ -177,6 +165,28 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   value={t('attendance:clockInOut.noScheduleToday')}
                 />
               )}
+              {/* Status — the on-time/late/no-schedule pill, moved here from the
+                  card header. */}
+              <InfoTableRow
+                label={t('attendance:clockInOut.statusLabel')}
+                value={
+                  hasScheduleToday ? (
+                    <NBBadge
+                      text={
+                        attendanceState === 'outside_window'
+                          ? t('attendance:clockInOut.outsideWindowChip')
+                          : isLate
+                            ? t('attendance:list.statusChip.late')
+                            : t('attendance:list.statusChip.onTime')
+                      }
+                      color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
+                      size="sm"
+                    />
+                  ) : (
+                    <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
+                  )
+                }
+              />
               {rosterAreas.length > 1 ? (
                 // Today's assignment covers several lokasi — list them all, not
                 // just the primary. Clock-in is accepted at ANY of them; the
@@ -229,20 +239,13 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               )}
             </View>
 
-            {/* Lokasi GPS — merged into this same card (it was a second card
-                sitting right next to this one, per UX review). One area-status
-                badge + one coordinate readout, no duplicates. */}
+            {/* Lokasi GPS — merged into this same card. The within/outside pill
+                that used to sit here duplicated the status alert below, so it's
+                gone; the alert itself is now tappable to open the map. */}
             <View style={styles.gpsHeader}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.gpsLocation')}
               </NBText>
-              {location.latitude != null && (areaState === 'within' || areaState === 'outside') && (
-                <NBBadge
-                  text={areaState === 'within' ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
-                  color={areaState === 'within' ? 'success' : 'danger'}
-                  size="sm"
-                />
-              )}
             </View>
             <GPSLocationSection
               latitude={location.latitude}
@@ -263,6 +266,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   : undefined
               }
               areaName={assignedArea?.name}
+              onShowMap={location.latitude != null ? () => setMapVisible(true) : undefined}
             />
             {!isClockIn && currentShift && (
               <View style={styles.clockInInfo}>
@@ -331,6 +335,23 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           uri={selfiePreviewUri}
           onClose={() => setSelfiePreviewUri(null)}
           title={t('attendance:clockInOut.selfiePreviewTitle')}
+        />
+
+        {/* GPS + assigned-area map — draws where the worker is vs the boundary
+            they're supposed to be inside, so "luar area" is actionable. */}
+        <LocationMapModal
+          visible={mapVisible}
+          onClose={() => setMapVisible(false)}
+          title={t('attendance:clockInOut.mapTitle')}
+          location={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            isWithinArea: isWithinBoundary,
+            updatedAt: currentTime,
+          }}
+          area={mapArea}
+          hideAreaStatus={areaState === 'none' || areaState === 'scope'}
         />
 
         {/* Submit Button — fixed at bottom, scrollable area sits above */}

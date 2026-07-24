@@ -131,7 +131,6 @@ const headerChrome = { ...NB_HEADER_STYLE, justifyContent: 'center' as const };
 // Profile is a bottom tab (rendered directly in TabNavigator), so it is NOT wrapped
 // here — the header avatar and the tab both resolve to that single ProfileScreen.
 const ShiftHistoryWithHeader = withProfileHeader(ShiftHistoryScreen, i18n.t('profile:menu.shiftHistory'));
-const MyScheduleWithHeader = withProfileHeader(MyScheduleScreen, i18n.t('profile:menu.mySchedule'));
 const SettingsWithHeader   = withProfileHeader(SettingsScreen,   i18n.t('settings:title'));
 const NotificationPreferencesWithHeader = withProfileHeader(
   NotificationPreferencesScreen,
@@ -318,6 +317,10 @@ function TabNavigator(): React.JSX.Element {
       <Tab.Screen name="Lembur" component={OvertimeListScreen} options={featureScreen(i18n.t('menu:tiles.overtime'))} />
       <Tab.Screen name="Tasks" component={TasksScreen} options={featureScreen(i18n.t('menu:tiles.tasks'))} />
       <Tab.Screen name="Activities" component={ActivitiesScreen} options={featureScreen(i18n.t('menu:tiles.activities'))} />
+      {/* Reached from home, Profil and the Menu tile — a hidden feature tab (like
+          the others) so its entry transition matches every other page instead of
+          the profile-cluster slide. */}
+      <Tab.Screen name="MySchedule" component={MyScheduleScreen} options={featureScreen(i18n.t('profile:menu.mySchedule'))} />
       <Tab.Screen name="Monitoring" component={MapDashboardScreen} options={featureScreen(i18n.t('menu:tiles.monitoring'))} />
       <Tab.Screen name="Reports" component={ReportsScreen} options={featureScreen(i18n.t('menu:tiles.reports'))} />
       <Tab.Screen name="Assets" component={AssetListScreen} options={featureScreen(i18n.t('menu:tiles.assets'))} />
@@ -566,11 +569,6 @@ function MainNavigator(): React.JSX.Element {
       <MainStack.Screen
         name="ShiftHistory"
         component={ShiftHistoryWithHeader}
-        options={{ animation: 'slide_from_left' }}
-      />
-      <MainStack.Screen
-        name="MySchedule"
-        component={MyScheduleWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
       <MainStack.Screen
