@@ -174,8 +174,8 @@ jobs:
           # rest — runs every deploy so they can never pile up again (they had grown
           # to dozens; manual RDS snapshot storage is billed beyond the free 20 GB).
           # Automated daily backups remain the point-in-time safety net; these manual
-          # ones only need to cover the last couple of deploys for a fast rollback.
-          RETAIN=2
+          # ones only need to cover the last deploy for a fast rollback.
+          RETAIN=1
           # Matches every SEKAR manual snapshot (predeploy + any preseed), NOT the
           # co-tenant swat-* ones — this workflow only owns sekar's.
           OLD=$(aws rds describe-db-snapshots \
