@@ -4,12 +4,14 @@
  * Phase 2D-11: Home Screen Location Card
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import i18n from '../i18n/config';
 import Geolocation from 'react-native-geolocation-service';
 import { useAppSelector } from '../store/hooks';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { locationTracker, type LocationPing } from '../services/location/locationTracker';
+import { useTodayRoster } from './useTodayRoster';
+import { resolveScheduleScope } from '../utils/scheduleScope';
 
 export interface HomeLocationState {
   latitude: number | null;
@@ -35,9 +37,40 @@ export function useHomeLocation() {
   const { assignedArea } = useAppSelector((state) => state.auth);
   const { currentShift } = useAppSelector((state) => state.shift);
   const hasActiveShift = !!currentShift;
-  // During an active shift, check against the area actually clocked into; fall
-  // back to the standing assigned area. Null for unscheduled/ad-hoc workers.
-  const boundaryArea = currentShift?.area ?? assignedArea ?? null;
+
+  // Today's roster carries the assigned scope. A rayon/kawasan assignment names
+  // no lokasi but HAS its own boundary polygon — geofence against it so the home
+  // hero shows real inside/outside for scope workers too (mirrors useClockInOut).
+  const { roster } = useTodayRoster();
+  const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
+  const scopeBoundary = useMemo(() => {
+    const scoped =
+      scheduleScope.scope === 'region'
+        ? roster?.region
+        : scheduleScope.scope === 'district'
+          ? roster?.district
+          : null;
+    if (!scoped?.boundary_polygon) return null;
+    return {
+      name: scoped.name,
+      boundary_polygon: scoped.boundary_polygon,
+      gps_lat: scoped.center_lat ?? null,
+      gps_lng: scoped.center_lng ?? null,
+    };
+  }, [scheduleScope, roster]);
+
+  // Boundary priority: the lokasi clocked into → today's roster lokasi → the
+  // assigned rayon/kawasan boundary → the standing assignment. Null for a
+  // genuinely ad-hoc worker (no boundary to be inside/outside of).
+  const boundaryArea = useMemo(() => {
+    const rosterLocation =
+      roster?.location?.gps_lat != null && roster.location.gps_lng != null ? roster.location : null;
+    return currentShift?.area ?? rosterLocation ?? scopeBoundary ?? assignedArea ?? null;
+  }, [currentShift, roster, scopeBoundary, assignedArea]);
+
+  // Whether there is a real polygon to test — drives the hero's inside/outside
+  // pill vs a neutral "scope, no boundary" state.
+  const hasBoundary = !!(boundaryArea && (boundaryArea as { boundary_polygon?: unknown }).boundary_polygon);
 
   const [location, setLocation] = useState<HomeLocationState>(INITIAL_STATE);
 
@@ -118,5 +151,5 @@ export function useHomeLocation() {
     };
   }, [hasActiveShift, boundaryArea]);
 
-  return { location, refresh, hasActiveShift };
+  return { location, refresh, hasActiveShift, hasBoundary };
 }

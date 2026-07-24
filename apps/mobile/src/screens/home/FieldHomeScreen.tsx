@@ -95,7 +95,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   });
 
   // Home-screen location (drives the in-area pill + the map modal).
-  const { location: homeLocation, refresh: refreshLocation, hasActiveShift } = useHomeLocation();
+  const { location: homeLocation, refresh: refreshLocation, hasActiveShift, hasBoundary } = useHomeLocation();
 
   // Today's roster — the "am I scheduled?" signal (shared with the clock-in
   // screen so both agree on lateness / area semantics).
@@ -290,34 +290,35 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // In-area pill tone/label for the active-shift hero. A worker with no assigned
   // area has no boundary to be inside/outside of — show a neutral "no area".
-  const hasArea = !!(currentShift?.area || assignedArea);
-  // A kota/rayon/kawasan-scope day has no polygon but IS an assignment. Reporting
-  // "Tanpa area" for it contradicted the worker's own Jadwal Saya card.
+  // Scope label is now just the area name (e.g. "Rayon Barat 1"), not the long
+  // "Lingkup Rayon Rayon Barat 1" — the scope i18n keys dropped the prefix.
   const scopeLabelText =
     scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
       ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
       : null;
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
-  const areaTone: StatusTone = !hasArea
-    ? scopeLabelText
-      ? 'info'
-      : 'neutral'
-    : locUnknown
+  // With a real boundary (lokasi OR the assigned rayon/kawasan polygon) the pill
+  // reports inside/outside; otherwise it names the scope (or "no area").
+  const areaTone: StatusTone = hasBoundary
+    ? locUnknown
       ? 'neutral'
       : homeLocation.isWithinArea
         ? 'ok'
-        : 'bad';
-  const areaLabel = !hasArea
-    ? (scopeLabelText ?? t('home:field.hero.location.noArea'))
-    : locUnknown
+        : 'bad'
+    : scopeLabelText
+      ? 'info'
+      : 'neutral';
+  const areaLabel = hasBoundary
+    ? locUnknown
       ? t('home:field.hero.location.loading')
       : homeLocation.isWithinArea
         ? t('home:field.hero.location.inArea')
-        : t('home:field.hero.location.outArea');
+        : t('home:field.hero.location.outArea')
+    : (scopeLabelText ?? t('home:field.hero.location.noArea'));
   const heroAreaName =
     currentShift?.area?.name ??
+    scheduleScope.name ??
     assignedArea?.name ??
-    scopeLabelText ??
     t('home:field.hero.location.noArea');
 
   return (
@@ -382,15 +383,19 @@ export function FieldHomeScreen(): React.JSX.Element {
                   {currentShift.is_overtime ? t('home:field.hero.overtimeActive') : t('home:field.hero.onDuty')}
                 </NBText>
                 <View style={styles.heroStatusRow}>
-                  <TouchableOpacity
-                    onPress={() => setLocationMapVisible(true)}
-                    disabled={!hasActiveShift}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
-                  >
-                    <StatusPill tone={areaTone} label={areaLabel} />
-                  </TouchableOpacity>
+                  {/* Collapsed only: the in/out-area pill lives in the header at a
+                      glance; expanded, it moves into the body (Status Area row). */}
+                  {!shiftExpanded && (
+                    <TouchableOpacity
+                      onPress={() => setLocationMapVisible(true)}
+                      disabled={!hasActiveShift}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
+                    >
+                      <StatusPill tone={areaTone} label={areaLabel} />
+                    </TouchableOpacity>
+                  )}
                   <MaterialCommunityIcons
                     name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
                     size={24}
@@ -424,6 +429,24 @@ export function FieldHomeScreen(): React.JSX.Element {
                     }
                   />
                   <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
+                  {/* Status Area — the in/out-area pill moves here when the card
+                      is open (it's in the header while collapsed). Tap → map. */}
+                  {hasBoundary && (
+                    <InfoTableRow
+                      label={t('home:field.hero.labels.areaStatus')}
+                      value={
+                        <TouchableOpacity
+                          onPress={() => setLocationMapVisible(true)}
+                          disabled={!hasActiveShift}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
+                        >
+                          <StatusPill tone={areaTone} label={areaLabel} />
+                        </TouchableOpacity>
+                      }
+                    />
+                  )}
                   <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
                   <InfoTableRow
                     label={t('home:field.hero.labels.currentLocation')}
@@ -648,6 +671,23 @@ export function FieldHomeScreen(): React.JSX.Element {
                 name: roster.location.name,
               }
             : undefined) ??
+          // Rayon/kawasan scope has no lokasi but its own boundary — draw it so
+          // the map answers "am I in my rayon?" for scope workers too.
+          (scheduleScope.scope === 'district' && roster?.district?.boundary_polygon
+            ? {
+                gps_lat: roster.district.center_lat ?? 0,
+                gps_lng: roster.district.center_lng ?? 0,
+                boundary_polygon: roster.district.boundary_polygon,
+                name: roster.district.name,
+              }
+            : scheduleScope.scope === 'region' && roster?.region?.boundary_polygon
+              ? {
+                  gps_lat: roster.region.center_lat ?? 0,
+                  gps_lng: roster.region.center_lng ?? 0,
+                  boundary_polygon: roster.region.boundary_polygon,
+                  name: roster.region.name,
+                }
+              : undefined) ??
           assignedArea ??
           undefined
         }

@@ -123,9 +123,9 @@
     "noScheduleChip": "Tanpa jadwal",
     "noScheduleToday": "Belum ada jadwal hari ini",
     "scope": {
-      "city": "Lingkup Kota Surabaya",
-      "district": "Lingkup Rayon {{name}}",
-      "region": "Lingkup Kawasan {{name}}"
+      "city": "Kota Surabaya",
+      "district": "{{name}}",
+      "region": "{{name}}"
     },
     "outsideWindowChip": "Di Luar Jam Shift",
     "multiArea": "{{count}} lokasi",
