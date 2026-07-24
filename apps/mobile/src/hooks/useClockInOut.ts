@@ -15,19 +15,13 @@ import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { isToday } from '../utils/dateUtils';
 import { deriveAttendanceStatus } from '../utils/attendance';
 import { resolveScheduleScope } from '../utils/scheduleScope';
+import { buildMapArea, type MapArea } from '../utils/mapUtils';
 import { useTodayRoster } from './useTodayRoster';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
-import type { GeoJsonGeometry } from '../types/geo.types';
 
-/** The assigned boundary to frame on the clock-in map modal. */
-export interface MapArea {
-  gps_lat: number;
-  gps_lng: number;
-  boundary_polygon: GeoJsonGeometry | null;
-  name?: string;
-}
+export type { MapArea } from '../utils/mapUtils';
 
 /** Whether the worker has an area to be inside/outside of at all. */
 /**
@@ -149,31 +143,13 @@ export function useClockInOut() {
   }, [location.latitude, location.longitude, areasForGeofence]);
 
   // The single area to draw on the map modal — the boundary we geofence
-  // against (today's lokasi, or the assigned rayon/kawasan). Centre falls back
-  // to the polygon's first vertex so the map can still frame a scope whose
-  // centre column is null. Undefined when there's nothing to show.
-  const mapArea = useMemo((): MapArea | undefined => {
-    const a = areasForGeofence[0] as
-      | { gps_lat?: number | null; gps_lng?: number | null; boundary_polygon?: GeoJsonGeometry | null; name?: string }
-      | undefined;
-    if (!a) return undefined;
-    let lat = typeof a.gps_lat === 'number' ? a.gps_lat : null;
-    let lng = typeof a.gps_lng === 'number' ? a.gps_lng : null;
-    const bp = a.boundary_polygon ?? null;
-    if ((lat == null || lng == null) && bp) {
-      // Defensive traversal — a Polygon's outer ring, or a MultiPolygon's first
-      // polygon's outer ring; grab its first vertex ([lng, lat]) as the centre.
-      const coords = (bp as { coordinates?: unknown }).coordinates as unknown[] | undefined;
-      const ring = bp.type === 'Polygon' ? coords?.[0] : (coords?.[0] as unknown[])?.[0];
-      const first = Array.isArray(ring) ? (ring as unknown[])[0] : undefined;
-      if (Array.isArray(first)) {
-        lng = Number(first[0]);
-        lat = Number(first[1]);
-      }
-    }
-    if (lat == null || lng == null) return undefined;
-    return { gps_lat: lat, gps_lng: lng, boundary_polygon: bp, name: a.name };
-  }, [areasForGeofence]);
+  // against (today's lokasi, or the assigned rayon/kawasan). `buildMapArea` is
+  // the shared builder the home hero uses too, so both screens frame the SAME
+  // area. Undefined when there's nothing to show.
+  const mapArea = useMemo(
+    (): MapArea | undefined => buildMapArea(areasForGeofence[0]),
+    [areasForGeofence],
+  );
 
   // Today's shifts (for the day's FIRST clock-in, so a clock-out+back-in later
   // never re-triggers "late").

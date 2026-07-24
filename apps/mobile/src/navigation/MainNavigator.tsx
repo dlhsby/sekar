@@ -586,15 +586,17 @@ function MainNavigator(): React.JSX.Element {
         component={EditProfileWithHeader}
         options={{ animation: 'slide_from_left' }}
       />
-      {/* Notifications inbox — slide-in from the header bell, matching the
-          Profile cluster. Deep-links into tab detail screens via navigate('Tabs', …). */}
+      {/* Notifications inbox — opened from the header bell. Standard push:
+          slides in from the right on open and back out to the right on leave
+          (the inverse), matching the platform default for a forward push.
+          Deep-links into tab detail screens via navigate('Tabs', …). */}
       <MainStack.Screen
         name="Notifications"
         component={NotificationsWithHeader}
         // gestureEnabled:false — the inbox owns its back (header + hardware) so it
         // can return to the origin tab; a raw swipe-pop could reveal a deep-linked
         // detail left underneath and loop. slide-in animation is unaffected.
-        options={{ animation: 'slide_from_left', gestureEnabled: false }}
+        options={{ animation: 'slide_from_right', gestureEnabled: false }}
       />
       <MainStack.Screen
         name="Diagnostics"
