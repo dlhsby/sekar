@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { render, waitFor, fireEvent } from '@testing-library/react-native';
 import { MyScheduleScreen } from '../MyScheduleScreen';
 import * as schedulesApi from '../../../services/api/schedulesApi';
 
@@ -79,6 +79,17 @@ describe('MyScheduleScreen', () => {
     const { getByText } = render(<MyScheduleScreen />);
 
     await waitFor(() => expect(getByText('Belum ada jadwal hari ini')).toBeTruthy());
+  });
+
+  it('opens the schedule detail sheet when a roster row is tapped', async () => {
+    jest.spyOn(schedulesApi, 'getMyRange').mockResolvedValue({ data: [todayRoster] } as any);
+
+    const { getByTestId, getByText } = render(<MyScheduleScreen />);
+
+    await waitFor(() => expect(getByTestId('roster-roster-today')).toBeTruthy());
+    fireEvent.press(getByTestId('roster-roster-today'));
+
+    await waitFor(() => expect(getByText('Detail Jadwal')).toBeTruthy());
   });
 
   it('surfaces an error state when the request fails', async () => {

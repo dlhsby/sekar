@@ -94,7 +94,7 @@ export function ExecHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Ringkasan hari ini — city-wide overview */}
-          <HomeSectionDivider label={t('home:exec.sections.summary')} />
+          <HomeSectionDivider label={t('home:exec.sections.summary')} first />
 
           {/* City-overview hero */}
           <View style={styles.hero} testID="city-hero">
@@ -160,7 +160,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap to the tile rows below (same summary section).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

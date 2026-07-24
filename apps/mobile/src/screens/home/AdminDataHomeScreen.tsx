@@ -247,7 +247,7 @@ export function AdminDataHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Kehadiran saya — clock-in card (matches FieldHomeScreen structure) */}
-          <HomeSectionDivider label={t('home:adminData.sections.attendance')} />
+          <HomeSectionDivider label={t('home:adminData.sections.attendance')} first />
           {currentShift ? (
             <TouchableOpacity
               style={[styles.absensi, currentShift.is_overtime ? styles.absensiLembur : styles.absensiActive]}
@@ -449,7 +449,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap (same summary section as the tiles below).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -459,7 +460,7 @@ const styles = StyleSheet.create({
   heroButton: { marginTop: nbSpacing.md },
 
   tilesRow: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
-  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
+  statTiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.sm },
   list: { gap: nbSpacing.sm },
 
   absensi: {
@@ -467,7 +468,6 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
     ...nbShadows.md,
   },
   absensiActive: { backgroundColor: nbColors.statusActiveBg },

@@ -4,9 +4,8 @@
       "shiftTime": "Waktu shift: {{hours}} jam {{minutes}} menit"
     },
     "sections": {
-      "attendance": "Kehadiran saya",
-      "summary": "Ringkasan hari ini",
-      "schedule": "Jadwal Saya"
+      "attendance": "Kehadiran",
+      "summary": "Ringkasan hari ini"
     },
     "alerts": {
       "permissionRevoked": "Izin lokasi dicabut. Pelacakan lokasi tidak aktif.",

@@ -24,6 +24,17 @@
       "off": "Libur — tidak ada shift hari ini."
     }
   },
+  "scheduleDetail": {
+    "title": "Detail Jadwal",
+    "date": "Tanggal",
+    "shift": "Shift",
+    "area": "Area",
+    "district": "Rayon",
+    "region": "Kawasan",
+    "team": "Tim",
+    "status": "Status",
+    "openHint": "Ketuk untuk melihat detail jadwal"
+  },
   "status": {
     "present": "Hadir",
     "planned": "Direncanakan",

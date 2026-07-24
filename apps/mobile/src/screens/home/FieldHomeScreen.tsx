@@ -361,8 +361,9 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           )}
 
-          {/* Kehadiran saya — clock-in hero first */}
-          <HomeSectionDivider label={t('home:field.sections.attendance')} />
+          {/* Kehadiran — clock-in hero + today's schedule, one section (the
+              schedule used to be its own divider; merged in per UX review). */}
+          <HomeSectionDivider label={t('home:field.sections.attendance')} first />
 
           {/* Kehadiran hero — collapsible; the whole card toggles open/closed. */}
           {currentShift ? (
@@ -500,12 +501,12 @@ export function FieldHomeScreen(): React.JSX.Element {
             </View>
           )}
 
-          {/* Jadwal saya — today's roster row at a glance. A worker could not see
-              their own assignment from the home screen at all; "Jadwal Saya" was
-              buried in Profil. Tapping opens the full day view. */}
+          {/* Jadwal saya — today's roster row at a glance, now nested inside the
+              Kehadiran section (no separate divider). Tapping opens the full day
+              view. A worker could not see their assignment from home at all before;
+              "Jadwal Saya" was buried in Profil. */}
           {isClockable && (
             <>
-              <HomeSectionDivider label={t('home:field.sections.schedule')} />
               <TouchableOpacity
                 style={styles.scheduleCard}
                 onPress={() => navigation.navigate('MySchedule' as never)}
@@ -668,7 +669,6 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
     ...nbShadows.md,
   },
   heroActive: { backgroundColor: nbColors.statusActiveBg },
@@ -706,7 +706,7 @@ const styles = StyleSheet.create({
   heroDetailText: { letterSpacing: 0.6 },
 
   /* Tiles */
-  tiles: { flexDirection: 'row', gap: nbSpacing.sm, marginBottom: nbSpacing.md },
+  tiles: { flexDirection: 'row', gap: nbSpacing.sm },
 
   scheduleCard: {
     backgroundColor: nbColors.bgSurface,
@@ -715,6 +715,8 @@ const styles = StyleSheet.create({
     borderRadius: nbRadius.base,
     padding: nbSpacing.md,
     gap: nbSpacing.xs,
+    // Intra-section gap from the clock-in hero above (same Kehadiran section).
+    marginTop: nbSpacing.sm,
   },
   scheduleLink: {
     marginTop: nbSpacing.xs,
