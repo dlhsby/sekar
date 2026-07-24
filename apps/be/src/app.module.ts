@@ -6,7 +6,8 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { AppThrottlerGuard } from './common/guards/app-throttler.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { PhotoUrlInterceptor } from './common/interceptors/photo-url.interceptor';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
@@ -173,6 +174,13 @@ import { ConfigModule as ClientConfigModule } from './modules/config/config.modu
   controllers: [AppController],
   providers: [
     AppService,
+    // Photos in/out of storage everywhere (F9): converts inline data:/blob:
+    // payloads to object storage on write, presigns stored URLs on read — for
+    // every module, no per-service wiring. See PhotoUrlInterceptor.
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: PhotoUrlInterceptor,
+    },
     // Global rate limiting guard (disabled in test environment). Resolves
     // limits from SystemConfigService at request time (ADR-049).
     ...(process.env.NODE_ENV !== 'test'

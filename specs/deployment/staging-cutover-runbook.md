@@ -189,14 +189,16 @@ environment** (matches the existing convention): **MinIO** for local dev + produ
 (`docker-compose.prod.yml`), **real AWS S3** for staging (`sekar-media-staging`). `S3Service`
 already speaks both via `AWS_ENDPOINT_URL` / `AWS_S3_FORCE_PATH_STYLE`.
 
-- **Phase A — stop the bleeding — DONE for ACTIVITIES (PR #377):** `POST /activities/photos`
-  uploads to storage and returns URLs; the activity DTO rejects `data:`/`blob:`
-  (`IsNotInlineMedia`); mobile uploads online and queues local refs for sync-time upload
-  offline. New APK contract (F8); needs an on-device pass before the mobile release.
-  **Still open — Phase A is NOT yet applied to the other photo modules** (shift clock-in/out
-  selfies, overtime, tasks completion, pruning, profile pictures), so *new* writes there still
-  inline base64. Closing that needs an upload endpoint + DTO guard + mobile change per module —
-  a tracked follow-up. Until then, Phase B has to be re-run periodically for those tables.
+- **Phase A — stop the bleeding — DONE for EVERY module (global interceptor):** a single
+  global `PhotoUrlInterceptor` (`shared/services/photo-storage.service.ts` +
+  `common/interceptors/photo-url.interceptor.ts`) makes photos behave everywhere without
+  per-module wiring: on **write** it uploads any inline `data:`/`blob:` value in a known photo
+  field (`photo_urls`, `completion_photo_urls`, `profile_picture_url`, `clock_in/out_photo_url`,
+  `photo_before/after_url`, `photo_url`) to storage *before* the handler, so base64 can never be
+  persisted **whatever the client sends — no mobile change needed**; on **read** it presigns
+  stored URLs so they render. The activity-specific `POST /activities/photos` upload endpoint +
+  DTO guard (PR #377) stay as belt-and-suspenders. Verified on the real-data sim: task/profile
+  photos presign and load (200), activities list unchanged (`photo_count`, empty `photo_urls`).
 - **Phase B — backfill ALL existing inline photos — SCRIPT BUILT + locally verified on real
   staging data:** `npm run backfill:inline-photos [-- --dry-run]`
   (`src/database/backfill/backfill-inline-photos.ts`, `:prod` runs the compiled JS). Covers

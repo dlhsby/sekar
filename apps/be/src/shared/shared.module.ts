@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { S3Service } from './services/s3.service';
 import { S3InitService } from './services/s3-init.service';
+import { PhotoStorageService } from './services/photo-storage.service';
 import { BoundaryCheckService } from './services/boundary-check.service';
 
 /**
@@ -13,7 +14,7 @@ import { BoundaryCheckService } from './services/boundary-check.service';
  */
 @Module({
   imports: [ConfigModule],
-  providers: [S3Service, S3InitService, BoundaryCheckService],
-  exports: [S3Service, BoundaryCheckService],
+  providers: [S3Service, S3InitService, PhotoStorageService, BoundaryCheckService],
+  exports: [S3Service, PhotoStorageService, BoundaryCheckService],
 })
 export class SharedModule {}
