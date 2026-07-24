@@ -170,6 +170,23 @@ jobs:
           aws rds wait db-snapshot-available --db-snapshot-identifier "$SNAP"
           echo "Snapshot completed: $SNAP"
 
+          # Retention: keep only the newest RETAIN pre-deploy snapshots, delete the
+          # rest — runs every deploy so they can never pile up again (they had grown
+          # to dozens; manual RDS snapshot storage is billed beyond the free 20 GB).
+          # Automated daily backups remain the point-in-time safety net; these manual
+          # ones only need to cover the last couple of deploys for a fast rollback.
+          RETAIN=2
+          # Matches every SEKAR manual snapshot (predeploy + any preseed), NOT the
+          # co-tenant swat-* ones — this workflow only owns sekar's.
+          OLD=$(aws rds describe-db-snapshots \
+                  --snapshot-type manual \
+                  --query "reverse(sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, 'sekar-staging-')], &SnapshotCreateTime))[${RETAIN}:].DBSnapshotIdentifier" \
+                  --output text)
+          for s in $OLD; do
+            echo "Pruning old pre-deploy snapshot: $s"
+            aws rds delete-db-snapshot --db-snapshot-identifier "$s" >/dev/null || true
+          done
+
       - name: Deploy via SSM (seed env, pull, migrate, up --wait)
         run: |
           set -euo pipefail
