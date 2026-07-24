@@ -65,18 +65,15 @@ export function GPSLocationSection({
           />
         )}
         <View style={{ flex: 1 }}>
+          {/* Short status only — the precise coordinates + accuracy live in the
+              detail block below, so showing them here too was a duplicate. */}
           <NBText variant="body-sm" color={hasLocation ? 'black' : 'gray600'}>
             {isCapturing
               ? t('gpsSection.capturingLocation')
               : hasLocation
-                ? (areaName ?? `${latitude!.toFixed(4)}, ${longitude!.toFixed(4)}`)
+                ? (areaName ?? t('gpsSection.locationRecorded'))
                 : t('gpsSection.locationUnavailable')}
           </NBText>
-          {hasLocation && accuracy != null && (
-            <NBText variant="caption" color="gray600">
-              ±{Math.round(accuracy)}m {t('gpsSection.accuracy')}
-            </NBText>
-          )}
         </View>
       </View>
 

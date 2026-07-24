@@ -82,22 +82,47 @@ export function useClockInOut() {
     [roster],
   );
 
-  // Fall back to the standing assignment only when today's roster names no
-  // lokasi. A kawasan/rayon/kota-scope day legitimately has none — there is no
-  // boundary to violate, and the backend resolves the actual lokasi from GPS at
-  // clock-in (it expands the scheduled kawasan into its lokasi).
+  // A rayon/kawasan assignment names no lokasi, but it DOES have its own
+  // boundary polygon (ADR-045/046). Build a geofence area from the assigned
+  // scope so the worker is checked against the rayon/kawasan they were actually
+  // put on — rather than treated as "no boundary, attendance always recorded",
+  // which was both wrong and misleading. Only when a real polygon exists; a
+  // scope whose polygon was never computed falls through to the neutral 'scope'
+  // state (fail-open, but honestly labelled — not "tanpa batas lokasi").
+  const scopeArea = useMemo(() => {
+    const scoped =
+      scheduleScope.scope === 'region'
+        ? roster?.region
+        : scheduleScope.scope === 'district'
+          ? roster?.district
+          : null;
+    if (!scoped?.boundary_polygon) return null;
+    return {
+      name: scoped.name,
+      boundary_polygon: scoped.boundary_polygon,
+      gps_lat: scoped.center_lat ?? null,
+      gps_lng: scoped.center_lng ?? null,
+    };
+  }, [scheduleScope, roster]);
+
+  // Geofence target priority: today's lokasi → the assigned rayon/kawasan
+  // boundary → the standing assignment. A scope with no polygon yields [] and is
+  // reported as 'scope' (neutral) below; a genuinely ad-hoc worker also yields
+  // [] but resolves to 'none'.
   const areasForGeofence = useMemo(
     () =>
       rosterAreas.length > 0
         ? rosterAreas
-        : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
-          ? []
-          : (assignedAreas?.length ?? 0) > 0
-            ? assignedAreas
-            : assignedArea
-              ? [assignedArea]
-              : [],
-    [rosterAreas, scheduleScope, assignedAreas, assignedArea],
+        : scopeArea
+          ? [scopeArea]
+          : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+            ? []
+            : (assignedAreas?.length ?? 0) > 0
+              ? assignedAreas
+              : assignedArea
+                ? [assignedArea]
+                : [],
+    [rosterAreas, scopeArea, scheduleScope, assignedAreas, assignedArea],
   );
 
   // Today's shifts (for the day's FIRST clock-in, so a clock-out+back-in later
@@ -368,12 +393,14 @@ export function useClockInOut() {
     );
   }, [currentShift, location, selfie, dispatch]);
 
-  // Area state for the boundary badge. Three cases, not two:
-  //  • lokasi assigned  → within / outside its boundary
-  //  • kota/rayon/kawasan scope → 'scope': there is no polygon to be inside of,
-  //    but the worker IS assigned. Reporting 'none' here is what made a
-  //    city-scope satgas read "TANPA AREA" everywhere while his own schedule
-  //    card said "Lingkup Kota Surabaya".
+  // Area state for the boundary badge. Three cases:
+  //  • a geofenceable area — today's lokasi OR a rayon/kawasan with a boundary
+  //    polygon → within / outside it. Scope-aware: a rayon assignment is now
+  //    checked against the RAYON boundary, a kawasan against its kawasan.
+  //  • a scope with no polygon (kota, or a rayon/kawasan whose boundary was
+  //    never computed) → 'scope': the worker IS assigned, attendance is still
+  //    recorded, but there is nothing to test against. Labelled neutrally, not
+  //    "tanpa batas lokasi".
   //  • genuinely unassigned (ad-hoc) → 'none'
   const areaState: AreaState =
     areasForGeofence.length > 0

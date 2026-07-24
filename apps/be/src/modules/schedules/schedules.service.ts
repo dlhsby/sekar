@@ -836,6 +836,11 @@ export class SchedulesService {
       .leftJoinAndSelect('ds.user', 'u')
       .leftJoinAndSelect('ds.shift_definition', 'sd')
       .leftJoinAndSelect('ds.location', 'location')
+      // `district` (rayon) is joined alongside `region` so a rayon-scope row
+      // carries its boundary — parity with findAllByUserAndDate, and what the
+      // client needs to geofence a rayon assignment (QueryBuilder skips eager
+      // relations, so this must be explicit).
+      .leftJoinAndSelect('ds.district', 'd')
       .leftJoinAndSelect('ds.region', 'r')
       .leftJoinAndSelect('ds.team_category', 'tt')
       .where('ds.user_id = :userId', { userId })

@@ -17,6 +17,8 @@ import shiftReducer from '../../store/slices/shiftSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
 import { useClockInOut } from '../useClockInOut';
 import { getMyRoster } from '../../services/api/schedulesApi';
+import Geolocation from 'react-native-geolocation-service';
+import { requestClockInPermissions } from '../../services/permissions';
 
 jest.mock('react-native-geolocation-service', () => ({
   getCurrentPosition: jest.fn(),
@@ -136,6 +138,71 @@ describe('useClockInOut — roster-gated lateness', () => {
     const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(currentShift) });
     await waitFor(() => expect(mockGetMyRoster).toHaveBeenCalled());
     expect(result.current.isLate).toBe(false);
+  });
+
+  // A ~2°×2° square around (0,0), GeoJSON [lng,lat] order.
+  const SQUARE_POLYGON = {
+    type: 'Polygon' as const,
+    coordinates: [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]],
+  };
+  const withGpsFix = (lat: number, lng: number) => {
+    (requestClockInPermissions as jest.Mock).mockResolvedValue({ success: true });
+    // Both getCurrentPosition and watchPosition drive isWithinBoundary; fire the
+    // success callback synchronously with a fixed coordinate.
+    (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) =>
+      success({ coords: { latitude: lat, longitude: lng, accuracy: 5 } }),
+    );
+    (Geolocation.watchPosition as jest.Mock).mockImplementation((success) => {
+      success({ coords: { latitude: lat, longitude: lng, accuracy: 5 } });
+      return 1;
+    });
+  };
+
+  it('geofences a rayon-scope assignment against the RAYON boundary (inside → within)', async () => {
+    withGpsFix(0, 0); // inside the square
+    mockGetMyRoster.mockResolvedValue({
+      data: {
+        shift_definition: ROSTER_SHIFT_DEF,
+        district_id: 'd-1',
+        district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+      },
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.areaState).toBe('within'));
+    expect(result.current.scheduleScope.scope).toBe('district');
+  });
+
+  it('reads outside the rayon boundary as LUAR AREA (outside)', async () => {
+    withGpsFix(5, 5); // outside the square
+    mockGetMyRoster.mockResolvedValue({
+      data: {
+        shift_definition: ROSTER_SHIFT_DEF,
+        district_id: 'd-1',
+        district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+      },
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.areaState).toBe('outside'));
+  });
+
+  it("falls back to neutral 'scope' when the rayon has no boundary polygon", async () => {
+    withGpsFix(0, 0);
+    mockGetMyRoster.mockResolvedValue({
+      data: {
+        shift_definition: ROSTER_SHIFT_DEF,
+        district_id: 'd-1',
+        district: { id: 'd-1', name: 'Rayon Barat 1' }, // no boundary_polygon
+      },
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('district'));
+    expect(result.current.areaState).toBe('scope');
   });
 
   it('is never late and reports no schedule when unscheduled (patrol/ad-hoc)', async () => {
