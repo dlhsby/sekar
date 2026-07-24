@@ -185,6 +185,15 @@ export function LocationMapModal({
   const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
   const accuracyWarning = location.accuracy !== null && location.accuracy > 50;
 
+  // Coerce the AREA centre too — TypeORM emits decimal columns (e.g. a district's
+  // center_lat/lng) as STRINGS, and react-native-maps' <Marker> throws "Value for
+  // latitude cannot be cast from String to double" on a string coordinate. Doing
+  // it here keeps every caller (clock-in, clock-out, home) safe.
+  const areaLat = area?.gps_lat != null ? Number(area.gps_lat) : null;
+  const areaLng = area?.gps_lng != null ? Number(area.gps_lng) : null;
+  const hasAreaCoords =
+    areaLat !== null && areaLng !== null && !isNaN(areaLat) && !isNaN(areaLng);
+
   const polygonCoords = useMemo(() => {
     const bp = area?.boundary_polygon;
     // Guard: undefined/null or a JSONB string not yet parsed (TypeORM serialization edge case)
@@ -278,10 +287,10 @@ export function LocationMapModal({
 
             {/* The area's own pin, so the boundary is identifiable even when
                 the worker is far outside it (or the polygon is off-screen). */}
-            {area?.gps_lat != null && area?.gps_lng != null ? (
+            {hasAreaCoords ? (
               <Marker
-                coordinate={{ latitude: area.gps_lat, longitude: area.gps_lng }}
-                title={area.name}
+                coordinate={{ latitude: areaLat!, longitude: areaLng! }}
+                title={area?.name}
                 anchor={areaMarker ? { x: 0.5, y: 1 } : undefined}
                 pinColor={areaMarker ? undefined : nbColors.statusActive}
               >
