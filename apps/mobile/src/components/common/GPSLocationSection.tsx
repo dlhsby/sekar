@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, Pressable } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NBAlert, NBButton, NBText } from '../nb';
@@ -23,6 +23,11 @@ export interface GPSLocationSectionProps {
    */
   scopeLabel?: string;
   areaName?: string;
+  /**
+   * When provided, the area-status row becomes tappable and opens the map modal
+   * ("where am I vs the boundary I should be in"). Omitted → not tappable.
+   */
+  onShowMap?: () => void;
 }
 
 export function GPSLocationSection({
@@ -36,6 +41,7 @@ export function GPSLocationSection({
   noArea,
   scopeLabel,
   areaName,
+  onShowMap,
 }: GPSLocationSectionProps) {
   const { t } = useTranslation('attendance');
   const hasLocation = latitude != null && longitude != null;
@@ -75,21 +81,32 @@ export function GPSLocationSection({
                 : t('gpsSection.locationUnavailable')}
           </NBText>
         </View>
+        {/* Right column of the status row: open the map (where am I vs boundary). */}
+        {hasLocation && onShowMap && (
+          <Pressable
+            onPress={onShowMap}
+            accessibilityRole="button"
+            accessibilityLabel={t('clockInOut.viewOnMap')}
+            style={styles.viewMapButton}
+          >
+            <MaterialCommunityIcons name="map-search-outline" size={16} color={nbColors.primary} />
+            <NBText variant="caption" color="primary">{t('clockInOut.viewOnMap')}</NBText>
+          </Pressable>
+        )}
       </View>
 
-      {/* Area status alert — neutral note when unassigned, else within/outside */}
+      {/* Area status alert — neutral note when unassigned, else within/outside.
+          (The map opens from the "Lihat di peta" button in the status row.) */}
       {hasLocation && scopeLabel ? (
         <NBAlert variant="info" message={t('gpsSection.scopeAssigned', { scope: scopeLabel })} />
       ) : hasLocation && noArea ? (
         <NBAlert variant="info" message={t('gpsSection.noArea')} />
       ) : hasLocation && isWithinBoundary !== undefined ? (
-        <View>
-          {isWithinBoundary ? (
-            <NBAlert variant="success" message={t('gpsSection.withinBoundary')} />
-          ) : (
-            <NBAlert variant="warning" message={t('gpsSection.outsideBoundary')} />
-          )}
-        </View>
+        isWithinBoundary ? (
+          <NBAlert variant="success" message={t('gpsSection.withinBoundary')} />
+        ) : (
+          <NBAlert variant="warning" message={t('gpsSection.outsideBoundary')} />
+        )
       ) : null}
 
       {/* Full coordinate detail */}
@@ -147,7 +164,18 @@ const styles = StyleSheet.create({
   },
   statusRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  viewMapButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+    paddingVertical: nbSpacing.xs,
+    paddingHorizontal: nbSpacing.sm,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.primary,
+    borderRadius: nbRadius.base,
+    backgroundColor: nbColors.white,
   },
   detailRow: {
     paddingHorizontal: nbSpacing.sm,

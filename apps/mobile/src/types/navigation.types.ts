@@ -28,7 +28,6 @@ export type MainStackParamList = {
   Settings: undefined;
   NotificationPreferences: undefined;
   ShiftHistory: undefined;
-  MySchedule: undefined;
   Diagnostics: undefined;
   // Phase 4 M3d (NOTIF-1) — in-app notifications inbox; slide-in like Profile.
   // `origin` records the tab the bell was tapped from so back returns there.

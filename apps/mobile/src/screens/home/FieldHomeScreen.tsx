@@ -95,7 +95,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   });
 
   // Home-screen location (drives the in-area pill + the map modal).
-  const { location: homeLocation, refresh: refreshLocation, hasActiveShift } = useHomeLocation();
+  const { location: homeLocation, refresh: refreshLocation, hasActiveShift, hasBoundary } = useHomeLocation();
 
   // Today's roster — the "am I scheduled?" signal (shared with the clock-in
   // screen so both agree on lateness / area semantics).
@@ -290,34 +290,35 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // In-area pill tone/label for the active-shift hero. A worker with no assigned
   // area has no boundary to be inside/outside of — show a neutral "no area".
-  const hasArea = !!(currentShift?.area || assignedArea);
-  // A kota/rayon/kawasan-scope day has no polygon but IS an assignment. Reporting
-  // "Tanpa area" for it contradicted the worker's own Jadwal Saya card.
+  // Scope label is now just the area name (e.g. "Rayon Barat 1"), not the long
+  // "Lingkup Rayon Rayon Barat 1" — the scope i18n keys dropped the prefix.
   const scopeLabelText =
     scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
       ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
       : null;
   const locUnknown = homeLocation.loading || homeLocation.latitude === null;
-  const areaTone: StatusTone = !hasArea
-    ? scopeLabelText
-      ? 'info'
-      : 'neutral'
-    : locUnknown
+  // With a real boundary (lokasi OR the assigned rayon/kawasan polygon) the pill
+  // reports inside/outside; otherwise it names the scope (or "no area").
+  const areaTone: StatusTone = hasBoundary
+    ? locUnknown
       ? 'neutral'
       : homeLocation.isWithinArea
         ? 'ok'
-        : 'bad';
-  const areaLabel = !hasArea
-    ? (scopeLabelText ?? t('home:field.hero.location.noArea'))
-    : locUnknown
+        : 'bad'
+    : scopeLabelText
+      ? 'info'
+      : 'neutral';
+  const areaLabel = hasBoundary
+    ? locUnknown
       ? t('home:field.hero.location.loading')
       : homeLocation.isWithinArea
         ? t('home:field.hero.location.inArea')
-        : t('home:field.hero.location.outArea');
+        : t('home:field.hero.location.outArea')
+    : (scopeLabelText ?? t('home:field.hero.location.noArea'));
   const heroAreaName =
     currentShift?.area?.name ??
+    scheduleScope.name ??
     assignedArea?.name ??
-    scopeLabelText ??
     t('home:field.hero.location.noArea');
 
   return (
@@ -382,15 +383,19 @@ export function FieldHomeScreen(): React.JSX.Element {
                   {currentShift.is_overtime ? t('home:field.hero.overtimeActive') : t('home:field.hero.onDuty')}
                 </NBText>
                 <View style={styles.heroStatusRow}>
-                  <TouchableOpacity
-                    onPress={() => setLocationMapVisible(true)}
-                    disabled={!hasActiveShift}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
-                  >
-                    <StatusPill tone={areaTone} label={areaLabel} />
-                  </TouchableOpacity>
+                  {/* Collapsed only: the in/out-area pill lives in the header at a
+                      glance; expanded, it moves into the body (Status Area row). */}
+                  {!shiftExpanded && (
+                    <TouchableOpacity
+                      onPress={() => setLocationMapVisible(true)}
+                      disabled={!hasActiveShift}
+                      activeOpacity={0.7}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
+                    >
+                      <StatusPill tone={areaTone} label={areaLabel} />
+                    </TouchableOpacity>
+                  )}
                   <MaterialCommunityIcons
                     name={shiftExpanded ? 'chevron-up' : 'chevron-down'}
                     size={24}
@@ -424,20 +429,22 @@ export function FieldHomeScreen(): React.JSX.Element {
                     }
                   />
                   <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
-                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
+                  {/* Status Area — the in/out-area pill (in the header while
+                      collapsed) with the GPS refresh beside it. The raw
+                      coordinates row was dropped as noise; tap the pill → map. */}
                   <InfoTableRow
-                    label={t('home:field.hero.labels.currentLocation')}
+                    label={t('home:field.hero.labels.areaStatus')}
                     value={
-                      <>
-                        <NBText variant="mono-sm" color="black" numberOfLines={1} style={styles.heroLocText}>
-                          {homeLocation.latitude !== null && homeLocation.longitude !== null
-                            ? `${homeLocation.latitude.toFixed(5)}, ${homeLocation.longitude.toFixed(5)}${
-                                homeLocation.accuracy !== null ? ` ±${Math.round(homeLocation.accuracy)}m` : ''
-                              }`
-                            : homeLocation.loading
-                            ? t('home:field.hero.location.searching')
-                            : t('home:field.hero.location.unavailable')}
-                        </NBText>
+                      <View style={styles.heroAreaStatusValue}>
+                        <TouchableOpacity
+                          onPress={() => setLocationMapVisible(true)}
+                          disabled={!hasActiveShift}
+                          activeOpacity={0.7}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
+                        >
+                          <StatusPill tone={areaTone} label={areaLabel} />
+                        </TouchableOpacity>
                         <TouchableOpacity
                           onPress={refreshLocation}
                           disabled={homeLocation.loading}
@@ -452,9 +459,10 @@ export function FieldHomeScreen(): React.JSX.Element {
                             <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
                           )}
                         </TouchableOpacity>
-                      </>
+                      </View>
                     }
                   />
+                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
                   <TouchableOpacity
                     onPress={() => setDetailShift(currentShift)}
                     activeOpacity={0.7}
@@ -648,6 +656,23 @@ export function FieldHomeScreen(): React.JSX.Element {
                 name: roster.location.name,
               }
             : undefined) ??
+          // Rayon/kawasan scope has no lokasi but its own boundary — draw it so
+          // the map answers "am I in my rayon?" for scope workers too.
+          (scheduleScope.scope === 'district' && roster?.district?.boundary_polygon
+            ? {
+                gps_lat: roster.district.center_lat ?? 0,
+                gps_lng: roster.district.center_lng ?? 0,
+                boundary_polygon: roster.district.boundary_polygon,
+                name: roster.district.name,
+              }
+            : scheduleScope.scope === 'region' && roster?.region?.boundary_polygon
+              ? {
+                  gps_lat: roster.region.center_lat ?? 0,
+                  gps_lng: roster.region.center_lng ?? 0,
+                  boundary_polygon: roster.region.boundary_polygon,
+                  name: roster.region.name,
+                }
+              : undefined) ??
           assignedArea ??
           undefined
         }
@@ -676,7 +701,9 @@ const styles = StyleSheet.create({
   heroIdle: { backgroundColor: nbColors.white },
   heroTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    // Center so the status pill + chevron line up with the "SEDANG BERTUGAS"
+    // label (the pill is taller than the text — top-align read as misaligned).
+    alignItems: 'center',
     justifyContent: 'space-between',
     gap: nbSpacing.sm,
   },
@@ -684,18 +711,22 @@ const styles = StyleSheet.create({
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   heroMeta: { marginTop: nbSpacing.sm },
-  // Expanded hero: label:value table rows.
-  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.xs },
-  heroLocText: { flexShrink: 1 },
+  // Expanded hero: label:value table rows — sm gap so the rows breathe.
+  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
-  // Compact white refresh button beside the inline coords.
+  // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
+  heroAreaStatusValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: nbSpacing.sm,
+  },
+  // Compact white refresh button beside the area-status pill.
   heroGpsRefresh: {
     width: 30,
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
-    // Extra breathing room from the coords (on top of the row gap).
-    marginLeft: nbSpacing.sm,
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.widthBase,
     borderColor: nbColors.black,

@@ -29,6 +29,7 @@
         "clockInStart": "Clock in start",
         "status": "Attendance Status",
         "assignedArea": "Assigned Area",
+        "areaStatus": "Area Status",
         "duration": "Current shift duration",
         "currentLocation": "Current location"
       },

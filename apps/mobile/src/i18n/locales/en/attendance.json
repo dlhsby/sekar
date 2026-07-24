@@ -91,6 +91,9 @@
     "gpsLocation": "GPS Location",
     "currentTime": "Current Time",
     "scheduledShift": "Scheduled Shift",
+    "statusLabel": "Status",
+    "mapTitle": "Assigned Area",
+    "viewOnMap": "View on map",
     "assignedArea": "Assigned Area",
     "address": "Address",
     "areaType": "Area Type",
@@ -120,9 +123,9 @@
     "noScheduleChip": "No schedule",
     "noScheduleToday": "No schedule today",
     "scope": {
-      "city": "Citywide (Surabaya)",
-      "district": "District-wide ({{name}})",
-      "region": "Region-wide ({{name}})"
+      "city": "Surabaya",
+      "district": "{{name}}",
+      "region": "{{name}}"
     },
     "outsideWindowChip": "Outside Shift Window",
     "multiArea": "{{count}} locations",

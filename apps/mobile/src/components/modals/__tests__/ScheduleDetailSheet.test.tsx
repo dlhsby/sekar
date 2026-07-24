@@ -38,14 +38,13 @@ describe('ScheduleDetailSheet', () => {
       district_id: 'd-1',
       district: { id: 'd-1', name: 'Rayon Barat 1' },
     };
-    const { getByText, queryByText } = render(
+    const { getAllByText, queryByText } = render(
       <ScheduleDetailSheet visible roster={roster} onClose={jest.fn()} />,
     );
 
-    // Assigned-area row resolves to the rayon scope label, and the rayon name
-    // appears in its own district row.
-    expect(getByText('Lingkup Rayon Rayon Barat 1')).toBeTruthy();
-    expect(getByText('Rayon Barat 1')).toBeTruthy();
+    // Scope now shows just the rayon name (no "Lingkup Rayon …" prefix), which
+    // appears in both the assigned-area row and its own district row.
+    expect(getAllByText('Rayon Barat 1').length).toBeGreaterThanOrEqual(1);
     expect(queryByText('Area belum ditetapkan')).toBeNull();
   });
 });

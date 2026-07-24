@@ -29,6 +29,7 @@
         "clockInStart": "Mulai clock in",
         "status": "Status Kehadiran",
         "assignedArea": "Area Ditugaskan",
+        "areaStatus": "Status Area",
         "duration": "Durasi shift berjalan",
         "currentLocation": "Lokasi sekarang"
       },

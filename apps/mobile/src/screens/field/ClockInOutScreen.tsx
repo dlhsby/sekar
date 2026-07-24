@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GPSLocationSection, ImagePreviewModal, InfoTableRow, DateTimeValue } from '../../components/common';
+import { LocationMapModal } from '../../components/modals/LocationMapModal';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -21,6 +22,7 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import { useClockInOut } from '../../hooks';
+import { getRoleIcon } from '../../utils/mapUtils';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -58,12 +60,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     attendanceState,
     scheduleScope,
     rosterAreas,
+    mapArea,
     hasScheduleToday,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
     handleClockOut,
   } = useClockInOut();
+
+  const [mapVisible, setMapVisible] = useState(false);
 
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
 
@@ -94,6 +99,24 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   // district-scoped roles show a "no specific area" note instead.
   const userRole = useAppSelector((state) => state.auth.user?.role);
   const isDistrictScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
+
+  // The on-time/late/no-schedule pill — shown in the card HEADER while collapsed
+  // (at-a-glance), and in the "Status" body row while expanded. One source.
+  const statusBadge = hasScheduleToday ? (
+    <NBBadge
+      text={
+        attendanceState === 'outside_window'
+          ? t('attendance:clockInOut.outsideWindowChip')
+          : isLate
+            ? t('attendance:list.statusChip.late')
+            : t('attendance:list.statusChip.onTime')
+      }
+      color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
+      size="sm"
+    />
+  ) : (
+    <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
+  );
 
   // Loading GPS
   if (location.loading && !location.latitude) {
@@ -137,31 +160,16 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Informasi Kehadiran — standard card: title left, status pill right;
-              date/time + schedule + area inside the body. */}
+          {/* Informasi Kehadiran — the status pill shows in the header while
+              COLLAPSED (at-a-glance) and hides when open, since the "Status" body
+              row (below Jadwal Shift) then carries it. */}
           <NBCollapsibleCard
             headerLeft={
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.attendanceInfo')}
               </NBText>
             }
-            headerRight={
-              hasScheduleToday ? (
-                <NBBadge
-                  text={
-                    attendanceState === 'outside_window'
-                      ? t('attendance:clockInOut.outsideWindowChip')
-                      : isLate
-                        ? t('attendance:list.statusChip.late')
-                        : t('attendance:list.statusChip.onTime')
-                  }
-                  color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
-                  size="sm"
-                />
-              ) : (
-                <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
-              )
-            }
+            headerRight={(expanded) => (expanded ? null : statusBadge)}
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
@@ -177,6 +185,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   value={t('attendance:clockInOut.noScheduleToday')}
                 />
               )}
+              {/* Status — the on-time/late/no-schedule pill (also shown in the
+                  header while collapsed). */}
+              <InfoTableRow label={t('attendance:clockInOut.statusLabel')} value={statusBadge} />
               {rosterAreas.length > 1 ? (
                 // Today's assignment covers several lokasi — list them all, not
                 // just the primary. Clock-in is accepted at ANY of them; the
@@ -229,20 +240,13 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               )}
             </View>
 
-            {/* Lokasi GPS — merged into this same card (it was a second card
-                sitting right next to this one, per UX review). One area-status
-                badge + one coordinate readout, no duplicates. */}
+            {/* Lokasi GPS — merged into this same card. The within/outside pill
+                that used to sit here duplicated the status alert below, so it's
+                gone; the alert itself is now tappable to open the map. */}
             <View style={styles.gpsHeader}>
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.gpsLocation')}
               </NBText>
-              {location.latitude != null && (areaState === 'within' || areaState === 'outside') && (
-                <NBBadge
-                  text={areaState === 'within' ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
-                  color={areaState === 'within' ? 'success' : 'danger'}
-                  size="sm"
-                />
-              )}
             </View>
             <GPSLocationSection
               latitude={location.latitude}
@@ -263,6 +267,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   : undefined
               }
               areaName={assignedArea?.name}
+              onShowMap={location.latitude != null ? () => setMapVisible(true) : undefined}
             />
             {!isClockIn && currentShift && (
               <View style={styles.clockInInfo}>
@@ -331,6 +336,47 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           uri={selfiePreviewUri}
           onClose={() => setSelfiePreviewUri(null)}
           title={t('attendance:clockInOut.selfiePreviewTitle')}
+        />
+
+        {/* GPS + assigned-area map — draws where the worker is vs the boundary
+            they're supposed to be inside, so "luar area" is actionable. */}
+        <LocationMapModal
+          visible={mapVisible}
+          onClose={() => setMapVisible(false)}
+          title={t('attendance:clockInOut.mapTitle')}
+          location={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            isWithinArea: isWithinBoundary,
+            updatedAt: currentTime,
+          }}
+          area={mapArea}
+          hideAreaStatus={areaState === 'none' || areaState === 'scope'}
+          // Worker pin = role glyph (matches the monitoring map), tinted by
+          // whether they're inside the boundary.
+          workerMarker={
+            userRole
+              ? {
+                  iconName: getRoleIcon(userRole),
+                  color: areaState === 'outside' ? nbColors.statusOutside : nbColors.statusActive,
+                }
+              : undefined
+          }
+          // Area pin = a glyph for the assigned scope (rayon / kawasan / lokasi).
+          areaMarker={
+            mapArea
+              ? {
+                  iconName:
+                    scheduleScope.scope === 'district'
+                      ? 'office-building'
+                      : scheduleScope.scope === 'region'
+                        ? 'forest'
+                        : 'leaf',
+                  color: nbColors.statusActive,
+                }
+              : undefined
+          }
         />
 
         {/* Submit Button — fixed at bottom, scrollable area sits above */}
