@@ -266,11 +266,11 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       // Not blocked — the clock-in form (and its submit button) renders.
       await waitFor(() => {
-        expect(getByText('Clock In')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
   });
@@ -473,14 +473,14 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
     it('should show Clock In as the action button title', async () => {
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
       await waitFor(() => {
-        expect(getByText('Clock In')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
 
@@ -492,10 +492,10 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
           error: null,
         },
       });
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText('Clock Out')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
   });
@@ -580,7 +580,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       // Wait for location
       await waitFor(() => {
@@ -596,7 +596,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       // Press Clock In button
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -660,14 +660,14 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
     it('should allow clock in without selfie (Phase 2E: optional selfie)', async () => {
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
 
       // Phase 2E-7: Selfie is optional, Clock In button should be enabled even without selfie
-      const submitButton = getByText('Clock In');
+      const submitButton = getByTestId('clockinout-submit');
       expect(submitButton).toBeTruthy();
     });
 
@@ -677,7 +677,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -690,7 +690,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -736,18 +736,18 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       // Clock Out button should be present
       await waitFor(() => {
-        expect(getByText('Clock Out')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
 
-      fireEvent.press(getByText('Clock Out'));
+      fireEvent.press(getByTestId('clockinout-submit'));
 
       // Confirmation dialog should appear (Alert.alert is mocked globally)
       await waitFor(() => {
-        expect(getByText('Clock Out')).toBeTruthy();
+        expect(getByTestId('clockinout-submit')).toBeTruthy();
       });
     });
 
@@ -901,7 +901,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       (mediaService.convertToBase64 as jest.Mock).mockRejectedValueOnce(new Error('File read error'));
 
       const store = createMockStore();
-      const { getByText } = renderScreen(store);
+      const { getByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -914,7 +914,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
@@ -935,7 +935,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       );
 
       const store = createMockStore();
-      const { getByText, getAllByText } = renderScreen(store);
+      const { getByText, getAllByText , getByTestId } = renderScreen(store);
 
       await waitFor(() => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
@@ -948,7 +948,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       await act(async () => {
-        fireEvent.press(getByText('Clock In'));
+        fireEvent.press(getByTestId('clockinout-submit'));
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 

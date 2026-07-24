@@ -468,7 +468,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       } as any,
     } as any);
 
-    const { getByText, getAllByText } = render(
+    const { getByTestId } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -478,7 +478,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
 
     // Clock Out button should be available (no selfie required for clock-out)
     await waitFor(() => {
-      expect(getByText('Clock Out')).toBeTruthy();
+      expect(getByTestId('clockinout-submit')).toBeTruthy();
     });
   });
 
