@@ -41,10 +41,41 @@ workbook set.
 | **F6** | `production.ts` doesn't seed roles/permissions (unlike `reference.ts`) — the F1 trap is armed for production too. | Add `seedPermissions`/`seedRoles` to the production profile. | ⏳ |
 | **F7** | Role codes renamed; the permission cache is Redis-keyed by role code (TTL 300 s). | Forced re-login for everyone; flush `rbac:role:*` post-deploy. | ⏳ |
 | **F8** | Installed mobile APKs emit pre-revamp shapes (`rayon_id`, `/areas`, 5-status). | Staging APK ships **with** the release; field devices must update. | ⏳ |
+| **F9** | **Activity photos are stored as base64 data-URIs inline in Postgres**, not as S3 objects. Mobile converts each photo to base64 (`useActivityForm.ts:305`) and posts it in `photo_urls`; the DTO only `@IsString`-validates (`create-activity.dto.ts:90`); there is **no S3 upload path for activities** and the read path even has explicit `data:`/`blob:` pass-through guards (`s3.service.ts:257`) — so this is established behaviour, not a stray row. Result: `activities` is **5.8 GB for 10,786 rows** (~537 KB/row). The staging backend (`mem_limit: 448m`, `node` with **no `--max-old-space-size`** → Node auto-caps old-space ~256 MB) is in an **OOM crash loop** (`RestartCount ≈ 994`, `FATAL ERROR: Reached heap limit`). `findMyActivities` (`activity-query.service.ts:74`) does an **unbounded** `find()` returning full `photo_urls`; even the paginated list loads ~50 rows × up to 3 × ~500 KB and re-serialises them to JSON. | **Cutover blocker + pre-existing prod defect.** Fix tier-1 before cutover (cap/queries + explicit heap); the data-URI→S3 migration is a larger follow-up. See §8. | 🔴 open |
 
 ---
 
 ## 3. Rehearsal (must pass before go-live)
+
+> **First rehearsal PASSED — 2026-07-24**, against the `dlhsby-clone-rehearsal` RDS
+> instance (today's 11:14 snapshot restored to a temporary `t4g.micro`, reached over an
+> SSM tunnel). Results below. Re-run before the actual cutover if staging data has moved
+> materially since.
+>
+> - **Chain:** 39 pending migrations (the 38 revamp migrations + `17517500000000`) applied
+>   clean, exit 0, **~33 s total** on `t4g.micro` — the two data-adoption migrations
+>   (`17496`, `17500`) both ran (they act only on an existing DB). The 25-min deploy poll
+>   (F3) is comfortably safe.
+> - **No constraint aborted:** 0 duplicate `(user, date, shift, place)` groups before the
+>   run, so `17517`'s unique index applied without rejecting a row.
+> - **Multi-place preservation (F-DATA-LOSS):** all 136,292 assignments archived to
+>   `schedule_locations_archive`; the 2,600 multi-location schedules re-expressed as
+>   204 kawasan-scoped + 2,204 rayon-scoped + 192 fanned-out (schedules 25,306 → 40,118).
+>   **`staging-verify-multiplace.sql` → 134,776 live assignments, 134,776 covered, 0 lost.**
+>   (1,516 archived assignments were uncovered — all on the 14 already-soft-deleted
+>   schedules, correctly not resurrected.)
+> - **Role rename 1:1:** `admin_data`→`admin_rayon` (12), `top_management`→`management`
+>   (15), 0 null roles, and **every `users.role` matches a seeded role code** (0 orphans).
+> - **RBAC (F1):** roles/permissions/role_permissions were **0/0/0 after migration alone**
+>   — confirming the trap — then `db:seed:prod` populated **9 / 72 / 96**, every role with a
+>   `monitoring_scope`; a second run left them unchanged (idempotent), schedules steady.
+> - **Geography:** areas→locations (955, 0 orphaned), rayons→districts (10), 129 kawasan
+>   seeded, 365 region-less locations (Taman Aktif, legit); tracking status collapsed 5→3
+>   with totals preserved (1,120).
+> - **Explained deltas only.** The one to sign off with the operator: staffing
+>   `area_staff_requirements` 332 → `location_staff_requirements` **195** — `17500` clearing
+>   auto-seeded rows for the authoritative workbook set (config data, re-derivable), as
+>   designed. Confirm none were hand-edited via the UI.
 
 Run against a **restored dump of real staging data** on a throwaway PG15 — never against AWS.
 
@@ -113,6 +144,41 @@ Decision tree:
 
 Snapshot restore creates a **new RDS instance** — the endpoint changes, so the backend's
 `DATABASE_HOST` (SSM parameter) must be repointed and the container recreated.
+
+---
+
+## 8. F9 — activity photos as inline data-URIs (OOM)
+
+**Root cause.** Activity photos are base64 data-URIs stored inline in
+`activities.photo_urls` (`text[]`). Mobile base64-encodes each photo and posts it
+(`apps/mobile/src/hooks/useActivityForm.ts:305`); the backend stores it verbatim
+(`create-activity.dto.ts` only `@IsString`s it) — there is no S3 upload for activities,
+and the read path deliberately passes `data:`/`blob:` URIs through untouched
+(`s3.service.ts:257`). So `activities` is 5.8 GB for ~10.8k rows, and any read pulls
+megabytes into a ~256 MB heap.
+
+**Tier 1 — unblock the cutover (backend only, no data change):**
+- Give `findMyActivities` a bounded `take` (it is currently an unbounded `find()`), and
+  keep the paginated list's page size small.
+- Stop returning `photo_urls` in **list** responses — project a `photo_count` / `has_photos`
+  instead, and load the actual photos only on the single-activity detail read.
+- Run `node` with an explicit `--max-old-space-size` matched to `mem_limit` so the cap is
+  intentional rather than auto-derived (raising `mem_limit` needs box headroom — the
+  co-tenant apps were stopped to buy some).
+
+**Tier 2 — the real fix (follow-up project, drops the DB ~8 GB → <1 GB):**
+- Migrate existing data-URIs out of Postgres into S3 (`sekar-media-staging`), rewriting
+  `photo_urls` to object keys; presign on read (the machinery already exists in
+  `s3.service.ts`).
+- Change mobile to upload to S3 (presigned PUT) and send keys, not base64.
+- Validate `photo_urls` as keys/URLs, rejecting `data:` payloads at the DTO.
+
+Tier 2 is out of scope for the cutover itself but must be tracked — the same bloat and
+OOM ride along to production otherwise.
+
+**Interim mitigation applied 2026-07-24:** the co-tenant apps sharing the box
+(`swat-*`, `mm-web`, `portal-web`) were stopped (`docker stop`, reversible via
+`docker start`) to relieve memory pressure while this is resolved.
 
 ---
 

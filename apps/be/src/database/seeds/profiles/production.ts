@@ -1,5 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { runProfileCli, type SeedContext } from '../lib/context';
+import { seedPermissions } from '../entities/permission';
+import { seedRoles } from '../entities/role';
 import { seedAreaTypes } from '../entities/area-type';
 import { seedDistricts } from '../entities/district';
 import { seedShiftDefinitions } from '../entities/shift-definition';
@@ -39,6 +41,19 @@ async function seedProduction(ctx: SeedContext): Promise<void> {
   ctx.log('');
 
   // DO NOT truncate — this is production!
+
+  // Dynamic RBAC (ADR-044) — MUST come first, and must not be omitted.
+  //
+  // The migration that creates roles/permissions/role_permissions leaves them
+  // EMPTY, and no migration ever inserts rows. With empty tables
+  // RolePermissionsService resolves [] for every role, so every
+  // @RequirePermissions handler 403s and every role's monitoring_scope is `none` —
+  // the app comes up authenticated but authorization-dead. This profile omitted
+  // them (unlike `reference.ts`), which armed exactly that failure for the
+  // production cutover. Both seeders are idempotent; grants are seeded only when
+  // a role has none, so re-running never clobbers operator edits.
+  await seedPermissions(ctx);
+  await seedRoles(ctx);
 
   // Reference data (all idempotent via ON CONFLICT DO NOTHING).
   await seedAreaTypes(ctx);
