@@ -20,6 +20,7 @@ import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { Shift } from '../shifts/entities/shift.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
@@ -204,6 +205,12 @@ export class SchedulesService {
     private readonly locationRepo: Repository<Location>,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
+    // Read-only: resolve the roster row a still-open shift was started from, so a
+    // dangling/overrun cross-midnight shift keeps its schedule + area. Registered
+    // via TypeOrmModule.forFeature in schedules.module — no ShiftsModule import,
+    // so no circular dependency (shifts already depends on schedules).
+    @InjectRepository(Shift)
+    private readonly shiftRepo: Repository<Shift>,
     private readonly userAreasService: UserLocationsService,
     private readonly auditLogService: AuditLogService,
     private readonly materializer: ScheduleMaterializerService,
@@ -771,11 +778,41 @@ export class SchedulesService {
     });
 
     const todays = await this.findByUserAndDate(userId, today);
-    if (!carried) return todays;
-    if (!todays?.shift_definition) return carried;
+    const resolved = !carried
+      ? todays
+      : !todays?.shift_definition
+        ? carried
+        : // Both exist: today's row wins only once it has actually started.
+          nowMin >= minutesOf(todays.shift_definition.start_time)
+          ? todays
+          : carried;
 
-    // Both exist: today's row wins only once it has actually started.
-    return nowMin >= minutesOf(todays.shift_definition.start_time) ? todays : carried;
+    // A still-open shift that has OVERRUN its window no longer matches the
+    // carried-tail test above (`now >= end_time`), yet the worker is demonstrably
+    // still on it — the attendance record has no clock-out. At 05:42 on a Shift 3
+    // (21:00–05:00) that was never closed, the plain resolution is empty and the
+    // worker was shown "belum ada jadwal / tanpa area" mid-shift. Fall back to the
+    // open shift's own roster row so the home hero + clock-out screen show the
+    // real schedule/area and the geofence tests the right boundary. Only when
+    // nothing else is operative, so a genuine current-day shift is never shadowed.
+    return resolved ?? (await this.rosterRowForOpenShift(userId));
+  }
+
+  /**
+   * The roster row a currently-open shift (clocked in, not yet clocked out) was
+   * started from — matched by the shift's WIB service-day + its shift definition.
+   * Null when there is no open shift, or it was an ad-hoc clock-in with no roster
+   * row (a genuinely unscheduled worker, correctly still "belum ada jadwal").
+   */
+  private async rosterRowForOpenShift(userId: string): Promise<Schedule | null> {
+    const open = await this.shiftRepo.findOne({
+      where: { user_id: userId, clock_out_time: IsNull() },
+      order: { clock_in_time: 'DESC' },
+    });
+    if (!open?.shift_definition_id) return null;
+    const startDate = TimezoneUtil.jakartaDateString(open.clock_in_time);
+    const rows = await this.findAllByUserAndDate(userId, startDate);
+    return rows.find((r) => r.shift_definition_id === open.shift_definition_id) ?? null;
   }
 
   private addDaysToDate(dateStr: string, days: number): string {
