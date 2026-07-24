@@ -76,6 +76,21 @@ workbook set.
 >   `area_staff_requirements` 332 → `location_staff_requirements` **195** — `17500` clearing
 >   auto-seeded rows for the authoritative workbook set (config data, re-derivable), as
 >   designed. Confirm none were hand-edited via the UI.
+>
+> **Per-role auth gate (backend booted against the migrated + seeded clone) — PASS.**
+> All 9 roles authenticate and `/auth/me` returns 200 (superadmin, admin_system, management,
+> kepala_rayon, admin_rayon, korlap, satgas, linmas, staff_kecamatan) — the real end-to-end
+> proof that the RBAC seed is complete (no role resolves to empty permissions). Permission
+> matrix correct: `/monitoring/city`, `/roles`, `/settings` → 200 for city-scope roles,
+> **403** for district/field roles; `/users` → 403 for satgas/linmas/staff_kecamatan;
+> `/districts` → 200 for all. **Caveat:** heavy schedule/monitoring endpoints could NOT be
+> load-tested through the SSM tunnel — the backend's `onApplicationBootstrap` `selfHeal`
+> materialization pass (pre-existing, ADR-047) saturated the single tunnelled connection
+> (`START TRANSACTION` alone measured 1.3 s), so those endpoints timed out and a transient
+> `/monitoring/city` 500 appeared *after* it had returned 200 cleanly. That is a tunnel
+> artifact, not a code defect — endpoint latency belongs in the **post-deploy smoke**
+> (co-located BE↔RDS), and the boot `selfHeal` means the first minutes after cutover do a
+> one-time materialization pass (fire-and-forget, fast co-located).
 
 Run against a **restored dump of real staging data** on a throwaway PG15 — never against AWS.
 

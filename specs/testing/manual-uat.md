@@ -626,6 +626,58 @@ docker exec sekar-postgres psql -U postgres -d sekar_db -c \
 
 ---
 
+## 12A. Staging release acceptance (post-cutover, on staging — not local)
+
+Run **after** the `main → staging` cutover, against the live staging URLs, before declaring
+the release good. This is the revamp cutover's acceptance pass; the runbook +
+go/no-go gate is [`../deployment/staging-cutover-runbook.md`](../deployment/staging-cutover-runbook.md).
+
+**URLs / access (pointers, not secrets):** web `https://sekar.wahyutrip.com` ·
+API `https://api.sekar.wahyutrip.com/api/v1` · docs `https://docs.sekar.wahyutrip.com` ·
+Android `https://sekar.wahyutrip.com/android`. Real staging users keep their own passwords
+(the reference seed does **not** reset them); the operator supplies one login per role.
+
+**12A.1 Data-integrity check (only the operator can do this).** Before anything else, the
+operator confirms their **own pre-existing staging records survived** the migration — a
+few known activities, schedules, users, pruning requests they created are still present and
+correct. The cutover rehearsal proved zero unexplained row loss on a clone, but this is the
+live confirmation. **If anything is missing, STOP and follow the runbook rollback tree.**
+
+**12A.2 Per-role authorization (the RBAC-seed gate).** Log in as **each of the 9 roles** and
+confirm landing + no unexpected 403s. This is where an incomplete RBAC seed would surface as
+a blank/denied dashboard (hazard F1). Rehearsal on the clone passed this; re-confirm live.
+
+| Role | Lands on | Must see | Must NOT see |
+|---|---|---|---|
+| superadmin / admin_system | Monitoring (city) | roles, settings, users, all masters | — |
+| management | Monitoring (city) | monitoring city + district drill, reports | roles/settings edit |
+| kepala_rayon / admin_rayon | Monitoring (their rayon) | their district's users/schedules/activities | other rayon; roles/settings |
+| korlap | Monitoring (their scope) | their area monitoring, activities | admin masters |
+| satgas / linmas | Home (clock-in) | own schedule, tugas, aktivitas | monitoring admin, users, roles |
+| staff_kecamatan | Pruning intake | submit / my requests | everything else |
+
+**12A.3 Revamp features (spot-check on real data):**
+- [ ] Monitoring drill **city → district → region(kawasan) → location**, incl. the **region-less
+      Taman Aktif** bucket; worker markers at their own scope; **"Luar Jadwal"** ad-hoc markers +
+      count chip at city.
+- [ ] Schedules **day board** + occurrences + teams; **Belum Dijadwalkan** (ADR-054) lists gaps;
+      a **multi-place** worker (ADR-053) shows under each assigned lokasi.
+- [ ] Clock in/out **with and without** a schedule; ad-hoc reads as "Luar Jadwal" and is **not**
+      counted in staffing.
+- [ ] Activities: create with photos → list shows the **photo count** (not the images), detail
+      shows the photos (F9 tier-1); pruning, overtime, notifications, settings, master data.
+- [ ] Forced re-login worked for all users (role codes were renamed); no stale-permission oddities.
+
+**12A.4 Mobile (staging APK).** Install the release APK (F8 — installed old APKs emit pre-revamp
+shapes and will break against the new backend). Repeat the field-worker flow: login (incl. forced
+reset), clock-in with/without schedule, submit an activity with photos, tugas. Confirm the in-app
+version checker matches `GET /app-releases/latest`.
+
+**12A.5 Post-deploy smoke (co-located — catches what the tunnel rehearsal could not):** the
+schedule/monitoring endpoints under real BE↔RDS latency. Confirm `/schedules/unscheduled`,
+`/schedule-events`, `/monitoring/city|aggregate` return promptly (the first minutes after boot run
+a one-time `selfHeal` materialization pass — expect a brief warm-up, then fast).
+
 ## 12. Sign-off
 
 | Area | Owner | Result | Notes |
@@ -635,9 +687,11 @@ docker exec sekar-postgres psql -U postgres -d sekar_db -c \
 | Mobile (§7) | | | |
 | Role matrix (§8) | | | |
 | Revamp deep-dives (§9) | | | |
+| **Staging release (§12A)** | | | data-integrity + 9-role auth + APK |
 
 **Blocking issues:** _______  **UAT verdict:** ☐ Pass ☐ Pass-with-notes ☐ Fail
 
 ## Changelog
+- 2026-07-24 — Added **§12A staging release acceptance** (post-cutover, on staging): operator data-integrity check, per-role authorization gate (the RBAC-seed proof), revamp feature spot-checks, staging-APK flow, and the co-located post-deploy smoke that the SSM-tunnel rehearsal couldn't cover. Companion to the new `deployment/staging-cutover-runbook.md`. Rehearsal on a real-data clone passed the 9-role auth gate.
 - 2026-07-22 — Added **§0 from-scratch setup + clean-reset recovery** (documents the two migration-run failure modes and the drop-recreate fix) and a **§2.6 conceptual primer** ("how schedules work" — event→occurrence model; "how monitoring works" — drill-down + 3-axis presence). Fixed two from-scratch **migration bugs**: a shipped class renamed by the rayon→district sweep (`RenameManagementAndAdmin**District**Roles`→ restored to `…RayonRoles`) and a 13-digit timestamp typo on `DropMarkerImageUrl` (→14-digit) that mis-sorted it before its dependencies — a clean `migration:run` now applies all 80 in order. Marked the excused-pill note done (shipped in web `OnLeaveList` / mobile `MonitoringStatusSheet`). Verified end-to-end: fresh drop→migrate→seed (exit 0), backend boots, login + `/monitoring/{city,live-users}` + `/schedules/date/:date` + `/districts` all 200.
 - 2026-07-22 — Created. Covers ADR-044…052 revamp across be/web/mobile for all 9 roles, with real seed credentials + step/expected/result cases. Shipped alongside a **task seeder** (18 tasks, all statuses + scopes) and fixes to the region/location seed loaders (`rayon_id`→`district_id`) so the demo data seeds completely.
