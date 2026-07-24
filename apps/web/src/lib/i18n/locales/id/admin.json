@@ -97,6 +97,7 @@
     "columnId": "ID",
     "columnName": "Nama",
     "columnDistrict": "Rayon",
+    "columnKawasan": "Kawasan",
     "columnType": "Tipe",
     "columnArea": "Luas",
     "columnAddress": "Alamat",

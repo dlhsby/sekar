@@ -73,12 +73,19 @@ SEKAR uses Docker Compose to run all local infrastructure. Services are defined 
 
 | Service | Purpose | Port | Credentials | Data Location |
 |---------|---------|------|-------------|---|
-| **PostgreSQL 14** | Primary database | 5432 | postgres/postgres, db: sekar_db | `infra/data/` |
+| **PostgreSQL 15** | Primary database | 5432 | postgres/postgres, db: sekar_db | `infra/data/` |
 | **Adminer** | Web database UI | 8080 | (use DB creds above) | — |
 | **MinIO** | S3-compatible object storage | 9000 (API), 9001 (console) | minioadmin/minioadmin | `sekar-minio-data` volume |
 | **Redis 7** | In-memory cache, streaming | 16379 | — | `sekar-redis-data` volume |
 
 **Note:** MinIO replaces LocalStack (the production stack also uses MinIO, so dev and prod behave identically). Adminer is the lightweight database UI (alternative to pgAdmin).
+
+> **PostgreSQL 15 (matches staging).** Dev was bumped from 14 → 15 so local and staging run the same major (a PG15 dump won't restore into PG14, and behaviour now matches). **A pre-existing PG14 data volume will not start under the 15 image** — Postgres refuses to boot on a v14 data dir. Reset once when you adopt this:
+> ```bash
+> ./scripts/stop.sh --infra          # stop containers
+> rm -rf infra/data                  # drop the PG14 data dir (local dev data only — bind mount)
+> ./scripts/setup.sh --yes           # infra up (PG15) + migrate + reseed
+> ```
 
 ### Starting & Stopping Services
 

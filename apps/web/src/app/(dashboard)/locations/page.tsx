@@ -29,6 +29,7 @@ import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/api/client';
 import { useUsers } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
+import { useRegions } from '@/lib/api/regions';
 import { useLocationTypes } from '@/lib/api/location-types';
 import { useAuth } from '@/lib/auth/hooks';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
@@ -65,6 +66,19 @@ export default function LocationsPage() {
   const districtLevel = useMemo(
     () => new Map((allDistricts ?? []).map((r) => [r.id, r.staffing_level ?? 'region'])),
     [allDistricts]
+  );
+  // Kawasan (region) resolver + filter options. A lokasi carries only `region_id`
+  // (no relation on the list), so resolve the name here — same pattern as the
+  // district/actor lookups. `includeInactive` so a lokasi under a deactivated
+  // kawasan still resolves its name.
+  const { data: allRegions } = useRegions(undefined, true);
+  const regionNameById = useMemo(
+    () => new Map((allRegions ?? []).map((r) => [r.id, r.name])),
+    [allRegions]
+  );
+  const regionFilterOptions = useMemo(
+    () => (allRegions ?? []).map((r) => ({ value: r.name, label: r.name })),
+    [allRegions]
   );
   const { data: allAreaTypes } = useLocationTypes();
   const locationTypeFilterOptions = useMemo(
@@ -124,6 +138,23 @@ export default function LocationsPage() {
           filterOptions: districtFilterOptions,
         },
         cell: ({ row }) => <span>{row.original.district?.name ?? '—'}</span>,
+      },
+      {
+        id: 'kawasan',
+        // Region-less lokasi (Taman Aktif, or a lokasi not mapped to a kawasan)
+        // sort/filter as an empty value; the cell shows a dash.
+        accessorFn: (a) => (a.region_id ? (regionNameById.get(a.region_id) ?? '') : ''),
+        header: t('admin:locations.columnKawasan'),
+        meta: {
+          label: t('admin:locations.columnKawasan'),
+          filterVariant: 'enum',
+          filterOptions: regionFilterOptions,
+        },
+        cell: ({ row }) => (
+          <span>
+            {row.original.region_id ? (regionNameById.get(row.original.region_id) ?? '—') : '—'}
+          </span>
+        ),
       },
       {
         id: 'area_type',
@@ -289,7 +320,7 @@ export default function LocationsPage() {
         ),
       },
     ],
-    [t, actorName, districtFilterOptions, locationTypeFilterOptions]
+    [t, actorName, districtFilterOptions, regionNameById, regionFilterOptions, locationTypeFilterOptions]
   );
 
   /**

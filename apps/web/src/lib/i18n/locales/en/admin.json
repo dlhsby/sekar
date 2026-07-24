@@ -97,6 +97,7 @@
     "columnId": "ID",
     "columnName": "Name",
     "columnDistrict": "District",
+    "columnKawasan": "Region",
     "columnType": "Type",
     "columnArea": "Area",
     "columnAddress": "Address",
