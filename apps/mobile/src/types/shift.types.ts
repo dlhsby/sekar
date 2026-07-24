@@ -75,16 +75,30 @@ export interface Schedule {
   // available for the lateness check instead of being defaulted.
   shift_definition: ShiftDefinition | null;
   district_id?: string | null;
+  // Geometry included so a rayon-scope assignment can be geofenced against the
+  // rayon's own boundary (ADR-045/046) — not just named.
   district: {
     id: string;
     name: string;
+    center_lat?: number | null;
+    center_lng?: number | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
   } | null;
   // Kawasan scope (ADR-046) — set when the assignment covers a whole region
-  // rather than a single lokasi.
+  // rather than a single lokasi. Geometry included for the same reason.
   region_id?: string | null;
   region?: {
     id: string;
     name: string;
+    center_lat?: number | null;
+    center_lng?: number | null;
+    boundary_polygon?:
+      | { type: 'Polygon'; coordinates: [number, number][][] }
+      | { type: 'MultiPolygon'; coordinates: [number, number][][][] }
+      | null;
   } | null;
   /**
    * Lokasi this occurrence is scoped to — ADR-053: exactly ONE place per row.

@@ -397,7 +397,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
       // GPS card is collapsed by default — expand to see the soft warning.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
       await waitFor(() => {
@@ -464,7 +464,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       });
 
       // GPS card is collapsed by default — expand to see the in-area banner.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       await waitFor(() => {
         expect(getByText(/Anda berada di dalam area kerja/i)).toBeTruthy();
@@ -648,7 +648,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
       });
       // GPS card is collapsed by default — expand to see the soft warning.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       await waitFor(() => {
         // Phase 2C: Soft warning shown but clock-in NOT blocked
@@ -819,7 +819,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       // The elapsed HH:MM:SS timer lives in the (collapsed-by-default) GPS card.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       await waitFor(() => {
         // Timer should show elapsed time

@@ -76,7 +76,7 @@ describe('GPSLocationSection', () => {
     expect(getByText(/-7\.250445, 112\.768845/)).toBeTruthy();
   });
 
-  it('shows accuracy badge when accuracy is provided', () => {
+  it('shows the accuracy value in the detail block', () => {
     const { getByText } = render(
       <GPSLocationSection
         latitude={-7.0}
@@ -86,7 +86,10 @@ describe('GPSLocationSection', () => {
         onRefresh={mockRefresh}
       />,
     );
-    expect(getByText(/±15m akurasi/)).toBeTruthy();
+    // Accuracy lives ONCE, in the labelled detail block (the duplicate
+    // "±15m akurasi" caption in the status row was removed).
+    expect(getByText('Akurasi:')).toBeTruthy();
+    expect(getByText('15m')).toBeTruthy();
   });
 
   it('does not show accuracy badge when accuracy is null', () => {
@@ -117,7 +120,7 @@ describe('GPSLocationSection', () => {
     expect(getByText('Taman Bungkul')).toBeTruthy();
   });
 
-  it('shows coordinate string in status row when no areaName', () => {
+  it('shows a neutral status label and the coords only in the detail block when no areaName', () => {
     const { getByText } = render(
       <GPSLocationSection
         latitude={-7.2504}
@@ -126,8 +129,11 @@ describe('GPSLocationSection', () => {
         onRefresh={mockRefresh}
       />,
     );
-    // Short 4-decimal format used in status row
-    expect(getByText(/-7\.2504, 112\.7688/)).toBeTruthy();
+    // Status row is a short status now (coords were a duplicate of the detail
+    // block below and were removed).
+    expect(getByText('Lokasi terekam')).toBeTruthy();
+    // The precise 6-decimal coordinate appears once, in the detail block.
+    expect(getByText(/-7\.250400, 112\.768800/)).toBeTruthy();
   });
 
   // ─── Boundary check ─────────────────────────────────────────────────────────

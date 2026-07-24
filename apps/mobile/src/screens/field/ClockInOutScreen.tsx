@@ -213,53 +213,37 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   )}
                 </>
               ) : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location' ? (
-                // Scheduled city / rayon / kawasan-wide: there is no single lokasi
-                // to name, but the worker IS assigned — say which scope.
-                <>
-                  <InfoTableRow
-                    label={t('attendance:clockInOut.assignedArea')}
-                    value={t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
-                      name: scheduleScope.name ?? '',
-                    })}
-                  />
-                  <NBText variant="body-sm" color="gray600">
-                    {t(`attendance:clockInOut.scope.${scheduleScope.scope}Hint`)}
-                  </NBText>
-                </>
+                // Scheduled city / rayon / kawasan-wide: name the scope. The
+                // "tanpa lokasi tertentu" hint that used to sit here was pure
+                // duplication of this row and is gone.
+                <InfoTableRow
+                  label={t('attendance:clockInOut.assignedArea')}
+                  value={t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
+                    name: scheduleScope.name ?? '',
+                  })}
+                />
               ) : isDistrictScoped ? (
                 <InfoTableRow label={t('attendance:clockInOut.districtCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />
               ) : (
                 <NBText variant="body-sm" color="gray600">{t('attendance:clockInOut.noAreaAssigned')}</NBText>
               )}
             </View>
-          </NBCollapsibleCard>
 
-          {/* GPS / Location Card — above selfie; collapsed by default */}
-          <NBCollapsibleCard
-            headerLeft={
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>{t('attendance:clockInOut.gpsLocation')}</NBText>
-            }
-            headerRight={location.latitude != null
-              ? areaState === 'scope'
-                ? <NBBadge
-                    text={t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
-                      name: scheduleScope.name ?? '',
-                    })}
-                    color="primary"
-                    size="sm"
-                  />
-                : areaState === 'none'
-                ? <NBBadge text={t('attendance:clockInOut.noAreaChip')} color="gray" size="sm" />
-                : <NBBadge
-                    text={areaState === 'within' ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
-                    color={areaState === 'within' ? 'success' : 'danger'}
-                    size="sm"
-                  />
-              : undefined
-            }
-            accessibilityLabel={t('attendance:clockInOut.gpsLocation')}
-            style={styles.gpsCard}
-          >
+            {/* Lokasi GPS — merged into this same card (it was a second card
+                sitting right next to this one, per UX review). One area-status
+                badge + one coordinate readout, no duplicates. */}
+            <View style={styles.gpsHeader}>
+              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
+                {t('attendance:clockInOut.gpsLocation')}
+              </NBText>
+              {location.latitude != null && (areaState === 'within' || areaState === 'outside') && (
+                <NBBadge
+                  text={areaState === 'within' ? t('attendance:clockInOut.inBoundary') : t('attendance:clockInOut.outOfBoundary')}
+                  color={areaState === 'within' ? 'success' : 'danger'}
+                  size="sm"
+                />
+              )}
+            </View>
             <GPSLocationSection
               latitude={location.latitude}
               longitude={location.longitude}
@@ -399,8 +383,15 @@ const styles = StyleSheet.create({
   cardLabel: {
     marginBottom: nbSpacing.xs,
   },
-  gpsCard: {
-    backgroundColor: nbColors.statusIdleBg,
+  // Separates the GPS block from the attendance table inside the merged card.
+  gpsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: nbSpacing.md,
+    paddingTop: nbSpacing.md,
+    borderTopWidth: nbBorders.widthThin,
+    borderTopColor: nbColors.gray300,
   },
   infoTable: {
     gap: nbSpacing.sm,

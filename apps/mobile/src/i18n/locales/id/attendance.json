@@ -119,14 +119,10 @@
     "clockInColonLabel": "Clock In:",
     "noScheduleChip": "Tanpa jadwal",
     "noScheduleToday": "Belum ada jadwal hari ini",
-    "noAreaChip": "Tanpa area",
     "scope": {
       "city": "Lingkup Kota Surabaya",
       "district": "Lingkup Rayon {{name}}",
-      "region": "Lingkup Kawasan {{name}}",
-      "cityHint": "Ditugaskan se-Kota Surabaya — tanpa lokasi tertentu",
-      "districtHint": "Ditugaskan se-Rayon — tanpa lokasi tertentu",
-      "regionHint": "Ditugaskan se-Kawasan — tanpa lokasi tertentu"
+      "region": "Lingkup Kawasan {{name}}"
     },
     "outsideWindowChip": "Di Luar Jam Shift",
     "multiArea": "{{count}} lokasi",
@@ -135,7 +131,7 @@
   "gpsSection": {
     "capturingLocation": "Mendapatkan lokasi...",
     "locationUnavailable": "Lokasi tidak tersedia",
-    "accuracy": "akurasi",
+    "locationRecorded": "Lokasi terekam",
     "withinBoundary": "Anda berada di dalam area kerja",
     "outsideBoundary": "Anda berada di luar area kerja. Absen tetap dicatat.",
     "gpsLabel": "GPS:",
@@ -143,7 +139,7 @@
     "lowAccuracyWarning": "GPS kurang akurat. Pindah ke area terbuka untuk hasil lebih baik.",
     "updateGpsButton": "Perbarui GPS",
     "noArea": "Tidak ada area penugasan — kehadiran tetap dicatat.",
-    "scopeAssigned": "Ditugaskan {{scope}} — tanpa batas lokasi tertentu, kehadiran tetap dicatat."
+    "scopeAssigned": "Ditugaskan {{scope}} — batas area belum ditentukan, kehadiran tetap dicatat."
   },
   "shifts": {
     "today": "Kehadiran Hari Ini",

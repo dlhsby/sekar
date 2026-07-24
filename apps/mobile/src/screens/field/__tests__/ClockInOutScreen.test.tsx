@@ -231,7 +231,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     });
 
     // GPS card is collapsed by default — expand to see its contents.
-    fireEvent.press(getByText('Lokasi GPS'));
+    fireEvent.press(getByText('Informasi Kehadiran'));
 
     // Verify location is displayed (may appear multiple times in UI)
     await waitFor(() => {
@@ -257,7 +257,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     });
 
     // GPS card is collapsed by default — expand to reach the refresh button.
-    fireEvent.press(getByText('Lokasi GPS'));
+    fireEvent.press(getByText('Informasi Kehadiran'));
 
     // Click refresh button (Indonesian: "Perbarui GPS")
     const refreshButton = getByText('Perbarui GPS');
@@ -302,7 +302,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     });
 
     // GPS card is collapsed by default — expand to see the error + retry.
-    fireEvent.press(getByText('Lokasi GPS'));
+    fireEvent.press(getByText('Informasi Kehadiran'));
 
     // Wait for error message - now in Indonesian
     await waitFor(
@@ -345,7 +345,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     });
 
     // GPS card is collapsed by default — expand to read the accuracy value.
-    fireEvent.press(getByText('Lokasi GPS'));
+    fireEvent.press(getByText('Informasi Kehadiran'));
 
     // Wait for location - accuracy shows as "500m"
     await waitFor(
@@ -372,7 +372,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     });
 
     // GPS card is collapsed by default — expand to reach refresh + warning.
-    fireEvent.press(getByText('Lokasi GPS'));
+    fireEvent.press(getByText('Informasi Kehadiran'));
 
     // Update mock to return location outside boundary
     getCurrentPositionMock.mockImplementation((success, error, options) => {
@@ -425,7 +425,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     });
 
     // GPS card is collapsed by default — expand to see the soft warning.
-    fireEvent.press(getByText('Lokasi GPS'));
+    fireEvent.press(getByText('Informasi Kehadiran'));
 
     // Wait for location to be acquired and boundary check
     await waitFor(
@@ -515,7 +515,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       });
 
       // GPS card is collapsed by default — expand to read the accuracy value.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       // Should display accuracy value (may or may not show warning based on UI)
       await waitFor(
@@ -554,7 +554,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       });
 
       // GPS card is collapsed by default — expand to read the accuracy value.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       // Should display accuracy
       await waitFor(
@@ -591,7 +591,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       });
 
       // GPS card is collapsed by default — expand to read the accuracy value.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       // At exactly 50m, should NOT show warning (only > 50)
       await waitFor(
@@ -628,7 +628,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       });
 
       // GPS card is collapsed by default — expand to read the accuracy value.
-      fireEvent.press(getByText('Lokasi GPS'));
+      fireEvent.press(getByText('Informasi Kehadiran'));
 
       // Should display very poor accuracy
       await waitFor(

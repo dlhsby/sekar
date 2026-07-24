@@ -119,14 +119,10 @@
     "clockInColonLabel": "Clock In:",
     "noScheduleChip": "No schedule",
     "noScheduleToday": "No schedule today",
-    "noAreaChip": "No area",
     "scope": {
       "city": "Citywide (Surabaya)",
       "district": "District-wide ({{name}})",
-      "region": "Region-wide ({{name}})",
-      "cityHint": "Assigned citywide — no specific location",
-      "districtHint": "Assigned district-wide — no specific location",
-      "regionHint": "Assigned region-wide — no specific location"
+      "region": "Region-wide ({{name}})"
     },
     "outsideWindowChip": "Outside Shift Window",
     "multiArea": "{{count}} locations",
@@ -135,7 +131,7 @@
   "gpsSection": {
     "capturingLocation": "Getting your location...",
     "locationUnavailable": "Location unavailable",
-    "accuracy": "accuracy",
+    "locationRecorded": "Location recorded",
     "withinBoundary": "You are within the work area",
     "outsideBoundary": "You are outside the work area. Attendance will still be recorded.",
     "gpsLabel": "GPS:",
@@ -143,7 +139,7 @@
     "lowAccuracyWarning": "GPS accuracy is low. Move to an open area for better results.",
     "updateGpsButton": "Update GPS",
     "noArea": "No assigned area — attendance is still recorded.",
-    "scopeAssigned": "Assigned {{scope}} — no specific boundary; attendance is still recorded."
+    "scopeAssigned": "Assigned {{scope}} — area boundary not defined; attendance is still recorded."
   },
   "shifts": {
     "today": "Attendance Today",
