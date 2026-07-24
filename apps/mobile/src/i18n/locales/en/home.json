@@ -4,9 +4,8 @@
       "shiftTime": "Shift time: {{hours}} hours {{minutes}} minutes"
     },
     "sections": {
-      "attendance": "My Attendance",
-      "summary": "Today's Summary",
-      "schedule": "My Schedule"
+      "attendance": "Attendance",
+      "summary": "Today's Summary"
     },
     "alerts": {
       "permissionRevoked": "Location permission was revoked. Location tracking is inactive.",

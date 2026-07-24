@@ -122,7 +122,7 @@ export function KecamatanHomeScreen(): React.JSX.Element {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={[nbColors.primary]} />}
         >
           {/* Ringkasan hari ini — request overview */}
-          <HomeSectionDivider label={t('home:kecamatan.sections.summary')} />
+          <HomeSectionDivider label={t('home:kecamatan.sections.summary')} first />
 
           {/* My-requests hero */}
           <View style={styles.hero} testID="kecamatan-hero">
@@ -199,7 +199,8 @@ const styles = StyleSheet.create({
     borderColor: nbColors.black,
     borderRadius: nbRadius.md,
     padding: nbSpacing.md,
-    marginBottom: nbSpacing.md,
+    // Intra-section gap to the tile rows below (same summary section).
+    marginBottom: nbSpacing.sm,
     ...nbShadows.md,
   },
   heroTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

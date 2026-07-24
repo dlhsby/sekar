@@ -24,6 +24,17 @@
       "off": "Day off — no shift today."
     }
   },
+  "scheduleDetail": {
+    "title": "Schedule Detail",
+    "date": "Date",
+    "shift": "Shift",
+    "area": "Area",
+    "district": "District",
+    "region": "Region",
+    "team": "Team",
+    "status": "Status",
+    "openHint": "Tap to view schedule detail"
+  },
   "status": {
     "present": "Present",
     "planned": "Planned",

@@ -17,6 +17,7 @@ import {
   NBDatePicker,
 } from '../../components/nb';
 import {StatusPill} from '../../components/home/StatusPill';
+import {ScheduleDetailSheet} from '../../components/modals/ScheduleDetailSheet';
 import {getMyRange} from '../../services/api/schedulesApi';
 import {useAppSelector} from '../../store/hooks';
 import {
@@ -72,9 +73,11 @@ const getRosterStatusPill = (t: ReturnType<typeof useTranslation>['t']) => ({
 function RosterRow({
   roster,
   t,
+  onPress,
 }: {
   roster: Schedule;
   t: ReturnType<typeof useTranslation>['t'];
+  onPress: () => void;
 }): React.JSX.Element {
   const ROSTER_STATUS_PILL = getRosterStatusPill(t);
   // Label from the roster status, TONE from the shared presence standard, so a
@@ -98,7 +101,12 @@ function RosterRow({
 
   const team = roster.team_category;
   return (
-    <View style={[styles.card, styles.rosterCard]} testID={`roster-${roster.id}`}>
+    <Pressable
+      style={[styles.card, styles.rosterCard]}
+      testID={`roster-${roster.id}`}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={t('schedules:scheduleDetail.openHint')}>
       <View style={styles.cardHeader}>
         <View style={styles.headerLeft}>
           <NBText variant="mono-sm" color="gray700" uppercase>
@@ -172,7 +180,7 @@ function RosterRow({
           {t(`schedules:mySchedule.statusHint.${roster.status}`)}
         </NBText>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -190,6 +198,7 @@ export function MyScheduleScreen(): React.JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailRoster, setDetailRoster] = useState<Schedule | null>(null);
 
   const stepDay = useCallback((dir: number) => {
     setSelectedDate(cur => keyOf(addDays(parseKey(cur), dir)));
@@ -279,14 +288,6 @@ export function MyScheduleScreen(): React.JSX.Element {
               {dateLabel}
             </NBText>
           </Pressable>
-          <Pressable
-            onPress={() => setSelectedDate(today)}
-            style={styles.todayBtn}
-            testID="today-btn">
-            <NBText variant="caption" uppercase color="gray700">
-              {t('schedules:mySchedule.today')}
-            </NBText>
-          </Pressable>
         </View>
 
         <Pressable
@@ -311,13 +312,8 @@ export function MyScheduleScreen(): React.JSX.Element {
       ) : error ? (
         <View style={styles.stateWrap}>
           <NBEmptyState
-            icon={
-              <MaterialCommunityIcons
-                name="alert-circle-outline"
-                size={48}
-                color={nbColors.danger}
-              />
-            }
+            variant="error"
+            illustration="illo-offline"
             title={t('schedules:mySchedule.loadFailed')}
             description={error}
             ctaLabel={t('schedules:mySchedule.retryLabel')}
@@ -327,13 +323,8 @@ export function MyScheduleScreen(): React.JSX.Element {
       ) : rows.length === 0 ? (
         <View style={styles.stateWrap}>
           <NBEmptyState
-            icon={
-              <MaterialCommunityIcons
-                name="calendar-blank-outline"
-                size={48}
-                color={nbColors.gray500}
-              />
-            }
+            variant="noData"
+            illustration="illo-shifts"
             title={t('schedules:mySchedule.emptyTitle')}
             description={t('schedules:mySchedule.emptyDescription')}
           />
@@ -349,7 +340,12 @@ export function MyScheduleScreen(): React.JSX.Element {
             />
           }>
           {rows.map(r => (
-            <RosterRow key={r.id} roster={r} t={t} />
+            <RosterRow
+              key={r.id}
+              roster={r}
+              t={t}
+              onPress={() => setDetailRoster(r)}
+            />
           ))}
         </ScrollView>
       )}
@@ -363,6 +359,12 @@ export function MyScheduleScreen(): React.JSX.Element {
           setPickerOpen(false);
         }}
         onRequestClose={() => setPickerOpen(false)}
+      />
+
+      <ScheduleDetailSheet
+        visible={detailRoster !== null}
+        onClose={() => setDetailRoster(null)}
+        roster={detailRoster}
       />
       </NBBackgroundPattern>
     </SafeAreaView>
@@ -404,15 +406,6 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   navDate: {textAlign: 'center'},
-  todayBtn: {
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.base,
-    backgroundColor: nbColors.white,
-    paddingHorizontal: nbSpacing.sm,
-    paddingVertical: 2,
-    ...nbShadows.sm,
-  },
   listContent: {padding: nbSpacing.md, gap: nbSpacing.sm},
   stateWrap: {flex: 1, justifyContent: 'center', padding: nbSpacing.xl},
   skeleton: {borderRadius: nbRadius.base, marginBottom: nbSpacing.sm},
