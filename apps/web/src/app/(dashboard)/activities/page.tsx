@@ -288,7 +288,8 @@ export default function ActivitiesPage() {
       meta: { label: t('activities:list.table.columns.photos') },
       cell: ({ row }) => (
         <Badge variant="secondary" size="sm">
-          {row.original.photo_urls?.length || 0} {t('activities:list.table.columns.photos').toLowerCase()}
+          {(row.original.photo_count ?? row.original.photo_urls?.length ?? 0)}{' '}
+          {t('activities:list.table.columns.photos').toLowerCase()}
         </Badge>
       ),
     },
@@ -497,7 +498,7 @@ export default function ActivitiesPage() {
                 </Badge>
               ),
             },
-            { label: t('activities:detail.fields.photos'), value: `${view.item.photo_urls?.length || 0} ${t('activities:detail.fields.photos').toLowerCase()}` },
+            { label: t('activities:detail.fields.photos'), value: `${view.item.photo_count ?? view.item.photo_urls?.length ?? 0} ${t('activities:detail.fields.photos').toLowerCase()}` },
             { label: t('activities:detail.fields.notes'), value: view.item.notes },
           ] as DetailModalRow[]}
         />

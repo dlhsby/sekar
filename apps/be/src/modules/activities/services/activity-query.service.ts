@@ -1,6 +1,6 @@
 import { Injectable, Logger, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, SelectQueryBuilder } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Activity, ActivityStatus } from '../entities/activity.entity';
 import { S3Service } from '../../../shared/services/s3.service';
 import { User, UserRole } from '../../users/entities/user.entity';
@@ -37,6 +37,14 @@ const ACTIVITY_DETAIL_RELATIONS = [
 ];
 
 /**
+ * Hard cap on the "my activities" list. Without a date it would otherwise load a
+ * worker's ENTIRE history in one query; combined with the old full-payload select
+ * that was an OOM path (F9). The list is day-oriented in the UI, so this ceiling
+ * is never reached in normal use — it only bounds the pathological case.
+ */
+const MY_ACTIVITIES_MAX = 200;
+
+/**
  * Read side of activities: filtered/paginated/role-scoped listings, detail
  * lookup with scope checks, and presigned photo URL conversion.
  */
@@ -63,22 +71,30 @@ export class ActivityQueryService {
     this.applyDateRange(queryBuilder, filters);
     this.applySortAndPagination(queryBuilder, filters, page, limit);
 
-    const [data, total] = await queryBuilder.getManyAndCount();
-    const withPresignedUrls = await Promise.all(
-      data.map((activity) => this.convertPhotoUrlsToPresigned(activity)),
-    );
-    return new PaginatedResponseDto(withPresignedUrls, total, page, limit);
+    // List responses carry photo_count, NOT the photo payload (F9) — see
+    // buildListQuery / attachPhotoCount. No presigning here: there are no URLs to sign.
+    const total = await queryBuilder.getCount();
+    const { entities, raw } = await queryBuilder.getRawAndEntities();
+    const data = this.attachPhotoCount(entities, raw);
+    return new PaginatedResponseDto(data, total, page, limit);
   }
 
-  /** Find all activities for a specific user (my activities). */
+  /**
+   * Find a user's own activities (my activities). Bounded and photo-payload-free:
+   * an unbounded `find()` returning full data-URI `photo_urls` was a direct OOM
+   * path (F9). Callers that need the actual photos open the detail read.
+   */
   async findMyActivities(userId: string, date?: string): Promise<Activity[]> {
-    const activities = await this.activitiesRepository.find({
-      where: { user_id: userId, ...this.createdAtRangeFor(date) },
-      relations: ACTIVITY_DETAIL_RELATIONS,
-      order: { created_at: 'DESC' },
-    });
-    // 24 hour expiry for mobile caching
-    return Promise.all(activities.map((activity) => this.convertPhotoUrlsToPresigned(activity)));
+    const qb = this.buildListQuery()
+      .where('activity.user_id = :userId', { userId })
+      .orderBy('activity.created_at', 'DESC')
+      .take(MY_ACTIVITIES_MAX);
+    const bounds = this.createdAtBounds(date);
+    if (bounds) {
+      qb.andWhere('activity.created_at BETWEEN :from AND :to', bounds);
+    }
+    const { entities, raw } = await qb.getRawAndEntities();
+    return this.attachPhotoCount(entities, raw);
   }
 
   /** Find activity by ID with scope-based access control (Phase 2C). */
@@ -133,15 +149,43 @@ export class ActivityQueryService {
     return activity;
   }
 
+  /**
+   * List query for activities. Selects every activity column EXCEPT the
+   * `photo_urls` payload — a page of rows carrying inline base64 data-URIs was a
+   * direct OOM path (F9) — and computes `cardinality(photo_urls)` as a cheap
+   * scalar the DB never has to ship. `attachPhotoCount` maps it onto the entities.
+   * The column list comes from entity metadata so a future column is included
+   * automatically (and only `photo_urls` is ever dropped).
+   */
   private buildListQuery(): SelectQueryBuilder<Activity> {
+    const scalarCols = this.activitiesRepository.metadata.columns
+      .filter((c) => c.databaseName !== 'photo_urls')
+      .map((c) => `activity.${c.propertyName}`);
+
     return this.activitiesRepository
       .createQueryBuilder('activity')
+      .select(scalarCols)
+      .addSelect('COALESCE(cardinality(activity.photo_urls), 0)', 'activity_photo_count')
       .leftJoinAndSelect('activity.user', 'user')
       .leftJoinAndSelect('activity.shift', 'shift')
       .leftJoinAndSelect('shift.area', 'shiftArea')
       .leftJoinAndSelect('activity.area', 'area')
       .leftJoinAndSelect('activity.activityType', 'activityType')
       .leftJoinAndSelect('activity.reviewer', 'reviewer');
+  }
+
+  /**
+   * Map the computed `activity_photo_count` raw column onto each entity and blank
+   * the payload. Raw rows are 1:1 with entities here — every activity relation is
+   * to-one, so no fan-out. Keeping `photo_urls: []` (not undefined) preserves the
+   * array contract for any client still reading `.length`.
+   */
+  private attachPhotoCount(entities: Activity[], raw: Array<Record<string, unknown>>): Activity[] {
+    entities.forEach((activity, i) => {
+      activity.photo_count = Number(raw[i]?.activity_photo_count ?? 0);
+      activity.photo_urls = [];
+    });
+    return entities;
   }
 
   /**
@@ -261,13 +305,14 @@ export class ActivityQueryService {
       .take(limit);
   }
 
-  private createdAtRangeFor(date?: string): { created_at?: ReturnType<typeof Between<Date>> } {
-    if (!date) return {};
-    const startDate = new Date(date);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(date);
-    endDate.setHours(23, 59, 59, 999);
-    return { created_at: Between(startDate, endDate) };
+  /** The [start, end] of a single day, or null when no date is given. */
+  private createdAtBounds(date?: string): { from: Date; to: Date } | null {
+    if (!date) return null;
+    const from = new Date(date);
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(date);
+    to.setHours(23, 59, 59, 999);
+    return { from, to };
   }
 
   private async assertReadScope(activity: Activity, user: User): Promise<void> {

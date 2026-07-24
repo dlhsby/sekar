@@ -41,7 +41,7 @@ workbook set.
 | **F6** | `production.ts` doesn't seed roles/permissions (unlike `reference.ts`) — the F1 trap is armed for production too. | Add `seedPermissions`/`seedRoles` to the production profile. | ⏳ |
 | **F7** | Role codes renamed; the permission cache is Redis-keyed by role code (TTL 300 s). | Forced re-login for everyone; flush `rbac:role:*` post-deploy. | ⏳ |
 | **F8** | Installed mobile APKs emit pre-revamp shapes (`rayon_id`, `/areas`, 5-status). | Staging APK ships **with** the release; field devices must update. | ⏳ |
-| **F9** | **Activity photos are stored as base64 data-URIs inline in Postgres**, not as S3 objects. Mobile converts each photo to base64 (`useActivityForm.ts:305`) and posts it in `photo_urls`; the DTO only `@IsString`-validates (`create-activity.dto.ts:90`); there is **no S3 upload path for activities** and the read path even has explicit `data:`/`blob:` pass-through guards (`s3.service.ts:257`) — so this is established behaviour, not a stray row. Result: `activities` is **5.8 GB for 10,786 rows** (~537 KB/row). The staging backend (`mem_limit: 448m`, `node` with **no `--max-old-space-size`** → Node auto-caps old-space ~256 MB) is in an **OOM crash loop** (`RestartCount ≈ 994`, `FATAL ERROR: Reached heap limit`). `findMyActivities` (`activity-query.service.ts:74`) does an **unbounded** `find()` returning full `photo_urls`; even the paginated list loads ~50 rows × up to 3 × ~500 KB and re-serialises them to JSON. | **Cutover blocker + pre-existing prod defect.** Fix tier-1 before cutover (cap/queries + explicit heap); the data-URI→S3 migration is a larger follow-up. See §8. | 🔴 open |
+| **F9** | **Activity photos are stored as base64 data-URIs inline in Postgres**, not as S3 objects. Mobile converts each photo to base64 (`useActivityForm.ts:305`) and posts it in `photo_urls`; the DTO only `@IsString`-validates (`create-activity.dto.ts:90`); there is **no S3 upload path for activities** and the read path even has explicit `data:`/`blob:` pass-through guards (`s3.service.ts:257`) — so this is established behaviour, not a stray row. Result: `activities` is **5.8 GB for 10,786 rows** (~537 KB/row, confirmed 100 % data-URIs on the clone). The staging backend (`mem_limit: 448m`, `node` with **no `--max-old-space-size`** → Node auto-caps old-space ~256 MB) was in an **OOM crash loop** (`RestartCount ≈ 994`, `FATAL ERROR: Reached heap limit`). `findMyActivities` did an **unbounded** `find()` returning full `photo_urls`; even the paginated list loaded ~50 rows × up to 3 × ~500 KB and re-serialised them to JSON. | **Tier-1 DONE** (ships with the cutover): list reads carry `photo_count`, not the payload; `findMyActivities` bounded; explicit `--max-old-space-size=384`. **Tier-2** data-URI→object-storage migration tracked as a follow-up. See §8. | 🟡 tier-1 done |
 
 ---
 
@@ -157,20 +157,26 @@ and the read path deliberately passes `data:`/`blob:` URIs through untouched
 (`s3.service.ts:257`). So `activities` is 5.8 GB for ~10.8k rows, and any read pulls
 megabytes into a ~256 MB heap.
 
-**Tier 1 — unblock the cutover (backend only, no data change):**
-- Give `findMyActivities` a bounded `take` (it is currently an unbounded `find()`), and
-  keep the paginated list's page size small.
-- Stop returning `photo_urls` in **list** responses — project a `photo_count` / `has_photos`
-  instead, and load the actual photos only on the single-activity detail read.
-- Run `node` with an explicit `--max-old-space-size` matched to `mem_limit` so the cap is
-  intentional rather than auto-derived (raising `mem_limit` needs box headroom — the
-  co-tenant apps were stopped to buy some).
+**Tier 1 — DONE (unblocks the cutover, ships with it):**
+- `findMyActivities` is now a bounded (`take` 200), photo-payload-free query builder read
+  (was an unbounded `find()` returning full data-URIs).
+- **List reads no longer ship the payload.** `buildListQuery` selects every activity column
+  except `photo_urls` and computes `cardinality(photo_urls)` as `photo_count`; the detail
+  read (`findOne`) still returns the full photos. Web + mobile count chips read
+  `photo_count ?? photo_urls?.length`.
+- Backend runs with `NODE_OPTIONS=--max-old-space-size=384` (compose.staging.yml), so the
+  V8 cap is intentional and hit before the kernel OOM-kills the container.
+- Verified: 63 activities service specs green; `cardinality`/projection confirmed on the
+  staging clone; the co-tenant apps were stopped to buy memory headroom in the interim.
 
 **Tier 2 — the real fix (follow-up project, drops the DB ~8 GB → <1 GB):**
-- Migrate existing data-URIs out of Postgres into S3 (`sekar-media-staging`), rewriting
-  `photo_urls` to object keys; presign on read (the machinery already exists in
-  `s3.service.ts`).
-- Change mobile to upload to S3 (presigned PUT) and send keys, not base64.
+- Migrate existing data-URIs out of Postgres into **object storage**, rewriting `photo_urls`
+  to object keys; presign on read (the machinery already exists in `s3.service.ts`).
+- **Storage is infra-agnostic per environment** (matches the existing convention): **MinIO**
+  for local dev and production (`docker-compose.prod.yml`), **real AWS S3** for staging
+  (`sekar-media-staging`). The `S3Service` already speaks both via `AWS_ENDPOINT_URL` /
+  `AWS_S3_FORCE_PATH_STYLE`, so the migration and upload paths target the same client.
+- Change mobile to upload to the bucket (presigned PUT) and send keys, not base64.
 - Validate `photo_urls` as keys/URLs, rejecting `data:` payloads at the DTO.
 
 Tier 2 is out of scope for the cutover itself but must be tracked — the same bloat and

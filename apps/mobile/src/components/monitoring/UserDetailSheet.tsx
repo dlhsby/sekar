@@ -599,8 +599,9 @@ export function UserDetailSheet({
                   const p = activityPill(a.status);
                   const meta: ListItemMeta[] = [];
                   if (a.area?.name) { meta.push({ icon: 'map-marker', label: a.area.name }); }
-                  if (a.photo_urls && a.photo_urls.length > 0) {
-                    meta.push({ icon: 'camera', label: `${a.photo_urls.length} ${t('monitoring:userDetail.photos')}` });
+                  const photoCount = a.photo_count ?? a.photo_urls?.length ?? 0;
+                  if (photoCount > 0) {
+                    meta.push({ icon: 'camera', label: `${photoCount} ${t('monitoring:userDetail.photos')}` });
                   }
                   return (
                     <ListItemCard
