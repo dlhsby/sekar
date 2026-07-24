@@ -58,8 +58,9 @@ export function TodayActivitiesModal({
             const p = activityPill(activity.status);
             const meta: ListItemMeta[] = [];
             if (activity.area?.name) { meta.push({ icon: 'map-marker', label: activity.area.name }); }
-            if (activity.photo_urls && activity.photo_urls.length > 0) {
-              meta.push({ icon: 'camera', label: t('today.photos', { count: activity.photo_urls.length }) });
+            const photoCount = activity.photo_count ?? activity.photo_urls?.length ?? 0;
+            if (photoCount > 0) {
+              meta.push({ icon: 'camera', label: t('today.photos', { count: photoCount }) });
             }
             return (
               <ListItemCard

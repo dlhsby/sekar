@@ -116,6 +116,20 @@ export class Activity {
   @Column('text', { array: true, default: '{}' })
   photo_urls: string[];
 
+  /**
+   * Number of photos, WITHOUT the payload. List endpoints set this and return
+   * `photo_urls: []` so a page of rows never drags megabytes of inline photo
+   * data-URIs into the heap (F9). It is not a column — computed as
+   * `cardinality(photo_urls)` in the list query. The detail read
+   * (`findOne`) still returns the full `photo_urls`.
+   */
+  @ApiProperty({
+    description: 'Photo count (list responses); photos themselves load on the detail read',
+    example: 2,
+    required: false,
+  })
+  photo_count?: number;
+
   @ApiProperty({
     description: 'GPS latitude where activity was created',
     example: -7.2905,

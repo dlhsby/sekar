@@ -29,6 +29,8 @@ export interface Activity {
   activityType?: ActivityType;
   description: string;
   photo_urls: string[];
+  /** Photo count on LIST responses (photo_urls is empty there; photos load on detail). */
+  photo_count?: number;
   gps_lat?: number;
   gps_lng?: number;
   user?: User;

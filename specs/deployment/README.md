@@ -14,6 +14,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 | Ship to production | **§E Deploy to production** |
 | Automate it / cut a versioned release | **§F CI/CD & releases** → [`ci-cd.md`](ci-cd.md) |
 | Operate it (migrate, back up, roll back, debug) | **§G Operations** → [`operations.md`](operations.md) |
+| Cut the revamp over to staging (one-off, high-risk) | [`staging-cutover-runbook.md`](staging-cutover-runbook.md) |
 | Watch it (dashboards, alarms) | **§H Monitoring** → [`monitoring.md`](monitoring.md) |
 | Release the mobile apps | **§I Mobile releases** → [`android-release-guide.md`](android-release-guide.md) · [`ios-release-guide.md`](ios-release-guide.md) |
 | Run it on managed AWS | **Appendix A** → [`infrastructure.md`](infrastructure.md) |

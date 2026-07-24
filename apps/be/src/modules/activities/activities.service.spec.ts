@@ -100,6 +100,14 @@ describe('ActivitiesService', () => {
     // the access-control assertion throws TypeError on undefined `manager`
     // instead of the expected ApiException — silently masking guard logic.
     manager: { query: jest.fn().mockResolvedValue([]) },
+    // buildListQuery derives the select list from entity metadata (so it can
+    // drop only `photo_urls`). Two representative columns are enough for the mock.
+    metadata: {
+      columns: [
+        { databaseName: 'id', propertyName: 'id' },
+        { databaseName: 'photo_urls', propertyName: 'photo_urls' },
+      ],
+    },
   };
 
   const mockShiftsRepo = {
@@ -430,12 +438,27 @@ describe('ActivitiesService', () => {
 
   describe('findAllPaginated', () => {
     const mockQueryBuilder: any = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       skip: jest.fn().mockReturnThis(),
       take: jest.fn().mockReturnThis(),
-      getManyAndCount: jest.fn(),
+      getCount: jest.fn(),
+      getRawAndEntities: jest.fn(),
+    };
+
+    // List reads no longer ship photo payloads (F9): the service calls
+    // getCount() + getRawAndEntities(), and photo_count comes from the raw
+    // `activity_photo_count`. This helper mirrors that shape from a plain list.
+    const mockList = (entities: any[], total: number): void => {
+      mockQueryBuilder.getCount.mockResolvedValue(total);
+      mockQueryBuilder.getRawAndEntities.mockResolvedValue({
+        entities: entities.map((e) => ({ ...e })),
+        raw: entities.map((e) => ({ activity_photo_count: e.photo_urls?.length ?? 0 })),
+      });
     };
 
     beforeEach(() => {
@@ -443,7 +466,7 @@ describe('ActivitiesService', () => {
     });
 
     it('should return paginated activities for SATGAS (only own activities)', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 1]);
+      mockList([mockActivity], 1);
 
       const result = await service.findAllPaginated({}, mockUser as any, 1, 50);
 
@@ -456,7 +479,7 @@ describe('ActivitiesService', () => {
 
     it('should return paginated activities for KORLAP (area-scoped)', async () => {
       const korlapUser = { ...mockUser, role: UserRole.KORLAP };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 5]);
+      mockList([mockActivity], 5);
 
       const result = await service.findAllPaginated({}, korlapUser as any, 1, 50);
 
@@ -473,7 +496,7 @@ describe('ActivitiesService', () => {
 
     it('should return paginated activities for KEPALA_RAYON (district-scoped)', async () => {
       const kepalaDistrictUser = { ...mockUser, role: UserRole.KEPALA_RAYON };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 10]);
+      mockList([mockActivity], 10);
 
       const result = await service.findAllPaginated({}, kepalaDistrictUser as any, 1, 50);
 
@@ -485,7 +508,7 @@ describe('ActivitiesService', () => {
 
     it('should return all activities for ADMIN_SYSTEM (no scope restriction)', async () => {
       const adminUser = { ...mockUser, role: UserRole.ADMIN_SYSTEM };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 50]);
+      mockList([mockActivity], 50);
 
       const result = await service.findAllPaginated({}, adminUser as any, 1, 50);
 
@@ -500,7 +523,7 @@ describe('ActivitiesService', () => {
         role: UserRole.ADMIN_RAYON,
         district_id: 'district-uuid-1',
       };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 15]);
+      mockList([mockActivity], 15);
 
       const result = await service.findAllPaginated({}, adminDataUser as any, 1, 50);
 
@@ -515,7 +538,7 @@ describe('ActivitiesService', () => {
         from_date: '2026-01-01',
         to_date: '2026-01-31',
       };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 1]);
+      mockList([mockActivity], 1);
 
       await service.findAllPaginated(filters, mockUser as any, 1, 50);
 
@@ -533,7 +556,7 @@ describe('ActivitiesService', () => {
 
     it('should apply from_date filter only when to_date not provided', async () => {
       const filters = { from_date: '2026-01-01' };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 1]);
+      mockList([mockActivity], 1);
 
       await service.findAllPaginated(filters, mockUser as any, 1, 50);
 
@@ -544,7 +567,7 @@ describe('ActivitiesService', () => {
 
     it('should apply user_id filter when provided', async () => {
       const filters = { user_id: 'specific-user-uuid' };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 1]);
+      mockList([mockActivity], 1);
 
       await service.findAllPaginated(filters, mockUser as any, 1, 50);
 
@@ -555,7 +578,7 @@ describe('ActivitiesService', () => {
 
     it('should apply shift_id filter when provided', async () => {
       const filters = { shift_id: 'specific-shift-uuid' };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 1]);
+      mockList([mockActivity], 1);
 
       await service.findAllPaginated(filters, mockUser as any, 1, 50);
 
@@ -565,7 +588,7 @@ describe('ActivitiesService', () => {
     });
 
     it('should handle pagination correctly', async () => {
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[mockActivity], 100]);
+      mockList([mockActivity], 100);
 
       const result = await service.findAllPaginated({}, mockUser as any, 2, 20);
 
@@ -576,62 +599,80 @@ describe('ActivitiesService', () => {
       expect(result.meta.totalPages).toBe(5); // 100 / 20
     });
 
-    it('should convert photo URLs to presigned URLs', async () => {
+    it('returns photo_count and NO photo payload in list responses (F9)', async () => {
       const activityForTest = {
         ...mockActivity,
-        photo_urls: ['https://s3.amazonaws.com/activities/photo1.jpg'],
+        photo_urls: ['data:image/jpeg;base64,AAAA', 'data:image/jpeg;base64,BBBB'],
       };
-      mockQueryBuilder.getManyAndCount.mockResolvedValue([[activityForTest], 1]);
+      mockList([activityForTest], 1);
 
       const result = await service.findAllPaginated({}, mockUser as any, 1, 50);
 
-      expect(s3Service.convertToPresignedUrl).toHaveBeenCalledWith(
-        'https://s3.amazonaws.com/activities/photo1.jpg',
-        86400,
-      );
-      expect(result.data[0].photo_urls[0]).toContain('presigned-');
+      // The heavy data-URI payload must NOT be shipped in a list; only the count.
+      expect(result.data[0].photo_urls).toEqual([]);
+      expect(result.data[0].photo_count).toBe(2);
+      // Nothing to presign in a list — the payload never left the DB.
+      expect(s3Service.convertToPresignedUrl).not.toHaveBeenCalled();
     });
   });
 
   describe('findMyActivities', () => {
-    it('should return all activities for user when no date filter', async () => {
-      mockActivitiesRepo.find.mockResolvedValue([mockActivity]);
+    // Rebuilt in F9: this is now a bounded, photo-payload-free QB read (was an
+    // unbounded repository.find that returned full data-URIs — an OOM path).
+    const mockQueryBuilder: any = {
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      take: jest.fn().mockReturnThis(),
+      getRawAndEntities: jest.fn(),
+    };
+
+    const mockList = (entities: any[]): void => {
+      mockQueryBuilder.getRawAndEntities.mockResolvedValue({
+        entities: entities.map((e) => ({ ...e })),
+        raw: entities.map((e) => ({ activity_photo_count: e.photo_urls?.length ?? 0 })),
+      });
+    };
+
+    beforeEach(() => {
+      mockActivitiesRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
+    });
+
+    it('scopes to the user, caps the result, and returns count not payload', async () => {
+      mockList([mockActivity]);
 
       const result = await service.findMyActivities(mockUser.id);
 
       expect(result).toHaveLength(1);
-      expect(mockActivitiesRepo.find).toHaveBeenCalledWith({
-        where: { user_id: mockUser.id },
-        relations: ['user', 'shift', 'shift.area', 'area', 'activityType', 'reviewer'],
-        order: { created_at: 'DESC' },
+      expect(result[0].photo_urls).toEqual([]);
+      expect(result[0].photo_count).toBe(1);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('activity.user_id = :userId', {
+        userId: mockUser.id,
       });
+      // Bounded — a missing date must not load the whole history.
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(200);
     });
 
-    it('should return activities filtered by date when date provided', async () => {
-      const dateString = '2026-01-09';
-      mockActivitiesRepo.find.mockResolvedValue([mockActivity]);
+    it('applies the day range when a date is provided', async () => {
+      mockList([mockActivity]);
 
-      const result = await service.findMyActivities(mockUser.id, dateString);
+      await service.findMyActivities(mockUser.id, '2026-01-09');
 
-      expect(result).toHaveLength(1);
-      const findCall = mockActivitiesRepo.find.mock.calls[0][0];
-      expect(findCall.where.user_id).toBe(mockUser.id);
-      expect(findCall.where.created_at).toBeDefined();
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'activity.created_at BETWEEN :from AND :to',
+        expect.objectContaining({ from: expect.any(Date), to: expect.any(Date) }),
+      );
     });
 
-    it('should convert photo URLs to presigned URLs with 24 hour expiry', async () => {
-      const activityForTest = {
-        ...mockActivity,
-        photo_urls: ['https://s3.amazonaws.com/activities/photo1.jpg'],
-      };
-      mockActivitiesRepo.find.mockResolvedValue([activityForTest]);
+    it('does not presign in the list — there is no payload to sign', async () => {
+      mockList([{ ...mockActivity, photo_urls: ['data:image/jpeg;base64,AAAA'] }]);
 
       await service.findMyActivities(mockUser.id);
 
-      expect(s3Service.convertToPresignedUrl).toHaveBeenCalledWith(
-        'https://s3.amazonaws.com/activities/photo1.jpg',
-        86400,
-      );
+      expect(s3Service.convertToPresignedUrl).not.toHaveBeenCalled();
     });
   });
 

@@ -375,6 +375,8 @@ export interface Activity extends Record<string, unknown> {
   };
   description: string;
   photo_urls: string[];
+  /** Photo count on LIST responses (photo_urls is empty there; photos load on detail). */
+  photo_count?: number;
   gps_lat?: number;
   gps_lng?: number;
   status: ActivityStatus;
