@@ -8,6 +8,7 @@ import {
   MaxLength,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotInlineMedia } from '../../../common/validators/is-not-inline-media.validator';
 
 /**
  * DTO for updating an existing activity
@@ -38,6 +39,7 @@ export class UpdateActivityDto {
   @ArrayMinSize(1, { message: 'Minimal 1 foto diperlukan' })
   @ArrayMaxSize(3, { message: 'Maksimal 3 foto diperbolehkan' })
   @IsString({ each: true })
+  @IsNotInlineMedia()
   @IsOptional()
   photo_urls?: string[];
 }

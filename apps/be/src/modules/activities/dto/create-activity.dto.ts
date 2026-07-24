@@ -18,6 +18,7 @@ import {
   IsPositive,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsNotInlineMedia } from '../../../common/validators/is-not-inline-media.validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export const VALID_CASE_TYPES = ['GT', 'PT', 'PS', 'PD', 'PK'] as const;
@@ -87,6 +88,7 @@ export class CreateActivityDto {
   @ArrayMinSize(1, { message: 'Minimal 1 foto diperlukan' })
   @ArrayMaxSize(3, { message: 'Maksimal 3 foto diperbolehkan' })
   @IsString({ each: true })
+  @IsNotInlineMedia()
   photo_urls: string[];
 
   @ApiPropertyOptional({

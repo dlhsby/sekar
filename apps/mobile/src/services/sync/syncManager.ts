@@ -15,7 +15,8 @@ import {
   type QueueItem,
 } from './offlineQueue';
 import { clockIn, clockOut } from '../api/shiftsApi';
-import { createActivity } from '../api/activitiesApi';
+import { createActivity, uploadActivityPhotos } from '../api/activitiesApi';
+import type { UploadableFile } from '../api/activitiesApi';
 import { uploadLocationBatch } from '../api/locationApi';
 import { submitPruningRequest } from '../api/pruningRequestsApi';
 import { locationTracker } from '../location/locationTracker';
@@ -42,9 +43,19 @@ interface ClockOutData {
 interface ActivityData {
   activity_type_id: string;
   description: string;
-  photo_urls: string[];
+  /** Present once photos are uploaded (online submit, or after a sync-time upload). */
+  photo_urls?: string[];
+  /**
+   * Offline submissions carry the LOCAL photo file refs here instead of URLs —
+   * there was no network to upload them at capture time. syncActivity uploads
+   * them to storage and fills `photo_urls` before POSTing (F9: no inline base64).
+   */
+  photo_local?: UploadableFile[];
   gps_lat?: number;
   gps_lng?: number;
+  // Pass-through extras carried from the submit form (preserved on offline sync).
+  tagged_user_ids?: string[];
+  task_id?: string;
 }
 
 interface PruningRequestData {
@@ -511,7 +522,25 @@ class SyncManager extends EventEmitter {
    * Sync activity
    */
   private async syncActivity(data: ActivityData): Promise<void> {
-    const result = await createActivity(data);
+    // Offline-captured photos were queued as local file refs (no network at
+    // capture time). Upload them to storage now, then submit the URLs — the
+    // backend rejects inline base64 (F9).
+    let payload = data;
+    if (data.photo_local && data.photo_local.length > 0) {
+      const upload = await uploadActivityPhotos(data.photo_local);
+      if (upload.error || !upload.data) {
+        throw new Error(upload.error || 'Activity photo upload failed');
+      }
+      const { photo_local: _dropped, ...rest } = data;
+      payload = { ...rest, photo_urls: upload.data.urls };
+    }
+
+    const { photo_local: _drop, photo_urls, ...restForSubmit } = payload;
+    if (!photo_urls || photo_urls.length === 0) {
+      throw new Error('Activity has no photos to sync');
+    }
+
+    const result = await createActivity({ ...restForSubmit, photo_urls });
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Activity sync failed');

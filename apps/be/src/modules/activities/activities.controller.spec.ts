@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ActivitiesController } from './activities.controller';
 import { ActivitiesService } from './activities.service';
+import { S3Service } from '../../shared/services/s3.service';
+import { BadRequestException } from '@nestjs/common';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { ActivitiesFilterDto } from './dto/activities-filter.dto';
@@ -52,6 +54,18 @@ describe('ActivitiesController', () => {
     remove: jest.fn(),
   };
 
+  const mockS3Service = {
+    generateKey: jest.fn(
+      (folder: string, name: string) => `sekar-media/2026/07/24/${folder}/${name}`,
+    ),
+    uploadFile: jest.fn((_buf: Buffer, key: string) =>
+      Promise.resolve(`http://localhost:9000/sekar-media-dev/${key}`),
+    ),
+  };
+
+  const filePart = (mimetype: string): Express.Multer.File =>
+    ({ mimetype, buffer: Buffer.from('x'), size: 1, originalname: 'p' }) as Express.Multer.File;
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [ActivitiesController],
@@ -59,6 +73,10 @@ describe('ActivitiesController', () => {
         {
           provide: ActivitiesService,
           useValue: mockService,
+        },
+        {
+          provide: S3Service,
+          useValue: mockS3Service,
         },
       ],
     }).compile();
@@ -625,6 +643,38 @@ describe('ActivitiesController', () => {
       expect(result.data).toEqual([]);
       expect(result.meta.total).toBe(0);
       expect(result.meta.totalPages).toBe(0);
+    });
+  });
+
+  describe('uploadPhotos (F9 — photos to storage, not inline)', () => {
+    it('uploads each file to storage and returns their URLs', async () => {
+      const files = [filePart('image/jpeg'), filePart('image/png')];
+
+      const result = await controller.uploadPhotos(files);
+
+      expect(result.urls).toHaveLength(2);
+      expect(mockS3Service.uploadFile).toHaveBeenCalledTimes(2);
+      // Stored under the activities folder, and NOT as a data-URI.
+      expect(mockS3Service.generateKey).toHaveBeenCalledWith(
+        'activities',
+        expect.stringMatching(/\.(jpg|png)$/),
+      );
+      result.urls.forEach((u) => expect(u.startsWith('data:')).toBe(false));
+    });
+
+    it('rejects an empty upload', async () => {
+      await expect(controller.uploadPhotos([])).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects more than 3 files', async () => {
+      const files = Array.from({ length: 4 }, () => filePart('image/jpeg'));
+      await expect(controller.uploadPhotos(files)).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects an unsupported mime type', async () => {
+      await expect(controller.uploadPhotos([filePart('application/pdf')])).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 });

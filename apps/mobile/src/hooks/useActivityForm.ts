@@ -10,7 +10,8 @@ import Geolocation from 'react-native-geolocation-service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
-import { createActivity } from '../services/api/activitiesApi';
+import { createActivity, uploadActivityPhotos } from '../services/api/activitiesApi';
+import type { UploadableFile } from '../services/api/activitiesApi';
 import { getMyActivityTypes } from '../services/api/activityTypesApi';
 import { getUsers } from '../services/api/usersApi';
 import { setSubmitting, setError } from '../store/slices/activitiesSlice';
@@ -300,16 +301,18 @@ export function useActivityForm() {
     dispatch(setSubmitting(true));
 
     try {
-      const photoBase64Array: string[] = [];
-      for (const photo of form.photos) {
-        const base64 = await mediaService.convertToBase64(photo);
-        photoBase64Array.push(base64);
-      }
+      // Photos go to object storage, never inline base64 (F9): the backend now
+      // rejects data: payloads. Online → upload now and submit the URLs. Offline
+      // → queue the LOCAL file refs; syncManager uploads them at replay time.
+      const uploadables: UploadableFile[] = form.photos.map((p) => ({
+        uri: p.uri,
+        name: p.fileName,
+        type: p.type,
+      }));
 
-      const activityData = {
+      const baseData = {
         activity_type_id: form.activityTypeId!,
         description: sanitizeMultilineText(form.description),
-        photo_urls: photoBase64Array,
         gps_lat: form.location!.latitude,
         gps_lng: form.location!.longitude,
         // ADR-038: include tagged users (omitted when empty so old payload shape is preserved)
@@ -319,7 +322,11 @@ export function useActivityForm() {
       };
 
       if (isOnline) {
-        const response = await createActivity(activityData);
+        const upload = await uploadActivityPhotos(uploadables);
+        if (upload.error || !upload.data) {
+          throw new Error(upload.error || i18n.t('activities:submitAlerts.failureMessage'));
+        }
+        const response = await createActivity({ ...baseData, photo_urls: upload.data.urls });
         if (response.error) { throw new Error(response.error); }
         if (response.data) {
           // Activity created successfully; the server response only includes id and created_at.
@@ -332,7 +339,9 @@ export function useActivityForm() {
           ]);
         }
       } else {
-        await addToOfflineQueue('activity', activityData);
+        // No network to upload photos now — queue the local file refs; the sync
+        // manager uploads them to storage and fills photo_urls before POSTing.
+        await addToOfflineQueue('activity', { ...baseData, photo_local: uploadables });
         await AsyncStorage.removeItem('activity_draft');
         resetForm();
         Alert.alert(
