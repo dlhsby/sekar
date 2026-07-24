@@ -32,15 +32,26 @@ function truncateForLog(value: string | null | undefined): string {
 export class S3Service {
   private readonly logger = new Logger(S3Service.name);
   private s3Client: S3Client;
+  /**
+   * Client used ONLY to sign read URLs. Same object as `s3Client` unless
+   * `AWS_PUBLIC_ENDPOINT_URL` is set — then it points at the public endpoint so
+   * the presigned URL's host (which SigV4 signs) is one the browser/device can
+   * actually reach. Solves the MinIO split-horizon in dev: the backend uploads
+   * via the internal endpoint (`localhost:19000`) while phones/emulators fetch
+   * via a reachable host (e.g. the LAN IP). Unset on staging → real S3 (public).
+   */
+  private presignClient: S3Client;
   private bucket: string;
   private region: string;
   private endpoint: string | undefined;
+  private publicEndpoint: string | undefined;
   private forcePathStyle: boolean;
 
   constructor(private configService: ConfigService) {
     this.region = this.configService.get<string>('AWS_REGION') || 'ap-southeast-1';
     this.bucket = this.configService.get<string>('AWS_S3_BUCKET') || 'sekar-media';
     this.endpoint = this.configService.get<string>('AWS_ENDPOINT_URL');
+    this.publicEndpoint = this.configService.get<string>('AWS_PUBLIC_ENDPOINT_URL');
     this.forcePathStyle = this.configService.get<string>('AWS_S3_FORCE_PATH_STYLE') === 'true';
 
     const s3Config: any = { region: this.region };
@@ -70,6 +81,21 @@ export class S3Service {
     }
 
     this.s3Client = new S3Client(s3Config);
+
+    // A read-URL signer pointed at the PUBLIC endpoint, when one is configured
+    // and differs from the internal endpoint. The presigned URL then carries the
+    // public host in its SigV4 signature, so it validates when the client fetches
+    // it from that host. Reuses the same region/creds/path-style as the upload
+    // client. No public endpoint (or same as internal) → reuse s3Client as-is.
+    if (this.publicEndpoint && this.publicEndpoint !== this.endpoint) {
+      this.presignClient = new S3Client({ ...s3Config, endpoint: this.publicEndpoint });
+      this.logger.log(
+        `S3 Service presigning read URLs via public endpoint: ${this.publicEndpoint}`,
+      );
+    } else {
+      this.presignClient = this.s3Client;
+    }
+
     this.logger.log(`S3 Service initialized for bucket: ${this.bucket}`);
   }
 
@@ -178,7 +204,9 @@ export class S3Service {
         Key: key,
       });
 
-      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+      // Sign with the public-endpoint client so the URL host is reachable by the
+      // browser/device (see `presignClient`). Falls back to the upload client.
+      const url = await getSignedUrl(this.presignClient, command, { expiresIn });
       this.logger.log(`Generated presigned URL for ${key}, expires in ${expiresIn}s`);
       return url;
     } catch (error) {

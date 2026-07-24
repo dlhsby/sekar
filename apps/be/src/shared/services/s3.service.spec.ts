@@ -160,6 +160,47 @@ describe('S3Service', () => {
 
       await testModule.close();
     });
+
+    it('builds a SECOND client on AWS_PUBLIC_ENDPOINT_URL for signing read URLs', async () => {
+      (S3Client as jest.Mock).mockClear();
+      const cfg = {
+        get: jest.fn((key: string): string | undefined => {
+          return {
+            AWS_REGION: 'ap-southeast-1',
+            AWS_S3_BUCKET: 'sekar-media-dev',
+            AWS_ENDPOINT_URL: 'http://localhost:19000',
+            AWS_PUBLIC_ENDPOINT_URL: 'http://172.25.165.11:19000',
+            AWS_S3_FORCE_PATH_STYLE: 'true',
+          }[key];
+        }),
+      };
+      const testModule = await Test.createTestingModule({
+        providers: [S3Service, { provide: ConfigService, useValue: cfg }],
+      }).compile();
+      testModule.get<S3Service>(S3Service);
+
+      const calls = (S3Client as jest.Mock).mock.calls.map((c) => c[0]);
+      expect(calls).toHaveLength(2); // upload client + presign client
+      expect(calls[0].endpoint).toBe('http://localhost:19000'); // uploads: internal
+      expect(calls[1].endpoint).toBe('http://172.25.165.11:19000'); // presign: public
+      await testModule.close();
+    });
+
+    it('does NOT build a second client when no public endpoint is set (real S3 / same-endpoint)', async () => {
+      (S3Client as jest.Mock).mockClear();
+      const cfg = {
+        get: jest.fn((key: string): string | undefined => {
+          return { AWS_REGION: 'ap-southeast-3', AWS_S3_BUCKET: 'sekar-media-staging' }[key];
+        }),
+      };
+      const testModule = await Test.createTestingModule({
+        providers: [S3Service, { provide: ConfigService, useValue: cfg }],
+      }).compile();
+      testModule.get<S3Service>(S3Service);
+
+      expect((S3Client as jest.Mock).mock.calls).toHaveLength(1); // one client, reused for presign
+      await testModule.close();
+    });
   });
 
   describe('uploadFile', () => {
