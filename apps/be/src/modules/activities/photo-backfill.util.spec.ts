@@ -4,6 +4,7 @@ import {
   mimeFromDataUri,
   bufferFromDataUri,
   rewritePhotoUrls,
+  rewritePhotoUrl,
   RewriteStats,
 } from './photo-backfill.util';
 
@@ -65,5 +66,28 @@ describe('photo-backfill.util (F9 Phase B transform)', () => {
     expect(result).toEqual(urls);
     expect(uploadOne).not.toHaveBeenCalled();
     expect(stats).toEqual({ photosMoved: 0, bytesMoved: 0 });
+  });
+
+  describe('rewritePhotoUrl (single-value column: profile pic, clock-in/out selfie)', () => {
+    const uploadOne = async (buf: Buffer, ext: string): Promise<string> =>
+      `https://store/x.${ext}?bytes=${buf.length}`;
+
+    it('uploads an inline single value and returns the stored URL', async () => {
+      const stats: RewriteStats = { photosMoved: 0, bytesMoved: 0 };
+      const result = await rewritePhotoUrl(PNG_1PX, uploadOne, stats);
+      expect(result).toBe('https://store/x.png?bytes=70');
+      expect(stats).toEqual({ photosMoved: 1, bytesMoved: 70 });
+    });
+
+    it('passes through an already-stored URL and null/empty untouched', async () => {
+      const stats: RewriteStats = { photosMoved: 0, bytesMoved: 0 };
+      expect(await rewritePhotoUrl('sekar-media/a.jpg', uploadOne, stats)).toBe(
+        'sekar-media/a.jpg',
+      );
+      expect(await rewritePhotoUrl(null, uploadOne, stats)).toBeNull();
+      expect(await rewritePhotoUrl(undefined, uploadOne, stats)).toBeNull();
+      expect(await rewritePhotoUrl('', uploadOne, stats)).toBe('');
+      expect(stats).toEqual({ photosMoved: 0, bytesMoved: 0 });
+    });
   });
 });

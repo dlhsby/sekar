@@ -189,24 +189,31 @@ environment** (matches the existing convention): **MinIO** for local dev + produ
 (`docker-compose.prod.yml`), **real AWS S3** for staging (`sekar-media-staging`). `S3Service`
 already speaks both via `AWS_ENDPOINT_URL` / `AWS_S3_FORCE_PATH_STYLE`.
 
-- **Phase A — stop the bleeding — DONE (PR #377):** `POST /activities/photos` uploads to
-  storage and returns URLs; the DTO rejects `data:`/`blob:` (`IsNotInlineMedia`); mobile
-  uploads online and queues local refs for sync-time upload offline. New APK contract (F8);
-  needs an on-device pass before the mobile release.
-- **Phase B — backfill the existing 5.8 GB — SCRIPT BUILT + locally verified:**
-  `npm run backfill:activity-photos [-- --dry-run]` (`src/database/backfill/backfill-activity-photos.ts`,
-  `:prod` variant runs the compiled JS in the container). Idempotent, keyset-batched,
-  per-row-isolated: it uploads each inline photo to storage and rewrites `photo_urls` to the
-  URL, leaving non-inline entries untouched. **Run it co-located with the DB AFTER Phase A is
-  deployed** (`docker exec sekar-backend npm run backfill:activity-photos:prod`), then
-  `VACUUM (FULL) activities` (takes a lock — operator's call) to reclaim the dead TOAST tuples
-  and actually shrink the table. Verified locally: dry-run writes nothing; the real run moves
-  photos to MinIO, preserves already-stored URLs, and a re-run reports 0 rows (idempotent).
-  Transform covered by `photo-backfill.util.spec.ts`.
+- **Phase A — stop the bleeding — DONE for ACTIVITIES (PR #377):** `POST /activities/photos`
+  uploads to storage and returns URLs; the activity DTO rejects `data:`/`blob:`
+  (`IsNotInlineMedia`); mobile uploads online and queues local refs for sync-time upload
+  offline. New APK contract (F8); needs an on-device pass before the mobile release.
+  **Still open — Phase A is NOT yet applied to the other photo modules** (shift clock-in/out
+  selfies, overtime, tasks completion, pruning, profile pictures), so *new* writes there still
+  inline base64. Closing that needs an upload endpoint + DTO guard + mobile change per module —
+  a tracked follow-up. Until then, Phase B has to be re-run periodically for those tables.
+- **Phase B — backfill ALL existing inline photos — SCRIPT BUILT + locally verified on real
+  staging data:** `npm run backfill:inline-photos [-- --dry-run]`
+  (`src/database/backfill/backfill-inline-photos.ts`, `:prod` runs the compiled JS). Covers
+  **every** photo column — `activities.{photo_urls,photo_before_url,photo_after_url}`,
+  `overtimes.photo_urls`, `pruning_requests.photo_urls`, `tasks.completion_photo_urls`,
+  `notable_plants.photo_urls`, `assets.photo_url`, `users.profile_picture_url`,
+  `shifts.{clock_in_photo_url,clock_out_photo_url}` — handling both `text[]` and single `text`.
+  Idempotent, keyset-batched, per-row-isolated. **Run co-located with the DB AFTER the cutover
+  deploy** (`docker exec sekar-backend npm run backfill:inline-photos:prod`), then
+  `VACUUM (FULL)` the affected tables (`activities`, `shifts`, `users`, …) to reclaim the dead
+  TOAST tuples. Verified on the real-data sim: **1,354 photos (186 MB) moved** (669 clock-in +
+  508 clock-out selfies + 160 profile pics + 11 overtime + 2 tasks; activities already done),
+  **zero inline left**, re-run reports 0 (idempotent). Transform covered by
+  `photo-backfill.util.spec.ts`.
 
 Phase B is out of scope for the cutover deploy itself (it's a separate, post-deploy job) but
-must be run, and the same fix applies to production. Profile pictures + pruning photos share
-the same inline-base64 pattern at smaller scale — a later cleanup, not tracked here.
+must be run, and the same fix applies to production.
 
 **Interim mitigation applied 2026-07-24:** the co-tenant apps sharing the box
 (`swat-*`, `mm-web`, `portal-web`) were stopped (`docker stop`, reversible via

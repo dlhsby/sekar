@@ -57,3 +57,23 @@ export async function rewritePhotoUrls(
   }
   return out;
 }
+
+/**
+ * Single-value variant of {@link rewritePhotoUrls} for a `text` column that holds
+ * ONE photo (profile picture, clock-in/out selfie, asset photo, before/after).
+ * Uploads the inline entry and returns the stored URL; a non-inline value (already
+ * a key/URL) or null/empty passes through unchanged.
+ */
+export async function rewritePhotoUrl(
+  url: string | null | undefined,
+  uploadOne: (buf: Buffer, ext: string, mime: string) => Promise<string>,
+  stats: RewriteStats,
+): Promise<string | null> {
+  if (!url) return url ?? null;
+  if (!isInlineMedia(url)) return url;
+  const buf = bufferFromDataUri(url);
+  const stored = await uploadOne(buf, extFromDataUri(url), mimeFromDataUri(url));
+  stats.photosMoved += 1;
+  stats.bytesMoved += buf.length;
+  return stored;
+}
