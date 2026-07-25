@@ -68,6 +68,16 @@
     "shiftCount": "{{count}} shift",
     "a11y": {
       "viewShifts": "Lihat rincian shift hari ini"
+    },
+    "punchLog": {
+      "title": "Pencatatan Waktu",
+      "session": "Sesi",
+      "overtime": "Lembur",
+      "open": "Berjalan",
+      "masuk": "Masuk",
+      "keluar": "Keluar",
+      "inArea": "Di area",
+      "outArea": "Luar area"
     }
   },
   "dayCard": {

@@ -8,6 +8,7 @@ import { PunchLabel } from './enums/punch-label.enum';
 import { AttendanceDerivationService } from './services/attendance-derivation.service';
 import { ShiftAttributionService, AttributionMatch } from './services/shift-attribution.service';
 import { AttendanceCurrentDto, ShiftOptionDto } from './dto/attendance-current.dto';
+import { PunchLogDayDto, PunchSessionDto, PunchDto } from './dto/punch-log.dto';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { LocationsService } from '../locations/locations.service';
@@ -539,6 +540,58 @@ export class ShiftsService {
    *   4. Fallback (unscheduled / ad-hoc, or no schedules provider): the legacy
    *      resolution (configured shift / time-of-day match) on today's date.
    */
+  /**
+   * The punch timeline for one WIB service-day (ADR-055 Phase 4) — the raw
+   * append-only log grouped into sessions (per shift-definition / overtime),
+   * each with its derived Jam Masuk / Keluar / worked-minutes. Powers the mobile
+   * "Detail Pencatatan Waktu" screen. Punches within a session are ordered by
+   * `punched_at`.
+   */
+  async getPunchLogForDate(userId: string, date: string): Promise<PunchLogDayDto> {
+    const punches = await this.punchRepository
+      .createQueryBuilder('p')
+      .where('p.user_id = :userId', { userId })
+      .andWhere('p.service_day = :date', { date })
+      .orderBy('p.punched_at', 'ASC')
+      .getMany();
+
+    // Group by session key (shift-definition + overtime), preserving first-seen order.
+    const groups = new Map<string, AttendancePunch[]>();
+    for (const punch of punches) {
+      const key = `${punch.shift_definition_id ?? 'none'}:${punch.is_overtime}`;
+      const bucket = groups.get(key);
+      if (bucket) bucket.push(punch);
+      else groups.set(key, [punch]);
+    }
+
+    const sessions: PunchSessionDto[] = [];
+    for (const bucket of groups.values()) {
+      const derived = this.derivation.deriveSession(bucket);
+      sessions.push({
+        shift_definition_id: bucket[0].shift_definition_id,
+        is_overtime: bucket[0].is_overtime,
+        jam_masuk: derived.clockInTime ? derived.clockInTime.toISOString() : null,
+        jam_keluar: derived.clockOutTime ? derived.clockOutTime.toISOString() : null,
+        worked_minutes: derived.workedMinutes,
+        is_open: derived.isOpen,
+        punches: bucket.map(
+          (p): PunchDto => ({
+            id: p.id,
+            label: p.label,
+            punched_at: p.punched_at.toISOString(),
+            gps_lat: p.gps_lat,
+            gps_lng: p.gps_lng,
+            accuracy_m: p.accuracy_m,
+            outside_boundary: p.outside_boundary,
+            photo_url: p.photo_url,
+          }),
+        ),
+      });
+    }
+
+    return { date, sessions };
+  }
+
   /**
    * The worker's live attendance state (ADR-055): the open session (or null) and
    * the shift options a clock-in could target now (best-first, `is_default` flags

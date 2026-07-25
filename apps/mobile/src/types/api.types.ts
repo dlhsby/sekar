@@ -117,6 +117,33 @@ export interface ShiftCurrentStateResponse {
   options: ShiftOption[];
 }
 
+// ADR-055 Phase 4: GET /shifts/attendance/:date/punches — the punch timeline.
+export interface PunchEntry {
+  id: string;
+  label: 'clock_in' | 'clock_out';
+  punched_at: string; // ISO 8601
+  gps_lat: number | null;
+  gps_lng: number | null;
+  accuracy_m: number | null;
+  outside_boundary: boolean;
+  photo_url: string | null;
+}
+
+export interface PunchSession {
+  shift_definition_id: string | null;
+  is_overtime: boolean;
+  jam_masuk: string | null;
+  jam_keluar: string | null;
+  worked_minutes: number;
+  is_open: boolean;
+  punches: PunchEntry[];
+}
+
+export interface PunchLogDay {
+  date: string; // YYYY-MM-DD (WIB)
+  sessions: PunchSession[];
+}
+
 // Attendance history (GET /shifts/attendance) — one WIB calendar day, regular shifts only.
 export interface AttendanceDaySummary {
   date: string; // YYYY-MM-DD (WIB)

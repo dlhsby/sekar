@@ -9,6 +9,7 @@ import type {
   ClockOutResponse,
   CurrentShiftResponse,
   ShiftCurrentStateResponse,
+  PunchLogDay,
   AttendanceListResponse,
   AttendanceDayDetail,
   AttendanceFilter,
@@ -89,6 +90,14 @@ export async function clockOut(
  */
 export async function getCurrentState(): Promise<ApiResponse<ShiftCurrentStateResponse>> {
   return get<ShiftCurrentStateResponse>('/shifts/current-state');
+}
+
+/**
+ * ADR-055 Phase 4: the punch timeline for a WIB service-day (YYYY-MM-DD),
+ * grouped into sessions. Powers the Detail Pencatatan Waktu screen.
+ */
+export async function getPunchLog(date: string): Promise<ApiResponse<PunchLogDay>> {
+  return get<PunchLogDay>(`/shifts/attendance/${date}/punches`);
 }
 
 export async function getCurrentShift(): Promise<
