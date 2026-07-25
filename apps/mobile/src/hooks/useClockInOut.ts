@@ -7,9 +7,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import Geolocation from 'react-native-geolocation-service';
 import { Alert } from 'react-native';
+import uuid from 'react-native-uuid';
 import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
-import { clockIn, clockOut, getCurrentShift } from '../services/api/shiftsApi';
+import { clockIn, clockOut, getCurrentShift, getCurrentState } from '../services/api/shiftsApi';
+import type { ShiftOption } from '../types/api.types';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { isToday } from '../utils/dateUtils';
@@ -56,6 +58,28 @@ export function useClockInOut() {
 
   const [selfie, setSelfie] = useState<Photo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ADR-055 Phase 3: live attendance state from the server — the open session
+  // (drives the Clock-Out gate) + the ranked shift options (drives the picker).
+  const [shiftOptions, setShiftOptions] = useState<ShiftOption[]>([]);
+  const [hasOpenSession, setHasOpenSession] = useState<boolean | null>(null);
+
+  const loadCurrentState = useCallback(async () => {
+    if (!isOnline) return; // offline: fall back to the local currentShift for gating
+    try {
+      const res = await getCurrentState();
+      if (res.data) {
+        setShiftOptions(res.data.options ?? []);
+        setHasOpenSession(res.data.open_session != null);
+      }
+    } catch {
+      // non-fatal — the screen degrades to the local shift state
+    }
+  }, [isOnline]);
+
+  useEffect(() => {
+    loadCurrentState();
+  }, [loadCurrentState]);
   const [timer, setTimer] = useState('00:00:00');
 
   const isClockIn = !currentShift;
@@ -309,7 +333,7 @@ export function useClockInOut() {
     }
   }, []);
 
-  const handleClockIn = useCallback(async (onSuccess: () => void) => {
+  const handleClockIn = useCallback(async (onSuccess: () => void, shift?: ShiftOption | null) => {
     if (!location.latitude || !location.longitude) {
       Alert.alert('Error', i18n.t('location:errors.unavailableClockIn'));
       return;
@@ -319,7 +343,15 @@ export function useClockInOut() {
     try {
       const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
 
-      const response = await clockIn(location.latitude, location.longitude, selfieBase64);
+      // ADR-055: every punch carries a client uuid so a retry (e.g. an offline
+      // sync) is idempotent server-side; an explicit picker shift overrides the
+      // automatic near-midnight attribution.
+      const response = await clockIn(location.latitude, location.longitude, selfieBase64, undefined, {
+        clientUuid: uuid.v4() as string,
+        accuracyM: location.accuracy ?? undefined,
+        shiftDefinitionId: shift?.shift_definition_id,
+        serviceDay: shift?.service_day,
+      });
       if (response.error || !response.data) {
         throw new Error(response.error || i18n.t('location:clockInOut.clockInFail'));
       }
@@ -378,7 +410,10 @@ export function useClockInOut() {
               }
 
               const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
-              const response = await clockOut(location.latitude!, location.longitude!, selfieBase64);
+              const response = await clockOut(location.latitude!, location.longitude!, selfieBase64, {
+                clientUuid: uuid.v4() as string,
+                accuracyM: location.accuracy ?? undefined,
+              });
               if (response.error) {
                 const errMsg = response.error;
                 Alert.alert(i18n.t('location:clockInOut.clockOutFail'), errMsg);
@@ -443,6 +478,10 @@ export function useClockInOut() {
     rosterAreas,
     mapArea,
     hasScheduleToday,
+    // ADR-055 Phase 3
+    shiftOptions,
+    hasOpenSession,
+    loadCurrentState,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,

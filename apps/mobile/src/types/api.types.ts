@@ -90,6 +90,33 @@ export interface CurrentShiftResponse extends Shift {
   hours_worked: number;
 }
 
+// ADR-055 Phase 3: GET /shifts/current-state — live attendance state + shift picker.
+export type ShiftOptionPhase = 'early' | 'covering' | 'grace';
+
+export interface ShiftOption {
+  shift_definition_id: string;
+  shift_name?: string;
+  shift_code?: string;
+  service_day: string; // YYYY-MM-DD (WIB)
+  phase: ShiftOptionPhase;
+  minutes_to_start: number; // negative = already started
+  is_default: boolean;
+}
+
+export interface OpenSessionInfo {
+  id: string;
+  service_day: string | null;
+  shift_definition_id: string | null;
+  clock_in_time: string;
+  location_id: string | null;
+  is_overtime: boolean;
+}
+
+export interface ShiftCurrentStateResponse {
+  open_session: OpenSessionInfo | null;
+  options: ShiftOption[];
+}
+
 // Attendance history (GET /shifts/attendance) — one WIB calendar day, regular shifts only.
 export interface AttendanceDaySummary {
   date: string; // YYYY-MM-DD (WIB)

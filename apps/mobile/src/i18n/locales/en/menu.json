@@ -1,6 +1,7 @@
 {
   "tiles": {
     "attendance": "Attendance",
+    "timeRecord": "Time Record",
     "overtime": "Overtime",
     "tasks": "Tasks",
     "activities": "Activities",
