@@ -520,6 +520,80 @@ describe('ShiftsService', () => {
       // clock-in's WIB date (the crux of the night-shift-past-midnight fix).
       expect(saved.service_day).toBe('2026-01-01');
     });
+
+    it('honors an EXPLICIT picker shift choice over auto-attribution (ADR-055)', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(null); // no open session
+      mockPunches = [inPunch({ shift_definition_id: 'sd-picked' })];
+      let saved: any;
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(null));
+      mockRepository.create.mockImplementation((r: any) => r);
+      mockRepository.save.mockImplementation((r: any) => {
+        saved = r;
+        return Promise.resolve({ id: 'session-1', ...r });
+      });
+
+      await service.clockIn(mockUser.id, {
+        ...clockInDto,
+        shift_definition_id: 'sd-picked',
+        service_day: '2026-07-24',
+      } as any);
+
+      expect(saved.shift_definition_id).toBe('sd-picked');
+      expect(saved.service_day).toBe('2026-07-24');
+      // explicit choice short-circuits attribution
+      expect(mockSchedulesService.getAttributionCandidates).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getCurrentAttendance (ADR-055 Phase 3)', () => {
+    it('returns the open session + ranked shift options (is_default on the best)', async () => {
+      const openRow = {
+        ...mockShift,
+        id: 'session-open',
+        service_day: '2026-07-25',
+        clock_in_time: new Date('2026-07-25T00:00:00Z'),
+        shift_definition_id: 'sd-1',
+      };
+      mockRepository.findOne.mockResolvedValue(openRow); // findOpenSessionRow
+      mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([
+        {
+          shift_definition_id: 'sd-1',
+          service_day: '2026-07-25',
+          start_time: '06:00',
+          end_time: '15:00',
+          crosses_midnight: false,
+          early_window_min: 100_000_000,
+          cutoff_grace_min: 100_000_000,
+          shift_name: 'Shift 1',
+          shift_code: 'SHIFT1',
+        },
+      ]);
+
+      const result = await service.getCurrentAttendance(mockUser.id);
+
+      expect(result.open_session).toMatchObject({
+        id: 'session-open',
+        service_day: '2026-07-25',
+        shift_definition_id: 'sd-1',
+      });
+      expect(result.options).toHaveLength(1);
+      expect(result.options[0]).toMatchObject({
+        shift_definition_id: 'sd-1',
+        shift_name: 'Shift 1',
+        is_default: true,
+      });
+    });
+
+    it('returns open_session null when nothing is clocked in', async () => {
+      mockRepository.findOne.mockResolvedValue(null);
+      mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([]);
+
+      const result = await service.getCurrentAttendance(mockUser.id);
+
+      expect(result.open_session).toBeNull();
+      expect(result.options).toEqual([]);
+    });
   });
 
   describe('clockOut (punch model, ADR-055)', () => {

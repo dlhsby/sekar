@@ -45,6 +45,25 @@ export class ClockInDto {
   accuracy_m?: number;
 
   @ApiProperty({
+    description:
+      'Explicit shift chosen from the picker (ADR-055). When set, overrides the ' +
+      'automatic attribution — used near midnight / for a dangling shift. Omit to auto-resolve.',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  shift_definition_id?: string;
+
+  @ApiProperty({
+    description:
+      'WIB service-day (YYYY-MM-DD) the chosen shift belongs to; pairs with shift_definition_id.',
+    required: false,
+  })
+  @IsOptional()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'service_day must be YYYY-MM-DD' })
+  service_day?: string;
+
+  @ApiProperty({
     description: 'GPS latitude of user location',
     example: -7.2905,
     minimum: -90,
