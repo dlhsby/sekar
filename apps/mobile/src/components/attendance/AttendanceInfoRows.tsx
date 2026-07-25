@@ -1,11 +1,11 @@
 import React from 'react';
-import { View, TouchableOpacity, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { InfoTableRow, DateTimeValue } from '../common';
 import { NBText } from '../nb/NBText';
 import { StatusPill, type StatusTone } from '../home/StatusPill';
-import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 
 interface AttendanceInfoRowsProps {
   /** "Shift 3 · 21:00–05:00" — omit/null to hide the Jadwal Shift row. */
@@ -72,7 +72,7 @@ export function AttendanceInfoRows({
   const pill = <StatusPill tone={areaStatus.tone} label={areaStatus.label} />;
 
   return (
-    <View>
+    <View style={styles.root}>
       {shiftText ? <InfoTableRow label={t('attendance:infoCard.shift')} value={shiftText} /> : null}
       <InfoTableRow label={t('attendance:infoCard.status')} value={statusBadge} />
       {clockInTime ? (
@@ -118,7 +118,7 @@ export function AttendanceInfoRows({
                 </NBText>
               ) : hasCoords ? (
                 <>
-                  <NBText variant="mono-sm" color="black" style={styles.coords}>
+                  <NBText variant="mono-sm" color="black">
                     {location.latitude!.toFixed(6)}, {location.longitude!.toFixed(6)}
                   </NBText>
                   {location.accuracy != null ? (
@@ -137,10 +137,11 @@ export function AttendanceInfoRows({
               <TouchableOpacity
                 onPress={onRefreshLocation}
                 disabled={location.loading}
+                activeOpacity={0.7}
                 accessibilityRole="button"
                 accessibilityLabel={t('attendance:infoCard.refreshLocation')}
                 testID="attendance-refresh-location"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                style={styles.refreshButton}
               >
                 {location.loading ? (
                   <ActivityIndicator size="small" color={nbColors.black} />
@@ -152,7 +153,7 @@ export function AttendanceInfoRows({
           </View>
         }
       />
-      {notes ? <View style={styles.notes}>{notes}</View> : null}
+      {notes ?? null}
       {onDetailShift ? (
         <TouchableOpacity
           onPress={onDetailShift}
@@ -171,6 +172,11 @@ export function AttendanceInfoRows({
 }
 
 const styles = StyleSheet.create({
+  // Self-contained vertical rhythm — the card no longer depends on the parent
+  // to space these rows, and md (16) replaces the old cramped 8px stacking.
+  root: {
+    gap: nbSpacing.md,
+  },
   locationValue: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -182,14 +188,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     flexShrink: 1,
   },
-  coords: {
-    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
-  },
-  notes: {
-    marginTop: nbSpacing.sm,
+  // Standard NB icon button — hard border + hard-edge shadow, matching NBButton.
+  refreshButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+    ...nbShadows.sm,
   },
   detailLink: {
-    marginTop: nbSpacing.sm,
     alignSelf: 'flex-start',
   },
   detailText: {

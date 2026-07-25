@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
   heroMeta: { marginTop: nbSpacing.sm },
   // Expanded hero: label:value table rows — sm gap so the rows breathe.
-  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
+  heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.md },
   heroIdleTitle: { marginTop: 2 },
   // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
   heroButton: { marginTop: nbSpacing.md },
