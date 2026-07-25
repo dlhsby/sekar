@@ -6,7 +6,6 @@ import {
   StyleSheet,
   AccessibilityInfo,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -16,6 +15,7 @@ import { LoadingSpinner, AppUpdateBanner, InfoTableRow, DateTimeValue } from '..
 import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
+import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
@@ -327,6 +327,11 @@ export function FieldHomeScreen(): React.JSX.Element {
     scheduleScope.name ??
     assignedArea?.name ??
     t('home:field.hero.location.noArea');
+  // Shift window for the shared Jadwal Shift row (e.g. "Shift 3 · 21:00–05:00").
+  const heroShiftDef = currentShift?.shift_definition ?? rosterShift;
+  const heroShiftText = heroShiftDef
+    ? `${heroShiftDef.name} · ${heroShiftDef.start_time.slice(0, 5)}–${heroShiftDef.end_time.slice(0, 5)}`
+    : null;
 
   return (
     <NBBackgroundPattern
@@ -421,9 +426,12 @@ export function FieldHomeScreen(): React.JSX.Element {
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
                   <InfoTableRow label={t('home:field.hero.labels.clockInStart')} value={<DateTimeValue source={currentShift.clock_in_time} />} />
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.status')}
-                    value={
+                  {/* Shared core rows — identical to the Rekam Kehadiran card:
+                      Jadwal Shift · Status · Area Ditugaskan · Status Area (pill +
+                      refresh, tap → map). */}
+                  <AttendanceInfoRows
+                    shiftText={heroShiftText}
+                    statusBadge={
                       hasScheduleToday ? (
                         <NBBadge
                           text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
@@ -434,40 +442,16 @@ export function FieldHomeScreen(): React.JSX.Element {
                         <NBBadge text={t('home:field.hero.status.noSchedule')} color="gray" size="sm" />
                       )
                     }
-                  />
-                  <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
-                  {/* Status Area — the in/out-area pill (in the header while
-                      collapsed) with the GPS refresh beside it. The raw
-                      coordinates row was dropped as noise; tap the pill → map. */}
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.areaStatus')}
-                    value={
-                      <View style={styles.heroAreaStatusValue}>
-                        <TouchableOpacity
-                          onPress={() => setLocationMapVisible(true)}
-                          disabled={!hasActiveShift}
-                          activeOpacity={0.7}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
-                        >
-                          <StatusPill tone={areaTone} label={areaLabel} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={refreshLocation}
-                          disabled={homeLocation.loading}
-                          style={styles.heroGpsRefresh}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('home:field.hero.a11y.refreshLocation')}
-                          testID="hero-refresh-location"
-                        >
-                          {homeLocation.loading ? (
-                            <ActivityIndicator size="small" color={nbColors.black} />
-                          ) : (
-                            <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    }
+                    areaName={heroAreaName}
+                    areaStatus={{
+                      tone: areaTone,
+                      label: areaLabel,
+                      onPress: () => setLocationMapVisible(true),
+                      disabled: !hasActiveShift,
+                      a11yLabel: t('home:field.hero.a11y.locationStatus', { status: areaLabel }),
+                    }}
+                    onRefreshLocation={refreshLocation}
+                    refreshingLocation={homeLocation.loading}
                   />
                   <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
                   <TouchableOpacity
@@ -696,23 +680,6 @@ const styles = StyleSheet.create({
   heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
   // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
-  heroAreaStatusValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: nbSpacing.sm,
-  },
-  // Compact white refresh button beside the area-status pill.
-  heroGpsRefresh: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.sm,
-  },
   heroButton: { marginTop: nbSpacing.md },
   heroDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
   heroDetailText: { letterSpacing: 0.6 },

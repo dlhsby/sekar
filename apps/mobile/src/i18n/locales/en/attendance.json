@@ -83,6 +83,18 @@
       "label": "Attendance {{date}}, {{status}}"
     }
   },
+  "infoCard": {
+    "shift": "Scheduled Shift",
+    "status": "Attendance Status",
+    "assignedArea": "Assigned Area",
+    "areaStatus": "Area Status",
+    "refreshLocation": "Refresh location",
+    "inArea": "In area",
+    "outArea": "Out of area",
+    "noArea": "No area",
+    "scopeUndefined": "Boundary not set",
+    "locating": "Locating…"
+  },
   "clockInOut": {
     "noAreaAssigned": "No area assigned — you can still clock in",
     "contactSupervisor": "Contact your supervisor for area assignment",

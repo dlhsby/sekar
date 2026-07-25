@@ -401,7 +401,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
       await waitFor(() => {
-        expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
+        expect(getByText('Di luar area')).toBeTruthy();
       }, { timeout: 5000 });
     });
 
@@ -437,20 +437,20 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // Title is visible AND the area details are shown without a tap — the card
       // opens expanded so the attendance-type row + shift/area read at a glance.
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
-      expect(getByText('Tipe Area')).toBeTruthy();
+      expect(getByText('Area Ditugaskan')).toBeTruthy();
     });
 
     it('collapses the Informasi Kehadiran card on press', async () => {
       const store = createMockStore();
       const { getByText, getByLabelText, queryByText } = renderScreen(store);
 
-      await waitFor(() => { expect(getByText('Tipe Area')).toBeTruthy(); });
+      await waitFor(() => { expect(getByText('Area Ditugaskan')).toBeTruthy(); });
 
       // Tap the card header to collapse it → area details are hidden.
       fireEvent.press(getByLabelText('Informasi Kehadiran'));
 
       await waitFor(() => {
-        expect(queryByText('Tipe Area')).toBeNull();
+        expect(queryByText('Area Ditugaskan')).toBeNull();
       });
     });
 
@@ -466,7 +466,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // The card is expanded by default, so the in-area banner is visible.
 
       await waitFor(() => {
-        expect(getByText(/Anda berada di dalam area kerja/i)).toBeTruthy();
+        expect(getByText('Di area')).toBeTruthy();
       }, { timeout: 5000 });
     });
 
@@ -650,7 +650,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
 
       await waitFor(() => {
         // Phase 2C: Soft warning shown but clock-in NOT blocked
-        expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
+        expect(getByText('Di luar area')).toBeTruthy();
       }, { timeout: 5000 });
 
       // Phase 2C: Clock-in button should still be enabled (only disabled if no GPS or no selfie)

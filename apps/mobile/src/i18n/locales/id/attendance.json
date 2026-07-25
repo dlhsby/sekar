@@ -83,6 +83,18 @@
       "label": "Kehadiran {{date}}, {{status}}"
     }
   },
+  "infoCard": {
+    "shift": "Jadwal Shift",
+    "status": "Status Kehadiran",
+    "assignedArea": "Area Ditugaskan",
+    "areaStatus": "Status Area",
+    "refreshLocation": "Perbarui lokasi",
+    "inArea": "Di area",
+    "outArea": "Di luar area",
+    "noArea": "Tanpa area",
+    "scopeUndefined": "Batas belum ditentukan",
+    "locating": "Lokasi…"
+  },
   "clockInOut": {
     "noAreaAssigned": "Tanpa area penugasan — Anda tetap dapat clock in",
     "contactSupervisor": "Hubungi supervisor untuk penugasan area",

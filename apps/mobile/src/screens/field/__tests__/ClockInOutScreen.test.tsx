@@ -387,7 +387,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
 
     // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
     await waitFor(() => {
-      expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
+      expect(getByText('Di luar area')).toBeTruthy();
     });
   });
 
@@ -425,7 +425,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     await waitFor(
       () => {
         // Phase 2C: Soft warning shown but clock-in NOT blocked
-        expect(getByText(/Anda berada di luar area kerja/i)).toBeTruthy();
+        expect(getByText('Di luar area')).toBeTruthy();
       },
       { timeout: 3000 }
     );

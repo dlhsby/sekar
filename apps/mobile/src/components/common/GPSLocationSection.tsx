@@ -28,6 +28,12 @@ export interface GPSLocationSectionProps {
    * ("where am I vs the boundary I should be in"). Omitted → not tappable.
    */
   onShowMap?: () => void;
+  /**
+   * Hide the within/outside/scope area alert. Set when the caller already shows
+   * the in/out-of-area state elsewhere (e.g. the shared "Status Area" pill row),
+   * so the two don't duplicate. The GPS status line + coordinates still render.
+   */
+  hideAreaStatus?: boolean;
 }
 
 export function GPSLocationSection({
@@ -42,6 +48,7 @@ export function GPSLocationSection({
   scopeLabel,
   areaName,
   onShowMap,
+  hideAreaStatus = false,
 }: GPSLocationSectionProps) {
   const { t } = useTranslation('attendance');
   const hasLocation = latitude != null && longitude != null;
@@ -96,8 +103,9 @@ export function GPSLocationSection({
       </View>
 
       {/* Area status alert — neutral note when unassigned, else within/outside.
-          (The map opens from the "Lihat di peta" button in the status row.) */}
-      {hasLocation && scopeLabel ? (
+          (The map opens from the "Lihat di peta" button in the status row.)
+          Suppressed via hideAreaStatus when a "Status Area" pill already shows it. */}
+      {hideAreaStatus ? null : hasLocation && scopeLabel ? (
         <NBAlert variant="info" message={t('gpsSection.scopeAssigned', { scope: scopeLabel })} />
       ) : hasLocation && noArea ? (
         <NBAlert variant="info" message={t('gpsSection.noArea')} />

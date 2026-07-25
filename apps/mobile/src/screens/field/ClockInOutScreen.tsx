@@ -11,6 +11,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { GPSLocationSection, ImagePreviewModal, InfoTableRow, DateTimeValue } from '../../components/common';
 import { LocationMapModal } from '../../components/modals/LocationMapModal';
 import { AttendanceTypeSheet, type AttendanceAction } from '../../components/modals/AttendanceTypeSheet';
+import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
+import type { StatusTone } from '../../components/home/StatusPill';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -94,6 +96,52 @@ export const ClockInOutScreen = (): React.JSX.Element => {
 
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
 
+  // No hard block for a missing area: ad-hoc / patrol workers with no assigned
+  // area may still clock in (GPS is recorded, geofencing stays soft, and the
+  // shift is created with location_id = null). The form surfaces "no area" inline;
+  // district-scoped roles show a "no specific area" note instead.
+  const userRole = useAppSelector((state) => state.auth.user?.role);
+  const isDistrictScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
+
+  // ── Shared attendance-card data (see AttendanceInfoRows) ──────────────────
+  // Resolved here so the Rekam Kehadiran card renders the SAME core rows as the
+  // home hero: Jadwal Shift · Status · Area Ditugaskan · Status Area.
+  const shiftText = scheduledShift
+    ? `${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`
+    : t('attendance:clockInOut.noScheduleToday');
+
+  // Single "Area Ditugaskan" label — the lokasi, else the named scope, else a
+  // district-coverage / no-area fallback. The multi-lokasi list is kept as extra
+  // rows below the shared block.
+  const isMultiArea = rosterAreas.length > 1;
+  const areaName = isMultiArea
+    ? t('attendance:clockInOut.multiArea', { count: rosterAreas.length })
+    : assignedArea?.name ??
+      (scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+        ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
+        : isDistrictScoped
+          ? t('attendance:clockInOut.noSpecificArea')
+          : t('attendance:infoCard.noArea'));
+
+  const areaStatusTone: StatusTone = location.loading
+    ? 'neutral'
+    : areaState === 'within'
+      ? 'ok'
+      : areaState === 'outside'
+        ? 'bad'
+        : areaState === 'scope'
+          ? 'info'
+          : 'neutral';
+  const areaStatusLabel = location.loading
+    ? t('attendance:infoCard.locating')
+    : areaState === 'within'
+      ? t('attendance:infoCard.inArea')
+      : areaState === 'outside'
+        ? t('attendance:infoCard.outArea')
+        : areaState === 'scope'
+          ? t('attendance:infoCard.scopeUndefined')
+          : t('attendance:infoCard.noArea');
+
   // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
   // The title is now the STABLE page name "Rekam Kehadiran" — the action
   // (clock in vs out) lives on the in-page label selector + primary button, not
@@ -114,13 +162,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       }
     }
   }, [navigation, goBack, t]);
-
-  // No hard block for a missing area: ad-hoc / patrol workers with no assigned
-  // area may still clock in (GPS is recorded, geofencing stays soft, and the
-  // shift is created with location_id = null). The form surfaces "no area" inline;
-  // district-scoped roles show a "no specific area" note instead.
-  const userRole = useAppSelector((state) => state.auth.user?.role);
-  const isDistrictScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
 
   // The on-time/late/no-schedule pill — shown in the card HEADER while collapsed
   // (at-a-glance), and in the "Status" body row while expanded. One source.
@@ -229,69 +270,32 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 }
               />
               <InfoTableRow label={t('attendance:clockInOut.currentTime')} value={<DateTimeValue source={currentTime} />} />
-              {scheduledShift ? (
-                <InfoTableRow
-                  label={t('attendance:clockInOut.scheduledShift')}
-                  value={`${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`}
-                />
-              ) : (
-                <InfoTableRow
-                  label={t('attendance:clockInOut.scheduledShift')}
-                  value={t('attendance:clockInOut.noScheduleToday')}
-                />
-              )}
-              {/* Status — the on-time/late/no-schedule pill (also shown in the
-                  header while collapsed). */}
-              <InfoTableRow label={t('attendance:clockInOut.statusLabel')} value={statusBadge} />
-              {rosterAreas.length > 1 ? (
-                // Today's assignment covers several lokasi — list them all, not
-                // just the primary. Clock-in is accepted at ANY of them; the
-                // backend records whichever one the GPS lands in.
+              {/* Shared core rows — identical to the home "Kehadiran" hero:
+                  Jadwal Shift · Status · Area Ditugaskan · Status Area. */}
+              <AttendanceInfoRows
+                shiftText={shiftText}
+                statusBadge={statusBadge}
+                areaName={areaName}
+                areaStatus={{
+                  tone: areaStatusTone,
+                  label: areaStatusLabel,
+                  onPress: location.latitude != null ? () => setMapVisible(true) : undefined,
+                  a11yLabel: t('attendance:clockInOut.viewOnMap'),
+                }}
+                onRefreshLocation={getCurrentLocation}
+                refreshingLocation={location.loading}
+              />
+              {/* Multi-lokasi assignment — list the places clock-in is accepted at.
+                  The backend records whichever one the GPS lands in. */}
+              {isMultiArea && (
                 <>
-                  <InfoTableRow
-                    label={t('attendance:clockInOut.assignedArea')}
-                    value={t('attendance:clockInOut.multiArea', { count: rosterAreas.length })}
-                  />
                   {rosterAreas.map((a) => (
-                    <InfoTableRow
-                      key={a.id}
-                      label=""
-                      value={`• ${a.name}`}
-                      numberOfLines={1}
-                    />
+                    <InfoTableRow key={a.id} label="" value={`• ${a.name}`} numberOfLines={1} />
                   ))}
                   <NBText variant="body-sm" color="gray600">
                     {t('attendance:clockInOut.multiAreaHint')}
                   </NBText>
                 </>
-              ) : assignedArea ? (
-                <>
-                  <InfoTableRow label={t('attendance:clockInOut.assignedArea')} value={assignedArea.name} />
-                  {assignedArea.address ? (
-                    <InfoTableRow label={t('attendance:clockInOut.address')} value={assignedArea.address} numberOfLines={2} />
-                  ) : null}
-                  <InfoTableRow label={t('attendance:clockInOut.areaType')} value={assignedArea.area_type?.name || 'N/A'} />
-                  {assignedArea.gps_lat != null && assignedArea.gps_lng != null && (
-                    <InfoTableRow
-                      label={t('attendance:clockInOut.gpsCoordinates')}
-                      value={`${Number(assignedArea.gps_lat).toFixed(6)}, ${Number(assignedArea.gps_lng).toFixed(6)}`}
-                    />
-                  )}
-                </>
-              ) : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location' ? (
-                // Scheduled city / rayon / kawasan-wide: name the scope. The
-                // "tanpa lokasi tertentu" hint that used to sit here was pure
-                // duplication of this row and is gone.
-                <InfoTableRow
-                  label={t('attendance:clockInOut.assignedArea')}
-                  value={t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
-                    name: scheduleScope.name ?? '',
-                  })}
-                />
-              ) : isDistrictScoped ? (
-                <InfoTableRow label={t('attendance:clockInOut.districtCoverage')} value={t('attendance:clockInOut.noSpecificArea')} />
-              ) : (
-                <NBText variant="body-sm" color="gray600">{t('attendance:clockInOut.noAreaAssigned')}</NBText>
               )}
             </View>
 
@@ -323,6 +327,10 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               }
               areaName={assignedArea?.name}
               onShowMap={location.latitude != null ? () => setMapVisible(true) : undefined}
+              // The "Status Area" pill row above already shows in/out-of-area, so
+              // suppress the duplicate alert here — GPS keeps only the location
+              // line + coordinates.
+              hideAreaStatus
             />
             {currentShift && (
               <View style={styles.clockInInfo}>
