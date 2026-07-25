@@ -24,6 +24,7 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { AttendanceDaySummaryDto, AttendanceDayDetailDto } from './dto/attendance-day.dto';
 import { AttendanceCurrentDto } from './dto/attendance-current.dto';
+import { PunchLogDayDto } from './dto/punch-log.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { Shift } from './entities/shift.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -238,6 +239,28 @@ export class ShiftsController {
     }
     const shifts = await this.shiftsService.findMyAttendanceForDate(user.id, date);
     return { date, shifts };
+  }
+
+  @Get('attendance/:date/punches')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({
+    summary: 'Punch timeline for a day (ADR-055)',
+    description:
+      "The raw append-only punch log behind the authenticated user's attendance on " +
+      'the given WIB service-day, grouped into sessions with their derived Jam Masuk / ' +
+      'Keluar / worked-minutes. Powers the mobile Detail Pencatatan Waktu screen.',
+  })
+  @ApiParam({ name: 'date', description: 'WIB service-day (YYYY-MM-DD)', example: '2026-06-22' })
+  @ApiResponse({ status: HttpStatus.OK, type: PunchLogDayDto })
+  @ApiResponse({ status: HttpStatus.BAD_REQUEST, description: 'Invalid date format' })
+  async getMyPunchLogForDate(
+    @GetUser() user: User,
+    @Param('date') date: string,
+  ): Promise<PunchLogDayDto> {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+    return this.shiftsService.getPunchLogForDate(user.id, date);
   }
 
   @Get('active')

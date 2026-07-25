@@ -546,6 +546,60 @@ describe('ShiftsService', () => {
     });
   });
 
+  describe('getPunchLogForDate (ADR-055 Phase 4)', () => {
+    const punch = (label: PunchLabel, iso: string, extra: any = {}) => ({
+      id: `${label}-${iso}`,
+      label,
+      punched_at: new Date(iso),
+      shift_definition_id: 'sd-1',
+      is_overtime: false,
+      gps_lat: -7.29,
+      gps_lng: 112.73,
+      accuracy_m: 10,
+      outside_boundary: false,
+      photo_url: null,
+      ...extra,
+    });
+
+    it('groups the day’s punches into sessions with derived Jam Masuk/Keluar/worked', async () => {
+      mockPunches = [
+        punch(PunchLabel.CLOCK_IN, '2026-07-24T01:00:00Z'),
+        punch(PunchLabel.CLOCK_OUT, '2026-07-24T09:00:00Z'), // 8h
+      ];
+
+      const result = await service.getPunchLogForDate(mockUser.id, '2026-07-24');
+
+      expect(result.date).toBe('2026-07-24');
+      expect(result.sessions).toHaveLength(1);
+      const s = result.sessions[0];
+      expect(s.shift_definition_id).toBe('sd-1');
+      expect(s.jam_masuk).toBe('2026-07-24T01:00:00.000Z');
+      expect(s.jam_keluar).toBe('2026-07-24T09:00:00.000Z');
+      expect(s.worked_minutes).toBe(8 * 60);
+      expect(s.is_open).toBe(false);
+      expect(s.punches).toHaveLength(2);
+      expect(s.punches[0].label).toBe(PunchLabel.CLOCK_IN);
+    });
+
+    it('separates overtime punches into their own session', async () => {
+      mockPunches = [
+        punch(PunchLabel.CLOCK_IN, '2026-07-24T01:00:00Z'),
+        punch(PunchLabel.CLOCK_OUT, '2026-07-24T09:00:00Z'),
+        punch(PunchLabel.CLOCK_IN, '2026-07-24T10:00:00Z', {
+          shift_definition_id: null,
+          is_overtime: true,
+        }),
+      ];
+
+      const result = await service.getPunchLogForDate(mockUser.id, '2026-07-24');
+
+      expect(result.sessions).toHaveLength(2);
+      const ot = result.sessions.find((x) => x.is_overtime);
+      expect(ot?.is_open).toBe(true); // OT still open (clock-in only)
+      expect(ot?.shift_definition_id).toBeNull();
+    });
+  });
+
   describe('getCurrentAttendance (ADR-055 Phase 3)', () => {
     it('returns the open session + ranked shift options (is_default on the best)', async () => {
       const openRow = {

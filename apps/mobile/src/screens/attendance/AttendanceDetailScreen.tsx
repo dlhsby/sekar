@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { NBBackgroundPattern, NBText, NBButton, NBBadge, NBCard } from '../../components/nb';
 import { InfoTableRow } from '../../components/common';
 import { TodayWorkHoursModal, ShiftDetailModal } from '../../components/modals';
+import { PunchTimeline } from '../../components/attendance/PunchTimeline';
 import { getAttendanceForDate } from '../../services/api/shiftsApi';
 import { summarizeAttendance } from '../../utils/attendance';
 import { formatLongDate, formatTime, calculateDuration } from '../../utils/dateUtils';
@@ -116,6 +117,9 @@ export function AttendanceDetailScreen(): React.JSX.Element {
             accessibilityLabel={t('attendance:detail.a11y.viewShifts')}
           />
         </NBCard>
+
+        {/* ADR-055 Phase 4: the raw punch timeline behind the day's attendance. */}
+        <PunchTimeline date={date} />
       </ScrollView>
 
       <TodayWorkHoursModal

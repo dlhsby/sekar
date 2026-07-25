@@ -68,6 +68,16 @@
     "shiftCount": "{{count}} shift",
     "a11y": {
       "viewShifts": "View shift details for today"
+    },
+    "punchLog": {
+      "title": "Time Record",
+      "session": "Session",
+      "overtime": "Overtime",
+      "open": "Open",
+      "masuk": "In",
+      "keluar": "Out",
+      "inArea": "In area",
+      "outArea": "Out of area"
     }
   },
   "dayCard": {
