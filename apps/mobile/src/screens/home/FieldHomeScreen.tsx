@@ -36,9 +36,10 @@ import { useHomeLocation } from '../../hooks/useHomeLocation';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
 import { useCurrentShiftState } from '../../hooks/useCurrentShiftState';
 import { screenContentGrow } from '../../constants/layout';
+import { resolveNextShift } from '../../utils/nextShift';
 import { resolveScheduleScope } from '../../utils/scheduleScope';
 import { formatShiftLabel } from '../../utils/shiftDisplay';
-import type { Activity, Task, Shift } from '../../types/models.types';
+import type { Activity, Task, Shift, Schedule } from '../../types/models.types';
 
 /**
  * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
@@ -357,6 +358,24 @@ export function FieldHomeScreen(): React.JSX.Element {
   const heroShiftText = heroShiftDef
     ? `${heroShiftDef.name} · ${heroShiftDef.start_time.slice(0, 5)}–${heroShiftDef.end_time.slice(0, 5)}`
     : null;
+  // "Shift 2 · 14:00–22:00 · Rayon Barat 1" for a roster row — used to name the
+  // next shift on the hero so a multi-shift worker sees what's coming.
+  const shiftLine = (s: Schedule | null): string | null => {
+    const sd = s?.shift_definition;
+    if (!sd) return null;
+    const scope = resolveScheduleScope(s);
+    const area = scope.scope !== 'none' ? (scope.name ?? '') : '';
+    const window = `${sd.name} · ${sd.start_time.slice(0, 5)}–${sd.end_time.slice(0, 5)}`;
+    return area ? `${window} · ${area}` : window;
+  };
+  // The shift after the current one today (ADR-053: clock out, then clock in the
+  // next). Null when there's nothing later today.
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const nextShift = resolveNextShift(allToday, nowMinutes, currentShift?.shift_definition?.id ?? null);
+  const nextShiftLine = shiftLine(nextShift);
+  // The idle case (naming the shift they'd clock INTO) is no longer this
+  // screen's job: the idle hero is now AttendanceEntryCard, which carries its
+  // own `shiftLabel` from the unified attribution source (`displayShift`).
   // Which explanation the Status Kehadiran pill opens.
   const statusKind: AttendanceStatusKind = !hasScheduleToday
     ? 'noSchedule'
@@ -460,6 +479,12 @@ export function FieldHomeScreen(): React.JSX.Element {
                 isEarlyLeave={attendance.isEarlyLeave}
                 neutral={!hasScheduleToday}
               />
+              {/* Next shift today — clock out of this one, then clock in for it. */}
+              {nextShiftLine && (
+                <NBText variant="body-sm" color="gray700" style={styles.heroNextShift}>
+                  {t('home:field.hero.nextShift', { shift: nextShiftLine })}
+                </NBText>
+              )}
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
                   {/* Shared, simplified rows — identical to the Rekam Kehadiran card:
@@ -702,6 +727,7 @@ const styles = StyleSheet.create({
   heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
+  heroNextShift: { marginTop: nbSpacing.xs },
   // Expanded hero: label:value table rows — sm gap so the rows breathe.
   heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
   // Status Area value: the in/out pill + the GPS refresh button, right-aligned.

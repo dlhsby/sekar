@@ -51,6 +51,7 @@
         "title": "Start shift today",
         "assignedArea": "Area: {{area}}"
       },
+      "nextShift": "Next: {{shift}}",
       "a11y": {
         "onDuty": "On duty",
         "overtimeActive": "Overtime active",
