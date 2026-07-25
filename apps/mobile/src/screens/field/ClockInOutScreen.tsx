@@ -10,6 +10,7 @@ import {
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { GPSLocationSection, ImagePreviewModal, InfoTableRow, DateTimeValue } from '../../components/common';
 import { LocationMapModal } from '../../components/modals/LocationMapModal';
+import { AttendanceTypeSheet, type AttendanceAction } from '../../components/modals/AttendanceTypeSheet';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -69,10 +70,34 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   } = useClockInOut();
 
   const [mapVisible, setMapVisible] = useState(false);
+  const [typeSheetVisible, setTypeSheetVisible] = useState(false);
+
+  // The attendance label the worker will record. Defaults from shift state — an
+  // open shift → Clock Out, none → Clock In — but the "Ubah Label Waktu" picker
+  // can override it (dangling/overrun shift, back-to-back shifts). Re-seeded from
+  // state whenever the open-shift status flips (e.g. after a submit).
+  const defaultAction: AttendanceAction = isClockIn ? 'clock_in' : 'clock_out';
+  const [attendanceAction, setAttendanceAction] = useState<AttendanceAction>(defaultAction);
+  useEffect(() => {
+    setAttendanceAction(isClockIn ? 'clock_in' : 'clock_out');
+  }, [isClockIn]);
+
+  // SEKAR holds at most one open shift, so only one label is valid at a time:
+  // you cannot clock in with a shift already open, nor clock out without one.
+  const invalidAction: AttendanceAction | undefined = currentShift ? 'clock_in' : 'clock_out';
+  const actionMismatch = attendanceAction === invalidAction;
+  const mismatchHint = currentShift
+    ? t('attendance:clockInOut.clockInUnavailable')
+    : t('attendance:clockInOut.clockOutUnavailable');
+
+  const isClockInAction = attendanceAction === 'clock_in';
 
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
 
   // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
+  // The title is now the STABLE page name "Rekam Kehadiran" — the action
+  // (clock in vs out) lives on the in-page label selector + primary button, not
+  // the header, so the screen reads as one reusable surface.
   // try/catch suppresses the "outside a screen" error thrown by NavigationContainer in
   // test/Storybook contexts where setOptions exists but cannot be called. All other
   // errors (e.g. render crash inside FieldHomeHeader) are re-thrown.
@@ -80,10 +105,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     try {
       navigation.setOptions({
         headerTitle: () => (
-          <FieldHomeHeader
-            title={isClockIn ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
-            onBack={goBack}
-          />
+          <FieldHomeHeader title={t('attendance:clockInOut.pageTitle')} onBack={goBack} />
         ),
       });
     } catch (e: unknown) {
@@ -91,7 +113,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         throw e;
       }
     }
-  }, [navigation, goBack, isClockIn]);
+  }, [navigation, goBack, t]);
 
   // No hard block for a missing area: ad-hoc / patrol workers with no assigned
   // area may still clock in (GPS is recorded, geofencing stays soft, and the
@@ -147,8 +169,17 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       <View style={styles.container}>
         {/* Scrollable content area — sits above the submit button */}
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+          {/* Blocked-choice warning — the selected label can't proceed given the
+              current shift state (clock in with a shift open, or clock out with
+              none). Explains why the button below is disabled. */}
+          {actionMismatch && (
+            <View style={styles.mismatchAlert}>
+              <NBAlert variant="warning" message={mismatchHint} />
+            </View>
+          )}
+
           {/* Offline Banner (top of scroll) */}
-          {!isOnline && isClockIn && (
+          {!isOnline && isClockInAction && (
             <View style={styles.offlineBanner}>
               <MaterialCommunityIcons
                 name="wifi-off"
@@ -160,10 +191,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Informasi Kehadiran — the status pill shows in the header while
-              COLLAPSED (at-a-glance) and hides when open, since the "Status" body
-              row (below Jadwal Shift) then carries it. */}
+          {/* Informasi Kehadiran — opens expanded so the attendance-type row and
+              the shift/area details are visible at a glance. The status pill shows
+              in the header only while collapsed (the "Status" body row carries it
+              when open). */}
           <NBCollapsibleCard
+            defaultExpanded
             headerLeft={
               <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
                 {t('attendance:clockInOut.attendanceInfo')}
@@ -173,6 +206,28 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
+              {/* Attendance type (Clock In / Clock Out) — blended in as the first
+                  row; tap the value to open the "Ubah Label Waktu" picker. */}
+              <InfoTableRow
+                label={t('attendance:clockInOut.attendanceType')}
+                value={
+                  <TouchableOpacity
+                    onPress={() => setTypeSheetVisible(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('attendance:clockInOut.changeLabel')}
+                    testID="clockinout-change-label"
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.typeValue}
+                  >
+                    <NBText variant="body" color="black">
+                      {isClockInAction
+                        ? t('attendance:list.button.clockIn')
+                        : t('attendance:list.button.clockOut')}
+                    </NBText>
+                    <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
+                  </TouchableOpacity>
+                }
+              />
               <InfoTableRow label={t('attendance:clockInOut.currentTime')} value={<DateTimeValue source={currentTime} />} />
               {scheduledShift ? (
                 <InfoTableRow
@@ -269,7 +324,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
               areaName={assignedArea?.name}
               onShowMap={location.latitude != null ? () => setMapVisible(true) : undefined}
             />
-            {!isClockIn && currentShift && (
+            {currentShift && (
               <View style={styles.clockInInfo}>
                 <View style={styles.timerContainer}>
                   <NBText variant="body-sm" color="gray600">{t("attendance:clockInOut.shiftTimeLabel")}</NBText>
@@ -311,7 +366,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             ) : (
               <View>
                 <NBText variant="body-sm" color="gray600" style={styles.selfiePrompt}>
-                  {isClockIn ? t('attendance:clockInOut.captureForVerification') : t('attendance:clockInOut.captureForClockOutVerification')}
+                  {isClockInAction ? t('attendance:clockInOut.captureForVerification') : t('attendance:clockInOut.captureForClockOutVerification')}
                 </NBText>
                 <NBButton title={t('attendance:clockInOut.captureSelfie')} onPress={handleCaptureSelfie} variant="secondary" fullWidth />
               </View>
@@ -320,12 +375,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         </ScrollView>
 
         {/* Offline warnings — between scroll and submit button */}
-        {!isOnline && isClockIn && (
+        {!isOnline && isClockInAction && (
           <View style={styles.offlineWarning}>
             <NBAlert variant="warning" message={t('attendance:clockInOut.onlineRequiredForClockIn')} />
           </View>
         )}
-        {!isOnline && !isClockIn && (
+        {!isOnline && !isClockInAction && (
           <View style={styles.offlineWarning}>
             <NBAlert variant="warning" message={t('attendance:clockInOut.offlineModeClockOut')} />
           </View>
@@ -359,24 +414,41 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           areaMarker={mapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
         />
 
-        {/* Submit Button — fixed at bottom, scrollable area sits above */}
+        {/* Attendance-type picker ("Ubah Label Waktu"). */}
+        <AttendanceTypeSheet
+          visible={typeSheetVisible}
+          value={attendanceAction}
+          onSelect={setAttendanceAction}
+          onClose={() => setTypeSheetVisible(false)}
+          disabledAction={invalidAction}
+          disabledHint={mismatchHint}
+        />
+
+        {/* Submit Button — fixed at bottom, scrollable area sits above. Its label
+            and action follow the selected attendance type, not the raw shift
+            state, so the "Ubah Label Waktu" choice drives it. A choice that can't
+            proceed (clock in while a shift is open, or clock out with none) is
+            blocked with the inline warning above. */}
         <View style={styles.submitBar}>
           <NBButton
-            title={isClockIn ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
-            onPress={isClockIn ? () => handleClockIn(goBack) : () => handleClockOut(goBack)}
+            testID="clockinout-submit"
+            title={isClockInAction ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
+            onPress={isClockInAction ? () => handleClockIn(goBack) : () => handleClockOut(goBack)}
             variant="primary"
             size="lg"
             fullWidth
             loading={isSubmitting}
             disabled={
               isSubmitting || location.loading || !location.latitude || !location.longitude ||
-              (isClockIn && !isOnline)
+              actionMismatch || (isClockInAction && !isOnline)
             }
-            accessibilityLabel={isClockIn ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
+            accessibilityLabel={isClockInAction ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
             accessibilityHint={
-              isClockIn
-                ? (isWithinBoundary ? t('attendance:clockInOut.startShiftWithVerification') : t('attendance:clockInOut.startShiftOutOfArea'))
-                : t('attendance:clockInOut.endShiftNow')
+              actionMismatch
+                ? mismatchHint
+                : isClockInAction
+                  ? (isWithinBoundary ? t('attendance:clockInOut.startShiftWithVerification') : t('attendance:clockInOut.startShiftOutOfArea'))
+                  : t('attendance:clockInOut.endShiftNow')
             }
           />
         </View>
@@ -389,6 +461,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  typeValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  mismatchAlert: {
+    marginBottom: nbSpacing.md,
   },
   centerContent: {
     flex: 1,

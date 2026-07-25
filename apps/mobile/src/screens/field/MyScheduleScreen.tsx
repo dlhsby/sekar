@@ -310,25 +310,37 @@ export function MyScheduleScreen(): React.JSX.Element {
           <NBSkeleton height={96} style={styles.skeleton} />
         </View>
       ) : error ? (
-        <View style={styles.stateWrap}>
+        // Same inline empty-state layout as Tugas/Aktivitas: a full-width state
+        // that sits in the scroll below the day nav (no floating centered card).
+        <ScrollView
+          contentContainerStyle={styles.emptyListContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={nbColors.primary} />
+          }>
           <NBEmptyState
             variant="error"
             illustration="illo-offline"
+            style={styles.emptyStateStretch}
             title={t('schedules:mySchedule.loadFailed')}
             description={error}
             ctaLabel={t('schedules:mySchedule.retryLabel')}
             onCTA={onRefresh}
           />
-        </View>
+        </ScrollView>
       ) : rows.length === 0 ? (
-        <View style={styles.stateWrap}>
+        <ScrollView
+          contentContainerStyle={styles.emptyListContent}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={nbColors.primary} />
+          }>
           <NBEmptyState
             variant="noData"
             illustration="illo-shifts"
+            style={styles.emptyStateStretch}
             title={t('schedules:mySchedule.emptyTitle')}
             description={t('schedules:mySchedule.emptyDescription')}
           />
-        </View>
+        </ScrollView>
       ) : (
         <ScrollView
           contentContainerStyle={styles.listContent}
@@ -407,7 +419,11 @@ const styles = StyleSheet.create({
   },
   navDate: {textAlign: 'center'},
   listContent: {padding: nbSpacing.md, gap: nbSpacing.sm},
-  stateWrap: {flex: 1, justifyContent: 'center', padding: nbSpacing.xl},
+  // Inline empty/error state — mirrors Tugas/Aktivitas: the scroll content grows
+  // to fill the space below the day nav and the state stretches full-width, so it
+  // reads as an inline state rather than a floating centered card.
+  emptyListContent: {flexGrow: 1, justifyContent: 'center', padding: nbSpacing.md},
+  emptyStateStretch: {flex: 0, alignItems: 'stretch', paddingHorizontal: 0, paddingVertical: 0},
   skeleton: {borderRadius: nbRadius.base, marginBottom: nbSpacing.sm},
   card: {
     backgroundColor: nbColors.white,
