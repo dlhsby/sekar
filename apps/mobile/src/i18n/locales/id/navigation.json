@@ -21,6 +21,7 @@
     "assetDetail": "Detail Aset",
     "scanQR": "Pindai QR",
     "checkoutAsset": "Pinjam Aset",
-    "returnAsset": "Kembalikan Aset"
+    "returnAsset": "Kembalikan Aset",
+    "timeRecordHub": "Pencatatan Waktu"
   }
 }

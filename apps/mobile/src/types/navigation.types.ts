@@ -47,9 +47,10 @@ export type MainTabParamList = {
   Menu: undefined;
   Profile: undefined;
   // Feature screens — reached from the Menu launcher (registered as hidden tab screens)
-  Attendance: undefined;             // attendance history list (day-grouped) — the "Kehadiran" tile
+  TimeRecordHub: undefined;          // ADR-055: the single "Pencatatan Waktu" hub (Menu tile)
+  Attendance: undefined;             // attendance history list (day-grouped) — reached from the hub
   AttendanceDetail: { date: string }; // one day's attendance detail (date = YYYY-MM-DD, WIB)
-  Absensi: undefined;                // clock in/out page (reached from home + the attendance list action)
+  Absensi: { action?: 'clock_in' | 'clock_out' } | undefined; // clock in/out page (from hub + home)
   Lembur: undefined;                 // overtime list page
   Tasks: undefined;                  // standalone tasks list (split from TasksActivities)
   Activities: undefined;             // standalone activities list (split from TasksActivities)

@@ -226,5 +226,14 @@
   },
   "workHours": {
     "titlePrefix": "Kehadiran {{date}}"
+  },
+  "hub": {
+    "noRecordThisShift": "Anda belum melakukan proses rekam waktu pada shift ini",
+    "noShift": "Tidak Ada Shift",
+    "jamMasuk": "Jam Masuk",
+    "jamKeluar": "Jam Keluar",
+    "viewLog": "Lihat Log Pencatatan Waktu",
+    "todayLog": "Log Pencatatan Waktu Hari Ini",
+    "todayEmpty": "Entri Pencatatan Waktu Anda akan muncul di sini"
   }
 }

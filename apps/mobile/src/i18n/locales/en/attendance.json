@@ -226,5 +226,14 @@
   },
   "workHours": {
     "titlePrefix": "Attendance {{date}}"
+  },
+  "hub": {
+    "noRecordThisShift": "You have not recorded time for this shift yet",
+    "noShift": "No Shift",
+    "jamMasuk": "Clock In",
+    "jamKeluar": "Clock Out",
+    "viewLog": "View Time Record Log",
+    "todayLog": "Today's Time Record Log",
+    "todayEmpty": "Your time record entries will appear here"
   }
 }

@@ -25,6 +25,7 @@ import { MenuScreen } from '../screens/menu/MenuScreen';
 import { ClockInOutScreen } from '../screens/field/ClockInOutScreen';
 import { AttendanceListScreen } from '../screens/attendance/AttendanceListScreen';
 import { AttendanceDetailScreen } from '../screens/attendance/AttendanceDetailScreen';
+import { TimeRecordHubScreen } from '../screens/attendance/TimeRecordHubScreen';
 import { ActivitySubmissionScreen } from '../screens/field/ActivitySubmissionScreen';
 import { TasksScreen, ActivitiesScreen } from '../screens/taskActivity';
 import { TaskDetailScreen } from '../screens/field/TaskDetailScreen';
@@ -316,6 +317,7 @@ function TabNavigator(): React.JSX.Element {
       />
 
       {/* Feature screens — reached from the Menu launcher (hidden from the bar) */}
+      <Tab.Screen name="TimeRecordHub" component={TimeRecordHubScreen} options={featureScreen(i18n.t('navigation:screens.timeRecordHub'))} />
       <Tab.Screen name="Attendance" component={AttendanceListScreen} options={featureScreen(i18n.t('navigation:screens.attendance'))} />
       <Tab.Screen name="AttendanceDetail" component={AttendanceDetailScreen} options={featureScreen(i18n.t('navigation:screens.attendanceDetail'))} />
       <Tab.Screen name="Absensi" component={ClockInOutScreen} options={featureScreen(i18n.t('navigation:screens.clockInOut'))} />
