@@ -324,7 +324,10 @@ export class ShiftsService {
       );
     }
 
-    const serviceDay = TimezoneUtil.jakartaDateOf(shift.clock_in_time);
+    // Explicit service_day (ADR-055); fall back to the clock-in's WIB date for
+    // legacy rows created before the column existed.
+    const serviceDay =
+      shift.service_day ?? TimezoneUtil.jakartaDateOf(shift.clock_in_time ?? new Date());
     const isOvertime = shift.is_overtime;
     const shiftDefId = shift.shift_definition_id;
 
@@ -490,6 +493,7 @@ export class ShiftsService {
     row.user_id = userId;
     row.shift_definition_id = shiftDefId;
     row.is_overtime = isOvertime;
+    row.service_day = serviceDay; // explicit key — may differ from clock_in's WIB date
     row.location_id = s.firstIn?.location_id ?? row.location_id ?? null;
 
     // Clock-in facet = the first-in punch.
@@ -539,7 +543,9 @@ export class ShiftsService {
     if (openSession) {
       return {
         shiftDefId: openSession.shift_definition_id,
-        serviceDay: TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
+        serviceDay:
+          openSession.service_day ??
+          TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
       };
     }
     if (isOvertime) {
@@ -575,11 +581,13 @@ export class ShiftsService {
   }
 
   /**
-   * The session-projection row for a key, matched by the WIB day of its clock-in.
-   * Prefers a currently-OPEN row (clock_out_time IS NULL), then newest, so both a
-   * re-entry clock-in and a clock-out target the live session — never a stale
-   * closed duplicate that could linger on cutover day (a pre-cutover `shifts` row
-   * and a new punch-session sharing the key). Returns null for a brand-new session.
+   * The session-projection row for a key, matched on the EXPLICIT `service_day`
+   * (ADR-055) — not the WIB date of clock_in_time, which the attribution window
+   * can put on a different day. Prefers a currently-OPEN row (clock_out_time IS
+   * NULL), then newest, so both a re-entry clock-in and a clock-out target the
+   * live session — never a stale closed duplicate. Returns null for a brand-new
+   * session (and for legacy rows whose service_day was never backfilled, which
+   * are historical closed sessions never re-projected).
    */
   private async findSessionRow(
     userId: string,
@@ -592,9 +600,9 @@ export class ShiftsService {
       .where('shift.user_id = :userId', { userId })
       .andWhere('shift.is_overtime = :isOvertime', { isOvertime })
       .andWhere('shift.deleted_at IS NULL')
-      .andWhere("DATE(shift.clock_in_time AT TIME ZONE 'Asia/Jakarta') = :serviceDay", {
-        serviceDay,
-      });
+      // Match on the EXPLICIT service_day (ADR-055) — not the WIB date of
+      // clock_in_time, which the attribution window can put on a different day.
+      .andWhere('shift.service_day = :serviceDay', { serviceDay });
     if (shiftDefId === null) {
       qb.andWhere('shift.shift_definition_id IS NULL');
     } else {

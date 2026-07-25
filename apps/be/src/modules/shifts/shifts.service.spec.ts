@@ -516,6 +516,9 @@ describe('ShiftsService', () => {
 
       expect(mockSchedulesService.getAttributionCandidates).toHaveBeenCalledWith(mockUser.id);
       expect(saved.shift_definition_id).toBe('sd-window'); // attributed shift, not the time-match fallback
+      // The EXPLICIT service_day comes from attribution — may differ from the
+      // clock-in's WIB date (the crux of the night-shift-past-midnight fix).
+      expect(saved.service_day).toBe('2026-01-01');
     });
   });
 

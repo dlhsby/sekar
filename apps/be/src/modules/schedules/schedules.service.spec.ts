@@ -1592,14 +1592,34 @@ describe('SchedulesService', () => {
       rosterRepo.find
         // yesterday: a crossing Shift 3 (PLANNED) + an OFF row (excluded)
         .mockResolvedValueOnce([
-          { schedule_date: '2026-07-24', status: ScheduleStatus.PLANNED, shift_definition: sd('sd-3', '21:00:00', '05:00:00', true) },
-          { schedule_date: '2026-07-24', status: ScheduleStatus.OFF, shift_definition: sd('sd-1', '06:00:00', '15:00:00') },
+          {
+            schedule_date: '2026-07-24',
+            status: ScheduleStatus.PLANNED,
+            shift_definition: sd('sd-3', '21:00:00', '05:00:00', true),
+          },
+          {
+            schedule_date: '2026-07-24',
+            status: ScheduleStatus.OFF,
+            shift_definition: sd('sd-1', '06:00:00', '15:00:00'),
+          },
         ])
         // today: Shift 1 PRESENT + duplicate Shift 1 PLANNED (dedup) + a LEAVE row (excluded)
         .mockResolvedValueOnce([
-          { schedule_date: '2026-07-25', status: ScheduleStatus.PRESENT, shift_definition: sd('sd-1', '06:00:00', '15:00:00') },
-          { schedule_date: '2026-07-25', status: ScheduleStatus.PLANNED, shift_definition: sd('sd-1', '06:00:00', '15:00:00') },
-          { schedule_date: '2026-07-25', status: ScheduleStatus.LEAVE_SICK, shift_definition: sd('sd-2', '15:00:00', '23:00:00') },
+          {
+            schedule_date: '2026-07-25',
+            status: ScheduleStatus.PRESENT,
+            shift_definition: sd('sd-1', '06:00:00', '15:00:00'),
+          },
+          {
+            schedule_date: '2026-07-25',
+            status: ScheduleStatus.PLANNED,
+            shift_definition: sd('sd-1', '06:00:00', '15:00:00'),
+          },
+          {
+            schedule_date: '2026-07-25',
+            status: ScheduleStatus.LEAVE_SICK,
+            shift_definition: sd('sd-2', '15:00:00', '23:00:00'),
+          },
         ]);
 
       const result = await service.getAttributionCandidates('user-1');
@@ -1614,5 +1634,4 @@ describe('SchedulesService', () => {
       expect(result.filter((c) => c.shift_definition_id === 'sd-1')).toHaveLength(1); // deduped
     });
   });
-
 });

@@ -22,7 +22,11 @@ export class AddShiftAttributionWindow17521000000000 implements MigrationInterfa
       `ALTER TABLE shift_definitions ADD COLUMN IF NOT EXISTS cutoff_grace_min int NOT NULL DEFAULT 60`,
     );
     // Guard the range at the DB — a negative window would invert the attribution
-    // logic and silently mis-assign punches.
+    // logic and silently mis-assign punches. Drop-then-add so a manual re-run is
+    // idempotent (Postgres has no ADD CONSTRAINT IF NOT EXISTS).
+    await queryRunner.query(
+      `ALTER TABLE shift_definitions DROP CONSTRAINT IF EXISTS chk_shift_def_attribution_window`,
+    );
     await queryRunner.query(`
       ALTER TABLE shift_definitions
         ADD CONSTRAINT chk_shift_def_attribution_window
