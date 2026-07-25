@@ -1,9 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { IsNull } from 'typeorm';
 import { ShiftsService } from './shifts.service';
 import { Shift } from './entities/shift.entity';
+import { AttendancePunch } from './entities/attendance-punch.entity';
+import { PunchLabel } from './enums/punch-label.enum';
+import { AttendanceDerivationService } from './services/attendance-derivation.service';
 import { LocationsService } from '../locations/locations.service';
 import { S3Service } from '../../shared/services/s3.service';
 import { ClockInDto } from './dto/clock-in.dto';
@@ -16,15 +18,11 @@ import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.
 import { User } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
 import { UserLocationsService } from '../user-locations/user-locations.service';
+import { SystemConfigService } from '../settings/services/system-config.service';
 
 describe('ShiftsService', () => {
   let module: TestingModule;
   let service: ShiftsService;
-  let repository: jest.Mocked<Repository<Shift>>;
-  let locationsService: jest.Mocked<LocationsService>;
-  let s3Service: jest.Mocked<S3Service>;
-  let statusCalculator: jest.Mocked<StatusCalculatorService>;
-  let shiftDefinitionRepo: jest.Mocked<Repository<ShiftDefinition>>;
 
   const mockUser = {
     id: 'user-uuid-1a2b3c4d-e5f6-7890-abcd-ef1234567890',
@@ -71,6 +69,44 @@ describe('ShiftsService', () => {
     createQueryBuilder: jest.fn(),
   };
 
+  // ADR-055: punch stream the derivation reads. Set per-test; the punch repo's
+  // query builder returns it from getMany and no-ops the idempotent insert.
+  let mockPunches: any[] = [];
+  const makePunchQB = () => {
+    const qb: any = {};
+    for (const m of ['insert', 'into', 'values', 'orIgnore', 'where', 'andWhere', 'orderBy']) {
+      qb[m] = jest.fn(() => qb);
+    }
+    qb.execute = jest.fn().mockResolvedValue({});
+    qb.getMany = jest.fn().mockImplementation(() => Promise.resolve(mockPunches));
+    return qb;
+  };
+  const mockPunchRepository = {
+    createQueryBuilder: jest.fn(() => makePunchQB()),
+  };
+  // Real derivation — it is pure, so the service tests exercise the true logic.
+  const derivation = new AttendanceDerivationService();
+
+  // Shift query builder used by findSessionRow (getOne) / findMyAttendanceForDate (getMany).
+  const makeShiftQB = (getOneResult: any = null, getManyResult: any[] = []) => {
+    const qb: any = {};
+    for (const m of [
+      'where',
+      'andWhere',
+      'orderBy',
+      'addOrderBy',
+      'leftJoinAndSelect',
+      'select',
+      'skip',
+      'take',
+    ]) {
+      qb[m] = jest.fn(() => qb);
+    }
+    qb.getOne = jest.fn().mockResolvedValue(getOneResult);
+    qb.getMany = jest.fn().mockResolvedValue(getManyResult);
+    return qb;
+  };
+
   const mockAreasService = {
     findOne: jest.fn(),
   };
@@ -93,6 +129,12 @@ describe('ShiftsService', () => {
     onClockOut: jest.fn().mockResolvedValue(undefined),
   };
 
+  // ADR-049 runtime config; by default echoes the caller's fallback (so the
+  // min-shift-duration behaves as the 5-min default unless a test overrides it).
+  const mockSystemConfig = {
+    getNumber: jest.fn((_key: string, fallback: number) => fallback),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -100,6 +142,14 @@ describe('ShiftsService', () => {
         {
           provide: getRepositoryToken(Shift),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(AttendancePunch),
+          useValue: mockPunchRepository,
+        },
+        {
+          provide: AttendanceDerivationService,
+          useValue: derivation,
         },
         {
           provide: getRepositoryToken(ShiftDefinition),
@@ -129,17 +179,14 @@ describe('ShiftsService', () => {
           provide: AuditLogService,
           useValue: { log: jest.fn().mockResolvedValue({}) },
         },
+        {
+          provide: SystemConfigService,
+          useValue: mockSystemConfig,
+        },
       ],
     }).compile();
 
     service = module.get<ShiftsService>(ShiftsService);
-    repository = module.get(getRepositoryToken(Shift)) as jest.Mocked<Repository<Shift>>;
-    locationsService = module.get(LocationsService) as jest.Mocked<LocationsService>;
-    s3Service = module.get(S3Service) as jest.Mocked<S3Service>;
-    statusCalculator = module.get(StatusCalculatorService) as jest.Mocked<StatusCalculatorService>;
-    shiftDefinitionRepo = module.get(getRepositoryToken(ShiftDefinition)) as jest.Mocked<
-      Repository<ShiftDefinition>
-    >;
   });
 
   afterEach(async () => {
@@ -244,7 +291,7 @@ describe('ShiftsService', () => {
     });
   });
 
-  describe('clockIn', () => {
+  describe('clockIn (punch model, ADR-055)', () => {
     const clockInDto: ClockInDto = {
       location_id: mockArea.id,
       gps_lat: -7.2905,
@@ -252,171 +299,291 @@ describe('ShiftsService', () => {
       selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
     };
 
-    it('should successfully clock in a user with location_id provided', async () => {
-      mockRepository.findOne.mockResolvedValue(null); // No active shift
-      mockAreasService.findOne.mockResolvedValue(mockArea);
+    const inPunch = (extra: any = {}) => ({
+      label: PunchLabel.CLOCK_IN,
+      punched_at: new Date('2026-01-09T08:00:00Z'),
+      location_id: mockArea.id,
+      gps_lat: -7.2905,
+      gps_lng: 112.7398,
+      outside_boundary: false,
+      ...extra,
+    });
+
+    // No existing session row → projectSession creates one; save echoes it with an id.
+    const arrangeNewSession = (punches: any[], existing: any = null) => {
+      mockPunches = punches;
       mockShiftDefinitionRepo.find.mockResolvedValue([]);
-      mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
-      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
-      mockRepository.create.mockReturnValue(mockShift);
-      mockRepository.save.mockResolvedValue(mockShift);
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(existing));
+      mockRepository.create.mockImplementation((r: any) => r);
+      mockRepository.save.mockImplementation((r: any) =>
+        Promise.resolve({ id: 'session-1', ...r }),
+      );
+    };
+
+    it('appends a clock-in punch and returns the projected OPEN session', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
 
       const result = await service.clockIn(mockUser.id, clockInDto);
 
-      expect(result).toEqual(mockShift);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { user_id: mockUser.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.locationType', 'user', 'shift_definition'],
-      });
+      expect(result.id).toBe('session-1');
+      expect(result.clock_out_time).toBeFalsy(); // open
+      expect(result.location_id).toBe(mockArea.id);
       expect(mockAreasService.findOne).toHaveBeenCalledWith(mockArea.id);
+      // a punch was inserted idempotently (orIgnore) and the session was rebuilt from punches
+      expect(mockPunchRepository.createQueryBuilder).toHaveBeenCalled();
     });
 
-    it('should successfully clock in with auto-detected area when location_id not provided', async () => {
-      const dtoWithoutArea = {
+    it('auto-detects the area when location_id is not provided', async () => {
+      mockAreasService.findOne.mockReset();
+      mockUserAreasService.getEffectiveLocations.mockResolvedValue([mockArea as any]);
+      arrangeNewSession([inPunch()]);
+
+      const result = await service.clockIn(mockUser.id, {
         gps_lat: -7.2905,
         gps_lng: 112.7398,
-        selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
-      };
+        selfie_photo: clockInDto.selfie_photo,
+      } as any);
 
-      mockRepository.findOne.mockResolvedValue(null);
-      mockUserAreasService.getEffectiveLocations.mockResolvedValue([mockArea as any]);
-      mockShiftDefinitionRepo.find.mockResolvedValue([]);
-      mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
-      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
-      mockRepository.create.mockReturnValue(mockShift);
-      mockRepository.save.mockResolvedValue(mockShift);
-
-      const result = await service.clockIn(mockUser.id, dtoWithoutArea);
-
-      expect(result).toEqual(mockShift);
+      expect(result.id).toBe('session-1');
       expect(mockUserAreasService.getEffectiveLocations).toHaveBeenCalled();
       expect(mockAreasService.findOne).not.toHaveBeenCalled();
     });
 
-    it('should allow clock-in without area when no schedule found', async () => {
-      const dtoWithoutArea = {
+    it('allows an ad-hoc clock-in with no assigned area', async () => {
+      mockAreasService.findOne.mockReset();
+      mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
+      arrangeNewSession([inPunch({ location_id: null })]);
+
+      const result = await service.clockIn(mockUser.id, {
         gps_lat: -7.2905,
         gps_lng: 112.7398,
-        selfie_photo: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==',
-      };
+        selfie_photo: clockInDto.selfie_photo,
+      } as any);
 
-      const shiftWithoutArea = {
-        ...mockShift,
-        location_id: null,
-        area: null,
-      };
-
-      mockRepository.findOne.mockResolvedValue(null);
-      mockUserAreasService.getEffectiveLocations.mockResolvedValue([]);
-      mockShiftDefinitionRepo.find.mockResolvedValue([]);
-      mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
-      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
-      mockRepository.create.mockReturnValue(shiftWithoutArea);
-      mockRepository.save.mockResolvedValue(shiftWithoutArea);
-
-      const result = await service.clockIn(mockUser.id, dtoWithoutArea);
-
-      expect(result).toEqual(shiftWithoutArea);
       expect(result.location_id).toBeNull();
     });
 
-    it('should throw ApiException with SHIFT_ALREADY_ACTIVE if user already clocked in', async () => {
-      mockRepository.findOne.mockResolvedValue(mockShift);
-
-      await expect(service.clockIn(mockUser.id, clockInDto)).rejects.toThrow(ApiException);
-
-      try {
-        await service.clockIn(mockUser.id, clockInDto);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiException);
-        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_ALREADY_ACTIVE);
-        expect(error.message).toContain('Already clocked in');
-        expect(error.getDetails()).toHaveProperty('activeShiftId');
-      }
-    });
-
-    // Removed: 'should throw ApiException with SHIFT_PHOTO_UPLOAD_FAILED if selfie
-    // upload fails' — Phase 2E refactor stores selfie as base64 directly (no S3
-    // upload at clock-in/clock-out), so this code path no longer exists.
-    it.skip('SHIFT_PHOTO_UPLOAD_FAILED — obsolete after Phase 2E base64 refactor', async () => {
-      // intentionally skipped
-    });
-
-    it('should call statusCalculator.onClockIn after successful clock-in', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
+    it('NO LONGER throws when a session is already open — a re-entry reopens the SAME row', async () => {
+      // ADR-055: SHIFT_ALREADY_ACTIVE is gone. An open session row exists; the new
+      // clock-in must reopen it (same id), not raise.
+      const openRow = { ...mockShift, id: 'session-1', clock_out_time: null };
       mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockPunches = [inPunch()];
       mockShiftDefinitionRepo.find.mockResolvedValue([]);
-      mockS3Service.generateKey.mockReturnValue('sekar-media/2026/01/09/clock-in/test.jpg');
-      mockS3Service.uploadFile.mockResolvedValue('https://s3.amazonaws.com/photo.jpg');
-      mockRepository.create.mockReturnValue(mockShift);
-      mockRepository.save.mockResolvedValue(mockShift);
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(openRow));
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve({ ...openRow, ...r }));
+
+      const result = await service.clockIn(mockUser.id, clockInDto);
+
+      expect(result.id).toBe('session-1'); // same session reopened, no throw
+    });
+
+    it('emits statusCalculator.onClockIn with the derived session id (open state)', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
 
       await service.clockIn(mockUser.id, clockInDto);
 
       expect(mockStatusCalculator.onClockIn).toHaveBeenCalledWith(
         mockUser.id,
-        mockShift.id,
-        mockShift.location_id,
+        'session-1',
+        mockArea.id,
         null,
         clockInDto.gps_lat,
         clockInDto.gps_lng,
       );
     });
+
+    it('CONTINUES an already-open session across midnight — no second open row (review #1)', async () => {
+      // Open Shift-3 session started 2026-07-24 21:00 WIB (14:00Z); a redundant/re-entry
+      // clock-in just after midnight must reuse its key, not compute today's service_day.
+      const openRow = {
+        ...mockShift,
+        id: 'session-open',
+        clock_in_time: new Date('2026-07-24T14:00:00Z'),
+        clock_out_time: null,
+        shift_definition_id: 'sd-3',
+        is_overtime: false,
+      };
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(openRow); // findOpenSessionRow → open row
+      mockPunches = [
+        inPunch({ punched_at: new Date('2026-07-24T14:00:00Z'), shift_definition_id: 'sd-3' }),
+        inPunch({ punched_at: new Date('2026-07-24T17:30:00Z'), shift_definition_id: 'sd-3' }), // 00:30 WIB next day
+      ];
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(openRow)); // findSessionRow → same row
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve({ ...openRow, ...r }));
+
+      const result = await service.clockIn(mockUser.id, clockInDto);
+
+      expect(result.id).toBe('session-open'); // same session, not a duplicate
+      expect(result.clock_out_time).toBeFalsy(); // still open
+      // reused the open session's shift → did NOT recompute via shift-definition lookup
+      expect(mockShiftDefinitionRepo.find).not.toHaveBeenCalled();
+      expect(mockStatusCalculator.onClockIn).toHaveBeenCalledWith(
+        mockUser.id,
+        'session-open',
+        mockArea.id,
+        'sd-3',
+        clockInDto.gps_lat,
+        clockInDto.gps_lng,
+      );
+    });
+
+    it('reopening a closed session CLEARS clock-out fields to null, not stale (review #3)', async () => {
+      const closedRow = {
+        ...mockShift,
+        id: 'session-x',
+        clock_out_time: new Date('2026-01-09T12:00:00Z'),
+        clock_out_photo_url: 'old-out.jpg',
+        clock_out_gps_lat: 1,
+        clock_out_gps_lng: 2,
+      };
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(null); // no open session → fresh path
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
+      mockPunches = [
+        inPunch({ punched_at: new Date('2026-01-09T08:00:00Z') }),
+        {
+          label: PunchLabel.CLOCK_OUT,
+          punched_at: new Date('2026-01-09T12:00:00Z'),
+          location_id: mockArea.id,
+          gps_lat: 1,
+          gps_lng: 2,
+          outside_boundary: false,
+        },
+        inPunch({ punched_at: new Date('2026-01-09T13:00:00Z') }), // re-entry → open again
+      ];
+      let saved: any;
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(closedRow));
+      mockRepository.save.mockImplementation((r: any) => {
+        saved = r;
+        return Promise.resolve(r);
+      });
+
+      await service.clockIn(mockUser.id, clockInDto);
+
+      expect(saved.clock_out_time).toBeNull(); // reopened
+      expect(saved.clock_out_photo_url).toBeNull(); // NOT 'old-out.jpg' (would be stale if undefined)
+      expect(saved.clock_out_gps_lat).toBeNull();
+      expect(saved.clock_out_gps_lng).toBeNull();
+    });
   });
 
-  describe('clockOut', () => {
+  describe('clockOut (punch model, ADR-055)', () => {
     const clockOutDto: ClockOutDto = {
       gps_lat: -7.2906,
       gps_lng: 112.7399,
     };
 
-    it('should successfully clock out a user', async () => {
-      const activeShift = { ...mockShift };
-      mockRepository.findOne.mockResolvedValue(activeShift);
-      mockRepository.save.mockResolvedValue({
-        ...activeShift,
-        clock_out_time: new Date(),
-        clock_out_gps_lat: clockOutDto.gps_lat,
-        clock_out_gps_lng: clockOutDto.gps_lng,
-      });
+    const openRow = {
+      ...mockShift,
+      id: 'session-1',
+      clock_in_time: new Date('2026-01-09T08:00:00Z'),
+      clock_out_time: null,
+      is_overtime: false,
+      shift_definition_id: null,
+      location_id: mockArea.id,
+      area: mockArea,
+    };
+
+    const closedPunches = [
+      {
+        label: PunchLabel.CLOCK_IN,
+        punched_at: new Date('2026-01-09T08:00:00Z'),
+        location_id: mockArea.id,
+        gps_lat: -7.2905,
+        gps_lng: 112.7398,
+        outside_boundary: false,
+      },
+      {
+        label: PunchLabel.CLOCK_OUT,
+        punched_at: new Date('2026-01-09T16:00:00Z'),
+        location_id: mockArea.id,
+        gps_lat: -7.2906,
+        gps_lng: 112.7399,
+        outside_boundary: false,
+      },
+    ];
+
+    it('closes the session, returns the projected closed row, emits onClockOut', async () => {
+      mockPunches = closedPunches;
+      mockRepository.findOne.mockResolvedValue({ ...openRow });
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...openRow }));
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
 
       const result = await service.clockOut(mockUser.id, clockOutDto);
 
       expect(result.clock_out_time).toBeTruthy();
       expect(result.clock_out_gps_lat).toBe(clockOutDto.gps_lat);
-      expect(result.clock_out_gps_lng).toBe(clockOutDto.gps_lng);
+      expect(mockStatusCalculator.onClockOut).toHaveBeenCalledWith(mockUser.id);
     });
 
-    it('should throw ApiException with SHIFT_NOT_ACTIVE if no active shift found', async () => {
+    it('throws SHIFT_NOT_ACTIVE when there is no open session (clock-out needs a clock-in)', async () => {
       mockRepository.findOne.mockResolvedValue(null);
 
       await expect(service.clockOut(mockUser.id, clockOutDto)).rejects.toThrow(ApiException);
-
       try {
         await service.clockOut(mockUser.id, clockOutDto);
-      } catch (error) {
-        expect(error).toBeInstanceOf(ApiException);
+      } catch (error: any) {
         expect(error.getCode()).toBe(ApiErrorCode.SHIFT_NOT_ACTIVE);
         expect(error.message).toContain('No active shift found');
       }
     });
 
-    it('should call statusCalculator.onClockOut after successful clock-out', async () => {
-      const activeShift = { ...mockShift };
-      mockRepository.findOne.mockResolvedValue(activeShift);
-      mockRepository.save.mockResolvedValue({
-        ...activeShift,
-        clock_out_time: new Date(),
-        clock_out_gps_lat: clockOutDto.gps_lat,
-        clock_out_gps_lng: clockOutDto.gps_lng,
-      });
+    it('enforces the minimum shift duration, measured from the open clock-in', async () => {
+      const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+      mockPunches = [
+        {
+          label: PunchLabel.CLOCK_IN,
+          punched_at: oneMinuteAgo,
+          location_id: mockArea.id,
+          gps_lat: -7.29,
+          gps_lng: 112.73,
+          outside_boundary: false,
+        },
+      ];
+      mockRepository.findOne.mockResolvedValue({ ...openRow, clock_in_time: oneMinuteAgo });
 
-      await service.clockOut(mockUser.id, clockOutDto);
+      await expect(service.clockOut(mockUser.id, clockOutDto)).rejects.toThrow(ApiException);
+      try {
+        await service.clockOut(mockUser.id, clockOutDto);
+      } catch (error: any) {
+        expect(error.getCode()).toBe(ApiErrorCode.SHIFT_DURATION_TOO_SHORT);
+      }
+    });
 
-      expect(mockStatusCalculator.onClockOut).toHaveBeenCalledWith(mockUser.id);
+    it('min-duration = 0 DISABLES the guard (settings-configurable off)', async () => {
+      mockSystemConfig.getNumber.mockReturnValueOnce(0); // schedule.min_shift_duration_min = 0
+      const tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+      mockPunches = [
+        {
+          label: PunchLabel.CLOCK_IN,
+          punched_at: tenSecondsAgo,
+          location_id: mockArea.id,
+          gps_lat: -7.29,
+          gps_lng: 112.73,
+          outside_boundary: false,
+        },
+        {
+          label: PunchLabel.CLOCK_OUT,
+          punched_at: new Date(),
+          location_id: mockArea.id,
+          gps_lat: -7.2906,
+          gps_lng: 112.7399,
+          outside_boundary: false,
+        },
+      ];
+      mockRepository.findOne.mockResolvedValue({ ...openRow, clock_in_time: tenSecondsAgo });
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...openRow }));
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      // A 10-second segment would normally be rejected; with 0 it clocks out fine.
+      const result = await service.clockOut(mockUser.id, clockOutDto);
+      expect(result.clock_out_time).toBeTruthy();
     });
   });
-
   describe('findActiveShift', () => {
     it('should return active shift if exists', async () => {
       mockRepository.findOne.mockResolvedValue(mockShift);

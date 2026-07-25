@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Matches,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 /**
  * Clock-Out DTO
@@ -8,6 +17,21 @@ import { IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from 'cl
  * Only requires GPS coordinates for validation.
  */
 export class ClockOutDto {
+  @ApiPropertyOptional({
+    description:
+      'Client-generated UUID for the punch (idempotency key, ADR-055). ' +
+      'Server generates one if omitted.',
+  })
+  @IsOptional()
+  @IsUUID()
+  client_uuid?: string;
+
+  @ApiPropertyOptional({ description: 'GPS accuracy in metres, if the device reports it' })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  accuracy_m?: number;
+
   @ApiProperty({
     description: 'GPS latitude of user location at clock-out',
     example: -7.2906,

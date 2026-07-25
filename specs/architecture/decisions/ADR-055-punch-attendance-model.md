@@ -84,12 +84,16 @@ The six lifecycle states, the two live sub-axes (`aktif`/`offline`, `dalam_area`
 
 A punch tags a `shift_definition`, **not** a row/place. Multi-place rows for one shift still resolve to **one session**; the punch's `area_id` records where the GPS landed. This is exactly ADR-053's invariant — *presence belongs to `(worker, shift, service-day)`, never to a row* — now made literal by the punch key.
 
-### Migration — `shifts` becomes a derived view
+### Migration — `shifts` becomes a maintained session-projection *table* (revised after Phase-0 audit)
 
-Punches become the source of truth incrementally:
+> **Phase-0 correction.** The audit found **four tables FK `shifts.id`** — `activities.shift_id`, `location_logs.shift_id` (CASCADE), `overtime.shift_id`, and `user_tracking_status.shift_id` (SET NULL). A **pure SQL view has no stable id to reference**, so the original "read-only view" plan would force re-pointing all four FKs. Instead, `shifts` stays a **real table**, but is **derived and maintained from the punches** — one row per session — so every FK, cascade, and field-reader keeps working untouched and nothing re-points.
 
-1. Backfill: each existing `shifts` row emits a `clock_in` punch (its `clock_in_time`) + a `clock_out` punch when set.
-2. Keep `shifts` as a **read-only projection** rebuilt from the punches, so presence / monitoring / hours / web keep working untouched.
+Punches are the source of truth (the audit log, the detail screen, the segment-hours source, the future correction target). `shifts` is a **maintained projection**:
+
+1. **Backfill (idempotent):** each existing `shifts` row emits a `clock_in` punch (its `clock_in_time`) + a `clock_out` punch when set — carrying GPS / photo / area / `is_overtime`. Parity assert: the derived session must equal the old `shifts` row for all historical data.
+2. **One session row per `(user, service_day, shift_definition)`**, kept in the existing `shifts` table with its **stable `id`**. After every punch, the session is recomputed from that key's punches and upserted: `clock_in_time` = first-in; `clock_out_time` follows the **last-punch rule** — set to the last `clock_out` when the session is closed, **cleared (NULL) on a re-entry `clock_in`** so `clock_out_time IS NULL` still means "open". A break/re-entry (IN, OUT, IN) is one session row (spanning the gap); the middle OUT lives only in the punch log; worked minutes come from the paired segments, not `clock_out − clock_in`.
+3. **All four FKs are preserved** — `activities` / `location_logs` / `overtime` / `user_tracking_status` keep pointing at the session row's `id`; **no re-point, no cascade rewrite.** Field-readers (`clock_out_time IS NULL`, GPS, area) are unchanged. Readers migrate off `shifts` onto the derivation service reader-by-reader (Phases 2–5); when nothing reads `shifts` directly, it can be dropped — but that is the *last* step, not the cutover.
+4. If punches and the session row ever disagree, **punches win** — the row is rebuildable from them.
 3. Migrate each reader to the derivation service reader-by-reader; retire `shifts` once nothing reads it.
 
 ### Scope — v1 is approval-free; correction deferred
