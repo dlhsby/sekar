@@ -21,6 +21,7 @@
     "assetDetail": "Asset Detail",
     "scanQR": "Scan QR",
     "checkoutAsset": "Checkout Asset",
-    "returnAsset": "Return Asset"
+    "returnAsset": "Return Asset",
+    "timeRecordHub": "Time Record"
   }
 }

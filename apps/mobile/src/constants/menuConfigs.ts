@@ -11,13 +11,11 @@ import type { MenuSection } from '../types/menu.types';
 // Reusable tiles (icons match the names previously used in TAB_CONFIGS).
 // `label` and section `title` hold i18n KEYS (menu namespace), resolved with
 // `t()` at render time in MenuScreen — never render them raw.
-// Distinct icons (no shared illustration): attendance = clock-check, overtime = clock-plus.
-// "Kehadiran" opens the attendance history list; "Pencatatan Waktu" opens the
-// clock-in/out record screen (ADR-055) — the entry point for punching in/out
-// with the near-midnight shift picker. Distinct icon: history = clock-check,
-// record = clock-edit.
-const ABSENSI = { route: 'Attendance', label: 'menu:tiles.attendance', icon: 'clock-check-outline' } as const;
-const PENCATATAN = { route: 'Absensi', label: 'menu:tiles.timeRecord', icon: 'clock-edit-outline' } as const;
+// ADR-055: ONE attendance entry point — the "Pencatatan Waktu" hub (today's
+// shift + Jam Masuk/Keluar + Clock In/Out + Lihat Log + today's punches). The
+// old separate "Kehadiran" (history) + record tiles collapsed into this one tile;
+// the list + record screens are reached from inside the hub.
+const PENCATATAN = { route: 'TimeRecordHub', label: 'menu:tiles.timeRecord', icon: 'clock-edit-outline' } as const;
 // "Jadwal Saya" was only reachable from Profil → menu, where nobody looked for it.
 // Every schedulable (clockable) role gets it on the Menu grid too.
 const JADWAL = { route: 'MySchedule', label: 'menu:tiles.mySchedule', icon: 'calendar-month-outline' } as const;
@@ -36,19 +34,19 @@ const PERANTINGAN_SUBMIT = { route: 'Perantingan', label: 'menu:tiles.pruning', 
 
 const FIELD_OPS: MenuSection = {
   title: 'menu:sections.operations',
-  items: [ABSENSI, PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA],
+  items: [PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA],
 };
 
 export const MENU_CONFIGS: Record<UserRole, MenuSection[]> = {
   // satgas has no Aset / Kinerja access.
-  satgas: [{ title: 'menu:sections.operations', items: [ABSENSI, PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS] }],
+  satgas: [{ title: 'menu:sections.operations', items: [PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS] }],
   linmas: [FIELD_OPS],
   korlap: [
-    { title: 'menu:sections.operations', items: [ABSENSI, PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA] },
+    { title: 'menu:sections.operations', items: [PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET, KINERJA] },
     { title: 'menu:sections.supervision', items: [MONITORING, TIM] },
   ],
   admin_rayon: [
-    { title: 'menu:sections.operations', items: [ABSENSI, PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET] },
+    { title: 'menu:sections.operations', items: [PENCATATAN, JADWAL, LEMBUR, TUGAS, AKTIVITAS, ASET] },
     { title: 'menu:sections.treeCare', items: [PERANTINGAN_REVIEW, BIBIT] },
     { title: 'menu:sections.reportsMonitoring', items: [LAPORAN, MONITORING] },
   ],

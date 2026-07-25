@@ -123,7 +123,7 @@ const ALL_ROLES = [
 // Routes registered as tab screens (Menu items must point at one of these).
 const REGISTERED_ROUTES = new Set([
   'Home', 'Menu', 'Profile',
-  'Attendance', 'AttendanceDetail', 'Absensi', 'Lembur', 'Tasks', 'Activities', 'MySchedule',
+  'TimeRecordHub', 'Attendance', 'AttendanceDetail', 'Absensi', 'Lembur', 'Tasks', 'Activities', 'MySchedule',
   'Monitoring', 'Reports', 'Assets',
   'WorkerAnalytics', 'TeamAnalytics', 'PlantSeeds', 'PruningReviewQueue', 'Perantingan',
 ]);
@@ -229,10 +229,10 @@ describe('MainNavigator', () => {
       });
     });
 
-    it('field roles surface Attendance (Kehadiran), Tasks and Activities', () => {
+    it('field roles surface TimeRecordHub (Pencatatan Waktu), Tasks and Activities', () => {
       (['satgas', 'linmas', 'korlap'] as const).forEach((role) => {
         const routes = MENU_CONFIGS[role].flatMap((s) => s.items.map((i) => i.route));
-        expect(routes).toContain('Attendance');
+        expect(routes).toContain('TimeRecordHub');
         expect(routes).toContain('Tasks');
         expect(routes).toContain('Activities');
       });
@@ -250,7 +250,7 @@ describe('MainNavigator', () => {
     it('staff_kecamatan menu is Perantingan only (non-clockable → no Kehadiran)', () => {
       const routes = MENU_CONFIGS.staff_kecamatan.flatMap((s) => s.items.map((i) => i.route));
       expect(routes).toContain('Perantingan');
-      expect(routes).not.toContain('Attendance');
+      expect(routes).not.toContain('TimeRecordHub');
     });
   });
 

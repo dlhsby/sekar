@@ -32,14 +32,17 @@ import { useClockInOut } from '../../hooks';
 import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
-import type { MainTabScreenProps } from '../../types/navigation.types';
+import type { RouteProp } from '@react-navigation/native';
+import type { MainTabScreenProps, MainTabParamList } from '../../types/navigation.types';
 
 /**
  * Clock In/Out Screen
  * Phase 2C: Soft geofencing (warnings only), auto-detect area from schedule
  * Uses Neo Brutalism design system
  */
-export const ClockInOutScreen = (): React.JSX.Element => {
+type ClockInOutRouteProp = RouteProp<MainTabParamList, 'Absensi'>;
+
+export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): React.JSX.Element => {
   const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'Absensi'>['navigation']>();
   const [selfiePreviewUri, setSelfiePreviewUri] = useState<string | null>(null);
@@ -86,15 +89,16 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const [detailShiftVisible, setDetailShiftVisible] = useState(false);
   const [statusSheetVisible, setStatusSheetVisible] = useState(false);
 
-  // The attendance label the worker will record. Defaults from shift state — an
-  // open shift → Clock Out, none → Clock In — but the "Ubah Label Waktu" picker
-  // can override it (dangling/overrun shift, back-to-back shifts). Re-seeded from
-  // state whenever the open-shift status flips (e.g. after a submit).
-  const defaultAction: AttendanceAction = isClockIn ? 'clock_in' : 'clock_out';
+  // The attendance label the worker will record. The hub's Clock In / Clock Out
+  // buttons pass an explicit `action`; otherwise it defaults from shift state
+  // (open shift → Clock Out, none → Clock In). The "Ubah Label Waktu" picker can
+  // still override it (dangling/overrun shift, back-to-back shifts).
+  const routeAction = route?.params?.action;
+  const defaultAction: AttendanceAction = routeAction ?? (isClockIn ? 'clock_in' : 'clock_out');
   const [attendanceAction, setAttendanceAction] = useState<AttendanceAction>(defaultAction);
   useEffect(() => {
-    setAttendanceAction(isClockIn ? 'clock_in' : 'clock_out');
-  }, [isClockIn]);
+    setAttendanceAction(routeAction ?? (isClockIn ? 'clock_in' : 'clock_out'));
+  }, [isClockIn, routeAction]);
 
   // SEKAR holds at most one open shift, so only one label is valid at a time:
   // you cannot clock in with a shift already open, nor clock out without one.
