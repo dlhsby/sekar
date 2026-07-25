@@ -3,9 +3,23 @@
  * TanStack Query hooks for shift definition data fetching
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import { ShiftDefinition } from '@/types/models';
+
+/** Payload for creating/updating a shift definition (ADR-055 configurable shifts). */
+export interface ShiftDefinitionInput {
+  name: string;
+  start_time: string; // HH:MM[:SS]
+  end_time: string;
+  crosses_midnight?: boolean;
+  early_window_min?: number;
+  cutoff_grace_min?: number;
+  /** Reminder timing (minutes). start default 15, 0 = off; end null/0 = off. */
+  start_reminder_min?: number;
+  end_reminder_min?: number | null;
+  is_active?: boolean;
+}
 
 /**
  * Query key factory for shift definitions
@@ -19,8 +33,7 @@ export const shiftDefinitionKeys = {
 };
 
 /**
- * Fetch all shift definitions
- * Returns 3 fixed shifts with time ranges
+ * Fetch all shift definitions (ADR-055 — configurable, any number of shifts).
  */
 export function useShiftDefinitions() {
   return useQuery({
@@ -45,5 +58,40 @@ export function useShiftDefinition(id: string) {
     },
     enabled: !!id,
     staleTime: 30 * 60 * 1000,
+  });
+}
+
+/** Create a shift definition (system managers). */
+export function useCreateShiftDefinition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ShiftDefinitionInput) => {
+      const response = await apiClient.post<ShiftDefinition>('/shift-definitions', input);
+      return response.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: shiftDefinitionKeys.all }),
+  });
+}
+
+/** Update a shift definition (system managers). */
+export function useUpdateShiftDefinition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, input }: { id: string; input: Partial<ShiftDefinitionInput> }) => {
+      const response = await apiClient.patch<ShiftDefinition>(`/shift-definitions/${id}`, input);
+      return response.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: shiftDefinitionKeys.all }),
+  });
+}
+
+/** Soft-delete a shift definition (system managers). */
+export function useDeleteShiftDefinition() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(`/shift-definitions/${id}`);
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: shiftDefinitionKeys.all }),
   });
 }

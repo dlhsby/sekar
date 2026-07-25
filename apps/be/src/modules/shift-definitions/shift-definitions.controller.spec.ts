@@ -11,7 +11,6 @@ describe('ShiftDefinitionsController', () => {
   const mockShift1: ShiftDefinition = {
     id: '22222222-2222-2222-2222-222222222201',
     name: 'Shift 1',
-    code: 'SHIFT1',
     start_time: '06:00:00',
     end_time: '15:00:00',
     crosses_midnight: false,
@@ -23,7 +22,6 @@ describe('ShiftDefinitionsController', () => {
   const mockShift2: ShiftDefinition = {
     id: '22222222-2222-2222-2222-222222222202',
     name: 'Shift 2',
-    code: 'SHIFT2',
     start_time: '15:00:00',
     end_time: '23:00:00',
     crosses_midnight: false,
@@ -35,7 +33,6 @@ describe('ShiftDefinitionsController', () => {
   const mockShift3: ShiftDefinition = {
     id: '22222222-2222-2222-2222-222222222203',
     name: 'Shift 3',
-    code: 'SHIFT3',
     start_time: '21:00:00',
     end_time: '05:00:00',
     crosses_midnight: true,
@@ -47,9 +44,11 @@ describe('ShiftDefinitionsController', () => {
   const mockShiftDefinitionsService = {
     findAll: jest.fn(),
     findOne: jest.fn(),
-    findByCode: jest.fn(),
     getCurrentShift: jest.fn(),
     exists: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
   };
 
   beforeEach(async () => {

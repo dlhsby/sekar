@@ -511,26 +511,26 @@ Fixed shift time definitions (3 shifts per day).
 CREATE TABLE shift_definitions (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name VARCHAR(50) NOT NULL,
-  code VARCHAR(10) NOT NULL,
   start_time TIME NOT NULL,
   end_time TIME NOT NULL,
   crosses_midnight BOOLEAN DEFAULT FALSE,
   is_active BOOLEAN DEFAULT TRUE,
+  -- ADR-055: attribution window + reminder timing (minutes), configurable per shift
+  early_window_min INT NOT NULL DEFAULT 60,
+  cutoff_grace_min INT NOT NULL DEFAULT 60,
+  start_reminder_min INT NOT NULL DEFAULT 15,   -- minutes before start to remind (0 = off)
+  end_reminder_min INT,                          -- minutes before end to remind (NULL = off)
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  CONSTRAINT uq_shift_definitions_code UNIQUE (code),
   CONSTRAINT uq_shift_definitions_name UNIQUE (name)
 );
 
--- Indexes
-CREATE UNIQUE INDEX idx_shift_definitions_code ON shift_definitions(code);
-
--- Seed 3 fixed shifts
-INSERT INTO shift_definitions (name, code, start_time, end_time, crosses_midnight) VALUES
-  ('Shift 1', 'SHIFT1', '06:00:00', '15:00:00', FALSE),
-  ('Shift 2', 'SHIFT2', '15:00:00', '23:00:00', FALSE),
-  ('Shift 3', 'SHIFT3', '21:00:00', '05:00:00', TRUE);
+-- Seed the 3 default shifts (ADR-055: configurable, not a fixed set)
+INSERT INTO shift_definitions (name, start_time, end_time, crosses_midnight) VALUES
+  ('Shift 1', '06:00:00', '15:00:00', FALSE),
+  ('Shift 2', '15:00:00', '23:00:00', FALSE),
+  ('Shift 3', '21:00:00', '05:00:00', TRUE);
 ```
 
 **TypeORM Entity:**

@@ -1017,29 +1017,30 @@ ON CONFLICT (code) DO NOTHING;
 
 ## 9. Shift Definitions (New - Phase 2)
 
-Three fixed shift time periods for daily operations.
+Three **default** shift time periods for daily operations (ADR-055: shifts are
+configurable at runtime — any number, these are just the seeded defaults).
 
 ### SQL Insert
 
 ```sql
-INSERT INTO shift_definitions (id, name, code, start_time, end_time, crosses_midnight, is_active, created_at) VALUES
-  ('22222222-2222-2222-2222-222222222201', 'Shift 1', 'SHIFT1', '06:00:00', '15:00:00', false, true, NOW()),
-  ('22222222-2222-2222-2222-222222222202', 'Shift 2', 'SHIFT2', '15:00:00', '23:00:00', false, true, NOW()),
-  ('22222222-2222-2222-2222-222222222203', 'Shift 3', 'SHIFT3', '21:00:00', '05:00:00', true, true, NOW())
-ON CONFLICT (code) DO NOTHING;
+INSERT INTO shift_definitions (id, name, start_time, end_time, crosses_midnight, is_active, created_at) VALUES
+  ('22222222-2222-2222-2222-222222222201', 'Shift 1', '06:00:00', '15:00:00', false, true, NOW()),
+  ('22222222-2222-2222-2222-222222222202', 'Shift 2', '15:00:00', '23:00:00', false, true, NOW()),
+  ('22222222-2222-2222-2222-222222222203', 'Shift 3', '21:00:00', '05:00:00', true, true, NOW())
+ON CONFLICT (name) DO NOTHING;
 ```
 
 ### Shift Definition Details
 
-| Code | Name | Start | End | Duration | Crosses Midnight | Notes |
-|------|------|-------|-----|----------|------------------|-------|
-| SHIFT1 | Shift 1 | 06:00 | 15:00 | 9 hours | No | Morning shift, primary daylight hours |
-| SHIFT2 | Shift 2 | 15:00 | 23:00 | 8 hours | No | Afternoon/evening shift |
-| SHIFT3 | Shift 3 | 21:00 | 05:00 | 8 hours | Yes | Night shift (security focus) |
+| Name | Start | End | Duration | Crosses Midnight | Notes |
+|------|-------|-----|----------|------------------|-------|
+| Shift 1 | 06:00 | 15:00 | 9 hours | No | Morning shift, primary daylight hours |
+| Shift 2 | 15:00 | 23:00 | 8 hours | No | Afternoon/evening shift |
+| Shift 3 | 21:00 | 05:00 | 8 hours | Yes | Night shift (security focus) |
 
 **Business Rules:**
-- Shift definitions are fixed (not user-configurable)
-- All shifts are always active
+- Shift definitions are configurable at runtime (ADR-055) — operators manage them; the 3 above are seeded defaults
+- Each shift carries its own attribution window (`early_window_min`/`cutoff_grace_min`) and reminder timing (`start_reminder_min` default 15, `end_reminder_min` off by default)
 - `crosses_midnight` indicates the shift spans two calendar days
 - Workers are scheduled to specific shifts per area
 
@@ -1446,12 +1447,12 @@ export class Phase2SeedService {
   private async seedShiftDefinitions() {
     console.log('⏰ Seeding shift definitions...');
     const shifts = [
-      { code: 'SHIFT1', name: 'Shift 1', startTime: '06:00', endTime: '15:00', crossesMidnight: false },
-      { code: 'SHIFT2', name: 'Shift 2', startTime: '15:00', endTime: '23:00', crossesMidnight: false },
-      { code: 'SHIFT3', name: 'Shift 3', startTime: '21:00', endTime: '05:00', crossesMidnight: true },
+      { name: 'Shift 1', startTime: '06:00', endTime: '15:00', crossesMidnight: false },
+      { name: 'Shift 2', startTime: '15:00', endTime: '23:00', crossesMidnight: false },
+      { name: 'Shift 3', startTime: '21:00', endTime: '05:00', crossesMidnight: true },
     ];
     for (const shift of shifts) {
-      await this.shiftDefinitionRepository.upsert(shift, ['code']);
+      await this.shiftDefinitionRepository.upsert(shift, ['name']);
       console.log(`  ✓ Created shift: ${shift.name}`);
     }
   }

@@ -124,7 +124,6 @@ describe('MonitoringService', () => {
   const mockShiftDefinition: ShiftDefinition = {
     id: 'shift-def-1',
     name: 'Shift 1',
-    code: 'SHIFT1',
     start_time: '06:00',
     end_time: '15:00',
     crosses_midnight: false,

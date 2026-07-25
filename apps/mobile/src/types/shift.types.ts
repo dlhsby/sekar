@@ -33,7 +33,6 @@ export interface Shift {
 export interface ShiftDefinition {
   id: string;
   name: string;
-  code: string;
   start_time: string; // HH:mm
   end_time: string; // HH:mm
   crosses_midnight: boolean;

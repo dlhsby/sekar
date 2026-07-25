@@ -36,7 +36,6 @@ describe('ScheduleEventsService', () => {
   const mockShift: ShiftDefinition = {
     id: 'shift-1',
     name: 'Shift 1',
-    code: 'S1',
     start_time: '06:00:00',
     end_time: '15:00:00',
     crosses_midnight: false,

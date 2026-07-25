@@ -12,8 +12,6 @@ import {
   RAYON_TAMAN_AKTIF_ID,
   RAYON_ID_BY_CODE,
   SHIFT_1_ID,
-  SHIFT_2_ID,
-  SHIFT_3_ID,
   DEMO_PUSAT_AREA_1,
   DEMO_PUSAT_AREA_2,
   DEMO_PUSAT_AREA_3,
@@ -904,21 +902,28 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // ==========================================
     // (ADR-013) A worker's shift lives on the user now (`users.shift_definition_id`);
     // the daily roster is materialized from that + `user_locations`. Round-robin across
-    // the 3 shift definitions for all clockable roles (korlap is clockable too).
+    // whatever shift definitions exist (ADR-055 — configurable, not a fixed 3) for all
+    // clockable roles (korlap is clockable too).
     ctx.log('📅 Assigning worker shifts...');
+    const shiftRows: Array<{ id: string }> = await ctx.qr.query(`
+    SELECT id FROM shift_definitions WHERE is_active = TRUE AND deleted_at IS NULL ORDER BY start_time ASC;
+  `);
+    const shiftIds = shiftRows.map((r) => r.id);
     const workerResult = await ctx.qr.query(`
     SELECT id FROM users WHERE role IN ('satgas', 'linmas', 'korlap');
   `);
-    if (workerResult.length > 0) {
+    if (workerResult.length > 0 && shiftIds.length > 0) {
       for (let i = 0; i < workerResult.length; i++) {
-        const shiftId = i % 3 === 0 ? SHIFT_1_ID : i % 3 === 1 ? SHIFT_2_ID : SHIFT_3_ID;
+        const shiftId = shiftIds[i % shiftIds.length];
         await ctx.qr.query(`
         UPDATE users SET shift_definition_id = '${shiftId}' WHERE id = '${workerResult[i].id}';
       `);
       }
-      ctx.log(`  ✓ Assigned shifts to ${workerResult.length} workers (satgas, linmas, korlap)`);
+      ctx.log(
+        `  ✓ Assigned shifts to ${workerResult.length} workers across ${shiftIds.length} shift(s)`,
+      );
     } else {
-      ctx.log('  ⚠ No workers found, skipping shift assignment');
+      ctx.log('  ⚠ No workers or no shifts found, skipping shift assignment');
     }
 
     ctx.log('✅ Users seeding complete');
