@@ -294,8 +294,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     fontWeight: '600',
   },
+  // Values align to the right so every row reads label-left / value-right.
   rowValue: {
     flex: 1,
+    alignItems: 'flex-end',
   },
   // Validation section
   validationSection: {

@@ -7,24 +7,42 @@ import { NBText } from '../nb/NBText';
 import { StatusPill, type StatusTone } from '../home/StatusPill';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 
+interface PillProps {
+  tone: StatusTone;
+  label: string;
+  /** Tap the pill → open a detail (why-status / map). */
+  onPress?: () => void;
+  disabled?: boolean;
+  a11yLabel?: string;
+}
+
 interface AttendanceInfoRowsProps {
-  /** Attendance-status badge (Terlambat / Tepat Waktu / Tanpa Jadwal). */
-  statusBadge: React.ReactNode;
-  /** Tap the status badge → "why am I late / on time" explanation. */
-  onPressStatus?: () => void;
+  /** Attendance status (Terlambat / Tepat Waktu / Tanpa Jadwal) as a pill. */
+  status: PillProps;
   /** In/out-area pill. */
-  areaStatus: {
-    tone: StatusTone;
-    label: string;
-    /** Tap the pill → open the Area Tugas map. */
-    onPress?: () => void;
-    disabled?: boolean;
-    a11yLabel?: string;
-  };
+  areaStatus: PillProps;
   onRefreshLocation?: () => void;
   refreshingLocation?: boolean;
   /** "Detail Shift →" — omit to hide the link. */
   onDetailShift?: () => void;
+}
+
+/** A tappable (or static) StatusPill, sized identically for both rows. */
+function PillValue({ pill, testID }: { pill: PillProps; testID?: string }): React.JSX.Element {
+  const node = <StatusPill tone={pill.tone} label={pill.label} />;
+  if (!pill.onPress) return node;
+  return (
+    <TouchableOpacity
+      onPress={pill.onPress}
+      disabled={pill.disabled}
+      activeOpacity={0.7}
+      accessibilityRole="button"
+      accessibilityLabel={pill.a11yLabel}
+      testID={testID}
+    >
+      {node}
+    </TouchableOpacity>
+  );
 }
 
 /**
@@ -32,13 +50,12 @@ interface AttendanceInfoRowsProps {
  *
  * Only the at-a-glance state lives on the card: **Status Kehadiran** (tap → why)
  * and **Status Area** (pill tap → the Area Tugas map, with a refresh beside it).
- * Everything else (shift, times, area, coordinates) moved into the Detail Shift
- * modal to keep the card uncluttered. Used identically by the home hero and the
- * Rekam Kehadiran card; the MASUK/KELUAR summary sits above this.
+ * Both rows are the same InfoTableRow with a StatusPill value, so they read as a
+ * consistent pair. Everything else moved into the Detail Shift modal. Used
+ * identically by the home hero and the Rekam Kehadiran card.
  */
 export function AttendanceInfoRows({
-  statusBadge,
-  onPressStatus,
+  status,
   areaStatus,
   onRefreshLocation,
   refreshingLocation = false,
@@ -46,46 +63,21 @@ export function AttendanceInfoRows({
 }: AttendanceInfoRowsProps): React.JSX.Element {
   const { t } = useTranslation();
 
-  const pill = <StatusPill tone={areaStatus.tone} label={areaStatus.label} />;
-
   return (
     <View style={styles.root}>
       <InfoTableRow
         label={t('attendance:infoCard.status')}
         value={
-          onPressStatus ? (
-            <TouchableOpacity
-              onPress={onPressStatus}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={t('attendance:infoCard.whyStatus')}
-              testID="attendance-status-badge"
-            >
-              {statusBadge}
-            </TouchableOpacity>
-          ) : (
-            statusBadge
-          )
+          <View style={styles.pillValue}>
+            <PillValue pill={status} testID="attendance-status-badge" />
+          </View>
         }
       />
       <InfoTableRow
         label={t('attendance:infoCard.areaStatus')}
         value={
-          <View style={styles.areaStatusValue}>
-            {areaStatus.onPress ? (
-              <TouchableOpacity
-                onPress={areaStatus.onPress}
-                disabled={areaStatus.disabled}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={areaStatus.a11yLabel}
-                testID="attendance-area-status"
-              >
-                {pill}
-              </TouchableOpacity>
-            ) : (
-              pill
-            )}
+          <View style={styles.pillValue}>
+            <PillValue pill={areaStatus} testID="attendance-area-status" />
             {onRefreshLocation ? (
               <TouchableOpacity
                 onPress={onRefreshLocation}
@@ -99,7 +91,7 @@ export function AttendanceInfoRows({
                 {refreshingLocation ? (
                   <ActivityIndicator size="small" color={nbColors.black} />
                 ) : (
-                  <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                  <MaterialCommunityIcons name="refresh" size={15} color={nbColors.black} />
                 )}
               </TouchableOpacity>
             ) : null}
@@ -123,21 +115,27 @@ export function AttendanceInfoRows({
   );
 }
 
+// A fixed height so both pill rows are exactly the same size regardless of the
+// refresh button, which is sized to match.
+const ROW_HEIGHT = 28;
+
 const styles = StyleSheet.create({
   root: {
     gap: nbSpacing.sm,
   },
-  areaStatusValue: {
+  pillValue: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: nbSpacing.sm,
+    height: ROW_HEIGHT,
     flexShrink: 1,
   },
-  // Standard NB icon button — hard border + hard-edge shadow, matching NBButton.
+  // Standard NB icon button — sized to match the pill row so the two rows stay
+  // the same height.
   refreshButton: {
-    width: 36,
-    height: 36,
+    width: ROW_HEIGHT,
+    height: ROW_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: nbColors.white,

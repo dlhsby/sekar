@@ -19,4 +19,5 @@ Cross-cutting platform services: health/build-identity endpoint, generic entity 
 - [notifications](../notifications/README.md)
 
 ## Changelog
-- 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
+
+Moved to [CHANGELOG.md](./CHANGELOG.md) (newest first) to keep this overview short. Add new entries there.

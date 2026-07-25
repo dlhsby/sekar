@@ -1,10 +1,9 @@
 import React from 'react';
-import { Text } from 'react-native';
 import { render, fireEvent } from '@testing-library/react-native';
 import { AttendanceInfoRows } from '../AttendanceInfoRows';
 
 const baseProps = {
-  statusBadge: <Text>TERLAMBAT</Text>,
+  status: { tone: 'bad' as const, label: 'Terlambat' },
   areaStatus: { tone: 'bad' as const, label: 'Di luar area' },
 };
 
@@ -12,18 +11,18 @@ describe('AttendanceInfoRows', () => {
   it('renders the two pill rows (status + area status)', () => {
     const { getByText } = render(<AttendanceInfoRows {...baseProps} />);
     expect(getByText('Status Kehadiran')).toBeTruthy();
-    expect(getByText('TERLAMBAT')).toBeTruthy();
+    expect(getByText('Terlambat')).toBeTruthy();
     expect(getByText('Status Area')).toBeTruthy();
     expect(getByText('Di luar area')).toBeTruthy();
   });
 
-  it('taps the status badge → why explanation', () => {
-    const onPressStatus = jest.fn();
+  it('taps the status pill → why explanation', () => {
+    const onPress = jest.fn();
     const { getByTestId } = render(
-      <AttendanceInfoRows {...baseProps} onPressStatus={onPressStatus} />,
+      <AttendanceInfoRows {...baseProps} status={{ ...baseProps.status, onPress }} />,
     );
     fireEvent.press(getByTestId('attendance-status-badge'));
-    expect(onPressStatus).toHaveBeenCalled();
+    expect(onPress).toHaveBeenCalled();
   });
 
   it('taps the area-status pill → open the map', () => {

@@ -22,4 +22,5 @@ Perantingan (tree-pruning) intake and disposition. External `staff_kecamatan` us
 - [auth](../auth/README.md)
 
 ## Changelog
-- 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
+
+Moved to [CHANGELOG.md](./CHANGELOG.md) (newest first) to keep this overview short. Add new entries there.

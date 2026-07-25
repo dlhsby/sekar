@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   infoStrip: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    gap: nbSpacing.xs,
+    gap: nbSpacing.sm,
   },
   coordsFont: {
     // override mono-sm with platform monospace fallback
@@ -474,7 +474,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: nbSpacing.xs,
   },
   accuracyText: {
     color: nbColors.gray700,
@@ -505,9 +504,7 @@ const styles = StyleSheet.create({
   areaBadgeTextOutside: {
     color: nbColors.statusIdle,
   },
-  updatedTopMargin: {
-    marginTop: nbSpacing.xs,
-  },
+  updatedTopMargin: {},
 });
 
 const pinStyles = StyleSheet.create({

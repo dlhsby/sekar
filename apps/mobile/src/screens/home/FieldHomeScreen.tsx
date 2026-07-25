@@ -12,7 +12,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTranslation } from 'react-i18next';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { LoadingSpinner, AppUpdateBanner, InfoTableRow } from '../../components/common';
-import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
+import { NBAlert, NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
@@ -440,18 +440,16 @@ export function FieldHomeScreen(): React.JSX.Element {
                       Status Kehadiran (tap → why) + Status Area (pill → map, refresh
                       beside). The rest lives in the Detail Shift modal. */}
                   <AttendanceInfoRows
-                    statusBadge={
-                      hasScheduleToday ? (
-                        <NBBadge
-                          text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
-                          color={attendance.isLate ? 'danger' : 'success'}
-                          size="sm"
-                        />
-                      ) : (
-                        <NBBadge text={t('home:field.hero.status.noSchedule')} color="gray" size="sm" />
-                      )
-                    }
-                    onPressStatus={() => setStatusSheetVisible(true)}
+                    status={{
+                      tone: !hasScheduleToday ? 'neutral' : attendance.isLate ? 'bad' : 'ok',
+                      label: !hasScheduleToday
+                        ? t('home:field.hero.status.noSchedule')
+                        : attendance.isLate
+                          ? t('home:field.hero.status.late')
+                          : t('home:field.hero.status.onTime'),
+                      onPress: () => setStatusSheetVisible(true),
+                      a11yLabel: t('attendance:infoCard.whyStatus'),
+                    }}
                     areaStatus={{
                       tone: areaTone,
                       label: areaLabel,

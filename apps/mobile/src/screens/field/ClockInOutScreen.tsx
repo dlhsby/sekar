@@ -14,9 +14,9 @@ import { AttendanceTypeSheet, type AttendanceAction } from '../../components/mod
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
-import type { StatusTone } from '../../components/home/StatusPill';
+import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { useNavigation } from '@react-navigation/native';
-import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
+import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import {
   nbColors,
@@ -141,6 +141,21 @@ export const ClockInOutScreen = (): React.JSX.Element => {
       ? 'late'
       : 'onTime';
 
+  // Record-page "notice" — the out-of-area (or no-boundary) reassurance banner,
+  // shown below the pills. The card is where the worker is about to clock out, so
+  // "absen tetap dicatat" belongs here.
+  const noticeNode =
+    areaState === 'outside' ? (
+      <NBAlert variant="warning" message={t('attendance:gpsSection.outsideBoundary')} />
+    ) : areaState === 'scope' ? (
+      <NBAlert
+        variant="info"
+        message={t('attendance:gpsSection.scopeAssigned', { scope: scheduleScope.name ?? '' })}
+      />
+    ) : areaState === 'none' ? (
+      <NBAlert variant="info" message={t('attendance:gpsSection.noArea')} />
+    ) : null;
+
   // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
   // The title is now the STABLE page name "Rekam Kehadiran" — the action
   // (clock in vs out) lives on the in-page label selector + primary button, not
@@ -162,23 +177,23 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     }
   }, [navigation, goBack, t]);
 
-  // The on-time/late/no-schedule pill — shown in the card HEADER while collapsed
-  // (at-a-glance), and in the "Status" body row while expanded. One source.
-  const statusBadge = hasScheduleToday ? (
-    <NBBadge
-      text={
-        attendanceState === 'outside_window'
-          ? t('attendance:clockInOut.outsideWindowChip')
-          : isLate
-            ? t('attendance:list.statusChip.late')
-            : t('attendance:list.statusChip.onTime')
-      }
-      color={attendanceState === 'outside_window' ? 'warning' : isLate ? 'danger' : 'success'}
-      size="sm"
-    />
-  ) : (
-    <NBBadge text={t('attendance:clockInOut.noScheduleChip')} color="gray" size="sm" />
-  );
+  // The on-time/late/no-schedule pill — a StatusPill (same style as Status Area)
+  // shown in the card header while collapsed and in the "Status" body row.
+  const statusTone: StatusTone = !hasScheduleToday
+    ? 'neutral'
+    : attendanceState === 'outside_window'
+      ? 'warn'
+      : isLate
+        ? 'bad'
+        : 'ok';
+  const statusLabel = !hasScheduleToday
+    ? t('attendance:clockInOut.noScheduleChip')
+    : attendanceState === 'outside_window'
+      ? t('attendance:clockInOut.outsideWindowChip')
+      : isLate
+        ? t('attendance:list.statusChip.late')
+        : t('attendance:list.statusChip.onTime');
+  const statusPill = <StatusPill tone={statusTone} label={statusLabel} />;
 
   // Loading GPS
   if (location.loading && !location.latitude) {
@@ -242,7 +257,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 {t('attendance:clockInOut.attendanceInfo')}
               </NBText>
             }
-            headerRight={(expanded) => (expanded ? null : statusBadge)}
+            headerRight={(expanded) => (expanded ? null : statusPill)}
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
@@ -280,8 +295,12 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   Status Kehadiran (tap → why) + Status Area (pill → map, refresh
                   beside). Everything else lives in the Detail Shift modal. */}
               <AttendanceInfoRows
-                statusBadge={statusBadge}
-                onPressStatus={() => setStatusSheetVisible(true)}
+                status={{
+                  tone: statusTone,
+                  label: statusLabel,
+                  onPress: () => setStatusSheetVisible(true),
+                  a11yLabel: t('attendance:infoCard.whyStatus'),
+                }}
                 areaStatus={{
                   tone: areaStatusTone,
                   label: areaStatusLabel,
@@ -292,6 +311,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 refreshingLocation={location.loading}
                 onDetailShift={currentShift ? () => setDetailShiftVisible(true) : undefined}
               />
+              {/* Out-of-area notice — kept on the record page (where you clock out). */}
+              {noticeNode}
             </View>
           </NBCollapsibleCard>
 

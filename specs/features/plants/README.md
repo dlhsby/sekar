@@ -21,5 +21,5 @@ Per-location plant inventory kept as a location aggregate (counts + notable spec
 - [geography](../geography/README.md)
 
 ## Changelog
-- 2026-07-12 — **Area→Location terminology sweep.** Renamed per-location aggregates, `location_type` lookup, per-location catalog reference.
-- 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
+
+Moved to [CHANGELOG.md](./CHANGELOG.md) (newest first) to keep this overview short. Add new entries there.
