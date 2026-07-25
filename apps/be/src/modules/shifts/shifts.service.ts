@@ -309,15 +309,19 @@ export class ShiftsService {
    * @returns Updated shift entity
    * @throws BadRequestException if no active shift found
    */
-  async clockOut(userId: string, dto: ClockOutDto): Promise<Shift> {
+  async clockOut(userId: string, dto: ClockOutDto, isOvertime: boolean = false): Promise<Shift> {
     this.logger.log(`User ${userId} attempting to clock out`);
 
     // ADR-055: clock-out requires an OPEN session (a prior unmatched clock-in).
     // The open session-projection row is the anchor; it also carries the shift's
     // service-day + definition so a cross-midnight Shift-3 clock-out at 03:00
     // pairs with its 21:00 clock-in (same service_day) instead of starting anew.
+    // Filtered by `is_overtime` — since Phase 1 removed the single-open-shift
+    // guard, a worker can hold a regular AND an overtime session at once, so
+    // ending overtime must close the OT session, not the regular one (and the
+    // regular clock-out must not close the OT session).
     const shift = await this.shiftRepository.findOne({
-      where: { user_id: userId, clock_out_time: IsNull() },
+      where: { user_id: userId, clock_out_time: IsNull(), is_overtime: isOvertime },
       relations: ['area'],
     });
 
@@ -333,7 +337,6 @@ export class ShiftsService {
     // legacy rows created before the column existed.
     const serviceDay =
       shift.service_day ?? TimezoneUtil.jakartaDateOf(shift.clock_in_time ?? new Date());
-    const isOvertime = shift.is_overtime;
     const shiftDefId = shift.shift_definition_id;
 
     // Minimum shift duration — DB override → env → default (ADR-049). Measured
@@ -662,26 +665,38 @@ export class ShiftsService {
           TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
       };
     }
-    // Explicit picker choice (ADR-055) wins over auto-attribution when no session
-    // is open — the worker deliberately selected a shift near midnight / dangling.
-    if (!isOvertime && explicit?.shiftDefinitionId) {
-      return {
-        shiftDefId: explicit.shiftDefinitionId,
-        serviceDay: explicit.serviceDay ?? TimezoneUtil.jakartaDateString(),
-      };
-    }
     if (isOvertime) {
       return { shiftDefId: null, serviceDay: TimezoneUtil.jakartaDateString() };
     }
-    if (this.dailySchedulesService) {
-      const candidates = await this.dailySchedulesService.getAttributionCandidates(userId);
-      const match = this.attribution.resolveBest(candidates, TimezoneUtil.jakartaNow());
-      if (match) {
-        return {
-          shiftDefId: match.candidate.shift_definition_id,
-          serviceDay: match.candidate.service_day,
-        };
+
+    // The worker's attributable shifts right now (yesterday+today rostered).
+    const candidates = this.dailySchedulesService
+      ? await this.dailySchedulesService.getAttributionCandidates(userId)
+      : [];
+
+    // Explicit picker choice (ADR-055) — honored ONLY when it matches a real
+    // current candidate. That both (a) supplies the CORRECT service_day (yesterday
+    // for a crossing shift chosen after midnight — never a blind "today" default)
+    // and (b) rejects a bogus/expired shift_definition_id (which would otherwise
+    // orphan a punch on an FK violation). A non-matching explicit falls through
+    // to auto-attribution rather than being trusted.
+    if (explicit?.shiftDefinitionId) {
+      const chosen = candidates.find(
+        (c) =>
+          c.shift_definition_id === explicit.shiftDefinitionId &&
+          (!explicit.serviceDay || c.service_day === explicit.serviceDay),
+      );
+      if (chosen) {
+        return { shiftDefId: chosen.shift_definition_id, serviceDay: chosen.service_day };
       }
+    }
+
+    const match = this.attribution.resolveBest(candidates, TimezoneUtil.jakartaNow());
+    if (match) {
+      return {
+        shiftDefId: match.candidate.shift_definition_id,
+        serviceDay: match.candidate.service_day,
+      };
     }
     return {
       shiftDefId: (await this.getUserShiftOrCurrent(userId))?.id ?? null,

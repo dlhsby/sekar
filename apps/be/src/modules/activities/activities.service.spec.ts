@@ -253,6 +253,7 @@ describe('ActivitiesService', () => {
       expect(mockShiftsRepo.findOne).toHaveBeenCalledWith({
         where: { user_id: mockUser.id, clock_out_time: IsNull() },
         relations: ['area'],
+        order: { is_overtime: 'ASC', clock_in_time: 'DESC' },
       });
       expect(mockActivityTypeRepo.findOne).toHaveBeenCalledWith({
         where: { id: createDto.activity_type_id, is_active: true },

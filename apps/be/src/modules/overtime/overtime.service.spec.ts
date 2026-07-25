@@ -855,10 +855,11 @@ describe('OvertimeService', () => {
         where: { user_id: userId, status: OvertimeStatus.IN_PROGRESS },
         relations: ['activityType', 'user', 'area'],
       });
-      expect(mockShiftsService.clockOut).toHaveBeenCalledWith(userId, {
-        gps_lat: endDto.gps_lat,
-        gps_lng: endDto.gps_lng,
-      });
+      expect(mockShiftsService.clockOut).toHaveBeenCalledWith(
+        userId,
+        { gps_lat: endDto.gps_lat, gps_lng: endDto.gps_lng },
+        true, // ADR-055: closes the OVERTIME session specifically
+      );
       expect(mockOvertimeRepo.save).toHaveBeenCalled();
       expect(result.status).toBe(OvertimeStatus.PENDING);
     });
@@ -891,10 +892,11 @@ describe('OvertimeService', () => {
     it('should call shiftsService.clockOut when overtime has a linked shift_id', async () => {
       await service.endOvertime(endDto, clockableUser);
 
-      expect(mockShiftsService.clockOut).toHaveBeenCalledWith(userId, {
-        gps_lat: endDto.gps_lat,
-        gps_lng: endDto.gps_lng,
-      });
+      expect(mockShiftsService.clockOut).toHaveBeenCalledWith(
+        userId,
+        { gps_lat: endDto.gps_lat, gps_lng: endDto.gps_lng },
+        true,
+      );
     });
 
     it('should skip clockOut when overtime has no linked shift_id', async () => {

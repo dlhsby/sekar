@@ -553,9 +553,22 @@ describe('ShiftsService', () => {
       expect(t).toBeLessThanOrEqual(after); // clamped to ~now, NOT the future value
     });
 
-    it('honors an EXPLICIT picker shift choice over auto-attribution (ADR-055)', async () => {
+    it('honors an EXPLICIT picker shift ONLY when it matches a real candidate (correct service_day)', async () => {
       mockAreasService.findOne.mockResolvedValue(mockArea);
       mockRepository.findOne.mockResolvedValue(null); // no open session
+      // The picker's options come from current-state = attribution candidates, so a
+      // legit choice always matches one — and that candidate supplies the service_day.
+      mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([
+        {
+          shift_definition_id: 'sd-picked',
+          service_day: '2026-07-24',
+          start_time: '21:00',
+          end_time: '05:00',
+          crosses_midnight: true,
+          early_window_min: 60,
+          cutoff_grace_min: 60,
+        },
+      ]);
       mockPunches = [inPunch({ shift_definition_id: 'sd-picked' })];
       let saved: any;
       mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(null));
@@ -572,9 +585,42 @@ describe('ShiftsService', () => {
       } as any);
 
       expect(saved.shift_definition_id).toBe('sd-picked');
-      expect(saved.service_day).toBe('2026-07-24');
-      // explicit choice short-circuits attribution
-      expect(mockSchedulesService.getAttributionCandidates).not.toHaveBeenCalled();
+      expect(saved.service_day).toBe('2026-07-24'); // from the matched candidate, not a blind "today"
+    });
+
+    it('IGNORES a bogus/expired explicit shift (no matching candidate) → falls to auto-attribution', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(null);
+      // Only a real Shift-1 candidate is available; the client sent a bogus id.
+      mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([
+        {
+          shift_definition_id: 'sd-real',
+          service_day: '2026-07-25',
+          start_time: '00:00',
+          end_time: '23:59',
+          crosses_midnight: false,
+          early_window_min: 100_000_000,
+          cutoff_grace_min: 100_000_000,
+        },
+      ]);
+      mockPunches = [inPunch({ shift_definition_id: 'sd-real' })];
+      let saved: any;
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(null));
+      mockRepository.create.mockImplementation((r: any) => r);
+      mockRepository.save.mockImplementation((r: any) => {
+        saved = r;
+        return Promise.resolve({ id: 'session-1', ...r });
+      });
+
+      await service.clockIn(mockUser.id, {
+        ...clockInDto,
+        shift_definition_id: 'bogus-does-not-exist',
+        service_day: '2099-01-01',
+      } as any);
+
+      // Bogus explicit ignored → attribution resolved the real candidate instead.
+      expect(saved.shift_definition_id).toBe('sd-real');
+      expect(saved.service_day).toBe('2026-07-25');
     });
   });
 
@@ -729,6 +775,26 @@ describe('ShiftsService', () => {
       expect(result.clock_out_time).toBeTruthy();
       expect(result.clock_out_gps_lat).toBe(clockOutDto.gps_lat);
       expect(mockStatusCalculator.onClockOut).toHaveBeenCalledWith(mockUser.id);
+      // regular clock-out targets the regular (non-overtime) open session
+      expect(mockRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ is_overtime: false }) }),
+      );
+    });
+
+    it('closes the OVERTIME session when clockOut is called with isOvertime=true (review fix)', async () => {
+      mockPunches = closedPunches;
+      mockRepository.findOne.mockResolvedValue({ ...openRow, is_overtime: true });
+      mockRepository.createQueryBuilder.mockReturnValue(
+        makeShiftQB({ ...openRow, is_overtime: true }),
+      );
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      await service.clockOut(mockUser.id, clockOutDto, true);
+
+      // must query the OT open session, not close a concurrent regular one
+      expect(mockRepository.findOne).toHaveBeenCalledWith(
+        expect.objectContaining({ where: expect.objectContaining({ is_overtime: true }) }),
+      );
     });
 
     it('throws SHIFT_NOT_ACTIVE when there is no open session (clock-out needs a clock-in)', async () => {

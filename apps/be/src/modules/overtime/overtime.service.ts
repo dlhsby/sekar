@@ -168,7 +168,9 @@ export class OvertimeService {
         gps_lng: dto.gps_lng,
         selfie_photo: dto.selfie_photo,
       };
-      await this.shiftsService.clockOut(user.id, clockOutDto);
+      // isOvertime=true so this closes the OVERTIME session, not a concurrent
+      // regular one (ADR-055: multiple open sessions are possible now).
+      await this.shiftsService.clockOut(user.id, clockOutDto, true);
     }
 
     // Update overtime record
