@@ -1,21 +1,89 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+} from '@nestjs/swagger';
 import { ShiftDefinitionsService } from './shift-definitions.service';
 import { ShiftDefinition } from './entities/shift-definition.entity';
+import { CreateShiftDefinitionDto } from './dto/create-shift-definition.dto';
+import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { USER_MANAGERS } from '../users/constants/role-groups';
 
 /**
- * Controller for shift definition operations (read-only)
+ * Controller for shift definition operations.
  *
- * All endpoints require authentication.
- * Shift definitions are fixed and not modifiable at runtime.
+ * Reads are open to any authenticated user; writes (ADR-055 configurable shifts)
+ * are restricted to system managers. All endpoints require authentication.
  */
 @ApiTags('shift-definitions')
 @ApiBearerAuth('JWT-auth')
 @Controller('shift-definitions')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ShiftDefinitionsController {
   constructor(private readonly shiftDefinitionsService: ShiftDefinitionsService) {}
+
+  @Post()
+  @Roles(...USER_MANAGERS)
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Create a shift definition (ADR-055)',
+    description: 'Add a new shift type. System managers only.',
+  })
+  @ApiBody({ type: CreateShiftDefinitionDto })
+  @ApiResponse({ status: 201, type: ShiftDefinition })
+  @ApiResponse({ status: 409, description: 'Duplicate name or code' })
+  create(@Body() dto: CreateShiftDefinitionDto): Promise<ShiftDefinition> {
+    return this.shiftDefinitionsService.create(dto);
+  }
+
+  @Patch(':id')
+  @Roles(...USER_MANAGERS)
+  @ApiOperation({
+    summary: 'Update a shift definition (ADR-055)',
+    description: 'Edit times / windows / active flag. System managers only.',
+  })
+  @ApiParam({ name: 'id', description: 'Shift definition UUID' })
+  @ApiBody({ type: UpdateShiftDefinitionDto })
+  @ApiResponse({ status: 200, type: ShiftDefinition })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  @ApiResponse({ status: 409, description: 'Duplicate name or code' })
+  update(@Param('id') id: string, @Body() dto: UpdateShiftDefinitionDto): Promise<ShiftDefinition> {
+    return this.shiftDefinitionsService.update(id, dto);
+  }
+
+  @Delete(':id')
+  @Roles(...USER_MANAGERS)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete (soft) a shift definition (ADR-055)',
+    description:
+      'Soft-deletes so historical schedules/shifts/punches keep their reference. ' +
+      'To merely stop offering a shift, set is_active=false instead. System managers only.',
+  })
+  @ApiParam({ name: 'id', description: 'Shift definition UUID' })
+  @ApiResponse({ status: 204, description: 'Deleted' })
+  @ApiResponse({ status: 404, description: 'Not found' })
+  async remove(@Param('id') id: string): Promise<void> {
+    await this.shiftDefinitionsService.remove(id);
+  }
 
   /**
    * Get all shift definitions

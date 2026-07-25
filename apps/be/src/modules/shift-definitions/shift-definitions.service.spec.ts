@@ -50,6 +50,9 @@ describe('ShiftDefinitionsService', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     count: jest.fn(),
+    create: jest.fn((x) => x),
+    save: jest.fn(async (x) => ({ id: x.id ?? 'new-id', ...x })),
+    softDelete: jest.fn().mockResolvedValue({ affected: 1 }),
   };
 
   beforeEach(async () => {
@@ -251,6 +254,72 @@ describe('ShiftDefinitionsService', () => {
       const result = await service.getCurrentShift();
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('create (ADR-055 configurable shifts)', () => {
+    it('creates with derived crosses_midnight + window defaults', async () => {
+      mockShiftDefinitionRepository.findOne.mockResolvedValue(null); // no name/code clash
+      await service.create({
+        name: 'Night',
+        code: 'NIGHT',
+        start_time: '21:00',
+        end_time: '05:00',
+      } as never);
+      expect(mockShiftDefinitionRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Night',
+          code: 'NIGHT',
+          crosses_midnight: true, // 05:00 <= 21:00
+          early_window_min: 60,
+          cutoff_grace_min: 60,
+          is_active: true,
+        }),
+      );
+    });
+
+    it('rejects a duplicate code', async () => {
+      mockShiftDefinitionRepository.findOne
+        .mockResolvedValueOnce(null) // name free
+        .mockResolvedValueOnce(mockShift1); // code taken
+      await expect(
+        service.create({
+          name: 'X',
+          code: 'SHIFT1',
+          start_time: '06:00',
+          end_time: '15:00',
+        } as never),
+      ).rejects.toThrow(ConflictException);
+    });
+  });
+
+  describe('update', () => {
+    it('updates fields and re-derives crosses_midnight when times change', async () => {
+      mockShiftDefinitionRepository.findOne
+        .mockResolvedValueOnce({ ...mockShift1 }) // the row being edited
+        .mockResolvedValue(null); // assertUnique: no clash
+      await service.update(mockShift1.id, { start_time: '21:00', end_time: '05:00' } as never);
+      expect(mockShiftDefinitionRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ crosses_midnight: true }),
+      );
+    });
+
+    it('throws NotFound for a missing id', async () => {
+      mockShiftDefinitionRepository.findOne.mockResolvedValue(null);
+      await expect(service.update('missing', {} as never)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('soft-deletes an existing definition', async () => {
+      mockShiftDefinitionRepository.findOne.mockResolvedValue(mockShift1);
+      await service.remove(mockShift1.id);
+      expect(mockShiftDefinitionRepository.softDelete).toHaveBeenCalledWith(mockShift1.id);
+    });
+
+    it('throws NotFound for a missing id', async () => {
+      mockShiftDefinitionRepository.findOne.mockResolvedValue(null);
+      await expect(service.remove('missing')).rejects.toThrow(NotFoundException);
     });
   });
 });

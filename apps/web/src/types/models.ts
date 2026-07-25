@@ -274,6 +274,9 @@ export interface ShiftDefinition {
   end_time: string;
   crosses_midnight: boolean;
   is_active: boolean;
+  // ADR-055 attribution window (minutes) — configurable per shift.
+  early_window_min?: number;
+  cutoff_grace_min?: number;
   created_at: string;
 }
 

@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarOff, UserPlus } from 'lucide-react';
+import { CalendarClock, CalendarOff, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -46,6 +46,7 @@ import { ScheduleDetailModal } from '@/components/schedules/ScheduleDetailModal'
 import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMapModal';
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import { HolidayManagerModal } from '@/components/schedules/HolidayManagerModal';
+import { ShiftDefinitionsModal } from '@/components/schedules/ShiftDefinitionsModal';
 import type { BoardMasterData } from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
@@ -116,6 +117,12 @@ export default function SchedulesPage() {
   const canManageCapacity = !!user && ['admin_system', 'superadmin'].includes(user.role);
   const [capacitySubject, setCapacitySubject] = useState<StaffSubject | null>(null);
   const [holidayOpen, setHolidayOpen] = useState(false);
+  const [shiftDefsOpen, setShiftDefsOpen] = useState(false);
+  const currentUser = useUser();
+  // Shift definitions are system config — only system managers may edit (backend
+  // enforces via USER_MANAGERS); others see a read-only list.
+  const canManageShifts =
+    currentUser?.role === 'admin_system' || currentUser?.role === 'superadmin';
   /** "Belum Dijadwalkan" panel (ADR-054) — the complement of the board. */
   const [unscheduledOpen, setUnscheduledOpen] = useState(false);
   const [createUserId, setCreateUserId] = useState<string | undefined>();
@@ -500,6 +507,18 @@ export default function SchedulesPage() {
           {/* The standard toolbar icon button — this was a hand-rolled <button>
               with its own size/border, so it didn't match the filter/refresh
               buttons it sits beside on every other page. */}
+          {/* Shift settings (ADR-055 configurable shifts) — sits to the LEFT of
+              Hari Libur, both being schedule-wide config. */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShiftDefsOpen(true)}
+            aria-label={t('schedules:shiftDefs.title')}
+            title={t('schedules:shiftDefs.title')}
+          >
+            <CalendarClock className="h-4 w-4" aria-hidden />
+            <span className="ml-1.5 hidden sm:inline">{t('schedules:shiftDefs.buttonLabel')}</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -612,6 +631,11 @@ export default function SchedulesPage() {
       />
 
       {/* Holidays / days-off manager (reachable from the Jadwal page) */}
+      <ShiftDefinitionsModal
+        open={shiftDefsOpen}
+        onOpenChange={setShiftDefsOpen}
+        canManage={canManageShifts}
+      />
       <HolidayManagerModal
         open={holidayOpen}
         onOpenChange={setHolidayOpen}

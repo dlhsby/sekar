@@ -391,5 +391,32 @@
     "columnTeam": "Tim",
     "searchLabel": "Cari",
     "matched": "{{count}} cocok dengan pencarian"
+  },
+  "shiftDefs": {
+    "title": "Pengaturan Shift",
+    "buttonLabel": "Shift",
+    "description": "Atur shift harian — jam mulai/selesai dan jendela pencatatan (menit sebelum mulai / setelah selesai). Bisa berapa pun jumlah shift.",
+    "add": "Tambah Shift",
+    "addTitle": "Tambah Shift",
+    "editTitle": "Ubah Shift",
+    "empty": "Belum ada shift.",
+    "inactive": "Nonaktif",
+    "created": "Shift dibuat",
+    "updated": "Shift diperbarui",
+    "deleted": "Shift dihapus",
+    "confirmDelete": "Hapus shift \"{{name}}\"? Data absensi lama tetap tersimpan.",
+    "window": "Jendela {{early}}m/{{cutoff}}m",
+    "errors": {
+      "required": "Nama dan kode wajib diisi"
+    },
+    "fields": {
+      "name": "Nama",
+      "code": "Kode",
+      "start": "Mulai",
+      "end": "Selesai",
+      "early": "Sebelum (menit)",
+      "cutoff": "Setelah (menit)",
+      "active": "Aktif"
+    }
   }
 }
