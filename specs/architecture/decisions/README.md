@@ -2,7 +2,7 @@
 
 Why the significant technical decisions were made. Each ADR follows **Status · Context · Decision · Consequences**. Statuses: **Active**, **Superseded by ADR-XXX**, **Proposed**. To add one: create `ADR-NNN-title.md` (next free number — 020–023 & 039 were skipped), follow the section structure of a recent ADR, and add a row below.
 
-## Index (all 44)
+## Index (all 45)
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -55,6 +55,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [052](./ADR-052-rayon-to-district-rename.md) | `rayon` → `district` — code/DB English-canonical; UI keeps "Rayon" | Accepted (**implemented** — DB/be/web/mobile) · extends 010 |
 | [053](./ADR-053-schedule-row-per-place.md) | One schedule row = one worker, one shift, one **place**; presence belongs to the worker, not the row | Accepted · **implemented** · rests on 050 · settles korlap scope in 046 |
 | [054](./ADR-054-unscheduled-workers.md) | "Belum Dijadwalkan" — the complement of the day's roster, so a gap is visible before it becomes an understaffed lokasi | Accepted · **implemented** (be + web) · rests on 053 + 047 |
+| [055](./ADR-055-punch-attendance-model.md) | Attendance as an immutable punch log — clock-in/out become append-only events; session (Masuk/Keluar, hours, open?) is derived; preserves ADR-050 presence | Accepted · **design locked, not started** · re-bases 050's source |
 
 ## By domain
 
@@ -83,5 +84,6 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **046 status model superseded by 050 (2026-07-16)** — the flat status enum splits into three axes (attendance lifecycle · live presence · counting); the six-state lifecycle is *derived*, not stored, so it can't drift the way the 5.3 enum did.
 
 - **046 korlap scope settled by 053 (2026-07-23)** — monitoring coverage is schedule-driven only; the static user assignment stops being a monitoring-scope source.
+- **050 source re-based by 055 (2026-07-25)** — attendance moves to an immutable punch log; `bertugas` = "last punch is a clock-in" replaces `clock_out_time IS NULL`. The presence lifecycle/axes/counting contract is unchanged — only storage + derivation.
 
 **Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)
