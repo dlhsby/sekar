@@ -718,7 +718,7 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       const { getByText } = renderScreen(store);
 
       await waitFor(() => {
-        expect(getByText(/Mode Offline/)).toBeTruthy();
+        expect(getByText(/Mode offline/i)).toBeTruthy();
       });
     });
   });

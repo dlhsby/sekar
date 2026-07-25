@@ -263,7 +263,7 @@ describe('syncManager', () => {
 
       await syncManager.processQueue();
 
-      expect(shiftsApi.clockIn).toHaveBeenCalledWith(-7.25, 112.75, 'base64', '1');
+      expect(shiftsApi.clockIn).toHaveBeenCalledWith(-7.25, 112.75, 'base64', '1', expect.any(Object));
       expect(offlineQueue.updateQueueItem).toHaveBeenCalledWith('1', { status: 'success' });
       expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('1');
     });
@@ -351,7 +351,7 @@ describe('syncManager', () => {
 
       await syncManager.processQueue();
 
-      expect(shiftsApi.clockOut).toHaveBeenCalledWith(-7.25, 112.75);
+      expect(shiftsApi.clockOut).toHaveBeenCalledWith(-7.25, 112.75, undefined, expect.any(Object));
       expect(offlineQueue.removeFromQueue).toHaveBeenCalledWith('2');
     });
 

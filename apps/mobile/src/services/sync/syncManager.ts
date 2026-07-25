@@ -29,15 +29,25 @@ import { logger } from '../../utils/logger';
  * Type-safe data interfaces for sync operations
  */
 interface ClockInData {
-  location_id: number;
+  location_id?: number | string;
   gps_lat: number;
   gps_lng: number;
   selfie_photo?: string;
+  // ADR-055: idempotency key + explicit picker shift, carried so an offline
+  // replay is a server-side no-op and lands on the right shift.
+  client_uuid?: string;
+  accuracy_m?: number;
+  shift_definition_id?: string;
+  service_day?: string;
+  punched_at?: string;
 }
 
 interface ClockOutData {
   gps_lat: number;
   gps_lng: number;
+  client_uuid?: string;
+  accuracy_m?: number;
+  punched_at?: string;
 }
 
 interface ActivityData {
@@ -494,7 +504,13 @@ class SyncManager extends EventEmitter {
    */
   private async syncClockIn(data: ClockInData): Promise<void> {
     const { location_id, gps_lat, gps_lng, selfie_photo } = data;
-    const result = await clockIn(gps_lat, gps_lng, selfie_photo, location_id?.toString());
+    const result = await clockIn(gps_lat, gps_lng, selfie_photo, location_id?.toString(), {
+      clientUuid: data.client_uuid,
+      accuracyM: data.accuracy_m,
+      shiftDefinitionId: data.shift_definition_id,
+      serviceDay: data.service_day,
+      punchedAt: data.punched_at,
+    });
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Clock-in sync failed');
@@ -509,7 +525,11 @@ class SyncManager extends EventEmitter {
    */
   private async syncClockOut(data: ClockOutData): Promise<void> {
     const { gps_lat, gps_lng } = data;
-    const result = await clockOut(gps_lat, gps_lng);
+    const result = await clockOut(gps_lat, gps_lng, undefined, {
+      clientUuid: data.client_uuid,
+      accuracyM: data.accuracy_m,
+      punchedAt: data.punched_at,
+    });
 
     if (!result || result.error) {
       throw new Error(result?.error || 'Clock-out sync failed');

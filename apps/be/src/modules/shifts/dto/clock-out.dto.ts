@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsString,
   IsUUID,
+  IsISO8601,
   Matches,
   Max,
   MaxLength,
@@ -25,6 +26,15 @@ export class ClockOutDto {
   @IsOptional()
   @IsUUID()
   client_uuid?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'When the punch actually happened (ISO 8601). Set by an OFFLINE client so a ' +
+      'later sync records the capture time, not the sync time. Clamped to ≤ now.',
+  })
+  @IsOptional()
+  @IsISO8601()
+  punched_at?: string;
 
   @ApiPropertyOptional({ description: 'GPS accuracy in metres, if the device reports it' })
   @IsOptional()

@@ -490,9 +490,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             size="lg"
             fullWidth
             loading={isSubmitting}
+            // ADR-055/ADR-002: clock-in is allowed offline now — it queues and
+            // syncs later (idempotent client-uuid punch), so no online gate.
             disabled={
               isSubmitting || location.loading || !location.latitude || !location.longitude ||
-              actionMismatch || (isClockInAction && !isOnline)
+              actionMismatch
             }
             accessibilityLabel={isClockInAction ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
             accessibilityHint={

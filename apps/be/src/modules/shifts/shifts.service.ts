@@ -246,7 +246,7 @@ export class ShiftsService {
     await this.insertPunch({
       id: dto.client_uuid ?? randomUUID(),
       user_id: userId,
-      punched_at: new Date(),
+      punched_at: this.resolvePunchedAt(dto.punched_at),
       label: PunchLabel.CLOCK_IN,
       service_day: serviceDay,
       shift_definition_id: shiftDefId,
@@ -345,7 +345,10 @@ export class ShiftsService {
       ? this.systemConfig.getNumber('schedule.min_shift_duration_min', 5)
       : getMinimumShiftDurationMinutes();
     const minMs = minMinutes * 60 * 1000;
-    const segmentMs = Date.now() - openSince.getTime();
+    // Measured to the punch's own time — for an offline clock-out that is the
+    // capture time, not the (later) sync time.
+    const punchedAt = this.resolvePunchedAt(dto.punched_at);
+    const segmentMs = punchedAt.getTime() - openSince.getTime();
     // 0 (or any non-positive) disables the guard entirely — configurable via
     // `schedule.min_shift_duration_min` in settings.
     if (minMinutes > 0 && segmentMs < minMs) {
@@ -382,7 +385,7 @@ export class ShiftsService {
     await this.insertPunch({
       id: dto.client_uuid ?? randomUUID(),
       user_id: userId,
-      punched_at: new Date(),
+      punched_at: punchedAt,
       label: PunchLabel.CLOCK_OUT,
       service_day: serviceDay,
       shift_definition_id: shiftDefId,
@@ -461,6 +464,20 @@ export class ShiftsService {
       qb.andWhere('p.shift_definition_id = :shiftDefId', { shiftDefId });
     }
     return qb.orderBy('p.punched_at', 'ASC').getMany();
+  }
+
+  /**
+   * The instant a punch happened. An offline client passes the CAPTURE time in
+   * `punched_at` so a later sync records when the worker actually clocked in/out,
+   * not when the queue drained. Clamped to ≤ now — a future or unparseable time
+   * (clock skew / tampering) falls back to the server clock.
+   */
+  private resolvePunchedAt(iso?: string): Date {
+    if (!iso) return new Date();
+    const parsed = new Date(iso);
+    const now = new Date();
+    if (Number.isNaN(parsed.getTime()) || parsed.getTime() > now.getTime()) return now;
+    return parsed;
   }
 
   /** Insert a punch idempotently — a retried offline punch (same PK) is a no-op. */
