@@ -165,7 +165,15 @@
     },
     "outsideWindowChip": "Di Luar Jam Shift",
     "multiArea": "{{count}} lokasi",
-    "multiAreaHint": "Clock in diterima di salah satu lokasi di atas"
+    "multiAreaHint": "Clock in diterima di salah satu lokasi di atas",
+    "selectShiftTitle": "Pilih Shift",
+    "noShiftOptions": "Tidak ada shift yang tersedia saat ini",
+    "shiftDefault": "Disarankan",
+    "shiftPhase": {
+      "early": "Akan mulai",
+      "covering": "Sedang berjalan",
+      "grace": "Baru selesai"
+    }
   },
   "gpsSection": {
     "capturingLocation": "Mendapatkan lokasi...",

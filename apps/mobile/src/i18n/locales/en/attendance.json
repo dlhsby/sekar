@@ -165,7 +165,15 @@
     },
     "outsideWindowChip": "Outside Shift Window",
     "multiArea": "{{count}} locations",
-    "multiAreaHint": "Clock in is accepted at any of the locations above"
+    "multiAreaHint": "Clock in is accepted at any of the locations above",
+    "selectShiftTitle": "Select Shift",
+    "noShiftOptions": "No shifts available right now",
+    "shiftDefault": "Suggested",
+    "shiftPhase": {
+      "early": "Starting soon",
+      "covering": "In progress",
+      "grace": "Just ended"
+    }
   },
   "gpsSection": {
     "capturingLocation": "Getting your location...",

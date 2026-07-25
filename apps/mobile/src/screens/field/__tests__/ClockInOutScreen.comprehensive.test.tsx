@@ -599,12 +599,15 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
       });
 
-      // Phase 2C: clockIn called WITHOUT location_id (auto-detected from schedule)
+      // Phase 2C: clockIn called WITHOUT location_id (auto-detected from schedule).
+      // ADR-055: also carries an idempotency client uuid in the opts object.
       await waitFor(() => {
         expect(shiftsApi.clockIn).toHaveBeenCalledWith(
           -7.250445,
           112.768845,
-          'data:image/jpeg;base64,base64data'
+          'data:image/jpeg;base64,base64data',
+          undefined,
+          expect.objectContaining({ clientUuid: expect.any(String) })
         );
       });
 

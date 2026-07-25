@@ -11,6 +11,8 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { ImagePreviewModal, InfoTableRow } from '../../components/common';
 import { LocationMapModal, ShiftDetailModal } from '../../components/modals';
 import { AttendanceTypeSheet, type AttendanceAction } from '../../components/modals/AttendanceTypeSheet';
+import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
+import type { ShiftOption } from '../../types/api.types';
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
@@ -65,6 +67,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     scheduleScope,
     mapArea,
     hasScheduleToday,
+    shiftOptions,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
@@ -73,6 +76,13 @@ export const ClockInOutScreen = (): React.JSX.Element => {
 
   const [mapVisible, setMapVisible] = useState(false);
   const [typeSheetVisible, setTypeSheetVisible] = useState(false);
+  const [shiftPickerVisible, setShiftPickerVisible] = useState(false);
+  // ADR-055: which shift a clock-in is attributed to. Defaults to the server's
+  // suggested option; the picker only appears when there is a choice to make.
+  const [selectedShift, setSelectedShift] = useState<ShiftOption | null>(null);
+  useEffect(() => {
+    setSelectedShift(shiftOptions.find((o) => o.is_default) ?? shiftOptions[0] ?? null);
+  }, [shiftOptions]);
   const [detailShiftVisible, setDetailShiftVisible] = useState(false);
   const [statusSheetVisible, setStatusSheetVisible] = useState(false);
 
@@ -283,6 +293,30 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   </TouchableOpacity>
                 }
               />
+              {/* Pilih Shift — only when clocking in and the attribution window
+                  offers a choice (near midnight / dangling). ADR-055. */}
+              {isClockInAction && shiftOptions.length > 0 && (
+                <InfoTableRow
+                  label={t('attendance:clockInOut.selectShiftTitle')}
+                  value={
+                    <TouchableOpacity
+                      onPress={() => setShiftPickerVisible(true)}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('attendance:clockInOut.selectShiftTitle')}
+                      testID="clockinout-pick-shift"
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={styles.typeValue}
+                    >
+                      <NBText variant="body" color="black">
+                        {selectedShift?.shift_name ??
+                          selectedShift?.shift_code ??
+                          t('attendance:clockInOut.noShiftOptions')}
+                      </NBText>
+                      <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
+                    </TouchableOpacity>
+                  }
+                />
+              )}
               {/* MASUK / KELUAR summary — same as the home hero. */}
               <AttendanceSummaryRow
                 firstClockIn={attendance.firstClockIn}
@@ -404,6 +438,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           disabledHint={mismatchHint}
         />
 
+        {/* Shift picker (ADR-055 attribution window) — near midnight / dangling. */}
+        <ShiftPickerSheet
+          visible={shiftPickerVisible}
+          options={shiftOptions}
+          value={selectedShift}
+          onSelect={setSelectedShift}
+          onClose={() => setShiftPickerVisible(false)}
+        />
+
         {/* Shift detail — opened from the "Detail Shift" link; now carries the
             fields the card no longer shows (shift window, durasi, waktu sekarang,
             lokasi sekarang). */}
@@ -440,7 +483,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           <NBButton
             testID="clockinout-submit"
             title={isClockInAction ? t('attendance:list.button.clockIn') : t('attendance:list.button.clockOut')}
-            onPress={isClockInAction ? () => handleClockIn(goBack) : () => handleClockOut(goBack)}
+            onPress={
+              isClockInAction ? () => handleClockIn(goBack, selectedShift) : () => handleClockOut(goBack)
+            }
             variant="primary"
             size="lg"
             fullWidth

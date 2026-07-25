@@ -1,6 +1,7 @@
 {
   "tiles": {
     "attendance": "Kehadiran",
+    "timeRecord": "Pencatatan Waktu",
     "overtime": "Lembur",
     "tasks": "Tugas",
     "activities": "Aktivitas",
