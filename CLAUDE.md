@@ -5,7 +5,7 @@ Guidance for Claude Code. Docs are **product/feature-organized** — nav hub `sp
 ## Working here
 - Be brief. Use `specs/` for technical detail; **update existing docs, never create parallel ones**.
 - **Keep specs in sync (MANDATE).** Any feature work must update, in the same PR:
-  - `specs/features/<feature>/README.md` — its `## Changelog` tail (1 line, newest-first) + any changed decisions/links. A revamp fills the "Revamp notes" placeholder.
+  - `specs/features/<feature>/CHANGELOG.md` — prepend 1 line, newest-first (the per-feature changelog was split out of the README to keep the overview short; the README's `## Changelog` section just links here). Update any changed decisions/links in `README.md` itself. A revamp fills the "Revamp notes" placeholder.
   - `specs/COMPLETION_STATUS.md` — only if status/metrics/live-URLs change.
   - New cross-cutting decision → add an ADR under `specs/architecture/decisions/` + a row in its `README.md` index. Parking/removing/promoting a feature → update `specs/features/_archived/`.
 - **Dev flow:** feature branch → PR → `main` (PR-gated CI). Release = merge `main` → `staging` + approve. Commit `<type>: <desc>` (feat/fix/refactor/docs/test/chore/perf/ci). Branch first if on `main`.

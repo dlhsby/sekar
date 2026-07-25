@@ -83,6 +83,35 @@
       "label": "Attendance {{date}}, {{status}}"
     }
   },
+  "infoCard": {
+    "shift": "Scheduled Shift",
+    "status": "Attendance Status",
+    "clockInStart": "Clock-in start",
+    "duration": "Elapsed shift time",
+    "currentTime": "Current Time",
+    "assignedArea": "Assigned Area",
+    "areaStatus": "Area Status",
+    "currentLocation": "Current Location",
+    "detailShift": "Shift detail →",
+    "accuracy": "±{{value}}m",
+    "refreshLocation": "Refresh location",
+    "locationUnavailable": "Location unavailable",
+    "inArea": "In area",
+    "outArea": "Out of area",
+    "noArea": "No area",
+    "scopeUndefined": "Boundary not set",
+    "locating": "Locating…",
+    "whyStatus": "See why this attendance status"
+  },
+  "statusSheet": {
+    "clockIn": "Clock in",
+    "scheduledStart": "Scheduled start",
+    "why": {
+      "late": "You clocked in after the scheduled shift start, so attendance is recorded as late.",
+      "onTime": "You clocked in at or before the scheduled shift start, so attendance is recorded as on time.",
+      "noSchedule": "You have no scheduled shift today, so attendance is not judged on time or late."
+    }
+  },
   "clockInOut": {
     "noAreaAssigned": "No area assigned — you can still clock in",
     "contactSupervisor": "Contact your supervisor for area assignment",

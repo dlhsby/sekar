@@ -83,6 +83,35 @@
       "label": "Kehadiran {{date}}, {{status}}"
     }
   },
+  "infoCard": {
+    "shift": "Jadwal Shift",
+    "status": "Status Kehadiran",
+    "clockInStart": "Mulai clock in",
+    "duration": "Durasi shift berjalan",
+    "currentTime": "Waktu Sekarang",
+    "assignedArea": "Area Ditugaskan",
+    "areaStatus": "Status Area",
+    "currentLocation": "Lokasi sekarang",
+    "detailShift": "Detail Shift →",
+    "accuracy": "±{{value}}m",
+    "refreshLocation": "Perbarui lokasi",
+    "locationUnavailable": "Lokasi tidak tersedia",
+    "inArea": "Di area",
+    "outArea": "Di luar area",
+    "noArea": "Tanpa area",
+    "scopeUndefined": "Batas belum ditentukan",
+    "locating": "Lokasi…",
+    "whyStatus": "Lihat alasan status kehadiran"
+  },
+  "statusSheet": {
+    "clockIn": "Clock in",
+    "scheduledStart": "Jadwal mulai",
+    "why": {
+      "late": "Anda clock in setelah jadwal shift dimulai, jadi kehadiran tercatat terlambat.",
+      "onTime": "Anda clock in sebelum atau tepat pada jadwal shift, jadi kehadiran tercatat tepat waktu.",
+      "noSchedule": "Anda tidak memiliki jadwal shift hari ini, jadi kehadiran tidak dinilai tepat waktu atau terlambat."
+    }
+  },
   "clockInOut": {
     "noAreaAssigned": "Tanpa area penugasan — Anda tetap dapat clock in",
     "contactSupervisor": "Hubungi supervisor untuk penugasan area",

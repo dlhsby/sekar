@@ -9,6 +9,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
@@ -81,6 +82,9 @@ interface LocationMapModalProps {
    * icon. Omitted → the default green Google pin.
    */
   areaMarker?: { iconName: string; color: string };
+  /** When provided, a refresh button appears in the header to re-read the GPS. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
 /** A small teardrop pin (circle badge + downward tip) for react-native-maps. */
@@ -163,6 +167,8 @@ export function LocationMapModal({
   markerTitle,
   workerMarker,
   areaMarker,
+  onRefresh,
+  refreshing = false,
 }: LocationMapModalProps) {
   const { t } = useTranslation();
   const defaultTitle = title ?? t('components:locationMap.defaultTitle');
@@ -330,16 +336,43 @@ export function LocationMapModal({
 
       {/* Info strip — with padding since noPadding applies to the sheet container */}
       <View style={styles.infoStrip}>
+        {area?.name ? (
+          <View style={styles.areaNameRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={16} color={nbColors.gray700} />
+            <NBText variant="body" color="black" style={styles.areaNameText} numberOfLines={1}>
+              {area.name}
+            </NBText>
+          </View>
+        ) : null}
         {hasCoords ? (
           <>
-            <NBText
-              variant="mono-sm"
-              color="black"
-              style={styles.coordsFont}
-              accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
-            >
-              {lat!.toFixed(6)}, {lng!.toFixed(6)}
-            </NBText>
+            <View style={styles.coordsRow}>
+              <NBText
+                variant="mono-sm"
+                color="black"
+                style={[styles.coordsFont, styles.coordsText]}
+                accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
+              >
+                {lat!.toFixed(6)}, {lng!.toFixed(6)}
+              </NBText>
+              {onRefresh ? (
+                <TouchableOpacity
+                  onPress={onRefresh}
+                  disabled={refreshing}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('attendance:infoCard.refreshLocation')}
+                  testID="location-map-refresh"
+                  style={styles.refreshButton}
+                >
+                  {refreshing ? (
+                    <ActivityIndicator size="small" color={nbColors.black} />
+                  ) : (
+                    <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                  )}
+                </TouchableOpacity>
+              ) : null}
+            </View>
 
             {(location.accuracy !== null || !hideAreaStatus) ? (
               <View style={styles.infoRow}>
@@ -420,17 +453,44 @@ const styles = StyleSheet.create({
   infoStrip: {
     paddingHorizontal: nbSpacing.md,
     paddingVertical: nbSpacing.sm,
-    gap: nbSpacing.xs,
+    gap: nbSpacing.sm,
   },
   coordsFont: {
     // override mono-sm with platform monospace fallback
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
   },
+  areaNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  areaNameText: {
+    flexShrink: 1,
+    fontWeight: '700',
+  },
+  coordsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: nbSpacing.sm,
+  },
+  coordsText: {
+    flexShrink: 1,
+  },
+  refreshButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
+  },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: nbSpacing.xs,
   },
   accuracyText: {
     color: nbColors.gray700,
@@ -461,9 +521,7 @@ const styles = StyleSheet.create({
   areaBadgeTextOutside: {
     color: nbColors.statusIdle,
   },
-  updatedTopMargin: {
-    marginTop: nbSpacing.xs,
-  },
+  updatedTopMargin: {},
 });
 
 const pinStyles = StyleSheet.create({

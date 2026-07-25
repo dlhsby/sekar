@@ -23,5 +23,5 @@ Authentication and role-based access for all SEKAR users. Username **or** phone-
 - [geography](../geography/README.md) (role scope by rayon/location)
 
 ## Changelog
-- 2026-07-12 — **Area→Location terminology sweep.** Updated onboarding location preview and role scope references.
-- 2026-07-10 — Spec created in product-docs restructure. History: [`../../history/CHANGELOG.md`](../../history/CHANGELOG.md).
+
+Moved to [CHANGELOG.md](./CHANGELOG.md) (newest first) to keep this overview short. Add new entries there.

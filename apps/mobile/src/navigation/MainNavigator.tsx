@@ -138,15 +138,20 @@ const NotificationPreferencesWithHeader = withProfileHeader(
 );
 const EditProfileWithHeader = withProfileHeader(EditProfileScreen, i18n.t('profile:menu.editProfile'));
 const DiagnosticsWithHeader = withProfileHeader(DiagnosticsScreen, i18n.t('profile:menu.diagnostics'));
-// Back returns to the tab the bell was tapped from (`origin`), or Home as a
-// fallback. Routing to a fixed tab (rather than a stack pop) also keeps the
-// deep-link round-trip — inbox → detail → back → inbox → back — from looping.
+// Back is a real stack pop, so it plays the inverse of the enter animation
+// (slide_from_right → slides back out to the right). goBack() returns to the tab
+// the bell was tapped from because the tab navigator keeps its own state; the
+// `origin` navigate is only a fallback when the inbox somehow can't pop.
 const NotificationsWithHeader = withProfileHeader(
   NotificationsScreen,
   i18n.t('settings:tabs.notifications'),
   (navigation, route) => {
-    const origin = (route?.params as { origin?: string } | undefined)?.origin;
-    navigation.navigate('Tabs', { screen: origin ?? 'Home' });
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      const origin = (route?.params as { origin?: string } | undefined)?.origin;
+      navigation.navigate('Tabs', { screen: origin ?? 'Home' });
+    }
   },
 );
 

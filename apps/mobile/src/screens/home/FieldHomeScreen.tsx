@@ -6,16 +6,17 @@ import {
   StyleSheet,
   AccessibilityInfo,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
-import { LoadingSpinner, AppUpdateBanner, InfoTableRow, DateTimeValue } from '../../components/common';
-import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
+import { LoadingSpinner, AppUpdateBanner, InfoTableRow } from '../../components/common';
+import { NBAlert, NBBackgroundPattern, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
+import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
+import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
@@ -65,6 +66,8 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Live shift timer
   const [timer, setTimer] = useState('00:00:00');
+  // Live wall clock for the shared "Waktu Sekarang" row.
+  const [now, setNow] = useState(() => new Date());
 
   // Active-shift hero collapse (default closed). Toggled by tapping the whole card;
   // resets to closed when the screen blurs (useCollapsible).
@@ -72,6 +75,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Modal states
   const [detailShift, setDetailShift] = useState<Shift | null>(null);
+  const [statusSheetVisible, setStatusSheetVisible] = useState(false);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [tasksModalVisible, setTasksModalVisible] = useState(false);
@@ -142,6 +146,12 @@ export function FieldHomeScreen(): React.JSX.Element {
   useEffect(() => {
     loadInitialData();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loader is a stable callback defined below; effect runs on mount by design
+  }, []);
+
+  // Live wall clock (every second) for the "Waktu Sekarang" row.
+  useEffect(() => {
+    const tick = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(tick);
   }, []);
 
   // Live timer (every second) for the active shift.
@@ -322,11 +332,17 @@ export function FieldHomeScreen(): React.JSX.Element {
         ? t('home:field.hero.location.inArea')
         : t('home:field.hero.location.outArea')
     : (scopeLabelText ?? t('home:field.hero.location.noArea'));
-  const heroAreaName =
-    currentShift?.area?.name ??
-    scheduleScope.name ??
-    assignedArea?.name ??
-    t('home:field.hero.location.noArea');
+  // Shift window for the Detail Shift modal (e.g. "Shift 3 · 21:00–05:00").
+  const heroShiftDef = currentShift?.shift_definition ?? rosterShift;
+  const heroShiftText = heroShiftDef
+    ? `${heroShiftDef.name} · ${heroShiftDef.start_time.slice(0, 5)}–${heroShiftDef.end_time.slice(0, 5)}`
+    : null;
+  // Which explanation the Status Kehadiran pill opens.
+  const statusKind: AttendanceStatusKind = !hasScheduleToday
+    ? 'noSchedule'
+    : attendance.isLate
+      ? 'late'
+      : 'onTime';
 
   return (
     <NBBackgroundPattern
@@ -420,67 +436,31 @@ export function FieldHomeScreen(): React.JSX.Element {
               />
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
-                  <InfoTableRow label={t('home:field.hero.labels.clockInStart')} value={<DateTimeValue source={currentShift.clock_in_time} />} />
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.status')}
-                    value={
-                      hasScheduleToday ? (
-                        <NBBadge
-                          text={attendance.isLate ? t('home:field.hero.status.late') : t('home:field.hero.status.onTime')}
-                          color={attendance.isLate ? 'danger' : 'success'}
-                          size="sm"
-                        />
-                      ) : (
-                        <NBBadge text={t('home:field.hero.status.noSchedule')} color="gray" size="sm" />
-                      )
-                    }
+                  {/* Shared, simplified rows — identical to the Rekam Kehadiran card:
+                      Status Kehadiran (tap → why) + Status Area (pill → map, refresh
+                      beside). The rest lives in the Detail Shift modal. */}
+                  <AttendanceInfoRows
+                    status={{
+                      tone: !hasScheduleToday ? 'neutral' : attendance.isLate ? 'bad' : 'ok',
+                      label: !hasScheduleToday
+                        ? t('home:field.hero.status.noSchedule')
+                        : attendance.isLate
+                          ? t('home:field.hero.status.late')
+                          : t('home:field.hero.status.onTime'),
+                      onPress: () => setStatusSheetVisible(true),
+                      a11yLabel: t('attendance:infoCard.whyStatus'),
+                    }}
+                    areaStatus={{
+                      tone: areaTone,
+                      label: areaLabel,
+                      onPress: () => setLocationMapVisible(true),
+                      disabled: !hasActiveShift,
+                      a11yLabel: t('home:field.hero.a11y.locationStatus', { status: areaLabel }),
+                    }}
+                    onRefreshLocation={refreshLocation}
+                    refreshingLocation={homeLocation.loading}
+                    onDetailShift={() => setDetailShift(currentShift)}
                   />
-                  <InfoTableRow label={t('home:field.hero.labels.assignedArea')} value={heroAreaName} numberOfLines={1} />
-                  {/* Status Area — the in/out-area pill (in the header while
-                      collapsed) with the GPS refresh beside it. The raw
-                      coordinates row was dropped as noise; tap the pill → map. */}
-                  <InfoTableRow
-                    label={t('home:field.hero.labels.areaStatus')}
-                    value={
-                      <View style={styles.heroAreaStatusValue}>
-                        <TouchableOpacity
-                          onPress={() => setLocationMapVisible(true)}
-                          disabled={!hasActiveShift}
-                          activeOpacity={0.7}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('home:field.hero.a11y.locationStatus', { status: areaLabel })}
-                        >
-                          <StatusPill tone={areaTone} label={areaLabel} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={refreshLocation}
-                          disabled={homeLocation.loading}
-                          style={styles.heroGpsRefresh}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('home:field.hero.a11y.refreshLocation')}
-                          testID="hero-refresh-location"
-                        >
-                          {homeLocation.loading ? (
-                            <ActivityIndicator size="small" color={nbColors.black} />
-                          ) : (
-                            <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                    }
-                  />
-                  <InfoTableRow label={t('home:field.hero.labels.duration')} value={timer.slice(0, 5)} />
-                  <TouchableOpacity
-                    onPress={() => setDetailShift(currentShift)}
-                    activeOpacity={0.7}
-                    accessibilityRole="button"
-                    style={styles.heroDetailLink}
-                    testID="shift-detail-link"
-                  >
-                    <NBText variant="mono-sm" color="gray700" uppercase style={styles.heroDetailText}>
-                      {t('home:field.hero.link.shiftDetail')}
-                    </NBText>
-                  </TouchableOpacity>
                   {isClockable && (
                     <View style={styles.heroButton}>
                       <NBButton
@@ -625,6 +605,21 @@ export function FieldHomeScreen(): React.JSX.Element {
         onClose={() => setDetailShift(null)}
         shift={detailShift}
         scopeLabel={scopeLabelText}
+        shiftText={heroShiftText}
+        durationText={currentShift ? timer.slice(0, 5) : null}
+        currentTime={now}
+        currentLocation={{
+          latitude: homeLocation.latitude,
+          longitude: homeLocation.longitude,
+          accuracy: homeLocation.accuracy,
+        }}
+      />
+      <AttendanceStatusSheet
+        visible={statusSheetVisible}
+        onClose={() => setStatusSheetVisible(false)}
+        status={statusKind}
+        clockInTime={currentShift?.clock_in_time ?? null}
+        shiftStart={rosterShift?.start_time ?? null}
       />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
@@ -657,6 +652,8 @@ export function FieldHomeScreen(): React.JSX.Element {
         hideAreaStatus={!hasBoundary}
         workerMarker={workerMapMarker(user?.role, hasBoundary && !homeLocation.isWithinArea)}
         areaMarker={homeMapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
+        onRefresh={refreshLocation}
+        refreshing={homeLocation.loading}
       />
     </NBBackgroundPattern>
   );
@@ -696,26 +693,7 @@ const styles = StyleSheet.create({
   heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
   heroIdleTitle: { marginTop: 2 },
   // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
-  heroAreaStatusValue: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: nbSpacing.sm,
-  },
-  // Compact white refresh button beside the area-status pill.
-  heroGpsRefresh: {
-    width: 30,
-    height: 30,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: nbColors.white,
-    borderWidth: nbBorders.widthBase,
-    borderColor: nbColors.black,
-    borderRadius: nbRadius.sm,
-  },
   heroButton: { marginTop: nbSpacing.md },
-  heroDetailLink: { marginTop: nbSpacing.sm, alignSelf: 'flex-start' },
-  heroDetailText: { letterSpacing: 0.6 },
 
   /* Tiles */
   tiles: { flexDirection: 'row', gap: nbSpacing.sm },

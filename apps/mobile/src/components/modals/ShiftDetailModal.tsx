@@ -26,9 +26,28 @@ interface ShiftDetailModalProps {
    * was simply no polygon to be inside of.
    */
   scopeLabel?: string | null;
+  // ── The card was simplified to two pills; the detail it used to show now lives
+  // here (all optional so other callers of this modal are unaffected). ──
+  /** "Shift 3 · 21:00–05:00". */
+  shiftText?: string | null;
+  /** Elapsed shift time "HH:MM". */
+  durationText?: string | null;
+  /** Live wall clock → "Waktu Sekarang". */
+  currentTime?: Date | string | null;
+  /** Live GPS → "Lokasi sekarang". */
+  currentLocation?: { latitude: number | null; longitude: number | null; accuracy: number | null } | null;
 }
 
-export function ShiftDetailModal({ visible, onClose, shift, scopeLabel }: ShiftDetailModalProps) {
+export function ShiftDetailModal({
+  visible,
+  onClose,
+  shift,
+  scopeLabel,
+  shiftText,
+  durationText,
+  currentTime,
+  currentLocation,
+}: ShiftDetailModalProps) {
   const { t: tAttendance } = useTranslation('attendance');
   const { t } = useTranslation();
 
@@ -77,6 +96,12 @@ export function ShiftDetailModal({ visible, onClose, shift, scopeLabel }: ShiftD
         </View>
       ) : (
         <View>
+          {!!shiftText && (
+            <InfoRow icon="calendar-clock" label={tAttendance('infoCard.shift')}>
+              <NBText variant="body" color="black">{shiftText}</NBText>
+            </InfoRow>
+          )}
+
           <InfoRow
             icon="map-marker"
             label={tAttendance('shiftDetail.area')}
@@ -112,6 +137,31 @@ export function ShiftDetailModal({ visible, onClose, shift, scopeLabel }: ShiftD
                 : 'N/A'}
             </NBText>
           </InfoRow>
+
+          {!!durationText && (
+            <InfoRow icon="timer-outline" label={tAttendance('infoCard.duration')} even>
+              <NBText variant="body" color="black">{durationText}</NBText>
+            </InfoRow>
+          )}
+
+          {!!currentTime && (
+            <InfoRow icon="clock-outline" label={tAttendance('infoCard.currentTime')}>
+              <NBText variant="body" color="black">{formatDateTime(currentTime)}</NBText>
+            </InfoRow>
+          )}
+
+          {!!currentLocation && currentLocation.latitude != null && currentLocation.longitude != null && (
+            <InfoRow icon="map-marker-radius-outline" label={tAttendance('infoCard.currentLocation')} even>
+              <NBText variant="mono-sm" color="black">
+                {`${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`}
+              </NBText>
+              {currentLocation.accuracy != null && (
+                <NBText variant="caption" color="gray600">
+                  {tAttendance('infoCard.accuracy', { value: Math.round(currentLocation.accuracy) })}
+                </NBText>
+              )}
+            </InfoRow>
+          )}
 
           {/* Location validation — only meaningful when there IS a boundary.
               A kota/rayon/kawasan-scope shift has none, so showing "Luar Area, 0m"
@@ -244,8 +294,10 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     fontWeight: '600',
   },
+  // Values align to the right so every row reads label-left / value-right.
   rowValue: {
     flex: 1,
+    alignItems: 'flex-end',
   },
   // Validation section
   validationSection: {
