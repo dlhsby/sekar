@@ -6,6 +6,7 @@ import { Shift } from './entities/shift.entity';
 import { AttendancePunch } from './entities/attendance-punch.entity';
 import { PunchLabel } from './enums/punch-label.enum';
 import { AttendanceDerivationService } from './services/attendance-derivation.service';
+import { ShiftAttributionService } from './services/shift-attribution.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { LocationsService } from '../locations/locations.service';
@@ -43,6 +44,7 @@ export class ShiftsService {
     @InjectRepository(AttendancePunch)
     private readonly punchRepository: Repository<AttendancePunch>,
     private readonly derivation: AttendanceDerivationService,
+    private readonly attribution: ShiftAttributionService,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     @InjectRepository(User)
@@ -232,21 +234,8 @@ export class ShiftsService {
       }
     }
 
-    // 4. Session key. If a session is already OPEN, this clock-in CONTINUES it
-    //    (a redundant tap or a re-entry) — reuse its service_day + definition so
-    //    the punch lands on the same key even across midnight. Without this a
-    //    post-midnight re-clock-in would compute *today's* service_day and spawn
-    //    a SECOND open row (ADR-055 review finding #1). Only when nothing is open
-    //    do we start a fresh session (today's date + the worker's shift).
-    const openSession = await this.findOpenSessionRow(userId, isOvertime);
-    const shiftDefId = openSession
-      ? openSession.shift_definition_id
-      : isOvertime
-        ? null
-        : ((await this.getUserShiftOrCurrent(userId))?.id ?? null);
-    const serviceDay = openSession
-      ? TimezoneUtil.jakartaDateOf(openSession.clock_in_time)
-      : TimezoneUtil.jakartaDateString();
+    // 4. Session key (service_day + shift-definition) for this punch.
+    const { shiftDefId, serviceDay } = await this.resolveClockInKey(userId, isOvertime);
 
     // 5. Append the immutable clock-in punch (idempotent on the client uuid).
     await this.insertPunch({
@@ -335,7 +324,10 @@ export class ShiftsService {
       );
     }
 
-    const serviceDay = TimezoneUtil.jakartaDateOf(shift.clock_in_time);
+    // Explicit service_day (ADR-055); fall back to the clock-in's WIB date for
+    // legacy rows created before the column existed.
+    const serviceDay =
+      shift.service_day ?? TimezoneUtil.jakartaDateOf(shift.clock_in_time ?? new Date());
     const isOvertime = shift.is_overtime;
     const shiftDefId = shift.shift_definition_id;
 
@@ -501,6 +493,7 @@ export class ShiftsService {
     row.user_id = userId;
     row.shift_definition_id = shiftDefId;
     row.is_overtime = isOvertime;
+    row.service_day = serviceDay; // explicit key — may differ from clock_in's WIB date
     row.location_id = s.firstIn?.location_id ?? row.location_id ?? null;
 
     // Clock-in facet = the first-in punch.
@@ -532,6 +525,49 @@ export class ShiftsService {
   }
 
   /**
+   * The (service_day, shift_definition) a clock-in belongs to.
+   *   1. An already-OPEN session continues on its own key — so a redundant tap or
+   *      a post-midnight re-entry lands on the same session, never a 2nd open row.
+   *   2. Overtime is not attributed to a shift-definition (ADR-014).
+   *   3. Otherwise the ADR-055 attribution window picks the rostered shift (and
+   *      its service-day — yesterday for a crossing shift past midnight) whose
+   *      [start − early_window, end + cutoff_grace] covers now.
+   *   4. Fallback (unscheduled / ad-hoc, or no schedules provider): the legacy
+   *      resolution (configured shift / time-of-day match) on today's date.
+   */
+  private async resolveClockInKey(
+    userId: string,
+    isOvertime: boolean,
+  ): Promise<{ shiftDefId: string | null; serviceDay: string }> {
+    const openSession = await this.findOpenSessionRow(userId, isOvertime);
+    if (openSession) {
+      return {
+        shiftDefId: openSession.shift_definition_id,
+        serviceDay:
+          openSession.service_day ??
+          TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
+      };
+    }
+    if (isOvertime) {
+      return { shiftDefId: null, serviceDay: TimezoneUtil.jakartaDateString() };
+    }
+    if (this.dailySchedulesService) {
+      const candidates = await this.dailySchedulesService.getAttributionCandidates(userId);
+      const match = this.attribution.resolveBest(candidates, TimezoneUtil.jakartaNow());
+      if (match) {
+        return {
+          shiftDefId: match.candidate.shift_definition_id,
+          serviceDay: match.candidate.service_day,
+        };
+      }
+    }
+    return {
+      shiftDefId: (await this.getUserShiftOrCurrent(userId))?.id ?? null,
+      serviceDay: TimezoneUtil.jakartaDateString(),
+    };
+  }
+
+  /**
    * The worker's currently-open session-projection row (clock_out_time IS NULL)
    * for the given overtime flag, newest first. Used by clock-in to CONTINUE an
    * open session (its key) rather than open a second row — the fix for a
@@ -545,11 +581,13 @@ export class ShiftsService {
   }
 
   /**
-   * The session-projection row for a key, matched by the WIB day of its clock-in.
-   * Prefers a currently-OPEN row (clock_out_time IS NULL), then newest, so both a
-   * re-entry clock-in and a clock-out target the live session — never a stale
-   * closed duplicate that could linger on cutover day (a pre-cutover `shifts` row
-   * and a new punch-session sharing the key). Returns null for a brand-new session.
+   * The session-projection row for a key, matched on the EXPLICIT `service_day`
+   * (ADR-055) — not the WIB date of clock_in_time, which the attribution window
+   * can put on a different day. Prefers a currently-OPEN row (clock_out_time IS
+   * NULL), then newest, so both a re-entry clock-in and a clock-out target the
+   * live session — never a stale closed duplicate. Returns null for a brand-new
+   * session (and for legacy rows whose service_day was never backfilled, which
+   * are historical closed sessions never re-projected).
    */
   private async findSessionRow(
     userId: string,
@@ -562,9 +600,9 @@ export class ShiftsService {
       .where('shift.user_id = :userId', { userId })
       .andWhere('shift.is_overtime = :isOvertime', { isOvertime })
       .andWhere('shift.deleted_at IS NULL')
-      .andWhere("DATE(shift.clock_in_time AT TIME ZONE 'Asia/Jakarta') = :serviceDay", {
-        serviceDay,
-      });
+      // Match on the EXPLICIT service_day (ADR-055) — not the WIB date of
+      // clock_in_time, which the attribution window can put on a different day.
+      .andWhere('shift.service_day = :serviceDay', { serviceDay });
     if (shiftDefId === null) {
       qb.andWhere('shift.shift_definition_id IS NULL');
     } else {

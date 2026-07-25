@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ShiftsController } from './shifts.controller';
 import { ShiftsService } from './shifts.service';
 import { AttendanceDerivationService } from './services/attendance-derivation.service';
+import { ShiftAttributionService } from './services/shift-attribution.service';
 import { Shift } from './entities/shift.entity';
 import { AttendancePunch } from './entities/attendance-punch.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
@@ -34,7 +35,7 @@ import { SettingsModule } from '../settings/settings.module';
     SettingsModule, // ADR-049: runtime min-shift-duration via SystemConfigService
   ],
   controllers: [ShiftsController],
-  providers: [ShiftsService, AttendanceDerivationService],
-  exports: [ShiftsService, AttendanceDerivationService],
+  providers: [ShiftsService, AttendanceDerivationService, ShiftAttributionService],
+  exports: [ShiftsService, AttendanceDerivationService, ShiftAttributionService],
 })
 export class ShiftsModule {}

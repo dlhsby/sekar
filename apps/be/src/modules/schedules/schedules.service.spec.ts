@@ -1577,4 +1577,61 @@ describe('SchedulesService', () => {
       expect(result.size).toBe(0);
     });
   });
+
+  describe('getAttributionCandidates (ADR-055)', () => {
+    const sd = (id: string, start: string, end: string, crossing = false) => ({
+      id,
+      start_time: start,
+      end_time: end,
+      crosses_midnight: crossing,
+      early_window_min: 60,
+      cutoff_grace_min: 60,
+    });
+
+    it('maps PLANNED/PRESENT yesterday+today rows, excludes leave/off, dedups per (day,shift)', async () => {
+      rosterRepo.find
+        // yesterday: a crossing Shift 3 (PLANNED) + an OFF row (excluded)
+        .mockResolvedValueOnce([
+          {
+            schedule_date: '2026-07-24',
+            status: ScheduleStatus.PLANNED,
+            shift_definition: sd('sd-3', '21:00:00', '05:00:00', true),
+          },
+          {
+            schedule_date: '2026-07-24',
+            status: ScheduleStatus.OFF,
+            shift_definition: sd('sd-1', '06:00:00', '15:00:00'),
+          },
+        ])
+        // today: Shift 1 PRESENT + duplicate Shift 1 PLANNED (dedup) + a LEAVE row (excluded)
+        .mockResolvedValueOnce([
+          {
+            schedule_date: '2026-07-25',
+            status: ScheduleStatus.PRESENT,
+            shift_definition: sd('sd-1', '06:00:00', '15:00:00'),
+          },
+          {
+            schedule_date: '2026-07-25',
+            status: ScheduleStatus.PLANNED,
+            shift_definition: sd('sd-1', '06:00:00', '15:00:00'),
+          },
+          {
+            schedule_date: '2026-07-25',
+            status: ScheduleStatus.LEAVE_SICK,
+            shift_definition: sd('sd-2', '15:00:00', '23:00:00'),
+          },
+        ]);
+
+      const result = await service.getAttributionCandidates('user-1');
+
+      expect(result.map((c) => c.shift_definition_id)).toEqual(['sd-3', 'sd-1']);
+      expect(result.find((c) => c.shift_definition_id === 'sd-3')).toMatchObject({
+        service_day: '2026-07-24',
+        crosses_midnight: true,
+        early_window_min: 60,
+        cutoff_grace_min: 60,
+      });
+      expect(result.filter((c) => c.shift_definition_id === 'sd-1')).toHaveLength(1); // deduped
+    });
+  });
 });

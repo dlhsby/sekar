@@ -16,6 +16,7 @@ import {
   type FindOptionsWhere,
 } from 'typeorm';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
+import type { AttributionCandidate } from '../shifts/services/shift-attribution.service';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { Location } from '../locations/entities/location.entity';
@@ -1713,6 +1714,44 @@ export class SchedulesService {
   async getShiftForDay(userId: string, date: string) {
     const row = await this.findByUserAndDate(userId, date);
     return row?.shift_definition ?? null;
+  }
+
+  /**
+   * The worker's shifts that a clock-in RIGHT NOW could be attributed to
+   * (ADR-055). Yesterday + today rostered rows the worker is expected to work
+   * (PLANNED / PRESENT), mapped to attribution candidates carrying each shift's
+   * window. Yesterday is included so a post-midnight clock-in can attribute to a
+   * crossing shift's tail; the `ShiftAttributionService` picks which one by the
+   * early_window / cutoff_grace windows. Deduped per (service_day, shift).
+   */
+  async getAttributionCandidates(userId: string): Promise<AttributionCandidate[]> {
+    const today = TimezoneUtil.jakartaDateString();
+    const yesterday = this.addDaysToDate(today, -1);
+    const rows = [
+      ...(await this.findAllByUserAndDate(userId, yesterday)),
+      ...(await this.findAllByUserAndDate(userId, today)),
+    ];
+
+    const candidates: AttributionCandidate[] = [];
+    const seen = new Set<string>();
+    for (const r of rows) {
+      const sd = r.shift_definition;
+      if (!sd) continue;
+      if (r.status !== ScheduleStatus.PLANNED && r.status !== ScheduleStatus.PRESENT) continue;
+      const key = `${r.schedule_date}:${sd.id}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      candidates.push({
+        shift_definition_id: sd.id,
+        service_day: r.schedule_date,
+        start_time: sd.start_time,
+        end_time: sd.end_time,
+        crosses_midnight: sd.crosses_midnight,
+        early_window_min: sd.early_window_min ?? 60,
+        cutoff_grace_min: sd.cutoff_grace_min ?? 60,
+      });
+    }
+    return candidates;
   }
 
   /**

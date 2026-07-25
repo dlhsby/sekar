@@ -67,6 +67,21 @@ export class Shift {
   @Column({ type: 'uuid', nullable: true })
   shift_definition_id: string | null;
 
+  /**
+   * The WIB service-day this session belongs to (ADR-055) — the session key,
+   * stored EXPLICITLY rather than derived from `clock_in_time`. They differ when
+   * the attribution window puts a first punch on another day: a night worker's
+   * first clock-in at 00:30 belongs to the PREVIOUS day's crossing shift, so its
+   * `service_day` is yesterday even though `clock_in_time` is today. Nullable for
+   * historical rows backfilled before this column existed.
+   */
+  @ApiProperty({
+    description: 'WIB service-day the session belongs to (YYYY-MM-DD)',
+    nullable: true,
+  })
+  @Column({ type: 'date', nullable: true })
+  service_day?: string | null;
+
   @ManyToOne(() => ShiftDefinition, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'shift_definition_id' })
   shift_definition: ShiftDefinition;

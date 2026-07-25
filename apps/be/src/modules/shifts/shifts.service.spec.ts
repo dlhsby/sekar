@@ -6,6 +6,7 @@ import { Shift } from './entities/shift.entity';
 import { AttendancePunch } from './entities/attendance-punch.entity';
 import { PunchLabel } from './enums/punch-label.enum';
 import { AttendanceDerivationService } from './services/attendance-derivation.service';
+import { ShiftAttributionService } from './services/shift-attribution.service';
 import { LocationsService } from '../locations/locations.service';
 import { S3Service } from '../../shared/services/s3.service';
 import { ClockInDto } from './dto/clock-in.dto';
@@ -19,6 +20,7 @@ import { User } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
 import { UserLocationsService } from '../user-locations/user-locations.service';
 import { SystemConfigService } from '../settings/services/system-config.service';
+import { SchedulesService } from '../schedules/schedules.service';
 
 describe('ShiftsService', () => {
   let module: TestingModule;
@@ -135,6 +137,14 @@ describe('ShiftsService', () => {
     getNumber: jest.fn((_key: string, fallback: number) => fallback),
   };
 
+  // Daily roster provider. Defaults keep existing tests on the legacy path
+  // (empty areas, no rostered shift, no attribution candidates → fallback).
+  const mockSchedulesService = {
+    getActiveAreasNow: jest.fn().mockResolvedValue([]),
+    getShiftForDay: jest.fn().mockResolvedValue(null),
+    getAttributionCandidates: jest.fn().mockResolvedValue([]),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -150,6 +160,10 @@ describe('ShiftsService', () => {
         {
           provide: AttendanceDerivationService,
           useValue: derivation,
+        },
+        {
+          provide: ShiftAttributionService,
+          useValue: new ShiftAttributionService(),
         },
         {
           provide: getRepositoryToken(ShiftDefinition),
@@ -182,6 +196,10 @@ describe('ShiftsService', () => {
         {
           provide: SystemConfigService,
           useValue: mockSystemConfig,
+        },
+        {
+          provide: SchedulesService,
+          useValue: mockSchedulesService,
         },
       ],
     }).compile();
@@ -468,6 +486,39 @@ describe('ShiftsService', () => {
       expect(saved.clock_out_photo_url).toBeNull(); // NOT 'old-out.jpg' (would be stale if undefined)
       expect(saved.clock_out_gps_lat).toBeNull();
       expect(saved.clock_out_gps_lng).toBeNull();
+    });
+
+    it('attributes a fresh clock-in via the ADR-055 window resolver (shift + service-day)', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(null); // no open session → fresh path
+      // A wide-window candidate so resolveBest matches regardless of the real clock.
+      mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([
+        {
+          shift_definition_id: 'sd-window',
+          service_day: '2026-01-01',
+          start_time: '00:00',
+          end_time: '23:59',
+          crosses_midnight: false,
+          early_window_min: 100_000_000, // ~190y — always in window regardless of the real clock
+          cutoff_grace_min: 100_000_000,
+        },
+      ]);
+      mockPunches = [inPunch({ shift_definition_id: 'sd-window' })];
+      let saved: any;
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(null));
+      mockRepository.create.mockImplementation((r: any) => r);
+      mockRepository.save.mockImplementation((r: any) => {
+        saved = r;
+        return Promise.resolve({ id: 'session-1', ...r });
+      });
+
+      await service.clockIn(mockUser.id, clockInDto);
+
+      expect(mockSchedulesService.getAttributionCandidates).toHaveBeenCalledWith(mockUser.id);
+      expect(saved.shift_definition_id).toBe('sd-window'); // attributed shift, not the time-match fallback
+      // The EXPLICIT service_day comes from attribution — may differ from the
+      // clock-in's WIB date (the crux of the night-shift-past-midnight fix).
+      expect(saved.service_day).toBe('2026-01-01');
     });
   });
 
