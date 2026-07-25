@@ -9,6 +9,8 @@ import type { ActiveUserData } from '../types/api.types';
 import type { TrackingStatus, LiveUser, PresenceActivity } from '../types/models.types';
 import type { Region } from 'react-native-maps';
 import { nbColors } from '../constants/nbTokens';
+import type { GeoJsonGeometry } from '../types/geo.types';
+import type { ScheduleScope } from './scheduleScope';
 
 // ─── Phase 2D: Four-Status Model ──────────────────────────────────────────────
 
@@ -68,6 +70,85 @@ export function getRoleIcon(role: string): string {
     superadmin: 'shield-crown',
   };
   return icons[role] ?? 'account-hard-hat';
+}
+
+// ─── Location map modal: shared area + marker builders ───────────────────────
+// The home hero and the clock-in/out screen open the SAME LocationMapModal, so
+// the area they draw and the pins they drop must be computed the same way. These
+// helpers are the single source for both, so the two screens can never diverge.
+
+/** The assigned boundary to frame on the location map modal. */
+export interface MapArea {
+  gps_lat: number;
+  gps_lng: number;
+  boundary_polygon: GeoJsonGeometry | null;
+  name?: string;
+}
+
+/**
+ * Normalize an assigned-area object into a MapArea the LocationMapModal can draw:
+ * a centre point + boundary polygon + name. The centre falls back to the
+ * polygon's first vertex so a rayon/kawasan scope whose `center_*` column is null
+ * still frames. Coordinates are Number-coerced because TypeORM emits decimal
+ * columns as strings. Returns undefined when there is neither a usable centre nor
+ * a polygon vertex.
+ */
+export function buildMapArea(
+  area:
+    | {
+        gps_lat?: number | string | null;
+        gps_lng?: number | string | null;
+        boundary_polygon?: GeoJsonGeometry | null;
+        name?: string;
+      }
+    | null
+    | undefined,
+): MapArea | undefined {
+  if (!area) return undefined;
+  const num = (v: number | string | null | undefined): number | null => {
+    if (v == null) return null;
+    const n = Number(v);
+    return isNaN(n) ? null : n;
+  };
+  let lat = num(area.gps_lat);
+  let lng = num(area.gps_lng);
+  const bp = area.boundary_polygon ?? null;
+  if ((lat === null || lng === null) && bp) {
+    // Defensive traversal — a Polygon's outer ring, or a MultiPolygon's first
+    // polygon's outer ring; grab its first vertex ([lng, lat]) as the centre.
+    const coords = (bp as { coordinates?: unknown }).coordinates as unknown[] | undefined;
+    const ring = bp.type === 'Polygon' ? coords?.[0] : (coords?.[0] as unknown[])?.[0];
+    const first = Array.isArray(ring) ? (ring as unknown[])[0] : undefined;
+    if (Array.isArray(first)) {
+      lng = num(first[0] as number | string);
+      lat = num(first[1] as number | string);
+    }
+  }
+  if (lat === null || lng === null) return undefined;
+  return { gps_lat: lat, gps_lng: lng, boundary_polygon: bp, name: area.name };
+}
+
+/**
+ * Worker pin for the location map — the role glyph (matching the monitoring map)
+ * tinted by whether the worker is inside or outside their boundary. Undefined
+ * (→ default Google pin) when the role is unknown.
+ */
+export function workerMapMarker(
+  role: string | null | undefined,
+  isOutside: boolean,
+): { iconName: string; color: string } | undefined {
+  if (!role) return undefined;
+  return {
+    iconName: getRoleIcon(role),
+    color: isOutside ? nbColors.statusOutside : nbColors.statusActive,
+  };
+}
+
+/** Area pin for the location map — a glyph for the assigned scope (rayon/kawasan/lokasi). */
+export function scopeAreaMarker(scope: ScheduleScope): { iconName: string; color: string } {
+  const iconName =
+    scope === 'district' ? 'office-building' : scope === 'region' ? 'forest' : 'leaf';
+  return { iconName, color: nbColors.statusActive };
 }
 
 /**

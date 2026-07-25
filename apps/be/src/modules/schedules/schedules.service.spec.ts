@@ -8,6 +8,7 @@ import { ScheduleEvent } from './entities/schedule-event.entity';
 import { Location } from '../locations/entities/location.entity';
 import { User, UserRole } from '../users/entities/user.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { Shift } from '../shifts/entities/shift.entity';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
@@ -46,6 +47,7 @@ describe('SchedulesService', () => {
   let areaEntityRepo: { find: jest.Mock };
   let userRepo: { find: jest.Mock; findOne: jest.Mock };
   let shiftDefinitionRepo: { findOne: jest.Mock };
+  let shiftRepo: { findOne: jest.Mock };
   let userAreas: { getPermanentLocationIdsForUsers: jest.Mock; getPermanentLocationIds: jest.Mock };
   let audit: { log: jest.Mock };
   let materializer: { materializeEvent: jest.Mock };
@@ -63,6 +65,9 @@ describe('SchedulesService', () => {
     areaEntityRepo = { find: jest.fn().mockResolvedValue([]) };
     userRepo = { find: jest.fn(), findOne: jest.fn() };
     shiftDefinitionRepo = { findOne: jest.fn() };
+    // Default: no open shift, so findCurrentForUser's fallback is a no-op unless a
+    // test opts in by stubbing an open shift.
+    shiftRepo = { findOne: jest.fn().mockResolvedValue(null) };
     userAreas = {
       getPermanentLocationIdsForUsers: jest.fn().mockResolvedValue(new Map()),
       getPermanentLocationIds: jest.fn().mockResolvedValue([]),
@@ -83,6 +88,7 @@ describe('SchedulesService', () => {
         { provide: getRepositoryToken(Location), useValue: areaEntityRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
         { provide: getRepositoryToken(ShiftDefinition), useValue: shiftDefinitionRepo },
+        { provide: getRepositoryToken(Shift), useValue: shiftRepo },
         { provide: UserLocationsService, useValue: userAreas },
         { provide: AuditLogService, useValue: audit },
         { provide: ScheduleMaterializerService, useValue: materializer },
@@ -663,6 +669,91 @@ describe('SchedulesService', () => {
 
       expect(result?.id).toBe('d2');
       spy.mockRestore();
+    });
+  });
+
+  describe('findCurrentForUser — dangling open shift fallback', () => {
+    const SHIFT3 = {
+      id: 'sd3',
+      start_time: '21:00:00',
+      end_time: '05:00:00',
+      crosses_midnight: true,
+    };
+
+    /** Freeze both "now" (nowMin) and "today" (WIB date string) for the resolver. */
+    const freeze = (nowUtc: Date, todayStr: string) => {
+      const spyNow = jest.spyOn(TimezoneUtil, 'jakartaNow').mockReturnValue(nowUtc);
+      const spyDate = jest
+        .spyOn(TimezoneUtil, 'jakartaDateString')
+        // With an explicit date (the shift's clock-in), compute the real WIB day;
+        // with no arg, return the frozen "today".
+        .mockImplementation((d?: Date) =>
+          d ? new Date(d.getTime() + 7 * 60 * 60 * 1000).toISOString().split('T')[0] : todayStr,
+        );
+      return () => {
+        spyNow.mockRestore();
+        spyDate.mockRestore();
+      };
+    };
+
+    it("surfaces yesterday's still-open shift after its window ends (05:42, Shift 3 not clocked out)", async () => {
+      // The reported bug: a Shift 3 (21:00–05:00) clocked in Jul 24 21:39 and never
+      // clocked out. At 05:42 Jul 25 the carried-tail test (now < end_time) fails,
+      // and today's roster is empty — so the worker was shown "belum ada jadwal".
+      const july24Row = {
+        id: 'r24',
+        user_id: 'W',
+        schedule_date: '2026-07-24',
+        shift_definition_id: 'sd3',
+        shift_definition: SHIFT3,
+        location: { id: 'loc1', name: 'Taman Barat' },
+      };
+      rosterRepo.find.mockImplementation((opts: { where: { schedule_date: string } }) =>
+        Promise.resolve(opts.where.schedule_date === '2026-07-24' ? [july24Row] : []),
+      );
+      // Open shift: clocked in Jul 24 21:39 WIB (= 14:39 UTC), no clock_out_time.
+      shiftRepo.findOne.mockResolvedValue({
+        id: 'shift-open',
+        user_id: 'W',
+        shift_definition_id: 'sd3',
+        clock_in_time: new Date(Date.UTC(2026, 6, 24, 14, 39, 0)),
+        clock_out_time: null,
+      });
+      const restore = freeze(new Date(Date.UTC(2026, 6, 25, 5, 42, 0)), '2026-07-25');
+
+      const result = await service.findCurrentForUser('W');
+
+      expect(result?.id).toBe('r24');
+      expect(result?.shift_definition_id).toBe('sd3');
+      restore();
+    });
+
+    it('returns null when nothing is scheduled and there is no open shift', async () => {
+      rosterRepo.find.mockResolvedValue([]);
+      shiftRepo.findOne.mockResolvedValue(null); // no dangling shift
+      const restore = freeze(new Date(Date.UTC(2026, 6, 25, 5, 42, 0)), '2026-07-25');
+
+      const result = await service.findCurrentForUser('W');
+
+      expect(result).toBeNull();
+      restore();
+    });
+
+    it('does not shadow a genuine current-day shift with a dangling one', async () => {
+      // A current-day Shift 1 is operative at 07:00; the open Shift 3 fallback must
+      // NOT run (resolved wins), so the worker sees today's shift, not yesterday's.
+      const shift1 = { id: 'sd1', start_time: '06:00:00', end_time: '15:00:00' };
+      const todayRow = { id: 'r25', schedule_date: '2026-07-25', shift_definition: shift1 };
+      rosterRepo.find.mockImplementation((opts: { where: { schedule_date: string } }) =>
+        Promise.resolve(opts.where.schedule_date === '2026-07-25' ? [todayRow] : []),
+      );
+      const restore = freeze(new Date(Date.UTC(2026, 6, 25, 7, 0, 0)), '2026-07-25');
+
+      const result = await service.findCurrentForUser('W');
+
+      expect(result?.id).toBe('r25');
+      expect(shiftRepo.findOne).not.toHaveBeenCalled();
+      restore();
     });
   });
 

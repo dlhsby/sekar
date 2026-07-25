@@ -20,6 +20,7 @@ import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi, tasksApi } from '../../services/api';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
@@ -95,7 +96,13 @@ export function FieldHomeScreen(): React.JSX.Element {
   });
 
   // Home-screen location (drives the in-area pill + the map modal).
-  const { location: homeLocation, refresh: refreshLocation, hasActiveShift, hasBoundary } = useHomeLocation();
+  const {
+    location: homeLocation,
+    refresh: refreshLocation,
+    hasActiveShift,
+    hasBoundary,
+    mapArea: homeMapArea,
+  } = useHomeLocation();
 
   // Today's roster — the "am I scheduled?" signal (shared with the clock-in
   // screen so both agree on lateness / area semantics).
@@ -640,42 +647,16 @@ export function FieldHomeScreen(): React.JSX.Element {
       <LocationMapModal
         visible={locationMapVisible}
         onClose={() => setLocationMapVisible(false)}
+        title={t('attendance:clockInOut.mapTitle')}
         location={homeLocation}
-        // Priority: the lokasi the ACTIVE clock-in is bound to → the lokasi
-        // TODAY'S roster assigns → the standing permanent lokasi. The old order
-        // skipped the roster entirely, so a worker whose schedule sent them
-        // somewhere other than their permanent lokasi saw the wrong boundary —
-        // or none at all, on the very screen meant to answer "am I in my area?".
-        area={
-          currentShift?.area ??
-          (roster?.location?.gps_lat != null && roster.location.gps_lng != null
-            ? {
-                gps_lat: roster.location.gps_lat,
-                gps_lng: roster.location.gps_lng,
-                boundary_polygon: roster.location.boundary_polygon ?? null,
-                name: roster.location.name,
-              }
-            : undefined) ??
-          // Rayon/kawasan scope has no lokasi but its own boundary — draw it so
-          // the map answers "am I in my rayon?" for scope workers too.
-          (scheduleScope.scope === 'district' && roster?.district?.boundary_polygon
-            ? {
-                gps_lat: roster.district.center_lat ?? 0,
-                gps_lng: roster.district.center_lng ?? 0,
-                boundary_polygon: roster.district.boundary_polygon,
-                name: roster.district.name,
-              }
-            : scheduleScope.scope === 'region' && roster?.region?.boundary_polygon
-              ? {
-                  gps_lat: roster.region.center_lat ?? 0,
-                  gps_lng: roster.region.center_lng ?? 0,
-                  boundary_polygon: roster.region.boundary_polygon,
-                  name: roster.region.name,
-                }
-              : undefined) ??
-          assignedArea ??
-          undefined
-        }
+        // `homeMapArea` is resolved by useHomeLocation with the SAME shared
+        // builder the clock-in/out screen uses (active clock-in lokasi → today's
+        // roster lokasi → assigned rayon/kawasan boundary → standing assignment),
+        // so this map draws exactly the same area + markers as that one.
+        area={homeMapArea}
+        hideAreaStatus={!hasBoundary}
+        workerMarker={workerMapMarker(user?.role, hasBoundary && !homeLocation.isWithinArea)}
+        areaMarker={homeMapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
       />
     </NBBackgroundPattern>
   );

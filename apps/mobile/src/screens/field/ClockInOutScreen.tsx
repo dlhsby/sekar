@@ -23,7 +23,7 @@ import {
   withAlpha,
 } from '../../constants/nbTokens';
 import { useClockInOut } from '../../hooks';
-import { getRoleIcon } from '../../utils/mapUtils';
+import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
 import { formatDateTime } from '../../utils/dateUtils';
@@ -408,30 +408,10 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           }}
           area={mapArea}
           hideAreaStatus={areaState === 'none' || areaState === 'scope'}
-          // Worker pin = role glyph (matches the monitoring map), tinted by
-          // whether they're inside the boundary.
-          workerMarker={
-            userRole
-              ? {
-                  iconName: getRoleIcon(userRole),
-                  color: areaState === 'outside' ? nbColors.statusOutside : nbColors.statusActive,
-                }
-              : undefined
-          }
-          // Area pin = a glyph for the assigned scope (rayon / kawasan / lokasi).
-          areaMarker={
-            mapArea
-              ? {
-                  iconName:
-                    scheduleScope.scope === 'district'
-                      ? 'office-building'
-                      : scheduleScope.scope === 'region'
-                        ? 'forest'
-                        : 'leaf',
-                  color: nbColors.statusActive,
-                }
-              : undefined
-          }
+          // Worker + area pins come from the shared builders so the home hero's
+          // map draws exactly the same markers as this one.
+          workerMarker={workerMapMarker(userRole, areaState === 'outside')}
+          areaMarker={mapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
         />
 
         {/* Attendance-type picker ("Ubah Label Waktu"). */}

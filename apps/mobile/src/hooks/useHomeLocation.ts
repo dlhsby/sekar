@@ -12,6 +12,7 @@ import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { locationTracker, type LocationPing } from '../services/location/locationTracker';
 import { useTodayRoster } from './useTodayRoster';
 import { resolveScheduleScope } from '../utils/scheduleScope';
+import { buildMapArea, type MapArea } from '../utils/mapUtils';
 
 export interface HomeLocationState {
   latitude: number | null;
@@ -71,6 +72,10 @@ export function useHomeLocation() {
   // Whether there is a real polygon to test — drives the hero's inside/outside
   // pill vs a neutral "scope, no boundary" state.
   const hasBoundary = !!(boundaryArea && (boundaryArea as { boundary_polygon?: unknown }).boundary_polygon);
+
+  // The area to draw on the LocationMapModal, built with the SAME shared builder
+  // the clock-in/out screen uses so the home hero's map is identical to it.
+  const mapArea = useMemo<MapArea | undefined>(() => buildMapArea(boundaryArea), [boundaryArea]);
 
   const [location, setLocation] = useState<HomeLocationState>(INITIAL_STATE);
 
@@ -151,5 +156,12 @@ export function useHomeLocation() {
     };
   }, [hasActiveShift, boundaryArea]);
 
-  return { location, refresh, hasActiveShift, hasBoundary };
+  return {
+    location,
+    refresh,
+    hasActiveShift,
+    hasBoundary,
+    mapArea,
+    scheduleScope,
+  };
 }
