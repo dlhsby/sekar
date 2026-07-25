@@ -29,6 +29,22 @@ export class ClockInDto {
   location_id?: string;
 
   @ApiProperty({
+    description:
+      'Client-generated UUID for the punch (idempotency key, ADR-055). ' +
+      'A retried offline punch with the same id is a no-op. Server generates one if omitted.',
+    required: false,
+  })
+  @IsOptional()
+  @IsUUID()
+  client_uuid?: string;
+
+  @ApiProperty({ description: 'GPS accuracy in metres, if the device reports it', required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  accuracy_m?: number;
+
+  @ApiProperty({
     description: 'GPS latitude of user location',
     example: -7.2905,
     minimum: -90,
