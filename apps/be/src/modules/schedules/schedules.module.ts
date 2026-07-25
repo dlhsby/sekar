@@ -8,6 +8,7 @@ import { Location } from '../locations/entities/location.entity';
 import { Region } from '../regions/entities/region.entity';
 import { District } from '../districts/entities/district.entity';
 import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.entity';
+import { Shift } from '../shifts/entities/shift.entity';
 import { TeamCategory } from '../teams/entities/team-category.entity';
 import { SchedulesService } from './schedules.service';
 import { SchedulesController } from './schedules.controller';
@@ -36,6 +37,10 @@ import { SettingsModule } from '../settings/settings.module';
       Region,
       District,
       ShiftDefinition,
+      // Read-only: SchedulesService resolves the roster row a still-open shift
+      // was started from (rosterRowForOpenShift). Registering the repo here avoids
+      // importing ShiftsModule, which would create a circular dependency.
+      Shift,
       TeamCategory,
     ]),
     UserLocationsModule,
