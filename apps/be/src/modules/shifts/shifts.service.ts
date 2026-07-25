@@ -349,7 +349,9 @@ export class ShiftsService {
       : getMinimumShiftDurationMinutes();
     const minMs = minMinutes * 60 * 1000;
     const segmentMs = Date.now() - openSince.getTime();
-    if (segmentMs < minMs) {
+    // 0 (or any non-positive) disables the guard entirely — configurable via
+    // `schedule.min_shift_duration_min` in settings.
+    if (minMinutes > 0 && segmentMs < minMs) {
       const minutesWorked = Math.floor(segmentMs / (60 * 1000));
       throw new ApiException(
         HttpStatus.BAD_REQUEST,

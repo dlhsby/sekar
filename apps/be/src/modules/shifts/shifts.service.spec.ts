@@ -18,6 +18,7 @@ import { ShiftDefinition } from '../shift-definitions/entities/shift-definition.
 import { User } from '../users/entities/user.entity';
 import { AuditLogService } from '../audit/audit.service';
 import { UserLocationsService } from '../user-locations/user-locations.service';
+import { SystemConfigService } from '../settings/services/system-config.service';
 
 describe('ShiftsService', () => {
   let module: TestingModule;
@@ -128,6 +129,12 @@ describe('ShiftsService', () => {
     onClockOut: jest.fn().mockResolvedValue(undefined),
   };
 
+  // ADR-049 runtime config; by default echoes the caller's fallback (so the
+  // min-shift-duration behaves as the 5-min default unless a test overrides it).
+  const mockSystemConfig = {
+    getNumber: jest.fn((_key: string, fallback: number) => fallback),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       providers: [
@@ -171,6 +178,10 @@ describe('ShiftsService', () => {
         {
           provide: AuditLogService,
           useValue: { log: jest.fn().mockResolvedValue({}) },
+        },
+        {
+          provide: SystemConfigService,
+          useValue: mockSystemConfig,
         },
       ],
     }).compile();
@@ -541,6 +552,36 @@ describe('ShiftsService', () => {
       } catch (error: any) {
         expect(error.getCode()).toBe(ApiErrorCode.SHIFT_DURATION_TOO_SHORT);
       }
+    });
+
+    it('min-duration = 0 DISABLES the guard (settings-configurable off)', async () => {
+      mockSystemConfig.getNumber.mockReturnValueOnce(0); // schedule.min_shift_duration_min = 0
+      const tenSecondsAgo = new Date(Date.now() - 10 * 1000);
+      mockPunches = [
+        {
+          label: PunchLabel.CLOCK_IN,
+          punched_at: tenSecondsAgo,
+          location_id: mockArea.id,
+          gps_lat: -7.29,
+          gps_lng: 112.73,
+          outside_boundary: false,
+        },
+        {
+          label: PunchLabel.CLOCK_OUT,
+          punched_at: new Date(),
+          location_id: mockArea.id,
+          gps_lat: -7.2906,
+          gps_lng: 112.7399,
+          outside_boundary: false,
+        },
+      ];
+      mockRepository.findOne.mockResolvedValue({ ...openRow, clock_in_time: tenSecondsAgo });
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...openRow }));
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      // A 10-second segment would normally be rejected; with 0 it clocks out fine.
+      const result = await service.clockOut(mockUser.id, clockOutDto);
+      expect(result.clock_out_time).toBeTruthy();
     });
   });
   describe('findActiveShift', () => {

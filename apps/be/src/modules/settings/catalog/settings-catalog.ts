@@ -152,8 +152,9 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     isSecret: false,
     envKey: 'MINIMUM_SHIFT_DURATION_MINUTES',
     label: 'Durasi shift minimum (menit)',
+    help: 'Clock-out ditolak jika segmen lebih pendek dari ini. Setel 0 untuk menonaktifkan (tanpa batas minimum).',
     default: 5,
-    min: 1,
+    min: 0,
     max: 1440,
   },
 
