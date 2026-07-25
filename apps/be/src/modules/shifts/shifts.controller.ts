@@ -23,6 +23,7 @@ import { ShiftsService } from './shifts.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { AttendanceDaySummaryDto, AttendanceDayDetailDto } from './dto/attendance-day.dto';
+import { AttendanceCurrentDto } from './dto/attendance-current.dto';
 import { AttendanceFilterDto } from './dto/attendance-filter.dto';
 import { Shift } from './entities/shift.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -128,6 +129,21 @@ export class ShiftsController {
   })
   async getCurrentShift(@GetUser() user: User): Promise<Shift | null> {
     return this.shiftsService.findActiveShift(user.id);
+  }
+
+  @Get('current-state')
+  @Roles(...CLOCKABLE_ROLES)
+  @ApiOperation({
+    summary: 'Current attendance state + shift options (ADR-055)',
+    description:
+      'Returns the open session (Jam Masuk + context) or null, plus the shift ' +
+      'options a clock-in could target now (best-first, is_default flags the top). ' +
+      'Drives the mobile Rekam Waktu screen: disable Clock Out when nothing is ' +
+      'open, and offer the shift picker near midnight or for a dangling shift.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, type: AttendanceCurrentDto })
+  async getCurrentState(@GetUser() user: User): Promise<AttendanceCurrentDto> {
+    return this.shiftsService.getCurrentAttendance(user.id);
   }
 
   @Get('my-shifts')

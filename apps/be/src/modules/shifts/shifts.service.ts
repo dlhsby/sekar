@@ -6,7 +6,8 @@ import { Shift } from './entities/shift.entity';
 import { AttendancePunch } from './entities/attendance-punch.entity';
 import { PunchLabel } from './enums/punch-label.enum';
 import { AttendanceDerivationService } from './services/attendance-derivation.service';
-import { ShiftAttributionService } from './services/shift-attribution.service';
+import { ShiftAttributionService, AttributionMatch } from './services/shift-attribution.service';
+import { AttendanceCurrentDto, ShiftOptionDto } from './dto/attendance-current.dto';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { LocationsService } from '../locations/locations.service';
@@ -235,7 +236,10 @@ export class ShiftsService {
     }
 
     // 4. Session key (service_day + shift-definition) for this punch.
-    const { shiftDefId, serviceDay } = await this.resolveClockInKey(userId, isOvertime);
+    const { shiftDefId, serviceDay } = await this.resolveClockInKey(userId, isOvertime, {
+      shiftDefinitionId: dto.shift_definition_id,
+      serviceDay: dto.service_day,
+    });
 
     // 5. Append the immutable clock-in punch (idempotent on the client uuid).
     await this.insertPunch({
@@ -535,9 +539,49 @@ export class ShiftsService {
    *   4. Fallback (unscheduled / ad-hoc, or no schedules provider): the legacy
    *      resolution (configured shift / time-of-day match) on today's date.
    */
+  /**
+   * The worker's live attendance state (ADR-055): the open session (or null) and
+   * the shift options a clock-in could target now (best-first, `is_default` flags
+   * the top). Powers the mobile "Rekam Waktu" screen — disable Clock Out when
+   * nothing is open, offer the picker near midnight / for a dangling shift.
+   */
+  async getCurrentAttendance(userId: string): Promise<AttendanceCurrentDto> {
+    const open = await this.findOpenSessionRow(userId, false);
+
+    let matches: AttributionMatch[] = [];
+    if (this.dailySchedulesService) {
+      const candidates = await this.dailySchedulesService.getAttributionCandidates(userId);
+      matches = this.attribution.resolveAll(candidates, TimezoneUtil.jakartaNow());
+    }
+    const options: ShiftOptionDto[] = matches.map((m, i) => ({
+      shift_definition_id: m.candidate.shift_definition_id,
+      shift_name: m.candidate.shift_name,
+      shift_code: m.candidate.shift_code,
+      service_day: m.candidate.service_day,
+      phase: m.phase,
+      minutes_to_start: m.minutesToStart,
+      is_default: i === 0,
+    }));
+
+    return {
+      open_session: open
+        ? {
+            id: open.id,
+            service_day: open.service_day ?? null,
+            shift_definition_id: open.shift_definition_id,
+            clock_in_time: (open.clock_in_time ?? new Date()).toISOString(),
+            location_id: open.location_id,
+            is_overtime: open.is_overtime,
+          }
+        : null,
+      options,
+    };
+  }
+
   private async resolveClockInKey(
     userId: string,
     isOvertime: boolean,
+    explicit?: { shiftDefinitionId?: string; serviceDay?: string },
   ): Promise<{ shiftDefId: string | null; serviceDay: string }> {
     const openSession = await this.findOpenSessionRow(userId, isOvertime);
     if (openSession) {
@@ -546,6 +590,14 @@ export class ShiftsService {
         serviceDay:
           openSession.service_day ??
           TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
+      };
+    }
+    // Explicit picker choice (ADR-055) wins over auto-attribution when no session
+    // is open — the worker deliberately selected a shift near midnight / dangling.
+    if (!isOvertime && explicit?.shiftDefinitionId) {
+      return {
+        shiftDefId: explicit.shiftDefinitionId,
+        serviceDay: explicit.serviceDay ?? TimezoneUtil.jakartaDateString(),
       };
     }
     if (isOvertime) {

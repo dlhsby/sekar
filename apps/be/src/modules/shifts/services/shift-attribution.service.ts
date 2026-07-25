@@ -13,6 +13,9 @@ export interface AttributionCandidate {
   crosses_midnight: boolean;
   early_window_min: number;
   cutoff_grace_min: number;
+  // Display fields for the mobile shift picker (optional — the resolver ignores them).
+  shift_name?: string;
+  shift_code?: string;
 }
 
 /** Where `now` falls relative to a candidate's window. */
