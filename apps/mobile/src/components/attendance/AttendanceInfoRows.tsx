@@ -118,8 +118,8 @@ export function AttendanceInfoRows({
                 </NBText>
               ) : hasCoords ? (
                 <>
-                  <NBText variant="mono-sm" color="black">
-                    {location.latitude!.toFixed(6)}, {location.longitude!.toFixed(6)}
+                  <NBText variant="mono-sm" color="black" numberOfLines={1}>
+                    {location.latitude!.toFixed(5)}, {location.longitude!.toFixed(5)}
                   </NBText>
                   {location.accuracy != null ? (
                     <NBText variant="caption" color="gray600">
@@ -172,10 +172,11 @@ export function AttendanceInfoRows({
 }
 
 const styles = StyleSheet.create({
-  // Self-contained vertical rhythm — the card no longer depends on the parent
-  // to space these rows, and md (16) replaces the old cramped 8px stacking.
+  // Self-contained vertical rhythm — the card owns its row spacing (the shared
+  // component had no internal gap, so rows touched). sm (8) matches the original
+  // hero spacing.
   root: {
-    gap: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
   locationValue: {
     flexDirection: 'row',

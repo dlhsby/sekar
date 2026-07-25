@@ -492,7 +492,7 @@ const styles = StyleSheet.create({
   },
   // Separates the GPS block from the attendance table inside the merged card.
   infoTable: {
-    gap: nbSpacing.md,
+    gap: nbSpacing.sm,
   },
   errorText: {
     marginBottom: nbSpacing.sm,

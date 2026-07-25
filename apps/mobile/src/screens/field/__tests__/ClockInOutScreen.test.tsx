@@ -232,9 +232,9 @@ describe('ClockInOutScreen Location Watcher Management', () => {
 
     // GPS card is collapsed by default — expand to see its contents.
 
-    // Verify location is displayed (may appear multiple times in UI)
+    // Verify location is displayed on the "Lokasi sekarang" row (5-decimal coords)
     await waitFor(() => {
-      const locationElements = getAllByText(/-7\.250445, 112\.768845/);
+      const locationElements = getAllByText(/-7\.25045, 112\.76884/);
       expect(locationElements.length).toBeGreaterThan(0);
     });
 

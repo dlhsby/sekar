@@ -29,7 +29,7 @@ describe('AttendanceInfoRows', () => {
     expect(getByText('Status Area')).toBeTruthy();
     expect(getByText('Di luar area')).toBeTruthy();
     expect(getByText('Lokasi sekarang')).toBeTruthy();
-    expect(getByText('-7.244722, 112.618531')).toBeTruthy();
+    expect(getByText('-7.24472, 112.61853')).toBeTruthy();
     expect(getByText('±6m')).toBeTruthy();
   });
 
