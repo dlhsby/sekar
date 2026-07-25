@@ -98,10 +98,15 @@ export class ShiftDefinitionsService {
    * name + code; derives `crosses_midnight` from the times when omitted.
    */
   async create(dto: CreateShiftDefinitionDto): Promise<ShiftDefinition> {
-    await this.assertUnique(dto.name, dto.code);
+    const providedCode = dto.code?.trim();
+    // `code` is internal now (not shown in the UI). Assert the name is unique;
+    // use the given code if supplied (assert it too), else auto-generate a unique
+    // one from the name.
+    await this.assertUnique(dto.name, providedCode || undefined);
+    const code = providedCode || (await this.generateUniqueCode(dto.name));
     const entity = this.shiftDefinitionRepository.create({
       name: dto.name,
-      code: dto.code,
+      code,
       start_time: dto.start_time,
       end_time: dto.end_time,
       crosses_midnight:
@@ -180,6 +185,22 @@ export class ShiftDefinitionsService {
   /** A shift crosses midnight when its end is at/earlier than its start. */
   private derivesCrossesMidnight(startTime: string, endTime: string): boolean {
     return endTime <= startTime;
+  }
+
+  /**
+   * Auto-generate a unique internal code from the name (code is no longer entered
+   * in the UI). Base = the name's uppercased alphanumerics (≤8 chars), then a
+   * numeric suffix until unique; falls back to `SHIFT` for an empty base.
+   */
+  private async generateUniqueCode(name: string): Promise<string> {
+    const base = (name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'SHIFT');
+    for (let n = 0; n < 1000; n++) {
+      const candidate = n === 0 ? base : `${base.slice(0, 8)}${n}`.slice(0, 10);
+      const clash = await this.shiftDefinitionRepository.findOne({ where: { code: candidate } });
+      if (!clash) return candidate;
+    }
+    // Extremely unlikely; keep the type honest.
+    return `${base.slice(0, 5)}${Date.now().toString().slice(-5)}`;
   }
 
   /**

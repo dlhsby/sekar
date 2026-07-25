@@ -494,7 +494,7 @@ export default function SchedulesPage() {
         </div>
         <div className="ml-auto flex flex-wrap items-center gap-2">
           <Select value={calendarView} onValueChange={(v) => setCalendarView(v as CalendarView)}>
-            <SelectTrigger className="w-32" aria-label={t('schedules:controls.viewLabel')}>
+            <SelectTrigger className="w-32 h-10" aria-label={t('schedules:controls.viewLabel')}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

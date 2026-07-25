@@ -10,7 +10,8 @@ import { ShiftDefinition } from '@/types/models';
 /** Payload for creating/updating a shift definition (ADR-055 configurable shifts). */
 export interface ShiftDefinitionInput {
   name: string;
-  code: string;
+  /** Internal code — auto-generated server-side from the name when omitted. */
+  code?: string;
   start_time: string; // HH:MM[:SS]
   end_time: string;
   crosses_midnight?: boolean;

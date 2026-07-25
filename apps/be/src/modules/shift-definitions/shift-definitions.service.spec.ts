@@ -278,6 +278,18 @@ describe('ShiftDefinitionsService', () => {
       );
     });
 
+    it('auto-generates a unique code from the name when code is omitted', async () => {
+      mockShiftDefinitionRepository.findOne.mockResolvedValue(null); // name + code candidate free
+      await service.create({
+        name: 'Malam Panjang',
+        start_time: '21:00',
+        end_time: '05:00',
+      } as never);
+      expect(mockShiftDefinitionRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({ code: 'MALAMPAN' }), // uppercased alphanumerics, ≤8
+      );
+    });
+
     it('rejects a duplicate code', async () => {
       mockShiftDefinitionRepository.findOne
         .mockResolvedValueOnce(null) // name free

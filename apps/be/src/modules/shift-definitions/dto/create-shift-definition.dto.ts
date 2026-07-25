@@ -26,11 +26,15 @@ export class CreateShiftDefinitionDto {
   @MaxLength(50)
   name: string;
 
-  @ApiProperty({ description: 'Short code (unique)', example: 'SHIFT1', maxLength: 10 })
+  @ApiPropertyOptional({
+    description: 'Internal short code (unique). Auto-generated from the name when omitted.',
+    example: 'SHIFT1',
+    maxLength: 10,
+  })
+  @IsOptional()
   @IsString()
-  @MinLength(1)
   @MaxLength(10)
-  code: string;
+  code?: string;
 
   @ApiProperty({ description: 'Start time (HH:MM[:SS], 24h)', example: '06:00' })
   @Matches(TIME_RE, { message: 'start_time must be HH:MM or HH:MM:SS (24-hour)' })
