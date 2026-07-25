@@ -71,6 +71,29 @@ export class ShiftDefinition {
   @Column({ default: true })
   is_active: boolean;
 
+  /**
+   * Attribution window (ADR-055). A clock-in is attributed to this shift from
+   * `early_window_min` BEFORE its start until `cutoff_grace_min` AFTER its end;
+   * past the cutoff the shift drops out of the picker and anything left open is
+   * a dangling `lupa_clock_out`. Configurable per shift-definition (the night
+   * shift wants a longer grace than the day shift). Default 60 min each.
+   */
+  @ApiProperty({
+    description: 'Minutes BEFORE start that a clock-in still attributes to this shift',
+    example: 60,
+    default: 60,
+  })
+  @Column({ name: 'early_window_min', type: 'int', default: 60 })
+  early_window_min?: number;
+
+  @ApiProperty({
+    description: 'Minutes AFTER end that a clock-in/out still attributes; past it → dangling',
+    example: 60,
+    default: 60,
+  })
+  @Column({ name: 'cutoff_grace_min', type: 'int', default: 60 })
+  cutoff_grace_min?: number;
+
   @ApiProperty({
     description: 'Timestamp when the shift definition was created',
   })

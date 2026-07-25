@@ -6,6 +6,7 @@ import { Shift } from './entities/shift.entity';
 import { AttendancePunch } from './entities/attendance-punch.entity';
 import { PunchLabel } from './enums/punch-label.enum';
 import { AttendanceDerivationService } from './services/attendance-derivation.service';
+import { ShiftAttributionService } from './services/shift-attribution.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { LocationsService } from '../locations/locations.service';
@@ -43,6 +44,7 @@ export class ShiftsService {
     @InjectRepository(AttendancePunch)
     private readonly punchRepository: Repository<AttendancePunch>,
     private readonly derivation: AttendanceDerivationService,
+    private readonly attribution: ShiftAttributionService,
     @InjectRepository(ShiftDefinition)
     private readonly shiftDefinitionRepo: Repository<ShiftDefinition>,
     @InjectRepository(User)
@@ -232,21 +234,8 @@ export class ShiftsService {
       }
     }
 
-    // 4. Session key. If a session is already OPEN, this clock-in CONTINUES it
-    //    (a redundant tap or a re-entry) — reuse its service_day + definition so
-    //    the punch lands on the same key even across midnight. Without this a
-    //    post-midnight re-clock-in would compute *today's* service_day and spawn
-    //    a SECOND open row (ADR-055 review finding #1). Only when nothing is open
-    //    do we start a fresh session (today's date + the worker's shift).
-    const openSession = await this.findOpenSessionRow(userId, isOvertime);
-    const shiftDefId = openSession
-      ? openSession.shift_definition_id
-      : isOvertime
-        ? null
-        : ((await this.getUserShiftOrCurrent(userId))?.id ?? null);
-    const serviceDay = openSession
-      ? TimezoneUtil.jakartaDateOf(openSession.clock_in_time)
-      : TimezoneUtil.jakartaDateString();
+    // 4. Session key (service_day + shift-definition) for this punch.
+    const { shiftDefId, serviceDay } = await this.resolveClockInKey(userId, isOvertime);
 
     // 5. Append the immutable clock-in punch (idempotent on the client uuid).
     await this.insertPunch({
@@ -529,6 +518,47 @@ export class ShiftsService {
     }
 
     return this.shiftRepository.save(row);
+  }
+
+  /**
+   * The (service_day, shift_definition) a clock-in belongs to.
+   *   1. An already-OPEN session continues on its own key — so a redundant tap or
+   *      a post-midnight re-entry lands on the same session, never a 2nd open row.
+   *   2. Overtime is not attributed to a shift-definition (ADR-014).
+   *   3. Otherwise the ADR-055 attribution window picks the rostered shift (and
+   *      its service-day — yesterday for a crossing shift past midnight) whose
+   *      [start − early_window, end + cutoff_grace] covers now.
+   *   4. Fallback (unscheduled / ad-hoc, or no schedules provider): the legacy
+   *      resolution (configured shift / time-of-day match) on today's date.
+   */
+  private async resolveClockInKey(
+    userId: string,
+    isOvertime: boolean,
+  ): Promise<{ shiftDefId: string | null; serviceDay: string }> {
+    const openSession = await this.findOpenSessionRow(userId, isOvertime);
+    if (openSession) {
+      return {
+        shiftDefId: openSession.shift_definition_id,
+        serviceDay: TimezoneUtil.jakartaDateOf(openSession.clock_in_time ?? new Date()),
+      };
+    }
+    if (isOvertime) {
+      return { shiftDefId: null, serviceDay: TimezoneUtil.jakartaDateString() };
+    }
+    if (this.dailySchedulesService) {
+      const candidates = await this.dailySchedulesService.getAttributionCandidates(userId);
+      const match = this.attribution.resolveBest(candidates, TimezoneUtil.jakartaNow());
+      if (match) {
+        return {
+          shiftDefId: match.candidate.shift_definition_id,
+          serviceDay: match.candidate.service_day,
+        };
+      }
+    }
+    return {
+      shiftDefId: (await this.getUserShiftOrCurrent(userId))?.id ?? null,
+      serviceDay: TimezoneUtil.jakartaDateString(),
+    };
   }
 
   /**
