@@ -115,9 +115,13 @@ export class ActivitiesService {
   }
 
   private async getActiveShiftOrFail(userId: string): Promise<Shift> {
+    // ADR-055: a worker can now hold >1 open session (regular + overtime). An
+    // activity is regular work, so attach it deterministically to the regular
+    // session first (is_overtime ASC → false before true), newest open otherwise.
     const activeShift = await this.shiftsRepository.findOne({
       where: { user_id: userId, clock_out_time: IsNull() },
       relations: ['area'],
+      order: { is_overtime: 'ASC', clock_in_time: 'DESC' },
     });
     if (!activeShift) {
       throw new BadRequestException(
