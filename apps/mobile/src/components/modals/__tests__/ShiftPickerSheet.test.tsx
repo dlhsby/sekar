@@ -7,7 +7,6 @@ const options: ShiftOption[] = [
   {
     shift_definition_id: 'sd-3',
     shift_name: 'Shift 3',
-    shift_code: 'SHIFT3',
     service_day: '2026-07-24',
     phase: 'covering',
     minutes_to_start: -30,
@@ -16,7 +15,6 @@ const options: ShiftOption[] = [
   {
     shift_definition_id: 'sd-1',
     shift_name: 'Shift 1',
-    shift_code: 'SHIFT1',
     service_day: '2026-07-25',
     phase: 'early',
     minutes_to_start: 30,

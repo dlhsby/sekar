@@ -87,4 +87,28 @@ describe('ShiftReminderCron', () => {
     expect(count).toBe(0);
     expect(sendToUser).not.toHaveBeenCalled();
   });
+
+  it('honors a per-shift start_reminder_min (30 min lead)', async () => {
+    findByDate.mockResolvedValue([
+      { ...rosterRow, shift_definition: { ...rosterRow.shift_definition, start_reminder_min: 30 } },
+    ]);
+    // 05:35 Jakarta == 22:35 UTC prev day; delta to 06:00 == 25 min ∈ (15, 30] → fires.
+    const at0535 = new Date('2026-06-09T22:35:00.000Z');
+    expect(await cron.sendDueReminders(at0535)).toBe(1);
+    // 05:45 (delta 15) is below the 30-min lead's bucket (15, 30] → no send.
+    jest.clearAllMocks();
+    findByDate.mockResolvedValue([
+      { ...rosterRow, shift_definition: { ...rosterRow.shift_definition, start_reminder_min: 30 } },
+    ]);
+    redisSet.mockResolvedValue('OK');
+    expect(await cron.sendDueReminders(at0545Jakarta)).toBe(0);
+  });
+
+  it('does NOT send when the shift reminder is disabled (0)', async () => {
+    findByDate.mockResolvedValue([
+      { ...rosterRow, shift_definition: { ...rosterRow.shift_definition, start_reminder_min: 0 } },
+    ]);
+    expect(await cron.sendDueReminders(at0545Jakarta)).toBe(0);
+    expect(sendToUser).not.toHaveBeenCalled();
+  });
 });

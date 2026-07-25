@@ -120,8 +120,8 @@ export async function stagePresenceScenarios(
     .filter(([, v]) => !v)
     .map(([k]) => k);
   log(
-    `  Real shifts — belum_hadir:${roles.belum?.code ?? '—'} ` +
-      `terlambat:${roles.terlambat?.code ?? '—'} ended:${roles.ended?.code ?? '—'}` +
+    `  Real shifts — belum_hadir:${roles.belum?.name ?? '—'} ` +
+      `terlambat:${roles.terlambat?.name ?? '—'} ended:${roles.ended?.name ?? '—'}` +
       (missing.length ? `  (unfillable at this hour: ${missing.join(', ')})` : ''),
   );
 
@@ -806,8 +806,9 @@ async function loadFixtures(ds: typeof AppDataSource): Promise<{
  *
  * Earlier this CREATED synthetic `STG_*` shift definitions with windows relative
  * to now. That worked, but they are rows in the shift catalog — so they showed up
- * as extra shift lanes on the /schedules day board and made it unreadable. The
- * catalog must stay exactly Shift 1/2/3.
+ * as extra shift lanes on the /schedules day board and made it unreadable. This
+ * script must not add rows to the shift catalog — it reuses whatever shifts are
+ * seeded (ADR-055: configurable, any number).
  *
  * The real shifts already cover every state; which one plays which role just
  * depends on the hour. At 19:50 for example: Shift 1 (06–15) has ENDED →
@@ -939,7 +940,7 @@ async function stagePresenceStates(
   // one that yields `terlambat` for someone who never showed). Clock in at
   // start+5min → on-time `bertugas`; at start+grace+30min → `is_late`. Both are
   // in the past for a shift already under way, so they hold at any hour.
-  // No synthetic shift is created — the catalog stays Shift 1/2/3.
+  // No synthetic shift is created — it reuses whatever shifts are seeded.
   const stdShift = shiftTerlambat ?? shiftTidakHadir ?? shiftBelum;
   if (!stdShift) throw new Error('No shift definitions found — seed the shift catalog first.');
   const windowStd = resolveShiftWindow(stdShift, today);

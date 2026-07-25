@@ -1750,7 +1750,6 @@ export class SchedulesService {
         early_window_min: sd.early_window_min ?? 60,
         cutoff_grace_min: sd.cutoff_grace_min ?? 60,
         shift_name: sd.name,
-        shift_code: sd.code,
       });
     }
     return candidates;

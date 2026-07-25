@@ -10,13 +10,14 @@ import { ShiftDefinition } from '@/types/models';
 /** Payload for creating/updating a shift definition (ADR-055 configurable shifts). */
 export interface ShiftDefinitionInput {
   name: string;
-  /** Internal code — auto-generated server-side from the name when omitted. */
-  code?: string;
   start_time: string; // HH:MM[:SS]
   end_time: string;
   crosses_midnight?: boolean;
   early_window_min?: number;
   cutoff_grace_min?: number;
+  /** Reminder timing (minutes). start default 15, 0 = off; end null/0 = off. */
+  start_reminder_min?: number;
+  end_reminder_min?: number | null;
   is_active?: boolean;
 }
 
@@ -32,8 +33,7 @@ export const shiftDefinitionKeys = {
 };
 
 /**
- * Fetch all shift definitions
- * Returns 3 fixed shifts with time ranges
+ * Fetch all shift definitions (ADR-055 — configurable, any number of shifts).
  */
 export function useShiftDefinitions() {
   return useQuery({

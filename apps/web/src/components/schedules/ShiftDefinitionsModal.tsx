@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
-  Badge,
   Button,
+  type ColumnDef,
+  DataTable,
+  type DataTableRowAction,
   Dialog,
   DialogBody,
   DialogContent,
@@ -20,6 +22,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  StatusPill,
   TimePicker,
 } from '@/components/ui';
 import {
@@ -45,17 +48,27 @@ const EMPTY_FORM: ShiftDefinitionInput = {
   end_time: '15:00',
   early_window_min: 60,
   cutoff_grace_min: 60,
+  start_reminder_min: 15,
+  end_reminder_min: null,
   is_active: true,
 };
 
 const hhmm = (t: string): string => (t?.length >= 5 ? t.slice(0, 5) : t);
 
+/** Coerce a number input to a non-negative int, or null when blank. */
+const toMinOrNull = (v: string): number | null => {
+  if (v.trim() === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+};
+
 /**
  * Manage shift definitions (ADR-055 configurable shifts) from the Jadwal page.
- * The side sheet lists the day's shifts; add/edit happens in a separate modal so
- * closing that modal (save or cancel) leaves the list open. Any number of shifts
- * (a single all-day shift, two, five…); each carries a per-shift attribution
- * window. Delete is soft — historical schedules/attendance stay intact.
+ * The side sheet lists the day's shifts as our standard sortable/filterable
+ * DataTable (name + status only); add/edit happens in a separate modal so closing
+ * that modal (save or cancel) leaves the list open. Any number of shifts, each
+ * with its own attribution window and reminder timing. Delete is soft —
+ * historical schedules/attendance stay intact.
  */
 export function ShiftDefinitionsModal({
   open,
@@ -90,6 +103,8 @@ export function ShiftDefinitionsModal({
       end_time: hhmm(s.end_time),
       early_window_min: s.early_window_min ?? 60,
       cutoff_grace_min: s.cutoff_grace_min ?? 60,
+      start_reminder_min: s.start_reminder_min ?? 15,
+      end_reminder_min: s.end_reminder_min ?? null,
       is_active: s.is_active,
     });
     setFormOpen(true);
@@ -131,10 +146,63 @@ export function ShiftDefinitionsModal({
 
   const saving = createMut.isPending || updateMut.isPending;
 
+  const columns = useMemo<ColumnDef<ShiftDefinition>[]>(
+    () => [
+      {
+        accessorKey: 'name',
+        header: t('schedules:shiftDefs.columns.name'),
+        meta: { label: t('schedules:shiftDefs.columns.name') },
+        cell: ({ row }) => {
+          const s = row.original;
+          return (
+            <div className="min-w-0">
+              <div className="text-nb-body font-medium">{s.name}</div>
+              <div className="text-nb-caption text-nb-gray-600">
+                {hhmm(s.start_time)}–{hhmm(s.end_time)}
+                {s.crosses_midnight ? ' (+1)' : ''}
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: 'status',
+        accessorFn: (s) => (s.is_active ? 'active' : 'inactive'),
+        header: t('schedules:shiftDefs.columns.status'),
+        meta: {
+          label: t('schedules:shiftDefs.columns.status'),
+          filterVariant: 'enum',
+          filterOptions: [
+            { label: t('schedules:shiftDefs.status.active'), value: 'active' },
+            { label: t('schedules:shiftDefs.status.inactive'), value: 'inactive' },
+          ],
+        },
+        cell: ({ row }) =>
+          row.original.is_active ? (
+            <StatusPill tone="ok">{t('schedules:shiftDefs.status.active')}</StatusPill>
+          ) : (
+            <StatusPill tone="neutral">{t('schedules:shiftDefs.status.inactive')}</StatusPill>
+          ),
+      },
+    ],
+    [t],
+  );
+
+  const rowActions = (s: ShiftDefinition): DataTableRowAction<ShiftDefinition>[] => [
+    { key: 'edit', label: t('common:actions.edit'), icon: Pencil, onClick: () => openEdit(s) },
+    {
+      key: 'delete',
+      label: t('common:actions.delete'),
+      icon: Trash2,
+      variant: 'danger',
+      onClick: () => onDelete(s),
+    },
+  ];
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent className="w-full max-w-md">
+        <SheetContent className="w-full max-w-2xl">
           <SheetHeader>
             <SheetTitle>{t('schedules:shiftDefs.title')}</SheetTitle>
           </SheetHeader>
@@ -143,67 +211,21 @@ export function ShiftDefinitionsModal({
               {t('schedules:shiftDefs.description')}
             </p>
 
-            {isLoading ? (
-              <p className="text-nb-body-sm text-nb-gray-500">{t('common:loading')}</p>
-            ) : (
-              <ul className="space-y-2">
-                {sorted.map((s) => (
-                  <li
-                    key={s.id}
-                    className="flex items-center justify-between gap-2 rounded-nb-base border-2 border-nb-black bg-nb-white p-3 shadow-nb-sm"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="text-nb-body font-medium">{s.name}</span>
-                        {!s.is_active && (
-                          <Badge variant="outline">{t('schedules:shiftDefs.inactive')}</Badge>
-                        )}
-                      </div>
-                      <div className="text-nb-caption text-nb-gray-600">
-                        {hhmm(s.start_time)}–{hhmm(s.end_time)}
-                        {s.crosses_midnight ? ' (+1)' : ''} ·{' '}
-                        {t('schedules:shiftDefs.window', {
-                          early: s.early_window_min ?? 60,
-                          cutoff: s.cutoff_grace_min ?? 60,
-                        })}
-                      </div>
-                    </div>
-                    {canManage && (
-                      <div className="flex shrink-0 gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEdit(s)}
-                          aria-label={t('common:actions.edit')}
-                        >
-                          <Pencil className="h-4 w-4" aria-hidden />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => onDelete(s)}
-                          aria-label={t('common:actions.delete')}
-                        >
-                          <Trash2 className="h-4 w-4 text-nb-danger" aria-hidden />
-                        </Button>
-                      </div>
-                    )}
-                  </li>
-                ))}
-                {sorted.length === 0 && (
-                  <li className="text-nb-body-sm text-nb-gray-500">
-                    {t('schedules:shiftDefs.empty')}
-                  </li>
-                )}
-              </ul>
-            )}
-
-            {canManage && (
-              <Button variant="outline" onClick={openCreate} className="w-full">
-                <Plus className="mr-1.5 h-4 w-4" aria-hidden />
-                {t('schedules:shiftDefs.add')}
-              </Button>
-            )}
+            <DataTable
+              columns={columns}
+              data={sorted}
+              loading={isLoading}
+              searchPlaceholder={t('schedules:shiftDefs.searchPlaceholder')}
+              enableColumnToggle={false}
+              enablePagination={false}
+              emptyTitle={t('schedules:shiftDefs.empty')}
+              rowActions={canManage ? rowActions : undefined}
+              createAction={{
+                label: t('schedules:shiftDefs.add'),
+                onClick: openCreate,
+                hidden: !canManage,
+              }}
+            />
           </SheetBody>
         </SheetContent>
       </Sheet>
@@ -264,6 +286,37 @@ export function ShiftDefinitionsModal({
                 onChange={(e) => setForm({ ...form, cutoff_grace_min: Number(e.target.value) })}
               />
             </div>
+            <div>
+              <Label htmlFor="sd-start-reminder">
+                {t('schedules:shiftDefs.fields.startReminder')}
+              </Label>
+              <Input
+                id="sd-start-reminder"
+                type="number"
+                min={0}
+                max={1440}
+                value={form.start_reminder_min ?? ''}
+                onChange={(e) =>
+                  setForm({ ...form, start_reminder_min: toMinOrNull(e.target.value) ?? 0 })
+                }
+              />
+            </div>
+            <div>
+              <Label htmlFor="sd-end-reminder">
+                {t('schedules:shiftDefs.fields.endReminder')}
+              </Label>
+              <Input
+                id="sd-end-reminder"
+                type="number"
+                min={0}
+                max={1440}
+                value={form.end_reminder_min ?? ''}
+                onChange={(e) => setForm({ ...form, end_reminder_min: toMinOrNull(e.target.value) })}
+              />
+            </div>
+            <p className="text-nb-caption text-nb-gray-600">
+              {t('schedules:shiftDefs.reminderHint')}
+            </p>
             <label className="flex items-center gap-2 text-nb-body-sm">
               <input
                 type="checkbox"

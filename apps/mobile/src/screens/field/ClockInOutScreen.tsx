@@ -312,9 +312,7 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                       style={styles.typeValue}
                     >
                       <NBText variant="body" color="black">
-                        {selectedShift?.shift_name ??
-                          selectedShift?.shift_code ??
-                          t('attendance:clockInOut.noShiftOptions')}
+                        {selectedShift?.shift_name ?? t('attendance:clockInOut.noShiftOptions')}
                       </NBText>
                       <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
                     </TouchableOpacity>

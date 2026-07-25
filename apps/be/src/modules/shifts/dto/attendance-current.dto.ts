@@ -9,7 +9,6 @@ import { AttributionPhase } from '../services/shift-attribution.service';
 export class ShiftOptionDto {
   @ApiProperty() shift_definition_id: string;
   @ApiProperty({ nullable: true }) shift_name?: string;
-  @ApiProperty({ nullable: true }) shift_code?: string;
   @ApiProperty({ description: 'WIB service-day this option belongs to (YYYY-MM-DD)' })
   service_day: string;
   @ApiProperty({ enum: ['early', 'covering', 'grace'] }) phase: AttributionPhase;

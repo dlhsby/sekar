@@ -19,6 +19,7 @@ export const CONFIGURABLE_NOTIFICATION_TYPES: readonly NotificationType[] = [
   NotificationType.OVERTIME_REJECTED,
   NotificationType.MISSING_WORKER_ALERT,
   NotificationType.SHIFT_REMINDER,
+  NotificationType.SHIFT_END_REMINDER,
   // Phase 3-8 close-out: plant-overdue digest is opt-out-able
   NotificationType.AREA_PLANT_OVERDUE,
 ] as const;

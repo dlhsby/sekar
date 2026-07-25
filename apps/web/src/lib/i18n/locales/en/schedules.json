@@ -394,28 +394,39 @@
   },
   "shiftDefs": {
     "title": "Shift Settings",
-    "buttonLabel": "Shifts",
-    "description": "Configure the day's shifts — start/end times and the attribution window (minutes before start / after end). Any number of shifts.",
+    "buttonLabel": "Shift",
+    "description": "Configure daily shifts — start/end times, attribution windows, and reminders. Any number of shifts.",
     "add": "Add Shift",
     "addTitle": "Add Shift",
     "editTitle": "Edit Shift",
     "empty": "No shifts yet.",
     "inactive": "Inactive",
+    "searchPlaceholder": "Search shifts…",
     "created": "Shift created",
     "updated": "Shift updated",
     "deleted": "Shift deleted",
-    "confirmDelete": "Delete shift \"{{name}}\"? Historical attendance is preserved.",
+    "confirmDelete": "Delete shift \"{{name}}\"? Past attendance records are kept.",
     "window": "Window {{early}}m/{{cutoff}}m",
+    "columns": {
+      "name": "Name",
+      "status": "Status"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "reminderHint": "0 or blank disables the reminder.",
     "errors": {
-      "required": "Name and code are required"
+      "required": "Name is required"
     },
     "fields": {
       "name": "Name",
-      "code": "Code",
       "start": "Start",
       "end": "End",
       "early": "Before (min)",
       "cutoff": "After (min)",
+      "startReminder": "Start reminder (min)",
+      "endReminder": "End reminder (min)",
       "active": "Active"
     }
   }

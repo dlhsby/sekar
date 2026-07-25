@@ -88,7 +88,7 @@ export function ShiftPickerSheet({
               onPress={() => setPending(option)}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              accessibilityLabel={option.shift_name ?? option.shift_code ?? phaseLabel(option)}
+              accessibilityLabel={option.shift_name ?? phaseLabel(option)}
               activeOpacity={0.7}
               testID={`shift-picker-option-${option.shift_definition_id}`}
             >
@@ -99,7 +99,7 @@ export function ShiftPickerSheet({
               />
               <View style={styles.optionText}>
                 <NBText variant="body" color="black">
-                  {option.shift_name ?? option.shift_code ?? option.shift_definition_id}
+                  {option.shift_name ?? option.shift_definition_id}
                 </NBText>
                 <NBText variant="caption" color="gray500" style={styles.optionMeta}>
                   {phaseLabel(option)} · {option.service_day}

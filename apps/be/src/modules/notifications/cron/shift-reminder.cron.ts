@@ -9,9 +9,10 @@ import { RedisService } from '../../../common/services/redis.service';
 /**
  * Shift reminder cron (Phase 4-3, §C3).
  *
- * Every 15 minutes (Asia/Jakarta), reads today's roster (ADR-013) for workers
- * whose shift starts within the next 15 minutes and pushes a one-time
- * `SHIFT_REMINDER` to each. The dedup key is keyed on the Jakarta calendar date
+ * Every 15 minutes (Asia/Jakarta), reads today's roster (ADR-013) and pushes a
+ * one-time `SHIFT_REMINDER` to each worker whose shift's configured lead time
+ * (`shift_definitions.start_reminder_min`, default 15, 0 = off) falls in the
+ * current cron bucket. The dedup key is keyed on the Jakarta calendar date
  * the reminder fires (which IS the shift's day) so an ongoing daily schedule is
  * reminded once per day — a 24h Redis TTL guards against the cron's overlap.
  *
@@ -23,7 +24,10 @@ import { RedisService } from '../../../common/services/redis.service';
 export class ShiftReminderCron {
   private readonly logger = new Logger(ShiftReminderCron.name);
   private static readonly JAKARTA_OFFSET_MS = 7 * 60 * 60 * 1000;
+  /** Cron cadence in minutes — the width of the "fire" bucket around each lead time. */
   private static readonly WINDOW_MINUTES = 15;
+  /** Fallback lead time when a shift has no configured `start_reminder_min`. */
+  private static readonly DEFAULT_LEAD_MINUTES = 15;
   private static readonly DEDUP_TTL_SECONDS = 86_400;
 
   constructor(
@@ -59,17 +63,26 @@ export class ShiftReminderCron {
         shift_definition_id: r.shift_definition_id as string,
         shift_name: r.shift_definition!.name,
         start_time: r.shift_definition!.start_time,
+        // Per-shift lead time (ADR-055). Null/undefined → the legacy 15 min; 0 = off.
+        reminder_min:
+          r.shift_definition!.start_reminder_min ?? ShiftReminderCron.DEFAULT_LEAD_MINUTES,
       }));
 
     let sent = 0;
 
     for (const row of rows) {
+      if (!row.reminder_min || row.reminder_min <= 0) continue; // reminder disabled
+
       const startMinutes = this.parseStartMinutes(row.start_time);
       if (startMinutes === null) continue;
 
-      // Minutes until the shift starts, wrapping across midnight.
+      // Minutes until the shift starts, wrapping across midnight. Fire once in the
+      // cron-cadence bucket that contains the shift's configured lead time, i.e.
+      // delta ∈ (reminder_min − CADENCE, reminder_min]. Dedup guards the overlap.
       const delta = (startMinutes - minutesNow + 1440) % 1440;
-      if (delta <= 0 || delta > ShiftReminderCron.WINDOW_MINUTES) continue;
+      if (delta <= 0) continue;
+      if (delta > row.reminder_min || delta <= row.reminder_min - ShiftReminderCron.WINDOW_MINUTES)
+        continue;
 
       const dedupKey = `shift-reminder:${dateStr}:${row.user_id}:${row.shift_definition_id}`;
       const first = await this.claimOnce(dedupKey);
@@ -79,7 +92,7 @@ export class ShiftReminderCron {
         .sendToUser({
           user_id: row.user_id,
           title: 'Pengingat shift',
-          body: `Shift ${row.shift_name} Anda dimulai dalam ${ShiftReminderCron.WINDOW_MINUTES} menit.`,
+          body: `Shift ${row.shift_name} Anda dimulai dalam ${row.reminder_min} menit.`,
           type: NotificationType.SHIFT_REMINDER,
           data: { shift_definition_id: row.shift_definition_id, location_id: row.location_id },
         })

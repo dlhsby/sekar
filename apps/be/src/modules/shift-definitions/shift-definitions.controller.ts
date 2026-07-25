@@ -49,7 +49,7 @@ export class ShiftDefinitionsController {
   })
   @ApiBody({ type: CreateShiftDefinitionDto })
   @ApiResponse({ status: 201, type: ShiftDefinition })
-  @ApiResponse({ status: 409, description: 'Duplicate name or code' })
+  @ApiResponse({ status: 409, description: 'Duplicate name' })
   create(@Body() dto: CreateShiftDefinitionDto): Promise<ShiftDefinition> {
     return this.shiftDefinitionsService.create(dto);
   }
@@ -64,7 +64,7 @@ export class ShiftDefinitionsController {
   @ApiBody({ type: UpdateShiftDefinitionDto })
   @ApiResponse({ status: 200, type: ShiftDefinition })
   @ApiResponse({ status: 404, description: 'Not found' })
-  @ApiResponse({ status: 409, description: 'Duplicate name or code' })
+  @ApiResponse({ status: 409, description: 'Duplicate name' })
   update(@Param('id') id: string, @Body() dto: UpdateShiftDefinitionDto): Promise<ShiftDefinition> {
     return this.shiftDefinitionsService.update(id, dto);
   }

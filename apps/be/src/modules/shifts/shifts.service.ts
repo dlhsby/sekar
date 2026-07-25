@@ -629,7 +629,6 @@ export class ShiftsService {
     const options: ShiftOptionDto[] = matches.map((m, i) => ({
       shift_definition_id: m.candidate.shift_definition_id,
       shift_name: m.candidate.shift_name,
-      shift_code: m.candidate.shift_code,
       service_day: m.candidate.service_day,
       phase: m.phase,
       minutes_to_start: m.minutesToStart,

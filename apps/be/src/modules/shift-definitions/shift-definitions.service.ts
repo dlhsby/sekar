@@ -6,13 +6,11 @@ import { CreateShiftDefinitionDto } from './dto/create-shift-definition.dto';
 import { UpdateShiftDefinitionDto } from './dto/update-shift-definition.dto';
 
 /**
- * Service for managing shift definitions (read-only)
+ * Service for managing shift definitions.
  *
- * Shift definitions are fixed and not configurable at runtime.
- * Phase 2 defines 3 fixed shifts:
- * - Shift 1: 06:00 - 15:00 (morning)
- * - Shift 2: 15:00 - 23:00 (afternoon)
- * - Shift 3: 21:00 - 05:00 (night, crosses midnight)
+ * Shift definitions are configurable at runtime (ADR-055) — any number of
+ * shifts, each fetched from the database. Seed data ships three defaults but no
+ * business logic assumes a fixed count.
  */
 @Injectable()
 export class ShiftDefinitionsService {
@@ -59,28 +57,6 @@ export class ShiftDefinitionsService {
   }
 
   /**
-   * Get a shift definition by code
-   *
-   * @param code - Shift definition code (SHIFT1, SHIFT2, SHIFT3)
-   * @returns The shift definition
-   * @throws NotFoundException if shift definition not found
-   */
-  async findByCode(code: string): Promise<ShiftDefinition> {
-    this.logger.log(`Fetching shift definition with code: ${code}`);
-
-    const shiftDefinition = await this.shiftDefinitionRepository.findOne({
-      where: { code, is_active: true },
-    });
-
-    if (!shiftDefinition) {
-      this.logger.warn(`Shift definition with code "${code}" not found`);
-      throw new NotFoundException(`Shift definition with code "${code}" not found`);
-    }
-
-    return shiftDefinition;
-  }
-
-  /**
    * Check if a shift definition exists by ID
    *
    * @param id - Shift definition ID (UUID)
@@ -94,29 +70,27 @@ export class ShiftDefinitionsService {
   }
 
   /**
-   * Create a shift definition (ADR-055 configurable shifts). Enforces unique
-   * name + code; derives `crosses_midnight` from the times when omitted.
+   * Create a shift definition (ADR-055 configurable shifts). Enforces a unique
+   * name; derives `crosses_midnight` from the times when omitted. The start
+   * reminder defaults to 15 min (preserving the legacy fixed window); the end
+   * reminder is off unless set.
    */
   async create(dto: CreateShiftDefinitionDto): Promise<ShiftDefinition> {
-    const providedCode = dto.code?.trim();
-    // `code` is internal now (not shown in the UI). Assert the name is unique;
-    // use the given code if supplied (assert it too), else auto-generate a unique
-    // one from the name.
-    await this.assertUnique(dto.name, providedCode || undefined);
-    const code = providedCode || (await this.generateUniqueCode(dto.name));
+    await this.assertUnique(dto.name);
     const entity = this.shiftDefinitionRepository.create({
       name: dto.name,
-      code,
       start_time: dto.start_time,
       end_time: dto.end_time,
       crosses_midnight:
         dto.crosses_midnight ?? this.derivesCrossesMidnight(dto.start_time, dto.end_time),
       early_window_min: dto.early_window_min ?? 60,
       cutoff_grace_min: dto.cutoff_grace_min ?? 60,
+      start_reminder_min: dto.start_reminder_min ?? 15,
+      end_reminder_min: dto.end_reminder_min ?? null,
       is_active: dto.is_active ?? true,
     });
     const saved = await this.shiftDefinitionRepository.save(entity);
-    this.logger.log(`Created shift definition ${saved.code} (${saved.id})`);
+    this.logger.log(`Created shift definition ${saved.name} (${saved.id})`);
     return saved;
   }
 
@@ -130,14 +104,15 @@ export class ShiftDefinitionsService {
     if (!existing) {
       throw new NotFoundException(`Shift definition with ID ${id} not found`);
     }
-    await this.assertUnique(dto.name, dto.code, id);
+    await this.assertUnique(dto.name, id);
 
     if (dto.name !== undefined) existing.name = dto.name;
-    if (dto.code !== undefined) existing.code = dto.code;
     if (dto.start_time !== undefined) existing.start_time = dto.start_time;
     if (dto.end_time !== undefined) existing.end_time = dto.end_time;
     if (dto.early_window_min !== undefined) existing.early_window_min = dto.early_window_min;
     if (dto.cutoff_grace_min !== undefined) existing.cutoff_grace_min = dto.cutoff_grace_min;
+    if (dto.start_reminder_min !== undefined) existing.start_reminder_min = dto.start_reminder_min;
+    if (dto.end_reminder_min !== undefined) existing.end_reminder_min = dto.end_reminder_min;
     if (dto.is_active !== undefined) existing.is_active = dto.is_active;
     existing.crosses_midnight =
       dto.crosses_midnight ??
@@ -146,7 +121,7 @@ export class ShiftDefinitionsService {
         : existing.crosses_midnight);
 
     const saved = await this.shiftDefinitionRepository.save(existing);
-    this.logger.log(`Updated shift definition ${saved.code} (${saved.id})`);
+    this.logger.log(`Updated shift definition ${saved.name} (${saved.id})`);
     return saved;
   }
 
@@ -162,45 +137,21 @@ export class ShiftDefinitionsService {
       throw new NotFoundException(`Shift definition with ID ${id} not found`);
     }
     await this.shiftDefinitionRepository.softDelete(id);
-    this.logger.log(`Soft-deleted shift definition ${existing.code} (${id})`);
+    this.logger.log(`Soft-deleted shift definition ${existing.name} (${id})`);
   }
 
-  /** Reject a duplicate name/code (excluding `ignoreId` on update). */
-  private async assertUnique(name?: string, code?: string, ignoreId?: string): Promise<void> {
-    if (name) {
-      const clash = await this.shiftDefinitionRepository.findOne({
-        where: ignoreId ? { name, id: Not(ignoreId) } : { name },
-      });
-      if (clash) throw new ConflictException(`A shift definition named "${name}" already exists`);
-    }
-    if (code) {
-      const clash = await this.shiftDefinitionRepository.findOne({
-        where: ignoreId ? { code, id: Not(ignoreId) } : { code },
-      });
-      if (clash)
-        throw new ConflictException(`A shift definition with code "${code}" already exists`);
-    }
+  /** Reject a duplicate name (excluding `ignoreId` on update). */
+  private async assertUnique(name?: string, ignoreId?: string): Promise<void> {
+    if (!name) return;
+    const clash = await this.shiftDefinitionRepository.findOne({
+      where: ignoreId ? { name, id: Not(ignoreId) } : { name },
+    });
+    if (clash) throw new ConflictException(`A shift definition named "${name}" already exists`);
   }
 
   /** A shift crosses midnight when its end is at/earlier than its start. */
   private derivesCrossesMidnight(startTime: string, endTime: string): boolean {
     return endTime <= startTime;
-  }
-
-  /**
-   * Auto-generate a unique internal code from the name (code is no longer entered
-   * in the UI). Base = the name's uppercased alphanumerics (≤8 chars), then a
-   * numeric suffix until unique; falls back to `SHIFT` for an empty base.
-   */
-  private async generateUniqueCode(name: string): Promise<string> {
-    const base = (name.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8) || 'SHIFT');
-    for (let n = 0; n < 1000; n++) {
-      const candidate = n === 0 ? base : `${base.slice(0, 8)}${n}`.slice(0, 10);
-      const clash = await this.shiftDefinitionRepository.findOne({ where: { code: candidate } });
-      if (!clash) return candidate;
-    }
-    // Extremely unlikely; keep the type honest.
-    return `${base.slice(0, 5)}${Date.now().toString().slice(-5)}`;
   }
 
   /**

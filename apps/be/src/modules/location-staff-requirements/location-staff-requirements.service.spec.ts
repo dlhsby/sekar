@@ -27,7 +27,6 @@ describe('LocationStaffRequirementsService', () => {
   const mockShiftDefinition = {
     id: '22222222-2222-2222-2222-222222222201',
     name: 'Shift 1',
-    code: 'SHIFT1',
     start_time: '06:00:00',
     end_time: '15:00:00',
     crosses_midnight: false,

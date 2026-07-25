@@ -465,7 +465,6 @@ erDiagram
 | rayons | uq_rayons_name | name |
 | rayons | uq_rayons_code | code |
 | location_types | uq_area_types_code | code |
-| shift_definitions | uq_shift_definitions_code | code |
 | shift_definitions | uq_shift_definitions_name | name |
 | activity_types | uq_activity_types_code | code |
 | schedules | uq_schedule_overlap | (user_id, effective_date, shift_definition_id) |

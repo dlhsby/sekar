@@ -26,16 +26,6 @@ export class CreateShiftDefinitionDto {
   @MaxLength(50)
   name: string;
 
-  @ApiPropertyOptional({
-    description: 'Internal short code (unique). Auto-generated from the name when omitted.',
-    example: 'SHIFT1',
-    maxLength: 10,
-  })
-  @IsOptional()
-  @IsString()
-  @MaxLength(10)
-  code?: string;
-
   @ApiProperty({ description: 'Start time (HH:MM[:SS], 24h)', example: '06:00' })
   @Matches(TIME_RE, { message: 'start_time must be HH:MM or HH:MM:SS (24-hour)' })
   start_time: string;
@@ -69,6 +59,26 @@ export class CreateShiftDefinitionDto {
   @Min(0)
   @Max(1440)
   cutoff_grace_min?: number;
+
+  @ApiPropertyOptional({
+    description: 'Reminder: minutes before start to notify (default 15, 0 = off)',
+    example: 15,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  start_reminder_min?: number;
+
+  @ApiPropertyOptional({
+    description: 'Reminder: minutes before end to notify (null/0 = off)',
+    example: 10,
+  })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  end_reminder_min?: number;
 
   @ApiPropertyOptional({ description: 'Whether the shift is active/offered', example: true })
   @IsOptional()

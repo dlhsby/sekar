@@ -12,7 +12,6 @@ describe('ScheduleOverlapService', () => {
   const mockShift1: ShiftDefinition = {
     id: 'shift-1',
     name: 'Shift 1',
-    code: 'S1',
     start_time: '06:00:00',
     end_time: '15:00:00',
     crosses_midnight: false,
@@ -24,7 +23,6 @@ describe('ScheduleOverlapService', () => {
   const mockShift2: ShiftDefinition = {
     id: 'shift-2',
     name: 'Shift 2',
-    code: 'S2',
     start_time: '15:00:00',
     end_time: '23:00:00',
     crosses_midnight: false,
@@ -36,7 +34,6 @@ describe('ScheduleOverlapService', () => {
   const mockShift3: ShiftDefinition = {
     id: 'shift-3',
     name: 'Shift 3',
-    code: 'S3',
     start_time: '21:00:00',
     end_time: '05:00:00',
     crosses_midnight: true,

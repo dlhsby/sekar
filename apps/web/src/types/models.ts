@@ -269,7 +269,6 @@ export interface UpdateLocationDto extends MapStyleFieldsDto {
 export interface ShiftDefinition {
   id: string;
   name: string;
-  code: string;
   start_time: string;
   end_time: string;
   crosses_midnight: boolean;
@@ -277,6 +276,9 @@ export interface ShiftDefinition {
   // ADR-055 attribution window (minutes) — configurable per shift.
   early_window_min?: number;
   cutoff_grace_min?: number;
+  // ADR-055 reminder timing (minutes). start default 15; end null = off.
+  start_reminder_min?: number;
+  end_reminder_min?: number | null;
   created_at: string;
 }
 

@@ -254,7 +254,6 @@ describe('ShiftsService', () => {
       {
         id: 'sd-1',
         name: 'Shift 1',
-        code: 'SHIFT1',
         start_time: '06:00:00',
         end_time: '15:00:00',
         crosses_midnight: false,
@@ -263,7 +262,6 @@ describe('ShiftsService', () => {
       {
         id: 'sd-2',
         name: 'Shift 2',
-        code: 'SHIFT2',
         start_time: '15:00:00',
         end_time: '23:00:00',
         crosses_midnight: false,
@@ -272,7 +270,6 @@ describe('ShiftsService', () => {
       {
         id: 'sd-3',
         name: 'Shift 3',
-        code: 'SHIFT3',
         start_time: '21:00:00',
         end_time: '05:00:00',
         crosses_midnight: true,
@@ -698,7 +695,6 @@ describe('ShiftsService', () => {
           early_window_min: 100_000_000,
           cutoff_grace_min: 100_000_000,
           shift_name: 'Shift 1',
-          shift_code: 'SHIFT1',
         },
       ]);
 
