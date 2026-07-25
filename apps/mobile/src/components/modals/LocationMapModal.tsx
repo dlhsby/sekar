@@ -336,6 +336,14 @@ export function LocationMapModal({
 
       {/* Info strip — with padding since noPadding applies to the sheet container */}
       <View style={styles.infoStrip}>
+        {area?.name ? (
+          <View style={styles.areaNameRow}>
+            <MaterialCommunityIcons name="map-marker-outline" size={16} color={nbColors.gray700} />
+            <NBText variant="body" color="black" style={styles.areaNameText} numberOfLines={1}>
+              {area.name}
+            </NBText>
+          </View>
+        ) : null}
         {hasCoords ? (
           <>
             <View style={styles.coordsRow}>
@@ -450,6 +458,15 @@ const styles = StyleSheet.create({
   coordsFont: {
     // override mono-sm with platform monospace fallback
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  areaNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: nbSpacing.xs,
+  },
+  areaNameText: {
+    flexShrink: 1,
+    fontWeight: '700',
   },
   coordsRow: {
     flexDirection: 'row',
