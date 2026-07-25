@@ -383,6 +383,81 @@ describe('ShiftsService', () => {
         clockInDto.gps_lng,
       );
     });
+
+    it('CONTINUES an already-open session across midnight — no second open row (review #1)', async () => {
+      // Open Shift-3 session started 2026-07-24 21:00 WIB (14:00Z); a redundant/re-entry
+      // clock-in just after midnight must reuse its key, not compute today's service_day.
+      const openRow = {
+        ...mockShift,
+        id: 'session-open',
+        clock_in_time: new Date('2026-07-24T14:00:00Z'),
+        clock_out_time: null,
+        shift_definition_id: 'sd-3',
+        is_overtime: false,
+      };
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(openRow); // findOpenSessionRow → open row
+      mockPunches = [
+        inPunch({ punched_at: new Date('2026-07-24T14:00:00Z'), shift_definition_id: 'sd-3' }),
+        inPunch({ punched_at: new Date('2026-07-24T17:30:00Z'), shift_definition_id: 'sd-3' }), // 00:30 WIB next day
+      ];
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(openRow)); // findSessionRow → same row
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve({ ...openRow, ...r }));
+
+      const result = await service.clockIn(mockUser.id, clockInDto);
+
+      expect(result.id).toBe('session-open'); // same session, not a duplicate
+      expect(result.clock_out_time).toBeFalsy(); // still open
+      // reused the open session's shift → did NOT recompute via shift-definition lookup
+      expect(mockShiftDefinitionRepo.find).not.toHaveBeenCalled();
+      expect(mockStatusCalculator.onClockIn).toHaveBeenCalledWith(
+        mockUser.id,
+        'session-open',
+        mockArea.id,
+        'sd-3',
+        clockInDto.gps_lat,
+        clockInDto.gps_lng,
+      );
+    });
+
+    it('reopening a closed session CLEARS clock-out fields to null, not stale (review #3)', async () => {
+      const closedRow = {
+        ...mockShift,
+        id: 'session-x',
+        clock_out_time: new Date('2026-01-09T12:00:00Z'),
+        clock_out_photo_url: 'old-out.jpg',
+        clock_out_gps_lat: 1,
+        clock_out_gps_lng: 2,
+      };
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(null); // no open session → fresh path
+      mockShiftDefinitionRepo.find.mockResolvedValue([]);
+      mockPunches = [
+        inPunch({ punched_at: new Date('2026-01-09T08:00:00Z') }),
+        {
+          label: PunchLabel.CLOCK_OUT,
+          punched_at: new Date('2026-01-09T12:00:00Z'),
+          location_id: mockArea.id,
+          gps_lat: 1,
+          gps_lng: 2,
+          outside_boundary: false,
+        },
+        inPunch({ punched_at: new Date('2026-01-09T13:00:00Z') }), // re-entry → open again
+      ];
+      let saved: any;
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(closedRow));
+      mockRepository.save.mockImplementation((r: any) => {
+        saved = r;
+        return Promise.resolve(r);
+      });
+
+      await service.clockIn(mockUser.id, clockInDto);
+
+      expect(saved.clock_out_time).toBeNull(); // reopened
+      expect(saved.clock_out_photo_url).toBeNull(); // NOT 'old-out.jpg' (would be stale if undefined)
+      expect(saved.clock_out_gps_lat).toBeNull();
+      expect(saved.clock_out_gps_lng).toBeNull();
+    });
   });
 
   describe('clockOut (punch model, ADR-055)', () => {

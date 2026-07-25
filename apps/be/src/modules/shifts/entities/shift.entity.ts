@@ -107,7 +107,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_in_gps_lat: number;
+  clock_in_gps_lat: number | null;
 
   @ApiProperty({
     description: 'GPS longitude at clock-in',
@@ -124,7 +124,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_in_gps_lng: number;
+  clock_in_gps_lng: number | null;
 
   @ApiProperty({
     description: 'S3 URL of selfie photo taken at clock-in',
@@ -141,7 +141,7 @@ export class Shift {
     nullable: true,
   })
   @Column({ type: 'timestamp with time zone', nullable: true })
-  clock_out_time: Date;
+  clock_out_time: Date | null;
 
   @ApiProperty({
     description: 'GPS latitude at clock-out',
@@ -158,7 +158,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_out_gps_lat: number;
+  clock_out_gps_lat: number | null;
 
   @ApiProperty({
     description: 'GPS longitude at clock-out',
@@ -175,7 +175,7 @@ export class Shift {
       from: (value: string | null) => (value ? parseFloat(value) : null),
     },
   })
-  clock_out_gps_lng: number;
+  clock_out_gps_lng: number | null;
 
   @ApiProperty({
     description: 'S3 URL of selfie photo taken at clock-out',
@@ -184,7 +184,7 @@ export class Shift {
     nullable: true,
   })
   @Column({ type: 'text', nullable: true })
-  clock_out_photo_url?: string;
+  clock_out_photo_url?: string | null;
 
   @ApiProperty({
     description: 'Whether this shift is an overtime shift',

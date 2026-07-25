@@ -232,10 +232,21 @@ export class ShiftsService {
       }
     }
 
-    // 4. Attribution: the worker's shift for now (roster → configured → time match);
-    //    overtime is not attributed to a shift-definition (ADR-014).
-    const shiftDefinition = isOvertime ? null : await this.getUserShiftOrCurrent(userId);
-    const serviceDay = TimezoneUtil.jakartaDateString();
+    // 4. Session key. If a session is already OPEN, this clock-in CONTINUES it
+    //    (a redundant tap or a re-entry) — reuse its service_day + definition so
+    //    the punch lands on the same key even across midnight. Without this a
+    //    post-midnight re-clock-in would compute *today's* service_day and spawn
+    //    a SECOND open row (ADR-055 review finding #1). Only when nothing is open
+    //    do we start a fresh session (today's date + the worker's shift).
+    const openSession = await this.findOpenSessionRow(userId, isOvertime);
+    const shiftDefId = openSession
+      ? openSession.shift_definition_id
+      : isOvertime
+        ? null
+        : ((await this.getUserShiftOrCurrent(userId))?.id ?? null);
+    const serviceDay = openSession
+      ? TimezoneUtil.jakartaDateOf(openSession.clock_in_time)
+      : TimezoneUtil.jakartaDateString();
 
     // 5. Append the immutable clock-in punch (idempotent on the client uuid).
     await this.insertPunch({
@@ -244,7 +255,7 @@ export class ShiftsService {
       punched_at: new Date(),
       label: PunchLabel.CLOCK_IN,
       service_day: serviceDay,
-      shift_definition_id: shiftDefinition?.id ?? null,
+      shift_definition_id: shiftDefId,
       location_id: area?.id ?? null,
       gps_lat: dto.gps_lat,
       gps_lng: dto.gps_lng,
@@ -255,12 +266,7 @@ export class ShiftsService {
     });
 
     // 6. Rebuild the maintained session-projection row from that key's punches.
-    const session = await this.projectSession(
-      userId,
-      serviceDay,
-      shiftDefinition?.id ?? null,
-      isOvertime,
-    );
+    const session = await this.projectSession(userId, serviceDay, shiftDefId, isOvertime);
     this.logger.log(
       `User ${userId} clocked in. Session ${session.id}, Location: ${area?.name || 'None'}`,
     );
@@ -497,27 +503,43 @@ export class ShiftsService {
 
     // Clock-in facet = the first-in punch.
     row.clock_in_time = s.clockInTime ?? row.clock_in_time;
-    row.clock_in_gps_lat = s.firstIn?.gps_lat ?? (null as unknown as number);
-    row.clock_in_gps_lng = s.firstIn?.gps_lng ?? (null as unknown as number);
+    row.clock_in_gps_lat = s.firstIn?.gps_lat ?? null;
+    row.clock_in_gps_lng = s.firstIn?.gps_lng ?? null;
     row.clock_in_photo_url = s.firstIn?.photo_url ?? null;
     row.clock_in_outside_boundary = s.firstIn?.outside_boundary ?? false;
 
-    // Clock-out facet = the last closing punch — cleared while the session is open.
+    // Clock-out facet = the last closing punch. Cleared with `null` (never
+    // `undefined`) while the session is open — TypeORM omits `undefined` on an
+    // UPDATE, which would leave a stale clock-out on a reopened session; `null`
+    // is emitted as `SET ... = NULL`.
     if (s.clockOutTime) {
       row.clock_out_time = s.clockOutTime;
-      row.clock_out_gps_lat = s.lastOut?.gps_lat ?? (null as unknown as number);
-      row.clock_out_gps_lng = s.lastOut?.gps_lng ?? (null as unknown as number);
-      row.clock_out_photo_url = s.lastOut?.photo_url ?? undefined;
+      row.clock_out_gps_lat = s.lastOut?.gps_lat ?? null;
+      row.clock_out_gps_lng = s.lastOut?.gps_lng ?? null;
+      row.clock_out_photo_url = s.lastOut?.photo_url ?? null;
       row.clock_out_outside_boundary = s.lastOut?.outside_boundary ?? false;
     } else {
-      row.clock_out_time = null as unknown as Date;
-      row.clock_out_gps_lat = null as unknown as number;
-      row.clock_out_gps_lng = null as unknown as number;
-      row.clock_out_photo_url = undefined;
+      row.clock_out_time = null;
+      row.clock_out_gps_lat = null;
+      row.clock_out_gps_lng = null;
+      row.clock_out_photo_url = null;
       row.clock_out_outside_boundary = false;
     }
 
     return this.shiftRepository.save(row);
+  }
+
+  /**
+   * The worker's currently-open session-projection row (clock_out_time IS NULL)
+   * for the given overtime flag, newest first. Used by clock-in to CONTINUE an
+   * open session (its key) rather than open a second row — the fix for a
+   * post-midnight re-entry landing on a fresh service_day. Null when none is open.
+   */
+  private async findOpenSessionRow(userId: string, isOvertime: boolean): Promise<Shift | null> {
+    return this.shiftRepository.findOne({
+      where: { user_id: userId, clock_out_time: IsNull(), is_overtime: isOvertime },
+      order: { clock_in_time: 'DESC' },
+    });
   }
 
   /**
