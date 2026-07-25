@@ -27,6 +27,8 @@ export interface ClockPunchOptions {
   accuracyM?: number;
   shiftDefinitionId?: string;
   serviceDay?: string;
+  /** ISO capture time — set for an offline punch so sync records the real time. */
+  punchedAt?: string;
 }
 
 function applyPunchOptions(payload: Record<string, unknown>, opts?: ClockPunchOptions): void {
@@ -35,6 +37,7 @@ function applyPunchOptions(payload: Record<string, unknown>, opts?: ClockPunchOp
   if (opts.accuracyM != null) payload.accuracy_m = opts.accuracyM;
   if (opts.shiftDefinitionId) payload.shift_definition_id = opts.shiftDefinitionId;
   if (opts.serviceDay) payload.service_day = opts.serviceDay;
+  if (opts.punchedAt) payload.punched_at = opts.punchedAt;
 }
 
 /**

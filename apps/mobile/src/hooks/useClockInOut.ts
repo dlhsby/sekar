@@ -11,6 +11,7 @@ import uuid from 'react-native-uuid';
 import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { clockIn, clockOut, getCurrentShift, getCurrentState } from '../services/api/shiftsApi';
+import { addToQueue } from '../services/sync/offlineQueue';
 import type { ShiftOption } from '../types/api.types';
 import { setCurrentShift } from '../store/slices/shiftSlice';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
@@ -343,14 +344,38 @@ export function useClockInOut() {
     try {
       const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
 
-      // ADR-055: every punch carries a client uuid so a retry (e.g. an offline
-      // sync) is idempotent server-side; an explicit picker shift overrides the
-      // automatic near-midnight attribution.
+      // ADR-055: every punch carries a client uuid so a retry (an offline sync)
+      // is idempotent server-side, plus the capture time so an offline punch
+      // records when it happened, not when the queue drains.
+      const clientUuid = uuid.v4() as string;
+      const punchedAt = new Date().toISOString();
+
+      // Offline-first (ADR-002): queue the punch and let the sync manager replay
+      // it when connectivity returns. Idempotent on the client uuid.
+      if (!isOnline) {
+        await addToQueue('clock-in', {
+          gps_lat: location.latitude,
+          gps_lng: location.longitude,
+          selfie_photo: selfieBase64,
+          client_uuid: clientUuid,
+          accuracy_m: location.accuracy ?? undefined,
+          shift_definition_id: shift?.shift_definition_id,
+          service_day: shift?.service_day,
+          punched_at: punchedAt,
+        });
+        setSelfie(null);
+        Alert.alert('OK', i18n.t('attendance:clockInOut.offlineQueued'), [
+          { text: 'OK', onPress: onSuccess },
+        ]);
+        return;
+      }
+
       const response = await clockIn(location.latitude, location.longitude, selfieBase64, undefined, {
-        clientUuid: uuid.v4() as string,
+        clientUuid,
         accuracyM: location.accuracy ?? undefined,
         shiftDefinitionId: shift?.shift_definition_id,
         serviceDay: shift?.service_day,
+        punchedAt,
       });
       if (response.error || !response.data) {
         throw new Error(response.error || i18n.t('location:clockInOut.clockInFail'));
@@ -379,7 +404,7 @@ export function useClockInOut() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [location, selfie, dispatch]);
+  }, [location, selfie, dispatch, isOnline]);
 
   const handleClockOut = useCallback(async (onSuccess: () => void) => {
     if (!currentShift) {
@@ -410,9 +435,30 @@ export function useClockInOut() {
               }
 
               const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
+              const clientUuid = uuid.v4() as string;
+              const punchedAt = new Date().toISOString();
+
+              // Offline-first (ADR-002): queue + optimistically end the shift.
+              if (!isOnline) {
+                await addToQueue('clock-out', {
+                  gps_lat: location.latitude!,
+                  gps_lng: location.longitude!,
+                  client_uuid: clientUuid,
+                  accuracy_m: location.accuracy ?? undefined,
+                  punched_at: punchedAt,
+                });
+                setSelfie(null);
+                dispatch(setCurrentShift(null));
+                Alert.alert('OK', i18n.t('attendance:clockInOut.offlineQueued'), [
+                  { text: 'OK', onPress: onSuccess },
+                ]);
+                return;
+              }
+
               const response = await clockOut(location.latitude!, location.longitude!, selfieBase64, {
-                clientUuid: uuid.v4() as string,
+                clientUuid,
                 accuracyM: location.accuracy ?? undefined,
+                punchedAt,
               });
               if (response.error) {
                 const errMsg = response.error;
@@ -439,7 +485,7 @@ export function useClockInOut() {
       ],
       { cancelable: true },
     );
-  }, [currentShift, location, selfie, dispatch]);
+  }, [currentShift, location, selfie, dispatch, isOnline]);
 
   // Area state for the boundary badge. Three cases:
   //  • a geofenceable area — today's lokasi OR a rayon/kawasan with a boundary

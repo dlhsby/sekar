@@ -157,7 +157,7 @@
     "captureSelfie": "Capture Selfie",
     "captureForVerification": "Capture selfie for identity verification",
     "captureForClockOutVerification": "Capture selfie to verify clock out",
-    "offlineBannerClockIn": "Offline Mode - Clock in requires internet connection",
+    "offlineBannerClockIn": "Offline — clock in will sync when online.",
     "onlineRequiredForClockIn": "You must be online to clock in. Connect to the internet first.",
     "offlineModeClockOut": "Offline mode. Clock out will sync when online.",
     "selfiePreviewTitle": "Selfie Clock In",
@@ -183,7 +183,8 @@
       "early": "Starting soon",
       "covering": "In progress",
       "grace": "Just ended"
-    }
+    },
+    "offlineQueued": "Saved offline — will sync when online."
   },
   "gpsSection": {
     "capturingLocation": "Getting your location...",

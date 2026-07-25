@@ -4,6 +4,7 @@ import {
   IsString,
   IsUUID,
   IsOptional,
+  IsISO8601,
   Min,
   Max,
   MaxLength,
@@ -62,6 +63,16 @@ export class ClockInDto {
   @IsOptional()
   @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'service_day must be YYYY-MM-DD' })
   service_day?: string;
+
+  @ApiProperty({
+    description:
+      'When the punch actually happened (ISO 8601). Set by an OFFLINE client so a ' +
+      'later sync records the capture time, not the sync time. Clamped to ≤ now server-side.',
+    required: false,
+  })
+  @IsOptional()
+  @IsISO8601()
+  punched_at?: string;
 
   @ApiProperty({
     description: 'GPS latitude of user location',

@@ -157,7 +157,7 @@
     "captureSelfie": "Ambil Selfie",
     "captureForVerification": "Ambil selfie untuk verifikasi identitas",
     "captureForClockOutVerification": "Ambil selfie untuk verifikasi clock out",
-    "offlineBannerClockIn": "Mode Offline - Clock in memerlukan koneksi",
+    "offlineBannerClockIn": "Mode offline — clock in akan disinkronkan saat online.",
     "onlineRequiredForClockIn": "Anda harus online untuk clock in. Sambungkan ke internet terlebih dahulu.",
     "offlineModeClockOut": "Mode offline. Clock out akan disinkronkan saat online.",
     "selfiePreviewTitle": "Selfie Clock In",
@@ -183,7 +183,8 @@
       "early": "Akan mulai",
       "covering": "Sedang berjalan",
       "grace": "Baru selesai"
-    }
+    },
+    "offlineQueued": "Tersimpan offline — akan disinkronkan saat online."
   },
   "gpsSection": {
     "capturingLocation": "Mendapatkan lokasi...",

@@ -74,11 +74,16 @@ describe('ShiftsService', () => {
   // ADR-055: punch stream the derivation reads. Set per-test; the punch repo's
   // query builder returns it from getMany and no-ops the idempotent insert.
   let mockPunches: any[] = [];
+  let insertedPunches: any[] = []; // capture what insertPunch writes (idempotent insert)
   const makePunchQB = () => {
     const qb: any = {};
-    for (const m of ['insert', 'into', 'values', 'orIgnore', 'where', 'andWhere', 'orderBy']) {
+    for (const m of ['insert', 'into', 'orIgnore', 'where', 'andWhere', 'orderBy']) {
       qb[m] = jest.fn(() => qb);
     }
+    qb.values = jest.fn((v: any) => {
+      insertedPunches.push(v);
+      return qb;
+    });
     qb.execute = jest.fn().mockResolvedValue({});
     qb.getMany = jest.fn().mockImplementation(() => Promise.resolve(mockPunches));
     return qb;
@@ -211,6 +216,7 @@ describe('ShiftsService', () => {
     await module.close();
     jest.clearAllMocks();
     jest.restoreAllMocks();
+    insertedPunches = [];
   });
 
   describe('getActiveArea', () => {
@@ -519,6 +525,32 @@ describe('ShiftsService', () => {
       // The EXPLICIT service_day comes from attribution — may differ from the
       // clock-in's WIB date (the crux of the night-shift-past-midnight fix).
       expect(saved.service_day).toBe('2026-01-01');
+    });
+
+    it('records an OFFLINE punch at its capture time (punched_at), clamped to ≤ now', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
+      const capture = '2026-07-24T02:00:00.000Z'; // in the past → used verbatim
+
+      await service.clockIn(mockUser.id, { ...clockInDto, punched_at: capture } as any);
+
+      const inserted = insertedPunches.find((p) => p.label === PunchLabel.CLOCK_IN);
+      expect(inserted?.punched_at.toISOString()).toBe(capture);
+    });
+
+    it('clamps a FUTURE punched_at to the server clock (no back-/forward-dating)', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
+      const future = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+      const before = Date.now();
+      await service.clockIn(mockUser.id, { ...clockInDto, punched_at: future } as any);
+      const after = Date.now();
+
+      const inserted = insertedPunches.find((p) => p.label === PunchLabel.CLOCK_IN);
+      const t = inserted.punched_at.getTime();
+      expect(t).toBeGreaterThanOrEqual(before);
+      expect(t).toBeLessThanOrEqual(after); // clamped to ~now, NOT the future value
     });
 
     it('honors an EXPLICIT picker shift choice over auto-attribution (ADR-055)', async () => {
