@@ -11,6 +11,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { ImagePreviewModal, InfoTableRow } from '../../components/common';
 import { LocationMapModal, ShiftDetailModal } from '../../components/modals';
 import { AttendanceTypeSheet, type AttendanceAction } from '../../components/modals/AttendanceTypeSheet';
+import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
 import type { StatusTone } from '../../components/home/StatusPill';
@@ -57,13 +58,11 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     timer,
     isClockIn,
     isOnline,
-    assignedArea,
     currentShift,
     scheduledShift,
     isLate,
     attendanceState,
     scheduleScope,
-    rosterAreas,
     mapArea,
     hasScheduleToday,
     getCurrentLocation,
@@ -75,6 +74,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const [mapVisible, setMapVisible] = useState(false);
   const [typeSheetVisible, setTypeSheetVisible] = useState(false);
   const [detailShiftVisible, setDetailShiftVisible] = useState(false);
+  const [statusSheetVisible, setStatusSheetVisible] = useState(false);
 
   // The attendance label the worker will record. Defaults from shift state — an
   // open shift → Clock Out, none → Clock In — but the "Ubah Label Waktu" picker
@@ -98,12 +98,9 @@ export const ClockInOutScreen = (): React.JSX.Element => {
 
   const goBack = useCallback(() => navigation.goBack(), [navigation]);
 
-  // No hard block for a missing area: ad-hoc / patrol workers with no assigned
-  // area may still clock in (GPS is recorded, geofencing stays soft, and the
-  // shift is created with location_id = null). The form surfaces "no area" inline;
-  // district-scoped roles show a "no specific area" note instead.
+  // Ad-hoc / patrol workers with no assigned area may still clock in (GPS is
+  // recorded, geofencing stays soft, shift created with location_id = null).
   const userRole = useAppSelector((state) => state.auth.user?.role);
-  const isDistrictScoped = userRole === 'admin_rayon' || userRole === 'kepala_rayon';
 
   // ── Shared attendance-card data (see AttendanceInfoRows) ──────────────────
   // Resolved here so the Rekam Kehadiran card renders the SAME core rows as the
@@ -111,19 +108,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
   const shiftText = scheduledShift
     ? `${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`
     : t('attendance:clockInOut.noScheduleToday');
-
-  // Single "Area Ditugaskan" label — the lokasi, else the named scope, else a
-  // district-coverage / no-area fallback. The multi-lokasi list is kept as extra
-  // rows below the shared block.
-  const isMultiArea = rosterAreas.length > 1;
-  const areaName = isMultiArea
-    ? t('attendance:clockInOut.multiArea', { count: rosterAreas.length })
-    : assignedArea?.name ??
-      (scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
-        ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
-        : isDistrictScoped
-          ? t('attendance:clockInOut.noSpecificArea')
-          : t('attendance:infoCard.noArea'));
 
   const areaStatusTone: StatusTone = location.loading
     ? 'neutral'
@@ -144,19 +128,18 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           ? t('attendance:infoCard.scopeUndefined')
           : t('attendance:infoCard.noArea');
 
-  // Record-page "notes" — the out-of-area (or no-boundary) reassurance banner,
-  // shown below Lokasi sekarang. Home never passes this.
-  const notesNode =
-    areaState === 'outside' ? (
-      <NBAlert variant="warning" message={t('attendance:gpsSection.outsideBoundary')} />
-    ) : areaState === 'none' ? (
-      <NBAlert variant="info" message={t('attendance:gpsSection.noArea')} />
-    ) : areaState === 'scope' ? (
-      <NBAlert
-        variant="info"
-        message={t('attendance:gpsSection.scopeAssigned', { scope: scheduleScope.name ?? '' })}
-      />
-    ) : null;
+  // Scope label for the Detail Shift modal (kota/rayon/kawasan-scope shift).
+  const scopeLabel =
+    scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+      ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, { name: scheduleScope.name ?? '' })
+      : null;
+
+  // Which explanation the Status Kehadiran pill opens.
+  const statusKind: AttendanceStatusKind = !hasScheduleToday
+    ? 'noSchedule'
+    : isLate
+      ? 'late'
+      : 'onTime';
 
   // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
   // The title is now the STABLE page name "Rekam Kehadiran" — the action
@@ -293,42 +276,22 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 isEarlyLeave={attendance.isEarlyLeave}
                 neutral={!hasScheduleToday}
               />
-              {/* Shared attendance rows — identical to the home "Kehadiran" hero. */}
+              {/* Shared, simplified rows — identical to the home "Kehadiran" hero:
+                  Status Kehadiran (tap → why) + Status Area (pill → map, refresh
+                  beside). Everything else lives in the Detail Shift modal. */}
               <AttendanceInfoRows
-                shiftText={shiftText}
                 statusBadge={statusBadge}
-                clockInTime={currentShift?.clock_in_time ?? null}
-                durationText={currentShift ? timer.slice(0, 5) : null}
-                currentTime={currentTime}
-                areaName={areaName}
+                onPressStatus={() => setStatusSheetVisible(true)}
                 areaStatus={{
                   tone: areaStatusTone,
                   label: areaStatusLabel,
                   onPress: location.latitude != null ? () => setMapVisible(true) : undefined,
                   a11yLabel: t('attendance:clockInOut.viewOnMap'),
                 }}
-                location={{
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                  accuracy: location.accuracy,
-                  loading: location.loading,
-                }}
                 onRefreshLocation={getCurrentLocation}
-                notes={notesNode}
+                refreshingLocation={location.loading}
                 onDetailShift={currentShift ? () => setDetailShiftVisible(true) : undefined}
               />
-              {/* Multi-lokasi assignment — list the places clock-in is accepted at.
-                  The backend records whichever one the GPS lands in. */}
-              {isMultiArea && (
-                <>
-                  {rosterAreas.map((a) => (
-                    <InfoTableRow key={a.id} label="" value={`• ${a.name}`} numberOfLines={1} />
-                  ))}
-                  <NBText variant="body-sm" color="gray600">
-                    {t('attendance:clockInOut.multiAreaHint')}
-                  </NBText>
-                </>
-              )}
             </View>
           </NBCollapsibleCard>
 
@@ -406,6 +369,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           // map draws exactly the same markers as this one.
           workerMarker={workerMapMarker(userRole, areaState === 'outside')}
           areaMarker={mapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
+          onRefresh={getCurrentLocation}
+          refreshing={location.loading}
         />
 
         {/* Attendance-type picker ("Ubah Label Waktu"). */}
@@ -418,11 +383,31 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           disabledHint={mismatchHint}
         />
 
-        {/* Shift detail — opened from the "Detail Shift" link in the card. */}
+        {/* Shift detail — opened from the "Detail Shift" link; now carries the
+            fields the card no longer shows (shift window, durasi, waktu sekarang,
+            lokasi sekarang). */}
         <ShiftDetailModal
           visible={detailShiftVisible}
           onClose={() => setDetailShiftVisible(false)}
           shift={currentShift ?? null}
+          scopeLabel={scopeLabel}
+          shiftText={shiftText}
+          durationText={currentShift ? timer.slice(0, 5) : null}
+          currentTime={currentTime}
+          currentLocation={{
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+          }}
+        />
+
+        {/* Why "Terlambat / Tepat Waktu" — opened from the Status Kehadiran pill. */}
+        <AttendanceStatusSheet
+          visible={statusSheetVisible}
+          onClose={() => setStatusSheetVisible(false)}
+          status={statusKind}
+          clockInTime={currentShift?.clock_in_time ?? null}
+          shiftStart={scheduledShift?.start_time ?? null}
         />
 
         {/* Submit Button — fixed at bottom, scrollable area sits above. Its label

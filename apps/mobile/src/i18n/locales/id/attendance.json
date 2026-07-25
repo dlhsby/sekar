@@ -100,7 +100,17 @@
     "outArea": "Di luar area",
     "noArea": "Tanpa area",
     "scopeUndefined": "Batas belum ditentukan",
-    "locating": "Lokasi…"
+    "locating": "Lokasi…",
+    "whyStatus": "Lihat alasan status kehadiran"
+  },
+  "statusSheet": {
+    "clockIn": "Clock in",
+    "scheduledStart": "Jadwal mulai",
+    "why": {
+      "late": "Anda clock in setelah jadwal shift dimulai, jadi kehadiran tercatat terlambat.",
+      "onTime": "Anda clock in sebelum atau tepat pada jadwal shift, jadi kehadiran tercatat tepat waktu.",
+      "noSchedule": "Anda tidak memiliki jadwal shift hari ini, jadi kehadiran tidak dinilai tepat waktu atau terlambat."
+    }
   },
   "clockInOut": {
     "noAreaAssigned": "Tanpa area penugasan — Anda tetap dapat clock in",

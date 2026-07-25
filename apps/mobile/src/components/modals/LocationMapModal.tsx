@@ -9,6 +9,7 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
   Platform,
 } from 'react-native';
 import MapView, { Marker, Polygon, PROVIDER_GOOGLE, Region } from 'react-native-maps';
@@ -81,6 +82,9 @@ interface LocationMapModalProps {
    * icon. Omitted → the default green Google pin.
    */
   areaMarker?: { iconName: string; color: string };
+  /** When provided, a refresh button appears in the header to re-read the GPS. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
 }
 
 /** A small teardrop pin (circle badge + downward tip) for react-native-maps. */
@@ -163,6 +167,8 @@ export function LocationMapModal({
   markerTitle,
   workerMarker,
   areaMarker,
+  onRefresh,
+  refreshing = false,
 }: LocationMapModalProps) {
   const { t } = useTranslation();
   const defaultTitle = title ?? t('components:locationMap.defaultTitle');
@@ -332,14 +338,33 @@ export function LocationMapModal({
       <View style={styles.infoStrip}>
         {hasCoords ? (
           <>
-            <NBText
-              variant="mono-sm"
-              color="black"
-              style={styles.coordsFont}
-              accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
-            >
-              {lat!.toFixed(6)}, {lng!.toFixed(6)}
-            </NBText>
+            <View style={styles.coordsRow}>
+              <NBText
+                variant="mono-sm"
+                color="black"
+                style={[styles.coordsFont, styles.coordsText]}
+                accessibilityLabel={t('components:locationMap.coordAria', { lat: lat!.toFixed(6), lng: lng!.toFixed(6) })}
+              >
+                {lat!.toFixed(6)}, {lng!.toFixed(6)}
+              </NBText>
+              {onRefresh ? (
+                <TouchableOpacity
+                  onPress={onRefresh}
+                  disabled={refreshing}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('attendance:infoCard.refreshLocation')}
+                  testID="location-map-refresh"
+                  style={styles.refreshButton}
+                >
+                  {refreshing ? (
+                    <ActivityIndicator size="small" color={nbColors.black} />
+                  ) : (
+                    <MaterialCommunityIcons name="refresh" size={18} color={nbColors.black} />
+                  )}
+                </TouchableOpacity>
+              ) : null}
+            </View>
 
             {(location.accuracy !== null || !hideAreaStatus) ? (
               <View style={styles.infoRow}>
@@ -425,6 +450,25 @@ const styles = StyleSheet.create({
   coordsFont: {
     // override mono-sm with platform monospace fallback
     fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+  },
+  coordsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: nbSpacing.sm,
+  },
+  coordsText: {
+    flexShrink: 1,
+  },
+  refreshButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: nbColors.white,
+    borderWidth: nbBorders.widthBase,
+    borderColor: nbColors.black,
+    borderRadius: nbRadius.sm,
   },
   infoRow: {
     flexDirection: 'row',

@@ -437,20 +437,20 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // Title is visible AND the area details are shown without a tap — the card
       // opens expanded so the attendance-type row + shift/area read at a glance.
       await waitFor(() => { expect(getByText('Informasi Kehadiran')).toBeTruthy(); });
-      expect(getByText('Area Ditugaskan')).toBeTruthy();
+      expect(getByText('Status Area')).toBeTruthy();
     });
 
     it('collapses the Informasi Kehadiran card on press', async () => {
       const store = createMockStore();
       const { getByText, getByLabelText, queryByText } = renderScreen(store);
 
-      await waitFor(() => { expect(getByText('Area Ditugaskan')).toBeTruthy(); });
+      await waitFor(() => { expect(getByText('Status Area')).toBeTruthy(); });
 
       // Tap the card header to collapse it → area details are hidden.
       fireEvent.press(getByLabelText('Informasi Kehadiran'));
 
       await waitFor(() => {
-        expect(queryByText('Area Ditugaskan')).toBeNull();
+        expect(queryByText('Status Area')).toBeNull();
       });
     });
 

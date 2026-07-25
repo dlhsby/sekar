@@ -100,7 +100,17 @@
     "outArea": "Out of area",
     "noArea": "No area",
     "scopeUndefined": "Boundary not set",
-    "locating": "Locating…"
+    "locating": "Locating…",
+    "whyStatus": "See why this attendance status"
+  },
+  "statusSheet": {
+    "clockIn": "Clock in",
+    "scheduledStart": "Scheduled start",
+    "why": {
+      "late": "You clocked in after the scheduled shift start, so attendance is recorded as late.",
+      "onTime": "You clocked in at or before the scheduled shift start, so attendance is recorded as on time.",
+      "noSchedule": "You have no scheduled shift today, so attendance is not judged on time or late."
+    }
   },
   "clockInOut": {
     "noAreaAssigned": "No area assigned — you can still clock in",

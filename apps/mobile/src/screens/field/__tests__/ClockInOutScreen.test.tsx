@@ -230,15 +230,11 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       expect(getCurrentPositionMock).toHaveBeenCalled();
     });
 
-    // GPS card is collapsed by default — expand to see its contents.
-
-    // Verify location is displayed on the "Lokasi sekarang" row (5-decimal coords)
+    // Precise coordinates now live in the Detail Shift modal; the card reflects
+    // GPS via the Status Area pill — default mock is inside the boundary.
     await waitFor(() => {
-      const locationElements = getAllByText(/-7\.25045, 112\.76884/);
-      expect(locationElements.length).toBeGreaterThan(0);
+      expect(getByText('Di area')).toBeTruthy();
     });
-
-    // Phase 2C: No more "Dalam batas" text - location within boundary shows nothing special
   });
 
   it('should not create multiple watchers running simultaneously', async () => {
@@ -297,16 +293,14 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
-    // With no coordinates, the "Lokasi sekarang" row reads "Lokasi tidak tersedia".
+    // On a GPS error the card still offers the refresh icon as retry (the raw
+    // error text is no longer surfaced on the card).
     await waitFor(
       () => {
-        expect(getByText('Lokasi tidak tersedia')).toBeTruthy();
+        expect(getByTestId('attendance-refresh-location')).toBeTruthy();
       },
       { timeout: 3000 }
     );
-
-    // Verify retry is available — the refresh icon doubles as retry.
-    expect(getByTestId('attendance-refresh-location')).toBeTruthy();
   });
 
   it('should handle location with low accuracy', async () => {
@@ -337,10 +331,11 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
-    // Accuracy shows on the "Lokasi sekarang" row as "±500m".
+    // Accuracy detail moved to the Detail Shift modal; the card shows the Status
+    // Area pill (default mock inside → "Di area").
     await waitFor(
       () => {
-        expect(getByText('±500m')).toBeTruthy();
+        expect(getByText('Di area')).toBeTruthy();
       },
       { timeout: 3000 }
     );
@@ -506,7 +501,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
         () => {
           // Verify accuracy is displayed (format: "Akurasi: XXm")
           // The accuracy might be shown as separate text nodes
-          expect(getByText(/\d+m/)).toBeTruthy();
+          expect(getByText('Di area')).toBeTruthy();
         },
         { timeout: 3000 }
       );
@@ -542,7 +537,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       // Should display accuracy
       await waitFor(
         () => {
-          expect(getByText(/\d+m/)).toBeTruthy();
+          expect(getByText('Di area')).toBeTruthy();
         },
         { timeout: 3000 }
       );
@@ -578,7 +573,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       // At exactly 50m, should NOT show warning (only > 50)
       await waitFor(
         () => {
-          expect(getByText(/\d+m/)).toBeTruthy();
+          expect(getByText('Di area')).toBeTruthy();
         },
         { timeout: 3000 }
       );
@@ -614,7 +609,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       // Should display very poor accuracy
       await waitFor(
         () => {
-          expect(getByText(/\d+m/)).toBeTruthy();
+          expect(getByText('Di area')).toBeTruthy();
         },
         { timeout: 3000 }
       );

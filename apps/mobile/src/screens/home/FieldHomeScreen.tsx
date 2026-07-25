@@ -14,6 +14,7 @@ import { CLOCKABLE_ROLES, TASK_RECEIVERS } from '../../constants/roles';
 import { LoadingSpinner, AppUpdateBanner, InfoTableRow } from '../../components/common';
 import { NBAlert, NBBackgroundPattern, NBBadge, NBButton, NBText } from '../../components/nb';
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal, LocationMapModal } from '../../components/modals';
+import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
@@ -74,6 +75,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Modal states
   const [detailShift, setDetailShift] = useState<Shift | null>(null);
+  const [statusSheetVisible, setStatusSheetVisible] = useState(false);
   const [activitiesModalVisible, setActivitiesModalVisible] = useState(false);
   const [workHoursModalVisible, setWorkHoursModalVisible] = useState(false);
   const [tasksModalVisible, setTasksModalVisible] = useState(false);
@@ -330,16 +332,17 @@ export function FieldHomeScreen(): React.JSX.Element {
         ? t('home:field.hero.location.inArea')
         : t('home:field.hero.location.outArea')
     : (scopeLabelText ?? t('home:field.hero.location.noArea'));
-  const heroAreaName =
-    currentShift?.area?.name ??
-    scheduleScope.name ??
-    assignedArea?.name ??
-    t('home:field.hero.location.noArea');
-  // Shift window for the shared Jadwal Shift row (e.g. "Shift 3 · 21:00–05:00").
+  // Shift window for the Detail Shift modal (e.g. "Shift 3 · 21:00–05:00").
   const heroShiftDef = currentShift?.shift_definition ?? rosterShift;
   const heroShiftText = heroShiftDef
     ? `${heroShiftDef.name} · ${heroShiftDef.start_time.slice(0, 5)}–${heroShiftDef.end_time.slice(0, 5)}`
     : null;
+  // Which explanation the Status Kehadiran pill opens.
+  const statusKind: AttendanceStatusKind = !hasScheduleToday
+    ? 'noSchedule'
+    : attendance.isLate
+      ? 'late'
+      : 'onTime';
 
   return (
     <NBBackgroundPattern
@@ -433,9 +436,10 @@ export function FieldHomeScreen(): React.JSX.Element {
               />
               {shiftExpanded && (
                 <View style={styles.heroDetails}>
-                  {/* Shared attendance rows — identical to the Rekam Kehadiran card. */}
+                  {/* Shared, simplified rows — identical to the Rekam Kehadiran card:
+                      Status Kehadiran (tap → why) + Status Area (pill → map, refresh
+                      beside). The rest lives in the Detail Shift modal. */}
                   <AttendanceInfoRows
-                    shiftText={heroShiftText}
                     statusBadge={
                       hasScheduleToday ? (
                         <NBBadge
@@ -447,10 +451,7 @@ export function FieldHomeScreen(): React.JSX.Element {
                         <NBBadge text={t('home:field.hero.status.noSchedule')} color="gray" size="sm" />
                       )
                     }
-                    clockInTime={currentShift.clock_in_time}
-                    durationText={timer.slice(0, 5)}
-                    currentTime={now}
-                    areaName={heroAreaName}
+                    onPressStatus={() => setStatusSheetVisible(true)}
                     areaStatus={{
                       tone: areaTone,
                       label: areaLabel,
@@ -458,13 +459,8 @@ export function FieldHomeScreen(): React.JSX.Element {
                       disabled: !hasActiveShift,
                       a11yLabel: t('home:field.hero.a11y.locationStatus', { status: areaLabel }),
                     }}
-                    location={{
-                      latitude: homeLocation.latitude,
-                      longitude: homeLocation.longitude,
-                      accuracy: homeLocation.accuracy,
-                      loading: homeLocation.loading,
-                    }}
                     onRefreshLocation={refreshLocation}
+                    refreshingLocation={homeLocation.loading}
                     onDetailShift={() => setDetailShift(currentShift)}
                   />
                   {isClockable && (
@@ -611,6 +607,21 @@ export function FieldHomeScreen(): React.JSX.Element {
         onClose={() => setDetailShift(null)}
         shift={detailShift}
         scopeLabel={scopeLabelText}
+        shiftText={heroShiftText}
+        durationText={currentShift ? timer.slice(0, 5) : null}
+        currentTime={now}
+        currentLocation={{
+          latitude: homeLocation.latitude,
+          longitude: homeLocation.longitude,
+          accuracy: homeLocation.accuracy,
+        }}
+      />
+      <AttendanceStatusSheet
+        visible={statusSheetVisible}
+        onClose={() => setStatusSheetVisible(false)}
+        status={statusKind}
+        clockInTime={currentShift?.clock_in_time ?? null}
+        shiftStart={rosterShift?.start_time ?? null}
       />
       <TodayActivitiesModal
         visible={activitiesModalVisible}
@@ -643,6 +654,8 @@ export function FieldHomeScreen(): React.JSX.Element {
         hideAreaStatus={!hasBoundary}
         workerMarker={workerMapMarker(user?.role, hasBoundary && !homeLocation.isWithinArea)}
         areaMarker={homeMapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
+        onRefresh={refreshLocation}
+        refreshing={homeLocation.loading}
       />
     </NBBackgroundPattern>
   );
