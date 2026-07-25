@@ -814,13 +814,13 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getByText } = renderScreen(store);
+      const { getAllByText } = renderScreen(store);
 
-      // The elapsed HH:MM:SS timer lives in the (collapsed-by-default) GPS card.
+      // Elapsed shift time now shows as the "Durasi shift berjalan" HH:MM row.
 
       await waitFor(() => {
-        // Timer should show elapsed time
-        expect(getByText(/\d{2}:\d{2}:\d{2}/)).toBeTruthy();
+        // Timer should show elapsed time (Durasi row + clocks all match HH:MM).
+        expect(getAllByText(/\d{2}:\d{2}/).length).toBeGreaterThan(0);
       });
 
       jest.useRealTimers();

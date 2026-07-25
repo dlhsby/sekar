@@ -8,10 +8,11 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { GPSLocationSection, ImagePreviewModal, InfoTableRow, DateTimeValue } from '../../components/common';
-import { LocationMapModal } from '../../components/modals/LocationMapModal';
+import { ImagePreviewModal, InfoTableRow } from '../../components/common';
+import { LocationMapModal, ShiftDetailModal } from '../../components/modals';
 import { AttendanceTypeSheet, type AttendanceAction } from '../../components/modals/AttendanceTypeSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
+import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
 import type { StatusTone } from '../../components/home/StatusPill';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBBadge, NBCollapsibleCard } from '../../components/nb';
@@ -28,7 +29,6 @@ import { useClockInOut } from '../../hooks';
 import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
-import { formatDateTime } from '../../utils/dateUtils';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
 /**
@@ -53,6 +53,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
     isSubmitting,
     isWithinBoundary,
     areaState,
+    attendance,
     timer,
     isClockIn,
     isOnline,
@@ -73,6 +74,7 @@ export const ClockInOutScreen = (): React.JSX.Element => {
 
   const [mapVisible, setMapVisible] = useState(false);
   const [typeSheetVisible, setTypeSheetVisible] = useState(false);
+  const [detailShiftVisible, setDetailShiftVisible] = useState(false);
 
   // The attendance label the worker will record. Defaults from shift state — an
   // open shift → Clock Out, none → Clock In — but the "Ubah Label Waktu" picker
@@ -141,6 +143,20 @@ export const ClockInOutScreen = (): React.JSX.Element => {
         : areaState === 'scope'
           ? t('attendance:infoCard.scopeUndefined')
           : t('attendance:infoCard.noArea');
+
+  // Record-page "notes" — the out-of-area (or no-boundary) reassurance banner,
+  // shown below Lokasi sekarang. Home never passes this.
+  const notesNode =
+    areaState === 'outside' ? (
+      <NBAlert variant="warning" message={t('attendance:gpsSection.outsideBoundary')} />
+    ) : areaState === 'none' ? (
+      <NBAlert variant="info" message={t('attendance:gpsSection.noArea')} />
+    ) : areaState === 'scope' ? (
+      <NBAlert
+        variant="info"
+        message={t('attendance:gpsSection.scopeAssigned', { scope: scheduleScope.name ?? '' })}
+      />
+    ) : null;
 
   // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
   // The title is now the STABLE page name "Rekam Kehadiran" — the action
@@ -247,8 +263,8 @@ export const ClockInOutScreen = (): React.JSX.Element => {
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
-              {/* Attendance type (Clock In / Clock Out) — blended in as the first
-                  row; tap the value to open the "Ubah Label Waktu" picker. */}
+              {/* Jenis Kehadiran — the record page's distinctive first row; tap to
+                  switch Clock In / Clock Out via the "Ubah Label Waktu" picker. */}
               <InfoTableRow
                 label={t('attendance:clockInOut.attendanceType')}
                 value={
@@ -269,12 +285,21 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   </TouchableOpacity>
                 }
               />
-              <InfoTableRow label={t('attendance:clockInOut.currentTime')} value={<DateTimeValue source={currentTime} />} />
-              {/* Shared core rows — identical to the home "Kehadiran" hero:
-                  Jadwal Shift · Status · Area Ditugaskan · Status Area. */}
+              {/* MASUK / KELUAR summary — same as the home hero. */}
+              <AttendanceSummaryRow
+                firstClockIn={attendance.firstClockIn}
+                lastClockOut={attendance.lastClockOut}
+                isLate={attendance.isLate}
+                isEarlyLeave={attendance.isEarlyLeave}
+                neutral={!hasScheduleToday}
+              />
+              {/* Shared attendance rows — identical to the home "Kehadiran" hero. */}
               <AttendanceInfoRows
                 shiftText={shiftText}
                 statusBadge={statusBadge}
+                clockInTime={currentShift?.clock_in_time ?? null}
+                durationText={currentShift ? timer.slice(0, 5) : null}
+                currentTime={currentTime}
                 areaName={areaName}
                 areaStatus={{
                   tone: areaStatusTone,
@@ -282,8 +307,15 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                   onPress: location.latitude != null ? () => setMapVisible(true) : undefined,
                   a11yLabel: t('attendance:clockInOut.viewOnMap'),
                 }}
+                location={{
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  accuracy: location.accuracy,
+                  loading: location.loading,
+                }}
                 onRefreshLocation={getCurrentLocation}
-                refreshingLocation={location.loading}
+                notes={notesNode}
+                onDetailShift={currentShift ? () => setDetailShiftVisible(true) : undefined}
               />
               {/* Multi-lokasi assignment — list the places clock-in is accepted at.
                   The backend records whichever one the GPS lands in. */}
@@ -298,52 +330,6 @@ export const ClockInOutScreen = (): React.JSX.Element => {
                 </>
               )}
             </View>
-
-            {/* Lokasi GPS — merged into this same card. The within/outside pill
-                that used to sit here duplicated the status alert below, so it's
-                gone; the alert itself is now tappable to open the map. */}
-            <View style={styles.gpsHeader}>
-              <NBText variant="mono-sm" color="gray700" uppercase style={styles.cardLabel}>
-                {t('attendance:clockInOut.gpsLocation')}
-              </NBText>
-            </View>
-            <GPSLocationSection
-              latitude={location.latitude}
-              longitude={location.longitude}
-              accuracy={location.accuracy}
-              isCapturing={location.loading}
-              onRefresh={getCurrentLocation}
-              error={location.error}
-              isWithinBoundary={
-                areaState === 'none' || areaState === 'scope' ? undefined : isWithinBoundary
-              }
-              noArea={areaState === 'none'}
-              scopeLabel={
-                areaState === 'scope'
-                  ? t(`attendance:clockInOut.scope.${scheduleScope.scope}`, {
-                      name: scheduleScope.name ?? '',
-                    })
-                  : undefined
-              }
-              areaName={assignedArea?.name}
-              onShowMap={location.latitude != null ? () => setMapVisible(true) : undefined}
-              // The "Status Area" pill row above already shows in/out-of-area, so
-              // suppress the duplicate alert here — GPS keeps only the location
-              // line + coordinates.
-              hideAreaStatus
-            />
-            {currentShift && (
-              <View style={styles.clockInInfo}>
-                <View style={styles.timerContainer}>
-                  <NBText variant="body-sm" color="gray600">{t("attendance:clockInOut.shiftTimeLabel")}</NBText>
-                  <NBText variant="display" color="statusIdle" style={styles.timerValue}>{timer}</NBText>
-                </View>
-                <View style={styles.clockInTimeRow}>
-                  <NBText variant="caption" color="gray600">{t("attendance:clockInOut.clockInColonLabel")}</NBText>
-                  <NBText variant="body-sm">{formatDateTime(currentShift.clock_in_time)}</NBText>
-                </View>
-              </View>
-            )}
           </NBCollapsibleCard>
 
           {/* Selfie Card — optional for both clock-in and clock-out */}
@@ -432,6 +418,13 @@ export const ClockInOutScreen = (): React.JSX.Element => {
           disabledHint={mismatchHint}
         />
 
+        {/* Shift detail — opened from the "Detail Shift" link in the card. */}
+        <ShiftDetailModal
+          visible={detailShiftVisible}
+          onClose={() => setDetailShiftVisible(false)}
+          shift={currentShift ?? null}
+        />
+
         {/* Submit Button — fixed at bottom, scrollable area sits above. Its label
             and action follow the selected attendance type, not the raw shift
             state, so the "Ubah Label Waktu" choice drives it. A choice that can't
@@ -498,15 +491,6 @@ const styles = StyleSheet.create({
     marginBottom: nbSpacing.xs,
   },
   // Separates the GPS block from the attendance table inside the merged card.
-  gpsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: nbSpacing.md,
-    paddingTop: nbSpacing.md,
-    borderTopWidth: nbBorders.widthThin,
-    borderTopColor: nbColors.gray300,
-  },
   infoTable: {
     gap: nbSpacing.sm,
   },
@@ -556,30 +540,6 @@ const styles = StyleSheet.create({
   },
   offlineBannerText: {
     flex: 1,
-  },
-  clockInInfo: {
-    marginTop: nbSpacing.sm,
-    padding: nbSpacing.sm,
-    backgroundColor: nbColors.gray50,
-    borderRadius: nbRadius.base,
-    borderWidth: nbBorders.widthThin,
-    borderColor: nbColors.black,
-  },
-  timerContainer: {
-    alignItems: 'center',
-    marginBottom: nbSpacing.xs,
-  },
-  timerValue: {
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
-  clockInTimeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: nbSpacing.xs,
-    borderTopWidth: nbBorders.widthThin,
-    borderTopColor: nbColors.gray300,
   },
 });
 

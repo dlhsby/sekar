@@ -242,7 +242,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
   });
 
   it('should not create multiple watchers running simultaneously', async () => {
-    const { getByText } = render(
+    const { getByTestId } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -255,10 +255,8 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       expect(getCurrentPositionMock).toHaveBeenCalledTimes(1);
     });
 
-    // GPS card is collapsed by default — expand to reach the refresh button.
-
-    // Click refresh button (Indonesian: "Perbarui GPS")
-    const refreshButton = getByText('Perbarui GPS');
+    // Click the refresh icon on the "Lokasi sekarang" row.
+    const refreshButton = getByTestId('attendance-refresh-location');
     fireEvent.press(refreshButton);
 
     // Wait for second location request
@@ -286,7 +284,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       }, 10);
     });
 
-    const { getByText } = render(
+    const { getByText, getByTestId } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -299,18 +297,16 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
-    // GPS card is collapsed by default — expand to see the error + retry.
-
-    // Wait for error message - now in Indonesian
+    // With no coordinates, the "Lokasi sekarang" row reads "Lokasi tidak tersedia".
     await waitFor(
       () => {
-        expect(getByText(/Tidak dapat mendapatkan lokasi|Izin lokasi ditolak/i)).toBeTruthy();
+        expect(getByText('Lokasi tidak tersedia')).toBeTruthy();
       },
       { timeout: 3000 }
     );
 
-    // Verify retry is available — the GPS refresh button doubles as retry
-    expect(getByText('Perbarui GPS')).toBeTruthy();
+    // Verify retry is available — the refresh icon doubles as retry.
+    expect(getByTestId('attendance-refresh-location')).toBeTruthy();
   });
 
   it('should handle location with low accuracy', async () => {
@@ -328,7 +324,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       }, 10);
     });
 
-    const { getAllByText, getByText } = render(
+    const { getByText } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -341,20 +337,17 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
     });
 
-    // GPS card is collapsed by default — expand to read the accuracy value.
-
-    // Wait for location - accuracy shows as "500m"
+    // Accuracy shows on the "Lokasi sekarang" row as "±500m".
     await waitFor(
       () => {
-        const accuracyElements = getAllByText('500m');
-        expect(accuracyElements.length).toBeGreaterThan(0);
+        expect(getByText('±500m')).toBeTruthy();
       },
       { timeout: 3000 }
     );
   });
 
   it('should show soft warning when outside boundary (Phase 2C)', async () => {
-    const { getByText, rerender } = render(
+    const { getByText, getByTestId, rerender } = render(
       <Provider store={store}>
         <NavigationContainer>
           <ClockInOutScreen />
@@ -366,8 +359,6 @@ describe('ClockInOutScreen Location Watcher Management', () => {
     await waitFor(() => {
       expect(getCurrentPositionMock).toHaveBeenCalled();
     });
-
-    // GPS card is collapsed by default — expand to reach refresh + warning.
 
     // Update mock to return location outside boundary
     getCurrentPositionMock.mockImplementation((success, error, options) => {
@@ -381,8 +372,8 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       });
     });
 
-    // Click refresh to get new location (Indonesian: "Perbarui GPS")
-    const refreshButton = getByText('Perbarui GPS');
+    // Click the refresh icon to get the new location.
+    const refreshButton = getByTestId('attendance-refresh-location');
     fireEvent.press(refreshButton);
 
     // Phase 2C: Should show soft warning (yellow banner) but NOT block clock-in
@@ -515,7 +506,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
         () => {
           // Verify accuracy is displayed (format: "Akurasi: XXm")
           // The accuracy might be shown as separate text nodes
-          expect(getByText('Akurasi:')).toBeTruthy();
+          expect(getByText(/\d+m/)).toBeTruthy();
         },
         { timeout: 3000 }
       );
@@ -551,7 +542,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       // Should display accuracy
       await waitFor(
         () => {
-          expect(getByText('Akurasi:')).toBeTruthy();
+          expect(getByText(/\d+m/)).toBeTruthy();
         },
         { timeout: 3000 }
       );
@@ -587,7 +578,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       // At exactly 50m, should NOT show warning (only > 50)
       await waitFor(
         () => {
-          expect(getByText('Akurasi:')).toBeTruthy();
+          expect(getByText(/\d+m/)).toBeTruthy();
         },
         { timeout: 3000 }
       );
@@ -623,7 +614,7 @@ describe('ClockInOutScreen Location Watcher Management', () => {
       // Should display very poor accuracy
       await waitFor(
         () => {
-          expect(getByText('Akurasi:')).toBeTruthy();
+          expect(getByText(/\d+m/)).toBeTruthy();
         },
         { timeout: 3000 }
       );

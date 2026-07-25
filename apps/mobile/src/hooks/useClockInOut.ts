@@ -430,6 +430,7 @@ export function useClockInOut() {
     isSubmitting,
     isWithinBoundary,
     areaState,
+    attendance,
     timer,
     isClockIn,
     isOnline,
