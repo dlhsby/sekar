@@ -17,10 +17,11 @@ import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasks
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
+import { AttendanceEntryCard } from '../../components/attendance/AttendanceEntryCard';
 import { HomeSectionDivider } from '../../components/home/HomeSectionDivider';
 import { HomeStatTile } from '../../components/home/HomeStatTile';
 import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
-import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { shiftsApi, activitiesApi, tasksApi } from '../../services/api';
@@ -33,6 +34,7 @@ import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission, useCollapsible } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
+import { screenContentGrow } from '../../constants/layout';
 import { resolveScheduleScope } from '../../utils/scheduleScope';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
@@ -52,7 +54,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
 
-  const { user, assignedArea } = useAppSelector((state) => state.auth);
+  const { user } = useAppSelector((state) => state.auth);
   const { currentShift, shiftHistory } = useAppSelector((state) => state.shift);
   const { activitiesList } = useAppSelector((state) => state.activities);
   const { tasks } = useAppSelector((state) => state.tasks);
@@ -344,6 +346,14 @@ export function FieldHomeScreen(): React.JSX.Element {
       ? 'late'
       : 'onTime';
 
+  // Idle-state entry card (shared with the Pencatatan Waktu hub). Reuses the same
+  // shift label + Jam Masuk/Keluar shape so home and the hub read identically.
+  const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const entryShiftLabel =
+    hasScheduleToday && rosterShift
+      ? `${rosterShift.name} · ${rosterShift.start_time.slice(0, 5)}–${rosterShift.end_time.slice(0, 5)}`
+      : t('attendance:hub.noShift');
+
   return (
     <NBBackgroundPattern
       pattern="dots"
@@ -475,32 +485,30 @@ export function FieldHomeScreen(): React.JSX.Element {
                 </View>
               )}
             </TouchableOpacity>
-          ) : (
-            <View style={[styles.hero, styles.heroIdle]} testID="absensi-hero">
-              <NBText variant="mono-sm" color="gray600" uppercase style={styles.heroLabel}>
-                {t('home:field.hero.idle.label')}
-              </NBText>
-              <NBText variant="h2" color="black" style={styles.heroIdleTitle}>
-                {t('home:field.hero.idle.title')}
-              </NBText>
-              {assignedArea && (
-                <NBText variant="body-sm" color="gray700" style={styles.heroMeta}>
-                  {t('home:field.hero.idle.assignedArea', { area: assignedArea.name })}
-                </NBText>
-              )}
-              {isClockable && (
-                <View style={styles.heroButton}>
-                  <NBButton title={t('home:field.hero.button.clockIn')} onPress={handleClockInOut} variant="primary" size="md" testID="clock-button" />
-                </View>
-              )}
-            </View>
-          )}
+          ) : isClockable ? (
+            // Idle (no active shift): the reusable Kehadiran entry card — same
+            // shape as the hub, with the schedule/log links built in. Only for
+            // clockable roles (mirrors the active hero's clock-button guard); a
+            // non-clockable role that lands here gets no clock affordance.
+            <AttendanceEntryCard
+              date={todayStr}
+              shiftLabel={entryShiftLabel}
+              jamMasuk={attendance.firstClockIn}
+              jamKeluar={attendance.lastClockOut}
+              hasRecordToday={todayShifts.length > 0}
+              onClockIn={() => navigation.navigate('Absensi', { action: 'clock_in' })}
+              onClockOut={() => navigation.navigate('Absensi', { action: 'clock_out' })}
+              onViewSchedule={() => navigation.navigate('MySchedule')}
+              onViewLog={() => navigation.navigate('Attendance')}
+              testID="absensi-hero"
+            />
+          ) : null}
 
-          {/* Jadwal saya — today's roster row at a glance, now nested inside the
-              Kehadiran section (no separate divider). Tapping opens the full day
-              view. A worker could not see their assignment from home at all before;
-              "Jadwal Saya" was buried in Profil. */}
-          {isClockable && (
+          {/* Jadwal saya — today's roster row at a glance, nested inside the
+              Kehadiran section. Only shown during an active shift; when idle, the
+              entry card above carries the "Jadwal Saya" link instead (no duplicate).
+              Tapping opens the full day view. */}
+          {isClockable && currentShift && (
             <>
               <TouchableOpacity
                 style={styles.scheduleCard}
@@ -584,18 +592,9 @@ export function FieldHomeScreen(): React.JSX.Element {
             />
           </View>
 
-          {/* Not-assigned hint (field roles only — district-scoped roles excluded) */}
-          {/* Only the genuinely-unassigned case warrants a warning. The scope of an
-              assignment is already stated by the "Jadwal Saya" card above —
-              repeating it here as a second banner was pure duplication. */}
-          {!assignedArea && !currentShift && scheduleScope.scope === 'none' &&
-            user?.role !== 'admin_rayon' && user?.role !== 'kepala_rayon' && (
-              <View style={styles.warningCard}>
-                <NBText variant="body-sm" color="statusIdle" align="center">
-                  {t('home:field.warning.noAssignedArea')}
-                </NBText>
-              </View>
-            )}
+          {/* The "not assigned to any area" state is surfaced by the attendance +
+              clock-in screens (Status Area + the "Tidak ada area penugasan" note),
+              so home no longer repeats it as a bottom banner. */}
         </ScrollView>
       </View>
 
@@ -662,7 +661,7 @@ export function FieldHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
   updateBanner: { marginBottom: nbSpacing.sm },
   banner: { marginBottom: nbSpacing.md },
 
@@ -676,7 +675,6 @@ const styles = StyleSheet.create({
   },
   heroActive: { backgroundColor: nbColors.statusActiveBg },
   heroLembur: { backgroundColor: nbColors.statusIdleBg },
-  heroIdle: { backgroundColor: nbColors.white },
   heroTopRow: {
     flexDirection: 'row',
     // Center so the status pill + chevron line up with the "SEDANG BERTUGAS"
@@ -688,10 +686,8 @@ const styles = StyleSheet.create({
   heroStatusRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.xs },
   heroChevron: { marginTop: 1 },
   heroLabel: { letterSpacing: 0.6, marginBottom: 2 },
-  heroMeta: { marginTop: nbSpacing.sm },
   // Expanded hero: label:value table rows — sm gap so the rows breathe.
   heroDetails: { marginTop: nbSpacing.md, gap: nbSpacing.sm },
-  heroIdleTitle: { marginTop: 2 },
   // Status Area value: the in/out pill + the GPS refresh button, right-aligned.
   heroButton: { marginTop: nbSpacing.md },
 
@@ -710,14 +706,6 @@ const styles = StyleSheet.create({
   },
   scheduleLink: {
     marginTop: nbSpacing.xs,
-  },
-  warningCard: {
-    backgroundColor: withAlpha(nbColors.warningLight, 0.125),
-    borderColor: nbColors.warning,
-    borderWidth: nbBorders.widthBase,
-    borderRadius: nbRadius.base,
-    padding: nbSpacing.md,
-    marginTop: nbSpacing.md,
   },
 });
 

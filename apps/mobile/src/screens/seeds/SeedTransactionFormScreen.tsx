@@ -22,6 +22,7 @@ import {
   NBDatePicker,
 } from '../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { recordTransaction } from '../../store/slices/plantSeedsSlice';
 import type { MainTabScreenProps } from '../../types/navigation.types';
@@ -201,7 +202,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
   },
   contentContainer: {
-    padding: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing.lg,
   },
   card: {

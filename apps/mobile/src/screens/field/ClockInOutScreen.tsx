@@ -15,7 +15,7 @@ import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
 import type { ShiftOption } from '../../types/api.types';
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
-import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow';
+import { AttendanceTimesRow } from '../../components/attendance/AttendanceTimesRow';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBCollapsibleCard } from '../../components/nb';
@@ -297,35 +297,63 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                   </TouchableOpacity>
                 }
               />
-              {/* Pilih Shift — only when clocking in and the attribution window
-                  offers a choice (near midnight / dangling). ADR-055. */}
-              {isClockInAction && shiftOptions.length > 0 && (
-                <InfoTableRow
-                  label={t('attendance:clockInOut.selectShiftTitle')}
-                  value={
-                    <TouchableOpacity
-                      onPress={() => setShiftPickerVisible(true)}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('attendance:clockInOut.selectShiftTitle')}
-                      testID="clockinout-pick-shift"
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={styles.typeValue}
-                    >
-                      <NBText variant="body" color="black">
-                        {selectedShift?.shift_name ?? t('attendance:clockInOut.noShiftOptions')}
-                      </NBText>
-                      <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
-                    </TouchableOpacity>
-                  }
-                />
-              )}
-              {/* MASUK / KELUAR summary — same as the home hero. */}
-              <AttendanceSummaryRow
-                firstClockIn={attendance.firstClockIn}
-                lastClockOut={attendance.lastClockOut}
-                isLate={attendance.isLate}
-                isEarlyLeave={attendance.isEarlyLeave}
-                neutral={!hasScheduleToday}
+              {/* Shift — always shown so the worker sees which shift they're
+                  recording against. When clocking in and the attribution window
+                  offers a choice (near midnight / dangling, ADR-055), the pencil
+                  opens the picker to switch shift; otherwise it's read-only. */}
+              {(() => {
+                const canSwitchShift = isClockInAction && shiftOptions.length > 0;
+                return (
+                  <InfoTableRow
+                    label={t('attendance:infoCard.shift')}
+                    value={
+                      canSwitchShift ? (
+                        <TouchableOpacity
+                          onPress={() => setShiftPickerVisible(true)}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('attendance:clockInOut.selectShiftTitle')}
+                          testID="clockinout-pick-shift"
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={styles.typeValue}
+                        >
+                          <NBText variant="body" color="black">
+                            {selectedShift?.shift_name ?? shiftText}
+                          </NBText>
+                          <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
+                        </TouchableOpacity>
+                      ) : (
+                        <NBText variant="body" color="black">
+                          {shiftText}
+                        </NBText>
+                      )
+                    }
+                  />
+                );
+              })()}
+              {/* Jam Masuk / Jam Keluar — same shared row as the entry card, so the
+                  clock-in page and home/hub cards render times identically. The
+                  colours still flag a late clock-in / early clock-out. */}
+              <AttendanceTimesRow
+                jamMasuk={attendance.firstClockIn}
+                jamKeluar={attendance.lastClockOut}
+                masukColor={
+                  attendance.firstClockIn
+                    ? !hasScheduleToday
+                      ? 'black'
+                      : attendance.isLate
+                        ? 'dangerDark'
+                        : 'successDark'
+                    : 'gray400'
+                }
+                keluarColor={
+                  attendance.lastClockOut
+                    ? !hasScheduleToday
+                      ? 'black'
+                      : attendance.isEarlyLeave
+                        ? 'dangerDark'
+                        : 'successDark'
+                    : 'gray400'
+                }
               />
               {/* Shared, simplified rows — identical to the home "Kehadiran" hero:
                   Status Kehadiran (tap → why) + Status Area (pill → map, refresh

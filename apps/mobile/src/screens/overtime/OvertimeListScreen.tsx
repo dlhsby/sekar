@@ -31,6 +31,7 @@ import {
   nbSpacing,
   nbRadius,
 } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { OvertimeFilter } from '../../types/api.types';
 import type { Overtime } from '../../types/models.types';
@@ -386,9 +387,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.md,
+    ...screenContentGrow,
     paddingBottom: nbSpacing['2xl'],
-    flexGrow: 1,
   },
   fabBlockedHint: {
     // Typography (fontSize, fontWeight, color) handled by NBText variant="body-sm" color="warning"

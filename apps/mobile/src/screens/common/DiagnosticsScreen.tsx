@@ -22,6 +22,7 @@ import { selectTotalPendingCount } from '../../store/slices/offlineSlice';
 import { permissionManager } from '../../services/permissions';
 import { useAppUpdate } from '../../hooks';
 import config from '../../constants/config';
+import { screenContent } from '../../constants/layout';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -582,10 +583,7 @@ function mapStatus(result: {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  content: {
-    paddingTop: nbSpacing.md,
-    paddingHorizontal: nbSpacing.md,
-  },
+  content: screenContent,
 
   // ─── Section ───────────────────────────────────────────────────────────
 

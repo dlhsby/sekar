@@ -37,6 +37,7 @@ import {
 } from '../../store/slices/analyticsSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 type Props = {
   route?: { params?: { workerId?: string } };
@@ -192,8 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.bgCanvas,
   },
   scrollContent: {
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     gap: nbSpacing.md,
   },
   loadingContainer: {

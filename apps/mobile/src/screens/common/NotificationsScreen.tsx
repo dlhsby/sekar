@@ -43,6 +43,7 @@ import {
 } from '../../services/api/notificationsApi';
 import type { Notification } from '../../types/models.types';
 import { nbBorders, nbColors, nbRadius, nbSpacing } from '../../constants/nbTokens';
+import { screenContent, screenContentGrow } from '../../constants/layout';
 import { NBEmptyState, NBSkeleton, NBTab, NBText } from '../../components/nb';
 
 // Category filter (matches the grouping in NotificationPreferencesScreen).
@@ -319,10 +320,10 @@ const styles = StyleSheet.create({
   actionLink: {
     letterSpacing: 0.4,
   },
-  listContent: { paddingVertical: nbSpacing.xs },
+  listContent: { ...screenContent },
   // Top-aligned (not vertically centred) so the empty illustration sits a
   // standard distance below the filter tabs rather than floating mid-screen.
-  emptyContent: { flexGrow: 1, paddingTop: nbSpacing.xl },
+  emptyContent: { ...screenContentGrow },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',

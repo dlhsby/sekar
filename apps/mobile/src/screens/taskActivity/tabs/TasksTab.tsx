@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { NBEmptyState, NBSkeleton, NBText } from '../../../components/nb';
 import { nbColors, nbSpacing } from '../../../constants/nbTokens';
+import { screenContent } from '../../../constants/layout';
 import { TaskCard } from '../components/TaskCard';
 import type { Task } from '../../../types/models.types';
 
@@ -149,6 +150,7 @@ const styles = StyleSheet.create({
     padding: nbSpacing.md,
   },
   listContent: {
+    ...screenContent,
     paddingBottom: nbSpacing.lg,
   },
   emptyListContent: {

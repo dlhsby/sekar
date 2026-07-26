@@ -22,6 +22,7 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import type { CurrentShiftResponse } from '../../types/api.types';
 import type { Shift } from '../../types/models.types';
 
@@ -724,12 +725,7 @@ const styles = StyleSheet.create({
   },
 
   // List
-  listContent: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.sm,
-    paddingBottom: nbSpacing.xl,
-    flexGrow: 1,
-  },
+  listContent: {...screenContentGrow, paddingBottom: nbSpacing.xl},
 
   // Month header
   dateHeader: {

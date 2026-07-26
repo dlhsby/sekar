@@ -16,6 +16,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 
 import { NBBackgroundPattern, NBButton, NBText, NBCard, NBBadge, NBSkeleton } from '../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchSeedById, fetchSeedTransactions } from '../../store/slices/plantSeedsSlice';
 import { formatDate } from '../../utils/dateUtils';
@@ -199,8 +200,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.white,
   },
   contentContainer: {
-    paddingTop: nbSpacing.md,
-    paddingHorizontal: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing.lg,
   },
   headerCard: {

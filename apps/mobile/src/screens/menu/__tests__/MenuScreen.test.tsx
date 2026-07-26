@@ -46,7 +46,7 @@ describe('MenuScreen', () => {
   it('renders a tile for every menu item of a field role', () => {
     const { getByText } = renderMenu('satgas');
     // Labels are i18n keys; expect resolved text
-    expect(getByText('Pencatatan Waktu')).toBeTruthy(); // menu:tiles.timeRecord (one attendance hub, ADR-055)
+    expect(getByText('Kehadiran')).toBeTruthy(); // menu:tiles.timeRecord (one attendance hub, ADR-055)
     expect(getByText('Lembur')).toBeTruthy(); // menu:tiles.overtime
     expect(getByText('Tugas')).toBeTruthy(); // menu:tiles.tasks
     expect(getByText('Aktivitas')).toBeTruthy(); // menu:tiles.activities

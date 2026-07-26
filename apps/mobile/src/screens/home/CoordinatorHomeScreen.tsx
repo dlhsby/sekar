@@ -13,6 +13,7 @@ import { AttendanceSummaryRow } from '../../components/home/AttendanceSummaryRow
 import { ShiftDetailModal, TodayActivitiesModal, TodayWorkHoursModal, TodayTasksModal } from '../../components/modals';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { TASK_RECEIVERS } from '../../constants/roles';
+import { screenContentGrow } from '../../constants/layout';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { fetchLiveUsers } from '../../store/slices/monitoringSlice';
 import { setCurrentShift, setShiftHistory, setError } from '../../store/slices/shiftSlice';
@@ -469,7 +470,7 @@ export function CoordinatorHomeScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   scrollView: { flex: 1 },
-  content: { paddingHorizontal: nbSpacing.md, paddingTop: nbSpacing.sm, paddingBottom: nbSpacing.md, flexGrow: 1 },
+  content: screenContentGrow,
 
   hero: {
     backgroundColor: nbColors.bgAccentMint,

@@ -18,21 +18,24 @@ jest.mock('../../../hooks/useTodayRoster', () => ({
 describe('TimeRecordHubScreen', () => {
   beforeEach(() => mockNavigate.mockClear());
 
-  it('renders the hub and routes Clock In / Clock Out / Lihat Log', async () => {
+  it('renders the hub and routes Clock In / Clock Out / Jadwal / Log Kehadiran', async () => {
     jest
       .spyOn(shiftsApi, 'getPunchLog')
       .mockResolvedValue({ data: { date: '2026-07-25', sessions: [] }, error: null } as any);
 
     const { getByTestId } = render(<TimeRecordHubScreen />);
-    await waitFor(() => expect(getByTestId('hub-clock-in')).toBeTruthy());
+    await waitFor(() => expect(getByTestId('entry-clock-in')).toBeTruthy());
 
-    fireEvent.press(getByTestId('hub-clock-in'));
+    fireEvent.press(getByTestId('entry-clock-in'));
     expect(mockNavigate).toHaveBeenCalledWith('Absensi', { action: 'clock_in' });
 
-    fireEvent.press(getByTestId('hub-clock-out'));
+    fireEvent.press(getByTestId('entry-clock-out'));
     expect(mockNavigate).toHaveBeenCalledWith('Absensi', { action: 'clock_out' });
 
-    fireEvent.press(getByTestId('hub-view-log'));
+    fireEvent.press(getByTestId('entry-view-schedule'));
+    expect(mockNavigate).toHaveBeenCalledWith('MySchedule');
+
+    fireEvent.press(getByTestId('entry-view-log'));
     expect(mockNavigate).toHaveBeenCalledWith('Attendance');
   });
 });

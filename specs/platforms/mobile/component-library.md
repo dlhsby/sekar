@@ -799,3 +799,9 @@ NB primitives found (every primitive has ≥2 importers).
 | `Alert.alert` → `NBToast`/`NBAlert` | 15 files | Several are *confirmation dialogs* — replacing with toast removes the confirm step (behavior change) |
 | Inline `textTransform`/`letterSpacing` → `NBText` variants | ~78 instances | Font-family/metric changes are visible; belongs in a dedicated typography sweep with visual regression |
 | `WeekPickerModal` raw `<Modal>` → `NBModal` fullscreen | 1 file | Verify fullscreen presentation semantics with design first |
+
+## Standard screen layout — page padding + section rhythm (MANDATE)
+
+Every scrollable screen body applies the shared **`screenContent`** / **`screenContentGrow`** (`src/constants/layout.ts`) to its `ScrollView`/`FlatList` `contentContainerStyle`, so horizontal edges and top/bottom breathing room are **identical app-wide** (`paddingHorizontal: md`, `paddingTop: sm`, `paddingBottom: md`; `screenContentGrow` adds `flexGrow: 1` for pages whose short content should still fill the viewport). Do **not** hand-roll per-screen `padding` values or add a `gap` on the content container — inter-section spacing is owned by **`HomeSectionDivider`**'s margins (a `gap` on top of those margins doubles the rhythm unevenly, which is what made the Kehadiran hub diverge from home). Section cards must not add their own `marginBottom` either.
+
+**In-page empty states** use `NBEmptyState` with the **`compact`** prop (smaller illustration + padding, no flex-fill) — the default full-screen sizing is only for a page that is *entirely* empty (e.g. a `FlatList` `ListEmptyComponent`). Reference: home + the Kehadiran hub (`TimeRecordHubScreen`).

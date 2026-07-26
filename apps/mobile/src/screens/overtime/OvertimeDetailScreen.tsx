@@ -26,6 +26,7 @@ import {
   nbColors,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { useAppSelector } from '../../store/hooks';
 import { useOvertimeDetail } from './hooks/useOvertimeDetail';
 import { useOvertimeActions } from './hooks/useOvertimeActions';
@@ -166,7 +167,7 @@ const styles = StyleSheet.create({
     gap: nbSpacing.md,
   },
   contentContainer: {
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing['2xl'],
   },
   contentContainerWithFooter: {

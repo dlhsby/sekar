@@ -27,6 +27,7 @@ import {
   nbShadows,
   nbBorders,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type {Schedule} from '../../types/shift.types';
 import {resolveScheduleScope} from '../../utils/scheduleScope';
 import {presenceTone} from '../../utils/statusHelpers';
@@ -418,7 +419,7 @@ const styles = StyleSheet.create({
     ...nbShadows.sm,
   },
   navDate: {textAlign: 'center'},
-  listContent: {padding: nbSpacing.md, gap: nbSpacing.sm},
+  listContent: {...screenContent, gap: nbSpacing.sm},
   // Inline empty/error state — mirrors Tugas/Aktivitas: the scroll content grows
   // to fill the space below the day nav and the state stretches full-width, so it
   // reads as an inline state rather than a floating centered card.

@@ -48,6 +48,7 @@ import {
   nbColors,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { GeneratedReportStatus, ReportType, ReportFormat } from '../../types/reports.types';
 
@@ -356,8 +357,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.lg,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.lg,
-    paddingVertical: nbSpacing.lg,
+    ...screenContent,
     paddingBottom: NB_FAB_BAR_HEIGHT + nbSpacing.lg,
   },
   footerLoader: {

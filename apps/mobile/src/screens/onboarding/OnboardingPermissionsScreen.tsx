@@ -21,6 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { NBButton, NBText, type NBTextColor } from '../../components/nb';
 import { PaginationDots } from '../../components/auth/PaginationDots';
 import { nbColors, nbBorders, nbRadius, nbShadows, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { permissionManager } from '../../services/permissions';
 
 type PermStatus = 'pending' | 'granted' | 'denied';
@@ -225,7 +226,7 @@ export function OnboardingPermissionsScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: nbColors.bgCanvas },
-  content: { padding: nbSpacing.lg },
+  content: screenContent,
   dots: { marginBottom: nbSpacing.xl },
   subtitle: { marginTop: nbSpacing.xs, marginBottom: nbSpacing.lg },
   list: { gap: nbSpacing.sm },

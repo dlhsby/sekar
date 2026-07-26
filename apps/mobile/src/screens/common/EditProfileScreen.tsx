@@ -30,6 +30,7 @@ import {
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { UserRole } from '../../types/models.types';
 import type { MainTabScreenProps } from '../../types/navigation.types';
 
@@ -268,7 +269,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    padding: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing.xl,
   },
   avatarSection: {

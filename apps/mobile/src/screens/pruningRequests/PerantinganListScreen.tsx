@@ -60,6 +60,7 @@ import {
   nbRadius,
   nbShadows,
 } from '../../constants/nbTokens';
+import { screenContentGrow } from '../../constants/layout';
 import type { PruningRequest } from '../../types/models.types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -543,9 +544,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    paddingHorizontal: nbSpacing.md,
+    ...screenContentGrow,
     paddingBottom: nbSpacing['2xl'],
-    flexGrow: 1,
   },
   skeletonContainer: {
     padding: nbSpacing.md,

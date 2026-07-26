@@ -22,6 +22,7 @@ import type { MainTabParamList, MainTabScreenProps } from '../../types/navigatio
 import { getActivityById, approveActivity, rejectActivity } from '../../services/api/activitiesApi';
 import { NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBBadge, NBButton, NBCardTextInput, NBText } from '../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { Activity } from '../../types/models.types';
 import { useAppSelector } from '../../store/hooks';
 
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
   },
   loadingTextMargin: {},
   contentContainer: {
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing['2xl'],
   },
   contentContainerWithFooter: {
