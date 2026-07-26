@@ -22,14 +22,17 @@ export class ShiftDefinitionsService {
   ) {}
 
   /**
-   * Get all active shift definitions
+   * Get shift definitions ordered by start time (soft-deleted always excluded).
    *
-   * @returns Array of all active shift definitions ordered by start time
+   * @param includeInactive - when true, also return inactive shifts (the
+   *   management datagrid shows them with an "Inactive" status); default false
+   *   keeps the picker/scheduling to active shifts only.
+   * @returns Array of shift definitions ordered by start time
    */
-  async findAll(): Promise<ShiftDefinition[]> {
-    this.logger.log('Fetching all shift definitions');
+  async findAll(includeInactive = false): Promise<ShiftDefinition[]> {
+    this.logger.log(`Fetching shift definitions (includeInactive=${includeInactive})`);
     return this.shiftDefinitionRepository.find({
-      where: { is_active: true },
+      where: includeInactive ? {} : { is_active: true },
       order: { start_time: 'ASC' },
     });
   }

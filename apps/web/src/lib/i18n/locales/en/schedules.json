@@ -417,7 +417,10 @@
     },
     "reminderHint": "0 or blank disables the reminder.",
     "errors": {
-      "required": "Name is required"
+      "required": "Name is required",
+      "minutesRequired": "Required (0–1440 min)",
+      "minutesRange": "Must be between 0 and 1440 minutes",
+      "formInvalid": "Please check the form"
     },
     "fields": {
       "name": "Name",
@@ -426,8 +429,11 @@
       "early": "Before (min)",
       "cutoff": "After (min)",
       "startReminder": "Start reminder (min)",
-      "endReminder": "End reminder (min)",
-      "active": "Active"
-    }
+      "endReminder": "End reminder (min)"
+    },
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "activated": "Shift activated",
+    "deactivated": "Shift deactivated"
   }
 }

@@ -8,6 +8,40 @@ Form handling patterns using React Hook Form with Zod validation for the SEKAR w
 
 ---
 
+## Standard rules — the canonical add / edit form (MANDATE)
+
+The add/edit form that pairs with a [standard datagrid](data-tables.md#standard-rules--the-canonical-datagrid-mandate)
+is itself standardized. Whether it renders in a `Dialog` (create/edit a datagrid row) or as a page
+form, apply these rules:
+
+1. **One field per row (single column).** Related units (e.g. start/end time) each get their own row —
+   don't pack two inputs side-by-side. Labels via `<Label htmlFor>`; localize every label/placeholder.
+2. **Mark required fields** with a red `*` after the label (`<span className="text-nb-danger" aria-hidden> *</span>`
+   + `aria-required` on the input). Only genuinely-optional fields go unmarked.
+3. **Inline validation AND toasts.** Validate on submit → show each field's own error beneath it
+   (`<p className="text-nb-caption text-nb-danger">`, `aria-invalid` on the input). Keep the toasts
+   too: a "check the form" error toast when inline validation blocks submit, and the mutation's
+   success / `getErrorMessage` error toast on the server round-trip. Inline = which field; toast =
+   the outcome.
+4. **No "active?" control in create/edit.** New records are created **active**; activation is toggled
+   from the datagrid row `…` menu (see data-tables §Standard rules). Editing preserves the current
+   `is_active` untouched.
+5. **Number ("minutes"/count) inputs** — use the native stepper (`type="number"`, `min`, `max`,
+   `step`) and normalize on change: clamp `≥ min`, floor, **strip leading zeros**, and force-sync the
+   DOM value (`e.currentTarget.value = next`) to beat React's "value unchanged → skip DOM update"
+   quirk (otherwise typing a leading zero into `45` leaves a stray `045`). **Required min-0 fields
+   snap to `0` when emptied** (never left blank); optional fields may stay blank (= unset). Canonical
+   helper: `MinutesField` in `components/schedules/ShiftDefinitionsModal.tsx`.
+6. **Dialog vs. sheet independence.** When the form is a `Dialog` launched from a list `Sheet`,
+   closing the dialog (save or cancel) must **not** dismiss the sheet (`<Dialog open={formOpen}
+   onOpenChange={(v) => !v && closeForm()}>`).
+7. **Time inputs** use the shared 24-hour `TimePicker` (`value`/`onValueChange`), never a locale-
+   dependent `type="time"` (which shows AM/PM).
+8. Zod schemas built in-component via `useMemo(() => z.object(...), [t])` so messages localize; reuse
+   shared `validation`/`errors` namespaces.
+
+---
+
 ## Technology Stack
 
 | Component | Technology |
