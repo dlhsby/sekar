@@ -438,7 +438,7 @@ describe('HomeScreen Clock In/Out FAB', () => {
     await act(async () => { jest.advanceTimersByTime(100); });
 
     await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
+      expect(getByTestId('entry-clock-in')).toBeTruthy();
     });
   });
 
@@ -676,7 +676,7 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
       await act(async () => { jest.advanceTimersByTime(200); });
 
       await waitFor(() => {
-        expect(getByTestId('clock-button')).toBeTruthy();
+        expect(getByTestId('entry-clock-in')).toBeTruthy();
       });
     });
   });
@@ -696,7 +696,7 @@ describe('HomeScreen — Fix 8: FAB role guard (all clockable roles)', () => {
       await act(async () => { jest.advanceTimersByTime(200); });
 
       await waitFor(() => {
-        expect(queryByTestId('clock-button')).toBeNull();
+        expect(queryByTestId('entry-clock-in')).toBeNull();
       });
     });
   });
@@ -910,15 +910,15 @@ describe('FieldHomeScreen HOME-1 body', () => {
       </Provider>
     );
 
-  it('renders the idle absensi hero when no shift is active', async () => {
+  it('renders the idle attendance entry card when no shift is active', async () => {
     const store = createTestStore(null);
     const { getByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
     await waitFor(() => {
       expect(getByTestId('absensi-hero')).toBeTruthy();
-      expect(getByText('Belum clock in')).toBeTruthy();
-      expect(getByText('Mulai shift hari ini')).toBeTruthy();
+      expect(getByTestId('entry-clock-in')).toBeTruthy();
+      expect(getByText('Anda belum clockin pada shift ini')).toBeTruthy();
     });
   });
 

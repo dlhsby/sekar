@@ -37,11 +37,11 @@ describe('AttendanceSummaryRow', () => {
     times.forEach((t) => expect(colorOf(t)).toBe(nbColors.successDark));
   });
 
-  it('shows an em-dash and a muted colour when there is no clock-out', () => {
+  it('shows the empty-time placeholder and a muted colour when there is no clock-out', () => {
     const { getByText } = render(
       <AttendanceSummaryRow firstClockIn={IN} lastClockOut={undefined} isLate={false} />,
     );
-    const keluar = getByText('—');
+    const keluar = getByText('--:--');
     expect(colorOf(keluar)).toBe(nbColors.gray600);
   });
 });

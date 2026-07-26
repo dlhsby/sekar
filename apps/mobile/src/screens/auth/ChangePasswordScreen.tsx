@@ -15,6 +15,7 @@ import { NBAlert, NBButton, NBPasswordInput, NBText, NBToast } from '../../compo
 import { RequirementChecklist } from '../../components/common/RequirementChecklist';
 import { SuccessOverlay } from '../../components/common/SuccessOverlay';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { useAppDispatch } from '../../store/hooks';
 import { setUser, logout } from '../../store/slices/authSlice';
 import { changePasswordAndRotate } from '../../services/api/authApi';
@@ -152,7 +153,7 @@ export function ChangePasswordScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: nbColors.bgCanvas },
   flex: { flex: 1 },
-  content: { padding: nbSpacing.lg, gap: nbSpacing.md },
+  content: { ...screenContent, gap: nbSpacing.md },
 });
 
 export default ChangePasswordScreen;

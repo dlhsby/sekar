@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { useAppSelector } from '../../store/hooks';
 import { NBBackgroundPattern, NBMenuCard, NBText } from '../../components/nb';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { MENU_CONFIGS } from '../../constants/menuConfigs';
 import type { MainTabParamList } from '../../types/navigation.types';
 
@@ -69,11 +70,7 @@ export function MenuScreen({ navigation }: Props): React.JSX.Element {
 
 const styles = StyleSheet.create({
   scroll: { flex: 1 },
-  content: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.md,
-    paddingBottom: nbSpacing.xl,
-  },
+  content: {...screenContent, paddingBottom: nbSpacing.xl},
   section: { marginBottom: nbSpacing.lg },
   sectionTitle: { marginBottom: nbSpacing.sm },
   grid: {

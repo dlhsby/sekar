@@ -29,6 +29,7 @@ import {
   NBText,
 } from '../../components/nb';
 import { nbColors, nbSpacing, nbRadius } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { PartialCompleteSheet } from '../../components/tasks/PartialCompleteSheet';
 
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -414,7 +415,7 @@ export function TaskDetailScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  contentContainer: { paddingVertical: nbSpacing.md, paddingBottom: nbSpacing.xl },
+  contentContainer: { ...screenContent, paddingBottom: nbSpacing.xl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingTextMargin: { marginTop: nbSpacing.md },
   card: { marginHorizontal: nbSpacing.md, marginBottom: nbSpacing.md },

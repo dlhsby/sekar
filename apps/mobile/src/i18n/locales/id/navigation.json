@@ -1,6 +1,6 @@
 {
   "screens": {
-    "attendance": "Kehadiran",
+    "attendance": "Log Kehadiran",
     "attendanceDetail": "Detail Kehadiran",
     "clockInOut": "Clock In/Out",
     "tasks": "Tugas",
@@ -22,6 +22,6 @@
     "scanQR": "Pindai QR",
     "checkoutAsset": "Pinjam Aset",
     "returnAsset": "Kembalikan Aset",
-    "timeRecordHub": "Pencatatan Waktu"
+    "timeRecordHub": "Kehadiran"
   }
 }

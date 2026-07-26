@@ -12,6 +12,7 @@ import { NBText } from '../nb';
 import type { NBTextColor } from '../nb/NBText';
 import { formatTime } from '../../utils/dateUtils';
 import { nbSpacing } from '../../constants/nbTokens';
+import { EMPTY_TIME } from '../attendance/AttendanceTimesRow';
 
 export interface AttendanceSummaryRowProps {
   firstClockIn?: string;
@@ -54,7 +55,7 @@ export function AttendanceSummaryRow({
           color={masukColor}
           accessibilityLabel={firstClockIn ? t('home:components.attendanceSummary.a11y.clockIn', { time: formatTime(firstClockIn), status: neutral ? t('home:components.attendanceSummary.a11y.noSchedule') : isLate ? t('home:components.attendanceSummary.a11y.late') : t('home:components.attendanceSummary.a11y.onTime') }) : undefined}
         >
-          {formatTime(firstClockIn ?? '')}
+          {firstClockIn ? formatTime(firstClockIn) : EMPTY_TIME}
         </NBText>
       </View>
       <View style={[styles.stat, styles.statEnd]}>
@@ -64,7 +65,7 @@ export function AttendanceSummaryRow({
           color={keluarColor}
           accessibilityLabel={lastClockOut ? t('home:components.attendanceSummary.a11y.clockOut', { time: formatTime(lastClockOut), status: isEarlyLeave ? t('home:components.attendanceSummary.a11y.earlyLeave') : '' }) : undefined}
         >
-          {lastClockOut ? formatTime(lastClockOut) : '—'}
+          {lastClockOut ? formatTime(lastClockOut) : EMPTY_TIME}
         </NBText>
       </View>
     </View>

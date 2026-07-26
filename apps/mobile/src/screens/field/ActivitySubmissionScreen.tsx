@@ -19,6 +19,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { NBAlert, NBBackgroundPattern, NBText } from '../../components/nb';
 import { NBButton, NBCard, NBCardHeader, NBCardContent, NBSelect, NBCardTextInput, type NBSelectOption } from '../../components/nb';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { PhotoUploader } from '../../components/common';
 import { useActivityForm } from '../../hooks';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
@@ -352,8 +353,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: nbSpacing.md,
-    paddingBottom: nbSpacing.md,
+    ...screenContent,
   },
   fab: {
     paddingHorizontal: nbSpacing.md,

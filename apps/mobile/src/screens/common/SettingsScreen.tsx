@@ -34,6 +34,7 @@ import {
   nbBorders,
   nbShadows,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 type SettingsScreenProps = NativeStackScreenProps<{ Settings: undefined }, 'Settings'>;
 
@@ -330,7 +331,7 @@ export function SettingsScreen(_props: SettingsScreenProps): React.JSX.Element {
 
 const styles = StyleSheet.create({
   content: {
-    padding: nbSpacing.md,
+    ...screenContent,
     paddingBottom: nbSpacing['2xl'],
   },
   sectionTitle: {

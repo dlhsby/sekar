@@ -37,6 +37,7 @@ import {
 } from '../../store/slices/assetsSlice';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import type { MainTabParamList } from '../../types/navigation.types';
 import type { AssetCondition } from '../../types/assets.types';
 
@@ -252,8 +253,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   content: {
-    paddingHorizontal: nbSpacing.md,
-    paddingVertical: nbSpacing.md,
+    ...screenContent,
     gap: nbSpacing.md,
   },
   cardTitle: {

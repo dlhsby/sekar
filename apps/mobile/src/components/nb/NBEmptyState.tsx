@@ -54,6 +54,9 @@ export interface NBEmptyStateProps {
   ctaLabel?: string;
   /** CTA button press handler */
   onCTA?: () => void;
+  /** Compact layout for an in-page section (smaller illustration + padding, no
+   *  flex-fill) rather than a full-screen empty state. */
+  compact?: boolean;
   /** Custom container style */
   style?: StyleProp<ViewStyle>;
   /** Custom title style */
@@ -127,6 +130,7 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
   illustration,
   ctaLabel,
   onCTA,
+  compact = false,
   style,
   titleStyle,
   descriptionStyle,
@@ -146,18 +150,18 @@ export const NBEmptyState: React.FC<NBEmptyStateProps> = ({
   const illustrationNode =
     typeof illustration === 'string'
       ? illustration in ILLUSTRATIONS
-        ? React.createElement(ILLUSTRATIONS[illustration as EmptyIllustrationKey], { size: 120 })
+        ? React.createElement(ILLUSTRATIONS[illustration as EmptyIllustrationKey], { size: compact ? 72 : 120 })
         : undefined
       : (illustration as React.ReactNode | undefined);
 
   return (
     <View
-      style={[styles.container, style]}
+      style={[compact ? styles.containerCompact : styles.container, style]}
       testID={testID}
       accessibilityRole="alert"
       accessibilityLabel={`${title}. ${displayDescription || ''}`}
     >
-      <View style={styles.card}>
+      <View style={[styles.card, compact && styles.cardCompact]}>
         {/* Illustration (preferred) or icon */}
         {illustrationNode ? (
           <View
@@ -225,6 +229,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: nbSpacing.lg,
     paddingVertical: nbSpacing.xl,
   },
+  containerCompact: {
+    alignItems: 'center',
+  },
   card: {
     backgroundColor: nbColors.white,
     borderWidth: nbBorders.widthBase,
@@ -235,6 +242,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: 400,
     ...nbShadows.md,
+  },
+  cardCompact: {
+    paddingHorizontal: nbSpacing.lg,
+    paddingVertical: nbSpacing.lg,
+    alignSelf: 'stretch',
   },
   illustrationContainer: {
     marginBottom: nbSpacing.lg,

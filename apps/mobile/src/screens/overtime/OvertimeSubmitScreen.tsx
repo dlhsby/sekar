@@ -30,6 +30,7 @@ import {
   nbColors,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { ImagePreviewModal } from '../../components/common';
 import { useOvertimeStartForm, useOvertimeEndForm, useOvertimeSession } from './hooks';
 import OvertimeTimeHero from './components/OvertimeTimeHero';
@@ -311,8 +312,7 @@ const styles = StyleSheet.create({
     marginTop: nbSpacing.md,
   },
   scrollContent: {
-    paddingHorizontal: nbSpacing.md,
-    paddingTop: nbSpacing.sm,
+    ...screenContent,
     paddingBottom: nbSpacing.sm,
   },
   submitBar: {

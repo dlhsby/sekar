@@ -23,6 +23,7 @@ import { useProfileLogout } from '../../hooks/useProfileLogout';
 import { locationTracker } from '../../services/location/locationTracker';
 import { getVersion } from 'react-native-device-info';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 // Read once from the native package metadata so the "About" version never drifts
 // from the actual build (versionName).
@@ -209,7 +210,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   contentContainer: {
-    paddingTop: nbSpacing.md,
+    ...screenContent,
   },
   loadingContainer: {
     flex: 1,

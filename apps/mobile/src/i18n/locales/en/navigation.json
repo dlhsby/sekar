@@ -1,6 +1,6 @@
 {
   "screens": {
-    "attendance": "Attendance",
+    "attendance": "Attendance Log",
     "attendanceDetail": "Attendance Detail",
     "clockInOut": "Clock In/Out",
     "tasks": "Tasks",
@@ -22,6 +22,6 @@
     "scanQR": "Scan QR",
     "checkoutAsset": "Checkout Asset",
     "returnAsset": "Return Asset",
-    "timeRecordHub": "Time Record"
+    "timeRecordHub": "Attendance"
   }
 }

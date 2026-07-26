@@ -28,6 +28,7 @@ import { AssignToTaskSheet } from '../../components/admin/AssignToTaskSheet';
 import { RescheduleSheet } from './components/RescheduleSheet';
 import { LocationMapModal } from '../../components/modals/LocationMapModal';
 import { nbSpacing, nbColors } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import {
   getPruningRequestStatusColor,
   getPruningRequestStatusLabel,
@@ -268,8 +269,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contentContainer: {
-    paddingTop: nbSpacing.md,
-    paddingBottom: nbSpacing.md,
+    ...screenContent,
   },
   photoViewerWrap: {
     flex: 1,

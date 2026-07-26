@@ -38,6 +38,7 @@ import {
   nbColors,
   nbSpacing,
 } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -272,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: nbColors.bgCanvas,
   },
   scrollContent: {
-    padding: nbSpacing[4],
+    ...screenContent,
     paddingBottom: nbSpacing[6],
   },
 });

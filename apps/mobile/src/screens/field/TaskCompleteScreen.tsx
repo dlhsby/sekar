@@ -18,6 +18,7 @@ import { NBButton, NBCard, NBCardHeader, NBCardContent, NBBackgroundPattern, NBC
 import { PhotoUploader } from '../../components/common';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
+import { screenContent } from '../../constants/layout';
 import { mediaService, type Photo } from '../../services/media';
 import * as tasksApi from '../../services/api/tasksApi';
 import type { MainTabParamList, MainTabScreenProps } from '../../types/navigation.types';
@@ -201,7 +202,7 @@ export function TaskCompleteScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
-  contentContainer: { paddingVertical: nbSpacing.md, paddingBottom: nbSpacing.xl },
+  contentContainer: { ...screenContent, paddingBottom: nbSpacing.xl },
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent' },
   loadingTextMargin: { marginTop: nbSpacing.md },
   errorContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'transparent', paddingHorizontal: nbSpacing.lg },
