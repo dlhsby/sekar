@@ -98,6 +98,17 @@ describe('ShiftDefinitionsService', () => {
 
       expect(result).toEqual([]);
     });
+
+    it('includes inactive shifts when includeInactive=true (management datagrid)', async () => {
+      mockShiftDefinitionRepository.find.mockResolvedValue([mockShift1]);
+
+      await service.findAll(true);
+
+      expect(mockShiftDefinitionRepository.find).toHaveBeenCalledWith({
+        where: {},
+        order: { start_time: 'ASC' },
+      });
+    });
   });
 
   describe('findOne', () => {

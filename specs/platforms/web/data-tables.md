@@ -8,6 +8,47 @@ Data table patterns using TanStack Table (React Table v8) for the SEKAR web dash
 
 ---
 
+## Standard rules — the canonical datagrid (MANDATE)
+
+**Every management / CRUD list in the web app is the same standardized datagrid.** Don't invent a
+per-feature table, card list, or `<ul>` — compose the shared `DataTable` from `@/components/ui`
+(`apps/web/src/components/ui/data-table.tsx`). Reference implementations: **Users**
+(`app/(dashboard)/users/page.tsx`), **Locations** (`.../locations/page.tsx`), **Shift definitions**
+(`components/schedules/ShiftDefinitionsModal.tsx`). New lists follow these rules verbatim:
+
+1. **Use `DataTable`.** It ships search (debounced global filter), per-column **sort**, per-column
+   **filter** (`meta.filterVariant` = `text|number|date|enum`, `+ filterOptions` for enums /
+   server-paginated columns), pagination + page-size, column-toggle, responsive mobile cards, and
+   built-in loading / empty / error states. Never hand-roll these.
+2. **Row visibility — inactive rows STAY in the list.** A management list shows **all non-deleted
+   rows, including inactive ones**, each carrying a **Status** column (`StatusPill` — `ok` for
+   active, `neutral` for inactive). **Deactivating a row must never remove it from the list.** Only
+   **soft-deleted** (`deleted_at`) rows are hidden. → The backend list endpoint the management grid
+   calls MUST return inactive rows (convention: `?includeInactive=true`), while pickers / selectors
+   / dropdowns fetch **active-only** (the default). Never rely on a list endpoint that silently
+   drops inactive rows for a management screen.
+3. **Active ⇄ Inactive is toggled from the row `…` menu** (`Aktifkan` / `Nonaktifkan`), **not** from
+   the create/edit form. **New records are created active** — no "active?" checkbox in the add form.
+4. **Row actions** live in the standardized pinned-right `…` menu via the `rowActions` callback —
+   typical order **Ubah · Aktifkan/Nonaktifkan · Hapus** (Hapus is `variant: 'danger'`). Gate per
+   permission with `hidden` / `disabled` on each action (and pass `rowActions={canManage ? fn :
+   undefined}`), never with a ternary at the call site.
+5. **Keep the grid scannable.** Columns show identity + status (and at most a compact secondary line,
+   e.g. a time range under the name); **full detail belongs in the edit modal/form**, not extra
+   columns.
+6. **Primary create** uses the `createAction` prop (a toolbar `[+ Tambah X]` that collapses to an
+   icon on mobile), gated with `hidden` — not a bespoke `<Button>` via `actions`.
+7. **Every mutating action reports both outcomes** — success toast + `getErrorMessage` error toast
+   (see `lib/hooks/use-action.ts` `runAction`); cache invalidation in the mutation's `onSuccess`. A
+   refused deactivate/delete must be visible, never a silent no-op.
+8. **Delete is soft** (`deleted_at`) wherever historical references exist; "stop offering" = set
+   `is_active=false` (still listed, inactive), "remove" = soft delete (delisted).
+
+See [`forms.md` §Standard rules](forms.md#standard-rules--the-canonical-add--edit-form-mandate) for
+the add/edit form that pairs with this grid.
+
+---
+
 ## Technology Stack
 
 | Component | Technology |

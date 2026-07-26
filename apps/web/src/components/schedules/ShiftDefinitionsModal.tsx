@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Power, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Button,
@@ -42,6 +42,7 @@ interface ShiftDefinitionsModalProps {
   canManage: boolean;
 }
 
+/** New shifts are created active; activation is toggled from the row menu. */
 const EMPTY_FORM: ShiftDefinitionInput = {
   name: '',
   start_time: '06:00',
@@ -53,22 +54,30 @@ const EMPTY_FORM: ShiftDefinitionInput = {
   is_active: true,
 };
 
+type FormErrors = Partial<Record<keyof ShiftDefinitionInput, string>>;
+
+const MINUTES_MAX = 1440;
+
 const hhmm = (t: string): string => (t?.length >= 5 ? t.slice(0, 5) : t);
 
-/** Coerce a number input to a non-negative int, or null when blank. */
-const toMinOrNull = (v: string): number | null => {
-  if (v.trim() === '') return null;
-  const n = Number(v);
-  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : null;
+/** Digits only, leading zeros stripped ("045" → "45", "0" → "0", "" → ""). */
+const sanitizeDigits = (raw: string): string =>
+  raw.replace(/[^0-9]/g, '').replace(/^0+(?=\d)/, '');
+const numToStr = (n: number | null | undefined): string =>
+  n === null || n === undefined ? '' : String(n);
+const strToNum = (raw: string): number | null => {
+  const s = sanitizeDigits(raw);
+  return s === '' ? null : Number(s);
 };
 
 /**
  * Manage shift definitions (ADR-055 configurable shifts) from the Jadwal page.
  * The side sheet lists the day's shifts as our standard sortable/filterable
- * DataTable (name + status only); add/edit happens in a separate modal so closing
- * that modal (save or cancel) leaves the list open. Any number of shifts, each
- * with its own attribution window and reminder timing. Delete is soft —
- * historical schedules/attendance stay intact.
+ * DataTable (name + status); the `…` row menu carries Ubah / Aktifkan⇄Nonaktifkan
+ * / Hapus. Add/edit happens in a separate modal (new shifts are always active;
+ * activation is only toggled from the menu) with inline validation. Any number of
+ * shifts, each with its own attribution window and reminder timing. Delete is
+ * soft — historical schedules/attendance stay intact.
  */
 export function ShiftDefinitionsModal({
   open,
@@ -76,7 +85,8 @@ export function ShiftDefinitionsModal({
   canManage,
 }: ShiftDefinitionsModalProps) {
   const { t } = useTranslation();
-  const { data: shifts, isLoading } = useShiftDefinitions();
+  // Management list: include inactive shifts (shown with an "Inactive" status).
+  const { data: shifts, isLoading } = useShiftDefinitions(true);
   const createMut = useCreateShiftDefinition();
   const updateMut = useUpdateShiftDefinition();
   const deleteMut = useDeleteShiftDefinition();
@@ -84,15 +94,25 @@ export function ShiftDefinitionsModal({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [form, setForm] = useState<ShiftDefinitionInput>(EMPTY_FORM);
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const sorted = useMemo(
     () => [...(shifts ?? [])].sort((a, b) => a.start_time.localeCompare(b.start_time)),
     [shifts],
   );
 
+  const setField = <K extends keyof ShiftDefinitionInput>(
+    key: K,
+    val: ShiftDefinitionInput[K],
+  ) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    setErrors((e) => ({ ...e, [key]: undefined }));
+  };
+
   const openCreate = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setErrors({});
     setFormOpen(true);
   };
   const openEdit = (s: ShiftDefinition) => {
@@ -107,6 +127,7 @@ export function ShiftDefinitionsModal({
       end_reminder_min: s.end_reminder_min ?? null,
       is_active: s.is_active,
     });
+    setErrors({});
     setFormOpen(true);
   };
   const closeForm = () => {
@@ -114,9 +135,33 @@ export function ShiftDefinitionsModal({
     setEditingId(null);
   };
 
+  /** Client-side validation → inline field errors. Required: name + all windows
+   *  except the end reminder (which may be blank/0 = off). */
+  const validate = (): boolean => {
+    const e: FormErrors = {};
+    if (!form.name.trim()) e.name = t('schedules:shiftDefs.errors.required');
+
+    const required: (keyof ShiftDefinitionInput)[] = [
+      'early_window_min',
+      'cutoff_grace_min',
+      'start_reminder_min',
+    ];
+    for (const key of required) {
+      const v = form[key] as number | null | undefined;
+      if (v === null || v === undefined) e[key] = t('schedules:shiftDefs.errors.minutesRequired');
+      else if (v < 0 || v > MINUTES_MAX) e[key] = t('schedules:shiftDefs.errors.minutesRange');
+    }
+    const end = form.end_reminder_min;
+    if (end !== null && end !== undefined && (end < 0 || end > MINUTES_MAX)) {
+      e.end_reminder_min = t('schedules:shiftDefs.errors.minutesRange');
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
   const submit = async () => {
-    if (!form.name.trim()) {
-      toast.error(t('schedules:shiftDefs.errors.required'));
+    if (!validate()) {
+      toast.error(t('schedules:shiftDefs.errors.formInvalid'));
       return;
     }
     try {
@@ -124,10 +169,21 @@ export function ShiftDefinitionsModal({
         await updateMut.mutateAsync({ id: editingId, input: form });
         toast.success(t('schedules:shiftDefs.updated'));
       } else {
-        await createMut.mutateAsync(form);
+        await createMut.mutateAsync({ ...form, is_active: true });
         toast.success(t('schedules:shiftDefs.created'));
       }
       closeForm();
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  const toggleActive = async (s: ShiftDefinition) => {
+    try {
+      await updateMut.mutateAsync({ id: s.id, input: { is_active: !s.is_active } });
+      toast.success(
+        t(s.is_active ? 'schedules:shiftDefs.deactivated' : 'schedules:shiftDefs.activated'),
+      );
     } catch (err) {
       toast.error(getErrorMessage(err));
     }
@@ -191,6 +247,14 @@ export function ShiftDefinitionsModal({
   const rowActions = (s: ShiftDefinition): DataTableRowAction<ShiftDefinition>[] => [
     { key: 'edit', label: t('common:actions.edit'), icon: Pencil, onClick: () => openEdit(s) },
     {
+      key: 'toggle',
+      label: t(
+        s.is_active ? 'schedules:shiftDefs.deactivate' : 'schedules:shiftDefs.activate',
+      ),
+      icon: Power,
+      onClick: () => toggleActive(s),
+    },
+    {
       key: 'delete',
       label: t('common:actions.delete'),
       icon: Trash2,
@@ -240,92 +304,81 @@ export function ShiftDefinitionsModal({
             </DialogTitle>
           </DialogHeader>
           <DialogBody className="space-y-3">
-            <div>
-              <Label htmlFor="sd-name">{t('schedules:shiftDefs.fields.name')}</Label>
+            <FieldRow
+              id="sd-name"
+              label={t('schedules:shiftDefs.fields.name')}
+              required
+              error={errors.name}
+            >
               <Input
                 id="sd-name"
                 value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                aria-required
+                aria-invalid={!!errors.name}
+                onChange={(e) => setField('name', e.target.value)}
               />
-            </div>
-            <div>
-              <Label htmlFor="sd-start">{t('schedules:shiftDefs.fields.start')}</Label>
+            </FieldRow>
+
+            <FieldRow
+              id="sd-start"
+              label={t('schedules:shiftDefs.fields.start')}
+              required
+              error={errors.start_time}
+            >
               <TimePicker
                 id="sd-start"
                 value={form.start_time}
-                onValueChange={(v) => setForm({ ...form, start_time: v })}
+                onValueChange={(v) => setField('start_time', v)}
               />
-            </div>
-            <div>
-              <Label htmlFor="sd-end">{t('schedules:shiftDefs.fields.end')}</Label>
+            </FieldRow>
+
+            <FieldRow
+              id="sd-end"
+              label={t('schedules:shiftDefs.fields.end')}
+              required
+              error={errors.end_time}
+            >
               <TimePicker
                 id="sd-end"
                 value={form.end_time}
-                onValueChange={(v) => setForm({ ...form, end_time: v })}
+                onValueChange={(v) => setField('end_time', v)}
               />
-            </div>
-            <div>
-              <Label htmlFor="sd-early">{t('schedules:shiftDefs.fields.early')}</Label>
-              <Input
-                id="sd-early"
-                type="number"
-                min={0}
-                max={1440}
-                value={form.early_window_min ?? 60}
-                onChange={(e) => setForm({ ...form, early_window_min: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="sd-cutoff">{t('schedules:shiftDefs.fields.cutoff')}</Label>
-              <Input
-                id="sd-cutoff"
-                type="number"
-                min={0}
-                max={1440}
-                value={form.cutoff_grace_min ?? 60}
-                onChange={(e) => setForm({ ...form, cutoff_grace_min: Number(e.target.value) })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="sd-start-reminder">
-                {t('schedules:shiftDefs.fields.startReminder')}
-              </Label>
-              <Input
-                id="sd-start-reminder"
-                type="number"
-                min={0}
-                max={1440}
-                value={form.start_reminder_min ?? ''}
-                onChange={(e) =>
-                  setForm({ ...form, start_reminder_min: toMinOrNull(e.target.value) ?? 0 })
-                }
-              />
-            </div>
-            <div>
-              <Label htmlFor="sd-end-reminder">
-                {t('schedules:shiftDefs.fields.endReminder')}
-              </Label>
-              <Input
-                id="sd-end-reminder"
-                type="number"
-                min={0}
-                max={1440}
-                value={form.end_reminder_min ?? ''}
-                onChange={(e) => setForm({ ...form, end_reminder_min: toMinOrNull(e.target.value) })}
-              />
-            </div>
+            </FieldRow>
+
+            <MinutesField
+              id="sd-early"
+              label={t('schedules:shiftDefs.fields.early')}
+              required
+              value={numToStr(form.early_window_min)}
+              error={errors.early_window_min}
+              onChange={(raw) => setField('early_window_min', strToNum(raw) ?? undefined)}
+            />
+            <MinutesField
+              id="sd-cutoff"
+              label={t('schedules:shiftDefs.fields.cutoff')}
+              required
+              value={numToStr(form.cutoff_grace_min)}
+              error={errors.cutoff_grace_min}
+              onChange={(raw) => setField('cutoff_grace_min', strToNum(raw) ?? undefined)}
+            />
+            <MinutesField
+              id="sd-start-reminder"
+              label={t('schedules:shiftDefs.fields.startReminder')}
+              required
+              value={numToStr(form.start_reminder_min)}
+              error={errors.start_reminder_min}
+              onChange={(raw) => setField('start_reminder_min', strToNum(raw) ?? undefined)}
+            />
+            <MinutesField
+              id="sd-end-reminder"
+              label={t('schedules:shiftDefs.fields.endReminder')}
+              value={numToStr(form.end_reminder_min)}
+              error={errors.end_reminder_min}
+              onChange={(raw) => setField('end_reminder_min', strToNum(raw))}
+            />
             <p className="text-nb-caption text-nb-gray-600">
               {t('schedules:shiftDefs.reminderHint')}
             </p>
-            <label className="flex items-center gap-2 text-nb-body-sm">
-              <input
-                type="checkbox"
-                checked={form.is_active ?? true}
-                onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
-                className="h-4 w-4"
-              />
-              {t('schedules:shiftDefs.fields.active')}
-            </label>
           </DialogBody>
           <DialogFooter>
             <Button variant="outline" onClick={closeForm}>
@@ -338,6 +391,90 @@ export function ShiftDefinitionsModal({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+/** A labelled form row with a required marker + inline error message. */
+function FieldRow({
+  id,
+  label,
+  required,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>
+        {label}
+        {required && (
+          <span className="text-nb-danger" aria-hidden>
+            {' '}
+            *
+          </span>
+        )}
+      </Label>
+      {children}
+      {error && <p className="mt-1 text-nb-caption text-nb-danger">{error}</p>}
+    </div>
+  );
+}
+
+/**
+ * A whole-number "minutes" input with the native stepper + min 0. Normalizes on
+ * change (clamps ≥ 0, floors, strips leading zeros) and force-syncs the DOM value
+ * so React's controlled-number quirk can't leave a stray "015" as you type.
+ */
+function MinutesField({
+  id,
+  label,
+  required,
+  value,
+  error,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  value: string;
+  error?: string;
+  onChange: (raw: string) => void;
+}) {
+  return (
+    <FieldRow id={id} label={label} required={required} error={error}>
+      <Input
+        id={id}
+        type="number"
+        min={0}
+        max={MINUTES_MAX}
+        step={1}
+        value={value}
+        aria-required={required}
+        aria-invalid={!!error}
+        onChange={(e) => {
+          const raw = e.target.value;
+          if (raw === '') {
+            // Required fields snap to "0" when emptied (min is 0); the optional
+            // end-reminder may stay blank (= off).
+            const next = required ? '0' : '';
+            e.currentTarget.value = next;
+            onChange(next);
+            return;
+          }
+          const n = Math.max(0, Math.floor(Number(raw)));
+          const next = Number.isFinite(n) ? String(n) : '';
+          // Beat React's "value unchanged → skip DOM update" case (e.g. typing a
+          // leading zero into "45" → parses back to 45 → DOM would keep "045").
+          if (e.currentTarget.value !== next) e.currentTarget.value = next;
+          onChange(next);
+        }}
+      />
+    </FieldRow>
   );
 }
 

@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -16,6 +17,7 @@ import {
   ApiResponse,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
   ApiBody,
 } from '@nestjs/swagger';
 import { ShiftDefinitionsService } from './shift-definitions.service';
@@ -97,7 +99,15 @@ export class ShiftDefinitionsController {
   @ApiOperation({
     summary: 'Get all shift definitions',
     description:
-      'Returns all active shift definitions (Shift 1: 06:00-15:00, Shift 2: 15:00-23:00, Shift 3: 21:00-05:00). Any authenticated user can access this.',
+      'Returns shift definitions ordered by start time (soft-deleted excluded). By ' +
+      'default only active ones; pass includeInactive=true (management datagrid) to ' +
+      'also return inactive shifts. Any authenticated user can access this.',
+  })
+  @ApiQuery({
+    name: 'includeInactive',
+    required: false,
+    type: Boolean,
+    description: 'Include inactive (is_active=false) shifts too — for the management list.',
   })
   @ApiResponse({
     status: 200,
@@ -108,8 +118,8 @@ export class ShiftDefinitionsController {
     status: 401,
     description: 'Unauthorized - Invalid or missing JWT token',
   })
-  findAll(): Promise<ShiftDefinition[]> {
-    return this.shiftDefinitionsService.findAll();
+  findAll(@Query('includeInactive') includeInactive?: string): Promise<ShiftDefinition[]> {
+    return this.shiftDefinitionsService.findAll(includeInactive === 'true');
   }
 
   /**
