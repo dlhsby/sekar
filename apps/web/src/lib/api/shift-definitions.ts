@@ -27,19 +27,26 @@ export interface ShiftDefinitionInput {
 export const shiftDefinitionKeys = {
   all: ['shift-definitions'] as const,
   lists: () => [...shiftDefinitionKeys.all, 'list'] as const,
-  list: () => [...shiftDefinitionKeys.lists()] as const,
+  list: (includeInactive = false) =>
+    [...shiftDefinitionKeys.lists(), { includeInactive }] as const,
   details: () => [...shiftDefinitionKeys.all, 'detail'] as const,
   detail: (id: string) => [...shiftDefinitionKeys.details(), id] as const,
 };
 
 /**
- * Fetch all shift definitions (ADR-055 — configurable, any number of shifts).
+ * Fetch shift definitions (ADR-055 — configurable, any number of shifts).
+ *
+ * @param includeInactive - management datagrid passes `true` to also list
+ *   inactive shifts (shown with an "Inactive" status); pickers/scheduling omit it
+ *   to get active shifts only. Soft-deleted shifts are never returned.
  */
-export function useShiftDefinitions() {
+export function useShiftDefinitions(includeInactive = false) {
   return useQuery({
-    queryKey: shiftDefinitionKeys.list(),
+    queryKey: shiftDefinitionKeys.list(includeInactive),
     queryFn: async () => {
-      const response = await apiClient.get<ShiftDefinition[]>('/shift-definitions');
+      const response = await apiClient.get<ShiftDefinition[]>('/shift-definitions', {
+        params: includeInactive ? { includeInactive: true } : undefined,
+      });
       return response.data;
     },
     staleTime: 30 * 60 * 1000, // 30 minutes - shifts rarely change

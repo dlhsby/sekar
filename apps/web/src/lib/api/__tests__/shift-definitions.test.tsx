@@ -73,7 +73,16 @@ describe('Shift Definitions API', () => {
     it('should generate correct query keys', () => {
       expect(shiftDefinitionKeys.all).toEqual(['shift-definitions']);
       expect(shiftDefinitionKeys.lists()).toEqual(['shift-definitions', 'list']);
-      expect(shiftDefinitionKeys.list()).toEqual(['shift-definitions', 'list']);
+      expect(shiftDefinitionKeys.list()).toEqual([
+        'shift-definitions',
+        'list',
+        { includeInactive: false },
+      ]);
+      expect(shiftDefinitionKeys.list(true)).toEqual([
+        'shift-definitions',
+        'list',
+        { includeInactive: true },
+      ]);
       expect(shiftDefinitionKeys.details()).toEqual(['shift-definitions', 'detail']);
       expect(shiftDefinitionKeys.detail('1')).toEqual(['shift-definitions', 'detail', '1']);
     });
