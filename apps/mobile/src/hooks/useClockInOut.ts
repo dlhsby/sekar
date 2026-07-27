@@ -20,6 +20,7 @@ import { deriveAttendanceStatus } from '../utils/attendance';
 import { resolveScheduleScope } from '../utils/scheduleScope';
 import { buildMapArea, type MapArea } from '../utils/mapUtils';
 import { useTodayRoster } from './useTodayRoster';
+import { useAllDistrictAreas } from './useAllDistrictAreas';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
 import { locationTracker } from '../services/location/locationTracker';
 import { mediaService, type Photo } from '../services/media';
@@ -94,6 +95,11 @@ export function useClockInOut() {
   // assignment names no lokasi but is still an assignment (see resolveScheduleScope).
   const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
 
+  // City-scope has no single polygon; geofence against EVERY rayon instead (the
+  // rayons tile Surabaya, so "inside the city" = inside ANY rayon). Only fetched
+  // for a city-scope worker (see useAllDistrictAreas).
+  const cityAreas = useAllDistrictAreas(scheduleScope.scope === 'city');
+
   /**
    * The lokasi TODAY'S assignment covers. ADR-053: one place per row — a worker
    * covering several holds several rows, so this stays a list for the geofence
@@ -142,14 +148,17 @@ export function useClockInOut() {
         ? rosterAreas
         : scopeArea
           ? [scopeArea]
-          : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
-            ? []
-            : (assignedAreas?.length ?? 0) > 0
-              ? assignedAreas
-              : assignedArea
-                ? [assignedArea]
-                : [],
-    [rosterAreas, scopeArea, scheduleScope, assignedAreas, assignedArea],
+          : // City scope: every rayon polygon (inside any = inside the city).
+            scheduleScope.scope === 'city' && cityAreas.length > 0
+            ? cityAreas
+            : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+              ? []
+              : (assignedAreas?.length ?? 0) > 0
+                ? assignedAreas
+                : assignedArea
+                  ? [assignedArea]
+                  : [],
+    [rosterAreas, scopeArea, cityAreas, scheduleScope, assignedAreas, assignedArea],
   );
 
   // DERIVED (not state): within-boundary if inside ANY assigned area. Deriving it
@@ -171,10 +180,18 @@ export function useClockInOut() {
   // against (today's lokasi, or the assigned rayon/kawasan). `buildMapArea` is
   // the shared builder the home hero uses too, so both screens frame the SAME
   // area. Undefined when there's nothing to show.
-  const mapArea = useMemo(
-    (): MapArea | undefined => buildMapArea(areasForGeofence[0]),
-    [areasForGeofence],
-  );
+  const mapArea = useMemo((): MapArea | undefined => {
+    if (areasForGeofence.length === 0) return undefined;
+    // With several areas (city scope → all rayons) draw the one the worker is
+    // inside; otherwise the first. A single-area scope is unaffected.
+    const primary =
+      areasForGeofence.length > 1 && location.latitude != null && location.longitude != null
+        ? areasForGeofence.find((a) =>
+            isWithinAreaBoundary(location.latitude!, location.longitude!, a),
+          ) ?? areasForGeofence[0]
+        : areasForGeofence[0];
+    return buildMapArea(primary);
+  }, [areasForGeofence, location.latitude, location.longitude]);
 
   // Today's shifts (for the day's FIRST clock-in, so a clock-out+back-in later
   // never re-triggers "late").

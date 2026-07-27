@@ -12,7 +12,25 @@ jest.mock('@react-navigation/native', () => ({
   },
 }));
 jest.mock('../../../hooks/useTodayRoster', () => ({
-  useTodayRoster: () => ({ rosterShift: null, hasScheduleToday: false, roster: null }),
+  useTodayRoster: () => ({
+    rosterShift: null,
+    hasScheduleToday: false,
+    roster: null,
+    allToday: [],
+    loading: false,
+    refetch: jest.fn().mockResolvedValue(undefined),
+  }),
+}));
+jest.mock('../../../hooks/useCurrentShiftState', () => ({
+  useCurrentShiftState: () => ({
+    options: [],
+    openSession: null,
+    hasOpenSession: false,
+    loading: false,
+    refetch: jest.fn().mockResolvedValue(undefined),
+    // No attribution option + null roster → the shared helper yields "no shift".
+    displayShift: () => null,
+  }),
 }));
 
 describe('TimeRecordHubScreen', () => {

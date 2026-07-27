@@ -30,6 +30,7 @@ import {
 } from '../../constants/nbTokens';
 import { useClockInOut } from '../../hooks';
 import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
+import { pickDisplayShift, formatShiftLabel } from '../../utils/shiftDisplay';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
 import type { RouteProp } from '@react-navigation/native';
@@ -119,9 +120,14 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
   // ── Shared attendance-card data (see AttendanceInfoRows) ──────────────────
   // Resolved here so the Rekam Kehadiran card renders the SAME core rows as the
   // home hero: Jadwal Shift · Status · Area Ditugaskan · Status Area.
-  const shiftText = scheduledShift
-    ? `${scheduledShift.name} · ${scheduledShift.start_time.slice(0, 5)}–${scheduledShift.end_time.slice(0, 5)}`
-    : t('attendance:clockInOut.noScheduleToday');
+  // Attribution-first (the ranked shiftOptions), roster fallback — the SAME
+  // resolution the home + hub Kehadiran cards use, so all three read identically.
+  const noScheduleText = t('attendance:clockInOut.noScheduleToday');
+  const shiftText = formatShiftLabel(pickDisplayShift(shiftOptions, scheduledShift), noScheduleText);
+  // The full label of the currently-selected picker option (name + window).
+  const selectedShiftText = selectedShift
+    ? formatShiftLabel(pickDisplayShift([selectedShift], scheduledShift), shiftText)
+    : shiftText;
 
   const areaStatusTone: StatusTone = location.loading
     ? 'neutral'
@@ -317,7 +323,7 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                           style={styles.typeValue}
                         >
                           <NBText variant="body" color="black">
-                            {selectedShift?.shift_name ?? shiftText}
+                            {selectedShiftText}
                           </NBText>
                           <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
                         </TouchableOpacity>

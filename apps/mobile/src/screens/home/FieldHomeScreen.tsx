@@ -34,8 +34,10 @@ import { isTaskScopedToday } from '../../utils/taskStatus';
 import { useLocationPermission, useCollapsible } from '../../hooks';
 import { useHomeLocation } from '../../hooks/useHomeLocation';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
+import { useCurrentShiftState } from '../../hooks/useCurrentShiftState';
 import { screenContentGrow } from '../../constants/layout';
 import { resolveScheduleScope } from '../../utils/scheduleScope';
+import { formatShiftLabel } from '../../utils/shiftDisplay';
 import type { Activity, Task, Shift } from '../../types/models.types';
 
 /**
@@ -112,7 +114,11 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   // Today's roster — the "am I scheduled?" signal (shared with the clock-in
   // screen so both agree on lateness / area semantics).
-  const { roster, rosterShift, hasScheduleToday, allToday } = useTodayRoster();
+  const { roster, rosterShift, hasScheduleToday, allToday, refetch: refetchRoster } = useTodayRoster();
+  // Same live-attendance source the clock-in screen uses, so the Kehadiran card
+  // shows the identical shift (attribution-first, roster fallback) — and stays
+  // fresh across a day boundary instead of showing yesterday's resolved shift.
+  const { displayShift, refetch: refetchShiftState } = useCurrentShiftState();
   // A city/rayon/kawasan-scope roster row assigns the worker without naming a
   // lokasi — it must NOT read as "not assigned to any area".
   const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
@@ -195,8 +201,13 @@ export function FieldHomeScreen(): React.JSX.Element {
       loadShiftHistory();
       loadTodayActivities();
       loadTasks();
+      // Roster + live shift state are fetch-once-on-mount hooks; refresh them on
+      // focus so the Kehadiran card never shows a stale shift after the app has
+      // been left open (e.g. across a day boundary).
+      void refetchRoster();
+      void refetchShiftState();
       // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined below; effect runs on focus by design
-    }, [])
+    }, [refetchRoster, refetchShiftState])
   );
 
   const loadInitialData = async () => {
@@ -263,10 +274,17 @@ export function FieldHomeScreen(): React.JSX.Element {
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([loadCurrentShift(), loadShiftHistory(), loadTodayActivities(), loadTasks()]);
+    await Promise.all([
+      loadCurrentShift(),
+      loadShiftHistory(),
+      loadTodayActivities(),
+      loadTasks(),
+      refetchRoster(),
+      refetchShiftState(),
+    ]);
     setRefreshing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- loaders are stable callbacks defined below; isTaskReceiver only affects loadTasks internals
-  }, [isTaskReceiver]);
+  }, [isTaskReceiver, refetchRoster, refetchShiftState]);
 
   const handleClockInOut = () => {
     if (currentShift?.is_overtime) {
@@ -349,10 +367,8 @@ export function FieldHomeScreen(): React.JSX.Element {
   // Idle-state entry card (shared with the Pencatatan Waktu hub). Reuses the same
   // shift label + Jam Masuk/Keluar shape so home and the hub read identically.
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-  const entryShiftLabel =
-    hasScheduleToday && rosterShift
-      ? `${rosterShift.name} · ${rosterShift.start_time.slice(0, 5)}–${rosterShift.end_time.slice(0, 5)}`
-      : t('attendance:hub.noShift');
+  // Attribution-first (same mechanism as the clock-in screen), roster fallback.
+  const entryShiftLabel = formatShiftLabel(displayShift(rosterShift), t('attendance:hub.noShift'));
 
   return (
     <NBBackgroundPattern

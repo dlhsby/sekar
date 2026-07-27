@@ -17,6 +17,8 @@ import shiftReducer from '../../store/slices/shiftSlice';
 import offlineReducer from '../../store/slices/offlineSlice';
 import { useClockInOut } from '../useClockInOut';
 import { getMyRoster } from '../../services/api/schedulesApi';
+import { getDistricts } from '../../services/api/districtsApi';
+import { __resetDistrictAreasCache } from '../useAllDistrictAreas';
 import Geolocation from 'react-native-geolocation-service';
 import { requestClockInPermissions } from '../../services/permissions';
 
@@ -34,6 +36,9 @@ jest.mock('../../services/api/schedulesApi', () => ({
   getMyRoster: jest.fn(),
   // `useTodayRoster` also fetches the full day (ADR-053: several rows per shift).
   getMyDay: jest.fn().mockResolvedValue({ data: [] }),
+}));
+jest.mock('../../services/api/districtsApi', () => ({
+  getDistricts: jest.fn().mockResolvedValue({ data: [] }),
 }));
 jest.mock('../../services/permissions', () => ({
   requestClockInPermissions: jest.fn().mockResolvedValue({ success: false }),
@@ -202,6 +207,54 @@ describe('useClockInOut — roster-gated lateness', () => {
     const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
 
     await waitFor(() => expect(result.current.scheduleScope.scope).toBe('district'));
+    expect(result.current.areaState).toBe('scope');
+  });
+
+  // ── City scope: geofence against ALL rayons (inside any = inside the city) ──
+  const CITY_ROSTER = { shift_definition: ROSTER_SHIFT_DEF }; // no location/region/district → city
+  const RAYON_POLY = {
+    type: 'Polygon' as const,
+    coordinates: [[[-1, -1], [-1, 1], [1, 1], [1, -1], [-1, -1]]],
+  };
+  const mockGetDistricts = getDistricts as jest.MockedFunction<typeof getDistricts>;
+
+  it('city scope: WITHIN when inside any rayon polygon', async () => {
+    __resetDistrictAreasCache();
+    withGpsFix(0, 0); // inside RAYON_POLY
+    mockGetMyRoster.mockResolvedValue({ data: CITY_ROSTER } as never);
+    mockGetDistricts.mockResolvedValue({
+      data: [{ id: 'r1', name: 'Rayon Barat 1', boundary_polygon: RAYON_POLY }],
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('city'));
+    await waitFor(() => expect(result.current.areaState).toBe('within'));
+  });
+
+  it('city scope: OUTSIDE when inside no rayon polygon', async () => {
+    __resetDistrictAreasCache();
+    withGpsFix(5, 5); // outside RAYON_POLY
+    mockGetMyRoster.mockResolvedValue({ data: CITY_ROSTER } as never);
+    mockGetDistricts.mockResolvedValue({
+      data: [{ id: 'r1', name: 'Rayon Barat 1', boundary_polygon: RAYON_POLY }],
+    } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('city'));
+    await waitFor(() => expect(result.current.areaState).toBe('outside'));
+  });
+
+  it("city scope: falls back to neutral 'scope' when no rayons load (fail-open)", async () => {
+    __resetDistrictAreasCache();
+    withGpsFix(0, 0);
+    mockGetMyRoster.mockResolvedValue({ data: CITY_ROSTER } as never);
+    mockGetDistricts.mockResolvedValue({ data: [] } as never);
+
+    const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+    await waitFor(() => expect(result.current.scheduleScope.scope).toBe('city'));
     expect(result.current.areaState).toBe('scope');
   });
 

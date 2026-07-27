@@ -96,6 +96,9 @@ export type ShiftOptionPhase = 'early' | 'covering' | 'grace';
 export interface ShiftOption {
   shift_definition_id: string;
   shift_name?: string;
+  start_time: string; // 'HH:MM[:SS]'
+  end_time: string; // 'HH:MM[:SS]'
+  crosses_midnight: boolean;
   service_day: string; // YYYY-MM-DD (WIB)
   phase: ShiftOptionPhase;
   minutes_to_start: number; // negative = already started
