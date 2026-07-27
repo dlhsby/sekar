@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, ChevronDown, Plus, Users } from 'lucide-react';
 import type { TFunction } from 'i18next';
@@ -242,7 +242,10 @@ function RoleColumn({
 }: RoleColumnProps) {
   const { t } = useTranslation(['schedules']);
   const [expanded, setExpanded] = useState(false);
-  const listId = `role-col-${label.replace(/\s+/g, '-').toLowerCase()}-${shortLabel ?? ''}`;
+  // useId, not a label-derived string: DayBoard renders one ShiftRoleTable per
+  // container, so a derived id repeats across kawasan/lokasi and every
+  // aria-controls after the first would point at another column's list.
+  const listId = useId();
 
   const sorted = useMemo(
     () => [...occurrences].sort((a, b) => a.user.full_name.localeCompare(b.user.full_name)),
@@ -374,7 +377,7 @@ interface TeamColumnProps {
 function TeamColumn({ shiftId, teams, onOccurrenceClick, onAssignTeam }: TeamColumnProps) {
   const { t } = useTranslation(['schedules']);
   const [expanded, setExpanded] = useState(false);
-  const listId = `team-col-${shiftId}`;
+  const listId = useId();
 
   const collapsible = shouldCollapse(teams.length);
   const collapsed = collapsible && !expanded;
