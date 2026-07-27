@@ -17,7 +17,8 @@ import { PunchTimeline } from '../../components/attendance/PunchTimeline';
 import { AttendanceEntryCard } from '../../components/attendance/AttendanceEntryCard';
 import { getPunchLog } from '../../services/api/shiftsApi';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
-import { formatTime } from '../../utils/dateUtils';
+import { useCurrentShiftState } from '../../hooks/useCurrentShiftState';
+import { formatShiftLabel } from '../../utils/shiftDisplay';
 import { nbColors } from '../../constants/nbTokens';
 import { screenContentGrow } from '../../constants/layout';
 import type { MainTabScreenProps } from '../../types/navigation.types';
@@ -33,7 +34,8 @@ function todayLocal(): string {
 export function TimeRecordHubScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'TimeRecordHub'>['navigation']>();
-  const { rosterShift, hasScheduleToday } = useTodayRoster();
+  const { rosterShift, refetch: refetchRoster } = useTodayRoster();
+  const { displayShift, refetch: refetchShiftState } = useCurrentShiftState();
   const date = todayLocal();
 
   const [sessions, setSessions] = useState<PunchSession[]>([]);
@@ -49,8 +51,12 @@ export function TimeRecordHubScreen(): React.JSX.Element {
 
   useFocusEffect(
     useCallback(() => {
+      // Keep the shift + punches fresh every time the hub is opened — the shift
+      // comes from the same attribution source the clock-in screen uses.
       void fetchToday();
-    }, [fetchToday]),
+      void refetchRoster();
+      void refetchShiftState();
+    }, [fetchToday, refetchRoster, refetchShiftState]),
   );
 
   // Jam Masuk = earliest session's first-in; Jam Keluar = latest last-out.
@@ -59,9 +65,8 @@ export function TimeRecordHubScreen(): React.JSX.Element {
   const jamKeluar = closed.length ? closed[closed.length - 1] : null;
   const hasRecordToday = sessions.length > 0;
 
-  const shiftLabel = hasScheduleToday && rosterShift
-    ? `${rosterShift.name} · ${formatTime(`2000-01-01T${rosterShift.start_time}`)}–${formatTime(`2000-01-01T${rosterShift.end_time}`)}`
-    : t('attendance:hub.noShift');
+  // Attribution-first (same mechanism as the clock-in screen), roster fallback.
+  const shiftLabel = formatShiftLabel(displayShift(rosterShift), t('attendance:hub.noShift'));
 
   return (
     <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>

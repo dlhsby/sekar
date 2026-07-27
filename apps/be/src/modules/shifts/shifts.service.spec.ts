@@ -709,6 +709,11 @@ describe('ShiftsService', () => {
       expect(result.options[0]).toMatchObject({
         shift_definition_id: 'sd-1',
         shift_name: 'Shift 1',
+        // Enriched so the mobile cards can render "Shift 1 · 06:00–15:00" without
+        // a second lookup (home + hub + clock-in share one display source).
+        start_time: '06:00',
+        end_time: '15:00',
+        crosses_midnight: false,
         is_default: true,
       });
     });

@@ -8,7 +8,7 @@
  * ad-hoc) resolves to `hasScheduleToday === false` with a null roster shift.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getMyDay, getMyRoster } from '../services/api/schedulesApi';
 import type { Schedule, ShiftDefinition } from '../types/models.types';
 
@@ -26,6 +26,12 @@ export interface TodayRoster {
    */
   allToday: Schedule[];
   loading: boolean;
+  /**
+   * Re-fetch today's roster. The roster used to be fetched once on mount and
+   * never again, so a long-lived Home tab (app left open across a day boundary)
+   * showed a stale shift. Screens call this on focus / pull-to-refresh.
+   */
+  refetch: () => Promise<void>;
 }
 
 export function useTodayRoster(): TodayRoster {
@@ -33,34 +39,30 @@ export function useTodayRoster(): TodayRoster {
   const [allToday, setAllToday] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    let active = true;
-    getMyRoster()
-      .then((res) => {
-        if (!active) return;
-        setRoster(res.data ?? null);
-        setLoading(false);
-      })
-      .catch(() => {
-        // Non-blocking — roster info is supplementary; treat as unscheduled.
-        if (active) {
-          setLoading(false);
-        }
-      });
+  const refetch = useCallback(async () => {
+    try {
+      const res = await getMyRoster();
+      setRoster(res.data ?? null);
+    } catch {
+      // Non-blocking — roster info is supplementary; treat as unscheduled.
+    } finally {
+      setLoading(false);
+    }
     // The full day is supplementary: a failure here must not blank the card, so
     // it falls back to the single operative row.
-    getMyDay()
-      .then((res) => {
-        if (active) setAllToday(res.data ?? []);
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
+    try {
+      const dayRes = await getMyDay();
+      setAllToday(dayRes.data ?? []);
+    } catch {
+      // ignore — falls back to the single operative row
+    }
   }, []);
+
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
 
   const rosterShift = roster?.shift_definition ?? null;
   const rows = allToday.length > 0 ? allToday : roster ? [roster] : [];
-  return { roster, rosterShift, hasScheduleToday: !!rosterShift, allToday: rows, loading };
+  return { roster, rosterShift, hasScheduleToday: !!rosterShift, allToday: rows, loading, refetch };
 }
