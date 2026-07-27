@@ -51,6 +51,7 @@
         "title": "Mulai shift hari ini",
         "assignedArea": "Area: {{area}}"
       },
+      "nextShift": "Berikutnya: {{shift}}",
       "a11y": {
         "onDuty": "Sedang bertugas",
         "overtimeActive": "Lembur aktif",
