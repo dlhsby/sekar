@@ -1,5 +1,5 @@
 /**
- * Unit tests: DateNav — the Hari Ini · ‹ label › toolbar navigation.
+ * Unit tests: DateNav — the ‹ label › toolbar navigation.
  * Small, but every calendar range (day/week/month/year) drives off it; its
  * prev/next are icon-only so they rely on localized aria-labels, and the label
  * doubles as the date-picker trigger.
@@ -53,13 +53,13 @@ describe('DateNav', () => {
     expect(onPrev).not.toHaveBeenCalled();
   });
 
-  it('jumps to today', async () => {
-    const user = userEvent.setup();
-    const { onToday } = setup();
+  it('has no standalone Hari Ini button — the picker owns that shortcut', () => {
+    setup();
 
-    await user.click(screen.getByRole('button', { name: /hari ini|today/i }));
-
-    expect(onToday).toHaveBeenCalledTimes(1);
+    // A second control for the same jump only widened the toolbar; Hari Ini now
+    // lives inside the picker popover (not assertable here — Radix popovers do
+    // not open under jsdom).
+    expect(screen.queryByRole('button', { name: /^hari ini$|^today$/i })).not.toBeInTheDocument();
   });
 
   it('gives the icon-only arrows accessible names', () => {

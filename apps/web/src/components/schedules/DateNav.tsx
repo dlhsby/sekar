@@ -28,14 +28,17 @@ function parseIsoLocal(iso: string): Date | undefined {
 }
 
 /**
- * Compact Google-Calendar-style date navigation: Hari Ini · ‹ label › .
+ * Compact Google-Calendar-style date navigation: ‹ label › .
  *
  * The label sits BETWEEN the arrows — where the eye already is when stepping
  * through days — and is itself the picker trigger. Jumping three weeks out used
  * to mean 21 clicks on ›.
  *
- * It stays a contextual LABEL rather than a dd/mm/yyyy field because it has to
- * read for four view sizes ("Senin, 27 Juli 2026" · a week range · "Juli 2026" ·
+ * There is no separate "Hari Ini" button: the picker's own Hari Ini shortcut
+ * covers it, and a second control for the same jump only widened the toolbar.
+ *
+ * The trigger stays a contextual LABEL rather than a dd/mm/yyyy field because it
+ * has to read for four view sizes ("Senin, 27 Juli 2026" · a week range · "Juli 2026" ·
  * "2026"); picking any day resolves to the period containing it.
  */
 export function DateNav({ label, value, onValueChange, onPrev, onNext, onToday }: DateNavProps) {
@@ -43,16 +46,13 @@ export function DateNav({ label, value, onValueChange, onPrev, onNext, onToday }
   const [open, setOpen] = useState(false);
   const selected = parseIsoLocal(value);
 
-  // Matches Button size="sm" (h-10) so the arrows, Hari Ini and the date
-  // trigger all sit on one line at one height — they were h-8 against h-10.
+  // Matches Button size="sm" (h-10) so the arrows and the date trigger sit on
+  // one line at one height — they were h-8 against h-10.
   const arrow =
     'grid size-10 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50';
 
   return (
     <div className="flex items-center gap-2">
-      <Button variant="outline" size="sm" onClick={onToday}>
-        {t('schedules:calendar.navigation.today')}
-      </Button>
       <button
         type="button"
         onClick={onPrev}
