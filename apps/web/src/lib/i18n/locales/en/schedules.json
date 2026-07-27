@@ -201,7 +201,6 @@
       "table": "Table"
     },
     "navigation": {
-      "today": "Today",
       "prevMonth": "Previous Month",
       "nextMonth": "Next Month",
       "prevWeek": "Previous Week",
@@ -209,7 +208,8 @@
       "prevDay": "Previous Day",
       "nextDay": "Next Day",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "pickDate": "Pick a date"
     },
     "event": {
       "createTitle": "Create Schedule",

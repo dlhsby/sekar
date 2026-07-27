@@ -477,6 +477,10 @@ export default function SchedulesPage() {
       <div className="relative flex flex-wrap items-center gap-3">
         <DateNav
           label={dateLabel}
+          value={isoDate(anchor)}
+          // Picking a day resolves to the period containing it — the current
+          // view is preserved, so a month view jumps to that day's month.
+          onValueChange={(iso) => setAnchor(new Date(`${iso}T00:00:00`))}
           onPrev={() => navStep(-1)}
           onNext={() => navStep(1)}
           onToday={() => setAnchor(wibTodayDate())}
