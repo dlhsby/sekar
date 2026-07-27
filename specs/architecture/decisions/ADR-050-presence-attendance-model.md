@@ -128,3 +128,17 @@ Because forgotten clock-outs are never auto-closed, they accumulate as open reco
 - [ADR-049](./ADR-049-settings-architecture.md) — where `active_max_age_sec` + grace live in the settings catalog
 - Feature spec: `../../features/monitoring/README.md`
 - Model reference (scenario catalog + diagrams): the "SEKAR — Presence & Attendance Model" standardisation doc
+
+## Amendment — 2026-07-27: the axes reach roster reads, and one tone rule
+
+This ADR was only half-implemented in practice. The axes were derived in `monitoring`, but a **roster** read returned the bare `Schedule` row, whose `status` can only express planned / present / absent / leave. The Jadwal board declared it consumed the full model and rendered a 9-tone bullet from it — so five tones (**amber** on-duty-outside-area, **orange** terlambat, **yellow** belum hadir, **dark grey** pulang, **purple** ad-hoc) were unreachable, and because the web type declared the fields it read as implemented.
+
+Changes:
+
+1. `/schedules/range`, `/schedules/date/:date` and `/schedules/my/day` attach `lifecycle_state`, `lifecycle_flags`, `leave_reason`, `is_within_area`, `is_scheduled` (`RosterPresenceService`), derived by the **same** `derivePresenceState`/`resolveShiftWindow` this ADR defines — deliberately not a second implementation. Only rows dated today-or-earlier are derived; `lifecycle_state: null` on a future row means *not applicable*, not "off duty".
+2. `occurrenceTone()` is the single tone rule (`apps/web/src/lib/presence/tone.ts`), used by the day-board bullet, the month/week chips and the detail pill. Previously the chips coloured by shift index and the pill was hardcoded grey.
+3. The **live inside/outside axis is suppressed unless `bertugas`** — a stale snapshot must not paint a planned row amber.
+
+**Tone table and the web-9 → mobile-5 mapping** (mobile collapses to `ok/warn/bad/info/neutral`; same inputs, same precedence, lower colour resolution) are tabulated in [scheduling/PROCESS.md](../../features/scheduling/PROCESS.md).
+
+**Time-convention hazard.** `derivePresenceState`/`resolveShiftWindow` take **real instants**; `isShiftWindowClosed` and `ShiftAttributionService` take **WIB-wall-clock-in-UTC-fields** (`TimezoneUtil.jakartaNow()`). Mixing them shifts the clock twice (+14h) — it derived tomorrow's rows and aged today's toward `tidak_hadir`. Pinned by a regression test.

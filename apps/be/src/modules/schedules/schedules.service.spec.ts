@@ -1696,6 +1696,39 @@ describe('SchedulesService', () => {
       ...over,
     });
 
+    // -----------------------------------------------------------------------
+    // Lookback bound. Unbounded, the FIRST sweep on a database that has never
+    // run ADR-056 rewrites the whole backlog in one transaction — on staging
+    // that is tens of thousands of rows on the first cron tick after cutover.
+    // -----------------------------------------------------------------------
+    describe('lookback bound', () => {
+      it('queries a bounded date window by default, not all of history', async () => {
+        rosterRepo.find.mockResolvedValue([]);
+        await service.sweepAbsences(new Date('2026-07-26T20:00:00Z'));
+
+        const where = rosterRepo.find.mock.calls[0][0].where;
+        // Between(from, to) rather than LessThanOrEqual(today).
+        expect(where.schedule_date?._type).toBe('between');
+      });
+
+      it('honours an explicit lookback', async () => {
+        rosterRepo.find.mockResolvedValue([]);
+        await service.sweepAbsences(new Date('2026-07-26T20:00:00Z'), 3);
+
+        const where = rosterRepo.find.mock.calls[0][0].where;
+        expect(where.schedule_date?._value?.[0]).toBe('2026-07-23');
+        expect(where.schedule_date?._value?.[1]).toBe('2026-07-26');
+      });
+
+      it('treats lookback 0 as an explicit, unbounded backfill', async () => {
+        rosterRepo.find.mockResolvedValue([]);
+        await service.sweepAbsences(new Date('2026-07-26T20:00:00Z'), 0);
+
+        const where = rosterRepo.find.mock.calls[0][0].where;
+        expect(where.schedule_date?._type).toBe('lessThanOrEqual');
+      });
+    });
+
     it('marks a past no-show absent (window closed, no session)', async () => {
       rosterRepo.find.mockResolvedValue([plannedRow()]);
       shiftRepo.find.mockResolvedValue([]); // no session → never clocked in

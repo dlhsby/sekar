@@ -1,9 +1,10 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
-  ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -26,6 +27,7 @@ import { UserLocationsService } from '../../modules/user-locations/user-location
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 import { ScheduleOverlapService } from './services/schedule-overlap.service';
+import { SystemConfigService } from '../settings/services/system-config.service';
 import { ScheduleRecurrenceUtil } from './utils/schedule-recurrence.util';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
@@ -59,6 +61,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * `serviceDay`/`nowWib` are framed as WIB-wall-clock-in-UTC-fields, matching
  * `TimezoneUtil.jakartaNow()` and `ShiftAttributionService.wibInstant`.
  */
+/**
+ * Default reach of one absence sweep, in days. A week comfortably covers a long
+ * weekend of downtime while keeping the hourly query small; widen it (or pass 0
+ * for "no limit") for a deliberate one-off backfill.
+ */
+export const DEFAULT_SWEEP_LOOKBACK_DAYS = 7;
+
 export function isShiftWindowClosed(
   serviceDay: string,
   endTime: string,
@@ -243,6 +252,10 @@ export class SchedulesService {
     private readonly auditLogService: AuditLogService,
     private readonly materializer: ScheduleMaterializerService,
     private readonly overlapService: ScheduleOverlapService,
+    // Optional so the many existing unit specs that construct this service by
+    // hand keep working; absent, the sweep falls back to its documented default.
+    @Optional()
+    private readonly configService?: SystemConfigService,
   ) {}
 
   // ---- Edit-permission hierarchy (ADR-013 addendum) ----
@@ -591,13 +604,36 @@ export class SchedulesService {
    */
   async sweepAbsences(
     now: Date = TimezoneUtil.jakartaNow(),
+    lookbackDays?: number,
   ): Promise<{ absent: number; present: number }> {
     const todayStr = now.toISOString().slice(0, 10);
+
+    /**
+     * How far back a single sweep reaches.
+     *
+     * Unbounded, this scans EVERY past `planned` row on every hourly tick. That
+     * is harmless once converged, but the first run after a deployment that has
+     * never swept before is not: on staging it would rewrite the entire backlog
+     * in one transaction. Bounding it keeps each run O(lookback) and turns the
+     * backfill into a deliberate act (`lookbackDays: 0` = no limit) instead of a
+     * surprise on the first cron tick after cutover.
+     */
+    const lookback =
+      lookbackDays ??
+      this.configService?.getNumber(
+        'schedule.absence_sweep_lookback_days',
+        DEFAULT_SWEEP_LOOKBACK_DAYS,
+      ) ??
+      DEFAULT_SWEEP_LOOKBACK_DAYS;
+    const fromStr =
+      lookback > 0
+        ? new Date(now.getTime() - lookback * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+        : null;
 
     const candidates = await this.rosterRepo.find({
       where: {
         status: ScheduleStatus.PLANNED,
-        schedule_date: LessThanOrEqual(todayStr),
+        schedule_date: fromStr ? Between(fromStr, todayStr) : LessThanOrEqual(todayStr),
         deleted_at: IsNull(),
       },
       relations: ['shift_definition'],

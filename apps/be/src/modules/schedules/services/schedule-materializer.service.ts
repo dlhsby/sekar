@@ -46,7 +46,10 @@ export class ScheduleMaterializerService {
    * Get the materialization horizon in days from the config (default 30).
    */
   horizonDays(): number {
-    return this.configService.getNumber('schedule.materialization_days', 30);
+    // Fallback matches the settings-catalog default (60). It read 30 here, which
+    // contradicted the catalog and the ~60 days of rows actually present on
+    // staging — two different answers to "how far ahead do we schedule".
+    return this.configService.getNumber('schedule.materialization_days', 60);
   }
 
   /**
