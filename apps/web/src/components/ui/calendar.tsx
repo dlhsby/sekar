@@ -42,8 +42,13 @@ export function Calendar({
         day: 'h-9 w-9 p-0 text-center text-nb-body-sm',
         day_button:
           'inline-flex h-9 w-9 items-center justify-center rounded-nb-base text-nb-black hover:bg-nb-gray-100 aria-selected:border-2 aria-selected:border-nb-black aria-selected:bg-nb-primary aria-selected:font-bold aria-selected:text-nb-ink',
-        // Quiet orientation marker only — the *selected* day owns the strong fill.
-        today: 'font-bold text-nb-success-dark',
+        // Today reads as a green CIRCLE — an orientation marker distinct in both
+        // shape and colour from the selected day, which owns the strong sage
+        // fill. A ring rather than a border so the two can coexist when today
+        // IS the selection (fill + black border + green ring) instead of one
+        // silently overriding the other's border colour.
+        today:
+          'font-bold text-nb-success-dark [&>button]:rounded-full [&>button]:ring-2 [&>button]:ring-inset [&>button]:ring-nb-success',
         selected: 'rounded-nb-base',
         outside: 'text-nb-gray-400 opacity-60',
         disabled: 'text-nb-gray-300 opacity-50',

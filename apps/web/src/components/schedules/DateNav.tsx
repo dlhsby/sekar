@@ -43,11 +43,13 @@ export function DateNav({ label, value, onValueChange, onPrev, onNext, onToday }
   const [open, setOpen] = useState(false);
   const selected = parseIsoLocal(value);
 
+  // Matches Button size="sm" (h-10) so the arrows, Hari Ini and the date
+  // trigger all sit on one line at one height — they were h-8 against h-10.
   const arrow =
-    'grid size-8 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50';
+    'grid size-10 shrink-0 place-items-center rounded-nb-base border-2 border-nb-black bg-nb-white shadow-nb-sm hover:bg-nb-gray-50';
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <Button variant="outline" size="sm" onClick={onToday}>
         {t('schedules:calendar.navigation.today')}
       </Button>
@@ -62,18 +64,16 @@ export function DateNav({ label, value, onValueChange, onPrev, onNext, onToday }
 
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
-          <button
-            type="button"
+          <Button
+            variant="outline"
+            size="sm"
             aria-label={t('schedules:calendar.navigation.pickDate')}
             // min-w keeps the arrows from shuffling sideways as the label's
             // width changes between views — and between days of the week.
-            className={cn(
-              'min-w-[12rem] whitespace-nowrap rounded-nb-base px-2 py-1 text-center text-nb-body font-bold hover:bg-nb-gray-100',
-              nbFocusRing
-            )}
+            className={cn('min-w-[13rem] whitespace-nowrap font-bold', nbFocusRing)}
           >
             {label}
-          </button>
+          </Button>
         </PopoverTrigger>
         <PopoverContent align="center" className="w-auto p-0">
           <Calendar
