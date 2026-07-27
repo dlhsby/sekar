@@ -9,6 +9,7 @@ import { nbColors, nbSpacing, nbBorders } from '../../constants/nbTokens';
 import { formatDateLong } from '../../utils/dateUtils';
 import { resolveScheduleScope } from '../../utils/scheduleScope';
 import { presenceTone } from '../../utils/statusHelpers';
+import { effectiveScheduleStatus } from '../../utils/scheduleStatus';
 import type { Schedule } from '../../types/shift.types';
 
 interface ScheduleDetailSheetProps {
@@ -43,7 +44,12 @@ export function ScheduleDetailSheet({
         ? t(`attendance:clockInOut.scope.${scope.scope}`, { name: scope.name ?? '' })
         : t('schedules:mySchedule.noAreasAssigned'));
 
-  const statusLabel = roster ? t(`schedules:status.${roster.status}`) : '';
+  // Effective status: a past no-show still stored as `planned` reads as `absent`
+  // immediately (the backend cron persists the same within the hour).
+  const status = roster
+    ? effectiveScheduleStatus(roster.status, shift, roster.schedule_date)
+    : '';
+  const statusLabel = status ? t(`schedules:status.${status}`) : '';
 
   return (
     <NBModal
@@ -121,11 +127,11 @@ export function ScheduleDetailSheet({
           <InfoRow icon="information-outline" label={t('schedules:scheduleDetail.status')} even>
             <StatusPill
               dot
-              tone={presenceTone({ scheduleStatus: roster.status })}
+              tone={presenceTone({ scheduleStatus: status })}
               label={statusLabel}
             />
             <NBText variant="caption" color="gray600" style={styles.statusHint}>
-              {t(`schedules:mySchedule.statusHint.${roster.status}`)}
+              {t(`schedules:mySchedule.statusHint.${status}`)}
             </NBText>
           </InfoRow>
         </View>

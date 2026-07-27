@@ -31,6 +31,7 @@ import { screenContent } from '../../constants/layout';
 import type {Schedule} from '../../types/shift.types';
 import {resolveScheduleScope} from '../../utils/scheduleScope';
 import {presenceTone} from '../../utils/statusHelpers';
+import {effectiveScheduleStatus} from '../../utils/scheduleStatus';
 
 // ─── Date helpers (WIB-naive YYYY-MM-DD, matching the API's DATE columns) ─────
 
@@ -81,15 +82,18 @@ function RosterRow({
   onPress: () => void;
 }): React.JSX.Element {
   const ROSTER_STATUS_PILL = getRosterStatusPill(t);
-  // Label from the roster status, TONE from the shared presence standard, so a
-  // schedule card, the map and the monitoring roster all agree on the colour.
+  const shift = roster.shift_definition;
+  // A past no-show still stored as `planned` reads as `absent` immediately (the
+  // backend cron persists the same within the hour) — see effectiveScheduleStatus.
+  const status = effectiveScheduleStatus(roster.status, shift, roster.schedule_date);
+  // Label from the (effective) roster status, TONE from the shared presence
+  // standard, so a schedule card, the map and the monitoring roster all agree.
   const label =
-    ROSTER_STATUS_PILL[roster.status]?.label ?? roster.status;
+    ROSTER_STATUS_PILL[status as keyof typeof ROSTER_STATUS_PILL]?.label ?? status;
   const pill = {
-    tone: presenceTone({ scheduleStatus: roster.status }),
+    tone: presenceTone({ scheduleStatus: status }),
     label,
   };
-  const shift = roster.shift_definition;
   // "Area belum ditetapkan" was shown for every kawasan/rayon/kota assignment —
   // those name no lokasi by design, but they are still assignments. Fall back to
   // the scope label instead of implying nothing was assigned.
@@ -178,7 +182,7 @@ function RosterRow({
           worker nothing — spell out the consequence for the day. */}
       <View style={styles.statusHint}>
         <NBText variant="caption" color="gray600">
-          {t(`schedules:mySchedule.statusHint.${roster.status}`)}
+          {t(`schedules:mySchedule.statusHint.${status}`)}
         </NBText>
       </View>
     </Pressable>

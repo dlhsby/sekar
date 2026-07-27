@@ -17,6 +17,7 @@ import { ScheduleEventsController } from './schedule-events.controller';
 import { ScheduleOverlapService } from './services/schedule-overlap.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 import { ScheduleEventMaterializationCron } from './schedule-event-materialization.cron';
+import { ScheduleAbsenceCron } from './schedule-absence.cron';
 import { UserLocationsModule } from '../user-locations/user-locations.module';
 import { AuditModule } from '../audit/audit.module';
 import { SettingsModule } from '../settings/settings.module';
@@ -54,6 +55,7 @@ import { SettingsModule } from '../settings/settings.module';
     ScheduleOverlapService,
     ScheduleMaterializerService,
     ScheduleEventMaterializationCron,
+    ScheduleAbsenceCron,
   ],
   exports: [SchedulesService, ScheduleEventsService, ScheduleMaterializerService],
 })

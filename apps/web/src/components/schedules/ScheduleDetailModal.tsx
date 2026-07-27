@@ -12,6 +12,7 @@ import {
 } from '@/components/ui';
 import { useDistricts } from '@/lib/api/districts';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
+import { effectiveScheduleStatus } from '@/lib/schedules/effectiveStatus';
 
 interface ScheduleDetailModalProps {
   open: boolean;
@@ -103,7 +104,15 @@ export function ScheduleDetailModal({
         })
       : null;
 
-  const statusLabel = t(`status:${occurrence.status}`, occurrence.status);
+  // Show the no-show as "Tidak Hadir" immediately for a past planned row (the
+  // backend cron persists the same result within the hour). Labels live in the
+  // `schedules:status.*` namespace (all 8 present in id + en).
+  const displayStatus = effectiveScheduleStatus(
+    occurrence.status,
+    occurrence.shift_definition,
+    occurrence.schedule_date,
+  );
+  const statusLabel = t(`schedules:status.${displayStatus}`, displayStatus);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

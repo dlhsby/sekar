@@ -6,6 +6,7 @@ import { AlertTriangle, Plus, Users } from 'lucide-react';
 import type { BoardShiftGroup } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import { presenceTone, PRESENCE_TONE_CLASS } from '@/lib/presence/tone';
+import { effectiveScheduleStatus } from '@/lib/schedules/effectiveStatus';
 
 /** Core scheduling roles always given a column so empty ones can be filled. */
 const CORE_ROLES = ['satgas', 'linmas', 'korlap'];
@@ -238,7 +239,13 @@ function RoleColumn({
               PRESENCE_TONE_CLASS[
                 presenceTone({
                   lifecycleState: occ.lifecycle_state,
-                  scheduleStatus: occ.status,
+                  // Effective status so a past no-show shows red immediately,
+                  // matching the detail modal + the backend cron.
+                  scheduleStatus: effectiveScheduleStatus(
+                    occ.status,
+                    occ.shift_definition,
+                    occ.schedule_date,
+                  ),
                   leaveReason: occ.leave_reason,
                   isWithinArea: occ.is_within_area,
                   isAdHoc: occ.is_scheduled === false,
