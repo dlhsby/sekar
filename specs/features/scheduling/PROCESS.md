@@ -39,6 +39,7 @@ attendance_punches (append-only, immutable)  ──projection──►  shifts (
 - `shifts` is a **maintained projection**, rebuilt from the punch stream after every punch. Multiple in/out pairs in one shift (breaks) collapse into one session.
 - **Attribution** ranks candidate shifts `covering > early > grace`, tie-broken by nearest start. The window is `[start − early_window_min, end + cutoff_grace_min)`, per shift definition. Past that, there is no candidate and the punch is **ad-hoc**.
 - Clock-in is **never blocked**. Geofence violations set `outside_boundary` (advisory); an operator's explicit shift choice is honoured only if it matches a real candidate.
+- **Overtime is its own session** (`is_overtime`). It therefore never satisfies a normal roster row — an overtime punch alone leaves that row a no-show. Its *existence* is what turns past-end presence from `lupa_clock_out` into `lembur`, so the two facts are read separately.
 
 ### 3. Roster status lifecycle (ADR-056)
 
@@ -66,7 +67,7 @@ Never stored; **derived on read** from (roster row + session + shift window + le
 | **Live** | activity `active/offline` + `is_within_area` (orthogonal — a worker can be active AND outside) | `user_tracking_status` |
 | **Counting** | counts toward staffing only if `bertugas ∧ scheduled ∧ role ∈ {satgas, linmas}`; multi-place counted **once** | `dayBoard.ts` |
 
-**Roster reads carry the axes.** `/schedules/range`, `/date/:date` and `/my/day` attach `lifecycle_state`, `lifecycle_flags`, `leave_reason`, `is_within_area`, `is_scheduled` via `RosterPresenceService` — only for rows dated **today or earlier** (`lifecycle_state: null` on a future row means *not applicable*, not "off duty").
+**Roster reads carry the axes.** `/schedules/range`, `/schedules/date/:date`, `/schedules/my/day` **and `/schedules/my`** attach `lifecycle_state`, `lifecycle_flags`, `leave_reason`, `is_within_area`, `is_scheduled` via `RosterPresenceService` — only for rows dated **today or earlier** (`lifecycle_state: null` on a future row means *not applicable*, not "off duty").
 
 **One tone, every surface** — `occurrenceTone()` in `apps/web/src/lib/presence/tone.ts` is the single rule, used by the day-board bullet, the month/week chips and the detail pill:
 
@@ -127,7 +128,8 @@ Expected values for each case. **Tone** is the web day-board bullet; **Counted**
 | S20 ✱ | back-to-back shifts | two sessions; home hero shows "Berikutnya" | | | | ✔ |
 | S21 ✱ | Shift 3 across midnight | `service_day` = start day; 02:00 next day still on duty | `bertugas` | — | green | ✔ |
 | S22 ✱ | forgot clock-out | `present` | `bertugas` | `lupa_clock_out` | green¹ | ✔ |
-| S23 ✱ | overtime session past end | **untouched** | `bertugas` | `lembur` | green | ✔ |
+| S23 ✱ | past end **with an approved overtime session** | **untouched** | `bertugas` | `lembur` | green | ✔ |
+| S23 ✱ | overtime session **alone** (no normal session) | `planned` | `tidak_hadir` | — | red | ✘ |
 | S24 | offline clock-in | queued; replayed with original `punched_at` + `client_uuid` | | | | |
 | S25 | duplicate replay | idempotent — no second punch | | | | |
 | S26 | GPS outside boundary | recorded, `outside_boundary` set; **never blocked** | | | amber² | ✔ |
@@ -176,10 +178,15 @@ cd apps/be   && npx jest src/modules/schedules src/modules/shifts src/modules/mo
 cd apps/web  && npx jest          # Calendar/tone are shared — run the whole suite
 cd apps/mobile && npx jest
 
+# End-to-end: real DB state -> real API -> asserted presence (22 scenarios)
+bash apps/be/scripts/e2e-presence-scenarios.sh
+
 # Against a real dataset (staging clone)
 psql "$DATABASE_URL" -f apps/be/scripts/staging-verify-schedules.sql   # before + after, then diff
 cd apps/be && npm run schedules:to-daily                              # dry run
 cd apps/be && npm run schedules:to-daily -- --apply                   # write, then re-run → 0
 ```
+
+> A green unit test can still assert an unreachable path. `lembur` was covered by a unit test that hand-fed `session.is_overtime` — a value the service could never produce, because it filtered overtime sessions out. Only the end-to-end script caught it. Prefer driving state through the API for anything whose inputs are assembled by a service.
 
 Manual pass worth doing once per release: clock in → the roster row flips **Hadir** and the same worker reads identically on the day board, the month chip and the detail modal; walk a worker outside their area and confirm **amber** on all three; leave a shift un-clocked past its window and confirm **red** appears immediately (before the cron).
