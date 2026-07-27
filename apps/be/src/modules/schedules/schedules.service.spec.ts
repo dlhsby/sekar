@@ -2,7 +2,7 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
-import { SchedulesService } from './schedules.service';
+import { SchedulesService, isShiftWindowClosed } from './schedules.service';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { ScheduleEvent } from './entities/schedule-event.entity';
 import { Location } from '../locations/entities/location.entity';
@@ -47,7 +47,7 @@ describe('SchedulesService', () => {
   let areaEntityRepo: { find: jest.Mock };
   let userRepo: { find: jest.Mock; findOne: jest.Mock };
   let shiftDefinitionRepo: { findOne: jest.Mock };
-  let shiftRepo: { findOne: jest.Mock };
+  let shiftRepo: { findOne: jest.Mock; find: jest.Mock };
   let userAreas: { getPermanentLocationIdsForUsers: jest.Mock; getPermanentLocationIds: jest.Mock };
   let audit: { log: jest.Mock };
   let materializer: { materializeEvent: jest.Mock };
@@ -67,7 +67,10 @@ describe('SchedulesService', () => {
     shiftDefinitionRepo = { findOne: jest.fn() };
     // Default: no open shift, so findCurrentForUser's fallback is a no-op unless a
     // test opts in by stubbing an open shift.
-    shiftRepo = { findOne: jest.fn().mockResolvedValue(null) };
+    shiftRepo = {
+      findOne: jest.fn().mockResolvedValue(null),
+      find: jest.fn().mockResolvedValue([]),
+    };
     userAreas = {
       getPermanentLocationIdsForUsers: jest.fn().mockResolvedValue(new Map()),
       getPermanentLocationIds: jest.fn().mockResolvedValue([]),
@@ -1632,6 +1635,94 @@ describe('SchedulesService', () => {
         cutoff_grace_min: 60,
       });
       expect(result.filter((c) => c.shift_definition_id === 'sd-1')).toHaveLength(1); // deduped
+    });
+  });
+
+  describe('markPresentForClockIn (schedule-status-lifecycle)', () => {
+    it('flips only the matching planned row to present', async () => {
+      await service.markPresentForClockIn('u-1', '2026-07-26', 'sd-1');
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'u-1',
+          schedule_date: '2026-07-26',
+          shift_definition_id: 'sd-1',
+          status: ScheduleStatus.PLANNED,
+        }),
+        { status: ScheduleStatus.PRESENT },
+      );
+    });
+  });
+
+  describe('sweepAbsences (schedule-status-lifecycle)', () => {
+    // Shift 1, 06:00–15:00, grace 60 → window closes 16:00 WIB.
+    const plannedRow = (over: Partial<Record<string, unknown>> = {}) => ({
+      id: 'r-1',
+      user_id: 'u-1',
+      schedule_date: '2026-07-26',
+      shift_definition_id: 'sd-1',
+      status: ScheduleStatus.PLANNED,
+      shift_definition: {
+        end_time: '15:00:00',
+        crosses_midnight: false,
+        cutoff_grace_min: 60,
+      },
+      ...over,
+    });
+
+    it('marks a past no-show absent (window closed, no session)', async () => {
+      rosterRepo.find.mockResolvedValue([plannedRow()]);
+      shiftRepo.find.mockResolvedValue([]); // no session → never clocked in
+      const now = new Date('2026-07-26T20:00:00Z'); // past 16:00 WIB close
+
+      const res = await service.sweepAbsences(now);
+
+      expect(res).toEqual({ absent: 1, present: 0 });
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ status: ScheduleStatus.PLANNED }),
+        { status: ScheduleStatus.ABSENT },
+      );
+    });
+
+    it('self-heals to present when a session exists', async () => {
+      rosterRepo.find.mockResolvedValue([plannedRow()]);
+      // A matching non-overtime session → they clocked in (self-heal to present).
+      shiftRepo.find.mockResolvedValue([
+        { user_id: 'u-1', service_day: '2026-07-26', shift_definition_id: 'sd-1' },
+      ]);
+      const now = new Date('2026-07-26T20:00:00Z');
+
+      const res = await service.sweepAbsences(now);
+
+      expect(res).toEqual({ absent: 0, present: 1 });
+      expect(rosterRepo.update).toHaveBeenCalledWith(
+        expect.objectContaining({ status: ScheduleStatus.PLANNED }),
+        { status: ScheduleStatus.PRESENT },
+      );
+    });
+
+    it('leaves a row whose window is still open untouched', async () => {
+      rosterRepo.find.mockResolvedValue([plannedRow()]);
+      const now = new Date('2026-07-26T09:00:00Z'); // shift still running
+
+      const res = await service.sweepAbsences(now);
+
+      expect(res).toEqual({ absent: 0, present: 0 });
+      expect(rosterRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('isShiftWindowClosed (pure)', () => {
+    it('is closed only after end_time + grace (WIB)', () => {
+      const args = ['2026-07-26', '15:00:00', false, 60] as const;
+      expect(isShiftWindowClosed(...args, new Date('2026-07-26T15:30:00Z'))).toBe(false); // in grace
+      expect(isShiftWindowClosed(...args, new Date('2026-07-26T16:30:00Z'))).toBe(true); // past grace
+    });
+
+    it('rolls a crossing shift end into the next day', () => {
+      // Shift 3, 21:00–05:00 (crosses), grace 60 → closes 06:00 next day.
+      const args = ['2026-07-26', '05:00:00', true, 60] as const;
+      expect(isShiftWindowClosed(...args, new Date('2026-07-27T05:30:00Z'))).toBe(false); // in grace
+      expect(isShiftWindowClosed(...args, new Date('2026-07-27T06:30:00Z'))).toBe(true); // past grace
     });
   });
 });

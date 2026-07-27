@@ -2,7 +2,7 @@
 
 Why the significant technical decisions were made. Each ADR follows **Status · Context · Decision · Consequences**. Statuses: **Active**, **Superseded by ADR-XXX**, **Proposed**. To add one: create `ADR-NNN-title.md` (next free number — 020–023 & 039 were skipped), follow the section structure of a recent ADR, and add a row below.
 
-## Index (all 45)
+## Index (all 46)
 
 | ADR | Title | Status |
 |-----|-------|--------|
@@ -56,12 +56,13 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [053](./ADR-053-schedule-row-per-place.md) | One schedule row = one worker, one shift, one **place**; presence belongs to the worker, not the row | Accepted · **implemented** · rests on 050 · settles korlap scope in 046 |
 | [054](./ADR-054-unscheduled-workers.md) | "Belum Dijadwalkan" — the complement of the day's roster, so a gap is visible before it becomes an understaffed lokasi | Accepted · **implemented** (be + web) · rests on 053 + 047 |
 | [055](./ADR-055-punch-attendance-model.md) | Attendance as an immutable punch log — clock-in/out become append-only events; session (Masuk/Keluar, hours, open?) is derived; preserves ADR-050 presence | Accepted · **design locked, not started** · re-bases 050's source |
+| [056](./ADR-056-schedule-status-lifecycle.md) | Schedule status lifecycle — clock-in sets `present`, an hourly cron + lazy display flip a past no-show to `absent`; `present`/`absent` were previously never written | Active · **implemented** · rests on 053 + 055 |
 
 ## By domain
 
 - **Data & persistence:** [001](./ADR-001-uuid-primary-keys.md) · [006](./ADR-006-postgresql-partitioning.md) · [013](./ADR-013-multi-area-assignment.md) · [025](./ADR-025-analytics-materialized-views.md) · [030](./ADR-030-area-aggregate-plant-inventory.md)
 - **Auth & roles:** [004](./ADR-004-jwt-authentication.md) · [009](./ADR-009-phase2c-role-system-overhaul.md) · [012](./ADR-012-phone-number-login.md) · [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) · [033](./ADR-033-staff-kecamatan-role.md) · [041](./ADR-041-forgot-password-contact-admin.md) · [042](./ADR-042-onboarding-flow.md) · [044](./ADR-044-dynamic-rbac.md)
-- **Location, scheduling & teams:** [045](./ADR-045-four-level-location-hierarchy.md) · [047](./ADR-047-schedule-redesign.md) · [048](./ADR-048-teams.md)
+- **Location, scheduling & teams:** [045](./ADR-045-four-level-location-hierarchy.md) · [047](./ADR-047-schedule-redesign.md) · [048](./ADR-048-teams.md) · [056](./ADR-056-schedule-status-lifecycle.md)
 - **Settings & config:** [049](./ADR-049-settings-architecture.md)
 - **Mobile & offline:** [002](./ADR-002-offline-first-mobile.md) · [003](./ADR-003-asyncstorage-phase1.md) · [007](./ADR-007-react-native-over-flutter.md) · [017](./ADR-017-maestro-mobile-e2e.md) · [019](./ADR-019-offline-connectivity-model.md) · [027](./ADR-027-ios-build-distribution.md)
 - **Realtime & monitoring:** [011](./ADR-011-phase2d-monitoring-status-model.md) · [016](./ADR-016-redis-websocket-scaling.md) · [029](./ADR-029-monitoring-v2-event-sourced-redis.md) · [046](./ADR-046-monitoring-subject-model.md) · [050](./ADR-050-presence-attendance-model.md)

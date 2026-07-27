@@ -265,6 +265,19 @@ export class ShiftsService {
       `User ${userId} clocked in. Session ${session.id}, Location: ${area?.name || 'None'}`,
     );
 
+    // 6b. Advance the day's roster row planned → present (ADR schedule-status-
+    // lifecycle). Non-overtime only (overtime has no roster row), and never lets a
+    // status write fail the clock-in.
+    if (!isOvertime && shiftDefId && this.dailySchedulesService) {
+      await this.dailySchedulesService
+        .markPresentForClockIn(userId, serviceDay, shiftDefId)
+        .catch((err) =>
+          this.logger.warn(
+            `markPresentForClockIn failed for user ${userId}: ${(err as Error).message}`,
+          ),
+        );
+    }
+
     // 7. Live path: emit based on the DERIVED state (session is open after a clock-in).
     if (this.statusCalculator) {
       await this.statusCalculator

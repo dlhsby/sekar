@@ -47,6 +47,33 @@ const LEAVE_STATUS_BY_TYPE: Record<'sick' | 'annual' | 'permit' | 'off', Schedul
   off: ScheduleStatus.OFF,
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Whether a shift's clock-in window has fully closed at `nowWib` — past its
+ * `end_time` (rolled to the next day when the shift crosses midnight) plus the
+ * `cutoff_grace_min` (the ADR-055 latest-clock-in cutoff). A still-`planned` row
+ * past this point is a no-show, so both the absence sweep and the web/mobile
+ * display helpers use this exact rule (kept in sync across the three codebases).
+ *
+ * `serviceDay`/`nowWib` are framed as WIB-wall-clock-in-UTC-fields, matching
+ * `TimezoneUtil.jakartaNow()` and `ShiftAttributionService.wibInstant`.
+ */
+export function isShiftWindowClosed(
+  serviceDay: string,
+  endTime: string,
+  crossesMidnight: boolean,
+  graceMin: number,
+  nowWib: Date,
+): boolean {
+  if (!endTime) return false;
+  const hms = endTime.length === 5 ? `${endTime}:00` : endTime;
+  const endMs = new Date(`${serviceDay}T${hms}Z`).getTime();
+  if (Number.isNaN(endMs)) return false;
+  const closeMs = endMs + (crossesMidnight ? DAY_MS : 0) + Math.max(0, graceMin) * 60_000;
+  return nowWib.getTime() > closeMs;
+}
+
 /** Statuses that mean a worker is committed for the day and can't cover another shift. */
 const BUSY_STATUSES = [
   ScheduleStatus.PLANNED,
@@ -526,6 +553,103 @@ export class SchedulesService {
         b.shift_definition?.start_time ?? '99:99:99',
       ),
     );
+  }
+
+  /**
+   * Clock-in transition (ADR schedule-status-lifecycle): flip the day's roster
+   * row(s) `planned → present`. Scoped to `(user, service_day, shift)` and to
+   * `planned` only, so it never disturbs a `leave_*`/`off`/`replaced` row or an
+   * ad-hoc clock-in with no row. Idempotent (a repeat clock-in is a no-op).
+   */
+  async markPresentForClockIn(
+    userId: string,
+    serviceDay: string,
+    shiftDefinitionId: string,
+  ): Promise<void> {
+    await this.rosterRepo.update(
+      {
+        user_id: userId,
+        schedule_date: serviceDay,
+        shift_definition_id: shiftDefinitionId,
+        status: ScheduleStatus.PLANNED,
+        deleted_at: IsNull(),
+      },
+      { status: ScheduleStatus.PRESENT },
+    );
+  }
+
+  /**
+   * Absence sweep (ADR schedule-status-lifecycle): persist the outcome of every
+   * PAST `planned` roster row whose clock-in window has fully closed
+   * (`isShiftWindowClosed`). For each, self-heal against the session projection:
+   * a clocked-in-but-still-`planned` row becomes `present`, a genuine no-show
+   * becomes `absent`. `leave_*`/`off`/`replaced` rows are never touched (only
+   * `planned` is queried). Deterministic — `now` is injectable for tests.
+   *
+   * Queries all past `planned` rows (`schedule_date <= today`), not just
+   * yesterday/today, so a backlog from downtime is still reconciled.
+   */
+  async sweepAbsences(
+    now: Date = TimezoneUtil.jakartaNow(),
+  ): Promise<{ absent: number; present: number }> {
+    const todayStr = now.toISOString().slice(0, 10);
+
+    const candidates = await this.rosterRepo.find({
+      where: {
+        status: ScheduleStatus.PLANNED,
+        schedule_date: LessThanOrEqual(todayStr),
+        deleted_at: IsNull(),
+      },
+      relations: ['shift_definition'],
+    });
+
+    // Rows whose window has fully closed — the only ones this run resolves.
+    const due = candidates.filter((row) => {
+      const sd = row.shift_definition;
+      if (!sd) return false;
+      const grace = sd.cutoff_grace_min ?? 60;
+      return isShiftWindowClosed(row.schedule_date, sd.end_time, sd.crosses_midnight, grace, now);
+    });
+    if (due.length === 0) return { absent: 0, present: 0 };
+
+    // One batched query for the sessions behind every due row (avoids an N+1
+    // over a downtime backlog). Keyed on the exact (user, service_day, shift) so
+    // a null shift never collapses into "matches any session".
+    const sessions = await this.shiftRepo.find({
+      where: {
+        user_id: In([...new Set(due.map((r) => r.user_id))]),
+        service_day: In([...new Set(due.map((r) => r.schedule_date))]),
+        is_overtime: false,
+      },
+      select: ['user_id', 'service_day', 'shift_definition_id'],
+    });
+    const key = (u: string, d: string, s: string | null | undefined): string =>
+      `${u}|${d}|${s ?? ''}`;
+    const clockedIn = new Set(
+      sessions.map((s) => key(s.user_id, s.service_day ?? '', s.shift_definition_id)),
+    );
+
+    const absentIds: string[] = [];
+    const presentIds: string[] = [];
+    for (const row of due) {
+      // Self-heal: a non-overtime session for this exact key means they clocked in.
+      const clocked = clockedIn.has(key(row.user_id, row.schedule_date, row.shift_definition_id));
+      (clocked ? presentIds : absentIds).push(row.id);
+    }
+
+    if (absentIds.length > 0) {
+      await this.rosterRepo.update(
+        { id: In(absentIds), status: ScheduleStatus.PLANNED },
+        { status: ScheduleStatus.ABSENT },
+      );
+    }
+    if (presentIds.length > 0) {
+      await this.rosterRepo.update(
+        { id: In(presentIds), status: ScheduleStatus.PLANNED },
+        { status: ScheduleStatus.PRESENT },
+      );
+    }
+    return { absent: absentIds.length, present: presentIds.length };
   }
 
   /**

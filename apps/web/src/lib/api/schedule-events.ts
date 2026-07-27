@@ -79,6 +79,8 @@ export interface ScheduleEvent {
     start_time: string;
     end_time: string;
     crosses_midnight?: boolean;
+    /** Latest-clock-in grace (min); drives the lazy planned→absent display. */
+    cutoff_grace_min?: number | null;
   };
   location?: {
     id: string;

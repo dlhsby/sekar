@@ -148,6 +148,7 @@ describe('ShiftsService', () => {
     getActiveAreasNow: jest.fn().mockResolvedValue([]),
     getShiftForDay: jest.fn().mockResolvedValue(null),
     getAttributionCandidates: jest.fn().mockResolvedValue([]),
+    markPresentForClockIn: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -522,6 +523,36 @@ describe('ShiftsService', () => {
       // The EXPLICIT service_day comes from attribution — may differ from the
       // clock-in's WIB date (the crux of the night-shift-past-midnight fix).
       expect(saved.service_day).toBe('2026-01-01');
+    });
+
+    it('advances the roster row planned → present on the attributed key', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      mockRepository.findOne.mockResolvedValue(null);
+      mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([
+        {
+          shift_definition_id: 'sd-window',
+          service_day: '2026-01-01',
+          start_time: '00:00',
+          end_time: '23:59',
+          crosses_midnight: false,
+          early_window_min: 100_000_000,
+          cutoff_grace_min: 100_000_000,
+        },
+      ]);
+      mockPunches = [inPunch({ shift_definition_id: 'sd-window' })];
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB(null));
+      mockRepository.create.mockImplementation((r: any) => r);
+      mockRepository.save.mockImplementation((r: any) =>
+        Promise.resolve({ id: 'session-1', ...r }),
+      );
+
+      await service.clockIn(mockUser.id, clockInDto);
+
+      expect(mockSchedulesService.markPresentForClockIn).toHaveBeenCalledWith(
+        mockUser.id,
+        '2026-01-01',
+        'sd-window',
+      );
     });
 
     it('records an OFFLINE punch at its capture time (punched_at), clamped to ≤ now', async () => {
