@@ -52,7 +52,8 @@ planned ──clock-in──► present
 ```
 
 - `present` is written **synchronously on clock-in** (non-overtime only).
-- `absent` is written by the **hourly** `ScheduleAbsenceCron`, bounded by `schedule.absence_sweep_lookback_days` (**default 7**; `0` = unbounded, for a deliberate backfill).
+- `absent` is written by the **hourly** `ScheduleAbsenceCron`, bounded by `schedule.absence_sweep_lookback_days` (**default 7**).
+  > **First deploy needs one backfill.** The bound means rows older than the window are never persisted `absent` — the UI still flips them at render, but a report reading raw `status` sees `planned` forever. On a database that has never swept: check `lookback_days_needed` in verifier §8, raise the setting to cover it in *Pengaturan* (it is read per run, no restart), wait one hourly tick, then set it back to 7.
 - Web and mobile additionally apply `effectiveScheduleStatus` **at render**, so a closed window reads "Tidak Hadir" immediately rather than waiting up to an hour. Display and cron use the *same* rule, so they cannot disagree.
 - Operator-set values: `leave_sick | leave_annual | leave_permit`, `replaced`, `off`.
 
@@ -65,6 +66,7 @@ Never stored; **derived on read** from (roster row + session + shift window + le
 | **Lifecycle** | `tidak_bertugas` · `belum_hadir` · `terlambat` · `bertugas` · `pulang` · `tidak_hadir` | `derivePresenceState()` |
 | **Flags** | `is_late` · `ad_hoc` · `lupa_clock_out` · `lembur` · `early` · `excused` | same |
 | **Live** | activity `active/offline` + `is_within_area` (orthogonal — a worker can be active AND outside) | `user_tracking_status` |
+| | *only trusted while `bertugas` **and** the GPS fix is newer than `monitoring.active_max_age_sec` (600 s) — a per-worker snapshot lives forever, and a stale one would report a days-old position as current* | |
 | **Counting** | counts toward staffing only if `bertugas ∧ scheduled ∧ role ∈ {satgas, linmas}`; multi-place counted **once** | `dayBoard.ts` |
 
 **Roster reads carry the axes.** `/schedules/range`, `/schedules/date/:date`, `/schedules/my/day` **and `/schedules/my`** attach `lifecycle_state`, `lifecycle_flags`, `leave_reason`, `is_within_area`, `is_scheduled` via `RosterPresenceService` — only for rows dated **today or earlier** (`lifecycle_state: null` on a future row means *not applicable*, not "off duty").

@@ -125,14 +125,19 @@ check S37 "replaced -> not scheduled"                       is_scheduled    Fals
 echo ""
 echo "── S32 live inside/outside axis ─────────────────────────────────────────"
 setstatus present; session 06:05 NULL
-sql "insert into user_tracking_status (user_id, status, is_within_area)
-     values ('$UID_','active',false)
-     on conflict (user_id) do update set is_within_area=false, status='active'"
+# last_location_at matters: a fix older than monitoring.active_max_age_sec is
+# treated as no reading at all, so the snapshot has to be fresh to assert on.
+sql "insert into user_tracking_status (user_id, status, is_within_area, last_location_at)
+     values ('$UID_','active',false, now())
+     on conflict (user_id) do update set is_within_area=false, status='active', last_location_at=now()"
 check S32 "on duty OUTSIDE area -> is_within_area false"    is_within_area  False
-sql "update user_tracking_status set is_within_area=true where user_id='$UID_'"
+sql "update user_tracking_status set is_within_area=true, last_location_at=now() where user_id='$UID_'"
 check S31 "on duty inside area -> is_within_area true"      is_within_area  True
 clearsessions; setstatus planned
-check S33 "not on duty -> stale snapshot suppressed (null)" is_within_area  null
+check S33 "not on duty -> snapshot suppressed (null)"        is_within_area  null
+setstatus present; session 06:05 NULL
+sql "update user_tracking_status set last_location_at = now() - interval '3 days' where user_id='$UID_'"
+check S33 "on duty but GPS fix stale -> no reading (null)"   is_within_area  null
 
 echo ""
 echo "── S13 future rows carry no lifecycle ───────────────────────────────────"

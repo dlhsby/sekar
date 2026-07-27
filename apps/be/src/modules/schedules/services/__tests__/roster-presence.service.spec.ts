@@ -32,9 +32,17 @@ const row = (over: Partial<Schedule> = {}): Schedule =>
     ...over,
   }) as unknown as Schedule;
 
+/** A fix taken `min` minutes before the scenario clock. */
+const fixAt = (min: number, base = '2026-07-27T10:00:00+07:00'): Date =>
+  new Date(new Date(base).getTime() - min * 60_000);
+
 function build(
   sessions: Partial<Shift>[] = [],
-  tracking: Array<{ user_id: string; is_within_area: boolean }> = [],
+  tracking: Array<{
+    user_id: string;
+    is_within_area: boolean;
+    last_location_at?: Date | null;
+  }> = [],
 ) {
   const shiftRepo = { find: jest.fn().mockResolvedValue(sessions) };
   const trackingRepo = { find: jest.fn().mockResolvedValue(tracking) };
@@ -168,15 +176,42 @@ describe('RosterPresenceService', () => {
     ];
 
     it('carries is_within_area while on duty', async () => {
-      const { service } = build(onDuty, [{ user_id: 'u1', is_within_area: false }]);
+      const { service } = build(onDuty, [
+        { user_id: 'u1', is_within_area: false, last_location_at: fixAt(2) },
+      ]);
       const [r] = await service.attach([row()], wib('10:00'));
       expect(r.lifecycle_state).toBe('bertugas');
       expect(r.is_within_area).toBe(false); // the amber case the board could never show
     });
 
-    it('suppresses a stale snapshot when the worker is NOT on duty', async () => {
+    it('ignores a snapshot whose GPS fix is older than active_max_age_sec', async () => {
+      // `user_tracking_status` keeps one row per worker forever. On the staging
+      // clone 899 of 1121 rows were >2 days old, so trusting them made a worker
+      // on duty today read "inside area / green" off a days-old fix — while the
+      // monitoring map called the same worker offline.
+      const { service } = build(onDuty, [
+        { user_id: 'u1', is_within_area: true, last_location_at: fixAt(60) }, // default cutoff 10 min
+      ]);
+      const [r] = await service.attach([row({ status: ScheduleStatus.PRESENT })], wib('10:00'));
+      expect(r.lifecycle_state).toBe('bertugas');
+      expect(r.is_within_area).toBeNull();
+    });
+
+    it('drops a snapshot with no fix at all rather than reporting false', async () => {
+      // `false` would accuse them of being out of area; absent means "unknown".
+      const { service } = build(onDuty, [
+        { user_id: 'u1', is_within_area: false, last_location_at: null },
+      ]);
+      const [r] = await service.attach([row({ status: ScheduleStatus.PRESENT })], wib('10:00'));
+      expect(r.is_within_area).toBeNull();
+    });
+
+    it('suppresses a snapshot when the worker is NOT on duty', async () => {
       // Last week's "inside area" must not paint a planned row green/amber.
-      const { service } = build([], [{ user_id: 'u1', is_within_area: true }]);
+      const { service } = build(
+        [],
+        [{ user_id: 'u1', is_within_area: true, last_location_at: fixAt(1) }],
+      );
       const [r] = await service.attach([row()], wib('18:00'));
       expect(r.lifecycle_state).toBe('tidak_hadir');
       expect(r.is_within_area).toBeNull();

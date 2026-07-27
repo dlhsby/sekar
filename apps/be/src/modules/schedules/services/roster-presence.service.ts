@@ -57,6 +57,15 @@ export class RosterPresenceService {
   }
 
   /**
+   * How old a GPS fix may be and still count as a live reading. Same setting the
+   * monitoring map uses for its active/offline axis, so the two surfaces call the
+   * same snapshot fresh or stale.
+   */
+  private maxFixAgeMs(): number {
+    return this.configService.getNumber('monitoring.active_max_age_sec', 600) * 1000;
+  }
+
+  /**
    * Enrich rows in place-free fashion: returns NEW row objects carrying the
    * presence axes. Rows in the future are returned with `lifecycle_state: null`
    * so a consumer can tell "not applicable" from "off duty".
@@ -75,7 +84,7 @@ export class RosterPresenceService {
 
     const [sessions, tracking] = await Promise.all([
       this.loadSessions(derivable),
-      this.loadTracking(derivable),
+      this.loadTracking(derivable, now),
     ]);
     const grace = this.graceMs();
 
@@ -102,9 +111,18 @@ export class RosterPresenceService {
         sessions.hasOvertime(row.user_id, row.schedule_date),
       );
 
-      // The inside/outside axis only means something while the worker is on
-      // duty; a stale snapshot from last week would otherwise paint a planned
-      // row amber. Null = "no live reading", which the UI renders as neutral.
+      // Two guards on the inside/outside axis, both load-bearing:
+      //
+      // 1. Only while `bertugas` — a snapshot from last week must not paint a
+      //    planned row amber.
+      // 2. Only while the FIX IS FRESH. `user_tracking_status` holds one row per
+      //    worker forever; on the staging clone 899 of 1121 rows were more than
+      //    two days old. Trusting those made a worker on duty today read
+      //    "inside area / green" off a three-day-old fix, while the monitoring
+      //    map called the same worker `offline`. Exactly the disagreement this
+      //    whole change set exists to remove.
+      //
+      // Null = "no live reading", which every surface renders as neutral.
       const within =
         presence.lifecycle_state === 'bertugas' ? (tracking.get(row.user_id) ?? null) : null;
 
@@ -175,15 +193,30 @@ export class RosterPresenceService {
     };
   }
 
-  /** One query for the live inside/outside axis. */
-  private async loadTracking(rows: Schedule[]): Promise<Map<string, boolean>> {
+  /**
+   * One query for the live inside/outside axis, keeping only FRESH fixes.
+   *
+   * A tracking row is a per-worker snapshot that lives forever, so its age is the
+   * only thing separating "outside their area right now" from "was outside three
+   * days ago". Stale rows are dropped rather than returned as `false`: absent
+   * means "no reading", which is honest; `false` would accuse them of being out
+   * of area.
+   */
+  private async loadTracking(rows: Schedule[], now: Date): Promise<Map<string, boolean>> {
     const userIds = [...new Set(rows.map((r) => r.user_id))];
+    const cutoff = now.getTime() - this.maxFixAgeMs();
     try {
       const found = await this.trackingRepo.find({
         where: { user_id: In(userIds) },
-        select: ['user_id', 'is_within_area'],
+        select: ['user_id', 'is_within_area', 'last_location_at'],
       });
-      return new Map(found.map((t) => [t.user_id, t.is_within_area]));
+      return new Map(
+        found
+          .filter(
+            (t) => t.last_location_at != null && new Date(t.last_location_at).getTime() >= cutoff,
+          )
+          .map((t) => [t.user_id, t.is_within_area]),
+      );
     } catch (err) {
       // The axis is decoration, not truth: a missing snapshot must never fail a
       // roster read. Degrade to "no live reading".
