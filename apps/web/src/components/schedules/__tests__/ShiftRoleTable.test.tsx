@@ -243,4 +243,118 @@ describe('ShiftRoleTable', () => {
       expect(onOccurrenceClick).toHaveBeenCalledWith(member);
     });
   });
+  // ---------------------------------------------------------------------------
+  // Long rosters. A fully staffed satgas column runs to 10+ names, which pushes
+  // every other shift block off screen and turns a comparison surface into a
+  // scroll. The column caps at 5 and stands the rest behind "N lainnya" —
+  // without ever hiding a worker who needs attention silently.
+  // ---------------------------------------------------------------------------
+
+  describe('collapsing a long column', () => {
+    const manyNames = [
+      'Evan Drianto',
+      'Fitri Herlina',
+      'Ismu Riyandhika',
+      'Ivo Safryan',
+      'Moch Naufal',
+      'Mochamad Rofii',
+      'Rini Mahanani',
+      'Roh Eni Suprapti',
+      'Slamet Riadi',
+      'Syarif Hidayatullah',
+    ];
+    const manyOccs = (extra: Partial<ScheduleOccurrence> = {}) =>
+      manyNames.map((name) => occ({ name, ...extra }));
+
+    it('shows the first five alphabetically and hides the rest behind "N lainnya"', () => {
+      render(
+        <ShiftRoleTable
+          shifts={[group({ byRole: { satgas: manyOccs() } })]}
+          onOccurrenceClick={jest.fn()}
+        />
+      );
+
+      for (const name of manyNames.slice(0, 5)) {
+        expect(screen.getByText(name)).toBeInTheDocument();
+      }
+      for (const name of manyNames.slice(5)) {
+        expect(screen.queryByText(name)).not.toBeInTheDocument();
+      }
+      expect(screen.getByText(/5 lainnya/)).toBeInTheDocument();
+      // The header still reports the TRUE total, not what is on screen.
+      expect(within(column(/^Satgas$/)).getByText('10')).toBeInTheDocument();
+    });
+
+    it('reveals the whole list inline when "N lainnya" is clicked', async () => {
+      const user = userEvent.setup();
+      render(
+        <ShiftRoleTable
+          shifts={[group({ byRole: { satgas: manyOccs() } })]}
+          onOccurrenceClick={jest.fn()}
+        />
+      );
+
+      await user.click(screen.getByText(/5 lainnya/));
+
+      for (const name of manyNames) {
+        expect(screen.getByText(name)).toBeInTheDocument();
+      }
+      expect(screen.queryByText(/5 lainnya/)).not.toBeInTheDocument();
+    });
+
+    it('expands from the header count too, and collapses back', async () => {
+      const user = userEvent.setup();
+      render(
+        <ShiftRoleTable
+          shifts={[group({ byRole: { satgas: manyOccs() } })]}
+          onOccurrenceClick={jest.fn()}
+        />
+      );
+
+      const toggle = screen.getByRole('button', { name: /Tampilkan semua 10 petugas/ });
+      await user.click(toggle);
+      expect(screen.getByText('Syarif Hidayatullah')).toBeInTheDocument();
+
+      // Two collapse affordances once open — the header chevron and the row.
+      await user.click(screen.getAllByRole('button', { name: /Ciutkan/ })[0]);
+      expect(screen.queryByText('Syarif Hidayatullah')).not.toBeInTheDocument();
+    });
+
+    it('flags the collapsed row when a hidden worker needs attention', () => {
+      // The last name sorts into the hidden half and is a no-show. Collapsing
+      // must not be how that goes unseen.
+      const occs = manyOccs();
+      occs[9] = occ({ name: manyNames[9], status: 'absent' });
+      render(
+        <ShiftRoleTable shifts={[group({ byRole: { satgas: occs } })]} onOccurrenceClick={jest.fn()} />
+      );
+
+      expect(
+        screen.getByLabelText(/Ada petugas yang perlu perhatian di daftar tersembunyi/)
+      ).toBeInTheDocument();
+    });
+
+    it('leaves the collapsed row unflagged when every hidden worker is fine', () => {
+      render(
+        <ShiftRoleTable
+          shifts={[group({ byRole: { satgas: manyOccs({ status: 'present', is_within_area: true }) } })]}
+          onOccurrenceClick={jest.fn()}
+        />
+      );
+
+      expect(
+        screen.queryByLabelText(/Ada petugas yang perlu perhatian di daftar tersembunyi/)
+      ).not.toBeInTheDocument();
+    });
+
+    it('does not collapse a single overflow row — one click to save one name', () => {
+      const six = manyNames.slice(0, 6).map((name) => occ({ name }));
+      render(
+        <ShiftRoleTable shifts={[group({ byRole: { satgas: six } })]} onOccurrenceClick={jest.fn()} />
+      );
+
+      expect(screen.getByText('Mochamad Rofii')).toBeInTheDocument();
+      expect(screen.queryByText(/lainnya/)).not.toBeInTheDocument();
+    });
+  });
 });
