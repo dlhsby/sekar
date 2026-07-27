@@ -67,10 +67,14 @@ export function OccurrenceChip({
   const projectedClass = isProjected ? 'opacity-60 border-dashed' : '';
 
   /**
-   * A future row has no presence yet, and a grey dot on every one of them would
-   * be noise on a month view. Only show the dot once there is something to say.
+   * Only show the dot once the backend has actually derived a lifecycle.
+   *
+   * `lifecycle_state` is null for any row dated in the future — nothing has
+   * happened yet — and a dot on every future chip is noise on a month view. It
+   * used to also fall back to `status !== 'planned'`, which put a meaningless
+   * grey dot on future `off` / `replaced` rows.
    */
-  const showPresence = occurrence.lifecycle_state != null || occurrence.status !== 'planned';
+  const showPresence = occurrence.lifecycle_state != null;
   const tone = PRESENCE_TONE_CLASS[occurrenceTone(occurrence)];
   // A white ring keeps the dot legible on every shift fill (sage / amber / info
   // / danger) without hand-picking a per-fill colour.

@@ -227,6 +227,55 @@ export interface RangeFilters {
  * See ADR-047 (occurrences from events); ADR-013 is the earlier daily-roster
  * model it superseded.
  */
+/**
+ * Trim a projected row's relations to the fields the calendar actually renders.
+ *
+ * Projected rows are built from a `ScheduleEvent` loaded with its full relation
+ * graph (location, region, team_category, user, pic_user, members.user), so each
+ * virtual row carried whole entities — including `location.boundary_polygon`
+ * (~2 KB of GeoJSON) and every user column. Measured on the staging clone: a
+ * 10-day range BEYOND the materialization horizon returned **95 MB for 10 090
+ * rows (11 KB/row)**; a 62-day far-future range would be ~590 MB, which the
+ * staging API cannot serialize at `--max-old-space-size=384`.
+ *
+ * The materialized path fixed this with explicit column lists; this is the same
+ * fix for the projection path, which shares no SQL with it. Field sets match
+ * what the web board and mobile's personal calendar read — boundaries are
+ * fetched per-subject by the map modal, never per roster row.
+ */
+function slimProjectedRelations(row: Schedule): Schedule {
+  const place = <T extends { id: string; name: string }>(x: T | null | undefined): T | null =>
+    x ? ({ id: x.id, name: x.name } as T) : null;
+
+  if (row.location) row.location = place(row.location);
+  if (row.region) row.region = place(row.region);
+  if (row.team_category) {
+    const t = row.team_category;
+    row.team_category = { id: t.id, name: t.name, marker_color: t.marker_color } as typeof t;
+  }
+  if (row.user) {
+    const u = row.user;
+    row.user = {
+      id: u.id,
+      full_name: u.full_name,
+      username: u.username,
+      role: u.role,
+    } as typeof u;
+  }
+  if (row.shift_definition) {
+    const sd = row.shift_definition;
+    row.shift_definition = {
+      id: sd.id,
+      name: sd.name,
+      start_time: sd.start_time,
+      end_time: sd.end_time,
+      crosses_midnight: sd.crosses_midnight,
+      cutoff_grace_min: sd.cutoff_grace_min,
+    } as typeof sd;
+  }
+  return row;
+}
+
 @Injectable()
 export class SchedulesService {
   private readonly logger = new Logger(SchedulesService.name);
@@ -1165,7 +1214,7 @@ export class SchedulesService {
                 projected.location = event.location;
               }
 
-              projectedRows.push(projected);
+              projectedRows.push(slimProjectedRelations(projected));
             }
           }
         }
@@ -1384,7 +1433,7 @@ export class SchedulesService {
                   projected.location = event.location;
                 }
 
-                projectedRows.push(projected);
+                projectedRows.push(slimProjectedRelations(projected));
               }
             }
           }

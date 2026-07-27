@@ -94,11 +94,18 @@ export class SchedulesController {
     description: 'WIB day (YYYY-MM-DD); defaults to today',
   })
   @ApiResponse({ status: 200, type: Schedule })
-  getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
+  async getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
     // No date → "what am I on right now", which at 03:00 is still yesterday's
     // cross-midnight shift. An explicit date stays a plain calendar-day lookup.
-    if (!date) return this.service.findCurrentForUser(user.id);
-    return this.service.findByUserAndDate(user.id, date);
+    const row = date
+      ? await this.service.findByUserAndDate(user.id, date)
+      : await this.service.findCurrentForUser(user.id);
+    if (!row) return null;
+    // Enriched like every other roster read: `/my` and `/my/day` are fetched by
+    // the same mobile screen, so returning the axes on one and not the other made
+    // the contract depend on which call you happened to use.
+    const [enriched] = await this.presence.attach([row]);
+    return enriched;
   }
 
   @Get('date/:date')

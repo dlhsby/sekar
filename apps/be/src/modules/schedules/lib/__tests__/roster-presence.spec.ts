@@ -120,17 +120,36 @@ describe('deriveRosterPresence', () => {
       expect(r.lifecycle_flags).not.toContain('lembur');
     });
 
-    it('S23 · past end on an overtime session → lembur, not a forgotten clock-out', () => {
+    it('S23 · past end WITH approved overtime → lembur, not a forgotten clock-out', () => {
+      // Overtime is its own session, so it can never be the session matched to a
+      // normal roster row — the caller passes the fact in. Asserting it via
+      // `session.is_overtime` alone passed while the service could never produce
+      // it, which an end-to-end run caught.
       const r = deriveRosterPresence(
         ScheduleStatus.PRESENT,
         DAY,
         SHIFT_1,
-        { ...openSession, is_overtime: true },
+        openSession,
         GRACE_MS,
         wib('17:00'),
+        true, // overtimeApproved
       );
       expect(r.lifecycle_flags).toContain('lembur');
       expect(r.lifecycle_flags).not.toContain('lupa_clock_out');
+    });
+
+    it('S22 · past end with NO overtime stays lupa_clock_out', () => {
+      const r = deriveRosterPresence(
+        ScheduleStatus.PRESENT,
+        DAY,
+        SHIFT_1,
+        openSession,
+        GRACE_MS,
+        wib('17:00'),
+        false,
+      );
+      expect(r.lifecycle_flags).toContain('lupa_clock_out');
+      expect(r.lifecycle_flags).not.toContain('lembur');
     });
   });
 

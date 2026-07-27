@@ -89,6 +89,12 @@ const asDate = (v: Date | string | null | undefined): Date | null =>
  *                    means the same thing here as on the monitoring map
  * @param now         evaluation instant — injected, never `new Date()` inside,
  *                    so the whole matrix is testable at a fixed clock
+ * @param overtimeApproved whether an APPROVED OVERTIME session exists for this
+ *                    worker + service day. Overtime is its own session
+ *                    (`is_overtime`), so it is never the session matched to a
+ *                    normal roster row — it has to be passed in separately, or
+ *                    a worker on approved overtime is accused of forgetting to
+ *                    clock out.
  */
 export function deriveRosterPresence(
   status: ScheduleStatus | string,
@@ -97,6 +103,7 @@ export function deriveRosterPresence(
   session: RosterSession | null | undefined,
   graceMs: number,
   now: Date,
+  overtimeApproved = false,
 ): RosterPresence {
   const leave = scheduleStatusToLeave(status);
   const scheduled = EXPECTED_STATUSES.has(status as string);
@@ -119,10 +126,10 @@ export function deriveRosterPresence(
       shiftStart: window?.start ?? null,
       shiftEnd: window?.end ?? null,
       graceMs,
-      // Overtime is its own session (`is_overtime`), so a roster row never
-      // carries an overtime approval; past-end presence on a normal session is a
-      // forgotten clock-out, which is what ADR-050 wants it called.
-      overtimeApproved: session?.is_overtime === true,
+      // Past-end presence is `lupa_clock_out` UNLESS overtime backs it, in which
+      // case ADR-050 calls it `lembur`. The flag comes from the caller because
+      // overtime lives in a separate session.
+      overtimeApproved: overtimeApproved || session?.is_overtime === true,
       leave,
     },
     now,

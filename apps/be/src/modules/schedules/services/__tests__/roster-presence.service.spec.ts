@@ -182,6 +182,43 @@ describe('RosterPresenceService', () => {
       expect(r.is_within_area).toBeNull();
     });
 
+    it('reads lembur from a SEPARATE overtime session (S23)', async () => {
+      // The service filtered overtime sessions out entirely, so `lembur` was
+      // unreachable on a roster read and past-end presence always accused the
+      // worker of forgetting to clock out. Caught by an end-to-end run.
+      const { service } = build([
+        ...onDuty,
+        {
+          user_id: 'u1',
+          service_day: '2026-07-27',
+          shift_definition_id: 's1',
+          clock_in_time: wib('15:10'),
+          clock_out_time: null,
+          is_overtime: true,
+        },
+      ]);
+      const [r] = await service.attach([row({ status: ScheduleStatus.PRESENT })], wib('17:00'));
+      expect(r.lifecycle_flags).toContain('lembur');
+      expect(r.lifecycle_flags).not.toContain('lupa_clock_out');
+    });
+
+    it('an overtime session never matches the roster row itself', async () => {
+      // Only an overtime session exists: the normal roster row has no attendance,
+      // so it must still read as a no-show rather than borrowing the overtime.
+      const { service } = build([
+        {
+          user_id: 'u1',
+          service_day: '2026-07-27',
+          shift_definition_id: 's1',
+          clock_in_time: wib('15:10'),
+          clock_out_time: null,
+          is_overtime: true,
+        },
+      ]);
+      const [r] = await service.attach([row()], wib('18:00'));
+      expect(r.lifecycle_state).toBe('tidak_hadir');
+    });
+
     it('survives a tracking-table failure — presence is decoration, not truth', async () => {
       const { service, trackingRepo } = build(onDuty);
       trackingRepo.find.mockRejectedValue(new Error('relation missing'));

@@ -11,6 +11,8 @@ import { deriveRosterPresence, sessionKey } from '../lib/roster-presence';
 /** Batched session lookup with exact-shift-then-unattributed precedence. */
 interface SessionIndex {
   lookup(userId: string, day: string, shiftDefId: string | null | undefined): Shift | undefined;
+  /** Does an APPROVED OVERTIME session exist for this worker on this day? */
+  hasOvertime(userId: string, day: string): boolean;
 }
 
 /**
@@ -97,6 +99,7 @@ export class RosterPresenceService {
         session,
         grace,
         now,
+        sessions.hasOvertime(row.user_id, row.schedule_date),
       );
 
       // The inside/outside axis only means something while the worker is on
@@ -129,8 +132,11 @@ export class RosterPresenceService {
   private async loadSessions(rows: Schedule[]): Promise<SessionIndex> {
     const userIds = [...new Set(rows.map((r) => r.user_id))];
     const days = [...new Set(rows.map((r) => r.schedule_date))];
+    // Overtime sessions are fetched too — not to match roster rows (a roster row
+    // is a normal assignment), but so past-end presence backed by overtime reads
+    // as `lembur` instead of accusing the worker of forgetting to clock out.
     const found = await this.shiftRepo.find({
-      where: { user_id: In(userIds), service_day: In(days), is_overtime: false },
+      where: { user_id: In(userIds), service_day: In(days) },
       select: [
         'id',
         'user_id',
@@ -144,12 +150,17 @@ export class RosterPresenceService {
 
     const exact = new Map<string, Shift>();
     const unattributed = new Map<string, Shift>();
+    const overtime = new Set<string>();
     for (const s of found) {
       if (!s.service_day) continue;
       // `date` columns come back as `YYYY-MM-DD` strings, but a driver/entity
       // change could hand back a Date — normalise rather than trust the shape.
       const raw: unknown = s.service_day;
       const day = raw instanceof Date ? TimezoneUtil.jakartaDateOf(raw) : String(raw);
+      if (s.is_overtime) {
+        overtime.add(`${s.user_id}|${day}`);
+        continue;
+      }
       if (s.shift_definition_id) {
         exact.set(sessionKey(s.user_id, day, s.shift_definition_id), s);
       } else {
@@ -160,6 +171,7 @@ export class RosterPresenceService {
       lookup: (userId, day, shiftDefId) =>
         (shiftDefId ? exact.get(sessionKey(userId, day, shiftDefId)) : undefined) ??
         unattributed.get(sessionKey(userId, day, null)),
+      hasOvertime: (userId, day) => overtime.has(`${userId}|${day}`),
     };
   }
 
