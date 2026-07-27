@@ -209,7 +209,8 @@
       "prevDay": "Hari Lalu",
       "nextDay": "Hari Depan",
       "prev": "Sebelumnya",
-      "next": "Berikutnya"
+      "next": "Berikutnya",
+      "pickDate": "Pilih tanggal"
     },
     "event": {
       "createTitle": "Buat Jadwal",

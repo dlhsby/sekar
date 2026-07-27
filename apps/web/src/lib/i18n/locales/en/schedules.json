@@ -209,7 +209,8 @@
       "prevDay": "Previous Day",
       "nextDay": "Next Day",
       "prev": "Previous",
-      "next": "Next"
+      "next": "Next",
+      "pickDate": "Pick a date"
     },
     "event": {
       "createTitle": "Create Schedule",
