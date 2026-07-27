@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { toast } from 'sonner';
@@ -21,11 +21,9 @@ import {
   DialogBody,
   DialogFooter,
   Button,
-  DatePicker,
   FormInput,
   FormSelect,
   FormCombobox,
-  Label,
 } from '@/components/ui';
 import { AsyncUserCombobox, type PickedUser } from '@/components/forms/AsyncUserCombobox';
 import { TeamFields } from '@/components/schedules/TeamFields';
@@ -38,7 +36,6 @@ import {
   type UpdateScheduleEventInput,
   type EditScope,
   type MaterializationEntry,
-  type RecurrenceType,
   type ScheduleEvent,
 } from '@/lib/api/schedule-events';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
@@ -155,7 +152,7 @@ function createSchema(t: TFn) {
       notes: z.string().optional(),
     })
     .superRefine((data, ctx) => {
-      for (const field of ['kind', 'scope', 'recurrence_type'] as const) {
+      for (const field of ['kind', 'scope'] as const) {
         if (!data[field]) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
@@ -357,9 +354,10 @@ export function ScheduleEventModal({
             regionId: initialRegionId,
             districtId: initialDistrictId,
           }),
-      // 'Sekali' was preselected, so a one-off could be saved without the
-      // operator ever choosing the recurrence.
-      recurrence_type: event?.recurrence_type ?? '',
+      // Defaults to "Tidak berulang", like Google Calendar: a one-off is what
+      // almost every schedule is, and the presets below are phrased in terms of
+      // the chosen date rather than assembled from parts.
+      recurrence_type: event?.recurrence_type ?? 'none',
       interval_n: event?.recurrence_config?.interval_n ?? 2,
       weekdays: event?.recurrence_config?.weekdays ?? [],
       dates: event?.recurrence_config?.dates ?? [],
@@ -526,13 +524,6 @@ export function ScheduleEventModal({
       backfilled.current = true; // district/city scope or manual — defaults already suffice
     }
   }, [event, locations, regions, setValue, t]);
-  const recurrenceOptions: Array<{ value: RecurrenceType; label: string }> = [
-    { value: 'none', label: t('schedules:calendar.event.recurrenceNone') },
-    { value: 'daily', label: t('schedules:calendar.event.recurrenceDaily') },
-    { value: 'every_n_days', label: t('schedules:calendar.event.recurrenceEveryNDays') },
-    { value: 'weekly', label: t('schedules:calendar.event.recurrenceWeekly') },
-    { value: 'specific_dates', label: t('schedules:calendar.event.recurrenceSpecificDates') },
-  ];
 
   const warnConflicts = (result: {
     skipped?: MaterializationEntry[];
@@ -787,67 +778,21 @@ export function ScheduleEventModal({
             />
 
 
+            {/* Date + recurrence. The date leads (every preset is phrased in
+                terms of it) and "Berakhir" lives only in the Kustom dialog. */}
             <RecurrenceFields
               control={control}
-              register={register}
               setValue={setValue}
               errors={errors}
               t={t}
               recurrence={formRecurrence}
-              recurrenceOptions={recurrenceOptions}
+              intervalN={watch('interval_n')}
+              weekdays={watch('weekdays')}
+              startDate={watch('start_date') || ''}
+              endDate={watch('end_date') || ''}
               dateDraft={dateDraft}
               setDateDraft={setDateDraft}
             />
-
-            {/* Stack on phones: two date pickers side by side leave ~150px each
-                on a 360px screen, which truncates the dd/mm/yyyy field. */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Controller
-                control={control}
-                name="start_date"
-                render={({ field }) => (
-                  <div className="space-y-1">
-                    <Label>
-                      {t('schedules:calendar.event.startDateLabel')}
-                      <span className="ml-1 text-nb-danger">*</span>
-                    </Label>
-                    <DatePicker
-                      value={field.value || undefined}
-                      onValueChange={(v) => field.onChange(v ?? '')}
-                      error={!!errors.start_date}
-                    />
-                    {errors.start_date && (
-                      <p className="text-nb-body-sm font-medium text-nb-danger" role="alert">
-                        {errors.start_date.message}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-              <Controller
-                control={control}
-                name="end_date"
-                render={({ field }) => (
-                  <div className="space-y-1">
-                    <Label>{t('schedules:calendar.event.endDateLabel')}</Label>
-                    <DatePicker
-                      value={field.value || undefined}
-                      onValueChange={(v) => field.onChange(v ?? '')}
-                      error={!!errors.end_date}
-                    />
-                    {errors.end_date ? (
-                      <p className="text-nb-body-sm font-medium text-nb-danger" role="alert">
-                        {errors.end_date.message}
-                      </p>
-                    ) : (
-                      <p className="text-nb-body-sm text-nb-gray-600">
-                        {t('schedules:calendar.event.endDateOptional')}
-                      </p>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
 
             <FormInput
               label={t('schedules:calendar.event.notesLabel')}

@@ -121,6 +121,56 @@ describe('ScheduleEventModal', () => {
     expect(screen.getByText('schedules:calendar.event.scopeLabel')).toBeInTheDocument();
   });
 
+  // -------------------------------------------------------------------------
+  // Recurrence (Google Calendar model). A one-off is what almost every schedule
+  // is, so the form opens on "Tidak berulang" and shows nothing else: no
+  // interval, no weekday toggles, and no Tanggal Akhir. Those live behind
+  // "Kustom…".
+  // -------------------------------------------------------------------------
+
+  it('opens on a one-off and labels the date "Tanggal", not "Tanggal Mulai"', () => {
+    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+    expect(screen.getByText('schedules:calendar.event.dateLabel')).toBeInTheDocument();
+    expect(screen.queryByText('schedules:calendar.event.startDateLabel')).not.toBeInTheDocument();
+  });
+
+  it('never puts Tanggal Akhir in the main form — "Berakhir" is custom-only', () => {
+    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+    expect(screen.queryByText('schedules:calendar.event.endDateLabel')).not.toBeInTheDocument();
+    expect(screen.queryByText('schedules:calendar.event.endDateOptional')).not.toBeInTheDocument();
+  });
+
+  it('shows the recurrence as a single select with no parts editor beside it', () => {
+    render(<ScheduleEventModal {...defaultProps} />, { wrapper: Wrapper });
+
+    expect(screen.getByText('schedules:calendar.event.recurrenceLabel')).toBeInTheDocument();
+    // The every-N-days input and weekday toggles moved into the Kustom dialog.
+    expect(
+      screen.queryByText('schedules:calendar.event.recurrenceEveryNDaysLabel')
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('schedules:calendar.event.customRepeatOn')).not.toBeInTheDocument();
+  });
+
+  it('relabels the date to "Tanggal Mulai" once the event actually repeats', () => {
+    const event = {
+      id: 'ev1',
+      is_team: false,
+      scope: 'city',
+      recurrence_type: 'daily',
+      start_date: '2026-07-27',
+      shift_definition_id: 's1',
+    } as never;
+
+    render(<ScheduleEventModal open onOpenChange={jest.fn()} event={event} />, {
+      wrapper: Wrapper,
+    });
+
+    expect(screen.getByText('schedules:calendar.event.startDateLabel')).toBeInTheDocument();
+    expect(screen.queryByText('schedules:calendar.event.dateLabel')).not.toBeInTheDocument();
+  });
+
   it('asks for Ruang Lingkup before Jenis (where -> who -> when)', () => {
     // Scope frames every other answer — it decides which geography fields exist
     // and which are required — so it leads. DOM order is the reading order.
