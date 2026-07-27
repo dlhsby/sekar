@@ -244,15 +244,6 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
       <View style={styles.container}>
         {/* Scrollable content area — sits above the submit button */}
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
-          {/* Blocked-choice warning — the selected label can't proceed given the
-              current shift state (clock in with a shift open, or clock out with
-              none). Explains why the button below is disabled. */}
-          {actionMismatch && (
-            <View style={styles.mismatchAlert}>
-              <NBAlert variant="warning" message={mismatchHint} />
-            </View>
-          )}
-
           {/* Offline Banner (top of scroll) */}
           {!isOnline && isClockInAction && (
             <View style={styles.offlineBanner}>
@@ -281,6 +272,11 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
             accessibilityLabel={t('attendance:clockInOut.attendanceInfo')}
           >
             <View style={styles.infoTable}>
+              {/* Blocked-choice warning — the selected label can't proceed given
+                  the current shift state (clock in with a shift open, or clock out
+                  with none). Pinned to the top of the card, before Jenis Kehadiran,
+                  so the reason the submit button is disabled reads at a glance. */}
+              {actionMismatch && <NBAlert variant="warning" message={mismatchHint} />}
               {/* Jenis Kehadiran — the record page's distinctive first row; tap to
                   switch Clock In / Clock Out via the "Ubah Label Waktu" picker. */}
               <InfoTableRow
@@ -556,9 +552,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: nbSpacing.xs,
-  },
-  mismatchAlert: {
-    marginBottom: nbSpacing.md,
   },
   centerContent: {
     flex: 1,
