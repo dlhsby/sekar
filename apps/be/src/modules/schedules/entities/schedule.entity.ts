@@ -18,6 +18,11 @@ import { Location } from '../../locations/entities/location.entity';
 import { Region } from '../../regions/entities/region.entity';
 import { TeamCategory } from '../../teams/entities/team-category.entity';
 import { ScheduleEvent } from './schedule-event.entity';
+import type {
+  LeaveReason,
+  LifecycleFlag,
+  LifecycleState,
+} from '../../monitoring/lib/presence-lifecycle';
 
 /**
  * Per-worker, per-WIB-day roster status.
@@ -143,6 +148,27 @@ export class Schedule {
    * materialization horizon (Phase 4, ADR-047). Omitted/false for materialized rows.
    */
   is_projected?: boolean;
+
+  /**
+   * Virtual presence axes (not persisted) — ADR-050, attached by
+   * `RosterPresenceService` on roster reads.
+   *
+   * `status` alone can only say planned / present / absent / leave. The board's
+   * coloured bullet needs the rest of the model — on duty but OUTSIDE the area,
+   * terlambat, pulang, ad-hoc — so these ride along rather than being re-derived
+   * per client (which is how web and mobile drifted apart before).
+   *
+   * `null` lifecycle means **not applicable**, not "off duty": rows dated in the
+   * future are never derived, because "where is this worker in their day" has no
+   * answer three weeks out.
+   */
+  lifecycle_state?: LifecycleState | null;
+  lifecycle_flags?: LifecycleFlag[];
+  leave_reason?: LeaveReason | null;
+  /** Live inside/outside axis; only set while `bertugas`, else null. */
+  is_within_area?: boolean | null;
+  /** False when a punch exists with no roster row for the subject (ad-hoc). */
+  is_scheduled?: boolean;
 
   // Actor audit (set explicitly by the service; no FK — historical reference).
   @Column({ type: 'uuid', nullable: true })

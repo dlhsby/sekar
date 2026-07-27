@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulesController } from './schedules.controller';
 import { SchedulesService } from './schedules.service';
+import { RosterPresenceService } from './services/roster-presence.service';
 import { User, UserRole } from '../users/entities/user.entity';
 
 describe('SchedulesController (district scoping)', () => {
@@ -28,7 +29,12 @@ describe('SchedulesController (district scoping)', () => {
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SchedulesController],
-      providers: [{ provide: SchedulesService, useValue: service }],
+      providers: [
+        { provide: SchedulesService, useValue: service },
+        // Presence enrichment is pass-through here: these tests are about
+        // district scoping, and a real derivation would need a DB.
+        { provide: RosterPresenceService, useValue: { attach: jest.fn((rows) => rows) } },
+      ],
     }).compile();
     controller = module.get(SchedulesController);
   });

@@ -21,6 +21,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { SchedulesService, SCHEDULABLE_WORKER_ROLES, type RangeFilters } from './schedules.service';
+import { RosterPresenceService } from './services/roster-presence.service';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -51,7 +52,10 @@ const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, Us
 @Controller('schedules')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SchedulesController {
-  constructor(private readonly service: SchedulesService) {}
+  constructor(
+    private readonly service: SchedulesService,
+    private readonly presence: RosterPresenceService,
+  ) {}
 
   /** Whether the caller is district-scoped (kepala_rayon / admin_rayon). */
   private isDistrictScoped(user: User): boolean {
@@ -71,8 +75,12 @@ export class SchedulesController {
   @ApiOperation({ summary: "All of the caller's roster rows for a day (defaults to today, WIB)" })
   @ApiQuery({ name: 'date', required: false, description: 'WIB day (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
-    return this.service.findAllByUserAndDate(user.id, date ?? TimezoneUtil.jakartaDateString());
+  async getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
+    const rows = await this.service.findAllByUserAndDate(
+      user.id,
+      date ?? TimezoneUtil.jakartaDateString(),
+    );
+    return this.presence.attach(rows);
   }
 
   @Get('my')
@@ -99,7 +107,7 @@ export class SchedulesController {
   @ApiParam({ name: 'date', example: '2026-06-30' })
   @ApiQuery({ name: 'districtId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getByDate(
+  async getByDate(
     @Param('date') date: string,
     @GetUser() user: User,
     @Query('districtId') districtId?: string,
@@ -108,11 +116,10 @@ export class SchedulesController {
     // query. A scoped user with no district_id (misconfiguration) sees nothing —
     // never fall through to the unfiltered (all-district) query.
     if (this.isDistrictScoped(user)) {
-      return user.district_id
-        ? this.service.findByDate(date, user.district_id)
-        : Promise.resolve([]);
+      if (!user.district_id) return [];
+      return this.presence.attach(await this.service.findByDate(date, user.district_id));
     }
-    return this.service.findByDate(date, districtId);
+    return this.presence.attach(await this.service.findByDate(date, districtId));
   }
 
   /**
@@ -198,7 +205,7 @@ export class SchedulesController {
   @ApiQuery({ name: 'shiftDefinitionId', required: false })
   @ApiQuery({ name: 'teamCategoryId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getByRange(
+  async getByRange(
     @Query('from') from: string,
     @Query('to') to: string,
     @GetUser() user: User,
@@ -234,18 +241,21 @@ export class SchedulesController {
 
     // Phase 4: workers (satgas/linmas/korlap) not in ROSTER_VIEWERS are self-scoped
     if (!ROSTER_VIEWERS.includes(user.role)) {
-      return this.service.findByDateRangeForUser(from, to, user.id);
+      return this.presence.attach(await this.service.findByDateRangeForUser(from, to, user.id));
     }
 
     // Rayon-scoped roles (kepala_rayon / admin_rayon) are pinned to their own
     // district; the requested districtId is ignored, other filters still apply.
     if (this.isDistrictScoped(user)) {
-      return user.district_id
-        ? this.service.findByDateRange(from, to, { ...filters, districtId: user.district_id })
-        : Promise.resolve([]);
+      if (!user.district_id) return [];
+      return this.presence.attach(
+        await this.service.findByDateRange(from, to, { ...filters, districtId: user.district_id }),
+      );
     }
 
-    return this.service.findByDateRange(from, to, { ...filters, districtId });
+    return this.presence.attach(
+      await this.service.findByDateRange(from, to, { ...filters, districtId }),
+    );
   }
 
   @Get('year-summary')

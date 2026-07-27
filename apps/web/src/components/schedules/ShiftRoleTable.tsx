@@ -6,8 +6,11 @@ import { AlertTriangle, ChevronDown, Plus, Users } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import type { BoardShiftGroup, BoardTeam } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { presenceTone, PRESENCE_TONE_CLASS, type PresenceTone } from '@/lib/presence/tone';
-import { effectiveScheduleStatus } from '@/lib/schedules/effectiveStatus';
+import {
+  ATTENTION_TONES,
+  occurrenceTone,
+  PRESENCE_TONE_CLASS,
+} from '@/lib/presence/tone';
 
 /** Core scheduling roles always given a column so empty ones can be filled. */
 const CORE_ROLES = ['satgas', 'linmas', 'korlap'];
@@ -29,31 +32,6 @@ const VISIBLE_ROWS = 5;
 export function shouldCollapse(total: number): boolean {
   return total > VISIBLE_ROWS + 1;
 }
-
-/** The canonical tone for a roster row (ADR-050), used by bullets and summaries. */
-export function occurrenceTone(occ: ScheduleOccurrence): PresenceTone {
-  return presenceTone({
-    lifecycleState: occ.lifecycle_state,
-    // Effective status so a past no-show shows red immediately, matching the
-    // detail modal + the backend cron.
-    scheduleStatus: effectiveScheduleStatus(occ.status, occ.shift_definition, occ.schedule_date),
-    leaveReason: occ.leave_reason,
-    isWithinArea: occ.is_within_area,
-    isAdHoc: occ.is_scheduled === false,
-  });
-}
-
-/**
- * Tones an operator is scanning the board FOR — a no-show, a late start, an
- * outside-area worker. Collapsing must never be how one of these goes unseen,
- * so the "lainnya" row carries a dot when the hidden rows hold any of them.
- */
-const ATTENTION_TONES: ReadonlySet<PresenceTone> = new Set<PresenceTone>([
-  'red',
-  'orange',
-  'yellow',
-  'amber',
-]);
 
 /** Per-role header colour (fixed brand tokens; white ink, per OccurrenceChip). */
 const ROLE_HEADER: Record<string, string> = {

@@ -1155,13 +1155,35 @@ export class SchedulesService {
     const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
 
     // Fetch materialized rows for the range
+    // Explicit column lists, NOT leftJoinAndSelect.
+    //
+    // `location` and `region` carry `boundary_polygon` (~2 KB of GeoJSON each),
+    // and joining them wholesale stamps that polygon onto every single roster
+    // row. Measured on the staging clone: a 31-day, all-district range returned
+    // **293 MB in 29 s** for 31k rows — and staging runs the API with
+    // `--max-old-space-size=384`, so serializing that response is an OOM, not a
+    // slow page. The web board and mobile's personal calendar only ever render
+    // these as NAMES; boundaries are fetched per-subject by the map modal.
     const qb = this.rosterRepo
       .createQueryBuilder('ds')
-      .leftJoinAndSelect('ds.user', 'u')
-      .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.location', 'location')
-      .leftJoinAndSelect('ds.region', 'r')
-      .leftJoinAndSelect('ds.team_category', 'tt')
+      .leftJoin('ds.user', 'u')
+      .addSelect(['u.id', 'u.full_name', 'u.username', 'u.role', 'u.is_active'])
+      .leftJoin('ds.shift_definition', 'sd')
+      .addSelect([
+        'sd.id',
+        'sd.name',
+        'sd.start_time',
+        'sd.end_time',
+        'sd.crosses_midnight',
+        // Drives the lazy no-show flip on both frontends (ADR-056).
+        'sd.cutoff_grace_min',
+      ])
+      .leftJoin('ds.location', 'location')
+      .addSelect(['location.id', 'location.name'])
+      .leftJoin('ds.region', 'r')
+      .addSelect(['r.id', 'r.name'])
+      .leftJoin('ds.team_category', 'tt')
+      .addSelect(['tt.id', 'tt.name', 'tt.marker_color'])
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL')

@@ -13,6 +13,7 @@ import {
 import { useDistricts } from '@/lib/api/districts';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
 import { effectiveScheduleStatus } from '@/lib/schedules/effectiveStatus';
+import { occurrenceTone, PRESENCE_TONE_CLASS } from '@/lib/presence/tone';
 
 interface ScheduleDetailModalProps {
   open: boolean;
@@ -113,6 +114,10 @@ export function ScheduleDetailModal({
     occurrence.schedule_date,
   );
   const statusLabel = t(`schedules:status.${displayStatus}`, displayStatus);
+  // The pill was hardcoded grey, so the modal that correctly LABELS a no-show
+  // "Tidak Hadir" still coloured it like a neutral planned row. Same tone rule as
+  // the board and the chips (ADR-050): one worker, one reading, every surface.
+  const statusTone = PRESENCE_TONE_CLASS[occurrenceTone(occurrence)];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -140,7 +145,11 @@ export function ScheduleDetailModal({
             <Row
               k={t('schedules:detail.status')}
               v={
-                <span className="inline-flex items-center rounded-full border-2 border-nb-black bg-nb-gray-50 px-2 py-0.5 text-nb-caption font-bold">
+                <span className="inline-flex items-center gap-1.5 rounded-full border-2 border-nb-black bg-nb-white px-2 py-0.5 text-nb-caption font-bold">
+                  <span
+                    className={`inline-block size-2 shrink-0 rounded-full ${statusTone.bg}`}
+                    aria-hidden
+                  />
                   {statusLabel}
                 </span>
               }
