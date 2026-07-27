@@ -49,6 +49,11 @@ export interface District {
   id: string;
   name: string;
   description?: string;
+  // Geometry — present on `GET /districts` (used to geofence a city-scope
+  // worker against every rayon: "inside the city" = inside ANY rayon polygon).
+  center_lat?: number | null;
+  center_lng?: number | null;
+  boundary_polygon?: GeoJsonGeometry | null;
   created_at: string;
   updated_at: string;
 }

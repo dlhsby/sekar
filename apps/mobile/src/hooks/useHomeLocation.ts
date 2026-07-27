@@ -11,6 +11,7 @@ import { useAppSelector } from '../store/hooks';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { locationTracker, type LocationPing } from '../services/location/locationTracker';
 import { useTodayRoster } from './useTodayRoster';
+import { useAllDistrictAreas, type GeofenceArea } from './useAllDistrictAreas';
 import { resolveScheduleScope } from '../utils/scheduleScope';
 import { buildMapArea, type MapArea } from '../utils/mapUtils';
 
@@ -44,6 +45,9 @@ export function useHomeLocation() {
   // hero shows real inside/outside for scope workers too (mirrors useClockInOut).
   const { roster } = useTodayRoster();
   const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
+  // City scope has no single polygon; geofence against every rayon (inside any =
+  // inside Surabaya). Only fetched for a city-scope worker.
+  const cityAreas = useAllDistrictAreas(scheduleScope.scope === 'city');
   const scopeBoundary = useMemo(() => {
     const scoped =
       scheduleScope.scope === 'region'
@@ -61,23 +65,39 @@ export function useHomeLocation() {
   }, [scheduleScope, roster]);
 
   // Boundary priority: the lokasi clocked into → today's roster lokasi → the
-  // assigned rayon/kawasan boundary → the standing assignment. Null for a
+  // assigned rayon/kawasan boundary → every rayon (city scope) → the standing
+  // assignment. A worker is "in area" if inside ANY of these. Empty for a
   // genuinely ad-hoc worker (no boundary to be inside/outside of).
-  const boundaryArea = useMemo(() => {
+  const boundaryAreas = useMemo<GeofenceArea[]>(() => {
     const rosterLocation =
       roster?.location?.gps_lat != null && roster.location.gps_lng != null ? roster.location : null;
-    return currentShift?.area ?? rosterLocation ?? scopeBoundary ?? assignedArea ?? null;
-  }, [currentShift, roster, scopeBoundary, assignedArea]);
+    if (currentShift?.area) return [currentShift.area];
+    if (rosterLocation) return [rosterLocation];
+    if (scopeBoundary) return [scopeBoundary];
+    if (scheduleScope.scope === 'city' && cityAreas.length > 0) return cityAreas;
+    if (assignedArea) return [assignedArea];
+    return [];
+  }, [currentShift, roster, scopeBoundary, scheduleScope, cityAreas, assignedArea]);
 
   // Whether there is a real polygon to test — drives the hero's inside/outside
   // pill vs a neutral "scope, no boundary" state.
-  const hasBoundary = !!(boundaryArea && (boundaryArea as { boundary_polygon?: unknown }).boundary_polygon);
-
-  // The area to draw on the LocationMapModal, built with the SAME shared builder
-  // the clock-in/out screen uses so the home hero's map is identical to it.
-  const mapArea = useMemo<MapArea | undefined>(() => buildMapArea(boundaryArea), [boundaryArea]);
+  const hasBoundary = boundaryAreas.some((a) => !!a.boundary_polygon);
 
   const [location, setLocation] = useState<HomeLocationState>(INITIAL_STATE);
+
+  // The area to draw on the LocationMapModal, built with the SAME shared builder
+  // the clock-in/out screen uses so the home hero's map is identical to it. With
+  // several areas (city scope → all rayons) draw the one the worker is inside.
+  const mapArea = useMemo<MapArea | undefined>(() => {
+    if (boundaryAreas.length === 0) return undefined;
+    const primary =
+      boundaryAreas.length > 1 && location.latitude != null && location.longitude != null
+        ? boundaryAreas.find((a) =>
+            isWithinAreaBoundary(location.latitude!, location.longitude!, a),
+          ) ?? boundaryAreas[0]
+        : boundaryAreas[0];
+    return buildMapArea(primary);
+  }, [boundaryAreas, location.latitude, location.longitude]);
 
   const fetchLocation = useCallback(() => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
@@ -86,9 +106,9 @@ export function useHomeLocation() {
       (position) => {
         const { latitude, longitude, accuracy } = position.coords;
 
-        const withinArea = boundaryArea
-          ? isWithinAreaBoundary(latitude, longitude, boundaryArea)
-          : false;
+        const withinArea = boundaryAreas.some((a) =>
+          isWithinAreaBoundary(latitude, longitude, a),
+        );
 
         setLocation({
           latitude,
@@ -113,7 +133,7 @@ export function useHomeLocation() {
         maximumAge: 10000,
       },
     );
-  }, [boundaryArea]);
+  }, [boundaryAreas]);
 
   const refresh = useCallback(() => {
     fetchLocation();
@@ -136,9 +156,9 @@ export function useHomeLocation() {
     if (!hasActiveShift) return;
 
     const handleLocationUpdate = (ping: LocationPing) => {
-      const withinArea = boundaryArea
-        ? isWithinAreaBoundary(ping.latitude, ping.longitude, boundaryArea)
-        : false;
+      const withinArea = boundaryAreas.some((a) =>
+        isWithinAreaBoundary(ping.latitude, ping.longitude, a),
+      );
       setLocation({
         latitude: ping.latitude,
         longitude: ping.longitude,
@@ -154,7 +174,7 @@ export function useHomeLocation() {
     return () => {
       locationTracker.off('locationUpdate', handleLocationUpdate);
     };
-  }, [hasActiveShift, boundaryArea]);
+  }, [hasActiveShift, boundaryAreas]);
 
   return {
     location,
