@@ -106,18 +106,49 @@ describe('deriveRosterPresence', () => {
       expect(r.lifecycle_flags).toContain('is_late');
     });
 
-    it('S22 · still open past the shift end → lupa_clock_out, never auto-lembur', () => {
+    it('S22 · open past end + cutoff grace → NOT live any more, still flagged', () => {
+      // SHIFT_1 ends 15:00 with a 60-min cutoff grace, so 17:00 is past it. The
+      // punch is never auto-closed (ADR-055) and the flag stays, but the worker
+      // leaves `bertugas`: one forgotten punch used to keep them on the
+      // monitoring map and in the staffing count indefinitely.
       const r = deriveRosterPresence(
         ScheduleStatus.PRESENT,
         DAY,
-        SHIFT_1,
+        { ...SHIFT_1, cutoff_grace_min: 60 },
         openSession,
         GRACE_MS,
         wib('17:00'),
       );
-      expect(r.lifecycle_state).toBe('bertugas');
+      expect(r.lifecycle_state).toBe('pulang');
       expect(r.lifecycle_flags).toContain('lupa_clock_out');
       expect(r.lifecycle_flags).not.toContain('lembur');
+    });
+
+    it('S22b · open past end but INSIDE the cutoff grace → still on duty', () => {
+      const r = deriveRosterPresence(
+        ScheduleStatus.PRESENT,
+        DAY,
+        { ...SHIFT_1, cutoff_grace_min: 60 },
+        openSession,
+        GRACE_MS,
+        wib('15:30'),
+      );
+      expect(r.lifecycle_state).toBe('bertugas');
+      expect(r.lifecycle_flags).toContain('lupa_clock_out');
+    });
+
+    it('S22c · approved overtime keeps them live past the cutoff', () => {
+      const r = deriveRosterPresence(
+        ScheduleStatus.PRESENT,
+        DAY,
+        { ...SHIFT_1, cutoff_grace_min: 60 },
+        openSession,
+        GRACE_MS,
+        wib('19:00'),
+        true,
+      );
+      expect(r.lifecycle_state).toBe('bertugas');
+      expect(r.lifecycle_flags).toContain('lembur');
     });
 
     it('S23 · past end WITH approved overtime → lembur, not a forgotten clock-out', () => {

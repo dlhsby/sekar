@@ -1,4 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { ShiftDefinition } from './entities/shift-definition.entity';
@@ -80,6 +86,7 @@ export class ShiftDefinitionsService {
    */
   async create(dto: CreateShiftDefinitionDto): Promise<ShiftDefinition> {
     await this.assertUnique(dto.name);
+    this.assertCrossesMidnight(dto.start_time, dto.end_time, dto.crosses_midnight);
     const entity = this.shiftDefinitionRepository.create({
       name: dto.name,
       start_time: dto.start_time,
@@ -112,6 +119,9 @@ export class ShiftDefinitionsService {
     if (dto.name !== undefined) existing.name = dto.name;
     if (dto.start_time !== undefined) existing.start_time = dto.start_time;
     if (dto.end_time !== undefined) existing.end_time = dto.end_time;
+    // Validate against the times AFTER any change to them, so editing only the
+    // end time is checked against the value it will actually have.
+    this.assertCrossesMidnight(existing.start_time, existing.end_time, dto.crosses_midnight);
     if (dto.early_window_min !== undefined) existing.early_window_min = dto.early_window_min;
     if (dto.cutoff_grace_min !== undefined) existing.cutoff_grace_min = dto.cutoff_grace_min;
     if (dto.start_reminder_min !== undefined) existing.start_reminder_min = dto.start_reminder_min;
@@ -155,6 +165,38 @@ export class ShiftDefinitionsService {
   /** A shift crosses midnight when its end is at/earlier than its start. */
   private derivesCrossesMidnight(startTime: string, endTime: string): boolean {
     return endTime <= startTime;
+  }
+
+  /**
+   * Reject a `crosses_midnight` that contradicts the times.
+   *
+   * The flag is DERIVED when omitted, but an explicit wrong value used to be
+   * stored verbatim — and the consequences are silent and severe. Every window
+   * calculation in the system (attribution, the no-show sweep, the presence
+   * lifecycle, the lazy display flip) rolls the end time forward by 24h only when
+   * this flag is set. Clear it on a 21:00→05:00 shift and the window is read as
+   * ending at 05:00 the SAME morning — i.e. already closed before it starts — so
+   * every night worker becomes an instant no-show, and the reverse (setting it on
+   * a day shift) makes a 06:00→15:00 shift look 33 hours long, so nobody is ever
+   * late or absent.
+   *
+   * There is exactly one correct value for any pair of times, so it is validated
+   * rather than silently corrected: an operator who typed it deliberately should
+   * be told they are wrong, not quietly overruled.
+   */
+  private assertCrossesMidnight(
+    startTime: string,
+    endTime: string,
+    crossesMidnight: boolean | undefined,
+  ): void {
+    if (crossesMidnight === undefined) return;
+    const derived = this.derivesCrossesMidnight(startTime, endTime);
+    if (crossesMidnight === derived) return;
+    throw new BadRequestException(
+      derived
+        ? `A shift ending at ${endTime} on or before its ${startTime} start crosses midnight; crosses_midnight must be true.`
+        : `A shift running ${startTime}–${endTime} ends the same day; crosses_midnight must be false.`,
+    );
   }
 
   /**

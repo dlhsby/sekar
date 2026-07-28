@@ -62,6 +62,7 @@ if [ -z "$ROW_ID" ]; then echo "no Shift 1 roster row exists for $DAY — nothin
 UID_=$("${PSQL[@]}" "select user_id from schedules where id='$ROW_ID'" | tr -d '\r\n')
 USER_NAME=$("${PSQL[@]}" "select username from users where id='$UID_'" | tr -d '\r\n')
 ORIG_STATUS=$("${PSQL[@]}" "select status from schedules where id='$ROW_ID'" | tr -d '\r\n')
+ORIG_GRACE=$("${PSQL[@]}" "select cutoff_grace_min from shift_definitions where id='$SD1'" | tr -d '\r\n')
 
 # Snapshot the day's sessions so they can be restored.
 "${PSQL[@]}" "create temp table _e2e_bak as select * from shifts where user_id='$UID_' and service_day='$DAY'" >/dev/null 2>&1
@@ -69,6 +70,7 @@ SESS_BAK=$("${PSQL[@]}" "select count(*) from shifts where user_id='$UID_' and s
 
 restore() {
   "${PSQL[@]}" "update schedules set status='$ORIG_STATUS' where id='$ROW_ID'" >/dev/null
+  "${PSQL[@]}" "update shift_definitions set cutoff_grace_min=$ORIG_GRACE where id='$SD1'" >/dev/null
   # Drop what this run created, then put the original sessions back.
   "${PSQL[@]}" "delete from shifts where user_id='$UID_' and service_day='$DAY'" >/dev/null 2>&1
 }
@@ -112,11 +114,26 @@ check S30 "cron-persisted absent agrees with the display"   lifecycle_state tida
 
 echo ""
 echo "── S31/S22/S17 on duty ───────────────────────────────────────────────────"
+# The harness drives YESTERDAY, so a shift's normal cutoff grace has always
+# elapsed. Widening the grace is what makes "still on duty" reachable without
+# depending on the wall clock — and it exercises the new boundary directly:
+# inside the grace the worker is live, past it they are not.
+grace() { sql "update shift_definitions set cutoff_grace_min=$1 where id='$SD1'"; }
+grace 100000
 setstatus present; session 06:05 NULL
-check S31 "open session -> bertugas"                        lifecycle_state bertugas
-check S22 "open past shift end -> lupa_clock_out"           lifecycle_flags lupa_clock_out
+check S31 "open, INSIDE cutoff grace -> still bertugas"     lifecycle_state bertugas
+check S22 "…and flagged lupa_clock_out"                     lifecycle_flags lupa_clock_out
 session 08:30 NULL
 check S17 "clock-in after start+grace -> is_late"           lifecycle_flags is_late,lupa_clock_out
+
+echo ""
+echo "── S22b forgotten clock-out stops being live ────────────────────────────"
+grace 60
+session 06:05 NULL
+# ADR-055 keeps the punch open forever; what must NOT persist is the worker
+# sitting on the monitoring map and inside the staffing count for days.
+check S22b "open, PAST cutoff grace -> pulang (off the map)" lifecycle_state pulang
+check S22b "flag retained so the record stays honest"        lifecycle_flags lupa_clock_out
 
 echo ""
 echo "── S34 clocked out ───────────────────────────────────────────────────────"
@@ -160,6 +177,8 @@ check S37 "replaced -> not scheduled"                       is_scheduled    Fals
 
 echo ""
 echo "── S32 live inside/outside axis ─────────────────────────────────────────"
+# Needs a LIVE worker: the axis is deliberately suppressed unless bertugas.
+grace 100000
 setstatus present; session 06:05 NULL
 # last_location_at matters: a fix older than monitoring.active_max_age_sec is
 # treated as no reading at all, so the snapshot has to be fresh to assert on.
@@ -174,6 +193,7 @@ check S33 "not on duty -> snapshot suppressed (null)"        is_within_area  nul
 setstatus present; session 06:05 NULL
 sql "update user_tracking_status set last_location_at = now() - interval '3 days' where user_id='$UID_'"
 check S33 "on duty but GPS fix stale -> no reading (null)"   is_within_area  null
+grace 60
 
 echo ""
 echo "── S13 future rows carry no lifecycle ───────────────────────────────────"

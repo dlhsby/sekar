@@ -38,7 +38,10 @@ attendance_punches (append-only, immutable)  ──projection──►  shifts (
 - A punch is a **fact**: never updated, never deleted. `service_day` is explicit, not derived from `punched_at` — that is what makes a 02:00 clock-out belong to yesterday's Shift 3.
 - `shifts` is a **maintained projection**, rebuilt from the punch stream after every punch. Multiple in/out pairs in one shift (breaks) collapse into one session.
 - **Attribution** ranks candidate shifts `covering > early > grace`, tie-broken by nearest start. The window is `[start − early_window_min, end + cutoff_grace_min)`, per shift definition. Past that, there is no candidate and the punch is **ad-hoc**.
+- A forgotten clock-out is **never auto-closed** — the punch log stays immutable — but the worker stops being *live* past the shift's `cutoff_grace_min`: they read `pulang` (flag retained), leaving the monitoring map and the staffing count. Otherwise one missing punch reports someone on duty for days and hides a real shortfall. Approved overtime is the exception and keeps them live.
 - Clock-in is **never blocked**. Geofence violations set `outside_boundary` (advisory); an operator's explicit shift choice is honoured only if it matches a real candidate.
+- **Only ACTIVE shift definitions** are used anywhere: pickers, attribution candidates, event validation, materialization and projection all filter `is_active`. Retiring a shift stops it producing roster rows.
+- **`crosses_midnight` is validated, not trusted.** It must equal `end_time <= start_time`; a contradicting value is rejected. Clear it on a 21:00–05:00 shift and every window reads as ending that same morning — already closed before it starts — so every night worker becomes an instant no-show. Set it on a day shift and the window looks 33 h long, so nobody is ever late or absent.
 - **Overtime is its own session** (`is_overtime`). It therefore never satisfies a normal roster row — an overtime punch alone leaves that row a no-show. Its *existence* is what turns past-end presence from `lupa_clock_out` into `lembur`, so the two facts are read separately.
 
 ### 3. Roster status lifecycle (ADR-056)
@@ -87,10 +90,9 @@ Never stored; **derived on read** from (roster row + session + shift window + le
 
 Mobile collapses these nine into five (`ok / warn / bad / info / neutral`) via `statusHelpers.presenceTone`; the inputs and precedence are identical, so the semantics match and only the colour resolution differs.
 
-> ⚠️ **Two time conventions coexist — do not mix them.**
-> `isShiftWindowClosed` / `ShiftAttributionService` take **WIB-wall-clock-in-UTC-fields** (`TimezoneUtil.jakartaNow()`).
-> `derivePresenceState` / `resolveShiftWindow` take **real instants** (`new Date()`).
-> Passing `jakartaNow()` to the second family shifts the clock twice (+14h). That bug derived tomorrow's rows and aged today's toward `tidak_hadir`; it is now pinned by a test.
+> **Time convention: real instants, one rule.** Everything that answers "where is this worker in their shift window" — `isShiftWindowClosed`, `derivePresenceState`, `resolveShiftWindow` — takes a **real instant** (`new Date()`), and `isShiftWindowClosed` resolves its window with the same `resolveShiftWindow` helper the presence engine uses.
+>
+> It was not always so: `isShiftWindowClosed` took a WIB-wall-clock-in-UTC-fields value (`TimezoneUtil.jakartaNow()`, which pre-adds +7 h) while the presence engine took real instants. Feeding one to the other shifted the clock **twice (+14 h)** — it derived tomorrow's rows and aged today's toward `tidak_hadir`. Both families now agree, so there is nothing left to mix up. `TimezoneUtil.jakartaNow()` remains only for *calendar-day* maths (`jakartaDateString`); never pass it to a window function.
 
 ---
 
@@ -116,7 +118,7 @@ Expected values for each case. **Tone** is the web day-board bullet; **Counted**
 | S11 | edit *series* | future non-detached rows re-materialized; tombstones survive |
 | S12 | delete occurrence | soft-delete tombstone; next cron must **not** resurrect it |
 | S13 | beyond horizon | virtual row, `is_projected: true`, not persisted |
-| S14 | holiday / special day | roster **still** generated — the override only selects the capacity day-type |
+| S14 | holiday / special day | roster **still** generated for daily events — a Hari Libur override only selects the capacity day-type. Mark people `off`/on leave if they genuinely are not working. |
 
 ### Attendance
 
@@ -129,7 +131,8 @@ Expected values for each case. **Tone** is the web day-board bullet; **Counted**
 | S19 | breaks — several in/out pairs | `present` | `bertugas` | — | green | ✔ |
 | S20 ✱ | back-to-back shifts | two sessions; home hero shows "Berikutnya" | | | | ✔ |
 | S21 ✱ | Shift 3 across midnight | `service_day` = start day; 02:00 next day still on duty | `bertugas` | — | green | ✔ |
-| S22 ✱ | forgot clock-out | `present` | `bertugas` | `lupa_clock_out` | green¹ | ✔ |
+| S22 ✱ | forgot clock-out, **inside** cutoff grace | `present` | `bertugas` | `lupa_clock_out` | green¹ | ✔ |
+| S22b ✱ | forgot clock-out, **past** cutoff grace | `present` | `pulang` | `lupa_clock_out` | dark grey | **✘** |
 | S23 ✱ | past end **with an approved overtime session** | **untouched** | `bertugas` | `lembur` | green | ✔ |
 | S23 ✱ | overtime session **alone** (no normal session) | `planned` | `tidak_hadir` | — | red | ✘ |
 | S24 | offline clock-in | queued; replayed with original `punched_at` + `client_uuid` | | | | |
@@ -176,7 +179,7 @@ Expected values for each case. **Tone** is the web day-board bullet; **Counted**
 
 | | |
 |---|---|
-| **Forgotten clock-outs never close** | ADR-055 says a `lupa_clock_out` is *never auto-closed*, and the correction flow (Koreksi Kehadiran) is deferred — so an operator currently has **no way to close one**. Those service days never settle: the worker reads `bertugas` + `lupa_clock_out` in history forever. **Today's counts are unaffected** (a stale session belongs to its own `service_day`), but reports over those days are wrong. Verifier §10 lists them per day; a rising count means clock-out reminders are not landing. |
+| **Forgotten clock-outs never close** | A punch is immutable and a `lupa_clock_out` is **never auto-closed** (ADR-055). Koreksi Kehadiran — the approval-gated correction — is **dropped**, not deferred: no approver can be assigned. So the record keeps the open session forever, by design. What it does **not** do any more is distort the live view: past the shift's `cutoff_grace_min` the worker leaves `bertugas` for `pulang` (flag retained), so they drop off the monitoring map and out of the staffing count. Verifier §10 lists open sessions per day; a rising count means clock-out reminders are not landing. |
 | **Photo verification is not enforced** | `selfie_photo` is `@IsOptional()` on the clock-in DTO, so a punch with no photo is accepted — on the staging clone only **7 % of clock-ins** carry one. Making it mandatory is a product call (a hard requirement blocks a worker whose camera fails), so nothing was changed; verifier §11 makes the number visible. Punch photos are S3 URLs with **zero** inline data-URIs, so attendance does not carry the F9 OOM risk. |
 | **Roster range is capped, not paginated** | `/schedules/range` refuses a request over **60 000 rows** with a message telling the operator how to narrow it, rather than OOMing the container mid-serialize. A month across every rayon (~31 k rows / 38 MB) still passes. Real pagination is the eventual fix. |
 

@@ -130,9 +130,34 @@ describe('presence-lifecycle', () => {
         facts({ clockIn: SHIFT_START }),
         at('2026-07-16T17:00:00+07:00'),
       );
-      expect(r.state).toBe('bertugas');
+      // Past end + cutoff grace a forgotten clock-out stops being LIVE: the punch
+      // is still never auto-closed (ADR-055) and the flag stays, but leaving them
+      // `bertugas` kept one missing punch on the map and in the staffing count
+      // for days, inflating "on duty" and masking a real shortfall.
+      expect(r.state).toBe('pulang');
       expect(r.flags).toContain('lupa_clock_out');
       expect(r.flags).not.toContain('lembur');
+    });
+
+    it('PM-L13b · past end but INSIDE the cutoff grace → still bertugas', () => {
+      // Someone wrapping up at 15:20 is still working; only past the grace do
+      // they drop off the live view.
+      const r = derivePresenceState(
+        {
+          scheduled: true,
+          clockIn: at('2026-07-16T06:05:00+07:00'),
+          clockOut: null,
+          shiftStart: at('2026-07-16T06:00:00+07:00'),
+          shiftEnd: at('2026-07-16T15:00:00+07:00'),
+          graceMs: 15 * 60 * 1000,
+          cutoffGraceMs: 60 * 60 * 1000,
+          overtimeApproved: false,
+          leave: 'none',
+        },
+        at('2026-07-16T15:30:00+07:00'),
+      );
+      expect(r.state).toBe('bertugas');
+      expect(r.flags).toContain('lupa_clock_out');
     });
 
     it('PM-L14 · past end, still in, approved overtime → bertugas + lembur', () => {
@@ -199,7 +224,8 @@ describe('presence-lifecycle', () => {
         facts({ clockIn: SHIFT_START }), // day shift ends 16:00 same day
         at('2026-07-17T02:00:00+07:00'), // long past its real end
       );
-      expect(r.state).toBe('bertugas');
+      // Long past the real end → no longer live (see PM-L13).
+      expect(r.state).toBe('pulang');
       expect(r.flags).toContain('lupa_clock_out');
     });
   });

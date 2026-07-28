@@ -1711,13 +1711,23 @@ describe('SchedulesService', () => {
         expect(where.schedule_date?._type).toBe('between');
       });
 
-      it('honours an explicit lookback', async () => {
+      it('honours an explicit lookback, in WIB days', async () => {
+        // Midday WIB on the 26th (05:00Z), deliberately: `now` is a REAL instant
+        // and the window is expressed in WIB calendar days, so an evening-UTC
+        // value like 20:00Z is already the NEXT WIB day and would make the
+        // expected dates non-obvious.
         rosterRepo.find.mockResolvedValue([]);
-        await service.sweepAbsences(new Date('2026-07-26T20:00:00Z'), 3);
+        await service.sweepAbsences(new Date('2026-07-26T05:00:00Z'), 3);
 
         const where = rosterRepo.find.mock.calls[0][0].where;
         expect(where.schedule_date?._value?.[0]).toBe('2026-07-23');
         expect(where.schedule_date?._value?.[1]).toBe('2026-07-26');
+      });
+
+      it('rolls "today" to the next WIB day for a late-UTC instant', () => {
+        // 20:00Z on the 26th is 03:00 WIB on the 27th. Getting this wrong is how
+        // the two time conventions used to bite.
+        expect(TimezoneUtil.jakartaDateString(new Date('2026-07-26T20:00:00Z'))).toBe('2026-07-27');
       });
 
       it('treats lookback 0 as an explicit, unbounded backfill', async () => {

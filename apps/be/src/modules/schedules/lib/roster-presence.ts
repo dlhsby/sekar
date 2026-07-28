@@ -65,6 +65,8 @@ export interface RosterShiftWindow {
   start_time: string;
   end_time: string;
   crosses_midnight?: boolean | null;
+  /** Minutes after the end before an unclosed session stops reading as live. */
+  cutoff_grace_min?: number | null;
 }
 
 export interface RosterPresence {
@@ -126,6 +128,9 @@ export function deriveRosterPresence(
       shiftStart: window?.start ?? null,
       shiftEnd: window?.end ?? null,
       graceMs,
+      // Past this, an unclosed session stops being live: a forgotten punch must
+      // not keep someone "on duty" (and inside the staffing count) for days.
+      cutoffGraceMs: Math.max(0, shift?.cutoff_grace_min ?? 0) * 60_000,
       // Past-end presence is `lupa_clock_out` UNLESS overtime backs it, in which
       // case ADR-050 calls it `lembur`. The flag comes from the caller because
       // overtime lives in a separate session.

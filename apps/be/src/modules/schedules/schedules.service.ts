@@ -28,6 +28,7 @@ import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 import { ScheduleOverlapService } from './services/schedule-overlap.service';
 import { SystemConfigService } from '../settings/services/system-config.service';
+import { resolveShiftWindow } from '../monitoring/lib/presence-lifecycle';
 import { ScheduleRecurrenceUtil } from './utils/schedule-recurrence.util';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
@@ -503,10 +504,28 @@ export class SchedulesService {
    * the DB — the projections no longer load every active event into memory.
    * (`end_date IS NULL` = open-ended, always a candidate.)
    */
+  /**
+   * Active events overlapping a range.
+   *
+   * `shift_definition: { is_active: true }` matters as much as the event's own
+   * flag: a retired shift must stop producing occurrences, including the
+   * PROJECTED ones this feeds, or the board keeps showing a shift that no picker
+   * offers.
+   */
   private activeEventsOverlapping(from: string, to: string): FindOptionsWhere<ScheduleEvent>[] {
     return [
-      { is_active: true, start_date: LessThanOrEqual(to), end_date: MoreThanOrEqual(from) },
-      { is_active: true, start_date: LessThanOrEqual(to), end_date: IsNull() },
+      {
+        is_active: true,
+        shift_definition: { is_active: true },
+        start_date: LessThanOrEqual(to),
+        end_date: MoreThanOrEqual(from),
+      },
+      {
+        is_active: true,
+        shift_definition: { is_active: true },
+        start_date: LessThanOrEqual(to),
+        end_date: IsNull(),
+      },
     ];
   }
 
@@ -652,10 +671,11 @@ export class SchedulesService {
    * yesterday/today, so a backlog from downtime is still reconciled.
    */
   async sweepAbsences(
-    now: Date = TimezoneUtil.jakartaNow(),
+    // A real instant, matching isShiftWindowClosed and the presence engine.
+    now: Date = new Date(),
     lookbackDays?: number,
   ): Promise<{ absent: number; present: number }> {
-    const todayStr = now.toISOString().slice(0, 10);
+    const todayStr = TimezoneUtil.jakartaDateString(now);
 
     /**
      * How far back a single sweep reaches.
@@ -676,7 +696,7 @@ export class SchedulesService {
       DEFAULT_SWEEP_LOOKBACK_DAYS;
     const fromStr =
       lookback > 0
-        ? new Date(now.getTime() - lookback * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+        ? TimezoneUtil.jakartaDateString(new Date(now.getTime() - lookback * 24 * 60 * 60 * 1000))
         : null;
 
     const candidates = await this.rosterRepo.find({
