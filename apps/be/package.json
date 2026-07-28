@@ -56,7 +56,8 @@
     "schedules:to-daily": "ts-node -r tsconfig-paths/register scripts/convert-schedules-to-daily.ts",
     "schedules:verify": "echo 'run: psql \"$DATABASE_URL\" -f scripts/staging-verify-schedules.sql'",
     "schedules:sweep-absences": "ts-node -r tsconfig-paths/register scripts/sweep-absences.ts",
-    "typecheck:scripts": "tsc -p tsconfig.scripts.json"
+    "typecheck:scripts": "tsc -p tsconfig.scripts.json",
+    "migrations:baseline": "ts-node -r tsconfig-paths/register scripts/baseline-migrations.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1066.0",
