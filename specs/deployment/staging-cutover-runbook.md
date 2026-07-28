@@ -43,11 +43,40 @@ workbook set.
 | **F8** | Installed mobile APKs emit pre-revamp shapes (`rayon_id`, `/areas`, 5-status). | Staging APK ships **with** the release; field devices must update. | ⏳ |
 | **F9** | **Activity photos are stored as base64 data-URIs inline in Postgres**, not as S3 objects. Mobile converts each photo to base64 (`useActivityForm.ts:305`) and posts it in `photo_urls`; the DTO only `@IsString`-validates (`create-activity.dto.ts:90`); there is **no S3 upload path for activities** and the read path even has explicit `data:`/`blob:` pass-through guards (`s3.service.ts:257`) — so this is established behaviour, not a stray row. Result: `activities` is **5.8 GB for 10,786 rows** (~537 KB/row, confirmed 100 % data-URIs on the clone). The staging backend (`mem_limit: 448m`, `node` with **no `--max-old-space-size`** → Node auto-caps old-space ~256 MB) was in an **OOM crash loop** (`RestartCount ≈ 994`, `FATAL ERROR: Reached heap limit`). `findMyActivities` did an **unbounded** `find()` returning full `photo_urls`; even the paginated list loaded ~50 rows × up to 3 × ~500 KB and re-serialised them to JSON. | **Tier-1 DONE** (ships with the cutover): list reads carry `photo_count`, not the payload; `findMyActivities` bounded; explicit `--max-old-space-size=384`. **Tier-2** data-URI→object-storage migration tracked as a follow-up. See §8. | 🟡 tier-1 done |
 | **F10** | **`/schedules/range` returned ~2 KB of `location.boundary_polygon` per roster row** (`leftJoinAndSelect` on the location + region relations). Measured on the clone: a 31-day all-district range = **293 MB in 29 s** for 31 284 rows. With the F9 fix pinning the heap at `--max-old-space-size=384`, serialising that response is an **OOM, not a slow page** — and the web board's month view requests exactly this shape. | **DONE** — explicit column lists (`location.id/name`, `region.id/name`); polygons are fetched per-subject by the map modal. Now **38.6 MB / 10.1 s**. The **projection** path (rows beyond the horizon) was a separate, worse instance of the same bug — **95.4 MB for a 10-day far-future range (11 KB/row)**, ~590 MB at 62 days — fixed by `slimProjectedRelations` → **9.59 MB / 1 011 B per row**. A unit test fails if the materialized relations are ever bare-joined again. | ✅ fixed |
-| **F11** | **First absence sweep is unbounded.** `sweepAbsences` (ADR-056) selected every past `planned` row each hourly tick. Staging has never run ADR-056, so its first tick would rewrite the whole backlog in one transaction. | **DONE** — bounded by `schedule.absence_sweep_lookback_days` (default 7; `0` = deliberate backfill). Check the blast radius with §8 of `staging-verify-schedules.sql` **before** deploying. | ✅ fixed |
+| **F11** | **First absence sweep is unbounded.** `sweepAbsences` (ADR-056) selected every past `planned` row each hourly tick. Staging has never run ADR-056, so its first tick would rewrite the whole backlog in one transaction. | **DONE** — bounded by `schedule.absence_sweep_lookback_days` (default 7; `0` = unbounded). **Measured on the 2026-07-28 rehearsal: 36 390 past `planned` rows reaching 27 days back**, so the 7-day default leaves most of them `planned` forever in any raw-status report. The one-off backfill (`npm run schedules:sweep-absences -- --all --apply`) is therefore a **required** cutover step, not optional. §8 of `staging-verify-schedules.sql` reports the current number. | ✅ fixed |
+| **F12** | **The punch backfill duplicates inline base64 photos.** Migration `17520` backfills `attendance_punches` from `shifts`, carrying `photo_url` verbatim — and on live staging those are `data:` URIs, not S3 objects. Measured on the 2026-07-28 rehearsal: **250 MB of base64 across 1 361 punches** (largest single photo 634 kB), duplicating what `shifts` already holds (269 MB), so the database carries ~519 MB for the same 1 361 photos. Same root cause as F9. | **Accepted for cutover.** One-time, bounded growth; no OOM risk on read because the punch endpoints are self-scoped to one worker's day (a handful of rows), unlike the roster range (F10). Folds into the deferred F9 Tier-2 data-URI→object-storage migration. `staging-verify-schedules.sql` §11 reports `inline_base64` so the number stays visible. | 🟡 accepted |
 
 ---
 
 ## 3. Rehearsal (must pass before go-live)
+
+> **Second rehearsal PASSED — 2026-07-28**, against a fresh `pg_dump` of live staging
+> restored into a local throwaway `postgres:15-alpine` (`staging-clone.sh`). This one also
+> exercised the post-ADR-050/056 code and the operator scripts.
+>
+> - **Chain:** **43 pending migrations applied clean, exit 0, 33.9 s.** Staging's ledger
+>   already held 46 rows, so no baselining was needed. `rayons` → `districts` rename,
+>   `schedule_events`, `attendance_punches` and the RBAC tables all created.
+> - **Schedule conversion:** the template migration produced **1009 events, every one
+>   `daily`, open-ended (`end_date IS NULL`), `recurrence_config` NULL, active.** Exactly
+>   the recurring shape the cutover needs — no one-offs.
+> - **RBAC (F1):** roles/permissions/role_permissions were **0/0/0** after migrations and
+>   **9/72/96** after `db:seed:prod`. F1 confirmed live and confirmed fixed by the seed.
+> - **Uniqueness gate:** **PASS** — no duplicate `(user, date, shift, place)`, so
+>   migration `17517` will not abort.
+> - **Boot + materialization:** the backend started healthy on the migrated schema and its
+>   self-heal materialized **925 events → 55 491 rows** to the 60-day horizon. Post-migration
+>   provenance is correct: past/today remain legacy manual rows, **future is 100 %
+>   event-generated**.
+> - **Converter:** reported "already converged" — nothing left to promote.
+> - **Sweep backfill is REQUIRED, and 7 days is not enough** (see F11 below).
+> - **New: the punch backfill copies inline base64 photos** (see F12 below).
+>
+> Two caveats on method: the dump excluded the DATA of `activities`, `location_logs`,
+> `notifications` and `audit_logs` (schemas kept, so every migration still ran for real) —
+> the SSM tunnel dropped mid-COPY twice on a full dump. One restore error is expected as a
+> result: `FK_activity_tags_activity` cannot be recreated because `activity_tags` references
+> excluded `activities` rows.
 
 > **First rehearsal PASSED — 2026-07-24**, against the `dlhsby-clone-rehearsal` RDS
 > instance (today's 11:14 snapshot restored to a temporary `t4g.micro`, reached over an
@@ -124,7 +153,7 @@ Run against a **restored dump of real staging data** on a throwaway PG15 — nev
 - [ ] `main` green on CI; nothing unmerged that belongs in the release
 - [ ] **Schedule drift report captured (BEFORE):** `psql "$DATABASE_URL" -f apps/be/scripts/staging-verify-schedules.sql > before.txt`
 - [ ] **Uniqueness gate PASSES** — §5 of that report must read `PASS`. Any duplicate `(user, date, shift, place)` **aborts migration `17517` mid-chain**; fix the data first.
-- [ ] Absence-sweep blast radius (§8) reviewed against `absence_sweep_lookback_days` (F11)
+- [ ] Absence-sweep blast radius (§8) read, and the **one-off backfill planned** — 7 days is not enough (F11 measured 27 days / 36 390 rows)
 - [ ] Coverage gaps (§4) reviewed — clockable workers with no event are **reported, not auto-created**; confirm the list is expected
 
 ## 5. Cutover
@@ -142,10 +171,17 @@ Run against a **restored dump of real staging data** on a throwaway PG15 — nev
    Events flagged `xN-same-slot` or `already-daily` are usually left-over test data —
    review (or delete) them rather than promoting every copy. Roster rows are filled by the
    materializer's next run / boot self-heal, or `POST /schedules/generate`.
-5. **Capture the AFTER report and diff it:**
+5. **Backfill the absence sweep (REQUIRED).** The hourly cron reaches back only
+   `absence_sweep_lookback_days` (7), and the rehearsal measured a **27-day / 36 390-row**
+   backlog — without this, most past no-shows stay `planned` in raw-status reports forever:
+   ```bash
+   cd apps/be && npm run schedules:sweep-absences -- --all            # dry run: read the count
+   cd apps/be && npm run schedules:sweep-absences -- --all --apply
+   ```
+6. **Capture the AFTER report and diff it:**
    `psql "$DATABASE_URL" -f apps/be/scripts/staging-verify-schedules.sql > after.txt && diff before.txt after.txt`
    Expect only the intended deltas: one-offs → daily, and roster rows appearing for them.
-6. Run the post-deploy verification below.
+7. Run the post-deploy verification below.
 
 ## 6. Post-deploy verification
 

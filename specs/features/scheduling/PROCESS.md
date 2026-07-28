@@ -56,7 +56,7 @@ planned ──clock-in──► present
 
 - `present` is written **synchronously on clock-in** (non-overtime only).
 - `absent` is written by the **hourly** `ScheduleAbsenceCron`, bounded by `schedule.absence_sweep_lookback_days` (**default 7**).
-  > **First deploy needs one backfill.** The bound means rows older than the window are never persisted `absent` — the UI still flips them at render, but a report reading raw `status` sees `planned` forever. Run `npm run schedules:sweep-absences -- --all` (dry run) then `--all --apply`, once, after the first deploy. Verifier §8 reports how far back it reaches.
+  > **First deploy needs one backfill.** The bound means rows older than the window are never persisted `absent` — the UI still flips them at render, but a report reading raw `status` sees `planned` forever. Run `npm run schedules:sweep-absences -- --all` (dry run) then `--all --apply`, once, after the first deploy. The 2026-07-28 rehearsal measured **36 390 rows / 27 days** on real staging, so this is required rather than optional. Verifier §8 reports the current number.
 - Web and mobile additionally apply `effectiveScheduleStatus` **at render**, so a closed window reads "Tidak Hadir" immediately rather than waiting up to an hour. Display and cron use the *same* rule, so they cannot disagree.
 - Operator-set values: `leave_sick | leave_annual | leave_permit`, `replaced`, `off`.
 
