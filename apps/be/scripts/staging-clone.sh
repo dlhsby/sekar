@@ -30,7 +30,12 @@
 set -euo pipefail
 
 BE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-WORK_DIR="${STAGING_CLONE_DIR:-/tmp/sekar-staging-clone}"
+# Persistent by default: a dump costs real bandwidth over the SSM tunnel and is
+# reusable for many rehearsals (`--restore-only` resets the clone in seconds).
+# /tmp was the old default and is cleared on reboot, so every rehearsal re-pulled
+# ~1 GB. Kept OUTSIDE the repo — this is live staging data and must never be
+# committed (.gitignore also guards *.dump).
+WORK_DIR="${STAGING_CLONE_DIR:-$HOME/.cache/sekar/staging-clone}"
 DUMP_FILE="$WORK_DIR/staging.dump"
 
 AWS_PROFILE_SEKAR="${AWS_PROFILE_SEKAR:-sekar}"
@@ -133,13 +138,43 @@ dump_staging() {
   # the "host" network is the Docker VM's namespace, so 127.0.0.1 there is not the
   # loopback the SSM tunnel is bound to. --add-host keeps this working on plain Linux
   # Docker too. -Fc = custom format, needed for selective pg_restore.
+  # Skip the DATA of tables that are huge and irrelevant to a schema/migration
+  # rehearsal. `activities` stores photos as inline base64 (hazard F9): 5.8 GB for
+  # ~10k rows, and streaming it over the SSM tunnel is what killed the previous
+  # dump ("SSL SYSCALL error: EOF detected" mid-COPY). Its SCHEMA is still dumped,
+  # so every migration that touches the table still runs for real.
+  # Override with STAGING_CLONE_EXCLUDE_TABLE_DATA="" to take everything.
+  local exclude_args=()
+  local excl
+  # Default exclusions: large tables whose DATA no migration in the chain reads.
+  # Their SCHEMA is still dumped, so every migration still runs for real. This
+  # keeps the transfer short — the SSM tunnel has twice dropped mid-COPY on a long
+  # dump ("SSL SYSCALL error: EOF detected"), once on activities, once on
+  # location_logs, i.e. on whichever table happened to be streaming at the time.
+  #   activities      — photos inline as base64, 5.8 GB (hazard F9)
+  #   location_logs   — GPS breadcrumbs, append-only telemetry
+  #   notifications   — delivery records
+  #   audit_logs      — append-only audit trail
+  for excl in ${STAGING_CLONE_EXCLUDE_TABLE_DATA-activities location_logs notifications audit_logs}; do
+    exclude_args+=("--exclude-table-data=$excl")
+    log "Excluding DATA of table '$excl' (schema still included)."
+  done
+
   log "Dumping ${STG_NAME} (this reads the live DB; it does not modify it)…"
   docker run --rm --add-host=host.docker.internal:host-gateway \
     -e PGPASSWORD="$STG_PASS" \
     "$PG_IMAGE" \
-    pg_dump -Fc --no-owner --no-acl \
+    pg_dump -Fc --no-owner --no-acl "${exclude_args[@]}" \
       -h host.docker.internal -p "$TUNNEL_PORT" -U "$STG_USER" -d "$STG_NAME" \
-    > "$DUMP_FILE" || die "pg_dump failed"
+    > "$DUMP_FILE.partial" || { rm -f "$DUMP_FILE.partial"; die "pg_dump failed — existing dump left intact"; }
+
+  # Only replace a known-good dump once the new one has completed. `> "$DUMP_FILE"`
+  # truncated the target the instant the redirect opened, so ANY failure — a dropped
+  # tunnel, a killed process — destroyed a perfectly good previous dump and left a
+  # TRUNCATED file in its place. Worse, `pg_restore --list` still succeeds on a
+  # truncated -Fc archive (its TOC is at the start), so the damage reads as healthy
+  # until constraints silently fail to restore.
+  mv -f "$DUMP_FILE.partial" "$DUMP_FILE"
 
   close_tunnel
   chmod 600 "$DUMP_FILE"
@@ -156,6 +191,15 @@ psql_clone() {
 
 restore_clone() {
   [ -s "$DUMP_FILE" ] || die "no dump at $DUMP_FILE — run without --restore-only first"
+
+  # A truncated archive restores *partially* and silently: tables and rows land,
+  # then CONSTRAINTS (applied last) are lost. Verify the archive is complete before
+  # trusting anything built on it.
+  local toc_ok
+  toc_ok=$(docker run --rm -v "$WORK_DIR:/d" "$PG_IMAGE" \
+    sh -c "pg_restore --list /d/$(basename "$DUMP_FILE") 2>/dev/null | tail -1" || true)
+  [ -n "$toc_ok" ] || die "dump appears unreadable — re-dump"
+
 
   log "Recreating the throwaway clone container (${CLONE_CONTAINER} on :${CLONE_PORT})…"
   docker rm -f "$CLONE_CONTAINER" >/dev/null 2>&1 || true
