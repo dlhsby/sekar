@@ -259,6 +259,41 @@ ORDER BY sh.service_day DESC
 LIMIT 25;
 
 \echo ''
+\echo '-- Dangling sessions by day (never auto-closed, by ADR-055) ------------'
+-- A forgotten clock-out stays open on purpose: ADR-055 says it is "never
+-- auto-closed", and the correction flow (Koreksi Kehadiran) is deferred. So
+-- these days never settle — the worker reads `bertugas` + `lupa_clock_out`
+-- forever in history. TODAY's counts are unaffected (a stale session belongs to
+-- its own service_day), but reports over those days are wrong. Track the trend:
+-- a growing number means workers are not being reminded to clock out.
+SELECT service_day, count(*) AS open_sessions, count(DISTINCT user_id) AS workers
+FROM shifts
+WHERE clock_out_time IS NULL AND service_day < CURRENT_DATE
+GROUP BY service_day ORDER BY service_day DESC LIMIT 15;
+
+\echo ''
+\echo '=============================================================='
+\echo ' 11. Photo verification coverage'
+\echo '=============================================================='
+-- `selfie_photo` is @IsOptional() on the clock-in DTO, so a punch with no photo
+-- is accepted. "Clock-in with photo verification" is a headline feature, so a
+-- low number here means the feature is effectively off. Deciding whether to
+-- make it mandatory is a product call (a hard requirement blocks a worker whose
+-- camera fails) — this just makes the number visible.
+SELECT
+  label,
+  count(*)                                          AS punches,
+  count(*) FILTER (WHERE photo_url IS NOT NULL)     AS with_photo,
+  round(100.0 * count(*) FILTER (WHERE photo_url IS NOT NULL) / NULLIF(count(*), 0), 1)
+                                                    AS pct_with_photo,
+  count(*) FILTER (WHERE photo_url LIKE 'data:%')   AS inline_base64
+FROM attendance_punches
+GROUP BY label ORDER BY label;
+
+\echo ''
+\echo '-- inline_base64 must stay 0: data-URIs in the DB are the F9 OOM class ---'
+
+\echo ''
 \echo '=============================================================='
 \echo ' Report complete. Compare against the pre-migration run.'
 \echo '=============================================================='

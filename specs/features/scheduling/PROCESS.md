@@ -53,7 +53,7 @@ planned ──clock-in──► present
 
 - `present` is written **synchronously on clock-in** (non-overtime only).
 - `absent` is written by the **hourly** `ScheduleAbsenceCron`, bounded by `schedule.absence_sweep_lookback_days` (**default 7**).
-  > **First deploy needs one backfill.** The bound means rows older than the window are never persisted `absent` — the UI still flips them at render, but a report reading raw `status` sees `planned` forever. On a database that has never swept: check `lookback_days_needed` in verifier §8, raise the setting to cover it in *Pengaturan* (it is read per run, no restart), wait one hourly tick, then set it back to 7.
+  > **First deploy needs one backfill.** The bound means rows older than the window are never persisted `absent` — the UI still flips them at render, but a report reading raw `status` sees `planned` forever. Run `npm run schedules:sweep-absences -- --all` (dry run) then `--all --apply`, once, after the first deploy. Verifier §8 reports how far back it reaches.
 - Web and mobile additionally apply `effectiveScheduleStatus` **at render**, so a closed window reads "Tidak Hadir" immediately rather than waiting up to an hour. Display and cron use the *same* rule, so they cannot disagree.
 - Operator-set values: `leave_sick | leave_annual | leave_permit`, `replaced`, `off`.
 
@@ -172,6 +172,14 @@ Expected values for each case. **Tone** is the web day-board bullet; **Counted**
 
 ---
 
+## Known limits
+
+| | |
+|---|---|
+| **Forgotten clock-outs never close** | ADR-055 says a `lupa_clock_out` is *never auto-closed*, and the correction flow (Koreksi Kehadiran) is deferred — so an operator currently has **no way to close one**. Those service days never settle: the worker reads `bertugas` + `lupa_clock_out` in history forever. **Today's counts are unaffected** (a stale session belongs to its own `service_day`), but reports over those days are wrong. Verifier §10 lists them per day; a rising count means clock-out reminders are not landing. |
+| **Photo verification is not enforced** | `selfie_photo` is `@IsOptional()` on the clock-in DTO, so a punch with no photo is accepted — on the staging clone only **7 % of clock-ins** carry one. Making it mandatory is a product call (a hard requirement blocks a worker whose camera fails), so nothing was changed; verifier §11 makes the number visible. Punch photos are S3 URLs with **zero** inline data-URIs, so attendance does not carry the F9 OOM risk. |
+| **Roster range is capped, not paginated** | `/schedules/range` refuses a request over **60 000 rows** with a message telling the operator how to narrow it, rather than OOMing the container mid-serialize. A month across every rayon (~31 k rows / 38 MB) still passes. Real pagination is the eventual fix. |
+
 ## Verification
 
 ```bash
@@ -181,12 +189,14 @@ cd apps/web  && npx jest          # Calendar/tone are shared — run the whole s
 cd apps/mobile && npx jest
 
 # End-to-end: real DB state -> real API -> asserted presence (22 scenarios)
-bash apps/be/scripts/e2e-presence-scenarios.sh
+ALLOW_MUTATION=yes bash apps/be/scripts/e2e-presence-scenarios.sh   # sim clone only
 
 # Against a real dataset (staging clone)
 psql "$DATABASE_URL" -f apps/be/scripts/staging-verify-schedules.sql   # before + after, then diff
 cd apps/be && npm run schedules:to-daily                              # dry run
 cd apps/be && npm run schedules:to-daily -- --apply                   # write, then re-run → 0
+cd apps/be && npm run schedules:sweep-absences -- --all               # one-off absence backfill (dry run)
+cd apps/be && npm run typecheck:scripts                               # scripts/ is typechecked too
 ```
 
 > A green unit test can still assert an unreachable path. `lembur` was covered by a unit test that hand-fed `session.is_overtime` — a value the service could never produce, because it filtered overtime sessions out. Only the end-to-end script caught it. Prefer driving state through the API for anything whose inputs are assembled by a service.

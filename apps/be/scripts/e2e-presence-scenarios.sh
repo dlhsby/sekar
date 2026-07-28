@@ -11,20 +11,56 @@ set -uo pipefail
 
 API=http://localhost:4110/api/v1
 PSQL=(docker exec sekar-staging-sim psql -U postgres -d sekar_staging -tAc)
-USER_NAME=satgas_barat_1_1
-PASS=1234567890
-DAY=$(date +%Y-%m-%d)
+# Read through an ADMIN, not the worker: the sim clone carries real staging
+# password hashes, so no arbitrary worker can be logged in as. The admin sees the
+# same enriched rows via /schedules/date/:date, which lets the harness pick
+# whichever worker actually has a row today instead of hardcoding one that may
+# not be scheduled (a one-off event stops producing rows — the very drift this
+# repo's converter exists to fix).
+ADMIN=superadmin
+ADMIN_PASS=12345678
+# Yesterday, deliberately: every shift window is closed by then, so "is this a
+# no-show / a forgotten clock-out" has one answer no matter what time this runs.
+# Clock-sensitive states (belum_hadir, mid-shift terlambat) live in the unit
+# tests, which can inject `now`.
+DAY=$(date -d 'yesterday' +%Y-%m-%d)
+
+# ---------------------------------------------------------------------------
+# Safety gate. This script TAKES OVER a real roster row and inserts sessions for
+# a real worker. That is fine on a scratch clone and unacceptable against live
+# staging, where it would briefly flip someone's attendance. Refuse unless the
+# target is an explicitly allow-listed scratch database.
+# ---------------------------------------------------------------------------
+DB_NAME=$("${PSQL[@]}" "select current_database()" | tr -d '\r\n')
+CONTAINER_OK=$(docker ps --format '{{.Names}}' 2>/dev/null | grep -c '^sekar-staging-sim$' || true)
+if [ "$CONTAINER_OK" != "1" ] || [ "${ALLOW_MUTATION:-}" != "yes" ]; then
+  cat <<MSG
+REFUSING TO RUN.
+
+  target database : $DB_NAME
+  sim container   : $([ "$CONTAINER_OK" = "1" ] && echo present || echo "NOT FOUND")
+
+This script mutates a real worker's roster row and sessions. It is only meant
+for the local sim clone (container 'sekar-staging-sim'). To run it there:
+
+  ALLOW_MUTATION=yes bash apps/be/scripts/e2e-presence-scenarios.sh
+
+Never point it at live staging or production.
+MSG
+  exit 1
+fi
 
 TOKEN=$(curl -s -X POST "$API/auth/login" -H 'Content-Type: application/json' \
-  -d "{\"identifier\":\"$USER_NAME\",\"password\":\"$PASS\"}" |
+  -d "{\"identifier\":\"$ADMIN\",\"password\":\"$ADMIN_PASS\"}" |
   python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
-UID_=$("${PSQL[@]}" "select id from users where username='$USER_NAME'" | tr -d '\r\n')
 SD1=$("${PSQL[@]}" "select id from shift_definitions where name='Shift 1' and deleted_at is null" | tr -d '\r\n')
 
-# Take over an existing Shift 1 row for today.
-ROW_ID=$("${PSQL[@]}" "select id from schedules where user_id='$UID_' and schedule_date='$DAY'
-  and shift_definition_id='$SD1' and deleted_at is null limit 1" | tr -d '\r\n')
-if [ -z "$ROW_ID" ]; then echo "no Shift 1 row today for $USER_NAME — aborting"; exit 1; fi
+# Take over whichever Shift 1 row exists today, rather than a hardcoded worker.
+ROW_ID=$("${PSQL[@]}" "select id from schedules where schedule_date='$DAY'
+  and shift_definition_id='$SD1' and deleted_at is null order by id limit 1" | tr -d '\r\n')
+if [ -z "$ROW_ID" ]; then echo "no Shift 1 roster row exists for $DAY — nothing to drive; aborting"; exit 1; fi
+UID_=$("${PSQL[@]}" "select user_id from schedules where id='$ROW_ID'" | tr -d '\r\n')
+USER_NAME=$("${PSQL[@]}" "select username from users where id='$UID_'" | tr -d '\r\n')
 ORIG_STATUS=$("${PSQL[@]}" "select status from schedules where id='$ROW_ID'" | tr -d '\r\n')
 
 # Snapshot the day's sessions so they can be restored.
@@ -49,7 +85,7 @@ session() { # session <clock_in> [clock_out|NULL] [is_overtime]
 }
 
 field() {
-  curl -s "$API/schedules/my/day?date=$DAY" -H "Authorization: Bearer $TOKEN" | python3 -c "
+  curl -s "$API/schedules/date/$DAY" -H "Authorization: Bearer $TOKEN" | python3 -c "
 import sys,json
 rows=json.load(sys.stdin)
 r=next((x for x in rows if x['id']=='$ROW_ID'), None)
@@ -141,11 +177,8 @@ check S33 "on duty but GPS fix stale -> no reading (null)"   is_within_area  nul
 
 echo ""
 echo "── S13 future rows carry no lifecycle ───────────────────────────────────"
-ADMIN_TOKEN=$(curl -s -X POST "$API/auth/login" -H 'Content-Type: application/json' \
-  -d '{"identifier":"superadmin","password":"12345678"}' |
-  python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
 FUT_NULLS=$(curl -s "$API/schedules/range?from=$(date -d '+40 days' +%Y-%m-%d)&to=$(date -d '+50 days' +%Y-%m-%d)" \
-  -H "Authorization: Bearer $ADMIN_TOKEN" | python3 -c "
+  -H "Authorization: Bearer $TOKEN" | python3 -c "
 import sys,json
 rows=json.load(sys.stdin)
 print('NO-ROWS' if not rows else ('all-null' if all(r.get('lifecycle_state') is None for r in rows) else 'LEAK'))

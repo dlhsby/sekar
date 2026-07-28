@@ -7,6 +7,9 @@ import { User, UserRole } from '../users/entities/user.entity';
 describe('SchedulesController (district scoping)', () => {
   let controller: SchedulesController;
   let service: {
+    countByDateRange: jest.Mock;
+    findByDateRange: jest.Mock;
+    findByDateRangeForUser: jest.Mock;
     findByDate: jest.Mock;
     findByUserAndDate: jest.Mock;
     findOne: jest.Mock;
@@ -20,6 +23,9 @@ describe('SchedulesController (district scoping)', () => {
 
   beforeEach(async () => {
     service = {
+      countByDateRange: jest.fn().mockResolvedValue(10),
+      findByDateRange: jest.fn().mockResolvedValue([]),
+      findByDateRangeForUser: jest.fn().mockResolvedValue([]),
       findByDate: jest.fn().mockResolvedValue([]),
       findByUserAndDate: jest.fn().mockResolvedValue(null),
       findOne: jest.fn(),
@@ -72,5 +78,25 @@ describe('SchedulesController (district scoping)', () => {
     const dto = { user_id: 'W', date: '2026-07-04' };
     await controller.addSchedule(dto, kepala);
     expect(service.addForDay).toHaveBeenCalledWith(dto, kepala);
+  });
+  // ---------------------------------------------------------------------------
+  // Range size guard. The 62-day cap bounds the DATE span but not the row count,
+  // and the API runs at --max-old-space-size=384: a big enough unfiltered range
+  // is an OOM, which takes the container down for everyone. A 400 does not.
+  // ---------------------------------------------------------------------------
+  describe('range size guard', () => {
+    it('serves a normal range', async () => {
+      service.countByDateRange.mockResolvedValue(31_000);
+      await expect(controller.getByRange('2026-07-01', '2026-07-31', admin)).resolves.toEqual([]);
+    });
+
+    it('refuses a range too large to serialize, and says how to narrow it', async () => {
+      service.countByDateRange.mockResolvedValue(250_000);
+      await expect(controller.getByRange('2026-07-01', '2026-08-31', admin)).rejects.toThrow(
+        /250,000 rows.*Narrow it/s,
+      );
+      // The point of the guard: the expensive query never runs.
+      expect(service.findByDateRange).not.toHaveBeenCalled();
+    });
   });
 });

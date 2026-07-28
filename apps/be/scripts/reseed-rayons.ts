@@ -5,11 +5,11 @@
  * (one solid colour, fully opaque). tes rayon is user-created and untouched.
  */
 import { runProfileCli } from '../src/database/seeds/lib/context';
-import { seedRayons } from '../src/database/seeds/entities/rayon';
+import { seedDistricts } from '../src/database/seeds/entities/district';
 
 runProfileCli('demo', async (ctx) => {
-  await seedRayons(ctx);
+  await seedDistricts(ctx);
   // The seeder never sets opacity; the default is opaque (NULL).
-  await ctx.qr.query(`UPDATE rayons SET fill_opacity = NULL, border_opacity = NULL`);
-  ctx.log('✓ rayons reseeded from snapshot + opacities cleared');
+  await ctx.qr.query(`UPDATE districts SET fill_opacity = NULL, border_opacity = NULL`);
+  ctx.log('✓ districts reseeded from snapshot + opacities cleared');
 });

@@ -43,6 +43,13 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, UserRole.LINMAS]));
 
 /**
+ * Row ceiling for one `/schedules/range` response. ~31k rows measured at 38 MB
+ * after the payload trim, so 60k leaves headroom under the 384 MB heap while
+ * still allowing a full month across every rayon.
+ */
+const MAX_RANGE_ROWS = 60_000;
+
+/**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
  * and admin_rayon are confined to their own district (forced on list, checked on
  * edit). Workers read their own day via `GET /schedules/my`.
@@ -245,6 +252,27 @@ export class SchedulesController {
       shiftDefinitionId,
       teamCategoryId,
     };
+
+    /**
+     * Refuse a request that is too large to serialize, instead of dying halfway.
+     *
+     * The 62-day cap above bounds the DATE span but not the row count, and rows
+     * scale with the workforce: a 31-day all-district range on staging is ~31k
+     * rows / 38 MB today. The API runs at `--max-old-space-size=384`, so a big
+     * enough unfiltered range is an OOM — and an OOM takes the whole container
+     * down for every other user, which a 400 does not.
+     *
+     * The limit is generous (a month across every rayon still passes) and the
+     * message says exactly how to get under it, because "narrow your filter" is
+     * actionable where a dead container is not.
+     */
+    const estimated = await this.service.countByDateRange(from, to, { ...filters, districtId });
+    if (estimated > MAX_RANGE_ROWS) {
+      throw new BadRequestException(
+        `This range would return ${estimated.toLocaleString()} rows (limit ${MAX_RANGE_ROWS.toLocaleString()}). ` +
+          'Narrow it with a shorter date span, or a district / kawasan / lokasi / shift filter.',
+      );
+    }
 
     // Phase 4: workers (satgas/linmas/korlap) not in ROSTER_VIEWERS are self-scoped
     if (!ROSTER_VIEWERS.includes(user.role)) {

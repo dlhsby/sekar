@@ -1230,6 +1230,39 @@ export class SchedulesService {
     });
   }
 
+  /**
+   * How many MATERIALIZED rows a range would return, without hydrating any.
+   *
+   * The controller uses this to refuse a response too large to serialize rather
+   * than OOMing mid-flight. It deliberately counts only materialized rows:
+   * projected ones require expanding every recurrence, which is most of the cost
+   * the guard exists to avoid. A range dominated by projections is beyond the
+   * horizon and small in practice.
+   */
+  async countByDateRange(
+    from: string,
+    to: string,
+    filters?: RangeFilters | string | null,
+  ): Promise<number> {
+    const f: RangeFilters = typeof filters === 'string' ? { districtId: filters } : (filters ?? {});
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .innerJoin('ds.user', 'u')
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL')
+      .andWhere('u.is_active = TRUE');
+    if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
+    if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
+    if (userId) qb.andWhere('ds.user_id = :userId', { userId });
+    if (shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
+    if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
+    return qb.getCount();
+  }
+
   async findByDateRange(
     from: string,
     to: string,

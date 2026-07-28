@@ -127,7 +127,15 @@ export function ScheduleDetailSheet({
           <InfoRow icon="information-outline" label={t('schedules:scheduleDetail.status')} even>
             <StatusPill
               dot
-              tone={presenceTone({ scheduleStatus: status })}
+              // Same full fact set as the schedule card — one worker, one
+              // reading, whichever surface you open (ADR-050).
+              tone={presenceTone({
+                lifecycleState: roster.lifecycle_state,
+                scheduleStatus: status,
+                leaveReason: roster.leave_reason,
+                isWithinArea: roster.is_within_area,
+                isAdHoc: roster.is_scheduled === false,
+              })}
               label={statusLabel}
             />
             <NBText variant="caption" color="gray600" style={styles.statusHint}>

@@ -70,6 +70,22 @@ export interface Schedule {
   user_id: string;
   schedule_date: string; // YYYY-MM-DD
   status: ScheduleStatus;
+  /**
+   * Presence axes (ADR-050), attached by the backend for rows dated today or
+   * earlier. `status` alone can only say planned / present / absent / leave;
+   * these carry the rest of the model — on duty but OUTSIDE the area, terlambat,
+   * pulang, ad-hoc — so mobile reads the same worker the same way the web board
+   * and the monitoring map do.
+   *
+   * `lifecycle_state: null` on a future row means NOT APPLICABLE, not "off duty".
+   */
+  lifecycle_state?: string | null;
+  lifecycle_flags?: string[];
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  /** Live inside/outside axis; only set while on duty with a fresh GPS fix. */
+  is_within_area?: boolean | null;
+  /** False when the worker punched in with no roster row (ad-hoc). */
+  is_scheduled?: boolean;
   // Full definition (the API returns the whole relation) so crosses_midnight is
   // available for the lateness check instead of being defaulted.
   shift_definition: ShiftDefinition | null;
