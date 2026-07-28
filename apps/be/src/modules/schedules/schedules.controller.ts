@@ -21,6 +21,7 @@ import {
   ApiQuery,
 } from '@nestjs/swagger';
 import { SchedulesService, SCHEDULABLE_WORKER_ROLES, type RangeFilters } from './schedules.service';
+import { RosterPresenceService } from './services/roster-presence.service';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -42,6 +43,13 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, UserRole.LINMAS]));
 
 /**
+ * Row ceiling for one `/schedules/range` response. ~31k rows measured at 38 MB
+ * after the payload trim, so 60k leaves headroom under the 384 MB heap while
+ * still allowing a full month across every rayon.
+ */
+const MAX_RANGE_ROWS = 60_000;
+
+/**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon
  * and admin_rayon are confined to their own district (forced on list, checked on
  * edit). Workers read their own day via `GET /schedules/my`.
@@ -51,7 +59,10 @@ const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, Us
 @Controller('schedules')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class SchedulesController {
-  constructor(private readonly service: SchedulesService) {}
+  constructor(
+    private readonly service: SchedulesService,
+    private readonly presence: RosterPresenceService,
+  ) {}
 
   /** Whether the caller is district-scoped (kepala_rayon / admin_rayon). */
   private isDistrictScoped(user: User): boolean {
@@ -71,8 +82,12 @@ export class SchedulesController {
   @ApiOperation({ summary: "All of the caller's roster rows for a day (defaults to today, WIB)" })
   @ApiQuery({ name: 'date', required: false, description: 'WIB day (YYYY-MM-DD)' })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
-    return this.service.findAllByUserAndDate(user.id, date ?? TimezoneUtil.jakartaDateString());
+  async getMyDay(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule[]> {
+    const rows = await this.service.findAllByUserAndDate(
+      user.id,
+      date ?? TimezoneUtil.jakartaDateString(),
+    );
+    return this.presence.attach(rows);
   }
 
   @Get('my')
@@ -86,11 +101,18 @@ export class SchedulesController {
     description: 'WIB day (YYYY-MM-DD); defaults to today',
   })
   @ApiResponse({ status: 200, type: Schedule })
-  getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
+  async getMy(@GetUser() user: User, @Query('date') date?: string): Promise<Schedule | null> {
     // No date → "what am I on right now", which at 03:00 is still yesterday's
     // cross-midnight shift. An explicit date stays a plain calendar-day lookup.
-    if (!date) return this.service.findCurrentForUser(user.id);
-    return this.service.findByUserAndDate(user.id, date);
+    const row = date
+      ? await this.service.findByUserAndDate(user.id, date)
+      : await this.service.findCurrentForUser(user.id);
+    if (!row) return null;
+    // Enriched like every other roster read: `/my` and `/my/day` are fetched by
+    // the same mobile screen, so returning the axes on one and not the other made
+    // the contract depend on which call you happened to use.
+    const [enriched] = await this.presence.attach([row]);
+    return enriched;
   }
 
   @Get('date/:date')
@@ -99,7 +121,7 @@ export class SchedulesController {
   @ApiParam({ name: 'date', example: '2026-06-30' })
   @ApiQuery({ name: 'districtId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getByDate(
+  async getByDate(
     @Param('date') date: string,
     @GetUser() user: User,
     @Query('districtId') districtId?: string,
@@ -108,11 +130,10 @@ export class SchedulesController {
     // query. A scoped user with no district_id (misconfiguration) sees nothing —
     // never fall through to the unfiltered (all-district) query.
     if (this.isDistrictScoped(user)) {
-      return user.district_id
-        ? this.service.findByDate(date, user.district_id)
-        : Promise.resolve([]);
+      if (!user.district_id) return [];
+      return this.presence.attach(await this.service.findByDate(date, user.district_id));
     }
-    return this.service.findByDate(date, districtId);
+    return this.presence.attach(await this.service.findByDate(date, districtId));
   }
 
   /**
@@ -198,7 +219,7 @@ export class SchedulesController {
   @ApiQuery({ name: 'shiftDefinitionId', required: false })
   @ApiQuery({ name: 'teamCategoryId', required: false })
   @ApiResponse({ status: 200, type: [Schedule] })
-  getByRange(
+  async getByRange(
     @Query('from') from: string,
     @Query('to') to: string,
     @GetUser() user: User,
@@ -232,20 +253,44 @@ export class SchedulesController {
       teamCategoryId,
     };
 
+    /**
+     * Refuse a request that is too large to serialize, instead of dying halfway.
+     *
+     * The 62-day cap above bounds the DATE span but not the row count, and rows
+     * scale with the workforce: a 31-day all-district range on staging is ~31k
+     * rows / 38 MB today. The API runs at `--max-old-space-size=384`, so a big
+     * enough unfiltered range is an OOM — and an OOM takes the whole container
+     * down for every other user, which a 400 does not.
+     *
+     * The limit is generous (a month across every rayon still passes) and the
+     * message says exactly how to get under it, because "narrow your filter" is
+     * actionable where a dead container is not.
+     */
+    const estimated = await this.service.countByDateRange(from, to, { ...filters, districtId });
+    if (estimated > MAX_RANGE_ROWS) {
+      throw new BadRequestException(
+        `This range would return ${estimated.toLocaleString()} rows (limit ${MAX_RANGE_ROWS.toLocaleString()}). ` +
+          'Narrow it with a shorter date span, or a district / kawasan / lokasi / shift filter.',
+      );
+    }
+
     // Phase 4: workers (satgas/linmas/korlap) not in ROSTER_VIEWERS are self-scoped
     if (!ROSTER_VIEWERS.includes(user.role)) {
-      return this.service.findByDateRangeForUser(from, to, user.id);
+      return this.presence.attach(await this.service.findByDateRangeForUser(from, to, user.id));
     }
 
     // Rayon-scoped roles (kepala_rayon / admin_rayon) are pinned to their own
     // district; the requested districtId is ignored, other filters still apply.
     if (this.isDistrictScoped(user)) {
-      return user.district_id
-        ? this.service.findByDateRange(from, to, { ...filters, districtId: user.district_id })
-        : Promise.resolve([]);
+      if (!user.district_id) return [];
+      return this.presence.attach(
+        await this.service.findByDateRange(from, to, { ...filters, districtId: user.district_id }),
+      );
     }
 
-    return this.service.findByDateRange(from, to, { ...filters, districtId });
+    return this.presence.attach(
+      await this.service.findByDateRange(from, to, { ...filters, districtId }),
+    );
   }
 
   @Get('year-summary')

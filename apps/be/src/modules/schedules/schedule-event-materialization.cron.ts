@@ -80,6 +80,11 @@ export class ScheduleEventMaterializationCron implements OnApplicationBootstrap 
       where: {
         is_active: true,
         deleted_at: IsNull(),
+        // An event whose SHIFT has been retired must stop producing roster rows.
+        // Filtering only on the event's own is_active kept a deactivated shift
+        // silently generating a daily roster that no picker offers and no
+        // operator expects to see.
+        shift_definition: { is_active: true },
       },
       relations: [
         'shift_definition',

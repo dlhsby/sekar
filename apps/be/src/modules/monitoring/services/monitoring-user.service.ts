@@ -515,6 +515,10 @@ export class MonitoringUserService {
         shiftStart: window.start,
         shiftEnd: window.end,
         graceMs: thresholds.late_grace_seconds * 1000,
+        // Without this a forgotten clock-out keeps the worker `bertugas` — on the
+        // map and inside the staffing count — indefinitely. Past the shift's
+        // cutoff grace they read `pulang` + `lupa_clock_out` instead.
+        cutoffGraceMs: Math.max(0, sd.cutoff_grace_min ?? 0) * 60_000,
         overtimeApproved: !!uts.shift?.is_overtime,
         leave: 'none',
       },

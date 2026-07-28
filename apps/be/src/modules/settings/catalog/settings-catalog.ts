@@ -145,6 +145,22 @@ export const SETTINGS_CATALOG: SettingsCatalogEntry[] = [
     max: 180,
   },
   {
+    key: 'schedule.absence_sweep_lookback_days',
+    group: 'scheduling',
+    subgroup: 'roster',
+    valueType: 'number',
+    isSecret: false,
+    envKey: 'SCHEDULE_ABSENCE_SWEEP_LOOKBACK_DAYS',
+    label: 'Jangkauan sapuan ketidakhadiran (hari)',
+    help: 'Berapa hari ke belakang sapuan per jam menandai tidak hadir (ADR-056)',
+    // A week covers a long weekend of downtime while keeping the hourly query
+    // small. Unbounded, the FIRST sweep on a database that has never run ADR-056
+    // rewrites the entire backlog in one transaction.
+    default: 7,
+    min: 0,
+    max: 365,
+  },
+  {
     key: 'schedule.min_shift_duration_min',
     group: 'scheduling',
     subgroup: 'roster',

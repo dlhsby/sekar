@@ -1,9 +1,10 @@
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
-  ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import {
@@ -26,6 +27,8 @@ import { UserLocationsService } from '../../modules/user-locations/user-location
 import { AuditLogService } from '../audit/audit.service';
 import { ScheduleMaterializerService } from './services/schedule-materializer.service';
 import { ScheduleOverlapService } from './services/schedule-overlap.service';
+import { SystemConfigService } from '../settings/services/system-config.service';
+import { resolveShiftWindow } from '../monitoring/lib/presence-lifecycle';
 import { ScheduleRecurrenceUtil } from './utils/schedule-recurrence.util';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import {
@@ -59,6 +62,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  * `serviceDay`/`nowWib` are framed as WIB-wall-clock-in-UTC-fields, matching
  * `TimezoneUtil.jakartaNow()` and `ShiftAttributionService.wibInstant`.
  */
+/**
+ * Default reach of one absence sweep, in days. A week comfortably covers a long
+ * weekend of downtime while keeping the hourly query small; widen it (or pass 0
+ * for "no limit") for a deliberate one-off backfill.
+ */
+export const DEFAULT_SWEEP_LOOKBACK_DAYS = 7;
+
 export function isShiftWindowClosed(
   serviceDay: string,
   endTime: string,
@@ -218,6 +228,55 @@ export interface RangeFilters {
  * See ADR-047 (occurrences from events); ADR-013 is the earlier daily-roster
  * model it superseded.
  */
+/**
+ * Trim a projected row's relations to the fields the calendar actually renders.
+ *
+ * Projected rows are built from a `ScheduleEvent` loaded with its full relation
+ * graph (location, region, team_category, user, pic_user, members.user), so each
+ * virtual row carried whole entities — including `location.boundary_polygon`
+ * (~2 KB of GeoJSON) and every user column. Measured on the staging clone: a
+ * 10-day range BEYOND the materialization horizon returned **95 MB for 10 090
+ * rows (11 KB/row)**; a 62-day far-future range would be ~590 MB, which the
+ * staging API cannot serialize at `--max-old-space-size=384`.
+ *
+ * The materialized path fixed this with explicit column lists; this is the same
+ * fix for the projection path, which shares no SQL with it. Field sets match
+ * what the web board and mobile's personal calendar read — boundaries are
+ * fetched per-subject by the map modal, never per roster row.
+ */
+function slimProjectedRelations(row: Schedule): Schedule {
+  const place = <T extends { id: string; name: string }>(x: T | null | undefined): T | null =>
+    x ? ({ id: x.id, name: x.name } as T) : null;
+
+  if (row.location) row.location = place(row.location);
+  if (row.region) row.region = place(row.region);
+  if (row.team_category) {
+    const t = row.team_category;
+    row.team_category = { id: t.id, name: t.name, marker_color: t.marker_color } as typeof t;
+  }
+  if (row.user) {
+    const u = row.user;
+    row.user = {
+      id: u.id,
+      full_name: u.full_name,
+      username: u.username,
+      role: u.role,
+    } as typeof u;
+  }
+  if (row.shift_definition) {
+    const sd = row.shift_definition;
+    row.shift_definition = {
+      id: sd.id,
+      name: sd.name,
+      start_time: sd.start_time,
+      end_time: sd.end_time,
+      crosses_midnight: sd.crosses_midnight,
+      cutoff_grace_min: sd.cutoff_grace_min,
+    } as typeof sd;
+  }
+  return row;
+}
+
 @Injectable()
 export class SchedulesService {
   private readonly logger = new Logger(SchedulesService.name);
@@ -243,6 +302,10 @@ export class SchedulesService {
     private readonly auditLogService: AuditLogService,
     private readonly materializer: ScheduleMaterializerService,
     private readonly overlapService: ScheduleOverlapService,
+    // Optional so the many existing unit specs that construct this service by
+    // hand keep working; absent, the sweep falls back to its documented default.
+    @Optional()
+    private readonly configService?: SystemConfigService,
   ) {}
 
   // ---- Edit-permission hierarchy (ADR-013 addendum) ----
@@ -441,10 +504,28 @@ export class SchedulesService {
    * the DB — the projections no longer load every active event into memory.
    * (`end_date IS NULL` = open-ended, always a candidate.)
    */
+  /**
+   * Active events overlapping a range.
+   *
+   * `shift_definition: { is_active: true }` matters as much as the event's own
+   * flag: a retired shift must stop producing occurrences, including the
+   * PROJECTED ones this feeds, or the board keeps showing a shift that no picker
+   * offers.
+   */
   private activeEventsOverlapping(from: string, to: string): FindOptionsWhere<ScheduleEvent>[] {
     return [
-      { is_active: true, start_date: LessThanOrEqual(to), end_date: MoreThanOrEqual(from) },
-      { is_active: true, start_date: LessThanOrEqual(to), end_date: IsNull() },
+      {
+        is_active: true,
+        shift_definition: { is_active: true },
+        start_date: LessThanOrEqual(to),
+        end_date: MoreThanOrEqual(from),
+      },
+      {
+        is_active: true,
+        shift_definition: { is_active: true },
+        start_date: LessThanOrEqual(to),
+        end_date: IsNull(),
+      },
     ];
   }
 
@@ -590,14 +671,38 @@ export class SchedulesService {
    * yesterday/today, so a backlog from downtime is still reconciled.
    */
   async sweepAbsences(
-    now: Date = TimezoneUtil.jakartaNow(),
+    // A real instant, matching isShiftWindowClosed and the presence engine.
+    now: Date = new Date(),
+    lookbackDays?: number,
   ): Promise<{ absent: number; present: number }> {
-    const todayStr = now.toISOString().slice(0, 10);
+    const todayStr = TimezoneUtil.jakartaDateString(now);
+
+    /**
+     * How far back a single sweep reaches.
+     *
+     * Unbounded, this scans EVERY past `planned` row on every hourly tick. That
+     * is harmless once converged, but the first run after a deployment that has
+     * never swept before is not: on staging it would rewrite the entire backlog
+     * in one transaction. Bounding it keeps each run O(lookback) and turns the
+     * backfill into a deliberate act (`lookbackDays: 0` = no limit) instead of a
+     * surprise on the first cron tick after cutover.
+     */
+    const lookback =
+      lookbackDays ??
+      this.configService?.getNumber(
+        'schedule.absence_sweep_lookback_days',
+        DEFAULT_SWEEP_LOOKBACK_DAYS,
+      ) ??
+      DEFAULT_SWEEP_LOOKBACK_DAYS;
+    const fromStr =
+      lookback > 0
+        ? TimezoneUtil.jakartaDateString(new Date(now.getTime() - lookback * 24 * 60 * 60 * 1000))
+        : null;
 
     const candidates = await this.rosterRepo.find({
       where: {
         status: ScheduleStatus.PLANNED,
-        schedule_date: LessThanOrEqual(todayStr),
+        schedule_date: fromStr ? Between(fromStr, todayStr) : LessThanOrEqual(todayStr),
         deleted_at: IsNull(),
       },
       relations: ['shift_definition'],
@@ -1129,7 +1234,7 @@ export class SchedulesService {
                 projected.location = event.location;
               }
 
-              projectedRows.push(projected);
+              projectedRows.push(slimProjectedRelations(projected));
             }
           }
         }
@@ -1145,6 +1250,39 @@ export class SchedulesService {
     });
   }
 
+  /**
+   * How many MATERIALIZED rows a range would return, without hydrating any.
+   *
+   * The controller uses this to refuse a response too large to serialize rather
+   * than OOMing mid-flight. It deliberately counts only materialized rows:
+   * projected ones require expanding every recurrence, which is most of the cost
+   * the guard exists to avoid. A range dominated by projections is beyond the
+   * horizon and small in practice.
+   */
+  async countByDateRange(
+    from: string,
+    to: string,
+    filters?: RangeFilters | string | null,
+  ): Promise<number> {
+    const f: RangeFilters = typeof filters === 'string' ? { districtId: filters } : (filters ?? {});
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .innerJoin('ds.user', 'u')
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL')
+      .andWhere('u.is_active = TRUE');
+    if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
+    if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
+    if (userId) qb.andWhere('ds.user_id = :userId', { userId });
+    if (shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', { shiftDefinitionId });
+    if (teamCategoryId) qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId });
+    if (locationId) qb.andWhere('ds.location_id = :locationId', { locationId });
+    return qb.getCount();
+  }
+
   async findByDateRange(
     from: string,
     to: string,
@@ -1155,13 +1293,35 @@ export class SchedulesService {
     const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
 
     // Fetch materialized rows for the range
+    // Explicit column lists, NOT leftJoinAndSelect.
+    //
+    // `location` and `region` carry `boundary_polygon` (~2 KB of GeoJSON each),
+    // and joining them wholesale stamps that polygon onto every single roster
+    // row. Measured on the staging clone: a 31-day, all-district range returned
+    // **293 MB in 29 s** for 31k rows — and staging runs the API with
+    // `--max-old-space-size=384`, so serializing that response is an OOM, not a
+    // slow page. The web board and mobile's personal calendar only ever render
+    // these as NAMES; boundaries are fetched per-subject by the map modal.
     const qb = this.rosterRepo
       .createQueryBuilder('ds')
-      .leftJoinAndSelect('ds.user', 'u')
-      .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.location', 'location')
-      .leftJoinAndSelect('ds.region', 'r')
-      .leftJoinAndSelect('ds.team_category', 'tt')
+      .leftJoin('ds.user', 'u')
+      .addSelect(['u.id', 'u.full_name', 'u.username', 'u.role', 'u.is_active'])
+      .leftJoin('ds.shift_definition', 'sd')
+      .addSelect([
+        'sd.id',
+        'sd.name',
+        'sd.start_time',
+        'sd.end_time',
+        'sd.crosses_midnight',
+        // Drives the lazy no-show flip on both frontends (ADR-056).
+        'sd.cutoff_grace_min',
+      ])
+      .leftJoin('ds.location', 'location')
+      .addSelect(['location.id', 'location.name'])
+      .leftJoin('ds.region', 'r')
+      .addSelect(['r.id', 'r.name'])
+      .leftJoin('ds.team_category', 'tt')
+      .addSelect(['tt.id', 'tt.name', 'tt.marker_color'])
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL')
@@ -1326,7 +1486,7 @@ export class SchedulesService {
                   projected.location = event.location;
                 }
 
-                projectedRows.push(projected);
+                projectedRows.push(slimProjectedRelations(projected));
               }
             }
           }

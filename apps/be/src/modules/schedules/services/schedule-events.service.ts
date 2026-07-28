@@ -597,7 +597,12 @@ export class ScheduleEventsService {
     },
     actor: User,
   ): Promise<void> {
-    const shift = await this.shiftRepo.findOne({ where: { id: e.shift_definition_id } });
+    // Only an ACTIVE shift may back an event. A deactivated shift is one an
+    // operator has retired; letting a new (or edited) event point at it puts a
+    // shift back on the roster that no picker offers and nobody expects.
+    const shift = await this.shiftRepo.findOne({
+      where: { id: e.shift_definition_id, is_active: true },
+    });
     if (!shift) throw new NotFoundException('Shift definition not found');
 
     if (e.scope === ScheduleScope.STATIC) {

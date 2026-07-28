@@ -101,4 +101,73 @@ describe('OccurrenceChip', () => {
     render(<OccurrenceChip occurrence={occ({ is_detached: true })} onClick={jest.fn()} />);
     expect(screen.getByText('✎')).toBeInTheDocument();
   });
+  // ---------------------------------------------------------------------------
+  // Presence (ADR-050). The chip used to colour ONLY by shift, so the same worker
+  // read red on the day board (which used occurrenceTone) and shift-coloured
+  // here — one person, two readings, depending on the view.
+  // ---------------------------------------------------------------------------
+
+  describe('presence dot', () => {
+    const dotIn = (el: HTMLElement) => el.querySelector('span[aria-hidden]');
+    /** Exact token match: `bg-nb-warning` (amber) also SUBSTRING-matches
+     *  `bg-nb-warning-light` (yellow), so `toContain` would pass on the wrong tone. */
+    const toneClass = (el: HTMLElement, cls: string) =>
+      (dotIn(el)?.className ?? '').split(/\s+/).includes(cls);
+
+    it('shows a red dot for a worker who never turned up', () => {
+      const { container } = render(
+        <OccurrenceChip occurrence={occ({ status: 'absent', lifecycle_state: 'tidak_hadir' })} />
+      );
+      expect(toneClass(container, 'bg-nb-danger')).toBe(true);
+    });
+
+    it('shows AMBER for a worker on duty but outside their area', () => {
+      // The tone that was unreachable before the backend started sending the
+      // axes: green and amber both mean "bertugas", and only is_within_area
+      // separates them.
+      const { container } = render(
+        <OccurrenceChip
+          occurrence={occ({
+            status: 'present',
+            lifecycle_state: 'bertugas',
+            is_within_area: false,
+          })}
+        />
+      );
+      expect(toneClass(container, 'bg-nb-warning')).toBe(true);
+      // Not the yellow (belum_hadir) tone, which shares the warning family.
+      expect(toneClass(container, 'bg-nb-warning-light')).toBe(false);
+    });
+
+    it('shows green for a worker on duty inside their area', () => {
+      const { container } = render(
+        <OccurrenceChip
+          occurrence={occ({ status: 'present', lifecycle_state: 'bertugas', is_within_area: true })}
+        />
+      );
+      expect(toneClass(container, 'bg-nb-success')).toBe(true);
+    });
+
+    it('renders NO dot for a future planned row — nothing has happened yet', () => {
+      const { container } = render(
+        <OccurrenceChip occurrence={occ({ status: 'planned', lifecycle_state: null })} />
+      );
+      expect(dotIn(container)).toBeNull();
+    });
+
+    it('keeps the shift fill, so shift identity survives the presence dot', () => {
+      const { container } = render(
+        <OccurrenceChip occurrence={occ({ status: 'present', lifecycle_state: 'bertugas' })} />
+      );
+      // Shift 1 → primary fill, regardless of how the worker is doing.
+      expect(container.querySelector('.bg-nb-primary')).not.toBeNull();
+    });
+
+    it('shows the dot in compact mode too (the month view)', () => {
+      const { container } = render(
+        <OccurrenceChip compact occurrence={occ({ status: 'absent', lifecycle_state: 'tidak_hadir' })} />
+      );
+      expect(toneClass(container, 'bg-nb-danger')).toBe(true);
+    });
+  });
 });

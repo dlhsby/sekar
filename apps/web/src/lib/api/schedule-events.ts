@@ -136,6 +136,7 @@ export interface ScheduleOccurrence {
   // Presence axes (ADR-050) — drive the board's status bullet. Absent on a
   // projected occurrence (nothing has happened yet), which reads as `planned`.
   lifecycle_state?: string | null;
+  lifecycle_flags?: string[];
   leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
   is_within_area?: boolean | null;
   is_scheduled?: boolean;
@@ -169,12 +170,20 @@ export interface ScheduleOccurrence {
 
 /** Raw roster row as the backend returns it (Schedule entity: locations ride in
  * `location`; there is no `scope` field). */
-interface RawScheduleRangeRow {
+export interface RawScheduleRangeRow {
   id: string;
   user_id: string;
   schedule_date: string;
   shift_definition_id: string | null;
   status: string;
+  // Presence axes (ADR-050). Attached by the backend's RosterPresenceService for
+  // rows dated today or earlier; `lifecycle_state: null` on a future row means
+  // "not applicable yet", not "off duty".
+  lifecycle_state?: string | null;
+  lifecycle_flags?: string[];
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
   region_id?: string | null;
   district_id?: string | null;
   team_category_id?: string | null;
@@ -189,8 +198,14 @@ interface RawScheduleRangeRow {
   team_category?: ScheduleOccurrence['team_category'];
 }
 
-/** Normalize a raw roster row to the calendar's occurrence shape. */
-function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
+/**
+ * Normalize a raw roster row to the calendar's occurrence shape.
+ *
+ * Exported for tests: this mapping is where the ADR-050 presence axes were
+ * silently dropped for months, so it is worth asserting directly rather than
+ * only through a mocked fetch.
+ */
+export function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
   // ADR-053: the row carries exactly one place.
   // Derive scope from the row's binding: region → mobile, a location →
   // static, a district-only row → district (roving crew), else no binding at all →
@@ -209,6 +224,14 @@ function toOccurrence(row: RawScheduleRangeRow): ScheduleOccurrence {
     shift_definition_id: row.shift_definition_id,
     scope,
     status: row.status,
+    // These four are what make the board's presence bullet mean anything: they
+    // were declared on ScheduleOccurrence but never mapped, so every consumer
+    // silently fell back to `status` and five of the nine tones were dead.
+    lifecycle_state: row.lifecycle_state ?? null,
+    lifecycle_flags: row.lifecycle_flags ?? [],
+    leave_reason: row.leave_reason ?? null,
+    is_within_area: row.is_within_area ?? null,
+    is_scheduled: row.is_scheduled ?? true,
     location_id: row.location_id ?? null,
     region_id: row.region_id ?? null,
     district_id: row.district_id ?? null,

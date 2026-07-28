@@ -23,7 +23,15 @@ function makeRosterRepo() {
   // Chainable query-builder mock: every method returns `this` so calls can be
   // asserted; getMany resolves to whatever the test stubs on it.
   const qb: Record<string, jest.Mock> = {};
-  for (const m of ['leftJoinAndSelect', 'where', 'andWhere', 'orderBy', 'addOrderBy']) {
+  for (const m of [
+    'leftJoinAndSelect',
+    'leftJoin',
+    'addSelect',
+    'where',
+    'andWhere',
+    'orderBy',
+    'addOrderBy',
+  ]) {
     qb[m] = jest.fn(() => qb);
   }
   qb.getMany = jest.fn().mockResolvedValue([]);
@@ -131,12 +139,31 @@ describe('SchedulesService', () => {
 
     it('joins user, shift_definition, location, region, and team_category relations (Phase 4)', async () => {
       await service.findByDateRange('2026-06-30', '2026-07-05');
-      const joinCalls = rosterRepo.qb.leftJoinAndSelect.mock.calls;
+      const joinCalls = rosterRepo.qb.leftJoin.mock.calls;
       expect(joinCalls.some((c) => c[0] === 'ds.user')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.shift_definition')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.location')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.region')).toBe(true);
       expect(joinCalls.some((c) => c[0] === 'ds.team_category')).toBe(true);
+    });
+
+    it('selects location/region by NAME only — never the boundary polygon', async () => {
+      // Regression guard. `leftJoinAndSelect` stamped ~2 KB of GeoJSON onto every
+      // row: a 31-day all-district range measured 293 MB / 29 s on the staging
+      // clone, and staging runs the API at --max-old-space-size=384, so that
+      // response is an OOM rather than a slow page. Re-adding a bare
+      // leftJoinAndSelect for these relations must fail here.
+      await service.findByDateRange('2026-06-30', '2026-07-05');
+      const selected = rosterRepo.qb.addSelect.mock.calls.flatMap((c) => c[0] as string[]);
+      expect(selected).toEqual(expect.arrayContaining(['location.id', 'location.name']));
+      expect(selected).toEqual(expect.arrayContaining(['r.id', 'r.name']));
+      expect(selected.some((f) => f.includes('boundary_polygon'))).toBe(false);
+      expect(selected.some((f) => f.includes('coverage_area'))).toBe(false);
+      // The lazy no-show flip (ADR-056) needs the grace on both frontends.
+      expect(selected).toEqual(expect.arrayContaining(['sd.cutoff_grace_min']));
+      const wholeRelationJoins = rosterRepo.qb.leftJoinAndSelect.mock.calls.map((c) => c[0]);
+      expect(wholeRelationJoins).not.toContain('ds.location');
+      expect(wholeRelationJoins).not.toContain('ds.region');
     });
 
     it('scopes to a district when one is given', async () => {
@@ -1667,6 +1694,49 @@ describe('SchedulesService', () => {
         cutoff_grace_min: 60,
       },
       ...over,
+    });
+
+    // -----------------------------------------------------------------------
+    // Lookback bound. Unbounded, the FIRST sweep on a database that has never
+    // run ADR-056 rewrites the whole backlog in one transaction — on staging
+    // that is tens of thousands of rows on the first cron tick after cutover.
+    // -----------------------------------------------------------------------
+    describe('lookback bound', () => {
+      it('queries a bounded date window by default, not all of history', async () => {
+        rosterRepo.find.mockResolvedValue([]);
+        await service.sweepAbsences(new Date('2026-07-26T20:00:00Z'));
+
+        const where = rosterRepo.find.mock.calls[0][0].where;
+        // Between(from, to) rather than LessThanOrEqual(today).
+        expect(where.schedule_date?._type).toBe('between');
+      });
+
+      it('honours an explicit lookback, in WIB days', async () => {
+        // Midday WIB on the 26th (05:00Z), deliberately: `now` is a REAL instant
+        // and the window is expressed in WIB calendar days, so an evening-UTC
+        // value like 20:00Z is already the NEXT WIB day and would make the
+        // expected dates non-obvious.
+        rosterRepo.find.mockResolvedValue([]);
+        await service.sweepAbsences(new Date('2026-07-26T05:00:00Z'), 3);
+
+        const where = rosterRepo.find.mock.calls[0][0].where;
+        expect(where.schedule_date?._value?.[0]).toBe('2026-07-23');
+        expect(where.schedule_date?._value?.[1]).toBe('2026-07-26');
+      });
+
+      it('rolls "today" to the next WIB day for a late-UTC instant', () => {
+        // 20:00Z on the 26th is 03:00 WIB on the 27th. Getting this wrong is how
+        // the two time conventions used to bite.
+        expect(TimezoneUtil.jakartaDateString(new Date('2026-07-26T20:00:00Z'))).toBe('2026-07-27');
+      });
+
+      it('treats lookback 0 as an explicit, unbounded backfill', async () => {
+        rosterRepo.find.mockResolvedValue([]);
+        await service.sweepAbsences(new Date('2026-07-26T20:00:00Z'), 0);
+
+        const where = rosterRepo.find.mock.calls[0][0].where;
+        expect(where.schedule_date?._type).toBe('lessThanOrEqual');
+      });
     });
 
     it('marks a past no-show absent (window closed, no session)', async () => {

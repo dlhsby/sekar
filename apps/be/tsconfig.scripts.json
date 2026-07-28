@@ -1,0 +1,9 @@
+{
+  // `tsconfig.json` includes only src + test, so everything under scripts/ was
+  // invisible to `tsc` — a real arity error in sweep-absences.ts compiled clean
+  // and would have failed at runtime. These are operator tools run against
+  // production data; they get typechecked like everything else.
+  "extends": "./tsconfig.json",
+  "include": ["scripts", "src"],
+  "compilerOptions": { "noEmit": true }
+}

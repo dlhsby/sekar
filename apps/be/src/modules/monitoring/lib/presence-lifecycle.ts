@@ -46,6 +46,17 @@ export interface PresenceFacts {
   shiftEnd: Date | null;
   /** Grace after start before "late", in ms. Caller resolves per-shift/global default. */
   graceMs: number;
+  /**
+   * Grace after the shift END before an unclosed session stops being live, in ms
+   * (the shift's `cutoff_grace_min`). Defaults to 0 for callers that predate it.
+   *
+   * A worker who forgets to clock out must NOT stay on the map and in the
+   * staffing count indefinitely — one forgotten punch would otherwise report
+   * someone as on duty for days. Past this point they read `pulang`
+   * (+ `lupa_clock_out`), which is the truth: their day ended, the system just
+   * never got the closing punch.
+   */
+  cutoffGraceMs?: number;
   /** An approved overtime record extends the shift — the only thing that makes past-end presence lembur. */
   overtimeApproved: boolean;
   /** Approved leave reason for today, if any. */
@@ -71,8 +82,7 @@ export function isClockInLate(clockIn: Date, shiftStart: Date, graceMs: number):
 export function derivePresenceState(facts: PresenceFacts, now: Date): PresenceResult {
   const flags: LifecycleFlag[] = [];
 
-  // 1. Clocked in, not out → the live state. Ad-hoc / late / past-end are facets
-  //    OF being on duty, so they are flags, not separate states.
+  // 1. Clocked in, not out. Usually the live state — but not forever.
   if (facts.clockIn && !facts.clockOut) {
     if (!facts.scheduled) flags.push('ad_hoc');
     if (facts.shiftStart && isClockInLate(facts.clockIn, facts.shiftStart, facts.graceMs)) {
@@ -82,6 +92,18 @@ export function derivePresenceState(facts: PresenceFacts, now: Date): PresenceRe
       // Lembur is EXPLICIT only. Past-end presence WITHOUT an approved overtime
       // record is a forgotten clock-out, never auto-inferred overtime.
       flags.push(facts.overtimeApproved ? 'lembur' : 'lupa_clock_out');
+
+      // A forgotten clock-out stops being LIVE once the shift's cutoff grace has
+      // also passed. The punch is still never auto-closed (ADR-055) and the flag
+      // is kept, but the worker leaves `bertugas`: otherwise one missing punch
+      // keeps them on the monitoring map and inside the staffing count for days,
+      // which silently inflates "on duty" and hides a real shortfall.
+      //
+      // Approved overtime is the exception — they are legitimately still working.
+      const cutoff = facts.shiftEnd.getTime() + (facts.cutoffGraceMs ?? 0);
+      if (!facts.overtimeApproved && now.getTime() > cutoff) {
+        return { state: 'pulang', flags, leaveReason: null };
+      }
     }
     return { state: 'bertugas', flags, leaveReason: null };
   }

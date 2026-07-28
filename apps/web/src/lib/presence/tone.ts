@@ -21,6 +21,8 @@
  * | ad-hoc / luar jadwal         | purple     |
  */
 
+import { effectiveScheduleStatus } from '@/lib/schedules/effectiveStatus';
+
 export type PresenceTone =
   | 'grey'
   | 'green'
@@ -96,3 +98,47 @@ export function presenceTone(facts: PresenceFacts): PresenceTone {
       return 'grey';
   }
 }
+
+/**
+ * The canonical tone for a roster occurrence — THE entry point for every
+ * schedule surface (day board bullets, month/week chips, the detail pill).
+ *
+ * It lived inside ShiftRoleTable, so only the day board used it: the chips
+ * coloured by shift index and the detail modal hardcoded grey, which meant one
+ * worker could read green on one view and red on another. Tones only mean
+ * something if they mean the same thing everywhere (ADR-050), so this is the
+ * shared rule and the views hold no colour logic of their own.
+ *
+ * `effectiveScheduleStatus` is applied here rather than by each caller: a past
+ * no-show must read red the moment its window closes, without waiting for the
+ * hourly cron to persist `absent`.
+ */
+export function occurrenceTone(occ: {
+  status: string;
+  schedule_date: string;
+  shift_definition?: { end_time: string; crosses_midnight?: boolean; cutoff_grace_min?: number } | null;
+  lifecycle_state?: string | null;
+  leave_reason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
+  is_within_area?: boolean | null;
+  is_scheduled?: boolean;
+}): PresenceTone {
+  return presenceTone({
+    lifecycleState: occ.lifecycle_state,
+    scheduleStatus: effectiveScheduleStatus(occ.status, occ.shift_definition, occ.schedule_date),
+    leaveReason: occ.leave_reason,
+    isWithinArea: occ.is_within_area,
+    isAdHoc: occ.is_scheduled === false,
+  });
+}
+
+/**
+ * Tones an operator is actively scanning for — a no-show, a late start, someone
+ * on duty outside their area. Used wherever rows are hidden or summarised, so
+ * collapsing can never be how a problem goes unnoticed.
+ */
+export const ATTENTION_TONES: ReadonlySet<PresenceTone> = new Set<PresenceTone>([
+  'red',
+  'orange',
+  'yellow',
+  'amber',
+]);

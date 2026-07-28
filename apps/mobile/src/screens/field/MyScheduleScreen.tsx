@@ -91,7 +91,17 @@ function RosterRow({
   const label =
     ROSTER_STATUS_PILL[status as keyof typeof ROSTER_STATUS_PILL]?.label ?? status;
   const pill = {
-    tone: presenceTone({ scheduleStatus: status }),
+    // The FULL fact set, not just the roster status. Feeding `scheduleStatus`
+    // alone collapsed every reading to planned/present/absent/leave, so "on duty
+    // but outside the area" and "terlambat" were invisible on mobile even once
+    // the backend started sending them (ADR-050).
+    tone: presenceTone({
+      lifecycleState: roster.lifecycle_state,
+      scheduleStatus: status,
+      leaveReason: roster.leave_reason,
+      isWithinArea: roster.is_within_area,
+      isAdHoc: roster.is_scheduled === false,
+    }),
     label,
   };
   // "Area belum ditetapkan" was shown for every kawasan/rayon/kota assignment —
