@@ -146,8 +146,10 @@ const styles = StyleSheet.create({
     borderRadius: nbRadius.sm,
     ...nbShadows.sm,
   },
+  // Centred like the Jadwal / Log Kehadiran pair it now matches — left-aligned,
+  // a lone ghost button reads as a stray link rather than a footer action.
   detailLink: {
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
   },
 });
 
