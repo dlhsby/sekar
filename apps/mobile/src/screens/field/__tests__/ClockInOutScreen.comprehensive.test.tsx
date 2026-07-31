@@ -890,9 +890,9 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
       // (the entry card owns those); elapsed time lives in the Detail Shift
       // modal, so open it and assert the duration there.
       await waitFor(() => {
-        expect(getByText('Detail Shift →')).toBeTruthy();
+        expect(getByText('Detail Shift')).toBeTruthy();
       });
-      fireEvent.press(getByText('Detail Shift →'));
+      fireEvent.press(getByText('Detail Shift'));
 
       await waitFor(() => {
         expect(getAllByText(/\d{2}:\d{2}/).length).toBeGreaterThan(0);

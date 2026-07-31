@@ -12,7 +12,6 @@ import { ImagePreviewModal, InfoTableRow } from '../../components/common';
 import { LocationMapModal, ShiftDetailModal } from '../../components/modals';
 import { AttendanceTypeSheet, type AttendanceAction } from '../../components/modals/AttendanceTypeSheet';
 import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
-import type { ShiftOption } from '../../types/api.types';
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { AttendanceShiftHeading } from '../../components/attendance/AttendanceShiftHeading';
@@ -179,21 +178,6 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
       ? 'late'
       : 'onTime';
 
-  // Record-page "notice" — the out-of-area (or no-boundary) reassurance banner,
-  // shown below the pills. The card is where the worker is about to clock out, so
-  // "absen tetap dicatat" belongs here.
-  const noticeNode =
-    areaState === 'outside' ? (
-      <NBAlert variant="warning" message={t('attendance:gpsSection.outsideBoundary')} />
-    ) : areaState === 'scope' ? (
-      <NBAlert
-        variant="info"
-        message={t('attendance:gpsSection.scopeAssigned', { scope: scheduleScope.name ?? '' })}
-      />
-    ) : areaState === 'none' ? (
-      <NBAlert variant="info" message={t('attendance:gpsSection.noArea')} />
-    ) : null;
-
   // Override navigator header: FieldHomeHeader owns all 3 columns (title + onBack).
   // The title is now the STABLE page name "Rekam Kehadiran" — the action
   // (clock in vs out) lives on the in-page label selector + primary button, not
@@ -353,8 +337,6 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                 refreshingLocation={location.loading}
                 onDetailShift={currentShift ? () => setDetailShiftVisible(true) : undefined}
               />
-              {/* Out-of-area notice — kept on the record page (where you clock out). */}
-              {noticeNode}
             </View>
           </NBCollapsibleCard>
 

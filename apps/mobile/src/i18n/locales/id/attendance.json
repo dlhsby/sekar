@@ -102,7 +102,7 @@
     "assignedArea": "Area Ditugaskan",
     "areaStatus": "Status Area",
     "currentLocation": "Lokasi sekarang",
-    "detailShift": "Detail Shift →",
+    "detailShift": "Detail Shift",
     "accuracy": "±{{value}}m",
     "refreshLocation": "Perbarui lokasi",
     "locationUnavailable": "Lokasi tidak tersedia",

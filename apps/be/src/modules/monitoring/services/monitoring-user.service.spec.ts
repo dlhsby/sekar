@@ -54,11 +54,18 @@ describe('MonitoringUserService', () => {
     name: 'District 1',
   } as District;
 
+  // Presence is derived against the wall clock, so an open session's lifecycle
+  // depends on WHEN the suite runs: with a 06:00-14:00 shift and `new Date()`,
+  // this read `bertugas` in the morning and `pulang` after 15:00. Pin the
+  // clock-in inside the shift window and freeze `now` alongside it (see the
+  // `beforeEach` below) so the expectation means the same thing at any hour.
+  const NOW_IN_SHIFT = new Date('2026-07-16T10:00:00+07:00');
+
   const mockShift: Shift = {
     id: 'shift-1',
     user_id: 'user-1',
     location_id: 'area-1',
-    clock_in_time: new Date(),
+    clock_in_time: new Date('2026-07-16T07:00:00+07:00'),
     clock_out_time: null,
     clock_in_outside_boundary: false,
   } as unknown as Shift;
@@ -71,6 +78,8 @@ describe('MonitoringUserService', () => {
   } as ShiftDefinition;
 
   beforeEach(async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    jest.setSystemTime(NOW_IN_SHIFT);
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MonitoringUserService,
@@ -188,6 +197,10 @@ describe('MonitoringUserService', () => {
     trackingRepository = module.get<jest.Mocked<Repository<UserTrackingStatus>>>(
       getRepositoryToken(UserTrackingStatus),
     );
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   describe('getLiveUsers', () => {

@@ -102,7 +102,7 @@
     "assignedArea": "Assigned Area",
     "areaStatus": "Area Status",
     "currentLocation": "Current Location",
-    "detailShift": "Shift detail →",
+    "detailShift": "Shift detail",
     "accuracy": "±{{value}}m",
     "refreshLocation": "Refresh location",
     "locationUnavailable": "Location unavailable",
