@@ -15,7 +15,7 @@ import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
 import type { ShiftOption } from '../../types/api.types';
 import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../components/modals/AttendanceStatusSheet';
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
-import { AttendanceTimesRow } from '../../components/attendance/AttendanceTimesRow';
+import { AttendanceShiftHeading } from '../../components/attendance/AttendanceShiftHeading';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
 import { useNavigation } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBCollapsibleCard } from '../../components/nb';
@@ -30,7 +30,8 @@ import {
 } from '../../constants/nbTokens';
 import { useClockInOut } from '../../hooks';
 import { workerMapMarker, scopeAreaMarker } from '../../utils/mapUtils';
-import { pickDisplayShift, formatShiftLabel } from '../../utils/shiftDisplay';
+import { pickDisplayShift, formatShiftLabel, formatShiftOptionLabel } from '../../utils/shiftDisplay';
+import { todayLocalDate } from '../../utils/dateUtils';
 import { useAppSelector } from '../../store/hooks';
 import { useTranslation } from 'react-i18next';
 import type { RouteProp } from '@react-navigation/native';
@@ -60,7 +61,6 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
     isSubmitting,
     isWithinBoundary,
     areaState,
-    attendance,
     timer,
     isClockIn,
     isOnline,
@@ -85,8 +85,19 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
   // suggested option; the picker only appears when there is a choice to make.
   const [selectedShift, setSelectedShift] = useState<ShiftOption | null>(null);
   useEffect(() => {
-    setSelectedShift(shiftOptions.find((o) => o.is_default) ?? shiftOptions[0] ?? null);
-  }, [shiftOptions]);
+    // A shift picked on the hub/home card arrives as a route param; honour it so
+    // the choice survives the navigation, else fall back to the server default.
+    const fromRoute = route?.params?.shiftDefinitionId
+      ? shiftOptions.find(
+          (o) =>
+            o.shift_definition_id === route.params?.shiftDefinitionId &&
+            (!route.params?.serviceDay || o.service_day === route.params.serviceDay),
+        )
+      : undefined;
+    setSelectedShift(
+      fromRoute ?? shiftOptions.find((o) => o.is_default) ?? shiftOptions[0] ?? null,
+    );
+  }, [shiftOptions, route?.params?.shiftDefinitionId, route?.params?.serviceDay]);
   const [detailShiftVisible, setDetailShiftVisible] = useState(false);
   const [statusSheetVisible, setStatusSheetVisible] = useState(false);
 
@@ -122,12 +133,31 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
   // home hero: Jadwal Shift · Status · Area Ditugaskan · Status Area.
   // Attribution-first (the ranked shiftOptions), roster fallback — the SAME
   // resolution the home + hub Kehadiran cards use, so all three read identically.
-  const noScheduleText = t('attendance:clockInOut.noScheduleToday');
+  // Same key the home hero and Kehadiran hub use, so "no shift today" reads
+  // identically on all three surfaces instead of drifting per screen.
+  const noScheduleText = t('attendance:hub.noShift');
   const shiftText = formatShiftLabel(pickDisplayShift(shiftOptions, scheduledShift), noScheduleText);
   // The full label of the currently-selected picker option (name + window).
   const selectedShiftText = selectedShift
     ? formatShiftLabel(pickDisplayShift([selectedShift], scheduledShift), shiftText)
     : shiftText;
+  // "Ubah Shift" is an affordance to CHOOSE — offered only from two candidates up.
+  const canSwitchShift = isClockInAction && shiftOptions.length > 1;
+  // Service day the punch will be attributed to: the picked option's own day
+  // (a past-midnight Shift 3 punch belongs to YESTERDAY), else today.
+  const serviceDay = selectedShift?.service_day ?? todayLocalDate();
+  // The shifts the punch is NOT going to, listed under the heading so the worker
+  // sees every shift they hold today rather than only the selected one.
+  const otherShiftLabels = canSwitchShift
+    ? shiftOptions
+        .filter(
+          (o) =>
+            o.shift_definition_id !== selectedShift?.shift_definition_id &&
+            !!o.start_time &&
+            !!o.end_time,
+        )
+        .map((o) => formatShiftOptionLabel(o, serviceDay))
+    : [];
 
   const areaStatusTone: StatusTone = location.loading
     ? 'neutral'
@@ -277,8 +307,19 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                   with none). Pinned to the top of the card, before Jenis Kehadiran,
                   so the reason the submit button is disabled reads at a glance. */}
               {actionMismatch && <NBAlert variant="warning" message={mismatchHint} />}
-              {/* Jenis Kehadiran — the record page's distinctive first row; tap to
-                  switch Clock In / Clock Out via the "Ubah Label Waktu" picker. */}
+              {/* Day + shift, in the SAME two-line shape as the home hero and the
+                  Kehadiran hub (it used to be a "Jadwal Shift │ value" table row
+                  further down, which read as a different fact). The picker rides
+                  along as the trailing action when there is a choice to make. */}
+              <AttendanceShiftHeading
+                date={serviceDay}
+                shiftLabel={canSwitchShift ? selectedShiftText : shiftText}
+                otherShifts={otherShiftLabels}
+                onChangeShift={canSwitchShift ? () => setShiftPickerVisible(true) : undefined}
+                changeShiftTestID="clockinout-pick-shift"
+              />
+              {/* Jenis Kehadiran — tap to switch Clock In / Clock Out via the
+                  "Ubah Label Waktu" picker. */}
               <InfoTableRow
                 label={t('attendance:clockInOut.attendanceType')}
                 value={
@@ -297,64 +338,6 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                     </NBText>
                     <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
                   </TouchableOpacity>
-                }
-              />
-              {/* Shift — always shown so the worker sees which shift they're
-                  recording against. When clocking in and the attribution window
-                  offers a choice (near midnight / dangling, ADR-055), the pencil
-                  opens the picker to switch shift; otherwise it's read-only. */}
-              {(() => {
-                const canSwitchShift = isClockInAction && shiftOptions.length > 0;
-                return (
-                  <InfoTableRow
-                    label={t('attendance:infoCard.shift')}
-                    value={
-                      canSwitchShift ? (
-                        <TouchableOpacity
-                          onPress={() => setShiftPickerVisible(true)}
-                          accessibilityRole="button"
-                          accessibilityLabel={t('attendance:clockInOut.selectShiftTitle')}
-                          testID="clockinout-pick-shift"
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={styles.typeValue}
-                        >
-                          <NBText variant="body" color="black">
-                            {selectedShiftText}
-                          </NBText>
-                          <MaterialCommunityIcons name="pencil" size={15} color={nbColors.primary} />
-                        </TouchableOpacity>
-                      ) : (
-                        <NBText variant="body" color="black">
-                          {shiftText}
-                        </NBText>
-                      )
-                    }
-                  />
-                );
-              })()}
-              {/* Jam Masuk / Jam Keluar — same shared row as the entry card, so the
-                  clock-in page and home/hub cards render times identically. The
-                  colours still flag a late clock-in / early clock-out. */}
-              <AttendanceTimesRow
-                jamMasuk={attendance.firstClockIn}
-                jamKeluar={attendance.lastClockOut}
-                masukColor={
-                  attendance.firstClockIn
-                    ? !hasScheduleToday
-                      ? 'black'
-                      : attendance.isLate
-                        ? 'dangerDark'
-                        : 'successDark'
-                    : 'gray400'
-                }
-                keluarColor={
-                  attendance.lastClockOut
-                    ? !hasScheduleToday
-                      ? 'black'
-                      : attendance.isEarlyLeave
-                        ? 'dangerDark'
-                        : 'successDark'
-                    : 'gray400'
                 }
               />
               {/* Shared, simplified rows — identical to the home "Kehadiran" hero:

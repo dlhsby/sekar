@@ -348,6 +348,7 @@ export function ShiftDefinitionsModal({
             <MinutesField
               id="sd-early"
               label={t('schedules:shiftDefs.fields.early')}
+              hint={t('schedules:shiftDefs.fields.earlyHint')}
               required
               value={numToStr(form.early_window_min)}
               error={errors.early_window_min}
@@ -356,6 +357,7 @@ export function ShiftDefinitionsModal({
             <MinutesField
               id="sd-cutoff"
               label={t('schedules:shiftDefs.fields.cutoff')}
+              hint={t('schedules:shiftDefs.fields.cutoffHint')}
               required
               value={numToStr(form.cutoff_grace_min)}
               error={errors.cutoff_grace_min}
@@ -400,12 +402,15 @@ function FieldRow({
   label,
   required,
   error,
+  hint,
   children,
 }: {
   id: string;
   label: string;
   required?: boolean;
   error?: string;
+  /** One line under the control explaining what the value does. */
+  hint?: string;
   children: React.ReactNode;
 }) {
   return (
@@ -420,6 +425,11 @@ function FieldRow({
         )}
       </Label>
       {children}
+      {hint && !error && (
+        <p id={`${id}-hint`} className="mt-1 text-nb-caption text-nb-gray-600">
+          {hint}
+        </p>
+      )}
       {error && <p className="mt-1 text-nb-caption text-nb-danger">{error}</p>}
     </div>
   );
@@ -436,6 +446,7 @@ function MinutesField({
   required,
   value,
   error,
+  hint,
   onChange,
 }: {
   id: string;
@@ -443,10 +454,11 @@ function MinutesField({
   required?: boolean;
   value: string;
   error?: string;
+  hint?: string;
   onChange: (raw: string) => void;
 }) {
   return (
-    <FieldRow id={id} label={label} required={required} error={error}>
+    <FieldRow id={id} label={label} required={required} error={error} hint={hint}>
       <Input
         id={id}
         type="number"
@@ -456,6 +468,7 @@ function MinutesField({
         value={value}
         aria-required={required}
         aria-invalid={!!error}
+        aria-describedby={hint && !error ? `${id}-hint` : undefined}
         onChange={(e) => {
           const raw = e.target.value;
           if (raw === '') {

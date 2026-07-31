@@ -447,3 +447,13 @@ export function formatLongDate(date: Date | string): string {
   const monthNames = i18n.t('common:calendar.monthsShort', { returnObjects: true }) as string[];
   return `${dayNames[d.getDay()]}, ${d.getDate()} ${monthNames[d.getMonth()]} ${d.getFullYear()}`;
 }
+
+/**
+ * Device-local calendar day as `YYYY-MM-DD`. Local, never UTC: a WIB evening is
+ * still "today" for a field worker, while `toISOString().slice(0,10)` would roll
+ * it back a day. Used wherever a service day is needed without a shift context.
+ */
+export function todayLocalDate(now: Date = new Date()): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}`;
+}

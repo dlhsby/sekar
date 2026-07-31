@@ -343,7 +343,8 @@
     "moreCount": "+{{count}} more",
     "board": {
       "cityLabel": "Surabaya"
-    }
+    },
+    "refreshing": "Updating schedule…"
   },
   "staffCapacity": {
     "title": "Set Capacity",
@@ -453,10 +454,12 @@
       "name": "Name",
       "start": "Start",
       "end": "End",
-      "early": "Before (min)",
-      "cutoff": "After (min)",
+      "early": "Early clock-in allowance (min)",
+      "cutoff": "Grace after shift ends (min)",
       "startReminder": "Start reminder (min)",
-      "endReminder": "End reminder (min)"
+      "endReminder": "End reminder (min)",
+      "earlyHint": "A clock-in this many minutes before the start still counts for this shift.",
+      "cutoffHint": "Past this, a clock-in/out no longer attaches to this shift."
     },
     "activate": "Activate",
     "deactivate": "Deactivate",

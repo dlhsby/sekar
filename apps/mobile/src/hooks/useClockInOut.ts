@@ -19,6 +19,9 @@ import { isToday } from '../utils/dateUtils';
 import { deriveAttendanceStatus } from '../utils/attendance';
 import { resolveScheduleScope } from '../utils/scheduleScope';
 import { buildMapArea, type MapArea } from '../utils/mapUtils';
+import { buildPunchWarnings, type PunchAction, type PunchWarning } from '../utils/punchWarnings';
+import { buildPunchConfirmMessage, punchConfirmTitle } from '../utils/punchWarningText';
+import { resolveActiveShift } from '../utils/shiftDisplay';
 import { useTodayRoster } from './useTodayRoster';
 import { useAllDistrictAreas } from './useAllDistrictAreas';
 import { requestClockInPermissions, requestCameraPermission } from '../services/permissions';
@@ -33,6 +36,34 @@ export type { MapArea } from '../utils/mapUtils';
  * NOT unassigned. `none` is reserved for a genuinely ad-hoc worker.
  */
 export type AreaState = 'within' | 'outside' | 'none' | 'scope';
+
+/**
+ * Ask the worker to confirm a punch that will be recorded unfavourably (outside
+ * the area, late, early, or unscheduled). There is no approval workflow — this
+ * informs, it never gates: dismissing simply abandons the punch.
+ *
+ * Resolves `false` on cancel or dismiss so the caller can `await` it inline.
+ */
+function confirmPunch(action: PunchAction, warnings: PunchWarning[]): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      punchConfirmTitle(action),
+      buildPunchConfirmMessage(warnings),
+      [
+        { text: i18n.t('common:actions.cancel'), style: 'cancel', onPress: () => resolve(false) },
+        {
+          text: i18n.t(
+            action === 'clock_in'
+              ? 'attendance:punchConfirm.confirmClockIn'
+              : 'attendance:punchConfirm.confirmClockOut',
+          ),
+          onPress: () => resolve(true),
+        },
+      ],
+      { cancelable: true, onDismiss: () => resolve(false) },
+    );
+  });
+}
 
 export interface LocationState {
   latitude: number | null;
@@ -84,12 +115,20 @@ export function useClockInOut() {
   }, [loadCurrentState]);
   const [timer, setTimer] = useState('00:00:00');
 
+  // Wall clock at minute granularity — drives the time-dependent derivations
+  // below (lateness, shift window) so they stay true while the screen is open.
+  const [nowMinute, setNowMinute] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowMinute(Date.now()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   const isClockIn = !currentShift;
 
   // Today's roster (from /schedules/my) — the single schedule concept (ADR-013).
   // This is the ONLY source of "scheduled" truth: an unscheduled patrol/ad-hoc
   // worker resolves to hasScheduleToday=false and never reads as late.
-  const { roster, rosterShift, hasScheduleToday } = useTodayRoster();
+  const { roster, rosterShift, hasScheduleToday, allToday } = useTodayRoster();
 
   // Where today's roster row puts the worker — a city/rayon/kawasan-scope
   // assignment names no lokasi but is still an assignment (see resolveScheduleScope).
@@ -200,15 +239,63 @@ export function useClockInOut() {
     [shiftHistory],
   );
 
-  // Lateness is judged only against the roster shift, off the first clock-in.
-  const attendance = useMemo(
-    () => deriveAttendanceStatus(todayShifts, currentShift, rosterShift),
-    [todayShifts, currentShift, rosterShift],
+  // The ONE shift this screen reasons about: the server's attribution default,
+  // falling back to whichever roster row is operative right now. Label, lateness
+  // and status all read this — deriving the label from attribution while judging
+  // lateness against `/schedules/my`'s single (possibly not-yet-started) row is
+  // what let a worker four hours late for Shift 2 be graded against Shift 3.
+  const scheduledShift = useMemo(
+    () => resolveActiveShift(shiftOptions, [...allToday.map((r) => r.shift_definition), rosterShift]),
+    [shiftOptions, allToday, rosterShift],
   );
-  // The scheduled window shown on screen — roster only (null when unscheduled).
-  const scheduledShift = rosterShift;
+
+  // Lateness is judged against that same shift, off the day's first clock-in.
+  //
+  // `deriveAttendanceStatus` projects against NOW when there is no clock-in yet,
+  // so the memo must age with the clock: a screen left open across the shift
+  // start would otherwise keep reading TEPAT WAKTU while the punch dialog
+  // (evaluated fresh at press time) says the worker is late. Minute granularity
+  // — the states it drives never turn on a finer boundary than that.
+  const attendance = useMemo(
+    () => deriveAttendanceStatus(todayShifts, currentShift, scheduledShift, new Date(nowMinute)),
+    [todayShifts, currentShift, scheduledShift, nowMinute],
+  );
   const isLate = attendance.isLate;
   const attendanceState = attendance.state;
+
+  // Area state for the boundary badge. Three cases:
+  //  • a geofenceable area — today's lokasi OR a rayon/kawasan with a boundary
+  //    polygon → within / outside it. Scope-aware: a rayon assignment is now
+  //    checked against the RAYON boundary, a kawasan against its kawasan.
+  //  • a scope with no polygon (kota, or a rayon/kawasan whose boundary was
+  //    never computed) → 'scope': the worker IS assigned, attendance is still
+  //    recorded, but there is nothing to test against. Labelled neutrally, not
+  //    "tanpa batas lokasi".
+  //  • genuinely unassigned (ad-hoc) → 'none'
+  const areaState: AreaState =
+    areasForGeofence.length > 0
+      ? isWithinBoundary
+        ? 'within'
+        : 'outside'
+      : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
+        ? 'scope'
+        : 'none';
+
+  /**
+   * Warnings for the punch about to be submitted, evaluated at press time so
+   * `now` is the moment of the punch rather than of the last render.
+   */
+  const collectWarnings = useCallback(
+    (action: PunchAction) =>
+      buildPunchWarnings({
+        action,
+        areaState,
+        attendanceState: attendance.state,
+        rosterShift: scheduledShift,
+        areaName: mapArea?.name ?? scheduleScope.name ?? null,
+      }),
+    [areaState, attendance.state, scheduledShift, mapArea, scheduleScope],
+  );
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 
@@ -352,8 +439,15 @@ export function useClockInOut() {
   }, []);
 
   const handleClockIn = useCallback(async (onSuccess: () => void, shift?: ShiftOption | null) => {
-    if (!location.latitude || !location.longitude) {
+    // Null-checked, not truthy-checked: latitude 0 is a valid fix.
+    if (location.latitude == null || location.longitude == null) {
       Alert.alert('Error', i18n.t('location:errors.unavailableClockIn'));
+      return;
+    }
+
+    // Tell the worker what is about to be recorded against them before it is.
+    const warnings = collectWarnings('clock_in');
+    if (warnings.length > 0 && !(await confirmPunch('clock_in', warnings))) {
       return;
     }
 
@@ -421,106 +515,100 @@ export function useClockInOut() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [location, selfie, dispatch, isOnline]);
+  }, [location, selfie, dispatch, isOnline, collectWarnings]);
 
   const handleClockOut = useCallback(async (onSuccess: () => void) => {
     if (!currentShift) {
       Alert.alert('Error', i18n.t('location:clockInOut.noActiveShift'));
       return;
     }
-    if (!location.latitude || !location.longitude) {
+    if (location.latitude == null || location.longitude == null) {
       Alert.alert('Error', i18n.t('location:errors.unavailableClockIn'));
       return;
     }
 
-    Alert.alert(
-      i18n.t('location:clockInOut.clockOutConfirmTitle'),
-      i18n.t('location:clockInOut.clockOutConfirmMessage'),
-      [
-        { text: i18n.t('common:actions.cancel'), style: 'cancel' },
-        {
-          text: i18n.t('location:clockInOut.clockOutButton'),
-          style: 'destructive',
-          onPress: async () => {
-            setIsSubmitting(true);
-            try {
-              try {
-                await locationTracker.forceUpload();
-                await locationTracker.stop();
-              } catch (trackingError) {
-                console.warn('Failed to stop location tracking:', trackingError);
-              }
+    // Clock-out always confirms — ending a shift is the irreversible half of the
+    // pair. When something is off (outside the area, leaving early, unscheduled)
+    // the generic "are you sure" is replaced by the specific reasons.
+    const warnings = collectWarnings('clock_out');
+    const confirmed =
+      warnings.length > 0
+        ? await confirmPunch('clock_out', warnings)
+        : await new Promise<boolean>((resolve) => {
+            Alert.alert(
+              i18n.t('location:clockInOut.clockOutConfirmTitle'),
+              i18n.t('location:clockInOut.clockOutConfirmMessage'),
+              [
+                { text: i18n.t('common:actions.cancel'), style: 'cancel', onPress: () => resolve(false) },
+                {
+                  text: i18n.t('location:clockInOut.clockOutButton'),
+                  style: 'destructive',
+                  onPress: () => resolve(true),
+                },
+              ],
+              { cancelable: true, onDismiss: () => resolve(false) },
+            );
+          });
+    if (!confirmed) {
+      return;
+    }
 
-              const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
-              const clientUuid = uuid.v4() as string;
-              const punchedAt = new Date().toISOString();
+    setIsSubmitting(true);
+    try {
+      try {
+        await locationTracker.forceUpload();
+        await locationTracker.stop();
+      } catch (trackingError) {
+        console.warn('Failed to stop location tracking:', trackingError);
+      }
 
-              // Offline-first (ADR-002): queue + optimistically end the shift.
-              if (!isOnline) {
-                await addToQueue('clock-out', {
-                  gps_lat: location.latitude!,
-                  gps_lng: location.longitude!,
-                  client_uuid: clientUuid,
-                  accuracy_m: location.accuracy ?? undefined,
-                  punched_at: punchedAt,
-                });
-                setSelfie(null);
-                dispatch(setCurrentShift(null));
-                Alert.alert('OK', i18n.t('attendance:clockInOut.offlineQueued'), [
-                  { text: 'OK', onPress: onSuccess },
-                ]);
-                return;
-              }
+      const selfieBase64 = selfie ? await mediaService.convertToBase64(selfie) : undefined;
+      const clientUuid = uuid.v4() as string;
+      const punchedAt = new Date().toISOString();
 
-              const response = await clockOut(location.latitude!, location.longitude!, selfieBase64, {
-                clientUuid,
-                accuracyM: location.accuracy ?? undefined,
-                punchedAt,
-              });
-              if (response.error) {
-                const errMsg = response.error;
-                Alert.alert(i18n.t('location:clockInOut.clockOutFail'), errMsg);
-                return;
-              }
+      // Offline-first (ADR-002): queue + optimistically end the shift.
+      if (!isOnline) {
+        await addToQueue('clock-out', {
+          gps_lat: location.latitude!,
+          gps_lng: location.longitude!,
+          client_uuid: clientUuid,
+          accuracy_m: location.accuracy ?? undefined,
+          punched_at: punchedAt,
+        });
+        setSelfie(null);
+        dispatch(setCurrentShift(null));
+        Alert.alert('OK', i18n.t('attendance:clockInOut.offlineQueued'), [
+          { text: 'OK', onPress: onSuccess },
+        ]);
+        return;
+      }
 
-              setSelfie(null);
-              dispatch(setCurrentShift(null));
-              Alert.alert('OK', i18n.t('location:clockInOut.clockOutSuccess'), [
-                { text: 'OK', onPress: onSuccess },
-              ]);
-            } catch (error: any) {
-              console.error('Clock-out error:', error);
-              Alert.alert(
-                i18n.t('location:clockInOut.clockOutFail'),
-                error.response?.data?.message || error.message || i18n.t('location:clockInOut.clockOutFail'),
-              );
-            } finally {
-              setIsSubmitting(false);
-            }
-          },
-        },
-      ],
-      { cancelable: true },
-    );
-  }, [currentShift, location, selfie, dispatch, isOnline]);
+      const response = await clockOut(location.latitude!, location.longitude!, selfieBase64, {
+        clientUuid,
+        accuracyM: location.accuracy ?? undefined,
+        punchedAt,
+      });
+      if (response.error) {
+        const errMsg = response.error;
+        Alert.alert(i18n.t('location:clockInOut.clockOutFail'), errMsg);
+        return;
+      }
 
-  // Area state for the boundary badge. Three cases:
-  //  • a geofenceable area — today's lokasi OR a rayon/kawasan with a boundary
-  //    polygon → within / outside it. Scope-aware: a rayon assignment is now
-  //    checked against the RAYON boundary, a kawasan against its kawasan.
-  //  • a scope with no polygon (kota, or a rayon/kawasan whose boundary was
-  //    never computed) → 'scope': the worker IS assigned, attendance is still
-  //    recorded, but there is nothing to test against. Labelled neutrally, not
-  //    "tanpa batas lokasi".
-  //  • genuinely unassigned (ad-hoc) → 'none'
-  const areaState: AreaState =
-    areasForGeofence.length > 0
-      ? isWithinBoundary
-        ? 'within'
-        : 'outside'
-      : scheduleScope.scope !== 'none' && scheduleScope.scope !== 'location'
-        ? 'scope'
-        : 'none';
+      setSelfie(null);
+      dispatch(setCurrentShift(null));
+      Alert.alert('OK', i18n.t('location:clockInOut.clockOutSuccess'), [
+        { text: 'OK', onPress: onSuccess },
+      ]);
+    } catch (error: any) {
+      console.error('Clock-out error:', error);
+      Alert.alert(
+        i18n.t('location:clockInOut.clockOutFail'),
+        error.response?.data?.message || error.message || i18n.t('location:clockInOut.clockOutFail'),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [currentShift, location, selfie, dispatch, isOnline, collectWarnings]);
 
   return {
     location,

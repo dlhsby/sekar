@@ -20,6 +20,8 @@ import { getMyRoster } from '../../services/api/schedulesApi';
 import { getDistricts } from '../../services/api/districtsApi';
 import { __resetDistrictAreasCache } from '../useAllDistrictAreas';
 import Geolocation from 'react-native-geolocation-service';
+import { Alert } from 'react-native';
+import { clockIn as mockClockIn, getCurrentShift } from '../../services/api/shiftsApi';
 import { requestClockInPermissions } from '../../services/permissions';
 
 jest.mock('react-native-geolocation-service', () => ({
@@ -273,5 +275,86 @@ describe('useClockInOut — roster-gated lateness', () => {
     expect(result.current.hasScheduleToday).toBe(false);
     expect(result.current.scheduledShift).toBeNull();
     expect(result.current.isLate).toBe(false);
+  });
+
+  // The pre-punch confirm: SEKAR never blocks a punch, so the dialog exists to
+  // inform. What matters is that dismissing it abandons the punch entirely —
+  // an advisory that submits anyway would be worse than no advisory at all.
+  describe('pre-punch confirmation', () => {
+    const ROSTER_OUTSIDE = {
+      shift_definition: ROSTER_SHIFT_DEF,
+      district_id: 'd-1',
+      district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+    };
+
+    /** Press a button on the most recent Alert by its index. */
+    const pressAlertButton = (index: number) => {
+      const buttons = (Alert.alert as jest.Mock).mock.calls.at(-1)?.[2];
+      buttons?.[index]?.onPress?.();
+    };
+
+    beforeEach(() => {
+      jest.spyOn(Alert, 'alert').mockImplementation(() => undefined);
+      (mockClockIn as jest.Mock).mockResolvedValue({ data: { id: 'punch-1' } });
+      (getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+    });
+
+    it('does not submit the clock-in when the worker cancels', async () => {
+      withGpsFix(5, 5); // outside the assigned rayon
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('outside'));
+
+      const onSuccess = jest.fn();
+      const pending = result.current.handleClockIn(onSuccess);
+      await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+      pressAlertButton(0); // Batal
+      await pending;
+
+      expect(mockClockIn).not.toHaveBeenCalled();
+      expect(onSuccess).not.toHaveBeenCalled();
+    });
+
+    it('submits the clock-in once the worker confirms', async () => {
+      withGpsFix(5, 5);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('outside'));
+
+      const pending = result.current.handleClockIn(jest.fn());
+      await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+      pressAlertButton(1); // Tetap Clock In
+      await pending;
+
+      expect(mockClockIn).toHaveBeenCalled();
+    });
+
+    it('lists the reason, so the dialog says WHY rather than just "are you sure"', async () => {
+      withGpsFix(5, 5);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('outside'));
+
+      const pending = result.current.handleClockIn(jest.fn());
+      await waitFor(() => expect(Alert.alert).toHaveBeenCalled());
+      const [, message] = (Alert.alert as jest.Mock).mock.calls.at(-1)!;
+      expect(message).toContain('Rayon Barat 1');
+      pressAlertButton(0);
+      await pending;
+    });
+
+    it('submits without any dialog when the punch is nominal', async () => {
+      withGpsFix(0, 0); // inside the assigned rayon
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.areaState).toBe('within'));
+
+      await result.current.handleClockIn(jest.fn());
+
+      expect(mockClockIn).toHaveBeenCalled();
+      // The only Alert raised is the success one, never a confirm.
+      const titles = (Alert.alert as jest.Mock).mock.calls.map((c) => c[0]);
+      expect(titles).not.toContain('Konfirmasi Clock In');
+    });
   });
 });

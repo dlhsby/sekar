@@ -343,7 +343,8 @@
     "moreCount": "+{{count}} lagi",
     "board": {
       "cityLabel": "Surabaya"
-    }
+    },
+    "refreshing": "Memperbarui jadwal…"
   },
   "staffCapacity": {
     "title": "Atur Kapasitas",
@@ -453,10 +454,12 @@
       "name": "Nama",
       "start": "Mulai",
       "end": "Selesai",
-      "early": "Sebelum (menit)",
-      "cutoff": "Setelah (menit)",
+      "early": "Toleransi clock in awal (menit)",
+      "cutoff": "Toleransi setelah shift berakhir (menit)",
       "startReminder": "Pengingat mulai (menit)",
-      "endReminder": "Pengingat selesai (menit)"
+      "endReminder": "Pengingat selesai (menit)",
+      "earlyHint": "Clock in sebelum jam mulai masih dihitung untuk shift ini.",
+      "cutoffHint": "Setelah lewat batas ini, clock in/out tidak lagi masuk ke shift ini."
     },
     "activate": "Aktifkan",
     "deactivate": "Nonaktifkan",
