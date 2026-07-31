@@ -78,7 +78,8 @@
     "withinWorkArea": "Within work area",
     "outsideWorkArea": "Outside work area",
     "updated": "Updated {{time}}",
-    "coordAria": "Coordinates: {{lat}}, {{lng}}"
+    "coordAria": "Coordinates: {{lat}}, {{lng}}",
+    "distanceFrom": "{{distance}} from {{area}}"
   },
   "nbDatePicker": {
     "months": [

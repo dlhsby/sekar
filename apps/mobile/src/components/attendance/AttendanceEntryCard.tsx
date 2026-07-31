@@ -52,6 +52,13 @@ export interface AttendanceEntryCardProps {
   otherShiftLabels?: string[];
   /** Opens the shift picker. Omit when there is nothing to choose between. */
   onChangeShift?: () => void;
+  /**
+   * Extra detail rendered between the heading and the punch actions — the home
+   * screen passes `AttendanceInfoRows` (Status Kehadiran / Status Area / Detail
+   * Shift) so an on-duty worker sees the same card as everyone else, with the
+   * context the old bespoke hero used to carry.
+   */
+  infoRows?: React.ReactNode;
   onClockIn: () => void;
   onClockOut: () => void;
   /** When provided, renders the "Jadwal Saya" link (bottom-left). */
@@ -70,6 +77,7 @@ export function AttendanceEntryCard({
   hasScheduleToday = true,
   otherShiftLabels,
   onChangeShift,
+  infoRows,
   onClockIn,
   onClockOut,
   onViewSchedule,
@@ -97,6 +105,8 @@ export function AttendanceEntryCard({
         onChangeShift={onChangeShift}
         changeShiftTestID="entry-change-shift"
       />
+
+      {infoRows && <View style={styles.infoRows}>{infoRows}</View>}
 
       {/* Divider between the shift info and the times/actions (the "top" rule) */}
       <View style={styles.divider} />
@@ -172,6 +182,7 @@ const styles = StyleSheet.create({
   // so the symmetry is explicit rather than inherited by luck.
   banner: { marginTop: 0, marginBottom: nbSpacing.md },
   divider: { height: 1, backgroundColor: nbColors.gray200, marginVertical: nbSpacing.sm },
+  infoRows: { marginTop: nbSpacing.sm },
   grid: { flexDirection: 'row', alignItems: 'stretch' },
   gridCol: { flex: 1, alignItems: 'center', gap: nbSpacing.sm },
   gridDivider: { width: 1, backgroundColor: nbColors.gray200, marginHorizontal: nbSpacing.sm },

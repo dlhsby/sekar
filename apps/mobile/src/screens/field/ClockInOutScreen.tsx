@@ -72,32 +72,20 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
     mapArea,
     hasScheduleToday,
     shiftOptions,
+    selectedShift,
+    setSelectedShift,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
     handleClockOut,
-  } = useClockInOut();
+  } = useClockInOut({
+    shiftDefinitionId: route?.params?.shiftDefinitionId,
+    serviceDay: route?.params?.serviceDay,
+  });
 
   const [mapVisible, setMapVisible] = useState(false);
   const [typeSheetVisible, setTypeSheetVisible] = useState(false);
   const [shiftPickerVisible, setShiftPickerVisible] = useState(false);
-  // ADR-055: which shift a clock-in is attributed to. Defaults to the server's
-  // suggested option; the picker only appears when there is a choice to make.
-  const [selectedShift, setSelectedShift] = useState<ShiftOption | null>(null);
-  useEffect(() => {
-    // A shift picked on the hub/home card arrives as a route param; honour it so
-    // the choice survives the navigation, else fall back to the server default.
-    const fromRoute = route?.params?.shiftDefinitionId
-      ? shiftOptions.find(
-          (o) =>
-            o.shift_definition_id === route.params?.shiftDefinitionId &&
-            (!route.params?.serviceDay || o.service_day === route.params.serviceDay),
-        )
-      : undefined;
-    setSelectedShift(
-      fromRoute ?? shiftOptions.find((o) => o.is_default) ?? shiftOptions[0] ?? null,
-    );
-  }, [shiftOptions, route?.params?.shiftDefinitionId, route?.params?.serviceDay]);
   const [detailShiftVisible, setDetailShiftVisible] = useState(false);
   const [statusSheetVisible, setStatusSheetVisible] = useState(false);
 
@@ -306,7 +294,12 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
                   the current shift state (clock in with a shift open, or clock out
                   with none). Pinned to the top of the card, before Jenis Kehadiran,
                   so the reason the submit button is disabled reads at a glance. */}
-              {actionMismatch && <NBAlert variant="warning" message={mismatchHint} />}
+              {actionMismatch && (
+                // NBAlert ships a `marginBottom: md`, but the info table already
+                // spaces its children by `sm` — leaving the banner with twice the
+                // gap below it that it has above.
+                <NBAlert variant="warning" message={mismatchHint} style={styles.mismatchAlert} />
+              )}
               {/* Day + shift, in the SAME two-line shape as the home hero and the
                   Kehadiran hub (it used to be a "Jadwal Shift │ value" table row
                   further down, which read as a different fact). The picker rides
@@ -559,6 +552,7 @@ const styles = StyleSheet.create({
   infoTable: {
     gap: nbSpacing.sm,
   },
+  mismatchAlert: { marginBottom: 0 },
   errorText: {
     marginBottom: nbSpacing.sm,
   },

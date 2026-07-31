@@ -78,7 +78,8 @@
     "withinWorkArea": "Di dalam area kerja",
     "outsideWorkArea": "Di luar area kerja",
     "updated": "Diperbarui {{time}}",
-    "coordAria": "Koordinat: {{lat}}, {{lng}}"
+    "coordAria": "Koordinat: {{lat}}, {{lng}}",
+    "distanceFrom": "{{distance}} dari {{area}}"
   },
   "nbDatePicker": {
     "months": [
