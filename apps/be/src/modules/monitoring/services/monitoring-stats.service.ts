@@ -100,8 +100,14 @@ export class MonitoringStatsService {
     const workersOffline = districtSummaries.reduce((sum, s) => sum + s.workers_offline, 0);
     const totalAreas = districtSummaries.reduce((sum, s) => sum + s.area_count, 0);
 
+    // Bounded to TODAY's service day. Unbounded, this counted every session that
+    // was never clocked out since the system began — on the staging snapshot that
+    // was 528 "active shifts" against 3 genuinely open today. A forgotten
+    // clock-out is not a worker on duty (ADR-055: past its cutoff the session is
+    // dangling, `pulang` + `lupa_clock_out`), so history must not inflate the
+    // live count.
     const activeShifts = await this.shiftRepository.count({
-      where: { clock_out_time: IsNull() },
+      where: { clock_out_time: IsNull(), service_day: TimezoneUtil.jakartaDateString() },
     });
 
     const [tasksPending, tasksInProgress, tasksCompletedToday] = await Promise.all([
@@ -1782,12 +1788,14 @@ export class MonitoringStatsService {
       .getCount();
   }
 
+  /** Open sessions on TODAY's service day — see the note on the city-level count. */
   async countActiveShiftsByAreaIds(locationIds: string[]): Promise<number> {
     if (locationIds.length === 0) return 0;
     return this.shiftRepository
       .createQueryBuilder('shift')
       .where('shift.location_id IN (:...locationIds)', { locationIds })
       .andWhere('shift.clock_out_time IS NULL')
+      .andWhere('shift.service_day = :today', { today: TimezoneUtil.jakartaDateString() })
       .getCount();
   }
 

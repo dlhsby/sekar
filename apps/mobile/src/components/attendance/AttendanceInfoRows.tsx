@@ -4,6 +4,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { useTranslation } from 'react-i18next';
 import { InfoTableRow } from '../common';
 import { NBText } from '../nb/NBText';
+import { NBButton } from '../nb/NBButton';
 import { StatusPill, type StatusTone } from '../home/StatusPill';
 import { nbColors, nbSpacing, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 
@@ -99,17 +100,18 @@ export function AttendanceInfoRows({
         }
       />
       {onDetailShift ? (
-        <TouchableOpacity
+        // Same ghost button as Jadwal / Log Kehadiran on the entry card — it is
+        // the same kind of affordance (go look at more detail), so it should not
+        // be styled as a third thing.
+        <NBButton
+          title={t('attendance:infoCard.detailShift')}
+          leftIcon="calendar-clock"
+          variant="ghost"
+          size="sm"
           onPress={onDetailShift}
-          activeOpacity={0.7}
-          accessibilityRole="button"
           style={styles.detailLink}
           testID="shift-detail-link"
-        >
-          <NBText variant="mono-sm" color="gray700" uppercase style={styles.detailText}>
-            {t('attendance:infoCard.detailShift')}
-          </NBText>
-        </TouchableOpacity>
+        />
       ) : null}
     </View>
   );
@@ -146,9 +148,6 @@ const styles = StyleSheet.create({
   },
   detailLink: {
     alignSelf: 'flex-start',
-  },
-  detailText: {
-    letterSpacing: 0.6,
   },
 });
 
