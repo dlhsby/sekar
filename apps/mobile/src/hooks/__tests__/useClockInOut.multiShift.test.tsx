@@ -165,6 +165,67 @@ describe('multi-shift day — which shift is shown at 19:00', () => {
     expect(result.current.isLate).toBe(true);
   });
 
+  it('grades against the PICKED shift, not the server default', async () => {
+    // 20:37: Shift 2 (covering, default) is 5h late; Shift 3 (early, starts
+    // 21:00) is not late at all. Choosing Shift 3 must flip the status — the
+    // record page named Shift 3 while still judging against Shift 2.
+    jest.setSystemTime(new Date(2026, 6, 31, 20, 37, 0));
+    const OPTION_SHIFT_3 = {
+      shift_definition_id: 'sd-3',
+      shift_name: 'Shift 3',
+      start_time: '21:00:00',
+      end_time: '05:00:00',
+      crosses_midnight: true,
+      service_day: '2026-07-31',
+      phase: 'early',
+      minutes_to_start: 23,
+      is_default: false,
+    };
+    (getMyRoster as jest.Mock).mockResolvedValue({ data: { shift_definition: SHIFT_2 } });
+    (getCurrentState as jest.Mock).mockResolvedValue({
+      data: { open_session: null, options: [OPTION_SHIFT_2, OPTION_SHIFT_3] },
+    });
+    const { result } = renderHook(() => useClockInOut(), { wrapper });
+
+    // Default (Shift 2) → late.
+    await waitFor(() => expect(result.current.selectedShift?.shift_definition_id).toBe('sd-2'));
+    expect(result.current.isLate).toBe(true);
+
+    // Pick Shift 3 → its window has not started, so nothing is late.
+    await act(async () => {
+      result.current.setSelectedShift(OPTION_SHIFT_3 as never);
+    });
+
+    expect(result.current.scheduledShift?.name).toBe('Shift 3');
+    expect(result.current.isLate).toBe(false);
+  });
+
+  it('honours a shift preselected by the caller (picked on the hub)', async () => {
+    jest.setSystemTime(new Date(2026, 6, 31, 20, 37, 0));
+    const OPTION_SHIFT_3 = {
+      shift_definition_id: 'sd-3',
+      shift_name: 'Shift 3',
+      start_time: '21:00:00',
+      end_time: '05:00:00',
+      crosses_midnight: true,
+      service_day: '2026-07-31',
+      phase: 'early',
+      minutes_to_start: 23,
+      is_default: false,
+    };
+    (getMyRoster as jest.Mock).mockResolvedValue({ data: { shift_definition: SHIFT_2 } });
+    (getCurrentState as jest.Mock).mockResolvedValue({
+      data: { open_session: null, options: [OPTION_SHIFT_2, OPTION_SHIFT_3] },
+    });
+    const { result } = renderHook(
+      () => useClockInOut({ shiftDefinitionId: 'sd-3', serviceDay: '2026-07-31' }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.selectedShift?.shift_definition_id).toBe('sd-3'));
+    expect(result.current.isLate).toBe(false);
+  });
+
   it('falls back to the shift covering NOW when attribution is unavailable', async () => {
     // Offline / failed fetch: with no options, the roster fallback must still
     // pick the operative shift out of the day's rows, not an arbitrary one.

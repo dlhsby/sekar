@@ -37,6 +37,9 @@ export type { MapArea } from '../utils/mapUtils';
  */
 export type AreaState = 'within' | 'outside' | 'none' | 'scope';
 
+/** Identity of a shift candidate: the same shift on another service day is a different option. */
+const keyOfOption = (o: ShiftOption): string => `${o.service_day}:${o.shift_definition_id}`;
+
 /**
  * Ask the worker to confirm a punch that will be recorded unfavourably (outside
  * the area, late, early, or unscheduled). There is no approval workflow — this
@@ -73,7 +76,13 @@ export interface LocationState {
   error: string | null;
 }
 
-export function useClockInOut() {
+/** A shift the caller wants pre-selected (e.g. picked on the hub, passed by route). */
+export interface PreferredShift {
+  shiftDefinitionId?: string;
+  serviceDay?: string;
+}
+
+export function useClockInOut(preferred?: PreferredShift) {
   const dispatch = useAppDispatch();
 
   const assignedArea = useAppSelector((state) => state.auth.assignedArea);
@@ -96,6 +105,30 @@ export function useClockInOut() {
   // (drives the Clock-Out gate) + the ranked shift options (drives the picker).
   const [shiftOptions, setShiftOptions] = useState<ShiftOption[]>([]);
   const [hasOpenSession, setHasOpenSession] = useState<boolean | null>(null);
+
+  /**
+   * Which shift the next punch targets. Owned here, not by the screen: the
+   * status and lateness are derived from it, and a selection the hook cannot see
+   * is a selection it cannot grade against — the record page named the picked
+   * Shift 3 while still judging the worker against the default Shift 2.
+   */
+  const [selectedShift, setSelectedShift] = useState<ShiftOption | null>(null);
+  useEffect(() => {
+    setSelectedShift((current) => {
+      // Keep an explicit in-session pick as long as it is still a candidate.
+      const stillValid =
+        current && shiftOptions.some((o) => keyOfOption(o) === keyOfOption(current));
+      if (stillValid) return current;
+      const fromCaller = preferred?.shiftDefinitionId
+        ? shiftOptions.find(
+            (o) =>
+              o.shift_definition_id === preferred.shiftDefinitionId &&
+              (!preferred.serviceDay || o.service_day === preferred.serviceDay),
+          )
+        : undefined;
+      return fromCaller ?? shiftOptions.find((o) => o.is_default) ?? shiftOptions[0] ?? null;
+    });
+  }, [shiftOptions, preferred?.shiftDefinitionId, preferred?.serviceDay]);
 
   const loadCurrentState = useCallback(async () => {
     if (!isOnline) return; // offline: fall back to the local currentShift for gating
@@ -245,8 +278,16 @@ export function useClockInOut() {
   // lateness against `/schedules/my`'s single (possibly not-yet-started) row is
   // what let a worker four hours late for Shift 2 be graded against Shift 3.
   const scheduledShift = useMemo(
-    () => resolveActiveShift(shiftOptions, [...allToday.map((r) => r.shift_definition), rosterShift]),
-    [shiftOptions, allToday, rosterShift],
+    () =>
+      resolveActiveShift(
+        // The SELECTED option wins over the server default: once the worker has
+        // chosen a shift, that is the shift they are punching into, so it is the
+        // one every derived value below must be about.
+        selectedShift ? [selectedShift] : shiftOptions,
+        [...allToday.map((r) => r.shift_definition), rosterShift],
+        new Date(nowMinute),
+      ),
+    [selectedShift, shiftOptions, allToday, rosterShift, nowMinute],
   );
 
   // Lateness is judged against that same shift, off the day's first clock-in.
@@ -631,6 +672,8 @@ export function useClockInOut() {
     hasScheduleToday,
     // ADR-055 Phase 3
     shiftOptions,
+    selectedShift,
+    setSelectedShift,
     hasOpenSession,
     loadCurrentState,
     getCurrentLocation,

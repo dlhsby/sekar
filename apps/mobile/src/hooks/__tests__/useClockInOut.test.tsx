@@ -344,6 +344,13 @@ describe('useClockInOut — roster-gated lateness', () => {
     });
 
     it('submits without any dialog when the punch is nominal', async () => {
+      // Pin the clock: the fixture's roster shift is Shift 3 (21:00–05:00), so
+      // running this in the evening makes the punch LATE, raises a confirm, and
+      // hangs the await forever. 13:11 is nominal under the crosses-midnight
+      // rule — the same instant the file's other fixtures assume.
+      jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+      jest.setSystemTime(new Date(2026, 5, 23, 13, 11, 0));
+
       withGpsFix(0, 0); // inside the assigned rayon
       mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
       const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
@@ -355,6 +362,7 @@ describe('useClockInOut — roster-gated lateness', () => {
       // The only Alert raised is the success one, never a confirm.
       const titles = (Alert.alert as jest.Mock).mock.calls.map((c) => c[0]);
       expect(titles).not.toContain('Konfirmasi Clock In');
+      jest.useRealTimers();
     });
   });
 });

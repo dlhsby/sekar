@@ -5,6 +5,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { calculateDistance, formatDistance } from '../../utils/gpsUtils';
 import {
   View,
   StyleSheet,
@@ -191,6 +192,24 @@ export function LocationMapModal({
   const hasCoords = lat !== null && lng !== null && !isNaN(lat) && !isNaN(lng);
   const accuracyWarning = location.accuracy !== null && location.accuracy > 50;
 
+  // Distance from the assigned area's centre. Only when both ends are known —
+  // a scope with no centre (rayon whose center_* was never computed) has nothing
+  // to measure against, and a fabricated "0 m" would be worse than silence.
+  const distanceText = useMemo(() => {
+    if (location.latitude == null || location.longitude == null) return null;
+    if (area?.gps_lat == null || area?.gps_lng == null) return null;
+    const metres = calculateDistance(
+      location.latitude,
+      location.longitude,
+      Number(area.gps_lat),
+      Number(area.gps_lng),
+    );
+    return t('components:locationMap.distanceFrom', {
+      distance: formatDistance(metres),
+      area: area.name ?? '',
+    });
+  }, [location.latitude, location.longitude, area?.gps_lat, area?.gps_lng, area?.name, t]);
+
   // Coerce the AREA centre too — TypeORM emits decimal columns (e.g. a district's
   // center_lat/lng) as STRINGS, and react-native-maps' <Marker> throws "Value for
   // latitude cannot be cast from String to double" on a string coordinate. Doing
@@ -342,6 +361,14 @@ export function LocationMapModal({
             <NBText variant="body" color="black" style={styles.areaNameText} numberOfLines={1}>
               {area.name}
             </NBText>
+            {/* How far off the worker is. "Di luar area" alone does not say
+                whether that is 20 m or 700 km — the distance is what makes the
+                badge actionable. */}
+            {distanceText ? (
+              <NBText variant="body-sm" color="gray700" style={styles.distanceText}>
+                {distanceText}
+              </NBText>
+            ) : null}
           </View>
         ) : null}
         {hasCoords ? (
@@ -464,6 +491,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: nbSpacing.xs,
   },
+  distanceText: { marginLeft: 'auto' },
   areaNameText: {
     flexShrink: 1,
     fontWeight: '700',

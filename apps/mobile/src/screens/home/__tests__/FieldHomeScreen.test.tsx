@@ -458,13 +458,9 @@ describe('HomeScreen Clock In/Out FAB', () => {
 
     await act(async () => { jest.advanceTimersByTime(100); });
 
-    // Hero starts collapsed — expand it first.
+    // One card for both states now — Clock Out is always on it, no expansion.
     await waitFor(() => { expect(getByTestId('absensi-hero')).toBeTruthy(); });
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-
-    await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
-    });
+    expect(getByTestId('entry-clock-out')).toBeTruthy();
   });
 
   it('should NOT render Clock In FAB for management role', async () => {
@@ -932,17 +928,16 @@ describe('FieldHomeScreen HOME-1 body', () => {
     const { getByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
-    // Hero card is visible but starts collapsed — clock-button is hidden until expanded.
+    // On duty now renders the SAME AttendanceEntryCard as the idle state and the
+    // Kehadiran hub — the bespoke "Sedang bertugas" hero is gone, so both punch
+    // buttons and the Status rows are on screen without any expansion.
     await waitFor(() => {
       expect(getByTestId('absensi-hero')).toBeTruthy();
-      expect(getByText('Sedang bertugas')).toBeTruthy();
     });
-
-    // Expand the card to reveal the clock-out button.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-    await waitFor(() => {
-      expect(getByTestId('clock-button')).toBeTruthy();
-    });
+    expect(getByTestId('entry-clock-in')).toBeTruthy();
+    expect(getByTestId('entry-clock-out')).toBeTruthy();
+    expect(getByText('Status Kehadiran')).toBeTruthy();
+    expect(getByText('Status Area')).toBeTruthy();
   });
 
   it('renders the "Ringkasan hari ini" summary tiles', async () => {
@@ -1006,7 +1001,7 @@ describe('FieldHomeScreen HOME-1 body', () => {
     });
   });
 
-  it('expands and collapses the active hero (whole card is the tap target)', async () => {
+  it('does not gate the on-duty card behind an expand/collapse', async () => {
     const shift = createShift(new Date());
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
     (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
@@ -1014,20 +1009,12 @@ describe('FieldHomeScreen HOME-1 body', () => {
     const { getByTestId, queryByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
-    // Default collapsed: clock-out + detail link hidden, card itself visible.
+    // Everything the old hero hid behind a tap is now always visible.
     await waitFor(() => { expect(getByTestId('absensi-hero')).toBeTruthy(); });
-    expect(queryByTestId('clock-button')).toBeNull();
-    expect(queryByTestId('shift-detail-link')).toBeNull();
+    expect(getByTestId('entry-clock-out')).toBeTruthy();
 
-    // First tap expands → clock-out + detail link appear.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-    expect(getByTestId('clock-button')).toBeTruthy();
-    expect(getByTestId('shift-detail-link')).toBeTruthy();
-
-    // Second tap collapses again.
-    await act(async () => { fireEvent.press(getByTestId('absensi-hero')); });
-    expect(queryByTestId('clock-button')).toBeNull();
+    // Detail Shift is reachable from Log Kehadiran instead — one entry point,
+    // not a duplicate link on the home card.
     expect(queryByTestId('shift-detail-link')).toBeNull();
-    expect(getByTestId('absensi-hero')).toBeTruthy();
   });
 });
