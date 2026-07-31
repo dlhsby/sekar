@@ -8,17 +8,22 @@
  * values; this component only presents them, so the missing-time placeholder
  * (`EMPTY_TIME`) is defined in one place instead of drifting per screen.
  *
- * The "belum clock in" banner is opt-in (`showEmptyNote`) — the hub shows it,
- * home hides it (the clock-in / attendance surfaces own that prompt).
+ * The "belum clock in" banner leads the card and is suppressed when the worker
+ * has no roster row (`hasScheduleToday`) — an unscheduled worker owes nothing.
+ *
+ * Spacing follows the token rhythm: `md` around the card, a uniform `sm` for
+ * every internal gap (banner offset, both hairlines, column gaps) so nothing
+ * inside reads heavier than its neighbours, and `xs` to bind a label to its
+ * value. No raw pixel literals.
  */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
-import { NBText, NBButton, NBCard, NBAlert } from '../nb';
+import { NBButton, NBCard, NBAlert } from '../nb';
 import { AttendanceTimeCell } from './AttendanceTimesRow';
-import { formatLongDate } from '../../utils/dateUtils';
+import { AttendanceShiftHeading } from './AttendanceShiftHeading';
 import { nbColors, nbSpacing } from '../../constants/nbTokens';
 
 export interface AttendanceEntryCardProps {
@@ -32,6 +37,21 @@ export interface AttendanceEntryCardProps {
   jamKeluar?: string | null;
   /** Whether any time was recorded today (drives the "belum clock in" banner). */
   hasRecordToday: boolean;
+  /**
+   * Whether the worker is rostered today. "Belum clock in pada shift ini" is
+   * only meaningful when there IS a shift to be missing — an unscheduled worker
+   * owes no clock-in, so the warning would be a false accusation. Defaults to
+   * true so existing callers keep their behaviour.
+   */
+  hasScheduleToday?: boolean;
+  /**
+   * The worker's OTHER shifts today, already formatted (ADR-053 back-to-back).
+   * Listed under the heading so a multi-shift worker sees every shift they hold,
+   * not only the one their next punch would attribute to.
+   */
+  otherShiftLabels?: string[];
+  /** Opens the shift picker. Omit when there is nothing to choose between. */
+  onChangeShift?: () => void;
   onClockIn: () => void;
   onClockOut: () => void;
   /** When provided, renders the "Jadwal Saya" link (bottom-left). */
@@ -47,6 +67,9 @@ export function AttendanceEntryCard({
   jamMasuk,
   jamKeluar,
   hasRecordToday,
+  hasScheduleToday = true,
+  otherShiftLabels,
+  onChangeShift,
   onClockIn,
   onClockOut,
   onViewSchedule,
@@ -58,7 +81,7 @@ export function AttendanceEntryCard({
 
   return (
     <NBCard style={styles.card} testID={testID}>
-      {!hasRecordToday && (
+      {!hasRecordToday && hasScheduleToday && (
         <NBAlert
           variant="warning"
           message={t('attendance:hub.notClockedIn')}
@@ -67,15 +90,13 @@ export function AttendanceEntryCard({
         />
       )}
 
-      {/* Today's shift */}
-      <View style={styles.shiftRow}>
-        <NBText variant="body-sm" color="gray600">
-          {formatLongDate(`${date}T00:00:00`)}
-        </NBText>
-        <NBText variant="body" color="black">
-          {shiftLabel}
-        </NBText>
-      </View>
+      <AttendanceShiftHeading
+        date={date}
+        shiftLabel={shiftLabel}
+        otherShifts={otherShiftLabels}
+        onChangeShift={onChangeShift}
+        changeShiftTestID="entry-change-shift"
+      />
 
       {/* Divider between the shift info and the times/actions (the "top" rule) */}
       <View style={styles.divider} />
@@ -109,7 +130,7 @@ export function AttendanceEntryCard({
       </View>
 
       {/* Hairline below the buttons, above the secondary nav */}
-      <View style={styles.divider} />
+      <View style={[styles.divider, styles.dividerFooter]} />
 
       {/* Secondary nav: Jadwal (left) │ Log Kehadiran (right), split by a
           vertical hairline (mirrors the Jam Masuk │ Jam Keluar divider). */}
@@ -145,14 +166,19 @@ export function AttendanceEntryCard({
 }
 
 const styles = StyleSheet.create({
-  card: { paddingHorizontal: nbSpacing.md, paddingVertical: nbSpacing.sm },
-  banner: { marginBottom: nbSpacing.sm },
+  card: { padding: nbSpacing.md, paddingBottom: nbSpacing.sm },
+  // Leads the card, so the space above it is the card's own top padding (md);
+  // match that below. NBAlert ships its own `marginBottom: md` — restated here
+  // so the symmetry is explicit rather than inherited by luck.
+  banner: { marginTop: 0, marginBottom: nbSpacing.md },
   divider: { height: 1, backgroundColor: nbColors.gray200, marginVertical: nbSpacing.sm },
-  shiftRow: { gap: 2 },
   grid: { flexDirection: 'row', alignItems: 'stretch' },
   gridCol: { flex: 1, alignItems: 'center', gap: nbSpacing.sm },
   gridDivider: { width: 1, backgroundColor: nbColors.gray200, marginHorizontal: nbSpacing.sm },
-  linksRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.sm, marginTop: nbSpacing.xs },
+  // The ghost buttons already carry a 36px touch height, so the footer needs
+  // less outer breathing room than the content rows above it.
+  dividerFooter: { marginBottom: nbSpacing.xs },
+  linksRow: { flexDirection: 'row', alignItems: 'center', gap: nbSpacing.sm },
   linkButton: { flex: 1 },
   linkDivider: { width: 1, height: 24, backgroundColor: nbColors.gray200 },
 });

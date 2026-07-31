@@ -10,7 +10,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { CalendarClock, CalendarOff, UserPlus } from 'lucide-react';
+import { CalendarClock, CalendarOff, RefreshCw, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   addDays,
@@ -158,7 +158,7 @@ export default function SchedulesPage() {
     };
   }, [calendarView, anchor]);
 
-  const { data: occurrences = [], isLoading } = useScheduleRange(
+  const { data: occurrences = [], isLoading, isFetching } = useScheduleRange(
     from,
     to,
     filters,
@@ -549,6 +549,23 @@ export default function SchedulesPage() {
               </span>
             </Button>
           )}
+          {/* Manual refresh. The board is cached for 30 s and a write elsewhere
+              (another operator, the materializer cron) will not push, so an
+              explicit "reload" is the only way to see it without a page reload. */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => void refreshCalendar()}
+            disabled={isFetching}
+            aria-label={t('common:actions.refresh')}
+            title={t('common:actions.refresh')}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+              aria-hidden
+            />
+            <span className="ml-1.5 hidden sm:inline">{t('common:actions.refresh')}</span>
+          </Button>
           {can('schedule:create') && (
             <CreateButton
               label={t('schedules:calendar.event.createTitle')}
@@ -559,6 +576,20 @@ export default function SchedulesPage() {
       </div>
 
       <ScheduleFilterChips filters={filters} onChange={setFilters} lockDistrict={lockDistrict} />
+
+      {/* A background refetch keeps the STALE board on screen, so after saving a
+          schedule the success toast landed while the row was still missing —
+          which reads as "it didn't work". Say the board is catching up. */}
+      {isFetching && !isLoading && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex items-center gap-2 text-nb-caption text-nb-gray-600"
+        >
+          <RefreshCw className="h-3.5 w-3.5 animate-spin" aria-hidden />
+          {t('schedules:calendar.refreshing')}
+        </div>
+      )}
 
       {calendarView === 'year' ? (
         <YearView

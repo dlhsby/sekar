@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { render, waitFor, fireEvent, act } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import { Provider } from 'react-redux';
 import { NavigationContainer } from '@react-navigation/native';
 import { ClockInOutScreen } from '../ClockInOutScreen';
@@ -147,7 +148,73 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
     jest.clearAllTimers();
   });
 
+  // The "Ubah Shift" pencil is an affordance to CHOOSE. Offering it when the
+  // attribution window produced a single candidate promises a choice that does
+  // not exist, so it appears only from two options up.
+  describe('Shift picker affordance', () => {
+    // Mirrors the real `GET /shifts/current-state` option shape: the times are
+    // FLAT on the option, not nested under a shift_definition.
+    const option = (id: string) => ({
+      shift_definition_id: id,
+      shift_name: `Shift ${id}`,
+      service_day: '2026-07-31',
+      start_time: '06:00:00',
+      end_time: '15:00:00',
+      crosses_midnight: false,
+      phase: 'covering',
+      minutes_to_start: -30,
+      is_default: id === 'sd-1',
+    });
+
+    const renderWithOptions = async (options: unknown[]) => {
+      (shiftsApi.getCurrentState as jest.Mock).mockResolvedValue({
+        data: { options, open_session: null },
+      });
+      const screen = renderScreen(createMockStore());
+      await waitFor(() => {
+        expect(Geolocation.getCurrentPosition).toHaveBeenCalled();
+      });
+      return screen;
+    };
+
+    it('hides the picker when a single shift is the only candidate', async () => {
+      const { queryByTestId } = await renderWithOptions([option('sd-1')]);
+      await waitFor(() => {
+        expect(queryByTestId('clockinout-pick-shift')).toBeNull();
+      });
+    });
+
+    it('hides the picker when no shift is available at all', async () => {
+      const { queryByTestId } = await renderWithOptions([]);
+      await waitFor(() => {
+        expect(queryByTestId('clockinout-pick-shift')).toBeNull();
+      });
+    });
+
+    it('offers the picker once two shifts compete for the punch', async () => {
+      const { queryByTestId } = await renderWithOptions([option('sd-1'), option('sd-2')]);
+      await waitFor(() => {
+        expect(queryByTestId('clockinout-pick-shift')).toBeTruthy();
+      });
+    });
+  });
+
   beforeEach(() => {
+    // A punch now raises a pre-punch confirm when something is off — and these
+    // fixtures have no roster row, so every clock-in is "tanpa jadwal". The
+    // global Alert mock presses button[0], which on a confirm is *Batal*; press
+    // the affirmative instead so these tests keep exercising the submit path.
+    // (Single-button alerts are unaffected: last === first.)
+    (Alert.alert as jest.Mock).mockImplementation((_title, _message, buttons) => {
+      const affirmative = buttons?.[buttons.length - 1];
+      affirmative?.onPress?.();
+    });
+    // Deterministic attribution state for every test. Without an explicit
+    // default, a `mockResolvedValue` set by one describe block leaks into the
+    // rest of the file and resolves into already-unmounted trees.
+    (shiftsApi.getCurrentState as jest.Mock).mockResolvedValue({
+      data: { options: [], open_session: null },
+    });
     // Clear specific mocks
     mockNavigation.goBack.mockClear();
     mockNavigation.navigate.mockClear();
@@ -817,12 +884,17 @@ describe('ClockInOutScreen - Comprehensive Tests', () => {
         },
       });
 
-      const { getAllByText } = renderScreen(store);
+      const { getAllByText, getByText } = renderScreen(store);
 
-      // Elapsed shift time now shows as the "Durasi shift berjalan" HH:MM row.
+      // The record page no longer repeats Jam Masuk/Keluar or the elapsed clock
+      // (the entry card owns those); elapsed time lives in the Detail Shift
+      // modal, so open it and assert the duration there.
+      await waitFor(() => {
+        expect(getByText('Detail Shift →')).toBeTruthy();
+      });
+      fireEvent.press(getByText('Detail Shift →'));
 
       await waitFor(() => {
-        // Timer should show elapsed time (Durasi row + clocks all match HH:MM).
         expect(getAllByText(/\d{2}:\d{2}/).length).toBeGreaterThan(0);
       });
 

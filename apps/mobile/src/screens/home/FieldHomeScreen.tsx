@@ -38,8 +38,15 @@ import { useCurrentShiftState } from '../../hooks/useCurrentShiftState';
 import { screenContentGrow } from '../../constants/layout';
 import { resolveNextShift } from '../../utils/nextShift';
 import { resolveScheduleScope } from '../../utils/scheduleScope';
-import { formatShiftLabel } from '../../utils/shiftDisplay';
+import {
+  formatShiftLabel,
+  pickOperativeShift,
+  formatShiftOptionLabel,
+  resolveActiveShift,
+} from '../../utils/shiftDisplay';
 import type { Activity, Task, Shift, Schedule } from '../../types/models.types';
+import type { ShiftOption } from '../../types/api.types';
+import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
 
 /**
  * Field Home Screen (hi-fi HOME-1) — dashboard for clockable field roles
@@ -73,6 +80,9 @@ export function FieldHomeScreen(): React.JSX.Element {
   const [timer, setTimer] = useState('00:00:00');
   // Live wall clock for the shared "Waktu Sekarang" row.
   const [now, setNow] = useState(() => new Date());
+  // Minute-granular view of the same clock: time-dependent derivations below
+  // must age, but recomputing them every second would be pure waste.
+  const nowMinute = Math.floor(now.getTime() / 60_000) * 60_000;
 
   // Active-shift hero collapse (default closed). Toggled by tapping the whole card;
   // resets to closed when the screen blurs (useCollapsible).
@@ -119,7 +129,9 @@ export function FieldHomeScreen(): React.JSX.Element {
   // Same live-attendance source the clock-in screen uses, so the Kehadiran card
   // shows the identical shift (attribution-first, roster fallback) — and stays
   // fresh across a day boundary instead of showing yesterday's resolved shift.
-  const { displayShift, refetch: refetchShiftState } = useCurrentShiftState();
+  const { options: shiftOptions, displayShift, refetch: refetchShiftState } = useCurrentShiftState();
+  const [shiftPickerVisible, setShiftPickerVisible] = useState(false);
+  const [selectedShiftKey, setSelectedShiftKey] = useState<string | null>(null);
   // A city/rayon/kawasan-scope roster row assigns the worker without naming a
   // lokasi — it must NOT read as "not assigned to any area".
   const scheduleScope = useMemo(() => resolveScheduleScope(roster), [roster]);
@@ -136,12 +148,45 @@ export function FieldHomeScreen(): React.JSX.Element {
     return list.filter((shift) => isToday(shift.clock_in_time));
   }, [shiftHistory]);
 
-  // Today's attendance status for the hero (roster-gated — see utils/attendance).
-  // Lateness is judged only against today's roster shift; an unscheduled worker
-  // (patrol / ad-hoc) reads as "no schedule", never late.
+  // Multi-shift day: `/schedules/my` returns ONE row that may not be the one
+  // operative now (Shift 2 + Shift 3 at 19:00 could hand back Shift 3), so pick
+  // by the clock.
+  const operativeShift = useMemo(
+    () => pickOperativeShift([...allToday.map((r) => r.shift_definition), rosterShift]),
+    [allToday, rosterShift],
+  );
+
+  const optionLabel = (o: ShiftOption): string =>
+    formatShiftLabel({ name: o.shift_name ?? '', start_time: o.start_time, end_time: o.end_time }, '');
+  const selectedOption =
+    shiftOptions.find((o) => `${o.service_day}:${o.shift_definition_id}` === selectedShiftKey) ??
+    shiftOptions.find((o) => o.is_default) ??
+    shiftOptions[0] ??
+    null;
+  const otherShiftLabels = shiftOptions
+    .filter((o) => o !== selectedOption && !!o.start_time && !!o.end_time)
+    .map((o) => formatShiftOptionLabel(o, selectedOption?.service_day ?? todayStr));
+  const canSwitchShift = shiftOptions.length > 1;
+  const entryShiftLabel = selectedOption
+    ? optionLabel(selectedOption)
+    : formatShiftLabel(displayShift(operativeShift), t('attendance:hub.noShift'));
+
+  // Status is judged against the shift the card NAMES — the picked option when
+  // there is one, else attribution's default, else the roster row covering now.
+  // Judging against a different shift is what let a worker four hours late read
+  // TEPAT WAKTU. Ages with `nowMinute` so an open screen does not go stale.
+  const activeShift = useMemo(
+    () =>
+      resolveActiveShift(
+        selectedOption ? [selectedOption] : shiftOptions,
+        [...allToday.map((r) => r.shift_definition), rosterShift],
+        new Date(nowMinute),
+      ),
+    [selectedOption, shiftOptions, allToday, rosterShift, nowMinute],
+  );
   const attendance = useMemo(
-    () => deriveAttendanceStatus(todayShifts, currentShift, rosterShift),
-    [todayShifts, currentShift, rosterShift],
+    () => deriveAttendanceStatus(todayShifts, currentShift, activeShift, new Date(nowMinute)),
+    [todayShifts, currentShift, activeShift, nowMinute],
   );
 
   // "Tugas hari ini" — all statuses, scoped to today (deadline, created_at,
@@ -373,6 +418,7 @@ export function FieldHomeScreen(): React.JSX.Element {
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const nextShift = resolveNextShift(allToday, nowMinutes, currentShift?.shift_definition?.id ?? null);
   const nextShiftLine = shiftLine(nextShift);
+
   // The idle case (naming the shift they'd clock INTO) is no longer this
   // screen's job: the idle hero is now AttendanceEntryCard, which carries its
   // own `shiftLabel` from the unified attribution source (`displayShift`).
@@ -387,7 +433,9 @@ export function FieldHomeScreen(): React.JSX.Element {
   // shift label + Jam Masuk/Keluar shape so home and the hub read identically.
   const todayStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   // Attribution-first (same mechanism as the clock-in screen), roster fallback.
-  const entryShiftLabel = formatShiftLabel(displayShift(rosterShift), t('attendance:hub.noShift'));
+  // Which shift the idle card names, and the others the worker also holds today
+  // (ADR-053). The picker only appears when there is a real choice; the pick is
+  // carried into the punch through the Absensi route params.
 
   return (
     <NBBackgroundPattern
@@ -537,7 +585,16 @@ export function FieldHomeScreen(): React.JSX.Element {
               jamMasuk={attendance.firstClockIn}
               jamKeluar={attendance.lastClockOut}
               hasRecordToday={todayShifts.length > 0}
-              onClockIn={() => navigation.navigate('Absensi', { action: 'clock_in' })}
+              hasScheduleToday={!!rosterShift}
+              otherShiftLabels={otherShiftLabels}
+              onChangeShift={canSwitchShift ? () => setShiftPickerVisible(true) : undefined}
+              onClockIn={() =>
+                navigation.navigate('Absensi', {
+                  action: 'clock_in',
+                  shiftDefinitionId: selectedOption?.shift_definition_id,
+                  serviceDay: selectedOption?.service_day,
+                })
+              }
               onClockOut={() => navigation.navigate('Absensi', { action: 'clock_out' })}
               onViewSchedule={() => navigation.navigate('MySchedule')}
               onViewLog={() => navigation.navigate('Attendance')}
@@ -694,6 +751,13 @@ export function FieldHomeScreen(): React.JSX.Element {
         areaMarker={homeMapArea ? scopeAreaMarker(scheduleScope.scope) : undefined}
         onRefresh={refreshLocation}
         refreshing={homeLocation.loading}
+      />
+      <ShiftPickerSheet
+        visible={shiftPickerVisible}
+        options={shiftOptions}
+        value={selectedOption}
+        onSelect={(o) => setSelectedShiftKey(`${o.service_day}:${o.shift_definition_id}`)}
+        onClose={() => setShiftPickerVisible(false)}
       />
     </NBBackgroundPattern>
   );

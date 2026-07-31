@@ -77,6 +77,7 @@ export const nbColors = {
   successDark: "#15803D",
   successLight: "#BAFCA2",
   warning: "#E3A018",
+  warningDark: "#8A5A00",
   warningLight: "#FFDB58",
   white: "#FFFFFF",
 } as const;

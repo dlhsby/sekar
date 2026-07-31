@@ -122,6 +122,25 @@
       "noSchedule": "You have no scheduled shift today, so attendance is not judged on time or late."
     }
   },
+  "punchConfirm": {
+    "titleClockIn": "Confirm Clock In",
+    "titleClockOut": "Confirm Clock Out",
+    "intro": "Please note before continuing:",
+    "footer": "Your attendance will still be recorded.",
+    "confirmClockIn": "Clock In",
+    "confirmClockOut": "Clock Out",
+    "reasons": {
+      "outsideArea": "You are outside your assigned area ({{area}}).",
+      "outsideAreaUnknown": "You are outside your assigned area.",
+      "late": "{{duration}} late from the shift start ({{time}}).",
+      "lateUnknown": "You are late from the shift start.",
+      "outsideWindow": "The shift ended at {{time}} — this will be recorded outside the schedule.",
+      "outsideWindowUnknown": "The shift has ended — this will be recorded outside the schedule.",
+      "earlyLeave": "The shift ends at {{time}} — {{duration}} still remaining.",
+      "earlyLeaveUnknown": "You are leaving before the shift ends.",
+      "noSchedule": "No schedule today — this is recorded as unscheduled and is not counted in monitoring."
+    }
+  },
   "clockInOut": {
     "noAreaAssigned": "No area assigned — you can still clock in",
     "contactSupervisor": "Contact your supervisor for area assignment",
@@ -167,7 +186,6 @@
     "shiftTimeLabel": "Shift Time:",
     "clockInColonLabel": "Clock In:",
     "noScheduleChip": "No schedule",
-    "noScheduleToday": "No schedule today",
     "scope": {
       "city": "Surabaya",
       "district": "{{name}}",
@@ -184,7 +202,9 @@
       "covering": "In progress",
       "grace": "Just ended"
     },
-    "offlineQueued": "Saved offline — will sync when online."
+    "offlineQueued": "Saved offline — will sync when online.",
+    "changeShift": "Change Shift",
+    "otherShiftsAvailable": "You have other shifts available:"
   },
   "gpsSection": {
     "capturingLocation": "Getting your location...",

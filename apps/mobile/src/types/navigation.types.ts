@@ -50,7 +50,11 @@ export type MainTabParamList = {
   TimeRecordHub: undefined;          // ADR-055: the single "Pencatatan Waktu" hub (Menu tile)
   Attendance: undefined;             // attendance history list (day-grouped) — reached from the hub
   AttendanceDetail: { date: string }; // one day's attendance detail (date = YYYY-MM-DD, WIB)
-  Absensi: { action?: 'clock_in' | 'clock_out' } | undefined; // clock in/out page (from hub + home)
+  // `shiftDefinitionId`/`serviceDay` carry a shift chosen on the hub/home card
+  // (Ubah Shift) into the punch, so the selection survives the navigation.
+  Absensi:
+    | { action?: 'clock_in' | 'clock_out'; shiftDefinitionId?: string; serviceDay?: string }
+    | undefined; // clock in/out page (from hub + home)
   Lembur: undefined;                 // overtime list page
   Tasks: undefined;                  // standalone tasks list (split from TasksActivities)
   Activities: undefined;             // standalone activities list (split from TasksActivities)

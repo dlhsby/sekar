@@ -122,6 +122,25 @@
       "noSchedule": "Anda tidak memiliki jadwal shift hari ini, jadi kehadiran tidak dinilai tepat waktu atau terlambat."
     }
   },
+  "punchConfirm": {
+    "titleClockIn": "Konfirmasi Clock In",
+    "titleClockOut": "Konfirmasi Clock Out",
+    "intro": "Perhatikan sebelum melanjutkan:",
+    "footer": "Kehadiran tetap dicatat.",
+    "confirmClockIn": "Clock In",
+    "confirmClockOut": "Clock Out",
+    "reasons": {
+      "outsideArea": "Anda berada di luar area penugasan ({{area}}).",
+      "outsideAreaUnknown": "Anda berada di luar area penugasan.",
+      "late": "Terlambat {{duration}} dari jam mulai shift ({{time}}).",
+      "lateUnknown": "Anda terlambat dari jam mulai shift.",
+      "outsideWindow": "Jam shift sudah berakhir pukul {{time}} — kehadiran dicatat di luar jadwal.",
+      "outsideWindowUnknown": "Jam shift sudah berakhir — kehadiran dicatat di luar jadwal.",
+      "earlyLeave": "Shift berakhir pukul {{time}} — masih kurang {{duration}} lagi.",
+      "earlyLeaveUnknown": "Anda pulang sebelum jam shift berakhir.",
+      "noSchedule": "Tidak ada jadwal hari ini — kehadiran dicatat tanpa jadwal dan tidak dihitung dalam pemantauan."
+    }
+  },
   "clockInOut": {
     "noAreaAssigned": "Tanpa area penugasan — Anda tetap dapat clock in",
     "contactSupervisor": "Hubungi supervisor untuk penugasan area",
@@ -167,7 +186,6 @@
     "shiftTimeLabel": "Waktu Shift:",
     "clockInColonLabel": "Clock In:",
     "noScheduleChip": "Tanpa jadwal",
-    "noScheduleToday": "Belum ada jadwal hari ini",
     "scope": {
       "city": "Kota Surabaya",
       "district": "{{name}}",
@@ -184,7 +202,9 @@
       "covering": "Sedang berjalan",
       "grace": "Baru selesai"
     },
-    "offlineQueued": "Tersimpan offline — akan disinkronkan saat online."
+    "offlineQueued": "Tersimpan offline — akan disinkronkan saat online.",
+    "changeShift": "Ubah Shift",
+    "otherShiftsAvailable": "Anda memiliki shift lain yang tersedia:"
   },
   "gpsSection": {
     "capturingLocation": "Mendapatkan lokasi...",

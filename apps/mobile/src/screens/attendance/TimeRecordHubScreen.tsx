@@ -18,25 +18,22 @@ import { AttendanceEntryCard } from '../../components/attendance/AttendanceEntry
 import { getPunchLog } from '../../services/api/shiftsApi';
 import { useTodayRoster } from '../../hooks/useTodayRoster';
 import { useCurrentShiftState } from '../../hooks/useCurrentShiftState';
-import { formatShiftLabel } from '../../utils/shiftDisplay';
+import { formatShiftLabel, pickOperativeShift, formatShiftOptionLabel } from '../../utils/shiftDisplay';
+import { todayLocalDate } from '../../utils/dateUtils';
 import { nbColors } from '../../constants/nbTokens';
 import { screenContentGrow } from '../../constants/layout';
 import type { MainTabScreenProps } from '../../types/navigation.types';
-import type { PunchSession } from '../../types/api.types';
-
-/** Device-local YYYY-MM-DD (WIB for field users, matching the app's convention). */
-function todayLocal(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-}
+import type { PunchSession, ShiftOption } from '../../types/api.types';
+import { ShiftPickerSheet } from '../../components/modals/ShiftPickerSheet';
 
 export function TimeRecordHubScreen(): React.JSX.Element {
   const { t } = useTranslation();
   const navigation = useNavigation<MainTabScreenProps<'TimeRecordHub'>['navigation']>();
-  const { rosterShift, refetch: refetchRoster } = useTodayRoster();
-  const { displayShift, refetch: refetchShiftState } = useCurrentShiftState();
-  const date = todayLocal();
+  const { rosterShift, allToday, refetch: refetchRoster } = useTodayRoster();
+  const { options, displayShift, refetch: refetchShiftState } = useCurrentShiftState();
+  const [pickerVisible, setPickerVisible] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const date = todayLocalDate();
 
   const [sessions, setSessions] = useState<PunchSession[]>([]);
 
@@ -66,7 +63,27 @@ export function TimeRecordHubScreen(): React.JSX.Element {
   const hasRecordToday = sessions.length > 0;
 
   // Attribution-first (same mechanism as the clock-in screen), roster fallback.
-  const shiftLabel = formatShiftLabel(displayShift(rosterShift), t('attendance:hub.noShift'));
+  // On a multi-shift day `/schedules/my` returns one row that may not be the
+  // operative one, so pick by the clock before handing it to the fallback.
+  const operativeShift = pickOperativeShift([...allToday.map((r) => r.shift_definition), rosterShift]);
+  const shiftLabel = formatShiftLabel(displayShift(operativeShift), t('attendance:hub.noShift'));
+
+  // Every OTHER shift the worker holds today, and the picker that switches
+  // which one the next punch targets (ADR-055 attribution). Only offered when
+  // there is a real choice — a single candidate has nothing to switch to.
+  const label = (o: ShiftOption): string =>
+    formatShiftLabel(
+      { name: o.shift_name ?? '', start_time: o.start_time, end_time: o.end_time },
+      '',
+    );
+  const selected = options.find(
+    (o) => `${o.service_day}:${o.shift_definition_id}` === selectedKey,
+  ) ?? options.find((o) => o.is_default) ?? options[0] ?? null;
+  const otherShiftLabels = options
+    .filter((o) => o !== selected && !!o.start_time && !!o.end_time)
+    .map((o) => formatShiftOptionLabel(o, selected?.service_day ?? date));
+  const canSwitchShift = options.length > 1;
+  const headingLabel = selected ? label(selected) : shiftLabel;
 
   return (
     <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
@@ -76,11 +93,20 @@ export function TimeRecordHubScreen(): React.JSX.Element {
 
         <AttendanceEntryCard
           date={date}
-          shiftLabel={shiftLabel}
+          shiftLabel={headingLabel}
+          otherShiftLabels={otherShiftLabels}
+          onChangeShift={canSwitchShift ? () => setPickerVisible(true) : undefined}
           jamMasuk={jamMasuk}
           jamKeluar={jamKeluar}
           hasRecordToday={hasRecordToday}
-          onClockIn={() => navigation.navigate('Absensi', { action: 'clock_in' })}
+          hasScheduleToday={!!rosterShift}
+          onClockIn={() =>
+            navigation.navigate('Absensi', {
+              action: 'clock_in',
+              shiftDefinitionId: selected?.shift_definition_id,
+              serviceDay: selected?.service_day,
+            })
+          }
           onClockOut={() => navigation.navigate('Absensi', { action: 'clock_out' })}
           onViewSchedule={() => navigation.navigate('MySchedule')}
           onViewLog={() => navigation.navigate('Attendance')}
@@ -100,6 +126,13 @@ export function TimeRecordHubScreen(): React.JSX.Element {
           />
         )}
       </ScrollView>
+      <ShiftPickerSheet
+        visible={pickerVisible}
+        options={options}
+        value={selected}
+        onSelect={(o) => setSelectedKey(`${o.service_day}:${o.shift_definition_id}`)}
+        onClose={() => setPickerVisible(false)}
+      />
     </NBBackgroundPattern>
   );
 }

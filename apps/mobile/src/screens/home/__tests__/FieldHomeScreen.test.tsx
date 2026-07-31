@@ -912,14 +912,16 @@ describe('FieldHomeScreen HOME-1 body', () => {
 
   it('renders the idle attendance entry card when no shift is active', async () => {
     const store = createTestStore(null);
-    const { getByText, getByTestId } = renderHome(store);
+    const { queryByText, getByTestId } = renderHome(store);
     await act(async () => { jest.advanceTimersByTime(200); });
 
     await waitFor(() => {
       expect(getByTestId('absensi-hero')).toBeTruthy();
       expect(getByTestId('entry-clock-in')).toBeTruthy();
-      expect(getByText('Anda belum clockin pada shift ini')).toBeTruthy();
     });
+    // This fixture has no roster row, so there is no shift to have missed —
+    // the "belum clock in" banner would be a false accusation.
+    expect(queryByText('Anda belum clockin pada shift ini')).toBeNull();
   });
 
   it('renders the active absensi hero ("Sedang bertugas") with a shift', async () => {
