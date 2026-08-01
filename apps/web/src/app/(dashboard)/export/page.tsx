@@ -26,7 +26,7 @@ import { hasRole } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
 import { getErrorMessage } from '@/lib/api/client';
 import { useDistricts } from '@/lib/api/districts';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import {
   useExportData,
   useExportJobs,
@@ -119,7 +119,12 @@ function ExportForm({ role }: { role: UserRole }) {
   const activeJob = useExportJob(activeJobId);
 
   const { data: districts } = useDistricts();
-  const { data: areasPage } = useLocations(districtId !== ALL ? { district_id: districtId } : {});
+  // Lookup, filtered client-side — one cached list rather than a request per rayon.
+  const { data: allAreas = [] } = useLocationLookup();
+  const areasPage = useMemo(
+    () => allAreas.filter((a) => districtId === ALL || a.district_id === districtId),
+    [allAreas, districtId]
+  );
 
   const formatOptions = useMemo(() => {
     const base = [
@@ -187,7 +192,7 @@ function ExportForm({ role }: { role: UserRole }) {
   const areaOptions = useMemo(
     () => [
       { value: ALL, label: t('export.allAreas') },
-      ...(areasPage?.data ?? []).map((a) => ({ value: a.id, label: a.name })),
+      ...areasPage.map((a) => ({ value: a.id, label: a.name })),
     ],
     [areasPage, t]
   );

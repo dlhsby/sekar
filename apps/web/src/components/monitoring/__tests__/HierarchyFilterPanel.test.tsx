@@ -30,13 +30,13 @@ jest.mock('@/lib/api/districts', () => ({
 }));
 
 jest.mock('@/lib/api/locations', () => ({
-  useLocations: jest.fn(() => ({
-    data: {
-      data: [
-        { id: 'a1', name: 'Area Bungkul', district_id: 'r1' },
-        { id: 'a2', name: 'Area Wonokromo', district_id: 'r1' },
-      ],
-    },
+  // The lookup returns a flat array, not a paginated envelope, and the panel
+  // filters it by rayon client-side.
+  useLocationLookup: jest.fn(() => ({
+    data: [
+      { id: 'a1', name: 'Area Bungkul', district_id: 'r1' },
+      { id: 'a2', name: 'Area Wonokromo', district_id: 'r1' },
+    ],
   })),
 }));
 
