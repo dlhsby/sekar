@@ -11,14 +11,14 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ScheduleSearch } from '../ScheduleSearch';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
 
-jest.mock('@/lib/api/users', () => ({ useUsers: jest.fn() }));
+jest.mock('@/lib/api/users', () => ({ useUserLookup: jest.fn() }));
 jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn() }));
 jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn() }));
 jest.mock('@/lib/api/locations', () => ({ useLocationLookup: jest.fn() }));
@@ -36,7 +36,7 @@ const SHIFTS = [{ id: 's1', name: 'Shift 1' }];
 const TEAMS = [{ id: 't1', name: 'Tim Bungkul' }];
 
 beforeEach(() => {
-  (useUsers as jest.Mock).mockReturnValue({ data: { data: USERS } });
+  (useUserLookup as jest.Mock).mockReturnValue({ data: USERS });
   (useDistricts as jest.Mock).mockReturnValue({ data: DISTRICTS });
   (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
   (useLocationLookup as jest.Mock).mockReturnValue({ data: LOCATIONS });

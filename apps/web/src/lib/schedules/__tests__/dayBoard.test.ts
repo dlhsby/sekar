@@ -717,3 +717,36 @@ describe('week/month from a range summary', () => {
     expect(empty[0].cells).toEqual([[], []]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// A deactivated lokasi that still holds assignments.
+//
+// The board resolves a lokasi through its master list, which used to hold only
+// ACTIVE lokasi — so a live row at a deactivated one had no node to hang on and
+// its workers were invisible, while the rayon's headcount (which counts the row)
+// went on including them. The cell contradicted its own header.
+// ---------------------------------------------------------------------------
+describe('deactivated lokasi', () => {
+  const masterWithClosed: BoardMasterData = {
+    ...master,
+    locations: [
+      ...master.locations,
+      { id: 'closed1', name: 'Taman Tutup', district_id: 'ry1', region_id: null, is_active: false },
+    ],
+  };
+
+  it('renders the node and carries the flag, so the card can say why it is there', () => {
+    const rows = [occ({ user_id: 'w1', location_id: 'closed1', shift_definition_id: 's1' })];
+    const district = districtOf(buildDayBoard(rows, masterWithClosed));
+    const closed = district.looseLocations.find((l) => l.id === 'closed1')!;
+
+    expect(closed).toBeDefined();
+    expect(closed.is_active).toBe(false);
+    expect(closed.shifts[0].byRole.satgas).toHaveLength(1);
+  });
+
+  it('leaves an active lokasi unflagged', () => {
+    const district = districtOf(buildDayBoard([], masterWithClosed));
+    expect(district.looseLocations.find((l) => l.id === 'loc2')!.is_active).toBeUndefined();
+  });
+});

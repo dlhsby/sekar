@@ -175,10 +175,21 @@ export class LocationsController {
       'Every active area as { id, name, district_id, region_id }. Unpaginated, district-scoped ' +
       'like GET /areas. No boundaries, no nested relations.',
   })
+  @ApiQuery({
+    name: 'include_inactive',
+    required: false,
+    description:
+      'Include deactivated areas. The schedules day board passes this: a live schedule row at a ' +
+      'deactivated lokasi still has a worker in it, and hiding the node made them invisible while ' +
+      "the rayon's headcount kept counting them. Pickers must NOT pass it.",
+  })
   @ApiResponse({ status: 200, description: 'Areas retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
-  findAllForLookup(@GetUser() user: User): Promise<LocationLookup[]> {
-    return this.locationsService.findAllForLookup(user);
+  findAllForLookup(
+    @GetUser() user: User,
+    @Query('include_inactive') includeInactive?: string,
+  ): Promise<LocationLookup[]> {
+    return this.locationsService.findAllForLookup(user, includeInactive === 'true');
   }
 
   /**

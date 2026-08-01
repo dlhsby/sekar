@@ -226,7 +226,7 @@ describe('LocationsService', () => {
       getMany: jest.fn().mockResolvedValue([]),
     });
 
-    it('selects only the four fields a hierarchy tree needs', async () => {
+    it('selects only the fields a hierarchy tree needs', async () => {
       const qb = makeQB();
       mockRepository.createQueryBuilder.mockReturnValue(qb);
 
@@ -237,7 +237,30 @@ describe('LocationsService', () => {
         'area.name',
         'area.district_id',
         'area.region_id',
+        // The board renders a deactivated lokasi differently; a picker refuses
+        // to offer one. Both need to know which it is.
+        'area.is_active',
       ]);
+    });
+
+    it('hides deactivated areas by default — a picker must not offer one', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAllForLookup(cityUser);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('area.is_active = :isActive', { isActive: true });
+    });
+
+    it('includes them on request — a live row at a closed lokasi still has a worker in it', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAllForLookup(cityUser, true);
+
+      expect(qb.andWhere).not.toHaveBeenCalledWith('area.is_active = :isActive', {
+        isActive: true,
+      });
     });
 
     it('never joins a relation — boundaries are what made this payload heavy', async () => {

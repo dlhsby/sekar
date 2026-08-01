@@ -31,6 +31,17 @@ export interface ResetCredential {
   temp_password: string;
 }
 
+/**
+ * The four fields a picker or a name label needs from a user. Deliberately
+ * excludes `profile_picture_url` — see `findAllForLookup`.
+ */
+export interface UserLookup {
+  id: string;
+  full_name: string;
+  username: string;
+  role: UserRole;
+}
+
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
@@ -252,6 +263,40 @@ export class UsersService {
       .where('user.role IN (:...roles)', { roles })
       .andWhere('user.is_active = :isActive', { isActive: true })
       .getMany();
+  }
+
+  /**
+   * Every user as a bare `{ id, full_name, username, role }` tuple.
+   *
+   * The schedules search box and its filter chips only ever resolve a worker's
+   * NAME and role, but asked `useUsers({ limit: 1000 })` for it — which pages
+   * through the full entity twice on a 1 173-person workforce and costs **928 KB
+   * on every page load**. Same question, four columns, one request.
+   *
+   * Deactivated accounts are excluded: every consumer is a picker or a label for
+   * someone who can actually be rostered.
+   */
+  async findAllForLookup(requester?: User): Promise<UserLookup[]> {
+    const qb = this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.full_name', 'user.username', 'user.role'])
+      .where('user.is_active = TRUE')
+      .orderBy('user.full_name', 'ASC');
+
+    // Rayon-scoped roles see only their own district — same rule as the list,
+    // including the area-derived fallback for users with no direct district_id.
+    if (
+      requester &&
+      (requester.role === UserRole.ADMIN_RAYON || requester.role === UserRole.KEPALA_RAYON)
+    ) {
+      if (!requester.district_id) return [];
+      qb.leftJoin('user.area', 'area').andWhere(
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
+        { districtId: requester.district_id },
+      );
+    }
+
+    return qb.getMany() as unknown as Promise<UserLookup[]>;
   }
 
   /**

@@ -917,6 +917,14 @@ function LocationCard({
         >
           <Chevron open={open} />
           <span className="font-bold">{loc.name}</span>
+          {/* Deactivated, but people are still rostered here — say so rather than
+              hide the card, which is what made those workers invisible while the
+              rayon's headcount kept counting them. */}
+          {loc.is_active === false && (
+            <span className="rounded-nb-sm border-2 border-nb-black bg-nb-warning-light px-1.5 py-0.5 text-nb-caption font-bold uppercase">
+              {t('schedules:board.inactiveLokasi')}
+            </span>
+          )}
           <span className="ml-auto flex flex-wrap items-center gap-1.5">
             {loc.shifts.map((s) => (
               <ShiftPill

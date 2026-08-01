@@ -36,6 +36,8 @@ export interface LocationLookup {
   name: string;
   district_id: string | null;
   region_id: string | null;
+  /** False for a deactivated lokasi. Callers that offer a CHOICE must exclude these. */
+  is_active?: boolean;
 }
 
 /**
@@ -50,7 +52,16 @@ export function useLocationLookup() {
   return useQuery({
     queryKey: locationKeys.lookup(),
     queryFn: async () => {
-      const response = await apiClient.get<LocationLookup[]>('/locations/lookup');
+      // Deactivated lokasi are INCLUDED, and callers narrow from there.
+      //
+      // Two audiences want different sets — the board must show a closed lokasi
+      // that still holds assignments, a picker must never offer one, and a chip
+      // resolving a stale filter's NAME wants every lokasi regardless. Fetching
+      // per-audience meant the same 180 KB list twice under two query keys, so
+      // one request carries `is_active` and each caller filters.
+      const response = await apiClient.get<LocationLookup[]>(
+        '/locations/lookup?include_inactive=true'
+      );
       return response.data ?? [];
     },
     staleTime: 5 * 60 * 1000,

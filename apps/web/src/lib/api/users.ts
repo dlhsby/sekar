@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import {
   User,
+  UserRole,
   UserFilters,
   CreateUserDto,
   UpdateUserDto,
@@ -18,6 +19,7 @@ export const userKeys = {
   all: ['users'] as const,
   lists: () => [...userKeys.all, 'list'] as const,
   list: (filters: UserFilters) => [...userKeys.lists(), filters] as const,
+  lookup: () => [...userKeys.all, 'lookup'] as const,
   details: () => [...userKeys.all, 'detail'] as const,
   detail: (id: string) => [...userKeys.details(), id] as const,
 };
@@ -52,6 +54,33 @@ const fetchUsers = async (filters: UserFilters = {}): Promise<PaginatedResponse<
   // read low. Walk every page so the client always receives the complete set.
   return collectAllPages((page) => fetchUsersPage(filters, page));
 };
+
+/** The four fields a picker or a name label needs. Mirrors the backend. */
+export interface UserLookup {
+  id: string;
+  full_name: string;
+  username: string;
+  role: UserRole;
+}
+
+/**
+ * Every active user as a bare id/name/role tuple, unpaginated.
+ *
+ * Prefer this over `useUsers({ limit: 1000 })` wherever only a name or a role is
+ * read: that pages through the full entity, which on a 1,173-person workforce is
+ * two requests and 928 KB on every page load.
+ */
+export function useUserLookup(enabled = true) {
+  return useQuery({
+    queryKey: userKeys.lookup(),
+    queryFn: async () => {
+      const response = await apiClient.get<UserLookup[]>('/users/lookup');
+      return response.data ?? [];
+    },
+    enabled,
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 /**
  * Fetch single user by ID

@@ -25,6 +25,7 @@
     "noShift": "No shift"
   },
   "board": {
+    "inactiveLokasi": "Inactive",
     "loadingWorkers": "Loading workers…",
     "assign": "Assign",
     "team": "Team",
