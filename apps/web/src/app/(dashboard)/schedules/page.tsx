@@ -7,9 +7,9 @@
 
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { CalendarClock, CalendarOff, RefreshCw, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -47,7 +47,12 @@ import { AreaMapModal, type AreaMapSubject } from '@/components/schedules/AreaMa
 import { CapacityModal } from '@/components/schedules/CapacityModal';
 import { HolidayManagerModal } from '@/components/schedules/HolidayManagerModal';
 import { ShiftDefinitionsModal } from '@/components/schedules/ShiftDefinitionsModal';
-import type { BoardMasterData } from '@/lib/schedules/dayBoard';
+import {
+  CITY_NODE_ID,
+  containerTotal,
+  indexDaySummary,
+  type BoardMasterData,
+} from '@/lib/schedules/dayBoard';
 import { ScheduleEventModal } from '@/components/schedules/ScheduleEventModal';
 import { EditScopeChooser } from '@/components/schedules/EditScopeChooser';
 import { DeleteScopeChooser } from '@/components/schedules/DeleteScopeChooser';
@@ -60,6 +65,9 @@ import {
   useDeleteScheduleEvent,
   useScheduleEvent,
   useScheduleRange,
+  useDaySummary,
+  containerOccurrencesQuery,
+  type ContainerTier,
   useScheduleYearSummary,
   type EditScope,
   type ScheduleOccurrence,
@@ -159,12 +167,50 @@ export default function SchedulesPage() {
     };
   }, [calendarView, anchor]);
 
-  const { data: occurrences = [], isLoading, isFetching } = useScheduleRange(
-    from,
-    to,
-    filters,
-    fetchOccurrences
+  // The DAY view no longer pulls the whole day's rows. Its collapsed cards are
+  // counts, so it reads the aggregate and fetches a container's rows only when
+  // that card is opened — 3.9 MB of JSON became ~80 KB.
+  //
+  // Week and month are unchanged here and still fetch rows. They have the same
+  // problem (an unfiltered month is 57 MB) and the same shape of fix, but they
+  // need a per-(date, district) aggregate this endpoint doesn't answer — see
+  // the follow-up noted in the changelog.
+  const dayView = calendarView === 'day';
+  const {
+    data: occurrences = [],
+    isLoading,
+    isFetching,
+  } = useScheduleRange(from, to, filters, fetchOccurrences && !dayView);
+
+  const {
+    data: daySummaryPayload,
+    isLoading: summaryLoading,
+    isFetching: summaryFetching,
+  } = useDaySummary(from, filters, dayView);
+  const daySummary = useMemo(
+    () => (daySummaryPayload ? indexDaySummary(daySummaryPayload) : undefined),
+    [daySummaryPayload]
   );
+  // The "memperbarui jadwal…" line and the spinning refresh icon must follow
+  // whichever query the CURRENT view is actually driven by.
+  const viewFetching = dayView ? summaryFetching : isFetching;
+  const viewLoading = dayView ? summaryLoading : isLoading;
+
+  // Rows for the containers the operator has opened, merged into one list for
+  // the board. Each container is its own cached query, so re-opening a card is
+  // instant and closing one costs nothing.
+  const [openContainers, setOpenContainers] = useState<string[]>([]);
+  const onExpandContainer = useCallback((id: string) => {
+    setOpenContainers((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+  // A new day or a new filter invalidates what was open — the ids may not even
+  // exist in the new result set.
+  const containerResetKey = `${from}|${JSON.stringify(filters)}`;
+  const [seenContainerKey, setSeenContainerKey] = useState(containerResetKey);
+  if (seenContainerKey !== containerResetKey) {
+    setSeenContainerKey(containerResetKey);
+    setOpenContainers([]);
+  }
 
   // Year view: per-day occupancy counts drive the load heatmap.
   const { data: yearCounts = [] } = useScheduleYearSummary(
@@ -318,6 +364,44 @@ export default function SchedulesPage() {
       })),
     }),
     [districts, regions, boardLocations, shifts]
+  );
+
+  // Which tier a container id belongs to, so the leaf fetch knows which filter
+  // to scope by. Resolved from master data the page already holds.
+  const containerTier = useCallback(
+    (id: string): ContainerTier | null => {
+      if (id === CITY_NODE_ID) return 'city';
+      if (boardLocations.some((l) => l.id === id)) return 'location';
+      if (regions.some((r) => r.id === id)) return 'region';
+      if (districts.some((d) => d.id === id)) return 'district';
+      return null;
+    },
+    [boardLocations, regions, districts]
+  );
+
+  // One cached query per opened container. `useQueries` keeps them independent:
+  // opening a second card doesn't refetch the first, and closing one keeps its
+  // rows warm for the next open.
+  const containerQueries = useQueries({
+    queries: openContainers.map((id) => {
+      const tier = containerTier(id);
+      // The summary already knows whether this container holds anything; an
+      // empty one needs no request at all.
+      return containerOccurrencesQuery(
+        from,
+        tier ? { id, tier } : null,
+        filters,
+        containerTotal(daySummary, id)
+      );
+    }),
+  });
+  const containerOccurrences = useMemo(
+    () => containerQueries.flatMap((q) => q.data ?? []),
+    [containerQueries]
+  );
+  const loadingContainers = useMemo(
+    () => new Set(openContainers.filter((_, i) => containerQueries[i]?.isLoading)),
+    [openContainers, containerQueries]
   );
 
   const updateShift = useUpdateRosterShift();
@@ -572,12 +656,12 @@ export default function SchedulesPage() {
             variant="outline"
             size="sm"
             onClick={() => void refreshCalendar()}
-            disabled={isFetching}
+            disabled={viewFetching}
             aria-label={t('common:actions.refresh')}
             title={t('common:actions.refresh')}
           >
             <RefreshCw
-              className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`}
+              className={`h-4 w-4 ${viewFetching ? 'animate-spin' : ''}`}
               aria-hidden
             />
             <span className="ml-1.5 hidden sm:inline">{t('common:actions.refresh')}</span>
@@ -596,7 +680,7 @@ export default function SchedulesPage() {
       {/* A background refetch keeps the STALE board on screen, so after saving a
           schedule the success toast landed while the row was still missing —
           which reads as "it didn't work". Say the board is catching up. */}
-      {isFetching && !isLoading && (
+      {viewFetching && !viewLoading && (
         <div
           role="status"
           aria-live="polite"
@@ -621,7 +705,7 @@ export default function SchedulesPage() {
           localeCode={localeCode}
           counts={yearCountMap}
         />
-      ) : isLoading ? (
+      ) : viewLoading ? (
         <Skeleton variant="card" />
       ) : calendarView === 'month' ? (
         <MonthGrid
@@ -649,7 +733,11 @@ export default function SchedulesPage() {
         />
       ) : (
         <DayBoard
-          occurrences={occurrences}
+          // Only the opened containers' rows — the counts come from `summary`.
+          occurrences={containerOccurrences}
+          summary={daySummary}
+          onExpandContainer={onExpandContainer}
+          loadingContainers={loadingContainers}
           master={boardMaster}
           capacities={capacities}
           roleCapacities={roleCapacities}

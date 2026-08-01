@@ -5,6 +5,8 @@ import {
   districtCountsFor,
   pruneDayBoard,
   autoExpandedIds,
+  indexDaySummary,
+  containerTotal,
   COUNTABLE_ROLES,
   CITY_NODE_ID,
   type BoardMasterData,
@@ -541,5 +543,97 @@ describe('buildDayBoard — teams count toward staffing', () => {
 
     expect(s1.countable).toBe(2);
     expect(s1.countableByRole.satgas).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Summary-first board.
+//
+// The collapsed board is built from `GET /schedules/day-summary` and holds NO
+// occurrences until a container is opened. These pin that a card shows the
+// server's numbers with an empty occurrence list, and that the two never
+// disagree once rows do arrive.
+// ---------------------------------------------------------------------------
+describe('buildDayBoard with a day summary', () => {
+  const payload = {
+    date: '2026-07-13',
+    groups: [
+      { district_id: 'ry1', region_id: null, location_id: 'loc1', shift_definition_id: 's1', role: 'satgas', total: 7 },
+      { district_id: 'ry1', region_id: null, location_id: 'loc1', shift_definition_id: 's1', role: 'korlap', total: 2 },
+      { district_id: 'ry1', region_id: 'kw1', location_id: null, shift_definition_id: 's2', role: 'linmas', total: 3 },
+      { district_id: null, region_id: null, location_id: null, shift_definition_id: 's1', role: 'satgas', total: 1 },
+    ],
+    workers: {
+      districts: [{ id: 'ry1', workers: 11 }],
+      // Deliberately NOT the sum of its lokasi: one worker covers two places,
+      // which is exactly why this cannot be added up client-side (ADR-053).
+      regions: [{ id: 'kw1', workers: 9 }],
+      locations: [{ id: 'loc1', workers: 8 }],
+      city: 12,
+    },
+  };
+  const index = indexDaySummary(payload);
+
+  it('renders counts with no occurrences loaded at all', () => {
+    const tree = buildDayBoard([], master, index);
+    const district = districtOf(tree);
+    const loc1 = district.regions[0].locations[0];
+
+    expect(loc1.shifts[0].total).toBe(9); // 7 satgas + 2 korlap
+    // Only satgas/linmas count toward staffing — korlap is listed, not counted.
+    expect(loc1.shifts[0].countable).toBe(7);
+    expect(loc1.shifts[0].countableByRole).toEqual({ satgas: 7 });
+    // …and no rows were needed to say any of it.
+    expect(loc1.shifts[0].byRole).toEqual({});
+  });
+
+  it('takes distinct headcounts from the server, never a sum of children', () => {
+    const tree = buildDayBoard([], master, index);
+    const district = districtOf(tree);
+    expect(district.workerCount).toBe(11);
+    expect(district.regions[0].workerCount).toBe(9);
+    expect(district.regions[0].locations[0].workerCount).toBe(8);
+  });
+
+  it('places a row bound to nothing on the city node', () => {
+    const tree = buildDayBoard([], master, index);
+    expect(tree[0].id).toBe(CITY_NODE_ID);
+    expect(tree[0].assignment[0].total).toBe(1);
+  });
+
+  it('lists the workers of a container once its rows arrive, keeping the counts', () => {
+    const rows = [
+      occ({ user_id: 'w1', location_id: 'loc1', shift_definition_id: 's1' }),
+      occ({ user_id: 'w2', location_id: 'loc1', shift_definition_id: 's1' }),
+    ];
+    const tree = buildDayBoard(rows, master, index);
+    const loc1 = districtOf(tree).regions[0].locations[0];
+
+    // Two rows fetched, but the card still reports the whole container.
+    expect(loc1.shifts[0].byRole.satgas).toHaveLength(2);
+    expect(loc1.shifts[0].total).toBe(9);
+    expect(loc1.workerCount).toBe(8);
+  });
+
+  it('behaves exactly as before when no summary is given', () => {
+    const rows = [occ({ user_id: 'w1', location_id: 'loc1', shift_definition_id: 's1' })];
+    const loc1 = districtOf(buildDayBoard(rows, master)).regions[0].locations[0];
+    expect(loc1.shifts[0].total).toBe(1);
+    expect(loc1.workerCount).toBe(1);
+  });
+
+  it('reports a container total so an empty one is never fetched', () => {
+    expect(containerTotal(index, 'loc1')).toBe(9);
+    expect(containerTotal(index, 'loc2')).toBe(0);
+    // No summary → "unknown", so the caller must still fetch.
+    expect(containerTotal(undefined, 'loc1')).toBeUndefined();
+  });
+
+  it('keeps the server headcount when a filter prunes the tree', () => {
+    // The summary is fetched WITH the same filters, so its numbers already
+    // describe the filtered set — re-deriving them from the ids the client
+    // happens to hold would under-report.
+    const tree = pruneDayBoard(buildDayBoard([], master, index), { locationId: 'loc1' }, index);
+    expect(districtOf(tree).workerCount).toBe(11);
   });
 });

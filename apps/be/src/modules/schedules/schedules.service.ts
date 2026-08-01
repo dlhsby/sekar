@@ -16,6 +16,7 @@ import {
   Not,
   Repository,
   type FindOptionsWhere,
+  type SelectQueryBuilder,
 } from 'typeorm';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import type { AttributionCandidate } from '../shifts/services/shift-attribution.service';
@@ -209,7 +210,45 @@ export function eventPlace(event: ScheduleEvent): {
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
  * whose location_id matches.
  */
+/**
+ * One (container, shift, role) tally from `getDaySummary`. The container is the
+ * innermost binding present: lokasi, else kawasan, else rayon, else city-wide —
+ * the same order `buildDayBoard` buckets occurrences in.
+ */
+export interface DaySummaryGroup {
+  district_id: string | null;
+  region_id: string | null;
+  location_id: string | null;
+  shift_definition_id: string | null;
+  role: string;
+  total: number;
+}
+
+/** Distinct people in one container's subtree. */
+export interface DaySummaryWorkers {
+  id: string;
+  workers: number;
+}
+
+export interface DaySummary {
+  date: string;
+  groups: DaySummaryGroup[];
+  workers: {
+    districts: DaySummaryWorkers[];
+    regions: DaySummaryWorkers[];
+    locations: DaySummaryWorkers[];
+    city: number;
+  };
+}
+
 export interface RangeFilters {
+  /**
+   * Only rows bound to NOTHING — no lokasi, no kawasan, no rayon: the board's
+   * "Seluruh Surabaya" container. It cannot be expressed as an id filter, and
+   * without it the board's city card had to fetch the entire day to show its
+   * own handful of rows.
+   */
+  cityScopeOnly?: boolean;
   districtId?: string | null;
   regionId?: string | null;
   locationId?: string | null;
@@ -1412,6 +1451,11 @@ export class SchedulesService {
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL')
       .andWhere('u.is_active = TRUE');
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
     if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
@@ -1467,6 +1511,11 @@ export class SchedulesService {
       // Deactivated workers drop off the board: their rows stay in the DB for
       // history, but the roster only shows people who can actually work.
       .andWhere('u.is_active = TRUE');
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
     if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
@@ -1638,6 +1687,129 @@ export class SchedulesService {
       if (dateCompare !== 0) return dateCompare;
       return (a.status ?? '').localeCompare(b.status ?? '');
     });
+  }
+
+  /**
+   * The day board's collapsed view, as counts rather than rows.
+   *
+   * A collapsed card shows a headcount, capacity pills and its children's
+   * counts — never a worker's name. Names are read only inside an EXPANDED
+   * `ShiftRoleTable`. The board nonetheless downloaded every occurrence for the
+   * whole city up front: **3.9 MB for one day** on the staging clone, and 57 MB
+   * for a month, to render integers. This answers the same question in ~2 % of
+   * the bytes; the rows for one container are fetched when it is opened.
+   *
+   * Two shapes come back because they are two different questions:
+   *
+   * - `groups` — occurrence counts per (container, shift, role). The client
+   *   sums these for a shift's `total`, and filters to the countable roles for
+   *   understaffing. Team members are included: a team fans out to one row per
+   *   member carrying that member's own role, so a `GROUP BY role` counts them
+   *   exactly as the board does.
+   * - `workers` — DISTINCT people per container subtree. This cannot be summed
+   *   client-side, which is the whole reason it is a separate result: under
+   *   ADR-053 one worker may hold several occurrences in a day (different
+   *   places), so a kawasan's headcount is a union of its lokasi, not a sum.
+   *   Postgres does the dedup per tier.
+   *
+   * Only non-empty groups are returned; empty containers still render, from
+   * master data the client already holds.
+   */
+  async getDaySummary(date: string, filters?: RangeFilters): Promise<DaySummary> {
+    const scoped = (alias = 'ds') =>
+      this.rosterRepo
+        .createQueryBuilder(alias)
+        // The roster only shows people who can actually work — same rule as
+        // `findByDateRange`, or the counts would disagree with the rows.
+        .innerJoin(`${alias}.user`, 'u', 'u.is_active = TRUE')
+        .where(`${alias}.schedule_date = :date`, { date })
+        .andWhere(`${alias}.deleted_at IS NULL`);
+
+    const applyFilters = (qb: SelectQueryBuilder<Schedule>, alias = 'ds') => {
+      const f = filters ?? {};
+      if (f.districtId)
+        qb.andWhere(`${alias}.district_id = :districtId`, { districtId: f.districtId });
+      if (f.userId) qb.andWhere(`${alias}.user_id = :userId`, { userId: f.userId });
+      if (f.shiftDefinitionId)
+        qb.andWhere(`${alias}.shift_definition_id = :shiftDefinitionId`, {
+          shiftDefinitionId: f.shiftDefinitionId,
+        });
+      if (f.teamCategoryId)
+        qb.andWhere(`${alias}.team_category_id = :teamCategoryId`, {
+          teamCategoryId: f.teamCategoryId,
+        });
+      if (f.locationId)
+        qb.andWhere(`${alias}.location_id = :locationId`, { locationId: f.locationId });
+      // A kawasan filter must keep BOTH its mobile rows and the rows at its
+      // lokasi; the lokasi's kawasan lives on `locations`, not on the roster row.
+      if (f.regionId)
+        qb.andWhere(
+          `(${alias}.region_id = :regionId OR ${alias}.location_id IN ` +
+            `(SELECT id FROM locations WHERE region_id = :regionId))`,
+          { regionId: f.regionId },
+        );
+      return qb;
+    };
+
+    // Counts per (container, shift, role). The container tier is decided by
+    // which binding the ROW carries, exactly as `buildDayBoard` buckets them.
+    const groupsQb = applyFilters(
+      scoped()
+        .select('ds.district_id', 'district_id')
+        .addSelect('ds.region_id', 'region_id')
+        .addSelect('ds.location_id', 'location_id')
+        .addSelect('ds.shift_definition_id', 'shift_definition_id')
+        .addSelect('u.role', 'role')
+        .addSelect('COUNT(*)::int', 'total')
+        .groupBy('ds.district_id')
+        .addGroupBy('ds.region_id')
+        .addGroupBy('ds.location_id')
+        .addGroupBy('ds.shift_definition_id')
+        .addGroupBy('u.role'),
+    );
+
+    // Distinct people per tier. `schedules.district_id` is denormalised onto
+    // every row, so districts need no join; a kawasan's subtree does — a static
+    // row at a lokasi has `region_id` NULL and only the lokasi knows its kawasan.
+    const perDistrict = applyFilters(
+      scoped()
+        .select('ds.district_id', 'id')
+        .addSelect('COUNT(DISTINCT ds.user_id)::int', 'workers')
+        .andWhere('ds.district_id IS NOT NULL')
+        .groupBy('ds.district_id'),
+    );
+    const perRegion = applyFilters(
+      scoped()
+        .leftJoin('locations', 'l', 'l.id = ds.location_id')
+        .select('COALESCE(ds.region_id, l.region_id)', 'id')
+        .addSelect('COUNT(DISTINCT ds.user_id)::int', 'workers')
+        .andWhere('COALESCE(ds.region_id, l.region_id) IS NOT NULL')
+        .groupBy('COALESCE(ds.region_id, l.region_id)'),
+    );
+    const perLocation = applyFilters(
+      scoped()
+        .select('ds.location_id', 'id')
+        .addSelect('COUNT(DISTINCT ds.user_id)::int', 'workers')
+        .andWhere('ds.location_id IS NOT NULL')
+        .groupBy('ds.location_id'),
+    );
+    // The city headline is every distinct person on the board, not the sum of
+    // the districts — a worker may appear in more than one.
+    const cityQb = applyFilters(scoped().select('COUNT(DISTINCT ds.user_id)::int', 'workers'));
+
+    const [groups, districts, regions, locations, city] = await Promise.all([
+      groupsQb.getRawMany<DaySummaryGroup>(),
+      perDistrict.getRawMany<DaySummaryWorkers>(),
+      perRegion.getRawMany<DaySummaryWorkers>(),
+      perLocation.getRawMany<DaySummaryWorkers>(),
+      cityQb.getRawOne<{ workers: number }>(),
+    ]);
+
+    return {
+      date,
+      groups,
+      workers: { districts, regions, locations, city: city?.workers ?? 0 },
+    };
   }
 
   /**

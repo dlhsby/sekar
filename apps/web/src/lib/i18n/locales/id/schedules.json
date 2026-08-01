@@ -25,6 +25,7 @@
     "noShift": "Tanpa shift"
   },
   "board": {
+    "loadingWorkers": "Memuat daftar petugas…",
     "assign": "Tugaskan",
     "team": "Tim",
     "petugasCount": "{{count}} petugas",

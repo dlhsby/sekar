@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChevronDown, Map as MapIcon, Settings2 } from 'lucide-react';
 import {
@@ -16,6 +16,7 @@ import {
   type BoardDistrict,
   type BoardRegion,
   type BoardShiftGroup,
+  type DaySummaryIndex,
   workersOf,
 } from '@/lib/schedules/dayBoard';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
@@ -75,7 +76,26 @@ interface DayBoardProps {
   /** Opens the boundary map for a container. Surabaya is never offered one — it
    *  is a city-wide sentinel with no geography of its own. */
   onShowMap?: (subject: AreaMapSubject) => void;
+  /**
+   * Server-side tallies for the collapsed board (`GET /schedules/day-summary`).
+   *
+   * When present, `occurrences` is no longer the whole day — it holds only the
+   * containers the operator has opened — and every headline count comes from
+   * here instead. Omit it and the board behaves exactly as before, deriving
+   * everything from `occurrences` (week/month views, unit tests).
+   */
+  summary?: DaySummaryIndex;
+  /**
+   * A container was opened: fetch its rows. Called once per container id as it
+   * enters the open set; the caller is expected to cache.
+   */
+  onExpandContainer?: (containerId: string) => void;
+  /** Container ids whose rows are in flight — those cards show a skeleton. */
+  loadingContainers?: Set<string>;
 }
+
+/** Stable empty set so the default prop doesn't re-render on every parent pass. */
+const EMPTY_LOADING: Set<string> = new Set();
 
 /** Title-bar map button, shared by every tier that HAS a boundary. */
 function MapButton({ label, onClick }: { label: string; onClick: () => void }) {
@@ -118,12 +138,26 @@ export function DayBoard({
   filters = NO_FILTERS,
   onClearFilters,
   onShowMap,
+  summary,
+  onExpandContainer,
+  loadingContainers = EMPTY_LOADING,
 }: DayBoardProps) {
   const { t } = useTranslation(['schedules', 'common']);
   const tree = useMemo(
-    () => pruneDayBoard(buildDayBoard(occurrences, master), filters),
-    [occurrences, master, filters]
+    () => pruneDayBoard(buildDayBoard(occurrences, master, summary), filters, summary),
+    [occurrences, master, filters, summary]
   );
+  // Distinct people across the whole board. With a summary this is Postgres's
+  // count; without one (week/month, tests) the client still holds every
+  // occurrence and can union the ids itself.
+  const cityWorkerCount = summary
+    ? summary.cityWorkers
+    : new Set(tree.flatMap((d) => d.workerIds)).size;
+
+  // "Nobody works today" must be read from the SUMMARY, not from `occurrences`:
+  // with lazy loading the latter is empty until a card is opened, so the banner
+  // claimed an empty day on every fully-populated board.
+  const dayIsEmpty = summary ? summary.counts.size === 0 : occurrences.length === 0;
   const filtered = hasAnyBoardFilter(filters);
 
   // Seeded from the criteria present on mount — landing on the page with a
@@ -150,6 +184,34 @@ export function DayBoard({
       else next.add(id);
       return next;
     });
+
+  // Fetch a container's rows the first time it is open.
+  //
+  // Driven off `open` rather than off `toggle` so the filter re-seed above is
+  // covered too: `autoExpandedIds` can open a container nobody clicked, and its
+  // rows are just as needed. Ids are only ever added here, so each container is
+  // requested once per criteria set; caching is the caller's job (a query key).
+  //
+  // The bookkeeping lives entirely inside the effect — a ref must not be read or
+  // written while rendering.
+  const requested = useRef<{ signature: string; ids: Set<string> }>({
+    signature,
+    ids: new Set(),
+  });
+  useEffect(() => {
+    if (!onExpandContainer) return;
+    // A filter change replaces the whole result set, so anything fetched under
+    // the previous criteria has to be requested again.
+    if (requested.current.signature !== signature) {
+      requested.current = { signature, ids: new Set() };
+    }
+    for (const id of open) {
+      // The assignment blocks are `<containerId>:assignment`, not containers.
+      if (id.includes(':') || requested.current.ids.has(id)) continue;
+      requested.current.ids.add(id);
+      onExpandContainer(id);
+    }
+  }, [open, signature, onExpandContainer]);
 
   const tableProps = { onOccurrenceClick, canAssign };
   // Bind a container's geography to a ShiftRoleTable's (shiftId, role) assign call.
@@ -182,7 +244,7 @@ export function DayBoard({
             }
           />
         )
-      ) : occurrences.length === 0 ? (
+      ) : dayIsEmpty ? (
         <p className="rounded-nb-base border-2 border-dashed border-nb-black bg-nb-gray-50 py-5 text-center text-nb-body-sm text-nb-gray-500">
           {t('schedules:board.emptyDay')}
         </p>
@@ -271,10 +333,14 @@ export function DayBoard({
                       // PEOPLE, not occurrences: a worker covering two lokasi in
                       // one day is one petugas (ADR-053). Summing `total` counted
                       // them twice the moment multi-place days became possible.
+                      // `workerCount` rather than `workerIds.length`: the board
+                      // no longer holds every occurrence, so the client cannot
+                      // union the ids — the summary carries the DISTINCT figure
+                      // Postgres computed per tier.
                       count:
                         district.id === CITY_NODE_ID
-                          ? new Set(tree.flatMap((d) => d.workerIds)).size
-                          : district.workerIds.length,
+                          ? cityWorkerCount
+                          : district.workerCount,
                     })}
                   </Pill>
                   {/* Surabaya is city-wide by definition — it has no kawasan or
@@ -313,6 +379,14 @@ export function DayBoard({
 
             {open.has(district.id) && (
               <div className="flex flex-col gap-3 p-3">
+                {/* The card's counts are already on screen (they came from the
+                    summary); only the NAMES are still in flight. Saying so beats
+                    an empty table that reads as "nobody is scheduled here". */}
+                {loadingContainers.has(district.id) && (
+                  <p role="status" className="text-nb-body-sm text-nb-gray-500">
+                    {t('schedules:board.loadingWorkers')}
+                  </p>
+                )}
                 {/* Surabaya holds nothing but city-wide assignments, so its shift
                     + role table IS its body — no "Penempatan" wrapper to
                     distinguish it from siblings it doesn't have. Gating it on
@@ -708,7 +782,7 @@ function RegionCard({
                 roleCounts={regionRoleCounts}
               />
             ))}
-            <Pill>{t('schedules:board.petugasCount', { count: region.workerIds.length })}</Pill>
+            <Pill>{t('schedules:board.petugasCount', { count: region.workerCount })}</Pill>
             <Pill>{t('schedules:board.lokasiCount', { count: region.locations.length })}</Pill>
           </span>
         </button>
