@@ -10,7 +10,7 @@ import { intlLocale } from '@/lib/i18n/date-locale';
 import { useAuth } from '@/lib/auth/hooks';
 import { useActivities, useApproveActivity, useRejectActivity } from '@/lib/api/activities';
 import { useActivityTypes } from '@/lib/api/activity-types';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useTranslation } from 'react-i18next';
 import {
   Card,
@@ -93,7 +93,8 @@ export default function ActivitiesPage() {
   }, [user, filters.areaId]);
 
   const { data: activityTypes } = useActivityTypes();
-  const { data: areasData } = useLocations();
+  // Lookup: this fills a filter dropdown with names.
+  const { data: allAreas = [] } = useLocationLookup();
 
   const apiFilters: ActivityFilters = {
     activity_type_id: filters.activityTypeId !== 'all' ? filters.activityTypeId : undefined,
@@ -211,7 +212,7 @@ export default function ActivitiesPage() {
 
   const areaOptions = [
     { value: 'all', label: t('activities:list.filters.allAreas') },
-    ...(areasData?.data || []).map((a) => ({ value: a.id, label: a.name })),
+    ...allAreas.map((a) => ({ value: a.id, label: a.name })),
   ];
 
   const columns: ColumnDef<Activity>[] = [

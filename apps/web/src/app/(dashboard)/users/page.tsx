@@ -35,7 +35,7 @@ import {
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useRoles } from '@/lib/api/roles';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useUser } from '@/lib/auth/hooks';
 import { ADMIN_ROLES, roleLabel } from '@/lib/constants/roles';
 import { formatDate } from '@/lib/utils/time';
@@ -91,8 +91,10 @@ export default function UsersPage() {
   // include_inactive: a user's assigned area may have since been deactivated —
   // keep resolving its name (and offering it as a filter option) rather than
   // silently showing "—" for that assignment.
-  const { data: areasData } = useLocations({ limit: 1000, include_inactive: true });
-  const allAreas = useMemo(() => areasData?.data ?? [], [areasData]);
+  // Lookup: only lokasi NAMES are resolved here (an assigned-areas column and
+  // its filter). It already includes deactivated lokasi, which this column needs
+  // — a user may still be assigned to one.
+  const { data: allAreas = [] } = useLocationLookup();
   const areaNameById = useMemo(() => new Map(allAreas.map((a) => [a.id, a.name])), [allAreas]);
   const areaFilterOptions = useMemo(
     () => allAreas.map((a) => ({ value: a.name, label: a.name })),

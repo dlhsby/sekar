@@ -145,13 +145,11 @@ const mockActivityTypes = [
   { id: 'type-2', code: 'WATERING', name: 'Penyiraman' },
 ];
 
-const mockAreasData = {
-  data: [
-    { id: 'area-1', name: 'Taman Bungkul', code: 'TB' },
-    { id: 'area-2', name: 'Taman Mundu', code: 'TM' },
-  ],
-  meta: { total: 2, page: 1, limit: 20, totalPages: 1 },
-};
+// The lookup returns a flat array, not a paginated envelope.
+const mockAreasData = [
+  { id: 'area-1', name: 'Taman Bungkul' },
+  { id: 'area-2', name: 'Taman Mundu' },
+];
 
 const mockMutate = jest.fn();
 const mockApproveMutation = { mutateAsync: mockMutate, isPending: false };
@@ -199,7 +197,7 @@ describe('ActivitiesPage', () => {
       isLoading: false,
     });
 
-    (areasApi.useLocations as jest.Mock).mockReturnValue({
+    (areasApi.useLocationLookup as jest.Mock).mockReturnValue({
       data: mockAreasData,
       isLoading: false,
     });
@@ -959,7 +957,7 @@ describe('ActivitiesPage', () => {
     });
 
     it('should handle undefined areas data gracefully without throwing', () => {
-      (areasApi.useLocations as jest.Mock).mockReturnValue({
+      (areasApi.useLocationLookup as jest.Mock).mockReturnValue({
         data: undefined,
         isLoading: false,
       });

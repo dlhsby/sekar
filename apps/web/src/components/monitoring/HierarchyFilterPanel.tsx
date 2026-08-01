@@ -7,13 +7,13 @@
  * Phase 3 sub-phase 3-4 (ADR-029)
  */
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils/cn';
 import { Button } from '@/components/ui';
 import { FormSelect } from '@/components/ui';
 import { useDistricts } from '@/lib/api/districts';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -49,10 +49,13 @@ export function HierarchyFilterPanel({
   // would remove its live workers from the map. Revisit in the Phase-5
   // monitoring revamp.
   const { data: districts } = useDistricts(true);
-  const { data: areasData } = useLocations({
-    district_id: value.districtId,
-  });
-  const areas = areasData?.data ?? [];
+  // Lookup, filtered client-side: the rayon changes as the operator drills, and
+  // one cached list beats a request per rayon.
+  const { data: allAreas = [] } = useLocationLookup();
+  const areas = useMemo(
+    () => allAreas.filter((a) => !value.districtId || a.district_id === value.districtId),
+    [allAreas, value.districtId]
+  );
 
   const handleScopeChange = useCallback(
     (scope: FilterScope) => {
