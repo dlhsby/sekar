@@ -115,7 +115,20 @@ describe('SchedulesService', () => {
       await service.findByDate('2026-06-30');
       // `user` is eager on the entity but createQueryBuilder ignores eager
       // relations — the explicit join is what keeps the row's user populated.
-      expect(rosterRepo.qb.leftJoinAndSelect).toHaveBeenCalledWith('ds.user', 'u');
+      expect(rosterRepo.qb.leftJoin).toHaveBeenCalledWith('ds.user', 'u');
+      expect(rosterRepo.qb.addSelect).toHaveBeenCalledWith(
+        expect.arrayContaining(['u.id', 'u.full_name']),
+      );
+    });
+
+    it('never selects the user avatar (a base64 data URI, once 190 MB per day)', async () => {
+      await service.findByDate('2026-06-30');
+      // `users.profile_picture_url` holds an inline data URI on legacy rows, up
+      // to 5 MB each, and a worker appears on many rows per day. Selecting the
+      // whole user entity is what made an unscoped day 190 MB.
+      const selected = rosterRepo.qb.addSelect.mock.calls.flat(2) as string[];
+      expect(selected).not.toContain('u.profile_picture_url');
+      expect(rosterRepo.qb.leftJoinAndSelect).not.toHaveBeenCalledWith('ds.user', 'u');
     });
 
     it('scopes to a district when one is given', async () => {
@@ -123,6 +136,71 @@ describe('SchedulesService', () => {
       expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.district_id = :districtId', {
         districtId: 'r1',
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Projection guards: two key-set queries that decide whether an event's
+  // occurrence may be projected. Both used to be unbounded, and one ran INSIDE
+  // the per-event loop.
+  // ---------------------------------------------------------------------------
+  describe('projection guard queries', () => {
+    const anEvent = (id: string) => ({
+      id,
+      scope: 'city',
+      is_team: false,
+      user_id: 'u1',
+      user: { id: 'u1', is_active: true },
+      shift_definition_id: 'sd1',
+      shift_definition: { id: 'sd1', name: 'S1' },
+      start_date: '2026-06-30',
+      end_date: '2026-07-05',
+      recurrence_type: 'daily',
+      is_active: true,
+    });
+
+    it('reads tombstones once for the range, not once per event', async () => {
+      // This is the N+1 that dominated a month-wide range: ~1k active events on
+      // the staging clone meant ~1k sequential round-trips inside the loop.
+      eventRepo.find.mockResolvedValue([anEvent('e1'), anEvent('e2'), anEvent('e3')]);
+
+      await service.findByDateRange('2026-06-30', '2026-07-05');
+
+      // Two guard queries total (tombstone keys + occupied shift keys),
+      // regardless of how many events were loaded.
+      expect(rosterRepo.find).toHaveBeenCalledTimes(2);
+    });
+
+    it('narrows both guards by the filters that are components of the key', async () => {
+      eventRepo.find.mockResolvedValue([anEvent('e1')]);
+
+      await service.findByDateRange('2026-06-30', '2026-07-05', {
+        userId: 'u9',
+        shiftDefinitionId: 'sd9',
+        districtId: 'd9',
+      });
+
+      for (const call of rosterRepo.find.mock.calls) {
+        expect(call[0].where).toMatchObject({
+          user_id: 'u9',
+          shift_definition_id: 'sd9',
+          district_id: 'd9',
+        });
+      }
+    });
+
+    it('never narrows a guard by team — a blocking row may belong to another team', async () => {
+      // The guards answer "does a row already own this (user, date, shift,
+      // place)?". A row in a different team can own it, so filtering the guard
+      // by team would drop it and resurrect the phantom projected duplicate
+      // `occupiedShiftKeys` exists to prevent.
+      eventRepo.find.mockResolvedValue([anEvent('e1')]);
+
+      await service.findByDateRange('2026-06-30', '2026-07-05', { teamCategoryId: 'tc1' });
+
+      for (const call of rosterRepo.find.mock.calls) {
+        expect(call[0].where).not.toHaveProperty('team_category_id');
+      }
     });
   });
 

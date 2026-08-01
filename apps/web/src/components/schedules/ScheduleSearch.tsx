@@ -8,7 +8,7 @@ import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { useUsers } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
 import type { ScheduleRangeFilters } from '@/lib/api/schedule-events';
@@ -92,12 +92,12 @@ export function ScheduleSearch({
   const { data: usersResp } = useUsers({ limit: 1000 });
   const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
-  const { data: locationsResp } = useLocations({ limit: 1000 });
+  // Lookup, not the full entity list — see ScheduleEventModal.
+  const { data: locations = [] } = useLocationLookup();
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: teamCategories = [] } = useTeamCategories();
 
   const users = useMemo(() => usersResp?.data ?? [], [usersResp]);
-  const locations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
   const locale = dateFnsLocale();
 
   const collapse = () => {

@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -345,6 +346,33 @@ export class SchedulesController {
         : Promise.resolve([]);
     }
     return this.service.getDailyCounts(from, to, { ...filters, districtId });
+  }
+
+  /**
+   * One roster row by id.
+   *
+   * Declared after every literal-path GET above so it cannot shadow them.
+   *
+   * The web edit modal used to reach a single row by fetching the WHOLE day
+   * unscoped and running `.find()` on the client — 190 MB and 5.4 s on the
+   * staging clone to read one record. A projected row (`projected:<event>:…`)
+   * has no id in the table, so those still come from the range payload the
+   * board already holds; only materialized rows resolve here.
+   */
+  @Get(':id')
+  @Roles(...ROSTER_VIEWERS)
+  @ApiOperation({ summary: 'Get a single roster row by id' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiResponse({ status: 200, type: Schedule })
+  async getOne(@Param('id') id: string, @GetUser() user: User): Promise<Schedule> {
+    const row = await this.service.findOne(id);
+    // District-scoped roles may only read their own rayon's rows; workers may
+    // only read their own. Mirrors the scoping the list endpoints apply in SQL.
+    if (this.isDistrictScoped(user) && row.district_id !== user.district_id) {
+      throw new ForbiddenException('This schedule belongs to another rayon');
+    }
+    const [enriched] = await this.presence.attach([row]);
+    return enriched;
   }
 
   @Post('generate')

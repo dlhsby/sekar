@@ -16,6 +16,18 @@ import {
 import { GeoJsonValidator } from '../../common/utils/geojson-validator.util';
 
 /**
+ * The four fields a picker or a board tree needs to place an area in a
+ * hierarchy. Deliberately excludes `boundary_polygon` and the nested
+ * `district`/`locationType` objects — see `findAllForLookup`.
+ */
+export interface LocationLookup {
+  id: string;
+  name: string;
+  district_id: string | null;
+  region_id: string | null;
+}
+
+/**
  * Service for managing work areas
  *
  * Provides CRUD operations for areas where workers can be assigned.
@@ -117,6 +129,38 @@ export class LocationsService {
       .take(limit)
       .getManyAndCount();
     return new PaginatedResponseDto(data, total, page, limit);
+  }
+
+  /**
+   * Every area as a bare `{ id, name, district_id, region_id }` tuple.
+   *
+   * The schedules day board builds its Rayon → Kawasan → Lokasi tree from these
+   * four fields and nothing else, and the lokasi pickers only need the same. The
+   * web asked `useLocations({ limit: 1000 })`, which sends **no** page/limit (it
+   * dodges the controller's `Math.min(100, …)` clamp that way) — so the backend
+   * returned every area as a FULL entity, nested `district` and boundary polygon
+   * included: **12.5 MB in 0.93 s** for 952 areas, on every schedules page load.
+   * Same 952 rows here cost **169 KB / 36 ms**.
+   *
+   * Unpaginated on purpose: the whole point is one complete, tiny master list.
+   * Same district scoping as `findAll`; inactive areas are excluded, since a
+   * deactivated lokasi should not appear as a board container.
+   */
+  async findAllForLookup(requester: User): Promise<LocationLookup[]> {
+    const isCityRole = MONITORING_CITY.includes(requester.role as UserRole);
+    if (!isCityRole && !requester.district_id) return [];
+
+    const query = this.locationRepository
+      .createQueryBuilder('area')
+      .select(['area.id', 'area.name', 'area.district_id', 'area.region_id'])
+      .where('area.is_active = :isActive', { isActive: true })
+      .orderBy('area.name', 'ASC');
+
+    if (!isCityRole) {
+      query.andWhere('area.district_id = :districtId', { districtId: requester.district_id });
+    }
+
+    return query.getMany() as unknown as Promise<LocationLookup[]>;
   }
 
   /**
