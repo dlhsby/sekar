@@ -50,6 +50,36 @@ workbook set.
 
 ## 3. Rehearsal (must pass before go-live)
 
+> **Third rehearsal PASSED — 2026-08-01**, covering the Jadwal payload work (#421–#431).
+> Run entirely on a throwaway clone; **staging was not touched**.
+>
+> - **No new migrations.** The 11 PRs are code-only, so the chain is unchanged from the
+>   2026-07-28 rehearsal. Re-ran it anyway to confirm: **43 migrations, exit 0, 19.3 s**,
+>   from a fresh `--restore-only` of the pre-cutover dump (355 MB, `schedule_events`
+>   absent, 30 478 schedules).
+> - **Post-migration shape unchanged:** 1 009 `schedule_events`, 21 775 `attendance_punches`.
+> - **F1 reconfirmed:** RBAC was **0/0/0** after migrations and **9/72/96** after
+>   `db:seed:prod`. Still a deploy-breaker without the seed step.
+> - **F9/F12 — the photo backfill, which is what this rehearsal was really for.**
+>   Post-migration the clone held **2 885 inline photos across four columns** and had grown
+>   to **633 MB** (migration `17520` duplicates the shifts' base64 into
+>   `attendance_punches`, exactly as F12 predicts). The backfill — now including
+>   `attendance_punches` and content-hash dedupe — moved **2 905 photos / 398.9 MB in
+>   1 m 10 s, zero failures, 1 541 distinct objects** (dedup avoided 1 364 duplicate
+>   uploads). Every column then reports **0 inline**, and a **re-run moves 0** (idempotent).
+>   After `VACUUM (FULL)`: **633 MB → 74 MB**.
+> - **Boot:** healthy on the migrated + backfilled schema, **zero ERROR lines**.
+> - **API:** all nine endpoints 200 — `day-summary` 83 KB/0.17 s, `range-summary` (35 days)
+>   172 KB/1.19 s, the four lookups, `/locations`, `/schedule-events`, `/schedules/range`.
+> - **Web:** all **16 dashboard routes** loaded 200 against the rehearsed clone with **no
+>   console errors**.
+>
+> **Still required before go-live:** re-run the rehearsal against a **fresh dump**. This one
+> reused the 2026-07-28 dump, so it proves the chain and the scripts, not the current row
+> shapes. And the clone's `superadmin` password was overwritten locally to obtain a token —
+> a clone-only convenience, never done against staging.
+
+
 > **Second rehearsal PASSED — 2026-07-28**, against a fresh `pg_dump` of live staging
 > restored into a local throwaway `postgres:15-alpine` (`staging-clone.sh`). This one also
 > exercised the post-ADR-050/056 code and the operator scripts.
