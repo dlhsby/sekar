@@ -50,6 +50,43 @@ workbook set.
 
 ## 3. Rehearsal (must pass before go-live)
 
+> **Fourth rehearsal PASSED — 2026-08-01, on a FRESH `pg_dump` of live staging.** This is
+> the one the third rehearsal said was still owed: it re-pulled the dump (**253 MB**, vs the
+> 224 MB of 2026-07-28) rather than reusing it, so it exercises the **current** row shapes.
+> Staging was read only — `pg_dump` takes no blocking locks; nothing was written to AWS.
+>
+> - **Fresh baseline is materially bigger:** 1 184 users (was 1 173), **35 331 schedules**
+>   (was 30 478), 12 838 shifts, `schedule_events` absent (pre-cutover shape confirmed).
+> - **Pre-flight gate PASSES on the new data:** **0** duplicate `(user, date, shift, place)`
+>   groups. This is the one that aborts migration `17517` mid-chain.
+> - **Chain:** **43 migrations, exit 0, 32.0 s** (19.3 s on the smaller dump — it scales with
+>   rows, so budget for it growing again between now and cutover).
+> - **F1 reconfirmed:** RBAC **0/0/0** after migrations, **9/72/96** after `db:seed:prod`,
+>   and **unchanged on a second seed** — additive and idempotent, as required.
+> - **F9/F12 photo backfill on current data:** post-migration the clone held **3 275 inline
+>   photos / 598 MB** across the four columns (163 avatars, 886 clock-in, 670 clock-out,
+>   1 556 punches) at **713 MB** total. The backfill moved **3 296 photos / 450.7 MB in
+>   1 m 15 s, zero failures, 1 737 distinct objects**; every column then reports **0 inline**
+>   and a **re-run moves 0**. After `VACUUM (FULL)`: **713 MB → 83 MB**.
+> - **Boot:** healthy, **zero ERROR lines**, at `--max-old-space-size=384`.
+> - **API:** all ten endpoints 200 — `day-summary` 97 KB/0.30 s, `range-summary` (31 days)
+>   171 KB/1.93 s, four lookups, `/locations`, `/schedule-events`, `/schedules/range`,
+>   `/schedules/unscheduled`.
+> - **Aggregate ↔ row parity re-verified on the new data**, on four days (two materialized,
+>   two beyond the horizon): occurrence totals, city headcount and every per-rayon distinct
+>   count agree **exactly** — 0 mismatches.
+> - **Web:** all **16 dashboard routes** 200, **no console errors**.
+> - **F11 blast radius moved:** **41 586** past `planned` rows reaching back to
+>   **2026-07-01** (`lookback_days_needed` = **31**; was 36 390 / 27 days). The one-off
+>   `npm run schedules:sweep-absences -- --all --apply` remains **required**, and the 7-day
+>   default still covers only a fraction.
+>
+> **Not covered by this rehearsal:** the **rollback rehearsal** (§3.6) — restoring the
+> pre-migration dump into a second throwaway PG15 and booting the *old* image against it.
+> That is what proves the RDS-snapshot path, and it is still ⏳. As before, the clone's
+> `superadmin` (and one `korlap`) password was overwritten locally to obtain tokens — a
+> clone-only convenience, never done against staging.
+
 > **Third rehearsal PASSED — 2026-08-01**, covering the Jadwal payload work (#421–#431).
 > Run entirely on a throwaway clone; **staging was not touched**.
 >
@@ -183,7 +220,7 @@ Run against a **restored dump of real staging data** on a throwaway PG15 — nev
 - [ ] `main` green on CI; nothing unmerged that belongs in the release
 - [ ] **Schedule drift report captured (BEFORE):** `psql "$DATABASE_URL" -f apps/be/scripts/staging-verify-schedules.sql > before.txt`
 - [ ] **Uniqueness gate PASSES** — §5 of that report must read `PASS`. Any duplicate `(user, date, shift, place)` **aborts migration `17517` mid-chain**; fix the data first.
-- [ ] Absence-sweep blast radius (§8) read, and the **one-off backfill planned** — 7 days is not enough (F11 measured 27 days / 36 390 rows)
+- [ ] Absence-sweep blast radius (§8) read, and the **one-off backfill planned** — 7 days is not enough (F11 measured **31 days / 41 586 rows** on the 2026-08-01 fresh dump, up from 27 days / 36 390; re-read §8 on the day)
 - [ ] Coverage gaps (§4) reviewed — clockable workers with no event are **reported, not auto-created**; confirm the list is expected
 
 ## 5. Cutover
