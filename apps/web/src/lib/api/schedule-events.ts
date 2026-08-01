@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-query';
 import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
-import type { DaySummaryPayload } from '@/lib/schedules/dayBoard';
+import type { DaySummaryPayload, RangeSummaryPayload } from '@/lib/schedules/dayBoard';
 import { unscheduledKeys } from './unscheduled';
 
 export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
@@ -299,6 +299,9 @@ export const scheduleOccurrenceKeys = {
   /** One container's rows on a day — what the board fetches when a card opens. */
   byContainer: (date: string, containerId: string, filters?: ScheduleRangeFilters) =>
     [...scheduleOccurrenceKeys.lists(), { date, containerId, ...filters }] as const,
+  /** Aggregate counts for the week/month grids. */
+  rangeSummary: (from: string, to: string, filters?: ScheduleRangeFilters) =>
+    [...scheduleOccurrenceKeys.all, 'range-summary', { from, to, ...filters }] as const,
   /** Aggregate counts for the collapsed board. */
   daySummary: (date: string, filters?: ScheduleRangeFilters) =>
     [...scheduleOccurrenceKeys.all, 'day-summary', { date, ...filters }] as const,
@@ -459,6 +462,34 @@ export function useDaySummary(date: string, filters?: ScheduleRangeFilters, enab
       return response.data;
     },
     enabled: enabled && !!date,
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Aggregate counts for the week and month grids.
+ *
+ * Both render only headcounts unless a subject filter is set, and used to fetch
+ * every row in the range to derive them — an unfiltered month was 57 MB / 27 s
+ * and an OOM risk on staging. This answers the same question in ~190 KB.
+ */
+export function useRangeSummary(
+  from: string,
+  to: string,
+  filters?: ScheduleRangeFilters,
+  enabled = true
+) {
+  return useQuery({
+    queryKey: scheduleOccurrenceKeys.rangeSummary(from, to, filters),
+    queryFn: async () => {
+      const params = new URLSearchParams({ from, to });
+      appendRangeFilters(params, filters);
+      const response = await apiClient.get<RangeSummaryPayload>(
+        `/schedules/range-summary?${params.toString()}`
+      );
+      return response.data;
+    },
+    enabled: enabled && !!from && !!to,
     staleTime: 30_000,
   });
 }
