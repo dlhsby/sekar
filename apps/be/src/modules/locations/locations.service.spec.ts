@@ -204,10 +204,10 @@ describe('LocationsService', () => {
   // findAllForLookup — the master list the schedules day board builds its
   // Rayon → Kawasan → Lokasi tree from.
   //
-  // It used to come from `GET /areas?limit=1000`, which the controller clamps to
-  // 100 — so on staging-sized data (955 areas) the board silently rendered a
-  // tenth of its tree, and each row carried a nested district with its boundary
-  // polygon. Unpaginated and four columns, on purpose.
+  // It used to come from the full `GET /areas` array — every area as a complete
+  // entity with a nested district and its boundary polygon, 12.5 MB for 952
+  // areas on the staging clone, fetched on every page load for four fields.
+  // Unpaginated and four columns, on purpose.
   // ---------------------------------------------------------------------------
   describe('findAllForLookup', () => {
     const cityUser = { id: 'u1', username: 'sa', role: 'superadmin', district_id: null } as any;

@@ -374,8 +374,9 @@ export function ScheduleEventModal({
   const { data: teamCategories = [] } = useTeamCategories(
     can('schedule:create') || can('schedule:update')
   );
-  // Lookup, not the paginated list: `GET /areas` clamps `limit` to 100, so
-  // `{ limit: 1000 }` offered only 100 of 955 lokasi in this picker.
+  // Lookup, not the full list: `useLocations({ limit: 1000 })` pulled all 952
+  // areas as complete entities (boundary polygons included, 12.5 MB) to fill a
+  // picker that shows a name.
   const { data: locations = [] } = useLocationLookup();
   const { data: regions = [] } = useRegions();
   const { data: districts = [] } = useDistricts();

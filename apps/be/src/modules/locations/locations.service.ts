@@ -135,10 +135,12 @@ export class LocationsService {
    * Every area as a bare `{ id, name, district_id, region_id }` tuple.
    *
    * The schedules day board builds its Rayon → Kawasan → Lokasi tree from these
-   * four fields and nothing else. It used to ask `findAllPaginated` for 1 000
-   * rows, which the controller silently clamped to 100 — so on staging-sized
-   * data (955 areas) the board rendered a tenth of its tree, and the 1.3 MB it
-   * did return was mostly nested `district` objects carrying boundary polygons.
+   * four fields and nothing else, and the lokasi pickers only need the same. The
+   * web asked `useLocations({ limit: 1000 })`, which sends **no** page/limit (it
+   * dodges the controller's `Math.min(100, …)` clamp that way) — so the backend
+   * returned every area as a FULL entity, nested `district` and boundary polygon
+   * included: **12.5 MB in 0.93 s** for 952 areas, on every schedules page load.
+   * Same 952 rows here cost **169 KB / 36 ms**.
    *
    * Unpaginated on purpose: the whole point is one complete, tiny master list.
    * Same district scoping as `findAll`; inactive areas are excluded, since a

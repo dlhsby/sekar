@@ -161,11 +161,12 @@ export class LocationsController {
    * Declared before `@Get(':id')` so the literal path is not swallowed by the
    * id route.
    *
-   * `GET /areas` clamps `limit` to 100, which silently truncated the schedules
-   * day board's master list to 100 of 955 areas — a correctness bug, since most
-   * lokasi nodes then had no name or parent. This is the endpoint that list
-   * actually wanted: complete, and ~40× smaller than the paginated payload,
-   * which carried a nested `district` (boundary polygon included) per row.
+   * Callers that want "every area" (the schedules day board's tree, the lokasi
+   * pickers) previously had to ask `GET /areas` with no page/limit, because
+   * passing `limit` gets it clamped to 100. That does return all of them — but
+   * as FULL entities, each carrying a nested `district` with its boundary
+   * polygon: **12.5 MB in 0.93 s** for 952 areas on the staging clone, on every
+   * page load. This endpoint answers the same question in **169 KB / 36 ms**.
    */
   @Get('lookup')
   @ApiOperation({

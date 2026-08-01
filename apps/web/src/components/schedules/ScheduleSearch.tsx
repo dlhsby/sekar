@@ -92,7 +92,7 @@ export function ScheduleSearch({
   const { data: usersResp } = useUsers({ limit: 1000 });
   const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
-  // Lookup, not the paginated list — see ScheduleEventModal.
+  // Lookup, not the full entity list — see ScheduleEventModal.
   const { data: locations = [] } = useLocationLookup();
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: teamCategories = [] } = useTeamCategories();

@@ -256,9 +256,9 @@ export default function SchedulesPage() {
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
-  // The board tree needs every lokasi, not the first 100 — `GET /areas` clamps
-  // `limit` to 100 server-side, so `{ limit: 1000 }` quietly returned a tenth of
-  // the tree on staging-sized data.
+  // Four fields per lokasi, not the whole entity. `useLocations({ limit: 1000 })`
+  // sends no page/limit, so the backend returned all 952 areas as FULL entities —
+  // nested district, boundary polygon and all — 12.5 MB on every page load.
   const { data: allLocations = [] } = useLocationLookup();
   const boardLocations = useMemo(
     () =>

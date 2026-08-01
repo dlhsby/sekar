@@ -27,7 +27,7 @@ export function ScheduleFilterChips({ filters, onChange, lockDistrict }: Schedul
   // deactivated district, which should still render as a chip.
   const { data: districts = [] } = useDistricts(true);
   const { data: regions = [] } = useRegions();
-  // Lookup, not the paginated list — see ScheduleEventModal.
+  // Lookup, not the full entity list — see ScheduleEventModal.
   const { data: locations = [] } = useLocationLookup();
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: teamCategories = [] } = useTeamCategories();
