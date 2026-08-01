@@ -137,11 +137,33 @@ describe('LocationsService', () => {
     } as any;
 
     const makeQB = () => ({
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([mockArea]),
+    });
+
+    // A lokasi's GeoJSON averages ~12.9 KB; the full list was 12.26 MB of the
+    // management table's 12.5 MB, for a table that draws no map. The boundary is
+    // read one lokasi at a time via GET /locations/:id/boundary.
+    // A District carries its own `boundary_polygon`, so hydrating the relation
+    // whole stamped ~11 KB of rayon GeoJSON onto every one of the 952 rows —
+    // 10.8 MB of a 12.5 MB response. The grid reads a rayon NAME.
+    it('joins the relations by column, never whole', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAll(cityUser);
+
+      expect(qb.leftJoin).toHaveBeenCalledWith('area.district', 'district');
+      expect(qb.addSelect).toHaveBeenCalledWith(['district.id', 'district.name']);
+      expect(qb.leftJoinAndSelect).not.toHaveBeenCalled();
+      const districtCols = qb.addSelect.mock.calls.flat(2) as string[];
+      expect(districtCols).not.toContain('district.boundary_polygon');
     });
 
     it('should return all active areas for city roles without filter', async () => {
