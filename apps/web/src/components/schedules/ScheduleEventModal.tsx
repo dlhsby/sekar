@@ -40,7 +40,7 @@ import {
 } from '@/lib/api/schedule-events';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
 import { useDistricts } from '@/lib/api/districts';
 import { usePermissions } from '@/lib/auth/usePermissions';
@@ -374,7 +374,9 @@ export function ScheduleEventModal({
   const { data: teamCategories = [] } = useTeamCategories(
     can('schedule:create') || can('schedule:update')
   );
-  const { data: locationsResp } = useLocations({ limit: 1000 });
+  // Lookup, not the paginated list: `GET /areas` clamps `limit` to 100, so
+  // `{ limit: 1000 }` offered only 100 of 955 lokasi in this picker.
+  const { data: locations = [] } = useLocationLookup();
   const { data: regions = [] } = useRegions();
   const { data: districts = [] } = useDistricts();
 
@@ -415,7 +417,6 @@ export function ScheduleEventModal({
     () => new Map(Object.values(userMeta).map((u) => [u.id, u.full_name])),
     [userMeta]
   );
-  const locations = locationsResp?.data ?? [];
 
   const formKind = watch('kind');
   const formScope = watch('scope');
@@ -508,7 +509,7 @@ export function ScheduleEventModal({
         return;
       }
       if (loc.region_id) setValue('region_id', loc.region_id);
-      setValue('district_id', loc.district_id);
+      if (loc.district_id) setValue('district_id', loc.district_id);
       backfilled.current = true;
     } else if (event.region_id) {
       const reg = regions.find((r) => r.id === event.region_id);

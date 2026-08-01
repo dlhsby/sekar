@@ -13,6 +13,7 @@ import {
   IsNull,
   LessThanOrEqual,
   MoreThanOrEqual,
+  Not,
   Repository,
   type FindOptionsWhere,
 } from 'typeorm';
@@ -244,6 +245,59 @@ export interface RangeFilters {
  * what the web board and mobile's personal calendar read — boundaries are
  * fetched per-subject by the map modal, never per roster row.
  */
+/**
+ * Column lists for the events the projection pass loads.
+ *
+ * `relations: [...]` alone hydrates every column of every relation, which on the
+ * staging clone means `locations.boundary_polygon` (~12 KB of GeoJSON per event,
+ * across ~1k events) and `users.profile_picture_url` for each team member — the
+ * latter a base64 data URI reaching 5 MB. None of it survives
+ * `slimProjectedRelations`, so it is loaded and discarded. These lists select
+ * exactly the fields the projection loop reads.
+ */
+const EVENT_PROJECTION_SELECT = {
+  // Root columns are listed explicitly rather than left to default, so the shape
+  // does not depend on how TypeORM merges a relation-only `select`. A new column
+  // on ScheduleEvent that the projection loop needs must be added here too.
+  id: true,
+  title: true,
+  recurrence_type: true,
+  start_date: true,
+  end_date: true,
+  recurrence_config: true,
+  shift_definition_id: true,
+  scope: true,
+  location_id: true,
+  region_id: true,
+  district_id: true,
+  is_team: true,
+  team_category_id: true,
+  pic_user_id: true,
+  user_id: true,
+  is_active: true,
+  notes: true,
+  created_by: true,
+  location: { id: true, name: true, district_id: true, region_id: true },
+  region: { id: true, name: true, district_id: true },
+  team_category: { id: true, name: true, marker_color: true },
+  shift_definition: {
+    id: true,
+    name: true,
+    start_time: true,
+    end_time: true,
+    crosses_midnight: true,
+    cutoff_grace_min: true,
+  },
+  user: { id: true, full_name: true, username: true, role: true, is_active: true },
+  pic_user: { id: true, full_name: true, username: true, role: true, is_active: true },
+  members: {
+    // Composite PK (schedule_event_id, user_id) — there is no `id` column.
+    schedule_event_id: true,
+    user_id: true,
+    user: { id: true, full_name: true, username: true, role: true, is_active: true },
+  },
+} as const;
+
 function slimProjectedRelations(row: Schedule): Schedule {
   const place = <T extends { id: string; name: string }>(x: T | null | undefined): T | null =>
     x ? ({ id: x.id, name: x.name } as T) : null;
@@ -476,9 +530,16 @@ export class SchedulesService {
    * occurrence of a worker legitimately covering two places in one shift, which
    * is precisely the case ADR-053 exists to allow.
    */
-  private async occupiedShiftKeys(from: string, to: string): Promise<Set<string>> {
+  private async occupiedShiftKeys(
+    from: string,
+    to: string,
+    filters?: RangeFilters,
+  ): Promise<Set<string>> {
     const rows = await this.rosterRepo.find({
-      where: { schedule_date: Between(from, to) },
+      where: {
+        schedule_date: Between(from, to),
+        ...this.projectionGuardScope(filters),
+      },
       select: [
         'user_id',
         'schedule_date',
@@ -495,6 +556,68 @@ export class SchedulesService {
           (r) => `${r.user_id}:${r.schedule_date}:${r.shift_definition_id}:${schedulePlaceKey(r)}`,
         ),
     );
+  }
+
+  /**
+   * `event:user:date` for every row in the range that an event produced,
+   * INCLUDING soft-deleted tombstones and detached overrides — none of which may
+   * be projected again.
+   *
+   * One query for the whole range. This used to run once per event, inside the
+   * projection loop: ~1k active events on the staging clone meant ~1k sequential
+   * round-trips, which dominated the 25 s a month-wide range took.
+   * `getDailyCounts` already collected the same keys this way.
+   */
+  private async eventOccurrenceKeys(
+    from: string,
+    to: string,
+    filters?: RangeFilters,
+  ): Promise<Set<string>> {
+    const rows = await this.rosterRepo.find({
+      where: {
+        schedule_date: Between(from, to),
+        schedule_event_id: Not(IsNull()),
+        ...this.projectionGuardScope(filters),
+      },
+      withDeleted: true,
+      select: ['schedule_event_id', 'user_id', 'schedule_date'],
+    });
+    return new Set(rows.map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`));
+  }
+
+  /**
+   * The subset of a range's filters that may narrow the two projection-guard
+   * key sets above.
+   *
+   * Both sets exist to answer "could this projected occurrence collide with a
+   * row that already exists?". A guard query must therefore keep every row that
+   * could collide with an occurrence the caller will actually receive — and the
+   * projection loop has already dropped events that don't match the filters, so
+   * narrowing the guard the same way is safe for these dimensions:
+   *
+   * - `userId` / `shiftDefinitionId` — both are components of the collision key,
+   *   so a row with a different value can never collide.
+   * - `locationId` / `regionId` / `districtId` — the collision key includes the
+   *   PLACE, and an occurrence's place comes from its event, which the loop has
+   *   already filtered to this place.
+   *
+   * `teamCategoryId` is deliberately NOT here: a blocking row may belong to a
+   * different team (or none) and still own the same (user, date, shift, place).
+   * Filtering by it would drop that row from the guard and resurrect a phantom
+   * projected duplicate — the exact bug `occupiedShiftKeys` was added to fix.
+   *
+   * Unfiltered (the default city-wide board) this is a no-op, by design.
+   */
+  private projectionGuardScope(filters?: RangeFilters): FindOptionsWhere<Schedule> {
+    if (!filters) return {};
+    const { userId, shiftDefinitionId, locationId, regionId, districtId } = filters;
+    return {
+      ...(userId ? { user_id: userId } : {}),
+      ...(shiftDefinitionId ? { shift_definition_id: shiftDefinitionId } : {}),
+      ...(locationId ? { location_id: locationId } : {}),
+      ...(regionId ? { region_id: regionId } : {}),
+      ...(districtId ? { district_id: districtId } : {}),
+    };
   }
 
   /**
@@ -606,10 +729,28 @@ export class SchedulesService {
       // `user` is eager on the entity, but createQueryBuilder ignores eager
       // relations — join it explicitly or every row comes back with no user
       // (the web table reads row.user.full_name and crashes).
-      .leftJoinAndSelect('ds.user', 'u')
-      .leftJoinAndSelect('ds.shift_definition', 'sd')
-      .leftJoinAndSelect('ds.location', 'location')
-      .leftJoinAndSelect('ds.replacement_user', 'ru')
+      //
+      // Explicit column lists, NOT leftJoinAndSelect — same reason as
+      // `findByDateRange`. `users.profile_picture_url` holds a base64 data URI
+      // (legacy rows reach 5 MB), so selecting the whole user stamps that blob
+      // onto every one of that worker's rows. Measured on the staging clone: an
+      // unscoped day returned **190 MB in 5.4 s** for 3.4k rows. `location` and
+      // `region` carry `boundary_polygon` for the same reason.
+      .leftJoin('ds.user', 'u')
+      .addSelect(['u.id', 'u.full_name', 'u.username', 'u.role', 'u.is_active'])
+      .leftJoin('ds.shift_definition', 'sd')
+      .addSelect([
+        'sd.id',
+        'sd.name',
+        'sd.start_time',
+        'sd.end_time',
+        'sd.crosses_midnight',
+        'sd.cutoff_grace_min',
+      ])
+      .leftJoin('ds.location', 'location')
+      .addSelect(['location.id', 'location.name'])
+      .leftJoin('ds.replacement_user', 'ru')
+      .addSelect(['ru.id', 'ru.full_name', 'ru.username', 'ru.role'])
       .where('ds.schedule_date = :date', { date })
       .andWhere('ds.deleted_at IS NULL');
     if (districtId) {
@@ -1126,6 +1267,10 @@ export class SchedulesService {
         .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
     );
 
+    // Tombstones and detached overrides for the whole range, in one query rather
+    // than one per event inside the projection loop below.
+    const existingKey = await this.eventOccurrenceKeys(from, to, { userId });
+
     // Projection: load active events that include this user and expand beyond the materialized window
     const events = await this.eventRepo.find({
       where: this.activeEventsOverlapping(from, to),
@@ -1139,9 +1284,10 @@ export class SchedulesService {
         'members',
         'members.user',
       ],
+      select: EVENT_PROJECTION_SELECT,
     });
 
-    const shiftOccupied = await this.occupiedShiftKeys(from, to);
+    const shiftOccupied = await this.occupiedShiftKeys(from, to, { userId });
     const projectedRows: Schedule[] = [];
     for (const event of events) {
       // Expand the event's recurrence into concrete dates
@@ -1167,19 +1313,12 @@ export class SchedulesService {
 
       // Check which (member, date) pairs are already in DB with this event
       if (dates.length > 0) {
-        const existingRows = await this.rosterRepo.find({
-          where: { schedule_event_id: event.id, user_id: userId, schedule_date: In(dates) },
-          withDeleted: true, // Include soft-deleted tombstones
-          select: ['user_id', 'schedule_date'],
-        });
-        const existingKey = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
-
         // For each date NOT already in DB, emit a virtual projected row
         for (const dateStr of dates) {
           const key = `${event.id}:${userId}:${dateStr}`;
           if (!materializedKey.has(key)) {
             // Also check withDeleted to avoid resurrecting tombstones
-            if (existingKey.has(`${userId}:${dateStr}`)) continue;
+            if (existingKey.has(key)) continue;
             // …and never project a (user, date, shift, PLACE) a live row already
             // owns (see `occupiedShiftKeys`) — it could never materialize anyway.
             // Keyed on the place too, so a second occurrence at a DIFFERENT place
@@ -1348,6 +1487,10 @@ export class SchedulesService {
         .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
     );
 
+    // Tombstones and detached overrides for the whole range, in one query rather
+    // than one per event inside the projection loop below.
+    const existingKey = await this.eventOccurrenceKeys(from, to, f);
+
     // Projection: load active events and expand beyond the materialized window
     const events = await this.eventRepo.find({
       where: this.activeEventsOverlapping(from, to),
@@ -1361,9 +1504,10 @@ export class SchedulesService {
         'members',
         'members.user',
       ],
+      select: EVENT_PROJECTION_SELECT,
     });
 
-    const shiftOccupied = await this.occupiedShiftKeys(from, to);
+    const shiftOccupied = await this.occupiedShiftKeys(from, to, f);
     const projectedRows: Schedule[] = [];
     for (const event of events) {
       // Event-level filter gate — skip whole events that can't match, so we
@@ -1412,20 +1556,13 @@ export class SchedulesService {
 
       // Check which (member, date) pairs are already in DB with this event
       if (dates.length > 0) {
-        const existingRows = await this.rosterRepo.find({
-          where: { schedule_event_id: event.id, schedule_date: In(dates) },
-          withDeleted: true, // Include soft-deleted tombstones
-          select: ['user_id', 'schedule_date'],
-        });
-        const existingKey = new Set(existingRows.map((r) => `${r.user_id}:${r.schedule_date}`));
-
         // For each (member, date) NOT already in DB, emit a virtual projected row
         for (const memberId of memberIds) {
           for (const dateStr of dates) {
             const key = `${event.id}:${memberId}:${dateStr}`;
             if (!materializedKey.has(key)) {
               // Also check withDeleted to avoid resurrecting tombstones
-              if (existingKey.has(`${memberId}:${dateStr}`)) continue;
+              if (existingKey.has(key)) continue;
               // …and never project a (user, date, shift, PLACE) a live row already
               // owns (see `occupiedShiftKeys`) — it could never materialize anyway.
               // Keyed on the place too, so a second occurrence at a DIFFERENT

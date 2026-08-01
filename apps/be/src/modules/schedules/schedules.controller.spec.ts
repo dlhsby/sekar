@@ -99,4 +99,30 @@ describe('SchedulesController (district scoping)', () => {
       expect(service.findByDateRange).not.toHaveBeenCalled();
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // GET /schedules/:id — reading one row.
+  //
+  // The web edit modal used to fetch the whole unscoped day and `.find()` the
+  // row on the client: 190 MB and 5.4 s on staging-sized data to read one
+  // record. These lock in that the single-row read exists and stays scoped.
+  // ---------------------------------------------------------------------------
+  describe('getOne', () => {
+    it('returns the row for a city-scoped role', async () => {
+      const row = { id: 's1', district_id: 'r2' };
+      service.findOne.mockResolvedValue(row);
+      await expect(controller.getOne('s1', admin)).resolves.toEqual(row);
+      expect(service.findOne).toHaveBeenCalledWith('s1');
+    });
+
+    it('returns a district-scoped role its own rayon row', async () => {
+      service.findOne.mockResolvedValue({ id: 's1', district_id: 'r1' });
+      await expect(controller.getOne('s1', kepala)).resolves.toMatchObject({ id: 's1' });
+    });
+
+    it("refuses a district-scoped role another rayon's row", async () => {
+      service.findOne.mockResolvedValue({ id: 's1', district_id: 'r2' });
+      await expect(controller.getOne('s1', kepala)).rejects.toThrow(/another rayon/);
+    });
+  });
 });

@@ -22,9 +22,40 @@ export const locationKeys = {
   all: ['locations'] as const,
   lists: () => [...locationKeys.all, 'list'] as const,
   list: (filters: LocationFilters = {}) => [...locationKeys.lists(), filters] as const,
+  lookup: () => [...locationKeys.all, 'lookup'] as const,
   details: () => [...locationKeys.all, 'detail'] as const,
   detail: (id: string) => [...locationKeys.details(), id] as const,
 };
+
+/**
+ * The four fields a hierarchy tree or picker needs from an area.
+ * Mirrors the backend's `LocationLookup`.
+ */
+export interface LocationLookup {
+  id: string;
+  name: string;
+  district_id: string | null;
+  region_id: string | null;
+}
+
+/**
+ * Every active area, unpaginated, as bare id/name/parent tuples.
+ *
+ * Prefer this over `useLocations({ limit: 1000 })` for master lists: the
+ * paginated endpoint caps `limit` at 100 server-side, so asking for more
+ * silently returned a truncated tree, and each row carried a nested district
+ * with its boundary polygon.
+ */
+export function useLocationLookup() {
+  return useQuery({
+    queryKey: locationKeys.lookup(),
+    queryFn: async () => {
+      const response = await apiClient.get<LocationLookup[]>('/locations/lookup');
+      return response.data ?? [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
 
 /** Fetch one page of locations (or the full array when `page` is omitted). */
 async function fetchLocationsPage(

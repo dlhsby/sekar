@@ -19,7 +19,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { LocationsService } from './locations.service';
+import { LocationsService, type LocationLookup } from './locations.service';
 import { CreateLocationDto } from './dto/create-location.dto';
 import { UpdateLocationDto } from './dto/update-location.dto';
 import { Location } from './entities/location.entity';
@@ -153,6 +153,31 @@ export class LocationsController {
       );
     }
     return this.locationsService.findAll(user, areaType, includeInactiveBool);
+  }
+
+  /**
+   * Every area as a bare id/name/parents tuple, unpaginated.
+   *
+   * Declared before `@Get(':id')` so the literal path is not swallowed by the
+   * id route.
+   *
+   * `GET /areas` clamps `limit` to 100, which silently truncated the schedules
+   * day board's master list to 100 of 955 areas — a correctness bug, since most
+   * lokasi nodes then had no name or parent. This is the endpoint that list
+   * actually wanted: complete, and ~40× smaller than the paginated payload,
+   * which carried a nested `district` (boundary polygon included) per row.
+   */
+  @Get('lookup')
+  @ApiOperation({
+    summary: 'Minimal area list for pickers and hierarchy trees',
+    description:
+      'Every active area as { id, name, district_id, region_id }. Unpaginated, district-scoped ' +
+      'like GET /areas. No boundaries, no nested relations.',
+  })
+  @ApiResponse({ status: 200, description: 'Areas retrieved successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or missing JWT token' })
+  findAllForLookup(@GetUser() user: User): Promise<LocationLookup[]> {
+    return this.locationsService.findAllForLookup(user);
   }
 
   /**

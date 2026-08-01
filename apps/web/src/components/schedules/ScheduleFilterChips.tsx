@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 import { useUsers } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
 import type { ScheduleRangeFilters } from '@/lib/api/schedule-events';
@@ -27,7 +27,8 @@ export function ScheduleFilterChips({ filters, onChange, lockDistrict }: Schedul
   // deactivated district, which should still render as a chip.
   const { data: districts = [] } = useDistricts(true);
   const { data: regions = [] } = useRegions();
-  const { data: locationsResp } = useLocations({ limit: 1000 });
+  // Lookup, not the paginated list — see ScheduleEventModal.
+  const { data: locations = [] } = useLocationLookup();
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: teamCategories = [] } = useTeamCategories();
 
@@ -36,11 +37,11 @@ export function ScheduleFilterChips({ filters, onChange, lockDistrict }: Schedul
       user: new Map((usersResp?.data ?? []).map((u) => [u.id, u.full_name])),
       district: new Map(districts.map((r) => [r.id, r.name])),
       region: new Map(regions.map((r) => [r.id, r.name])),
-      location: new Map((locationsResp?.data ?? []).map((l) => [l.id, l.name])),
+      location: new Map(locations.map((l) => [l.id, l.name])),
       shift: new Map(shifts.map((s) => [s.id, s.name])),
       category: new Map(teamCategories.map((c) => [c.id, c.name])),
     }),
-    [usersResp, districts, regions, locationsResp, shifts, teamCategories]
+    [usersResp, districts, regions, locations, shifts, teamCategories]
   );
 
   const chips = useMemo(() => {

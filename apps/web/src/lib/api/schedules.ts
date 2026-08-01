@@ -82,6 +82,7 @@ export const dailyScheduleKeys = {
   lists: () => [...dailyScheduleKeys.all, 'list'] as const,
   byDate: (date: string, districtId?: string) =>
     [...dailyScheduleKeys.lists(), { date, districtId }] as const,
+  detail: (id: string) => [...dailyScheduleKeys.all, 'detail', id] as const,
   myRoster: (date?: string) => [...dailyScheduleKeys.all, 'my', date] as const,
 };
 
@@ -200,6 +201,25 @@ export function useDailyRoster(date: string, districtId?: string) {
     queryKey: dailyScheduleKeys.byDate(date, districtId),
     queryFn: () => fetchSchedules(date, districtId),
     enabled: !!date,
+  });
+}
+
+/**
+ * One roster row by id.
+ *
+ * A projected occurrence has no row in the table — its id is
+ * `projected:<event>:<user>:<date>` — so those are skipped here and read from the
+ * range payload the board already holds. Only materialized rows are fetched.
+ */
+export function useSchedule(id?: string | null) {
+  const isMaterialized = !!id && !id.startsWith('projected:');
+  return useQuery({
+    queryKey: dailyScheduleKeys.detail(id ?? ''),
+    queryFn: async () => {
+      const response = await apiClient.get<Schedule>(`/schedules/${id}`);
+      return response.data;
+    },
+    enabled: isMaterialized,
   });
 }
 

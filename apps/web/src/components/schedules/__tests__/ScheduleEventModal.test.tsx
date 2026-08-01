@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ScheduleEventModal } from '../ScheduleEventModal';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -60,7 +60,7 @@ jest.mock('@/components/forms/AsyncUserCombobox', () => ({
 }));
 
 jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn(() => ({ data: [] })) }));
-jest.mock('@/lib/api/locations', () => ({ useLocations: jest.fn(() => ({ data: { data: [] } })) }));
+jest.mock('@/lib/api/locations', () => ({ useLocationLookup: jest.fn(() => ({ data: [] })) }));
 jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn(() => ({ data: [] })) }));
 
 const queryClient = new QueryClient({
@@ -86,7 +86,7 @@ const LOCATIONS = [
 function withGeography() {
   (useDistricts as jest.Mock).mockReturnValue({ data: DISTRICTS });
   (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
-  (useLocations as jest.Mock).mockReturnValue({ data: { data: LOCATIONS } });
+  (useLocationLookup as jest.Mock).mockReturnValue({ data: LOCATIONS });
 }
 
 describe('ScheduleEventModal', () => {

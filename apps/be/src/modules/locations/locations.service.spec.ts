@@ -200,6 +200,87 @@ describe('LocationsService', () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // findAllForLookup — the master list the schedules day board builds its
+  // Rayon → Kawasan → Lokasi tree from.
+  //
+  // It used to come from `GET /areas?limit=1000`, which the controller clamps to
+  // 100 — so on staging-sized data (955 areas) the board silently rendered a
+  // tenth of its tree, and each row carried a nested district with its boundary
+  // polygon. Unpaginated and four columns, on purpose.
+  // ---------------------------------------------------------------------------
+  describe('findAllForLookup', () => {
+    const cityUser = { id: 'u1', username: 'sa', role: 'superadmin', district_id: null } as any;
+    const districtUser = {
+      id: 'u2',
+      username: 'korlap_pusat_1',
+      role: 'korlap',
+      district_id: 'district-pusat-uuid',
+    } as any;
+
+    const makeQB = () => ({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    });
+
+    it('selects only the four fields a hierarchy tree needs', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAllForLookup(cityUser);
+
+      expect(qb.select).toHaveBeenCalledWith([
+        'area.id',
+        'area.name',
+        'area.district_id',
+        'area.region_id',
+      ]);
+    });
+
+    it('never joins a relation — boundaries are what made this payload heavy', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAllForLookup(cityUser);
+
+      expect(qb).not.toHaveProperty('leftJoinAndSelect.mock.calls.0');
+    });
+
+    it('applies no pagination — the board needs every lokasi, not the first 100', async () => {
+      const qb = makeQB() as Record<string, unknown>;
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAllForLookup(cityUser);
+
+      expect(qb.take).toBeUndefined();
+      expect(qb.skip).toBeUndefined();
+    });
+
+    it('scopes by district_id for district-scoped roles', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      await service.findAllForLookup(districtUser);
+
+      expect(qb.andWhere).toHaveBeenCalledWith('area.district_id = :districtId', {
+        districtId: 'district-pusat-uuid',
+      });
+    });
+
+    it('returns empty for a district-scoped user with no district_id', async () => {
+      const qb = makeQB();
+      mockRepository.createQueryBuilder.mockReturnValue(qb);
+
+      const result = await service.findAllForLookup({ ...districtUser, district_id: null });
+
+      expect(result).toEqual([]);
+      expect(qb.getMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('findOne', () => {
     it('should return an area by ID', async () => {
       mockRepository.findOne.mockResolvedValue(mockArea);

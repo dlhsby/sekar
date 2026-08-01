@@ -66,10 +66,11 @@ import {
   type ScheduleRangeFilters,
 } from '@/lib/api/schedule-events';
 import {
-  useDailyRoster,
   useDeleteSchedule,
+  useSchedule,
   useUpdateRosterAreas,
   useUpdateRosterShift,
+  type Schedule,
 } from '@/lib/api/schedules';
 import {
   useStaffRequirements,
@@ -81,7 +82,7 @@ import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-ov
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { useUser } from '@/lib/auth/hooks';
 import { getErrorMessage } from '@/lib/api/client';
@@ -239,20 +240,38 @@ export default function SchedulesPage() {
     }
   }, [eventEdit, chosenEventError, t]);
 
-  // Row-level ("this occurrence") editing reuses the roster-table machinery:
-  // the day's roster is fetched and the chosen row fed to EditScheduleModal.
-  // (useDailyRoster no-ops on an empty date string.)
-  const { data: dayRoster } = useDailyRoster(rowEditOpen ? (chosen?.schedule_date ?? '') : '');
+  // Row-level ("this occurrence") editing reuses the roster-table machinery.
+  //
+  // This used to fetch the WHOLE day's roster, unscoped, and `.find()` the one
+  // row on the client — 190 MB and 5.4 s on staging-sized data to read a single
+  // record. It now asks for that record. A projected occurrence has no row to
+  // fetch (its id is `projected:…`), so `useSchedule` skips those and the board's
+  // own copy is used instead.
+  const { data: fetchedRow } = useSchedule(rowEditOpen ? chosen?.id : null);
   const rowUnderEdit = useMemo(
-    () => dayRoster?.find((r) => r.id === chosen?.id) ?? null,
-    [dayRoster, chosen]
+    () => fetchedRow ?? (chosen?.is_projected ? (chosen as unknown as Schedule) : null),
+    [fetchedRow, chosen]
   );
 
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
-  const { data: locationsResp } = useLocations({ limit: 1000 });
-  const allLocations = useMemo(() => locationsResp?.data ?? [], [locationsResp]);
+  // The board tree needs every lokasi, not the first 100 — `GET /areas` clamps
+  // `limit` to 100 server-side, so `{ limit: 1000 }` quietly returned a tenth of
+  // the tree on staging-sized data.
+  const { data: allLocations = [] } = useLocationLookup();
+  const boardLocations = useMemo(
+    () =>
+      allLocations
+        .filter((l): l is typeof l & { district_id: string } => !!l.district_id)
+        .map((l) => ({
+          id: l.id,
+          name: l.name,
+          district_id: l.district_id,
+          region_id: l.region_id ?? null,
+        })),
+    [allLocations]
+  );
 
   // Special-day overrides (holidays/days off) → the anchor's staffing day type,
   // matching monitoring's DayTypeService (holiday requirements fire on holidays).
@@ -288,12 +307,9 @@ export default function SchedulesPage() {
       // made the board offer the capacity control on every tier but the district.
       districts: districts.map((r) => ({ id: r.id, name: r.name, staffing_level: r.staffing_level })),
       regions: regions.map((r) => ({ id: r.id, name: r.name, district_id: r.district_id })),
-      locations: allLocations.map((l) => ({
-        id: l.id,
-        name: l.name,
-        district_id: l.district_id,
-        region_id: l.region_id ?? null,
-      })),
+      // A lokasi with no rayon has no place in a Rayon → Kawasan → Lokasi tree,
+      // so it is dropped rather than rendered under a missing parent.
+      locations: boardLocations,
       shifts: shifts.map((s) => ({
         id: s.id,
         name: s.name,
@@ -301,7 +317,7 @@ export default function SchedulesPage() {
         end_time: s.end_time,
       })),
     }),
-    [districts, regions, allLocations, shifts]
+    [districts, regions, boardLocations, shifts]
   );
 
   const updateShift = useUpdateRosterShift();
@@ -740,7 +756,7 @@ export default function SchedulesPage() {
         loading={updateShift.isPending || updateAreas.isPending}
         shifts={shifts}
         allDistricts={districts}
-        allAreas={allLocations}
+        allAreas={boardLocations}
         allRegions={regions}
       />
 
@@ -751,7 +767,7 @@ export default function SchedulesPage() {
         shifts={shifts}
         districts={districts}
         regions={regions}
-        locations={allLocations}
+        locations={boardLocations}
         onSchedule={(worker, target) => {
           // Hand off to the normal create flow. The WORKER and their role are
           // facts — they were picked from the list — so they lock. The target is
