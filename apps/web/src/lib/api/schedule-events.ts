@@ -3,10 +3,16 @@
  * Rule-based recurring schedules (ADR-047)
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
 import type { DaySummaryPayload } from '@/lib/schedules/dayBoard';
+import { unscheduledKeys } from './unscheduled';
 
 export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
 export type ScheduleScope = 'static' | 'mobile' | 'district' | 'city';
@@ -574,16 +580,39 @@ export function useScheduleEvent(id: string, enabled = true) {
 }
 
 /**
+ * Everything a roster write invalidates, awaited so the caller can trust the
+ * board before it claims success.
+ *
+ * Two things were wrong before. It invalidated `scheduleOccurrenceKeys.lists()`,
+ * which does NOT cover the day summary — the collapsed board's counts sat under
+ * a sibling key and would have kept the pre-write numbers. And nothing awaited
+ * the refetch, so `mutateAsync` resolved while the board was still stale and the
+ * success toast beat the row onto the screen by seconds.
+ *
+ * `onSuccess` may return a promise; React Query waits for it before the mutation
+ * settles, which is what makes the toast honest without an optimistic patch.
+ */
+async function invalidateRosterWrites(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: scheduleEventKeys.lists() }),
+    // `.all`, not `.lists()` — covers the range, the per-container rows AND the
+    // day summary.
+    queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.all }),
+    // The gap panel ("Belum Dijadwalkan") is derived from the same rosters, so a
+    // schedule written anywhere must invalidate it too — otherwise returning to
+    // the list after a save shows the worker you just placed still sitting there.
+    queryClient.invalidateQueries({ queryKey: unscheduledKeys.all }),
+  ]);
+}
+
+/**
  * Hook: Create a schedule event
  */
 export function useCreateScheduleEvent() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: createScheduleEvent,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleEventKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterWrites(queryClient),
   });
 }
 
@@ -604,10 +633,7 @@ export function useUpdateScheduleEvent() {
       editScope?: EditScope;
       fromDate?: string;
     }) => updateScheduleEvent(id, input, editScope, fromDate),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleEventKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterWrites(queryClient),
   });
 }
 
@@ -619,9 +645,6 @@ export function useDeleteScheduleEvent() {
   return useMutation({
     mutationFn: ({ id, scope, date }: { id: string; scope?: EditScope; date?: string }) =>
       deleteScheduleEvent(id, scope, date),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleEventKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterWrites(queryClient),
   });
 }
