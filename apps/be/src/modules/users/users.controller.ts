@@ -45,6 +45,7 @@ import { Location } from '../locations/entities/location.entity';
 import { USER_MANAGERS } from './constants/role-groups';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { UserValidationService } from './services/user-validation.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 
 /**
  * User Management Controller
@@ -63,6 +64,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly userAreasService: UserLocationsService,
     private readonly userValidationService: UserValidationService,
+    private readonly photos: PhotoStorageService,
   ) {}
 
   /**
@@ -609,12 +611,27 @@ export class UsersController {
       throw new BadRequestException('File size must not exceed 5MB');
     }
 
-    // Store as base64 data URI directly — avoids LocalStack URL accessibility issues on physical devices
-    const base64 = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
+    // Upload to object storage; the column holds a URL, never the bytes.
+    //
+    // This used to persist `data:<mime>;base64,…` straight into
+    // `users.profile_picture_url`, to work around a since-resolved LocalStack
+    // URL-reachability problem on physical devices (MinIO's split-horizon
+    // `AWS_PUBLIC_ENDPOINT_URL` handles that now). The global
+    // `PhotoUrlInterceptor` could not save us here: it rewrites known photo
+    // FIELDS on the request body, and this is a multipart upload assembled
+    // inside the handler, after the interceptor has run.
+    //
+    // The cost was not theoretical — 163 avatars, 28 MB, one row 5.4 MB — and
+    // because roster queries joined the whole user entity, a single avatar was
+    // re-serialized onto every one of that worker's schedule rows.
+    const url = await this.photos.upload(file.buffer, file.mimetype, 'profiles');
 
-    await this.usersService.updateProfilePicture(id, base64);
+    await this.usersService.updateProfilePicture(id, url);
 
-    return { profile_picture_url: base64 };
+    // Presigned so the client can render it immediately — the stored value is
+    // private, and the response interceptor only presigns on the way out of
+    // handlers it walks.
+    return { profile_picture_url: (await this.photos.presign(url)) ?? url };
   }
 
   @Patch('me/change-password')

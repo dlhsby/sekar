@@ -40,6 +40,25 @@ export class PhotoStorageService {
     return this.s3.uploadFile(buf, key, mimeFromDataUri(value));
   }
 
+  /**
+   * Upload an already-decoded file (a multipart upload) to `folder`.
+   *
+   * `store` exists for values that arrive as data URIs; a `FileInterceptor`
+   * hands over a Buffer and a MIME type, and base64-encoding it just so `store`
+   * can decode it again would be silly. Same destination, same key layout.
+   */
+  async upload(buffer: Buffer, mime: string, folder: string): Promise<string> {
+    const key = this.s3.generateKey(folder, `${randomUUID()}.${PhotoStorageService.ext(mime)}`);
+    return this.s3.uploadFile(buffer, key, mime);
+  }
+
+  /** `image/jpeg` → `jpg`; anything unrecognised falls back to `jpg`. */
+  private static ext(mime: string): string {
+    const sub = /^image\/([a-z0-9.+-]+)$/i.exec(mime)?.[1]?.toLowerCase();
+    if (!sub) return 'jpg';
+    return sub === 'jpeg' ? 'jpg' : sub;
+  }
+
   /** Upload each inline entry of an array to `folder`; non-inline entries untouched. */
   async storeArray(values: string[] | null | undefined, folder: string): Promise<string[]> {
     if (!values || values.length === 0) return values ?? [];

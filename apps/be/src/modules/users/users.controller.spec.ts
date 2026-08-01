@@ -3,6 +3,7 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { UserLocationsService } from '../../modules/user-locations/user-locations.service';
 import { UserValidationService } from './services/user-validation.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -50,6 +51,11 @@ describe('UsersController', () => {
     suggestUsername: jest.fn().mockResolvedValue('suggested_user'),
   };
 
+  const mockPhotoStorage = {
+    upload: jest.fn().mockResolvedValue('https://cdn.test/profiles/abc.jpg'),
+    presign: jest.fn(async (v: string) => `${v}?X-Amz-Signature=sig`),
+  };
+
   beforeEach(async () => {
     module = await Test.createTestingModule({
       controllers: [UsersController],
@@ -65,6 +71,10 @@ describe('UsersController', () => {
         {
           provide: UserValidationService,
           useValue: mockUserValidationService,
+        },
+        {
+          provide: PhotoStorageService,
+          useValue: mockPhotoStorage,
         },
       ],
     }).compile();
@@ -297,17 +307,27 @@ describe('UsersController', () => {
       path: '',
     };
 
-    it('should upload profile picture for own user as base64', async () => {
+    // These used to assert the OPPOSITE — that the handler persists
+    // `data:image/jpeg;base64,…` — which is the bug, not the contract: it put
+    // 28 MB of images into `users.profile_picture_url` (one row 5.4 MB), and
+    // roster queries joining the user re-serialized an avatar onto every one of
+    // that worker's schedule rows.
+    it('uploads the file to object storage and persists the URL, never base64', async () => {
       mockUsersService.updateProfilePicture.mockResolvedValue(undefined);
 
       const result = await controller.uploadProfilePicture(mockUser.id, mockFile, mockUser);
-      const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
 
-      expect(result).toEqual({ profile_picture_url: expectedBase64 });
-      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(
-        mockUser.id,
-        expectedBase64,
+      expect(mockPhotoStorage.upload).toHaveBeenCalledWith(
+        mockFile.buffer,
+        'image/jpeg',
+        'profiles',
       );
+      const calls = mockUsersService.updateProfilePicture.mock.calls as Array<[string, string]>;
+      const persisted = calls[calls.length - 1][1];
+      expect(persisted).toBe('https://cdn.test/profiles/abc.jpg');
+      expect(persisted).not.toMatch(/^data:/);
+      // The client renders it straight away, so it comes back presigned.
+      expect(result.profile_picture_url).toContain('X-Amz-Signature');
     });
 
     it('should allow admin to upload for other user', async () => {
@@ -319,9 +339,12 @@ describe('UsersController', () => {
       mockUsersService.updateProfilePicture.mockResolvedValue(undefined);
 
       const result = await controller.uploadProfilePicture('other-user-uuid', mockFile, adminUser);
-      const expectedBase64 = `data:image/jpeg;base64,${mockFile.buffer.toString('base64')}`;
 
-      expect(result).toEqual({ profile_picture_url: expectedBase64 });
+      expect(mockUsersService.updateProfilePicture).toHaveBeenCalledWith(
+        'other-user-uuid',
+        'https://cdn.test/profiles/abc.jpg',
+      );
+      expect(result.profile_picture_url).not.toMatch(/^data:/);
     });
 
     it('should throw ForbiddenException if non-admin uploads for another user', async () => {

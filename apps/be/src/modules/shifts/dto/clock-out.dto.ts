@@ -68,8 +68,16 @@ export class ClockOutDto {
   @IsOptional()
   @IsString()
   @MaxLength(10_000_000)
-  @Matches(/^data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+$/, {
-    message: 'Invalid base64 image format',
-  })
+  // Accepts a data URI (what the apps send today) OR an already-stored photo
+  // URL/key. The backend uploads inline payloads to object storage before
+  // persisting, so a client that starts uploading separately does not need a
+  // matching API change — it can just send the URL.
+  @Matches(
+    /^(data:image\/(jpeg|jpg|png);base64,[A-Za-z0-9+/=]+|https?:\/\/\S+|[\w.\-/]+\.(jpe?g|png|webp))$/,
+    {
+      message:
+        'Selfie must be a data:image/(jpeg|jpg|png);base64 payload or a stored photo URL/key',
+    },
+  )
   selfie_photo?: string;
 }

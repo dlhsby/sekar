@@ -9,6 +9,7 @@ import { AttendanceDerivationService } from './services/attendance-derivation.se
 import { ShiftAttributionService } from './services/shift-attribution.service';
 import { LocationsService } from '../locations/locations.service';
 import { S3Service } from '../../shared/services/s3.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { UserRole } from '../users/entities/user.entity';
@@ -123,6 +124,14 @@ describe('ShiftsService', () => {
     generateKey: jest.fn(),
   };
 
+  // Mirrors the real service: a data URI becomes a stored URL, anything else
+  // passes through untouched.
+  const mockPhotoStorage = {
+    store: jest.fn(async (v: string | null, folder: string) =>
+      v && v.startsWith('data:') ? `https://cdn.test/${folder}/stored.jpg` : v,
+    ),
+  };
+
   const mockUserAreasService = {
     getEffectiveLocations: jest.fn().mockResolvedValue([]),
   };
@@ -206,6 +215,10 @@ describe('ShiftsService', () => {
         {
           provide: SchedulesService,
           useValue: mockSchedulesService,
+        },
+        {
+          provide: PhotoStorageService,
+          useValue: mockPhotoStorage,
         },
       ],
     }).compile();
@@ -354,6 +367,40 @@ describe('ShiftsService', () => {
       expect(mockAreasService.findOne).toHaveBeenCalledWith(mockArea.id);
       // a punch was inserted idempotently (orIgnore) and the session was rebuilt from punches
       expect(mockPunchRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    // ---------------------------------------------------------------------
+    // Selfies must never reach the column.
+    //
+    // `PhotoUrlInterceptor` converts inline media globally, but only for the
+    // field names in its map, and the selfie arrives as `selfie_photo` — so
+    // these went into `attendance_punches.photo_url` (and the projected
+    // `shifts.clock_*_photo_url`) as raw base64. On the staging clone that was
+    // 500 MB across three columns, every single row a data URI.
+    // ---------------------------------------------------------------------
+    it('stores the clock-in selfie and punches the URL, not the base64', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
+
+      await service.clockIn(mockUser.id, clockInDto);
+
+      expect(mockPhotoStorage.store).toHaveBeenCalledWith(clockInDto.selfie_photo, 'clock-in');
+      const punched = insertedPunches[insertedPunches.length - 1] as { photo_url: string };
+      expect(punched.photo_url).toBe('https://cdn.test/clock-in/stored.jpg');
+      expect(punched.photo_url).not.toMatch(/^data:/);
+    });
+
+    it('passes an already-stored photo URL through untouched', async () => {
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
+
+      await service.clockIn(mockUser.id, {
+        ...clockInDto,
+        selfie_photo: 'https://cdn.test/clock-in/already-there.jpg',
+      });
+
+      const punched = insertedPunches[insertedPunches.length - 1] as { photo_url: string };
+      expect(punched.photo_url).toBe('https://cdn.test/clock-in/already-there.jpg');
     });
 
     it('auto-detects the area when location_id is not provided', async () => {
