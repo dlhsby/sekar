@@ -21,7 +21,7 @@ import {
 } from '@/components/ui';
 import { useUser } from '@/lib/auth/hooks';
 import { useAssets, useAssetCategories, useDeleteAsset, type AssetStatus } from '@/lib/api/assets';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { AssetFormModal } from '@/components/assets/AssetFormModal';
 import { formatDate } from '@/lib/utils/time';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
@@ -78,10 +78,11 @@ export default function AssetsPage() {
   const { data: categories } = useAssetCategories();
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
-  const { data: usersData } = useUsers({ limit: 1000 });
+  // Lookup, not the paginated list — only a NAME is resolved here.
+  const { data: users = [] } = useUserLookup();
   const userNameById = useMemo(
-    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
-    [usersData]
+    () => new Map((users ?? []).map((u) => [u.id, u.full_name])),
+    [users]
   );
   const actorName = useCallback(
     (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),

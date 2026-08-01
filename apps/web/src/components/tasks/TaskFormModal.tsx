@@ -19,8 +19,8 @@ import { FormActions } from '@/components/forms/FormActions';
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority, type AssignmentScope } from '@/lib/api/tasks';
 import { useTaskScopeField } from '@/lib/hooks/useTaskScopeField';
-import { useUsers } from '@/lib/api/users';
-import { useLocations } from '@/lib/api/locations';
+import { useUserLookup } from '@/lib/api/users';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { getErrorMessage } from '@/lib/api/client';
@@ -46,8 +46,11 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
   const { user } = useAuth();
   const createMutation = useCreateTask();
   const { scopeOptions, validate: validateScope, buildScopePayload } = useTaskScopeField();
-  const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useLocations({ limit: 1000 });
+  // Lookup, not the paginated list — see OvertimeForm.
+  const { data: users = [] } = useUserLookup();
+  // Lookup, not the full entity — see UserForm. The lookup carries the lokasi
+  // TYPE name, which this picker uses to disambiguate duplicate names.
+  const { data: allAreas = [] } = useLocationLookup();
   const { data: districtsData } = useDistricts();
   const { data: regionsData } = useRegions();
 
@@ -87,10 +90,11 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
     { value: 'high', label: t('tasks:form.priorityHigh') },
     { value: 'urgent', label: t('tasks:form.priorityUrgent') },
   ];
-  const assignableUsers = (usersData?.data || []).filter((u) =>
+  const assignableUsers = (users || []).filter((u) =>
     assignableRoles.includes(u.role as UserRole)
   );
-  const areas = areasData?.data || [];
+  // A picker offers only lokasi you can actually pick.
+  const areas = allAreas.filter((a) => a.is_active !== false);
   const districts = districtsData || [];
   const regions = regionsData || [];
 
@@ -226,7 +230,7 @@ export function TaskFormModal({ open, onOpenChange, onSuccess }: TaskFormModalPr
                     { value: 'none', label: t('tasks:newPage.scopeLocationPlaceholder') },
                     ...areas.map((a) => ({
                       value: a.id,
-                      label: a.locationType?.name ? `${a.name} (${a.locationType.name})` : a.name,
+                      label: a.location_type_name ? `${a.name} (${a.location_type_name})` : a.name,
                     })),
                   ]}
                 />

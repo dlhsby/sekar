@@ -38,6 +38,8 @@ export interface LocationLookup {
   region_id: string | null;
   /** False for a deactivated lokasi. Callers that offer a CHOICE must exclude these. */
   is_active?: boolean;
+  /** Lokasi type name ("Taman", "Trotoar", …) — pickers disambiguate with it. */
+  location_type_name?: string | null;
 }
 
 /**

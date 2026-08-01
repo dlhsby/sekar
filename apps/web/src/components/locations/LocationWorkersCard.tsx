@@ -29,7 +29,7 @@ import {
   FormSelect,
   EmptyState,
 } from '@/components/ui';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { useAreaUsers, useAssignLocations, useRemoveAssignment } from '@/lib/api/user-locations';
 import { getErrorMessage } from '@/lib/api/client';
 import { ROLE_LABELS, ROLE_BADGE_VARIANTS, SCHEDULABLE_WORKER_ROLES } from '@/lib/constants/roles';
@@ -43,7 +43,8 @@ interface LocationWorkersCardProps {
 export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardProps) {
   const { t } = useTranslation();
   const { data: workers, isLoading } = useAreaUsers(areaId);
-  const { data: usersData } = useUsers({ limit: 1000 });
+  // Lookup, not the paginated list — see OvertimeForm.
+  const { data: users = [] } = useUserLookup();
   const assignMutation = useAssignLocations();
   const removeMutation = useRemoveAssignment();
 
@@ -55,10 +56,10 @@ export function LocationWorkersCard({ areaId, canManage }: LocationWorkersCardPr
   // Schedulable workers not already assigned to this area.
   const candidates = useMemo(
     () =>
-      (usersData?.data ?? []).filter(
+      (users ?? []).filter(
         (u) => SCHEDULABLE_WORKER_ROLES.includes(u.role) && !assignedIds.has(u.id),
       ),
-    [usersData, assignedIds],
+    [users, assignedIds],
   );
 
   const handleAssign = async () => {

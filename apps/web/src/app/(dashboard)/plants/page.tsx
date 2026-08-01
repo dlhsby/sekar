@@ -27,7 +27,7 @@ import {
   useDeletePlantSpecies,
   type PlantSpeciesRow,
 } from '@/lib/api/plants';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { getErrorMessage } from '@/lib/api/client';
 import { useViewModal } from '@/lib/hooks/use-view-modal';
 import { formatDate } from '@/lib/utils/time';
@@ -40,10 +40,14 @@ export default function PlantsPage() {
   const { data: catalogData, isLoading, refetch } = useSpeciesCatalog(1, '', 1000);
   const species = useMemo(() => catalogData?.data ?? [], [catalogData]);
 
-  const { data: areasResponse } = useLocations({ limit: 1000 });
+  // Lookup, not the full entity — see UserForm.
+  const { data: allAreas = [] } = useLocationLookup();
   const areaOptions = useMemo(
-    () => (areasResponse?.data ?? []).map((area) => ({ value: area.id, label: area.name })),
-    [areasResponse]
+    () =>
+      allAreas
+        .filter((a) => a.is_active !== false)
+        .map((area) => ({ value: area.id, label: area.name })),
+    [allAreas]
   );
 
   // Form modal state

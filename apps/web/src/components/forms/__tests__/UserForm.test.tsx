@@ -10,7 +10,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserForm } from '../UserForm';
 import { useDistricts } from '@/lib/api/districts';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import type { User } from '@/types/models';
 import { ReactNode } from 'react';
 
@@ -19,7 +19,7 @@ jest.mock('@/lib/api/districts', () => ({
   useDistricts: jest.fn(),
 }));
 jest.mock('@/lib/api/locations', () => ({
-  useLocations: jest.fn(),
+  useLocationLookup: jest.fn(),
 }));
 jest.mock('@/lib/api/shift-definitions', () => ({
   useShiftDefinitions: jest.fn(() => ({ data: [], isLoading: false })),
@@ -89,10 +89,8 @@ describe('UserForm', () => {
       data: mockDistricts,
       isLoading: false,
     });
-    (useLocations as jest.Mock).mockReturnValue({
-      data: { data: [], total: 0 },
-      isLoading: false,
-    });
+    // The lookup returns a flat array, not a paginated envelope.
+    (useLocationLookup as jest.Mock).mockReturnValue({ data: [], isLoading: false });
   });
 
   describe('Form Rendering', () => {
