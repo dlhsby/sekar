@@ -50,11 +50,20 @@ import { TimezoneUtil } from '../../common/utils/timezone.util';
 const RANGE_VIEWERS = Array.from(new Set([...ROSTER_VIEWERS, UserRole.SATGAS, UserRole.LINMAS]));
 
 /**
- * Row ceiling for one `/schedules/range` response. ~31k rows measured at 38 MB
- * after the payload trim, so 60k leaves headroom under the 384 MB heap while
- * still allowing a full month across every rayon.
+ * Row ceiling for one `/schedules/range` response.
+ *
+ * The cap used to have to allow a full month across every rayon, because the
+ * month grid fetched exactly that — 60k rows, ~57 MB, right at the edge of the
+ * 384 MB heap. Since ADR-057 nothing asks for a wide unfiltered range: the day
+ * board fetches ONE container at a time, week and month read aggregates unless
+ * narrowed to a worker or a lokasi, and mobile's calendar is self-scoped.
+ *
+ * The largest legitimate request is now a rayon-scoped container on a peak day —
+ * measured at ~1.2k rows — so 20k leaves better than an order of magnitude of
+ * headroom while making the guard actually protective again. A request above it
+ * is a client that has regressed to fetching a range wholesale.
  */
-const MAX_RANGE_ROWS = 60_000;
+const MAX_RANGE_ROWS = 20_000;
 
 /**
  * Daily roster operations. Reads/edits are gated to ROSTER_MANAGERS; kepala_rayon

@@ -8,8 +8,8 @@
 import { useAuth } from '@/lib/auth/hooks';
 import { useCreateTask, type TaskPriority, type AssignmentScope } from '@/lib/api/tasks';
 import { useTaskScopeField } from '@/lib/hooks/useTaskScopeField';
-import { useUsers } from '@/lib/api/users';
-import { useLocations } from '@/lib/api/locations';
+import { useUserLookup } from '@/lib/api/users';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useTranslation } from 'react-i18next';
@@ -58,8 +58,10 @@ export default function CreateTaskPage() {
   const [error, setError] = useState('');
 
   // Data fetching hooks - always call (enabled by query client)
-  const { data: usersData } = useUsers({ limit: 1000 });
-  const { data: areasData } = useLocations({ limit: 1000 });
+  // Lookup, not the paginated list — see OvertimeForm.
+  const { data: users = [] } = useUserLookup();
+  // Lookup, not the full entity — see UserForm.
+  const { data: allAreas = [] } = useLocationLookup();
   const { data: districtsData } = useDistricts();
   const { data: regionsData } = useRegions();
 
@@ -121,11 +123,12 @@ export default function CreateTaskPage() {
   };
 
   // Filter users by assignable roles
-  const assignableUsers = (usersData?.data || []).filter((u) =>
+  const assignableUsers = (users || []).filter((u) =>
     assignableRoles.includes(u.role as UserRole)
   );
 
-  const areas = areasData?.data || [];
+  // A picker offers only lokasi you can actually pick.
+  const areas = allAreas.filter((a) => a.is_active !== false);
   const districts = districtsData || [];
   const regions = regionsData || [];
 
@@ -253,7 +256,10 @@ export default function CreateTaskPage() {
                     { value: 'none', label: t('newPage.scopeLocationPlaceholder') },
                     ...areas.map((a) => ({
                       value: a.id,
-                      label: `${a.name} (${a.code})`,
+                      // `a.code` never existed on a lokasi, so this label read
+                      // "Taman Bungkul (undefined)". The TYPE is what actually
+                      // disambiguates two lokasi sharing a name.
+                      label: a.location_type_name ? `${a.name} (${a.location_type_name})` : a.name,
                     })),
                   ]}
                 />

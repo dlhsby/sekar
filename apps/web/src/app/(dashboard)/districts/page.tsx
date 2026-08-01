@@ -30,7 +30,7 @@ import {
   useDeactivateDistrict,
   useActivateDistrict,
 } from '@/lib/api/districts';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { useAuth } from '@/lib/auth/hooks';
 import { ADMIN_ROLES } from '@/lib/constants/roles';
 import { getErrorMessage } from '@/lib/api/client';
@@ -49,10 +49,11 @@ export default function RayonsPage() {
   const districts = useMemo(() => districtsData || [], [districtsData]);
 
   // Resolve actor ids (created_by/updated_by) to names via the user list.
-  const { data: usersData } = useUsers({ limit: 1000 });
+  // Lookup, not the paginated list — only a NAME is resolved here.
+  const { data: users = [] } = useUserLookup();
   const userNameById = useMemo(
-    () => new Map((usersData?.data ?? []).map((u) => [u.id, u.full_name])),
-    [usersData]
+    () => new Map((users ?? []).map((u) => [u.id, u.full_name])),
+    [users]
   );
   const actorName = useCallback(
     (id?: string): string => (id ? (userNameById.get(id) ?? '—') : '—'),

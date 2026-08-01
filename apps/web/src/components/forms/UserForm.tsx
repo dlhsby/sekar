@@ -9,7 +9,7 @@ import { FormInput, FormCombobox, Button } from '@/components/ui';
 import { AvailabilityHint } from '@/components/forms/AvailabilityHint';
 import type { User } from '@/types/models';
 import { useDistricts } from '@/lib/api/districts';
-import { useLocations } from '@/lib/api/locations';
+import { useLocationLookup } from '@/lib/api/locations';
 import { useRegions } from '@/lib/api/regions';
 import { useUserAreas } from '@/lib/api/user-locations';
 import { checkUsername, suggestUsername, checkPhone } from '@/lib/api/users';
@@ -106,7 +106,10 @@ export function UserForm({
   const userSchema = useMemo(() => createUserSchema(t), [t]);
 
   const { data: districts = [], isLoading: districtsLoading } = useDistricts();
-  const { data: areasData, isLoading: areasLoading } = useLocations({ limit: 1000 });
+  // Lookup, not the full entity: this reads a name and a kawasan, while
+  // `useLocations({ limit: 1000 })` pulled all 952 lokasi complete with nested
+  // districts and boundary polygons — 12.5 MB.
+  const { data: allAreas = [], isLoading: areasLoading } = useLocationLookup();
   const { data: roles = [] } = useRoles();
 
   // Dynamic, hierarchy-sorted role options (incl. custom roles) with DB labels.
@@ -214,7 +217,7 @@ export function UserForm({
 
   const districtOptions = districts.map((r) => ({ value: r.id, label: r.name }));
 
-  const allAreas = useMemo(() => areasData?.data || [], [areasData]);
+  const activeAreas = useMemo(() => allAreas.filter((a) => a.is_active !== false), [allAreas]);
   const selectedDistrictId = watch('district_id') || '';
   const selectedRegionId = watch('region_id') || '';
 
@@ -226,10 +229,10 @@ export function UserForm({
   // areas (ADR-045: location is chosen based on the region).
   const areaOptions = useMemo(
     () =>
-      allAreas
+      activeAreas
         .filter((a) => a.region_id === selectedRegionId)
         .map((a) => ({ value: a.id, label: a.name })),
-    [allAreas, selectedRegionId],
+    [activeAreas, selectedRegionId],
   );
 
   // Which scope fields this role uses (district / region / location) — from the

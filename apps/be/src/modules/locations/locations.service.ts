@@ -27,6 +27,14 @@ export interface LocationLookup {
   region_id: string | null;
   /** False for a deactivated lokasi — only ever returned with `includeInactive`. */
   is_active: boolean;
+  /**
+   * The lokasi TYPE's display name ("Taman", "Trotoar", …).
+   *
+   * Pickers disambiguate with it — there are 952 lokasi and duplicate names do
+   * occur (two "Taman Korea" on the staging clone) — so dropping it to keep the
+   * payload flat would make some options impossible to tell apart.
+   */
+  location_type_name: string | null;
 }
 
 /**
@@ -154,7 +162,9 @@ export class LocationsService {
 
     const query = this.locationRepository
       .createQueryBuilder('area')
+      .leftJoin('area.locationType', 'lt')
       .select(['area.id', 'area.name', 'area.district_id', 'area.region_id', 'area.is_active'])
+      .addSelect('lt.name', 'location_type_name')
       .orderBy('area.name', 'ASC');
 
     // Pickers must never offer a deactivated lokasi — you cannot roster someone
@@ -170,7 +180,24 @@ export class LocationsService {
       query.andWhere('area.district_id = :districtId', { districtId: requester.district_id });
     }
 
-    return query.getMany() as unknown as Promise<LocationLookup[]>;
+    // `getRawMany`, not `getMany`: the joined type name is not a column on the
+    // entity, so the entity hydrator would drop it.
+    const rows = await query.getRawMany<{
+      area_id: string;
+      area_name: string;
+      area_district_id: string | null;
+      area_region_id: string | null;
+      area_is_active: boolean;
+      location_type_name: string | null;
+    }>();
+    return rows.map((r) => ({
+      id: r.area_id,
+      name: r.area_name,
+      district_id: r.area_district_id,
+      region_id: r.area_region_id,
+      is_active: r.area_is_active,
+      location_type_name: r.location_type_name,
+    }));
   }
 
   /**

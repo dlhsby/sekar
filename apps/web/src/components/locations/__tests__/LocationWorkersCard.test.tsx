@@ -6,7 +6,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LocationWorkersCard } from '../LocationWorkersCard';
 import { useAreaUsers, useAssignLocations, useRemoveAssignment } from '@/lib/api/user-locations';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 
 jest.mock('@/lib/api/user-locations', () => ({
   useAreaUsers: jest.fn(),
@@ -14,7 +14,7 @@ jest.mock('@/lib/api/user-locations', () => ({
   useRemoveAssignment: jest.fn(),
 }));
 jest.mock('@/lib/api/users', () => ({
-  useUsers: jest.fn(),
+  useUserLookup: jest.fn(),
 }));
 jest.mock('sonner', () => ({ toast: { success: jest.fn(), error: jest.fn() } }));
 
@@ -26,7 +26,7 @@ beforeAll(() => {
 });
 
 const mockUseAreaUsers = useAreaUsers as jest.Mock;
-const mockUseUsers = useUsers as jest.Mock;
+const mockUseUsers = useUserLookup as jest.Mock;
 const mockUseAssign = useAssignLocations as jest.Mock;
 const mockUseRemove = useRemoveAssignment as jest.Mock;
 
@@ -45,7 +45,8 @@ const allUsers = [
 beforeEach(() => {
   jest.clearAllMocks();
   mockUseAreaUsers.mockReturnValue({ data: assigned, isLoading: false });
-  mockUseUsers.mockReturnValue({ data: { data: allUsers } });
+  // The lookup returns a flat array, not a paginated envelope.
+  mockUseUsers.mockReturnValue({ data: allUsers });
   mockUseAssign.mockReturnValue({ mutateAsync: jest.fn(), isPending: false, variables: undefined });
   mockUseRemove.mockReturnValue({ mutateAsync: jest.fn(), isPending: false, variables: undefined });
 });

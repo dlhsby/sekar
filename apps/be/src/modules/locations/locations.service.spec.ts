@@ -219,11 +219,13 @@ describe('LocationsService', () => {
     } as any;
 
     const makeQB = () => ({
+      leftJoin: jest.fn().mockReturnThis(),
       select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
+      getRawMany: jest.fn().mockResolvedValue([]),
     });
 
     it('selects only the fields a hierarchy tree needs', async () => {
@@ -269,7 +271,10 @@ describe('LocationsService', () => {
 
       await service.findAllForLookup(cityUser);
 
-      expect(qb).not.toHaveProperty('leftJoinAndSelect.mock.calls.0');
+      // Joined for the TYPE NAME only — never `leftJoinAndSelect`, which would
+      // hydrate the whole related entity again.
+      expect(qb.leftJoin).toHaveBeenCalledWith('area.locationType', 'lt');
+      expect(qb).not.toHaveProperty('leftJoinAndSelect');
     });
 
     it('applies no pagination — the board needs every lokasi, not the first 100', async () => {
@@ -300,7 +305,7 @@ describe('LocationsService', () => {
       const result = await service.findAllForLookup({ ...districtUser, district_id: null });
 
       expect(result).toEqual([]);
-      expect(qb.getMany).not.toHaveBeenCalled();
+      expect(qb.getRawMany).not.toHaveBeenCalled();
     });
   });
 

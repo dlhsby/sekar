@@ -85,11 +85,27 @@ describe('SchedulesController (district scoping)', () => {
   // Range size guard. The 62-day cap bounds the DATE span but not the row count,
   // and the API runs at --max-old-space-size=384: a big enough unfiltered range
   // is an OOM, which takes the container down for everyone. A 400 does not.
+  //
+  // Since ADR-057 nothing asks for a wide unfiltered range — the board fetches
+  // one container at a time and the grids read aggregates — so the ceiling came
+  // down from 60k to 20k, which is where it actually protects something.
   // ---------------------------------------------------------------------------
   describe('range size guard', () => {
     it('serves a normal range', async () => {
-      service.countByDateRange.mockResolvedValue(31_000);
+      // What a real caller asks for now: one rayon-scoped container on a peak
+      // day, measured at ~1.2k rows.
+      service.countByDateRange.mockResolvedValue(1_200);
       await expect(controller.getByRange('2026-07-01', '2026-07-31', admin)).resolves.toEqual([]);
+    });
+
+    it('refuses what the month grid used to ask for', async () => {
+      // 31k rows was a routine month-wide request before the grids read counts;
+      // now it means a client has regressed to fetching a range wholesale.
+      service.countByDateRange.mockResolvedValue(31_000);
+      await expect(controller.getByRange('2026-07-01', '2026-07-31', admin)).rejects.toThrow(
+        /31,000 rows.*Narrow it/s,
+      );
+      expect(service.findByDateRange).not.toHaveBeenCalled();
     });
 
     it('refuses a range too large to serialize, and says how to narrow it', async () => {
