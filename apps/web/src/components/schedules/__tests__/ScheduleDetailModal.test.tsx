@@ -9,10 +9,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ScheduleDetailModal } from '../ScheduleDetailModal';
-import { useDistricts } from '@/lib/api/districts';
+import { useDistrictLookup } from '@/lib/api/districts';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
 
-jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn() }));
+jest.mock('@/lib/api/districts', () => ({ useDistrictLookup: jest.fn() }));
 
 const occ = (o: Partial<ScheduleOccurrence> = {}): ScheduleOccurrence =>
   ({
@@ -52,7 +52,7 @@ function setup(
 }
 
 beforeEach(() => {
-  (useDistricts as jest.Mock).mockReturnValue({
+  (useDistrictLookup as jest.Mock).mockReturnValue({
     data: [{ id: 'ry1', name: 'Rayon Pusat' }],
   });
 });

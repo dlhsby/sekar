@@ -1,8 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ScheduleEventModal } from '../ScheduleEventModal';
-import { useDistricts } from '@/lib/api/districts';
-import { useRegions } from '@/lib/api/regions';
+import { useDistrictLookup } from '@/lib/api/districts';
+import { useRegionLookup } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
 
 jest.mock('react-i18next', () => ({
@@ -59,9 +59,9 @@ jest.mock('@/components/forms/AsyncUserCombobox', () => ({
   },
 }));
 
-jest.mock('@/lib/api/districts', () => ({ useDistricts: jest.fn(() => ({ data: [] })) }));
+jest.mock('@/lib/api/districts', () => ({ useDistrictLookup: jest.fn(() => ({ data: [] })) }));
 jest.mock('@/lib/api/locations', () => ({ useLocationLookup: jest.fn(() => ({ data: [] })) }));
-jest.mock('@/lib/api/regions', () => ({ useRegions: jest.fn(() => ({ data: [] })) }));
+jest.mock('@/lib/api/regions', () => ({ useRegionLookup: jest.fn(() => ({ data: [] })) }));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,15 +77,15 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
  * Rayon Taman Aktif is the shape that broke: a kawasan is an OPTIONAL parent
  * (ADR-045), so its lokasi hang straight off the district with region_id null.
  */
-const DISTRICTS = [{ id: 'ry-aktif', name: 'Rayon Taman Aktif' }];
+const DISTRICTS = [{ id: 'ry-aktif', name: 'Rayon Taman Aktif', is_active: true }];
 const REGIONS = [{ id: 'kw1', name: 'Kawasan Pusat', district_id: 'ry-other' }];
 const LOCATIONS = [
   { id: 'loc-direct', name: 'Taman Bungkul', district_id: 'ry-aktif', region_id: null },
 ];
 
 function withGeography() {
-  (useDistricts as jest.Mock).mockReturnValue({ data: DISTRICTS });
-  (useRegions as jest.Mock).mockReturnValue({ data: REGIONS });
+  (useDistrictLookup as jest.Mock).mockReturnValue({ data: DISTRICTS });
+  (useRegionLookup as jest.Mock).mockReturnValue({ data: REGIONS });
   (useLocationLookup as jest.Mock).mockReturnValue({ data: LOCATIONS });
 }
 

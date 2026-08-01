@@ -20,7 +20,7 @@ import {
   ApiQuery,
   ApiParam,
 } from '@nestjs/swagger';
-import { RegionsService } from './regions.service';
+import { RegionsService, type RegionLookup } from './regions.service';
 import { Region } from './entities/region.entity';
 import { CreateRegionDto } from './dto/create-region.dto';
 import { UpdateRegionDto } from './dto/update-region.dto';
@@ -87,6 +87,23 @@ export class RegionsController {
   @ApiResponse({ status: 200, type: Region })
   activate(@Param('id', ParseUUIDPipe) id: string): Promise<Region> {
     return this.regionsService.activate(id);
+  }
+
+  /**
+   * Every kawasan as a bare id/name/parent tuple. Declared before `@Get(':id')`.
+   *
+   * `GET /regions` returns whole entities — 62 KB for 129 rows to read names.
+   */
+  @Get('lookup')
+  @ApiOperation({
+    summary: 'Minimal kawasan list for pickers, labels and the board tree',
+    description:
+      'Every kawasan as { id, name, district_id, is_active }, deactivated ones included so a ' +
+      'stale filter still resolves. District-scoped like GET /regions.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Regions retrieved successfully' })
+  findAllForLookup(@GetUser() user: User): Promise<RegionLookup[]> {
+    return this.regionsService.findAllForLookup(user);
   }
 
   @Get(':id')

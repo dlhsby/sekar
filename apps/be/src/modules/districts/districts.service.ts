@@ -24,6 +24,14 @@ import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-val
  * Districts are administrative divisions in Surabaya for organizing work areas.
  * Phase 2 defines 7 districts: Selatan, Utara, Pusat, Timur 1, Timur 2, Barat 1, Barat 2.
  */
+/** The fields a picker, a name label or the board's tree needs from a rayon. */
+export interface DistrictLookup {
+  id: string;
+  name: string;
+  staffing_level: District['staffing_level'];
+  is_active: boolean;
+}
+
 @Injectable()
 export class DistrictsService {
   private readonly logger = new Logger(DistrictsService.name);
@@ -38,6 +46,25 @@ export class DistrictsService {
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
+
+  /**
+   * Every rayon as a bare `{ id, name, staffing_level, is_active }` tuple.
+   *
+   * `findAll` returns the whole entity, and a rayon carries a
+   * `boundary_polygon` — 126 KB for ten rows, fetched twice per schedules page
+   * load (once plain, once `include_inactive`) to read a NAME and the tier that
+   * owns capacity. Boundaries are loaded per-subject by the map modal.
+   *
+   * Deactivated rayon are included, with the flag: the board and the filter
+   * chips must still resolve one (a stale filter, or a row that predates the
+   * deactivation), while pickers narrow to the active ones themselves.
+   */
+  async findAllForLookup(): Promise<DistrictLookup[]> {
+    return this.districtRepository.find({
+      select: ['id', 'name', 'staffing_level', 'is_active'],
+      order: { name: 'ASC' },
+    }) as unknown as Promise<DistrictLookup[]>;
+  }
 
   /**
    * Get all districts.

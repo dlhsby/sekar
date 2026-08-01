@@ -4,8 +4,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { useUserLookup } from '@/lib/api/users';
-import { useDistricts } from '@/lib/api/districts';
-import { useRegions } from '@/lib/api/regions';
+import { useDistrictLookup } from '@/lib/api/districts';
+import { useRegionLookup } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
@@ -27,8 +27,10 @@ export function ScheduleFilterChips({ filters, onChange, lockDistrict }: Schedul
   const { data: users = [] } = useUserLookup();
   // Resolves an active filter's district id -> name; a stale filter may point at a
   // deactivated district, which should still render as a chip.
-  const { data: districts = [] } = useDistricts(true);
-  const { data: regions = [] } = useRegions();
+  // Lookup — see ScheduleDetailModal. A stale filter must still resolve its name.
+  const { data: districts = [] } = useDistrictLookup();
+  // Lookup — a stale filter must still resolve a deactivated kawasan's name.
+  const { data: regions = [] } = useRegionLookup();
   // Lookup, not the full entity list — see ScheduleEventModal.
   const { data: locations = [] } = useLocationLookup();
   const { data: shifts = [] } = useShiftDefinitions();

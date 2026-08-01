@@ -20,7 +20,7 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { DistrictsService } from './districts.service';
+import { DistrictsService, type DistrictLookup } from './districts.service';
 import { District } from './entities/district.entity';
 import { Location } from '../locations/entities/location.entity';
 import { CreateDistrictDto } from './dto/create-district.dto';
@@ -118,6 +118,25 @@ export class DistrictsController {
    *
    * @route GET /api/districts/check-name?name=&excludeId=
    */
+  /**
+   * Every rayon as a bare id/name tuple. Declared before `@Get(':id')`.
+   *
+   * `GET /districts` returns whole entities including `boundary_polygon` — 126 KB
+   * for ten rows, and the schedules page fetched it twice (plain and
+   * `include_inactive`) to read names.
+   */
+  @Get('lookup')
+  @ApiOperation({
+    summary: 'Minimal rayon list for pickers, labels and the board tree',
+    description:
+      'Every rayon as { id, name, staffing_level, is_active }, deactivated ones included so a ' +
+      'stale filter still resolves. No boundaries. Callers that offer a CHOICE filter to active.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Districts retrieved successfully' })
+  findAllForLookup(): Promise<DistrictLookup[]> {
+    return this.districtService.findAllForLookup();
+  }
+
   @Get('check-name')
   @Roles(...USER_MANAGERS)
   @ApiOperation({ summary: 'Check whether a district name is available' })

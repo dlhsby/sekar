@@ -89,8 +89,8 @@ import {
 } from '@/lib/api/location-staff-requirements';
 import { resolveDayType, useSpecialDayOverrides } from '@/lib/api/special-day-overrides';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
-import { useDistricts } from '@/lib/api/districts';
-import { useRegions } from '@/lib/api/regions';
+import { useDistrictLookup } from '@/lib/api/districts';
+import { useRegionLookup } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { useUser } from '@/lib/auth/hooks';
@@ -318,8 +318,11 @@ export default function SchedulesPage() {
   );
 
   const { data: shifts = [] } = useShiftDefinitions();
-  const { data: districts = [] } = useDistricts();
-  const { data: regions = [] } = useRegions();
+  // Lookup, not the full entity — the tree reads a name and the capacity tier,
+  // never a boundary. Deactivated rayon are filtered for the pickers below.
+  const { data: districts = [] } = useDistrictLookup();
+  // Lookup, not the full entity — the tree reads a name and a parent.
+  const { data: regions = [] } = useRegionLookup();
   // Four fields per lokasi, not the whole entity. `useLocations({ limit: 1000 })`
   // sends no page/limit, so the backend returned all 952 areas as FULL entities —
   // nested district, boundary polygon and all — 12.5 MB on every page load.
@@ -354,6 +357,12 @@ export default function SchedulesPage() {
         })),
     [placeable, daySummary]
   );
+
+  /** Pickers offer only kawasan you can actually roster someone into. */
+  const pickerRegions = useMemo(() => regions.filter((r) => r.is_active), [regions]);
+
+  /** Pickers offer only rayon you can actually roster someone into. */
+  const pickerDistricts = useMemo(() => districts.filter((d) => d.is_active), [districts]);
 
   /** Pickers offer only lokasi you can actually roster someone into. */
   const pickerLocations = useMemo(
@@ -903,9 +912,9 @@ export default function SchedulesPage() {
         pendingEdit={pendingEdit}
         loading={updateShift.isPending || updateAreas.isPending}
         shifts={shifts}
-        allDistricts={districts}
+        allDistricts={pickerDistricts}
         allAreas={pickerLocations}
-        allRegions={regions}
+        allRegions={pickerRegions}
       />
 
       <UnscheduledWorkersSheet
@@ -913,8 +922,8 @@ export default function SchedulesPage() {
         onOpenChange={setUnscheduledOpen}
         initialDate={isoDate(anchor)}
         shifts={shifts}
-        districts={districts}
-        regions={regions}
+        districts={pickerDistricts}
+        regions={pickerRegions}
         locations={pickerLocations}
         onSchedule={(worker, target) => {
           // Hand off to the normal create flow. The WORKER and their role are
