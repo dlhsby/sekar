@@ -207,8 +207,24 @@ export class LocationsService {
   private buildFindAllQuery(requester: User, areaType?: string, includeInactive = false) {
     const query = this.locationRepository
       .createQueryBuilder('area')
-      .leftJoinAndSelect('area.locationType', 'locationType')
-      .leftJoinAndSelect('area.district', 'district')
+      // The JOINED relations carry explicit column lists, and that is where the
+      // weight was: a District has its own `boundary_polygon`, so
+      // `leftJoinAndSelect('area.district')` stamped ~11 KB of rayon GeoJSON onto
+      // every one of the 952 rows — **10.8 MB of a 12.5 MB response**. The grid
+      // reads a rayon NAME and a type name/code/category, nothing more.
+      //
+      // The lokasi's OWN `boundary_polygon` stays: it is only 0.6 MB, and the
+      // grid genuinely uses it — a yes/no column with a filter, and the
+      // per-row map link that draws the shape.
+      .leftJoin('area.locationType', 'locationType')
+      .addSelect([
+        'locationType.id',
+        'locationType.code',
+        'locationType.name',
+        'locationType.category',
+      ])
+      .leftJoin('area.district', 'district')
+      .addSelect(['district.id', 'district.name'])
       .orderBy('area.id', 'ASC');
 
     if (!includeInactive) {
