@@ -45,6 +45,32 @@ export const regionKeys = {
   detail: (id: string) => [...regionKeys.all, 'detail', id] as const,
 };
 
+/** The fields a picker, a name label or the board tree needs from a kawasan. */
+export interface RegionLookup {
+  id: string;
+  name: string;
+  district_id: string;
+  is_active: boolean;
+}
+
+/**
+ * Every kawasan as a bare id/name/parent tuple, deactivated ones included.
+ *
+ * Prefer this over `useRegions()` wherever only a name or the parent rayon is
+ * read: that returns whole entities — timestamps, marker colours, audit columns
+ * — 62 KB for 129 rows. Callers that offer a CHOICE filter to `is_active`.
+ */
+export function useRegionLookup() {
+  return useQuery({
+    queryKey: [...regionKeys.all, 'lookup'],
+    queryFn: async () => {
+      const response = await apiClient.get<RegionLookup[]>('/regions/lookup');
+      return response.data ?? [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 /**
  * List regions, optionally filtered by district (for cascade selects).
  *

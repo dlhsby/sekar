@@ -37,6 +37,34 @@ export const districtKeys = {
  * filter; the admin management grid opts in to keep it visible and
  * reactivatable.
  */
+/** The fields a picker, a name label or the board tree needs from a rayon. */
+export interface DistrictLookup {
+  id: string;
+  name: string;
+  staffing_level?: District['staffing_level'];
+  is_active: boolean;
+}
+
+/**
+ * Every rayon as a bare id/name tuple, deactivated ones included.
+ *
+ * Prefer this over `useDistricts()` wherever only a name or the capacity tier is
+ * read: that returns whole entities including `boundary_polygon` — 126 KB for
+ * ten rows, and the schedules page fetched it TWICE (plain and
+ * `include_inactive`) because two callers wanted different sets. One request
+ * carries `is_active`; callers that offer a CHOICE filter to the active ones.
+ */
+export function useDistrictLookup() {
+  return useQuery({
+    queryKey: [...districtKeys.all, 'lookup'],
+    queryFn: async () => {
+      const response = await apiClient.get<DistrictLookup[]>('/districts/lookup');
+      return response.data ?? [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 export function useDistricts(includeInactive = false) {
   return useQuery({
     queryKey: districtKeys.list(includeInactive),

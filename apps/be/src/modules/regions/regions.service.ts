@@ -23,6 +23,14 @@ import { GeoJsonValidator, GeoJsonPolygon } from '../../common/utils/geojson-val
  * `region_id` (soft-delete won't trigger the FK), and re-parenting an area into
  * a region requires the area and region to share a district.
  */
+/** The fields a picker, a name label or the board tree needs from a kawasan. */
+export interface RegionLookup {
+  id: string;
+  name: string;
+  district_id: string;
+  is_active: boolean;
+}
+
 @Injectable()
 export class RegionsService {
   constructor(
@@ -38,6 +46,29 @@ export class RegionsService {
    * only ever see their own district's regions — mirroring the locations list.
    * Active-only by default (pickers/filters); the admin management grid passes
    * `includeInactive` so a deactivated kawasan stays reactivatable. */
+  /**
+   * Every kawasan as a bare `{ id, name, district_id, is_active }` tuple.
+   *
+   * `findAll` returns whole entities — timestamps, marker colours, audit columns
+   * — 62 KB for 129 rows to read a NAME and a parent. Same district scoping.
+   *
+   * Deactivated kawasan are included, with the flag: the board and the filter
+   * chips must still resolve one, while pickers narrow to the active ones.
+   */
+  findAllForLookup(requester: User): Promise<RegionLookup[]> {
+    if (!MONITORING_CITY.includes(requester.role as UserRole) && !requester.district_id) {
+      return Promise.resolve([]);
+    }
+    const districtId = MONITORING_CITY.includes(requester.role as UserRole)
+      ? undefined
+      : requester.district_id;
+    return this.regionRepo.find({
+      select: ['id', 'name', 'district_id', 'is_active'],
+      where: districtId ? { district_id: districtId } : {},
+      order: { name: 'ASC' },
+    }) as unknown as Promise<RegionLookup[]>;
+  }
+
   findAll(requester: User, districtId?: string, includeInactive = false): Promise<Region[]> {
     let effectiveDistrictId = districtId;
     if (!MONITORING_CITY.includes(requester.role as UserRole)) {

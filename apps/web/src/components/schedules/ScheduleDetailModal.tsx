@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui';
-import { useDistricts } from '@/lib/api/districts';
+import { useDistrictLookup } from '@/lib/api/districts';
 import type { ScheduleOccurrence, ScheduleEvent } from '@/lib/api/schedule-events';
 import { effectiveScheduleStatus } from '@/lib/schedules/effectiveStatus';
 import { occurrenceTone, PRESENCE_TONE_CLASS } from '@/lib/presence/tone';
@@ -53,7 +53,9 @@ export function ScheduleDetailModal({
   const { t } = useTranslation(['schedules', 'roles', 'status', 'common']);
   // Resolves an existing schedule's district id -> name, so it must still find a
   // deactivated district or the name silently blanks.
-  const { data: districts = [] } = useDistricts(true);
+  // Lookup, not the full entity: only the NAME is read, and a rayon carries a
+  // boundary polygon. Deactivated ones included — a row may predate one.
+  const { data: districts = [] } = useDistrictLookup();
   if (!occurrence) return null;
 
   const isTeam = occurrence.team_category != null;

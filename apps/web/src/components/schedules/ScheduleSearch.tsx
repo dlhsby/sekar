@@ -6,8 +6,8 @@ import { Search, X } from 'lucide-react';
 import { parse, isValid, format, type Locale } from 'date-fns';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
 import { useUserLookup } from '@/lib/api/users';
-import { useDistricts } from '@/lib/api/districts';
-import { useRegions } from '@/lib/api/regions';
+import { useDistrictLookup } from '@/lib/api/districts';
+import { useRegionLookup } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
@@ -91,8 +91,12 @@ export function ScheduleSearch({
 
   // Lookup, not the paginated list — see ScheduleFilterChips.
   const { data: users = [] } = useUserLookup();
-  const { data: districts = [] } = useDistricts();
-  const { data: regions = [] } = useRegions();
+  // Lookup, not the full entity. A picker offers only ACTIVE rayon.
+  const { data: allDistricts = [] } = useDistrictLookup();
+  const districts = useMemo(() => allDistricts.filter((d) => d.is_active), [allDistricts]);
+  // Lookup, not the full entity. A picker offers only ACTIVE kawasan.
+  const { data: allRegions = [] } = useRegionLookup();
+  const regions = useMemo(() => allRegions.filter((r) => r.is_active), [allRegions]);
   // Lookup, not the full entity list — see ScheduleEventModal.
   const { data: locations = [] } = useLocationLookup();
   const { data: shifts = [] } = useShiftDefinitions();

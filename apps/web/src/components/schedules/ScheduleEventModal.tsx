@@ -41,8 +41,8 @@ import {
 import { useShiftDefinitions } from '@/lib/api/shift-definitions';
 import { useTeamCategories } from '@/lib/api/teams';
 import { useLocationLookup } from '@/lib/api/locations';
-import { useRegions } from '@/lib/api/regions';
-import { useDistricts } from '@/lib/api/districts';
+import { useRegionLookup } from '@/lib/api/regions';
+import { useDistrictLookup } from '@/lib/api/districts';
 import { usePermissions } from '@/lib/auth/usePermissions';
 import { getErrorMessage } from '@/lib/api/client';
 
@@ -381,8 +381,12 @@ export function ScheduleEventModal({
   // lookup carries deactivated ones for the board's benefit.
   const { data: allLokasi = [] } = useLocationLookup();
   const locations = useMemo(() => allLokasi.filter((l) => l.is_active !== false), [allLokasi]);
-  const { data: regions = [] } = useRegions();
-  const { data: districts = [] } = useDistricts();
+  // Lookup, not the full entity. A picker offers only ACTIVE kawasan.
+  const { data: allRegions = [] } = useRegionLookup();
+  const regions = useMemo(() => allRegions.filter((r) => r.is_active), [allRegions]);
+  // Lookup, not the full entity. A picker offers only ACTIVE rayon.
+  const { data: allDistricts = [] } = useDistrictLookup();
+  const districts = useMemo(() => allDistricts.filter((d) => d.is_active), [allDistricts]);
 
   /**
    * Names/roles of users this form has actually touched — picked from a combobox
