@@ -252,6 +252,40 @@ already speaks both via `AWS_ENDPOINT_URL` / `AWS_S3_FORCE_PATH_STYLE`.
   stored URLs so they render. The activity-specific `POST /activities/photos` upload endpoint +
   DTO guard (PR #377) stay as belt-and-suspenders. Verified on the real-data sim: task/profile
   photos presign and load (200), activities list unchanged (`photo_count`, empty `photo_urls`).
+- **Phase A had two holes, closed 2026-08-01.** "Every module" was true only for handlers whose
+  inline payload arrives in a *known photo field on the request body* — which two write paths
+  did not:
+  1. `POST /users/:id/profile-picture` is a **multipart** upload and built the data URI *inside
+     the handler*, after the interceptor had already run. It now uploads via
+     `PhotoStorageService.upload(buffer, mime, folder)` (new — `store()` decodes a data URI, and
+     base64-encoding a Multer buffer just to decode it again is waste).
+  2. Clock-in/out and overtime selfies arrive as **`selfie_photo`**, a field name absent from
+     `PhotoUrlInterceptor.FIELDS`, so they went straight into `attendance_punches.photo_url` and
+     the projected `shifts.clock_*_photo_url` as raw base64. `ShiftsService.storeSelfie()` now
+     stores them (overtime inherits this — it delegates to `clockIn`/`clockOut`).
+  The four selfie DTOs' `@Matches` required a data URI; they now accept a data URI **or** a
+  stored URL, so a client that starts uploading separately needs no API change.
+- **Phase A hole 3 — camelCase photo properties were invisible to the interceptor.** Its FIELDS
+  map is keyed on the **JSON property**, which is the ENTITY PROPERTY, not the column. Three
+  entities name them differently: `Activity.photoBeforeUrl` / `photoAfterUrl`
+  (`@Column({ name: 'photo_before_url' })`), `PruningRequest.photoUrls` and
+  `NotablePlant.photoUrls`. The snake_case keys never matched, so those fields were skipped in
+  **both** directions — inline base64 persisted on write, stored URLs went out **unsigned** on
+  read. Unsigned is not cosmetic: the bucket is private, so a raw object URL answers **403** and
+  the image is simply broken. Both spellings are now listed. `photoUrls` is shared by two
+  entities, so its write folder is the generic `uploads` (folder affects only where a NEW upload
+  lands; reads presign whatever is stored).
+- **Presigned links expire — clients must not cache them.** `PhotoStorageService.READ_TTL` is
+  24 h. Mobile persists the whole user object in `EncryptedStorage` (`user_data`), and
+  `AuthProvider.restoreSession` fetched `/auth/me` on boot but merged only `location_id` /
+  `district_id` from it — so the avatar stayed the link signed at **login** and 403'd a day
+  later, recovering only if the user happened to open Profil. It now takes the freshly signed
+  `profile_picture_url` from the same `me` response it already had. `MeResponseDto` documents
+  the TTL. Anything else that caches a photo URL across days needs the same treatment.
+  Measured on the 2026-08-01 staging clone before the fix: **every** row of all four columns was
+  a data URI — `attendance_punches.photo_url` 1,361 rows / 250 MB, `shifts.clock_in` 773 / 140 MB,
+  `shifts.clock_out` 588 / 110 MB, `users.profile_picture_url` 163 / 28 MB. That is **528 MB of a
+  658 MB database (80%)**, and it is why Phase B's "zero inline left" did not hold.
 - **Phase B — backfill ALL existing inline photos — SCRIPT BUILT + locally verified on real
   staging data:** `npm run backfill:inline-photos [-- --dry-run]`
   (`src/database/backfill/backfill-inline-photos.ts`, `:prod` runs the compiled JS). Covers
@@ -262,10 +296,22 @@ already speaks both via `AWS_ENDPOINT_URL` / `AWS_S3_FORCE_PATH_STYLE`.
   Idempotent, keyset-batched, per-row-isolated. **Run co-located with the DB AFTER the cutover
   deploy** (`docker exec sekar-backend npm run backfill:inline-photos:prod`), then
   `VACUUM (FULL)` the affected tables (`activities`, `shifts`, `users`, …) to reclaim the dead
-  TOAST tuples. Verified on the real-data sim: **1,354 photos (186 MB) moved** (669 clock-in +
-  508 clock-out selfies + 160 profile pics + 11 overtime + 2 tasks; activities already done),
-  **zero inline left**, re-run reports 0 (idempotent). Transform covered by
-  `photo-backfill.util.spec.ts`.
+  TOAST tuples. Transform covered by `photo-backfill.util.spec.ts`.
+  - **2026-08-01: `attendance_punches.photo_url` added to `TARGETS`** — ADR-055 made punches the
+    immutable record and `shifts` a projection of them, but this list predates that table, so
+    the single largest column of inline photos was never swept. It is listed **before** `shifts`
+    on purpose (see dedupe below): the punch is the record, so the projection should point at
+    the punch's object.
+  - **Content-hash dedupe added.** `shifts` holds the same bytes as the punch it projects — 776
+    byte-identical pairs on the clone — so identical buffers now upload once and share the URL.
+  - **Re-verified end to end on the 2026-08-01 clone:** **2,905 photos / 398.9 MB moved in
+    1 m 55 s, zero failures, 1,541 distinct objects** (dedupe avoided 1,364 duplicate uploads).
+    All four columns then report 0 inline; after `VACUUM (FULL)` on
+    `attendance_punches`/`shifts`/`users` the database went **658 MB → 100 MB** (`shifts`
+    269 MB → 4.9 MB, `attendance_punches` 267 MB → 5.9 MB). Read path confirmed: a stored URL
+    presigns and the image fetches 200 `image/jpeg`.
+  - `VACUUM (FULL)` must be issued **one table per statement** — psql sends a multi-statement
+    `-c` as one transaction and vacuum cannot run inside one.
 
 Phase B is out of scope for the cutover deploy itself (it's a separate, post-deploy job) but
 must be run, and the same fix applies to production.

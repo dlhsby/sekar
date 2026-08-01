@@ -15,6 +15,7 @@ import { LocationsService } from '../locations/locations.service';
 import { ApiException } from '../../common/exceptions/api.exception';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
+import { PhotoStorageService } from '../../shared/services/photo-storage.service';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
 import { AttendanceDaySummaryDto } from './dto/attendance-day.dto';
@@ -69,7 +70,37 @@ export class ShiftsService {
     // default). Optional → specs without the provider fall back to the env helper.
     @Optional()
     private readonly systemConfig?: SystemConfigService,
+    // Selfies go to object storage, never into the column (see `storeSelfie`).
+    // Optional → legacy specs that build this service by hand keep working.
+    @Optional()
+    private readonly photos?: PhotoStorageService,
   ) {}
+
+  /**
+   * Put a clock-in/out selfie in object storage and return its URL.
+   *
+   * `PhotoUrlInterceptor` converts inline media globally, but only for the field
+   * names it knows, and the selfie arrives as `selfie_photo` — so these photos
+   * bypassed it and went into `attendance_punches.photo_url` and
+   * `shifts.clock_*_photo_url` as raw base64. On the staging clone that is
+   * **500 MB across three columns**, every row a data URI, averaging 188 KB.
+   *
+   * A value that is already a URL passes through, so a client that has been
+   * updated to upload separately is unaffected.
+   */
+  private async storeSelfie(
+    value: string | null | undefined,
+    folder: string,
+  ): Promise<string | null> {
+    if (!value) return null;
+    if (!this.photos) {
+      // Only reachable from a hand-built service in a spec; the module provides
+      // it. Say so rather than silently persisting base64.
+      this.logger.warn('PhotoStorageService unavailable — selfie left inline');
+      return value;
+    }
+    return this.photos.store(value, folder);
+  }
 
   private get boundaryCheck(): BoundaryCheckService {
     return (this.boundaryCheckFallback ??= this.boundaryCheckService ?? new BoundaryCheckService());
@@ -224,8 +255,8 @@ export class ShiftsService {
     }
     // area may be null — ad-hoc clock-in still proceeds (GPS still recorded).
 
-    // 2. Selfie stored as a base64 data-URI directly (Phase 2E), same as before.
-    const photoUrl: string | null = dto.selfie_photo ?? null;
+    // 2. Selfie to object storage — the column holds a URL, never the bytes.
+    const photoUrl = await this.storeSelfie(dto.selfie_photo, 'clock-in');
 
     // 3. Soft geofencing — advisory only, never blocks (ADR-005→010).
     let outsideBoundary = false;
@@ -381,7 +412,7 @@ export class ShiftsService {
       );
     }
 
-    const clockOutPhotoUrl: string | null = dto.selfie_photo ?? null;
+    const clockOutPhotoUrl = await this.storeSelfie(dto.selfie_photo, 'clock-out');
 
     // Soft geofencing — advisory only, never blocks (ADR-005→010).
     let outsideBoundary = false;

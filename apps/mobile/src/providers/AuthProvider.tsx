@@ -129,6 +129,12 @@ export function AuthProvider({ children }: AuthProviderProps): React.JSX.Element
                 ...storedUser,
                 location_id: meResponse.data.location_id ?? storedUser.location_id,
                 district_id: meResponse.data.district_id ?? storedUser.district_id,
+                // The avatar is a PRESIGNED url now, not a base64 data URI, so the
+                // copy cached at login goes stale (24 h TTL) and then answers 403.
+                // `me` already carries a freshly-signed one — take it, rather than
+                // keeping a cached value this call has just superseded.
+                profile_picture_url:
+                  meResponse.data.profile_picture_url ?? storedUser.profile_picture_url,
               };
               dispatch(
                 restoreAuth({

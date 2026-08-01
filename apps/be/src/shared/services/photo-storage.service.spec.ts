@@ -43,6 +43,27 @@ describe('PhotoStorageService', () => {
     });
   });
 
+  describe('upload (multipart write)', () => {
+    // `store` decodes a data URI; a FileInterceptor already hands over a Buffer,
+    // and base64-encoding it just so `store` can decode it again is wasteful.
+    // Same destination and key layout either way.
+    it('uploads a decoded buffer to the folder', async () => {
+      const out = await svc.upload(Buffer.from('bytes'), 'image/jpeg', 'profiles');
+      expect(out).toMatch(/^http:\/\/minio\/sekar-media\/profiles\/.*\.jpg$/);
+      expect(s3.uploadFile).toHaveBeenCalledTimes(1);
+    });
+
+    it('normalises the extension from the MIME type', async () => {
+      expect(await svc.upload(Buffer.from('b'), 'image/jpeg', 'profiles')).toMatch(/\.jpg$/);
+      expect(await svc.upload(Buffer.from('b'), 'image/png', 'profiles')).toMatch(/\.png$/);
+      expect(await svc.upload(Buffer.from('b'), 'image/webp', 'profiles')).toMatch(/\.webp$/);
+      // Unrecognised → jpg rather than a bogus extension.
+      expect(await svc.upload(Buffer.from('b'), 'application/octet-stream', 'profiles')).toMatch(
+        /\.jpg$/,
+      );
+    });
+  });
+
   describe('presign (read)', () => {
     it('presigns a stored URL', async () => {
       expect(await svc.presign('http://minio/sekar-media/x.jpg')).toContain('X-Amz-Signature');

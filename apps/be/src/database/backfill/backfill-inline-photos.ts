@@ -28,7 +28,7 @@ import {
   rewritePhotoUrl,
   RewriteStats,
 } from '../../modules/activities/photo-backfill.util';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 const DRY_RUN = process.argv.includes('--dry-run');
 const BATCH = 25;
@@ -51,6 +51,16 @@ const TARGETS: Target[] = [
   { table: 'notable_plants', column: 'photo_urls', array: true, folder: 'plants' },
   { table: 'assets', column: 'photo_url', array: false, folder: 'assets' },
   { table: 'users', column: 'profile_picture_url', array: false, folder: 'profiles' },
+  // ADR-055 made `attendance_punches` the immutable record and `shifts` a
+  // projection of it, but this list was written before that table existed — so
+  // the single biggest column of inline photos was never swept. On the staging
+  // clone it is 1,361 rows / 250 MB, larger than every other target combined.
+  //
+  // Listed BEFORE `shifts` deliberately: the two hold the same bytes, and the
+  // dedupe cache makes whichever runs first own the object. The punch is the
+  // record, so the projection should point at the punch's object, not the
+  // reverse.
+  { table: 'attendance_punches', column: 'photo_url', array: false, folder: 'punches' },
   { table: 'shifts', column: 'clock_in_photo_url', array: false, folder: 'clock-in' },
   { table: 'shifts', column: 'clock_out_photo_url', array: false, folder: 'clock-out' },
 ];
@@ -61,7 +71,12 @@ function inlinePredicate(t: Target): string {
     : `("${t.column}" LIKE 'data:%' OR "${t.column}" LIKE 'blob:%')`;
 }
 
-async function backfillTarget(s3: S3Service, t: Target, stats: RewriteStats): Promise<void> {
+async function backfillTarget(
+  s3: S3Service,
+  t: Target,
+  stats: RewriteStats,
+  dedupe: Map<string, string>,
+): Promise<void> {
   // Skip a column absent from this schema (defensive across versions).
   const [{ present }] = (await AppDataSource.query(
     `SELECT EXISTS (SELECT 1 FROM information_schema.columns
@@ -79,9 +94,18 @@ async function backfillTarget(s3: S3Service, t: Target, stats: RewriteStats): Pr
   console.log(`${DRY_RUN ? '[DRY RUN] ' : ''}${t.table}.${t.column}: ${n} rows with inline photos`);
 
   const upload = async (buf: Buffer, ext: string, mime: string): Promise<string> => {
+    // Identical bytes get one object, not one per row. `shifts` is a projection
+    // of `attendance_punches` (ADR-055), so the same selfie is stored in both —
+    // 776 byte-identical pairs on the staging clone. Without this they upload
+    // twice, and the shift row points at a second copy of its own punch photo.
+    const digest = createHash('sha256').update(buf).digest('hex');
+    const seen = dedupe.get(digest);
+    if (seen) return seen;
+
     const key = s3.generateKey(t.folder, `${randomUUID()}.${ext}`);
-    if (DRY_RUN) return `dry-run:${key}`;
-    return s3.uploadFile(buf, key, mime);
+    const url = DRY_RUN ? `dry-run:${key}` : await s3.uploadFile(buf, key, mime);
+    dedupe.set(digest, url);
+    return url;
   };
 
   let done = 0;
@@ -123,14 +147,18 @@ async function main(): Promise<void> {
   await AppDataSource.initialize();
   const s3 = new S3Service(new ConfigService(process.env as Record<string, unknown>));
   const stats: RewriteStats = { photosMoved: 0, bytesMoved: 0 };
+  // sha256(bytes) -> stored URL, shared across every target so a photo that
+  // appears in two columns is uploaded once.
+  const dedupe = new Map<string, string>();
 
   for (const t of TARGETS) {
-    await backfillTarget(s3, t, stats);
+    await backfillTarget(s3, t, stats, dedupe);
   }
 
   console.log(
     `${DRY_RUN ? '[DRY RUN] ' : ''}TOTAL — ${stats.photosMoved} photos ` +
-      `(${(stats.bytesMoved / 1_048_576).toFixed(1)} MB) moved across ${TARGETS.length} columns.`,
+      `(${(stats.bytesMoved / 1_048_576).toFixed(1)} MB) moved across ${TARGETS.length} columns, ` +
+      `${dedupe.size} distinct objects stored.`,
   );
   if (!DRY_RUN && stats.photosMoved > 0) {
     console.log(
