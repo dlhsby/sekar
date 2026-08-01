@@ -25,6 +25,8 @@ export interface LocationLookup {
   name: string;
   district_id: string | null;
   region_id: string | null;
+  /** False for a deactivated lokasi — only ever returned with `includeInactive`. */
+  is_active: boolean;
 }
 
 /**
@@ -146,15 +148,23 @@ export class LocationsService {
    * Same district scoping as `findAll`; inactive areas are excluded, since a
    * deactivated lokasi should not appear as a board container.
    */
-  async findAllForLookup(requester: User): Promise<LocationLookup[]> {
+  async findAllForLookup(requester: User, includeInactive = false): Promise<LocationLookup[]> {
     const isCityRole = MONITORING_CITY.includes(requester.role as UserRole);
     if (!isCityRole && !requester.district_id) return [];
 
     const query = this.locationRepository
       .createQueryBuilder('area')
-      .select(['area.id', 'area.name', 'area.district_id', 'area.region_id'])
-      .where('area.is_active = :isActive', { isActive: true })
+      .select(['area.id', 'area.name', 'area.district_id', 'area.region_id', 'area.is_active'])
       .orderBy('area.name', 'ASC');
+
+    // Pickers must never offer a deactivated lokasi — you cannot roster someone
+    // into a place that is closed. The day BOARD is the opposite case: a live
+    // schedule row at a deactivated lokasi still has a worker standing in it, so
+    // hiding the node made those people invisible while the rayon's headcount
+    // (which counts the row) went on including them. The caller says which it is.
+    if (!includeInactive) {
+      query.andWhere('area.is_active = :isActive', { isActive: true });
+    }
 
     if (!isCityRole) {
       query.andWhere('area.district_id = :districtId', { districtId: requester.district_id });

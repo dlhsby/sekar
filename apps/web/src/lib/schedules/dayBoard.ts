@@ -60,6 +60,13 @@ export interface BoardShiftGroup {
 export interface BoardLocation {
   id: string;
   name: string;
+  /**
+   * False when this lokasi is deactivated but still holds assignments. The card
+   * says so — the people are real and on duty, but nobody should be rostered
+   * into a closed place, and silently hiding the node made them invisible while
+   * the rayon's headcount went on counting them.
+   */
+  is_active?: boolean;
   shifts: BoardShiftGroup[];
   total: number;  /** Distinct workers in this node's subtree — what "N petugas" shows. */
   workerIds: string[];
@@ -117,7 +124,14 @@ export interface BoardMasterData {
    */
   districts: Array<{ id: string; name: string; staffing_level?: StaffingLevel }>;
   regions: Array<{ id: string; name: string; district_id: string }>;
-  locations: Array<{ id: string; name: string; district_id: string; region_id?: string | null }>;
+  locations: Array<{
+    id: string;
+    name: string;
+    district_id: string;
+    region_id?: string | null;
+    /** False for a deactivated lokasi that still holds assignments. */
+    is_active?: boolean;
+  }>;
   shifts: BoardShiftDef[];
 }
 
@@ -352,6 +366,7 @@ export function buildDayBoard(
     return {
       id: loc.id,
       name: loc.name,
+      is_active: loc.is_active,
       shifts: shiftGroups,
       total: sumTotal(shiftGroups),
       workerIds,

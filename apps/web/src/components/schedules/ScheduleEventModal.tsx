@@ -377,7 +377,10 @@ export function ScheduleEventModal({
   // Lookup, not the full list: `useLocations({ limit: 1000 })` pulled all 952
   // areas as complete entities (boundary polygons included, 12.5 MB) to fill a
   // picker that shows a name.
-  const { data: locations = [] } = useLocationLookup();
+  // A picker offers only lokasi you can actually roster someone into; the shared
+  // lookup carries deactivated ones for the board's benefit.
+  const { data: allLokasi = [] } = useLocationLookup();
+  const locations = useMemo(() => allLokasi.filter((l) => l.is_active !== false), [allLokasi]);
   const { data: regions = [] } = useRegions();
   const { data: districts = [] } = useDistricts();
 

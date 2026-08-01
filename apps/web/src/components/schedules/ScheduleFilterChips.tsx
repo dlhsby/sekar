@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
@@ -22,7 +22,9 @@ export function ScheduleFilterChips({ filters, onChange, lockDistrict }: Schedul
   const { t } = useTranslation(['schedules']);
   const hasAny = Object.values(filters).some(Boolean);
 
-  const { data: usersResp } = useUsers({ limit: 1000 });
+  // Lookup, not the paginated list — only the NAME is read, and paging the full
+  // entity cost 928 KB on every page load.
+  const { data: users = [] } = useUserLookup();
   // Resolves an active filter's district id -> name; a stale filter may point at a
   // deactivated district, which should still render as a chip.
   const { data: districts = [] } = useDistricts(true);
@@ -34,14 +36,14 @@ export function ScheduleFilterChips({ filters, onChange, lockDistrict }: Schedul
 
   const nameOf = useMemo(
     () => ({
-      user: new Map((usersResp?.data ?? []).map((u) => [u.id, u.full_name])),
+      user: new Map(users.map((u) => [u.id, u.full_name])),
       district: new Map(districts.map((r) => [r.id, r.name])),
       region: new Map(regions.map((r) => [r.id, r.name])),
       location: new Map(locations.map((l) => [l.id, l.name])),
       shift: new Map(shifts.map((s) => [s.id, s.name])),
       category: new Map(teamCategories.map((c) => [c.id, c.name])),
     }),
-    [usersResp, districts, regions, locations, shifts, teamCategories]
+    [users, districts, regions, locations, shifts, teamCategories]
   );
 
   const chips = useMemo(() => {

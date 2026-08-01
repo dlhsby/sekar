@@ -1108,4 +1108,67 @@ describe('UsersService', () => {
       ).rejects.toThrow('New password must be different from current password');
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // findAllForLookup — id/name/role for pickers and name labels.
+  //
+  // The schedules search box and its filter chips resolve only a worker's NAME
+  // and role, but asked the paginated list for it — two requests and 928 KB on a
+  // 1,173-person workforce, every page load.
+  // ---------------------------------------------------------------------------
+  describe('findAllForLookup', () => {
+    const makeQB = () => ({
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([]),
+    });
+
+    it('selects four columns and excludes deactivated accounts', async () => {
+      const qb = makeQB();
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+      await service.findAllForLookup();
+
+      expect(qb.select).toHaveBeenCalledWith([
+        'user.id',
+        'user.full_name',
+        'user.username',
+        'user.role',
+      ]);
+      expect(qb.where).toHaveBeenCalledWith('user.is_active = TRUE');
+    });
+
+    it('scopes a rayon role to its own district, area-derived fallback included', async () => {
+      const qb = makeQB();
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+      await service.findAllForLookup({
+        id: 'k1',
+        role: UserRole.KEPALA_RAYON,
+        district_id: 'ry1',
+      } as User);
+
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        '(user.district_id = :districtId OR area.district_id = :districtId)',
+        { districtId: 'ry1' },
+      );
+    });
+
+    it('returns nothing for a rayon role with no district (no leak)', async () => {
+      const qb = makeQB();
+      mockUserRepository.createQueryBuilder = jest.fn().mockReturnValue(qb);
+
+      const result = await service.findAllForLookup({
+        id: 'k2',
+        role: UserRole.ADMIN_RAYON,
+        district_id: null,
+      } as unknown as User);
+
+      expect(result).toEqual([]);
+      expect(qb.getMany).not.toHaveBeenCalled();
+    });
+  });
 });

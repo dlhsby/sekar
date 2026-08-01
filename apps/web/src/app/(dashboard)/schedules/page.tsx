@@ -323,18 +323,50 @@ export default function SchedulesPage() {
   // Four fields per lokasi, not the whole entity. `useLocations({ limit: 1000 })`
   // sends no page/limit, so the backend returned all 952 areas as FULL entities —
   // nested district, boundary polygon and all — 12.5 MB on every page load.
+  // The BOARD includes deactivated lokasi; the pickers below do not.
+  //
+  // A live schedule row at a deactivated lokasi still has a worker standing in
+  // it, and the rayon's headcount counts that row — but with the lokasi missing
+  // from the master list the tree had no node to hang them on, so the people
+  // were invisible while the number above them included them. The cell
+  // contradicted its own header.
   const { data: allLocations = [] } = useLocationLookup();
+  const placeable = useMemo(
+    () => allLocations.filter((l): l is typeof l & { district_id: string } => !!l.district_id),
+    [allLocations]
+  );
+
+  /**
+   * The board's lokasi. A deactivated one appears ONLY when it still holds
+   * assignments — otherwise every closed lokasi would add an empty card — and it
+   * carries `is_active` so the card can say why it is there.
+   */
   const boardLocations = useMemo(
     () =>
-      allLocations
-        .filter((l): l is typeof l & { district_id: string } => !!l.district_id)
+      placeable
+        .filter((l) => l.is_active !== false || (containerTotal(daySummary, l.id) ?? 0) > 0)
+        .map((l) => ({
+          id: l.id,
+          name: l.name,
+          district_id: l.district_id,
+          region_id: l.region_id ?? null,
+          is_active: l.is_active !== false,
+        })),
+    [placeable, daySummary]
+  );
+
+  /** Pickers offer only lokasi you can actually roster someone into. */
+  const pickerLocations = useMemo(
+    () =>
+      placeable
+        .filter((l) => l.is_active !== false)
         .map((l) => ({
           id: l.id,
           name: l.name,
           district_id: l.district_id,
           region_id: l.region_id ?? null,
         })),
-    [allLocations]
+    [placeable]
   );
 
   // Special-day overrides (holidays/days off) → the anchor's staffing day type,
@@ -872,7 +904,7 @@ export default function SchedulesPage() {
         loading={updateShift.isPending || updateAreas.isPending}
         shifts={shifts}
         allDistricts={districts}
-        allAreas={boardLocations}
+        allAreas={pickerLocations}
         allRegions={regions}
       />
 
@@ -883,7 +915,7 @@ export default function SchedulesPage() {
         shifts={shifts}
         districts={districts}
         regions={regions}
-        locations={boardLocations}
+        locations={pickerLocations}
         onSchedule={(worker, target) => {
           // Hand off to the normal create flow. The WORKER and their role are
           // facts — they were picked from the list — so they lock. The target is

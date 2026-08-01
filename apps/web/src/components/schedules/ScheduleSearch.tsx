@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Search, X } from 'lucide-react';
 import { parse, isValid, format, type Locale } from 'date-fns';
 import { dateFnsLocale } from '@/lib/i18n/date-locale';
-import { useUsers } from '@/lib/api/users';
+import { useUserLookup } from '@/lib/api/users';
 import { useDistricts } from '@/lib/api/districts';
 import { useRegions } from '@/lib/api/regions';
 import { useLocationLookup } from '@/lib/api/locations';
@@ -89,7 +89,8 @@ export function ScheduleSearch({
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: usersResp } = useUsers({ limit: 1000 });
+  // Lookup, not the paginated list — see ScheduleFilterChips.
+  const { data: users = [] } = useUserLookup();
   const { data: districts = [] } = useDistricts();
   const { data: regions = [] } = useRegions();
   // Lookup, not the full entity list — see ScheduleEventModal.
@@ -97,7 +98,6 @@ export function ScheduleSearch({
   const { data: shifts = [] } = useShiftDefinitions();
   const { data: teamCategories = [] } = useTeamCategories();
 
-  const users = useMemo(() => usersResp?.data ?? [], [usersResp]);
   const locale = dateFnsLocale();
 
   const collapse = () => {

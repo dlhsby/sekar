@@ -27,7 +27,7 @@ import {
   ApiQuery,
   ApiConsumes,
 } from '@nestjs/swagger';
-import { UsersService } from './users.service';
+import { UsersService, type UserLookup } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -80,6 +80,28 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.OK, description: 'List of assigned areas.' })
   getMyAreas(@GetUser() user: User) {
     return this.userAreasService.getEffectiveLocations(user.id);
+  }
+
+  /**
+   * Every user as a bare id/name/role tuple, unpaginated.
+   *
+   * Declared before `@Get(':id')` so the literal path is not swallowed.
+   *
+   * The schedules search box and filter chips resolve only a worker's name and
+   * role, but paged the full user entity twice to get it — 928 KB on every page
+   * load of a 1 173-person workforce.
+   */
+  @Get('lookup')
+  @Roles(...USER_MANAGERS, UserRole.KORLAP, UserRole.KEPALA_RAYON, UserRole.ADMIN_RAYON)
+  @ApiOperation({
+    summary: 'Minimal user list for pickers and name labels',
+    description:
+      'Every ACTIVE user as { id, full_name, username, role }. Unpaginated, district-scoped like ' +
+      'GET /users. No profile pictures, no relations.',
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'Users retrieved successfully' })
+  findAllForLookup(@GetUser() user: User): Promise<UserLookup[]> {
+    return this.usersService.findAllForLookup(user);
   }
 
   /**
