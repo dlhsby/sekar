@@ -166,6 +166,63 @@ describe('AuthProvider', () => {
       expect(locationTracker.initialize).toHaveBeenCalledWith('123');
     });
 
+    // The avatar is a PRESIGNED url (24 h TTL), not the base64 data URI it used
+    // to be. `restoreSession` already fetches /auth/me on boot, so it must take
+    // the freshly-signed link rather than the one cached at login — otherwise the
+    // home-screen avatar 403s a day after signing in and only recovers when the
+    // user happens to open Profil.
+    it('takes the freshly signed profile picture from /auth/me, not the cached one', async () => {
+      (secureStorage.getToken as jest.Mock).mockResolvedValue('valid-token');
+      (secureStorage.getUser as jest.Mock).mockResolvedValue({
+        ...mockFieldUser,
+        profile_picture_url: 'https://cdn/p.jpg?X-Amz-Signature=STALE',
+      });
+      (authApi.getMe as jest.Mock).mockResolvedValue({
+        data: { ...mockFieldUser, profile_picture_url: 'https://cdn/p.jpg?X-Amz-Signature=FRESH' },
+      });
+      (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+
+      render(
+        <Provider store={store}>
+          <AuthProvider>
+            <View testID="app-content" />
+          </AuthProvider>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(store.getState().auth.user?.profile_picture_url).toBe(
+          'https://cdn/p.jpg?X-Amz-Signature=FRESH'
+        );
+      });
+    });
+
+    it('keeps the cached picture when /auth/me omits one', async () => {
+      (secureStorage.getToken as jest.Mock).mockResolvedValue('valid-token');
+      (secureStorage.getUser as jest.Mock).mockResolvedValue({
+        ...mockFieldUser,
+        profile_picture_url: 'https://cdn/p.jpg?X-Amz-Signature=CACHED',
+      });
+      (authApi.getMe as jest.Mock).mockResolvedValue({
+        data: { ...mockFieldUser, profile_picture_url: null },
+      });
+      (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
+
+      render(
+        <Provider store={store}>
+          <AuthProvider>
+            <View testID="app-content" />
+          </AuthProvider>
+        </Provider>
+      );
+
+      await waitFor(() => {
+        expect(store.getState().auth.user?.profile_picture_url).toBe(
+          'https://cdn/p.jpg?X-Amz-Signature=CACHED'
+        );
+      });
+    });
+
     it('should restore auth for worker without active shift', async () => {
       const mockToken = 'valid-token';
 

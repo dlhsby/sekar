@@ -52,8 +52,11 @@ export class MeResponseDto {
   phone_number?: string | null;
 
   @ApiPropertyOptional({
-    description: 'Profile picture as base64 data URI',
-    example: 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
+    description:
+      'Presigned URL for the profile picture, valid ~24 h. Clients must NOT cache it ' +
+      'indefinitely — re-read it from this endpoint (the bucket is private, so an ' +
+      'expired link answers 403). Was a base64 data URI before 2026-08-01.',
+    example: 'https://s3.../profiles/9f2c….jpg?X-Amz-Signature=…',
     nullable: true,
   })
   profile_picture_url?: string | null;

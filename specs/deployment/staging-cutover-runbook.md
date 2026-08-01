@@ -265,6 +265,23 @@ already speaks both via `AWS_ENDPOINT_URL` / `AWS_S3_FORCE_PATH_STYLE`.
      stores them (overtime inherits this — it delegates to `clockIn`/`clockOut`).
   The four selfie DTOs' `@Matches` required a data URI; they now accept a data URI **or** a
   stored URL, so a client that starts uploading separately needs no API change.
+- **Phase A hole 3 — camelCase photo properties were invisible to the interceptor.** Its FIELDS
+  map is keyed on the **JSON property**, which is the ENTITY PROPERTY, not the column. Three
+  entities name them differently: `Activity.photoBeforeUrl` / `photoAfterUrl`
+  (`@Column({ name: 'photo_before_url' })`), `PruningRequest.photoUrls` and
+  `NotablePlant.photoUrls`. The snake_case keys never matched, so those fields were skipped in
+  **both** directions — inline base64 persisted on write, stored URLs went out **unsigned** on
+  read. Unsigned is not cosmetic: the bucket is private, so a raw object URL answers **403** and
+  the image is simply broken. Both spellings are now listed. `photoUrls` is shared by two
+  entities, so its write folder is the generic `uploads` (folder affects only where a NEW upload
+  lands; reads presign whatever is stored).
+- **Presigned links expire — clients must not cache them.** `PhotoStorageService.READ_TTL` is
+  24 h. Mobile persists the whole user object in `EncryptedStorage` (`user_data`), and
+  `AuthProvider.restoreSession` fetched `/auth/me` on boot but merged only `location_id` /
+  `district_id` from it — so the avatar stayed the link signed at **login** and 403'd a day
+  later, recovering only if the user happened to open Profil. It now takes the freshly signed
+  `profile_picture_url` from the same `me` response it already had. `MeResponseDto` documents
+  the TTL. Anything else that caches a photo URL across days needs the same treatment.
   Measured on the 2026-08-01 staging clone before the fix: **every** row of all four columns was
   a data URI — `attendance_punches.photo_url` 1,361 rows / 250 MB, `shifts.clock_in` 773 / 140 MB,
   `shifts.clock_out` 588 / 110 MB, `users.profile_picture_url` 163 / 28 MB. That is **528 MB of a

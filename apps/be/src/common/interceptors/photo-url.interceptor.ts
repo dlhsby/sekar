@@ -24,7 +24,21 @@ import { PhotoStorageService } from '../../shared/services/photo-storage.service
 export class PhotoUrlInterceptor implements NestInterceptor {
   constructor(private readonly photos: PhotoStorageService) {}
 
-  /** field name → { array?, folder } */
+  /**
+   * field name → { array?, folder }
+   *
+   * Keys are matched against the JSON property name, which is the ENTITY
+   * PROPERTY, not the column. Most entities name both alike, but three do not —
+   * `Activity.photoBeforeUrl`/`photoAfterUrl` (`@Column({ name: 'photo_before_url' })`),
+   * `PruningRequest.photoUrls` and `NotablePlant.photoUrls` — so the snake_case
+   * keys alone silently skipped them in BOTH directions: inline base64 was
+   * persisted on write, and stored URLs went out unsigned on read. Unsigned is
+   * not a cosmetic problem: the bucket is private, so a raw object URL answers
+   * **403** and the image is simply broken.
+   *
+   * Both spellings are listed rather than normalising the key, so the set of
+   * fields this interceptor touches stays explicit and greppable.
+   */
   private static readonly FIELDS: Record<string, { array: boolean; folder: string }> = {
     photo_urls: { array: true, folder: 'activities' },
     completion_photo_urls: { array: true, folder: 'tasks' },
@@ -34,6 +48,13 @@ export class PhotoUrlInterceptor implements NestInterceptor {
     photo_before_url: { array: false, folder: 'activities' },
     photo_after_url: { array: false, folder: 'activities' },
     photo_url: { array: false, folder: 'assets' },
+    // camelCase spellings of the same columns (see above).
+    photoBeforeUrl: { array: false, folder: 'activities' },
+    photoAfterUrl: { array: false, folder: 'activities' },
+    // `photoUrls` is shared by PruningRequest and NotablePlant, so the write
+    // folder cannot identify the source. It only affects where a NEW inline
+    // upload lands; reads presign whatever URL is stored, whatever its prefix.
+    photoUrls: { array: true, folder: 'uploads' },
   };
   private static readonly MAX_DEPTH = 5;
 
