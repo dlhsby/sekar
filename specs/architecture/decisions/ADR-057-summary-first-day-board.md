@@ -128,6 +128,40 @@ worker is on duty, and the day board's rayon pill already counted them, so the
 grids now agree with it. On the staging clone this is one lokasi ("Taman Korea")
 and shifts a handful of cells by one.
 
+## Four holes found by the 2026-08-01 end-to-end pass
+
+Each is the same shape: SQL now answers a question the client used to answer, and
+SQL sees rows the client never could.
+
+1. **A day-off row has no shift, so it renders nowhere — and must not count.**
+   `groupByShift` buckets by the known shift ids, so a row with
+   `shift_definition_id IS NULL` was always invisible to the tree; the old
+   headcount was implicitly "people on a shift". Tallying straight from SQL
+   started counting day-off markers as petugas. On 2026-08-01: **1 087 claimed
+   against 1 023 actually on shift**, and one worker whose only row was a
+   city-scope day-off showed in the Surabaya total while appearing on no card
+   below it. Both summaries now require a shift.
+2. **A rayon is rolled up through its place, exactly like a kawasan.** Constraint
+   2 above was applied to kawasan and missed for rayon: `getDaySummary` read
+   `district_id` off the row while `getRangeSummary` resolved it through
+   lokasi → kawasan → rayon. **276 rows that day carry a lokasi but no rayon**, so
+   the day board's rayon pill omitted 3 people the board still listed under that
+   rayon's lokasi, and the day figure (1 023) contradicted the week/month one
+   (1 026). Both now resolve identically.
+3. **`cityScopeOnly` has to gate the projection too.** The materialized query had
+   its three `IS NULL` predicates; `projectOccurrences` did not, so every
+   geography-bound event still expanded into the city container's fetch —
+   **99 foreign rows out of 100** — reinstating the overfetch constraint 3 exists
+   to prevent.
+4. **Nested containers return overlapping rows.** A lokasi-bound occurrence comes
+   back from the lokasi query, its kawasan's *and* its rayon's, and the leaf
+   fetches were merged by concatenation. Opening a card and its parent listed the
+   same person two or three times and React logged a duplicate key.
+   `dedupeOccurrences` merges by id. Headcounts were never affected — they come
+   from the server's DISTINCT, which is the point of this ADR.
+
+Each has a regression test that fails without its fix.
+
 ## Alternatives rejected
 
 - **Slim the row payload instead** (dictionary-encode the repeated `user` /

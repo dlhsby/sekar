@@ -211,6 +211,31 @@ describe('SchedulesService', () => {
         expect(call[0].where).not.toHaveProperty('team_category_id');
       }
     });
+
+    // "Seluruh Surabaya" is bound to no geography, so its leaf fetch has no id
+    // to scope by and instead asks for the rows that carry none. The
+    // materialized query honoured that with three IS NULL predicates; the
+    // PROJECTION did not, so every geography-bound event still expanded into
+    // the city container's response — 99 foreign rows out of 100 on the clone,
+    // reinstating the overfetch `cityScopeOnly` exists to prevent.
+    it('cityScopeOnly drops geography-bound events from the projection too', async () => {
+      const cityEvent = anEvent('city');
+      const atALokasi = {
+        ...anEvent('static'),
+        scope: 'static',
+        location_id: 'loc1',
+        location: { id: 'loc1', region_id: 'kw1', district_id: 'ry1' },
+      };
+      eventRepo.find.mockResolvedValue([cityEvent, atALokasi]);
+
+      const rows = await service.findByDateRange('2026-06-30', '2026-07-05', {
+        cityScopeOnly: true,
+      });
+
+      expect(rows.length).toBeGreaterThan(0);
+      expect(rows.every((r) => !r.location_id && !r.region_id && !r.district_id)).toBe(true);
+      expect(rows.every((r) => r.schedule_event_id === 'city')).toBe(true);
+    });
   });
 
   describe('findByDateRange', () => {
@@ -1963,6 +1988,26 @@ describe('SchedulesService', () => {
 
       const summary = await svc.getDaySummary('2026-07-08');
       expect(summary.workers.regions).toEqual([{ id: 'kw1', workers: 1 }]);
+    });
+
+    // A day-off row carries NO shift. `groupByShift` on the client buckets by
+    // the known shift ids, so such a row was never renderable and never counted
+    // — until the summary tallied straight from SQL and started including them.
+    // Measured on the 2026-08-01 clone: every card claimed 1 087 petugas where
+    // 1 023 were actually on shift, and one worker whose only row was a
+    // city-scope day-off appeared in the Surabaya total but on no card below it.
+    it('excludes day-off rows, which carry no shift and render nowhere', async () => {
+      const svc = service as unknown as {
+        getDaySummary: (d: string) => Promise<unknown>;
+        projectOccurrences: jest.Mock;
+      };
+      rosterRepo.qb.getRawMany.mockResolvedValue([]);
+      svc.projectOccurrences = jest.fn().mockResolvedValue([]);
+      areaEntityRepo.find.mockResolvedValue([]);
+
+      await svc.getDaySummary('2026-08-01');
+
+      expect(rosterRepo.qb.andWhere).toHaveBeenCalledWith('ds.shift_definition_id IS NOT NULL');
     });
   });
 

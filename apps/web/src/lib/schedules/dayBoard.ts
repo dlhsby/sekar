@@ -203,6 +203,22 @@ export function containerTotal(
 }
 
 /**
+ * Merge the per-container leaf fetches into one occurrence list.
+ *
+ * The containers are NESTED, so a single row satisfies every scope above it —
+ * a lokasi-bound occurrence is returned by the lokasi query, by its kawasan's
+ * and by its rayon's. Concatenating them handed the board the same occurrence
+ * two or three times: React logged a duplicate key and the expanded table
+ * listed the same person repeatedly. Headcounts were never affected; those come
+ * from the server's DISTINCT, which is the point of ADR-057.
+ */
+export function dedupeOccurrences(lists: readonly (ScheduleOccurrence[] | undefined)[]) {
+  const byId = new Map<string, ScheduleOccurrence>();
+  for (const list of lists) for (const occ of list ?? []) byId.set(occ.id, occ);
+  return [...byId.values()];
+}
+
+/**
  * Fold the summary into the lookups `buildDayBoard` wants.
  *
  * A group's container is the innermost binding it carries — lokasi, else
