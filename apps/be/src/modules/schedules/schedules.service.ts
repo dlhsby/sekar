@@ -210,6 +210,17 @@ export function eventPlace(event: ScheduleEvent): {
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
  * whose location_id matches.
  */
+/** One occurrence reduced to the fields a tally needs. */
+interface SummaryTuple {
+  user_id: string;
+  district_id: string | null;
+  region_id: string | null;
+  location_id: string | null;
+  shift_definition_id: string | null;
+  schedule_event_id: string | null;
+  role: string;
+}
+
 /**
  * One (container, shift, role) tally from `getDaySummary`. The container is the
  * innermost binding present: lokasi, else kawasan, else rayon, else city-wide —
@@ -1536,11 +1547,63 @@ export class SchedulesService {
         .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
     );
 
+    // Projection: the occurrences active events will produce that no row holds
+    // yet. Shared with `getDaySummary` so the two can never disagree.
+    const projectedRows = await this.projectOccurrences(from, to, f, materializedKey);
+    // Merge materialized and projected rows, sorted by date + status
+    const all = [...materialized, ...projectedRows];
+    return all.sort((a, b) => {
+      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.status ?? '').localeCompare(b.status ?? '');
+    });
+  }
+
+  /**
+   * The range filters as SQL, applied identically wherever occurrences are
+   * counted or listed. Shared so a card's headcount and the rows it expands to
+   * can never be filtered differently.
+   */
+  private applyRangeFilters(qb: SelectQueryBuilder<Schedule>, f: RangeFilters): void {
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
+    if (f.districtId) qb.andWhere('ds.district_id = :districtId', { districtId: f.districtId });
+    if (f.regionId) qb.andWhere('ds.region_id = :regionId', { regionId: f.regionId });
+    if (f.userId) qb.andWhere('ds.user_id = :userId', { userId: f.userId });
+    if (f.shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', {
+        shiftDefinitionId: f.shiftDefinitionId,
+      });
+    if (f.teamCategoryId)
+      qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId: f.teamCategoryId });
+    // One place per row (ADR-053), so the filter is a plain column match.
+    if (f.locationId) qb.andWhere('ds.location_id = :locationId', { locationId: f.locationId });
+  }
+
+  /**
+   * Virtual occurrences for a range: the ones an active event WILL produce but
+   * that no roster row holds yet (beyond the materialization horizon, ADR-047).
+   *
+   * Extracted so the roster read and the day summary project from exactly the
+   * same code. They have to agree — a card counting 0 for a day the board can
+   * still open and list people in is worse than a slow board — and two copies of
+   * this loop would drift the first time either was touched.
+   */
+  private async projectOccurrences(
+    from: string,
+    to: string,
+    f: RangeFilters,
+    materializedKey: Set<string>,
+  ): Promise<Schedule[]> {
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
     // Tombstones and detached overrides for the whole range, in one query rather
-    // than one per event inside the projection loop below.
+    // than one per event inside the loop below.
     const existingKey = await this.eventOccurrenceKeys(from, to, f);
 
-    // Projection: load active events and expand beyond the materialized window
+    // Load active events and expand them beyond the materialized window.
     const events = await this.eventRepo.find({
       where: this.activeEventsOverlapping(from, to),
       relations: [
@@ -1680,13 +1743,7 @@ export class SchedulesService {
       }
     }
 
-    // Merge materialized and projected rows, sorted by date + status
-    const all = [...materialized, ...projectedRows];
-    return all.sort((a, b) => {
-      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
-      if (dateCompare !== 0) return dateCompare;
-      return (a.status ?? '').localeCompare(b.status ?? '');
-    });
+    return projectedRows;
   }
 
   /**
@@ -1716,99 +1773,120 @@ export class SchedulesService {
    * master data the client already holds.
    */
   async getDaySummary(date: string, filters?: RangeFilters): Promise<DaySummary> {
-    const scoped = (alias = 'ds') =>
-      this.rosterRepo
-        .createQueryBuilder(alias)
-        // The roster only shows people who can actually work — same rule as
-        // `findByDateRange`, or the counts would disagree with the rows.
-        .innerJoin(`${alias}.user`, 'u', 'u.is_active = TRUE')
-        .where(`${alias}.schedule_date = :date`, { date })
-        .andWhere(`${alias}.deleted_at IS NULL`);
+    const f = filters ?? {};
 
-    const applyFilters = (qb: SelectQueryBuilder<Schedule>, alias = 'ds') => {
-      const f = filters ?? {};
-      if (f.districtId)
-        qb.andWhere(`${alias}.district_id = :districtId`, { districtId: f.districtId });
-      if (f.userId) qb.andWhere(`${alias}.user_id = :userId`, { userId: f.userId });
-      if (f.shiftDefinitionId)
-        qb.andWhere(`${alias}.shift_definition_id = :shiftDefinitionId`, {
-          shiftDefinitionId: f.shiftDefinitionId,
-        });
-      if (f.teamCategoryId)
-        qb.andWhere(`${alias}.team_category_id = :teamCategoryId`, {
-          teamCategoryId: f.teamCategoryId,
-        });
-      if (f.locationId)
-        qb.andWhere(`${alias}.location_id = :locationId`, { locationId: f.locationId });
-      // A kawasan filter must keep BOTH its mobile rows and the rows at its
-      // lokasi; the lokasi's kawasan lives on `locations`, not on the roster row.
-      if (f.regionId)
-        qb.andWhere(
-          `(${alias}.region_id = :regionId OR ${alias}.location_id IN ` +
-            `(SELECT id FROM locations WHERE region_id = :regionId))`,
-          { regionId: f.regionId },
-        );
-      return qb;
+    // Slim TUPLES, not entities: one row per occurrence with only the six fields
+    // a tally needs. 3.4k of these is nothing to hold; 3.4k hydrated Schedules
+    // with their relations is the 3.9 MB this endpoint exists to avoid.
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      // The roster only shows people who can actually work — same rule as
+      // `findByDateRange`, or the counts would disagree with the rows.
+      .innerJoin('ds.user', 'u', 'u.is_active = TRUE')
+      .select('ds.user_id', 'user_id')
+      .addSelect('ds.district_id', 'district_id')
+      .addSelect('ds.region_id', 'region_id')
+      .addSelect('ds.location_id', 'location_id')
+      .addSelect('ds.shift_definition_id', 'shift_definition_id')
+      .addSelect('ds.schedule_event_id', 'schedule_event_id')
+      .addSelect('u.role', 'role')
+      .where('ds.schedule_date = :date', { date })
+      .andWhere('ds.deleted_at IS NULL');
+    this.applyRangeFilters(qb, f);
+    const materialized = await qb.getRawMany<SummaryTuple>();
+
+    // A kawasan owns its own mobile rows AND every row at a lokasi inside it,
+    // but a static row carries no `region_id` — only the lokasi knows its
+    // kawasan. Resolved from one small lookup rather than a join, because the
+    // PROJECTED rows need the same answer and their `location` has been slimmed
+    // to id+name by then (`slimProjectedRelations`), which silently zeroed every
+    // kawasan headcount on a projected day.
+    const regionOfLocation = new Map(
+      (await this.locationRepo.find({ select: ['id', 'region_id'] })).map((l) => [
+        l.id,
+        l.region_id ?? null,
+      ]),
+    );
+
+    // Beyond the materialization horizon a day has NO rows, only occurrences an
+    // event will produce. Counting materialized rows alone reported 0 petugas
+    // for a day the board could still open and list 1 009 people in.
+    const materializedKey = new Set(
+      materialized
+        .filter((r) => r.schedule_event_id)
+        .map((r) => `${r.schedule_event_id}:${r.user_id}:${date}`),
+    );
+    const projected = await this.projectOccurrences(date, date, f, materializedKey);
+
+    const tuples: SummaryTuple[] = [
+      ...materialized,
+      ...projected.map((row) => ({
+        user_id: row.user_id,
+        district_id: row.district_id ?? null,
+        region_id: row.region_id ?? null,
+        location_id: row.location_id ?? null,
+        shift_definition_id: row.shift_definition_id ?? null,
+        schedule_event_id: row.schedule_event_id ?? null,
+        role: (row.user?.role ?? '') as string,
+      })),
+    ];
+
+    // The container is the innermost binding a row carries — lokasi, else
+    // kawasan, else rayon, else city — the same order `buildDayBoard` buckets in.
+    const groupMap = new Map<string, DaySummaryGroup>();
+    // Distinct PEOPLE per tier. Sets, not counters: ADR-053 lets one worker hold
+    // several occurrences in a day, so a subtree's headcount is a union of its
+    // children, never a sum.
+    const districtWorkers = new Map<string, Set<string>>();
+    const regionWorkers = new Map<string, Set<string>>();
+    const locationWorkers = new Map<string, Set<string>>();
+    const cityWorkers = new Set<string>();
+
+    const add = (map: Map<string, Set<string>>, id: string | null, userId: string) => {
+      if (!id) return;
+      const set = map.get(id);
+      if (set) set.add(userId);
+      else map.set(id, new Set([userId]));
     };
 
-    // Counts per (container, shift, role). The container tier is decided by
-    // which binding the ROW carries, exactly as `buildDayBoard` buckets them.
-    const groupsQb = applyFilters(
-      scoped()
-        .select('ds.district_id', 'district_id')
-        .addSelect('ds.region_id', 'region_id')
-        .addSelect('ds.location_id', 'location_id')
-        .addSelect('ds.shift_definition_id', 'shift_definition_id')
-        .addSelect('u.role', 'role')
-        .addSelect('COUNT(*)::int', 'total')
-        .groupBy('ds.district_id')
-        .addGroupBy('ds.region_id')
-        .addGroupBy('ds.location_id')
-        .addGroupBy('ds.shift_definition_id')
-        .addGroupBy('u.role'),
-    );
+    for (const t of tuples) {
+      const key = [t.district_id, t.region_id, t.location_id, t.shift_definition_id, t.role].join(
+        '|',
+      );
+      const existing = groupMap.get(key);
+      if (existing) existing.total += 1;
+      else
+        groupMap.set(key, {
+          district_id: t.district_id,
+          region_id: t.region_id,
+          location_id: t.location_id,
+          shift_definition_id: t.shift_definition_id,
+          role: t.role,
+          total: 1,
+        });
 
-    // Distinct people per tier. `schedules.district_id` is denormalised onto
-    // every row, so districts need no join; a kawasan's subtree does — a static
-    // row at a lokasi has `region_id` NULL and only the lokasi knows its kawasan.
-    const perDistrict = applyFilters(
-      scoped()
-        .select('ds.district_id', 'id')
-        .addSelect('COUNT(DISTINCT ds.user_id)::int', 'workers')
-        .andWhere('ds.district_id IS NOT NULL')
-        .groupBy('ds.district_id'),
-    );
-    const perRegion = applyFilters(
-      scoped()
-        .leftJoin('locations', 'l', 'l.id = ds.location_id')
-        .select('COALESCE(ds.region_id, l.region_id)', 'id')
-        .addSelect('COUNT(DISTINCT ds.user_id)::int', 'workers')
-        .andWhere('COALESCE(ds.region_id, l.region_id) IS NOT NULL')
-        .groupBy('COALESCE(ds.region_id, l.region_id)'),
-    );
-    const perLocation = applyFilters(
-      scoped()
-        .select('ds.location_id', 'id')
-        .addSelect('COUNT(DISTINCT ds.user_id)::int', 'workers')
-        .andWhere('ds.location_id IS NOT NULL')
-        .groupBy('ds.location_id'),
-    );
-    // The city headline is every distinct person on the board, not the sum of
-    // the districts — a worker may appear in more than one.
-    const cityQb = applyFilters(scoped().select('COUNT(DISTINCT ds.user_id)::int', 'workers'));
+      cityWorkers.add(t.user_id);
+      add(districtWorkers, t.district_id, t.user_id);
+      add(locationWorkers, t.location_id, t.user_id);
+      add(
+        regionWorkers,
+        t.region_id ?? regionOfLocation.get(t.location_id ?? '') ?? null,
+        t.user_id,
+      );
+    }
 
-    const [groups, districts, regions, locations, city] = await Promise.all([
-      groupsQb.getRawMany<DaySummaryGroup>(),
-      perDistrict.getRawMany<DaySummaryWorkers>(),
-      perRegion.getRawMany<DaySummaryWorkers>(),
-      perLocation.getRawMany<DaySummaryWorkers>(),
-      cityQb.getRawOne<{ workers: number }>(),
-    ]);
+    const toList = (map: Map<string, Set<string>>): DaySummaryWorkers[] =>
+      [...map.entries()].map(([id, set]) => ({ id, workers: set.size }));
 
     return {
       date,
-      groups,
-      workers: { districts, regions, locations, city: city?.workers ?? 0 },
+      groups: [...groupMap.values()],
+      workers: {
+        districts: toList(districtWorkers),
+        regions: toList(regionWorkers),
+        locations: toList(locationWorkers),
+        city: cityWorkers.size,
+      },
     };
   }
 
