@@ -16,6 +16,7 @@ import {
   Not,
   Repository,
   type FindOptionsWhere,
+  type SelectQueryBuilder,
 } from 'typeorm';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import type { AttributionCandidate } from '../shifts/services/shift-attribution.service';
@@ -209,7 +210,56 @@ export function eventPlace(event: ScheduleEvent): {
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
  * whose location_id matches.
  */
+/** One occurrence reduced to the fields a tally needs. */
+interface SummaryTuple {
+  user_id: string;
+  district_id: string | null;
+  region_id: string | null;
+  location_id: string | null;
+  shift_definition_id: string | null;
+  schedule_event_id: string | null;
+  role: string;
+}
+
+/**
+ * One (container, shift, role) tally from `getDaySummary`. The container is the
+ * innermost binding present: lokasi, else kawasan, else rayon, else city-wide —
+ * the same order `buildDayBoard` buckets occurrences in.
+ */
+export interface DaySummaryGroup {
+  district_id: string | null;
+  region_id: string | null;
+  location_id: string | null;
+  shift_definition_id: string | null;
+  role: string;
+  total: number;
+}
+
+/** Distinct people in one container's subtree. */
+export interface DaySummaryWorkers {
+  id: string;
+  workers: number;
+}
+
+export interface DaySummary {
+  date: string;
+  groups: DaySummaryGroup[];
+  workers: {
+    districts: DaySummaryWorkers[];
+    regions: DaySummaryWorkers[];
+    locations: DaySummaryWorkers[];
+    city: number;
+  };
+}
+
 export interface RangeFilters {
+  /**
+   * Only rows bound to NOTHING — no lokasi, no kawasan, no rayon: the board's
+   * "Seluruh Surabaya" container. It cannot be expressed as an id filter, and
+   * without it the board's city card had to fetch the entire day to show its
+   * own handful of rows.
+   */
+  cityScopeOnly?: boolean;
   districtId?: string | null;
   regionId?: string | null;
   locationId?: string | null;
@@ -1412,6 +1462,11 @@ export class SchedulesService {
       .andWhere('ds.schedule_date <= :to', { to })
       .andWhere('ds.deleted_at IS NULL')
       .andWhere('u.is_active = TRUE');
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
     if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
@@ -1467,6 +1522,11 @@ export class SchedulesService {
       // Deactivated workers drop off the board: their rows stay in the DB for
       // history, but the roster only shows people who can actually work.
       .andWhere('u.is_active = TRUE');
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
     if (districtId) qb.andWhere('ds.district_id = :districtId', { districtId });
     if (regionId) qb.andWhere('ds.region_id = :regionId', { regionId });
     if (userId) qb.andWhere('ds.user_id = :userId', { userId });
@@ -1487,11 +1547,63 @@ export class SchedulesService {
         .map((r) => `${r.schedule_event_id}:${r.user_id}:${r.schedule_date}`),
     );
 
+    // Projection: the occurrences active events will produce that no row holds
+    // yet. Shared with `getDaySummary` so the two can never disagree.
+    const projectedRows = await this.projectOccurrences(from, to, f, materializedKey);
+    // Merge materialized and projected rows, sorted by date + status
+    const all = [...materialized, ...projectedRows];
+    return all.sort((a, b) => {
+      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
+      if (dateCompare !== 0) return dateCompare;
+      return (a.status ?? '').localeCompare(b.status ?? '');
+    });
+  }
+
+  /**
+   * The range filters as SQL, applied identically wherever occurrences are
+   * counted or listed. Shared so a card's headcount and the rows it expands to
+   * can never be filtered differently.
+   */
+  private applyRangeFilters(qb: SelectQueryBuilder<Schedule>, f: RangeFilters): void {
+    if (f.cityScopeOnly) {
+      qb.andWhere('ds.location_id IS NULL')
+        .andWhere('ds.region_id IS NULL')
+        .andWhere('ds.district_id IS NULL');
+    }
+    if (f.districtId) qb.andWhere('ds.district_id = :districtId', { districtId: f.districtId });
+    if (f.regionId) qb.andWhere('ds.region_id = :regionId', { regionId: f.regionId });
+    if (f.userId) qb.andWhere('ds.user_id = :userId', { userId: f.userId });
+    if (f.shiftDefinitionId)
+      qb.andWhere('ds.shift_definition_id = :shiftDefinitionId', {
+        shiftDefinitionId: f.shiftDefinitionId,
+      });
+    if (f.teamCategoryId)
+      qb.andWhere('ds.team_category_id = :teamCategoryId', { teamCategoryId: f.teamCategoryId });
+    // One place per row (ADR-053), so the filter is a plain column match.
+    if (f.locationId) qb.andWhere('ds.location_id = :locationId', { locationId: f.locationId });
+  }
+
+  /**
+   * Virtual occurrences for a range: the ones an active event WILL produce but
+   * that no roster row holds yet (beyond the materialization horizon, ADR-047).
+   *
+   * Extracted so the roster read and the day summary project from exactly the
+   * same code. They have to agree — a card counting 0 for a day the board can
+   * still open and list people in is worse than a slow board — and two copies of
+   * this loop would drift the first time either was touched.
+   */
+  private async projectOccurrences(
+    from: string,
+    to: string,
+    f: RangeFilters,
+    materializedKey: Set<string>,
+  ): Promise<Schedule[]> {
+    const { districtId, regionId, locationId, userId, shiftDefinitionId, teamCategoryId } = f;
     // Tombstones and detached overrides for the whole range, in one query rather
-    // than one per event inside the projection loop below.
+    // than one per event inside the loop below.
     const existingKey = await this.eventOccurrenceKeys(from, to, f);
 
-    // Projection: load active events and expand beyond the materialized window
+    // Load active events and expand them beyond the materialized window.
     const events = await this.eventRepo.find({
       where: this.activeEventsOverlapping(from, to),
       relations: [
@@ -1631,13 +1743,151 @@ export class SchedulesService {
       }
     }
 
-    // Merge materialized and projected rows, sorted by date + status
-    const all = [...materialized, ...projectedRows];
-    return all.sort((a, b) => {
-      const dateCompare = a.schedule_date.localeCompare(b.schedule_date);
-      if (dateCompare !== 0) return dateCompare;
-      return (a.status ?? '').localeCompare(b.status ?? '');
-    });
+    return projectedRows;
+  }
+
+  /**
+   * The day board's collapsed view, as counts rather than rows.
+   *
+   * A collapsed card shows a headcount, capacity pills and its children's
+   * counts — never a worker's name. Names are read only inside an EXPANDED
+   * `ShiftRoleTable`. The board nonetheless downloaded every occurrence for the
+   * whole city up front: **3.9 MB for one day** on the staging clone, and 57 MB
+   * for a month, to render integers. This answers the same question in ~2 % of
+   * the bytes; the rows for one container are fetched when it is opened.
+   *
+   * Two shapes come back because they are two different questions:
+   *
+   * - `groups` — occurrence counts per (container, shift, role). The client
+   *   sums these for a shift's `total`, and filters to the countable roles for
+   *   understaffing. Team members are included: a team fans out to one row per
+   *   member carrying that member's own role, so a `GROUP BY role` counts them
+   *   exactly as the board does.
+   * - `workers` — DISTINCT people per container subtree. This cannot be summed
+   *   client-side, which is the whole reason it is a separate result: under
+   *   ADR-053 one worker may hold several occurrences in a day (different
+   *   places), so a kawasan's headcount is a union of its lokasi, not a sum.
+   *   Postgres does the dedup per tier.
+   *
+   * Only non-empty groups are returned; empty containers still render, from
+   * master data the client already holds.
+   */
+  async getDaySummary(date: string, filters?: RangeFilters): Promise<DaySummary> {
+    const f = filters ?? {};
+
+    // Slim TUPLES, not entities: one row per occurrence with only the six fields
+    // a tally needs. 3.4k of these is nothing to hold; 3.4k hydrated Schedules
+    // with their relations is the 3.9 MB this endpoint exists to avoid.
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      // The roster only shows people who can actually work — same rule as
+      // `findByDateRange`, or the counts would disagree with the rows.
+      .innerJoin('ds.user', 'u', 'u.is_active = TRUE')
+      .select('ds.user_id', 'user_id')
+      .addSelect('ds.district_id', 'district_id')
+      .addSelect('ds.region_id', 'region_id')
+      .addSelect('ds.location_id', 'location_id')
+      .addSelect('ds.shift_definition_id', 'shift_definition_id')
+      .addSelect('ds.schedule_event_id', 'schedule_event_id')
+      .addSelect('u.role', 'role')
+      .where('ds.schedule_date = :date', { date })
+      .andWhere('ds.deleted_at IS NULL');
+    this.applyRangeFilters(qb, f);
+    const materialized = await qb.getRawMany<SummaryTuple>();
+
+    // A kawasan owns its own mobile rows AND every row at a lokasi inside it,
+    // but a static row carries no `region_id` — only the lokasi knows its
+    // kawasan. Resolved from one small lookup rather than a join, because the
+    // PROJECTED rows need the same answer and their `location` has been slimmed
+    // to id+name by then (`slimProjectedRelations`), which silently zeroed every
+    // kawasan headcount on a projected day.
+    const regionOfLocation = new Map(
+      (await this.locationRepo.find({ select: ['id', 'region_id'] })).map((l) => [
+        l.id,
+        l.region_id ?? null,
+      ]),
+    );
+
+    // Beyond the materialization horizon a day has NO rows, only occurrences an
+    // event will produce. Counting materialized rows alone reported 0 petugas
+    // for a day the board could still open and list 1 009 people in.
+    const materializedKey = new Set(
+      materialized
+        .filter((r) => r.schedule_event_id)
+        .map((r) => `${r.schedule_event_id}:${r.user_id}:${date}`),
+    );
+    const projected = await this.projectOccurrences(date, date, f, materializedKey);
+
+    const tuples: SummaryTuple[] = [
+      ...materialized,
+      ...projected.map((row) => ({
+        user_id: row.user_id,
+        district_id: row.district_id ?? null,
+        region_id: row.region_id ?? null,
+        location_id: row.location_id ?? null,
+        shift_definition_id: row.shift_definition_id ?? null,
+        schedule_event_id: row.schedule_event_id ?? null,
+        role: (row.user?.role ?? '') as string,
+      })),
+    ];
+
+    // The container is the innermost binding a row carries — lokasi, else
+    // kawasan, else rayon, else city — the same order `buildDayBoard` buckets in.
+    const groupMap = new Map<string, DaySummaryGroup>();
+    // Distinct PEOPLE per tier. Sets, not counters: ADR-053 lets one worker hold
+    // several occurrences in a day, so a subtree's headcount is a union of its
+    // children, never a sum.
+    const districtWorkers = new Map<string, Set<string>>();
+    const regionWorkers = new Map<string, Set<string>>();
+    const locationWorkers = new Map<string, Set<string>>();
+    const cityWorkers = new Set<string>();
+
+    const add = (map: Map<string, Set<string>>, id: string | null, userId: string) => {
+      if (!id) return;
+      const set = map.get(id);
+      if (set) set.add(userId);
+      else map.set(id, new Set([userId]));
+    };
+
+    for (const t of tuples) {
+      const key = [t.district_id, t.region_id, t.location_id, t.shift_definition_id, t.role].join(
+        '|',
+      );
+      const existing = groupMap.get(key);
+      if (existing) existing.total += 1;
+      else
+        groupMap.set(key, {
+          district_id: t.district_id,
+          region_id: t.region_id,
+          location_id: t.location_id,
+          shift_definition_id: t.shift_definition_id,
+          role: t.role,
+          total: 1,
+        });
+
+      cityWorkers.add(t.user_id);
+      add(districtWorkers, t.district_id, t.user_id);
+      add(locationWorkers, t.location_id, t.user_id);
+      add(
+        regionWorkers,
+        t.region_id ?? regionOfLocation.get(t.location_id ?? '') ?? null,
+        t.user_id,
+      );
+    }
+
+    const toList = (map: Map<string, Set<string>>): DaySummaryWorkers[] =>
+      [...map.entries()].map(([id, set]) => ({ id, workers: set.size }));
+
+    return {
+      date,
+      groups: [...groupMap.values()],
+      workers: {
+        districts: toList(districtWorkers),
+        regions: toList(regionWorkers),
+        locations: toList(locationWorkers),
+        city: cityWorkers.size,
+      },
+    };
   }
 
   /**

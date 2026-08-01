@@ -35,6 +35,12 @@ function makeRosterRepo() {
     qb[m] = jest.fn(() => qb);
   }
   qb.getMany = jest.fn().mockResolvedValue([]);
+  qb.getRawMany = jest.fn().mockResolvedValue([]);
+  qb.getRawOne = jest.fn().mockResolvedValue(undefined);
+  qb.select = jest.fn(() => qb);
+  qb.innerJoin = jest.fn(() => qb);
+  qb.groupBy = jest.fn(() => qb);
+  qb.addGroupBy = jest.fn(() => qb);
   return {
     find: jest.fn().mockResolvedValue([]),
     findOne: jest.fn(),
@@ -1871,6 +1877,89 @@ describe('SchedulesService', () => {
       const args = ['2026-07-26', '05:00:00', true, 60] as const;
       expect(isShiftWindowClosed(...args, new Date('2026-07-27T05:30:00Z'))).toBe(false); // in grace
       expect(isShiftWindowClosed(...args, new Date('2026-07-27T06:30:00Z'))).toBe(true); // past grace
+    });
+  });
+  // ---------------------------------------------------------------------------
+  // getDaySummary — the collapsed day board, as counts.
+  //
+  // Its numbers have to equal what `/schedules/range` would list for the same
+  // day. The dangerous half is PROJECTION: past the materialization horizon a day
+  // holds no rows at all, only occurrences an event will produce, so a summary
+  // that counted rows alone reported "0 petugas" for a day the board could open
+  // and list 1,009 people in.
+  // ---------------------------------------------------------------------------
+  describe('SchedulesService.getDaySummary', () => {
+    it('counts projected occurrences, not just materialized rows', async () => {
+      const svc = service as unknown as {
+        getDaySummary: (
+          d: string,
+          f?: unknown,
+        ) => Promise<{
+          groups: Array<{ total: number; role: string; location_id: string | null }>;
+          workers: { city: number; locations: Array<{ id: string; workers: number }> };
+        }>;
+        projectOccurrences: jest.Mock;
+      };
+      // No materialized rows for this day — everything is a projection.
+      rosterRepo.qb.getRawMany.mockResolvedValue([]);
+      svc.projectOccurrences = jest.fn().mockResolvedValue([
+        {
+          user_id: 'w1',
+          district_id: 'ry1',
+          region_id: null,
+          location_id: 'loc1',
+          shift_definition_id: 's1',
+          schedule_event_id: 'e1',
+          user: { role: 'satgas' },
+        },
+        {
+          user_id: 'w2',
+          district_id: 'ry1',
+          region_id: null,
+          location_id: 'loc1',
+          shift_definition_id: 's1',
+          schedule_event_id: 'e1',
+          user: { role: 'satgas' },
+        },
+      ]);
+      // The service's `locationRepo` is provided as `areaEntityRepo` here.
+      areaEntityRepo.find.mockResolvedValue([{ id: 'loc1', region_id: 'kw1' }]);
+
+      const summary = await svc.getDaySummary('2026-10-15');
+
+      expect(summary.groups).toEqual([
+        expect.objectContaining({ location_id: 'loc1', role: 'satgas', total: 2 }),
+      ]);
+      expect(summary.workers.city).toBe(2);
+      expect(summary.workers.locations).toEqual([{ id: 'loc1', workers: 2 }]);
+    });
+
+    it("rolls a lokasi's people up into its kawasan, which the row itself never names", async () => {
+      // A static row carries no `region_id` — only the lokasi knows its kawasan.
+      // Getting this wrong zeroed every kawasan headcount on a projected day.
+      const svc = service as unknown as {
+        getDaySummary: (
+          d: string,
+        ) => Promise<{ workers: { regions: Array<{ id: string; workers: number }> } }>;
+        projectOccurrences: jest.Mock;
+      };
+      rosterRepo.qb.getRawMany.mockResolvedValue([
+        {
+          user_id: 'w1',
+          district_id: 'ry1',
+          region_id: null,
+          location_id: 'loc1',
+          shift_definition_id: 's1',
+          schedule_event_id: null,
+          role: 'satgas',
+        },
+      ]);
+      svc.projectOccurrences = jest.fn().mockResolvedValue([]);
+      // The service's `locationRepo` is provided as `areaEntityRepo` here.
+      areaEntityRepo.find.mockResolvedValue([{ id: 'loc1', region_id: 'kw1' }]);
+
+      const summary = await svc.getDaySummary('2026-07-08');
+      expect(summary.workers.regions).toEqual([{ id: 'kw1', workers: 1 }]);
     });
   });
 });

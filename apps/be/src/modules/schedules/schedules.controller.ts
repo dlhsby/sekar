@@ -21,7 +21,12 @@ import {
   ApiParam,
   ApiQuery,
 } from '@nestjs/swagger';
-import { SchedulesService, SCHEDULABLE_WORKER_ROLES, type RangeFilters } from './schedules.service';
+import {
+  SchedulesService,
+  SCHEDULABLE_WORKER_ROLES,
+  type RangeFilters,
+  type DaySummary,
+} from './schedules.service';
 import { RosterPresenceService } from './services/roster-presence.service';
 import { Schedule } from './entities/schedule.entity';
 import {
@@ -219,6 +224,13 @@ export class SchedulesController {
   @ApiQuery({ name: 'userId', required: false })
   @ApiQuery({ name: 'shiftDefinitionId', required: false })
   @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiQuery({
+    name: 'cityScopeOnly',
+    required: false,
+    description:
+      'Only rows bound to no lokasi, kawasan or rayon — the board\'s "Seluruh Surabaya" ' +
+      'container, which cannot be named by an id filter.',
+  })
   @ApiResponse({ status: 200, type: [Schedule] })
   async getByRange(
     @Query('from') from: string,
@@ -230,6 +242,7 @@ export class SchedulesController {
     @Query('userId') userId?: string,
     @Query('shiftDefinitionId') shiftDefinitionId?: string,
     @Query('teamCategoryId') teamCategoryId?: string,
+    @Query('cityScopeOnly') cityScopeOnly?: string,
   ): Promise<Schedule[]> {
     // Validate from <= to
     if (from > to) {
@@ -252,6 +265,7 @@ export class SchedulesController {
       userId,
       shiftDefinitionId,
       teamCategoryId,
+      cityScopeOnly: cityScopeOnly === 'true',
     };
 
     /**
@@ -292,6 +306,66 @@ export class SchedulesController {
     return this.presence.attach(
       await this.service.findByDateRange(from, to, { ...filters, districtId }),
     );
+  }
+
+  /**
+   * The day board's collapsed view as counts, not rows.
+   *
+   * Same scoping and the same filter set as `GET /schedules/range` — the two
+   * must agree, or a card's headcount would contradict the rows it opens to.
+   */
+  @Get('day-summary')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'Aggregate headcounts for one WIB day, per container per shift per role, plus distinct ' +
+      'people per container subtree. What the collapsed day board renders; the rows for a ' +
+      'container are fetched from /schedules/range when it is expanded.',
+  })
+  @ApiQuery({ name: 'date', example: '2026-07-08' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiResponse({ status: 200, description: '{ date, groups[], workers{} }' })
+  getDaySummary(
+    @Query('date') date: string,
+    @GetUser() user: User,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+  ): Promise<DaySummary> {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      throw new BadRequestException('date must be in YYYY-MM-DD format');
+    }
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
+
+    // Workers see only themselves; district-scoped roles are pinned to their own
+    // rayon and the requested districtId is ignored. Mirrors `getByRange`.
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.getDaySummary(date, { userId: user.id });
+    }
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.getDaySummary(date, { ...filters, districtId: user.district_id })
+        : Promise.resolve({
+            date,
+            groups: [],
+            workers: { districts: [], regions: [], locations: [], city: 0 },
+          });
+    }
+    return this.service.getDaySummary(date, { ...filters, districtId });
   }
 
   @Get('year-summary')

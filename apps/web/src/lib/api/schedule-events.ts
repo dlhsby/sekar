@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
 import type { UserRole } from '@/types/models';
+import type { DaySummaryPayload } from '@/lib/schedules/dayBoard';
 
 export type RecurrenceType = 'none' | 'daily' | 'every_n_days' | 'weekly' | 'specific_dates';
 export type ScheduleScope = 'static' | 'mobile' | 'district' | 'city';
@@ -289,6 +290,12 @@ export const scheduleOccurrenceKeys = {
   all: ['schedule-occurrences'] as const,
   lists: () => [...scheduleOccurrenceKeys.all, 'list'] as const,
   byRange: (from: string, to: string) => [...scheduleOccurrenceKeys.lists(), { from, to }] as const,
+  /** One container's rows on a day — what the board fetches when a card opens. */
+  byContainer: (date: string, containerId: string, filters?: ScheduleRangeFilters) =>
+    [...scheduleOccurrenceKeys.lists(), { date, containerId, ...filters }] as const,
+  /** Aggregate counts for the collapsed board. */
+  daySummary: (date: string, filters?: ScheduleRangeFilters) =>
+    [...scheduleOccurrenceKeys.all, 'day-summary', { date, ...filters }] as const,
 };
 
 /**
@@ -296,12 +303,26 @@ export const scheduleOccurrenceKeys = {
  */
 /** Calendar range filters (query-param names match the backend, camelCase). */
 export interface ScheduleRangeFilters {
+  /** Only rows bound to nothing — the board's city container. */
+  cityScopeOnly?: boolean;
   districtId?: string;
   regionId?: string;
   locationId?: string;
   userId?: string;
   shiftDefinitionId?: string;
   teamCategoryId?: string;
+}
+
+/** The range filters as query params — shared by the range and summary calls so
+ *  the two can never drift and disagree about what a card contains. */
+function appendRangeFilters(params: URLSearchParams, filters?: ScheduleRangeFilters): void {
+  if (filters?.districtId) params.append('districtId', filters.districtId);
+  if (filters?.regionId) params.append('regionId', filters.regionId);
+  if (filters?.locationId) params.append('locationId', filters.locationId);
+  if (filters?.userId) params.append('userId', filters.userId);
+  if (filters?.shiftDefinitionId) params.append('shiftDefinitionId', filters.shiftDefinitionId);
+  if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
+  if (filters?.cityScopeOnly) params.append('cityScopeOnly', 'true');
 }
 
 async function fetchScheduleRange(
@@ -312,12 +333,7 @@ async function fetchScheduleRange(
   const params = new URLSearchParams();
   params.append('from', from);
   params.append('to', to);
-  if (filters?.districtId) params.append('districtId', filters.districtId);
-  if (filters?.regionId) params.append('regionId', filters.regionId);
-  if (filters?.locationId) params.append('locationId', filters.locationId);
-  if (filters?.userId) params.append('userId', filters.userId);
-  if (filters?.shiftDefinitionId) params.append('shiftDefinitionId', filters.shiftDefinitionId);
-  if (filters?.teamCategoryId) params.append('teamCategoryId', filters.teamCategoryId);
+  appendRangeFilters(params, filters);
 
   const response = await apiClient.get<RawScheduleRangeRow[]>(
     `/schedules/range?${params.toString()}`
@@ -415,6 +431,70 @@ export function useScheduleRange(
     enabled,
     staleTime: 30_000,
   });
+}
+
+/**
+ * Aggregate counts for one day's collapsed board.
+ *
+ * The board used to download every occurrence in the city to render headcounts
+ * and capacity pills — 3.9 MB for a day on staging-sized data, to print
+ * integers. This is the same day in ~80 KB; the rows for a container arrive via
+ * `useContainerOccurrences` when it is expanded.
+ */
+export function useDaySummary(date: string, filters?: ScheduleRangeFilters, enabled = true) {
+  return useQuery({
+    queryKey: scheduleOccurrenceKeys.daySummary(date, filters),
+    queryFn: async () => {
+      const params = new URLSearchParams({ date });
+      appendRangeFilters(params, filters);
+      const response = await apiClient.get<DaySummaryPayload>(
+        `/schedules/day-summary?${params.toString()}`
+      );
+      return response.data;
+    },
+    enabled: enabled && !!date,
+    staleTime: 30_000,
+  });
+}
+
+/** Which tier a board container belongs to — decides how a leaf fetch is scoped. */
+export type ContainerTier = 'city' | 'district' | 'region' | 'location';
+
+/**
+ * Query options for ONE container's rows on a day, fetched when its card opens.
+ *
+ * Options rather than a hook because the board opens an arbitrary number of
+ * containers and they must be fetched with `useQueries` — each independently
+ * cached, so re-opening a card is instant and closing one costs nothing.
+ *
+ * The city container is bound to no geography, so it asks for `cityScopeOnly`
+ * rather than an id. Without that param it had to fall back to the unscoped day
+ * — and since the board auto-opens the city node, that quietly re-downloaded
+ * all 1.2 MB the summary had just replaced.
+ *
+ * `expectedRows` short-circuits the fetch entirely when the summary already says
+ * the container is empty: there is nothing to ask for, and most containers on a
+ * city-wide board are empty.
+ */
+export function containerOccurrencesQuery(
+  date: string,
+  container: { id: string; tier: ContainerTier } | null,
+  filters?: ScheduleRangeFilters,
+  expectedRows?: number
+) {
+  const scoped: ScheduleRangeFilters = {
+    ...filters,
+    ...(container?.tier === 'city' ? { cityScopeOnly: true } : {}),
+    ...(container?.tier === 'location' ? { locationId: container.id } : {}),
+    ...(container?.tier === 'region' ? { regionId: container.id } : {}),
+    ...(container?.tier === 'district' ? { districtId: container.id } : {}),
+  };
+  return {
+    queryKey: scheduleOccurrenceKeys.byContainer(date, container?.id ?? '', filters),
+    queryFn: () => fetchScheduleRange(date, date, scoped),
+    enabled: !!container && !!date && expectedRows !== 0,
+    staleTime: 30_000,
+  };
 }
 
 /** One day's occupancy count for the year heatmap. */

@@ -13,6 +13,7 @@ describe('SchedulesController (district scoping)', () => {
     findByDate: jest.Mock;
     findByUserAndDate: jest.Mock;
     findOne: jest.Mock;
+    getDaySummary: jest.Mock;
     setLeave: jest.Mock;
     generateRoster: jest.Mock;
     addForDay: jest.Mock;
@@ -29,6 +30,7 @@ describe('SchedulesController (district scoping)', () => {
       findByDate: jest.fn().mockResolvedValue([]),
       findByUserAndDate: jest.fn().mockResolvedValue(null),
       findOne: jest.fn(),
+      getDaySummary: jest.fn(),
       setLeave: jest.fn().mockResolvedValue({}),
       generateRoster: jest.fn().mockResolvedValue(3),
       addForDay: jest.fn().mockResolvedValue({ id: 'new' }),
@@ -107,6 +109,65 @@ describe('SchedulesController (district scoping)', () => {
   // row on the client: 190 MB and 5.4 s on staging-sized data to read one
   // record. These lock in that the single-row read exists and stays scoped.
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // GET /schedules/day-summary — the collapsed board, as counts.
+  //
+  // It MUST scope identically to /schedules/range: a card's headcount that
+  // disagrees with the rows it expands to is worse than a slow board.
+  // ---------------------------------------------------------------------------
+  describe('getDaySummary', () => {
+    const emptySummary = {
+      date: '2026-07-08',
+      groups: [],
+      workers: { districts: [], regions: [], locations: [], city: 0 },
+    };
+
+    beforeEach(() => {
+      service.getDaySummary = jest.fn().mockResolvedValue(emptySummary);
+    });
+
+    it('rejects a malformed date', () => {
+      // Thrown synchronously, like `getYearSummary` beside it — the validation
+      // runs before any promise is returned.
+      expect(() => controller.getDaySummary('08-07-2026', admin)).toThrow(/YYYY-MM-DD/);
+      expect(service.getDaySummary).not.toHaveBeenCalled();
+    });
+
+    it('passes a city role its filters through', async () => {
+      await controller.getDaySummary('2026-07-08', admin, 'd1', 'r1', undefined, undefined, 'sd1');
+      expect(service.getDaySummary).toHaveBeenCalledWith(
+        '2026-07-08',
+        expect.objectContaining({ districtId: 'd1', regionId: 'r1', shiftDefinitionId: 'sd1' }),
+      );
+    });
+
+    it('pins a district-scoped role to its own rayon, ignoring the query', async () => {
+      await controller.getDaySummary('2026-07-08', kepala, 'other-district');
+      expect(service.getDaySummary).toHaveBeenCalledWith(
+        '2026-07-08',
+        expect.objectContaining({ districtId: 'r1' }),
+      );
+    });
+
+    it('self-scopes a worker to their own rows', async () => {
+      const satgas = { id: 'w1', role: UserRole.SATGAS, district_id: 'r1' } as unknown as User;
+      await controller.getDaySummary('2026-07-08', satgas, 'd1');
+      expect(service.getDaySummary).toHaveBeenCalledWith('2026-07-08', { userId: 'w1' });
+    });
+
+    it('returns an empty summary for a district-scoped user with no district', async () => {
+      const orphan = {
+        id: 'k2',
+        role: UserRole.KEPALA_RAYON,
+        district_id: null,
+      } as unknown as User;
+      await expect(controller.getDaySummary('2026-07-08', orphan)).resolves.toEqual(
+        expect.objectContaining({ groups: [], workers: expect.objectContaining({ city: 0 }) }),
+      );
+      expect(service.getDaySummary).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getOne', () => {
     it('returns the row for a city-scoped role', async () => {
       const row = { id: 's1', district_id: 'r2' };

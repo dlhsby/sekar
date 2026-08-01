@@ -25,6 +25,7 @@
     "noShift": "No shift"
   },
   "board": {
+    "loadingWorkers": "Loading workers…",
     "assign": "Assign",
     "team": "Team",
     "petugasCount": "{{count}} workers",

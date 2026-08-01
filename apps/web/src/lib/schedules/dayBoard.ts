@@ -63,6 +63,18 @@ export interface BoardLocation {
   shifts: BoardShiftGroup[];
   total: number;  /** Distinct workers in this node's subtree — what "N petugas" shows. */
   workerIds: string[];
+  /**
+   * Distinct people in this subtree, as a NUMBER rather than a list.
+   *
+   * `workerIds` can only be counted when the client holds every occurrence. The
+   * board no longer does — a collapsed card is built from `/schedules/day-summary`
+   * and the rows arrive per container on expand — and the union cannot be derived
+   * from counts, because ADR-053 lets one worker hold several occurrences in a
+   * day. Postgres does the dedup per tier and sends the number. When no summary
+   * is supplied this falls back to `workerIds.length`, so every other caller
+   * (week/month, the unit tests) is unaffected.
+   */
+  workerCount: number;
 }
 export interface BoardRegion {
   id: string;
@@ -72,6 +84,8 @@ export interface BoardRegion {
   locations: BoardLocation[];
   total: number;  /** Distinct workers in this node's subtree — what "N petugas" shows. */
   workerIds: string[];
+  /** See `BoardLocation.workerCount`. */
+  workerCount: number;
 }
 export interface BoardDistrict {
   id: string;
@@ -84,6 +98,8 @@ export interface BoardDistrict {
   total: number;
   /** Distinct workers in this district's subtree — what "N petugas" shows. */
   workerIds: string[];
+  /** See `BoardLocation.workerCount`. */
+  workerCount: number;
   /**
    * Tier this district's staffing requirements attach to — decides which single
    * level may edit capacity (district / kawasan / lokasi, never several).
@@ -114,8 +130,104 @@ export const CITY_NODE_ID = '__city__';
 
 const isTeam = (o: ScheduleOccurrence): boolean => o.team_category != null;
 
-/** Split a container's occurrences into per-shift role/team groups. */
-function groupByShift(occs: ScheduleOccurrence[], shifts: BoardShiftDef[]): BoardShiftGroup[] {
+/** Counts for ONE container's one shift, as the summary endpoint reports them. */
+export interface ShiftCounts {
+  total: number;
+  countableByRole: Record<string, number>;
+}
+
+/**
+ * Aggregates keyed for `buildDayBoard`, produced by `indexDaySummary`.
+ *
+ * `counts` is keyed `<containerId>|<shiftId>`, where the container id is the
+ * lokasi / kawasan / rayon the row is bound to, or `CITY_NODE_ID`. `workers` is
+ * keyed by container id alone and holds SUBTREE distinct people.
+ */
+export interface DaySummaryIndex {
+  counts: Map<string, ShiftCounts>;
+  workers: Map<string, number>;
+  cityWorkers: number;
+}
+
+/** The wire shape of `GET /schedules/day-summary`. */
+export interface DaySummaryPayload {
+  date: string;
+  groups: Array<{
+    district_id: string | null;
+    region_id: string | null;
+    location_id: string | null;
+    shift_definition_id: string | null;
+    role: string;
+    total: number;
+  }>;
+  workers: {
+    districts: Array<{ id: string; workers: number }>;
+    regions: Array<{ id: string; workers: number }>;
+    locations: Array<{ id: string; workers: number }>;
+    city: number;
+  };
+}
+
+/**
+ * How many occurrences the summary reports for a container, across every shift.
+ *
+ * `undefined` when there is no summary — "unknown", not "none", so the caller
+ * must still fetch. A concrete `0` means the container is genuinely empty and
+ * asking the server for its rows would be a wasted round-trip; on a city-wide
+ * board most containers are empty.
+ */
+export function containerTotal(
+  summary: DaySummaryIndex | undefined,
+  containerId: string,
+): number | undefined {
+  if (!summary) return undefined;
+  let total = 0;
+  for (const [key, counts] of summary.counts) {
+    if (key.slice(0, key.lastIndexOf('|')) === containerId) total += counts.total;
+  }
+  return total;
+}
+
+/**
+ * Fold the summary into the lookups `buildDayBoard` wants.
+ *
+ * A group's container is the innermost binding it carries — lokasi, else
+ * kawasan, else rayon, else city — which is the same order `buildDayBoard`
+ * buckets occurrences in, so a card's count and its rows always agree.
+ */
+export function indexDaySummary(payload: DaySummaryPayload): DaySummaryIndex {
+  const counts = new Map<string, ShiftCounts>();
+  for (const g of payload.groups) {
+    const container = g.location_id ?? g.region_id ?? g.district_id ?? CITY_NODE_ID;
+    const key = `${container}|${g.shift_definition_id ?? ''}`;
+    const entry = counts.get(key) ?? { total: 0, countableByRole: {} };
+    entry.total += g.total;
+    if (COUNTABLE_ROLES.includes(g.role)) {
+      entry.countableByRole[g.role] = (entry.countableByRole[g.role] ?? 0) + g.total;
+    }
+    counts.set(key, entry);
+  }
+
+  const workers = new Map<string, number>();
+  for (const list of [payload.workers.districts, payload.workers.regions, payload.workers.locations]) {
+    for (const w of list) workers.set(w.id, w.workers);
+  }
+  return { counts, workers, cityWorkers: payload.workers.city };
+}
+
+/**
+ * Split a container's occurrences into per-shift role/team groups.
+ *
+ * `counts` overrides the tallies when the client does not hold every occurrence
+ * (the summary-first board): `byRole`/`teams` still come from whatever rows have
+ * been fetched, so a collapsed card shows correct numbers and an expanded one
+ * lists real people. Without it, everything is derived from `occs` as before.
+ */
+function groupByShift(
+  occs: ScheduleOccurrence[],
+  shifts: BoardShiftDef[],
+  counts?: (shiftId: string) => ShiftCounts | undefined,
+): BoardShiftGroup[] {
   return shifts.map((shift) => {
     const shiftOccs = occs.filter((o) => o.shift_definition_id === shift.id);
     const byRole: Record<string, ScheduleOccurrence[]> = {};
@@ -161,13 +273,20 @@ function groupByShift(occs: ScheduleOccurrence[], shifts: BoardShiftDef[]): Boar
       countableByRole[role] = (countableByRole[role] ?? 0) + 1;
     }
 
+    // Summary counts win when present: the client may hold none of this
+    // container's rows yet, and a card must still show the right number.
+    const summary = counts?.(shift.id);
+    const summaryCountable = summary
+      ? Object.values(summary.countableByRole).reduce((a, b) => a + b, 0)
+      : 0;
+
     return {
       shift,
       byRole,
       teams: Array.from(teamMap.values()),
-      countableByRole,
-      countable: countableOccs.length,
-      total: shiftOccs.length,
+      countableByRole: summary ? summary.countableByRole : countableByRole,
+      countable: summary ? summaryCountable : countableOccs.length,
+      total: summary ? summary.total : shiftOccs.length,
       userIds: [...new Set(shiftOccs.map((o) => o.user_id))],
     };
   });
@@ -191,9 +310,19 @@ export const unionWorkers = (...lists: string[][]): string[] => [...new Set(list
  */
 export function buildDayBoard(
   occurrences: ScheduleOccurrence[],
-  master: BoardMasterData
+  master: BoardMasterData,
+  summary?: DaySummaryIndex,
 ): BoardDistrict[] {
   const { districts, regions, locations, shifts } = master;
+
+  // With a summary, tallies come from the server and `occurrences` holds only
+  // the containers the operator has opened. Without one, everything is derived
+  // from `occurrences` exactly as before.
+  const countsFor = (containerId: string) =>
+    summary ? (shiftId: string) => summary.counts.get(`${containerId}|${shiftId}`) : undefined;
+  /** Subtree headcount: the server's DISTINCT when we have it, else the union. */
+  const workersIn = (containerId: string, ids: string[]) =>
+    summary ? (summary.workers.get(containerId) ?? 0) : ids.length;
 
   // Occurrences bucketed by container id (location, region, or district); those
   // with no binding at all are city-wide (Seluruh Surabaya).
@@ -218,13 +347,15 @@ export function buildDayBoard(
   }
 
   const buildLocation = (loc: BoardMasterData['locations'][number]): BoardLocation => {
-    const shiftGroups = groupByShift(byLocation.get(loc.id) ?? [], shifts);
+    const shiftGroups = groupByShift(byLocation.get(loc.id) ?? [], shifts, countsFor(loc.id));
+    const workerIds = workersOf(shiftGroups);
     return {
       id: loc.id,
       name: loc.name,
       shifts: shiftGroups,
       total: sumTotal(shiftGroups),
-      workerIds: workersOf(shiftGroups),
+      workerIds,
+      workerCount: workersIn(loc.id, workerIds),
     };
   };
 
@@ -236,7 +367,7 @@ export function buildDayBoard(
   // node never appeared, so you could never assign one. Same chicken-and-egg the
   // district/kawasan assign tables had. It is now always present, like every other
   // empty container on the board.
-  const cityPlacement = groupByShift(cityOccs, shifts);
+  const cityPlacement = groupByShift(cityOccs, shifts, countsFor(CITY_NODE_ID));
   // `total` stays this node's OWN occupancy (city-scope assignments only).
   // The nested layout shows Surabaya's headline count as the whole city, but that
   // roll-up is computed in the component: pruneDayBoard treats total===0 as empty,
@@ -250,6 +381,9 @@ export function buildDayBoard(
       assignment: cityPlacement,
       total: sumTotal(cityPlacement),
       workerIds: workersOf(cityPlacement),
+      // This node's OWN occupancy (city-scope assignments); the headline
+      // "Surabaya" figure is the whole board and is rolled up in the component.
+      workerCount: workersIn(CITY_NODE_ID, workersOf(cityPlacement)),
       // No staffing_level: the city node is a sentinel, not a district — there is
       // nothing to attach a capacity to.
     },
@@ -263,11 +397,19 @@ export function buildDayBoard(
     const districtLocations = locations.filter((l) => l.district_id === district.id).sort(byName);
 
     const regionNodes: BoardRegion[] = districtRegions.map((region) => {
-      const assignment = groupByShift(byRegionMobile.get(region.id) ?? [], shifts);
+      const assignment = groupByShift(
+        byRegionMobile.get(region.id) ?? [],
+        shifts,
+        countsFor(region.id),
+      );
       const regionLocations = districtLocations
         .filter((l) => l.region_id === region.id)
         .map(buildLocation);
       const total = sumTotal(assignment) + regionLocations.reduce((acc, l) => acc + l.total, 0);
+      const regionWorkerIds = unionWorkers(
+        workersOf(assignment),
+        ...regionLocations.map((l) => l.workerIds),
+      );
       return {
         id: region.id,
         name: region.name,
@@ -275,18 +417,30 @@ export function buildDayBoard(
         locations: regionLocations,
         total,
         // Union, not sum: one worker covering two lokasi in this kawasan is one
-        // person (ADR-053).
-        workerIds: unionWorkers(workersOf(assignment), ...regionLocations.map((l) => l.workerIds)),
+        // person (ADR-053). The summary's number is that same union, computed in
+        // SQL — which is why it cannot be a sum of the lokasi counts.
+        workerIds: regionWorkerIds,
+        workerCount: workersIn(region.id, regionWorkerIds),
       };
     });
 
     const looseLocations = districtLocations.filter((l) => !l.region_id).map(buildLocation);
-    const assignment = groupByShift(byDistrictMobile.get(district.id) ?? [], shifts);
+    const assignment = groupByShift(
+      byDistrictMobile.get(district.id) ?? [],
+      shifts,
+      countsFor(district.id),
+    );
 
     const total =
       regionNodes.reduce((acc, r) => acc + r.total, 0) +
       looseLocations.reduce((acc, l) => acc + l.total, 0) +
       sumTotal(assignment);
+
+    const districtWorkerIds = unionWorkers(
+      workersOf(assignment),
+      ...regionNodes.map((r) => r.workerIds),
+      ...looseLocations.map((l) => l.workerIds),
+    );
 
     return {
       id: district.id,
@@ -295,11 +449,8 @@ export function buildDayBoard(
       looseLocations,
       assignment,
       total,
-      workerIds: unionWorkers(
-        workersOf(assignment),
-        ...regionNodes.map((r) => r.workerIds),
-        ...looseLocations.map((l) => l.workerIds),
-      ),
+      workerIds: districtWorkerIds,
+      workerCount: workersIn(district.id, districtWorkerIds),
       // Mirror the entity's column default so a district whose level the API
       // omitted still resolves to exactly one editable tier (kawasan) rather
       // than none.
@@ -352,7 +503,19 @@ export const hasAnyBoardFilter = (f: BoardFilters): boolean =>
  * The city node is left to the caller's structural rules: it is kept only when a
  * subject filter matches it, since it belongs to no district/kawasan/lokasi.
  */
-export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): BoardDistrict[] {
+export function pruneDayBoard(
+  tree: BoardDistrict[],
+  filters: BoardFilters,
+  summary?: DaySummaryIndex,
+): BoardDistrict[] {
+  // Headcounts are DISTINCT people, so a pruned node's figure cannot be summed
+  // or re-derived from the ids the client happens to hold. With a summary it is
+  // already filter-correct — the summary is fetched with these same filters —
+  // so it is carried, not recomputed. Without one, the union is recomputed from
+  // what survived, like `total`.
+  const workersIn = (containerId: string, ids: string[]) =>
+    summary ? (summary.workers.get(containerId) ?? 0) : ids.length;
+
   if (!hasAnyBoardFilter(filters)) return tree;
 
   const dropEmpty = hasSubjectFilter(filters);
@@ -391,11 +554,16 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
           const subtreeTotal =
             sumTotal(region.assignment) + locations.reduce((a, l) => a + l.total, 0);
           if (!keepNode(subtreeTotal) && locations.length === 0) return null;
+          const keptWorkerIds = unionWorkers(
+            workersOf(region.assignment),
+            ...locations.map((l) => l.workerIds),
+          );
           return {
             ...region,
             locations,
             total: subtreeTotal,
-            workerIds: unionWorkers(workersOf(region.assignment), ...locations.map((l) => l.workerIds)),
+            workerIds: keptWorkerIds,
+            workerCount: workersIn(region.id, keptWorkerIds),
           };
         })
         .filter((r): r is BoardRegion => r !== null);
@@ -426,6 +594,12 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
       // Nothing left under this district at all → it isn't an answer to the query.
       if (regions.length === 0 && looseLocations.length === 0 && assignment.length === 0) return null;
 
+      const keptDistrictWorkerIds = unionWorkers(
+        workersOf(assignment),
+        ...regions.map((r) => r.workerIds),
+        ...looseLocations.map((l) => l.workerIds),
+      );
+
       return {
         ...district,
         regions,
@@ -437,11 +611,8 @@ export function pruneDayBoard(tree: BoardDistrict[], filters: BoardFilters): Boa
         // worker set through, so a district filtered down to one lokasi still
         // announced "40 petugas" beside three occurrences — and the city roll-up
         // in DayBoard unions these same arrays, so it inherited the error.
-        workerIds: unionWorkers(
-          workersOf(assignment),
-          ...regions.map((r) => r.workerIds),
-          ...looseLocations.map((l) => l.workerIds),
-        ),
+        workerIds: keptDistrictWorkerIds,
+        workerCount: workersIn(district.id, keptDistrictWorkerIds),
       };
     })
     .filter((r): r is BoardDistrict => r !== null);
