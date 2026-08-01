@@ -111,7 +111,30 @@ export class ScheduleMaterializerService {
           })) ?? []);
     const takenTriples = new Set(takenRows.map((r) => `${r.user_id}:${r.schedule_date}`));
 
-    // For each (member, date) tuple, create or skip a schedule row
+    // Every overlap answer for the whole fan-out, in ONE query.
+    //
+    // This used to be a `findConflict` call per (member, date) INSIDE the loop
+    // below, each a joined query over a 3-day window: a 10-member team across a
+    // 60-day horizon meant ~600 sequential round-trips before
+    // `POST /schedule-events` could return, which is most of why the success
+    // toast appeared long before the row did.
+    const conflictByPair =
+      memberIds.length === 0 || dates.length === 0
+        ? new Map<string, { shift_name: string }>()
+        : await this.overlapService.findConflicts(memberIds, dates, event.shift_definition, {
+            excludeEventId: event.id,
+          });
+
+    // Build every row first, then write them in chunks. Saving one at a time
+    // was a second round-trip per tuple on top of the conflict check.
+    const district_id =
+      event.scope === 'static'
+        ? event.location?.district_id
+        : event.scope === 'mobile'
+          ? event.region?.district_id
+          : event.district_id;
+
+    const pending: Array<{ row: Schedule; memberId: string; dateStr: string }> = [];
     for (const memberId of memberIds) {
       for (const dateStr of dates) {
         if (occupied.has(`${memberId}:${dateStr}`) || takenTriples.has(`${memberId}:${dateStr}`)) {
@@ -121,24 +144,7 @@ export class ScheduleMaterializerService {
           continue;
         }
 
-        // Check for overlap with other shifts. Unlike Phase 3, we now CREATE the
-        // row and warn, not skip (ADR-047 amended, overlap policy).
-        const conflict = await this.overlapService.findConflict(
-          memberId,
-          dateStr,
-          event.shift_definition,
-          { excludeEventId: event.id },
-        );
-
-        // Create the schedule row
-        const district_id =
-          event.scope === 'static'
-            ? event.location?.district_id
-            : event.scope === 'mobile'
-              ? event.region?.district_id
-              : event.district_id;
-
-        const schedule = this.scheduleRepo.create({
+        const row = this.scheduleRepo.create({
           user_id: memberId,
           schedule_date: dateStr,
           shift_definition_id: event.shift_definition_id,
@@ -154,35 +160,54 @@ export class ScheduleMaterializerService {
           district_id,
           created_by: event.created_by,
         });
+        pending.push({ row, memberId, dateStr });
+      }
+    }
 
-        try {
-          await this.scheduleRepo.save(schedule);
-        } catch (err) {
-          // (user, date, shift) unique — the worker already holds this EXACT
-          // shift that day via another event/manual row. The only thing still
-          // impossible: report as skipped, never crash the fan-out.
-          if ((err as { code?: string }).code === '23505') {
-            skipped.push({ user_id: memberId, date: dateStr, reason: 'duplicate' });
-            continue;
+    // Chunked, and per-chunk failures fall back to one-by-one so a single
+    // duplicate is still reported as `skipped` rather than losing its whole
+    // batch. Unlike Phase 3, an overlap CREATES the row and warns (ADR-047
+    // amended, overlap policy) — only the unique key can stop a row.
+    const CHUNK = 200;
+    for (let i = 0; i < pending.length; i += CHUNK) {
+      const batch = pending.slice(i, i + CHUNK);
+      try {
+        await this.scheduleRepo.save(
+          batch.map((p) => p.row),
+          { chunk: CHUNK },
+        );
+        created += batch.length;
+      } catch {
+        for (const p of batch) {
+          try {
+            await this.scheduleRepo.save(p.row);
+            created++;
+          } catch (err) {
+            // (user, date, shift, place) unique — the worker already holds this
+            // EXACT occurrence via another event/manual row. The only thing
+            // still impossible: report as skipped, never crash the fan-out.
+            if ((err as { code?: string }).code === '23505') {
+              skipped.push({ user_id: p.memberId, date: p.dateStr, reason: 'duplicate' });
+              continue;
+            }
+            throw err;
           }
-          throw err;
-        }
-
-        created++;
-
-        // Log conflict as warning if one was detected
-        if (conflict) {
-          this.logger.warn(
-            `Overlap detected: user ${memberId} on ${dateStr} has ${conflict.shift_name}; ` +
-              `created ${event.shift_definition.name} anyway`,
-          );
-          conflicts.push({
-            user_id: memberId,
-            date: dateStr,
-            conflicting_shift: conflict.shift_name,
-          });
         }
       }
+    }
+
+    for (const p of pending) {
+      const conflict = conflictByPair.get(`${p.memberId}:${p.dateStr}`);
+      if (!conflict) continue;
+      this.logger.warn(
+        `Overlap detected: user ${p.memberId} on ${p.dateStr} has ${conflict.shift_name}; ` +
+          `created ${event.shift_definition.name} anyway`,
+      );
+      conflicts.push({
+        user_id: p.memberId,
+        date: p.dateStr,
+        conflicting_shift: conflict.shift_name,
+      });
     }
 
     return { created, skipped, conflicts };

@@ -3,8 +3,15 @@
  * Operational daily roster management
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { apiClient } from './client';
+import { scheduleOccurrenceKeys } from './schedule-events';
+import { unscheduledKeys } from './unscheduled';
 
 import type { UserRole } from '@/types/models';
 
@@ -234,6 +241,24 @@ export function useMyRoster(date?: string) {
 }
 
 /**
+ * What a roster-row write invalidates.
+ *
+ * These hooks only ever invalidated `dailyScheduleKeys` — the `/schedules/date`
+ * cache — which the calendar does not read. The board's rows, its summary counts
+ * and the gap panel all live under other keys, so every one of them had to be
+ * refreshed by hand from the page afterwards. Awaited, so `mutateAsync` resolves
+ * with the board already correct and the success toast cannot beat the row onto
+ * the screen.
+ */
+async function invalidateRosterRowWrites(queryClient: QueryClient): Promise<void> {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() }),
+    queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.all }),
+    queryClient.invalidateQueries({ queryKey: unscheduledKeys.all }),
+  ]);
+}
+
+/**
  * Hook to generate daily schedules for a date
  */
 export function useGenerateRoster() {
@@ -241,10 +266,7 @@ export function useGenerateRoster() {
 
   return useMutation({
     mutationFn: generateRoster,
-    onSuccess: () => {
-      // Invalidate the daily roster cache
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -257,9 +279,7 @@ export function useSetLeave() {
   return useMutation({
     mutationFn: ({ id, leave_type, notes }: { id: string; leave_type: LeaveType; notes?: string }) =>
       setLeave(id, leave_type, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -272,9 +292,7 @@ export function useReplaceWorker() {
   return useMutation({
     mutationFn: ({ id, replacement_user_id, notes }: { id: string; replacement_user_id: string; notes?: string }) =>
       replaceWorker(id, replacement_user_id, notes),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -296,9 +314,7 @@ export function useUpdateRosterAreas() {
       district_id?: string | null;
       region_id?: string | null;
     }) => updateAreas(id, location_ids, district_id, region_id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -311,9 +327,7 @@ export function useUpdateRosterShift() {
   return useMutation({
     mutationFn: ({ id, shift_definition_id }: { id: string; shift_definition_id: string | null }) =>
       updateShift(id, shift_definition_id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -325,9 +339,7 @@ export function useAddSchedule() {
 
   return useMutation({
     mutationFn: addSchedule,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }
 
@@ -346,8 +358,6 @@ export function useDeleteSchedule() {
 
   return useMutation({
     mutationFn: deleteSchedule,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: dailyScheduleKeys.lists() });
-    },
+    onSuccess: () => invalidateRosterRowWrites(queryClient),
   });
 }

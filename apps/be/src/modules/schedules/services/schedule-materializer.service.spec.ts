@@ -69,6 +69,8 @@ describe('ScheduleMaterializerService', () => {
           provide: ScheduleOverlapService,
           useValue: {
             findConflict: jest.fn(),
+            // Batched now: one lookup for the whole (members x dates) fan-out.
+            findConflicts: jest.fn().mockResolvedValue(new Map()),
           },
         },
         {
@@ -107,7 +109,7 @@ describe('ScheduleMaterializerService', () => {
 
       // Batched query: find all existing rows of this event in the date range
       jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]); // No tombstones
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null); // No conflict
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValueOnce(new Map()); // No conflict
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({ id: 'sched-1' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({ id: 'sched-1' } as Schedule);
 
@@ -188,11 +190,16 @@ describe('ScheduleMaterializerService', () => {
       // No tombstone exists for this (user, date) pair
       jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
       // But overlapping shift exists
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce({
-        schedule_id: 'conflict-sched',
-        date: '2026-07-15',
-        shift_name: 'Shift 2',
-      });
+      jest
+        .spyOn(overlapService, 'findConflicts')
+        .mockResolvedValueOnce(
+          new Map([
+            [
+              'user-1:2026-07-15',
+              { schedule_id: 'conflict-sched', date: '2026-07-15', shift_name: 'Shift 2' },
+            ],
+          ]),
+        );
       // Mock create to return an object
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({
         user_id: 'user-1',
@@ -240,7 +247,7 @@ describe('ScheduleMaterializerService', () => {
 
       // No tombstones or conflicts for any member
       jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]); // Batched query returns empty
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValue(new Map());
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
 
@@ -274,7 +281,7 @@ describe('ScheduleMaterializerService', () => {
       };
 
       jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]);
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValue(new Map());
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
 
@@ -305,7 +312,7 @@ describe('ScheduleMaterializerService', () => {
       };
 
       jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValueOnce(new Map());
 
       const createdSchedule = {} as Schedule;
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce(createdSchedule);
@@ -338,7 +345,7 @@ describe('ScheduleMaterializerService', () => {
       };
 
       jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]);
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValueOnce(null);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValueOnce(new Map());
       jest.spyOn(scheduleRepo, 'create').mockReturnValueOnce({ id: 'sched-1' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValueOnce({ id: 'sched-1' } as Schedule);
 
@@ -397,7 +404,7 @@ describe('ScheduleMaterializerService', () => {
 
       // Then the re-materialize call
       jest.spyOn(scheduleRepo, 'find').mockResolvedValueOnce([]); // No new tombstones
-      jest.spyOn(overlapService, 'findConflict').mockResolvedValue(null);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValue(new Map());
       jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'new-sched' } as Schedule);
       jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'new-sched' } as Schedule);
 
@@ -418,6 +425,97 @@ describe('ScheduleMaterializerService', () => {
       expect(qbDelete.execute).toHaveBeenCalled();
       // Verify re-materialization happened
       expect(result.created).toBe(1);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Round-trip count.
+  //
+  // The fan-out used to run a joined overlap query AND an individual save per
+  // (member, date): a 10-member team over a 60-day horizon was ~1,200 sequential
+  // round-trips before POST /schedule-events could return, which is most of why
+  // the success toast appeared long before the row did.
+  //
+  // These assert the SHAPE of the DB access, not just the result — a correct
+  // result reached one row at a time is the bug.
+  // ---------------------------------------------------------------------------
+  describe('write shape (round-trips)', () => {
+    const teamEvent = (members: string[]) => ({
+      id: 'event-batch',
+      shift_definition_id: mockShiftDef.id,
+      shift_definition: mockShiftDef as any,
+      user_id: null,
+      is_team: true,
+      pic_user_id: members[0],
+      team_category_id: 'team-1',
+      scope: ScheduleScope.STATIC,
+      location_id: mockLocation.id,
+      location: mockLocation as any,
+      members: members.map((user_id) => ({ user_id })) as any,
+      recurrence_type: 'daily',
+      start_date: '2026-07-15',
+      end_date: '2026-07-24',
+    });
+
+    it('asks about overlaps once for the whole fan-out, not once per tuple', async () => {
+      const members = ['m1', 'm2', 'm3', 'm4', 'm5'];
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]);
+      const batched = jest.spyOn(overlapService, 'findConflicts').mockResolvedValue(new Map());
+      const single = jest.spyOn(overlapService, 'findConflict');
+      jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'x' } as Schedule);
+      jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'x' } as Schedule);
+
+      const result = await service.materializeEvent(
+        teamEvent(members) as unknown as ScheduleEvent,
+        '2026-07-15',
+        '2026-07-24',
+      );
+
+      // 5 members x 10 days = 50 occurrences…
+      expect(result.created).toBe(50);
+      // …one overlap query, and the per-tuple version never used.
+      expect(batched).toHaveBeenCalledTimes(1);
+      expect(single).not.toHaveBeenCalled();
+    });
+
+    it('writes the rows in batches rather than one save per occurrence', async () => {
+      const members = ['m1', 'm2', 'm3', 'm4', 'm5'];
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValue(new Map());
+      jest.spyOn(scheduleRepo, 'create').mockReturnValue({ id: 'x' } as Schedule);
+      const save = jest.spyOn(scheduleRepo, 'save').mockResolvedValue({ id: 'x' } as Schedule);
+
+      await service.materializeEvent(
+        teamEvent(members) as unknown as ScheduleEvent,
+        '2026-07-15',
+        '2026-07-24',
+      );
+
+      // 50 rows, one save call — not 50.
+      expect(save).toHaveBeenCalledTimes(1);
+      expect(Array.isArray(save.mock.calls[0][0])).toBe(true);
+      expect(save.mock.calls[0][0]).toHaveLength(50);
+    });
+
+    it('falls back to one-by-one so a single duplicate cannot lose its batch', async () => {
+      jest.spyOn(scheduleRepo, 'find').mockResolvedValue([]);
+      jest.spyOn(overlapService, 'findConflicts').mockResolvedValue(new Map());
+      jest.spyOn(scheduleRepo, 'create').mockImplementation((r: any) => r as Schedule);
+      const save = jest.spyOn(scheduleRepo, 'save');
+      // The batch write fails…
+      save.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }));
+      // …then each row is retried alone; the second one is the duplicate.
+      save.mockResolvedValueOnce({ id: 'ok' } as Schedule);
+      save.mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }));
+
+      const result = await service.materializeEvent(
+        teamEvent(['m1', 'm2']) as unknown as ScheduleEvent,
+        '2026-07-15',
+        '2026-07-15',
+      );
+
+      expect(result.created).toBe(1);
+      expect(result.skipped).toEqual([expect.objectContaining({ reason: 'duplicate' })]);
     });
   });
 });

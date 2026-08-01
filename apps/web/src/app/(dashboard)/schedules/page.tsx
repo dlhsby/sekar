@@ -409,11 +409,19 @@ export default function SchedulesPage() {
   const deleteRow = useDeleteSchedule();
   const deleteEvent = useDeleteScheduleEvent();
 
+  /**
+   * Manual refresh (the "Muat Ulang" button). The board is cached and nothing
+   * pushes, so a write by another operator — or the materializer cron — is
+   * otherwise invisible without a page reload.
+   *
+   * Writes made HERE no longer call this: every roster mutation now invalidates
+   * what it touched, and awaits it, so `mutateAsync` resolves with the board
+   * already correct. This used to run after each save on top of what the
+   * mutation hooks had already invalidated — two passes, sequential, and still
+   * missing the summary key.
+   */
   const refreshCalendar = async () => {
-    await queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.lists() });
-    // The gap panel is derived from the same rosters, so a schedule written
-    // anywhere must invalidate it too — otherwise returning to the list after a
-    // save shows the worker you just placed still sitting there.
+    await queryClient.invalidateQueries({ queryKey: scheduleOccurrenceKeys.all });
     await queryClient.invalidateQueries({ queryKey: unscheduledKeys.all });
   };
 
@@ -481,8 +489,9 @@ export default function SchedulesPage() {
       );
     }
     // One toast for the whole edit, not one per field that happened to change.
+    // The mutations have already refreshed the board by the time they resolve,
+    // so this is claimed only once it is true on screen.
     if (ok) toast.success(t('schedules:messages.editSuccess'));
-    refreshCalendar();
     return ok;
   };
 
@@ -527,7 +536,6 @@ export default function SchedulesPage() {
         });
       }
       toast.success(t('schedules:calendar.messages.deleteSuccess'));
-      refreshCalendar();
       setChosen(null);
     } catch (err) {
       toast.error(getErrorMessage(err));
@@ -809,7 +817,6 @@ export default function SchedulesPage() {
           // From the gap panel the geography/shift are the panel's FILTERS, not
           // a clicked board cell — a prefill to adjust, not a fact to obey.
           lockPrefill={!returnToUnscheduled}
-          onSuccess={refreshCalendar}
         />
       )}
 
@@ -824,7 +831,8 @@ export default function SchedulesPage() {
           editScope={eventEdit.scope}
           fromDate={eventEdit.fromDate}
           onSuccess={() => {
-            refreshCalendar();
+            // No refresh here: `useUpdateScheduleEvent` invalidates and awaits it,
+            // so the board is already current when this fires.
             setEventEdit(null);
             setChosen(null);
           }}

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { Schedule } from '../entities/schedule.entity';
 import { ShiftDefinition } from '../../shift-definitions/entities/shift-definition.entity';
 
@@ -93,6 +93,76 @@ export class ScheduleOverlapService {
     }
 
     return null;
+  }
+
+  /**
+   * The same question as `findConflict`, asked once for many (user, date) pairs.
+   *
+   * `findConflict` runs one joined query per call, and the materializer called
+   * it inside a `members x dates` loop — a 10-member team over a 60-day horizon
+   * meant ~600 sequential round-trips before `POST /schedule-events` could
+   * return, which is most of the reason the create toast appeared long before
+   * the row did. This asks once for the whole fan-out and answers from memory.
+   *
+   * Returns a map keyed `<userId>:<date>`; a pair with no conflict is absent.
+   * The overlap rules live in `findConflict`'s helpers and are shared verbatim —
+   * this changes only how many times the DB is asked.
+   */
+  async findConflicts(
+    userIds: string[],
+    dates: string[],
+    shift: ShiftDefinition,
+    opts?: { excludeEventId?: string; excludeScheduleId?: string },
+  ): Promise<Map<string, OverlapConflict>> {
+    const result = new Map<string, OverlapConflict>();
+    if (userIds.length === 0 || dates.length === 0) return result;
+
+    // One 3-day-padded window covering every date asked about, exactly as the
+    // single-pair version pads by ±1 for midnight-crossing shifts.
+    const sorted = [...dates].sort();
+    const from = this.addDaysToDateStr(sorted[0], -1);
+    const to = this.addDaysToDateStr(sorted[sorted.length - 1], 1);
+
+    const rows = await this.scheduleRepo.find({
+      where: { user_id: In(userIds), schedule_date: Between(from, to) },
+      relations: ['shift_definition'],
+    });
+
+    const byUser = new Map<string, Schedule[]>();
+    for (const row of rows) {
+      if (row.shift_definition_id == null) continue;
+      // Siblings are not conflicts (ADR-053) — see `findConflict`.
+      if (row.shift_definition_id === shift.id) continue;
+      if (opts?.excludeScheduleId && row.id === opts.excludeScheduleId) continue;
+      if (opts?.excludeEventId && row.schedule_event_id === opts.excludeEventId) continue;
+      const list = byUser.get(row.user_id);
+      if (list) list.push(row);
+      else byUser.set(row.user_id, [row]);
+    }
+
+    for (const userId of userIds) {
+      const candidates = byUser.get(userId);
+      if (!candidates?.length) continue;
+      for (const dateStr of dates) {
+        const { start, end } = this.shiftWindow(dateStr, shift);
+        for (const row of candidates) {
+          if (!row.shift_definition) continue;
+          const { start: existStart, end: existEnd } = this.shiftWindow(
+            row.schedule_date,
+            row.shift_definition,
+          );
+          if (this.windowsOverlap(start, end, existStart, existEnd)) {
+            result.set(`${userId}:${dateStr}`, {
+              schedule_id: row.id,
+              date: row.schedule_date,
+              shift_name: row.shift_definition.name,
+            });
+            break;
+          }
+        }
+      }
+    }
+    return result;
   }
 
   /**
