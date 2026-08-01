@@ -95,6 +95,10 @@ export class RegionsController {
    * `GET /regions` returns whole entities — 62 KB for 129 rows to read names.
    */
   @Get('lookup')
+  // Same gate as `GET /regions`, which this replaced on the schedules page.
+  // `PermissionsGuard` is a no-op without metadata, so omitting it silently
+  // widened kawasan enumeration to every authenticated role.
+  @RequirePermissions('region:read')
   @ApiOperation({
     summary: 'Minimal kawasan list for pickers, labels and the board tree',
     description:
