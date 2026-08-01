@@ -7,6 +7,7 @@ import {
   autoExpandedIds,
   indexDaySummary,
   containerTotal,
+  dedupeOccurrences,
   districtCountsFromSummary,
   weekCoverageFromSummary,
   COUNTABLE_ROLES,
@@ -748,5 +749,31 @@ describe('deactivated lokasi', () => {
   it('leaves an active lokasi unflagged', () => {
     const district = districtOf(buildDayBoard([], masterWithClosed));
     expect(district.looseLocations.find((l) => l.id === 'loc2')!.is_active).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dedupeOccurrences — the containers are NESTED, so one row is returned by
+// every scope above it. Concatenating the leaf fetches listed the same person
+// two or three times and React logged a duplicate key.
+// ---------------------------------------------------------------------------
+describe('dedupeOccurrences', () => {
+  it('keeps one copy of a row returned by a lokasi, its kawasan and its rayon', () => {
+    const row = occ({ id: 'projected:e1:w1:2026-08-01', user_id: 'w1', location_id: 'loc1' });
+    const merged = dedupeOccurrences([[row], [row], [row]]);
+
+    expect(merged).toHaveLength(1);
+    expect(merged[0].id).toBe('projected:e1:w1:2026-08-01');
+  });
+
+  it('keeps genuinely distinct rows, including a second place for the same worker', () => {
+    // ADR-053: one worker may hold several occurrences in a day.
+    const merged = dedupeOccurrences([
+      [occ({ id: 'a', user_id: 'w1', location_id: 'loc1' })],
+      [occ({ id: 'b', user_id: 'w1', location_id: 'loc2' })],
+      undefined,
+    ]);
+
+    expect(merged.map((o) => o.id)).toEqual(['a', 'b']);
   });
 });

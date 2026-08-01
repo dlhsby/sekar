@@ -50,6 +50,7 @@ import { ShiftDefinitionsModal } from '@/components/schedules/ShiftDefinitionsMo
 import {
   CITY_NODE_ID,
   containerTotal,
+  dedupeOccurrences,
   indexDaySummary,
   type BoardMasterData,
 } from '@/lib/schedules/dayBoard';
@@ -454,8 +455,9 @@ export default function SchedulesPage() {
       );
     }),
   });
+  // Nested containers return overlapping rows — see `dedupeOccurrences`.
   const containerOccurrences = useMemo(
-    () => containerQueries.flatMap((q) => q.data ?? []),
+    () => dedupeOccurrences(containerQueries.map((q) => q.data)),
     [containerQueries]
   );
   const loadingContainers = useMemo(

@@ -81,9 +81,7 @@ workbook set.
 >   `npm run schedules:sweep-absences -- --all --apply` remains **required**, and the 7-day
 >   default still covers only a fraction.
 >
-> **Not covered by this rehearsal:** the **rollback rehearsal** (§3.6) — restoring the
-> pre-migration dump into a second throwaway PG15 and booting the *old* image against it.
-> That is what proves the RDS-snapshot path, and it is still ⏳. As before, the clone's
+> **The rollback rehearsal (§3.6) followed it and also PASSED** — see there. As before, the clone's
 > `superadmin` (and one `korlap`) password was overwritten locally to obtain tokens — a
 > clone-only convenience, never done against staging.
 
@@ -206,7 +204,24 @@ Run against a **restored dump of real staging data** on a throwaway PG15 — nev
 5. **Verify** — full automated suites + `scripts/e2e-api-smoke.sh` + the per-role matrix in
    [`../testing/manual-uat.md`](../testing/manual-uat.md). ⏳
 6. **Rollback rehearsal** — restore the pre-migration dump into a second throwaway PG15 and confirm
-   the **old** image boots green against it. This is what proves the snapshot path works. ⏳
+   the **old** image boots green against it. This is what proves the snapshot path works. ✅
+   **PASSED 2026-08-01.** Not a rebuild of old source — the **actual deployed artifact**,
+   `sekar-backend:2e12e8d` (pushed 2026-07-13), pulled from ECR and run against a second
+   container (`sekar-rollback`, `:15545`) holding the untouched 253 MB dump (35 331 schedules,
+   pre-cutover shape). Result: **Nest application successfully started, zero ERROR lines**, the
+   boot roster pass behaved pre-revamp (`Generated 0 rows … skipped 1087`), login issued a
+   token, and the **legacy** surfaces answered 200 — `/rayons` (127 KB), `/areas`, `/users`,
+   `/monitoring/city`, `/activities` — including the two paths the migration renames out of
+   existence. So the snapshot path is real: restore, redeploy the previous tag, service returns.
+   - Two environment gotchas, neither a defect: the image reads **`REDIS_URL`** (not
+     `REDIS_HOST`/`REDIS_PORT`), and `--network host` is useless here because Docker Desktop
+     puts the container in the *VM's* namespace — publish the port instead.
+   - Restoring this dump logs exactly **one** ignored error, an `activity_tags` FK violation.
+     That is an artifact of `staging-clone.sh` excluding `activities` **data** while keeping
+     `activity_tags`; live staging holds both, so it is not a cutover hazard.
+   - Contrast worth keeping: on the old image `GET /schedules/date/2026-08-01` returns
+     **47 MB in 7.45 s** — the defect this release fixes, still measurable in the artifact
+     staging is running right now.
 
 ---
 

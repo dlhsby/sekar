@@ -1676,6 +1676,17 @@ export class SchedulesService {
             ? event.region?.district_id
             : event.district_id;
       if (districtId && eventDistrictForFilter !== districtId) continue;
+      // "Seluruh Surabaya" is bound to no geography, so it has no id to scope
+      // by and asks for the rows that carry none. The materialized query honours
+      // this (three IS NULL predicates); without the same gate here every
+      // geography-bound event still projected into the city container's fetch —
+      // 99 foreign rows out of 100 on the 2026-08-01 clone.
+      if (
+        f.cityScopeOnly &&
+        (event.location_id || event.region_id || event.district_id || eventRegionId)
+      ) {
+        continue;
+      }
 
       // Expand the event's recurrence into concrete dates
       const dates = ScheduleRecurrenceUtil.expandOccurrenceDates(event, from, to);
@@ -1830,7 +1841,14 @@ export class SchedulesService {
       .addSelect('ds.schedule_event_id', 'schedule_event_id')
       .addSelect('u.role', 'role')
       .where('ds.schedule_date = :date', { date })
-      .andWhere('ds.deleted_at IS NULL');
+      .andWhere('ds.deleted_at IS NULL')
+      // A row with NO shift is a day-off marker, not an assignment. The board
+      // cannot render one — `groupByShift` buckets by the known shift ids, so
+      // such a row was always dropped from the tree — and the pre-summary
+      // headcount was therefore the union of SHIFTED rows only. Counting them
+      // here made every card claim people who are off today (measured on the
+      // 2026-08-01 clone: 1 087 vs the 1 023 actually on shift).
+      .andWhere('ds.shift_definition_id IS NOT NULL');
     this.applyRangeFilters(qb, f);
     const materialized = await qb.getRawMany<SummaryTuple>();
 
@@ -1840,12 +1858,21 @@ export class SchedulesService {
     // PROJECTED rows need the same answer and their `location` has been slimmed
     // to id+name by then (`slimProjectedRelations`), which silently zeroed every
     // kawasan headcount on a projected day.
-    const regionOfLocation = new Map(
-      (await this.locationRepo.find({ select: ['id', 'region_id'] })).map((l) => [
-        l.id,
-        l.region_id ?? null,
-      ]),
-    );
+    // The RAYON needs the same treatment, and for the same reason: 276 of one
+    // day's rows on the clone carry a lokasi but no `district_id`. Reading the
+    // rayon off the row alone left those people out of its headcount while the
+    // board still listed them under that rayon's lokasi — the card contradicted
+    // its own children, and the figure disagreed with `getRangeSummary`, which
+    // has always resolved through the place (1 023 vs 1 026 on 2026-08-01).
+    const [locationRows, regionRows] = await Promise.all([
+      this.locationRepo.find({ select: ['id', 'region_id', 'district_id'] }),
+      this.rosterRepo.manager.query(
+        `SELECT id, district_id FROM regions WHERE deleted_at IS NULL`,
+      ) as Promise<Array<{ id: string; district_id: string | null }>>,
+    ]);
+    const regionOfLocation = new Map(locationRows.map((l) => [l.id, l.region_id ?? null]));
+    const districtOfLocation = new Map(locationRows.map((l) => [l.id, l.district_id ?? null]));
+    const districtOfRegion = new Map(regionRows.map((r) => [r.id, r.district_id ?? null]));
 
     // Beyond the materialization horizon a day has NO rows, only occurrences an
     // event will produce. Counting materialized rows alone reported 0 petugas
@@ -1905,7 +1932,15 @@ export class SchedulesService {
         });
 
       cityWorkers.add(t.user_id);
-      add(districtWorkers, t.district_id, t.user_id);
+      // Same resolution order as `getRangeSummary`, so a rayon's day figure and
+      // its week/month cell can never disagree.
+      add(
+        districtWorkers,
+        (t.location_id ? districtOfLocation.get(t.location_id) : undefined) ??
+          (t.region_id ? districtOfRegion.get(t.region_id) : undefined) ??
+          t.district_id,
+        t.user_id,
+      );
       add(locationWorkers, t.location_id, t.user_id);
       add(
         regionWorkers,
@@ -1965,7 +2000,10 @@ export class SchedulesService {
       .addSelect('u.role', 'role')
       .where('ds.schedule_date >= :from', { from })
       .andWhere('ds.schedule_date <= :to', { to })
-      .andWhere('ds.deleted_at IS NULL');
+      .andWhere('ds.deleted_at IS NULL')
+      // Day-off markers carry no shift and render nowhere — same rule as
+      // `getDaySummary`, or a week cell would disagree with the day it opens.
+      .andWhere('ds.shift_definition_id IS NOT NULL');
     this.applyRangeFilters(qb, f);
     const materialized = await qb.getRawMany<SummaryTuple>();
 
