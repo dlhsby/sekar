@@ -210,6 +210,42 @@ export function eventPlace(event: ScheduleEvent): {
  * All are ANDed; omitted fields don't filter. `locationId` matches static rows
  * whose location_id matches.
  */
+/**
+ * `date` columns come back from `getRawMany` as JS **Date objects**, not the
+ * `YYYY-MM-DD` strings the entity declares. Keying a Map on one directly uses
+ * object identity, so every row becomes its own bucket — an unfiltered month
+ * produced 48 954 "days" of one worker each instead of 35. Everything that
+ * groups by day must go through here.
+ */
+function toDayString(value: unknown): string {
+  if (value instanceof Date) return TimezoneUtil.jakartaDateOf(value);
+  return String(value ?? '').slice(0, 10);
+}
+
+/** One week-grid cell: a (day, rayon, shift) breakdown, deduped to PEOPLE. */
+export interface RangeSummaryCell {
+  date: string;
+  district_id: string;
+  shift_definition_id: string | null;
+  /** Distinct people in the cell. */
+  total: number;
+  /** …of those, how many are working as part of a team. */
+  teams: number;
+  /** …and the rest, by role. */
+  roleCounts: Record<string, number>;
+}
+
+export interface RangeSummary {
+  from: string;
+  to: string;
+  /** Distinct people per day — the month cell's headline figure. */
+  days: Array<{ date: string; workers: number }>;
+  /** Distinct people per (day, rayon) — the month cell's rayon list. */
+  dayDistricts: Array<{ date: string; district_id: string; workers: number }>;
+  /** The week grid's cells. */
+  cells: RangeSummaryCell[];
+}
+
 /** One occurrence reduced to the fields a tally needs. */
 interface SummaryTuple {
   user_id: string;
@@ -219,6 +255,9 @@ interface SummaryTuple {
   shift_definition_id: string | null;
   schedule_event_id: string | null;
   role: string;
+  /** Whether this occurrence is part of a team assignment. */
+  is_team?: boolean;
+  schedule_date?: string;
 }
 
 /**
@@ -1887,6 +1926,152 @@ export class SchedulesService {
         locations: toList(locationWorkers),
         city: cityWorkers.size,
       },
+    };
+  }
+
+  /**
+   * The week and month grids, as counts.
+   *
+   * Same problem as the day board (ADR-057), one dimension larger: both grids
+   * render **only headcounts** unless a subject filter is set — `MonthGrid`
+   * prints a distinct-petugas figure plus a per-rayon list, `WeekGrid` prints a
+   * rayon x day table of per-shift role breakdowns — and both were fed the whole
+   * range's occurrences to do it. An unfiltered month measured **57 MB in 27 s**
+   * on the staging clone, which at `--max-old-space-size=384` is an OOM rather
+   * than a slow page.
+   *
+   * Every figure here is **distinct people**, never rows: ADR-053 lets a worker
+   * hold several occurrences in a day at different places, and every one of
+   * these cells reads as "N petugas".
+   *
+   * A rayon is resolved the way the grids resolve it — the lokasi's rayon, else
+   * the kawasan's, else the row's own column — so the numbers match what the day
+   * board shows when you click into a cell.
+   */
+  async getRangeSummary(from: string, to: string, filters?: RangeFilters): Promise<RangeSummary> {
+    const f = filters ?? {};
+
+    const qb = this.rosterRepo
+      .createQueryBuilder('ds')
+      .innerJoin('ds.user', 'u', 'u.is_active = TRUE')
+      .select('ds.user_id', 'user_id')
+      .addSelect('ds.schedule_date', 'schedule_date')
+      .addSelect('ds.district_id', 'district_id')
+      .addSelect('ds.region_id', 'region_id')
+      .addSelect('ds.location_id', 'location_id')
+      .addSelect('ds.shift_definition_id', 'shift_definition_id')
+      .addSelect('ds.schedule_event_id', 'schedule_event_id')
+      .addSelect('ds.team_category_id IS NOT NULL', 'is_team')
+      .addSelect('u.role', 'role')
+      .where('ds.schedule_date >= :from', { from })
+      .andWhere('ds.schedule_date <= :to', { to })
+      .andWhere('ds.deleted_at IS NULL');
+    this.applyRangeFilters(qb, f);
+    const materialized = await qb.getRawMany<SummaryTuple>();
+
+    // Beyond the materialization horizon a range holds no rows, only the
+    // occurrences events will produce — the same trap `getDaySummary` fell into.
+    const materializedKey = new Set(
+      materialized
+        .filter((r) => r.schedule_event_id)
+        .map((r) => `${r.schedule_event_id}:${r.user_id}:${toDayString(r.schedule_date)}`),
+    );
+    const projected = await this.projectOccurrences(from, to, f, materializedKey);
+
+    const tuples: SummaryTuple[] = [
+      ...materialized,
+      ...projected.map((row) => ({
+        user_id: row.user_id,
+        schedule_date: row.schedule_date,
+        district_id: row.district_id ?? null,
+        region_id: row.region_id ?? null,
+        location_id: row.location_id ?? null,
+        shift_definition_id: row.shift_definition_id ?? null,
+        schedule_event_id: row.schedule_event_id ?? null,
+        is_team: row.team_category_id != null,
+        role: (row.user?.role ?? '') as string,
+      })),
+    ];
+
+    // A lokasi/kawasan knows its rayon; the row does not always carry one.
+    const [locations, regions] = await Promise.all([
+      this.locationRepo.find({ select: ['id', 'district_id', 'region_id'] }),
+      // No `regions` repository is injected here, and adding one for two columns
+      // is more coupling than the lookup is worth.
+      this.rosterRepo.manager.query(
+        `SELECT id, district_id FROM regions WHERE deleted_at IS NULL`,
+      ) as Promise<Array<{ id: string; district_id: string | null }>>,
+    ]);
+    const districtOfLocation = new Map(locations.map((l) => [l.id, l.district_id ?? null]));
+    const districtOfRegion = new Map(regions.map((r) => [r.id, r.district_id ?? null]));
+
+    const dayWorkers = new Map<string, Set<string>>();
+    const dayDistrictWorkers = new Map<string, Set<string>>();
+    /** `<date>|<district>|<shift>` → the people in that cell and how each is attributed. */
+    const cellUsers = new Map<string, Map<string, { role: string; isTeam: boolean }>>();
+
+    for (const t of tuples) {
+      const date = toDayString(t.schedule_date);
+      if (!date) continue;
+
+      const bump = (map: Map<string, Set<string>>, key: string) => {
+        const set = map.get(key);
+        if (set) set.add(t.user_id);
+        else map.set(key, new Set([t.user_id]));
+      };
+      bump(dayWorkers, date);
+
+      const districtId =
+        (t.location_id ? districtOfLocation.get(t.location_id) : undefined) ??
+        (t.region_id ? districtOfRegion.get(t.region_id) : undefined) ??
+        t.district_id;
+      // A city-scope row belongs to no rayon, so it appears in the day total but
+      // in none of the rayon rows — exactly as the grids treat it today.
+      if (!districtId) continue;
+      bump(dayDistrictWorkers, `${date}|${districtId}`);
+
+      const cellKey = `${date}|${districtId}|${t.shift_definition_id ?? 'none'}`;
+      const users = cellUsers.get(cellKey) ?? new Map();
+      const seen = users.get(t.user_id);
+      // One person counts ONCE per cell. Where a worker mixes a team assignment
+      // with an individual one in the same shift, the team wins — deterministic,
+      // unlike "whichever row the database returned first".
+      if (seen) {
+        if (t.is_team) seen.isTeam = true;
+      } else {
+        users.set(t.user_id, { role: t.role, isTeam: !!t.is_team });
+      }
+      cellUsers.set(cellKey, users);
+    }
+
+    const cells: RangeSummaryCell[] = [];
+    for (const [key, users] of cellUsers) {
+      const [date, district_id, shift] = key.split('|');
+      const roleCounts: Record<string, number> = {};
+      let teams = 0;
+      for (const { role, isTeam } of users.values()) {
+        if (isTeam) teams += 1;
+        else roleCounts[role] = (roleCounts[role] ?? 0) + 1;
+      }
+      cells.push({
+        date,
+        district_id,
+        shift_definition_id: shift === 'none' ? null : shift,
+        total: users.size,
+        teams,
+        roleCounts,
+      });
+    }
+
+    return {
+      from,
+      to,
+      days: [...dayWorkers.entries()].map(([date, set]) => ({ date, workers: set.size })),
+      dayDistricts: [...dayDistrictWorkers.entries()].map(([key, set]) => {
+        const [date, district_id] = key.split('|');
+        return { date, district_id, workers: set.size };
+      }),
+      cells,
     };
   }
 

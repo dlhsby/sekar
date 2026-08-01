@@ -90,12 +90,43 @@ Cross-checked against `/schedules/range` on four days — two materialized, two
 fully projected — for occurrence totals, city headcount and per-district /
 kawasan / lokasi distinct counts: **exact agreement, zero mismatches.**
 
-## Not covered
+## Extended to week and month (2026-08-01)
 
-Week and month still fetch rows, and an unfiltered month is still 57 MB / 27 s.
-They render only headcounts unless a subject filter is set, so the same
-treatment applies — but they need a per-`(date, district)` aggregate this
-endpoint does not answer. Tracked as a follow-up.
+Both grids render **only headcounts** unless narrowed to a worker or a lokasi —
+`MonthGrid` prints a distinct-petugas figure plus a per-rayon list, `WeekGrid` a
+rayon × day table of per-shift role breakdowns — and both were fed the whole
+range's rows to derive them. `GET /schedules/range-summary` answers the same
+question in three arrays: `days`, `dayDistricts`, and per-`(day, rayon, shift)`
+`cells`. `districtCountsFromSummary` / `weekCoverageFromSummary` turn those into
+the exact shapes the grids already render, so the components were barely touched.
+
+| | Before | After |
+|---|---|---|
+| Week (browser) | 16 MB | **40 KB** |
+| Month (browser) | 57 MB · 27 s | **226 KB** |
+
+Three things this had to get right:
+
+- **`getRawMany` returns `date` columns as JS `Date` objects**, not the
+  `YYYY-MM-DD` the entity declares. Keying a Map on one uses object identity, so
+  every row became its own bucket — an unfiltered month reported **48 954 "days"
+  of one worker each** instead of 35. Everything that groups by day goes through
+  `toDayString`.
+- **A person counts once per cell**, and where they mix a team assignment with an
+  individual one in the same shift the **team wins**. The row-based code took
+  whichever row the database happened to return first; this is the same answer
+  without the ordering dependency.
+- **The chip/count switch is one definition.** The grids draw occurrence chips
+  when filtered to a worker or a lokasi, and that same flag decides whether the
+  rows are fetched — otherwise a chip view could be handed nothing to draw.
+
+**Deliberate difference:** a row at a **deactivated** lokasi is now counted in
+its rayon. The grids resolved a rayon through their master list, which holds only
+active lokasi, so such a row was silently dropped from the rayon breakdown while
+still counting in the day total — the cell contradicted its own header. The
+worker is on duty, and the day board's rayon pill already counted them, so the
+grids now agree with it. On the staging clone this is one lokasi ("Taman Korea")
+and shifts a handful of cells by one.
 
 ## Alternatives rejected
 

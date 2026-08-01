@@ -6,6 +6,8 @@ import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
 import {
   buildWeekCoverage,
+  weekCoverageFromSummary,
+  type RangeSummaryPayload,
   COUNTABLE_ROLES,
   type BoardMasterData,
   type WeekShiftBreakdown,
@@ -21,6 +23,8 @@ interface WeekGridProps {
   onOccurrenceClick?: (occurrence: ScheduleOccurrence) => void;
   /** Single subject filtered → chip strip; otherwise the coverage grid. */
   subjectFiltered?: boolean;
+  /** Aggregate counts, used when the grid holds no occurrences (the default). */
+  summary?: RangeSummaryPayload;
 }
 
 export function WeekGrid({
@@ -30,6 +34,7 @@ export function WeekGrid({
   onDayClick,
   onOccurrenceClick,
   subjectFiltered = false,
+  summary,
 }: WeekGridProps) {
   const { t } = useTranslation();
 
@@ -51,9 +56,14 @@ export function WeekGrid({
   ];
 
   // Show every district (even with no schedule) so gaps are visible.
+  // From the aggregate unless a subject filter has narrowed the range enough to
+  // fetch its rows; both produce the same shape.
   const coverage = useMemo(
-    () => buildWeekCoverage(occurrences, master, dateStrs),
-    [occurrences, master, dateStrs]
+    () =>
+      summary
+        ? weekCoverageFromSummary(summary, master, dateStrs)
+        : buildWeekCoverage(occurrences, master, dateStrs),
+    [summary, occurrences, master, dateStrs]
   );
 
   // Chip strip (subject filtered): occurrences grouped by day.

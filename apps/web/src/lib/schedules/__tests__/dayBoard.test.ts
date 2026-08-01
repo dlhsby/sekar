@@ -7,6 +7,8 @@ import {
   autoExpandedIds,
   indexDaySummary,
   containerTotal,
+  districtCountsFromSummary,
+  weekCoverageFromSummary,
   COUNTABLE_ROLES,
   CITY_NODE_ID,
   type BoardMasterData,
@@ -635,5 +637,83 @@ describe('buildDayBoard with a day summary', () => {
     // happens to hold would under-report.
     const tree = pruneDayBoard(buildDayBoard([], master, index), { locationId: 'loc1' }, index);
     expect(districtOf(tree).workerCount).toBe(11);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Week/month from the aggregate.
+//
+// Both grids render only headcounts unless narrowed to a worker or a lokasi, and
+// used to be handed every row in the range to derive them — an unfiltered month
+// was 57 MB. These assert the aggregate path produces what the row path did, so
+// the switch cannot quietly change a number on screen.
+// ---------------------------------------------------------------------------
+describe('week/month from a range summary', () => {
+  const dates = ['2026-07-13', '2026-07-14'];
+
+  it('districtCountsFromSummary matches districtCountsFor, ordering included', () => {
+    const rows = [
+      occ({ user_id: 'a', location_id: 'loc1', schedule_date: dates[0] }),
+      occ({ user_id: 'b', location_id: 'loc1', schedule_date: dates[0] }),
+      // Same worker at a second lokasi — one PERSON, counted once (ADR-053).
+      occ({ user_id: 'a', location_id: 'loc2', schedule_date: dates[0] }),
+    ];
+    const fromRows = districtCountsFor(rows, master);
+
+    const summary = {
+      from: dates[0],
+      to: dates[1],
+      days: [{ date: dates[0], workers: 2 }],
+      dayDistricts: [{ date: dates[0], district_id: 'ry1', workers: 2 }],
+      cells: [],
+    };
+    expect(districtCountsFromSummary(summary, dates[0], master)).toEqual(fromRows);
+  });
+
+  it('weekCoverageFromSummary matches buildWeekCoverage', () => {
+    const rows = [
+      occ({ user_id: 'a', location_id: 'loc1', shift_definition_id: 's1', schedule_date: dates[0] }),
+      occ({ user_id: 'b', location_id: 'loc1', shift_definition_id: 's1', schedule_date: dates[0] }),
+      occ({ user_id: 'c', location_id: 'loc1', shift_definition_id: 's2', schedule_date: dates[1] }),
+    ];
+    const fromRows = buildWeekCoverage(rows, master, dates);
+
+    // What the endpoint would report for the same rows.
+    const summary = {
+      from: dates[0],
+      to: dates[1],
+      days: [],
+      dayDistricts: [],
+      cells: [
+        {
+          date: dates[0],
+          district_id: 'ry1',
+          shift_definition_id: 's1',
+          total: 2,
+          teams: 0,
+          roleCounts: { satgas: 2 },
+        },
+        {
+          date: dates[1],
+          district_id: 'ry1',
+          shift_definition_id: 's2',
+          total: 1,
+          teams: 0,
+          roleCounts: { satgas: 1 },
+        },
+      ],
+    };
+    expect(weekCoverageFromSummary(summary, master, dates)).toEqual(fromRows);
+  });
+
+  it('keeps a district with no assignments in the table, as an empty row', () => {
+    const empty = weekCoverageFromSummary(
+      { from: dates[0], to: dates[1], days: [], dayDistricts: [], cells: [] },
+      master,
+      dates,
+    );
+    expect(empty).toHaveLength(master.districts.length);
+    expect(empty[0].total).toBe(0);
+    expect(empty[0].cells).toEqual([[], []]);
   });
 });

@@ -26,6 +26,7 @@ import {
   SCHEDULABLE_WORKER_ROLES,
   type RangeFilters,
   type DaySummary,
+  type RangeSummary,
 } from './schedules.service';
 import { RosterPresenceService } from './services/roster-presence.service';
 import { Schedule } from './entities/schedule.entity';
@@ -366,6 +367,74 @@ export class SchedulesController {
           });
     }
     return this.service.getDaySummary(date, { ...filters, districtId });
+  }
+
+  /**
+   * The week and month grids, as counts.
+   *
+   * Same scoping and filter set as `/schedules/range`, so a cell's headcount
+   * agrees with the day it opens into.
+   */
+  @Get('range-summary')
+  @Roles(...RANGE_VIEWERS)
+  @ApiOperation({
+    summary:
+      'Aggregate headcounts for a date range: distinct people per day, per (day, rayon), and a ' +
+      'per-(day, rayon, shift) role breakdown. What the week and month grids render when no ' +
+      'subject filter is set — they show only counts, and used to fetch every row to derive them.',
+  })
+  @ApiQuery({ name: 'from', example: '2026-08-01' })
+  @ApiQuery({ name: 'to', example: '2026-08-31' })
+  @ApiQuery({ name: 'districtId', required: false })
+  @ApiQuery({ name: 'regionId', required: false })
+  @ApiQuery({ name: 'locationId', required: false })
+  @ApiQuery({ name: 'userId', required: false })
+  @ApiQuery({ name: 'shiftDefinitionId', required: false })
+  @ApiQuery({ name: 'teamCategoryId', required: false })
+  @ApiResponse({ status: 200, description: '{ from, to, days[], dayDistricts[], cells[] }' })
+  getRangeSummary(
+    @Query('from') from: string,
+    @Query('to') to: string,
+    @GetUser() user: User,
+    @Query('districtId') districtId?: string,
+    @Query('regionId') regionId?: string,
+    @Query('locationId') locationId?: string,
+    @Query('userId') userId?: string,
+    @Query('shiftDefinitionId') shiftDefinitionId?: string,
+    @Query('teamCategoryId') teamCategoryId?: string,
+  ): Promise<RangeSummary> {
+    if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      throw new BadRequestException('from and to must be in YYYY-MM-DD format');
+    }
+    if (from > to) throw new BadRequestException('from date must be <= to date');
+    const days =
+      Math.floor(
+        (new Date(to + 'T00:00:00Z').getTime() - new Date(from + 'T00:00:00Z').getTime()) /
+          86_400_000,
+      ) + 1;
+    // Same 62-day span cap as `/schedules/range`; this is cheap per day but the
+    // projection expansion still scales with the window.
+    if (days > 62) {
+      throw new BadRequestException(`Date range exceeds 62 days (${days} requested).`);
+    }
+
+    const filters: RangeFilters = {
+      regionId,
+      locationId,
+      userId,
+      shiftDefinitionId,
+      teamCategoryId,
+    };
+
+    if (!ROSTER_VIEWERS.includes(user.role)) {
+      return this.service.getRangeSummary(from, to, { userId: user.id });
+    }
+    if (this.isDistrictScoped(user)) {
+      return user.district_id
+        ? this.service.getRangeSummary(from, to, { ...filters, districtId: user.district_id })
+        : Promise.resolve({ from, to, days: [], dayDistricts: [], cells: [] });
+    }
+    return this.service.getRangeSummary(from, to, { ...filters, districtId });
   }
 
   @Get('year-summary')

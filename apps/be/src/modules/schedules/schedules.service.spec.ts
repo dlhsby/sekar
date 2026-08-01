@@ -49,6 +49,9 @@ function makeRosterRepo() {
     update: jest.fn().mockResolvedValue(undefined),
     softDelete: jest.fn(),
     createQueryBuilder: jest.fn(() => qb),
+    // The regions lookup in `getRangeSummary` goes through the entity manager
+    // rather than a repository, so the mock needs one.
+    manager: { query: jest.fn().mockResolvedValue([]) },
     qb,
   };
 }
@@ -1960,6 +1963,108 @@ describe('SchedulesService', () => {
 
       const summary = await svc.getDaySummary('2026-07-08');
       expect(summary.workers.regions).toEqual([{ id: 'kw1', workers: 1 }]);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // getRangeSummary — the week and month grids, as counts.
+  //
+  // Same trap as the day summary, one dimension larger. Plus one of its own:
+  // `getRawMany` hands back `date` columns as JS **Date objects**, and keying a
+  // Map on one uses object identity — an unfiltered month produced 48,954
+  // "days" of one worker each instead of 35.
+  // ---------------------------------------------------------------------------
+  describe('SchedulesService.getRangeSummary', () => {
+    type Svc = {
+      getRangeSummary: (
+        f: string,
+        t: string,
+      ) => Promise<{
+        days: Array<{ date: string; workers: number }>;
+        dayDistricts: Array<{ date: string; district_id: string; workers: number }>;
+        cells: Array<{
+          date: string;
+          district_id: string;
+          shift_definition_id: string | null;
+          total: number;
+          teams: number;
+          roleCounts: Record<string, number>;
+        }>;
+      }>;
+      projectOccurrences: jest.Mock;
+    };
+
+    const tuple = (o: Record<string, unknown>) => ({
+      user_id: 'w1',
+      schedule_date: '2026-07-13',
+      district_id: 'ry1',
+      region_id: null,
+      location_id: 'loc1',
+      shift_definition_id: 's1',
+      schedule_event_id: null,
+      is_team: false,
+      role: 'satgas',
+      ...o,
+    });
+
+    beforeEach(() => {
+      areaEntityRepo.find.mockResolvedValue([{ id: 'loc1', district_id: 'ry1', region_id: 'kw1' }]);
+      rosterRepo.manager.query.mockResolvedValue([{ id: 'kw1', district_id: 'ry1' }]);
+      (service as unknown as Svc).projectOccurrences = jest.fn().mockResolvedValue([]);
+    });
+
+    it('groups by CALENDAR DAY even when the driver returns Date objects', async () => {
+      // Two rows on the same day, handed back as distinct Date instances.
+      rosterRepo.qb.getRawMany.mockResolvedValue([
+        tuple({ user_id: 'w1', schedule_date: new Date('2026-07-13T00:00:00Z') }),
+        tuple({ user_id: 'w2', schedule_date: new Date('2026-07-13T00:00:00Z') }),
+      ]);
+
+      const summary = await (service as unknown as Svc).getRangeSummary('2026-07-13', '2026-07-13');
+
+      // ONE day, two people — not two days of one.
+      expect(summary.days).toEqual([{ date: '2026-07-13', workers: 2 }]);
+    });
+
+    it('counts a person once per cell, and lets a team assignment win', async () => {
+      rosterRepo.qb.getRawMany.mockResolvedValue([
+        // Same worker, same cell, twice — two places in one shift (ADR-053).
+        tuple({ user_id: 'w1', location_id: 'loc1' }),
+        tuple({ user_id: 'w1', location_id: 'loc1', is_team: true }),
+        tuple({ user_id: 'w2' }),
+      ]);
+
+      const summary = await (service as unknown as Svc).getRangeSummary('2026-07-13', '2026-07-13');
+
+      const cell = summary.cells[0];
+      expect(cell.total).toBe(2);
+      // w1 is on a team, so it is not also counted under its role.
+      expect(cell.teams).toBe(1);
+      expect(cell.roleCounts).toEqual({ satgas: 1 });
+      expect(summary.dayDistricts).toEqual([
+        { date: '2026-07-13', district_id: 'ry1', workers: 2 },
+      ]);
+    });
+
+    it('includes projected occurrences, so a far-future week is not empty', async () => {
+      rosterRepo.qb.getRawMany.mockResolvedValue([]);
+      (service as unknown as Svc).projectOccurrences = jest.fn().mockResolvedValue([
+        {
+          user_id: 'p1',
+          schedule_date: '2026-11-20',
+          district_id: 'ry1',
+          region_id: null,
+          location_id: 'loc1',
+          shift_definition_id: 's1',
+          schedule_event_id: 'e1',
+          team_category_id: null,
+          user: { role: 'satgas' },
+        },
+      ]);
+
+      const summary = await (service as unknown as Svc).getRangeSummary('2026-11-20', '2026-11-20');
+      expect(summary.days).toEqual([{ date: '2026-11-20', workers: 1 }]);
+      expect(summary.cells[0].total).toBe(1);
     });
   });
 });

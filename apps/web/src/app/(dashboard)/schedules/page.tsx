@@ -66,6 +66,7 @@ import {
   useScheduleEvent,
   useScheduleRange,
   useDaySummary,
+  useRangeSummary,
   containerOccurrencesQuery,
   type ContainerTier,
   useScheduleYearSummary,
@@ -176,25 +177,42 @@ export default function SchedulesPage() {
   // need a per-(date, district) aggregate this endpoint doesn't answer — see
   // the follow-up noted in the changelog.
   const dayView = calendarView === 'day';
+  // Week and month draw occurrence CHIPS only when narrowed to a worker or a
+  // lokasi; otherwise they render headcounts, which the aggregate answers. This
+  // is the single definition — the grids receive it as `subjectFiltered`, and it
+  // decides whether the rows are fetched at all, so the two cannot disagree and
+  // leave a chip view with nothing to draw.
+  const subjectFiltered = !!(filters.userId || filters.locationId);
+  const rangeNeedsRows = !dayView && subjectFiltered;
   const {
     data: occurrences = [],
     isLoading,
     isFetching,
-  } = useScheduleRange(from, to, filters, fetchOccurrences && !dayView);
+  } = useScheduleRange(from, to, filters, fetchOccurrences && rangeNeedsRows);
 
   const {
     data: daySummaryPayload,
     isLoading: summaryLoading,
     isFetching: summaryFetching,
   } = useDaySummary(from, filters, dayView);
+  const {
+    data: rangeSummary,
+    isLoading: rangeSummaryLoading,
+    isFetching: rangeSummaryFetching,
+  } = useRangeSummary(from, to, filters, fetchOccurrences && !dayView && !subjectFiltered);
+
   const daySummary = useMemo(
     () => (daySummaryPayload ? indexDaySummary(daySummaryPayload) : undefined),
     [daySummaryPayload]
   );
   // The "memperbarui jadwal…" line and the spinning refresh icon must follow
   // whichever query the CURRENT view is actually driven by.
-  const viewFetching = dayView ? summaryFetching : isFetching;
-  const viewLoading = dayView ? summaryLoading : isLoading;
+  const viewFetching = dayView
+    ? summaryFetching
+    : rangeNeedsRows
+      ? isFetching
+      : rangeSummaryFetching;
+  const viewLoading = dayView ? summaryLoading : rangeNeedsRows ? isLoading : rangeSummaryLoading;
 
   // Rows for the containers the operator has opened, merged into one list for
   // the board. Each container is its own cached query, so re-opening a card is
@@ -718,6 +736,7 @@ export default function SchedulesPage() {
       ) : calendarView === 'month' ? (
         <MonthGrid
           occurrences={occurrences}
+          summary={subjectFiltered ? undefined : rangeSummary}
           currentMonth={anchor}
           master={boardMaster}
           onDayClick={(d) => {
@@ -725,11 +744,12 @@ export default function SchedulesPage() {
             setCalendarView('day');
           }}
           onOccurrenceClick={onOccurrenceClick}
-          subjectFiltered={!!(filters.userId || filters.locationId)}
+          subjectFiltered={subjectFiltered}
         />
       ) : calendarView === 'week' ? (
         <WeekGrid
           occurrences={occurrences}
+          summary={subjectFiltered ? undefined : rangeSummary}
           currentDate={anchor}
           master={boardMaster}
           onDayClick={(d) => {
@@ -737,7 +757,7 @@ export default function SchedulesPage() {
             setCalendarView('day');
           }}
           onOccurrenceClick={onOccurrenceClick}
-          subjectFiltered={!!(filters.userId || filters.locationId)}
+          subjectFiltered={subjectFiltered}
         />
       ) : (
         <DayBoard

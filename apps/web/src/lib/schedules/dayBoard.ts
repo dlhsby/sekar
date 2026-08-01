@@ -858,3 +858,95 @@ export function buildWeekCoverage(
     };
   });
 }
+
+/** The wire shape of `GET /schedules/range-summary`. */
+export interface RangeSummaryPayload {
+  from: string;
+  to: string;
+  days: Array<{ date: string; workers: number }>;
+  dayDistricts: Array<{ date: string; district_id: string; workers: number }>;
+  cells: Array<{
+    date: string;
+    district_id: string;
+    shift_definition_id: string | null;
+    total: number;
+    teams: number;
+    roleCounts: Record<string, number>;
+  }>;
+}
+
+/**
+ * The month cell's rayon list, from the aggregate instead of the day's rows.
+ *
+ * Same output as `districtCountsFor`, same ordering — the grid renders one or
+ * the other depending on whether it holds occurrences at all.
+ */
+export function districtCountsFromSummary(
+  summary: RangeSummaryPayload,
+  date: string,
+  master: BoardMasterData,
+): DistrictCount[] {
+  const name = new Map(master.districts.map((d) => [d.id, d.name]));
+  return summary.dayDistricts
+    .filter((d) => d.date === date && d.workers > 0)
+    .map((d) => ({
+      districtId: d.district_id,
+      districtName: name.get(d.district_id) ?? d.district_id,
+      count: d.workers,
+    }))
+    .sort((a, b) => b.count - a.count || a.districtName.localeCompare(b.districtName));
+}
+
+/**
+ * The week grid, from the aggregate instead of the range's rows.
+ *
+ * Mirrors `buildWeekCoverage`'s output exactly, including its ordering and its
+ * "one person counts once per cell" rule — the dedup just happens server-side
+ * now, because the client no longer holds the rows to do it with.
+ */
+export function weekCoverageFromSummary(
+  summary: RangeSummaryPayload,
+  master: BoardMasterData,
+  dateStrs: string[],
+): WeekCoverageRow[] {
+  const shiftName = new Map(master.shifts.map((s) => [s.id, s.name]));
+  const dayIndex = new Map(dateStrs.map((d, i) => [d, i]));
+
+  const acc = new Map<string, Map<string, WeekShiftBreakdown>[]>(
+    master.districts.map((r) => [r.id, dateStrs.map(() => new Map<string, WeekShiftBreakdown>())]),
+  );
+
+  for (const cell of summary.cells) {
+    const di = dayIndex.get(cell.date);
+    if (di == null) continue;
+    const dayShifts = acc.get(cell.district_id)?.[di];
+    if (!dayShifts) continue;
+    const shiftId = cell.shift_definition_id ?? 'none';
+    const fullName = shiftName.get(shiftId) ?? shiftId;
+    dayShifts.set(shiftId, {
+      shiftId,
+      name: fullName,
+      label: shortShiftLabel(fullName),
+      roleCounts: cell.roleCounts,
+      teams: cell.teams,
+      total: cell.total,
+    });
+  }
+
+  return master.districts.map((r) => {
+    const perDay = acc.get(r.id) ?? dateStrs.map(() => new Map<string, WeekShiftBreakdown>());
+    const cells = perDay.map((m) =>
+      Array.from(m.values()).sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { numeric: true }),
+      ),
+    );
+    const counts = cells.map((day) => day.reduce((sum, s) => sum + s.total, 0));
+    return {
+      districtId: r.id,
+      districtName: r.name,
+      counts,
+      cells,
+      total: counts.reduce((a, b) => a + b, 0),
+    };
+  });
+}

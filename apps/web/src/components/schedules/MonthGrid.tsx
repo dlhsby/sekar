@@ -3,7 +3,12 @@
 import { useTranslation } from 'react-i18next';
 import { OccurrenceChip } from './OccurrenceChip';
 import type { ScheduleOccurrence } from '@/lib/api/schedule-events';
-import { districtCountsFor, type BoardMasterData } from '@/lib/schedules/dayBoard';
+import {
+  districtCountsFromSummary,
+  districtCountsFor,
+  type BoardMasterData,
+  type RangeSummaryPayload,
+} from '@/lib/schedules/dayBoard';
 import {
   formatISO,
   startOfMonth,
@@ -24,6 +29,8 @@ interface MonthGridProps {
   /** When a single subject (worker/location) is filtered, show chips (a personal
    * calendar); otherwise show a per-district coverage summary. */
   subjectFiltered?: boolean;
+  /** Aggregate counts, used when the grid holds no occurrences (the default). */
+  summary?: RangeSummaryPayload;
 }
 
 /** How many district rows fit in a day cell before collapsing to "+N". */
@@ -36,6 +43,7 @@ export function MonthGrid({
   onDayClick,
   onOccurrenceClick,
   subjectFiltered = false,
+  summary,
 }: MonthGridProps) {
   const { t } = useTranslation();
 
@@ -93,7 +101,16 @@ export function MonthGrid({
             {days.map((day) => {
               const dateStr = formatISO(day, { representation: 'date' });
               const dayOccurrences = occurrencesByDate.get(dateStr) || [];
-              const districtCounts = subjectFiltered ? [] : districtCountsFor(dayOccurrences, master);
+              // Counts come from the aggregate unless a subject filter has
+              // narrowed the range enough to fetch its rows.
+              const districtCounts = subjectFiltered
+                ? []
+                : summary
+                  ? districtCountsFromSummary(summary, dateStr, master)
+                  : districtCountsFor(dayOccurrences, master);
+              const dayWorkers = summary
+                ? (summary.days.find((d) => d.date === dateStr)?.workers ?? 0)
+                : new Set(dayOccurrences.map((o) => o.user_id)).size;
               const isDayInMonth = isSameMonth(day, currentMonth);
               // Roster days are WIB days — highlight WIB "today", not the
               // browser's local today (they differ outside UTC+7).
@@ -134,12 +151,12 @@ export function MonthGrid({
                       )}
                     </div>
                   ) : (
-                    dayOccurrences.length > 0 && (
+                    dayWorkers > 0 && (
                       <div className="space-y-1">
                         <div className="text-nb-body-sm font-bold tabular-nums leading-none">
                           {/* Distinct petugas — one worker can hold several rows
                               in a day (ADR-053), and this cell counts people. */}
-                          {new Set(dayOccurrences.map((o) => o.user_id)).size}
+                          {dayWorkers}
                           <span className="ml-1 text-nb-caption font-medium text-nb-gray-500">
                             {t('schedules:board.petugasShort')}
                           </span>

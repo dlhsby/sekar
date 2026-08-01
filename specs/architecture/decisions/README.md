@@ -58,7 +58,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [055](./ADR-055-punch-attendance-model.md) | Attendance as an immutable punch log — clock-in/out become append-only events; session (Masuk/Keluar, hours, open?) is derived; preserves ADR-050 presence | Accepted · **design locked, not started** · re-bases 050's source |
 | [056](./ADR-056-schedule-status-lifecycle.md) | Schedule status lifecycle — clock-in sets `present`, an hourly cron + lazy display flip a past no-show to `absent`; `present`/`absent` were previously never written | Active · **implemented** · rests on 053 + 055 |
 
-| [057](./ADR-057-summary-first-day-board.md) | Summary-first day board — the collapsed board reads aggregate counts (`/schedules/day-summary`); a container's rows are fetched when it is expanded. Day payload 3.87 MB → 83 KB | Active · **implemented** (day view; week/month follow-up) · rests on 053 + 047 |
+| [057](./ADR-057-summary-first-day-board.md) | Summary-first day board — the collapsed board reads aggregate counts (`/schedules/day-summary`); a container's rows are fetched when it is expanded. Day payload 3.87 MB → 83 KB, month 57 MB → 226 KB | Active · **implemented** · rests on 053 + 047 |
 
 ## By domain
 
