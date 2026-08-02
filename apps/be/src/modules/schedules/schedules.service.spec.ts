@@ -628,28 +628,76 @@ describe('SchedulesService', () => {
       expect(rosterRepo.save).toHaveBeenCalled();
     });
 
-    it('rejects exact duplicate shift (Phase 4: same user+date+shift)', async () => {
-      userRepo.findOne.mockResolvedValue({
-        id: 'W',
-        is_active: true,
-        role: UserRole.SATGAS,
-        district_id: 'r1',
-      });
-      shiftDefinitionRepo.findOne.mockResolvedValue({
-        id: 's3',
-        name: 'Shift 3',
-        start_time: '14:00:00',
-        end_time: '22:00:00',
-      });
-      // Exact duplicate already exists (same shift that day)
-      rosterRepo.find.mockResolvedValue([
-        { user_id: 'W', schedule_date: '2026-07-04', shift_definition_id: 's3' },
-      ]);
+    // The uniqueness key is (user, date, shift, PLACE) — migration 17517. One
+    // worker covering two lokasi during the SAME shift is the intended case
+    // (ADR-053), so only a repeat of the same shift AT THE SAME PLACE is a
+    // duplicate. Matching on the shift alone rejected the legitimate one.
+    describe('duplicate detection is keyed on (shift, place)', () => {
+      const worker = { id: 'W', is_active: true, role: UserRole.SATGAS, district_id: 'r1' };
+      const shift3 = { id: 's3', name: 'Shift 3', start_time: '14:00:00', end_time: '22:00:00' };
 
-      await expect(
-        service.addForDay({ user_id: 'W', date: '2026-07-04', shift_definition_id: 's3' }, ADMIN),
-      ).rejects.toThrow(/already has this exact shift/i);
-      expect(rosterRepo.save).not.toHaveBeenCalled();
+      beforeEach(() => {
+        userRepo.findOne.mockResolvedValue(worker);
+        shiftDefinitionRepo.findOne.mockResolvedValue(shift3);
+        overlapService.findConflict.mockResolvedValue(null);
+        rosterRepo.save.mockResolvedValue({ id: 'new', user_id: 'W' });
+        rosterRepo.findOne.mockResolvedValue({ id: 'new', user_id: 'W', location_id: null });
+      });
+
+      it('rejects the same shift at the SAME place', async () => {
+        rosterRepo.find.mockResolvedValue([
+          {
+            user_id: 'W',
+            schedule_date: '2026-07-04',
+            shift_definition_id: 's3',
+            location_id: 'locA',
+          },
+        ]);
+
+        await expect(
+          service.addForDay(
+            { user_id: 'W', date: '2026-07-04', shift_definition_id: 's3', area_ids: ['locA'] },
+            ADMIN,
+          ),
+        ).rejects.toThrow(/already has this shift at this place/i);
+        expect(rosterRepo.save).not.toHaveBeenCalled();
+      });
+
+      it('ALLOWS the same shift at a different lokasi — the point of ADR-053', async () => {
+        rosterRepo.find.mockResolvedValue([
+          {
+            user_id: 'W',
+            schedule_date: '2026-07-04',
+            shift_definition_id: 's3',
+            location_id: 'locA',
+          },
+        ]);
+
+        await service.addForDay(
+          { user_id: 'W', date: '2026-07-04', shift_definition_id: 's3', area_ids: ['locB'] },
+          ADMIN,
+        );
+
+        expect(rosterRepo.save).toHaveBeenCalled();
+      });
+
+      it('writes nothing when several lokasi are named', async () => {
+        rosterRepo.find.mockResolvedValue([]);
+
+        await expect(
+          service.addForDay(
+            {
+              user_id: 'W',
+              date: '2026-07-04',
+              shift_definition_id: 's3',
+              area_ids: ['locA', 'locB'],
+            },
+            ADMIN,
+          ),
+        ).rejects.toThrow(/exactly one place/i);
+        // Validated BEFORE the insert: this used to answer 400 and leave the row.
+        expect(rosterRepo.save).not.toHaveBeenCalled();
+      });
     });
 
     it('rejects a non-schedulable role (staff_kecamatan)', async () => {

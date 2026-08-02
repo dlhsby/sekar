@@ -29,6 +29,7 @@ import {
   type RangeSummary,
 } from './schedules.service';
 import { RosterPresenceService } from './services/roster-presence.service';
+import { ScheduleIdPipe } from './pipes/schedule-id.pipe';
 import { Schedule } from './entities/schedule.entity';
 import {
   AddScheduleDto,
@@ -516,7 +517,7 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Get a single roster row by id' })
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiResponse({ status: 200, type: Schedule })
-  async getOne(@Param('id') id: string, @GetUser() user: User): Promise<Schedule> {
+  async getOne(@Param('id', ScheduleIdPipe) id: string, @GetUser() user: User): Promise<Schedule> {
     const row = await this.service.findOne(id);
     // District-scoped roles may only read their own rayon's rows; workers may
     // only read their own. Mirrors the scoping the list endpoints apply in SQL.
@@ -557,7 +558,7 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Mark a roster row as sick / annual leave' })
   @ApiResponse({ status: 200, type: Schedule })
   async setLeave(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: SetLeaveDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
@@ -571,7 +572,7 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Replace the rostered worker for the day' })
   @ApiResponse({ status: 200, type: Schedule })
   async replace(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: ReplaceWorkerDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
@@ -586,7 +587,7 @@ export class SchedulesController {
   })
   @ApiResponse({ status: 200, type: Schedule })
   async updateAreas(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: UpdateRosterAreasDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
@@ -598,7 +599,7 @@ export class SchedulesController {
   @ApiOperation({ summary: 'Set (or clear) the shift for the day' })
   @ApiResponse({ status: 200, type: Schedule })
   async updateShift(
-    @Param('id') id: string,
+    @Param('id', ScheduleIdPipe) id: string,
     @Body() dto: UpdateRosterShiftDto,
     @GetUser() user: User,
   ): Promise<Schedule> {
@@ -609,7 +610,7 @@ export class SchedulesController {
   @Roles(...USER_MANAGERS)
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Soft-delete a roster row' })
-  async remove(@Param('id') id: string, @GetUser() user: User): Promise<void> {
+  async remove(@Param('id', ScheduleIdPipe) id: string, @GetUser() user: User): Promise<void> {
     await this.service.remove(id, user.id);
   }
 }
