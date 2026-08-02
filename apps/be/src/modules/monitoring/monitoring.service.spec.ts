@@ -141,6 +141,10 @@ describe('MonitoringService', () => {
     accuracy_meters: 10,
     battery_level: 85,
     logged_at: new Date(),
+    // Integrity advisories: a clean fix — no rejection, good accuracy, no skew.
+    rejection_reason: null,
+    poor_accuracy: false,
+    clock_skew_ms: 0,
     user: mockUser,
     shift: mockShift,
   };

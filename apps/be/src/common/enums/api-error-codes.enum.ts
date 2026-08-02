@@ -30,6 +30,15 @@ export enum ApiErrorCode {
   SHIFT_PHOTO_UPLOAD_FAILED = 'SHIFT_PHOTO_UPLOAD_FAILED',
   SHIFT_DURATION_TOO_SHORT = 'SHIFT_DURATION_TOO_SHORT',
 
+  // ==================== Location Integrity Errors ====================
+  // Refusals from the shared location-integrity evaluator. Distinct codes on
+  // purpose: the app shows a different remedy for each ("turn off mock
+  // location" vs "wait for a GPS fix"), and a supervisor needs to tell a
+  // spoofing attempt from a device that simply had no signal.
+  GPS_MOCKED = 'GPS_MOCKED',
+  GPS_MISSING_COORDINATES = 'GPS_MISSING_COORDINATES',
+  GPS_IMPOSSIBLE_TRAVEL = 'GPS_IMPOSSIBLE_TRAVEL',
+
   // ==================== Activity Errors (was Report) ====================
   ACTIVITY_SHIFT_REQUIRED = 'ACTIVITY_SHIFT_REQUIRED',
   ACTIVITY_SHIFT_NOT_FOUND = 'ACTIVITY_SHIFT_NOT_FOUND',

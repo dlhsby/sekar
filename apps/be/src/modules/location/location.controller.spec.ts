@@ -40,6 +40,10 @@ describe('LocationController', () => {
     accuracy_meters: 12.5,
     battery_level: 85,
     logged_at: new Date('2026-01-09T10:30:00Z'),
+    // Integrity advisories: a clean fix — no rejection, good accuracy, no skew.
+    rejection_reason: null,
+    poor_accuracy: false,
+    clock_skew_ms: 0,
     user: mockUser,
     shift: null as any,
   };

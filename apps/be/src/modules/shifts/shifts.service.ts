@@ -1,7 +1,7 @@
 import { Injectable, Logger, HttpStatus, Optional, Inject, forwardRef } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
-import { Repository, IsNull } from 'typeorm';
+import { Repository, IsNull, Not } from 'typeorm';
 import { Shift } from './entities/shift.entity';
 import { AttendancePunch } from './entities/attendance-punch.entity';
 import { PunchLabel } from './enums/punch-label.enum';
@@ -13,6 +13,12 @@ import { ClockInDto } from './dto/clock-in.dto';
 import { ClockOutDto } from './dto/clock-out.dto';
 import { LocationsService } from '../locations/locations.service';
 import { ApiException } from '../../common/exceptions/api.exception';
+import {
+  evaluateLocation,
+  LocationRejection,
+  type LocationVerdict,
+  type PreviousFix,
+} from '../../common/utils/location-integrity.util';
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
 import { PhotoStorageService } from '../../shared/services/photo-storage.service';
@@ -246,6 +252,11 @@ export class ShiftsService {
     // any more — a repeat clock-in simply appends a punch; the derivation collapses
     // redundant/re-entry clock-ins into one session (first-in / last-out).
 
+    // 0. Integrity gate. Runs BEFORE anything is stored or uploaded so a refused
+    // punch leaves no selfie in object storage and no partial state behind.
+    // Being outside the area is NOT judged here — that stays advisory (step 3).
+    const verdict = await this.evaluatePunchLocation(userId, dto);
+
     // 1. Get area: from DTO or auto-detect (GPS-aware among assigned areas).
     let area: Location | null = null;
     if (dto.location_id) {
@@ -277,7 +288,7 @@ export class ShiftsService {
     await this.insertPunch({
       id: dto.client_uuid ?? randomUUID(),
       user_id: userId,
-      punched_at: this.resolvePunchedAt(dto.punched_at),
+      punched_at: verdict.effectiveTimestamp,
       label: PunchLabel.CLOCK_IN,
       service_day: serviceDay,
       shift_definition_id: shiftDefId,
@@ -286,6 +297,8 @@ export class ShiftsService {
       gps_lng: dto.gps_lng,
       accuracy_m: dto.accuracy_m ?? null,
       outside_boundary: outsideBoundary,
+      poor_accuracy: verdict.advisories.poorAccuracy,
+      clock_skew_ms: verdict.advisories.clockSkewMs,
       photo_url: photoUrl,
       is_overtime: isOvertime,
     });
@@ -392,9 +405,11 @@ export class ShiftsService {
       ? this.systemConfig.getNumber('schedule.min_shift_duration_min', 5)
       : getMinimumShiftDurationMinutes();
     const minMs = minMinutes * 60 * 1000;
-    // Measured to the punch's own time — for an offline clock-out that is the
-    // capture time, not the (later) sync time.
-    const punchedAt = this.resolvePunchedAt(dto.punched_at);
+    // Integrity gate first: a refused clock-out must not consume the duration
+    // check or upload a selfie. Measured to the punch's own time — for an
+    // offline clock-out that is the capture time, not the (later) sync time.
+    const verdict = await this.evaluatePunchLocation(userId, dto);
+    const punchedAt = verdict.effectiveTimestamp;
     const segmentMs = punchedAt.getTime() - openSince.getTime();
     // 0 (or any non-positive) disables the guard entirely — configurable via
     // `schedule.min_shift_duration_min` in settings.
@@ -441,6 +456,8 @@ export class ShiftsService {
       gps_lng: dto.gps_lng,
       accuracy_m: dto.accuracy_m ?? null,
       outside_boundary: outsideBoundary,
+      poor_accuracy: verdict.advisories.poorAccuracy,
+      clock_skew_ms: verdict.advisories.clockSkewMs,
       photo_url: clockOutPhotoUrl,
       is_overtime: isOvertime,
     });
@@ -513,18 +530,69 @@ export class ShiftsService {
     return qb.orderBy('p.punched_at', 'ASC').getMany();
   }
 
+  /** Error code the app shows a specific remedy for, per rejection reason. */
+  private static readonly REJECTION_CODE: Record<LocationRejection, ApiErrorCode> = {
+    [LocationRejection.MOCKED]: ApiErrorCode.GPS_MOCKED,
+    [LocationRejection.MISSING_COORDINATES]: ApiErrorCode.GPS_MISSING_COORDINATES,
+    [LocationRejection.IMPOSSIBLE_TRAVEL]: ApiErrorCode.GPS_IMPOSSIBLE_TRAVEL,
+  };
+
+  /** The most recent punch with usable coordinates, for impossible-travel. */
+  private async lastKnownFix(userId: string): Promise<PreviousFix | null> {
+    const previous = await this.punchRepository.findOne({
+      where: { user_id: userId, gps_lat: Not(IsNull()), gps_lng: Not(IsNull()) },
+      order: { punched_at: 'DESC' },
+    });
+
+    if (previous?.gps_lat == null || previous.gps_lng == null) return null;
+    return { lat: previous.gps_lat, lng: previous.gps_lng, at: previous.punched_at };
+  }
+
   /**
-   * The instant a punch happened. An offline client passes the CAPTURE time in
-   * `punched_at` so a later sync records when the worker actually clocked in/out,
-   * not when the queue drained. Clamped to ≤ now — a future or unparseable time
-   * (clock skew / tampering) falls back to the server clock.
+   * Judge the location on a punch, and refuse the punch if it fails.
+   *
+   * A punch is evidence, so unlike the ping stream this rejects outright rather
+   * than recording a flagged row — there must be nothing to submit. The worker
+   * is told exactly which remedy applies (turn off mock location / wait for a
+   * fix) via a distinct error code.
+   *
+   * Returns the verdict so the caller can persist the advisories and the
+   * clamped timestamp. Replaces the old `resolvePunchedAt`, which clamped only
+   * the FUTURE — backdating was unbounded, so a device with its clock rolled
+   * back could claim a punch from any point in the past.
    */
-  private resolvePunchedAt(iso?: string): Date {
-    if (!iso) return new Date();
-    const parsed = new Date(iso);
-    const now = new Date();
-    if (Number.isNaN(parsed.getTime()) || parsed.getTime() > now.getTime()) return now;
-    return parsed;
+  private async evaluatePunchLocation(
+    userId: string,
+    dto: {
+      gps_lat: number;
+      gps_lng: number;
+      accuracy_m?: number;
+      is_mocked?: boolean;
+      punched_at?: string;
+    },
+  ): Promise<LocationVerdict> {
+    const verdict = evaluateLocation(
+      {
+        lat: dto.gps_lat,
+        lng: dto.gps_lng,
+        accuracyMeters: dto.accuracy_m ?? null,
+        isMocked: dto.is_mocked ?? null,
+        clientTimestamp: dto.punched_at ? new Date(dto.punched_at) : null,
+      },
+      { now: new Date(), previous: await this.lastKnownFix(userId) },
+    );
+
+    if (!verdict.accepted && verdict.rejection) {
+      this.logger.warn(`Punch refused for user ${userId}: ${verdict.rejection}`);
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        ShiftsService.REJECTION_CODE[verdict.rejection],
+        `Location rejected: ${verdict.rejection}`,
+        { reason: verdict.rejection, impliedSpeedKmh: verdict.advisories.impliedSpeedKmh },
+      );
+    }
+
+    return verdict;
   }
 
   /** Insert a punch idempotently — a retried offline punch (same PK) is a no-op. */

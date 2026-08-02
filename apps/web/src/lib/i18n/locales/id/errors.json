@@ -52,5 +52,8 @@
   "NETWORK_ERROR": "Gagal terhubung ke server. Periksa koneksi internet Anda.",
   "TIMEOUT_ERROR": "Permintaan melebihi batas waktu. Silakan coba lagi.",
   "UNKNOWN_ERROR": "Terjadi kesalahan. Silakan coba lagi.",
-  "GENERIC": "Terjadi kesalahan. Silakan coba lagi."
+  "GENERIC": "Terjadi kesalahan. Silakan coba lagi.",
+  "GPS_MOCKED": "Lokasi palsu terdeteksi. Nonaktifkan aplikasi lokasi palsu (mock location) di Pengaturan, lalu coba lagi.",
+  "GPS_MISSING_COORDINATES": "Lokasi GPS belum tersedia. Tunggu hingga perangkat mendapatkan sinyal, lalu coba lagi.",
+  "GPS_IMPOSSIBLE_TRAVEL": "Perpindahan lokasi tidak wajar terdeteksi. Pastikan GPS aktif dan tidak dimanipulasi."
 }
