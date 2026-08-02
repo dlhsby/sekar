@@ -60,6 +60,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 
 | [057](./ADR-057-summary-first-day-board.md) | Summary-first day board — the collapsed board reads aggregate counts (`/schedules/day-summary`); a container's rows are fetched when it is expanded. Day payload 3.87 MB → 83 KB, month 57 MB → 226 KB | Active · **implemented** · rests on 053 + 047 |
 | [058](./ADR-058-no-inline-media-in-postgres.md) | No inline media in Postgres — photos live in object storage (MinIO local/prod, S3 staging) and the column holds a URL; global interceptor converts on write and presigns on read. Was 528 MB of a 658 MB database | Active · **implemented** |
+| [059](./ADR-059-location-integrity.md) | Location integrity (anti-spoofing) — reject missing/forged fixes (null island, mock provider, impossible travel) but NEVER "outside area"; one shared evaluator for punches + pings; timestamps clamped both sides | Active · **implemented** |
 
 ## By domain
 
@@ -67,6 +68,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **Auth & roles:** [004](./ADR-004-jwt-authentication.md) · [009](./ADR-009-phase2c-role-system-overhaul.md) · [012](./ADR-012-phone-number-login.md) · [032](./ADR-032-admin-data-disposition-authority-pruning-requests.md) · [033](./ADR-033-staff-kecamatan-role.md) · [041](./ADR-041-forgot-password-contact-admin.md) · [042](./ADR-042-onboarding-flow.md) · [044](./ADR-044-dynamic-rbac.md)
 - **Location, scheduling & teams:** [045](./ADR-045-four-level-location-hierarchy.md) · [047](./ADR-047-schedule-redesign.md) · [048](./ADR-048-teams.md) · [056](./ADR-056-schedule-status-lifecycle.md) · [057](./ADR-057-summary-first-day-board.md)
 - **Media & storage:** [058](./ADR-058-no-inline-media-in-postgres.md)
+- **Location integrity:** [059](./ADR-059-location-integrity.md)
 - **Settings & config:** [049](./ADR-049-settings-architecture.md)
 - **Mobile & offline:** [002](./ADR-002-offline-first-mobile.md) · [003](./ADR-003-asyncstorage-phase1.md) · [007](./ADR-007-react-native-over-flutter.md) · [017](./ADR-017-maestro-mobile-e2e.md) · [019](./ADR-019-offline-connectivity-model.md) · [027](./ADR-027-ios-build-distribution.md)
 - **Realtime & monitoring:** [011](./ADR-011-phase2d-monitoring-status-model.md) · [016](./ADR-016-redis-websocket-scaling.md) · [029](./ADR-029-monitoring-v2-event-sourced-redis.md) · [046](./ADR-046-monitoring-subject-model.md) · [050](./ADR-050-presence-attendance-model.md)
@@ -90,5 +92,6 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 
 - **046 korlap scope settled by 053 (2026-07-23)** — monitoring coverage is schedule-driven only; the static user assignment stops being a monitoring-scope source.
 - **050 source re-based by 055 (2026-07-25)** — attendance moves to an immutable punch log; `bertugas` = "last punch is a clock-in" replaces `clock_out_time IS NULL`. The presence lifecycle/axes/counting contract is unchanged — only storage + derivation.
+- **005→010 reaffirmed by 059 (2026-08-02)** — anti-spoofing blocks *missing/forged* location only; being outside an area stays advisory and still never blocks, so the Phase 2C removal is NOT reversed.
 
 **Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)

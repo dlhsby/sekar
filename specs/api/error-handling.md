@@ -54,6 +54,25 @@ The SEKAR API uses standardized error codes defined in `ApiErrorCode` enum for c
 | `SHIFT_PHOTO_UPLOAD_FAILED` | 400 | Failed to upload clock-in/out selfie photo |
 | `SHIFT_DURATION_TOO_SHORT` | 400 | Shift duration is below the minimum required duration (default: 5 minutes, configurable) |
 
+### Location integrity (ADR-059)
+
+Refusals from the shared location-integrity evaluator, applied to both punches and the
+location ping stream. Distinct codes because the app shows a different remedy for each,
+and a supervisor needs to tell a spoofing attempt from a device with no signal.
+
+**Being outside an area is NOT one of these** — that stays advisory (`outside_boundary`)
+and never blocks. See [ADR-059](../architecture/decisions/ADR-059-location-integrity.md).
+
+| Code | HTTP | Meaning |
+|---|---|---|
+| `GPS_MISSING_COORDINATES` | 400 | Coordinates are exactly `(0,0)` — null island, the shape a missing fix takes since both coordinates are required by the DTO |
+| `GPS_MOCKED` | 400 | The OS reported the fix came from a mock provider |
+| `GPS_IMPOSSIBLE_TRAVEL` | 400 | Implied ground speed from the previous fix is not physically plausible |
+
+Punches **reject** on these. Pings do not fail the request: the row is stored with
+`rejection_reason` set and excluded from presence, so a spoofing worker reads as inactive
+rather than vanishing (a dropped ping is indistinguishable from a switched-off phone).
+
 ### Activity Errors (11 codes) ✅ Implemented (Phase 2C)
 
 > Renamed from `REPORT_*` to `ACTIVITY_*` per [ADR-010](../architecture/decisions/ADR-010-phase2c-terminology-cleanup.md). Table `work_reports` → `activities`.
