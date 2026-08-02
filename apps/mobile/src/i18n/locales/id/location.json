@@ -58,5 +58,14 @@
     "selectDistrictFirst": "Pilih rayon terlebih dahulu",
     "selectArea": "Pilih area..."
   },
-  "getFailed": "Gagal mendapatkan lokasi"
+  "getFailed": "Gagal mendapatkan lokasi",
+  "mockBlocker": {
+    "title": "Lokasi Palsu Terdeteksi",
+    "body": "Aplikasi mendeteksi lokasi palsu (mock location) aktif di perangkat Anda. Selama ini aktif, lokasi Anda tidak dilacak dan Anda tercatat TIDAK AKTIF.",
+    "steps": "Cara menonaktifkan:\n1. Buka Pengaturan > Opsi Pengembang\n2. Pilih \"Aplikasi lokasi tiruan\" / \"Select mock location app\"\n3. Pilih \"Tidak ada\" / \"None\"\n4. Kembali ke aplikasi ini",
+    "openSettings": "Buka Pengaturan",
+    "recheck": "Saya Sudah Menonaktifkan",
+    "stillDetected": "Lokasi palsu masih terdeteksi. Pastikan sudah dinonaktifkan, lalu coba lagi.",
+    "checking": "Memeriksa…"
+  }
 }

@@ -152,6 +152,13 @@ export interface LocationTrackerEvents {
   error: (error: string) => void;
   /** Specific error event with error type for targeted handling */
   locationError: (errorType: LocationErrorType, message: string) => void;
+  /**
+   * A captured fix came from a mock provider.
+   *
+   * Raised on every offending capture, not just the first, so a listener that
+   * mounts late still learns about an ongoing violation without polling.
+   */
+  integrityViolation: (reason: 'mocked') => void;
 }
 
 /**
@@ -534,6 +541,15 @@ class LocationTracker extends EventEmitter {
    * Add location to memory buffer with OOM prevention
    */
   private addLocationToBuffer(location: LocationPing): void {
+    // Single choke point for both continuous capture paths (normal + low-accuracy
+    // retry), so a spoofed fix cannot slip through whichever one produced it.
+    // The ping is still buffered and uploaded: the server needs the row to tell
+    // "faking location" from a phone that is simply off, and it rejects the ping
+    // for presence so the worker reads as inactive until they stop.
+    if (location.mocked) {
+      this.emit('integrityViolation', 'mocked');
+    }
+
     this.locationBuffer.push(location);
     console.debug(`[LocationTracker] Buffer size: ${this.locationBuffer.length}/${MAX_BUFFER_SIZE}`);
 

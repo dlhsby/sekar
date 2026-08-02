@@ -58,5 +58,14 @@
     "selectDistrictFirst": "Select a district first",
     "selectArea": "Select area..."
   },
-  "getFailed": "Failed to get location"
+  "getFailed": "Failed to get location",
+  "mockBlocker": {
+    "title": "Fake Location Detected",
+    "body": "A mock-location app is active on your device. While it is on, your location is not tracked and you are recorded as INACTIVE.",
+    "steps": "How to turn it off:\n1. Open Settings > Developer options\n2. Tap \"Select mock location app\"\n3. Choose \"None\"\n4. Return to this app",
+    "openSettings": "Open Settings",
+    "recheck": "I have turned it off",
+    "stillDetected": "Fake location is still detected. Make sure it is disabled, then try again.",
+    "checking": "Checking…"
+  }
 }
