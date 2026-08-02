@@ -12,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between, IsNull } from 'typeorm';
 import { LocationLog } from './entities/location-log.entity';
 import { evaluateLocation, type PreviousFix } from '../../common/utils/location-integrity.util';
+import { isRedundantStationaryPing } from '../../common/utils/location-thinning.util';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 import { Shift } from '../shifts/entities/shift.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -89,7 +90,10 @@ export class LocationService {
       (a, b) => new Date(a.logged_at).getTime() - new Date(b.logged_at).getTime(),
     );
 
-    return ordered.map((location) => {
+    const rows: LocationLog[] = [];
+    let thinned = 0;
+
+    for (const location of ordered) {
       const verdict = evaluateLocation(
         {
           lat: location.gps_lat,
@@ -102,6 +106,18 @@ export class LocationService {
       );
 
       if (verdict.accepted) {
+        // Drop redundant "still here" pings. Only ever applied to an ACCEPTED
+        // ping: a refused one must always be stored, since that row is the
+        // evidence of spoofing.
+        if (
+          isRedundantStationaryPing(
+            { lat: location.gps_lat, lng: location.gps_lng, at: verdict.effectiveTimestamp },
+            previous,
+          )
+        ) {
+          thinned += 1;
+          continue;
+        }
         previous = {
           lat: location.gps_lat,
           lng: location.gps_lng,
@@ -111,22 +127,29 @@ export class LocationService {
         this.logger.warn(`Ping refused for user ${userId}: ${verdict.rejection}`);
       }
 
-      return this.locationLogsRepository.create({
-        user_id: userId,
-        shift_id: dto.shift_id,
-        gps_lat: location.gps_lat,
-        gps_lng: location.gps_lng,
-        accuracy_meters: location.accuracy_meters,
-        battery_level: location.battery_level,
-        // Clamped, never the raw client claim — `logged_at` drives presence
-        // freshness, so an unbounded backdate would let a client fabricate its
-        // own attendance history.
-        logged_at: verdict.effectiveTimestamp,
-        rejection_reason: verdict.rejection,
-        poor_accuracy: verdict.advisories.poorAccuracy,
-        clock_skew_ms: verdict.advisories.clockSkewMs,
-      });
-    });
+      rows.push(
+        this.locationLogsRepository.create({
+          user_id: userId,
+          shift_id: dto.shift_id,
+          gps_lat: location.gps_lat,
+          gps_lng: location.gps_lng,
+          accuracy_meters: location.accuracy_meters,
+          battery_level: location.battery_level,
+          // Clamped, never the raw client claim — `logged_at` drives presence
+          // freshness, so an unbounded backdate would let a client fabricate its
+          // own attendance history.
+          logged_at: verdict.effectiveTimestamp,
+          rejection_reason: verdict.rejection,
+          poor_accuracy: verdict.advisories.poorAccuracy,
+          clock_skew_ms: verdict.advisories.clockSkewMs,
+        }),
+      );
+    }
+
+    if (thinned > 0) {
+      this.logger.debug(`Thinned ${thinned} stationary pings for user ${userId}`);
+    }
+    return rows;
   }
 
   async createBatch(
