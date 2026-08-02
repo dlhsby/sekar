@@ -6,7 +6,12 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../services/location/verifiedPosition';
+import {
+  classifyLocationError,
+  describeLocationError,
+  type LocationErrorType,
+} from '../services/location/locationErrors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n/config';
 import { useAppDispatch, useAppSelector } from '../store/store';
@@ -130,37 +135,39 @@ export function useActivityForm() {
   // Get current GPS location
   const getCurrentLocation = useCallback(() => {
     setIsLoadingLocation(true);
-    Geolocation.getCurrentPosition(
-      (position) => {
+    // An activity report is evidence, so a mocked fix is refused rather than
+    // recorded. maximumAge stays at the reader's default of 0: the previous 5s
+    // cache is long enough to return a fix captured before a mock provider was
+    // switched off.
+    readPosition()
+      .then((position) => {
         setForm((prev) => ({
           ...prev,
           location: {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            accuracy: position.accuracy ?? 0,
           },
         }));
         setErrors((prev) => ({ ...prev, location: undefined }));
         setIsLoadingLocation(false);
-      },
-      (error) => {
+      })
+      .catch((error) => {
         if (__DEV__) { console.error('Location error:', error); }
-        let errorMessage = i18n.t('activities:locationMessages.locationError');
-        if (error.code === 1) { errorMessage = i18n.t('activities:locationMessages.permissionDenied'); }
-        else if (error.code === 3) { errorMessage = i18n.t('activities:locationMessages.timeoutError'); }
-        else if (error.code === 5) { errorMessage = i18n.t('activities:locationMessages.gpsDisabled'); }
-        setErrors((prev) => ({ ...prev, location: errorMessage }));
+        // The activities namespace has its own copy for the common failures;
+        // fall back to the shared describer for everything else (incl. mocked).
+        const activityMessage: Partial<Record<LocationErrorType, string>> = {
+          permission_denied: 'activities:locationMessages.permissionDenied',
+          timeout: 'activities:locationMessages.timeoutError',
+          gps_disabled: 'activities:locationMessages.gpsDisabled',
+        };
+        const key = activityMessage[classifyLocationError(error)];
+        setErrors((prev) => ({
+          ...prev,
+          location: key ? i18n.t(key) : describeLocationError(error),
+        }));
         setIsLoadingLocation(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 5000,
-        forceRequestLocation: true,
-        forceLocationManager: false,
-        showLocationDialog: true,
-      }
-    );
+      });
   }, []);
 
   // Add photo (called by PhotoUploader after capture)

@@ -3,11 +3,12 @@
  * Phase 2D: Tests for GPS location state management on HomeScreen.
  */
 
-import { renderHook, act } from '@testing-library/react-native';
+import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { useHomeLocation } from '../useHomeLocation';
 import Geolocation from 'react-native-geolocation-service';
 import { locationTracker } from '../../services/location/locationTracker';
 import { isWithinAreaBoundary } from '../../utils/gpsUtils';
+import i18n from '../../i18n/config';
 
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -114,11 +115,13 @@ describe('useHomeLocation', () => {
       expect(mockGeolocation).toHaveBeenCalledTimes(1);
     });
 
-    it('sets coordinates on successful fetch', () => {
+    // Position now arrives through readPosition's promise, so the state lands a
+    // microtask after render rather than inside it.
+    it('sets coordinates on successful fetch', async () => {
       simulateSuccess(-7.2905, 112.7398, 15);
       const { result } = renderHook(() => useHomeLocation());
 
-      expect(result.current.location.latitude).toBe(-7.2905);
+      await waitFor(() => expect(result.current.location.latitude).toBe(-7.2905));
       expect(result.current.location.longitude).toBe(112.7398);
       expect(result.current.location.accuracy).toBe(15);
       expect(result.current.location.loading).toBe(false);
@@ -126,23 +129,28 @@ describe('useHomeLocation', () => {
       expect(result.current.location.updatedAt).toBeInstanceOf(Date);
     });
 
-    it('sets error on failed fetch', () => {
-      simulateError('Gagal mendapatkan lokasi');
+    it('sets a localized error on failed fetch', async () => {
+      // The raw native message is no longer surfaced: describeLocationError maps
+      // the PositionError code to translated copy, per the i18n mandate.
+      simulateError('Location unavailable');
       const { result } = renderHook(() => useHomeLocation());
 
-      expect(result.current.location.error).toBe('Gagal mendapatkan lokasi');
+      await waitFor(() => expect(result.current.location.error).toBeTruthy());
+      expect(result.current.location.error).toBe(i18n.t('location:errors.permissionDenied'));
       expect(result.current.location.loading).toBe(false);
       expect(result.current.location.latitude).toBeNull();
     });
 
-    it('checks isWithinArea with assignedArea', () => {
+    it('checks isWithinArea with assignedArea', async () => {
       const area = { gps_lat: -7.29, gps_lng: 112.74, radius_meters: 200 };
       mockAuthState = { assignedArea: area };
       simulateSuccess();
 
       const { result } = renderHook(() => useHomeLocation());
 
-      expect(mockIsWithinArea).toHaveBeenCalledWith(-7.2905, 112.7398, area);
+      await waitFor(() =>
+        expect(mockIsWithinArea).toHaveBeenCalledWith(-7.2905, 112.7398, area),
+      );
       expect(result.current.location.isWithinArea).toBe(true);
     });
 
@@ -196,13 +204,13 @@ describe('useHomeLocation', () => {
   });
 
   describe('shift becomes inactive', () => {
-    it('resets location state when shift ends', () => {
+    it('resets location state when shift ends', async () => {
       mockShiftState = { currentShift: { id: 'shift-1' } };
       simulateSuccess();
 
       const { result, rerender } = renderHook(() => useHomeLocation());
 
-      expect(result.current.location.latitude).toBe(-7.2905);
+      await waitFor(() => expect(result.current.location.latitude).toBe(-7.2905));
 
       mockShiftState = { currentShift: null };
       rerender({});

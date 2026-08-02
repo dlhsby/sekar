@@ -5,7 +5,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../../../services/location/verifiedPosition';
 import { getActiveOvertime } from '../../../services/api/overtimeApi';
 import { isWithinAreaBoundary } from '../../../utils/gpsUtils';
 import type { Overtime } from '../../../types/models.types';
@@ -36,20 +36,23 @@ export function useOvertimeSession(assignedArea: any) {
 
   const captureLocation = useCallback(() => {
     setIsCapturingLocation(true);
-    Geolocation.getCurrentPosition(
-      (position) => {
+    // Overtime is attendance, so a mocked fix is refused rather than recorded.
+    // The 10s maximumAge is dropped in favour of the reader's default of 0 —
+    // a cached fix can predate a mock provider being switched off.
+    readPosition({ geoOptions: { timeout: 15_000 } })
+      .then((position) => {
         setLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          accuracy: position.accuracy ?? 0,
         });
         setIsCapturingLocation(false);
-      },
-      () => {
+      })
+      .catch(() => {
+        // Leave `location` null: the screen already treats "no location" as
+        // not-ready, so a refused mock fix cannot be submitted as a real one.
         setIsCapturingLocation(false);
-      },
-      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 10_000 },
-    );
+      });
   }, []);
 
   const fetchActiveOvertime = useCallback(async () => {

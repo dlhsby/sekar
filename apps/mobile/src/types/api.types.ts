@@ -229,6 +229,12 @@ export interface LocationPoint {
   accuracy_meters?: number;
   battery_level?: number;
   logged_at: string; // ISO 8601 timestamp
+  /**
+   * Client's report of whether the OS flagged this fix as mock-provided.
+   * Advisory: the server records it and excludes flagged pings from presence,
+   * but never treats a `false` here as proof the fix is genuine.
+   */
+  is_mocked?: boolean;
 }
 
 export interface LocationBatchRequest {

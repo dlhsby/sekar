@@ -18,7 +18,9 @@
     "unavailableClockIn": "Lokasi belum tersedia. Tunggu GPS mendapatkan lokasi.",
     "capturePermissionDenied": "Izin lokasi ditolak. Aktifkan izin lokasi di Pengaturan untuk menangkap koordinat GPS otomatis.",
     "getFailed": "Gagal mendapatkan lokasi:",
-    "captureFailed": "Gagal menangkap lokasi GPS"
+    "captureFailed": "Gagal menangkap lokasi GPS",
+    "mockedLocation": "Lokasi palsu terdeteksi. Nonaktifkan aplikasi lokasi palsu (mock location) di Pengaturan, lalu coba lagi.",
+    "mockedLocationTitle": "Lokasi Palsu Terdeteksi"
   },
   "clockInOut": {
     "cameraPermissionTitle": "Izin Kamera",

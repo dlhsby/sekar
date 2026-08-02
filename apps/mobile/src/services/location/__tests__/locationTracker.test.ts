@@ -295,10 +295,42 @@ describe('LocationTracker', () => {
       expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
     });
 
+    it('flags a mocked ping instead of dropping it', async () => {
+      // Dropping the ping would be indistinguishable from the worker being
+      // offline, hiding exactly the cheating this is meant to surface. The
+      // server decides what to do; the tracker's job is to report honestly.
+      const listener = jest.fn();
+      locationTracker.on('locationUpdate', listener);
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
+        success({ ...mockLocation, mocked: true });
+      });
+
+      await jest.advanceTimersByTimeAsync(61 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ mocked: true }));
+    });
+
+    it('marks an ordinary ping as not mocked', async () => {
+      const listener = jest.fn();
+      locationTracker.on('locationUpdate', listener);
+
+      await jest.advanceTimersByTimeAsync(61 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ mocked: false }));
+    });
+
     it('should add location to buffer on capture', async () => {
       // First ping is uploaded immediately (buffer cleared); advance time to
       // trigger a second ping, which is buffered until batch size is reached.
       await jest.advanceTimersByTimeAsync(61 * 1000);
+      // Capture resolves through readPosition's promise, so the buffer write
+      // lands a microtask after the timer callback rather than inside it.
+      await Promise.resolve();
+      await Promise.resolve();
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
     });
 

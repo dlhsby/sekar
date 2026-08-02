@@ -5,7 +5,13 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Geolocation from 'react-native-geolocation-service';
+import {
+  readPosition,
+  watchPosition,
+  MockedLocationError,
+  type VerifiedPosition,
+} from '../services/location/verifiedPosition';
+import { describeLocationError } from '../services/location/locationErrors';
 import { Alert } from 'react-native';
 import uuid from 'react-native-uuid';
 import i18n from '../i18n/config';
@@ -340,14 +346,13 @@ export function useClockInOut(preferred?: PreferredShift) {
 
   const pad = (num: number): string => String(num).padStart(2, '0');
 
-  const handleLocationSuccess = useCallback((position: any) => {
-    const { latitude, longitude, accuracy } = position.coords;
-
-    // Only update the location — `isWithinBoundary` is derived from it (above).
+  const handleLocationSuccess = useCallback((position: VerifiedPosition) => {
+    // VerifiedPosition is flat — the reader has already unwrapped `coords` and
+    // applied the mock policy, so a fix reaching here is one we accept.
     setLocation({
-      latitude,
-      longitude,
-      accuracy: accuracy || null,
+      latitude: position.latitude,
+      longitude: position.longitude,
+      accuracy: position.accuracy,
       loading: false,
       error: null,
     });
@@ -356,42 +361,25 @@ export function useClockInOut(preferred?: PreferredShift) {
   const getCurrentLocation = useCallback(() => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
 
-    Geolocation.getCurrentPosition(
-      handleLocationSuccess,
-      (error) => {
+    // A punch is evidence, so a mocked fix is refused outright rather than
+    // flagged. readPosition already defaults to maximumAge: 0 — a cached fix
+    // would answer for where the worker just was, which is the gap a spoofer
+    // uses after switching a mock provider off.
+    readPosition()
+      .then(handleLocationSuccess)
+      .catch((error) => {
         if (__DEV__) { console.error('Location error:', error); }
-
-        let errorMessage = i18n.t('location:errors.unavailableGeneral');
-        switch (error.code) {
-          case 1: errorMessage = i18n.t('location:errors.permissionDenied'); break;
-          case 2: errorMessage = i18n.t('location:errors.unknown'); break;
-          case 3: errorMessage = i18n.t('location:errors.timeout'); break;
-          case 4: errorMessage = i18n.t('location:errors.unknown'); break;
-          case 5: errorMessage = i18n.t('location:errors.gpsDisabled'); break;
-        }
 
         setLocation({
           latitude: null, longitude: null, accuracy: null,
-          loading: false, error: errorMessage,
+          loading: false, error: describeLocationError(error),
         });
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        // Fresh fix, never a cached one — the clock-in screen opens to answer
-        // "where am I right now", and a stale cache (e.g. after moving a mock
-        // GPS) would answer for where the worker just was.
-        maximumAge: 0,
-        forceRequestLocation: true,
-        forceLocationManager: false,
-        showLocationDialog: true,
-      },
-    );
+      });
   }, [handleLocationSuccess]);
 
   // Request permissions and watch position
   useEffect(() => {
-    let watchId: number | null = null;
+    let unsubscribe: (() => void) | null = null;
     let isMounted = true;
 
     const initializeLocation = async () => {
@@ -405,29 +393,41 @@ export function useClockInOut(preferred?: PreferredShift) {
 
       getCurrentLocation();
 
-      watchId = Geolocation.watchPosition(
-        (position) => {
-          if (!isMounted) { return; }
-          const { latitude, longitude, accuracy } = position.coords;
-          // Location only — isWithinBoundary is derived from it.
-          setLocation({
-            latitude, longitude,
-            accuracy: accuracy || null,
-            loading: false, error: null,
-          });
-        },
-        (error) => {
-          if (!isMounted) { return; }
-          if (__DEV__) { console.error('Watch position error:', error); }
+      unsubscribe = watchPosition(
+        {
+          onPosition: ({ latitude, longitude, accuracy }) => {
+            if (!isMounted) { return; }
+            // Location only — isWithinBoundary is derived from it.
+            setLocation({
+              latitude, longitude,
+              accuracy: accuracy ?? null,
+              loading: false, error: null,
+            });
+          },
+          onError: (error) => {
+            if (!isMounted) { return; }
+            if (__DEV__) { console.error('Watch position error:', error); }
+            // A mocked update must not leave the last good fix on screen —
+            // that would let a worker get a valid reading, switch on a fake
+            // GPS, and punch against the stale coordinates.
+            if (error instanceof MockedLocationError) {
+              setLocation({
+                latitude: null, longitude: null, accuracy: null,
+                loading: false, error: describeLocationError(error),
+              });
+            }
+          },
         },
         {
-          enableHighAccuracy: true,
-          distanceFilter: 10,
-          interval: 5000,
-          fastestInterval: 2000,
-          forceRequestLocation: true,
-          forceLocationManager: false,
-          showLocationDialog: true,
+          geoOptions: {
+            enableHighAccuracy: true,
+            distanceFilter: 10,
+            interval: 5000,
+            fastestInterval: 2000,
+            forceRequestLocation: true,
+            forceLocationManager: false,
+            showLocationDialog: true,
+          },
         },
       );
     };
@@ -436,9 +436,7 @@ export function useClockInOut(preferred?: PreferredShift) {
 
     return () => {
       isMounted = false;
-      if (watchId !== null) {
-        Geolocation.clearWatch(watchId);
-      }
+      unsubscribe?.();
     };
     // Runs once on mount: the watch callback only updates location now (the
     // geofence is derived), so it no longer needs to re-subscribe when areas

@@ -21,8 +21,9 @@
  */
 
 import { Alert } from 'react-native';
-import Geolocation from 'react-native-geolocation-service';
 import DeviceInfo from 'react-native-device-info';
+import { readPosition, type VerifiedPosition } from './verifiedPosition';
+import type { LocationErrorType } from './locationErrors';
 import { EventEmitter } from 'events';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { uploadLocationBatch, convertPingsToLocations, type TrackerLocationPing } from '../api/locationApi';
@@ -46,6 +47,20 @@ const GPS_TIMEOUT = config.GPS_TIMEOUT_MS;
 const GPS_MAXIMUM_AGE = config.GPS_MAXIMUM_AGE_MS;
 const HIGH_ACCURACY = true;
 const BUFFER_STORAGE_KEY = 'location_buffer';
+
+/** Standard capture options for the shift-long ping loop. */
+const TRACKER_GEO_OPTIONS = {
+  enableHighAccuracy: HIGH_ACCURACY,
+  timeout: GPS_TIMEOUT,
+  maximumAge: GPS_MAXIMUM_AGE,
+} as const;
+
+/** Fallback after a timeout: lower accuracy, longer patience. */
+const TRACKER_RETRY_GEO_OPTIONS = {
+  enableHighAccuracy: false,
+  timeout: GPS_TIMEOUT * 2,
+  maximumAge: GPS_MAXIMUM_AGE * 2,
+} as const;
 
 // Track if singleton has been initialized to prevent duplicates
 let singletonInitialized = false;
@@ -82,16 +97,48 @@ export interface LocationPing {
   timestamp: string; // ISO format
   shift_id: string;
   battery_level?: number; // 0-100 percentage
+  /**
+   * True when the OS reported the fix came from a mock provider.
+   *
+   * The tracker records spoofed pings rather than dropping them: a dropped ping
+   * is indistinguishable from a worker being offline, so silently discarding it
+   * would hide the cheating it is meant to catch. The server decides what to do
+   * — it excludes flagged pings from presence rather than trusting this field.
+   */
+  mocked: boolean;
 }
 
 /**
- * Location error types for specific handling
+ * Build a ping from a verified fix.
+ *
+ * Extracted because the same object literal was repeated at three capture sites
+ * (normal, low-accuracy retry, on-demand), which is how `mocked` would end up
+ * set in two of them and forgotten in the third.
  */
-export type LocationErrorType =
-  | 'permission_denied'
-  | 'gps_disabled'
-  | 'timeout'
-  | 'unknown';
+function buildPing(
+  position: VerifiedPosition,
+  shiftId: string,
+  batteryLevel: number | undefined,
+): LocationPing {
+  return {
+    latitude: position.latitude,
+    longitude: position.longitude,
+    // The server treats a missing accuracy as "unknown"; -1 would read as a
+    // real, absurdly precise value, so keep 0 as the neutral local default.
+    accuracy: position.accuracy ?? 0,
+    timestamp: position.capturedAt,
+    shift_id: shiftId,
+    battery_level: batteryLevel,
+    mocked: position.mocked,
+  };
+}
+
+/**
+ * Re-exported for backwards compatibility with existing importers. The union
+ * itself now lives with the shared error describer so the tracker and the
+ * screens classify failures identically.
+ */
+export type { LocationErrorType } from './locationErrors';
 
 /**
  * Location tracker events
@@ -115,7 +162,6 @@ class LocationTracker extends EventEmitter {
   private shiftId: string | null = null;
   private tracking = false;
   private locationBuffer: LocationPing[] = [];
-  private watchId: number | null = null;
   private intervalId: NodeJS.Timeout | null = null;
   private firstPingUploaded = false;
   private instanceId: string;
@@ -282,36 +328,28 @@ class LocationTracker extends EventEmitter {
     const shiftId = this.shiftId;
 
     return new Promise((resolve, reject) => {
-      Geolocation.getCurrentPosition(
-        (position) => {
-          const location: LocationPing = {
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-            accuracy: position.coords.accuracy,
-            timestamp: new Date().toISOString(),
-            shift_id: shiftId,
-            battery_level: batteryLevel,
-          };
+      // allowMocked: the tracker flags rather than refuses — see LocationPing.
+      // Options are passed explicitly rather than taking the reader's stricter
+      // defaults: a shift-long ping loop deliberately accepts a few-seconds-old
+      // fix to save battery, where the one-shot punch reads demand a fresh one.
+      readPosition({ allowMocked: true, geoOptions: TRACKER_GEO_OPTIONS })
+        .then((position) => {
+          const location = buildPing(position, shiftId, batteryLevel);
 
           console.debug('[LocationTracker] Got current location:', {
             lat: location.latitude.toFixed(6),
             lng: location.longitude.toFixed(6),
             accuracy: `${location.accuracy.toFixed(1)}m`,
+            mocked: location.mocked,
             battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
           });
           resolve(location);
-        },
-        (error) => {
+        })
+        .catch((error) => {
           const errorMsg = this.handleLocationError(error);
           console.error('[LocationTracker] Error getting current location:', errorMsg);
           reject(new Error(errorMsg));
-        },
-        {
-          enableHighAccuracy: HIGH_ACCURACY,
-          timeout: GPS_TIMEOUT,
-          maximumAge: GPS_MAXIMUM_AGE,
-        }
-      );
+        });
     });
   }
 
@@ -388,11 +426,8 @@ class LocationTracker extends EventEmitter {
   private stopLocationWatch(): void {
     console.debug('[LocationTracker] Stopping location watch');
 
-    if (this.watchId !== null) {
-      Geolocation.clearWatch(this.watchId);
-      this.watchId = null;
-    }
-
+    // No watch to clear: the tracker polls on a setTimeout loop rather than
+    // subscribing via watchPosition, so `intervalId` is the only handle.
     if (this.intervalId !== null) {
       clearTimeout(this.intervalId);
       this.intervalId = null;
@@ -413,21 +448,25 @@ class LocationTracker extends EventEmitter {
     // Get battery level first (non-blocking, fast ~1-5ms)
     const batteryLevel = await getBatteryLevel();
 
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const location: LocationPing = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString(),
-          shift_id: this.shiftId!,
-          battery_level: batteryLevel,
-        };
+    const shiftId = this.shiftId;
+
+    readPosition({
+      allowMocked: true,
+      geoOptions: {
+        ...TRACKER_GEO_OPTIONS,
+        forceRequestLocation: true,
+        forceLocationManager: false,
+        showLocationDialog: true,
+      },
+    })
+      .then((position) => {
+        const location = buildPing(position, shiftId, batteryLevel);
 
         console.debug('[LocationTracker] Location captured:', {
           lat: location.latitude.toFixed(6),
           lng: location.longitude.toFixed(6),
           accuracy: `${location.accuracy.toFixed(1)}m`,
+          mocked: location.mocked,
           battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
 
@@ -442,26 +481,17 @@ class LocationTracker extends EventEmitter {
         } else if (this.shouldUploadBatch()) {
           this.uploadLocations();
         }
-      },
-      (error) => {
+      })
+      .catch((error) => {
         const errorMsg = this.handleLocationError(error);
         console.error('[LocationTracker] Location capture error:', errorMsg);
         this.emit('error', errorMsg);
 
         // Retry with lower accuracy on timeout
-        if (error.code === 3) { // TIMEOUT
+        if (error?.code === 3) { // TIMEOUT
           this.retryWithLowerAccuracy();
         }
-      },
-      {
-        enableHighAccuracy: HIGH_ACCURACY,
-        timeout: GPS_TIMEOUT,
-        maximumAge: GPS_MAXIMUM_AGE,
-        forceRequestLocation: true,
-        forceLocationManager: false,
-        showLocationDialog: true,
-      }
-    );
+      });
   }
 
   /**
@@ -477,37 +507,27 @@ class LocationTracker extends EventEmitter {
     // Get battery level (may have changed since first attempt)
     const batteryLevel = await getBatteryLevel();
 
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const location: LocationPing = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy: position.coords.accuracy,
-          timestamp: new Date().toISOString(),
-          shift_id: this.shiftId!,
-          battery_level: batteryLevel,
-        };
+    const shiftId = this.shiftId;
+
+    readPosition({ allowMocked: true, geoOptions: TRACKER_RETRY_GEO_OPTIONS })
+      .then((position) => {
+        const location = buildPing(position, shiftId, batteryLevel);
 
         console.debug('[LocationTracker] Location captured (low accuracy):', {
           lat: location.latitude.toFixed(6),
           lng: location.longitude.toFixed(6),
           accuracy: `${location.accuracy.toFixed(1)}m`,
+          mocked: location.mocked,
           battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
         this.addLocationToBuffer(location);
         this.emit('locationUpdate', location);
-      },
-      (error) => {
+      })
+      .catch((error) => {
         const errorMsg = this.handleLocationError(error);
         console.error('[LocationTracker] Retry failed:', errorMsg);
         this.emit('error', errorMsg);
-      },
-      {
-        enableHighAccuracy: false, // Lower accuracy
-        timeout: GPS_TIMEOUT * 2, // Longer timeout
-        maximumAge: GPS_MAXIMUM_AGE * 2,
-      }
-    );
+      });
   }
 
   /**
@@ -554,7 +574,13 @@ class LocationTracker extends EventEmitter {
     try {
       const bufferStr = await AsyncStorage.getItem(BUFFER_STORAGE_KEY);
       if (bufferStr) {
-        const restoredBuffer = JSON.parse(bufferStr) as LocationPing[];
+        // A buffer written by a build that predates `mocked` has no such field.
+        // Normalise on read so the rest of the tracker can treat it as required:
+        // unknown becomes `false`, since flagging every queued ping the first
+        // time a worker updates the app would be a mass false positive.
+        const restoredBuffer = (JSON.parse(bufferStr) as LocationPing[]).map(
+          (loc) => ({ ...loc, mocked: loc.mocked ?? false }),
+        );
 
         // Filter: only keep locations for the current shift
         const currentShiftLocations = restoredBuffer.filter(
@@ -715,31 +741,26 @@ class LocationTracker extends EventEmitter {
    * Check if location services are enabled
    */
   private async checkLocationServicesEnabled(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      Geolocation.getCurrentPosition(
-        () => resolve(),
-        (error) => {
-          if (error.code === 2) { // POSITION_UNAVAILABLE - GPS/location services disabled
-            const errorMsg = i18n.t('location:errors.gpsDisabled');
-
-            Alert.alert(
-              i18n.t('location:errors.gpsDisabledTitle'),
-              i18n.t('location:errors.gpsDisabledMessage'),
-              [{ text: 'OK' }]
-            );
-
-            reject(new Error(errorMsg));
-          } else {
-            resolve(); // Other errors are handled during normal operation
-          }
-        },
-        {
-          enableHighAccuracy: false,
-          timeout: 5000,
-          maximumAge: 0,
+    // allowMocked: this asks whether the provider answers at all, not whether
+    // the fix can be trusted. A mocked fix still proves location services are on.
+    return readPosition({
+      allowMocked: true,
+      geoOptions: { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 },
+    }).then(
+      () => undefined,
+      (error) => {
+        if (error?.code !== 2) {
+          return; // POSITION_UNAVAILABLE is the only fatal case; others are
+          //         handled during normal operation.
         }
-      );
-    });
+        Alert.alert(
+          i18n.t('location:errors.gpsDisabledTitle'),
+          i18n.t('location:errors.gpsDisabledMessage'),
+          [{ text: 'OK' }],
+        );
+        throw new Error(i18n.t('location:errors.gpsDisabled'));
+      },
+    );
   }
 
   /**

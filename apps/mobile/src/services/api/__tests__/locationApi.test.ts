@@ -151,14 +151,35 @@ describe('locationApi', () => {
           gps_lng: 112.75,
           accuracy_meters: 10,
           logged_at: '2026-01-19T10:00:00Z',
+          battery_level: undefined,
+          // Pings from a build predating the mock check report `false`, not
+          // absent — the server must distinguish "checked, clean" from "unknown".
+          is_mocked: false,
         },
         {
           gps_lat: -7.251,
           gps_lng: 112.751,
           accuracy_meters: 12,
           logged_at: '2026-01-19T10:05:00Z',
+          battery_level: undefined,
+          is_mocked: false,
         },
       ]);
+    });
+
+    it('should forward a mocked ping so the server can flag it', () => {
+      const result = convertPingsToLocations([
+        {
+          latitude: -7.25,
+          longitude: 112.75,
+          accuracy: 10,
+          timestamp: '2026-01-19T10:00:00Z',
+          shift_id: 'shift-123',
+          mocked: true,
+        },
+      ]);
+
+      expect(result[0].is_mocked).toBe(true);
     });
 
     it('should handle empty array', () => {
@@ -184,6 +205,8 @@ describe('locationApi', () => {
           gps_lat: -7.25,
           gps_lng: 112.75,
           accuracy_meters: 0,
+          battery_level: undefined,
+          is_mocked: false,
           logged_at: '2026-01-19T10:00:00Z',
         },
       ]);
