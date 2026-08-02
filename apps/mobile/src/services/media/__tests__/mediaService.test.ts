@@ -9,6 +9,14 @@ import RNFS from 'react-native-fs';
 
 // Mock dependencies
 jest.mock('react-native-image-picker');
+// Pin the gallery flag rather than inheriting it from a developer's .env.local:
+// these specs assert gallery BEHAVIOUR, and whether the override happens to be
+// on locally must not decide whether they run.
+jest.mock('../../../config/integrity', () => ({
+  galleryUploadAllowed: jest.fn(() => true),
+  mockLocationAllowed: jest.fn(() => false),
+  isOverrideEnabled: jest.fn(() => false),
+}));
 jest.mock('@bam.tech/react-native-image-resizer');
 jest.mock('react-native-fs');
 jest.mock('react-native-uuid', () => ({
@@ -195,6 +203,16 @@ describe('MediaService', () => {
   });
 
   describe('pickFromGallery', () => {
+    it('refuses when evidence uploads are camera-only', async () => {
+      // The real control. A screen that forgets to hide its gallery button must
+      // still be unable to attach a gallery photo as evidence.
+      const { galleryUploadAllowed } = require('../../../config/integrity');
+      galleryUploadAllowed.mockReturnValueOnce(false);
+
+      await expect(mediaService.pickFromGallery()).rejects.toThrow();
+      expect(launchImageLibrary).not.toHaveBeenCalled();
+    });
+
     it('should pick photos from gallery successfully', async () => {
       mockLaunchImageLibrary.mockResolvedValue({
         assets: [

@@ -90,6 +90,14 @@ export function PhotoUploader({
       Alert.alert(t('photoUploader.maxPhotosTitle'), t('photoUploader.maxPhotosMessage', { max: maxPhotos }));
       return;
     }
+    // Evidence photos are camera-only in release builds: a gallery image is no
+    // evidence the worker was anywhere. Skip the chooser entirely rather than
+    // showing a one-option dialog or a button that refuses when tapped.
+    if (!mediaService.isGalleryAllowed()) {
+      captureFromCamera();
+      return;
+    }
+
     // May 12 — let the user pick camera OR gallery, mirroring the
     // standard pattern in TaskCompleteScreen / ActivitySubmissionScreen.
     Alert.alert(

@@ -39,6 +39,8 @@ jest.mock('../../../services/api/tasksApi');
 // Mock media service (used by PhotoUploader component)
 jest.mock('../../../services/media', () => ({
   mediaService: {
+    // Gallery available by default so the existing chooser specs still apply.
+    isGalleryAllowed: jest.fn(() => true),
     capturePhoto: jest.fn().mockResolvedValue({
       id: 'photo-1',
       uri: 'file:///test-photo.jpg',
