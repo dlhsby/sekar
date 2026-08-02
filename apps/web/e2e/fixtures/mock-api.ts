@@ -397,6 +397,7 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
   await page.route('**/api/v1/rayons/*/locations**', (route) => json(route, mockData.locations));
   await page.route('**/api/v1/rayons/*/stats', (route) => json(route, mockData.districtStats));
 
+
   // 6) Schedules + shifts + team categories + staff requirements
   await page.route('**/api/v1/shift-definitions**', (route) => json(route, mockData.shiftDefinitions));
   await page.route('**/api/v1/team-categories?**', (route) => json(route, mockData.teamCategories));
@@ -418,6 +419,90 @@ export async function setupMockApi(page: Page, currentUser: MockUserKey = 'admin
   await page.route('**/api/v1/schedules?**', (route) => json(route, mockData.schedules));
   await page.route('**/api/v1/schedules', (route) => json(route, mockData.schedules));
   await page.route('**/api/v1/schedules/*', (route) => json(route, mockData.schedules.data[0]));
+
+  // Slim LOOKUP endpoints (ADR-057 payload work). Registered AFTER the wildcard
+  // routes above so they win: `**/api/v1/districts/*` also matches
+  // `/districts/lookup` and answers with a single object, which crashed the
+  // schedules page on `allDistricts.filter is not a function` — the page renders
+  // its error boundary and every assertion on it fails for an unrelated reason.
+  // These return FLAT ARRAYS, exactly as the real endpoints do.
+  // FLAT shapes, as the real lookups answer: the board resolves the hierarchy
+  // from `district_id`/`region_id`, so returning the nested `district`/`region`
+  // objects the list endpoints use leaves every lokasi unplaceable.
+  await page.route('**/api/v1/districts/lookup**', (route) =>
+    json(
+      route,
+      mockData.districts.map((d) => ({
+        id: d.id,
+        name: d.name,
+        staffing_level: 'location',
+        is_active: true,
+      })),
+    ),
+  );
+  await page.route('**/api/v1/regions/lookup**', (route) =>
+    json(
+      route,
+      mockData.regions.map((r) => ({
+        id: r.id,
+        name: r.name,
+        district_id: DISTRICT.id,
+        is_active: true,
+      })),
+    ),
+  );
+  const locationLookup = mockData.locations.data.map((l) => ({
+    id: l.id,
+    name: l.name,
+    district_id: l.district?.id ?? DISTRICT.id,
+    region_id: l.region?.id ?? null,
+    is_active: true,
+    location_type_name: l.location_type?.name ?? null,
+  }));
+  await page.route('**/api/v1/locations/lookup**', (route) => json(route, locationLookup));
+  await page.route('**/api/v1/areas/lookup**', (route) => json(route, locationLookup));
+  await page.route('**/api/v1/users/lookup**', (route) =>
+    json(
+      route,
+      (Array.isArray(mockData.users) ? mockData.users : (mockData.users?.data ?? [])).map(
+        (u: { id: string; full_name: string; username: string; role: string }) => ({
+          id: u.id,
+          full_name: u.full_name,
+          username: u.username,
+          role: u.role,
+        }),
+      ),
+    ),
+  );
+
+  // The summary-first day board (ADR-057): counts up front, rows on expand.
+  // One satgas at one lokasi, so the board renders a real rayon card with a
+  // headcount and the expand path has something to open (ADR-057: the collapsed
+  // board is built from THIS, and rows are only fetched when a card is opened).
+  await page.route('**/api/v1/schedules/day-summary**', (route) =>
+    json(route, {
+      date: '2026-01-01',
+      groups: [
+        {
+          district_id: DISTRICT.id,
+          region_id: null,
+          location_id: LOCATION.id,
+          shift_definition_id: SHIFT.id,
+          role: 'satgas',
+          total: 1,
+        },
+      ],
+      workers: {
+        districts: [{ id: DISTRICT.id, workers: 1 }],
+        regions: [],
+        locations: [{ id: LOCATION.id, workers: 1 }],
+        city: 1,
+      },
+    }),
+  );
+  await page.route('**/api/v1/schedules/range-summary**', (route) =>
+    json(route, { from: '2026-01-01', to: '2026-01-01', days: [], dayDistricts: [], cells: [] }),
+  );
 
   // 7) Pruning requests
   await page.route('**/api/v1/pruning-requests?**', (route) => {

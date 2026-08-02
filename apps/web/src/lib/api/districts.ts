@@ -59,7 +59,11 @@ export function useDistrictLookup() {
     queryKey: [...districtKeys.all, 'lookup'],
     queryFn: async () => {
       const response = await apiClient.get<DistrictLookup[]>('/districts/lookup');
-      return response.data ?? [];
+      // Defensive: every caller treats this as an array and calls `.filter`/`.map`
+      // on it directly, so a non-array body (a paginated envelope, an error
+      // page, a stray single object) throws inside render and takes the whole
+      // page down to its error boundary rather than degrading to "no options".
+      return Array.isArray(response.data) ? response.data : [];
     },
     staleTime: 10 * 60 * 1000,
   });
