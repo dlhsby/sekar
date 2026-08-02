@@ -64,7 +64,11 @@ export function useLocationLookup() {
       const response = await apiClient.get<LocationLookup[]>(
         '/locations/lookup?include_inactive=true'
       );
-      return response.data ?? [];
+      // Defensive: every caller treats this as an array and calls `.filter`/`.map`
+      // on it directly, so a non-array body (a paginated envelope, an error
+      // page, a stray single object) throws inside render and takes the whole
+      // page down to its error boundary rather than degrading to "no options".
+      return Array.isArray(response.data) ? response.data : [];
     },
     staleTime: 5 * 60 * 1000,
   });

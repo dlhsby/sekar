@@ -227,7 +227,10 @@ export function dedupeOccurrences(lists: readonly (ScheduleOccurrence[] | undefi
  */
 export function indexDaySummary(payload: DaySummaryPayload): DaySummaryIndex {
   const counts = new Map<string, ShiftCounts>();
-  for (const g of payload.groups) {
+  // Defensive: an unexpected body (an error page, a stale mock, a proxy notice)
+  // would otherwise throw inside render and take the board down to its error
+  // boundary. An empty index reads as "no assignments", which is recoverable.
+  for (const g of payload?.groups ?? []) {
     const container = g.location_id ?? g.region_id ?? g.district_id ?? CITY_NODE_ID;
     const key = `${container}|${g.shift_definition_id ?? ''}`;
     const entry = counts.get(key) ?? { total: 0, countableByRole: {} };
@@ -239,10 +242,14 @@ export function indexDaySummary(payload: DaySummaryPayload): DaySummaryIndex {
   }
 
   const workers = new Map<string, number>();
-  for (const list of [payload.workers.districts, payload.workers.regions, payload.workers.locations]) {
-    for (const w of list) workers.set(w.id, w.workers);
+  for (const list of [
+    payload?.workers?.districts,
+    payload?.workers?.regions,
+    payload?.workers?.locations,
+  ]) {
+    for (const w of list ?? []) workers.set(w.id, w.workers);
   }
-  return { counts, workers, cityWorkers: payload.workers.city };
+  return { counts, workers, cityWorkers: payload?.workers?.city ?? 0 };
 }
 
 /**
