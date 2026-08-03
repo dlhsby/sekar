@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react-native';
+import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '../../store/slices/authSlice';
@@ -20,6 +20,7 @@ import { getMyRoster } from '../../services/api/schedulesApi';
 import { getDistricts } from '../../services/api/districtsApi';
 import { __resetDistrictAreasCache } from '../useAllDistrictAreas';
 import Geolocation from 'react-native-geolocation-service';
+import i18n from '../../i18n/config';
 import { Alert } from 'react-native';
 import { clockIn as mockClockIn, getCurrentShift } from '../../services/api/shiftsApi';
 import { requestClockInPermissions } from '../../services/permissions';
@@ -28,6 +29,14 @@ jest.mock('react-native-geolocation-service', () => ({
   getCurrentPosition: jest.fn(),
   watchPosition: jest.fn(() => 1),
   clearWatch: jest.fn(),
+}));
+// Local .env.local sets ALLOW_MOCK_LOCATION=true for emulator work, and __DEV__
+// is true under jest — so without this the whole suite would run with the dev
+// override ACTIVE and never exercise the enforced path.
+jest.mock('../../config/integrity', () => ({
+  mockLocationAllowed: jest.fn(() => false),
+  galleryUploadAllowed: jest.fn(() => false),
+  isOverrideEnabled: jest.fn(() => false),
 }));
 jest.mock('../../services/api/shiftsApi', () => ({
   clockIn: jest.fn(),
@@ -363,6 +372,60 @@ describe('useClockInOut — roster-gated lateness', () => {
       const titles = (Alert.alert as jest.Mock).mock.calls.map((c) => c[0]);
       expect(titles).not.toContain('Konfirmasi Clock In');
       jest.useRealTimers();
+    });
+  });
+
+  describe('mock-GPS enforcement', () => {
+    // Local copy: the identical fixture in `pre-punch confirmation` is scoped to
+    // that block. Any roster with a boundary works here — these tests assert on
+    // the location state, not on the geofence verdict.
+    const ROSTER_OUTSIDE = {
+      shift_definition: ROSTER_SHIFT_DEF,
+      district_id: 'd-1',
+      district: { id: 'd-1', name: 'Rayon Barat 1', boundary_polygon: SQUARE_POLYGON },
+    };
+
+    /** Same as withGpsFix, but the OS reports the fix as mock-provided. */
+    const withMockedGpsFix = (lat: number, lng: number) => {
+      (requestClockInPermissions as jest.Mock).mockResolvedValue({ success: true });
+      const fix = { coords: { latitude: lat, longitude: lng, accuracy: 5 }, mocked: true };
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => success(fix));
+      (Geolocation.watchPosition as jest.Mock).mockImplementation((success) => {
+        success(fix);
+        return 1;
+      });
+    };
+
+    it('refuses a mocked fix and surfaces a localized reason', async () => {
+      // A punch is evidence, so unlike the tracker this refuses outright: there
+      // must be no coordinates available to submit.
+      withMockedGpsFix(0, 0);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+
+      await waitFor(() => expect(result.current.location.error).toBeTruthy());
+      expect(result.current.location.error).toBe(i18n.t('location:errors.mockedLocation'));
+      expect(result.current.location.latitude).toBeNull();
+      expect(result.current.location.longitude).toBeNull();
+    });
+
+    it('does not leave a stale good fix on screen when the watch turns mocked', async () => {
+      // Otherwise a worker could take a genuine reading, switch on a fake GPS,
+      // and punch against the coordinates still held in state.
+      withGpsFix(0, 0);
+      mockGetMyRoster.mockResolvedValue({ data: ROSTER_OUTSIDE } as never);
+      const { result } = renderHook(() => useClockInOut(), { wrapper: wrapperFor(null) });
+      await waitFor(() => expect(result.current.location.latitude).toBe(0));
+
+      // The watch now reports a mocked fix.
+      const watchSuccess = (Geolocation.watchPosition as jest.Mock).mock.calls[0][0];
+      await act(async () => {
+        watchSuccess({ coords: { latitude: 0, longitude: 0, accuracy: 5 }, mocked: true });
+      });
+
+      expect(result.current.location.latitude).toBeNull();
+      expect(result.current.location.error).toBe(i18n.t('location:errors.mockedLocation'));
     });
   });
 });

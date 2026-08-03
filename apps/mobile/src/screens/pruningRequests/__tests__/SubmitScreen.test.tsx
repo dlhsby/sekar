@@ -89,6 +89,9 @@ jest.mock('../../../services/media/mediaService', () => ({
   mediaService: {
     capturePhoto: jest.fn(),
     pickFromGallery: jest.fn(),
+    // Gallery stays available in these specs: they assert the existing
+    // camera-OR-gallery flow, which is still the dev behaviour.
+    isGalleryAllowed: jest.fn(() => true),
     convertToBase64: jest.fn().mockResolvedValue('data:image/jpeg;base64,AAAA'),
   },
 }));

@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { mediaService } from '../../../services/media';
 import {
   View,
   Image,
@@ -132,14 +133,19 @@ export function SubmitPhotoCard(props: SubmitPhotoCardProps) {
             disabled={photos.length >= MAX_PHOTOS || isBusy}
             style={{ flex: 1 }}
           />
-          <NBButton
-            label={t('submitPhotoCard.galleryButton')}
-            leftIcon="image-multiple"
-            variant="secondary"
-            onPress={handlePickFromGallery}
-            disabled={photos.length >= MAX_PHOTOS || isBusy}
-            style={{ flex: 1 }}
-          />
+          {/* Evidence photos are camera-only in release builds: a gallery image
+              is no evidence the tree was actually visited. The button is hidden
+              rather than disabled — a permanently greyed control reads as a bug. */}
+          {mediaService.isGalleryAllowed() && (
+            <NBButton
+              label={t('submitPhotoCard.galleryButton')}
+              leftIcon="image-multiple"
+              variant="secondary"
+              onPress={handlePickFromGallery}
+              disabled={photos.length >= MAX_PHOTOS || isBusy}
+              style={{ flex: 1 }}
+            />
+          )}
         </View>
       </NBCardContent>
     </NBCard>

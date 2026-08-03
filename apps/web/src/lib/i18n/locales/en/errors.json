@@ -52,5 +52,8 @@
   "NETWORK_ERROR": "Could not connect to the server. Check your internet connection.",
   "TIMEOUT_ERROR": "The request timed out. Please try again.",
   "UNKNOWN_ERROR": "Something went wrong. Please try again.",
-  "GENERIC": "Something went wrong. Please try again."
+  "GENERIC": "Something went wrong. Please try again.",
+  "GPS_MOCKED": "Fake location detected. Turn off any mock-location app in Settings, then try again.",
+  "GPS_MISSING_COORDINATES": "No GPS location yet. Wait for your device to get a signal, then try again.",
+  "GPS_IMPOSSIBLE_TRAVEL": "Implausible movement detected. Make sure GPS is on and not being manipulated."
 }

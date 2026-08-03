@@ -21,6 +21,14 @@ export interface TrackerLocationPing {
   timestamp: string; // ISO format
   shift_id: string;
   battery_level?: number; // 0-100 percentage
+  /**
+   * Whether the OS reported this fix as coming from a mock provider.
+   *
+   * Optional here (not in `LocationPing`) because a buffer persisted to
+   * AsyncStorage by an older build predates the field. Those pings are
+   * forwarded as `false` — see `convertPingsToLocations`.
+   */
+  mocked?: boolean;
 }
 
 /**
@@ -56,5 +64,10 @@ export function convertPingsToLocations(pings: TrackerLocationPing[]): LocationP
     accuracy_meters: ping.accuracy,
     battery_level: ping.battery_level,
     logged_at: ping.timestamp,
+    // A ping buffered by an older build carries no verdict. Send `false` rather
+    // than omitting the field: the server must be able to tell "checked, clean"
+    // from "field absent", and treating an unknown as mocked would mass-flag
+    // every queued ping the first time a worker updates the app.
+    is_mocked: ping.mocked ?? false,
   }));
 }

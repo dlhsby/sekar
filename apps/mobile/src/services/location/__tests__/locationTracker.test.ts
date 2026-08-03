@@ -15,6 +15,16 @@ import { Alert } from 'react-native';
 
 // Mock dependencies
 jest.mock('react-native-geolocation-service');
+// Thinning off for this suite. These specs drive the SAME fixture coordinates
+// repeatedly to exercise buffering and upload mechanics; with the 25 m filter
+// live those pings are correctly discarded as "still here" and the buffer never
+// grows, which would make them assert the thinning rather than what they are
+// about. Thinning has its own coverage: pingThinning.test.ts for the rule, and
+// the dedicated tracker spec below for the integration.
+jest.mock('../../../constants/config', () => {
+  const actual = jest.requireActual('../../../constants/config');
+  return { __esModule: true, ...actual, default: { ...actual.default, LOCATION_DISTANCE_FILTER: 0 } };
+});
 jest.mock('react-native-device-info');
 jest.mock('../../api/locationApi');
 jest.mock('../../sync/offlineQueue');
@@ -295,10 +305,42 @@ describe('LocationTracker', () => {
       expect((Geolocation.getCurrentPosition as jest.Mock).mock.calls.length).toBeGreaterThan(initialCalls);
     });
 
+    it('flags a mocked ping instead of dropping it', async () => {
+      // Dropping the ping would be indistinguishable from the worker being
+      // offline, hiding exactly the cheating this is meant to surface. The
+      // server decides what to do; the tracker's job is to report honestly.
+      const listener = jest.fn();
+      locationTracker.on('locationUpdate', listener);
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
+        success({ ...mockLocation, mocked: true });
+      });
+
+      await jest.advanceTimersByTimeAsync(61 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ mocked: true }));
+    });
+
+    it('marks an ordinary ping as not mocked', async () => {
+      const listener = jest.fn();
+      locationTracker.on('locationUpdate', listener);
+
+      await jest.advanceTimersByTimeAsync(61 * 1000);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ mocked: false }));
+    });
+
     it('should add location to buffer on capture', async () => {
       // First ping is uploaded immediately (buffer cleared); advance time to
       // trigger a second ping, which is buffered until batch size is reached.
       await jest.advanceTimersByTimeAsync(61 * 1000);
+      // Capture resolves through readPosition's promise, so the buffer write
+      // lands a microtask after the timer callback rather than inside it.
+      await Promise.resolve();
+      await Promise.resolve();
       expect(locationTracker.getBufferCount()).toBeGreaterThan(0);
     });
 

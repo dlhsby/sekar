@@ -395,6 +395,51 @@ already speaks both via `AWS_ENDPOINT_URL` / `AWS_S3_FORCE_PATH_STYLE`.
   - `VACUUM (FULL)` must be issued **one table per statement** — psql sends a multi-statement
     `-c` as one transaction and vacuum cannot run inside one.
 
+#### Live-scale pre-flight (added 2026-08-03)
+
+The rehearsal above ran against a **658 MB clone**. The live operational database is an order
+of magnitude larger, so two things that did not matter on the clone now decide whether the run
+is safe.
+
+**1. Order is mandatory: backfill FIRST, `VACUUM (FULL)` SECOND.**
+
+`VACUUM (FULL)` rewrites a table into a *new* file, so peak disk is `old + new`.
+
+| | |
+|---|---|
+| `activities` total | **8155 MB** (heap only 4.5 MB — the rest is inline-photo TOAST) |
+| `sekar_staging` | ~10 GB |
+| RDS allocated | 20 GB |
+| **Free storage** | **~6.0 GB** (measured 2026-08-03) |
+
+Vacuuming `activities` **before** the backfill would need ~8.1 GB free against ~6.0 GB
+available — it would fill the volume, and a storage-full RDS instance can become unavailable.
+Run **after** the backfill and the new file is a few MB, so peak is barely above current usage.
+
+Check free space immediately before starting, and abort if it has fallen:
+
+```bash
+aws cloudwatch get-metric-statistics --profile sekar --region ap-southeast-3 \
+  --namespace AWS/RDS --metric-name FreeStorageSpace \
+  --dimensions Name=DBInstanceIdentifier,Value=dlhsby \
+  --start-time "$(date -u -d '2 hours ago' +%Y-%m-%dT%H:%M:%SZ)" \
+  --end-time "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+  --period 3600 --statistics Minimum \
+  --query 'Datapoints[-1].Minimum' --output text
+```
+
+**2. Expect ~20× the rehearsal volume.** All 15,103 `activities` rows still hold inline base64
+(~8.1 GB, averaging ~540 KB/row) versus 398.9 MB moved on the clone. Budget minutes, not
+seconds. The added S3 cost is negligible — ~8 GB at $0.023/GB is well under $0.20/month, and
+the PUT requests round to nothing — while the same 8 GB on RDS gp2 costs 5× more *and* is the
+main driver of the cross-AZ read traffic (see
+[`aws-cost-position.md`](aws-cost-position.md)).
+
+**3. `location_logs` is not part of this.** It is large (5.4M rows) for an unrelated reason —
+unbounded ping retention — and is covered separately in `aws-cost-position.md`. Do not vacuum
+it opportunistically during this window; nothing has deleted rows from it, so there is little
+to reclaim and the lock is not worth taking.
+
 Phase B is out of scope for the cutover deploy itself (it's a separate, post-deploy job) but
 must be run, and the same fix applies to production.
 

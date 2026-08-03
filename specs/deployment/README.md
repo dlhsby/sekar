@@ -18,6 +18,7 @@ It walks the four scenarios end-to-end — **run locally → obtain keys → dep
 | Watch it (dashboards, alarms) | **§H Monitoring** → [`monitoring.md`](monitoring.md) |
 | Release the mobile apps | **§I Mobile releases** → [`android-release-guide.md`](android-release-guide.md) · [`ios-release-guide.md`](ios-release-guide.md) |
 | Run it on managed AWS | **Appendix A** → [`infrastructure.md`](infrastructure.md) |
+| Know what AWS costs + how long credits last | [`aws-cost-position.md`](aws-cost-position.md) |
 
 ## Deployment targets (same application images)
 

@@ -9,8 +9,10 @@ import {
 } from '@nestjs/common';
 import { RedisService } from '../../common/services/redis.service';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, Between } from 'typeorm';
+import { Repository, DataSource, Between, IsNull } from 'typeorm';
 import { LocationLog } from './entities/location-log.entity';
+import { evaluateLocation, type PreviousFix } from '../../common/utils/location-integrity.util';
+import { isRedundantStationaryPing } from '../../common/utils/location-thinning.util';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 import { Shift } from '../shifts/entities/shift.entity';
 import { PaginatedResponseDto } from '../../common/dto/pagination.dto';
@@ -49,7 +51,111 @@ export class LocationService {
    * @param userId UUID of the user
    * @returns Number of locations inserted
    */
-  async createBatch(dto: CreateLocationBatchDto, userId: string): Promise<{ count: number }> {
+  /** The most recent stored ping with usable coordinates, for impossible-travel. */
+  private async lastKnownFix(userId: string): Promise<PreviousFix | null> {
+    const previous = await this.locationLogsRepository.findOne({
+      // Chain only from clean fixes: seeding the speed check with a spoofed
+      // position would make the NEXT (genuine) ping look like a teleport.
+      where: { user_id: userId, rejection_reason: IsNull() },
+      order: { logged_at: 'DESC' },
+    });
+
+    if (!previous) return null;
+    return {
+      lat: parseFloat(previous.gps_lat.toString()),
+      lng: parseFloat(previous.gps_lng.toString()),
+      at: previous.logged_at,
+    };
+  }
+
+  /**
+   * Judge every ping in a batch and build the rows to store.
+   *
+   * Unlike a punch, a bad ping does NOT fail the request. Rejecting the whole
+   * batch would punish an honest client for one bad fix among twenty, and the
+   * offline queue would then retry the same batch forever. Each ping is judged
+   * on its own and carries its own verdict.
+   *
+   * Pings are processed in capture order and chained: each accepted fix becomes
+   * the reference for the next, so a spoofed jump is caught within a batch and
+   * not just across batches.
+   */
+  private async evaluateBatch(dto: CreateLocationBatchDto, userId: string): Promise<LocationLog[]> {
+    const now = new Date();
+    let previous = await this.lastKnownFix(userId);
+
+    // Sort defensively: the client buffers and may flush out of order, and an
+    // out-of-order sequence would derive nonsense speeds.
+    const ordered = [...dto.locations].sort(
+      (a, b) => new Date(a.logged_at).getTime() - new Date(b.logged_at).getTime(),
+    );
+
+    const rows: LocationLog[] = [];
+    let thinned = 0;
+
+    for (const location of ordered) {
+      const verdict = evaluateLocation(
+        {
+          lat: location.gps_lat,
+          lng: location.gps_lng,
+          accuracyMeters: location.accuracy_meters ?? null,
+          isMocked: location.is_mocked ?? null,
+          clientTimestamp: new Date(location.logged_at),
+        },
+        { now, previous },
+      );
+
+      if (verdict.accepted) {
+        // Drop redundant "still here" pings. Only ever applied to an ACCEPTED
+        // ping: a refused one must always be stored, since that row is the
+        // evidence of spoofing.
+        if (
+          isRedundantStationaryPing(
+            { lat: location.gps_lat, lng: location.gps_lng, at: verdict.effectiveTimestamp },
+            previous,
+          )
+        ) {
+          thinned += 1;
+          continue;
+        }
+        previous = {
+          lat: location.gps_lat,
+          lng: location.gps_lng,
+          at: verdict.effectiveTimestamp,
+        };
+      } else {
+        this.logger.warn(`Ping refused for user ${userId}: ${verdict.rejection}`);
+      }
+
+      rows.push(
+        this.locationLogsRepository.create({
+          user_id: userId,
+          shift_id: dto.shift_id,
+          gps_lat: location.gps_lat,
+          gps_lng: location.gps_lng,
+          accuracy_meters: location.accuracy_meters,
+          battery_level: location.battery_level,
+          // Clamped, never the raw client claim — `logged_at` drives presence
+          // freshness, so an unbounded backdate would let a client fabricate its
+          // own attendance history.
+          logged_at: verdict.effectiveTimestamp,
+          rejection_reason: verdict.rejection,
+          poor_accuracy: verdict.advisories.poorAccuracy,
+          clock_skew_ms: verdict.advisories.clockSkewMs,
+        }),
+      );
+    }
+
+    if (thinned > 0) {
+      this.logger.debug(`Thinned ${thinned} stationary pings for user ${userId}`);
+    }
+    return rows;
+  }
+
+  async createBatch(
+    dto: CreateLocationBatchDto,
+    userId: string,
+  ): Promise<{ count: number; rejected: number }> {
     this.logger.log(
       `User ${userId} uploading ${dto.locations.length} location logs for shift ${dto.shift_id}`,
     );
@@ -74,27 +180,26 @@ export class LocationService {
     await queryRunner.startTransaction();
 
     try {
-      const locationEntities = dto.locations.map((location) => {
-        return this.locationLogsRepository.create({
-          user_id: userId,
-          shift_id: dto.shift_id,
-          gps_lat: location.gps_lat,
-          gps_lng: location.gps_lng,
-          accuracy_meters: location.accuracy_meters,
-          battery_level: location.battery_level,
-          logged_at: new Date(location.logged_at),
-        });
-      });
+      const locationEntities = await this.evaluateBatch(dto, userId);
 
       const savedLogs = await queryRunner.manager.save(LocationLog, locationEntities);
       await queryRunner.commitTransaction();
 
-      this.logger.log(`Successfully inserted ${locationEntities.length} location logs`);
+      // Only clean pings may drive presence. A refused ping is stored (so a
+      // supervisor sees "faking location" rather than a silent gap) but never
+      // advances tracking status — the worker goes inactive until they stop.
+      const accepted = savedLogs?.filter((log) => !log.rejection_reason) ?? [];
+      const rejected = (savedLogs?.length ?? 0) - accepted.length;
 
-      if (savedLogs?.length > 0) {
+      this.logger.log(
+        `Inserted ${locationEntities.length} location logs for user ${userId}` +
+          (rejected > 0 ? ` (${rejected} refused on integrity, excluded from presence)` : ''),
+      );
+
+      if (accepted.length > 0) {
         if (this.redisService) {
           // Phase 3: queue all pings to Redis Stream for async processing
-          for (const log of savedLogs) {
+          for (const log of accepted) {
             await this.redisService
               .streamAdd('location:pings', {
                 userId,
@@ -108,7 +213,7 @@ export class LocationService {
           }
         } else if (this.statusCalculator) {
           // Fallback: process only the latest ping synchronously (no Redis)
-          const latestLog = savedLogs.reduce((a, b) => (a.logged_at > b.logged_at ? a : b));
+          const latestLog = accepted.reduce((a, b) => (a.logged_at > b.logged_at ? a : b));
           await this.statusCalculator
             .onLocationPing(
               userId,
@@ -127,7 +232,7 @@ export class LocationService {
         }
       }
 
-      return { count: locationEntities.length };
+      return { count: locationEntities.length, rejected };
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error(`Failed to insert location logs: ${error.message}`);

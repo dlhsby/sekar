@@ -5,8 +5,8 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import i18n from '../i18n/config';
-import Geolocation from 'react-native-geolocation-service';
+import { readPosition } from '../services/location/verifiedPosition';
+import { describeLocationError } from '../services/location/locationErrors';
 import { useAppSelector } from '../store/hooks';
 import { isWithinAreaBoundary } from '../utils/gpsUtils';
 import { locationTracker, type LocationPing } from '../services/location/locationTracker';
@@ -102,10 +102,14 @@ export function useHomeLocation() {
   const fetchLocation = useCallback(() => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
 
-    Geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude, accuracy } = position.coords;
-
+    // allowMocked: the home card only *displays* where the worker appears to be.
+    // Nothing is recorded from it, and the punch flow re-reads position under
+    // full enforcement, so blocking here would strand an emulator for no gain.
+    readPosition({
+      allowMocked: true,
+      geoOptions: { timeout: 15000, maximumAge: 10000 },
+    })
+      .then(({ latitude, longitude, accuracy }) => {
         const withinArea = boundaryAreas.some((a) =>
           isWithinAreaBoundary(latitude, longitude, a),
         );
@@ -119,20 +123,14 @@ export function useHomeLocation() {
           error: null,
           updatedAt: new Date(),
         });
-      },
-      (error) => {
+      })
+      .catch((error) => {
         setLocation((prev) => ({
           ...prev,
           loading: false,
-          error: error.message || i18n.t('location:getFailed'),
+          error: describeLocationError(error),
         }));
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 10000,
-      },
-    );
+      });
   }, [boundaryAreas]);
 
   const refresh = useCallback(() => {

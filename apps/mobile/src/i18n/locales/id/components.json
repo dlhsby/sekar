@@ -58,7 +58,8 @@
     "cameraUnavailable": "Kamera tidak tersedia di perangkat ini",
     "cameraPermissionDenied": "Izin kamera/galeri ditolak. Aktifkan di Pengaturan.",
     "cameraAccessError": "Terjadi kesalahan saat mengakses kamera/galeri",
-    "unknownCameraError": "Kesalahan: {{errorCode}}"
+    "unknownCameraError": "Kesalahan: {{errorCode}}",
+    "galleryDisabled": "Foto bukti harus diambil langsung dari kamera, tidak boleh dari galeri."
   },
   "locationPicker": {
     "title": "Pilih Titik Lokasi",

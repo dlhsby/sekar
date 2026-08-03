@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsNumber,
   IsString,
   IsUUID,
@@ -38,6 +39,17 @@ export class ClockInDto {
   @IsOptional()
   @IsUUID()
   client_uuid?: string;
+
+  @ApiProperty({
+    description:
+      'Client report of the OS mock-provider flag. Advisory input, never proof: ' +
+      'a patched client can always send false, so the server also applies checks ' +
+      'that do not depend on this value.',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  is_mocked?: boolean;
 
   @ApiProperty({ description: 'GPS accuracy in metres, if the device reports it', required: false })
   @IsOptional()

@@ -22,6 +22,10 @@ jest.mock('../../../services/media', () => ({
       fileSize: 500,
       type: 'image/jpeg',
     }),
+    // Gallery available by default so the existing camera-OR-gallery specs
+    // keep exercising the chooser; the camera-only path is asserted separately.
+    isGalleryAllowed: jest.fn(() => true),
+    pickFromGallery: jest.fn().mockResolvedValue([]),
   },
 }));
 
@@ -142,6 +146,22 @@ describe('PhotoUploader', () => {
     await waitFor(() => {
       expect(mockOnAdd).not.toHaveBeenCalled();
     });
+  });
+
+  it('goes straight to the camera when gallery evidence is disabled', async () => {
+    // No chooser at all: a one-option dialog, or a button that refuses when
+    // tapped, both read as a bug rather than a policy.
+    const { mediaService } = require('../../../services/media');
+    mediaService.isGalleryAllowed.mockReturnValue(false);
+
+    const { getByTestId } = render(
+      <PhotoUploader photos={[]} onAdd={mockOnAdd} onRemove={mockOnRemove} />
+    );
+    fireEvent.press(getByTestId('add-photo-button'));
+
+    await waitFor(() => expect(mediaService.capturePhoto).toHaveBeenCalled());
+    expect(mediaService.pickFromGallery).not.toHaveBeenCalled();
+    mediaService.isGalleryAllowed.mockReturnValue(true);
   });
 
   it('renders existing photos', () => {

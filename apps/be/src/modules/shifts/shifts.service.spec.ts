@@ -91,6 +91,10 @@ describe('ShiftsService', () => {
   };
   const mockPunchRepository = {
     createQueryBuilder: jest.fn(() => makePunchQB()),
+    // Last-known-fix lookup for the impossible-travel check. Null by default =
+    // no prior position, so the check is skipped and these specs exercise the
+    // behaviour they were written for.
+    findOne: jest.fn().mockResolvedValue(null),
   };
   // Real derivation — it is pure, so the service tests exercise the true logic.
   const derivation = new AttendanceDerivationService();
@@ -605,12 +609,109 @@ describe('ShiftsService', () => {
     it('records an OFFLINE punch at its capture time (punched_at), clamped to ≤ now', async () => {
       mockAreasService.findOne.mockResolvedValue(mockArea);
       arrangeNewSession([inPunch()]);
-      const capture = '2026-07-24T02:00:00.000Z'; // in the past → used verbatim
+      // Relative, not a fixed date: backdating is now bounded to a 24h window,
+      // so a hardcoded timestamp would drift out of range as the calendar moves.
+      // 6h covers the real case — a full shift with no signal, synced afterwards.
+      const capture = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
 
       await service.clockIn(mockUser.id, { ...clockInDto, punched_at: capture } as any);
 
       const inserted = insertedPunches.find((p) => p.label === PunchLabel.CLOCK_IN);
       expect(inserted?.punched_at.toISOString()).toBe(capture);
+    });
+
+    it('clamps an over-old backdate to the window floor', async () => {
+      // The hole this closes: resolvePunchedAt only ever clamped the FUTURE, so
+      // a device with its clock rolled back could claim a punch from any point
+      // in the past and have it accepted verbatim.
+      mockAreasService.findOne.mockResolvedValue(mockArea);
+      arrangeNewSession([inPunch()]);
+      const ancient = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const before = Date.now();
+      await service.clockIn(mockUser.id, { ...clockInDto, punched_at: ancient } as any);
+
+      const inserted = insertedPunches.find((p) => p.label === PunchLabel.CLOCK_IN);
+      const t = inserted.punched_at.getTime();
+      expect(t).toBeGreaterThanOrEqual(before - 24 * 60 * 60 * 1000 - 5000);
+      expect(t).toBeLessThan(before - 23 * 60 * 60 * 1000);
+      // The untouched claim stays visible even though the stored value moved.
+      expect(inserted.clock_skew_ms).toBeLessThan(-29 * 24 * 60 * 60 * 1000);
+    });
+
+    describe('integrity enforcement', () => {
+      beforeEach(() => {
+        mockAreasService.findOne.mockResolvedValue(mockArea);
+        arrangeNewSession([inPunch()]);
+      });
+
+      it('refuses a punch reported as mock-provided', async () => {
+        // A punch is evidence, so unlike a tracking ping this rejects outright:
+        // there must be nothing left to submit.
+        await expect(
+          service.clockIn(mockUser.id, { ...clockInDto, is_mocked: true } as any),
+        ).rejects.toThrow();
+        await service
+          .clockIn(mockUser.id, { ...clockInDto, is_mocked: true } as any)
+          .catch((e) => expect(e.getCode()).toBe(ApiErrorCode.GPS_MOCKED));
+      });
+
+      it('refuses null island as a missing fix', async () => {
+        await service.clockIn(mockUser.id, { ...clockInDto, gps_lat: 0, gps_lng: 0 } as any).then(
+          () => {
+            throw new Error('expected the punch to be refused');
+          },
+          (e) => expect(e.getCode()).toBe(ApiErrorCode.GPS_MISSING_COORDINATES),
+        );
+      });
+
+      it('stores nothing when a punch is refused', async () => {
+        // The gate runs before the selfie upload and the insert, so a refused
+        // punch leaves no orphaned photo and no partial state.
+        insertedPunches.length = 0;
+
+        await expect(
+          service.clockIn(mockUser.id, { ...clockInDto, is_mocked: true } as any),
+        ).rejects.toThrow();
+
+        expect(insertedPunches).toHaveLength(0);
+      });
+
+      it('still records an OUTSIDE-AREA punch — being outside never blocks', async () => {
+        // The property most likely to be broken by accident: enforcement is
+        // about missing/forged location, never about position (ADR-005 to 010).
+        // A real BoundaryCheckService is used, so put the worker outside by
+        // giving the area a polygon that excludes the fixture coordinates.
+        mockAreasService.findOne.mockResolvedValue({
+          ...mockArea,
+          boundary_polygon: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [0, 0],
+                [0, 1],
+                [1, 1],
+                [1, 0],
+                [0, 0],
+              ],
+            ],
+          },
+        });
+
+        await service.clockIn(mockUser.id, clockInDto as any);
+
+        const inserted = insertedPunches.find((p) => p.label === PunchLabel.CLOCK_IN);
+        expect(inserted).toBeDefined();
+        expect(inserted.outside_boundary).toBe(true);
+      });
+
+      it('flags a poor-accuracy fix without refusing it', async () => {
+        // Tree canopy is the honest case; it must be visible, not blocked.
+        await service.clockIn(mockUser.id, { ...clockInDto, accuracy_m: 500 } as any);
+
+        const inserted = insertedPunches.find((p) => p.label === PunchLabel.CLOCK_IN);
+        expect(inserted.poor_accuracy).toBe(true);
+      });
     });
 
     it('clamps a FUTURE punched_at to the server clock (no back-/forward-dating)', async () => {

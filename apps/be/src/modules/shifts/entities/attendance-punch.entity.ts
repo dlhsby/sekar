@@ -115,6 +115,37 @@ export class AttendancePunch {
   @Column({ type: 'boolean', default: false })
   outside_boundary: boolean;
 
+  /**
+   * Whether the fix reported an accuracy too poor to be meaningful.
+   *
+   * Advisory, exactly like `outside_boundary`: a bad fix under tree canopy is
+   * the honest case and must never block a punch. Recorded so a supervisor can
+   * tell "outside the area" from "we do not really know where they were".
+   */
+  @ApiProperty({ description: 'Whether the GPS accuracy was too poor to be reliable' })
+  @Column({ type: 'boolean', default: false })
+  poor_accuracy: boolean;
+
+  /**
+   * `client capture time - server receive time`, in milliseconds. Negative means
+   * the device claimed the punch happened earlier than it arrived.
+   *
+   * A large negative value is normal for the offline queue (a shift with no
+   * signal syncs hours later) and suspicious for an online punch, so the raw
+   * number is stored rather than a verdict. `punched_at` itself is clamped into
+   * the allowed window; this is what the clamp hid.
+   */
+  @ApiProperty({ description: 'Client/server clock difference at the punch, in ms' })
+  @Column({
+    type: 'bigint',
+    default: 0,
+    transformer: {
+      to: (value: number) => value,
+      from: (value: string | null) => (value != null ? parseInt(value, 10) : 0),
+    },
+  })
+  clock_skew_ms: number;
+
   @ApiProperty({ description: 'Selfie photo (base64 data-URI or S3 URL)', nullable: true })
   @Column({ type: 'text', nullable: true })
   photo_url: string | null;

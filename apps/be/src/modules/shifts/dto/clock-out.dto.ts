@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  IsBoolean,
   IsNumber,
   IsOptional,
   IsString,
@@ -41,6 +42,17 @@ export class ClockOutDto {
   @IsNumber()
   @Min(0)
   accuracy_m?: number;
+
+  @ApiProperty({
+    description:
+      'Client report of the OS mock-provider flag. Advisory input, never proof: ' +
+      'a patched client can always send false, so the server also applies checks ' +
+      'that do not depend on this value.',
+    required: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  is_mocked?: boolean;
 
   @ApiProperty({
     description: 'GPS latitude of user location at clock-out',

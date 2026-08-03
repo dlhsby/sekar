@@ -60,5 +60,8 @@
   "loadUsersFailed": "Failed to load users",
   "photoCaptureFailed": "Failed to capture photo",
   "photoLimitExceeded": "Photo limit reached",
-  "photoLimitMessage": "You can only add a maximum of {{maxPhotos}} photos."
+  "photoLimitMessage": "You can only add a maximum of {{maxPhotos}} photos.",
+  "GPS_MOCKED": "Fake location detected. Turn off any mock-location app in Settings, then try again.",
+  "GPS_MISSING_COORDINATES": "No GPS location yet. Wait for your device to get a signal, then try again.",
+  "GPS_IMPOSSIBLE_TRAVEL": "Implausible movement detected. Make sure GPS is on and not being manipulated."
 }

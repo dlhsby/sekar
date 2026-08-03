@@ -60,5 +60,8 @@
   "loadUsersFailed": "Gagal memuat data pengguna",
   "photoCaptureFailed": "Gagal mengambil foto",
   "photoLimitExceeded": "Batas foto tercapai",
-  "photoLimitMessage": "Anda hanya dapat menambahkan maksimal {{maxPhotos}} foto."
+  "photoLimitMessage": "Anda hanya dapat menambahkan maksimal {{maxPhotos}} foto.",
+  "GPS_MOCKED": "Lokasi palsu terdeteksi. Nonaktifkan aplikasi lokasi palsu (mock location) di Pengaturan, lalu coba lagi.",
+  "GPS_MISSING_COORDINATES": "Lokasi GPS belum tersedia. Tunggu hingga perangkat mendapatkan sinyal, lalu coba lagi.",
+  "GPS_IMPOSSIBLE_TRAVEL": "Perpindahan lokasi tidak wajar terdeteksi. Pastikan GPS aktif dan tidak dimanipulasi."
 }
