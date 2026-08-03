@@ -14,7 +14,7 @@
  * Configuration via .env:
  * - LOCATION_MIN_INTERVAL_SECONDS (default: 10)
  * - LOCATION_MAX_INTERVAL_SECONDS (default: 60)
- * - LOCATION_DISTANCE_FILTER_METERS (default: 0)
+ * - LOCATION_DISTANCE_FILTER_METERS (default: 0 = off; >0 thins stationary pings)
  * - LOCATION_BATCH_UPLOAD_SIZE (default: 20)
  * - LOCATION_MAX_BUFFER_SIZE (default: 100)
  * - GPS_TIMEOUT_SECONDS (default: 10)
@@ -24,6 +24,7 @@ import { Alert } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { readPosition, type VerifiedPosition } from './verifiedPosition';
 import type { LocationErrorType } from './locationErrors';
+import { shouldSkipStationaryPing, type ThinningReference } from './pingThinning';
 import { EventEmitter } from 'events';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { uploadLocationBatch, convertPingsToLocations, type TrackerLocationPing } from '../api/locationApi';
@@ -46,6 +47,8 @@ const MAX_BUFFER_SIZE = config.LOCATION_MAX_BUFFER_SIZE;
 const GPS_TIMEOUT = config.GPS_TIMEOUT_MS;
 const GPS_MAXIMUM_AGE = config.GPS_MAXIMUM_AGE_MS;
 const HIGH_ACCURACY = true;
+// 0 disables client-side thinning (historical behaviour); see pingThinning.ts.
+const DISTANCE_FILTER_M = config.LOCATION_DISTANCE_FILTER;
 const BUFFER_STORAGE_KEY = 'location_buffer';
 
 /** Standard capture options for the shift-long ping loop. */
@@ -432,6 +435,8 @@ class LocationTracker extends EventEmitter {
    */
   private stopLocationWatch(): void {
     console.debug('[LocationTracker] Stopping location watch');
+    // A new shift must not be thinned against the previous shift's last fix.
+    this.lastAcceptedPing = null;
 
     // No watch to clear: the tracker polls on a setTimeout loop rather than
     // subscribing via watchPosition, so `intervalId` is the only handle.
@@ -540,7 +545,40 @@ class LocationTracker extends EventEmitter {
   /**
    * Add location to memory buffer with OOM prevention
    */
+  /**
+   * The last fix accepted into the buffer, kept as the thinning reference.
+   *
+   * Not read back from `locationBuffer`, because that empties on upload — the
+   * reference has to survive a flush or the first ping after every batch would
+   * always be kept and the thinning would barely fire.
+   */
+  private lastAcceptedPing: ThinningReference | null = null;
+
   private addLocationToBuffer(location: LocationPing): void {
+    // Skip a redundant "still here" fix before it is ever buffered or uploaded,
+    // saving the worker's mobile data. A mocked fix is NEVER thinned: that ping
+    // is the evidence of spoofing and the server needs the row.
+    if (
+      !location.mocked &&
+      shouldSkipStationaryPing(
+        {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          capturedAtMs: new Date(location.timestamp).getTime(),
+        },
+        this.lastAcceptedPing,
+        DISTANCE_FILTER_M,
+      )
+    ) {
+      console.debug('[LocationTracker] Stationary ping thinned');
+      return;
+    }
+    this.lastAcceptedPing = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+      timestamp: location.timestamp,
+    };
+
     // Single choke point for both continuous capture paths (normal + low-accuracy
     // retry), so a spoofed fix cannot slip through whichever one produced it.
     // The ping is still buffered and uploaded: the server needs the row to tell

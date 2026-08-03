@@ -76,9 +76,9 @@ The only quiet window is **00:00–04:00**, and stopping there saves just **~$5.
 | # | Action | Saves | Status |
 |---|---|---|---|
 | 1 | Drop 4 never-scanned indexes on `location_logs` | 1.35 GB | **done 2026-08-02** |
-| 2 | Thin redundant stationary pings server-side | most new ping volume | **done** (see below) |
+| 2 | Thin redundant stationary pings (server **and** client) | most new ping volume | **done 2026-08-03** |
 | 3 | Move EC2 to `ap-southeast-3c` | ~$18/mo | runbook below |
-| 4 | Backfill inline photos + `VACUUM FULL` | ~8 GB, big egress cut | at revamp deploy |
+| 4 | Backfill inline photos + `VACUUM FULL` | ~8 GB, big egress cut | **script + runbook ready**, awaiting revamp deploy |
 | 5 | Review RDS backup retention | up to ~$5/mo | open |
 | 6 | `location_logs` tiering/partitioning | ongoing growth | proposed below |
 
@@ -100,14 +100,26 @@ CREATE INDEX idx_location_logs_user_date       ON public.location_logs USING btr
 
 ### 2. Stationary thinning (done)
 
-`LOCATION_DISTANCE_FILTER_METERS` is **dead config** — parsed in `constants/config.ts` and
-named in the tracker docblock, but never read, because the tracker polls
-`getCurrentPosition` on a `setTimeout` loop and `distanceFilter` only applies to
-`watchPosition`. Thinning is therefore done server-side in `location.service`, which also
-takes effect for every app version already in the field.
+Thinned on **both** sides, for different reasons:
 
-Constraint: presence is derived from the newest ping's age, so the 4-minute heartbeat must
-stay well under the 10-minute offline threshold. A test guards that invariant.
+- **Server** (`location-thinning.util.ts`, in `location.service`) — the control that matters,
+  because it applies to every app version already in the field, including ones that will never
+  be updated.
+- **Client** (`services/location/pingThinning.ts`) — saves the worker's **mobile data and
+  battery**, since a ping thinned here is never uploaded at all.
+
+`LOCATION_DISTANCE_FILTER_METERS` *was* dead config: parsed in `constants/config.ts` and named
+in the tracker docblock, but never read, because the tracker polls `getCurrentPosition` on a
+`setTimeout` loop and `distanceFilter` is only honoured by `watchPosition`. It is now wired,
+and set to **25 m** in local/staging/production (0 still means off, so any build that has not
+opted in behaves exactly as before). 25 m clears ordinary GPS wander — a stationary phone
+reports ±10–20 m.
+
+Constraint, and the reason both sides share one rule: presence is derived server-side from the
+age of the newest ping, so the **4-minute heartbeat must always survive** — thinning past it
+would make a present worker read OFFLINE. Tests on both sides assert the invariant (heartbeat
+< the 10-minute offline threshold) rather than the literal number. A **mocked** ping is never
+thinned on either side: that row is the evidence of spoofing.
 
 ### 3. EC2 → `ap-southeast-3c` runbook
 
@@ -134,6 +146,19 @@ Window: **05:00–06:00 WIB** — the only hour no shift covers. Expect ~15 minu
 
 Verify the saving after ~48 h: `DataTransfer-Regional-Bytes` should fall to near zero in
 the Cost Explorer daily breakdown.
+
+### 4. Photo backfill — ready, gated on disk order
+
+Nothing new to build: `apps/be/src/database/backfill/backfill-inline-photos.ts` exists
+(`npm run backfill:inline-photos[:prod]`, idempotent and keyset-batched), and the procedure with
+rehearsal results is in
+[`staging-cutover-runbook.md`](staging-cutover-runbook.md).
+
+The one live-scale hazard, added to that runbook on 2026-08-03: **`VACUUM (FULL)` must run
+AFTER the backfill, never before.** It rewrites the table into a new file, so peak disk is
+`old + new`; `activities` is 8155 MB against **~6.0 GB free**, so vacuuming first would fill the
+volume and a storage-full RDS instance can become unavailable. After the backfill the new file
+is a few MB and the operation is safe. Re-check `FreeStorageSpace` immediately before starting.
 
 ### 6. Proposed `location_logs` lifecycle
 
