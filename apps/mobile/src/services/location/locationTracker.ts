@@ -482,7 +482,7 @@ class LocationTracker extends EventEmitter {
           battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
 
-        this.addLocationToBuffer(location);
+        if (!this.addLocationToBuffer(location)) return;
         this.emit('locationUpdate', location);
 
         // Upload first ping immediately so supervisor can see worker location right after clock-in.
@@ -532,7 +532,7 @@ class LocationTracker extends EventEmitter {
           mocked: location.mocked,
           battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
-        this.addLocationToBuffer(location);
+        if (!this.addLocationToBuffer(location)) return;
         this.emit('locationUpdate', location);
       })
       .catch((error) => {
@@ -554,7 +554,8 @@ class LocationTracker extends EventEmitter {
    */
   private lastAcceptedPing: ThinningReference | null = null;
 
-  private addLocationToBuffer(location: LocationPing): void {
+  /** @returns false when the ping was thinned as a redundant "still here" report. */
+  private addLocationToBuffer(location: LocationPing): boolean {
     // Skip a redundant "still here" fix before it is ever buffered or uploaded,
     // saving the worker's mobile data. A mocked fix is NEVER thinned: that ping
     // is the evidence of spoofing and the server needs the row.
@@ -571,7 +572,7 @@ class LocationTracker extends EventEmitter {
       )
     ) {
       console.debug('[LocationTracker] Stationary ping thinned');
-      return;
+      return false;
     }
     this.lastAcceptedPing = {
       latitude: location.latitude,
@@ -608,6 +609,7 @@ class LocationTracker extends EventEmitter {
     this.persistBuffer().catch(err =>
       console.error('[LocationTracker] Failed to persist buffer:', err)
     );
+    return true;
   }
 
   /**

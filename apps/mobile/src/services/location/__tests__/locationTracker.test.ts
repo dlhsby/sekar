@@ -15,6 +15,16 @@ import { Alert } from 'react-native';
 
 // Mock dependencies
 jest.mock('react-native-geolocation-service');
+// Thinning off for this suite. These specs drive the SAME fixture coordinates
+// repeatedly to exercise buffering and upload mechanics; with the 25 m filter
+// live those pings are correctly discarded as "still here" and the buffer never
+// grows, which would make them assert the thinning rather than what they are
+// about. Thinning has its own coverage: pingThinning.test.ts for the rule, and
+// the dedicated tracker spec below for the integration.
+jest.mock('../../../constants/config', () => {
+  const actual = jest.requireActual('../../../constants/config');
+  return { __esModule: true, ...actual, default: { ...actual.default, LOCATION_DISTANCE_FILTER: 0 } };
+});
 jest.mock('react-native-device-info');
 jest.mock('../../api/locationApi');
 jest.mock('../../sync/offlineQueue');

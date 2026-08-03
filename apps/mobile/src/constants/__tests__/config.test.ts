@@ -104,8 +104,11 @@ describe('config', () => {
     });
 
     it('should export LOCATION_DISTANCE_FILTER', () => {
+      // 25 m from .env.local: thins a fix that has not moved that far since the
+      // last one. Was 0 (track even when stationary) while the setting was dead
+      // config — see services/location/pingThinning.ts.
       expect(config.LOCATION_DISTANCE_FILTER).toBeDefined();
-      expect(config.LOCATION_DISTANCE_FILTER).toBe(0); // 0 = track even when stationary
+      expect(config.LOCATION_DISTANCE_FILTER).toBe(25);
     });
   });
 
