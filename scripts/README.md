@@ -165,6 +165,37 @@ apps, or to reset local data (`down`). It reads/creates `infra/.env`.
 
 ---
 
+### `dev-simulate-worker.sh`
+
+**Purpose:** Put a worker on the `/monitoring` map without a physical device
+
+**What it does:**
+- Logs in, reads the caller's roster row for today (`GET /schedules/my/day`)
+- Clocks in at the scheduled location's centre, or adopts the shift already open
+- Emits a short moving GPS track, ending on a ping stamped *now* so presence reads ACTIVE
+
+**Usage:**
+```bash
+./scripts/dev-simulate-worker.sh <username> [password] [lat] [lng]
+
+# several workers at once
+for u in abd_qodir abd_haris abd_malik; do ./scripts/dev-simulate-worker.sh "$u"; done
+
+# longer / faster / wider track
+PINGS=12 STEP_M=60 INTERVAL=30 ./scripts/dev-simulate-worker.sh abd_qodir
+```
+
+`STEP_M` (default 40 m) must stay above the server's 25 m stationary-thinning
+floor — below it the backend silently drops the pings as redundant and the pin
+never moves. The script reconciles `sent` against `accepted` and says so when it
+happens.
+
+**When to use:**
+- Demoing or eyeballing the monitoring map with no phone in hand
+- Reproducing presence / drill-down behaviour against a seeded or cloned DB
+
+---
+
 ## Quick Reference
 
 ```bash
@@ -182,7 +213,8 @@ apps, or to reset local data (`down`). It reads/creates `infra/.env`.
 ./scripts/deploy-production.sh  # Deploy to production
 
 # Testing
-./scripts/smoke-tests.sh <API_URL>  # Run smoke tests
+./scripts/smoke-tests.sh <API_URL>          # Run smoke tests
+./scripts/dev-simulate-worker.sh <username> # Put a worker live on the monitoring map
 ```
 
 ---
