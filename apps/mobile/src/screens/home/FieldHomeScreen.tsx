@@ -467,28 +467,42 @@ export function FieldHomeScreen(): React.JSX.Element {
               hasScheduleToday={!!rosterShift}
               otherShiftLabels={otherShiftLabels}
               onChangeShift={canSwitchShift ? () => setShiftPickerVisible(true) : undefined}
+              /**
+               * ADR-050: both of these rows belong to a worker who is ON DUTY.
+               * Status Area is Axis 2 (live presence), which the model scopes to
+               * `bertugas` outright — a worker who has not clocked in has no
+               * in/out-of-area state to report. Status Kehadiran is Axis 1, and
+               * before a punch the banner above already states it ("Anda belum
+               * clockin pada shift ini"); rendering a TERLAMBAT chip beside it
+               * said the same thing twice and, worse, was judged against a shift
+               * the worker had not started.
+               *
+               * So the whole block is withheld until a session is open, and the
+               * card falls back to the banner + Jam Masuk/Keluar placeholders.
+               */
               infoRows={
-                <AttendanceInfoRows
-                  status={{
-                    tone: !hasScheduleToday ? 'neutral' : attendance.isLate ? 'bad' : 'ok',
-                    label: !hasScheduleToday
-                      ? t('home:field.hero.status.noSchedule')
-                      : attendance.isLate
-                        ? t('home:field.hero.status.late')
-                        : t('home:field.hero.status.onTime'),
-                    onPress: () => setStatusSheetVisible(true),
-                    a11yLabel: t('attendance:infoCard.whyStatus'),
-                  }}
-                  areaStatus={{
-                    tone: areaTone,
-                    label: areaLabel,
-                    onPress: () => setLocationMapVisible(true),
-                    disabled: !hasActiveShift,
-                    a11yLabel: t('home:field.hero.a11y.locationStatus', { status: areaLabel }),
-                  }}
-                  onRefreshLocation={refreshLocation}
-                  refreshingLocation={homeLocation.loading}
-                />
+                hasActiveShift ? (
+                  <AttendanceInfoRows
+                    status={{
+                      tone: !hasScheduleToday ? 'neutral' : attendance.isLate ? 'bad' : 'ok',
+                      label: !hasScheduleToday
+                        ? t('home:field.hero.status.noSchedule')
+                        : attendance.isLate
+                          ? t('home:field.hero.status.late')
+                          : t('home:field.hero.status.onTime'),
+                      onPress: () => setStatusSheetVisible(true),
+                      a11yLabel: t('attendance:infoCard.whyStatus'),
+                    }}
+                    areaStatus={{
+                      tone: areaTone,
+                      label: areaLabel,
+                      onPress: () => setLocationMapVisible(true),
+                      a11yLabel: t('home:field.hero.a11y.locationStatus', { status: areaLabel }),
+                    }}
+                    onRefreshLocation={refreshLocation}
+                    refreshingLocation={homeLocation.loading}
+                  />
+                ) : undefined
               }
               onClockIn={() =>
                 navigation.navigate('Absensi', {

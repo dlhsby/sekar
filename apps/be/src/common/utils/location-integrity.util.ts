@@ -155,6 +155,20 @@ export function evaluateLocation(
     now: Date;
     previous?: PreviousFix | null;
     thresholds?: Partial<IntegrityThresholds>;
+    /**
+     * Development escape hatch: accept a fix the client reports as mocked.
+     *
+     * Passed in rather than read from the environment here so this stays a pure
+     * function — and so the decision to relax enforcement is visible at the call
+     * site instead of hidden inside the evaluator. Resolve it with
+     * `mockedLocationAllowed()` from `common/config/integrity-overrides`, which
+     * refuses in production.
+     *
+     * Only the MOCKED rule is skipped. Null island and impossible travel are
+     * geometric facts that hold regardless of the provider, and an emulator has
+     * no legitimate reason to produce either.
+     */
+    allowMocked?: boolean;
   },
 ): LocationVerdict {
   const thresholds = { ...DEFAULT_INTEGRITY_THRESHOLDS, ...context.thresholds };
@@ -196,7 +210,7 @@ export function evaluateLocation(
   if (isNullIsland(candidate.lat, candidate.lng)) {
     return reject(LocationRejection.MISSING_COORDINATES);
   }
-  if (candidate.isMocked === true) {
+  if (candidate.isMocked === true && context.allowMocked !== true) {
     return reject(LocationRejection.MOCKED);
   }
   if (speed !== null && speed > thresholds.maxSpeedKmh) {

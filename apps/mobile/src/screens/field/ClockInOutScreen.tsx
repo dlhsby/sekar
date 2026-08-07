@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   ScrollView,
+  RefreshControl,
   Image,
   StyleSheet,
   ActivityIndicator,
@@ -16,7 +17,7 @@ import { AttendanceStatusSheet, type AttendanceStatusKind } from '../../componen
 import { AttendanceInfoRows } from '../../components/attendance/AttendanceInfoRows';
 import { AttendanceShiftHeading } from '../../components/attendance/AttendanceShiftHeading';
 import { StatusPill, type StatusTone } from '../../components/home/StatusPill';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NBButton, NBBackgroundPattern, NBText, NBAlert, NBCollapsibleCard } from '../../components/nb';
 import { FieldHomeHeader } from '../../components/navigation/FieldHomeHeader';
 import {
@@ -73,6 +74,8 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
     shiftOptions,
     selectedShift,
     setSelectedShift,
+    refresh,
+    refreshing,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,
@@ -81,6 +84,21 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
     shiftDefinitionId: route?.params?.shiftDefinitionId,
     serviceDay: route?.params?.serviceDay,
   });
+
+  /**
+   * Re-read the roster + live session every time this screen is opened.
+   *
+   * This screen lives in a tab, so React Navigation keeps it mounted after the
+   * first visit and the hooks' mount-time fetch never runs again. A schedule
+   * added elsewhere (the web Jadwal page) while the app was open therefore
+   * stayed invisible here — "Tidak Ada Shift" — even though the home card and
+   * the Kehadiran hub, which already refetch on focus, both showed it.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const [mapVisible, setMapVisible] = useState(false);
   const [typeSheetVisible, setTypeSheetVisible] = useState(false);
@@ -245,7 +263,18 @@ export const ClockInOutScreen = ({ route }: { route?: ClockInOutRouteProp }): Re
     >
       <View style={styles.container}>
         {/* Scrollable content area — sits above the submit button */}
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={refresh}
+              tintColor={nbColors.primary}
+              colors={[nbColors.primary]}
+            />
+          }
+        >
           {/* Offline Banner (top of scroll) */}
           {!isOnline && isClockInAction && (
             <View style={styles.offlineBanner}>

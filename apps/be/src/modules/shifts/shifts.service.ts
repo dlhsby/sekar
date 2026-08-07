@@ -19,6 +19,11 @@ import {
   type LocationVerdict,
   type PreviousFix,
 } from '../../common/utils/location-integrity.util';
+import { mockedLocationAllowed } from '../../common/config/integrity-overrides';
+import { isShiftWindowClosed } from '../schedules/schedules.support';
+
+/** Fallback when a shift definition carries no explicit grace. Matches the absence sweep. */
+const DEFAULT_CUTOFF_GRACE_MIN = 60;
 import { ApiErrorCode } from '../../common/enums/api-error-codes.enum';
 import { BoundaryCheckService } from '../../shared/services/boundary-check.service';
 import { PhotoStorageService } from '../../shared/services/photo-storage.service';
@@ -377,10 +382,20 @@ export class ShiftsService {
     // guard, a worker can hold a regular AND an overtime session at once, so
     // ending overtime must close the OT session, not the regular one (and the
     // regular clock-out must not close the OT session).
-    const shift = await this.shiftRepository.findOne({
+    // Ordered + liveness-ranked, not `findOne`: a worker can legitimately hold a
+    // dangling session from a past day AND a live one today, and an unordered
+    // findOne closed whichever the database happened to return first — observed
+    // closing yesterday's forgotten session while today's stayed open. Prefer
+    // the live session; fall back to the newest dangling one so a worker who
+    // simply forgot can still close it.
+    const openRows = await this.shiftRepository.find({
       where: { user_id: userId, clock_out_time: IsNull(), is_overtime: isOvertime },
-      relations: ['area'],
+      order: { clock_in_time: 'DESC' },
+      relations: ['area', 'shift_definition'],
     });
+    const nowForLiveness = TimezoneUtil.jakartaNow();
+    const shift =
+      openRows.find((row) => this.isSessionLive(row, nowForLiveness)) ?? openRows[0] ?? null;
 
     if (!shift) {
       throw new ApiException(
@@ -579,7 +594,11 @@ export class ShiftsService {
         isMocked: dto.is_mocked ?? null,
         clientTimestamp: dto.punched_at ? new Date(dto.punched_at) : null,
       },
-      { now: new Date(), previous: await this.lastKnownFix(userId) },
+      {
+        now: new Date(),
+        previous: await this.lastKnownFix(userId),
+        allowMocked: mockedLocationAllowed(),
+      },
     );
 
     if (!verdict.accepted && verdict.rejection) {
@@ -824,11 +843,48 @@ export class ShiftsService {
    * open session (its key) rather than open a second row — the fix for a
    * post-midnight re-entry landing on a fresh service_day. Null when none is open.
    */
+  /**
+   * Is this open row still the worker's LIVE session?
+   *
+   * "Open" and "live" are not the same thing, and conflating them is what put a
+   * forgotten clock-out from one day on the next day's screen: the hub offered
+   * Clock Out, the home card showed yesterday's Jam Masuk against today's shift,
+   * and the session's duration kept climbing past 25 hours.
+   *
+   * ADR-055 is explicit — a forgotten clock-out is never auto-closed, it simply
+   * stops being live once its shift window plus `cutoff_grace_min` has passed.
+   * The row stays open (a supervisor still has to resolve it) but it is no
+   * longer what "am I on duty right now?" should answer with.
+   *
+   * `isShiftWindowClosed` is imported rather than reimplemented so this, the
+   * absence sweep, and the monitoring session sweep can never disagree about
+   * when a shift has finished. A session with no shift definition (overtime, or
+   * legacy data) has no window to judge and stays live — a worker genuinely on
+   * duty must never be told they are not.
+   */
+  private isSessionLive(shift: Shift, now: Date = TimezoneUtil.jakartaNow()): boolean {
+    if (shift.clock_out_time) return false;
+    const sd = shift.shift_definition;
+    if (!sd?.end_time) return true;
+    const serviceDay = shift.service_day ?? TimezoneUtil.jakartaDateOf(shift.clock_in_time ?? now);
+    return !isShiftWindowClosed(
+      serviceDay,
+      sd.end_time,
+      sd.crosses_midnight ?? false,
+      sd.cutoff_grace_min ?? DEFAULT_CUTOFF_GRACE_MIN,
+      now,
+    );
+  }
+
   private async findOpenSessionRow(userId: string, isOvertime: boolean): Promise<Shift | null> {
-    return this.shiftRepository.findOne({
+    const open = await this.shiftRepository.find({
       where: { user_id: userId, clock_out_time: IsNull(), is_overtime: isOvertime },
       order: { clock_in_time: 'DESC' },
+      // Needed to judge liveness — without the definition there is no window.
+      relations: ['shift_definition'],
     });
+    const now = TimezoneUtil.jakartaNow();
+    return open.find((shift) => this.isSessionLive(shift, now)) ?? null;
   }
 
   /**
@@ -872,14 +928,20 @@ export class ShiftsService {
    * @returns Active shift or null if not clocked in
    */
   async findActiveShift(userId: string): Promise<Shift | null> {
-    return this.shiftRepository.findOne({
+    const open = await this.shiftRepository.find({
       where: {
         user_id: userId,
         clock_out_time: IsNull(),
       },
+      order: { clock_in_time: 'DESC' },
       // shift_definition carries the scheduled start_time used for the late check.
       relations: ['area', 'area.locationType', 'user', 'shift_definition'],
     });
+    // "Active" means live, not merely un-clocked-out: this drives the mobile
+    // `currentShift`, so a dangling session from a previous day would otherwise
+    // make the app believe the worker is already on duty today.
+    const now = TimezoneUtil.jakartaNow();
+    return open.find((shift) => this.isSessionLive(shift, now)) ?? null;
   }
 
   /**

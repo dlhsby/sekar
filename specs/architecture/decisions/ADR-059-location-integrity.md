@@ -101,8 +101,23 @@ sending pings carrying `mocked: true` — silence would look like a switched-off
 `__DEV__`. `react-native-dotenv` inlines `@env` at bundle time, so these are compile-time
 constants; the `__DEV__` guard means a release bundle constant-folds the bypass away and
 **cannot honour a misconfigured `.env.production`**. Flags fail closed — only the exact
-string `"true"` enables. The backend refuses the permissive value when
-`NODE_ENV === 'production'`.
+string `"true"` enables.
+
+**Server-side counterpart (added 2026-08-06):** `ALLOW_MOCKED_LOCATION`, read only by
+`src/common/config/integrity-overrides.ts` and passed to the evaluator as
+`context.allowMocked`. Without it the client override was half a control: the app stopped
+*blocking*, but `verifiedPosition` still reports `mocked` truthfully and the server rejected
+every ping, so an emulator worker could punch and then never appear on the map. The flag is
+**env-gated, not a settings row** — a DB-backed toggle would be reachable by anything that
+can write settings, which is precisely the surface that must not be able to disable
+integrity — and `mockedLocationAllowed()` refuses whenever `NODE_ENV === 'production'`, so
+both conditions must hold.
+
+The override is **narrow by construction**: only the `MOCKED` branch is skipped. Null island
+and impossible travel are geometric facts that hold whatever the provider is, and an emulator
+has no legitimate reason to produce either. `evaluateLocation` stays pure — the flag arrives
+as an argument, so the decision to relax enforcement is visible at the call site rather than
+hidden in the evaluator.
 
 ## Consequences
 

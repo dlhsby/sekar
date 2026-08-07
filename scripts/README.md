@@ -110,7 +110,14 @@ shuts down all three. Docker services stay up (`stop.sh --infra` stops them).
 ./scripts/start-web.sh            # web, foreground
 ./scripts/start-mobile.sh         # Metro, foreground
 ./scripts/start-mobile.sh --android   # build + install + launch on Android
+./scripts/start-mobile.sh --reset-cache   # drop Metro's transform cache first
 ```
+
+**`--reset-cache` is required after editing `apps/mobile/.env.local`.**
+`react-native-dotenv` is a *babel* plugin, so `import { X } from '@env'` is
+replaced with a literal at transform time — a warm cache keeps serving the OLD
+value while the file on disk shows the new one. The failure looks like the app
+ignoring your config, and it has cost a CI run and an emulator session.
 
 ### `stop.sh`
 

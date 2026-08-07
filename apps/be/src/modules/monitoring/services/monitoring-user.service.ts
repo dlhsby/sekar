@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In, Not, IsNull } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Location } from '../../locations/entities/location.entity';
 import { Shift } from '../../shifts/entities/shift.entity';
@@ -96,6 +96,13 @@ export class MonitoringUserService {
       .leftJoinAndSelect('uts.area', 'area')
       .leftJoin('area.locationType', 'locationType')
       .where('uts.shift_id IS NOT NULL')
+      // A tracking row can outlive its session: `shift_id` is cleared on
+      // clock-out, so a worker who never clocked out kept rendering as on duty
+      // indefinitely. `endStaleSessions` restores that invariant on a timer;
+      // this is the read-side guard for the window in between, and it tests a
+      // fact (the session is closed) rather than re-deriving the ADR-055 window
+      // in SQL — that rule lives in one place, in the sweep.
+      .andWhere('shift.clock_out_time IS NULL')
       // Deactivated accounts never appear on the live map, even if a stale
       // tracking row survives their deactivation.
       .andWhere('user.is_active = TRUE');
@@ -259,10 +266,19 @@ export class MonitoringUserService {
     const roster = await this.dailySchedulesService.getRosterForMonitoring(today, districtId);
     if (roster.length === 0) return empty;
 
-    const clockedRows = await this.trackingRepository.find({
-      where: { shift_id: Not(IsNull()), ...(districtId ? { district_id: districtId } : {}) },
-      select: ['user_id'],
-    });
+    // Same guard as the live map: a tracking row pointing at a CLOSED session
+    // is not a clocked-in worker, and counting it here inflated "hadir" against
+    // a roster that had nobody on duty.
+    const clockedQb = this.trackingRepository
+      .createQueryBuilder('uts')
+      .innerJoin('shifts', 'shift', 'shift.id = uts.shift_id')
+      .where('uts.shift_id IS NOT NULL')
+      .andWhere('shift.clock_out_time IS NULL')
+      .select('uts.user_id', 'user_id');
+    if (districtId) {
+      clockedQb.andWhere('uts.district_id = :districtId', { districtId });
+    }
+    const clockedRows = await clockedQb.getRawMany<{ user_id: string }>();
     const clockedIn = new Set(clockedRows.map((r) => r.user_id));
 
     // Counts are DISTINCT WORKERS, not roster rows — a worker may hold two

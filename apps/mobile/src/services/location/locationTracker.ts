@@ -23,6 +23,7 @@
 import { Alert } from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import { readPosition, type VerifiedPosition } from './verifiedPosition';
+import { mockLocationAllowed } from '../../config/integrity';
 import type { LocationErrorType } from './locationErrors';
 import { shouldSkipStationaryPing, type ThinningReference } from './pingThinning';
 import { EventEmitter } from 'events';
@@ -585,7 +586,14 @@ class LocationTracker extends EventEmitter {
     // The ping is still buffered and uploaded: the server needs the row to tell
     // "faking location" from a phone that is simply off, and it rejects the ping
     // for presence so the worker reads as inactive until they stop.
-    if (location.mocked) {
+    // `mockLocationAllowed()` is checked here, not only in the reader: the
+    // reader's policy decides whether a mocked fix RESOLVES, this decides
+    // whether it raises the blocking overlay. Without the check the dev
+    // override let the fix through and then immediately blocked the app on it,
+    // so an emulator (whose every fix is mock-provided) was unusable even with
+    // ALLOW_MOCK_LOCATION=true. Release builds are unaffected — the flag is
+    // constant-folded to false, so this reads exactly as it did before.
+    if (location.mocked && !mockLocationAllowed()) {
       this.emit('integrityViolation', 'mocked');
     }
 

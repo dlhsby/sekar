@@ -20,6 +20,13 @@
 #                     print the one-time WSL2 Windows port-forwards. Without
 #                     --lan (USB / emulator) the app is built against
 #                     http://localhost:<BE_PORT> and reached via `adb reverse`.
+#   --reset-cache     drop Metro's transform cache before starting.
+#                     REQUIRED AFTER EDITING .env.local: react-native-dotenv is a
+#                     BABEL plugin, so `import { X } from '@env'` is replaced with
+#                     a literal at transform time. A warm cache therefore keeps
+#                     serving the OLD value while the file on disk shows the new
+#                     one — the failure looks like the app ignoring your config,
+#                     and it has cost a CI run and an emulator session already.
 #
 # API_BASE_URL is baked at build time (react-native-config reads apps/mobile/
 # .env.local), so this script sets it for the chosen mode — rebuild (--android)
@@ -33,11 +40,13 @@ DEVICE_FLAG=""
 ALL_FLAG=false
 LAN=false
 LAN_IP_ARG=""
+RESET_CACHE=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --android) MODE="android"; shift ;;
     --device) DEVICE_FLAG="$2"; shift 2 ;;
     --all) ALL_FLAG=true; shift ;;
+    --reset-cache) RESET_CACHE=true; shift ;;
     --lan)
       LAN=true; shift
       if [[ "${1:-}" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then LAN_IP_ARG="$1"; shift; fi
@@ -49,9 +58,12 @@ start-mobile.sh — Metro + Android run/install, with real-device networking.
   ./scripts/start-mobile.sh --android       build + install on the connected device
   ./scripts/start-mobile.sh --lan           Wi-Fi: build against the LAN backend
   ./scripts/start-mobile.sh --android --lan 192.168.1.5   build for a Wi-Fi device
+  ./scripts/start-mobile.sh --reset-cache   drop Metro's cache first (REQUIRED
+                                            after editing apps/mobile/.env.local —
+                                            @env values are inlined at build time)
 USAGE
       exit 0 ;;
-    *) print_error "Unknown flag: $1 (supported: --android, --device <serial>, --all, --lan [IP], --help)"; exit 1 ;;
+    *) print_error "Unknown flag: $1 (supported: --android, --device <serial>, --all, --lan [IP], --reset-cache, --help)"; exit 1 ;;
   esac
 done
 
@@ -206,6 +218,11 @@ if [ "$MODE" = "android" ]; then
     for s in "${_RTARGETS[@]}"; do [ -n "$s" ] && { adb_reverse_backend "$s"; adb_reverse_minio "$s"; }; done
   fi
   print_warning "This doesn't start Metro — run ./scripts/start-mobile.sh (no --android) in another terminal first."
+  if [ "$RESET_CACHE" = true ]; then
+    # Said out loud rather than ignored: this path never launches Metro, so the
+    # flag would otherwise look applied while the stale bundle is still served.
+    print_warning "--reset-cache does nothing with --android (this path doesn't start Metro). Pass it to the Metro terminal instead."
+  fi
   if [ "$RUN_ALL" = true ]; then
     print_info "Installing to ALL connected devices..."
     npm run android:all
@@ -215,12 +232,21 @@ if [ "$MODE" = "android" ]; then
   fi
 else
   free_port "$METRO_PORT" "metro"
+
+  # Built once and reused by both launch paths below, so the two can never drift
+  # apart on whether the cache is dropped.
+  METRO_ARGS=(--port "$METRO_PORT")
+  if [ "$RESET_CACHE" = true ]; then
+    METRO_ARGS+=(--reset-cache)
+    print_info "Dropping Metro's transform cache (@env values are re-inlined from apps/mobile/.env.local)."
+  fi
+
   if [ "$LAN" = true ]; then
     print_be_lan_help "$LAN_IP"
     wsl_portproxy_hint "$METRO_PORT" "Metro"
     print_info "Starting Metro on 0.0.0.0:$METRO_PORT (Ctrl+C to stop)..."
     print_info "On the device's dev menu, set 'Debug server host & port' to $LAN_IP:$METRO_PORT."
-    npm start -- --port "$METRO_PORT" --host 0.0.0.0
+    npm start -- "${METRO_ARGS[@]}" --host 0.0.0.0
   else
     # USB/emulator: tunnel the backend AND Metro ports to every connected device
     # so the app reaches http://localhost:$BE_PORT (its baked API base) and finds
@@ -240,6 +266,6 @@ else
     fi
     print_info "Starting Metro bundler on :$METRO_PORT (Ctrl+C to stop)..."
     print_info "Tip: app API base is $MOBILE_API_BASE (USB/emulator via adb reverse) — see apps/mobile/.env.local"
-    npm start -- --port "$METRO_PORT"
+    npm start -- "${METRO_ARGS[@]}"
   fi
 fi

@@ -373,13 +373,17 @@ describe('SchedulesService — roster reads', () => {
         Promise.resolve(opts.where.schedule_date === '2026-07-24' ? [july24Row] : []),
       );
       // Open shift: clocked in Jul 24 21:39 WIB (= 14:39 UTC), no clock_out_time.
-      t.shiftRepo.findOne.mockResolvedValue({
-        id: 'shift-open',
-        user_id: 'W',
-        shift_definition_id: 'sd3',
-        clock_in_time: new Date(Date.UTC(2026, 6, 24, 14, 39, 0)),
-        clock_out_time: null,
-      });
+      t.shiftRepo.find.mockResolvedValue([
+        {
+          id: 'shift-open',
+          user_id: 'W',
+          shift_definition_id: 'sd3',
+          shift_definition: SHIFT3,
+          service_day: '2026-07-24',
+          clock_in_time: new Date(Date.UTC(2026, 6, 24, 14, 39, 0)),
+          clock_out_time: null,
+        },
+      ]);
       const restore = freeze(new Date(Date.UTC(2026, 6, 25, 5, 42, 0)), '2026-07-25');
 
       const result = await t.service.findCurrentForUser('W');
@@ -389,9 +393,53 @@ describe('SchedulesService — roster reads', () => {
       restore();
     });
 
+    // The reported bug: a Shift 2 clocked in 5 Aug and never clocked out was
+    // still answering "what am I on right now?" on 6 Aug, so the home card put
+    // YESTERDAY's shift on today's date — with a TERLAMBAT judged against a
+    // shift that had already finished. The overrun fallback above is for a
+    // session still inside its grace; once the window has fully closed the row
+    // is a forgotten clock-out and must not shadow today.
+    it('ignores a dangling shift whose window closed on a previous day', async () => {
+      const SHIFT2 = {
+        id: 'sd2',
+        start_time: '15:00:00',
+        end_time: '23:00:00',
+        crosses_midnight: false,
+        cutoff_grace_min: 60,
+      };
+      const aug5Row = {
+        id: 'r5',
+        user_id: 'W',
+        schedule_date: '2026-08-05',
+        shift_definition_id: 'sd2',
+        shift_definition: SHIFT2,
+      };
+      t.rosterRepo.find.mockImplementation((opts: { where: { schedule_date: string } }) =>
+        Promise.resolve(opts.where.schedule_date === '2026-08-05' ? [aug5Row] : []),
+      );
+      t.shiftRepo.find.mockResolvedValue([
+        {
+          id: 'shift-dangling',
+          user_id: 'W',
+          shift_definition_id: 'sd2',
+          shift_definition: SHIFT2,
+          service_day: '2026-08-05',
+          clock_in_time: new Date(Date.UTC(2026, 7, 5, 9, 20, 0)),
+          clock_out_time: null,
+        },
+      ]);
+      // 6 Aug 18:00 — long past the 5 Aug window close (23:00 + 60 min).
+      const restore = freeze(new Date(Date.UTC(2026, 7, 6, 18, 0, 0)), '2026-08-06');
+
+      const result = await t.service.findCurrentForUser('W');
+
+      expect(result).toBeNull();
+      restore();
+    });
+
     it('returns null when nothing is scheduled and there is no open shift', async () => {
       t.rosterRepo.find.mockResolvedValue([]);
-      t.shiftRepo.findOne.mockResolvedValue(null); // no dangling shift
+      t.shiftRepo.find.mockResolvedValue([]); // no dangling shift
       const restore = freeze(new Date(Date.UTC(2026, 6, 25, 5, 42, 0)), '2026-07-25');
 
       const result = await t.service.findCurrentForUser('W');
@@ -413,7 +461,7 @@ describe('SchedulesService — roster reads', () => {
       const result = await t.service.findCurrentForUser('W');
 
       expect(result?.id).toBe('r25');
-      expect(t.shiftRepo.findOne).not.toHaveBeenCalled();
+      expect(t.shiftRepo.find).not.toHaveBeenCalled();
       restore();
     });
   });
