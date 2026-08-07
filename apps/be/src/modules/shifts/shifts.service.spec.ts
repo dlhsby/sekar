@@ -228,12 +228,20 @@ describe('ShiftsService', () => {
     }).compile();
 
     service = module.get<ShiftsService>(ShiftsService);
+
+    // The open-session lookups return a LIST now (they filter it for liveness),
+    // so an unset mock would hand back `undefined` and blow up in `.find(...)`.
+    // "No open session" is the right default for every test that doesn't care.
+    mockRepository.find.mockResolvedValue([]);
   });
 
   afterEach(async () => {
     await module.close();
     jest.clearAllMocks();
     jest.restoreAllMocks();
+    // Session liveness reads the wall clock, so specs that pin it must not leak
+    // a frozen time into the next test.
+    jest.useRealTimers();
     insertedPunches = [];
   });
 
@@ -471,6 +479,11 @@ describe('ShiftsService', () => {
     it('CONTINUES an already-open session across midnight — no second open row (review #1)', async () => {
       // Open Shift-3 session started 2026-07-24 21:00 WIB (14:00Z); a redundant/re-entry
       // clock-in just after midnight must reuse its key, not compute today's service_day.
+      //
+      // The clock is pinned because "is this session still open?" is now
+      // time-dependent: a session is reused only while it is LIVE, and against
+      // the real wall clock this July session is long finished.
+      jest.useFakeTimers().setSystemTime(new Date('2026-07-24T17:30:00Z'));
       const openRow = {
         ...mockShift,
         id: 'session-open',
@@ -478,9 +491,14 @@ describe('ShiftsService', () => {
         clock_out_time: null,
         shift_definition_id: 'sd-3',
         is_overtime: false,
+        // Shift 3 crosses midnight, so at 00:30 this session is still LIVE —
+        // which is exactly why the clock-in has to reuse its key.
+        service_day: '2026-07-24',
+        shift_definition: { end_time: '05:00:00', crosses_midnight: true, cutoff_grace_min: 60 },
       };
       mockAreasService.findOne.mockResolvedValue(mockArea);
-      mockRepository.findOne.mockResolvedValue(openRow); // findOpenSessionRow → open row
+      mockRepository.findOne.mockResolvedValue(openRow);
+      mockRepository.find.mockResolvedValue([openRow]); // findOpenSessionRow → open row
       mockPunches = [
         inPunch({ punched_at: new Date('2026-07-24T14:00:00Z'), shift_definition_id: 'sd-3' }),
         inPunch({ punched_at: new Date('2026-07-24T17:30:00Z'), shift_definition_id: 'sd-3' }), // 00:30 WIB next day
@@ -861,9 +879,15 @@ describe('ShiftsService', () => {
         id: 'session-open',
         service_day: '2026-07-25',
         clock_in_time: new Date('2026-07-25T00:00:00Z'),
+        clock_out_time: null,
         shift_definition_id: 'sd-1',
+        // No definition attached → no window to judge, so the session stays
+        // live regardless of the wall clock. Keeps this spec about the DTO
+        // shape rather than about time.
+        shift_definition: null,
       };
-      mockRepository.findOne.mockResolvedValue(openRow); // findOpenSessionRow
+      mockRepository.findOne.mockResolvedValue(openRow);
+      mockRepository.find.mockResolvedValue([openRow]); // findOpenSessionRow
       mockSchedulesService.getAttributionCandidates.mockResolvedValueOnce([
         {
           shift_definition_id: 'sd-1',
@@ -947,6 +971,7 @@ describe('ShiftsService', () => {
     it('closes the session, returns the projected closed row, emits onClockOut', async () => {
       mockPunches = closedPunches;
       mockRepository.findOne.mockResolvedValue({ ...openRow });
+      mockRepository.find.mockResolvedValue([{ ...openRow }]);
       mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...openRow }));
       mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
 
@@ -956,14 +981,65 @@ describe('ShiftsService', () => {
       expect(result.clock_out_gps_lat).toBe(clockOutDto.gps_lat);
       expect(mockStatusCalculator.onClockOut).toHaveBeenCalledWith(mockUser.id);
       // regular clock-out targets the regular (non-overtime) open session
-      expect(mockRepository.findOne).toHaveBeenCalledWith(
+      expect(mockRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ is_overtime: false }) }),
       );
+    });
+
+    // Observed live: a worker held a forgotten session from 5 Aug and a live one
+    // from 6 Aug; the unordered `findOne` closed the 5 Aug row and left today's
+    // open. Clock-out must resolve to the LIVE session whenever one exists.
+    it('closes the LIVE session, not a dangling one from a previous day', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-06T11:00:00Z'));
+      const dangling = {
+        ...openRow,
+        id: 'session-dangling',
+        service_day: '2026-08-05',
+        clock_in_time: new Date('2026-08-05T09:20:00Z'),
+        shift_definition: { end_time: '23:00:00', crosses_midnight: false, cutoff_grace_min: 60 },
+      };
+      const live = {
+        ...openRow,
+        id: 'session-live',
+        service_day: '2026-08-06',
+        clock_in_time: new Date('2026-08-06T10:00:00Z'),
+        shift_definition: { end_time: '23:00:00', crosses_midnight: false, cutoff_grace_min: 60 },
+      };
+      mockPunches = closedPunches;
+      // Newest-first, as the repository returns them.
+      mockRepository.find.mockResolvedValue([live, dangling]);
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...live }));
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      const result = await service.clockOut(mockUser.id, clockOutDto);
+
+      expect(result.id).toBe('session-live');
+    });
+
+    // The fallback matters just as much: with nothing live, a worker who simply
+    // forgot must still be able to close the dangling session.
+    it('falls back to a dangling session when nothing is live', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-06T11:00:00Z'));
+      const dangling = {
+        ...openRow,
+        id: 'session-dangling',
+        service_day: '2026-08-05',
+        shift_definition: { end_time: '23:00:00', crosses_midnight: false, cutoff_grace_min: 60 },
+      };
+      mockPunches = closedPunches;
+      mockRepository.find.mockResolvedValue([dangling]);
+      mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...dangling }));
+      mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
+
+      const result = await service.clockOut(mockUser.id, clockOutDto);
+
+      expect(result.id).toBe('session-dangling');
     });
 
     it('closes the OVERTIME session when clockOut is called with isOvertime=true (review fix)', async () => {
       mockPunches = closedPunches;
       mockRepository.findOne.mockResolvedValue({ ...openRow, is_overtime: true });
+      mockRepository.find.mockResolvedValue([{ ...openRow, is_overtime: true }]);
       mockRepository.createQueryBuilder.mockReturnValue(
         makeShiftQB({ ...openRow, is_overtime: true }),
       );
@@ -972,7 +1048,7 @@ describe('ShiftsService', () => {
       await service.clockOut(mockUser.id, clockOutDto, true);
 
       // must query the OT open session, not close a concurrent regular one
-      expect(mockRepository.findOne).toHaveBeenCalledWith(
+      expect(mockRepository.find).toHaveBeenCalledWith(
         expect.objectContaining({ where: expect.objectContaining({ is_overtime: true }) }),
       );
     });
@@ -1002,6 +1078,7 @@ describe('ShiftsService', () => {
         },
       ];
       mockRepository.findOne.mockResolvedValue({ ...openRow, clock_in_time: oneMinuteAgo });
+      mockRepository.find.mockResolvedValue([{ ...openRow, clock_in_time: oneMinuteAgo }]);
 
       await expect(service.clockOut(mockUser.id, clockOutDto)).rejects.toThrow(ApiException);
       try {
@@ -1033,6 +1110,7 @@ describe('ShiftsService', () => {
         },
       ];
       mockRepository.findOne.mockResolvedValue({ ...openRow, clock_in_time: tenSecondsAgo });
+      mockRepository.find.mockResolvedValue([{ ...openRow, clock_in_time: tenSecondsAgo }]);
       mockRepository.createQueryBuilder.mockReturnValue(makeShiftQB({ ...openRow }));
       mockRepository.save.mockImplementation((r: any) => Promise.resolve(r));
 
@@ -1042,24 +1120,89 @@ describe('ShiftsService', () => {
     });
   });
   describe('findActiveShift', () => {
+    /** Shift 2 (ends 23:00) with the standard one-hour grace → window shuts at 00:00. */
+    const SHIFT_2_DEF = {
+      end_time: '23:00:00',
+      crosses_midnight: false,
+      cutoff_grace_min: 60,
+    };
+    const openOn = (serviceDay: string, definition: unknown = SHIFT_2_DEF) => ({
+      ...mockShift,
+      clock_out_time: null,
+      service_day: serviceDay,
+      shift_definition: definition,
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it('should return active shift if exists', async () => {
-      mockRepository.findOne.mockResolvedValue(mockShift);
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-05T11:00:00Z'));
+      const live = openOn('2026-08-05');
+      mockRepository.find.mockResolvedValue([live]);
 
       const result = await service.findActiveShift(mockUser.id);
 
-      expect(result).toEqual(mockShift);
-      expect(mockRepository.findOne).toHaveBeenCalledWith({
-        where: { user_id: mockUser.id, clock_out_time: IsNull() },
-        relations: ['area', 'area.locationType', 'user', 'shift_definition'],
-      });
+      expect(result).toEqual(live);
+      expect(mockRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { user_id: mockUser.id, clock_out_time: IsNull() },
+          relations: ['area', 'area.locationType', 'user', 'shift_definition'],
+        }),
+      );
     });
 
     it('should return null if no active shift', async () => {
-      mockRepository.findOne.mockResolvedValue(null);
+      mockRepository.find.mockResolvedValue([]);
 
       const result = await service.findActiveShift(mockUser.id);
 
       expect(result).toBeNull();
+    });
+
+    // The reported bug: a forgotten clock-out from 5 Aug still answered "are you
+    // on duty?" on 6 Aug, so the app showed yesterday's Jam Masuk against
+    // today's shift and offered Clock Out for a session 25 hours long.
+    it('ignores an open session whose shift window has already closed', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-06T11:00:00Z'));
+      mockRepository.find.mockResolvedValue([openOn('2026-08-05')]);
+
+      await expect(service.findActiveShift(mockUser.id)).resolves.toBeNull();
+    });
+
+    it('prefers the live session when a dangling one is also open', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-06T11:00:00Z'));
+      const dangling = openOn('2026-08-05');
+      const live = openOn('2026-08-06');
+      mockRepository.find.mockResolvedValue([dangling, live]);
+
+      await expect(service.findActiveShift(mockUser.id)).resolves.toEqual(live);
+    });
+
+    // Shift 3 runs 21:00→05:00. At 00:30 the worker is mid-shift and must stay
+    // active — a date-based check would have dropped them at midnight.
+    it('keeps a cross-midnight session active after midnight', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-05T17:30:00Z'));
+      const nightShift = openOn('2026-08-05', {
+        end_time: '05:00:00',
+        crosses_midnight: true,
+        cutoff_grace_min: 60,
+      });
+      mockRepository.find.mockResolvedValue([nightShift]);
+
+      await expect(service.findActiveShift(mockUser.id)).resolves.toEqual(nightShift);
+    });
+
+    // Overtime and legacy rows carry no definition, so there is no window to
+    // judge. Failing open is the safe direction: never tell a worker who IS on
+    // duty that they are not.
+    it('keeps a session with no shift definition active', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-30T11:00:00Z'));
+      const noDefinition = openOn('2026-08-05', null);
+      mockRepository.find.mockResolvedValue([noDefinition]);
+
+      await expect(service.findActiveShift(mockUser.id)).resolves.toEqual(noDefinition);
     });
   });
 

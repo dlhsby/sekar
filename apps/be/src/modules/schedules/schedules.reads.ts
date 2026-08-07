@@ -3,7 +3,10 @@ import { In, IsNull, Not } from 'typeorm';
 import { Schedule, ScheduleStatus } from './entities/schedule.entity';
 import { Shift } from '../shifts/entities/shift.entity';
 import { TimezoneUtil } from '../../common/utils/timezone.util';
-import { DAY_MS } from './schedules.support';
+import { DAY_MS, isShiftWindowClosed } from './schedules.support';
+
+/** Fallback when a shift definition carries no explicit grace. Matches the absence sweep. */
+const DEFAULT_CUTOFF_GRACE_MIN = 60;
 
 /** What the roster reads need from `SchedulesService`. */
 export interface ReadDeps {
@@ -151,7 +154,9 @@ export async function findCurrentForUser(svc: ReadDeps, userId: string): Promise
   // open shift's own roster row so the home hero + clock-out screen show the
   // real schedule/area and the geofence tests the right boundary. Only when
   // nothing else is operative, so a genuine current-day shift is never shadowed.
-  return resolved ?? (await rosterRowForOpenShift(svc, userId));
+  // `now` is the WIB wall clock, which is what the window check needs — see the
+  // note on `rosterRowForOpenShift`.
+  return resolved ?? (await rosterRowForOpenShift(svc, userId, now));
 }
 
 /**
@@ -163,11 +168,39 @@ export async function findCurrentForUser(svc: ReadDeps, userId: string): Promise
 export async function rosterRowForOpenShift(
   svc: ReadDeps,
   userId: string,
+  /**
+   * WIB wall clock, NOT a real instant. `isShiftWindowClosed` builds the shift's
+   * end from `serviceDay + end_time` with a `Z` suffix — the stored time is a
+   * wall-clock time being labelled UTC — so the only "now" it can be compared
+   * against is `TimezoneUtil.jakartaNow()`. Passing a real `new Date()` here
+   * makes every window appear to close seven hours late.
+   */
+  now: Date = TimezoneUtil.jakartaNow(),
 ): Promise<Schedule | null> {
-  const open = await svc.shiftRepo.findOne({
+  const openRows = await svc.shiftRepo.find({
     where: { user_id: userId, clock_out_time: IsNull() },
     order: { clock_in_time: 'DESC' },
+    relations: ['shift_definition'],
   });
+
+  // Only a LIVE open shift may stand in for today's roster. The overrun case
+  // this fallback exists for is a shift still inside its grace; once the window
+  // has fully closed the row is a forgotten clock-out, and letting it answer
+  // "what am I on right now?" put YESTERDAY's shift on today's home card —
+  // complete with a TERLAMBAT judged against a shift that already finished.
+  const open = openRows.find((row) => {
+    const sd = row.shift_definition;
+    if (!sd?.end_time) return true; // no window to judge — keep the old behaviour
+    const serviceDay = row.service_day ?? TimezoneUtil.jakartaDateString(row.clock_in_time ?? now);
+    return !isShiftWindowClosed(
+      serviceDay,
+      sd.end_time,
+      sd.crosses_midnight ?? false,
+      sd.cutoff_grace_min ?? DEFAULT_CUTOFF_GRACE_MIN,
+      now,
+    );
+  });
+
   if (!open?.shift_definition_id) return null;
   const startDate = TimezoneUtil.jakartaDateString(open.clock_in_time);
   const rows = await findAllByUserAndDate(svc, userId, startDate);

@@ -49,6 +49,47 @@ describe('evaluateLocation', () => {
       expect(evaluateLocation({ ...SURABAYA, isMocked }, { now: NOW }).accepted).toBe(true);
     });
 
+    it('accepts a mocked fix when the caller allows it', () => {
+      const verdict = evaluateLocation(
+        { ...SURABAYA, isMocked: true },
+        { now: NOW, allowMocked: true },
+      );
+
+      expect(verdict.accepted).toBe(true);
+      expect(verdict.rejection).toBeNull();
+    });
+
+    // The override relaxes the mock-provider rule ONLY. An emulator has no
+    // legitimate reason to produce null island or to teleport, so those stay
+    // enforced — otherwise the escape hatch would disable integrity wholesale.
+    it('still rejects null island when mocked fixes are allowed', () => {
+      const verdict = evaluateLocation(
+        { lat: 0, lng: 0, isMocked: true },
+        { now: NOW, allowMocked: true },
+      );
+
+      expect(verdict.rejection).toBe(LocationRejection.MISSING_COORDINATES);
+    });
+
+    it('still rejects impossible travel when mocked fixes are allowed', () => {
+      const verdict = evaluateLocation(
+        { lat: -6.2905, lng: 112.7398, isMocked: true },
+        {
+          now: NOW,
+          allowMocked: true,
+          previous: { ...SURABAYA, at: new Date(NOW.getTime() - 60 * 1000) },
+        },
+      );
+
+      expect(verdict.rejection).toBe(LocationRejection.IMPOSSIBLE_TRAVEL);
+    });
+
+    it.each([false, undefined])('rejects a mocked fix when allowMocked is %p', (allowMocked) => {
+      expect(
+        evaluateLocation({ ...SURABAYA, isMocked: true }, { now: NOW, allowMocked }).rejection,
+      ).toBe(LocationRejection.MOCKED);
+    });
+
     it('still applies geometric checks when the client claims it is clean', () => {
       // A patched APK can always send isMocked:false, so the checks that do not
       // depend on the client's word must keep running.

@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
 
@@ -46,14 +46,29 @@ export function TimeRecordHubScreen(): React.JSX.Element {
     }
   }, [date]);
 
+  /**
+   * One refresh path for both triggers.
+   *
+   * Opening the screen covers a schedule changed while the app sat in another
+   * tab; the pull gesture covers a change made while the worker is looking at
+   * this screen, which focus alone can never catch.
+   */
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchToday(), refetchRoster(), refetchShiftState()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [fetchToday, refetchRoster, refetchShiftState]);
+
   useFocusEffect(
     useCallback(() => {
       // Keep the shift + punches fresh every time the hub is opened — the shift
       // comes from the same attribution source the clock-in screen uses.
-      void fetchToday();
-      void refetchRoster();
-      void refetchShiftState();
-    }, [fetchToday, refetchRoster, refetchShiftState]),
+      void refresh();
+    }, [refresh]),
   );
 
   // Jam Masuk = earliest session's first-in; Jam Keluar = latest last-out.
@@ -87,7 +102,18 @@ export function TimeRecordHubScreen(): React.JSX.Element {
 
   return (
     <NBBackgroundPattern pattern="dots" backgroundColor={nbColors.bgCanvas} patternColor={nbColors.primary} opacity={0.06}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={refresh}
+            tintColor={nbColors.primary}
+            colors={[nbColors.primary]}
+          />
+        }
+      >
         {/* Section header — mirrors the home "KEHADIRAN" divider for consistency */}
         <HomeSectionDivider label={t('navigation:screens.timeRecordHub')} first />
 

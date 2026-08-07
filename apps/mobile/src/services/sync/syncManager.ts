@@ -40,6 +40,8 @@ interface ClockInData {
   shift_definition_id?: string;
   service_day?: string;
   punched_at?: string;
+  /** Mock-provider verdict captured with the fix, replayed on sync. */
+  is_mocked?: boolean;
 }
 
 interface ClockOutData {
@@ -48,6 +50,8 @@ interface ClockOutData {
   client_uuid?: string;
   accuracy_m?: number;
   punched_at?: string;
+  /** Mock-provider verdict captured with the fix, replayed on sync. */
+  is_mocked?: boolean;
 }
 
 interface ActivityData {
@@ -510,6 +514,7 @@ class SyncManager extends EventEmitter {
       shiftDefinitionId: data.shift_definition_id,
       serviceDay: data.service_day,
       punchedAt: data.punched_at,
+      isMocked: data.is_mocked,
     });
 
     if (!result || result.error) {
@@ -529,6 +534,7 @@ class SyncManager extends EventEmitter {
       clientUuid: data.client_uuid,
       accuracyM: data.accuracy_m,
       punchedAt: data.punched_at,
+      isMocked: data.is_mocked,
     });
 
     if (!result || result.error) {

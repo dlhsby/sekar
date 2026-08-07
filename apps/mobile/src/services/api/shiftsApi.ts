@@ -29,6 +29,15 @@ export interface ClockPunchOptions {
   serviceDay?: string;
   /** ISO capture time — set for an offline punch so sync records the real time. */
   punchedAt?: string;
+  /**
+   * The OS mock-provider verdict for the fix this punch was taken at.
+   *
+   * Reported truthfully even when the dev override is on: the client's job is
+   * to say what it saw, and the server decides what to do about it. Omitted
+   * (rather than sent as `false`) when unknown, so the server can tell "checked,
+   * clean" from "never checked" — the same distinction the ping stream draws.
+   */
+  isMocked?: boolean;
 }
 
 function applyPunchOptions(payload: Record<string, unknown>, opts?: ClockPunchOptions): void {
@@ -38,6 +47,7 @@ function applyPunchOptions(payload: Record<string, unknown>, opts?: ClockPunchOp
   if (opts.shiftDefinitionId) payload.shift_definition_id = opts.shiftDefinitionId;
   if (opts.serviceDay) payload.service_day = opts.serviceDay;
   if (opts.punchedAt) payload.punched_at = opts.punchedAt;
+  if (opts.isMocked != null) payload.is_mocked = opts.isMocked;
 }
 
 /**

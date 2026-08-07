@@ -80,6 +80,15 @@ export interface LocationState {
   accuracy: number | null;
   loading: boolean;
   error: string | null;
+  /**
+   * The OS mock-provider verdict carried alongside the coordinates.
+   *
+   * Kept on the state (not just inside the reader) because it has to travel
+   * with the punch: without it the server sees no `is_mocked` on a clock-in and
+   * the punch gate cannot fire at all. `null` = no fix yet, so nothing to
+   * report — distinct from `false`, which means checked and clean.
+   */
+  mocked: boolean | null;
 }
 
 /** A shift the caller wants pre-selected (e.g. picked on the hub, passed by route). */
@@ -102,6 +111,7 @@ export function useClockInOut(preferred?: PreferredShift) {
     accuracy: null,
     loading: false,
     error: null,
+    mocked: null,
   });
 
   const [selfie, setSelfie] = useState<Photo | null>(null);
@@ -167,7 +177,34 @@ export function useClockInOut(preferred?: PreferredShift) {
   // Today's roster (from /schedules/my) — the single schedule concept (ADR-013).
   // This is the ONLY source of "scheduled" truth: an unscheduled patrol/ad-hoc
   // worker resolves to hasScheduleToday=false and never reads as late.
-  const { roster, rosterShift, hasScheduleToday, allToday } = useTodayRoster();
+  const {
+    roster,
+    rosterShift,
+    hasScheduleToday,
+    allToday,
+    refetch: refetchRoster,
+  } = useTodayRoster();
+
+  /**
+   * Re-read everything the screen renders: the roster row, the attribution
+   * options, and the live session.
+   *
+   * The clock-in screen lives in a tab, so React Navigation keeps it mounted
+   * after the first visit and the hooks' mount-time fetch never runs again. A
+   * schedule added from the web while the app was open therefore stayed
+   * invisible on this screen — "Tidak Ada Shift" — while the home card and the
+   * Kehadiran hub, which both refetch on focus, already showed it.
+   */
+  const [refreshing, setRefreshing] = useState(false);
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([loadCurrentState(), refetchRoster()]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [loadCurrentState, refetchRoster]);
+
 
   // Where today's roster row puts the worker — a city/rayon/kawasan-scope
   // assignment names no lokasi but is still an assignment (see resolveScheduleScope).
@@ -355,6 +392,10 @@ export function useClockInOut(preferred?: PreferredShift) {
       accuracy: position.accuracy,
       loading: false,
       error: null,
+      // Only reaches here when the dev override let it through; in a release
+      // bundle a mocked fix rejects before this point. Recorded either way so
+      // the punch reports what the device actually saw.
+      mocked: position.mocked,
     });
   }, []);
 
@@ -371,7 +412,7 @@ export function useClockInOut(preferred?: PreferredShift) {
         if (__DEV__) { console.error('Location error:', error); }
 
         setLocation({
-          latitude: null, longitude: null, accuracy: null,
+          latitude: null, longitude: null, accuracy: null, mocked: null,
           loading: false, error: describeLocationError(error),
         });
       });
@@ -395,13 +436,14 @@ export function useClockInOut(preferred?: PreferredShift) {
 
       unsubscribe = watchPosition(
         {
-          onPosition: ({ latitude, longitude, accuracy }) => {
+          onPosition: ({ latitude, longitude, accuracy, mocked }) => {
             if (!isMounted) { return; }
             // Location only — isWithinBoundary is derived from it.
             setLocation({
               latitude, longitude,
               accuracy: accuracy ?? null,
               loading: false, error: null,
+              mocked,
             });
           },
           onError: (error) => {
@@ -412,7 +454,7 @@ export function useClockInOut(preferred?: PreferredShift) {
             // GPS, and punch against the stale coordinates.
             if (error instanceof MockedLocationError) {
               setLocation({
-                latitude: null, longitude: null, accuracy: null,
+                latitude: null, longitude: null, accuracy: null, mocked: null,
                 loading: false, error: describeLocationError(error),
               });
             }
@@ -512,6 +554,7 @@ export function useClockInOut(preferred?: PreferredShift) {
           shift_definition_id: shift?.shift_definition_id,
           service_day: shift?.service_day,
           punched_at: punchedAt,
+          is_mocked: location.mocked ?? undefined,
         });
         setSelfie(null);
         Alert.alert('OK', i18n.t('attendance:clockInOut.offlineQueued'), [
@@ -526,6 +569,7 @@ export function useClockInOut(preferred?: PreferredShift) {
         shiftDefinitionId: shift?.shift_definition_id,
         serviceDay: shift?.service_day,
         punchedAt,
+        isMocked: location.mocked ?? undefined,
       });
       if (response.error || !response.data) {
         throw new Error(response.error || i18n.t('location:clockInOut.clockInFail'));
@@ -613,6 +657,7 @@ export function useClockInOut(preferred?: PreferredShift) {
           client_uuid: clientUuid,
           accuracy_m: location.accuracy ?? undefined,
           punched_at: punchedAt,
+          is_mocked: location.mocked ?? undefined,
         });
         setSelfie(null);
         dispatch(setCurrentShift(null));
@@ -626,6 +671,7 @@ export function useClockInOut(preferred?: PreferredShift) {
         clientUuid,
         accuracyM: location.accuracy ?? undefined,
         punchedAt,
+        isMocked: location.mocked ?? undefined,
       });
       if (response.error) {
         const errMsg = response.error;
@@ -674,6 +720,8 @@ export function useClockInOut(preferred?: PreferredShift) {
     setSelectedShift,
     hasOpenSession,
     loadCurrentState,
+    refresh,
+    refreshing,
     getCurrentLocation,
     handleCaptureSelfie,
     handleClockIn,

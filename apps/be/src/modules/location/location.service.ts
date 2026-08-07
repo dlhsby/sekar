@@ -12,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource, Between, IsNull } from 'typeorm';
 import { LocationLog } from './entities/location-log.entity';
 import { evaluateLocation, type PreviousFix } from '../../common/utils/location-integrity.util';
+import { mockedLocationAllowed } from '../../common/config/integrity-overrides';
 import { isRedundantStationaryPing } from '../../common/utils/location-thinning.util';
 import { CreateLocationBatchDto } from './dto/create-location-batch.dto';
 import { Shift } from '../shifts/entities/shift.entity';
@@ -92,6 +93,9 @@ export class LocationService {
 
     const rows: LocationLog[] = [];
     let thinned = 0;
+    // Resolved once per batch rather than per ping — it cannot change mid-loop,
+    // and a batch is up to a few hundred entries.
+    const allowMocked = mockedLocationAllowed();
 
     for (const location of ordered) {
       const verdict = evaluateLocation(
@@ -102,7 +106,7 @@ export class LocationService {
           isMocked: location.is_mocked ?? null,
           clientTimestamp: new Date(location.logged_at),
         },
-        { now, previous },
+        { now, previous, allowMocked },
       );
 
       if (verdict.accepted) {

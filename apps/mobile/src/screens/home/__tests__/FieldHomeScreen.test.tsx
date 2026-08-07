@@ -69,21 +69,32 @@ jest.mock('../../../components/modals/OvertimeTrailModal', () => ({
 }));
 
 // Mock useHomeLocation hook
+const mockHomeLocationState = {
+  location: {
+    latitude: null,
+    longitude: null,
+    accuracy: null,
+    isWithinArea: false,
+    loading: false,
+    error: null,
+    updatedAt: null,
+  },
+  refresh: jest.fn(),
+  // Overridden per-test via `onDuty()`. It gates the Status Kehadiran / Status
+  // Area rows (ADR-050 scopes those to a worker who is actually on duty), so a
+  // spec that asserts them has to say it is on duty rather than relying on the
+  // store alone — this hook is mocked, so the store never reaches it.
+  hasActiveShift: false,
+};
+
 jest.mock('../../../hooks/useHomeLocation', () => ({
-  useHomeLocation: jest.fn(() => ({
-    location: {
-      latitude: null,
-      longitude: null,
-      accuracy: null,
-      isWithinArea: false,
-      loading: false,
-      error: null,
-      updatedAt: null,
-    },
-    refresh: jest.fn(),
-    hasActiveShift: false,
-  })),
+  useHomeLocation: jest.fn(() => mockHomeLocationState),
 }));
+
+/** Put the mocked home-location hook into the on-duty state for one test. */
+const onDuty = () => {
+  mockHomeLocationState.hasActiveShift = true;
+};
 
 // Helper to create test store with optional shift
 const createTestStore = (currentShift: any = null) => {
@@ -888,6 +899,8 @@ describe('FieldHomeScreen HOME-1 body', () => {
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: null });
     (activitiesApi.getMyActivities as jest.Mock).mockResolvedValue({ data: [] });
     (tasksApi.getMyTasks as jest.Mock).mockResolvedValue({ data: { data: [] } });
+    // Off duty is the default; the on-duty spec opts in via `onDuty()`.
+    mockHomeLocationState.hasActiveShift = false;
   });
 
   afterEach(() => {
@@ -921,6 +934,7 @@ describe('FieldHomeScreen HOME-1 body', () => {
   });
 
   it('renders the active absensi hero ("Sedang bertugas") with a shift', async () => {
+    onDuty();
     const shift = createShift(new Date());
     (shiftsApi.getCurrentShift as jest.Mock).mockResolvedValue({ data: shift });
     (shiftsApi.getMyShifts as jest.Mock).mockResolvedValue({ data: [shift] });
@@ -938,6 +952,23 @@ describe('FieldHomeScreen HOME-1 body', () => {
     expect(getByTestId('entry-clock-out')).toBeTruthy();
     expect(getByText('Status Kehadiran')).toBeTruthy();
     expect(getByText('Status Area')).toBeTruthy();
+  });
+
+  // ADR-050: Status Area is Axis 2 (live presence), scoped to `bertugas` — a
+  // worker who has not punched in has no in/out-of-area state to report. Status
+  // Kehadiran goes with it: the "belum clockin" banner already states that, and
+  // showing a TERLAMBAT chip beside it judged the worker against a shift they
+  // had not started.
+  it('hides the Status rows until the worker is actually on duty', async () => {
+    const store = createTestStore(null);
+    const { queryByText, getByTestId } = renderHome(store);
+    await act(async () => { jest.advanceTimersByTime(200); });
+
+    await waitFor(() => {
+      expect(getByTestId('absensi-hero')).toBeTruthy();
+    });
+    expect(queryByText('Status Kehadiran')).toBeNull();
+    expect(queryByText('Status Area')).toBeNull();
   });
 
   it('renders the "Ringkasan hari ini" summary tiles', async () => {
