@@ -122,7 +122,7 @@ async function login(identifier: string, password: string): Promise<string> {
  * runs identical, and it means a local run never mutates a demo persona whose
  * state another test depends on.
  */
-async function resolveSubject(s: Scenario): Promise<ResolvedSubject> {
+async function resolveSubject(s: Scenario): Promise<ResolvedSubject | null> {
   const ds = AppDataSource;
 
   // Adopted persona: seeder-owned, so use it as it stands rather than creating
@@ -141,11 +141,11 @@ async function resolveSubject(s: Scenario): Promise<ResolvedSubject> {
       district_id: string | null;
       region_id: string | null;
     }>;
-    if (!row) {
-      throw new Error(
-        `${s.id} adopts "${s.subject.adopt}", which does not exist — run \`npm run db:seed\` first.`,
-      );
-    }
+    // Absent is legitimate in clone mode: the presence personas belong to the
+    // DEMO profile, and the staging clone holds real workers instead. Returning
+    // null lets the runner skip the scenario with a reason rather than aborting
+    // an otherwise-valid run.
+    if (!row) return null;
     return {
       userId: row.id,
       username: row.username,
@@ -364,12 +364,21 @@ async function main(): Promise<void> {
 
   // ── Arrange ──
   const subjects = new Map<string, ResolvedSubject>();
+  /** Scenarios whose adopted persona is absent here — skipped, with the reason. */
+  const missingSubjects = new Map<string, string>();
   if (!VERIFY_ONLY) {
     await resetSubjectData(
       scenarios.map((s) => s.subject.adopt).filter((u): u is string => Boolean(u)),
     );
     for (const s of scenarios) {
       const subject = await resolveSubject(s);
+      if (!subject) {
+        missingSubjects.set(
+          s.id,
+          `adopts "${s.subject.adopt}", which this database does not have (demo-profile persona)`,
+        );
+        continue;
+      }
       subjects.set(s.id, subject);
       await s.arrange({ ds: AppDataSource, mode: MODE, today, now, subject, helpers });
     }
@@ -393,7 +402,11 @@ async function main(): Promise<void> {
       return;
     }
   } else {
-    for (const s of scenarios) subjects.set(s.id, await resolveSubject(s));
+    for (const s of scenarios) {
+      const subject = await resolveSubject(s);
+      if (subject) subjects.set(s.id, subject);
+      else missingSubjects.set(s.id, `adopts "${s.subject.adopt}", which this database does not have`);
+    }
   }
 
   // ── Verify ── (adminToken was obtained during preflight)
@@ -401,7 +414,7 @@ async function main(): Promise<void> {
   const skipped: Array<{ scenario: Scenario; reason: string }> = [];
 
   for (const s of scenarios) {
-    const skip = s.skipIf?.() ?? null;
+    const skip = missingSubjects.get(s.id) ?? s.skipIf?.() ?? null;
     if (skip) {
       skipped.push({ scenario: s, reason: skip });
       console.log(`${DIM}  SKIP  ${s.id}  ${s.title}\n        ↳ ${skip}${RESET}`);
