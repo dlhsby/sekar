@@ -1,5 +1,7 @@
 import type { Scenario } from '../types';
 import { ATTENDANCE } from './attendance';
+import { INTEGRITY } from './integrity';
+import { LIFECYCLE } from './lifecycle';
 import { MONITORING } from './monitoring';
 import { SCHEDULING } from './scheduling';
 
@@ -10,7 +12,13 @@ import { SCHEDULING } from './scheduling';
  *   CATALOG.filter((s) => s.expect.length === 0)   // arranged but never asserted
  *   CATALOG.filter((s) => s.guards)                // regression guards
  */
-export const CATALOG: Scenario[] = [...SCHEDULING, ...MONITORING, ...ATTENDANCE];
+export const CATALOG: Scenario[] = [
+  ...SCHEDULING,
+  ...MONITORING,
+  ...LIFECYCLE,
+  ...ATTENDANCE,
+  ...INTEGRITY,
+];
 
 /** Scenarios that must fail against the code from before their fix. */
 export const REGRESSION_GUARDS = CATALOG.filter((s) => s.guards);

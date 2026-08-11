@@ -106,7 +106,21 @@ Two traps worth knowing, both learned by scenarios failing:
 `assertCatalogIsSound()` rejects duplicate ids and any scenario that arranges data
 but asserts nothing — the shape that passes vacuously.
 
+## Skips
+
+A scenario can declare `skipIf()` and be skipped with a printed reason, counted
+separately so it can never masquerade as a pass. Exactly one uses it today:
+**ATT-18** (mocked fix refused) skips while `ALLOW_MOCKED_LOCATION=true`, because
+with the emulator override on the server is *supposed* to accept a mocked fix.
+Reporting that as a failure would train people to ignore a red suite.
+
+A skip that has never been proven to work is a hidden failure, so ATT-18 was run
+with the override off and passes there.
+
 ## Coverage
+
+22 scenarios: 4 scheduling, 8 monitoring, 10 attendance (4 of them integrity
+writes). 11 are regression guards for defects fixed in August 2026.
 
 `CATALOG` is a plain array, so holes are findable rather than assumed:
 

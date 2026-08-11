@@ -125,16 +125,27 @@ async function resolveSubject(s: Scenario): Promise<ResolvedSubject> {
   const username = `${PREFIX}${s.subject.handle}`;
   const ds = AppDataSource;
 
-  // A lokasi that actually has a rayon, so every drill tier is reachable.
+  // The lokasi must be able to SUPPORT the scope the scenario declares. A
+  // region-scoped scenario needs one that is actually re-parented under a
+  // kawasan — only 590 of 953 are, so picking blind silently produced a
+  // district-scoped occurrence and the scenario failed for the wrong reason.
+  const needsRegion = s.subject.scope === 'region';
   const [place] = (await ds.query(
     `SELECT l.id AS location_id, l.district_id, l.region_id
        FROM locations l
       WHERE l.deleted_at IS NULL AND l.district_id IS NOT NULL
+        AND ($2::boolean IS NOT TRUE OR l.region_id IS NOT NULL)
       ORDER BY l.name
       OFFSET $1 LIMIT 1`,
-    [Math.abs(hash(s.id)) % 50],
+    [Math.abs(hash(s.id)) % 50, needsRegion],
   )) as Array<{ location_id: string; district_id: string; region_id: string | null }>;
-  if (!place) throw new Error('no locations available — seed the demo profile first');
+  if (!place) {
+    throw new Error(
+      needsRegion
+        ? 'no lokasi is re-parented under a kawasan — cannot place a region-scoped subject'
+        : 'no locations available — seed the demo profile first',
+    );
+  }
 
   const [existing] = (await ds.query(`SELECT id FROM users WHERE username = $1`, [
     username,
@@ -329,8 +340,15 @@ async function main(): Promise<void> {
 
   // ── Verify ── (adminToken was obtained during preflight)
   const results: Result[] = [];
+  const skipped: Array<{ scenario: Scenario; reason: string }> = [];
 
   for (const s of scenarios) {
+    const skip = s.skipIf?.() ?? null;
+    if (skip) {
+      skipped.push({ scenario: s, reason: skip });
+      console.log(`${DIM}  SKIP  ${s.id}  ${s.title}\n        ↳ ${skip}${RESET}`);
+      continue;
+    }
     const subject = subjects.get(s.id)!;
     const ctx = { subject, today, mode: MODE };
     const failures: string[] = [];
@@ -346,15 +364,23 @@ async function main(): Promise<void> {
           continue;
         }
       }
+      const isPost = typeof e.post === 'function';
       const res = await fetch(`${API}${path}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        method: isPost ? 'POST' : 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          ...(isPost ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: isPost ? JSON.stringify(e.post!(ctx)) : undefined,
       });
-      if (!res.ok) {
+      // A POST expectation asserts the REFUSAL, so a non-2xx is the result to
+      // inspect rather than a transport failure to report.
+      if (!isPost && !res.ok) {
         failures.push(`${e.what}: GET ${path} → HTTP ${res.status}`);
         continue;
       }
-      const body: unknown = await res.json();
-      const reason = e.check(body, ctx);
+      const body: unknown = await res.json().catch(() => ({}));
+      const reason = e.check(body, { ...ctx, status: res.status });
       if (reason) failures.push(`${e.what}: ${reason}`);
     }
 
@@ -379,6 +405,9 @@ async function main(): Promise<void> {
   console.log('\nCoverage');
   for (const [domain, d] of byDomain) {
     console.log(`  ${domain.padEnd(12)} ${d.pass}/${d.total}`);
+  }
+  if (skipped.length > 0) {
+    console.log(`  ${DIM}skipped      ${skipped.length} (${skipped.map((s) => s.scenario.id).join(', ')})${RESET}`);
   }
   console.log(
     `\n${failed.length === 0 ? GREEN + 'All scenarios passed.' : RED + `${failed.length} scenario(s) failed.`}${RESET}\n`,

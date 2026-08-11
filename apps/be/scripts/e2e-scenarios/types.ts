@@ -133,7 +133,16 @@ export interface Helpers {
 export interface Expectation {
   what: string;
   get: (ctx: ExpectContext) => string;
-  check: (body: unknown, ctx: ExpectContext) => string | null;
+  /**
+   * Body to POST instead of issuing a GET.
+   *
+   * The integrity rules (ADR-059) can only be proven by attempting a WRITE the
+   * API must refuse — a rejected punch leaves no row to read afterwards, so
+   * there is nothing a GET could assert. `check` then receives the error body
+   * and `status` carries the HTTP code.
+   */
+  post?: (ctx: ExpectContext) => Record<string, unknown>;
+  check: (body: unknown, ctx: ExpectContext & { status: number }) => string | null;
   /**
    * Who makes the call. Declared, not inferred from the path — several
    * attendance endpoints are `@Roles(...CLOCKABLE_ROLES)` and read `@GetUser()`,
@@ -167,4 +176,14 @@ export interface Scenario {
   subject: SubjectSpec;
   arrange: (ctx: ArrangeContext) => Promise<void>;
   expect: Expectation[];
+  /**
+   * Return a reason to SKIP rather than run.
+   *
+   * For scenarios a deliberate local setting makes untestable — the anti-spoof
+   * override being the case in point. A dev who set `ALLOW_MOCKED_LOCATION=true`
+   * for emulator work has not caused a regression, and reporting one would train
+   * people to ignore a red suite. Skips are counted and printed separately so
+   * they cannot masquerade as passes either.
+   */
+  skipIf?: () => string | null;
 }
