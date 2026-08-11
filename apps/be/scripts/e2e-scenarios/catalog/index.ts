@@ -3,6 +3,7 @@ import { ATTENDANCE } from './attendance';
 import { INTEGRITY } from './integrity';
 import { LIFECYCLE } from './lifecycle';
 import { MONITORING } from './monitoring';
+import { PRESENCE } from './presence';
 import { SCHEDULING } from './scheduling';
 
 /**
@@ -16,6 +17,7 @@ export const CATALOG: Scenario[] = [
   ...SCHEDULING,
   ...MONITORING,
   ...LIFECYCLE,
+  ...PRESENCE,
   ...ATTENDANCE,
   ...INTEGRITY,
 ];

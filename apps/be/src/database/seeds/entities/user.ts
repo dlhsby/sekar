@@ -933,8 +933,10 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
   // tester can log in (or watch on /monitoring) and know exactly what the row
   // is SUPPOSED to show. The users are stable here; the time-relative facts
   // (clock in/out, leave, overtime, pings) are applied by
-  // `npx ts-node scripts/stage-presence-scenarios.ts`, which must run for the
-  // states to materialise. All password `12345678`.
+  // the E2E scenario catalog (`npm run e2e:scenarios:seed`, chained into
+  // `npm run db:seed`), which ADOPTS these accounts by name and arranges their
+  // state from PUNCHES — so each persona has a real Log Kehadiran, which the
+  // retired stager could not produce. All password `12345678`.
   const PRESENCE_USERS: Array<[string, string, string, string, string, string | null]> = [
     // id, username, full name, role, phone, locationId (null → scope-driven)
     [
@@ -1118,7 +1120,7 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
     // Rescheduling cohort — one per role per shift, always on CITY scope so the
     // day board shows them under "Penugasan Kota" and you can drag/reschedule
     // them between Shift 1/2/3 without disturbing any presence scenario.
-    // Schedules are applied by scripts/stage-presence-scenarios.ts.
+    // Schedules are applied by the E2E scenario catalog (see above).
     [
       'b0000000-0000-4000-8000-000000000023',
       'satgas_shift_1',
@@ -1256,6 +1258,6 @@ export async function seedUsers(ctx: SeedContext): Promise<void> {
   }
   ctx.log(
     `  ✓ ${presenceInserted}/${PRESENCE_USERS.length} presence-scenario users ` +
-      `(schedules applied by scripts/stage-presence-scenarios.ts)`,
+      `(schedules applied by the E2E scenario catalog — npm run e2e:scenarios:seed)`,
   );
 }

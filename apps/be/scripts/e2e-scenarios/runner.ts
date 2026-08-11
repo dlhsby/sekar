@@ -21,6 +21,7 @@
 
 import type { DataSource } from 'typeorm';
 import { CATALOG, assertCatalogIsSound } from './catalog';
+import { arrangeDemoFixtures, clearDemoFixtures } from './fixtures';
 import { buildHelpers, wibToday } from './helpers';
 import type { Mode, ResolvedSubject, Scenario } from './types';
 
@@ -122,8 +123,39 @@ async function login(identifier: string, password: string): Promise<string> {
  * state another test depends on.
  */
 async function resolveSubject(s: Scenario): Promise<ResolvedSubject> {
-  const username = `${PREFIX}${s.subject.handle}`;
   const ds = AppDataSource;
+
+  // Adopted persona: seeder-owned, so use it as it stands rather than creating
+  // anything. Its own lokasi/rayon are the ones the tester sees in manual-uat.
+  if (s.subject.adopt) {
+    const [row] = (await ds.query(
+      `SELECT u.id, u.username, u.location_id, u.district_id, l.region_id
+         FROM users u
+         LEFT JOIN locations l ON l.id = u.location_id
+        WHERE u.username = $1`,
+      [s.subject.adopt],
+    )) as Array<{
+      id: string;
+      username: string;
+      location_id: string | null;
+      district_id: string | null;
+      region_id: string | null;
+    }>;
+    if (!row) {
+      throw new Error(
+        `${s.id} adopts "${s.subject.adopt}", which does not exist — run \`npm run db:seed\` first.`,
+      );
+    }
+    return {
+      userId: row.id,
+      username: row.username,
+      locationId: row.location_id,
+      regionId: row.region_id,
+      districtId: row.district_id,
+    };
+  }
+
+  const username = `${PREFIX}${s.subject.handle}`;
 
   // The lokasi must be able to SUPPORT the scope the scenario declares. A
   // region-scoped scenario needs one that is actually re-parented under a
@@ -198,9 +230,13 @@ function hash(s: string): number {
 /** Remove every trace of previous runs. Scoped to e2e_* users only. */
 async function purge(): Promise<number> {
   const ds = AppDataSource;
-  const users = (await ds.query(`SELECT id FROM users WHERE username LIKE $1`, [
-    `${PREFIX}%`,
-  ])) as Array<{ id: string }>;
+  // Rows for adopted personas are cleared too; their ACCOUNTS are seeder-owned
+  // and deliberately survive (only e2e_* users are dropped, below).
+  const adopted = CATALOG.map((s) => s.subject.adopt).filter((u): u is string => Boolean(u));
+  const users = (await ds.query(
+    `SELECT id FROM users WHERE username LIKE $1 OR username = ANY($2)`,
+    [`${PREFIX}%`, adopted],
+  )) as Array<{ id: string }>;
   if (users.length === 0) return 0;
   const ids = users.map((u) => u.id);
   await ds.query(`DELETE FROM location_logs WHERE user_id = ANY($1)`, [ids]);
@@ -211,12 +247,19 @@ async function purge(): Promise<number> {
   return users.length;
 }
 
-/** Delete only the rows a re-run would otherwise duplicate; keep the accounts. */
-async function resetSubjectData(): Promise<void> {
+/**
+ * Delete only the rows a re-run would otherwise duplicate; keep the accounts.
+ *
+ * Covers BOTH the catalog's own `e2e_*` users and any adopted persona, because
+ * an adopted one accumulates a fresh session on every run otherwise. The
+ * accounts themselves are never touched here.
+ */
+async function resetSubjectData(adopted: string[] = []): Promise<void> {
   const ds = AppDataSource;
-  const users = (await ds.query(`SELECT id FROM users WHERE username LIKE $1`, [
-    `${PREFIX}%`,
-  ])) as Array<{ id: string }>;
+  const users = (await ds.query(
+    `SELECT id FROM users WHERE username LIKE $1 OR username = ANY($2)`,
+    [`${PREFIX}%`, adopted],
+  )) as Array<{ id: string }>;
   if (users.length === 0) return;
   const ids = users.map((u) => u.id);
   await ds.query(`DELETE FROM location_logs WHERE user_id = ANY($1)`, [ids]);
@@ -322,13 +365,28 @@ async function main(): Promise<void> {
   // ── Arrange ──
   const subjects = new Map<string, ResolvedSubject>();
   if (!VERIFY_ONLY) {
-    await resetSubjectData();
+    await resetSubjectData(
+      scenarios.map((s) => s.subject.adopt).filter((u): u is string => Boolean(u)),
+    );
     for (const s of scenarios) {
       const subject = await resolveSubject(s);
       subjects.set(s.id, subject);
       await s.arrange({ ds: AppDataSource, mode: MODE, today, now, subject, helpers });
     }
-    console.log(`${DIM}Arranged ${scenarios.length} scenarios.${RESET}\n`);
+    // Demo roster fixtures: the half of the retired stager that carried no
+    // assertion. Only on a FULL run — a --only run is a targeted check and has
+    // no business rewriting the whole board.
+    if (!ONLY) {
+      const owned = CATALOG.map((s) => s.subject.adopt).filter((u): u is string => Boolean(u));
+      await clearDemoFixtures(AppDataSource, today, owned);
+      const fx = await arrangeDemoFixtures(AppDataSource, helpers, today, owned);
+      console.log(
+        `${DIM}Arranged ${scenarios.length} scenarios + ${fx.rosterRows} demo roster rows` +
+          `${fx.skipped.length ? ` (${fx.skipped.length} accounts absent)` : ''}.${RESET}\n`,
+      );
+    } else {
+      console.log(`${DIM}Arranged ${scenarios.length} scenarios.${RESET}\n`);
+    }
     if (ARRANGE_ONLY) {
       console.log('arrange-only: skipping verification (no API call made).\n');
       await AppDataSource.destroy();

@@ -19,7 +19,7 @@
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/src/main",
-    "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/demo.ts && ts-node -r tsconfig-paths/register scripts/stage-presence-scenarios.ts",
+    "db:seed": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/demo.ts && ts-node -r tsconfig-paths/register scripts/e2e-scenarios/runner.ts --arrange-only",
     "db:seed:staging": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/staging.ts",
     "db:seed:reference": "ts-node -r tsconfig-paths/register src/database/seeds/profiles/reference.ts",
     "backfill:inline-photos": "ts-node -r tsconfig-paths/register src/database/backfill/backfill-inline-photos.ts",

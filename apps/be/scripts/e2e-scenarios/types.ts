@@ -38,11 +38,24 @@ export type DrillScope = 'city' | 'district' | 'region' | 'location';
  * mutating them would pollute the dataset the client demo runs from.
  */
 export interface SubjectSpec {
-  /** Stable handle used in output and to derive the `e2e_*` username in clone mode. */
+  /** Stable handle used in output and to derive the `e2e_*` username. */
   handle: string;
   role: 'satgas' | 'linmas' | 'korlap' | 'staff_kecamatan';
   /** Which tier the worker's schedule occurrence is scoped to (drives display_scope). */
   scope: DrillScope;
+  /**
+   * Take over an EXISTING seeded user instead of creating an `e2e_*` one.
+   *
+   * The demo profile creates 22 self-describing presence personas
+   * (`satgas_bertugas_1`, `satgas_cuti_1`, …) with stable UUIDs, and
+   * `manual-uat.md` walks a tester through them by name. Adopting keeps those
+   * names — and the human-readable demo they provide — while the catalog
+   * supplies the state, which the retired stager used to do.
+   *
+   * The account is never created or deleted here; only its scenario rows are
+   * managed, so a `--purge` leaves the persona itself intact.
+   */
+  adopt?: string;
 }
 
 /** Everything an `arrange` step is handed. Keeps scenarios free of wiring. */

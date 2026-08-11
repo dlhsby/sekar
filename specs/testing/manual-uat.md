@@ -119,7 +119,7 @@ clocked in yet). Only **satgas + linmas** count toward staffing.
 | `satgas_pusat_3` | 2 | Jl. Ahmad Jaiz | -7.25364327, 112.73785415 |
 
 ### 2.3 Schedule scope variants (see them on the monitoring map / schedule board)
-`scripts/stage-presence-scenarios.ts` owns every demo assignment (the seeder creates none) and
+The E2E scenario catalog (`apps/be/scripts/e2e-scenarios/`) owns every demo assignment (the seeder creates the accounts only) and
 writes **recurring** `daily` events, so the board is populated today *and* every day forward to
 the materialization horizon (**60 days**) — not just the day you seeded.
 
@@ -513,7 +513,8 @@ the row is supposed to show. Seed them, then stage them:
 ```bash
 cd apps/be
 npm run db:seed                                   # creates the 22 presence users (idempotent)
-npx ts-node scripts/stage-presence-scenarios.ts   # applies today's clock-ins / leave / pings
+npm run e2e:scenarios:seed                       # applies today's punches / leave / pings
+npm run e2e:scenarios                            # …and asserts each persona resolves as intended
 # then open web /monitoring as admin_system_1
 ```
 All use password `12345678` (no forced reset), so you can also log into the **mobile app** as
@@ -553,7 +554,7 @@ disturbing any presence scenario. They are scheduled only — never clocked in.
 | `satgas_shift_2` · `linmas_shift_2` · `korlap_shift_2` · `tim_shift_2_1` + `tim_shift_2_2` | satgas · linmas · korlap · tim | Shift 2 |
 | `satgas_shift_3` · `linmas_shift_3` · `korlap_shift_3` · `tim_shift_3_1` + `tim_shift_3_2` | satgas · linmas · korlap · tim | Shift 3 |
 
-**Scope × role sample roster** (`SAMPLE …` in a schedule's notes) — `stage-presence-scenarios.ts`
+**Scope × role sample roster** (`SAMPLE …` in a schedule's notes) — the E2E scenario catalog
 also rosters one satgas, one linmas, one korlap and one team at **each** of city / district /
 region / location, so every board tier and role column has content. The **location** tier is
 pinned to **Rayon Pusat**; the other tiers each draw from a different rayon, because a worker
