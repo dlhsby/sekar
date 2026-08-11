@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { NotFoundException } from '@nestjs/common';
 import { MonitoringStatsService } from './monitoring-stats.service';
 import { DayTypeService } from './day-type.service';
@@ -346,6 +346,48 @@ describe('MonitoringStatsService', () => {
       const result = await service.getAreaWorkers('area-1');
 
       expect(result).toEqual([]);
+    });
+
+    // The lokasi tier had no liveness guard, so a tracking row still pointing at
+    // a shift closed days earlier kept the worker on this list. "Remembers a
+    // shift" is not "on duty now" — the session must still be open.
+    it('asks only for tracking rows whose session is still open', async () => {
+      trackingRepository.find.mockResolvedValue([]);
+      shiftRepository.find.mockResolvedValue([]);
+
+      await service.getAreaWorkers('area-1');
+
+      expect(trackingRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            location_id: 'area-1',
+            shift: { clock_out_time: IsNull() },
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('clockedInUserSet (drives the off-schedule "Luar jadwal" count)', () => {
+    // The worst place for a phantom: a stale session is by definition absent
+    // from today's roster, so every one of them was counted as off-schedule.
+    it('excludes tracking rows whose session is already closed', async () => {
+      trackingRepository.find.mockResolvedValue([]);
+
+      await (
+        service as unknown as {
+          clockedInUserSet: (o: { districtId?: string }) => Promise<Set<string>>;
+        }
+      ).clockedInUserSet({ districtId: 'district-1' });
+
+      expect(trackingRepository.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            district_id: 'district-1',
+            shift: { clock_out_time: IsNull() },
+          }),
+        }),
+      );
     });
   });
 

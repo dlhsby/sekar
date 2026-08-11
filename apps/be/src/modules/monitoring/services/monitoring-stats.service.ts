@@ -51,6 +51,30 @@ import { DayTypeService } from './day-type.service';
 import { simplifyGeometry } from '../../../common/utils/geojson-simplify.util';
 import { MonitoringCacheService } from './monitoring-cache.service';
 
+/**
+ * A `user_tracking_status` row that still represents a LIVE session.
+ *
+ * `shift_id` is set on clock-in and cleared on clock-out, so "the row remembers
+ * a shift" is NOT "this worker is on duty now" — a forgotten clock-out keeps it
+ * set indefinitely. Every count and roll-up in this service must say so, or a
+ * stale session inflates whichever tier it sits in: on the staging clone that
+ * was 302 phantom workers, 292 of them pointing at an already-closed shift.
+ *
+ * `MonitoringSchedulerService.endStaleSessions` releases those rows on a timer;
+ * this is the read-side guard for the window in between. It tests a FACT (the
+ * session is closed) rather than re-deriving ADR-055's window-plus-grace rule in
+ * SQL — that rule lives in one place, in the sweep.
+ *
+ * EXISTS rather than a join: the tier queries already join `area`/`user` and
+ * group by them, and a second join would be one more alias to keep unique in
+ * fourteen call sites for no gain.
+ */
+const LIVE_SESSION_SQL = `uts.shift_id IS NOT NULL AND EXISTS (
+  SELECT 1 FROM shifts live_shift
+   WHERE live_shift.id = uts.shift_id
+     AND live_shift.clock_out_time IS NULL
+)`;
+
 @Injectable()
 export class MonitoringStatsService {
   private readonly logger = new Logger(MonitoringStatsService.name);
@@ -480,7 +504,7 @@ export class MonitoringStatsService {
           .addSelect('uts.status', 'status')
           .addSelect('uts.is_within_area', 'is_within_area')
           .addSelect('COUNT(*)', 'count')
-          .where('uts.shift_id IS NOT NULL')
+          .where(LIVE_SESSION_SQL)
           .groupBy('area.district_id')
           .addGroupBy('uts.status')
           .addGroupBy('uts.is_within_area')
@@ -492,7 +516,7 @@ export class MonitoringStatsService {
           .select('area.district_id', 'group_id')
           .addSelect('user.role', 'role')
           .addSelect('COUNT(*)', 'count')
-          .where('uts.shift_id IS NOT NULL')
+          .where(LIVE_SESSION_SQL)
           .groupBy('area.district_id')
           .addGroupBy('user.role')
           .getRawMany(),
@@ -567,7 +591,7 @@ export class MonitoringStatsService {
         .addSelect('uts.status', 'status')
         .addSelect('uts.is_within_area', 'is_within_area')
         .addSelect('COUNT(*)', 'count')
-        .where('uts.shift_id IS NOT NULL')
+        .where(LIVE_SESSION_SQL)
         .andWhere('(uts.district_id = :districtId OR uts.location_id IN (:...locationIds))', {
           districtId,
           locationIds,
@@ -582,7 +606,7 @@ export class MonitoringStatsService {
         .select('uts.location_id', 'group_id')
         .addSelect('user.role', 'role')
         .addSelect('COUNT(*)', 'count')
-        .where('uts.shift_id IS NOT NULL')
+        .where(LIVE_SESSION_SQL)
         .andWhere('uts.location_id IN (:...locationIds)', {
           locationIds,
         })
@@ -666,7 +690,7 @@ export class MonitoringStatsService {
           .addSelect('uts.status', 'status')
           .addSelect('uts.is_within_area', 'is_within_area')
           .addSelect('COUNT(*)', 'count')
-          .where('uts.shift_id IS NOT NULL')
+          .where(LIVE_SESSION_SQL)
           .andWhere('area.region_id IS NOT NULL')
           .groupBy('area.region_id')
           .addGroupBy('uts.status')
@@ -679,7 +703,7 @@ export class MonitoringStatsService {
           .select('area.region_id', 'group_id')
           .addSelect('user.role', 'role')
           .addSelect('COUNT(*)', 'count')
-          .where('uts.shift_id IS NOT NULL')
+          .where(LIVE_SESSION_SQL)
           .andWhere('area.region_id IS NOT NULL')
           .groupBy('area.region_id')
           .addGroupBy('user.role')
@@ -834,7 +858,7 @@ export class MonitoringStatsService {
       .innerJoin('uts.user', 'user')
       .select(groupCol, 'group_id')
       .addSelect('uts.user_id', 'user_id')
-      .where('uts.shift_id IS NOT NULL')
+      .where(LIVE_SESSION_SQL)
       .andWhere('user.role IN (:...countedRoles)', { countedRoles: STAFFING_COUNTED_ROLES });
 
     // location/region are always bounded by a caller-supplied id list; an empty list
@@ -1237,7 +1261,7 @@ export class MonitoringStatsService {
     qb.addSelect('uts.status', 'status')
       .addSelect('uts.is_within_area', 'within')
       .addSelect('COUNT(*)', 'count')
-      .where('uts.shift_id IS NOT NULL')
+      .where(LIVE_SESSION_SQL)
       .andWhere('uts.user_id IN (:...ids)', { ids: scheduledUserIds });
     if (groupBy === 'location' && opts.locationIds && opts.locationIds.length > 0) {
       qb.andWhere('uts.location_id IN (:...locationIds)', { locationIds: opts.locationIds });
@@ -1393,7 +1417,15 @@ export class MonitoringStatsService {
     districtId?: string;
     locationIds?: string[];
   }): Promise<Set<string>> {
-    const where: FindOptionsWhere<UserTrackingStatus> = { shift_id: Not(IsNull()) };
+    // The `shift` relation condition is the FindOptions spelling of
+    // LIVE_SESSION_SQL. It matters most here: this set feeds `offScheduleCount`,
+    // and a phantom session is by definition absent from today's roster — so
+    // every stale row was landing in the "Luar jadwal" pill. That is where 259
+    // off-schedule workers on a city view with nobody on duty came from.
+    const where: FindOptionsWhere<UserTrackingStatus> = {
+      shift_id: Not(IsNull()),
+      shift: { clock_out_time: IsNull() },
+    };
     if (opts.districtId) where.district_id = opts.districtId;
     else if (opts.locationIds && opts.locationIds.length > 0)
       where.location_id = In(opts.locationIds);
@@ -1554,8 +1586,14 @@ export class MonitoringStatsService {
   }
 
   async getAreaWorkers(locationId: string): Promise<UserStatusDto[]> {
+    // The lokasi-level worker list. Same guard as every other tier — a stale
+    // session here put a worker on a lokasi drill-down days after they left it.
     const trackingRecords = await this.trackingRepository.find({
-      where: { location_id: locationId, shift_id: Not(IsNull()) },
+      where: {
+        location_id: locationId,
+        shift_id: Not(IsNull()),
+        shift: { clock_out_time: IsNull() },
+      },
       relations: ['user', 'shift', 'shift_definition'],
     });
 
@@ -1653,7 +1691,7 @@ export class MonitoringStatsService {
       .addSelect('uts.status', 'status')
       .addSelect('COUNT(*)', 'count')
       .where('uts.location_id = :locationId', { locationId })
-      .andWhere('uts.shift_id IS NOT NULL')
+      .andWhere(LIVE_SESSION_SQL)
       .groupBy('user.role')
       .addGroupBy('uts.status')
       .getRawMany();
@@ -1712,7 +1750,7 @@ export class MonitoringStatsService {
     return this.trackingRepository
       .createQueryBuilder('uts')
       .where('uts.location_id IN (:...locationIds)', { locationIds })
-      .andWhere('uts.shift_id IS NOT NULL')
+      .andWhere(LIVE_SESSION_SQL)
       .getCount();
   }
 
@@ -1721,7 +1759,7 @@ export class MonitoringStatsService {
     return this.trackingRepository
       .createQueryBuilder('uts')
       .where('uts.location_id IN (:...locationIds)', { locationIds })
-      .andWhere('uts.shift_id IS NOT NULL')
+      .andWhere(LIVE_SESSION_SQL)
       .andWhere('uts.status = :status', { status: TrackingStatus.ACTIVE })
       .getCount();
   }
@@ -1731,7 +1769,7 @@ export class MonitoringStatsService {
     return this.trackingRepository
       .createQueryBuilder('uts')
       .where('uts.location_id IN (:...locationIds)', { locationIds })
-      .andWhere('uts.shift_id IS NOT NULL')
+      .andWhere(LIVE_SESSION_SQL)
       .andWhere('uts.status = :status', { status: TrackingStatus.OFFLINE })
       .getCount();
   }
