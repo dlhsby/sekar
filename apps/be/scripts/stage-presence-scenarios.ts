@@ -306,7 +306,7 @@ async function stageGeneralSchedules(ds: typeof AppDataSource, today: string): P
 
   const shift = (
     await ds.query(
-      `SELECT id FROM shift_definitions WHERE code NOT LIKE 'STG%' AND deleted_at IS NULL
+      `SELECT id FROM shift_definitions WHERE deleted_at IS NULL
         ORDER BY start_time LIMIT 1`,
     )
   )[0]?.id as string | undefined;
@@ -451,7 +451,7 @@ async function stageGeneralSchedules(ds: typeof AppDataSource, today: string): P
 async function stageMultiPlaceCoverage(ds: typeof AppDataSource, today: string): Promise<void> {
   const shift = (
     await ds.query(
-      `SELECT id FROM shift_definitions WHERE code NOT LIKE 'STG%' AND deleted_at IS NULL
+      `SELECT id FROM shift_definitions WHERE deleted_at IS NULL
         ORDER BY start_time LIMIT 1`,
     )
   )[0]?.id as string | undefined;
@@ -543,10 +543,12 @@ async function stageMultiPlaceCoverage(ds: typeof AppDataSource, today: string):
  */
 async function stageShiftRosters(ds: typeof AppDataSource, today: string): Promise<void> {
   const shifts = (await ds.query(
-    `SELECT id, code FROM shift_definitions
-      WHERE code NOT LIKE 'STG%' AND deleted_at IS NULL AND is_active
+    // `code` was dropped by 17523000000000-DropShiftCodeAddReminders; `name`
+    // ("Shift 1"/"Shift 2"/"Shift 3") is what identifies a definition now.
+    `SELECT id, name FROM shift_definitions
+      WHERE deleted_at IS NULL AND is_active
       ORDER BY start_time LIMIT 3`,
-  )) as Array<{ id: string; code: string }>;
+  )) as Array<{ id: string; name: string }>;
   if (shifts.length === 0) {
     console.log('Shift roster: skipped — no shift definitions.');
     return;
@@ -585,7 +587,7 @@ async function stageShiftRosters(ds: typeof AppDataSource, today: string): Promi
         null,
         null,
         teamId,
-        `RESCHEDULE ${shift.code} × ${username}`,
+        `RESCHEDULE ${shift.name} × ${username}`,
         shift.id,
       );
       if (created) rows += 1;
@@ -628,7 +630,7 @@ async function ensureSchedules(ds: typeof AppDataSource, today: string): Promise
            -- from staffing. Fall back to the first active shift if none covers now.
            COALESCE(
              (SELECT sd.id FROM shift_definitions sd
-               WHERE sd.code NOT LIKE 'STG%' AND sd.deleted_at IS NULL
+               WHERE sd.deleted_at IS NULL
                  AND ((NOT sd.crosses_midnight
                        AND (now() AT TIME ZONE 'Asia/Jakarta')::time BETWEEN sd.start_time AND sd.end_time)
                    OR (sd.crosses_midnight
@@ -636,7 +638,7 @@ async function ensureSchedules(ds: typeof AppDataSource, today: string): Promise
                          OR (now() AT TIME ZONE 'Asia/Jakarta')::time < sd.end_time)))
                ORDER BY sd.start_time LIMIT 1),
              (SELECT id FROM shift_definitions
-               WHERE code NOT LIKE 'STG%' AND deleted_at IS NULL ORDER BY start_time LIMIT 1)
+               WHERE deleted_at IS NULL ORDER BY start_time LIMIT 1)
            ),
            'planned', 'manual'
     FROM users u
@@ -661,7 +663,7 @@ async function ensureSchedules(ds: typeof AppDataSource, today: string): Promise
     UPDATE schedules s
        SET shift_definition_id = COALESCE(
              (SELECT sd.id FROM shift_definitions sd
-               WHERE sd.code NOT LIKE 'STG%' AND sd.deleted_at IS NULL
+               WHERE sd.deleted_at IS NULL
                  AND ((NOT sd.crosses_midnight
                        AND (now() AT TIME ZONE 'Asia/Jakarta')::time BETWEEN sd.start_time AND sd.end_time)
                    OR (sd.crosses_midnight
@@ -669,7 +671,7 @@ async function ensureSchedules(ds: typeof AppDataSource, today: string): Promise
                          OR (now() AT TIME ZONE 'Asia/Jakarta')::time < sd.end_time)))
                ORDER BY sd.start_time LIMIT 1),
              (SELECT id FROM shift_definitions
-               WHERE code NOT LIKE 'STG%' AND deleted_at IS NULL ORDER BY start_time LIMIT 1))
+               WHERE deleted_at IS NULL ORDER BY start_time LIMIT 1))
       FROM users u
      WHERE u.id = s.user_id
        AND s.schedule_date = $1::date
