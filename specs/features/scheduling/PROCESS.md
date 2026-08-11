@@ -192,7 +192,8 @@ cd apps/web  && npx jest          # Calendar/tone are shared — run the whole s
 cd apps/mobile && npx jest
 
 # End-to-end: real DB state -> real API -> asserted presence (22 scenarios)
-ALLOW_MUTATION=yes bash apps/be/scripts/e2e-presence-scenarios.sh   # sim clone only
+cd apps/be && npm run e2e:scenarios                 # local dev DB
+cd apps/be && npm run e2e:scenarios -- --mode=clone # staging clone, additive
 
 # Against a real dataset (staging clone)
 psql "$DATABASE_URL" -f apps/be/scripts/staging-verify-schedules.sql   # before + after, then diff
