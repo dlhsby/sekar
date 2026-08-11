@@ -6,6 +6,7 @@
 Real-time supervisor dashboard: live worker positions, five-status tracking, and an aggregate-first drill-down (Surabaya → rayon → location → workers) over Google Maps, with Socket.IO push. Scope is authorized by role (city / rayon / location). Backed by the `monitoring` module (services + cron under `apps/be/src/modules/monitoring`) and the `location` module (ingest + history). **Under revamp** post-UAT (a top UAT-feedback area).
 
 ## Key decisions
+- **A tracking row is released when its session ends, not when the day turns.** `user_tracking_status.shift_id` is cleared on clock-out, so a worker who never clocks out would otherwise render as on duty forever — 15 reads gate on `shift_id IS NOT NULL`, and on the staging clone that meant **302 workers on the live map with 0 genuinely on duty**. `MonitoringSchedulerService.endStaleSessions()` (5-min cron) restores the invariant, using ADR-055's window-plus-grace rule rather than a calendar date — a date check would evict a Shift-3 worker at midnight, mid-shift. The reads keep a `clock_out_time IS NULL` guard for the gap between sweeps.
 - **Event-sourced status via Redis Streams** (ADR-029, supersedes ADR-011) — status is derived from a location/event stream, not a materialized column; `monitoring/cron` recomputes aggregates.
 - **Redis for WebSocket scaling** (ADR-016) — Socket.IO adapter + notification retry.
 - **Location log partitioning** (ADR-006) — monthly partitions for query performance.

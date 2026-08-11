@@ -414,8 +414,10 @@ npm run android
 # Or: build for all connected/running devices
 npm run android:all
 
-# Rebuild cache if stale
+# Drop Metro's transform cache — REQUIRED after editing .env.local (see below)
 npm start -- --reset-cache
+# or, via the helper that also sets up the adb reverses:
+./scripts/start-mobile.sh --reset-cache
 ```
 
 **Running on iOS (macOS only):**
@@ -453,7 +455,34 @@ GOOGLE_MAPS_API_KEY=          # Leave blank for dev, or add your key
 FEATURE_PLANTS_ENABLED=false
 FEATURE_PRUNING_REQUESTS_ENABLED=false
 FEATURE_PLANT_SEEDS_ENABLED=false
+
+# Anti-spoofing dev overrides (ADR-059). The Android emulator supplies location
+# through a MOCK PROVIDER, so without these the app blocks on a non-dismissable
+# "Lokasi Palsu Terdeteksi" overlay and every GPS ping is refused server-side —
+# you can punch, but the worker never appears on the monitoring map.
+ALLOW_MOCK_LOCATION=true      # accept mocked GPS
+ALLOW_GALLERY_UPLOAD=true     # allow the gallery in evidence flows
 ```
+
+Both are double-gated on `__DEV__` (`src/config/integrity.ts`), so a release
+bundle constant-folds the bypass away and cannot honour a misconfigured
+`.env.production`.
+
+**The backend needs its own half.** The client flags only stop the *app* from
+blocking; `verifiedPosition` still reports `mocked` truthfully and the server
+applies its own policy. Set this in **`apps/be/.env.local`** too, or the ping
+stream is refused and the worker reads as inactive:
+
+```bash
+ALLOW_MOCKED_LOCATION=true    # ignored when NODE_ENV=production
+```
+
+> **After editing `apps/mobile/.env.local`, you MUST clear Metro's cache:**
+> `./scripts/start-mobile.sh --reset-cache` (or `npm start -- --reset-cache`).
+> `react-native-dotenv` is a *babel* plugin, so `import { X } from '@env'` is
+> replaced with a literal at transform time — a warm cache keeps serving the OLD
+> value while the file on disk shows the new one. The failure looks like the app
+> ignoring your config, and it has cost a CI run and an emulator session.
 
 ---
 
