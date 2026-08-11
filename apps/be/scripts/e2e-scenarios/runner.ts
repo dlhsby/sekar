@@ -19,10 +19,60 @@
  *   npx ts-node scripts/e2e-scenarios/runner.ts --purge
  */
 
-import AppDataSource from '../../src/database/data-source';
+import type { DataSource } from 'typeorm';
 import { CATALOG, assertCatalogIsSound } from './catalog';
 import { buildHelpers, wibToday } from './helpers';
 import type { Mode, ResolvedSubject, Scenario } from './types';
+
+/**
+ * Resolved after the mode is known, because `data-source.ts` reads `process.env`
+ * at IMPORT time — a static import would bind the local DB before clone mode
+ * could redirect it.
+ */
+let AppDataSource!: DataSource;
+
+/** Connection defaults for the throwaway staging clone (`staging-clone.sh`). */
+const CLONE_DEFAULTS = {
+  DATABASE_HOST: '127.0.0.1',
+  DATABASE_PORT: '15544',
+  DATABASE_NAME: 'sekar_staging_clone',
+  DATABASE_USER: 'postgres',
+  DATABASE_PASSWORD: 'clone',
+  DATABASE_SSL: 'false',
+};
+
+/**
+ * Databases this script must never touch, whatever flags it is given.
+ *
+ * `sekar_staging` is the LIVE operational database — the clone is
+ * `sekar_staging_clone`. One tunnel left open and one mistyped port is all it
+ * would take to seed synthetic workers into the system the client is using.
+ */
+const FORBIDDEN_DATABASES = new Set(['sekar_staging', 'sekar_prod', 'sekar_production']);
+
+/**
+ * Point the process at the clone before `data-source.ts` is imported.
+ *
+ * Overrides are applied to `process.env` rather than passed as options because
+ * the DataSource is constructed at import time from exactly those keys — this is
+ * the only seam that works without duplicating its entity configuration.
+ */
+function applyCloneEnv(): void {
+  for (const [key, value] of Object.entries(CLONE_DEFAULTS)) {
+    // An explicitly-exported value wins, so a differently-provisioned clone
+    // (another port, another container) needs no code change.
+    if (!process.env[`E2E_${key}`] && !isExplicit(key)) process.env[key] = value;
+    else if (process.env[`E2E_${key}`]) process.env[key] = process.env[`E2E_${key}`] as string;
+  }
+}
+
+/** Was this DB setting deliberately exported for this run? */
+const EXPLICIT_DB_KEYS = new Set(
+  Object.keys(CLONE_DEFAULTS).filter((k) => process.env[k] !== undefined),
+);
+function isExplicit(key: string): boolean {
+  return EXPLICIT_DB_KEYS.has(key);
+}
 
 const args = process.argv.slice(2);
 const flag = (name: string): string | undefined =>
@@ -165,8 +215,65 @@ async function resetSubjectData(): Promise<void> {
   await ds.query(`DELETE FROM schedules WHERE user_id = ANY($1)`, [ids]);
 }
 
+/**
+ * Refuse to run against a database this script has no business writing to.
+ *
+ * Checked AFTER the connection is configured and BEFORE anything is written, so
+ * a mistyped port or a forgotten SSM tunnel aborts rather than seeding synthetic
+ * workers into the live system.
+ */
+function assertDatabaseIsWritable(): void {
+  const name = process.env.DATABASE_NAME ?? '';
+  if (FORBIDDEN_DATABASES.has(name)) {
+    throw new Error(
+      `Refusing to run against "${name}" — that is a live database. ` +
+        `Clone mode expects "${CLONE_DEFAULTS.DATABASE_NAME}".`,
+    );
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Refusing to run with NODE_ENV=production.');
+  }
+}
+
+/**
+ * Confirm the API is reading the SAME database the runner is about to seed.
+ *
+ * Without this the failure mode is baffling: every scenario arranges cleanly and
+ * every assertion fails, because the API is serving a different database. Ask
+ * both sides for a cheap invariant and compare. Runs before any write.
+ */
+async function assertApiAndDbAgree(token: string): Promise<void> {
+  const [{ count }] = (await AppDataSource.query(
+    `SELECT count(*)::int AS count FROM districts WHERE deleted_at IS NULL`,
+  )) as Array<{ count: number }>;
+
+  const res = await fetch(`${API}/districts`, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) throw new Error(`preflight: GET /districts → HTTP ${res.status}`);
+  const body = (await res.json()) as unknown;
+  const rows = Array.isArray(body)
+    ? body
+    : ((body as { data?: unknown[] })?.data ?? []);
+  const apiCount = Array.isArray(rows) ? rows.length : -1;
+
+  if (apiCount !== count) {
+    throw new Error(
+      `The API and the runner are looking at DIFFERENT databases.\n` +
+        `  runner  → ${process.env.DATABASE_NAME}@${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT} — ${count} districts\n` +
+        `  api     → ${API} — ${apiCount} districts\n` +
+        `Point the backend at the same database and re-run.`,
+    );
+  }
+}
+
 async function main(): Promise<void> {
   assertCatalogIsSound();
+
+  if (MODE === 'clone') applyCloneEnv();
+  assertDatabaseIsWritable();
+
+  // Dynamic import: `data-source.ts` builds its DataSource from process.env at
+  // import time, so the clone overrides above have to land first.
+  AppDataSource = (await import('../../src/database/data-source')).default;
   await AppDataSource.initialize();
 
   if (PURGE) {
@@ -190,7 +297,16 @@ async function main(): Promise<void> {
   const helpers = buildHelpers(AppDataSource);
 
   console.log(`\nmode=${MODE}  service day=${today}  scenarios=${scenarios.length}`);
+  console.log(
+    `db=${process.env.DATABASE_NAME}@${process.env.DATABASE_HOST}:${process.env.DATABASE_PORT}`,
+  );
   console.log(`api=${API}\n`);
+
+  // ── Preflight ──
+  // Before ANY write: prove the API reads the same database the runner seeds.
+  // `--arrange-only` skips it because that path makes no API call at all.
+  const adminToken = ARRANGE_ONLY ? '' : await login(ADMIN, ADMIN_PASSWORD);
+  if (!ARRANGE_ONLY) await assertApiAndDbAgree(adminToken);
 
   // ── Arrange ──
   const subjects = new Map<string, ResolvedSubject>();
@@ -211,8 +327,7 @@ async function main(): Promise<void> {
     for (const s of scenarios) subjects.set(s.id, await resolveSubject(s));
   }
 
-  // ── Verify ──
-  const adminToken = await login(ADMIN, ADMIN_PASSWORD);
+  // ── Verify ── (adminToken was obtained during preflight)
   const results: Result[] = [];
 
   for (const s of scenarios) {
@@ -274,7 +389,10 @@ async function main(): Promise<void> {
 }
 
 main().catch(async (err) => {
-  console.error(err);
-  if (AppDataSource.isInitialized) await AppDataSource.destroy();
+  console.error(err instanceof Error ? err.message : err);
+  // A refusal guard fires BEFORE the dynamic import, so the DataSource may not
+  // exist yet — reading `.isInitialized` off undefined would replace the useful
+  // message with a TypeError.
+  if (AppDataSource?.isInitialized) await AppDataSource.destroy();
   process.exit(1);
 });

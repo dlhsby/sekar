@@ -5,15 +5,53 @@ API must answer**. Seeding and verification read the same object, so a scenario
 cannot drift from its own assertion.
 
 ```bash
-npm run e2e:scenarios                      # arrange + verify (local dev DB)
-npm run e2e:scenarios -- --only=ATT        # one domain, or --only=ATT-12,MON-18
-npm run e2e:scenarios -- --verify-only     # assert without re-arranging
-npm run e2e:scenarios:seed                 # arrange only — no API needed
-npm run e2e:scenarios:purge                # remove every e2e_* subject and row
+npm run e2e:scenarios                          # local dev DB — arrange + verify
+npm run e2e:scenarios -- --mode=clone          # staging clone — additive
+npm run e2e:scenarios -- --only=ATT            # one domain, or --only=ATT-12,MON-18
+npm run e2e:scenarios -- --verify-only         # assert without re-arranging
+npm run e2e:scenarios:seed                     # arrange only — no API needed
+npm run e2e:scenarios:purge                    # remove every e2e_* subject and row
+npm run e2e:scenarios -- --mode=clone --purge  # …on the clone
 ```
 
-The API must be running and pointed at the **same database** the runner seeds.
-For the local dev DB that is `apps/be/.env.local` defaults (`sekar_db` on 15432).
+## Modes
+
+| | `--mode=local` (default) | `--mode=clone` |
+|---|---|---|
+| Database | `.env.local` (`sekar_db`@15432) | `sekar_staging_clone`@15544, auto-configured |
+| Real data present | no | yes — 1 184 users, 955 lokasi |
+| Behaviour | additive, `e2e_*` only | additive, `e2e_*` only |
+| Cleanup | `--purge` | `--purge` |
+
+Clone mode configures its own connection, so `--mode=clone` is self-sufficient —
+there is no half-applied state where the flag is set but the DB is not. Override
+any part with `E2E_DATABASE_HOST` / `E2E_DATABASE_PORT` / `E2E_DATABASE_NAME` for
+a differently-provisioned clone.
+
+**The API must be pointed at the same database.** A preflight compares the
+district count on both sides and aborts before any write if they disagree —
+without it the failure is baffling, because every scenario arranges cleanly and
+every assertion fails. What it prints:
+
+```
+The API and the runner are looking at DIFFERENT databases.
+  runner  → sekar_staging_clone@127.0.0.1:15544 — 9 districts
+  api     → http://localhost:4110/api/v1 — 8 districts
+```
+
+## Safety
+
+Two refusals, both before the connection is even opened:
+
+- **`sekar_staging`, `sekar_prod`, `sekar_production` are hard-refused.** The live
+  staging database differs from the clone by one suffix; a forgotten SSM tunnel
+  and a mistyped port is all it would take to seed synthetic workers into the
+  system the client is using.
+- **`NODE_ENV=production` is refused** outright.
+
+Every write is scoped to `username LIKE 'e2e_%'`. Verified on the clone: real
+users, punches and shifts are byte-identical across a full arrange + purge cycle
+(1184 / 25422 / 12848 before and after).
 
 ## Two rules the catalog is built on
 
