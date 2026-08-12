@@ -448,6 +448,77 @@ describe('MonitoringUserService', () => {
       expect(result.absent_users[0].lifecycle_state).toBeDefined();
     });
 
+    it('narrows the roster lists by search term but leaves the counts alone', async () => {
+      // A worker on today's roster who has NOT clocked in can never appear in the
+      // live query (it is rooted in `user_tracking_status`), so search has to
+      // reach them through these lists or a known name returns nothing at all.
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        innerJoin: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+      trackingRepository.createQueryBuilder.mockReturnValue(qb as any);
+      (service as any).dailySchedulesService = {
+        getRosterForMonitoring: jest.fn().mockResolvedValue([
+          {
+            user_id: 'u2',
+            status: 'planned',
+            district_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Budi Santoso', role: 'satgas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u5',
+            status: 'planned',
+            district_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Siti Aminah', role: 'satgas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+          {
+            user_id: 'u3',
+            status: 'leave_sick',
+            district_id: 'r1',
+            shift_definition_id: 's1',
+            user: { full_name: 'Budi Hartono', role: 'linmas' },
+            shift_definition: { name: 'Shift 1' },
+          },
+        ]),
+        getTeamMembership: jest.fn().mockResolvedValue(new Map()),
+      };
+      const clockedQb = {
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+      const liveUsersQbFactory = trackingRepository.createQueryBuilder;
+      trackingRepository.createQueryBuilder = jest
+        .fn()
+        .mockImplementationOnce((alias?: string) => liveUsersQbFactory(alias))
+        .mockImplementation(() => clockedQb) as any;
+
+      const result = await service.getLiveUsers({ q: 'budi' } as any);
+
+      // Case-insensitive, matches across both lists…
+      expect(result.absent_users.map((a) => a.user_id)).toEqual(['u2']);
+      expect(result.on_leave_users.map((a) => a.user_id)).toEqual(['u3']);
+      // …while the counts still describe the ROSTER, not the query. The module
+      // already learned that a list disagreeing with its own count is a bug, so
+      // the narrowing is deliberately one-directional.
+      expect(result.expected_count).toBe(2);
+      expect(result.absent_count).toBe(2);
+      expect(result.on_leave_count).toBe(1);
+    });
+
     it('should filter users by area ID', async () => {
       const mockQueryBuilder = {
         innerJoinAndSelect: jest.fn().mockReturnThis(),
