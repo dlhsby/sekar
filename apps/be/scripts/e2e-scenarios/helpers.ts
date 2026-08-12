@@ -201,8 +201,8 @@ export function buildHelpers(ds: DataSource): Helpers {
     async schedule(o) {
       await ds.query(
         `INSERT INTO schedules (id, user_id, schedule_date, shift_definition_id, status,
-                                location_id, region_id, district_id, source)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'manual')
+                                location_id, region_id, district_id, team_category_id, source)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'manual')
          ON CONFLICT DO NOTHING`,
         [
           randomUUID(),
@@ -213,6 +213,7 @@ export function buildHelpers(ds: DataSource): Helpers {
           o.locationId ?? null,
           o.regionId ?? null,
           o.districtId ?? null,
+          o.teamCategoryId ?? null,
         ],
       );
     },
