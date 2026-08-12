@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { nbColors, nbSpacing, nbBorders, nbRadius } from '../../../constants/nbTokens';
 import { NBText } from '../../../components/nb/NBText';
-import { LAYER_ROWS } from '../../../components/monitoring/monitoringLayers';
+import { layerRows, type LayerOption } from '../../../components/monitoring/monitoringLayers';
 import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
 
 interface ToolsOverlayProps {
@@ -19,7 +19,7 @@ interface ToolsOverlayProps {
   onMyLocation: () => void;
   resetHeading: () => void;
   visibleLayers: MonitoringV2VisibleLayers;
-  onToggleLayer: (key: keyof MonitoringV2VisibleLayers) => void;
+  onSetLayer: (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -87,13 +87,59 @@ function LayerToggleRow({
   );
 }
 
+/**
+ * A layer row with a four-way choice, mirroring web's select. Tapping cycles to
+ * the next option rather than opening a picker: the sheet is a narrow popover
+ * and four options fit in a cycle far better than a nested menu, while the
+ * current value stays readable on the row.
+ */
+function LayerChoiceRow({
+  icon,
+  label,
+  options,
+  value,
+  onSelect,
+}: {
+  icon: string;
+  label: string;
+  options: LayerOption[];
+  value: string;
+  onSelect: (value: string) => void;
+}): React.JSX.Element {
+  const current = options.find(o => o.value === value) ?? options[0];
+  const next = options[(options.findIndex(o => o.value === value) + 1) % options.length];
+  const hidden = value === 'none';
+  return (
+    <TouchableOpacity
+      style={[styles.toolRow, !hidden && styles.toolRowActive]}
+      onPress={() => onSelect(next.value)}
+      activeOpacity={0.75}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${current.label}`}
+      accessibilityHint={next.label}
+    >
+      <View style={styles.toolIconChip}>
+        <MaterialCommunityIcons name={icon} size={16} color={nbColors.black} />
+      </View>
+      <NBText variant="body-sm" style={styles.layerLabel}>{label}</NBText>
+      <NBText
+        variant="mono-sm"
+        color={hidden ? 'gray400' : 'black'}
+        numberOfLines={1}
+      >
+        {current.label}
+      </NBText>
+    </TouchableOpacity>
+  );
+}
+
 export function ToolsOverlay({
   onZoomIn,
   onZoomOut,
   onMyLocation,
   resetHeading,
   visibleLayers,
-  onToggleLayer,
+  onSetLayer,
   filterModalVisible,
   setFilterModalVisible,
 }: ToolsOverlayProps): React.JSX.Element {
@@ -118,15 +164,26 @@ export function ToolsOverlay({
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
         {t('monitoring:tools.layersSection')}
       </NBText>
-      {LAYER_ROWS.map(row => (
-        <LayerToggleRow
-          key={row.key}
-          icon={row.icon}
-          label={t(`monitoring:layers.${row.key}`)}
-          visible={visibleLayers[row.key]}
-          onPress={() => onToggleLayer(row.key)}
-        />
-      ))}
+      {layerRows().map(row =>
+        row.options ? (
+          <LayerChoiceRow
+            key={row.key}
+            icon={row.icon}
+            label={row.label}
+            options={row.options}
+            value={String(visibleLayers[row.key])}
+            onSelect={value => onSetLayer(row.key, value)}
+          />
+        ) : (
+          <LayerToggleRow
+            key={row.key}
+            icon={row.icon}
+            label={row.label}
+            visible={Boolean(visibleLayers[row.key])}
+            onPress={() => onSetLayer(row.key, !visibleLayers[row.key])}
+          />
+        ),
+      )}
 
       {/* Filter (status / area / jabatan) */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>

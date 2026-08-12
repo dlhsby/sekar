@@ -338,12 +338,32 @@ export interface AreaBoundary {
   total_required: number;
 }
 
+/**
+ * Kawasan outline. The backend has returned these inside every district since
+ * the four-level hierarchy landed (ADR-045); mobile simply had no field for
+ * them, so the geometry was discarded on arrival and the kawasan tier — which
+ * the map drills THROUGH — could never draw its own boundary.
+ */
+export interface RegionBoundary {
+  id: string;
+  name: string;
+  center_lat: number | null;
+  center_lng: number | null;
+  boundary_polygon: GeoJsonGeometry | null;
+  border_color?: string | null;
+  fill_color?: string | null;
+  border_opacity?: number | null;
+  fill_opacity?: number | null;
+}
+
 export interface DistrictBoundary {
   id: string;
   name: string;
   center_lat: number;
   center_lng: number;
   boundary_polygon: GeoJsonGeometry | null;
+  /** Optional: older cached payloads predate the field. */
+  regions?: RegionBoundary[];
   areas: AreaBoundary[];
   area_count: number;
   is_understaffed: boolean;

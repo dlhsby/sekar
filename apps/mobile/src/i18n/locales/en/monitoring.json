@@ -33,11 +33,20 @@
     "allAreas": "All Areas"
   },
   "layers": {
-    "workers": "Workers",
     "plants": "Plants",
     "overdue": "Overdue",
     "districts": "District Border",
-    "areas": "Area Border"
+    "areas": "Area Border",
+    "kawasan": "Kawasan Boundary",
+    "personnel": "Personnel & Teams",
+    "option": {
+      "all": "All",
+      "boundary": "Boundary only",
+      "marker": "Marker only",
+      "none": "Hidden",
+      "petugasOnly": "Personnel only",
+      "timOnly": "Teams only"
+    }
   },
   "fab": {
     "status": "Status summary",

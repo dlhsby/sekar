@@ -34,8 +34,9 @@ import { getRoleIcon, SURABAYA_CITY_REGION } from '../../utils/mapUtils';
 import { userAxes } from '../../utils/statusHelpers';
 import { useMapAutoFocus } from '../../hooks/useMapAutoFocus';
 import type { DistrictBoundary, AreaBoundary } from '../../types/models.types';
+import { showsWorkerPins } from '../../utils/layerVisibility';
 import {
-  toggleLayer,
+  setLayer,
   fetchAggregate,
   initMonitoringView,
   drillTo,
@@ -85,7 +86,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Workers render at EVERY drill tier now (city/district/region/location), each
   // filtered to the current scope by `display_scope` (see useLiveUsersFiltering).
   // Gated only by the layer toggle.
-  const showWorkers = visibleLayers.workers;
+  const showWorkers = showsWorkerPins(visibleLayers.personnel);
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -330,9 +331,9 @@ export function MapDashboardScreen(): React.JSX.Element {
   );
 
   // Layer toggle handler
-  const handleToggleLayer = useCallback(
-    (layer: string | number | symbol) => {
-      dispatch(toggleLayer(layer as keyof MonitoringV2VisibleLayers));
+  const handleSetLayer = useCallback(
+    (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => {
+      dispatch(setLayer({ key, value }));
     },
     [dispatch],
   );
@@ -612,7 +613,7 @@ export function MapDashboardScreen(): React.JSX.Element {
             onZoomOut={handleZoomOut}
             onMyLocation={handleMyLocation}
             visibleLayers={visibleLayers}
-            onToggleLayer={handleToggleLayer}
+            onSetLayer={handleSetLayer}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />

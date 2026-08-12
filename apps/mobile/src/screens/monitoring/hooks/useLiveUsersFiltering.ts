@@ -11,7 +11,11 @@ import { scopeMatches } from '../../../utils/monitoringScope';
 import { groupWorkersByTeam, isTeamGroup, type TeamGroup } from '../../../utils/teamGrouping';
 import type { LiveUser, UserRole, PresenceActivity } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import {
+  showsWorkerPins,
+  teamMembersOnly,
+  type MonitoringV2VisibleLayers,
+} from '../../../utils/layerVisibility';
 
 type LabelMode = 'none' | 'abbrev' | 'full';
 
@@ -41,7 +45,10 @@ export function useLiveUsersFiltering(
   selectedTeamId: string | null = null,
 ): UseLiveUsersFilteringReturn {
   const scopedUsers = React.useMemo(() => {
-    if (!visibleLayers.workers) { return []; }
+    if (!showsWorkerPins(visibleLayers.personnel)) { return []; }
+    // "Tim saja" keeps only workers who are ON a team; the collapse itself
+    // happens in the team layer, same split as web.
+    const teamOnly = teamMembersOnly(visibleLayers.personnel);
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
     // Render each worker at their OWN drill tier: keep only those whose occurrence
@@ -55,8 +62,9 @@ export function useLiveUsersFiltering(
       const locs = filters.location;
       users = users.filter(u => locs.includes(userAxes(u).location));
     }
+    if (teamOnly) { users = users.filter(u => !!u.team_id); }
     return users;
-  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, viewId]);
+  }, [liveUsers, activityFilter, filters.location, visibleLayers.personnel, scope, viewId]);
 
   // Collapse ≥2-member teams into team bubbles (ADR-048). With a team selected,
   // show ONLY its members as individual pins and no team bubbles — so `visibleUsers`

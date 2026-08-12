@@ -23,7 +23,7 @@ interface FABColumnProps {
   onZoomOut: () => void;
   onMyLocation: () => void;
   visibleLayers: MonitoringV2VisibleLayers;
-  onToggleLayer: (key: keyof MonitoringV2VisibleLayers) => void;
+  onSetLayer: (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -38,7 +38,7 @@ export function FABColumn({
   onZoomOut,
   onMyLocation,
   visibleLayers,
-  onToggleLayer,
+  onSetLayer,
   filterModalVisible,
   setFilterModalVisible,
 }: FABColumnProps): React.JSX.Element {
@@ -85,7 +85,7 @@ export function FABColumn({
             onMyLocation={onMyLocation}
             resetHeading={resetHeading}
             visibleLayers={visibleLayers}
-            onToggleLayer={onToggleLayer}
+            onSetLayer={onSetLayer}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />

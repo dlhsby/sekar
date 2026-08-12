@@ -33,11 +33,20 @@
     "allAreas": "Semua Area"
   },
   "layers": {
-    "workers": "Petugas",
     "plants": "Tanaman",
     "overdue": "Jatuh Tempo",
     "districts": "Batas Rayon",
-    "areas": "Batas Area"
+    "areas": "Batas Area",
+    "kawasan": "Batas Kawasan",
+    "personnel": "Petugas & Tim",
+    "option": {
+      "all": "Semua",
+      "boundary": "Batas saja",
+      "marker": "Marker saja",
+      "none": "Sembunyikan",
+      "petugasOnly": "Petugas saja",
+      "timOnly": "Tim saja"
+    }
   },
   "fab": {
     "status": "Ringkasan status",
@@ -249,7 +258,7 @@
     "retryLabel": "Coba lagi memuat peta"
   },
   "boundaryDetail": {
-    "understaffed": "Understaffed",
+    "understaffed": "Kekurangan personel",
     "sufficient": "Cukup",
     "areaLabel": "Area",
     "understaffedLabel": "Kurang Staf",
