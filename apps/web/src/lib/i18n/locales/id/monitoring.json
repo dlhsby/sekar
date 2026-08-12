@@ -388,6 +388,8 @@
     "understaffedLabel": "Kurang Staf",
     "activeLabel": "Aktif",
     "assignedLabel": "Petugas",
-    "staffingTitle": "Kebutuhan per Jabatan"
+    "staffingTitle": "Kebutuhan per Jabatan",
+    "plantsLabel": "Tanaman",
+    "plantsCount": "{{count}} jenis · {{notable}} heritage"
   }
 }

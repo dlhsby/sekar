@@ -388,6 +388,8 @@
     "understaffedLabel": "Understaffed",
     "activeLabel": "Active",
     "assignedLabel": "Officers",
-    "staffingTitle": "Staffing by Role"
+    "staffingTitle": "Staffing by Role",
+    "plantsLabel": "Plants",
+    "plantsCount": "{{count}} species · {{notable}} heritage"
   }
 }

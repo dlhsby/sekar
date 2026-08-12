@@ -17,7 +17,7 @@
  * can disagree with itself.
  */
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { X, Trees } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import type { UserRole } from '@/types/models';
@@ -58,6 +58,11 @@ export interface AreaDetailPanelProps {
   /** Lokasi only: live vs required headcount and the per-role split. */
   staffing?: RoleStaffing[] | null;
   isUnderstaffed?: boolean;
+  /** Lokasi only: plant inventory summary (mobile's "Tanaman" row). */
+  plantCount?: number | null;
+  notableCount?: number | null;
+  /** Opens the lokasi's plant list — omitted when the caller has nowhere to go. */
+  onViewPlants?: () => void;
   onClose: () => void;
 }
 
@@ -105,6 +110,9 @@ export function AreaDetailPanel({
   understaffedChildCount,
   staffing,
   isUnderstaffed,
+  plantCount,
+  notableCount,
+  onViewPlants,
   onClose,
 }: AreaDetailPanelProps) {
   const { t } = useTranslation();
@@ -218,6 +226,28 @@ export function AreaDetailPanel({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Tanaman — lokasi only. Mobile opens a sub-sheet; on web the plants page
+          already exists, so the row links there rather than duplicating it. */}
+      {isLocation && plantCount != null && (
+        <button
+          type="button"
+          onClick={onViewPlants}
+          disabled={!onViewPlants}
+          className="mt-2 flex w-full items-center justify-between gap-2 rounded-nb-sm border-2 border-nb-black bg-nb-gray-50 px-2 py-1.5 text-left disabled:cursor-default"
+        >
+          <span className="flex items-center gap-1.5 text-xs font-bold text-nb-black">
+            <Trees className="h-3.5 w-3.5" aria-hidden="true" />
+            {t('monitoring:boundaryDetail.plantsLabel')}
+          </span>
+          <span className="text-xs text-nb-gray-600">
+            {t('monitoring:boundaryDetail.plantsCount', {
+              count: plantCount,
+              notable: notableCount ?? 0,
+            })}
+          </span>
+        </button>
       )}
 
       {/* Per-role staffing — lokasi only; a rayon's requirement is the sum of its

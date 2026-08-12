@@ -43,6 +43,7 @@ import {
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
 import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
 import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
+import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
@@ -295,6 +296,12 @@ export default function MonitoringPage() {
   // than mobile's.
   const daySummary = useUserDaySummary(selectedId);
   const reassignments = useReassignmentHistory(selectedId);
+  // Plant inventory for the open lokasi detail — mobile shows the same summary
+  // in its area sheet. Lazy: only fetched while a LOKASI's card is open, so the
+  // rayon/kawasan cards cost nothing.
+  const plantAreaId = detailNodeId && scope === 'location' ? detailNodeId : null;
+  const areaPlants = useAreaPlants(plantAreaId);
+  const notablePlants = useNotablePlants(plantAreaId);
   const trail = useMemo(
     () =>
       (trailQuery.data?.points ?? [])
@@ -1447,6 +1454,9 @@ export default function MonitoringPage() {
         <AreaDetailPanel
           {...detailProps}
           presenceLabels={PRESENCE_PILLS}
+          plantCount={plantAreaId ? (areaPlants.data?.length ?? 0) : null}
+          notableCount={plantAreaId ? (notablePlants.data?.length ?? 0) : null}
+          onViewPlants={plantAreaId ? () => router.push(`/plants/${plantAreaId}`) : undefined}
           onClose={() => setDetailNodeId(null)}
         />
       )}
