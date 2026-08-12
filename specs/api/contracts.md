@@ -3701,16 +3701,18 @@ Authorization: Bearer {token}
 
 ### GET /api/v1/monitoring/aggregate
 
-Lightweight hierarchical rollup for the monitoring map's "Ringkasan" (summary) mode. Returns one node per child of the requested scope — rayons for `scope=city`, areas for `scope=rayon` — with grouped status/role counts and a center point, but **no individual worker coordinates**. Backed by grouped `COUNT` queries and a short-TTL response cache (concurrent identical reads collapse to one DB hit).
+Lightweight hierarchical rollup for the monitoring map's "Ringkasan" (summary) mode. Returns one node per child of the requested scope — rayons for `scope=city`, areas for `scope=rayon`, kawasan for `scope=region` — with grouped status/role counts and a center point, but **no individual worker coordinates**. Backed by grouped `COUNT` queries and a short-TTL response cache (concurrent identical reads collapse to one DB hit).
+
+`scope=all` returns **every tier in one payload** (rayon + kawasan + lokasi nodes mixed, discriminated by `type` and parented by `district_id` / `region_id`). It exists for the map's **zoom mode**, which draws all tiers at once and would otherwise need 1 + 2N requests. It is composed server-side from the same per-tier builders the drill scopes use, so a node's counts are identical whichever scope asked for them; `totals` / `roster_totals` / `presence_totals` are taken from the **rayon tier only**, since summing across tiers would count each worker three times.
 
 **Auth:** JwtAuthGuard + RolesGuard
-**Roles:** `scope=city` → `management`, `admin_system`, `superadmin`. `scope=rayon` → also `kepala_rayon`, `admin_rayon` (forced to their own rayon).
+**Roles:** `scope=city` → `management`, `admin_system`, `superadmin`. `scope=rayon` / `region` → also `kepala_rayon`, `admin_rayon` (forced to their own rayon). `scope=all` → city roles get the whole hierarchy; rayon-scoped roles are pinned to their own rayon's subtree.
 
 **Query Parameters:**
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `scope` | `city` \| `rayon` | No (default `city`) | Aggregation level |
-| `id` | UUID | rayon scope | Rayon id (city roles may target any; rayon-scoped roles are forced to their own) |
+| `scope` | `city` \| `rayon` \| `region` \| `all` | No (default `city`) | Aggregation level |
+| `id` | UUID | rayon + region scope | Rayon id (city roles may target any; rayon-scoped roles are forced to their own). Optional for `all`, where it narrows the payload to that rayon's subtree |
 
 **Response `200`:**
 ```jsonc

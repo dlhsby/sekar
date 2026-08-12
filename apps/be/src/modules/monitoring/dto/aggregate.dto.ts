@@ -169,12 +169,23 @@ export class AggregateNodeDto {
 }
 
 /**
+ * Which slice of the hierarchy an aggregate call returns.
+ *
+ * `all` is the map's zoom mode: districts, kawasan AND lokasi in one payload, so
+ * the client can draw every tier at once instead of issuing 1 + 2N requests.
+ * Each node still carries `type` + `district_id`/`region_id`, which is what lets
+ * the caller rebuild the tree without a shape change.
+ */
+export type AggregateScope = 'city' | 'district' | 'region' | 'all';
+
+/**
  * Lightweight aggregate response for the monitoring map's "Ringkasan" mode.
- * `nodes` are districts when `scope=city`, or areas when `scope=district`.
+ * `nodes` are districts when `scope=city`, areas when `scope=district`, kawasan
+ * when `scope=region`, and all three tiers mixed when `scope=all`.
  */
 export class AggregateResponseDto {
-  @ApiProperty({ enum: ['city', 'district', 'region'], example: 'city' })
-  scope: 'city' | 'district' | 'region';
+  @ApiProperty({ enum: ['city', 'district', 'region', 'all'], example: 'city' })
+  scope: AggregateScope;
 
   @ApiPropertyOptional({ example: 'district-uuid', nullable: true })
   scope_id: string | null;

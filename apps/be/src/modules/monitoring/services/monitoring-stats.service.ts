@@ -20,6 +20,7 @@ import { AreaSummaryDto, ShiftSummaryDto } from '../dto/district-stats.dto';
 import {
   AggregateResponseDto,
   AggregateNodeDto,
+  type AggregateScope,
   AggregateStatusCountsDto,
   AggregateRosterCountsDto,
   PresenceBreakdownDto,
@@ -352,10 +353,7 @@ export class MonitoringStatsService {
    * Returns only centers + grouped counts (never worker coordinates), built with a
    * fixed set of grouped queries (no per-node fan-out).
    */
-  async getAggregate(
-    scope: 'city' | 'district' | 'region',
-    districtId?: string,
-  ): Promise<AggregateResponseDto> {
+  async getAggregate(scope: AggregateScope, districtId?: string): Promise<AggregateResponseDto> {
     const key = `aggregate:${scope}:${districtId ?? ''}`;
     if (typeof this.cacheService?.getOrCompute === 'function') {
       return this.cacheService.getOrCompute(key, () => this.computeAggregate(scope, districtId));
@@ -364,7 +362,7 @@ export class MonitoringStatsService {
   }
 
   private async computeAggregate(
-    scope: 'city' | 'district' | 'region',
+    scope: AggregateScope,
     districtId?: string,
   ): Promise<AggregateResponseDto> {
     const currentShift = await this.getCurrentShiftDefinition();
@@ -454,6 +452,74 @@ export class MonitoringStatsService {
       clockedInSet,
       beforeGrace,
     );
+
+    if (scope === 'all') {
+      // Every tier in one payload — what the map's zoom mode draws. Deliberately
+      // COMPOSED from the same builders the drill scopes call, looped per
+      // district, rather than widened into one grouped query: a node's counts
+      // must be provably identical whichever mode asked for them, and this
+      // counting code has already shipped the same class of bug twice (a guard
+      // applied at one tier and not the others). Each district's children are
+      // built with that district's OWN `clockedInUserSet`, exactly as
+      // `scope=district` / `scope=region` do, so the reproduction is faithful
+      // rather than merely similar.
+      //
+      // Cost is 1 + 2N builder passes behind the 5 s aggregate cache, traded for
+      // the 1 + 2N HTTP round trips the client would otherwise make.
+      const districtNodes = districtId ? nodes.filter((n) => n.id === districtId) : nodes;
+      const childNodes: AggregateNodeDto[] = [];
+      // Sequential across districts (each builder already fans out ~6 queries in
+      // parallel internally) — enough concurrency without exhausting the pool.
+      for (const district of districtNodes) {
+        const districtClockedIn = await this.clockedInUserSet({ districtId: district.id });
+        const [regionNodes, locationNodes] = await Promise.all([
+          this.buildRegionNodes(
+            district.id,
+            currentShift?.id,
+            currentDayType,
+            today,
+            districtClockedIn,
+            beforeGrace,
+          ),
+          this.buildLocationNodes(
+            district.id,
+            currentShift?.id,
+            currentDayType,
+            today,
+            districtClockedIn,
+            beforeGrace,
+          ),
+        ]);
+        childNodes.push(...regionNodes, ...locationNodes);
+      }
+
+      // Totals stay TIER-WIDE, not Σ nodes: summing across tiers would count the
+      // same worker in their district, their kawasan and their lokasi. The
+      // district nodes alone carry the scope's true totals, which is also what
+      // the drill scopes report.
+      const totalsScope = districtId ? 'district' : 'city';
+      const totalsClockedIn = districtId
+        ? await this.clockedInUserSet({ districtId })
+        : clockedInSet;
+      return {
+        scope,
+        scope_id: districtId ?? null,
+        nodes: [...districtNodes, ...childNodes],
+        totals: this.sumStatusCounts(districtNodes),
+        roster_totals: await this.rosterTotalsForScope(
+          totalsScope,
+          districtId,
+          today,
+          currentShift?.id,
+          totalsClockedIn,
+          beforeGrace,
+        ),
+        presence_totals: this.sumPresence(districtNodes),
+        off_schedule_count: offScheduleCount(totalsClockedIn),
+        generated_at: new Date(),
+      };
+    }
+
     return {
       scope,
       scope_id: null,

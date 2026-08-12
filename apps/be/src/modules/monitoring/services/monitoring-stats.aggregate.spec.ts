@@ -514,6 +514,132 @@ describe('MonitoringStatsService.getAggregate', () => {
       expect(locationRepo.count).toHaveBeenCalled();
     });
   });
+
+  /**
+   * `scope=all` is the map's zoom mode: every tier in one payload. Its whole
+   * design premise is that it COMPOSES the drill-scope builders rather than
+   * re-deriving counts, so these tests assert exactly that — the builders are
+   * spied, not the SQL. If someone later "optimizes" this into a wider grouped
+   * query, the composition tests below are what should stop them.
+   */
+  describe('getAggregate(scope=all)', () => {
+    // Only the fields the response assembly reads (`sumStatusCounts` /
+    // `sumPresence`); the builders' real output is exercised by the drill-scope
+    // tests above, which is the point — this suite is about COMPOSITION.
+    const countsShape = {
+      counts_by_status: { active: 1, offline: 0, absent: 0, outside_area: 0 },
+      presence: {
+        aktif: { dalam: 1, luar: 0 },
+        tidak_aktif: { dalam: 0, luar: 0 },
+      },
+    };
+    const districtNode = (id: string) =>
+      ({ id, name: `Rayon ${id}`, type: 'district', ...countsShape }) as any;
+    const childNode = (id: string, type: string) => ({ id, name: id, type, ...countsShape }) as any;
+
+    /** Typed view of the private builders, so the spies stay type-checked. */
+    type Internals = {
+      buildDistrictNodes: (...a: unknown[]) => Promise<unknown[]>;
+      buildRegionNodes: (...a: unknown[]) => Promise<unknown[]>;
+      buildLocationNodes: (...a: unknown[]) => Promise<unknown[]>;
+      clockedInUserSet: (...a: unknown[]) => Promise<Set<string>>;
+      rosterTotalsForScope: (...a: unknown[]) => Promise<unknown>;
+      sumStatusCounts: (nodes: unknown[]) => unknown;
+    };
+
+    let internals: Internals;
+    let buildRegions: jest.SpyInstance;
+    let buildLocations: jest.SpyInstance;
+    let clockedIn: jest.SpyInstance;
+
+    beforeEach(() => {
+      internals = service as unknown as Internals;
+      jest
+        .spyOn(internals, 'buildDistrictNodes')
+        .mockResolvedValue([districtNode('d1'), districtNode('d2')]);
+      buildRegions = jest
+        .spyOn(internals, 'buildRegionNodes')
+        .mockImplementation((...args) =>
+          Promise.resolve([childNode(`region-of-${String(args[0])}`, 'region')]),
+        );
+      buildLocations = jest
+        .spyOn(internals, 'buildLocationNodes')
+        .mockImplementation((...args) =>
+          Promise.resolve([childNode(`lokasi-of-${String(args[0])}`, 'location')]),
+        );
+      clockedIn = jest.spyOn(internals, 'clockedInUserSet').mockResolvedValue(new Set<string>());
+      jest.spyOn(internals, 'rosterTotalsForScope').mockResolvedValue({
+        scheduled: 0,
+        clocked_in: 0,
+        belum_hadir: 0,
+        tidak_hadir: 0,
+      });
+    });
+
+    it('returns every tier in one payload: districts + their kawasan + their lokasi', async () => {
+      const res = await service.getAggregate('all');
+
+      expect(res.scope).toBe('all');
+      expect(res.scope_id).toBeNull();
+      expect(res.nodes.map((n) => n.id)).toEqual([
+        'd1',
+        'd2',
+        'region-of-d1',
+        'lokasi-of-d1',
+        'region-of-d2',
+        'lokasi-of-d2',
+      ]);
+    });
+
+    it('builds each district’s children with THAT district’s clocked-in set', async () => {
+      // The faithfulness guarantee: `scope=district` / `scope=region` each scope
+      // their clocked-in set to the district, so composing them with a global set
+      // would quietly produce different roster counts than drilling does.
+      await service.getAggregate('all');
+
+      expect(clockedIn).toHaveBeenCalledWith({ districtId: 'd1' });
+      expect(clockedIn).toHaveBeenCalledWith({ districtId: 'd2' });
+      for (const spy of [buildRegions, buildLocations]) {
+        expect(spy).toHaveBeenCalledWith(
+          'd1',
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+        );
+        expect(spy).toHaveBeenCalledWith(
+          'd2',
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+          expect.anything(),
+        );
+      }
+    });
+
+    it('narrows to one district’s subtree when an id is supplied', async () => {
+      const res = await service.getAggregate('all', 'd2');
+
+      expect(res.scope_id).toBe('d2');
+      expect(res.nodes.map((n) => n.id)).toEqual(['d2', 'region-of-d2', 'lokasi-of-d2']);
+      // d1's children are never built — the id is a real restriction, not a filter
+      // applied after the fact.
+      expect(buildRegions).not.toHaveBeenCalledWith('d1', ...Array(5).fill(expect.anything()));
+    });
+
+    it('takes totals from the district tier only, never Σ all nodes', async () => {
+      // Summing across tiers would count the same worker three times — once in
+      // their rayon, once in their kawasan, once in their lokasi.
+      const sumSpy = jest.spyOn(internals, 'sumStatusCounts');
+
+      await service.getAggregate('all');
+
+      const summed = sumSpy.mock.calls[0][0] as { id: string }[];
+      expect(summed.map((n) => n.id)).toEqual(['d1', 'd2']);
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
