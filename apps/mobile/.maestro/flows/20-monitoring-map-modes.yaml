@@ -14,13 +14,43 @@ appId: com.wahyutrip.sekar
 # Maestro has no bare `wait` command — every other flow in this directory uses
 # one and therefore fails to parse on Maestro 2.x.
 
-- launchApp:
-    clearState: true
+# NOT clearState: this flow is about the map, not onboarding. A cleared install
+# opens the welcome carousel, so the skip below handles a first launch without
+# making every run pay for it.
+- launchApp
+
+# Wait for the JS bundle to actually mount before deciding which screen we are
+# on. A conditional evaluated straight after launchApp always sees an empty
+# hierarchy — React Native needs seconds here, and far longer on a software-GPU
+# emulator. The regex covers both landing screens.
+- extendedWaitUntil:
+    visible: "Lewati|Lanjut|Masuk|Nama pengguna"
+    timeout: 120000
+
+# Match the LABEL, not the container id: `carousel-skip` wraps the button and
+# carries no text of its own, so Maestro's visibility check never matched it.
+- runFlow:
+    when:
+      visible: "Lewati"
+    commands:
+      # "Lewati" jumps to the LAST slide, not to login — the carousel still
+      # wants its final confirm. Skipping that second tap leaves the flow
+      # stranded on slide 4 with a misleading "element not found" on the login
+      # field.
+      - tapOn: "Lewati"
+      # The label is "Mulai (Masuk)" and Maestro treats selectors as REGEX, so
+      # the parentheses would be read as a capture group and never match.
+      - extendedWaitUntil:
+          visible: "Mulai.*"
+          timeout: 30000
+      - tapOn: "Mulai.*"
+      - waitForAnimationToEnd:
+          timeout: 8000
 
 - extendedWaitUntil:
     visible:
       id: username-input
-    timeout: 20000
+    timeout: 60000
 
 # kepala_rayon lands on the rayon scope; superadmin would open at city.
 - tapOn:
