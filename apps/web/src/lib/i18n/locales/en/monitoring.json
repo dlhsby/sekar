@@ -348,5 +348,12 @@
       "izin": "Permission",
       "libur": "Holiday"
     }
+  },
+  "mode": {
+    "title": "Monitoring Mode",
+    "drill": "Tap & Drill",
+    "zoom": "Zoom",
+    "drillHint": "Tap an area to go one level deeper. Personnel appear at their scheduled level.",
+    "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it."
   }
 }

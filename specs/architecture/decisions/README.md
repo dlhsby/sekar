@@ -61,6 +61,7 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 | [057](./ADR-057-summary-first-day-board.md) | Summary-first day board — the collapsed board reads aggregate counts (`/schedules/day-summary`); a container's rows are fetched when it is expanded. Day payload 3.87 MB → 83 KB, month 57 MB → 226 KB | Active · **implemented** · rests on 053 + 047 |
 | [058](./ADR-058-no-inline-media-in-postgres.md) | No inline media in Postgres — photos live in object storage (MinIO local/prod, S3 staging) and the column holds a URL; global interceptor converts on write and presigns on read. Was 528 MB of a 658 MB database | Active · **implemented** |
 | [059](./ADR-059-location-integrity.md) | Location integrity (anti-spoofing) — reject missing/forged fixes (null island, mock provider, impossible travel) but NEVER "outside area"; one shared evaluator for punches + pings; timestamps clamped both sides | Active · **implemented** |
+| [060](./ADR-060-monitoring-map-modes.md) | Two monitoring map modes — `drill` (worker at their schedule tier, ADR-046) vs `zoom` (every tier + everyone standing in the subtree); modes change what is DRAWN, never what is COUNTED; `aggregate?scope=all` composed from the drill builders; viewport culling, never clustering | Active · **web implemented** |
 
 ## By domain
 
@@ -93,5 +94,6 @@ Why the significant technical decisions were made. Each ADR follows **Status · 
 - **046 korlap scope settled by 053 (2026-07-23)** — monitoring coverage is schedule-driven only; the static user assignment stops being a monitoring-scope source.
 - **050 source re-based by 055 (2026-07-25)** — attendance moves to an immutable punch log; `bertugas` = "last punch is a clock-in" replaces `clock_out_time IS NULL`. The presence lifecycle/axes/counting contract is unchanged — only storage + derivation.
 - **005→010 reaffirmed by 059 (2026-08-02)** — anti-spoofing blocks *missing/forged* location only; being outside an area stays advisory and still never blocks, so the Phase 2C removal is NOT reversed.
+- **046 amended by 060 (2026-08-12)** — `display_scope` still decides where a worker renders in drill mode; zoom mode adds a second, geography-based predicate for the same question. ADR-046's rule is unchanged, it is now one of two readings, selected by an explicit mode.
 
 **Related:** [system-overview](../system-overview.md) · [tech-stack](../tech-stack.md) · [features](../../features/README.md)

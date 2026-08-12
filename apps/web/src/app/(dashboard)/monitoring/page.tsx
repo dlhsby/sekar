@@ -25,6 +25,7 @@ import {
 import { useBoundaries, useLocationHistory } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
+import { useMonitoringMode } from '@/lib/monitoring/mapMode';
 import { statusToActivity } from '@/lib/monitoring/markers';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearch';
@@ -152,8 +153,10 @@ export default function MonitoringPage() {
     key: number;
   } | null>(null);
 
-  // Map layer visibility (persisted).
+  // Map layer visibility + monitoring mode (both persisted per browser).
   const { layers, setLayer } = useMonitoringLayers();
+  const { mode, setMode } = useMonitoringMode();
+  const isZoom = mode === 'zoom';
 
   // Keep view in sync when the user (role) resolves.
   useEffect(() => {
@@ -161,49 +164,80 @@ export default function MonitoringPage() {
   }, [roleView]);
 
   const scope = view.scope;
-  const showWorkers = scope === 'location';  // Workers only at location scope, not region.
+  // Drill mode shows worker pins only at lokasi scope; zoom mode shows everyone
+  // inside the current subtree at every level — that is what it is for.
+  const showWorkers = isZoom || scope === 'location';
 
   // City aggregate feeds BOTH the Surabaya summary (roster_totals) and the district
   // list/markers (nodes) — one fetch. Rayon aggregate feeds the region/area level.
   const cityAgg = useMonitoringAggregate(
     'city',
     undefined,
-    canMonitor && scope === 'city'
+    canMonitor && !isZoom && scope === 'city'
   );
+  // Zoom mode: ONE call for every tier in the current subtree (rayon + kawasan +
+  // lokasi), narrowed by district once drilled. Replaces the 1 + 2N per-tier
+  // requests, and the server composes it from the same builders the drill scopes
+  // use — so the numbers cannot disagree between modes.
+  const zoomDistrictId = scope === 'city' ? undefined : (view.districtId ?? view.id);
+  const allAgg = useMonitoringAggregate('all', zoomDistrictId, canMonitor && isZoom);
   // `view.id` is the district id only at district scope. At region/area scope the district
   // aggregate is fetched by `view.districtId` via `regionAreasAgg` below.
-  const districtAgg = useMonitoringAggregate('district', view.id, canMonitor && scope === 'district');
+  const districtAgg = useMonitoringAggregate(
+    'district',
+    view.id,
+    canMonitor && !isZoom && scope === 'district'
+  );
   // At district scope, fetch region aggregate to check if this district has regions.
   const regionAgg = useMonitoringAggregate(
     'region',
     view.id,
-    canMonitor && scope === 'district'
+    canMonitor && !isZoom && scope === 'district'
   );
   // At region scope, fetch the district aggregate to filter areas by region_id.
   const regionAreasAgg = useMonitoringAggregate(
     'district',
     view.districtId,
-    canMonitor && scope === 'region'
+    canMonitor && !isZoom && scope === 'region'
   );
 
-  const activeAgg = scope === 'region' ? regionAreasAgg : scope === 'district' ? districtAgg : cityAgg;
+  const activeAgg = isZoom
+    ? allAgg
+    : scope === 'region'
+      ? regionAreasAgg
+      : scope === 'district'
+        ? districtAgg
+        : cityAgg;
 
   // Snapshot (workers) — rendered only at location scope, but kept loaded so search
   // can find people at any level. Surabaya maps to the city snapshot scope.
   // Region scope shows locations, so snapshot is still at the parent district.
-  const snapshotScope: 'city' | 'district' | 'location' =
-    scope === 'region' ? 'district' : scope;
-  const snapshotId = scope === 'region' ? view.districtId : view.id;
+  // Zoom mode always reads the CITY snapshot: it already contains every live
+  // worker with their full geographic parentage, so one payload serves every
+  // drill level and `subtreeMatches` does the narrowing client-side.
+  const snapshotScope: 'city' | 'district' | 'location' = isZoom
+    ? 'city'
+    : scope === 'region'
+      ? 'district'
+      : scope;
+  const snapshotId = isZoom ? undefined : scope === 'region' ? view.districtId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
 
   // Progressive boundaries: district outlines at the top, that district's locations deeper.
   // NB: the boundaries `level` param stays 'area' — it's part of the retained
   // AreaBoundaryDto / `.areas[]` boundary contract (backend accepts 'district'|'area').
-  const boundaryLevel: 'district' | 'area' =
-    scope === 'city' ? 'district' : 'area';
-  const boundaryDistrictId =
-    scope === 'district' || scope === 'region' || scope === 'location' ? view.districtId ?? view.id : undefined;
+  // Zoom mode always asks for full geometry ('area' returns district + kawasan +
+  // lokasi polygons together); with no district id at city scope that is every
+  // tier city-wide, which is precisely what the mode draws.
+  const boundaryLevel: 'district' | 'area' = isZoom || scope !== 'city' ? 'area' : 'district';
+  const boundaryDistrictId = isZoom
+    ? scope === 'city'
+      ? undefined
+      : (view.districtId ?? view.id)
+    : scope === 'district' || scope === 'region' || scope === 'location'
+      ? (view.districtId ?? view.id)
+      : undefined;
   const {
     data: boundaries,
     isFetching: boundariesFetching,
@@ -509,6 +543,22 @@ export default function MonitoringPage() {
   // Districts list (surabaya + city), regions list (district), or locations list (region or district-without-regions),
   // for the side panel.
   const listNodes = useMemo<AggregateNode[]>(() => {
+    if (isZoom) {
+      // One payload, sliced to the same tier drill mode would show — the sidebar
+      // stays a list of the CURRENT level's children even though the map now
+      // draws the whole subtree. (Grouping the full subtree in the panel is its
+      // own change.)
+      const nodes = allAgg.data?.nodes ?? [];
+      if (scope === 'location') return [];
+      if (scope === 'region') return nodes.filter((n) => n.type === 'location' && n.region_id === view.id);
+      if (scope === 'district') {
+        const kawasan = nodes.filter((n) => n.type === 'region');
+        return kawasan.length > 0
+          ? kawasan
+          : nodes.filter((n) => n.type === 'location' && !n.region_id);
+      }
+      return nodes.filter((n) => n.type === 'district');
+    }
     if (scope === 'region') {
       // At region scope: filter the district's location nodes by region_id.
       const areas = regionAreasAgg.data?.nodes ?? [];
@@ -523,7 +573,7 @@ export default function MonitoringPage() {
     }
     if (scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
-  }, [scope, view.id, regionAgg.data, regionAreasAgg.data, districtAgg.data, cityAgg.data]);
+  }, [isZoom, allAgg.data, scope, view.id, regionAgg.data, regionAreasAgg.data, districtAgg.data, cityAgg.data]);
 
   // Map markers for the current scope (ADR-046 count+ring markers, not ratio
   // bubbles). Zoom-gated tiers keep dense districts legible:
@@ -536,6 +586,19 @@ export default function MonitoringPage() {
   const nodeMarkers = useMemo<NodeMarker[]>(() => {
     const toMarkers = (nodes: AggregateNode[]) =>
       nodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
+    if (isZoom) {
+      // Every tier at once. `scope=all` already narrowed the payload to the
+      // current subtree, so the only thing to drop is the node you are standing
+      // ON — it is drawn separately as the current-node pin.
+      const nodes = (allAgg.data?.nodes ?? []).filter((n) => n.id !== view.id);
+      if (scope === 'region') {
+        // Inside a kawasan the payload still spans the parent district, so keep
+        // that kawasan's own lokasi only.
+        return toMarkers(nodes.filter((n) => n.type === 'location' && n.region_id === view.id));
+      }
+      if (scope === 'location') return [];
+      return toMarkers(nodes);
+    }
     if (scope === 'location') return [];
     if (scope === 'region') {
       return toMarkers((regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id));
@@ -546,7 +609,7 @@ export default function MonitoringPage() {
       return toMarkers([...kawasan, ...regionlessLokasi]);
     }
     return toMarkers(listNodes); // city → district markers
-  }, [scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
+  }, [isZoom, allAgg.data, scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
 
   // At region (kawasan) scope the aggregate's top-level totals cover the whole
   // parent district; sum just this kawasan's lokasi nodes so the stats pills match
@@ -798,16 +861,35 @@ export default function MonitoringPage() {
     [scope, view.id]
   );
 
-  // Map source: base filter (no jenis split) so teams + individuals both draw.
-  const drillScopedWorkers = useMemo(
-    () => baseFilteredWorkers.filter(scopeMatches),
-    [baseFilteredWorkers, scopeMatches]
+  // Zoom mode asks a DIFFERENT question: not "is this worker's schedule scoped
+  // here" but "is this worker standing anywhere inside what I'm looking at".
+  // That is the client's "show all the workers in that rayon" verbatim, and it
+  // uses the worker's real geography rather than their `display_scope` — so an
+  // ad-hoc clock-in (flat at city scope) appears inside the rayon they are
+  // actually in, still styled as Luar Jadwal.
+  const subtreeMatches = useCallback(
+    (w: { district_id?: string | null; region_id?: string | null; location_id?: string | null }) => {
+      if (scope === 'city') return true;
+      if (scope === 'district') return w.district_id === view.id;
+      if (scope === 'region') return w.region_id === view.id;
+      return w.location_id === view.id;
+    },
+    [scope, view.id]
   );
 
-  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), same scope match.
+  const workerVisible = isZoom ? subtreeMatches : scopeMatches;
+
+  // Map source: base filter (no jenis split) so teams + individuals both draw.
+  const drillScopedWorkers = useMemo(
+    () => baseFilteredWorkers.filter(workerVisible),
+    [baseFilteredWorkers, workerVisible]
+  );
+
+  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), same predicate
+  // as the map, so the tab count can never disagree with what is drawn.
   const listScopedWorkers = useMemo(
-    () => filteredWorkers.filter(scopeMatches),
-    [filteredWorkers, scopeMatches]
+    () => filteredWorkers.filter(workerVisible),
+    [filteredWorkers, workerVisible]
   );
 
   const mapWorkers = useMemo<SimpleWorker[]>(
@@ -874,6 +956,7 @@ export default function MonitoringPage() {
       <SimpleMonitoringMap
         scope={scope}
         nodeMarkers={nodeMarkers}
+        mode={mode}
         activeGeoId={activeGeoId}
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
@@ -1090,6 +1173,8 @@ export default function MonitoringPage() {
         <MonitoringLayersPanel
           layers={layers}
           onSetLayer={setLayer}
+          mode={mode}
+          onSetMode={setMode}
           onClose={() => setLayersOpen(false)}
         />
       )}
