@@ -48,3 +48,10 @@ replay_pid*.log
 *.dump.partial
 *.sql.gz
 staging-clone/
+
+# Claude Code plugin/skill artifacts — per-developer tooling state, not project
+# code. `.agents/` holds locally-installed skill definitions and
+# `skills-lock.json` pins their hashes; both are regenerated per machine and
+# would otherwise sit permanently in `git status` as untracked noise.
+.agents/
+skills-lock.json
