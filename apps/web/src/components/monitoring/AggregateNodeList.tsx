@@ -7,7 +7,7 @@
  * map node tap.
  */
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, AlertTriangle } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Info } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import type { AggregateNode } from '@/lib/api/monitoring-v2';
@@ -15,6 +15,20 @@ import type { AggregateNode } from '@/lib/api/monitoring-v2';
 export interface AggregateNodeListProps {
   nodes: AggregateNode[];
   onDrill: (node: AggregateNode) => void;
+  /**
+   * Opens the node's detail card. Optional: when absent the row is a single
+   * drill button exactly as before. When present the row splits into two
+   * targets, because a button nested inside a button is invalid HTML — and a
+   * whole-row click that sometimes drills and sometimes opens detail would be
+   * worse than either.
+   */
+  onDetail?: (node: AggregateNode) => void;
+  /**
+   * Show each row's tier and indent it. Only meaningful when the list mixes
+   * tiers (zoom mode's whole-subtree listing) — in drill mode every row is the
+   * same tier and the chips would be noise.
+   */
+  showTier?: boolean;
   /** Geo-filter selection (district/kawasan/lokasi id). Non-matching rows dim to
    *  match the map's spotlight. Null = no geo filter (all rows full strength). */
   activeGeoId?: string | null;
@@ -24,7 +38,15 @@ export interface AggregateNodeListProps {
   className?: string;
 }
 
-export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className }: AggregateNodeListProps) {
+export function AggregateNodeList({
+  nodes,
+  onDrill,
+  onDetail,
+  showTier,
+  activeGeoId,
+  bare,
+  className,
+}: AggregateNodeListProps) {
   const { t } = useTranslation();
 
   if (nodes.length === 0) {
@@ -53,17 +75,26 @@ export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className
         {nodes.map((node) => {
           const dimmed = activeGeoId != null && node.id !== activeGeoId;
           return (
-          <li key={node.id}>
+          <li key={node.id} className="flex items-stretch">
             <button
               type="button"
               onClick={() => onDrill(node)}
               className={cn(
-                'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-nb-gray-50',
-                dimmed && 'opacity-40'
+                'flex flex-1 items-center gap-3 py-2.5 pr-3 text-left transition-colors hover:bg-nb-gray-50',
+                dimmed && 'opacity-40',
+                !showTier && 'pl-3',
+                showTier && node.type === 'district' && 'pl-3',
+                showTier && node.type === 'region' && 'pl-6',
+                showTier && node.type === 'location' && 'pl-9'
               )}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
+                  {showTier && (
+                    <span className="shrink-0 rounded-nb-sm border border-nb-gray-300 bg-nb-gray-50 px-1 text-[10px] font-bold uppercase text-nb-gray-500">
+                      {t(`monitoring:hierarchy.${node.type === 'location' ? 'area' : node.type}`)}
+                    </span>
+                  )}
                   <span className="truncate text-sm font-bold text-nb-black">{node.name}</span>
                   {node.is_understaffed && (
                     <AlertTriangle
@@ -98,9 +129,48 @@ export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className
                     {t('monitoring:aggregate.tidakHadirLabel')}
                   </span>
                 </div>
+                {/* Presence (ADR-050 axis 2) alongside the roster trio: the roster
+                    says who was EXPECTED, presence says who is reachable right
+                    now. A row showing only the roster cannot answer "are they
+                    actually out there", which is the question the map exists for. */}
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-nb-gray-600">
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-[var(--color-status-active)]">
+                      {node.presence.aktif.dalam + node.presence.aktif.luar}
+                    </span>
+                    {t('monitoring:status.active')}
+                  </span>
+                  <span className="flex items-baseline gap-1">
+                    <span className="font-mono font-bold tabular-nums text-[var(--color-status-idle)]">
+                      {node.presence.tidak_aktif.dalam + node.presence.tidak_aktif.luar}
+                    </span>
+                    {t('monitoring:status.inactive')}
+                  </span>
+                  {node.presence.aktif.luar + node.presence.tidak_aktif.luar > 0 && (
+                    <span className="flex items-baseline gap-1">
+                      <span className="font-mono font-bold tabular-nums text-[var(--color-status-outside)]">
+                        {node.presence.aktif.luar + node.presence.tidak_aktif.luar}
+                      </span>
+                      {t('monitoring:sidebar.outsideArea')}
+                    </span>
+                  )}
+                </div>
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-nb-gray-400" aria-hidden="true" />
             </button>
+            {onDetail && (
+              <button
+                type="button"
+                onClick={() => onDetail(node)}
+                aria-label={t('monitoring:aggregate.detailLabel', { name: node.name })}
+                className={cn(
+                  'shrink-0 border-l-2 border-nb-gray-100 px-3 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black',
+                  dimmed && 'opacity-40'
+                )}
+              >
+                <Info className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
           </li>
           );
         })}

@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MonitoringSearch } from '../MonitoringSearch';
 import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
-import type { DistrictBoundary } from '@/lib/api/monitoring-types';
+import type { GeoIndexEntry } from '@/lib/monitoring/useGeoIndex';
 
 // 5.7b: the component queries the server for petugas via useQuery; stub it empty
 // so these tests exercise the client-side (props-driven) search without needing a
@@ -29,32 +29,16 @@ const workers: SnapshotWorker[] = [
   },
 ];
 
-const districts: DistrictBoundary[] = [
+const geo: GeoIndexEntry[] = [
+  { id: 'r1', name: 'Rayon Pusat', tier: 'district', latitude: -7.29, longitude: 112.74, districtId: 'r1' },
   {
-    id: 'r1',
-    name: 'Rayon Pusat',
-    border_color: 'var(--color-nb-primary)',
-    boundary_polygon: null,
-    center_lat: -7.29,
-    center_lng: 112.74,
-    area_count: 2,
-    is_understaffed: false,
-    understaffed_area_count: 0,
-    regions: [],
-    areas: [
-      {
-        id: 'a1',
-        name: 'Taman Bungkul',
-        boundary_polygon: null,
-        center_lat: -7.29,
-        center_lng: 112.74,
-        district_id: 'r1',
-        district_name: 'Rayon Pusat',
-        assigned_count: 3,
-        is_understaffed: false,
-        staffing_summary: [],
-      },
-    ],
+    id: 'a1',
+    name: 'Taman Bungkul',
+    tier: 'location',
+    latitude: -7.29,
+    longitude: 112.74,
+    parentName: 'Rayon Pusat',
+    districtId: 'r1',
   },
 ];
 
@@ -63,7 +47,7 @@ describe('MonitoringSearch', () => {
 
   it('shows grouped results and reports the picked result', () => {
     const onSelect = jest.fn();
-    render(<MonitoringSearch workers={workers} districts={districts} onSelect={onSelect} />);
+    render(<MonitoringSearch workers={workers} geo={geo} onSelect={onSelect} />);
 
     const input = screen.getByRole('searchbox');
     fireEvent.change(input, { target: { value: 'budi' } });
@@ -77,7 +61,7 @@ describe('MonitoringSearch', () => {
   });
 
   it('stores a picked result as a recent search', () => {
-    render(<MonitoringSearch workers={workers} districts={districts} onSelect={jest.fn()} />);
+    render(<MonitoringSearch workers={workers} geo={geo} onSelect={jest.fn()} />);
     const input = screen.getByRole('searchbox');
 
     fireEvent.change(input, { target: { value: 'taman' } });
@@ -88,7 +72,7 @@ describe('MonitoringSearch', () => {
   });
 
   it('shows an empty-results message for no match', () => {
-    render(<MonitoringSearch workers={workers} districts={districts} onSelect={jest.fn()} />);
+    render(<MonitoringSearch workers={workers} geo={geo} onSelect={jest.fn()} />);
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'zzzzz' } });
     expect(screen.getByText(/tidak ada hasil/i)).toBeInTheDocument();
   });

@@ -7,11 +7,15 @@
 import React, { useMemo } from 'react';
 import { clusterUsers, shouldCluster } from '../../../utils/mapUtils';
 import { userAxes } from '../../../utils/statusHelpers';
-import { scopeMatches } from '../../../utils/monitoringScope';
+import { scopeMatches, subtreeMatches } from '../../../utils/monitoringScope';
 import { groupWorkersByTeam, isTeamGroup, type TeamGroup } from '../../../utils/teamGrouping';
 import type { LiveUser, UserRole, PresenceActivity } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import {
+  showsWorkerPins,
+  teamMembersOnly,
+  type MonitoringV2VisibleLayers,
+} from '../../../utils/layerVisibility';
 
 type LabelMode = 'none' | 'abbrev' | 'full';
 
@@ -39,15 +43,23 @@ export function useLiveUsersFiltering(
   viewId: string | null,
   /** When set, show ONLY that team's members (as pins) and hide the rest (ADR-048). */
   selectedTeamId: string | null = null,
+  /** Zoom mode swaps the visibility question (ADR-060). */
+  mode: 'drill' | 'zoom' = 'drill',
 ): UseLiveUsersFilteringReturn {
   const scopedUsers = React.useMemo(() => {
-    if (!visibleLayers.workers) { return []; }
+    if (!showsWorkerPins(visibleLayers.personnel)) { return []; }
+    // "Tim saja" keeps only workers who are ON a team; the collapse itself
+    // happens in the team layer, same split as web.
+    const teamOnly = teamMembersOnly(visibleLayers.personnel);
     if (!Array.isArray(liveUsers)) { return []; }
     let users = liveUsers.filter(u => u.status !== 'offline');
     // Render each worker at their OWN drill tier: keep only those whose occurrence
     // `display_scope` matches the current scope (+ node id below city). City scope
     // thus shows city/ad-hoc "Luar Jadwal" workers; a location shows its own crew.
-    users = users.filter(u => scopeMatches(u, scope, viewId));
+    // Drill: does this worker's SCHEDULE scope here (ADR-046). Zoom: are they
+    // standing anywhere inside it. Same fork as web, same two predicates.
+    const visible = mode === 'zoom' ? subtreeMatches : scopeMatches;
+    users = users.filter(u => visible(u, scope, viewId));
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);
     }
@@ -55,8 +67,9 @@ export function useLiveUsersFiltering(
       const locs = filters.location;
       users = users.filter(u => locs.includes(userAxes(u).location));
     }
+    if (teamOnly) { users = users.filter(u => !!u.team_id); }
     return users;
-  }, [liveUsers, activityFilter, filters.location, visibleLayers.workers, scope, viewId]);
+  }, [liveUsers, activityFilter, filters.location, visibleLayers.personnel, scope, viewId, mode]);
 
   // Collapse ≥2-member teams into team bubbles (ADR-048). With a team selected,
   // show ONLY its members as individual pins and no team bubbles — so `visibleUsers`

@@ -110,6 +110,10 @@ export type DrillScope = 'city' | 'district' | 'region' | 'location';
 export interface ScopedWorker {
   display_scope?: LiveUser['display_scope'];
   display_scope_id?: string | null;
+  /** Real geography — what zoom mode reads (drill mode reads display_scope). */
+  district_id?: string | null;
+  region_id?: string | null;
+  location_id?: string | null;
 }
 
 /**
@@ -119,6 +123,26 @@ export interface ScopedWorker {
  * no `display_scope` is treated as `location` (the pre-ADR-046 default) so partial
  * rollouts don't hide everyone. City scope ignores the id (it is always null there).
  */
+/**
+ * Zoom mode's predicate: is this worker standing anywhere INSIDE what I am
+ * looking at — as opposed to drill mode's "is their schedule scoped here".
+ *
+ * The web twin is `subtreeMatches` in `monitoring/page.tsx`. It reads the
+ * worker's real geography rather than their `display_scope`, which is why an
+ * ad-hoc clock-in (pinned flat to city by ADR-046) shows inside the rayon they
+ * are physically in — still styled Luar Jadwal, so visible without counting.
+ */
+export function subtreeMatches(
+  worker: ScopedWorker,
+  scope: DrillScope,
+  viewId: string | null,
+): boolean {
+  if (scope === 'city') return true;
+  if (scope === 'district') return worker.district_id === viewId;
+  if (scope === 'region') return worker.region_id === viewId;
+  return worker.location_id === viewId;
+}
+
 export function scopeMatches(
   worker: ScopedWorker,
   scope: DrillScope,

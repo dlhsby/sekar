@@ -28,7 +28,8 @@
     "clockedInLabel": "Present",
     "belumHadirLabel": "Not Yet In",
     "tidakHadirLabel": "Absent",
-    "activeInsideLabel": "Active in area"
+    "activeInsideLabel": "Active in area",
+    "detailLabel": "{{name}} details"
   },
   "surabaya": {
     "title": "Surabaya",
@@ -57,7 +58,8 @@
     "recentTitle": "Recent Searches",
     "clearRecent": "Clear",
     "recentEmpty": "No recent searches yet",
-    "noResults": "No results"
+    "noResults": "No results",
+    "regionLabel": "Kawasan"
   },
   "status": {
     "active": "Active",
@@ -247,7 +249,10 @@
     "contactTitle": "Contact",
     "phoneLabel": "Phone",
     "districtLabel": "District:",
-    "areaLabel": "Area:"
+    "areaLabel": "Area:",
+    "reassignmentHistory": "Reassignment History",
+    "loadingHistory": "Loading history…",
+    "noHistory": "No reassignment history"
   },
   "sidePanel": {
     "title": "Staff",
@@ -355,5 +360,36 @@
     "zoom": "Zoom",
     "drillHint": "Tap an area to go one level deeper. Personnel appear at their scheduled level.",
     "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it."
+  },
+  "lifecycle": {
+    "late": "Late",
+    "luarJadwal": "Off-schedule",
+    "lembur": "Overtime",
+    "lupaClockOut": "Forgot clock-out",
+    "state": {
+      "tidak_bertugas": "Off Duty",
+      "belum_hadir": "Not Yet Present",
+      "terlambat": "Late",
+      "bertugas": "On Duty",
+      "pulang": "Clocked Out",
+      "tidak_hadir": "Absent"
+    },
+    "leave": {
+      "cuti": "Annual Leave",
+      "sakit": "Sick",
+      "izin": "Permit",
+      "libur": "Day Off"
+    }
+  },
+  "boundaryDetail": {
+    "understaffed": "Understaffed",
+    "sufficient": "Sufficient",
+    "areaLabel": "Area",
+    "understaffedLabel": "Understaffed",
+    "activeLabel": "Active",
+    "assignedLabel": "Officers",
+    "staffingTitle": "Staffing by Role",
+    "plantsLabel": "Plants",
+    "plantsCount": "{{count}} species · {{notable}} heritage"
   }
 }

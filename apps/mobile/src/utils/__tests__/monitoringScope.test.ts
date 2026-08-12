@@ -1,11 +1,13 @@
 /**
  * Tests for the PR2.5 monitoring drill helpers: the snapshot→LiveUser adapter and
- * the display_scope-based `scopeMatches` filter.
+ * the display_scope-based `scopeMatches` filter, plus zoom mode's geography-
+ * based `subtreeMatches`.
  */
 
 import {
   snapshotWorkerToLiveUser,
   scopeMatches,
+  subtreeMatches,
   type SnapshotWorker,
 } from '../monitoringScope';
 
@@ -121,5 +123,42 @@ describe('scopeMatches', () => {
   it('treats a missing display_scope as location (partial-rollout safe)', () => {
     expect(scopeMatches({ display_scope_id: 'loc-1' }, 'location', 'loc-1')).toBe(true);
     expect(scopeMatches({ display_scope_id: 'loc-1' }, 'city', null)).toBe(false);
+  });
+});
+
+describe('subtreeMatches (zoom mode)', () => {
+  // Zoom asks a different question from drill: not "is this worker's schedule
+  // scoped here" but "are they standing anywhere inside this". Same fork, same
+  // two predicates, as web.
+  const worker = {
+    display_scope: 'city' as const,
+    display_scope_id: null,
+    district_id: 'dist-1',
+    region_id: 'reg-1',
+    location_id: 'loc-1',
+  };
+
+  it('shows everyone at city scope', () => {
+    expect(subtreeMatches(worker, 'city', null)).toBe(true);
+  });
+
+  it('matches on REAL geography, not display_scope', () => {
+    // This worker is display_scope=city (an ad-hoc clock-in), yet zoom mode
+    // shows them inside the rayon they are physically in — still flagged Luar
+    // Jadwal by the marker, so visible without being counted.
+    expect(subtreeMatches(worker, 'district', 'dist-1')).toBe(true);
+    expect(subtreeMatches(worker, 'district', 'dist-2')).toBe(false);
+    expect(subtreeMatches(worker, 'region', 'reg-1')).toBe(true);
+    expect(subtreeMatches(worker, 'location', 'loc-1')).toBe(true);
+    expect(subtreeMatches(worker, 'location', 'loc-2')).toBe(false);
+  });
+
+  it('differs from drill for the same worker — which is the whole point', () => {
+    expect(scopeMatches(worker, 'district', 'dist-1')).toBe(false);
+    expect(subtreeMatches(worker, 'district', 'dist-1')).toBe(true);
+  });
+
+  it('excludes a worker with no geography below city', () => {
+    expect(subtreeMatches({ display_scope: 'city' }, 'district', 'dist-1')).toBe(false);
   });
 });
