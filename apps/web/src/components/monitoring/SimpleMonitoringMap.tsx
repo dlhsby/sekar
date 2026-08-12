@@ -79,6 +79,8 @@ export interface SimpleMonitoringMapProps {
   onNodeDetail?: (node: CurrentNodeMarker) => void;
   /** Opens a CHILD node's detail from its ⓘ badge (the pin body still drills). */
   onNodeMarkerDetail?: (node: NodeMarker) => void;
+  /** Node whose detail card is open — never culled, so the card and its pin agree. */
+  openNodeId?: string | null;
   /** Selected location id — at location scope only its boundary is drawn (on demand). */
   areaId?: string | null;
   /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
@@ -245,6 +247,7 @@ function MonitoringMapInner({
   currentNode,
   onNodeDetail,
   onNodeMarkerDetail,
+  openNodeId,
   areaId,
   regionId,
   workers,
@@ -521,8 +524,13 @@ function MonitoringMapInner({
 
   const drawnNodeMarkers = useMemo(() => {
     if (!bounds) return visibleNodeMarkers;
-    return visibleNodeMarkers.filter((n) => pointInBounds(n.lat, n.lng, bounds));
-  }, [visibleNodeMarkers, bounds]);
+    // Same exemption as the selected worker: a node with its detail card open
+    // must keep its pin even off-camera, or the card describes something the
+    // map is no longer showing.
+    return visibleNodeMarkers.filter(
+      (n) => n.id === openNodeId || pointInBounds(n.lat, n.lng, bounds)
+    );
+  }, [visibleNodeMarkers, bounds, openNodeId]);
 
   // At location scope, frame the SELECTED location's boundary once it loads — a reliable
   // "focus in" that beats a fixed zoom (locations vary in size). Runs once per location.

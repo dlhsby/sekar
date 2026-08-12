@@ -14,7 +14,12 @@ import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
 import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
 import type { UserDaySummary, ReassignmentHistoryEntry } from '@/lib/api/monitoring';
-import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
+import {
+  lifecycleFlagPills,
+  lifecycleStatePill,
+  type LifecycleFacts,
+} from '@/lib/monitoring/lifecyclePills';
+import { PRESENCE_TONE_CLASS } from '@/lib/presence/tone';
 import type { UserRole } from '@/types/models';
 
 export interface UserDetailPanelProps {
@@ -31,19 +36,12 @@ export interface UserDetailPanelProps {
    * panel degrades to the summary alone when it is absent (e.g. a worker found
    * by search who is not on the current map).
    */
-  worker?: Pick<SnapshotWorker, 'lifecycle_state' | 'lifecycle_flags'> | null;
+  worker?: LifecycleFacts | null;
   /** Reassignment audit trail — mobile's "Riwayat Pemindahan". */
   reassignments?: ReassignmentHistoryEntry[];
   isReassignmentsLoading?: boolean;
 }
 
-/** Lifecycle flag → label key, mirroring mobile's own mapping. */
-const FLAG_LABELS: Record<string, string> = {
-  is_late: 'monitoring:lifecycle.late',
-  ad_hoc: 'monitoring:lifecycle.luarJadwal',
-  lembur: 'monitoring:lifecycle.lembur',
-  lupa_clock_out: 'monitoring:lifecycle.lupaClockOut',
-};
 
 const TASK_STATUS_VARIANT: Record<
   string,
@@ -100,6 +98,10 @@ export function UserDetailPanel({
     'bg-[var(--color-status-offline-bg)] text-[var(--color-status-offline)] border-[var(--color-status-offline)]';
   const statusLabel = statusLabels[summary.status] ?? summary.status;
   const roleLabel = ROLE_LABELS[summary.role as UserRole] || summary.role;
+  // Both pill sets come from the shared helper (the web twin of mobile's
+  // statusHelpers), so a worker reads identically on either platform.
+  const statePill = worker ? lifecycleStatePill(worker) : null;
+  const flagPills = worker ? lifecycleFlagPills(worker) : [];
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -141,23 +143,32 @@ export function UserDetailPanel({
                     `bertugas`, but a worker reached from search or the roster may
                     be belum_hadir / terlambat / pulang, and that is the first
                     thing a supervisor wants to read. */}
-                {worker?.lifecycle_state && (
-                  <span className="rounded-nb-sm border border-nb-gray-300 bg-nb-gray-100 px-2 py-0.5 text-xs font-semibold text-nb-black">
-                    {t(`monitoring:lifecycle.state.${worker.lifecycle_state}`)}
+                {statePill && (
+                  <span
+                    className={cn(
+                      'rounded-nb-sm border px-2 py-0.5 text-xs font-semibold',
+                      PRESENCE_TONE_CLASS[statePill.tone].text,
+                      PRESENCE_TONE_CLASS[statePill.tone].border
+                    )}
+                  >
+                    {t(statePill.labelKey)}
                   </span>
                 )}
-                {/* Flags are additive, not exclusive — a worker can be late AND on
-                    overtime. Unknown flags are skipped rather than rendered raw. */}
-                {(worker?.lifecycle_flags ?? [])
-                  .filter((f) => FLAG_LABELS[f])
-                  .map((f) => (
-                    <span
-                      key={f}
-                      className="rounded-nb-sm border border-nb-warning bg-nb-warning-light px-2 py-0.5 text-xs font-semibold text-nb-black"
-                    >
-                      {t(FLAG_LABELS[f])}
-                    </span>
-                  ))}
+                {/* Flags are additive, not exclusive — a worker can be late AND
+                    on overtime. Ordering + which sources count live in the shared
+                    helper, so web and mobile cannot drift. */}
+                {flagPills.map((p) => (
+                  <span
+                    key={p.labelKey}
+                    className={cn(
+                      'rounded-nb-sm border px-2 py-0.5 text-xs font-semibold',
+                      PRESENCE_TONE_CLASS[p.tone].text,
+                      PRESENCE_TONE_CLASS[p.tone].border
+                    )}
+                  >
+                    {t(p.labelKey)}
+                  </span>
+                ))}
                 {/* Presence is two axes (ADR-050): the status pill above is the
                     live/activity axis; this is the inside/outside-area axis, shown
                     alongside it (matching mobile's worker detail) instead of buried

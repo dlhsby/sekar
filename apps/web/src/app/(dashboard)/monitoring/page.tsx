@@ -759,6 +759,33 @@ export default function MonitoringPage() {
    * data already on screen, so the card and the bubble it came from cannot show
    * different numbers.
    */
+  /**
+   * Ad-hoc (unscheduled) workers standing inside one node.
+   *
+   * The aggregate reports `off_schedule_count` for the whole SCOPE, never per
+   * node, so this is counted from the snapshot — which already carries every
+   * live worker with their geography. Both detail entry points use it, so a
+   * node reports the same four presence numbers whether it was opened from its
+   * parent's list or from inside it.
+   */
+  const adhocInNode = useCallback(
+    (nodeId: string, type: 'district' | 'region' | 'location'): number => {
+      let n = 0;
+      for (const w of workers) {
+        if (w.is_scheduled !== false) continue;
+        const inside =
+          type === 'district'
+            ? w.district_id === nodeId
+            : type === 'region'
+              ? w.region_id === nodeId
+              : w.location_id === nodeId;
+        if (inside) n += 1;
+      }
+      return n;
+    },
+    [workers]
+  );
+
   const detailProps = useMemo(() => {
     if (!detailNodeId) return null;
     const pool = allAgg.data?.nodes ?? listNodes;
@@ -775,7 +802,7 @@ export default function MonitoringPage() {
           aktif: agg.presence.aktif.dalam + agg.presence.aktif.luar,
           tidak_aktif: agg.presence.tidak_aktif.dalam + agg.presence.tidak_aktif.luar,
           tidak_hadir: agg.roster.tidak_hadir,
-          adhoc: 0,
+          adhoc: adhocInNode(agg.id, agg.type),
         },
         roster: agg.roster,
         childCount: isLoc ? null : (agg.area_count ?? agg.location_count ?? null),
@@ -785,11 +812,25 @@ export default function MonitoringPage() {
       };
     }
     if (currentNode && currentNode.id === detailNodeId) {
+      const p = regionTotals?.presence_totals ?? activeAgg.data?.presence_totals;
+      const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals ?? null;
+      const adhoc = adhocInNode(currentNode.id, currentNode.variant);
       return {
         variant: currentNode.variant,
         name: currentNode.name,
-        presence: presenceCounts,
-        roster: regionTotals?.roster_totals ?? activeAgg.data?.roster_totals ?? null,
+        // Prefer the AGGREGATE basis, which is what the same node reports when
+        // opened from its parent's list. `presenceCounts` counts the visible
+        // worker set instead, and at lokasi scope (and everywhere in zoom mode)
+        // that made one node read differently depending on how you opened it.
+        presence: p
+          ? {
+              aktif: p.aktif.dalam + p.aktif.luar,
+              tidak_aktif: p.tidak_aktif.dalam + p.tidak_aktif.luar,
+              tidak_hadir: r?.tidak_hadir ?? 0,
+              adhoc,
+            }
+          : { ...presenceCounts, adhoc },
+        roster: r,
         childCount: currentNodeStats.childCount,
         understaffedChildCount: currentNodeStats.understaffedChildCount,
         staffing: currentNodeStats.staffing,
@@ -807,6 +848,7 @@ export default function MonitoringPage() {
     regionTotals,
     activeAgg.data,
     currentNodeStats,
+    adhocInNode,
   ]);
 
 
@@ -1104,6 +1146,7 @@ export default function MonitoringPage() {
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
         onNodeMarkerDetail={(n) => setDetailNodeId(n.id)}
+        openNodeId={detailNodeId}
         areaId={scope === 'location' ? view.id ?? null : null}
         regionId={scope === 'region' ? view.id ?? null : null}
         workers={mapWorkers}
