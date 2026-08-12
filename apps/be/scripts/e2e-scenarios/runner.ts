@@ -81,6 +81,10 @@ const flag = (name: string): string | undefined =>
 const has = (name: string): boolean => args.includes(`--${name}`);
 
 const MODE: Mode = (flag('mode') as Mode) ?? 'local';
+// Exposed on the environment because `skipIf()` takes no arguments by design —
+// a scenario decides for itself whether it is testable, and the mode is the one
+// piece of run context it needs.
+process.env.E2E_MODE = MODE;
 const ONLY = flag('only')?.split(',').map((s) => s.trim().toUpperCase());
 const VERIFY_ONLY = has('verify-only');
 /** Seed the scenarios without asserting — for topping up a demo DB with no API running. */
