@@ -37,7 +37,7 @@ import {
 } from './dto/monitoring-config.dto';
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
 import { BoundariesResponseDto } from './dto/boundaries.dto';
-import { AggregateResponseDto } from './dto/aggregate.dto';
+import { AggregateResponseDto, type AggregateScope } from './dto/aggregate.dto';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
 import { AreaPlantStatusDto } from './dto/area-plant-status.dto';
 import { AreaPlantStatusService } from './services/area-plant-status.service';
@@ -344,19 +344,22 @@ export class MonitoringController {
       'Aggregate map summary (Ringkasan mode) — district/region/area rollups, no worker coords',
     description:
       'scope=city → one node per district; scope=district → one node per area in the district; ' +
-      'scope=region → one node per kawasan in the district. Returns grouped status/role counts + ' +
-      'centers only, for lightweight drill-down bubbles.',
+      'scope=region → one node per kawasan in the district; scope=all → every tier at once ' +
+      '(districts + kawasan + lokasi), which is what the map’s zoom mode draws. Returns grouped ' +
+      'status/role counts + centers only, for lightweight drill-down bubbles.',
   })
-  @ApiQuery({ name: 'scope', enum: ['city', 'district', 'region'], required: false })
+  @ApiQuery({ name: 'scope', enum: ['city', 'district', 'region', 'all'], required: false })
   @ApiQuery({
     name: 'id',
     required: false,
-    description: 'District UUID (required for district + region scope)',
+    description:
+      'District UUID — required for district + region scope; optional for scope=all, where it ' +
+      'narrows the payload to that district’s subtree.',
   })
   @ApiResponse({ status: 200, type: AggregateResponseDto })
   async getAggregate(
     @GetUser() user: User,
-    @Query('scope') scope: 'city' | 'district' | 'region' = 'city',
+    @Query('scope') scope: AggregateScope = 'city',
     @Query('id') id?: string,
   ): Promise<AggregateResponseDto> {
     // City-scope aggregate is city-role only; district-scoped roles are forced to
@@ -365,6 +368,18 @@ export class MonitoringController {
       throw new ForbiddenException('City-scope aggregate requires city-level role');
     }
     let districtId = id;
+    // `all` spans every tier, so an unrestricted call is a city-wide read: city
+    // roles may ask for the whole hierarchy, district roles are pinned to their
+    // own district's subtree exactly as they are on the drill scopes. Without
+    // this, zoom mode would be a way around the scope enforcement.
+    if (scope === 'all') {
+      const isCityRole = MONITORING_CITY.includes(user.role as UserRole);
+      districtId = isCityRole ? id : (user.district_id ?? undefined);
+      if (!isCityRole && !districtId) {
+        throw new ForbiddenException('District-scoped role has no district to aggregate');
+      }
+      if (districtId) this.enforceScopeDistrict(user, districtId);
+    }
     // `region` scope is district-parametrised (kawasan of a district), so it enforces
     // identically to `district`: a district role only ever sees its own district.
     if (scope === 'district' || scope === 'region') {

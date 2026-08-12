@@ -378,16 +378,34 @@ export class MonitoringUserService {
       return out;
     };
 
-    const absent_users = buildList(absentRows, () => 'none');
-    const on_leave_users = buildList(
+    const allAbsent = buildList(absentRows, () => 'none');
+    const allOnLeave = buildList(
       leaveRows,
       (r) => SCHEDULE_STATUS_TO_LEAVE[r.status as ScheduleStatus] ?? 'none',
     );
 
+    // Search (`q`) narrows the two ROSTER LISTS by name, so a worker who is on
+    // today's roster but has not clocked in is still findable — the live query
+    // above can never surface them, because it is rooted in
+    // `user_tracking_status` and they have no open session. Without this, typing
+    // a known satgas's name returns nothing whenever they haven't punched in,
+    // which reads as a broken search rather than as "not here yet".
+    //
+    // The counts below are taken from the UNFILTERED lists on purpose: they are
+    // roster totals, not match totals. Deriving them from the narrowed lists
+    // would make `absent_count` mean something different on the search endpoint
+    // than everywhere else.
+    const term = filters?.q?.trim().toLowerCase();
+    const matchesTerm = (u: AbsentUserDto): boolean =>
+      !term || u.full_name.toLowerCase().includes(term);
+
+    const absent_users = term ? allAbsent.filter(matchesTerm) : allAbsent;
+    const on_leave_users = term ? allOnLeave.filter(matchesTerm) : allOnLeave;
+
     return {
       expected_count: expectedCount,
-      present_count: expectedCount - absent_users.length,
-      absent_count: absent_users.length,
+      present_count: expectedCount - allAbsent.length,
+      absent_count: allAbsent.length,
       on_leave_count: onLeave,
       off_schedule_count: offSchedule,
       absent_users,
