@@ -106,6 +106,8 @@ export interface Helpers {
     locationId?: string | null;
     regionId?: string | null;
     districtId?: string | null;
+    /** Team membership for the day — what the map collapses into a team bubble. */
+    teamCategoryId?: string | null;
   }): Promise<void>;
   /** Record a GPS ping, which is what presence recency is derived from. */
   ping(o: {

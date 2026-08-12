@@ -22,6 +22,7 @@
 import type { DataSource } from 'typeorm';
 import { CATALOG, assertCatalogIsSound } from './catalog';
 import { arrangeDemoFixtures, clearDemoFixtures } from './fixtures';
+import { arrangeLivePopulation, clearLivePopulation } from './live-population';
 import { buildHelpers, wibToday } from './helpers';
 import type { Mode, ResolvedSubject, Scenario } from './types';
 
@@ -393,9 +394,18 @@ async function main(): Promise<void> {
       const owned = CATALOG.map((s) => s.subject.adopt).filter((u): u is string => Boolean(u));
       await clearDemoFixtures(AppDataSource, today, owned);
       const fx = await arrangeDemoFixtures(AppDataSource, helpers, today, owned);
+      // Scenery: a live fleet worth looking at. One worker per rule is right for
+      // assertions and useless for judging a map — before this the dev DB held
+      // six live workers, all stale, so every presence figure read zero.
+      await clearLivePopulation(AppDataSource, today, owned);
+      const pop = await arrangeLivePopulation(AppDataSource, helpers, today, now, owned);
       console.log(
         `${DIM}Arranged ${scenarios.length} scenarios + ${fx.rosterRows} demo roster rows` +
-          `${fx.skipped.length ? ` (${fx.skipped.length} accounts absent)` : ''}.${RESET}\n`,
+          `${fx.skipped.length ? ` (${fx.skipped.length} accounts absent)` : ''}.${RESET}`,
+      );
+      console.log(
+        `${DIM}Live population: ${pop.clockedIn} on duty ` +
+          `(${pop.stale} tidak aktif, ${pop.outsideArea} luar area).${RESET}\n`,
       );
     } else {
       console.log(`${DIM}Arranged ${scenarios.length} scenarios.${RESET}\n`);
