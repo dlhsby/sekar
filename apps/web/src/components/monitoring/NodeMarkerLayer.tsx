@@ -12,7 +12,7 @@
  * a WebSocket snapshot patch that only moves a node repositions the marker in place
  * instead of rebuilding it (reposition-on-patch; profiled 47× cheaper).
  */
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { AdvancedPinMarker } from './AdvancedPinMarker';
 import {
   pinElement,
@@ -47,6 +47,13 @@ export interface NodeMarker {
 export interface NodeMarkerLayerProps {
   nodes: NodeMarker[];
   onDrill?: (node: NodeMarker) => void;
+  /**
+   * Opens the node's detail card. Rendered as a small ⓘ badge on the pin so the
+   * body of the pin keeps its original meaning — tap = drill. Mobile splits the
+   * same two actions across a bubble and a marker; on web one pin carries both,
+   * which avoids drawing two pins per area in zoom mode.
+   */
+  onDetail?: (node: NodeMarker) => void;
   /** Accepted for API compatibility; labels now show at every zoom. */
   zoom?: number;
   /** Geo filter selection (district/kawasan/lokasi id). When set, node bubbles that
@@ -54,7 +61,14 @@ export interface NodeMarkerLayerProps {
   activeGeoId?: string | null;
 }
 
-export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayerProps) {
+export function NodeMarkerLayer({ nodes, onDrill, onDetail, activeGeoId }: NodeMarkerLayerProps) {
+  // `build()` is memoized by signature, so a handler captured inside it would go
+  // stale the moment the callback identity changed. The ref is read at CLICK
+  // time, which keeps the memo intact and the handler current.
+  const onDetailRef = useRef(onDetail);
+  useEffect(() => {
+    onDetailRef.current = onDetail;
+  }, [onDetail]);
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
@@ -83,7 +97,8 @@ export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayer
         // memoized element → a moved node only repositions.
         const signature =
           `${node.variant}|${node.marker_icon ?? ''}|${node.fill_color ?? ''}|${node.fill_opacity ?? ''}` +
-          `|${node.active}|${node.scheduled}|${node.clocked_in}|${node.name}|${dimmed ? 1 : 0}`;
+          `|${node.active}|${node.scheduled}|${node.clocked_in}|${node.name}|${dimmed ? 1 : 0}` +
+          `|${onDetail ? 1 : 0}`;
         return (
           <AdvancedPinMarker
             key={`node-${node.id}`}
@@ -106,6 +121,20 @@ export function NodeMarkerLayer({ nodes, onDrill, activeGeoId }: NodeMarkerLayer
                 { text: node.name, className: 'node-marker-label', color: HEALTH_COLORS[health] }
               );
               el.style.opacity = dimmed ? '0.3' : '1';
+              if (onDetailRef.current) {
+                const info = document.createElement('button');
+                info.type = 'button';
+                info.className = 'node-info-badge';
+                info.textContent = 'i';
+                info.setAttribute('aria-label', node.name);
+                info.addEventListener('click', (ev) => {
+                  // Without this the marker's own handler fires too and the map
+                  // drills at the same moment the card opens.
+                  ev.stopPropagation();
+                  onDetailRef.current?.(node);
+                });
+                el.appendChild(info);
+              }
               return el;
             }}
             onClick={() => onDrill?.(node)}

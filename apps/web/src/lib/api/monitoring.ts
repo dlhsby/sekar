@@ -65,6 +65,8 @@ export const monitoringKeys = {
   liveUsers: (filters?: LiveUsersFilters) =>
     [...monitoringKeys.all, 'live-users', filters] as const,
   userDaySummary: (userId: string) => [...monitoringKeys.all, 'user-day-summary', userId] as const,
+  reassignmentHistory: (userId: string) =>
+    [...monitoringKeys.all, 'reassignment-history', userId] as const,
   locationHistory: (userId: string, date: string) =>
     [...monitoringKeys.all, 'location-history', userId, date] as const,
   staffingSummary: (filters?: StaffingFilters) =>
@@ -151,6 +153,45 @@ export function useUserDaySummary(userId: string | null) {
     enabled: !!userId,
     staleTime: 30 * 1000,
     refetchInterval: 30 * 1000,
+  });
+}
+
+/**
+ * A worker's reassignment audit trail — the "Riwayat Pemindahan" section mobile's
+ * worker sheet has always shown and web never did. Read-only, so it can be lazy:
+ * only fetched while a worker's detail is open.
+ */
+export interface ReassignmentHistoryEntry {
+  id: string;
+  previous_area_id: string | null;
+  previous_area_name: string | null;
+  new_area_id: string | null;
+  new_area_name: string | null;
+  reason: string | null;
+  effective_date: string | null;
+  actor_id: string;
+  actor_name: string;
+  created_at: string;
+}
+
+export interface ReassignmentHistory {
+  user_id: string;
+  history: ReassignmentHistoryEntry[];
+}
+
+export function useReassignmentHistory(userId: string | null) {
+  return useQuery({
+    queryKey: monitoringKeys.reassignmentHistory(userId ?? ''),
+    queryFn: async () => {
+      const response = await apiClient.get<ReassignmentHistory>(
+        `/monitoring/users/${userId}/reassignment-history`
+      );
+      return response.data;
+    },
+    enabled: !!userId,
+    // An audit trail changes only when a supervisor acts, so it does not need the
+    // day summary's 30 s poll.
+    staleTime: 5 * 60 * 1000,
   });
 }
 

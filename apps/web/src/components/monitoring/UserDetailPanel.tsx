@@ -7,13 +7,14 @@
 
 import { useTranslation } from 'react-i18next';
 import { intlLocale } from '@/lib/i18n/date-locale';
-import { ArrowLeft, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
+import { ArrowLeft, ArrowLeftRight, Clock, MapPin, Battery, CheckSquare, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui';
 import { ROLE_LABELS } from '@/lib/constants/roles';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime, formatDuration, formatTime } from '@/lib/utils/formatters';
 import { STATUS_BADGE_CLASSES, getStatusLabels } from '@/lib/constants/monitoring';
-import type { UserDaySummary } from '@/lib/api/monitoring';
+import type { UserDaySummary, ReassignmentHistoryEntry } from '@/lib/api/monitoring';
+import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
 import type { UserRole } from '@/types/models';
 
 export interface UserDetailPanelProps {
@@ -21,7 +22,28 @@ export interface UserDetailPanelProps {
   isLoading: boolean;
   onBack: () => void;
   onViewLocationHistory: () => void;
+  /**
+   * The worker's live snapshot row, when the map has one.
+   *
+   * The day summary has no presence LIFECYCLE — that is derived per snapshot
+   * (ADR-050) and rides `SnapshotWorker`. Passing it in keeps the panel a pure
+   * renderer while still showing the same pills mobile's sheet does, and the
+   * panel degrades to the summary alone when it is absent (e.g. a worker found
+   * by search who is not on the current map).
+   */
+  worker?: Pick<SnapshotWorker, 'lifecycle_state' | 'lifecycle_flags'> | null;
+  /** Reassignment audit trail — mobile's "Riwayat Pemindahan". */
+  reassignments?: ReassignmentHistoryEntry[];
+  isReassignmentsLoading?: boolean;
 }
+
+/** Lifecycle flag → label key, mirroring mobile's own mapping. */
+const FLAG_LABELS: Record<string, string> = {
+  is_late: 'monitoring:lifecycle.late',
+  ad_hoc: 'monitoring:lifecycle.luarJadwal',
+  lembur: 'monitoring:lifecycle.lembur',
+  lupa_clock_out: 'monitoring:lifecycle.lupaClockOut',
+};
 
 const TASK_STATUS_VARIANT: Record<
   string,
@@ -39,6 +61,9 @@ export function UserDetailPanel({
   isLoading,
   onBack,
   onViewLocationHistory,
+  worker,
+  reassignments,
+  isReassignmentsLoading,
 }: UserDetailPanelProps) {
   const { t } = useTranslation(['monitoring']);
   const statusLabels = getStatusLabels();
@@ -112,6 +137,27 @@ export function UserDetailPanel({
                 >
                   {statusLabel}
                 </span>
+                {/* Attendance lifecycle (ADR-050 axis 1) — a live pin is always
+                    `bertugas`, but a worker reached from search or the roster may
+                    be belum_hadir / terlambat / pulang, and that is the first
+                    thing a supervisor wants to read. */}
+                {worker?.lifecycle_state && (
+                  <span className="rounded-nb-sm border border-nb-gray-300 bg-nb-gray-100 px-2 py-0.5 text-xs font-semibold text-nb-black">
+                    {t(`monitoring:lifecycle.state.${worker.lifecycle_state}`)}
+                  </span>
+                )}
+                {/* Flags are additive, not exclusive — a worker can be late AND on
+                    overtime. Unknown flags are skipped rather than rendered raw. */}
+                {(worker?.lifecycle_flags ?? [])
+                  .filter((f) => FLAG_LABELS[f])
+                  .map((f) => (
+                    <span
+                      key={f}
+                      className="rounded-nb-sm border border-nb-warning bg-nb-warning-light px-2 py-0.5 text-xs font-semibold text-nb-black"
+                    >
+                      {t(FLAG_LABELS[f])}
+                    </span>
+                  ))}
                 {/* Presence is two axes (ADR-050): the status pill above is the
                     live/activity axis; this is the inside/outside-area axis, shown
                     alongside it (matching mobile's worker detail) instead of buried
@@ -287,6 +333,33 @@ export function UserDetailPanel({
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Reassignment history — parity with mobile's "Riwayat Pemindahan". */}
+        {(isReassignmentsLoading || (reassignments && reassignments.length > 0)) && (
+          <div className="border-2 border-nb-black rounded-nb-base p-3 bg-white shadow-nb-sm">
+            <h3 className="text-xs font-bold uppercase text-nb-gray-500 mb-2 flex items-center gap-1">
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              {t('monitoring:userDetail.reassignmentHistory')}
+            </h3>
+            {isReassignmentsLoading ? (
+              <p className="text-xs text-nb-gray-400">{t('monitoring:userDetail.loadingHistory')}</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {(reassignments ?? []).slice(0, 5).map((r) => (
+                  <li key={r.id} className="text-xs">
+                    <div className="font-medium text-nb-black">
+                      {r.previous_area_name ?? '—'} → {r.new_area_name ?? '—'}
+                    </div>
+                    <div className="text-nb-gray-500">
+                      {r.actor_name}
+                      {r.reason ? ` · ${r.reason}` : ''}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 

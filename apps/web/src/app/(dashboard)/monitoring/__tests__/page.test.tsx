@@ -34,6 +34,10 @@ jest.mock('@/lib/api/monitoring', () => ({
   useBoundaries: () => mockBoundaries(),
   // The worker trail query — the page reads `.data?.points`; no trail in tests.
   useLocationHistory: () => ({ data: undefined, isLoading: false }),
+  // Worker-detail reads, both lazy on the selection. Undefined data exercises
+  // the panel's own empty/loading handling rather than stubbing a summary.
+  useUserDaySummary: () => ({ data: undefined, isLoading: false }),
+  useReassignmentHistory: () => ({ data: undefined, isLoading: false }),
 }));
 
 // The real map needs Google Maps/WebGL — assert we hand it the worker list

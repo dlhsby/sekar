@@ -5,8 +5,14 @@
  * at EVERY drill level. Two tabs:
  *  - Wilayah (first): the current level's child nodes (districts at city, kawasan/
  *    lokasi deeper) with today's attendance trio; tapping a row drills in.
- *  - Petugas (second): the scoped worker list; selecting a worker opens an inline
- *    detail card (snapshot fields only — no extra fetch).
+ *  - Petugas (second): the scoped worker list; selecting a worker opens the full
+ *    worker detail (shift, location, tugas, aktivitas, kontak, reassignment
+ *    history) — the same content mobile's UserDetailSheet shows, rather than the
+ *    snapshot-only card this panel used to render.
+ *
+ * The detail itself is a SLOT (`workerDetail`). The sidebar stays presentational:
+ * the day-summary and reassignment fetches belong to the page that owns the
+ * selection, and the fallback card below still renders when no slot is supplied.
  * At lokasi scope there are no child nodes, so only the Petugas tab shows.
  */
 import { useState } from 'react';
@@ -29,6 +35,8 @@ export interface MonitoringSidebarProps {
   /** The current level's child nodes (empty at lokasi scope → Wilayah tab hidden). */
   nodes: AggregateNode[];
   onDrillNode: (node: AggregateNode) => void;
+  /** Opens a node's detail card from the Wilayah row's ⓘ button. */
+  onNodeDetail?: (node: AggregateNode) => void;
   /** Geo-filter spotlight id — dims non-matching Wilayah rows. */
   activeGeoId?: string | null;
   selectedId: string | null;
@@ -37,6 +45,12 @@ export interface MonitoringSidebarProps {
    *  current drill scope. Null when nothing is selected. */
   selectedWorker: SnapshotWorker | null;
   onSelect: (id: string | null) => void;
+  /**
+   * Rich detail for the selected worker. When supplied it replaces the built-in
+   * snapshot card entirely — the caller has already fetched more than the
+   * snapshot carries.
+   */
+  workerDetail?: React.ReactNode;
   className?: string;
 }
 
@@ -203,10 +217,12 @@ export function MonitoringSidebar({
   workers,
   nodes,
   onDrillNode,
+  onNodeDetail,
   activeGeoId,
   selectedId,
   selectedWorker,
   onSelect,
+  workerDetail,
   className,
 }: MonitoringSidebarProps) {
   const { t } = useTranslation();
@@ -247,7 +263,7 @@ export function MonitoringSidebar({
       )}
     >
       {selectedWorker ? (
-        <WorkerDetail worker={selectedWorker} onBack={() => onSelect(null)} />
+        (workerDetail ?? <WorkerDetail worker={selectedWorker} onBack={() => onSelect(null)} />)
       ) : (
         <>
           {hasNodes && (
@@ -268,7 +284,13 @@ export function MonitoringSidebar({
 
           <div className="flex-1 overflow-y-auto">
             {activeTab === 'wilayah' ? (
-              <AggregateNodeList bare nodes={nodes} onDrill={onDrillNode} activeGeoId={activeGeoId} />
+              <AggregateNodeList
+                bare
+                nodes={nodes}
+                onDrill={onDrillNode}
+                onDetail={onNodeDetail}
+                activeGeoId={activeGeoId}
+              />
             ) : (
               workerList
             )}

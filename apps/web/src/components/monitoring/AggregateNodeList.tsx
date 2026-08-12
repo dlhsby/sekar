@@ -7,7 +7,7 @@
  * map node tap.
  */
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, AlertTriangle } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Info } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import type { AggregateNode } from '@/lib/api/monitoring-v2';
@@ -15,6 +15,14 @@ import type { AggregateNode } from '@/lib/api/monitoring-v2';
 export interface AggregateNodeListProps {
   nodes: AggregateNode[];
   onDrill: (node: AggregateNode) => void;
+  /**
+   * Opens the node's detail card. Optional: when absent the row is a single
+   * drill button exactly as before. When present the row splits into two
+   * targets, because a button nested inside a button is invalid HTML — and a
+   * whole-row click that sometimes drills and sometimes opens detail would be
+   * worse than either.
+   */
+  onDetail?: (node: AggregateNode) => void;
   /** Geo-filter selection (district/kawasan/lokasi id). Non-matching rows dim to
    *  match the map's spotlight. Null = no geo filter (all rows full strength). */
   activeGeoId?: string | null;
@@ -24,7 +32,14 @@ export interface AggregateNodeListProps {
   className?: string;
 }
 
-export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className }: AggregateNodeListProps) {
+export function AggregateNodeList({
+  nodes,
+  onDrill,
+  onDetail,
+  activeGeoId,
+  bare,
+  className,
+}: AggregateNodeListProps) {
   const { t } = useTranslation();
 
   if (nodes.length === 0) {
@@ -53,12 +68,12 @@ export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className
         {nodes.map((node) => {
           const dimmed = activeGeoId != null && node.id !== activeGeoId;
           return (
-          <li key={node.id}>
+          <li key={node.id} className="flex items-stretch">
             <button
               type="button"
               onClick={() => onDrill(node)}
               className={cn(
-                'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-nb-gray-50',
+                'flex flex-1 items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-nb-gray-50',
                 dimmed && 'opacity-40'
               )}
             >
@@ -101,6 +116,19 @@ export function AggregateNodeList({ nodes, onDrill, activeGeoId, bare, className
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-nb-gray-400" aria-hidden="true" />
             </button>
+            {onDetail && (
+              <button
+                type="button"
+                onClick={() => onDetail(node)}
+                aria-label={t('monitoring:aggregate.detailLabel', { name: node.name })}
+                className={cn(
+                  'shrink-0 border-l-2 border-nb-gray-100 px-3 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black',
+                  dimmed && 'opacity-40'
+                )}
+              >
+                <Info className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
           </li>
           );
         })}

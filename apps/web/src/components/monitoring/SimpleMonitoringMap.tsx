@@ -77,6 +77,8 @@ export interface SimpleMonitoringMapProps {
   /** The current node's own pin (district/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
+  /** Opens a CHILD node's detail from its ⓘ badge (the pin body still drills). */
+  onNodeMarkerDetail?: (node: NodeMarker) => void;
   /** Selected location id — at location scope only its boundary is drawn (on demand). */
   areaId?: string | null;
   /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
@@ -242,6 +244,7 @@ function MonitoringMapInner({
   onDrillNode,
   currentNode,
   onNodeDetail,
+  onNodeMarkerDetail,
   areaId,
   regionId,
   workers,
@@ -631,7 +634,7 @@ function MonitoringMapInner({
         {/* Geo node markers (Surabaya / district / kawasan / lokasi bubbles) — always
             drawn (the marker layer can't be hidden). At location scope nodeMarkers is
             empty, so nothing renders there. */}
-        <NodeMarkerLayer nodes={drawnNodeMarkers} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
+        <NodeMarkerLayer nodes={drawnNodeMarkers} onDrill={onDrillNode} onDetail={onNodeMarkerDetail} zoom={zoom} activeGeoId={activeGeoId} />
 
         {/* Selected worker's movement trail (today) — a dashed path under the pins. */}
         {trail && trail.length >= 2 && (
