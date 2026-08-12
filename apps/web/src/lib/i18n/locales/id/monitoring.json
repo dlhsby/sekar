@@ -40,9 +40,15 @@
     "district": "Batas Rayon",
     "kawasan": "Batas Kawasan",
     "lokasi": "Batas Lokasi",
-    "petugas": "Petugas",
-    "teamBubbles": "Tim",
-    "teamNeedsPetugas": "Aktifkan Petugas dulu untuk gelembung tim"
+    "personnel": "Petugas & Tim",
+    "option": {
+      "all": "Semua",
+      "boundary": "Batas saja",
+      "marker": "Marker saja",
+      "none": "Sembunyikan",
+      "petugasOnly": "Petugas saja",
+      "timOnly": "Tim saja"
+    }
   },
   "search": {
     "personnelLabel": "Petugas",

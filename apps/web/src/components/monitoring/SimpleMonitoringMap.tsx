@@ -17,7 +17,15 @@ import { useMapId } from '@/lib/api/config';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
-import { type MonitoringLayers, DEFAULT_LAYERS } from '@/lib/monitoring/layers';
+import {
+  type MonitoringLayers,
+  DEFAULT_LAYERS,
+  showsBoundary,
+  showsNodeMarker,
+  showsWorkerPins,
+  showsTeamBubbles,
+  teamMembersOnly,
+} from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
 import { WorkerClusterLayer } from './WorkerClusterLayer';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
@@ -227,10 +235,32 @@ function MonitoringMapInner({
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
 
   // Workers render at EVERY level (city → district → kawasan → lokasi) as soon as
-  // the Petugas layer is on — no scope/zoom gate. The geo node bubbles are drawn
-  // alongside (never replaced), so the city view shows the district bubbles AND the
-  // people on the ground at once.
-  const renderWorkers = layers.petugas;
+  // the personnel layer shows them — no scope/zoom gate. The geo node bubbles are
+  // drawn alongside (never replaced), so the city view shows the district bubbles
+  // AND the people on the ground at once.
+  const renderWorkers = showsWorkerPins(layers.personnel);
+
+  // "Tim saja" means only people who are ON a team; the other options show
+  // everyone. Filtering here rather than inside the cluster layer keeps that
+  // layer about RENDERING and this component about what is in scope.
+  const personnelWorkers = useMemo(
+    () => (teamMembersOnly(layers.personnel) ? workers.filter((w) => w.team_id) : workers),
+    [workers, layers.personnel]
+  );
+
+  // Node markers carry their tier in `variant`, so the per-tier marker options
+  // filter the list and NodeMarkerLayer stays unaware of layer settings.
+  const visibleNodeMarkers = useMemo(() => {
+    const allowed: Record<string, boolean> = {
+      district: showsNodeMarker(layers.district),
+      region: showsNodeMarker(layers.kawasan),
+      location: showsNodeMarker(layers.lokasi),
+      // No city row exists (Surabaya has no boundary polygon), so the summary
+      // node is never gated.
+      surabaya: true,
+    };
+    return (nodeMarkers ?? []).filter((n) => allowed[n.variant] !== false);
+  }, [nodeMarkers, layers.district, layers.kawasan, layers.lokasi]);
 
   // Track viewport zoom so team-bubble collapse recomputes on pan/zoom.
   const syncViewport = useCallback((map: google.maps.Map) => {
@@ -446,7 +476,7 @@ function MonitoringMapInner({
       >
         {/* Rayon boundaries — the district's own border_color + fill_color (ADR-045),
             drawn separately; sensible defaults only when unset. */}
-        {layers.district && showDistrictPolys &&
+        {showsBoundary(layers.district) && showDistrictPolys &&
           districtPolys.map((poly, i) => (
             <Polygon
               key={`district-${i}`}
@@ -465,7 +495,7 @@ function MonitoringMapInner({
 
         {/* Kawasan (region) boundaries — the kawasan's own border_color +
             fill_color; drawn once you're inside a district. */}
-        {layers.kawasan && showRegionPolys &&
+        {showsBoundary(layers.kawasan) && showRegionPolys &&
           visibleRegionPolys.map((poly, i) => (
             <Polygon
               key={`region-${i}`}
@@ -484,7 +514,7 @@ function MonitoringMapInner({
 
         {/* Lokasi boundaries — the lokasi's own border_color + fill_color (one
             `lokasi` toggle); only the selected area at area scope (on-demand). */}
-        {layers.lokasi && showAreaBorders &&
+        {showsBoundary(layers.lokasi) && showAreaBorders &&
           visibleAreaPaths.map((area, i) => (
             <Polygon
               key={`area-${area.id}-${i}`}
@@ -504,7 +534,7 @@ function MonitoringMapInner({
         {/* Geo node markers (Surabaya / district / kawasan / lokasi bubbles) — always
             drawn (the marker layer can't be hidden). At location scope nodeMarkers is
             empty, so nothing renders there. */}
-        <NodeMarkerLayer nodes={nodeMarkers ?? []} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
+        <NodeMarkerLayer nodes={visibleNodeMarkers} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
 
         {/* Selected worker's movement trail (today) — a dashed path under the pins. */}
         {trail && trail.length >= 2 && (
@@ -531,12 +561,12 @@ function MonitoringMapInner({
             node bubbles at district/kawasan/location scope, no clustering. */}
         {renderWorkers && (
           <WorkerClusterLayer
-            workers={workers}
+            workers={personnelWorkers}
             zoom={zoom}
             selectedId={selectedId}
             onSelect={onSelect}
             onTeamClick={onTeamClick}
-            teamBubbles={layers.teamBubbles}
+            teamBubbles={showsTeamBubbles(layers.personnel)}
           />
         )}
 
