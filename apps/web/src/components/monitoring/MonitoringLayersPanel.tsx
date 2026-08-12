@@ -11,17 +11,23 @@
  */
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils/cn';
 import { LAYER_ROWS, type MonitoringLayers } from '@/lib/monitoring/layers';
+import { MODE_OPTIONS, type MonitoringMode } from '@/lib/monitoring/mapMode';
 
 export interface MonitoringLayersPanelProps {
   layers: MonitoringLayers;
   onSetLayer: (key: keyof MonitoringLayers, value: string) => void;
+  mode: MonitoringMode;
+  onSetMode: (mode: MonitoringMode) => void;
   onClose: () => void;
 }
 
 export function MonitoringLayersPanel({
   layers,
   onSetLayer,
+  mode,
+  onSetMode,
   onClose,
 }: MonitoringLayersPanelProps) {
   const { t } = useTranslation();
@@ -39,6 +45,37 @@ export function MonitoringLayersPanel({
           <X className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Mode — how much of the hierarchy the map draws at once. A segmented
+          control rather than a select: there are two options and the choice
+          reshapes the whole map, so it should read as a stance, not a setting. */}
+      <span className="mb-1.5 block text-xs font-bold uppercase text-nb-gray-500">
+        {t('monitoring:mode.title')}
+      </span>
+      <div
+        role="radiogroup"
+        aria-label={t('monitoring:mode.title')}
+        className="mb-4 flex overflow-hidden rounded-nb-sm border-2 border-nb-black"
+      >
+        {MODE_OPTIONS.map((o) => (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={mode === o.value}
+            onClick={() => onSetMode(o.value)}
+            className={cn(
+              'min-h-touch flex-1 px-2 py-1.5 text-sm font-bold',
+              mode === o.value
+                ? 'bg-nb-primary text-nb-black'
+                : 'bg-nb-white text-nb-gray-500 hover:bg-nb-gray-50'
+            )}
+          >
+            {t(o.labelKey)}
+          </button>
+        ))}
+      </div>
+      <p className="mb-4 text-xs text-nb-gray-500">{t(`monitoring:mode.${mode}Hint`)}</p>
 
       <span className="mb-1.5 block text-xs font-bold uppercase text-nb-gray-500">
         {t('monitoring:layers.overlays')}
