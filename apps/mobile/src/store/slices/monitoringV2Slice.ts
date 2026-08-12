@@ -32,6 +32,9 @@ export interface MonitoringV2Snapshot {
 // Layer vocabulary + predicates live in a plain module (not the store): they are
 // pure functions about a VALUE, and keeping them here forced every test that
 // mocked this slice to stub them as well.
+/** Monitoring map mode (ADR-060) — the mobile twin of web's `mapMode`. */
+export type MonitoringMode = 'drill' | 'zoom';
+
 export type {
   LayerVisibility,
   PersonnelVisibility,
@@ -59,6 +62,13 @@ export interface MonitoringView {
 export interface MonitoringV2State {
   snapshot: MonitoringV2Snapshot;
   visibleLayers: VisibleLayers;
+  /**
+   * How much of the hierarchy the map shows at once (ADR-060). `drill` renders a
+   * worker at their own schedule tier and one level of children; `zoom` renders
+   * every tier in the subtree and everyone standing in it. Modes change what is
+   * DRAWN, never what is counted.
+   */
+  mode: MonitoringMode;
   selectedUserId: string | null;
   selectedAreaId: string | null;
   clusterZoomThreshold: number;
@@ -96,6 +106,9 @@ const initialState: MonitoringV2State = {
     generated_at: null,
   },
   visibleLayers: { ...DEFAULT_VISIBLE_LAYERS },
+  // Drill stays the default so nobody's map gets heavier without asking — the
+  // same choice web makes.
+  mode: 'drill',
   selectedUserId: null,
   selectedAreaId: null,
   /** lat-delta threshold below which individual markers are shown instead of clusters */
@@ -202,6 +215,11 @@ const monitoringV2Slice = createSlice({
     /**
      * Toggle a single layer's visibility in the map toggle sheet.
      */
+    /** Switch between tap-to-drill and zoom mode (ADR-060). */
+    setMode(state, action: PayloadAction<MonitoringMode>) {
+      state.mode = action.payload;
+    },
+
     /**
      * Set one layer's visibility. Replaces the old boolean `toggleLayer`: the
      * geo tiers now carry a four-way choice, and Petugas/Tim collapsed into one
@@ -399,6 +417,7 @@ export const {
   setSnapshot,
   applyPatch,
   setLayer,
+  setMode,
   setSelectedUser,
   setSelectedArea,
   setClusterZoomThreshold,

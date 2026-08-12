@@ -340,5 +340,12 @@
       "izin": "Izin",
       "libur": "Libur"
     }
+  },
+  "mode": {
+    "title": "Mode Monitoring",
+    "drill": "Ketuk & Telusuri",
+    "zoom": "Zoom",
+    "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
+    "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu."
   }
 }

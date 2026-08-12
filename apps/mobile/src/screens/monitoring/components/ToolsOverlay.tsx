@@ -20,6 +20,8 @@ interface ToolsOverlayProps {
   resetHeading: () => void;
   visibleLayers: MonitoringV2VisibleLayers;
   onSetLayer: (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => void;
+  mode: 'drill' | 'zoom';
+  onSetMode: (mode: 'drill' | 'zoom') => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }
@@ -140,6 +142,8 @@ export function ToolsOverlay({
   resetHeading,
   visibleLayers,
   onSetLayer,
+  mode,
+  onSetMode,
   filterModalVisible,
   setFilterModalVisible,
 }: ToolsOverlayProps): React.JSX.Element {
@@ -159,6 +163,17 @@ export function ToolsOverlay({
       <ToolActionRow icon="minus" label={t('monitoring:tools.zoomOut')} onPress={onZoomOut} />
       <ToolActionRow icon="crosshairs-gps" label={t('monitoring:tools.myLocation')} onPress={onMyLocation} />
       <ToolActionRow icon="compass-outline" label={t('monitoring:tools.resetHeading')} onPress={resetHeading} />
+
+      {/* Monitoring mode (ADR-060) — how much of the hierarchy draws at once. */}
+      <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
+        {t('monitoring:mode.title')}
+      </NBText>
+      <ToolActionRow
+        icon={mode === 'zoom' ? 'magnify-expand' : 'gesture-tap'}
+        label={mode === 'zoom' ? t('monitoring:mode.zoom') : t('monitoring:mode.drill')}
+        active={mode === 'zoom'}
+        onPress={() => onSetMode(mode === 'zoom' ? 'drill' : 'zoom')}
+      />
 
       {/* Map-layer visibility toggles */}
       <NBText variant="mono-sm" uppercase style={styles.toolsHeader}>
