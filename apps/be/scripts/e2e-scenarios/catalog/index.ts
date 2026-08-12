@@ -2,6 +2,7 @@ import type { Scenario } from '../types';
 import { ATTENDANCE } from './attendance';
 import { INTEGRITY } from './integrity';
 import { LIFECYCLE } from './lifecycle';
+import { MAPMODES } from './mapmodes';
 import { MONITORING } from './monitoring';
 import { PRESENCE } from './presence';
 import { SCHEDULING } from './scheduling';
@@ -16,6 +17,7 @@ import { SCHEDULING } from './scheduling';
 export const CATALOG: Scenario[] = [
   ...SCHEDULING,
   ...MONITORING,
+  ...MAPMODES,
   ...LIFECYCLE,
   ...PRESENCE,
   ...ATTENDANCE,
