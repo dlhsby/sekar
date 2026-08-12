@@ -21,28 +21,28 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should be at FieldHomeScreen (or onboarding if first login)
 # Assuming onboarding is complete or skipped
 - tryTapOn:
     text: Clock In|Masuk Kerja
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # If clock-in button is not directly visible, scroll
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Look for clock-in button
 - tryTapOn:
     id: absensi-clock-button
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should be at ClockInOutScreen
 # MANUAL: GPS location is typically mocked/stubbed in CI. On-device, the app
 #         requests the device's actual location via permissionManager + Geolocation.
@@ -60,8 +60,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Ambil Foto|Selfie|Foto Diri
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Camera would open; in CI, this is stubbed or skipped.
 # For now, assume a default/mock selfie is provided.
 
@@ -69,14 +69,14 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Masuk|Clock In|Mulai Kerja
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # After successful clock-in, should show success toast + return to home
 - assertVisible:
     text: Berhasil|Sukses
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should be back at home with the shift timer visible
 - assertVisible:
     text: Beranda|Waktu Kerja
@@ -87,20 +87,20 @@ appId: com.wahyutrip.sekar
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap clock-out button
 - tryTapOn:
     text: Keluar|Clock Out
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # May see a confirmation dialog
 - tryTapOn:
     text: Konfirmasi|Ya|Lanjut
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Clock-out may also show success
 - assertVisible:
     text: Berhasil|Sukses

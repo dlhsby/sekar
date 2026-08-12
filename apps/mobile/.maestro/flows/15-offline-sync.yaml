@@ -25,20 +25,20 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Navigate to clock-in screen
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tryTapOn:
     text: Clock In|Masuk Kerja
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # MANUAL: Enable airplane mode via adb or device UI
 # adb command: adb shell settings put global airplane_mode_on 1 && adb shell am broadcast -a android.intent.action.AIRPLANE_MODE --ez state true
 # Or manually toggle in device settings.
@@ -56,8 +56,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Clock In|Masuk Kerja|Mulai
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should queue the action and show a queued message
 - assertVisible:
     text: Antri|Offline|Tersimpan|Pending
@@ -71,8 +71,8 @@ appId: com.wahyutrip.sekar
 # or via a custom Maestro extension with native adb integration.
 
 # After reconnecting (manual step), wait for sync
-- wait: 5000
-
+- waitForAnimationToEnd:
+    timeout: 5000
 # Verify that the queued clock-in has been synced (banner disappears, shift timer appears)
 - assertVisible:
     text: Berhasil|Waktu Kerja|Sukses Masuk

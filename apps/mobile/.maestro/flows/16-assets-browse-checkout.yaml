@@ -25,28 +25,28 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should be at FieldHomeScreen (Beranda)
 - assertVisible:
     text: Beranda
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Navigate to Assets tab by tapping the "Aset" tab label
 # scroll down to see bottom tabs if needed
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap Assets tab (label: "Aset")
 - tryTapOn:
     text: Aset
 
-- wait: 1500
-
+- waitForAnimationToEnd:
+    timeout: 1500
 # Should be at AssetListScreen
 - assertVisible:
     text: Aset|Asset
@@ -55,20 +55,20 @@ appId: com.wahyutrip.sekar
 - assertVisible:
     text: Cari aset
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Verify filter tabs are visible (at least one: "Semua", "Tersedia", "Saya")
 - assertVisible:
     text: Semua|Tersedia
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap on "Tersedia" (available) filter to show only available assets
 - tapOn:
     text: Tersedia
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should now see filtered available assets
 # Look for an asset card in the list (assets should have visible names or generic text)
 # We use a generic tap on a visible text that appears on asset cards.
@@ -79,8 +79,8 @@ appId: com.wahyutrip.sekar
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Try to find and tap an asset (this is fragile without testIDs; we look for
 # common asset names or attempt a coordinate-based tap). For now, we'll use
 # tryTapOn with a generic pattern or text that might appear on an asset card.
@@ -90,100 +90,100 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Baik|Good|Buruk|Fair
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # If the above didn't work (no asset visible), scroll back and try again
 - scroll:
     direction: up
     duration: 300
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Should now be at AssetDetailScreen ("Detail Aset")
 - tryAssertVisible:
     text: Detail Aset
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # If not at detail screen, scroll down on list and tap first visible element
 - scroll:
     direction: down
     duration: 500
 
-- wait: 300
-
+- waitForAnimationToEnd:
+    timeout: 300
 # Try again to open an asset (this time, tap generically on list)
 - tryTapOn:
     text: Digunakan|In Use|Available|Tersedia
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Now should be at AssetDetailScreen
 - assertVisible:
     text: Detail Aset|Pinjam|Kembalikan
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Look for the "Pinjam Aset" (Checkout) button
 # If visible, tap it; otherwise, scroll to find it
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tryTapOn:
     text: Pinjam Aset|Pinjam|Checkout
 
-- wait: 1500
-
+- waitForAnimationToEnd:
+    timeout: 1500
 # Should now be at AssetCheckoutScreen ("Pinjam Aset")
 - assertVisible:
     text: Pinjam Aset|Condition
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Select condition (e.g., "Baik" / Good)
 # The ConditionSelector component offers radio/button options: Baik, Cukup, Buruk, Rusak, Tidak Layak
 - tryTapOn:
     text: Baik
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # If "Baik" not found, try other condition labels
 - tryTapOn:
     text: Good|Kondisi
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Tap notes field (optional, but tests form interaction)
 - scroll:
     direction: down
     duration: 400
 
-- wait: 300
-
+- waitForAnimationToEnd:
+    timeout: 300
 - tryTapOn:
     text: Catatan|Keterangan|Notes
 
-- wait: 300
-
+- waitForAnimationToEnd:
+    timeout: 300
 - inputText: Aset dalam kondisi baik, tidak ada kerusakan
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Scroll down to find submit button ("Pinjam" or "Simpan")
 - scroll:
     direction: down
     duration: 500
 
-- wait: 300
-
+- waitForAnimationToEnd:
+    timeout: 300
 - tryTapOn:
     text: Pinjam|Simpan|Submit|Confirm
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # After successful checkout, should see success toast or return to Assets list
 - tryAssertVisible:
     text: Berhasil|Sukses|Terjadi kesalahan

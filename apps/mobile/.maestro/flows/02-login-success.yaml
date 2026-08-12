@@ -22,8 +22,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should reach the home screen; we check for a testID we know exists in FieldHomeScreen
 # (the absensi card is present in the satgas/field worker home)
 # If onboarding triggers (first login ever), we'll see the onboarding welcome instead

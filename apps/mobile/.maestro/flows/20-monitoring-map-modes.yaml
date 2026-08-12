@@ -1,0 +1,122 @@
+appId: com.wahyutrip.sekar
+---
+# 20-monitoring-map-modes.yaml
+# Monitoring map settings (ADR-060) — the wrench sheet: mode + layer selects.
+# Scenario: log in as a supervisor, open the map, open the tools sheet, switch to
+#          zoom mode, and cycle the KAWASAN layer through its four options.
+#
+# Why this flow exists: mobile drilled THROUGH the kawasan tier while never
+# drawing it — the boundary payload's regions[] had no field on the client and
+# was discarded on arrival. There was no control for it either, so nothing on
+# screen could have revealed the gap. The kawasan row below is the regression.
+#
+# NOTE ON SYNTAX: this flow uses `extendedWaitUntil` / `waitForAnimationToEnd`.
+# Maestro has no bare `wait` command — every other flow in this directory uses
+# one and therefore fails to parse on Maestro 2.x.
+
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible:
+      id: username-input
+    timeout: 20000
+
+# kepala_rayon lands on the rayon scope; superadmin would open at city.
+- tapOn:
+    id: username-input
+- inputText: kepala_rayon_pusat_1
+
+- tapOn:
+    id: password-input
+- inputText: 12345678
+
+- tapOn:
+    id: login-button
+
+- extendedWaitUntil:
+    visible:
+      text: "Beranda|Monitoring|Peta"
+    timeout: 30000
+
+# Open the map dashboard
+- tapOn:
+    text: "Monitoring|Peta"
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# The tools (wrench) FAB owns Mode + the layer selects.
+- tapOn:
+    text: "Alat peta|Alat"
+
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# ── Mode ────────────────────────────────────────────────────────────────────
+# Default is tap-to-drill, so nobody's map gets heavier without asking.
+- assertVisible:
+    text: "Mode Monitoring|Monitoring Mode"
+
+- assertVisible:
+    text: "Ketuk & Telusuri|Tap & Drill"
+
+# Switch to zoom: every tier of the subtree draws at once.
+- tapOn:
+    text: "Ketuk & Telusuri|Tap & Drill"
+
+- extendedWaitUntil:
+    visible:
+      text: "Zoom"
+    timeout: 10000
+
+# ── Layers ──────────────────────────────────────────────────────────────────
+- assertVisible:
+    text: "Tampilan|Lapisan"
+
+# Kawasan is the row that did not exist before — mobile could neither show nor
+# hide a tier it drilled through.
+- assertVisible:
+    text: "Batas Kawasan|Kawasan"
+
+# Each geo row cycles Semua → Batas saja → Marker saja → Sembunyikan.
+- assertVisible:
+    text: "Semua"
+
+- tapOn:
+    text: "Batas Kawasan|Kawasan"
+
+- extendedWaitUntil:
+    visible:
+      text: "Batas saja"
+    timeout: 8000
+
+- tapOn:
+    text: "Batas Kawasan|Kawasan"
+
+- extendedWaitUntil:
+    visible:
+      text: "Marker saja"
+    timeout: 8000
+
+- tapOn:
+    text: "Batas Kawasan|Kawasan"
+
+- extendedWaitUntil:
+    visible:
+      text: "Sembunyikan"
+    timeout: 8000
+
+# Petugas + Tim are ONE control: "Tim on, Petugas off" drew an empty map and is
+# now unrepresentable rather than merely discouraged.
+- assertVisible:
+    text: "Petugas & Tim|Personnel"
+
+# MANUAL: with the sheet closed, confirm on-device that
+#   1. KAWASAN OUTLINES actually draw (they never did before this change) and
+#      disappear when the row reads Sembunyikan;
+#   2. "Batas saja" keeps the outline but removes the count pin — the two were
+#      inseparable under the old boolean toggles;
+#   3. in Zoom mode the city view draws every rayon, kawasan and lokasi at once.
+#      On a large dataset this is the heavy case by design; note whether it is
+#      usable on the target device, because that is the trade the client accepted.

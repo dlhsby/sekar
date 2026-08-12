@@ -20,8 +20,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Navigate to home and find overtime option
 # Overtime is typically in a drawer/menu or a dedicated tab
 # For this test, we navigate via menu or search for "Lembur"
@@ -29,25 +29,25 @@ appId: com.wahyutrip.sekar
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Try to find overtime in nav (may be in a drawer or bottom tabs)
 - tryTapOn:
     text: Lembur|Overtime|Overtime Request
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # If not found, try opening a menu
 - tryTapOn:
     text: Menu|☰|More
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 - tryTapOn:
     text: Lembur
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should be at OvertimeListScreen
 - assertVisible:
     text: Lembur|Overtime
@@ -56,8 +56,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Mulai Lembur|Start Overtime|Buat|Add
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should navigate to OvertimeDetailScreen or OvertimeSubmitScreen
 - assertVisible:
     text: Lembur|Overtime|Mulai
@@ -66,47 +66,47 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Mulai|Start|Begin
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # May show a form or confirmation
 - tryTapOn:
     text: Konfirmasi|Ya|Lanjut
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Overtime should now be running (timer visible)
 - assertVisible:
     text: Waktu|Timer|Lembur Berjalan
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Now submit overtime with optional notes
 - scroll:
     direction: down
     duration: 500
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Look for submit button
 - tryTapOn:
     text: Kirim|Submit|Selesai Lembur
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # May see a form for overtime details (activity type, notes)
 - tryTapOn:
     text: Aktivitas|Catatan|Notes
 
-- wait: 300
-
+- waitForAnimationToEnd:
+    timeout: 300
 - inputText: Lembur untuk menyelesaikan patroli area
 
 # Submit
 - tryTapOn:
     text: Kirim|Submit|Simpan
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should show success
 - assertVisible:
     text: Berhasil|Sukses|Lembur tersimpan

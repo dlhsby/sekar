@@ -21,8 +21,8 @@ appId: com.wahyutrip.sekar
 - tapOn:
     id: login-button
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should reach coordinator home (different from satgas)
 - assertVisible:
     text: Beranda|Monitoring|Koordinator
@@ -31,8 +31,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Monitoring|Workers|Pekerja|Tim
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should show a list of workers
 - assertVisible:
     text: Satgas|Pekerja|Worker
@@ -41,8 +41,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: satgas1|Satgas 1|Worker Detail
 
-- wait: 1000
-
+- waitForAnimationToEnd:
+    timeout: 1000
 # Should see worker detail screen
 - assertVisible:
     text: Detail|Profil|Informasi
@@ -51,8 +51,8 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Penugasan Ulang|Reassign|Ubah Area
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Should see reassignment modal/sheet
 - assertVisible:
     text: Penugasan|Area|Rayon
@@ -61,20 +61,20 @@ appId: com.wahyutrip.sekar
 - tryTapOn:
     text: Pilih Area|Select Area|Area Baru
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Pick an area from the list
 - tryTapOn:
     text: Area 1|Area Pusat|Area Barat
 
-- wait: 500
-
+- waitForAnimationToEnd:
+    timeout: 500
 # Confirm reassignment
 - tryTapOn:
     text: Konfirmasi|Ya|Simpan|Terapkan
 
-- wait: 2000
-
+- waitForAnimationToEnd:
+    timeout: 2000
 # Should show success
 - assertVisible:
     text: Berhasil|Sukses|Penugasan berhasil

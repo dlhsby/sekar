@@ -39,6 +39,8 @@ flows:
     tags: [phase-5, analytics, worker, ui]
   - name: "19-analytics-team.yaml"
     tags: [phase-5, analytics, team, ui]
+  - name: "20-monitoring-map-modes.yaml"
+    tags: [monitoring, map, ui]
 
 # Tags explanation:
 # smoke      - Critical entry/auth flows; should pass on every build
