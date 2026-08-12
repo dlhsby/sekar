@@ -58,7 +58,8 @@
     "recentTitle": "Recent Searches",
     "clearRecent": "Clear",
     "recentEmpty": "No recent searches yet",
-    "noResults": "No results"
+    "noResults": "No results",
+    "regionLabel": "Kawasan"
   },
   "status": {
     "active": "Active",

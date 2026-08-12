@@ -31,6 +31,7 @@ import {
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
 import { useMonitoringMode } from '@/lib/monitoring/mapMode';
+import { useGeoIndex } from '@/lib/monitoring/useGeoIndex';
 import { statusToActivity } from '@/lib/monitoring/markers';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearch';
@@ -166,6 +167,10 @@ export default function MonitoringPage() {
   // Map layer visibility + monitoring mode (both persisted per browser).
   const { layers, setLayer } = useMonitoringLayers();
   const { mode, setMode } = useMonitoringMode();
+  // Every rayon/kawasan/lokasi by name, independent of the drill scope — search
+  // used to read the map's scope-bound boundaries, so at the DEFAULT city view
+  // no lokasi could be found at all (`level='district'` returns no areas).
+  const geoIndex = useGeoIndex(canMonitor);
   const isZoom = mode === 'zoom';
 
   // Keep view in sync when the user (role) resolves.
@@ -387,6 +392,14 @@ export default function MonitoringPage() {
       focusOn(result.latitude, result.longitude, 16);
     } else if (result.type === 'area') {
       drillToLocation(result.id, result.name, result.districtId ?? view.districtId, result.latitude, result.longitude);
+    } else if (result.type === 'region') {
+      drillToRegion(
+        result.id,
+        result.name,
+        result.districtId ?? view.districtId,
+        result.latitude,
+        result.longitude
+      );
     } else {
       drillToDistrict(result.id, result.name, result.latitude, result.longitude);
     }
@@ -560,20 +573,35 @@ export default function MonitoringPage() {
   // for the side panel.
   const listNodes = useMemo<AggregateNode[]>(() => {
     if (isZoom) {
-      // One payload, sliced to the same tier drill mode would show — the sidebar
-      // stays a list of the CURRENT level's children even though the map now
-      // draws the whole subtree. (Grouping the full subtree in the panel is its
-      // own change.)
+      // The panel lists the SAME set the map draws — the whole subtree, ordered
+      // rayon → its kawasan → its lokasi, so the list reads as the hierarchy
+      // rather than as a flat dump. Anything else and the Wilayah tab would
+      // disagree with the map about what "here" contains.
       const nodes = allAgg.data?.nodes ?? [];
       if (scope === 'location') return [];
-      if (scope === 'region') return nodes.filter((n) => n.type === 'location' && n.region_id === view.id);
-      if (scope === 'district') {
-        const kawasan = nodes.filter((n) => n.type === 'region');
-        return kawasan.length > 0
-          ? kawasan
-          : nodes.filter((n) => n.type === 'location' && !n.region_id);
+      if (scope === 'region') {
+        return nodes.filter((n) => n.type === 'location' && n.region_id === view.id);
       }
-      return nodes.filter((n) => n.type === 'district');
+
+      const ordered: AggregateNode[] = [];
+      const districts =
+        scope === 'district'
+          ? nodes.filter((n) => n.type === 'district' && n.id === view.id)
+          : nodes.filter((n) => n.type === 'district');
+      for (const d of districts) {
+        // At district scope the rayon itself is the node you are standing on;
+        // the breadcrumb already names it, so don't repeat it as a row.
+        if (scope !== 'district') ordered.push(d);
+        const kawasan = nodes.filter((n) => n.type === 'region' && n.district_id === d.id);
+        const lokasi = nodes.filter((n) => n.type === 'location' && n.district_id === d.id);
+        for (const k of kawasan) {
+          ordered.push(k);
+          ordered.push(...lokasi.filter((l) => l.region_id === k.id));
+        }
+        // Lokasi with no kawasan sit directly under the rayon.
+        ordered.push(...lokasi.filter((l) => !l.region_id));
+      }
+      return ordered;
     }
     if (scope === 'region') {
       // At region scope: filter the district's location nodes by region_id.
@@ -1201,7 +1229,7 @@ export default function MonitoringPage() {
           {/* Search (recent + grouped results + click-to-locate) */}
           <MonitoringSearch
             workers={workers}
-            districts={boundaries?.districts}
+            geo={geoIndex}
             onSelect={handleSearchSelect}
             className="max-w-md flex-1"
           />
@@ -1321,6 +1349,7 @@ export default function MonitoringPage() {
             nodes={filteredNodes}
             onDrillNode={onDrillListNode}
             onNodeDetail={(n) => setDetailNodeId(n.id)}
+            showNodeTier={isZoom}
             activeGeoId={activeGeoId}
             selectedId={selectedId}
             selectedWorker={

@@ -58,7 +58,8 @@
     "recentTitle": "Pencarian Terakhir",
     "clearRecent": "Hapus",
     "recentEmpty": "Belum ada pencarian terakhir",
-    "noResults": "Tidak ada hasil"
+    "noResults": "Tidak ada hasil",
+    "regionLabel": "Kawasan"
   },
   "status": {
     "active": "Aktif",

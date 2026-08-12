@@ -37,6 +37,8 @@ export interface MonitoringSidebarProps {
   onDrillNode: (node: AggregateNode) => void;
   /** Opens a node's detail card from the Wilayah row's ⓘ button. */
   onNodeDetail?: (node: AggregateNode) => void;
+  /** Label + indent each row by tier — used when the list spans the whole subtree. */
+  showNodeTier?: boolean;
   /** Geo-filter spotlight id — dims non-matching Wilayah rows. */
   activeGeoId?: string | null;
   selectedId: string | null;
@@ -218,6 +220,7 @@ export function MonitoringSidebar({
   nodes,
   onDrillNode,
   onNodeDetail,
+  showNodeTier,
   activeGeoId,
   selectedId,
   selectedWorker,
@@ -289,6 +292,7 @@ export function MonitoringSidebar({
                 nodes={nodes}
                 onDrill={onDrillNode}
                 onDetail={onNodeDetail}
+                showTier={showNodeTier}
                 activeGeoId={activeGeoId}
               />
             ) : (
