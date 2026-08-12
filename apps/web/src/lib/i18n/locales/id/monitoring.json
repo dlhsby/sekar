@@ -28,7 +28,8 @@
     "clockedInLabel": "Hadir",
     "belumHadirLabel": "Belum Hadir",
     "tidakHadirLabel": "Tidak Hadir",
-    "activeInsideLabel": "Aktif di area"
+    "activeInsideLabel": "Aktif di area",
+    "detailLabel": "Detail {{name}}"
   },
   "surabaya": {
     "title": "Surabaya",
@@ -57,7 +58,8 @@
     "recentTitle": "Pencarian Terakhir",
     "clearRecent": "Hapus",
     "recentEmpty": "Belum ada pencarian terakhir",
-    "noResults": "Tidak ada hasil"
+    "noResults": "Tidak ada hasil",
+    "regionLabel": "Kawasan"
   },
   "status": {
     "active": "Aktif",
@@ -247,7 +249,10 @@
     "contactTitle": "Hubungi",
     "phoneLabel": "Telepon",
     "districtLabel": "Rayon:",
-    "areaLabel": "Area:"
+    "areaLabel": "Area:",
+    "reassignmentHistory": "Riwayat Pemindahan",
+    "loadingHistory": "Memuat riwayat…",
+    "noHistory": "Belum ada riwayat pemindahan"
   },
   "sidePanel": {
     "title": "Petugas",
@@ -348,5 +353,43 @@
       "izin": "Izin",
       "libur": "Libur"
     }
+  },
+  "mode": {
+    "title": "Mode Monitoring",
+    "drill": "Ketuk & Telusuri",
+    "zoom": "Zoom",
+    "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
+    "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu."
+  },
+  "lifecycle": {
+    "late": "Terlambat",
+    "luarJadwal": "Luar Jadwal",
+    "lembur": "Lembur",
+    "lupaClockOut": "Lupa Clock-out",
+    "state": {
+      "tidak_bertugas": "Tidak Bertugas",
+      "belum_hadir": "Belum Hadir",
+      "terlambat": "Terlambat",
+      "bertugas": "Bertugas",
+      "pulang": "Pulang",
+      "tidak_hadir": "Tidak Hadir"
+    },
+    "leave": {
+      "cuti": "Cuti",
+      "sakit": "Sakit",
+      "izin": "Izin",
+      "libur": "Libur"
+    }
+  },
+  "boundaryDetail": {
+    "understaffed": "Kekurangan personel",
+    "sufficient": "Cukup",
+    "areaLabel": "Area",
+    "understaffedLabel": "Kurang Staf",
+    "activeLabel": "Aktif",
+    "assignedLabel": "Petugas",
+    "staffingTitle": "Kebutuhan per Jabatan",
+    "plantsLabel": "Tanaman",
+    "plantsCount": "{{count}} jenis · {{notable}} heritage"
   }
 }

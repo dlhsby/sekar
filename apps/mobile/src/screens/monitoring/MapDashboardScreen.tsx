@@ -34,8 +34,10 @@ import { getRoleIcon, SURABAYA_CITY_REGION } from '../../utils/mapUtils';
 import { userAxes } from '../../utils/statusHelpers';
 import { useMapAutoFocus } from '../../hooks/useMapAutoFocus';
 import type { DistrictBoundary, AreaBoundary } from '../../types/models.types';
+import { showsWorkerPins } from '../../utils/layerVisibility';
 import {
-  toggleLayer,
+  setLayer,
+  setMode,
   fetchAggregate,
   initMonitoringView,
   drillTo,
@@ -77,6 +79,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     useSelector((state: RootState) => state.monitoring);
   const currentUser = useSelector((state: RootState) => state.auth.user);
   const visibleLayers = useSelector((state: RootState) => state.monitoringV2.visibleLayers);
+  const mode = useSelector((state: RootState) => state.monitoringV2.mode);
   const view = useSelector((state: RootState) => state.monitoringV2.view);
   const floor = useSelector((state: RootState) => state.monitoringV2.floor);
   const aggregate = useSelector((state: RootState) => state.monitoringV2.aggregate);
@@ -85,7 +88,7 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Workers render at EVERY drill tier now (city/district/region/location), each
   // filtered to the current scope by `display_scope` (see useLiveUsersFiltering).
   // Gated only by the layer toggle.
-  const showWorkers = visibleLayers.workers;
+  const showWorkers = showsWorkerPins(visibleLayers.personnel);
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -121,7 +124,7 @@ export function MapDashboardScreen(): React.JSX.Element {
     useMapOperations(mapRef, currentRegion);
 
   const { visibleUsers, teamBubbles, useClustering, clusters, labelMode, staffedAreas, totalAreas, lastUpdated } =
-    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId);
+    useLiveUsersFiltering(liveUsers, activityFilter, filters, visibleLayers, currentRegion, boundaries, scope, view.id, selectedTeamId, mode);
 
 
   // Initialise the unified drill view + floor from the viewer's role.
@@ -330,9 +333,16 @@ export function MapDashboardScreen(): React.JSX.Element {
   );
 
   // Layer toggle handler
-  const handleToggleLayer = useCallback(
-    (layer: string | number | symbol) => {
-      dispatch(toggleLayer(layer as keyof MonitoringV2VisibleLayers));
+  const handleSetMode = useCallback(
+    (next: 'drill' | 'zoom') => {
+      dispatch(setMode(next));
+    },
+    [dispatch],
+  );
+
+  const handleSetLayer = useCallback(
+    (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => {
+      dispatch(setLayer({ key, value }));
     },
     [dispatch],
   );
@@ -539,6 +549,8 @@ export function MapDashboardScreen(): React.JSX.Element {
                 scope={scope}
                 districtId={view.districtId ?? view.id}
                 areaId={scope === 'location' ? view.id : null}
+                regionId={scope === 'region' ? view.id : view.regionId}
+                mode={mode}
                 rosterById={rosterById}
                 nodeMarkers={nodeMarkers}
                 onNodeDrill={handleNodeDrill}
@@ -612,7 +624,9 @@ export function MapDashboardScreen(): React.JSX.Element {
             onZoomOut={handleZoomOut}
             onMyLocation={handleMyLocation}
             visibleLayers={visibleLayers}
-            onToggleLayer={handleToggleLayer}
+            onSetLayer={handleSetLayer}
+            mode={mode}
+            onSetMode={handleSetMode}
             filterModalVisible={filterModalVisible}
             setFilterModalVisible={setFilterModalVisible}
           />

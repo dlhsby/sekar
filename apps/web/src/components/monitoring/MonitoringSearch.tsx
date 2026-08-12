@@ -12,7 +12,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, X, History, MapPin, Building2, User } from 'lucide-react';
+import { Search, X, History, MapPin, Building2, Layers, User } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 import { useDebounce } from '@/lib/hooks/useDebounce';
 import { roleLabel } from '@/lib/constants/roles';
@@ -24,11 +24,12 @@ import {
 import { useMonitoringSearchQuery } from '@/lib/api/monitoring-v2';
 import { getRecentSearches, addRecentSearch, clearRecentSearches } from '@/lib/monitoring/recentSearches';
 import type { SnapshotWorker } from '@/lib/api/monitoring-v2';
-import type { DistrictBoundary } from '@/lib/api/monitoring-types';
+import type { GeoIndexEntry } from '@/lib/monitoring/useGeoIndex';
 
 export interface MonitoringSearchProps {
   workers: SnapshotWorker[];
-  districts: DistrictBoundary[] | undefined;
+  /** Full geography index — every tier, independent of the current drill scope. */
+  geo: GeoIndexEntry[] | undefined;
   onSelect: (result: MonitoringSearchResult) => void;
   className?: string;
 }
@@ -36,6 +37,7 @@ export interface MonitoringSearchProps {
 const TYPE_ICON: Record<SearchResultType, typeof MapPin> = {
   petugas: User,
   area: MapPin,
+  region: Layers,
   district: Building2,
 };
 
@@ -66,7 +68,7 @@ function ResultRow({
   );
 }
 
-export function MonitoringSearch({ workers, districts, onSelect, className }: MonitoringSearchProps) {
+export function MonitoringSearch({ workers, geo, onSelect, className }: MonitoringSearchProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -86,13 +88,14 @@ export function MonitoringSearch({ workers, districts, onSelect, className }: Mo
     () => ({
       petugas: t('monitoring:search.personnelLabel'),
       area: t('monitoring:search.areaLabel'),
+      region: t('monitoring:search.regionLabel'),
       district: t('monitoring:search.districtLabel'),
     }),
     [t]
   );
 
   // Client-side search (area + district) and local petugas from snapshot.
-  const clientResults = useMonitoringSearch(workers, districts, query, labels);
+  const clientResults = useMonitoringSearch(workers, geo, query, labels);
 
   // Merge server petugas with client petugas, deduped by id (server wins).
   const mergedResults = useMemo(() => {
@@ -128,15 +131,21 @@ export function MonitoringSearch({ workers, districts, onSelect, className }: Mo
     const sections = [
       { title: labels.petugas, type: 'petugas' as const, data: merged },
       { title: labels.area, type: 'area' as const, data: clientResults.area },
+      { title: labels.region, type: 'region' as const, data: clientResults.region },
       { title: labels.district, type: 'district' as const, data: clientResults.district },
     ].filter((s) => s.data.length > 0);
 
     return {
       petugas: merged,
       area: clientResults.area,
+      region: clientResults.region,
       district: clientResults.district,
       sections,
-      total: merged.length + clientResults.area.length + clientResults.district.length,
+      total:
+        merged.length +
+        clientResults.area.length +
+        clientResults.region.length +
+        clientResults.district.length,
     };
   }, [serverSearchResult, clientResults, labels]);
 

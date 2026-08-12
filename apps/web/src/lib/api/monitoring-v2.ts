@@ -153,8 +153,15 @@ export interface AggregateNode extends AggregateNodeMarker {
   region_id?: string | null;
 }
 
+/**
+ * Which slice of the hierarchy an aggregate call returns. `all` is zoom mode:
+ * every tier in one payload, nodes discriminated by `type` and parented by
+ * `district_id` / `region_id`.
+ */
+export type AggregateScope = 'city' | 'district' | 'region' | 'all';
+
 export interface AggregateResponse {
-  scope: 'city' | 'district' | 'region';
+  scope: AggregateScope;
   scope_id: string | null;
   nodes: AggregateNode[];
   totals: AggregateStatusCounts;
@@ -176,9 +183,14 @@ export const aggregateKeys = {
  * or area rollups (region scope) for the map's "Ringkasan" bubbles. No worker coordinates,
  * so it stays light even city-wide. WS staffing events invalidate it; a slow poll is the
  * safety net.
+ *
+ * `scope='all'` is zoom mode's single call: rayon + kawasan + lokasi nodes together,
+ * optionally narrowed to one rayon's subtree by `id`. It replaces the 1 + 2N drill
+ * requests the client would otherwise fan out, and the server composes it from the
+ * same per-tier builders, so a node's counts match whichever scope asked.
  */
 export function useMonitoringAggregate(
-  scope: 'city' | 'district' | 'region',
+  scope: AggregateScope,
   id?: string,
   enabled = true
 ) {

@@ -7,10 +7,14 @@
  * - `applyPatch` uses Immer's draft mutation (enabled by RTK's createSlice) to
  *   update a single worker in-place without rebuilding the full array.
  * - `fetchSnapshot` hits GET /monitoring/snapshot and stores the full response.
- * - `toggleLayer` flips a single boolean in `visibleLayers`.
+ * - `setLayer` sets one entry in `visibleLayers` (four-way for the geo tiers).
  */
 
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import {
+  DEFAULT_VISIBLE_LAYERS,
+  type MonitoringV2VisibleLayers as VisibleLayers,
+} from '../../utils/layerVisibility';
 import type { LiveUser, AggregateNode, MonitoringAggregateResponse } from '../../types/models.types';
 import { getMonitoringAggregate } from '../../services/api/monitoringApi';
 import apiClient from '../../services/api/apiClient';
@@ -25,13 +29,17 @@ export interface MonitoringV2Snapshot {
   generated_at: string | null;
 }
 
-export interface MonitoringV2VisibleLayers {
-  workers: boolean;
-  plants: boolean;
-  overdue: boolean;
-  districts: boolean;
-  areas: boolean;
-}
+// Layer vocabulary + predicates live in a plain module (not the store): they are
+// pure functions about a VALUE, and keeping them here forced every test that
+// mocked this slice to stub them as well.
+/** Monitoring map mode (ADR-060) — the mobile twin of web's `mapMode`. */
+export type MonitoringMode = 'drill' | 'zoom';
+
+export type {
+  LayerVisibility,
+  PersonnelVisibility,
+  MonitoringV2VisibleLayers,
+} from '../../utils/layerVisibility';
 
 export type MonitoringScope = 'city' | 'district' | 'region' | 'location';
 
@@ -53,7 +61,14 @@ export interface MonitoringView {
 
 export interface MonitoringV2State {
   snapshot: MonitoringV2Snapshot;
-  visibleLayers: MonitoringV2VisibleLayers;
+  visibleLayers: VisibleLayers;
+  /**
+   * How much of the hierarchy the map shows at once (ADR-060). `drill` renders a
+   * worker at their own schedule tier and one level of children; `zoom` renders
+   * every tier in the subtree and everyone standing in it. Modes change what is
+   * DRAWN, never what is counted.
+   */
+  mode: MonitoringMode;
   selectedUserId: string | null;
   selectedAreaId: string | null;
   clusterZoomThreshold: number;
@@ -90,13 +105,10 @@ const initialState: MonitoringV2State = {
     workers: [],
     generated_at: null,
   },
-  visibleLayers: {
-    workers: true,
-    plants: false,
-    overdue: false,
-    districts: true,
-    areas: true,
-  },
+  visibleLayers: { ...DEFAULT_VISIBLE_LAYERS },
+  // Drill stays the default so nobody's map gets heavier without asking — the
+  // same choice web makes.
+  mode: 'drill',
   selectedUserId: null,
   selectedAreaId: null,
   /** lat-delta threshold below which individual markers are shown instead of clusters */
@@ -203,11 +215,26 @@ const monitoringV2Slice = createSlice({
     /**
      * Toggle a single layer's visibility in the map toggle sheet.
      */
-    toggleLayer(
+    /** Switch between tap-to-drill and zoom mode (ADR-060). */
+    setMode(state, action: PayloadAction<MonitoringMode>) {
+      state.mode = action.payload;
+    },
+
+    /**
+     * Set one layer's visibility. Replaces the old boolean `toggleLayer`: the
+     * geo tiers now carry a four-way choice, and Petugas/Tim collapsed into one
+     * value so "Tim on, Petugas off" — which drew nothing — cannot be expressed.
+     */
+    setLayer(
       state,
-      action: PayloadAction<keyof MonitoringV2VisibleLayers>,
+      action: PayloadAction<{ key: keyof VisibleLayers; value: string | boolean }>,
     ) {
-      state.visibleLayers[action.payload] = !state.visibleLayers[action.payload];
+      const { key, value } = action.payload;
+      if (key === 'plants') {
+        state.visibleLayers.plants = Boolean(value);
+        return;
+      }
+      (state.visibleLayers[key] as string) = String(value);
     },
 
     /**
@@ -389,7 +416,8 @@ const monitoringV2Slice = createSlice({
 export const {
   setSnapshot,
   applyPatch,
-  toggleLayer,
+  setLayer,
+  setMode,
   setSelectedUser,
   setSelectedArea,
   setClusterZoomThreshold,

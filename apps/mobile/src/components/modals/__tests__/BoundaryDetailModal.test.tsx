@@ -150,11 +150,13 @@ describe('BoundaryDetailModal', () => {
       expect(getByTestId('icon-office-building')).toBeTruthy();
     });
 
-    it('shows the Understaffed pill when the district is understaffed', () => {
+    it('shows the understaffed pill, in Indonesian, when the district is short', () => {
       const { getByText } = render(
         <BoundaryDetailModal type="district" data={mockDistrict} {...baseProps} />,
       );
-      expect(getByText('Understaffed')).toBeTruthy();
+      // Was the untranslated English word in the `id` bundle; web's canonical
+      // term is used on both platforms now.
+      expect(getByText('Kekurangan personel')).toBeTruthy();
     });
 
     it('renders the Area + Kurang Staf KPI tiles', () => {

@@ -39,6 +39,10 @@ interface BoundaryOverlayProps {
    */
   showDistricts?: boolean;
   showAreas?: boolean;
+  /** Draw kawasan outlines. New: the payload's `regions[]` was previously discarded. */
+  showRegions?: boolean;
+  /** At region scope, narrow to the drilled kawasan so the view actually narrows. */
+  regionId?: string | null;
   /**
    * Ratio **bubbles** — the drill-in targets for the CHILD level (district bubbles
    * at city scope, area bubbles at district scope). Each carries `hadir/terjadwal`
@@ -158,6 +162,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   onAreaBubblePress,
   showDistricts = true,
   showAreas = true,
+  showRegions = false,
+  regionId = null,
   showDistrictBubbles = false,
   showAreaBubbles = false,
   showDistrictMarker = false,
@@ -172,6 +178,30 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
 
   return (
     <>
+      {/* Kawasan polygons — between the rayon and its lokasi. At region scope
+          only the drilled kawasan draws, so the view narrows the way it does on
+          web; at district scope all of the rayon's kawasan draw. */}
+      {showRegions &&
+        districts.flatMap(district =>
+          (district.regions ?? [])
+            .filter(region => !regionId || region.id === regionId)
+            .flatMap(region =>
+              geometryToRings(region.boundary_polygon).map((ring, i) => (
+                <Polygon
+                  key={`region-poly-${region.id}-${i}`}
+                  coordinates={ring}
+                  strokeColor={region.border_color ?? districtColor(districtColors, district.id).stroke}
+                  fillColor={
+                    region.fill_color
+                      ? withAlpha(region.fill_color, region.fill_opacity ?? 0.1)
+                      : withAlpha(districtColor(districtColors, district.id).stroke, 0.08)
+                  }
+                  strokeWidth={1.5}
+                />
+              )),
+            ),
+        )}
+
       {/* Layer 1: District polygons (one <Polygon> per outer ring — handles
           both Polygon and MultiPolygon geometries). Each district gets its own
           fixed color so the 7 Rayon are visually separable. */}

@@ -7,7 +7,7 @@
 import monitoringV2Reducer, {
   setSnapshot,
   applyPatch,
-  toggleLayer,
+  setLayer,
   setSelectedUser,
   setSelectedArea,
   setClusterZoomThreshold,
@@ -77,17 +77,18 @@ describe('monitoringV2Slice', () => {
       expect(state.snapshot.workers).toEqual([]);
     });
 
-    it('starts with workers and districts layers visible', () => {
+    it('starts with every geo tier and personnel fully visible', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
-      expect(state.visibleLayers.workers).toBe(true);
-      expect(state.visibleLayers.districts).toBe(true);
-      expect(state.visibleLayers.areas).toBe(true);
+      expect(state.visibleLayers.district).toBe('all');
+      // Kawasan is new: the tier the map drills THROUGH previously had no layer.
+      expect(state.visibleLayers.kawasan).toBe('all');
+      expect(state.visibleLayers.lokasi).toBe('all');
+      expect(state.visibleLayers.personnel).toBe('all');
     });
 
-    it('starts with plants, overdue layers hidden', () => {
+    it('starts with the plants overlay hidden', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
       expect(state.visibleLayers.plants).toBe(false);
-      expect(state.visibleLayers.overdue).toBe(false);
     });
 
     it('starts with no selected user or area', () => {
@@ -185,45 +186,43 @@ describe('monitoringV2Slice', () => {
     });
   });
 
-  describe('toggleLayer', () => {
-    it('flips workers layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('workers'));
-      expect(state.visibleLayers.workers).toBe(false);
+  describe('setLayer', () => {
+    it('sets a geo tier to an explicit visibility', () => {
+      const state = monitoringV2Reducer(
+        undefined,
+        setLayer({ key: 'district', value: 'boundary' }),
+      );
+      expect(state.visibleLayers.district).toBe('boundary');
     });
 
-    it('flips plants layer from false to true', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('plants'));
+    it('collapses Petugas/Tim onto ONE value, so Tim-without-Petugas is unrepresentable', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: 'tim' }));
+      expect(state.visibleLayers.personnel).toBe('tim');
+    });
+
+    it('keeps plants a plain boolean', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'plants', value: true }));
       expect(state.visibleLayers.plants).toBe(true);
     });
 
-    it('flips overdue layer from false to true', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('overdue'));
-      expect(state.visibleLayers.overdue).toBe(true);
+    it('hides a tier outright', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'lokasi', value: 'none' }));
+      expect(state.visibleLayers.lokasi).toBe('none');
     });
 
-    it('flips districts layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('districts'));
-      expect(state.visibleLayers.districts).toBe(false);
+    it('can ask for markers without the outline — impossible before', () => {
+      // The old booleans governed the BOUNDARY only; node markers were always
+      // drawn and could not be hidden or requested on their own.
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'kawasan', value: 'marker' }));
+      expect(state.visibleLayers.kawasan).toBe('marker');
     });
 
-    it('flips areas layer from true to false', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('areas'));
-      expect(state.visibleLayers.areas).toBe(false);
-    });
-
-    it('double-toggle returns to original value', () => {
-      let state = monitoringV2Reducer(undefined, toggleLayer('workers'));
-      expect(state.visibleLayers.workers).toBe(false);
-      state = monitoringV2Reducer(state, toggleLayer('workers'));
-      expect(state.visibleLayers.workers).toBe(true);
-    });
-
-    it('toggling one layer does not affect others', () => {
-      const state = monitoringV2Reducer(undefined, toggleLayer('workers'));
+    it('setting one layer does not affect others', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: 'none' }));
       expect(state.visibleLayers.plants).toBe(false);
-      expect(state.visibleLayers.overdue).toBe(false);
-      expect(state.visibleLayers.districts).toBe(true);
-      expect(state.visibleLayers.areas).toBe(true);
+      expect(state.visibleLayers.district).toBe('all');
+      expect(state.visibleLayers.kawasan).toBe('all');
+      expect(state.visibleLayers.lokasi).toBe('all');
     });
   });
 

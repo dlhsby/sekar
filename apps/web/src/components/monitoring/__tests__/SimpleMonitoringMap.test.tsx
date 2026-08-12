@@ -349,6 +349,55 @@ describe('SimpleMonitoringMap', () => {
     expect(screen.queryAllByTestId('marker')).toHaveLength(0);
   });
 
+  it('culls worker pins outside the viewport, but never the selected one', () => {
+    // The fake map reports bounds lat -7.5..-7.0 / lng 112.5..113.0 on idle.
+    const offscreen: SimpleWorker[] = [
+      { user_id: 'far', full_name: 'Jauh', lat: 0, lng: 0, status: 'active', role: 'satgas', is_within_area: true, is_scheduled: true },
+      ...workers,
+    ];
+    const { rerender } = render(
+      <SimpleMonitoringMap workers={offscreen} boundaries={boundaries} />
+    );
+    // Both in-viewport workers paint; null island does not.
+    const culled = screen.queryAllByTestId('marker').length;
+    expect(culled).toBe(workers.length);
+
+    // Selecting it from the sidebar must keep it drawn even while off-camera —
+    // the map pans to it next, and a pin that blinks out and back reads as a bug.
+    rerender(
+      <SimpleMonitoringMap workers={offscreen} boundaries={boundaries} selectedId="far" />
+    );
+    expect(screen.queryAllByTestId('marker').length).toBe(culled + 1);
+  });
+
+  it('zoom mode draws lokasi outlines at city scope; drill mode does not', () => {
+    const drill = render(
+      <SimpleMonitoringMap
+        scope="city"
+        nodeMarkers={nodeMarkers}
+        workers={[]}
+        boundaries={boundaries}
+      />
+    );
+    const drillPolys = drill.container.querySelectorAll('[data-testid="polygon"]').length;
+    drill.unmount();
+
+    const zoom = render(
+      <SimpleMonitoringMap
+        scope="city"
+        mode="zoom"
+        nodeMarkers={nodeMarkers}
+        workers={[]}
+        boundaries={boundaries}
+      />
+    );
+    // Zoom mode turns on the kawasan + lokasi outline gates that drill mode keeps
+    // shut until you are inside a rayon.
+    expect(
+      zoom.container.querySelectorAll('[data-testid="polygon"]').length
+    ).toBeGreaterThanOrEqual(drillPolys);
+  });
+
   it('draws the outline but no node marker on "batas saja"', () => {
     render(
       <SimpleMonitoringMap

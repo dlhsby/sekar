@@ -17,6 +17,7 @@ import { useMapId } from '@/lib/api/config';
 import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
+import { type MonitoringMode, DEFAULT_MODE } from '@/lib/monitoring/mapMode';
 import {
   type MonitoringLayers,
   DEFAULT_LAYERS,
@@ -27,7 +28,7 @@ import {
   teamMembersOnly,
 } from '@/lib/monitoring/layers';
 import { NodeMarkerLayer, type NodeMarker } from './NodeMarkerLayer';
-import { WorkerClusterLayer } from './WorkerClusterLayer';
+import { WorkerClusterLayer, type MapBounds } from './WorkerClusterLayer';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import { pinElement, KIND_DEFAULT_GLYPH, MARKER_NEUTRAL_OUTLINE } from '@/lib/monitoring/markers';
 import { useThemeStore } from '@/stores/theme';
@@ -76,6 +77,10 @@ export interface SimpleMonitoringMapProps {
   /** The current node's own pin (district/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
+  /** Opens a CHILD node's detail from its ⓘ badge (the pin body still drills). */
+  onNodeMarkerDetail?: (node: NodeMarker) => void;
+  /** Node whose detail card is open — never culled, so the card and its pin agree. */
+  openNodeId?: string | null;
   /** Selected location id — at location scope only its boundary is drawn (on demand). */
   areaId?: string | null;
   /** Selected kawasan id — at region scope only this kawasan's boundary is drawn
@@ -87,6 +92,8 @@ export interface SimpleMonitoringMapProps {
   onSelect?: (userId: string) => void;
   /** Which overlays to draw (district/kawasan/lokasi boundaries, petugas, team bubbles). */
   layers?: MonitoringLayers;
+  /** Monitoring mode. `zoom` draws every tier in the subtree instead of one level. */
+  mode?: MonitoringMode;
   /** Imperative focus target (from search / drill). `exact` sets the zoom
    *  absolutely (used to zoom OUT on drill-back); otherwise it only zooms in. */
   focusTarget?: { lat: number; lng: number; zoom?: number; exact?: boolean; key: number } | null;
@@ -157,6 +164,49 @@ const boundaryStyle = (e: {
 });
 
 /**
+ * Viewport culling — skip overlays the camera cannot see.
+ *
+ * Zoom mode draws every rayon, kawasan and lokasi at once, and the polygons cost
+ * more than the pins. Culling makes zooming IN progressively cheaper, which is
+ * the mode's actual interaction; a fully zoomed-out city view culls nothing by
+ * definition, and that remains the worst case on purpose.
+ *
+ * Deliberately NOT clustering. Clustering was removed from this map on request
+ * ("it hid people and confused operators"), so nothing here may hide a worker —
+ * culling only defers what is off-screen, which panning brings straight back.
+ */
+type Extent = { south: number; west: number; north: number; east: number };
+
+function extentOf(paths: google.maps.LatLngLiteral[]): Extent | null {
+  if (paths.length === 0) return null;
+  let south = Infinity;
+  let west = Infinity;
+  let north = -Infinity;
+  let east = -Infinity;
+  for (const p of paths) {
+    if (p.lat < south) south = p.lat;
+    if (p.lat > north) north = p.lat;
+    if (p.lng < west) west = p.lng;
+    if (p.lng > east) east = p.lng;
+  }
+  return { south, west, north, east };
+}
+
+/** Bounding-box overlap. Surabaya never crosses the antimeridian, so a plain
+ *  comparison is exact here; a wrapped viewport (west > east) disables culling
+ *  rather than guessing. */
+function intersects(e: Extent | null, b: MapBounds): boolean {
+  if (!e) return true;
+  if (b.west > b.east) return true;
+  return e.south <= b.north && e.north >= b.south && e.west <= b.east && e.east >= b.west;
+}
+
+function pointInBounds(lat: number, lng: number, b: MapBounds): boolean {
+  if (b.west > b.east) return true;
+  return lat >= b.south && lat <= b.north && lng >= b.west && lng <= b.east;
+}
+
+/**
  * Build a native-looking My-Location control button and register it in the map's
  * control stack (RIGHT_BOTTOM) so Google lays it out above the zoom control —
  * no overlap, Google-app-like UX. Pure DOM (runs once on map load).
@@ -196,6 +246,8 @@ function MonitoringMapInner({
   onDrillNode,
   currentNode,
   onNodeDetail,
+  onNodeMarkerDetail,
+  openNodeId,
   areaId,
   regionId,
   workers,
@@ -203,6 +255,7 @@ function MonitoringMapInner({
   selectedId,
   onSelect,
   layers = DEFAULT_LAYERS,
+  mode = DEFAULT_MODE,
   focusTarget,
   trail,
   onTeamClick,
@@ -233,6 +286,9 @@ function MonitoringMapInner({
   // read only inside handleMapLoad (a callback), never during render.
   const viewportRef = useRef<{ center: google.maps.LatLngLiteral; zoom: number } | null>(null);
   const [zoom, setZoom] = useState(DEFAULT_ZOOM);
+  // Current viewport, or null until the map first settles. Null means "draw
+  // everything" — which is what keeps this invisible in tests and on first paint.
+  const [bounds, setBounds] = useState<MapBounds | null>(null);
 
   // Workers render at EVERY level (city → district → kawasan → lokasi) as soon as
   // the personnel layer shows them — no scope/zoom gate. The geo node bubbles are
@@ -347,6 +403,14 @@ function MonitoringMapInner({
     const c = map.getCenter();
     const z = map.getZoom();
     if (c && typeof z === 'number') viewportRef.current = { center: { lat: c.lat(), lng: c.lng() }, zoom: z };
+    // Viewport bounds drive culling (below). Captured on idle rather than on
+    // every camera event so panning doesn't re-render the overlay per frame.
+    const b = map.getBounds();
+    if (b) {
+      const sw = b.getSouthWest();
+      const ne = b.getNorthEast();
+      setBounds({ south: sw.lat(), west: sw.lng(), north: ne.lat(), east: ne.lng() });
+    }
   }, [syncViewport]);
 
   // Fit once content arrives after the map already loaded (async boundaries).
@@ -397,11 +461,14 @@ function MonitoringMapInner({
   // Scope-gate boundary polygons: district outlines from the city view down, area
   // outlines only once inside a district. At the top (Surabaya) the map shows just
   // the Surabaya node bubble.
+  const isZoom = mode === 'zoom';
   const showDistrictPolys = scope !== 'surabaya';
   // Kawasan outlines: all of a district's kawasan at district scope; ONLY the drilled
   // kawasan once you're inside one (region scope) — the others hide so the view
   // narrows to that kawasan.
-  const showRegionPolys = scope === 'district' || scope === 'region';
+  // Zoom mode draws every tier of the subtree, so kawasan outlines are on from
+  // the city view down rather than appearing only once you're inside a rayon.
+  const showRegionPolys = isZoom || scope === 'district' || scope === 'region';
   const visibleRegionPolys = useMemo(
     () => (scope === 'region' && regionId ? regionPolys.filter((r) => r.id === regionId) : regionPolys),
     [regionPolys, scope, regionId]
@@ -410,7 +477,7 @@ function MonitoringMapInner({
   // lokasi shown as node markers (direct lokasi under the district, or the kawasan's
   // lokasi) get their boundary drawn too, so drilling in reveals location shapes
   // immediately — not just after zooming to a single location.
-  const showAreaBorders = scope === 'location' || scope === 'district' || scope === 'region';
+  const showAreaBorders = isZoom || scope === 'location' || scope === 'district' || scope === 'region';
   // Ids of the lokasi currently drawn as node markers (variant 'location'); used to
   // draw exactly those lokasi's boundaries at district/kawasan scope.
   const nodeAreaIds = useMemo(
@@ -419,10 +486,51 @@ function MonitoringMapInner({
   );
   const visibleAreaPaths = useMemo(() => {
     if (scope === 'location' && areaId) return areaPaths.filter((a) => a.id === areaId);
-    if (scope === 'district' || scope === 'region')
+    // Both modes draw exactly the lokasi that have a node marker, so the outlines
+    // and the pins can never disagree about which lokasi are "in view". In zoom
+    // mode that set is the whole subtree; in drill mode it is one level.
+    // NB this reads the RAW `nodeMarkers`, not the layer-filtered list — hiding
+    // markers must not take the boundaries with them.
+    if (isZoom || scope === 'district' || scope === 'region')
       return areaPaths.filter((a) => nodeAreaIds.has(a.id));
     return areaPaths;
-  }, [areaPaths, scope, areaId, nodeAreaIds]);
+  }, [areaPaths, isZoom, scope, areaId, nodeAreaIds]);
+
+  // ── Viewport culling ───────────────────────────────────────────────────────
+  // Applied to what is DRAWN only; the un-culled arrays still drive fitToContent
+  // and the boundary/marker agreement above, so panning never changes which
+  // lokasi are considered in view — only which are currently painted.
+  const cullPolys = useCallback(
+    <T extends { paths: google.maps.LatLngLiteral[] }>(polys: T[]): T[] => {
+      if (!bounds) return polys;
+      return polys.filter((p) => intersects(extentOf(p.paths), bounds));
+    },
+    [bounds]
+  );
+
+  const drawnDistrictPolys = useMemo(() => cullPolys(districtPolys), [cullPolys, districtPolys]);
+  const drawnRegionPolys = useMemo(() => cullPolys(visibleRegionPolys), [cullPolys, visibleRegionPolys]);
+  const drawnAreaPaths = useMemo(() => cullPolys(visibleAreaPaths), [cullPolys, visibleAreaPaths]);
+
+  // Worker pins: cull off-screen people, but NEVER the selected one — it can be
+  // selected from the sidebar while off-camera, and the map pans to it right
+  // after; dropping it would make the pin flicker out and back.
+  const drawnWorkers = useMemo(() => {
+    if (!bounds) return personnelWorkers;
+    return personnelWorkers.filter(
+      (w) => w.user_id === selectedId || pointInBounds(w.lat, w.lng, bounds)
+    );
+  }, [personnelWorkers, bounds, selectedId]);
+
+  const drawnNodeMarkers = useMemo(() => {
+    if (!bounds) return visibleNodeMarkers;
+    // Same exemption as the selected worker: a node with its detail card open
+    // must keep its pin even off-camera, or the card describes something the
+    // map is no longer showing.
+    return visibleNodeMarkers.filter(
+      (n) => n.id === openNodeId || pointInBounds(n.lat, n.lng, bounds)
+    );
+  }, [visibleNodeMarkers, bounds, openNodeId]);
 
   // At location scope, frame the SELECTED location's boundary once it loads — a reliable
   // "focus in" that beats a fixed zoom (locations vary in size). Runs once per location.
@@ -477,7 +585,7 @@ function MonitoringMapInner({
         {/* Rayon boundaries — the district's own border_color + fill_color (ADR-045),
             drawn separately; sensible defaults only when unset. */}
         {showsBoundary(layers.district) && showDistrictPolys &&
-          districtPolys.map((poly, i) => (
+          drawnDistrictPolys.map((poly, i) => (
             <Polygon
               key={`district-${i}`}
               paths={poly.paths}
@@ -496,7 +604,7 @@ function MonitoringMapInner({
         {/* Kawasan (region) boundaries — the kawasan's own border_color +
             fill_color; drawn once you're inside a district. */}
         {showsBoundary(layers.kawasan) && showRegionPolys &&
-          visibleRegionPolys.map((poly, i) => (
+          drawnRegionPolys.map((poly, i) => (
             <Polygon
               key={`region-${i}`}
               paths={poly.paths}
@@ -515,7 +623,7 @@ function MonitoringMapInner({
         {/* Lokasi boundaries — the lokasi's own border_color + fill_color (one
             `lokasi` toggle); only the selected area at area scope (on-demand). */}
         {showsBoundary(layers.lokasi) && showAreaBorders &&
-          visibleAreaPaths.map((area, i) => (
+          drawnAreaPaths.map((area, i) => (
             <Polygon
               key={`area-${area.id}-${i}`}
               paths={area.paths}
@@ -534,7 +642,7 @@ function MonitoringMapInner({
         {/* Geo node markers (Surabaya / district / kawasan / lokasi bubbles) — always
             drawn (the marker layer can't be hidden). At location scope nodeMarkers is
             empty, so nothing renders there. */}
-        <NodeMarkerLayer nodes={visibleNodeMarkers} onDrill={onDrillNode} zoom={zoom} activeGeoId={activeGeoId} />
+        <NodeMarkerLayer nodes={drawnNodeMarkers} onDrill={onDrillNode} onDetail={onNodeMarkerDetail} zoom={zoom} activeGeoId={activeGeoId} />
 
         {/* Selected worker's movement trail (today) — a dashed path under the pins. */}
         {trail && trail.length >= 2 && (
@@ -561,7 +669,7 @@ function MonitoringMapInner({
             node bubbles at district/kawasan/location scope, no clustering. */}
         {renderWorkers && (
           <WorkerClusterLayer
-            workers={personnelWorkers}
+            workers={drawnWorkers}
             zoom={zoom}
             selectedId={selectedId}
             onSelect={onSelect}

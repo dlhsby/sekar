@@ -16,7 +16,10 @@ import { TeamMarkerLayer } from '../../../components/monitoring/TeamMarkerLayer'
 import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import {
+  showsBoundary,
+  type MonitoringV2VisibleLayers,
+} from '../../../utils/layerVisibility';
 
 interface MapLayerContentProps {
   mapReady: boolean;
@@ -35,6 +38,10 @@ interface MapLayerContentProps {
   districtId: string | null;
   /** The selected location (location scope) — only its boundary is drawn, on demand. */
   areaId: string | null;
+  /** The drilled kawasan (region scope) — narrows which kawasan outline draws. */
+  regionId?: string | null;
+  /** Monitoring mode — `zoom` draws every tier of the subtree at once. */
+  mode?: 'drill' | 'zoom';
   /** Attendance ratio per rayon/location id, shown on the geographic markers. */
   rosterById: Record<string, { activeInside: number; scheduled: number }>;
   /** Drill bubbles composed from the aggregate (district → regions ∪ region-less
@@ -73,6 +80,8 @@ export function MapLayerContent({
   scope,
   districtId,
   areaId,
+  regionId = null,
+  mode = 'drill',
   rosterById,
   nodeMarkers,
   onNodeDrill,
@@ -109,8 +118,18 @@ export function MapLayerContent({
   // ONLY at location scope (the one selected location) — never all-at-once at district scope.
   // The Surabaya top level was retired (PR2) — district boundaries show at every
   // tier when toggled (city is now the top, and it draws the district outlines).
-  const showDistrictBoundaries = visibleLayers.districts;
-  const showAreaBoundaries = visibleLayers.areas && scope === 'location';
+  const showDistrictBoundaries = showsBoundary(visibleLayers.district);
+  // Lokasi outlines used to draw ONLY at location scope. Web draws them from
+  // district scope down (the lokasi that have a node marker), so a supervisor
+  // sees the shapes as soon as they drill in rather than one at a time.
+  const isZoom = mode === 'zoom';
+  const showAreaBoundaries =
+    showsBoundary(visibleLayers.lokasi) &&
+    (isZoom || scope === 'location' || scope === 'district' || scope === 'region');
+  // Kawasan outlines — new. The payload has carried `regions[]` since ADR-045;
+  // mobile had no field for it, so the tier it drills THROUGH was invisible.
+  const showRegionBoundaries =
+    showsBoundary(visibleLayers.kawasan) && (isZoom || scope === 'district' || scope === 'region');
 
   // Drill BUBBLES now come from the aggregate (AggregateBubbleLayer below) so the
   // kawasan tier — which has no boundary polygon — can render. BoundaryOverlay keeps
@@ -122,7 +141,7 @@ export function MapLayerContent({
   const showDistrictMarker = scope === 'district';
   const showAreaMarker = scope === 'location';
   const showBoundaryLayer =
-    showDistrictBoundaries || showAreaBoundaries ||
+    showDistrictBoundaries || showAreaBoundaries || showRegionBoundaries ||
     showDistrictMarker || showAreaMarker;
 
   return (
@@ -140,6 +159,8 @@ export function MapLayerContent({
           onAreaMarkerPress={onAreaDetail}
           showDistricts={showDistrictBoundaries}
           showAreas={showAreaBoundaries}
+        showRegions={showRegionBoundaries}
+        regionId={regionId}
           showDistrictBubbles={showDistrictBubbles}
           showAreaBubbles={showAreaBubbles}
           showDistrictMarker={showDistrictMarker}

@@ -22,9 +22,16 @@ import {
   useMonitoringAggregate,
   type AggregateNode,
 } from '@/lib/api/monitoring-v2';
-import { useBoundaries, useLocationHistory } from '@/lib/api/monitoring';
+import {
+  useBoundaries,
+  useLocationHistory,
+  useUserDaySummary,
+  useReassignmentHistory,
+} from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
+import { useMonitoringMode } from '@/lib/monitoring/mapMode';
+import { useGeoIndex } from '@/lib/monitoring/useGeoIndex';
 import { statusToActivity } from '@/lib/monitoring/markers';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearch';
@@ -34,6 +41,9 @@ import {
   type DistrictOption,
 } from '@/components/monitoring/MonitoringFilters';
 import { MonitoringSidebar } from '@/components/monitoring/MonitoringSidebar';
+import { UserDetailPanel } from '@/components/monitoring/UserDetailPanel';
+import { AreaDetailPanel } from '@/components/monitoring/AreaDetailPanel';
+import { useAreaPlants, useNotablePlants } from '@/lib/api/plants';
 import { MonitoringSearch } from '@/components/monitoring/MonitoringSearch';
 import { MonitoringLayersPanel } from '@/components/monitoring/MonitoringLayersPanel';
 import { SimpleMonitoringMap } from '@/components/monitoring/SimpleMonitoringMapLazy';
@@ -141,7 +151,10 @@ export default function MonitoringPage() {
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [layersOpen, setLayersOpen] = useState(false);
   const [listOpen, setListOpen] = useState(false);
-  const [areaDetailOpen, setAreaDetailOpen] = useState(false);
+  // Which node's detail card is open. An ID rather than a boolean, because
+  // detail can now be opened for ANY node (a child's ⓘ badge or Wilayah row),
+  // not only the one you have drilled into.
+  const [detailNodeId, setDetailNodeId] = useState<string | null>(null);
   const [teamDetail, setTeamDetail] = useState<TeamGroup | null>(null);
   const [statsOpen, setStatsOpen] = useState(false); // tappable stat legend (mobile)
   const [focusTarget, setFocusTarget] = useState<{
@@ -152,8 +165,14 @@ export default function MonitoringPage() {
     key: number;
   } | null>(null);
 
-  // Map layer visibility (persisted).
+  // Map layer visibility + monitoring mode (both persisted per browser).
   const { layers, setLayer } = useMonitoringLayers();
+  const { mode, setMode } = useMonitoringMode();
+  // Every rayon/kawasan/lokasi by name, independent of the drill scope — search
+  // used to read the map's scope-bound boundaries, so at the DEFAULT city view
+  // no lokasi could be found at all (`level='district'` returns no areas).
+  const geoIndex = useGeoIndex(canMonitor);
+  const isZoom = mode === 'zoom';
 
   // Keep view in sync when the user (role) resolves.
   useEffect(() => {
@@ -161,49 +180,80 @@ export default function MonitoringPage() {
   }, [roleView]);
 
   const scope = view.scope;
-  const showWorkers = scope === 'location';  // Workers only at location scope, not region.
+  // Drill mode shows worker pins only at lokasi scope; zoom mode shows everyone
+  // inside the current subtree at every level — that is what it is for.
+  const showWorkers = isZoom || scope === 'location';
 
   // City aggregate feeds BOTH the Surabaya summary (roster_totals) and the district
   // list/markers (nodes) — one fetch. Rayon aggregate feeds the region/area level.
   const cityAgg = useMonitoringAggregate(
     'city',
     undefined,
-    canMonitor && scope === 'city'
+    canMonitor && !isZoom && scope === 'city'
   );
+  // Zoom mode: ONE call for every tier in the current subtree (rayon + kawasan +
+  // lokasi), narrowed by district once drilled. Replaces the 1 + 2N per-tier
+  // requests, and the server composes it from the same builders the drill scopes
+  // use — so the numbers cannot disagree between modes.
+  const zoomDistrictId = scope === 'city' ? undefined : (view.districtId ?? view.id);
+  const allAgg = useMonitoringAggregate('all', zoomDistrictId, canMonitor && isZoom);
   // `view.id` is the district id only at district scope. At region/area scope the district
   // aggregate is fetched by `view.districtId` via `regionAreasAgg` below.
-  const districtAgg = useMonitoringAggregate('district', view.id, canMonitor && scope === 'district');
+  const districtAgg = useMonitoringAggregate(
+    'district',
+    view.id,
+    canMonitor && !isZoom && scope === 'district'
+  );
   // At district scope, fetch region aggregate to check if this district has regions.
   const regionAgg = useMonitoringAggregate(
     'region',
     view.id,
-    canMonitor && scope === 'district'
+    canMonitor && !isZoom && scope === 'district'
   );
   // At region scope, fetch the district aggregate to filter areas by region_id.
   const regionAreasAgg = useMonitoringAggregate(
     'district',
     view.districtId,
-    canMonitor && scope === 'region'
+    canMonitor && !isZoom && scope === 'region'
   );
 
-  const activeAgg = scope === 'region' ? regionAreasAgg : scope === 'district' ? districtAgg : cityAgg;
+  const activeAgg = isZoom
+    ? allAgg
+    : scope === 'region'
+      ? regionAreasAgg
+      : scope === 'district'
+        ? districtAgg
+        : cityAgg;
 
   // Snapshot (workers) — rendered only at location scope, but kept loaded so search
   // can find people at any level. Surabaya maps to the city snapshot scope.
   // Region scope shows locations, so snapshot is still at the parent district.
-  const snapshotScope: 'city' | 'district' | 'location' =
-    scope === 'region' ? 'district' : scope;
-  const snapshotId = scope === 'region' ? view.districtId : view.id;
+  // Zoom mode always reads the CITY snapshot: it already contains every live
+  // worker with their full geographic parentage, so one payload serves every
+  // drill level and `subtreeMatches` does the narrowing client-side.
+  const snapshotScope: 'city' | 'district' | 'location' = isZoom
+    ? 'city'
+    : scope === 'region'
+      ? 'district'
+      : scope;
+  const snapshotId = isZoom ? undefined : scope === 'region' ? view.districtId : view.id;
   const snapshot = useMonitoringSnapshot(snapshotScope, snapshotId, canMonitor);
   const workers = useMemo(() => snapshot.data?.data?.workers ?? [], [snapshot.data]);
 
   // Progressive boundaries: district outlines at the top, that district's locations deeper.
   // NB: the boundaries `level` param stays 'area' — it's part of the retained
   // AreaBoundaryDto / `.areas[]` boundary contract (backend accepts 'district'|'area').
-  const boundaryLevel: 'district' | 'area' =
-    scope === 'city' ? 'district' : 'area';
-  const boundaryDistrictId =
-    scope === 'district' || scope === 'region' || scope === 'location' ? view.districtId ?? view.id : undefined;
+  // Zoom mode always asks for full geometry ('area' returns district + kawasan +
+  // lokasi polygons together); with no district id at city scope that is every
+  // tier city-wide, which is precisely what the mode draws.
+  const boundaryLevel: 'district' | 'area' = isZoom || scope !== 'city' ? 'area' : 'district';
+  const boundaryDistrictId = isZoom
+    ? scope === 'city'
+      ? undefined
+      : (view.districtId ?? view.id)
+    : scope === 'district' || scope === 'region' || scope === 'location'
+      ? (view.districtId ?? view.id)
+      : undefined;
   const {
     data: boundaries,
     isFetching: boundariesFetching,
@@ -221,7 +271,7 @@ export default function MonitoringPage() {
     setSelectedId(id);
     if (id) {
       setListOpen(true);
-      setAreaDetailOpen(false);
+      setDetailNodeId(null);
       setTeamDetail(null);
     }
   };
@@ -229,7 +279,7 @@ export default function MonitoringPage() {
   // Clicking a team marker reveals its members (no zoom-to-expand).
   const onTeamClick = (team: TeamGroup) => {
     setTeamDetail(team);
-    setAreaDetailOpen(false);
+    setDetailNodeId(null);
     setSelectedId(null);
   };
 
@@ -240,6 +290,18 @@ export default function MonitoringPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }, []);
   const trailQuery = useLocationHistory(selectedId, todayStr);
+  // Worker detail: both lazy on the selection, so nothing is fetched until a
+  // supervisor actually opens someone. The endpoints already existed — the web
+  // simply never called them, which is why its worker card was so much thinner
+  // than mobile's.
+  const daySummary = useUserDaySummary(selectedId);
+  const reassignments = useReassignmentHistory(selectedId);
+  // Plant inventory for the open lokasi detail — mobile shows the same summary
+  // in its area sheet. Lazy: only fetched while a LOKASI's card is open, so the
+  // rayon/kawasan cards cost nothing.
+  const plantAreaId = detailNodeId && scope === 'location' ? detailNodeId : null;
+  const areaPlants = useAreaPlants(plantAreaId);
+  const notablePlants = useNotablePlants(plantAreaId);
   const trail = useMemo(
     () =>
       (trailQuery.data?.points ?? [])
@@ -337,6 +399,14 @@ export default function MonitoringPage() {
       focusOn(result.latitude, result.longitude, 16);
     } else if (result.type === 'area') {
       drillToLocation(result.id, result.name, result.districtId ?? view.districtId, result.latitude, result.longitude);
+    } else if (result.type === 'region') {
+      drillToRegion(
+        result.id,
+        result.name,
+        result.districtId ?? view.districtId,
+        result.latitude,
+        result.longitude
+      );
     } else {
       drillToDistrict(result.id, result.name, result.latitude, result.longitude);
     }
@@ -503,12 +573,43 @@ export default function MonitoringPage() {
   // Clicking the current node's pin opens its LOCATION DETAIL card (not the list).
   const onNodeDetail = (node: CurrentNodeMarker) => {
     focusOn(node.lat, node.lng, node.variant === 'location' ? 16 : 14);
-    setAreaDetailOpen(true);
+    setDetailNodeId(view.id ?? null);
   };
 
   // Districts list (surabaya + city), regions list (district), or locations list (region or district-without-regions),
   // for the side panel.
   const listNodes = useMemo<AggregateNode[]>(() => {
+    if (isZoom) {
+      // The panel lists the SAME set the map draws — the whole subtree, ordered
+      // rayon → its kawasan → its lokasi, so the list reads as the hierarchy
+      // rather than as a flat dump. Anything else and the Wilayah tab would
+      // disagree with the map about what "here" contains.
+      const nodes = allAgg.data?.nodes ?? [];
+      if (scope === 'location') return [];
+      if (scope === 'region') {
+        return nodes.filter((n) => n.type === 'location' && n.region_id === view.id);
+      }
+
+      const ordered: AggregateNode[] = [];
+      const districts =
+        scope === 'district'
+          ? nodes.filter((n) => n.type === 'district' && n.id === view.id)
+          : nodes.filter((n) => n.type === 'district');
+      for (const d of districts) {
+        // At district scope the rayon itself is the node you are standing on;
+        // the breadcrumb already names it, so don't repeat it as a row.
+        if (scope !== 'district') ordered.push(d);
+        const kawasan = nodes.filter((n) => n.type === 'region' && n.district_id === d.id);
+        const lokasi = nodes.filter((n) => n.type === 'location' && n.district_id === d.id);
+        for (const k of kawasan) {
+          ordered.push(k);
+          ordered.push(...lokasi.filter((l) => l.region_id === k.id));
+        }
+        // Lokasi with no kawasan sit directly under the rayon.
+        ordered.push(...lokasi.filter((l) => !l.region_id));
+      }
+      return ordered;
+    }
     if (scope === 'region') {
       // At region scope: filter the district's location nodes by region_id.
       const areas = regionAreasAgg.data?.nodes ?? [];
@@ -523,7 +624,45 @@ export default function MonitoringPage() {
     }
     if (scope === 'city') return cityAgg.data?.nodes ?? [];
     return [];
-  }, [scope, view.id, regionAgg.data, regionAreasAgg.data, districtAgg.data, cityAgg.data]);
+  }, [isZoom, allAgg.data, scope, view.id, regionAgg.data, regionAreasAgg.data, districtAgg.data, cityAgg.data]);
+
+  /**
+   * Figures the area-detail card needs about the node you are standing ON.
+   *
+   * Sourced from data the page already holds — the aggregate node for counts,
+   * the boundary row for the per-role staffing split — rather than a new fetch,
+   * so the card can never disagree with the bubble it was opened from.
+   */
+  const currentNodeStats = useMemo(() => {
+    const id = view.id;
+    if (!id) return { childCount: null, understaffedChildCount: null, staffing: null, isUnderstaffed: undefined };
+
+    // The lokasi's own boundary row carries `staffing_summary` (role/required/active).
+    const area = boundaries?.districts
+      ?.flatMap((d) => d.areas ?? [])
+      .find((a) => a.id === id);
+
+    if (scope === 'location') {
+      return {
+        childCount: null,
+        understaffedChildCount: null,
+        staffing: area?.staffing_summary ?? null,
+        isUnderstaffed: area?.is_understaffed,
+      };
+    }
+
+    // Rayon / kawasan: count the lokasi beneath, and how many are short.
+    const children = listNodes.filter((n) => n.type === 'location');
+    const understaffed = children.filter((n) => n.is_understaffed).length;
+    const district = boundaries?.districts?.find((d) => d.id === id);
+    return {
+      childCount: district?.area_count ?? children.length,
+      understaffedChildCount: district?.understaffed_area_count ?? understaffed,
+      staffing: null,
+      isUnderstaffed: district?.is_understaffed ?? understaffed > 0,
+    };
+  }, [view.id, scope, boundaries, listNodes]);
+
 
   // Map markers for the current scope (ADR-046 count+ring markers, not ratio
   // bubbles). Zoom-gated tiers keep dense districts legible:
@@ -536,6 +675,19 @@ export default function MonitoringPage() {
   const nodeMarkers = useMemo<NodeMarker[]>(() => {
     const toMarkers = (nodes: AggregateNode[]) =>
       nodes.map(aggToMarker).filter((m): m is NodeMarker => m !== null);
+    if (isZoom) {
+      // Every tier at once. `scope=all` already narrowed the payload to the
+      // current subtree, so the only thing to drop is the node you are standing
+      // ON — it is drawn separately as the current-node pin.
+      const nodes = (allAgg.data?.nodes ?? []).filter((n) => n.id !== view.id);
+      if (scope === 'region') {
+        // Inside a kawasan the payload still spans the parent district, so keep
+        // that kawasan's own lokasi only.
+        return toMarkers(nodes.filter((n) => n.type === 'location' && n.region_id === view.id));
+      }
+      if (scope === 'location') return [];
+      return toMarkers(nodes);
+    }
     if (scope === 'location') return [];
     if (scope === 'region') {
       return toMarkers((regionAreasAgg.data?.nodes ?? []).filter((n) => n.region_id === view.id));
@@ -546,7 +698,7 @@ export default function MonitoringPage() {
       return toMarkers([...kawasan, ...regionlessLokasi]);
     }
     return toMarkers(listNodes); // city → district markers
-  }, [scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
+  }, [isZoom, allAgg.data, scope, view.id, regionAgg.data, districtAgg.data, regionAreasAgg.data, listNodes]);
 
   // At region (kawasan) scope the aggregate's top-level totals cover the whole
   // parent district; sum just this kawasan's lokasi nodes so the stats pills match
@@ -604,6 +756,108 @@ export default function MonitoringPage() {
     };
 
   }, [showWorkers, workers, regionTotals, activeAgg.data]);
+
+  /**
+   * The detail card's props for whichever node is open.
+   *
+   * Two sources, in order: the aggregate node (a child you tapped — it already
+   * carries its own presence + roster), else the node you have drilled INTO,
+   * whose figures are the page's scope-wide ones. Everything is derived from
+   * data already on screen, so the card and the bubble it came from cannot show
+   * different numbers.
+   */
+  /**
+   * Ad-hoc (unscheduled) workers standing inside one node.
+   *
+   * The aggregate reports `off_schedule_count` for the whole SCOPE, never per
+   * node, so this is counted from the snapshot — which already carries every
+   * live worker with their geography. Both detail entry points use it, so a
+   * node reports the same four presence numbers whether it was opened from its
+   * parent's list or from inside it.
+   */
+  const adhocInNode = useCallback(
+    (nodeId: string, type: 'district' | 'region' | 'location'): number => {
+      let n = 0;
+      for (const w of workers) {
+        if (w.is_scheduled !== false) continue;
+        const inside =
+          type === 'district'
+            ? w.district_id === nodeId
+            : type === 'region'
+              ? w.region_id === nodeId
+              : w.location_id === nodeId;
+        if (inside) n += 1;
+      }
+      return n;
+    },
+    [workers]
+  );
+
+  const detailProps = useMemo(() => {
+    if (!detailNodeId) return null;
+    const pool = allAgg.data?.nodes ?? listNodes;
+    const agg = pool.find((n) => n.id === detailNodeId);
+    if (agg) {
+      const area = boundaries?.districts
+        ?.flatMap((d) => d.areas ?? [])
+        .find((a) => a.id === agg.id);
+      const isLoc = agg.type === 'location';
+      return {
+        variant: (agg.type === 'region' ? 'region' : agg.type) as 'district' | 'region' | 'location',
+        name: agg.name,
+        presence: {
+          aktif: agg.presence.aktif.dalam + agg.presence.aktif.luar,
+          tidak_aktif: agg.presence.tidak_aktif.dalam + agg.presence.tidak_aktif.luar,
+          tidak_hadir: agg.roster.tidak_hadir,
+          adhoc: adhocInNode(agg.id, agg.type),
+        },
+        roster: agg.roster,
+        childCount: isLoc ? null : (agg.area_count ?? agg.location_count ?? null),
+        understaffedChildCount: null,
+        staffing: isLoc ? (area?.staffing_summary ?? null) : null,
+        isUnderstaffed: agg.is_understaffed,
+      };
+    }
+    if (currentNode && currentNode.id === detailNodeId) {
+      const p = regionTotals?.presence_totals ?? activeAgg.data?.presence_totals;
+      const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals ?? null;
+      const adhoc = adhocInNode(currentNode.id, currentNode.variant);
+      return {
+        variant: currentNode.variant,
+        name: currentNode.name,
+        // Prefer the AGGREGATE basis, which is what the same node reports when
+        // opened from its parent's list. `presenceCounts` counts the visible
+        // worker set instead, and at lokasi scope (and everywhere in zoom mode)
+        // that made one node read differently depending on how you opened it.
+        presence: p
+          ? {
+              aktif: p.aktif.dalam + p.aktif.luar,
+              tidak_aktif: p.tidak_aktif.dalam + p.tidak_aktif.luar,
+              tidak_hadir: r?.tidak_hadir ?? 0,
+              adhoc,
+            }
+          : { ...presenceCounts, adhoc },
+        roster: r,
+        childCount: currentNodeStats.childCount,
+        understaffedChildCount: currentNodeStats.understaffedChildCount,
+        staffing: currentNodeStats.staffing,
+        isUnderstaffed: currentNodeStats.isUnderstaffed,
+      };
+    }
+    return null;
+  }, [
+    detailNodeId,
+    allAgg.data,
+    listNodes,
+    boundaries,
+    currentNode,
+    presenceCounts,
+    regionTotals,
+    activeAgg.data,
+    currentNodeStats,
+    adhocInNode,
+  ]);
+
 
   // ALL districts from the city aggregate (not just those with live workers), so
   // the cascade root lists every district. Fetched independently of the view scope
@@ -798,16 +1052,35 @@ export default function MonitoringPage() {
     [scope, view.id]
   );
 
-  // Map source: base filter (no jenis split) so teams + individuals both draw.
-  const drillScopedWorkers = useMemo(
-    () => baseFilteredWorkers.filter(scopeMatches),
-    [baseFilteredWorkers, scopeMatches]
+  // Zoom mode asks a DIFFERENT question: not "is this worker's schedule scoped
+  // here" but "is this worker standing anywhere inside what I'm looking at".
+  // That is the client's "show all the workers in that rayon" verbatim, and it
+  // uses the worker's real geography rather than their `display_scope` — so an
+  // ad-hoc clock-in (flat at city scope) appears inside the rayon they are
+  // actually in, still styled as Luar Jadwal.
+  const subtreeMatches = useCallback(
+    (w: { district_id?: string | null; region_id?: string | null; location_id?: string | null }) => {
+      if (scope === 'city') return true;
+      if (scope === 'district') return w.district_id === view.id;
+      if (scope === 'region') return w.region_id === view.id;
+      return w.location_id === view.id;
+    },
+    [scope, view.id]
   );
 
-  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), same scope match.
+  const workerVisible = isZoom ? subtreeMatches : scopeMatches;
+
+  // Map source: base filter (no jenis split) so teams + individuals both draw.
+  const drillScopedWorkers = useMemo(
+    () => baseFilteredWorkers.filter(workerVisible),
+    [baseFilteredWorkers, workerVisible]
+  );
+
+  // The Petugas tab's list: the jenis-filtered set (Individu/Tim), same predicate
+  // as the map, so the tab count can never disagree with what is drawn.
   const listScopedWorkers = useMemo(
-    () => filteredWorkers.filter(scopeMatches),
-    [filteredWorkers, scopeMatches]
+    () => filteredWorkers.filter(workerVisible),
+    [filteredWorkers, workerVisible]
   );
 
   const mapWorkers = useMemo<SimpleWorker[]>(
@@ -874,10 +1147,13 @@ export default function MonitoringPage() {
       <SimpleMonitoringMap
         scope={scope}
         nodeMarkers={nodeMarkers}
+        mode={mode}
         activeGeoId={activeGeoId}
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
+        onNodeMarkerDetail={(n) => setDetailNodeId(n.id)}
+        openNodeId={detailNodeId}
         areaId={scope === 'location' ? view.id ?? null : null}
         regionId={scope === 'region' ? view.id ?? null : null}
         workers={mapWorkers}
@@ -1003,7 +1279,7 @@ export default function MonitoringPage() {
           {/* Search (recent + grouped results + click-to-locate) */}
           <MonitoringSearch
             workers={workers}
-            districts={boundaries?.districts}
+            geo={geoIndex}
             onSelect={handleSearchSelect}
             className="max-w-md flex-1"
           />
@@ -1090,6 +1366,8 @@ export default function MonitoringPage() {
         <MonitoringLayersPanel
           layers={layers}
           onSetLayer={setLayer}
+          mode={mode}
+          onSetMode={setMode}
           onClose={() => setLayersOpen(false)}
         />
       )}
@@ -1120,10 +1398,37 @@ export default function MonitoringPage() {
             workers={listScopedWorkers}
             nodes={filteredNodes}
             onDrillNode={onDrillListNode}
+            onNodeDetail={(n) => setDetailNodeId(n.id)}
+            showNodeTier={isZoom}
             activeGeoId={activeGeoId}
             selectedId={selectedId}
             selectedWorker={
-              selectedId ? workers.find((w) => w.user_id === selectedId) ?? null : null
+              selectedId ? (workers.find((w) => w.user_id === selectedId) ?? null) : null
+            }
+            workerDetail={
+              // Fall back to the sidebar's own snapshot card when the day
+              // summary is unavailable (failed, forbidden, or simply absent):
+              // the snapshot still knows the worker's name, role, status and
+              // position, and showing that beats blanking the panel to "no data".
+              selectedId && (daySummary.isLoading || daySummary.data) ? (
+                <UserDetailPanel
+                  summary={daySummary.data}
+                  isLoading={daySummary.isLoading}
+                  worker={workers.find((w) => w.user_id === selectedId) ?? null}
+                  reassignments={reassignments.data?.history}
+                  isReassignmentsLoading={reassignments.isLoading}
+                  onBack={() => selectWorker(null)}
+                  onViewLocationHistory={() => {
+                    // The trail is already drawn on the map for the selected
+                    // worker (mobile opens a separate full-screen map for it);
+                    // on web the useful action is to frame it, so zoom to the
+                    // first recorded point rather than the current position —
+                    // that is where the day started.
+                    const first = trail[0];
+                    if (first) focusOn(first.lat, first.lng, 16);
+                  }}
+                />
+              ) : undefined
             }
             onSelect={selectWorker}
             className="min-h-0 flex-1 shadow-nb-lg"
@@ -1145,63 +1450,15 @@ export default function MonitoringPage() {
 
       {/* Area detail card — opens when the current node's pin is tapped (parity
           with mobile's area info). Shows the drilled node's presence + roster. */}
-      {areaDetailOpen && currentNode && (
-        <div className="absolute right-3 top-40 z-30 w-72 rounded-nb-md border-2 border-nb-black bg-nb-white p-3 shadow-nb-lg sm:top-32">
-          <div className="mb-2 flex items-start justify-between gap-2">
-            <div>
-              <p className="text-xs font-bold uppercase text-nb-gray-500">
-                {t(`monitoring:areaDetail.${currentNode.variant}`)}
-              </p>
-              <h2 className="text-sm font-black leading-tight text-nb-black">{currentNode.name}</h2>
-            </div>
-            <button
-              type="button"
-              onClick={() => setAreaDetailOpen(false)}
-              aria-label={t('monitoring:page.closePanelLabel')}
-              className="shrink-0 rounded-nb-sm p-1 text-nb-gray-500 hover:bg-nb-gray-100 hover:text-nb-black"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          {/* Presence */}
-          <div className="grid grid-cols-2 gap-1.5">
-            {PRESENCE_PILLS.map((p) => (
-              <div
-                key={p.key}
-                className="flex items-center justify-between rounded-nb-sm border border-nb-gray-200 px-2 py-1 text-xs"
-              >
-                <span className="flex items-center gap-1.5 text-nb-gray-600">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} aria-hidden="true" />
-                  {p.label}
-                </span>
-                <span className="font-mono font-bold tabular-nums text-nb-black">{presenceCounts[p.key]}</span>
-              </div>
-            ))}
-          </div>
-          {/* Roster */}
-          {(() => {
-            const r = regionTotals?.roster_totals ?? activeAgg.data?.roster_totals;
-            if (!r) return null;
-            const rows: [string, number][] = [
-              [t('monitoring:aggregate.scheduledLabel'), r.scheduled],
-              [t('monitoring:aggregate.clockedInLabel'), r.clocked_in],
-              [t('monitoring:aggregate.belumHadirLabel'), r.belum_hadir],
-              [t('monitoring:aggregate.tidakHadirLabel'), r.tidak_hadir],
-            ];
-            return (
-              <div className="mt-2 border-t-2 border-nb-gray-200 pt-2">
-                <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-nb-gray-600">
-                  {rows.map(([label, n]) => (
-                    <span key={label} className="flex items-baseline gap-1">
-                      <span className="font-mono font-bold tabular-nums text-nb-black">{n}</span>
-                      {label}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
-        </div>
+      {detailProps && (
+        <AreaDetailPanel
+          {...detailProps}
+          presenceLabels={PRESENCE_PILLS}
+          plantCount={plantAreaId ? (areaPlants.data?.length ?? 0) : null}
+          notableCount={plantAreaId ? (notablePlants.data?.length ?? 0) : null}
+          onViewPlants={plantAreaId ? () => router.push(`/plants/${plantAreaId}`) : undefined}
+          onClose={() => setDetailNodeId(null)}
+        />
       )}
 
       {/* Team member list — opens when a team marker is clicked. Lists the team's

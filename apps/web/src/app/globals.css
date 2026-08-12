@@ -500,6 +500,31 @@ body {
       1px 0 2px var(--color-nb-white),
       -1px 0 2px var(--color-nb-white);
   }
+  /* ⓘ badge on a node marker — opens the area detail card. Sits on the pin's
+     top-right so the pin body keeps its own meaning (tap = drill). Its own
+     pointer-events are re-enabled because the label rules above disable them
+     for the pin's decorative children. */
+  .node-info-badge {
+    position: absolute;
+    top: -4px;
+    right: -6px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--color-nb-black);
+    border-radius: 9999px;
+    background: var(--color-nb-white);
+    color: var(--color-nb-black);
+    font-family: var(--font-body), Inter, sans-serif;
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .node-info-badge:hover {
+    background: var(--color-nb-primary);
+  }
+
   /* Worker name under a pin: neutral dark (the pin color already carries
      status) with the same white halo so it reads over any base-map color. */
   .worker-marker-label {

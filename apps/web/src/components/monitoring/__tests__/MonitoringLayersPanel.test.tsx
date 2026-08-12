@@ -6,6 +6,8 @@ describe('MonitoringLayersPanel', () => {
   const base = {
     layers: DEFAULT_LAYERS,
     onSetLayer: jest.fn(),
+    mode: 'drill' as const,
+    onSetMode: jest.fn(),
     onClose: jest.fn(),
   };
 
@@ -50,5 +52,19 @@ describe('MonitoringLayersPanel', () => {
   it('has no city row — Surabaya has no boundary polygon to draw', () => {
     render(<MonitoringLayersPanel {...base} />);
     expect(screen.queryByLabelText(/kota|surabaya/i)).toBeNull();
+  });
+
+  it('offers the two monitoring modes, with the current one selected', () => {
+    render(<MonitoringLayersPanel {...base} />);
+    const drill = screen.getByRole('radio', { name: /ketuk & telusuri/i });
+    const zoom = screen.getByRole('radio', { name: /^zoom$/i });
+    expect(drill).toHaveAttribute('aria-checked', 'true');
+    expect(zoom).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('reports a mode change', () => {
+    render(<MonitoringLayersPanel {...base} />);
+    fireEvent.click(screen.getByRole('radio', { name: /^zoom$/i }));
+    expect(base.onSetMode).toHaveBeenCalledWith('zoom');
   });
 });
