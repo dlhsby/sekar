@@ -40,9 +40,15 @@
     "district": "District Boundary",
     "kawasan": "Kawasan Boundary",
     "lokasi": "Lokasi Boundary",
-    "petugas": "Workers",
-    "teamBubbles": "Teams",
-    "teamNeedsPetugas": "Enable Petugas first to group team bubbles"
+    "personnel": "Personnel & Teams",
+    "option": {
+      "all": "All",
+      "boundary": "Boundary only",
+      "marker": "Marker only",
+      "none": "Hidden",
+      "petugasOnly": "Personnel only",
+      "timOnly": "Teams only"
+    }
   },
   "search": {
     "personnelLabel": "Officers",

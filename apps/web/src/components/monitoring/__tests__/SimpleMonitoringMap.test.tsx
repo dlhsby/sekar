@@ -332,22 +332,54 @@ describe('SimpleMonitoringMap', () => {
     expect(controlStack[0].getAttribute('aria-label')).toMatch(/fokus ke lokasi saya/i);
   });
 
-  it('hides worker markers when the petugas layer is off', () => {
+  it('hides worker markers when the personnel layer is hidden', () => {
     render(
       <SimpleMonitoringMap
-
         workers={workers}
         boundaries={boundaries}
         layers={{
-          district: true,
-          kawasan: true,
-          lokasi: true,
-          petugas: false,
-          teamBubbles: true,
+          district: 'all',
+          kawasan: 'all',
+          lokasi: 'all',
+          personnel: 'none',
         }}
       />
     );
     // Only the district + area polygons (no worker markers).
+    expect(screen.queryAllByTestId('marker')).toHaveLength(0);
+  });
+
+  it('draws the outline but no node marker on "batas saja"', () => {
+    render(
+      <SimpleMonitoringMap
+        nodeMarkers={[
+          {
+            id: 'd1',
+            name: 'Rayon Barat',
+            variant: 'district',
+            lat: -7.25,
+            lng: 112.75,
+            scheduled: 4,
+            clocked_in: 2,
+            belum_hadir: 1,
+            tidak_hadir: 1,
+            active: 2,
+            active_inside: 2,
+          },
+        ]}
+        workers={[]}
+        boundaries={boundaries}
+        layers={{
+          district: 'boundary',
+          kawasan: 'all',
+          lokasi: 'all',
+          personnel: 'none',
+        }}
+      />
+    );
+    // The rayon polygon still draws; its count pin does not. Node markers used to
+    // be ungated entirely, so this is the case the new select exists to allow.
+    expect(screen.queryAllByTestId('polygon').length).toBeGreaterThan(0);
     expect(screen.queryAllByTestId('marker')).toHaveLength(0);
   });
 });

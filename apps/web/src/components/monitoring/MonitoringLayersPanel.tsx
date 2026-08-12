@@ -2,42 +2,26 @@
 
 /**
  * MonitoringLayersPanel — the "Pengaturan" (settings) control popover, opened
- * from the settings button. Toggles which overlays the map draws. State is owned
+ * from the settings button. Chooses what the map draws per layer. State is owned
  * by the page (persisted via useMonitoringLayers).
+ *
+ * Every row is a select with the same shape, so the panel reads as one control
+ * repeated rather than a mix of widgets — and the personnel row can no longer be
+ * put into a combination that means nothing (see `layers.ts`).
  */
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils/cn';
-import { LAYER_TOGGLES, type MonitoringLayers } from '@/lib/monitoring/layers';
+import { LAYER_ROWS, type MonitoringLayers } from '@/lib/monitoring/layers';
 
 export interface MonitoringLayersPanelProps {
   layers: MonitoringLayers;
-  onToggleLayer: (key: keyof MonitoringLayers) => void;
+  onSetLayer: (key: keyof MonitoringLayers, value: string) => void;
   onClose: () => void;
-}
-
-function Switch({ on }: { on: boolean }) {
-  return (
-    <span
-      className={cn(
-        'relative h-5 w-9 shrink-0 rounded-full border-2 border-nb-black transition-colors',
-        on ? 'bg-nb-primary' : 'bg-nb-gray-200'
-      )}
-      aria-hidden="true"
-    >
-      <span
-        className={cn(
-          'absolute top-0.5 h-3 w-3 rounded-full bg-nb-black transition-transform',
-          on ? 'left-0.5 translate-x-4' : 'left-0.5'
-        )}
-      />
-    </span>
-  );
 }
 
 export function MonitoringLayersPanel({
   layers,
-  onToggleLayer,
+  onSetLayer,
   onClose,
 }: MonitoringLayersPanelProps) {
   const { t } = useTranslation();
@@ -59,30 +43,29 @@ export function MonitoringLayersPanel({
       <span className="mb-1.5 block text-xs font-bold uppercase text-nb-gray-500">
         {t('monitoring:layers.overlays')}
       </span>
-      <ul className="flex flex-col gap-0.5">
-        {LAYER_TOGGLES.map(({ key, labelKey }) => {
-          // Tim only groups worker pins, so it does nothing while Petugas is off
-          // — grey it out (and hint why) rather than let it toggle to no effect.
-          const isDisabled = key === 'teamBubbles' && !layers.petugas;
-          return (
-            <li key={key}>
-              <button
-                type="button"
-                onClick={() => onToggleLayer(key)}
-                aria-pressed={layers[key]}
-                disabled={isDisabled}
-                title={isDisabled ? t('monitoring:layers.teamNeedsPetugas') : undefined}
-                className={cn(
-                  'flex w-full items-center justify-between gap-3 rounded-nb-sm px-2 py-2 text-left text-sm font-medium text-nb-black hover:bg-nb-gray-50',
-                  isDisabled && 'cursor-not-allowed opacity-40 hover:bg-transparent'
-                )}
-              >
-                <span>{t(labelKey)}</span>
-                <Switch on={layers[key]} />
-              </button>
-            </li>
-          );
-        })}
+      <ul className="flex flex-col gap-2">
+        {LAYER_ROWS.map(({ key, labelKey, options }) => (
+          <li key={key} className="flex items-center justify-between gap-3">
+            <label
+              htmlFor={`layer-${key}`}
+              className="text-sm font-medium text-nb-black"
+            >
+              {t(labelKey)}
+            </label>
+            <select
+              id={`layer-${key}`}
+              value={layers[key]}
+              onChange={(e) => onSetLayer(key, e.target.value)}
+              className="min-h-touch rounded-nb-sm border-2 border-nb-black bg-nb-white px-2 py-1 text-sm font-medium text-nb-black"
+            >
+              {options.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {t(o.labelKey)}
+                </option>
+              ))}
+            </select>
+          </li>
+        ))}
       </ul>
     </div>
   );

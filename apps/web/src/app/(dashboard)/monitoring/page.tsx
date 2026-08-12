@@ -153,7 +153,7 @@ export default function MonitoringPage() {
   } | null>(null);
 
   // Map layer visibility (persisted).
-  const { layers, toggleLayer } = useMonitoringLayers();
+  const { layers, setLayer } = useMonitoringLayers();
 
   // Keep view in sync when the user (role) resolves.
   useEffect(() => {
@@ -1089,7 +1089,7 @@ export default function MonitoringPage() {
       {layersOpen && (
         <MonitoringLayersPanel
           layers={layers}
-          onToggleLayer={toggleLayer}
+          onSetLayer={setLayer}
           onClose={() => setLayersOpen(false)}
         />
       )}
