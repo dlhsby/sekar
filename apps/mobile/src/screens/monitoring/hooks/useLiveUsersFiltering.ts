@@ -8,6 +8,7 @@ import React, { useMemo } from 'react';
 import { clusterUsers, shouldCluster } from '../../../utils/mapUtils';
 import { userAxes } from '../../../utils/statusHelpers';
 import { scopeMatches, subtreeMatches } from '../../../utils/monitoringScope';
+import { isZoomLike, type MonitoringMode } from '../../../store/slices/monitoringV2Slice';
 import { groupWorkersByTeam, isTeamGroup, type TeamGroup } from '../../../utils/teamGrouping';
 import type { LiveUser, UserRole, PresenceActivity } from '../../../types/models.types';
 import type { MonitoringFilters } from '../../../types/api.types';
@@ -44,7 +45,7 @@ export function useLiveUsersFiltering(
   /** When set, show ONLY that team's members (as pins) and hide the rest (ADR-048). */
   selectedTeamId: string | null = null,
   /** Zoom mode swaps the visibility question (ADR-060). */
-  mode: 'drill' | 'zoom' = 'drill',
+  mode: MonitoringMode = 'drill',
 ): UseLiveUsersFilteringReturn {
   const scopedUsers = React.useMemo(() => {
     if (!showsWorkerPins(visibleLayers.personnel)) { return []; }
@@ -58,7 +59,7 @@ export function useLiveUsersFiltering(
     // thus shows city/ad-hoc "Luar Jadwal" workers; a location shows its own crew.
     // Drill: does this worker's SCHEDULE scope here (ADR-046). Zoom: are they
     // standing anywhere inside it. Same fork as web, same two predicates.
-    const visible = mode === 'zoom' ? subtreeMatches : scopeMatches;
+    const visible = isZoomLike(mode) ? subtreeMatches : scopeMatches;
     users = users.filter(u => visible(u, scope, viewId));
     if (activityFilter) {
       users = users.filter(u => userAxes(u).activity === activityFilter);

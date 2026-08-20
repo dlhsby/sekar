@@ -10,7 +10,7 @@ import { useTranslation } from 'react-i18next';
 import { MapFab } from '../../../components/monitoring/MapFab';
 import { ToolsOverlay } from './ToolsOverlay';
 import { nbSpacing } from '../../../constants/nbTokens';
-import type { MonitoringV2VisibleLayers } from '../../../store/slices/monitoringV2Slice';
+import type { MonitoringV2VisibleLayers, MonitoringMode } from '../../../store/slices/monitoringV2Slice';
 
 interface FABColumnProps {
   toolsExpanded: boolean;
@@ -23,9 +23,9 @@ interface FABColumnProps {
   onZoomOut: () => void;
   onMyLocation: () => void;
   visibleLayers: MonitoringV2VisibleLayers;
-  onSetLayer: (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => void;
-  mode: 'drill' | 'zoom';
-  onSetMode: (mode: 'drill' | 'zoom') => void;
+  onSetLayer: (key: keyof MonitoringV2VisibleLayers, value: string[] | boolean) => void;
+  mode: MonitoringMode;
+  onSetMode: (mode: MonitoringMode) => void;
   filterModalVisible: boolean;
   setFilterModalVisible: (visible: boolean) => void;
 }

@@ -107,46 +107,41 @@ appId: com.wahyutrip.sekar
 # Kawasan is the row that did not exist before — mobile could neither show nor
 # hide a tier it drilled through.
 - assertVisible:
-    text: "Batas Kawasan|Kawasan"
+    text: "Kawasan"
 
-# Each geo row cycles Semua → Batas saja → Marker saja → Sembunyikan.
+# Each geo row now carries THREE independent chips instead of one cycling value.
+# "Isian" (fill) is the one the old four-way select had no word for at all: its
+# "Batas saja" silently meant outline AND fill.
 - assertVisible:
-    text: "Semua"
+    text: "Batas"
+- assertVisible:
+    text: "Isian"
+- assertVisible:
+    text: "Marker"
+
+# Untick fill on the kawasan row, then the outline: the chips are independent, so
+# each tap changes exactly one thing (the old row needed up to 3 taps to get here
+# and hid the options you were not on).
+- tapOn:
+    text: "Isian"
+- waitForAnimationToEnd:
+    timeout: 3000
 
 - tapOn:
-    text: "Batas Kawasan|Kawasan"
+    text: "Batas"
+- waitForAnimationToEnd:
+    timeout: 3000
 
-- extendedWaitUntil:
-    visible:
-      text: "Batas saja"
-    timeout: 8000
-
-- tapOn:
-    text: "Batas Kawasan|Kawasan"
-
-- extendedWaitUntil:
-    visible:
-      text: "Marker saja"
-    timeout: 8000
-
-- tapOn:
-    text: "Batas Kawasan|Kawasan"
-
-- extendedWaitUntil:
-    visible:
-      text: "Sembunyikan"
-    timeout: 8000
-
-# Petugas + Tim are ONE control: "Tim on, Petugas off" drew an empty map and is
-# now unrepresentable rather than merely discouraged.
+# Petugas + Tim are the same control shape. Tim alone is now a legal state — it
+# means "teams only", and the map collapses non-team workers out of view.
 - assertVisible:
     text: "Petugas & Tim|Personnel"
 
 # MANUAL: with the sheet closed, confirm on-device that
 #   1. KAWASAN OUTLINES actually draw (they never did before this change) and
-#      disappear when the row reads Sembunyikan;
-#   2. "Batas saja" keeps the outline but removes the count pin — the two were
-#      inseparable under the old boolean toggles;
+#      disappear when both Batas and Isian are unticked;
+#   2. unticking ISIAN alone leaves the outline and removes the wash — the two
+#      were inseparable under every earlier version of this control;
 #   3. in Zoom mode the city view draws every rayon, kawasan and lokasi at once.
 #      On a large dataset this is the heavy case by design; note whether it is
 #      usable on the target device, because that is the trade the client accepted.

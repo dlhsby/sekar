@@ -150,4 +150,51 @@ describe('NodeMarkerLayer unified pin', () => {
     );
     expect(svg()).toContain('M12 2.5l2.9'); // star, not a dot
   });
+
+  // ── Label placement + the label facet ───────────────────────────────────────
+
+  it('puts each tier\'s name on its own side of the pin', () => {
+    // One side per tier so a lokasi inside a kawasan inside a rayon does not
+    // print three names on the same strip of map.
+    for (const [variant, placement] of [
+      ['district', 'bottom'],
+      ['region', 'left'],
+      ['location', 'right'],
+    ] as const) {
+      render(<NodeMarkerLayer nodes={[makeNode({ variant })]} />);
+      const lab = labelEl(markers.length - 1)!;
+      expect(lab.className).toContain(`am-label--${placement}`);
+    }
+  });
+
+  it('omits the label when the tier\'s label facet is off, keeping the pin', () => {
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ variant: 'location' })]}
+        showLabels={{ location: false }}
+      />
+    );
+    expect(labelEl()).toBeNull();
+    // The pin itself is untouched — hiding names is not hiding the tier.
+    expect(svg()).toContain('svg');
+  });
+
+  it('draws the label by default, so an unspecified tier is unchanged', () => {
+    render(<NodeMarkerLayer nodes={[makeNode({ variant: 'district', name: 'Rayon Pusat' })]} />);
+    expect(labelText()).toBe('Rayon Pusat');
+  });
+
+  it('draws a WHITE pin body even when the area carries its own fill colour', () => {
+    // Node pins used to take the area's fill_color, which put the map's loudest
+    // colour on its most repeated element — the pins competed with the polygons
+    // wearing the same colours. Colour on a geo pin now means STATUS (the health
+    // badge); area identity is carried by the boundary.
+    render(
+      <NodeMarkerLayer
+        nodes={[makeNode({ variant: 'location', fill_color: '#FF00FF', fill_opacity: 0.9 })]}
+      />
+    );
+    expect(svg()).toContain('#FFFFFF');
+    expect(svg()).not.toContain('#FF00FF');
+  });
 });

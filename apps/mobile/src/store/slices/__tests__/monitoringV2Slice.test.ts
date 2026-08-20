@@ -79,11 +79,11 @@ describe('monitoringV2Slice', () => {
 
     it('starts with every geo tier and personnel fully visible', () => {
       const state = monitoringV2Reducer(undefined, { type: '@@INIT' });
-      expect(state.visibleLayers.district).toBe('all');
+      expect(state.visibleLayers.district).toEqual(['boundary', 'fill', 'marker', 'label']);
       // Kawasan is new: the tier the map drills THROUGH previously had no layer.
-      expect(state.visibleLayers.kawasan).toBe('all');
-      expect(state.visibleLayers.lokasi).toBe('all');
-      expect(state.visibleLayers.personnel).toBe('all');
+      expect(state.visibleLayers.kawasan).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.lokasi).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.personnel).toEqual(['petugas', 'tim']);
     });
 
     it('starts with the plants overlay hidden', () => {
@@ -187,17 +187,17 @@ describe('monitoringV2Slice', () => {
   });
 
   describe('setLayer', () => {
-    it('sets a geo tier to an explicit visibility', () => {
+    it('sets a geo tier to an explicit facet set', () => {
       const state = monitoringV2Reducer(
         undefined,
-        setLayer({ key: 'district', value: 'boundary' }),
+        setLayer({ key: 'district', value: ['boundary'] }),
       );
-      expect(state.visibleLayers.district).toBe('boundary');
+      expect(state.visibleLayers.district).toEqual(['boundary']);
     });
 
-    it('collapses Petugas/Tim onto ONE value, so Tim-without-Petugas is unrepresentable', () => {
-      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: 'tim' }));
-      expect(state.visibleLayers.personnel).toBe('tim');
+    it('lets Tim be chosen without Petugas — the map then shows teams only', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: ['tim'] }));
+      expect(state.visibleLayers.personnel).toEqual(['tim']);
     });
 
     it('keeps plants a plain boolean', () => {
@@ -205,24 +205,39 @@ describe('monitoringV2Slice', () => {
       expect(state.visibleLayers.plants).toBe(true);
     });
 
-    it('hides a tier outright', () => {
-      const state = monitoringV2Reducer(undefined, setLayer({ key: 'lokasi', value: 'none' }));
-      expect(state.visibleLayers.lokasi).toBe('none');
+    it('hides a tier outright with an empty set', () => {
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'lokasi', value: [] }));
+      expect(state.visibleLayers.lokasi).toEqual([]);
     });
 
     it('can ask for markers without the outline — impossible before', () => {
-      // The old booleans governed the BOUNDARY only; node markers were always
-      // drawn and could not be hidden or requested on their own.
-      const state = monitoringV2Reducer(undefined, setLayer({ key: 'kawasan', value: 'marker' }));
-      expect(state.visibleLayers.kawasan).toBe('marker');
+      // The original booleans governed the BOUNDARY only; node markers were
+      // always drawn and could not be hidden or requested on their own.
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'kawasan', value: ['marker'] }));
+      expect(state.visibleLayers.kawasan).toEqual(['marker']);
+    });
+
+    it('can ask for outline without fill — the combination the select had no word for', () => {
+      const state = monitoringV2Reducer(
+        undefined,
+        setLayer({ key: 'kawasan', value: ['boundary', 'marker'] }),
+      );
+      expect(state.visibleLayers.kawasan).toEqual(['boundary', 'marker']);
+    });
+
+    it('stores a COPY, so a caller reusing its array cannot mutate the store', () => {
+      const chosen = ['boundary'];
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'district', value: chosen }));
+      chosen.push('marker');
+      expect(state.visibleLayers.district).toEqual(['boundary']);
     });
 
     it('setting one layer does not affect others', () => {
-      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: 'none' }));
+      const state = monitoringV2Reducer(undefined, setLayer({ key: 'personnel', value: [] }));
       expect(state.visibleLayers.plants).toBe(false);
-      expect(state.visibleLayers.district).toBe('all');
-      expect(state.visibleLayers.kawasan).toBe('all');
-      expect(state.visibleLayers.lokasi).toBe('all');
+      expect(state.visibleLayers.district).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.kawasan).toEqual(['boundary', 'fill', 'marker', 'label']);
+      expect(state.visibleLayers.lokasi).toEqual(['boundary', 'fill', 'marker', 'label']);
     });
   });
 

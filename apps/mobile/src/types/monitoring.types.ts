@@ -128,6 +128,8 @@ export interface LiveUser {
   team_icon?: string | null;
   /** Per-role marker glyph override (from the role's marker_icon). */
   role_marker_icon?: string | null;
+  /** Per-role marker colour (from the role's marker_color) — fills the pin body. */
+  role_marker_color?: string | null;
 }
 
 // Absent User for daily roster monitoring — Phase 3 (roster monitoring)

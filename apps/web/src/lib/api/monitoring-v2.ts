@@ -17,6 +17,8 @@ export interface SnapshotWorker {
   role: string;
   /** The role's configured marker icon (null → the client default glyph for the role). */
   role_marker_icon?: string | null;
+  /** The role's configured marker colour (role settings, ADR-044) — fills the pin. */
+  role_marker_color?: string | null;
   lat: number;
   lng: number;
   status: TrackingStatus;
@@ -176,6 +178,9 @@ export const aggregateKeys = {
   all: ['monitoring', 'aggregate'] as const,
   byScope: (scope: string, id?: string) =>
     [...aggregateKeys.all, scope, id] as const,
+  /** Viewport mode keys on the box too — two corners of the city are two answers. */
+  byBox: (scope: AggregateScope, id?: string, bbox?: string) =>
+    [...aggregateKeys.all, scope, id, bbox ?? null] as const,
 };
 
 /**
@@ -188,17 +193,23 @@ export const aggregateKeys = {
  * optionally narrowed to one rayon's subtree by `id`. It replaces the 1 + 2N drill
  * requests the client would otherwise fan out, and the server composes it from the
  * same per-tier builders, so a node's counts match whichever scope asked.
+ *
+ * `bbox` (viewport mode, `scope='all'` only) narrows which NODES the server builds
+ * — the off-camera districts' builder passes never run. `totals` stay scope-wide,
+ * so the header keeps reporting the city rather than the camera.
  */
 export function useMonitoringAggregate(
   scope: AggregateScope,
   id?: string,
-  enabled = true
+  enabled = true,
+  bbox?: string | null
 ) {
   return useQuery({
-    queryKey: aggregateKeys.byScope(scope, id),
+    queryKey: aggregateKeys.byBox(scope, id, bbox ?? undefined),
     queryFn: async () => {
       const params: Record<string, string> = { scope };
       if (id) params.id = id;
+      if (bbox) params.bbox = bbox;
       const response = await apiClient.get<AggregateResponse>('/monitoring/aggregate', {
         params,
       });

@@ -209,14 +209,16 @@ export const fetchStaffingSummary = createAsyncThunk(
 export const fetchBoundaries = createAsyncThunk(
   'monitoring/fetchBoundaries',
   async (
-    filters: { district_id?: string; level?: 'district' | 'area' } | undefined,
+    filters:
+      | { district_id?: string; level?: 'district' | 'area'; bbox?: string | null }
+      | undefined,
     { rejectWithValue },
   ) => {
     try {
       // Keep full (server-simplified) area geometry by default so the current
       // city view still shows area polygons; `level` is opt-in for a future
       // drill flow that wants district-outlines-only.
-      const response = await getBoundaries(filters?.district_id, filters?.level);
+      const response = await getBoundaries(filters?.district_id, filters?.level, filters?.bbox);
       if (response.error) {
         return rejectWithValue(response.error);
       }

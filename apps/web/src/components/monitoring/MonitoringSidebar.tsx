@@ -17,7 +17,7 @@
  */
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, Battery, MapPin, Users } from 'lucide-react';
+import { ArrowLeft, Battery, MapPin, Users, EyeOff } from 'lucide-react';
 import { Tabs, EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import { formatRelativeTime } from '@/lib/utils/formatters';
@@ -53,6 +53,14 @@ export interface MonitoringSidebarProps {
    * snapshot carries.
    */
   workerDetail?: React.ReactNode;
+  /**
+   * Row-level hide (see `lib/monitoring/hidden.ts`). Applies to BOTH tabs, with
+   * one restore control per tab; hiding is presentation only, so the tab counts
+   * keep reporting what is in scope, not what survived the filter.
+   */
+  isHidden?: (kind: 'nodes' | 'workers', id: string) => boolean;
+  onToggleHidden?: (kind: 'nodes' | 'workers', id: string) => void;
+  onShowAllHidden?: (kind: 'nodes' | 'workers') => void;
   className?: string;
 }
 
@@ -64,10 +72,12 @@ function WorkerRow({
   worker,
   selected,
   onClick,
+  onHide,
 }: {
   worker: SnapshotWorker;
   selected: boolean;
   onClick: () => void;
+  onHide?: () => void;
 }) {
   const { t } = useTranslation();
   const statusLabels = getStatusLabels();
@@ -76,13 +86,14 @@ function WorkerRow({
   const lowBattery = worker.battery_level !== null && worker.battery_level < 20;
 
   return (
+    <div className="flex items-stretch border-b border-nb-gray-200">
     <button
       type="button"
       onClick={onClick}
       aria-current={selected}
       aria-label={`${worker.full_name}, ${statusLabels[worker.status as TrackingStatus] ?? worker.status}`}
       className={cn(
-        'w-full border-b border-nb-gray-200 px-3 py-2.5 text-left transition-colors',
+        'flex-1 px-3 py-2.5 text-left transition-colors',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-nb-primary',
         selected ? 'border-l-4 border-l-nb-primary bg-nb-primary/10' : 'hover:bg-nb-gray-50'
       )}
@@ -114,6 +125,18 @@ function WorkerRow({
         )}
       </div>
     </button>
+      {onHide && (
+        <button
+          type="button"
+          onClick={onHide}
+          aria-label={t('monitoring:hidden.hideLabel', { name: worker.full_name })}
+          title={t('monitoring:hidden.hideLabel', { name: worker.full_name })}
+          className="shrink-0 border-l border-nb-gray-200 px-2 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
+        >
+          <EyeOff className="h-4 w-4" aria-hidden="true" />
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -226,6 +249,9 @@ export function MonitoringSidebar({
   selectedWorker,
   onSelect,
   workerDetail,
+  isHidden,
+  onToggleHidden,
+  onShowAllHidden,
   className,
 }: MonitoringSidebarProps) {
   const { t } = useTranslation();
@@ -235,8 +261,13 @@ export function MonitoringSidebar({
   const [tab, setTab] = useState<SidebarTab>(hasNodes ? 'wilayah' : 'petugas');
   const activeTab: SidebarTab = hasNodes ? tab : 'petugas';
 
+  // Hiding filters the LIST, never the counts: the tab badge below still reports
+  // how many workers are in scope, which is the number the map is answering for.
+  const visibleWorkers = isHidden ? workers.filter((w) => !isHidden('workers', w.user_id)) : workers;
+  const hiddenWorkerCount = workers.length - visibleWorkers.length;
+
   const workerList =
-    workers.length === 0 ? (
+    visibleWorkers.length === 0 ? (
       <div className="p-4">
         <EmptyState
           variant="noResults"
@@ -246,17 +277,35 @@ export function MonitoringSidebar({
       </div>
     ) : (
       <ul>
-        {workers.map((w) => (
+        {visibleWorkers.map((w) => (
           <li key={w.user_id}>
             <WorkerRow
               worker={w}
               selected={w.user_id === selectedId}
               onClick={() => onSelect(w.user_id)}
+              onHide={onToggleHidden ? () => onToggleHidden('workers', w.user_id) : undefined}
             />
           </li>
         ))}
       </ul>
     );
+
+  // Never silent: a hidden worker is announced with a one-click way back, or an
+  // operator ends up trusting an incomplete list.
+  const workerRestoreBanner = hiddenWorkerCount > 0 && onShowAllHidden && (
+    <div className="flex items-center justify-between gap-2 border-b-2 border-nb-gray-100 bg-nb-gray-50 px-3 py-1.5 text-xs">
+      <span className="font-bold text-nb-gray-600">
+        {t('monitoring:hidden.count', { count: hiddenWorkerCount })}
+      </span>
+      <button
+        type="button"
+        onClick={() => onShowAllHidden('workers')}
+        className="font-bold text-nb-black underline underline-offset-2 hover:text-nb-primary-active"
+      >
+        {t('monitoring:hidden.showAll')}
+      </button>
+    </div>
+  );
 
   return (
     <div
@@ -294,9 +343,15 @@ export function MonitoringSidebar({
                 onDetail={onNodeDetail}
                 showTier={showNodeTier}
                 activeGeoId={activeGeoId}
+                isHidden={isHidden ? (id) => isHidden('nodes', id) : undefined}
+                onToggleHidden={onToggleHidden ? (id) => onToggleHidden('nodes', id) : undefined}
+                onShowAllHidden={onShowAllHidden ? () => onShowAllHidden('nodes') : undefined}
               />
             ) : (
-              workerList
+              <>
+                {workerRestoreBanner}
+                {workerList}
+              </>
             )}
           </div>
         </>

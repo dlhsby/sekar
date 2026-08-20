@@ -38,17 +38,21 @@
   "layers": {
     "title": "Settings",
     "overlays": "Map Layers",
-    "district": "District Boundary",
-    "kawasan": "Kawasan Boundary",
-    "lokasi": "Lokasi Boundary",
+    "district": "District",
+    "kawasan": "Region",
+    "lokasi": "Location",
     "personnel": "Personnel & Teams",
     "option": {
       "all": "All",
-      "boundary": "Boundary only",
-      "marker": "Marker only",
-      "none": "Hidden",
-      "petugasOnly": "Personnel only",
-      "timOnly": "Teams only"
+      "none": "Hidden"
+    },
+    "facet": {
+      "boundary": "Boundary",
+      "fill": "Fill",
+      "marker": "Marker",
+      "label": "Label",
+      "petugas": "Personnel",
+      "tim": "Teams"
     }
   },
   "search": {
@@ -357,9 +361,15 @@
   "mode": {
     "title": "Monitoring Mode",
     "drill": "Tap & Drill",
-    "zoom": "Zoom",
+    "zoom": "Zoom (everything)",
     "drillHint": "Tap an area to go one level deeper. Personnel appear at their scheduled level.",
-    "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it."
+    "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it.",
+    "viewport": "Zoom (on screen)",
+    "viewportHint": "Same as Zoom, but only loads what is on screen. Pan or zoom out to load more.",
+    "zoomInFor": {
+      "region": "Zoom in to see kawasan",
+      "location": "Zoom in to see lokasi & personnel"
+    }
   },
   "lifecycle": {
     "late": "Late",
@@ -391,5 +401,14 @@
     "staffingTitle": "Staffing by Role",
     "plantsLabel": "Plants",
     "plantsCount": "{{count}} species · {{notable}} heritage"
+  },
+  "hidden": {
+    "count": "{{count}} hidden",
+    "showAll": "Show all",
+    "hideLabel": "Hide {{name}}"
+  },
+  "trail": {
+    "start": "Start",
+    "end": "Latest"
   }
 }

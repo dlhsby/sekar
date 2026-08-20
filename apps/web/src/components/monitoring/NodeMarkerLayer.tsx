@@ -15,6 +15,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { AdvancedPinMarker } from './AdvancedPinMarker';
 import {
+  NODE_LABEL_PLACEMENT,
   pinElement,
   rosterHealth,
   HEALTH_COLORS,
@@ -38,9 +39,11 @@ export interface NodeMarker {
   active_inside: number;
   /** Configured marker glyph for this location (e.g. "trees"); null → per-kind default. */
   marker_icon?: string | null;
-  /** The location's fill_color — fills the marker pin (null → white). */
+  /**
+   * The location's own colours. Still carried because the BOUNDARY polygons use
+   * them; the pin body is white for every geo tier (see the builder below).
+   */
   fill_color?: string | null;
-  /** The location's fill_opacity 0–1. */
   fill_opacity?: number | null;
 }
 
@@ -59,9 +62,21 @@ export interface NodeMarkerLayerProps {
   /** Geo filter selection (district/kawasan/lokasi id). When set, node bubbles that
    *  don't match are dimmed to spotlight the selection. Null = no geo filter. */
   activeGeoId?: string | null;
+  /**
+   * Per-tier name-label visibility (the `label` facet). Separate from the marker
+   * facet: hiding a dense tier's names while keeping its pins is the common ask,
+   * so this gates the label rather than filtering the node out.
+   */
+  showLabels?: Partial<Record<NodeMarker['variant'], boolean>>;
 }
 
-export function NodeMarkerLayer({ nodes, onDrill, onDetail, activeGeoId }: NodeMarkerLayerProps) {
+export function NodeMarkerLayer({
+  nodes,
+  onDrill,
+  onDetail,
+  activeGeoId,
+  showLabels,
+}: NodeMarkerLayerProps) {
   // `build()` is memoized by signature, so a handler captured inside it would go
   // stale the moment the callback identity changed. The ref is read at CLICK
   // time, which keeps the memo intact and the handler current.
@@ -95,10 +110,14 @@ export function NodeMarkerLayer({ nodes, onDrill, onDetail, activeGeoId }: NodeM
         // Signature = every field the pin/label visual depends on (NOT position —
         // that is synced cheaply by the marker wrapper). Unchanged signature →
         // memoized element → a moved node only repositions.
+        const withLabel = showLabels?.[node.variant] !== false;
         const signature =
-          `${node.variant}|${node.marker_icon ?? ''}|${node.fill_color ?? ''}|${node.fill_opacity ?? ''}` +
+          // fill_color/opacity are no longer read for the pin body (white), so
+          // they are out of the signature — leaving them in would rebuild the
+          // element for a change that cannot alter a pixel.
+          `${node.variant}|${node.marker_icon ?? ''}` +
           `|${node.active}|${node.scheduled}|${node.clocked_in}|${node.name}|${dimmed ? 1 : 0}` +
-          `|${onDetail ? 1 : 0}`;
+          `|${onDetail ? 1 : 0}|${withLabel ? 1 : 0}`;
         return (
           <AdvancedPinMarker
             key={`node-${node.id}`}
@@ -108,17 +127,32 @@ export function NodeMarkerLayer({ nodes, onDrill, onDetail, activeGeoId }: NodeM
               const el = pinElement(
                 node.marker_icon ?? KIND_DEFAULT_GLYPH[node.variant] ?? null,
                 {
-                  // Ring is NEUTRAL — the marker's identity is its fill_color alone;
-                  // the entity's border color never rides the ring. Staffing health
-                  // stays visible on the count badge (badgeColor), not the ring.
+                  // Ring is NEUTRAL and the body is WHITE for every geo tier.
+                  //
+                  // Node pins used to take the area's own fill_color, which put
+                  // the map's loudest colour on its most repeated element: at
+                  // zoom level the pins competed with the polygons wearing the
+                  // same colours, and a rayon's identity read twice. White pins
+                  // let the BOUNDARIES carry area identity and leave colour on a
+                  // pin to mean status — the health badge — which is the only
+                  // thing an operator needs to spot at a glance. People keep
+                  // their own colours (role marker / team category); those are
+                  // the markers where colour still identifies something.
                   outline: MARKER_NEUTRAL_OUTLINE,
-                  fill: node.fill_color ?? undefined,
-                  fillOpacity: node.fill_opacity ?? undefined,
+                  fill: undefined,
+                  fillOpacity: undefined,
                   count: node.active,
                   badgeColor: HEALTH_COLORS[health],
                   big,
                 },
-                { text: node.name, className: 'node-marker-label', color: HEALTH_COLORS[health] }
+                withLabel
+                  ? {
+                      text: node.name,
+                      className: 'node-marker-label',
+                      color: HEALTH_COLORS[health],
+                      placement: NODE_LABEL_PLACEMENT[node.variant],
+                    }
+                  : undefined
               );
               el.style.opacity = dimmed ? '0.3' : '1';
               if (onDetailRef.current) {

@@ -22,6 +22,13 @@ import { geometryToRings } from '../../utils/geoJsonUtils';
 import { buildDistrictColorMap, districtColor } from './districtColors';
 import { healthColor, rosterHealth } from './markerSpec';
 
+/**
+ * A fill the map does not paint. `react-native-maps` has no fillOpacity prop —
+ * the alpha lives in the colour — so "fill off" is a fully transparent colour
+ * rather than an omitted polygon (the outline may still be wanted).
+ */
+const TRANSPARENT = 'rgba(0,0,0,0)';
+
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface BoundaryOverlayProps {
@@ -39,8 +46,20 @@ interface BoundaryOverlayProps {
    */
   showDistricts?: boolean;
   showAreas?: boolean;
-  /** Draw kawasan outlines. New: the payload's `regions[]` was previously discarded. */
+  /** Draw kawasan polygons. New: the payload's `regions[]` was previously discarded. */
   showRegions?: boolean;
+  /**
+   * Outline and fill are INDEPENDENT facets per tier (the map settings let an
+   * operator ask for a wash with no border, or a border with no wash). The
+   * `show*` flags above decide whether the polygon is mounted at all — scope
+   * plus "either facet"; these decide which half of it paints.
+   */
+  districtOutline?: boolean;
+  districtFill?: boolean;
+  regionOutline?: boolean;
+  regionFill?: boolean;
+  areaOutline?: boolean;
+  areaFill?: boolean;
   /** At region scope, narrow to the drilled kawasan so the view actually narrows. */
   regionId?: string | null;
   /**
@@ -163,6 +182,12 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
   showDistricts = true,
   showAreas = true,
   showRegions = false,
+  districtOutline = true,
+  districtFill = true,
+  regionOutline = true,
+  regionFill = true,
+  areaOutline = true,
+  areaFill = true,
   regionId = null,
   showDistrictBubbles = false,
   showAreaBubbles = false,
@@ -192,11 +217,13 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
                   coordinates={ring}
                   strokeColor={region.border_color ?? districtColor(districtColors, district.id).stroke}
                   fillColor={
-                    region.fill_color
-                      ? withAlpha(region.fill_color, region.fill_opacity ?? 0.1)
-                      : withAlpha(districtColor(districtColors, district.id).stroke, 0.08)
+                    !regionFill
+                      ? TRANSPARENT
+                      : region.fill_color
+                        ? withAlpha(region.fill_color, region.fill_opacity ?? 0.1)
+                        : withAlpha(districtColor(districtColors, district.id).stroke, 0.08)
                   }
-                  strokeWidth={1.5}
+                  strokeWidth={regionOutline ? 1.5 : 0}
                 />
               )),
             ),
@@ -217,8 +244,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
             key={`district-poly-${district.id}-${i}`}
             coordinates={ring}
             strokeColor={stroke}
-            fillColor={fill}
-            strokeWidth={2}
+            fillColor={districtFill ? fill : TRANSPARENT}
+            strokeWidth={districtOutline ? 2 : 0}
             lineDashPattern={[8, 4]}
           />
         ));
@@ -237,8 +264,8 @@ export const BoundaryOverlay = React.memo(function BoundaryOverlay({
                 key={`area-poly-${area.id}-${i}`}
                 coordinates={ring}
                 strokeColor={nbColors.black}
-                fillColor={withAlpha(nbColors.warningLight, 0.15)}
-                strokeWidth={2}
+                fillColor={areaFill ? withAlpha(nbColors.warningLight, 0.15) : TRANSPARENT}
+                strokeWidth={areaOutline ? 2 : 0}
               />
             ));
           }

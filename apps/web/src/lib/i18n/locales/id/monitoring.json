@@ -38,17 +38,21 @@
   "layers": {
     "title": "Pengaturan",
     "overlays": "Lapisan Peta",
-    "district": "Batas Rayon",
-    "kawasan": "Batas Kawasan",
-    "lokasi": "Batas Lokasi",
+    "district": "Rayon",
+    "kawasan": "Kawasan",
+    "lokasi": "Lokasi",
     "personnel": "Petugas & Tim",
     "option": {
       "all": "Semua",
-      "boundary": "Batas saja",
-      "marker": "Marker saja",
-      "none": "Sembunyikan",
-      "petugasOnly": "Petugas saja",
-      "timOnly": "Tim saja"
+      "none": "Sembunyikan"
+    },
+    "facet": {
+      "boundary": "Batas",
+      "fill": "Isian",
+      "marker": "Marker",
+      "label": "Nama",
+      "petugas": "Petugas",
+      "tim": "Tim"
     }
   },
   "search": {
@@ -357,9 +361,15 @@
   "mode": {
     "title": "Mode Monitoring",
     "drill": "Ketuk & Telusuri",
-    "zoom": "Zoom",
+    "zoom": "Zoom (semua)",
     "drillHint": "Ketuk wilayah untuk masuk satu tingkat. Petugas tampil di tingkat jadwalnya.",
-    "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu."
+    "zoomHint": "Tampilkan semua rayon, kawasan, lokasi, dan petugas sekaligus. Ketuk wilayah untuk membatasi ke wilayah itu.",
+    "viewport": "Zoom (layar)",
+    "viewportHint": "Sama seperti Zoom, tetapi hanya memuat area yang terlihat di layar. Geser atau perkecil peta untuk memuat lebih banyak.",
+    "zoomInFor": {
+      "region": "Perbesar untuk melihat kawasan",
+      "location": "Perbesar untuk melihat lokasi & petugas"
+    }
   },
   "lifecycle": {
     "late": "Terlambat",
@@ -391,5 +401,14 @@
     "staffingTitle": "Kebutuhan per Jabatan",
     "plantsLabel": "Tanaman",
     "plantsCount": "{{count}} jenis · {{notable}} heritage"
+  },
+  "hidden": {
+    "count": "{{count}} disembunyikan",
+    "showAll": "Tampilkan semua",
+    "hideLabel": "Sembunyikan {{name}}"
+  },
+  "trail": {
+    "start": "Mulai",
+    "end": "Terakhir"
   }
 }

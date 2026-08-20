@@ -63,6 +63,11 @@ jest.mock('../../../store/slices/monitoringSlice', () => ({
 
 import React from 'react';
 import { render, act } from '@testing-library/react-native';
+// Aliased to a `mock`-prefixed name: `jest.mock` factories are HOISTED above
+// the imports, so babel-plugin-jest-hoist rejects any out-of-scope reference
+// it cannot prove is lazy. The prefix is the sanctioned way to assert that it
+// is — this one is only read inside `useSelector`, long after the module loads.
+import { DEFAULT_VISIBLE_LAYERS as mockDefaultVisibleLayers } from '../../../utils/layerVisibility';
 import { MapDashboardScreen } from '../MapDashboardScreen';
 import type { LiveUser } from '../../../types/models.types';
 
@@ -129,6 +134,11 @@ jest.mock('../../../components/monitoring/MonitoringSearchBar', () => ({
   MonitoringSearchBar: () => null,
 }));
 jest.mock('../../../store/slices/monitoringV2Slice', () => ({
+  // Spread the REAL module: only the action creators need stubbing, and the
+  // slice also exports pure helpers the screen calls through (`isZoomLike`).
+  // Listing exports by hand meant every new helper arrived here as
+  // `undefined` and surfaced as "is not a function" at render.
+  ...jest.requireActual('../../../store/slices/monitoringV2Slice'),
   toggleLayer: jest.fn((l: any) => ({ type: 'monitoringV2/toggleLayer', payload: l })),
   fetchAggregate: jest.fn(() => ({ type: 'monitoringV2/fetchAggregate' })),
   setMode: jest.fn((m: any) => ({ type: 'monitoringV2/setMode', payload: m })),
@@ -174,13 +184,10 @@ jest.mock('react-redux', () => ({
       auth: { user: { id: 'u-1', role: 'korlap', location_id: 'area-1' } },
       // Phase 3 sub-phase 3-5: monitoringV2 slice default state
       monitoringV2: {
-        visibleLayers: {
-          workers: true,
-          plants: false,
-          overdue: false,
-          districts: true,
-          areas: true,
-        },
+        // The real default shape. This fixture used to carry the pre-v5 keys
+        // (workers/districts/areas), which no predicate reads any more — it only
+        // survived because comparing a missing key to a string quietly said no.
+        visibleLayers: { ...mockDefaultVisibleLayers },
         selectedUserId: null,
         selectedAreaId: null,
         clusterZoomThreshold: 0.05,

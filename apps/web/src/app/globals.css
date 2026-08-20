@@ -479,13 +479,49 @@ body {
   }
   .am-marker > .am-label {
     position: absolute;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.15;
+    pointer-events: none;
+    /* Names wrap instead of running off across the map. "Taman Harmoni Keputih
+       Sukolilo" as one unbroken line covered several neighbouring pins. */
+    white-space: normal;
+    overflow-wrap: anywhere;
+    max-width: 132px;
+    width: max-content;
+  }
+  /* One side per tier, so a lokasi inside a kawasan inside a rayon does not
+     print three names on the same strip of map. The label always grows AWAY
+     from the pin, so the anchor never moves. */
+  .am-marker > .am-label--bottom {
     top: 100%;
     left: 50%;
     transform: translateX(-50%);
     margin-top: 1px;
-    font-size: 12px;
-    font-weight: 700;
-    pointer-events: none;
+    text-align: center;
+  }
+  .am-marker > .am-label--top {
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 2px;
+    text-align: center;
+  }
+  /* Right-aligned so the text ENDS at the pin — a left-placed label that grew
+     rightwards would run under its own marker. */
+  .am-marker > .am-label--left {
+    right: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-right: 4px;
+    text-align: right;
+  }
+  .am-marker > .am-label--right {
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 4px;
+    text-align: left;
   }
   /* Google-style place label under a monitoring node marker: dark text with a
      white halo so an area's name reads over any base-map color. */
@@ -493,12 +529,27 @@ body {
     /* color comes from the marker's label (staffing-health tinted); keep only
        the white halo + font so the name reads over any base-map color. */
     font-family: var(--font-body), Inter, sans-serif !important;
-    white-space: nowrap;
     text-shadow:
       0 1px 2px var(--color-nb-white),
       0 -1px 2px var(--color-nb-white),
       1px 0 2px var(--color-nb-white),
       -1px 0 2px var(--color-nb-white);
+  }
+  /* Start / end of a movement trail. Filled = start (where the day began),
+     hollow = end (where they are now, which the worker pin also marks) — the
+     same read as the mobile trail view. */
+  .trail-endpoint {
+    width: 12px;
+    height: 12px;
+    border-radius: 9999px;
+    border: 2px solid var(--color-nb-black);
+    box-shadow: 0 0 0 2px var(--color-nb-white);
+  }
+  .trail-endpoint--start {
+    background: var(--color-nb-black);
+  }
+  .trail-endpoint--end {
+    background: var(--color-nb-white);
   }
   /* ⓘ badge on a node marker — opens the area detail card. Sits on the pin's
      top-right so the pin body keeps its own meaning (tap = drill). Its own
@@ -530,7 +581,6 @@ body {
   .worker-marker-label {
     color: var(--color-nb-black) !important;
     font-family: var(--font-body), Inter, sans-serif !important;
-    white-space: nowrap;
     text-shadow:
       0 1px 2px var(--color-nb-white),
       0 -1px 2px var(--color-nb-white),

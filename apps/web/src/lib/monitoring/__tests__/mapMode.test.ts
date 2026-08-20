@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useMonitoringMode, DEFAULT_MODE, MODE_OPTIONS } from '../mapMode';
+import { useMonitoringMode, DEFAULT_MODE, MODE_OPTIONS, isZoomLike } from '../mapMode';
 
 describe('useMonitoringMode', () => {
   beforeEach(() => window.localStorage.clear());
@@ -29,7 +29,20 @@ describe('useMonitoringMode', () => {
     expect(result.current.mode).toBe('drill');
   });
 
-  it('offers exactly the two modes', () => {
-    expect(MODE_OPTIONS.map((o) => o.value)).toEqual(['drill', 'zoom']);
+  it('offers exactly the three modes', () => {
+    expect(MODE_OPTIONS.map((o) => o.value)).toEqual(['drill', 'zoom', 'viewport']);
+  });
+
+  it('treats viewport as zoom-like: they DRAW the same, they differ in extent', () => {
+    expect(isZoomLike('zoom')).toBe(true);
+    expect(isZoomLike('viewport')).toBe(true);
+    expect(isZoomLike('drill')).toBe(false);
+  });
+
+  it('falls back to the default for a stored value it does not recognise', () => {
+    // A downgrade can leave a newer mode name in storage.
+    window.localStorage.setItem('monitoring.mode.v1', 'satellite');
+    const { result } = renderHook(() => useMonitoringMode());
+    expect(result.current.mode).toBe('drill');
   });
 });

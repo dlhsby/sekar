@@ -14,6 +14,7 @@ import { Marker } from 'react-native-maps';
 import { nbColors, nbBorders, nbRadius, nbShadows, withAlpha } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import type { TeamGroup } from '../../utils/teamGrouping';
+import { LabeledMarker } from './MarkerLabel';
 
 interface TeamMarkerLayerProps {
   teams: TeamGroup[];
@@ -57,15 +58,17 @@ function TeamBubble({
       anchor={{ x: 0.5, y: 0.5 }}
       testID={`team-marker-${team.team_id}`}
     >
-      <View style={[styles.bubble, { borderColor: color }]}>
-        <View style={[styles.dot, { backgroundColor: color }]} />
-        <NBText variant="caption" style={styles.name} numberOfLines={1}>
-          {team.team_name}
-        </NBText>
-        <NBText variant="body-sm" style={styles.count}>
-          {team.member_count}
-        </NBText>
-      </View>
+      {/* People write ABOVE their pin — the space below belongs to the geo
+          tiers' own names. The bubble keeps the count; the team name moved out
+          so it can wrap instead of being clipped at 170 px. */}
+      <LabeledMarker label={team.team_name} placement="top">
+        <View style={[styles.bubble, { borderColor: color }]}>
+          <View style={[styles.dot, { backgroundColor: color }]} />
+          <NBText variant="body-sm" style={styles.count}>
+            {team.member_count}
+          </NBText>
+        </View>
+      </LabeledMarker>
     </Marker>
   );
 }
@@ -102,11 +105,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: nbColors.black,
     marginRight: 6,
-  },
-  name: {
-    color: nbColors.black,
-    fontWeight: '700',
-    flexShrink: 1,
   },
   count: {
     color: nbColors.black,

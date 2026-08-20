@@ -30,8 +30,12 @@ import {
 } from '@/lib/api/monitoring';
 import { useMonitoringSocket } from '@/lib/monitoring/useMonitoringSocket';
 import { useMonitoringLayers } from '@/lib/monitoring/layers';
-import { useMonitoringMode } from '@/lib/monitoring/mapMode';
+import { useMonitoringMode, isZoomLike } from '@/lib/monitoring/mapMode';
 import { useGeoIndex } from '@/lib/monitoring/useGeoIndex';
+import { useViewportBox } from '@/lib/monitoring/useViewportBox';
+import { useHiddenEntities } from '@/lib/monitoring/hidden';
+import { needsAreaGeometry, nextTierAt } from '@/lib/monitoring/zoomTiers';
+import type { MapBounds } from '@/components/monitoring/WorkerClusterLayer';
 import { statusToActivity } from '@/lib/monitoring/markers';
 import type { TeamGroup } from '@/lib/monitoring/teamGrouping';
 import type { MonitoringSearchResult } from '@/lib/monitoring/useMonitoringSearch';
@@ -167,12 +171,34 @@ export default function MonitoringPage() {
 
   // Map layer visibility + monitoring mode (both persisted per browser).
   const { layers, setLayer } = useMonitoringLayers();
+  // Per-row "get this out of my way" for the lists AND the map. Presentation
+  // only — every count still comes from the server over the full scope.
+  const { isHidden, toggle: toggleHidden, clear: clearHidden } = useHiddenEntities();
   const { mode, setMode } = useMonitoringMode();
   // Every rayon/kawasan/lokasi by name, independent of the drill scope — search
   // used to read the map's scope-bound boundaries, so at the DEFAULT city view
   // no lokasi could be found at all (`level='district'` returns no areas).
   const geoIndex = useGeoIndex(canMonitor);
-  const isZoom = mode === 'zoom';
+  // Zoom and viewport DRAW the same thing — every tier of the subtree at once.
+  // They differ only in extent, so every rendering decision reads `isZoom` and
+  // only the fetches below read `isViewport`.
+  const isZoom = isZoomLike(mode);
+  const isViewport = mode === 'viewport';
+  // Camera bounds, lifted from the map (which already computes them for
+  // culling) and widened into a stable box — see `useViewportBox`.
+  const [mapBounds, setMapBounds] = useState<MapBounds | null>(null);
+  // The map's zoom, mirrored here because viewport mode's FETCH depends on it:
+  // below the kawasan threshold the map draws rayon outlines only, so asking for
+  // full lokasi geometry would download shapes nothing renders.
+  const [mapZoom, setMapZoom] = useState<number | undefined>(undefined);
+  const onViewport = useCallback((b: MapBounds, z: number | undefined) => {
+    setMapBounds(b);
+    setMapZoom(z);
+  }, []);
+  const viewportBox = useViewportBox(mapBounds, isViewport);
+  // Viewport mode waits for the first box: firing without one would ask for the
+  // whole city, which is the exact payload the mode exists to avoid.
+  const viewportReady = !isViewport || viewportBox != null;
 
   // Keep view in sync when the user (role) resolves.
   useEffect(() => {
@@ -196,7 +222,12 @@ export default function MonitoringPage() {
   // requests, and the server composes it from the same builders the drill scopes
   // use — so the numbers cannot disagree between modes.
   const zoomDistrictId = scope === 'city' ? undefined : (view.districtId ?? view.id);
-  const allAgg = useMonitoringAggregate('all', zoomDistrictId, canMonitor && isZoom);
+  const allAgg = useMonitoringAggregate(
+    'all',
+    zoomDistrictId,
+    canMonitor && isZoom && viewportReady,
+    viewportBox
+  );
   // `view.id` is the district id only at district scope. At region/area scope the district
   // aggregate is fetched by `view.districtId` via `regionAreasAgg` below.
   const districtAgg = useMonitoringAggregate(
@@ -246,7 +277,14 @@ export default function MonitoringPage() {
   // Zoom mode always asks for full geometry ('area' returns district + kawasan +
   // lokasi polygons together); with no district id at city scope that is every
   // tier city-wide, which is precisely what the mode draws.
-  const boundaryLevel: 'district' | 'area' = isZoom || scope !== 'city' ? 'area' : 'district';
+  const boundaryLevel: 'district' | 'area' =
+    // Viewport mode climbs the tiers with the camera: rayon outlines near the
+    // city, full geometry once kawasan are on screen.
+    isViewport && !needsAreaGeometry(mapZoom)
+      ? 'district'
+      : isZoom || scope !== 'city'
+        ? 'area'
+        : 'district';
   const boundaryDistrictId = isZoom
     ? scope === 'city'
       ? undefined
@@ -258,7 +296,14 @@ export default function MonitoringPage() {
     data: boundaries,
     isFetching: boundariesFetching,
     refetch: refetchBoundaries,
-  } = useBoundaries(canMonitor, boundaryLevel, boundaryDistrictId);
+  } = useBoundaries(
+    canMonitor && viewportReady,
+    boundaryLevel,
+    boundaryDistrictId,
+    // Only viewport mode narrows geometry. Drill already asks for one district;
+    // zoom deliberately asks for everything.
+    isViewport ? viewportBox : null
+  );
 
   // Live incremental updates (replaces the old 30 s full-refresh flash).
   useMonitoringSocket(canMonitor);
@@ -269,6 +314,10 @@ export default function MonitoringPage() {
 
   const selectWorker = (id: string | null) => {
     setSelectedId(id);
+    // A trail belongs to the worker it was opened for. Leaving it drawn while
+    // the panel moves to someone else is how a line gets attributed to the
+    // wrong person.
+    setTrailWorkerId((cur) => (cur === id ? cur : null));
     if (id) {
       setListOpen(true);
       setDetailNodeId(null);
@@ -289,7 +338,16 @@ export default function MonitoringPage() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   }, []);
-  const trailQuery = useLocationHistory(selectedId, todayStr);
+  // The trail is OPT-IN, not a side effect of selecting someone.
+  //
+  // It used to load for whoever was selected, so opening a worker from search
+  // drew a line from wherever their day started — across the map when that was
+  // another city — on top of a card that is meant to answer "where are they
+  // now". Mobile already treats the trail as its own view ("Lihat jejak"); this
+  // matches it, and it also stops a location-history request firing for every
+  // worker a supervisor merely glances at.
+  const [trailWorkerId, setTrailWorkerId] = useState<string | null>(null);
+  const trailQuery = useLocationHistory(trailWorkerId, todayStr);
   // Worker detail: both lazy on the selection, so nothing is fetched until a
   // supervisor actually opens someone. The endpoints already existed — the web
   // simply never called them, which is why its worker card was so much thinner
@@ -1083,9 +1141,14 @@ export default function MonitoringPage() {
     [filteredWorkers, workerVisible]
   );
 
+  // Hidden workers leave the MAP as well as the list — the point of hiding a
+  // person is not to see their pin. Counts are untouched: they come from the
+  // aggregate, which never saw this filter.
   const mapWorkers = useMemo<SimpleWorker[]>(
     () =>
-      drillScopedWorkers.map((w) => ({
+      drillScopedWorkers
+        .filter((w) => !isHidden('workers', w.user_id))
+        .map((w) => ({
         user_id: w.user_id,
         full_name: w.full_name,
         lat: w.lat,
@@ -1093,6 +1156,7 @@ export default function MonitoringPage() {
         status: w.status,
         role: w.role,
         role_marker_icon: w.role_marker_icon ?? null,
+        role_marker_color: w.role_marker_color ?? null,
         is_within_area: w.is_within_area,
         is_scheduled: w.is_scheduled ?? true,
         team_id: w.team_id ?? null,
@@ -1101,7 +1165,7 @@ export default function MonitoringPage() {
         team_opacity: w.team_opacity ?? null,
         team_icon: w.team_icon ?? null,
       })),
-    [drillScopedWorkers]
+    [drillScopedWorkers, isHidden]
   );
 
   const isLoading = showWorkers ? snapshot.isLoading : activeAgg.isLoading;
@@ -1123,6 +1187,14 @@ export default function MonitoringPage() {
   };
   // Collapsed "Daftar Petugas" badge counts the scoped workers (the panel leads
   // with Wilayah, but the button names the worker list).
+  // Hidden nodes leave the map too, for the same reason hidden workers do. The
+  // node's own counts still ride inside its parent's totals — hiding is never
+  // accounting.
+  const visibleNodeMarkers = useMemo(
+    () => nodeMarkers.filter((n) => !isHidden('nodes', n.id)),
+    [nodeMarkers, isHidden]
+  );
+
   const listCount = listScopedWorkers.length;
 
   if (authLoading || !user) {
@@ -1146,8 +1218,9 @@ export default function MonitoringPage() {
       {/* Map (base layer) */}
       <SimpleMonitoringMap
         scope={scope}
-        nodeMarkers={nodeMarkers}
+        nodeMarkers={visibleNodeMarkers}
         mode={mode}
+        onBoundsChange={onViewport}
         activeGeoId={activeGeoId}
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
@@ -1372,6 +1445,15 @@ export default function MonitoringPage() {
         />
       )}
 
+      {/* Viewport mode reveals tiers with the camera, so it has to SAY so —
+          otherwise a missing kawasan layer reads as broken data rather than as
+          "not yet". Disappears once the map is at full depth. */}
+      {isViewport && nextTierAt(mapZoom) && (
+        <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs">
+          {t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)}
+        </div>
+      )}
+
       {/* Worker/area/node sheet */}
       {listOpen ? (
         <div className="absolute inset-x-3 bottom-3 z-20 flex h-[45vh] max-h-[60%] flex-col sm:inset-x-auto sm:left-3 sm:w-96">
@@ -1401,6 +1483,9 @@ export default function MonitoringPage() {
             onNodeDetail={(n) => setDetailNodeId(n.id)}
             showNodeTier={isZoom}
             activeGeoId={activeGeoId}
+            isHidden={isHidden}
+            onToggleHidden={toggleHidden}
+            onShowAllHidden={clearHidden}
             selectedId={selectedId}
             selectedWorker={
               selectedId ? (workers.find((w) => w.user_id === selectedId) ?? null) : null
@@ -1419,11 +1504,15 @@ export default function MonitoringPage() {
                   isReassignmentsLoading={reassignments.isLoading}
                   onBack={() => selectWorker(null)}
                   onViewLocationHistory={() => {
-                    // The trail is already drawn on the map for the selected
-                    // worker (mobile opens a separate full-screen map for it);
-                    // on web the useful action is to frame it, so zoom to the
-                    // first recorded point rather than the current position —
-                    // that is where the day started.
+                    // Toggle: a second press clears the line rather than
+                    // stranding it on the map with no way off.
+                    if (trailWorkerId === selectedId) {
+                      setTrailWorkerId(null);
+                      return;
+                    }
+                    setTrailWorkerId(selectedId);
+                    // Frame the START of the day, not the current position —
+                    // the current position is already under the worker pin.
                     const first = trail[0];
                     if (first) focusOn(first.lat, first.lng, 16);
                   }}

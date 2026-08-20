@@ -316,7 +316,32 @@ function pinMarkerFromPath(glyphPath: string | null, opts: PinOpts): google.maps
   };
 }
 
-/** A name label rendered beneath an AdvancedMarker pin (baked into the content DOM
+/**
+ * Where a pin's name label sits relative to the pin.
+ *
+ * Each tier gets its own side so overlapping tiers do not stack their names on
+ * the same strip of map: rayon below, kawasan left, lokasi right, people above.
+ * With every label under the pin — the previous behaviour — a lokasi inside a
+ * kawasan inside a rayon printed three names on top of each other.
+ */
+export type LabelPlacement = 'bottom' | 'top' | 'left' | 'right';
+
+/**
+ * Which side each tier's name sits on. One place, because the map draws node
+ * labels from two call sites (the node layer and the current-node marker) and
+ * they must agree or the same lokasi would move its name on drill-in.
+ */
+export const NODE_LABEL_PLACEMENT: Record<
+  'district' | 'region' | 'location' | 'surabaya',
+  LabelPlacement
+> = {
+  surabaya: 'bottom',
+  district: 'bottom',
+  region: 'left',
+  location: 'right',
+};
+
+/** A name label rendered beside an AdvancedMarker pin (baked into the content DOM
  *  so it rides with the marker; the halo classes match the old Google labels). */
 export interface PinLabel {
   text: string;
@@ -324,14 +349,17 @@ export interface PinLabel {
   className: string;
   /** Inline color (health tint); the class supplies only the white halo + font. */
   color?: string;
+  /** Side of the pin. Defaults to `bottom` — the historical position. */
+  placement?: LabelPlacement;
 }
 
 /**
  * DOM builder for the unified pin — the `AdvancedMarkerElement` equivalent of
  * {@link pinMarkerFromPath}. Returns a container whose bottom-center (the pin tip)
  * is what Advanced Markers anchor to the LatLng; the optional name label is
- * absolutely positioned BELOW the pin so it never shifts that anchor. Same SVG as
- * the legacy icon, so the two render paths look identical.
+ * absolutely positioned OUTSIDE the pin box (below / above / left / right per
+ * `placement`) so it never shifts that anchor. Same SVG as the legacy icon, so
+ * the two render paths look identical.
  */
 function pinElementFromPath(
   glyphPath: string | null,
@@ -348,7 +376,7 @@ function pinElementFromPath(
   if (svgEl) svgEl.style.display = 'block';
   if (label) {
     const lab = document.createElement('div');
-    lab.className = `am-label ${label.className}`;
+    lab.className = `am-label am-label--${label.placement ?? 'bottom'} ${label.className}`;
     lab.textContent = label.text;
     if (label.color) lab.style.color = label.color;
     el.appendChild(lab);
@@ -370,7 +398,19 @@ export function workerPinElement(
     adHoc?: boolean;
     selected?: boolean;
     markerIcon?: string | null;
-    /** Presence axes — drive the pin colour when supplied (ADR-050/053). */
+    /**
+     * The ROLE's configured marker colour (role settings, ADR-044). Fills the
+     * pin body, so a role is legible in a crowd of pins without reading its
+     * glyph. Null → white, the previous look.
+     *
+     * This is the opposite decision to the geo tiers, and deliberately so: geo
+     * pins went white because area identity is already carried by the boundary
+     * they sit on, while a worker pin has nothing else to carry WHO this is.
+     * Status stays on the ring in both cases, so colour never has two meanings
+     * on the same marker.
+     */
+    markerColor?: string | null;
+    /** Presence axes — drive the pin RING colour when supplied (ADR-050/053). */
     lifecycleState?: string | null;
     leaveReason?: 'cuti' | 'sakit' | 'izin' | 'libur' | null;
   },
@@ -390,7 +430,16 @@ export function workerPinElement(
     : opts.adHoc
       ? ADHOC
       : ACTIVITY_COLORS[opts.activity];
-  return pinElementFromPath(glyphPath, { outline, dashed: opts.outside, big: opts.selected }, label);
+  return pinElementFromPath(
+    glyphPath,
+    {
+      outline,
+      fill: opts.markerColor ?? undefined,
+      dashed: opts.outside,
+      big: opts.selected,
+    },
+    label
+  );
 }
 
 /**

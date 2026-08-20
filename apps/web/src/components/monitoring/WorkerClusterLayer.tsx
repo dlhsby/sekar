@@ -80,7 +80,9 @@ export function WorkerClusterLayer({
                   r.team_color,
                   r.member_count,
                   r.team_icon,
-                  { text: r.team_name, className: 'worker-marker-label' },
+                  // People sit ABOVE their pin: workers are the densest layer and
+                  // the space below is where the geo tiers put their names.
+                  { text: r.team_name, className: 'worker-marker-label', placement: 'top' },
                   r.team_opacity,
                 )
               }
@@ -95,7 +97,7 @@ export function WorkerClusterLayer({
         const selected = r.user_id === selectedId;
         const signature =
           `worker|${r.role}|${r.status}|${r.is_within_area}|${r.is_scheduled}` +
-          `|${r.role_marker_icon ?? ''}|${selected ? 1 : 0}|${r.full_name}`;
+          `|${r.role_marker_icon ?? ''}|${r.role_marker_color ?? ''}|${selected ? 1 : 0}|${r.full_name}`;
         return (
           <AdvancedPinMarker
             key={`worker-${r.user_id}`}
@@ -110,10 +112,13 @@ export function WorkerClusterLayer({
                   adHoc: !r.is_scheduled,
                   selected,
                   markerIcon: r.role_marker_icon ?? null,
+                  // Identity on the body, status on the ring — the two never
+                  // compete for the same colour.
+                  markerColor: r.role_marker_color ?? null,
                   lifecycleState: r.lifecycle_state ?? null,
                   leaveReason: r.leave_reason ?? null,
                 },
-                { text: r.full_name, className: 'worker-marker-label' }
+                { text: r.full_name, className: 'worker-marker-label', placement: 'top' }
               )
             }
             onClick={() => onSelect?.(r.user_id)}

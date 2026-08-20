@@ -72,8 +72,8 @@ export const monitoringKeys = {
   staffingSummary: (filters?: StaffingFilters) =>
     [...monitoringKeys.all, 'staffing-summary', filters] as const,
   config: () => [...monitoringKeys.all, 'config'] as const,
-  boundaries: (level?: 'district' | 'area', districtId?: string) =>
-    [...monitoringKeys.all, 'boundaries', level ?? 'area', districtId ?? null] as const,
+  boundaries: (level?: 'district' | 'area', districtId?: string, bbox?: string | null) =>
+    [...monitoringKeys.all, 'boundaries', level ?? 'area', districtId ?? null, bbox ?? null] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -275,18 +275,28 @@ export function useUpdateMonitoringConfig() {
  * payload for the city view. Drilling into a district requests `level='area'`
  * with `districtId` so only that district's areas load. Geometry is server-simplified
  * (Douglas–Peucker) and changes rarely, so it caches for 5 minutes.
+ *
+ * Viewport mode passes a `bbox`; because the box is part of the query key, each
+ * fetched region stays cached and panning back is instant.
  */
 export function useBoundaries(
   enabled = true,
   level?: 'district' | 'area',
-  districtId?: string
+  districtId?: string,
+  /**
+   * Viewport mode (ADR-060): `minLng,minLat,maxLng,maxLat`. The server returns
+   * only geometry intersecting the box, which is what keeps the city-wide
+   * `level='area'` payload from being paid for in full.
+   */
+  bbox?: string | null
 ) {
   return useQuery({
-    queryKey: monitoringKeys.boundaries(level, districtId),
+    queryKey: monitoringKeys.boundaries(level, districtId, bbox),
     queryFn: async () => {
       const params: Record<string, string> = {};
       if (level) params.level = level;
       if (districtId) params.district_id = districtId;
+      if (bbox) params.bbox = bbox;
       const response = await apiClient.get<BoundariesResponse>('/monitoring/boundaries', {
         params,
       });

@@ -175,6 +175,44 @@ describe('BoundaryOverlay', () => {
     });
   });
 
+  // ── Outline / fill facets ───────────────────────────────────────────────────
+
+  describe('outline and fill are independent facets', () => {
+    it('drops the fill but keeps the stroke when only the boundary facet is on', () => {
+      // react-native-maps has no fillOpacity prop — the alpha lives in the
+      // colour — so "fill off" is a transparent fill, not a missing polygon.
+      const { getAllByTestId } = render(
+        <BoundaryOverlay districts={[buildDistrict()]} {...defaultProps} districtFill={false} />,
+      );
+      const poly = getAllByTestId('polygon')[0];
+      expect(poly.props.fillColor).toBe('rgba(0,0,0,0)');
+      expect(poly.props.strokeWidth).toBe(2);
+    });
+
+    it('drops the stroke but keeps the fill when only the fill facet is on', () => {
+      const { getAllByTestId } = render(
+        <BoundaryOverlay districts={[buildDistrict()]} {...defaultProps} districtOutline={false} />,
+      );
+      const poly = getAllByTestId('polygon')[0];
+      expect(poly.props.strokeWidth).toBe(0);
+      expect(poly.props.fillColor).not.toBe('rgba(0,0,0,0)');
+    });
+
+    it('applies the same split to lokasi polygons', () => {
+      const { getAllByTestId } = render(
+        <BoundaryOverlay
+          districts={[buildDistrict()]}
+          {...defaultProps}
+          showDistricts={false}
+          areaFill={false}
+        />,
+      );
+      const poly = getAllByTestId('polygon')[0];
+      expect(poly.props.fillColor).toBe('rgba(0,0,0,0)');
+      expect(poly.props.strokeWidth).toBe(2);
+    });
+  });
+
   // ── Rayon polygons ───────────────────────────────────────────────────────────
 
   describe('district polygon rendering', () => {

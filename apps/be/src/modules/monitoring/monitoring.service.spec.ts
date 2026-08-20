@@ -1696,6 +1696,80 @@ describe('MonitoringService', () => {
       areaRepository.find.mockResolvedValue([mockAreaWithDistrict] as any);
     });
 
+    it('carries BOTH role marker fields through to the snapshot worker', async () => {
+      // `computeSnapshot` rebuilds each worker field-by-field rather than
+      // spreading, so a new field on the live user is silently dropped unless
+      // it is copied by hand — which is exactly how `role_marker_color` reached
+      // the map as null after the repository fix, leaving every pin white.
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue({
+        total_active: 1,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        total_online: 1,
+        users: [
+          {
+            id: 'user-1',
+            full_name: 'Worker One',
+            role: 'satgas',
+            role_marker_icon: 'hard-hat',
+            role_marker_color: '#2D5233',
+            latitude: -7.2905,
+            longitude: 112.7398,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            is_within_area: true,
+          },
+        ],
+        generated_at: new Date(),
+      } as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
+      staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
+
+      const result = await service.getSnapshot('city');
+
+      expect(result.data.workers[0]).toMatchObject({
+        role_marker_icon: 'hard-hat',
+        role_marker_color: '#2D5233',
+      });
+    });
+
+    it('nulls a missing role marker colour rather than dropping the key', async () => {
+      // A role with no configured colour must still send the field — the client
+      // falls back to the presence colour on null, but an ABSENT key would make
+      // the two cases indistinguishable in the payload.
+      jest.spyOn(service['userService'], 'getLiveUsers').mockResolvedValue({
+        total_active: 1,
+        total_offline: 0,
+        total_absent: 0,
+        total_outside_area: 0,
+        total_online: 1,
+        users: [
+          {
+            id: 'user-1',
+            full_name: 'Worker One',
+            role: 'satgas',
+            latitude: -7.2905,
+            longitude: 112.7398,
+            last_update: new Date(),
+            status: TrackingStatus.ACTIVE,
+            is_within_area: true,
+          },
+        ],
+        generated_at: new Date(),
+      } as any);
+      jest
+        .spyOn(service['statsService'], 'getCurrentShiftDefinition')
+        .mockResolvedValue(mockShiftDefinition);
+      staffRequirementRepository.find.mockResolvedValue([mockStaffRequirement]);
+
+      const result = await service.getSnapshot('city');
+
+      expect(result.data.workers[0]).toHaveProperty('role_marker_color', null);
+    });
+
     it('should return snapshot with correct contract shape', async () => {
       const mockLiveUsersResult = {
         total_active: 2,

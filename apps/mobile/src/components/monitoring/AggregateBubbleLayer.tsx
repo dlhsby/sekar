@@ -18,6 +18,7 @@ import { Marker } from 'react-native-maps';
 import { nbColors, nbBorders, nbRadius, nbShadows } from '../../constants/nbTokens';
 import { NBText } from '../nb/NBText';
 import { healthColor, rosterHealth } from './markerSpec';
+import { LabeledMarker, NODE_LABEL_PLACEMENT } from './MarkerLabel';
 import { clusterNodes, type NodeCluster } from '../../utils/monitoringDrillNodes';
 
 /** A drill-down node marker: a district (rayon), a region (kawasan), or a location (lokasi). */
@@ -40,14 +41,19 @@ interface AggregateBubbleLayerProps {
   latitudeDelta: number;
   /** Tap a cluster → zoom in toward its centre (declutter, NOT a drill). */
   onClusterPress: (center: { latitude: number; longitude: number }) => void;
+  /** Per-tier `label` facet. Hiding a dense tier's names keeps its bubbles. */
+  showLabels?: Partial<Record<NodeMarker['variant'], boolean>>;
 }
 
 function Bubble({
   node,
   onDrill,
+  showLabel = true,
 }: {
   node: NodeMarker;
   onDrill: (node: NodeMarker) => void;
+  /** The tier's `label` facet. The bubble (and its count) stays either way. */
+  showLabel?: boolean;
 }): React.JSX.Element | null {
   // Let the first frame render the label, then freeze the bitmap.
   const [tracks, setTracks] = useState(true);
@@ -72,14 +78,19 @@ function Bubble({
       anchor={{ x: 0.5, y: 0.5 }}
       testID={`node-marker-${node.id}`}
     >
-      <View style={[styles.bubble, big && styles.bubbleBig, { borderColor: color }]}>
-        <NBText variant="caption" style={styles.name} numberOfLines={1}>
-          {node.name}
-        </NBText>
-        <NBText variant="body-sm" style={[styles.ratio, { color }]}>
-          {node.clocked_in}/{node.scheduled}
-        </NBText>
-      </View>
+      {/* The name moved OUT of the bubble: inside it, it was clipped to one
+          line at 160 px and every tier wrote in the same place. Outside, it
+          wraps and each tier writes on its own side. */}
+      <LabeledMarker
+        label={showLabel ? node.name : null}
+        placement={NODE_LABEL_PLACEMENT[node.variant] ?? 'bottom'}
+      >
+        <View style={[styles.bubble, big && styles.bubbleBig, { borderColor: color }]}>
+          <NBText variant="body-sm" style={[styles.ratio, { color }]}>
+            {node.clocked_in}/{node.scheduled}
+          </NBText>
+        </View>
+      </LabeledMarker>
     </Marker>
   );
 }
@@ -119,6 +130,7 @@ export function AggregateBubbleLayer({
   onDrill,
   latitudeDelta,
   onClusterPress,
+  showLabels,
 }: AggregateBubbleLayerProps): React.JSX.Element {
   const items = useMemo(() => clusterNodes(nodes, latitudeDelta), [nodes, latitudeDelta]);
   return (
@@ -131,7 +143,12 @@ export function AggregateBubbleLayer({
             onPress={onClusterPress}
           />
         ) : (
-          <Bubble key={`node-${item.node.id}`} node={item.node} onDrill={onDrill} />
+          <Bubble
+            key={`node-${item.node.id}`}
+            node={item.node}
+            onDrill={onDrill}
+            showLabel={showLabels?.[item.node.variant] !== false}
+          />
         ),
       )}
     </>
@@ -153,10 +170,6 @@ const styles = StyleSheet.create({
   },
   bubbleBig: {
     paddingVertical: 6,
-  },
-  name: {
-    color: nbColors.black,
-    fontWeight: '700',
   },
   ratio: {
     fontWeight: '800',

@@ -35,17 +35,21 @@
   "layers": {
     "plants": "Plants",
     "overdue": "Overdue",
-    "districts": "District Border",
-    "areas": "Area Border",
-    "kawasan": "Kawasan Boundary",
+    "districts": "District",
+    "areas": "Location",
+    "kawasan": "Region",
     "personnel": "Personnel & Teams",
     "option": {
       "all": "All",
-      "boundary": "Boundary only",
-      "marker": "Marker only",
-      "none": "Hidden",
-      "petugasOnly": "Personnel only",
-      "timOnly": "Teams only"
+      "none": "Hidden"
+    },
+    "facet": {
+      "boundary": "Boundary",
+      "fill": "Fill",
+      "marker": "Marker",
+      "label": "Label",
+      "petugas": "Personnel",
+      "tim": "Teams"
     }
   },
   "fab": {
@@ -344,8 +348,10 @@
   "mode": {
     "title": "Monitoring Mode",
     "drill": "Tap & Drill",
-    "zoom": "Zoom",
+    "zoom": "Zoom (everything)",
     "drillHint": "Tap an area to go one level deeper. Personnel appear at their scheduled level.",
-    "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it."
+    "zoomHint": "Show every rayon, kawasan, lokasi and worker at once. Tap an area to limit the view to it.",
+    "viewport": "Zoom (on screen)",
+    "viewportHint": "Same as Zoom, but only loads what is on screen. Pan or zoom out to load more."
   }
 }

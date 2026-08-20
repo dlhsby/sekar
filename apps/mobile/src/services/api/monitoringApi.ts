@@ -150,6 +150,12 @@ export async function getStaffingSummary(
 export async function getBoundaries(
   districtId?: string,
   level?: 'district' | 'area',
+  /**
+   * Viewport mode (ADR-060): `minLng,minLat,maxLng,maxLat`. The server returns
+   * only geometry intersecting the box — the whole point of the mode, since
+   * mobile otherwise pulls every lokasi polygon in the city at every zoom.
+   */
+  bbox?: string | null,
 ): Promise<ApiResponse<BoundariesResponse>> {
   const params: Record<string, string> = {};
   if (districtId) {
@@ -157,6 +163,9 @@ export async function getBoundaries(
   }
   if (level) {
     params.level = level;
+  }
+  if (bbox) {
+    params.bbox = bbox;
   }
   return get<BoundariesResponse>('/monitoring/boundaries', params);
 }

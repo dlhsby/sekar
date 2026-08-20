@@ -52,6 +52,7 @@ export interface SnapshotWorker {
   team_opacity?: number | null;
   team_icon?: string | null;
   role_marker_icon?: string | null;
+  role_marker_color?: string | null;
   phone?: string | null;
   accuracy?: number | null;
 }
@@ -101,6 +102,7 @@ export function snapshotWorkerToLiveUser(w: SnapshotWorker): LiveUser {
     team_opacity: w.team_opacity ?? null,
     team_icon: w.team_icon ?? null,
     role_marker_icon: w.role_marker_icon ?? null,
+    role_marker_color: w.role_marker_color ?? null,
   };
 }
 

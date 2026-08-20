@@ -29,6 +29,14 @@ export class LiveUserDto {
   })
   role_marker_icon: string | null;
 
+  @ApiPropertyOptional({
+    description:
+      "The role's configured marker colour (role settings, ADR-044). Fills the worker pin, " +
+      'so a role is legible in a crowd without reading its glyph. Null → the client default.',
+    example: '#7FBC8C',
+  })
+  role_marker_color: string | null;
+
   @ApiProperty({ example: 'area-uuid', nullable: true })
   location_id: string | null;
 

@@ -36,6 +36,8 @@ export interface SnapshotWorker {
   role: string;
   /** The role's configured marker icon (null → client uses the role default glyph). */
   role_marker_icon: string | null;
+  /** The role's configured marker colour (null → client falls back to the presence colour). */
+  role_marker_color: string | null;
   lat: number;
   lng: number;
   status: TrackingStatus;
@@ -254,6 +256,7 @@ export class MonitoringService {
         full_name: u.full_name,
         role: u.role,
         role_marker_icon: u.role_marker_icon ?? null,
+        role_marker_color: u.role_marker_color ?? null,
         lat: u.latitude,
         lng: u.longitude,
         status: u.status,

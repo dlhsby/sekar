@@ -1,6 +1,6 @@
-# ADR-060 — Two monitoring map modes, one set of numbers
+# ADR-060 — Three monitoring map modes, one set of numbers
 
-**Status:** Accepted (2026-08-12) · **Supersedes:** nothing · **Amends:** [ADR-046](./ADR-046-monitoring-drill-model.md) (adds a second reading of `display_scope`, does not change it)
+**Status:** Accepted (2026-08-12) · **Amended 2026-08-13** (third mode: `viewport`) · **Supersedes:** nothing · **Amends:** [ADR-046](./ADR-046-monitoring-drill-model.md) (adds a second reading of `display_scope`, does not change it)
 
 ## Context
 
@@ -14,6 +14,11 @@ and every worker, from the city view — with tapping a rayon narrowing to *that
 rather than to its immediate children. She was told this is heavier and insisted; the agreed compromise
 is to ship both and let her choose.
 
+Shown the real map, she accepted the cost but asked for **a third option**: the same everything-at-once
+view, restricted to what is actually on screen, loading more as she pans or zooms out. That is the
+honest resolution of the trade — zoom mode's reading of the data, without paying for the parts of the
+city nobody is looking at.
+
 That request is not a tweak to the drill model. It asks a **different question** about a worker:
 
 - drill asks *"is this worker's schedule scoped to what I'm looking at?"*
@@ -25,7 +30,7 @@ rather than blended into one heuristic.
 
 ## Decision
 
-**Ship two modes. They differ only in what is DRAWN — never in what is COUNTED.**
+**Ship three modes. They differ only in what is DRAWN or FETCHED — never in what is COUNTED.**
 
 ### 1. Worker visibility is the mode
 
@@ -33,6 +38,11 @@ rather than blended into one heuristic.
 |------|-----------|-------|
 | `drill` | `display_scope === scope && display_scope_id === view.id` | the worker's **schedule occurrence** (ADR-046) |
 | `zoom` | worker's `district_id` / `region_id` / `location_id` matches the current node | the worker's **actual geography** |
+| `viewport` | identical to `zoom` | identical to `zoom` — the difference is extent, not meaning |
+
+`viewport` is deliberately **not** a third predicate. Every rendering decision reads one
+`isZoomLike(mode)` helper, so the two can never drift into drawing different things; only the fetch
+layer distinguishes them.
 
 A consequence worth stating: in zoom mode an **ad-hoc clock-in appears inside the rayon they are
 physically in**, even though their `display_scope` is flat city. That is the correct reading of "show
@@ -50,6 +60,63 @@ Zoom mode needed **no new worker endpoint and no new geometry endpoint**:
   lokasi polygon. Drill mode simply pins `level` to `'district'` at city scope.
 
 The one real gap was node **counts**, solved by `GET /monitoring/aggregate?scope=all` (see below).
+
+### 2b. Viewport mode narrows the FETCH, server-side
+
+Culling what is already downloaded does not help the payload — the client still pays for ~1.5 MB of
+city-wide geometry and the server still runs the per-district builder passes behind it. Viewport mode
+therefore sends the camera's bounds to the server:
+
+- `GET /monitoring/boundaries?bbox=minLng,minLat,maxLng,maxLat` — returns only geometry intersecting
+  the box. Filtering runs after the rows load, so it trims the **payload** and the client's polygon
+  construction, which is where this map's cost is.
+- `GET /monitoring/aggregate?scope=all&bbox=…` — an off-camera district has its two builder passes
+  **skipped**, not merely its results discarded. That is the server-side half of the saving.
+
+Three properties make it safe:
+
+- **Bounding boxes, not true intersection.** O(vertices), no geometry library, and it errs toward
+  *including* a shape. Over-inclusion costs a few KB; under-inclusion would blank a boundary the
+  operator is standing inside, which reads as data loss.
+- **Geometry beats centre.** A rayon large enough to fill the screen has its centre off-camera, so a
+  centre-only test would drop the very shape being looked at. The centre is the fallback for entities
+  carrying no polygon (kawasan often do not).
+- **Totals never move.** `totals` / `roster_totals` stay computed over the full scope. A header that
+  changed as the operator panned would be reporting the camera, not the city. Likewise a rayon's
+  `area_count` stays its true size — a number that shrank while panning would read as data vanishing.
+
+**A bbox alone is not enough.** At city zoom the box *is* the city, so the first build of viewport mode
+still drew every kawasan and every lokasi — hundreds of stacked pins, exactly the view it was meant to
+relieve. The mode therefore also carries **depth**: rayon near the city, kawasan as the camera closes
+in (Google zoom ≥ 13 / `latitudeDelta` ≤ 0.05), lokasi and the workers standing in them closer still
+(≥ 14.5 / ≤ 0.015). Detail arrives as there is room for it, and panning at that zoom brings the
+neighbouring detail with it. Below the kawasan threshold the client asks for `level='district'`, so
+lokasi geometry is not merely undrawn — it is never downloaded. Because a missing tier must read as
+"not yet" and not as broken data, the map shows a **"zoom in to see kawasan / lokasi"** hint until it
+is at full depth. Zoom mode is untouched: drawing everything at every zoom is the trade chosen there.
+
+Client-side, the box is **padded by half a screen** and only redrawn once the camera leaves it, so
+ordinary panning costs nothing; because the box is part of the query key, panning back to an
+already-fetched region is served from cache. A malformed `bbox` is **ignored**, not rejected: a bad
+value degrades to the full payload rather than blanking the map.
+
+### 2c. Hiding individual rows
+
+Tier facets answer "which layers do I want"; they are too blunt when the thing in the way is one rayon
+out of nine or one person out of sixty. Both side-panel tabs therefore carry a per-row hide, persisted
+per browser (`monitoring.hidden.v1`) beside the layer facets — it is a workspace preference, not a data
+change. Three rules keep it safe on a monitoring surface:
+
+1. **Hiding is presentation, never accounting.** Every count is computed server-side over the full
+   scope, so a hidden lokasi is still counted inside its rayon and the tab badges still report what is
+   in scope. A map whose numbers changed on request would be a map that lies on request.
+2. **Never silent.** A hidden-count banner with a one-click restore sits above the list — including
+   when *everything* is hidden, where an unexplained empty state would otherwise be the only feedback.
+3. **A hidden node hides itself, not its subtree.** "I don't need Rayon Barat's pin" is not "I don't
+   care about anything inside Rayon Barat"; hiding a whole subtree is what the facets and the drill
+   scope are for.
+
+Hidden rows leave the **map** as well as the list — not seeing the pin is the point.
 
 ### 3. Counts are mode-independent, by construction
 
@@ -86,7 +153,11 @@ silently mitigated.
 ### 5. Default and persistence
 
 `drill` stays the default, persisted in `localStorage` (`monitoring.mode.v1`) alongside the layer
-selects. Nobody's map becomes heavier without asking for it.
+facets (`monitoring.layers.v6`). Nobody's map becomes heavier without asking for it. An unrecognised
+stored value (a downgrade leaving a newer mode name behind) falls back to the default.
+
+The control is a **select**, not a segmented tab strip: three options no longer fit side by side
+without truncating their labels.
 
 ## Consequences
 
@@ -99,7 +170,13 @@ selects. Nobody's map becomes heavier without asking for it.
 
 **Bad / accepted**
 
-- Zoom mode at full city zoom is unbounded work. Accepted, measured, reported.
+- Zoom mode at full city zoom is unbounded work. Accepted, measured, reported — and now avoidable by
+  choosing viewport mode instead.
+- Viewport mode trades payload for **requests**: panning far enough refetches. The padded box and the
+  query-key cache keep that to a few calls per session rather than one per pan, but it is a real trade
+  on a slow connection.
+- The bbox is part of the aggregate cache key (rounded to ~1 km), so two operators looking at
+  different corners of the city no longer share one cache entry.
 - Two predicates for "which workers belong here" exist in the client. They are named
   (`scopeMatches` / `subtreeMatches`) and selected in exactly one place, so the cost is a named fork
   rather than scattered conditionals.

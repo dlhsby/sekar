@@ -37,6 +37,7 @@ import {
 } from './dto/monitoring-config.dto';
 import { StaffingSummaryQueryDto, StaffingSummaryResponseDto } from './dto/staffing-summary.dto';
 import { BoundariesResponseDto } from './dto/boundaries.dto';
+import { parseBBox, type BBox } from '../../common/utils/geo-bbox.util';
 import { AggregateResponseDto, type AggregateScope } from './dto/aggregate.dto';
 import { ReassignWorkerDto, ReassignWorkerResponseDto } from './dto/reassign-worker.dto';
 import { AreaPlantStatusDto } from './dto/area-plant-status.dto';
@@ -221,20 +222,32 @@ export class MonitoringController {
     required: false,
     description: 'district → outlines only (lightest); area (default) → full area geometry',
   })
+  @ApiQuery({
+    name: 'bbox',
+    required: false,
+    description:
+      'Viewport filter `minLng,minLat,maxLng,maxLat` (ADR-060 viewport mode). Returns only ' +
+      'geometry intersecting the box. Malformed values are IGNORED, not rejected: a bad ' +
+      'bbox degrades to the full payload rather than blanking the map.',
+  })
   @ApiResponse({ status: 200, type: BoundariesResponseDto })
   async getBoundaries(
     @Query('district_id') districtId: string | undefined,
     @GetUser() user: User,
     @Query('level') level?: 'district' | 'area',
+    @Query('bbox') bbox?: string,
   ): Promise<BoundariesResponseDto> {
     const filters: {
       district_id?: string;
       area_ids?: string[];
       location_id?: string;
       level?: 'district' | 'area';
+      bbox?: BBox;
     } = {};
     if (districtId) filters.district_id = districtId;
     if (level === 'district' || level === 'area') filters.level = level;
+    const box = parseBBox(bbox);
+    if (box) filters.bbox = box;
     await this.applyScopeFilters(user, filters);
     // Korlap scope: collapse location_id / area_ids into a single area_ids list so
     // the service only returns assigned areas, not the entire district.
@@ -356,11 +369,20 @@ export class MonitoringController {
       'District UUID — required for district + region scope; optional for scope=all, where it ' +
       'narrows the payload to that district’s subtree.',
   })
+  @ApiQuery({
+    name: 'bbox',
+    required: false,
+    description:
+      'Viewport filter `minLng,minLat,maxLng,maxLat` — `scope=all` only (ADR-060 viewport ' +
+      'mode). Narrows which NODES are built and returned; `totals` / `roster_totals` stay ' +
+      'scope-wide, so the header reports the city rather than the camera.',
+  })
   @ApiResponse({ status: 200, type: AggregateResponseDto })
   async getAggregate(
     @GetUser() user: User,
     @Query('scope') scope: AggregateScope = 'city',
     @Query('id') id?: string,
+    @Query('bbox') bbox?: string,
   ): Promise<AggregateResponseDto> {
     // City-scope aggregate is city-role only; district-scoped roles are forced to
     // their own district and cannot request the city rollup.
@@ -387,7 +409,10 @@ export class MonitoringController {
       districtId = isCityRole ? id : (user.district_id ?? undefined);
       if (districtId) this.enforceScopeDistrict(user, districtId);
     }
-    return this.statsService.getAggregate(scope, districtId);
+    // Only `scope=all` draws a whole subtree at once, so it is the only scope a
+    // viewport can narrow; the drill scopes already return one level.
+    const box = scope === 'all' ? parseBBox(bbox) : null;
+    return this.statsService.getAggregate(scope, districtId, box ?? undefined);
   }
 
   @Get('snapshot')

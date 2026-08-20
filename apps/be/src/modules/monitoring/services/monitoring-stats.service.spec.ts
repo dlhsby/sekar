@@ -605,6 +605,58 @@ describe('MonitoringStatsService', () => {
 
       expect(result).toBeDefined();
     });
+
+    describe('bbox (viewport mode)', () => {
+      const qb = () =>
+        ({
+          select: jest.fn().mockReturnThis(),
+          addSelect: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          innerJoin: jest.fn().mockReturnThis(),
+          leftJoin: jest.fn().mockReturnThis(),
+          groupBy: jest.fn().mockReturnThis(),
+          addGroupBy: jest.fn().mockReturnThis(),
+          getRawMany: jest.fn().mockResolvedValue([]),
+          getMany: jest.fn().mockResolvedValue([]),
+        }) as any;
+
+      beforeEach(() => {
+        districtRepository.find.mockResolvedValue([mockDistrict]);
+        areaRepository.find.mockResolvedValue([mockArea]);
+        shiftDefinitionRepository.find.mockResolvedValue([mockShiftDef]);
+        trackingRepository.createQueryBuilder.mockReturnValue(qb());
+        staffRequirementRepository.createQueryBuilder.mockReturnValue(qb());
+      });
+
+      it('keeps a lokasi whose centre is inside the box', async () => {
+        const result = await service.getBoundaries({ bbox: [112.7, -7.3, 112.8, -7.2] });
+        expect(result.districts[0].areas.map((a) => a.id)).toEqual(['area-1']);
+      });
+
+      it('drops a rayon with nothing on camera — no outline, no kawasan, no lokasi', async () => {
+        const result = await service.getBoundaries({ bbox: [113.5, -8.5, 113.6, -8.4] });
+        expect(result.districts).toEqual([]);
+      });
+
+      it('keeps `area_count` at the rayon TRUE size, not the visible count', async () => {
+        // The number labels the rayon ("12 lokasi"); one that shrank as the
+        // operator panned would read as data vanishing rather than a viewport.
+        areaRepository.find.mockResolvedValue([
+          mockArea,
+          { ...mockArea, id: 'area-2', gps_lat: -8.4, gps_lng: 113.5 } as any,
+        ]);
+        const result = await service.getBoundaries({ bbox: [112.7, -7.3, 112.8, -7.2] });
+        expect(result.districts[0].areas).toHaveLength(1);
+        expect(result.districts[0].area_count).toBe(2);
+      });
+
+      it('returns everything when no bbox is given, so drill and zoom are unchanged', async () => {
+        const result = await service.getBoundaries({});
+        expect(result.districts).toHaveLength(1);
+        expect(result.districts[0].areas).toHaveLength(1);
+      });
+    });
   });
 
   describe('korlap coverage resolvers (PR0b)', () => {

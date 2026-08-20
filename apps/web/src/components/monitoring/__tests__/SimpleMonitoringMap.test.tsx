@@ -59,7 +59,15 @@ jest.mock('@react-google-maps/api', () => ({
     }, []);
     return <div data-testid="gmap">{children}</div>;
   },
-  Polygon: () => <div data-testid="polygon" />,
+  // Surfaces the two facet-driven options so a test can tell "outline only" from
+  // "fill only" — both render a Polygon, and the difference is entirely opacity.
+  Polygon: ({ options }: { options?: { strokeOpacity?: number; fillOpacity?: number } }) => (
+    <div
+      data-testid="polygon"
+      data-stroke-opacity={String(options?.strokeOpacity ?? '')}
+      data-fill-opacity={String(options?.fillOpacity ?? '')}
+    />
+  ),
   Polyline: () => <div data-testid="polyline" />,
   InfoWindow: ({ children }: { children?: React.ReactNode }) => (
     <div data-testid="infowindow">{children}</div>
@@ -83,8 +91,12 @@ beforeAll(() => {
   (global as unknown as { google: unknown }).google = {
     maps: {
       SymbolPath: { CIRCLE: 0 },
+      // Records what was extended, so a test can assert WHICH points the
+      // initial fit considered.
       LatLngBounds: class {
-        extend = jest.fn();
+        extend = (p: { lat: number; lng: number }) => {
+          (globalThis as any).__boundsExtended.push(p);
+        };
       },
       Size: class {},
       Point: class {},
@@ -94,6 +106,7 @@ beforeAll(() => {
 });
 
 beforeEach(() => {
+  (globalThis as any).__boundsExtended = [];
   jest.clearAllMocks();
   controlStack.length = 0;
 });
@@ -338,10 +351,10 @@ describe('SimpleMonitoringMap', () => {
         workers={workers}
         boundaries={boundaries}
         layers={{
-          district: 'all',
-          kawasan: 'all',
-          lokasi: 'all',
-          personnel: 'none',
+          district: ['boundary', 'fill', 'marker'],
+          kawasan: ['boundary', 'fill', 'marker'],
+          lokasi: ['boundary', 'fill', 'marker'],
+          personnel: [],
         }}
       />
     );
@@ -419,16 +432,89 @@ describe('SimpleMonitoringMap', () => {
         workers={[]}
         boundaries={boundaries}
         layers={{
-          district: 'boundary',
-          kawasan: 'all',
-          lokasi: 'all',
-          personnel: 'none',
+          district: ['boundary', 'fill'],
+          kawasan: ['boundary', 'fill', 'marker'],
+          lokasi: ['boundary', 'fill', 'marker'],
+          personnel: [],
         }}
       />
     );
     // The rayon polygon still draws; its count pin does not. Node markers used to
-    // be ungated entirely, so this is the case the new select exists to allow.
+    // be ungated entirely, so this is the case the facet checkboxes exist to allow.
     expect(screen.queryAllByTestId('polygon').length).toBeGreaterThan(0);
     expect(screen.queryAllByTestId('marker')).toHaveLength(0);
+  });
+
+  it('draws the outline without the fill when only the boundary facet is on', () => {
+    // The combination the four-way select had no word for: "Batas saja" always
+    // brought the fill with it, so a fill-free outline was unrequestable.
+    render(
+      <SimpleMonitoringMap
+        workers={[]}
+        boundaries={boundaries}
+        layers={{
+          district: ['boundary'],
+          kawasan: [],
+          lokasi: [],
+          personnel: [],
+        }}
+      />
+    );
+    const polys = screen.queryAllByTestId('polygon');
+    expect(polys.length).toBeGreaterThan(0);
+    for (const p of polys) {
+      expect(p.getAttribute('data-fill-opacity')).toBe('0');
+      expect(Number(p.getAttribute('data-stroke-opacity'))).toBeGreaterThan(0);
+    }
+  });
+
+  it('draws the fill without the outline when only the fill facet is on', () => {
+    render(
+      <SimpleMonitoringMap
+        workers={[]}
+        boundaries={boundaries}
+        layers={{
+          district: ['fill'],
+          kawasan: [],
+          lokasi: [],
+          personnel: [],
+        }}
+      />
+    );
+    const polys = screen.queryAllByTestId('polygon');
+    // Gating the Polygon on the boundary facet alone would drop it entirely.
+    expect(polys.length).toBeGreaterThan(0);
+    for (const p of polys) {
+      expect(p.getAttribute('data-stroke-opacity')).toBe('0');
+      expect(Number(p.getAttribute('data-fill-opacity'))).toBeGreaterThan(0);
+    }
+  });
+
+  it('fits the initial view to GEOGRAPHY, ignoring where workers stand', () => {
+    // One satgas outside the city used to drag the opening view out to contain
+    // them — a worker in Jakarta turned the first frame into the whole of Java
+    // with Surabaya an unreadable smudge. The served region is a property of
+    // the data, not of where somebody happens to be standing.
+    render(
+      <SimpleMonitoringMap
+        workers={[
+          {
+            user_id: 'far',
+            full_name: 'Jauh',
+            lat: -6.2,
+            lng: 106.8, // Jakarta
+            status: 'active',
+            role: 'satgas',
+            is_within_area: false,
+            is_scheduled: true,
+          },
+        ]}
+        boundaries={boundaries}
+      />
+    );
+
+    const extended = (globalThis as any).__boundsExtended as Array<{ lat: number; lng: number }>;
+    expect(extended.length).toBeGreaterThan(0);
+    expect(extended.some((p) => p.lng > 100 && p.lng < 110)).toBe(false);
   });
 });

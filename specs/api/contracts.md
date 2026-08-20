@@ -3696,6 +3696,7 @@ Authorization: Bearer {token}
 |-----------|------|----------|-------------|
 | `rayon_id` | UUID | No | Filter to specific rayon (auto-applied for kepala_rayon) |
 | `level` | `rayon` \| `area` | No | `rayon` → rayon outlines only, `areas: []` (lightest payload for the city view). `area` (default) → full per-area geometry. Polygons are server-simplified (Douglas–Peucker). The web/mobile clients request `rayon` at city scope and `area` (+`rayon_id`) after drilling into a rayon. |
+| `bbox` | `minLng,minLat,maxLng,maxLat` | No | Viewport filter (ADR-060 viewport mode). Returns only geometry intersecting the box — bounding-box test, erring toward **inclusion**; a shape's own polygon wins over its centre, so a rayon larger than the camera is not dropped. A rayon survives on its children alone. `area_count` stays the rayon's TRUE size, not the visible count. Malformed values are **ignored**, not rejected: a bad bbox degrades to the full payload rather than blanking the map. |
 
 > **Aggregate-first monitoring (revamp):** see `GET /monitoring/aggregate` below. Clients render lightweight rayon/area summary bubbles by default and only fetch worker coordinates for a focused area (or when the user opts into the clustered "Semua Petugas" view).
 
@@ -3703,7 +3704,7 @@ Authorization: Bearer {token}
 
 Lightweight hierarchical rollup for the monitoring map's "Ringkasan" (summary) mode. Returns one node per child of the requested scope — rayons for `scope=city`, areas for `scope=rayon`, kawasan for `scope=region` — with grouped status/role counts and a center point, but **no individual worker coordinates**. Backed by grouped `COUNT` queries and a short-TTL response cache (concurrent identical reads collapse to one DB hit).
 
-`scope=all` returns **every tier in one payload** (rayon + kawasan + lokasi nodes mixed, discriminated by `type` and parented by `district_id` / `region_id`). It exists for the map's **zoom mode**, which draws all tiers at once and would otherwise need 1 + 2N requests. It is composed server-side from the same per-tier builders the drill scopes use, so a node's counts are identical whichever scope asked for them; `totals` / `roster_totals` / `presence_totals` are taken from the **rayon tier only**, since summing across tiers would count each worker three times.
+`scope=all` returns **every tier in one payload** (rayon + kawasan + lokasi nodes mixed, discriminated by `type` and parented by `district_id` / `region_id`). It exists for the map's **zoom** and **viewport** modes, which draw all tiers at once and would otherwise need 1 + 2N requests. It is composed server-side from the same per-tier builders the drill scopes use, so a node's counts are identical whichever scope asked for them; `totals` / `roster_totals` / `presence_totals` are taken from the **rayon tier only**, since summing across tiers would count each worker three times.
 
 **Auth:** JwtAuthGuard + RolesGuard
 **Roles:** `scope=city` → `management`, `admin_system`, `superadmin`. `scope=rayon` / `region` → also `kepala_rayon`, `admin_rayon` (forced to their own rayon). `scope=all` → city roles get the whole hierarchy; rayon-scoped roles are pinned to their own rayon's subtree.
@@ -3713,6 +3714,7 @@ Lightweight hierarchical rollup for the monitoring map's "Ringkasan" (summary) m
 |-----------|------|----------|-------------|
 | `scope` | `city` \| `rayon` \| `region` \| `all` | No (default `city`) | Aggregation level |
 | `id` | UUID | rayon + region scope | Rayon id (city roles may target any; rayon-scoped roles are forced to their own). Optional for `all`, where it narrows the payload to that rayon's subtree |
+| `bbox` | `minLng,minLat,maxLng,maxLat` | No | **`scope=all` only** (viewport mode, ADR-060). Narrows which NODES are built — an off-camera rayon's builder passes are skipped, not merely discarded. `totals` / `roster_totals` stay scope-wide, so the header reports the city rather than the camera. Ignored on the drill scopes (they already return one level) and on malformed input |
 
 **Response `200`:**
 ```jsonc

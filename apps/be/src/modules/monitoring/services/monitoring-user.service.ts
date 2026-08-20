@@ -19,6 +19,12 @@ import {
   AbsentUserDto,
 } from '../dto/live-users.dto';
 import { SchedulesService } from '../../schedules/schedules.service';
+
+/** A role's configured map marker — glyph + colour, both set in role settings. */
+interface RoleMarker {
+  icon: string | null;
+  color: string | null;
+}
 import { ScheduleStatus } from '../../schedules/entities/schedule.entity';
 import { TimezoneUtil } from '../../../common/utils/timezone.util';
 import { LocationHistoryResponseDto, LocationHistoryPointDto } from '../dto/location-history.dto';
@@ -185,7 +191,8 @@ export class MonitoringUserService {
         full_name: uts.user.full_name,
         phone: uts.user.phone_number || null,
         role: uts.user.role,
-        role_marker_icon: roleMarkerMap.get(uts.user.role) ?? null,
+        role_marker_icon: roleMarkerMap.get(uts.user.role)?.icon ?? null,
+        role_marker_color: roleMarkerMap.get(uts.user.role)?.color ?? null,
         location_id: uts.location_id,
         location_name: uts.area?.name || 'Unknown',
         district_id: districtId,
@@ -621,10 +628,21 @@ export class MonitoringUserService {
    * A worker's role glyph on the map falls back to a client-side default when the
    * role leaves this null, so custom roles / overrides still get their icon.
    */
-  private async buildRoleMarkerMap(): Promise<Map<string, string>> {
-    const roles = await this.roleRepository.find({ select: ['code', 'marker_icon'] });
+  /**
+   * Per-role map marker: glyph AND colour.
+   *
+   * Both are configured on the role (ADR-044) and both belong on the pin — the
+   * glyph says what kind of worker this is, the colour makes a role legible in a
+   * crowd of pins without reading any glyph at all. The colour used to be loaded
+   * and then dropped here, so the setting existed in the admin UI and changed
+   * nothing on the map.
+   */
+  private async buildRoleMarkerMap(): Promise<Map<string, RoleMarker>> {
+    const roles = await this.roleRepository.find({
+      select: ['code', 'marker_icon', 'marker_color'],
+    });
     return new Map(
-      roles.filter((r) => r.marker_icon).map((r) => [r.code, r.marker_icon as string]),
+      roles.map((r) => [r.code, { icon: r.marker_icon ?? null, color: r.marker_color ?? null }]),
     );
   }
 

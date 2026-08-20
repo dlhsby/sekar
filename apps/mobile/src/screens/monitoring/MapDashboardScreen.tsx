@@ -29,6 +29,7 @@ import {
   setSelectedUser,
   setMonitoringFilters,
   fetchUserDaySummary,
+  fetchBoundaries,
 } from '../../store/slices/monitoringSlice';
 import { getRoleIcon, SURABAYA_CITY_REGION } from '../../utils/mapUtils';
 import { userAxes } from '../../utils/statusHelpers';
@@ -46,8 +47,11 @@ import {
 import type {
   MonitoringV2VisibleLayers,
   MonitoringScope,
+  MonitoringMode,
 } from '../../store/slices/monitoringV2Slice';
 import { composeDrillNodes } from '../../utils/monitoringDrillNodes';
+import { regionToBox, regionWithinBox } from '../../utils/viewportBox';
+import { tiersAtDelta } from '../../utils/zoomTiers';
 import type { NodeMarker } from '../../components/monitoring/AggregateBubbleLayer';
 import type { TeamGroup } from '../../utils/teamGrouping';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -88,7 +92,6 @@ export function MapDashboardScreen(): React.JSX.Element {
   // Workers render at EVERY drill tier now (city/district/region/location), each
   // filtered to the current scope by `display_scope` (see useLiveUsersFiltering).
   // Gated only by the layer toggle.
-  const showWorkers = showsWorkerPins(visibleLayers.personnel);
 
   // Local UI state
   const [mapReady, setMapReady] = useState(false);
@@ -103,6 +106,12 @@ export function MapDashboardScreen(): React.JSX.Element {
   const [searchModalVisible, setSearchModalVisible] = useState(false);
   const [trailUser, setTrailUser] = useState<LiveUser | null>(null);
   const [currentRegion, setCurrentRegion] = useState(SURABAYA_CITY_REGION);
+  // Workers are the densest layer, so viewport mode reveals them last — at the
+  // camera height where a lokasi fills enough of the screen to read its people.
+  const showWorkers =
+    showsWorkerPins(visibleLayers.personnel) &&
+    (mode !== 'viewport' || tiersAtDelta(currentRegion.latitudeDelta).workers);
+
   const [boundaryDetailVisible, setBoundaryDetailVisible] = useState(false);
   const [boundaryDetailType, setBoundaryDetailType] = useState<'district' | 'location'>('location');
   const [boundaryDetailData, setBoundaryDetailData] = useState<DistrictBoundary | AreaBoundary | null>(null);
@@ -165,6 +174,26 @@ export function MapDashboardScreen(): React.JSX.Element {
     dispatch(initMonitoringView(payload));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser?.id]);
+
+  // Viewport mode (ADR-060): refetch geometry for the camera, and ONLY when the
+  // camera has left the box we last asked for. The padded box means ordinary
+  // panning costs nothing; leaving it — or zooming out — fetches more.
+  //
+  // Boundaries are the payload that matters here: mobile asks for `level='area'`
+  // city-wide in every other mode, which is every lokasi polygon in Surabaya.
+  const viewportBoxRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (mode !== 'viewport') {
+      // Clear on the way out so re-entering fetches for where the camera is NOW.
+      viewportBoxRef.current = null;
+      return;
+    }
+    if (viewportBoxRef.current && regionWithinBox(currentRegion, viewportBoxRef.current)) return;
+    const box = regionToBox(currentRegion);
+    if (box === viewportBoxRef.current) return;
+    viewportBoxRef.current = box;
+    void dispatch(fetchBoundaries({ bbox: box }));
+  }, [mode, currentRegion, dispatch]);
 
   // Aggregate fetch — city rollup feeds the district nodes; district rollup feeds
   // the lokasi nodes. (The `region`/kawasan aggregate tier + its bubble rendering is
@@ -334,14 +363,14 @@ export function MapDashboardScreen(): React.JSX.Element {
 
   // Layer toggle handler
   const handleSetMode = useCallback(
-    (next: 'drill' | 'zoom') => {
+    (next: MonitoringMode) => {
       dispatch(setMode(next));
     },
     [dispatch],
   );
 
   const handleSetLayer = useCallback(
-    (key: keyof MonitoringV2VisibleLayers, value: string | boolean) => {
+    (key: keyof MonitoringV2VisibleLayers, value: string[] | boolean) => {
       dispatch(setLayer({ key, value }));
     },
     [dispatch],

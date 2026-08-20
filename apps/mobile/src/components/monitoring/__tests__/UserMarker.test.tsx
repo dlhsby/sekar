@@ -402,4 +402,31 @@ describe('UserMarker', () => {
       expect(getByTestId('marker')).toBeTruthy();
     });
   });
+
+  describe('marker colour', () => {
+    /** Every backgroundColor rendered anywhere in the marker tree. */
+    const colorsOf = (tree: any): string[] => {
+      const flat = (s: any): any[] => (Array.isArray(s) ? s.flatMap(flat) : [s]);
+      const views = tree.UNSAFE_getAllByType(require('react-native').View);
+      return views
+        .flatMap((v: any) => flat(v.props.style).filter(Boolean))
+        .map((st: any) => st.backgroundColor)
+        .filter(Boolean);
+    };
+
+    it("fills the pin with the ROLE's configured marker colour", () => {
+      // The colour is set in role settings and used to change nothing on the
+      // map — the pin always drew in the presence colour.
+      const user = createMockUser({ role_marker_color: '#1D4ED8' } as any);
+      const tree = render(<UserMarker user={user} onPress={mockOnPress} labelMode="none" />);
+      expect(colorsOf(tree)).toContain('#1D4ED8');
+    });
+
+    it('falls back to the presence colour when the role has none — unchanged look', () => {
+      const user = createMockUser();
+      const tree = render(<UserMarker user={user} onPress={mockOnPress} labelMode="none" />);
+      expect(colorsOf(tree)).not.toContain('#1D4ED8');
+      expect(colorsOf(tree).length).toBeGreaterThan(0);
+    });
+  });
 });

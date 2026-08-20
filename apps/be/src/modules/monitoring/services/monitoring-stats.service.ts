@@ -50,6 +50,7 @@ import {
 import { STAFFING_COUNTED_ROLES } from '../../users/constants/role-groups';
 import { DayTypeService } from './day-type.service';
 import { simplifyGeometry } from '../../../common/utils/geojson-simplify.util';
+import { visibleIn, pointInBBox, type BBox } from '../../../common/utils/geo-bbox.util';
 import { MonitoringCacheService } from './monitoring-cache.service';
 
 /**
@@ -353,17 +354,47 @@ export class MonitoringStatsService {
    * Returns only centers + grouped counts (never worker coordinates), built with a
    * fixed set of grouped queries (no per-node fan-out).
    */
-  async getAggregate(scope: AggregateScope, districtId?: string): Promise<AggregateResponseDto> {
-    const key = `aggregate:${scope}:${districtId ?? ''}`;
+  async getAggregate(
+    scope: AggregateScope,
+    districtId?: string,
+    bbox?: BBox,
+  ): Promise<AggregateResponseDto> {
+    // The bbox is part of the cache key, or two operators looking at different
+    // corners of the city would serve each other's viewport. Rounded to ~1 km so
+    // a pixel of panning does not mint a fresh entry and defeat the cache.
+    const boxKey = bbox ? bbox.map((n) => n.toFixed(2)).join(',') : '';
+    const key = `aggregate:${scope}:${districtId ?? ''}:${boxKey}`;
     if (typeof this.cacheService?.getOrCompute === 'function') {
-      return this.cacheService.getOrCompute(key, () => this.computeAggregate(scope, districtId));
+      return this.cacheService.getOrCompute(key, () =>
+        this.computeAggregate(scope, districtId, bbox),
+      );
     }
-    return this.computeAggregate(scope, districtId);
+    return this.computeAggregate(scope, districtId, bbox);
+  }
+
+  /**
+   * Districts whose own outline touches the box.
+   *
+   * Nine rows, geometry included — cheap enough to read per viewport request and
+   * the only way to answer "is this rayon on camera" correctly, since a rayon
+   * bigger than the screen has its centre outside it.
+   */
+  private async districtIdsInBBox(bbox: BBox): Promise<Set<string>> {
+    const districts = await this.districtRepository.find({ where: { is_active: true } });
+    const ids = new Set<string>();
+    for (const d of districts) {
+      const lat = (d as any).center_lat ? parseFloat((d as any).center_lat.toString()) : null;
+      const lng = (d as any).center_lng ? parseFloat((d as any).center_lng.toString()) : null;
+      if (visibleIn(bbox, (d as any).boundary_polygon, lat, lng)) ids.add(d.id);
+    }
+    return ids;
   }
 
   private async computeAggregate(
     scope: AggregateScope,
     districtId?: string,
+    /** Viewport mode (ADR-060) — `scope=all` only; narrows which NODES are built. */
+    bbox?: BBox,
   ): Promise<AggregateResponseDto> {
     const currentShift = await this.getCurrentShiftDefinition();
     const currentDayType = await this.dayTypeService.getCurrentDayType();
@@ -467,10 +498,18 @@ export class MonitoringStatsService {
       // Cost is 1 + 2N builder passes behind the 5 s aggregate cache, traded for
       // the 1 + 2N HTTP round trips the client would otherwise make.
       const districtNodes = districtId ? nodes.filter((n) => n.id === districtId) : nodes;
+      // Viewport mode: a district entirely off-camera has its two builder passes
+      // SKIPPED, not merely its results discarded — that is the whole saving.
+      // Read from the districts' own geometry (9 rows) rather than the node
+      // centre, because a rayon filling the screen has its centre off it.
+      const visibleDistrictIds = bbox ? await this.districtIdsInBBox(bbox) : null;
+      const drawnDistrictNodes = visibleDistrictIds
+        ? districtNodes.filter((n) => visibleDistrictIds.has(n.id))
+        : districtNodes;
       const childNodes: AggregateNodeDto[] = [];
       // Sequential across districts (each builder already fans out ~6 queries in
       // parallel internally) — enough concurrency without exhausting the pool.
-      for (const district of districtNodes) {
+      for (const district of drawnDistrictNodes) {
         const districtClockedIn = await this.clockedInUserSet({ districtId: district.id });
         const [regionNodes, locationNodes] = await Promise.all([
           this.buildRegionNodes(
@@ -493,6 +532,12 @@ export class MonitoringStatsService {
         childNodes.push(...regionNodes, ...locationNodes);
       }
 
+      // Children are filtered on their own centre: a lokasi is a point on this
+      // map, so the box test that matters for it is where its pin lands.
+      const drawnChildNodes = bbox
+        ? childNodes.filter((n) => pointInBBox(n.center_lat, n.center_lng, bbox))
+        : childNodes;
+
       // Totals stay TIER-WIDE, not Σ nodes: summing across tiers would count the
       // same worker in their district, their kawasan and their lokasi. The
       // district nodes alone carry the scope's true totals, which is also what
@@ -504,7 +549,10 @@ export class MonitoringStatsService {
       return {
         scope,
         scope_id: districtId ?? null,
-        nodes: [...districtNodes, ...childNodes],
+        nodes: [...drawnDistrictNodes, ...drawnChildNodes],
+        // Totals stay computed over the FULL district set, never the visible one:
+        // the header answers "how is the city doing", and a number that moved as
+        // the operator panned would be reporting the camera, not the city.
         totals: this.sumStatusCounts(districtNodes),
         roster_totals: await this.rosterTotalsForScope(
           totalsScope,
@@ -1911,8 +1959,15 @@ export class MonitoringStatsService {
      * the city-level map). `area` (default) → full area geometry for drill-down.
      */
     level?: 'district' | 'area';
+    /**
+     * Viewport mode (ADR-060): return only what intersects the camera's bounds.
+     * Filtering happens after the rows load, so it trims the PAYLOAD and the
+     * client's polygon construction — where this map's cost actually is.
+     */
+    bbox?: BBox;
   }): Promise<BoundariesResponseDto> {
     const level = filters?.level ?? 'area';
+    const bbox = filters?.bbox ?? null;
     const districtWhere: Record<string, any> = { is_active: true };
     if (filters?.district_id) {
       districtWhere.id = filters.district_id;
@@ -1920,7 +1975,10 @@ export class MonitoringStatsService {
 
     const districts = await this.districtRepository.find({ where: districtWhere });
 
-    const districtBoundaries: DistrictBoundaryDto[] = await Promise.all(
+    // `null` = filtered out by the viewport box; compacted below. Kept as a hole
+    // rather than filtered pre-flight because a district can survive on its
+    // CHILDREN alone (its own outline off-camera while its lokasi are on it).
+    const districtBoundaries: (DistrictBoundaryDto | null)[] = await Promise.all(
       districts.map(async (district) => {
         const districtCenterLat = (district as any).center_lat
           ? parseFloat((district as any).center_lat.toString())
@@ -1933,6 +1991,20 @@ export class MonitoringStatsService {
         // come from /monitoring/aggregate at the city zoom, so this path stays a
         // single cheap count per district.
         if (level === 'district') {
+          // A rayon big enough to fill the screen has its centre off-camera, so
+          // `visibleIn` prefers the polygon's own box and only falls back to the
+          // centre for entities with no geometry.
+          if (
+            bbox &&
+            !visibleIn(
+              bbox,
+              (district as any).boundary_polygon,
+              districtCenterLat,
+              districtCenterLng,
+            )
+          ) {
+            return null;
+          }
           const area_count = await this.areaRepository.count({
             where: { district_id: district.id, is_active: true },
           });
@@ -1975,14 +2047,38 @@ export class MonitoringStatsService {
           }
           areaWhere.id = In(filters.area_ids);
         }
-        const areas = await this.areaRepository.find({ where: areaWhere });
+        const allAreas = await this.areaRepository.find({ where: areaWhere });
+        // `area_count` stays the district's TRUE size: it labels the rayon ("12
+        // lokasi"), and a number that shrank as you panned would read as data
+        // vanishing rather than as a viewport.
+        const totalAreaCount = allAreas.length;
+        const areas = bbox
+          ? allAreas.filter((a) =>
+              visibleIn(
+                bbox,
+                a.boundary_polygon,
+                parseFloat(a.gps_lat?.toString() || '0'),
+                parseFloat(a.gps_lng?.toString() || '0'),
+              ),
+            )
+          : allAreas;
 
         // Kawasan (region) outlines within this district — drawn tinted at district zoom.
         const regionEntities =
           (await this.regionRepository.find({
             where: { district_id: district.id, is_active: true },
           })) ?? [];
-        const regionBoundaries: RegionBoundaryDto[] = regionEntities.map((rg) => ({
+        const visibleRegions = bbox
+          ? regionEntities.filter((rg) =>
+              visibleIn(
+                bbox,
+                (rg as any).boundary_polygon,
+                (rg as any).center_lat ? parseFloat((rg as any).center_lat.toString()) : null,
+                (rg as any).center_lng ? parseFloat((rg as any).center_lng.toString()) : null,
+              ),
+            )
+          : regionEntities;
+        const regionBoundaries: RegionBoundaryDto[] = visibleRegions.map((rg) => ({
           id: rg.id,
           name: rg.name,
           ...this.styleOf(rg),
@@ -2035,6 +2131,17 @@ export class MonitoringStatsService {
 
         const understaffedCount = areaBoundaries.filter((a) => a.is_understaffed).length;
 
+        // Drop the rayon only when NOTHING of it is on camera — neither its own
+        // outline nor any kawasan or lokasi inside it.
+        if (
+          bbox &&
+          regionBoundaries.length === 0 &&
+          areaBoundaries.length === 0 &&
+          !visibleIn(bbox, (district as any).boundary_polygon, districtCenterLat, districtCenterLng)
+        ) {
+          return null;
+        }
+
         return {
           id: district.id,
           name: district.name,
@@ -2042,7 +2149,7 @@ export class MonitoringStatsService {
           boundary_polygon: simplifyGeometry((district as any).boundary_polygon) || null,
           center_lat: districtCenterLat,
           center_lng: districtCenterLng,
-          area_count: areas.length,
+          area_count: totalAreaCount,
           is_understaffed: understaffedCount > 0,
           understaffed_area_count: understaffedCount,
           regions: regionBoundaries,
@@ -2054,10 +2161,9 @@ export class MonitoringStatsService {
     // When the caller requested specific area_ids, suppress districts that
     // ended up with no matching areas (otherwise korlap would still see
     // empty district polygons from across the city).
+    const placed = districtBoundaries.filter((r): r is DistrictBoundaryDto => r !== null);
     const finalDistricts =
-      filters?.area_ids && level === 'area'
-        ? districtBoundaries.filter((r) => r.areas.length > 0)
-        : districtBoundaries;
+      filters?.area_ids && level === 'area' ? placed.filter((r) => r.areas.length > 0) : placed;
 
     return {
       districts: finalDistricts,

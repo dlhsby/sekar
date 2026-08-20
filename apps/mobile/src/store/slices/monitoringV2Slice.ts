@@ -32,12 +32,23 @@ export interface MonitoringV2Snapshot {
 // Layer vocabulary + predicates live in a plain module (not the store): they are
 // pure functions about a VALUE, and keeping them here forced every test that
 // mocked this slice to stub them as well.
-/** Monitoring map mode (ADR-060) — the mobile twin of web's `mapMode`. */
-export type MonitoringMode = 'drill' | 'zoom';
+/**
+ * Monitoring map mode (ADR-060) — the mobile twin of web's `mapMode`.
+ *
+ * `viewport` draws exactly what `zoom` draws; it asks the SERVER for only the
+ * geometry intersecting the camera (`?bbox=`), so the city-wide boundary payload
+ * is never produced for regions off-screen. Panning or zooming out fetches more.
+ */
+export type MonitoringMode = 'drill' | 'zoom' | 'viewport';
+
+/** Zoom and viewport draw the same thing; they differ in how much they fetch. */
+export const isZoomLike = (m: MonitoringMode): boolean => m === 'zoom' || m === 'viewport';
 
 export type {
-  LayerVisibility,
-  PersonnelVisibility,
+  GeoFacet,
+  PersonnelFacet,
+  GeoLayer,
+  PersonnelLayer,
   MonitoringV2VisibleLayers,
 } from '../../utils/layerVisibility';
 
@@ -221,20 +232,23 @@ const monitoringV2Slice = createSlice({
     },
 
     /**
-     * Set one layer's visibility. Replaces the old boolean `toggleLayer`: the
-     * geo tiers now carry a four-way choice, and Petugas/Tim collapsed into one
-     * value so "Tim on, Petugas off" — which drew nothing — cannot be expressed.
+     * Set one layer's facets. Takes the whole SET rather than a delta, so the
+     * caller never has to merge and two equal selections are always equal
+     * arrays (`toggleFacet` keeps canonical order).
+     *
+     * `plants` stays a plain boolean — it is a single overlay, not a tier with
+     * an outline, a fill and a marker.
      */
     setLayer(
       state,
-      action: PayloadAction<{ key: keyof VisibleLayers; value: string | boolean }>,
+      action: PayloadAction<{ key: keyof VisibleLayers; value: string[] | boolean }>,
     ) {
       const { key, value } = action.payload;
       if (key === 'plants') {
         state.visibleLayers.plants = Boolean(value);
         return;
       }
-      (state.visibleLayers[key] as string) = String(value);
+      (state.visibleLayers[key] as string[]) = Array.isArray(value) ? [...value] : [];
     },
 
     /**

@@ -200,6 +200,7 @@ describe('MonitoringController', () => {
         full_name: 'Worker One',
         role: UserRole.SATGAS,
         role_marker_icon: null,
+        role_marker_color: null,
         phone: '081234567890',
         status: TrackingStatus.ACTIVE,
         activity: 'aktif',
@@ -921,7 +922,7 @@ describe('MonitoringController', () => {
 
     it('returns city aggregate for city role', async () => {
       await controller.getAggregate(mockSuperadmin, 'city');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined);
+      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined, undefined);
     });
 
     it('rejects city scope for district-scoped role', async () => {
@@ -932,22 +933,41 @@ describe('MonitoringController', () => {
 
     it('forces district-scoped role to own district regardless of requested id', async () => {
       await controller.getAggregate(mockKepalaDistrict, 'district', 'district-other');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('district', 'district-1');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('district', 'district-1', undefined);
     });
 
     it('lets city role target any district', async () => {
       await controller.getAggregate(mockSuperadmin, 'district', 'district-9');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('district', 'district-9');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('district', 'district-9', undefined);
     });
 
     it('region scope forces a district-scoped role to its own district (5.5c)', async () => {
       await controller.getAggregate(mockKepalaDistrict, 'region', 'district-other');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'district-1');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'district-1', undefined);
     });
 
     it('region scope lets a city role target any district', async () => {
       await controller.getAggregate(mockSuperadmin, 'region', 'district-9');
-      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'district-9');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('region', 'district-9', undefined);
+    });
+
+    it('passes a parsed bbox through for scope=all (viewport mode)', async () => {
+      await controller.getAggregate(mockSuperadmin, 'all', undefined, '112.7,-7.3,112.8,-7.2');
+      expect(statsService.getAggregate).toHaveBeenCalledWith(
+        'all',
+        undefined,
+        [112.7, -7.3, 112.8, -7.2],
+      );
+    });
+
+    it('IGNORES a bbox on the drill scopes — they already return one level', async () => {
+      await controller.getAggregate(mockSuperadmin, 'city', undefined, '112.7,-7.3,112.8,-7.2');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('city', undefined, undefined);
+    });
+
+    it('degrades a malformed bbox to no filter rather than blanking the map', async () => {
+      await controller.getAggregate(mockSuperadmin, 'all', undefined, 'not,a,box');
+      expect(statsService.getAggregate).toHaveBeenCalledWith('all', undefined, undefined);
     });
   });
 

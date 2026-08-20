@@ -95,6 +95,11 @@ export const UserMarker = React.memo(function UserMarker({
   const { location } = userAxes(user);
   const isAdHoc = user.is_scheduled === false;
   const markerColor = presenceMarkerColor(user);
+  // The ROLE's configured colour fills the pin body (role settings, ADR-044);
+  // presence keeps the arrow + the luar-area ring, so identity and status never
+  // compete for the same colour. Web makes the same split. Null → the presence
+  // colour, which is exactly how this pin looked before roles carried one.
+  const bodyColor = user.role_marker_color || markerColor;
   const isOutside = location === 'luar_area';
   const roleIcon = getRoleIcon(user.role);
   const label = isCluster ? null : getMarkerLabel(user, labelMode);
@@ -112,7 +117,7 @@ export const UserMarker = React.memo(function UserMarker({
     setTracksViewChanges(true);
     const t = setTimeout(() => setTracksViewChanges(false), 250);
     return () => clearTimeout(t);
-  }, [labelMode, user.status, user.activity, user.location, user.is_within_area, user.full_name, isCluster, clusterCount]);
+  }, [labelMode, user.status, user.activity, user.location, user.is_within_area, user.full_name, user.role_marker_color, isCluster, clusterCount]);
 
   return (
     <Marker
@@ -141,26 +146,11 @@ export const UserMarker = React.memo(function UserMarker({
           </View>
         ) : (
           <>
-            {/* Ring marks luar_area; transparent (but same size) otherwise so the
-                cached bitmap dimensions stay stable on Android. */}
-            <View style={[styles.markerRing, isOutside && styles.markerRingOutside]}>
-              <View
-                style={[
-                  styles.marker,
-                  { backgroundColor: isAdHoc ? nbColors.white : markerColor },
-                  isAdHoc && { borderColor: markerColor },
-                ]}
-              >
-                <MaterialCommunityIcons
-                  name={roleIcon}
-                  size={16}
-                  color={isAdHoc ? markerColor : nbColors.white}
-                />
-              </View>
-            </View>
-            <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
-            {/* Always render label placeholder to keep view hierarchy stable on Android
-                (prevents bitmap recreation flicker when label appears/disappears) */}
+            {/* The name sits ABOVE the pin: below is where the geo tiers write
+                theirs, and with anchor y=1 the arrow tip now lands on the
+                coordinate instead of the label's bottom edge. Always rendered
+                (hidden, not unmounted) to keep the Android view hierarchy — and
+                therefore the cached bitmap — stable. */}
             <NBText
               variant="caption"
               color="white"
@@ -169,10 +159,28 @@ export const UserMarker = React.memo(function UserMarker({
                 isCloseZoom ? styles.nameLabelFull : styles.nameLabelAbbrev,
                 !label && styles.labelHidden,
               ]}
-              numberOfLines={1}
+              numberOfLines={2}
             >
               {label ?? ''}
             </NBText>
+            {/* Ring marks luar_area; transparent (but same size) otherwise so the
+                cached bitmap dimensions stay stable on Android. */}
+            <View style={[styles.markerRing, isOutside && styles.markerRingOutside]}>
+              <View
+                style={[
+                  styles.marker,
+                  { backgroundColor: isAdHoc ? nbColors.white : bodyColor },
+                  isAdHoc && { borderColor: bodyColor },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name={roleIcon}
+                  size={16}
+                  color={isAdHoc ? bodyColor : nbColors.white}
+                />
+              </View>
+            </View>
+            <View style={[styles.markerArrow, { borderTopColor: markerColor }]} />
           </>
         )}
       </View>
@@ -237,7 +245,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
     textAlign: 'center',
-    marginTop: 2,
+    marginBottom: 2,
   },
   nameLabelAbbrev: {
     maxWidth: 80,
@@ -248,7 +256,7 @@ const styles = StyleSheet.create({
   labelHidden: {
     opacity: 0,
     height: 0,
-    marginTop: 0,
+    marginBottom: 0,
   },
   clusterMarker: {
     width: 48,

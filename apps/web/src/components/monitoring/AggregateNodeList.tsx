@@ -5,9 +5,13 @@
  * row per node (district or area) with today's attendance trio
  * (Terjadwal / Hadir / Belum Hadir); clicking a row drills into it, mirroring a
  * map node tap.
+ *
+ * Rows can be hidden individually — 371 rows is not a list, and hiding by tier
+ * is too blunt when the thing in the way is one rayon. Hiding is presentation
+ * only: the numbers on every remaining row still count what was hidden.
  */
 import { useTranslation } from 'react-i18next';
-import { ChevronRight, AlertTriangle, Info } from 'lucide-react';
+import { ChevronRight, AlertTriangle, Info, EyeOff } from 'lucide-react';
 import { EmptyState } from '@/components/ui';
 import { cn } from '@/lib/utils/cn';
 import type { AggregateNode } from '@/lib/api/monitoring-v2';
@@ -32,6 +36,14 @@ export interface AggregateNodeListProps {
   /** Geo-filter selection (district/kawasan/lokasi id). Non-matching rows dim to
    *  match the map's spotlight. Null = no geo filter (all rows full strength). */
   activeGeoId?: string | null;
+  /**
+   * Row-level hide (see `lib/monitoring/hidden.ts`). When present each row gains
+   * an eye button, and hidden rows are dropped from the list with a restore
+   * banner above it — hiding must never be silent.
+   */
+  isHidden?: (id: string) => boolean;
+  onToggleHidden?: (id: string) => void;
+  onShowAllHidden?: () => void;
   /** Bare mode drops the bordered card chrome — for embedding inside a tab panel
    *  that already provides the container. */
   bare?: boolean;
@@ -44,12 +56,35 @@ export function AggregateNodeList({
   onDetail,
   showTier,
   activeGeoId,
+  isHidden,
+  onToggleHidden,
+  onShowAllHidden,
   bare,
   className,
 }: AggregateNodeListProps) {
   const { t } = useTranslation();
 
-  if (nodes.length === 0) {
+  // Counts come from the SERVER over the full scope, so a hidden row changes
+  // what is listed and never what is counted (see `hidden.ts`).
+  const visible = isHidden ? nodes.filter((n) => !isHidden(n.id)) : nodes;
+  const hiddenCount = nodes.length - visible.length;
+
+  const restoreBanner = hiddenCount > 0 && onShowAllHidden && (
+    <div className="flex items-center justify-between gap-2 border-b-2 border-nb-gray-100 bg-nb-gray-50 px-3 py-1.5 text-xs">
+      <span className="font-bold text-nb-gray-600">
+        {t('monitoring:hidden.count', { count: hiddenCount })}
+      </span>
+      <button
+        type="button"
+        onClick={onShowAllHidden}
+        className="font-bold text-nb-black underline underline-offset-2 hover:text-nb-primary-active"
+      >
+        {t('monitoring:hidden.showAll')}
+      </button>
+    </div>
+  );
+
+  if (visible.length === 0) {
     return (
       <div
         className={cn(
@@ -58,6 +93,7 @@ export function AggregateNodeList({
           className
         )}
       >
+        {restoreBanner}
         <EmptyState variant="noData" />
       </div>
     );
@@ -71,8 +107,9 @@ export function AggregateNodeList({
         className
       )}
     >
+      {restoreBanner}
       <ul className="divide-y-2 divide-nb-gray-100">
-        {nodes.map((node) => {
+        {visible.map((node) => {
           const dimmed = activeGeoId != null && node.id !== activeGeoId;
           return (
           <li key={node.id} className="flex items-stretch">
@@ -158,6 +195,17 @@ export function AggregateNodeList({
               </div>
               <ChevronRight className="h-4 w-4 shrink-0 text-nb-gray-400" aria-hidden="true" />
             </button>
+            {onToggleHidden && (
+              <button
+                type="button"
+                onClick={() => onToggleHidden(node.id)}
+                aria-label={t('monitoring:hidden.hideLabel', { name: node.name })}
+                title={t('monitoring:hidden.hideLabel', { name: node.name })}
+                className="shrink-0 border-l-2 border-nb-gray-100 px-2 text-nb-gray-400 transition-colors hover:bg-nb-gray-50 hover:text-nb-black"
+              >
+                <EyeOff className="h-4 w-4" aria-hidden="true" />
+              </button>
+            )}
             {onDetail && (
               <button
                 type="button"

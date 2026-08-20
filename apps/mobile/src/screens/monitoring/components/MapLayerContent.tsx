@@ -16,8 +16,13 @@ import { TeamMarkerLayer } from '../../../components/monitoring/TeamMarkerLayer'
 import type { TeamGroup } from '../../../utils/teamGrouping';
 import { UserMarker, type LabelMode } from '../../../components/monitoring/UserMarker';
 import type { LiveUser } from '../../../types/models.types';
+import { isZoomLike, type MonitoringMode } from '../../../store/slices/monitoringV2Slice';
+import { tiersAtDelta, ALL_TIERS } from '../../../utils/zoomTiers';
 import {
   showsBoundary,
+  showsFill,
+  showsNodeLabel,
+  showsPolygon,
   type MonitoringV2VisibleLayers,
 } from '../../../utils/layerVisibility';
 
@@ -41,7 +46,7 @@ interface MapLayerContentProps {
   /** The drilled kawasan (region scope) — narrows which kawasan outline draws. */
   regionId?: string | null;
   /** Monitoring mode — `zoom` draws every tier of the subtree at once. */
-  mode?: 'drill' | 'zoom';
+  mode?: MonitoringMode;
   /** Attendance ratio per rayon/location id, shown on the geographic markers. */
   rosterById: Record<string, { activeInside: number; scheduled: number }>;
   /** Drill bubbles composed from the aggregate (district → regions ∪ region-less
@@ -114,22 +119,35 @@ export function MapLayerContent({
     return all;
   }, [boundaries, scope, districtId, areaId]);
 
+  // Viewport mode adds DEPTH to the bbox: a box at city height is the whole
+  // city, so "only what is on screen" still drew every kawasan and lokasi at
+  // once. Tiers now arrive as there is room for them.
+  const tiers =
+    mode === 'viewport' ? tiersAtDelta(currentRegion.latitudeDelta) : ALL_TIERS;
   // Rayon outline follows its toggle from the city view down. Location outlines draw
   // ONLY at location scope (the one selected location) — never all-at-once at district scope.
   // The Surabaya top level was retired (PR2) — district boundaries show at every
   // tier when toggled (city is now the top, and it draws the district outlines).
-  const showDistrictBoundaries = showsBoundary(visibleLayers.district);
+  // "Show the polygon" is now OR over outline+fill; which of the two actually
+  // paints is decided inside BoundaryOverlay. Gating on the outline alone would
+  // drop a fill-only tier entirely.
+  const showDistrictBoundaries = showsPolygon(visibleLayers.district) && tiers.district;
   // Lokasi outlines used to draw ONLY at location scope. Web draws them from
   // district scope down (the lokasi that have a node marker), so a supervisor
   // sees the shapes as soon as they drill in rather than one at a time.
-  const isZoom = mode === 'zoom';
+  // Viewport draws exactly what zoom draws — the server already narrowed the
+  // payload, so nothing here needs to know which of the two it is.
+  const isZoom = isZoomLike(mode);
   const showAreaBoundaries =
-    showsBoundary(visibleLayers.lokasi) &&
+    tiers.location &&
+    showsPolygon(visibleLayers.lokasi) &&
     (isZoom || scope === 'location' || scope === 'district' || scope === 'region');
   // Kawasan outlines — new. The payload has carried `regions[]` since ADR-045;
   // mobile had no field for it, so the tier it drills THROUGH was invisible.
   const showRegionBoundaries =
-    showsBoundary(visibleLayers.kawasan) && (isZoom || scope === 'district' || scope === 'region');
+    tiers.region &&
+    showsPolygon(visibleLayers.kawasan) &&
+    (isZoom || scope === 'district' || scope === 'region');
 
   // Drill BUBBLES now come from the aggregate (AggregateBubbleLayer below) so the
   // kawasan tier — which has no boundary polygon — can render. BoundaryOverlay keeps
@@ -143,6 +161,20 @@ export function MapLayerContent({
   const showBoundaryLayer =
     showDistrictBoundaries || showAreaBoundaries || showRegionBoundaries ||
     showDistrictMarker || showAreaMarker;
+
+  // Bubbles obey the same depth gate as the polygons, or a tier would draw its
+  // pins with no shape (and, at city height, hundreds of them at once).
+  const tierScopedNodes = useMemo(
+    () =>
+      nodeMarkers.filter(n =>
+        n.variant === 'district'
+          ? tiers.district
+          : n.variant === 'region'
+            ? tiers.region
+            : tiers.location,
+      ),
+    [nodeMarkers, tiers],
+  );
 
   return (
     <>
@@ -159,8 +191,16 @@ export function MapLayerContent({
           onAreaMarkerPress={onAreaDetail}
           showDistricts={showDistrictBoundaries}
           showAreas={showAreaBoundaries}
-        showRegions={showRegionBoundaries}
-        regionId={regionId}
+          showRegions={showRegionBoundaries}
+          // Outline and fill are independent facets: the show* flags above mount
+          // the polygon (scope + either facet), these decide which half paints.
+          districtOutline={showsBoundary(visibleLayers.district)}
+          districtFill={showsFill(visibleLayers.district)}
+          regionOutline={showsBoundary(visibleLayers.kawasan)}
+          regionFill={showsFill(visibleLayers.kawasan)}
+          areaOutline={showsBoundary(visibleLayers.lokasi)}
+          areaFill={showsFill(visibleLayers.lokasi)}
+          regionId={regionId}
           showDistrictBubbles={showDistrictBubbles}
           showAreaBubbles={showAreaBubbles}
           showDistrictMarker={showDistrictMarker}
@@ -171,12 +211,19 @@ export function MapLayerContent({
 
       {/* Drill bubbles from the aggregate — district nodes (city), regions ∪
           region-less lokasi (district), a kawasan's lokasi (region). Tap → drill. */}
-      {mapReady && nodeMarkers.length > 0 && (
+      {mapReady && tierScopedNodes.length > 0 && (
         <AggregateBubbleLayer
-          nodes={nodeMarkers}
+          nodes={tierScopedNodes}
           onDrill={onNodeDrill}
           latitudeDelta={currentRegion.latitudeDelta}
           onClusterPress={onClusterPress}
+          // Labels are their own facet: hiding a dense tier's names keeps the
+          // bubbles, which is the common ask at a wide zoom.
+          showLabels={{
+            district: showsNodeLabel(visibleLayers.district),
+            region: showsNodeLabel(visibleLayers.kawasan),
+            location: showsNodeLabel(visibleLayers.lokasi),
+          }}
         />
       )}
 
