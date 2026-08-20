@@ -2,7 +2,7 @@
   "name": "sekar-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "SEKAR — DLH Surabaya worker tracking & task management. Cross-workspace tooling root (Phase 3 onward).",
+  "description": "SEKAR \u2014 DLH Surabaya worker tracking & task management. Cross-workspace tooling root (Phase 3 onward).",
   "license": "UNLICENSED",
   "engines": {
     "node": ">=24.13.0",
@@ -40,5 +40,8 @@
     "ts-jest": "^29.2.5",
     "tsx": "^4.19.2",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "esbuild": "^0.28.1"
   }
 }
