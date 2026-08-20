@@ -740,6 +740,16 @@ class LocationTracker extends EventEmitter {
 
       if (result.error) {
         // BAD_REQUEST (completed shift) or NOT_FOUND (shift deleted) — drop locations, don't queue
+        // The session is gone. `apiClient` has already cleared the credentials
+        // and announced it, so the sign-out is in flight; queueing here would
+        // only write pings nobody can attribute yet. Keep them in the buffer -
+        // it is persisted, so they survive to be uploaded by the next session
+        // rather than being lost or duplicated into the queue.
+        if (result.code === 'AUTH_TOKEN_INVALID' || result.code === 'UNAUTHORIZED') {
+          console.warn('[LocationTracker] Session invalid, holding buffer for next session');
+          this.emit('batchQueued', 0);
+          return;
+        }
         if (result.code === 'BAD_REQUEST' || result.code === 'NOT_FOUND') {
           console.warn('[LocationTracker] Shift no longer active, dropping locations:', result.error);
           this.locationBuffer = this.locationBuffer.slice(uploadCount);

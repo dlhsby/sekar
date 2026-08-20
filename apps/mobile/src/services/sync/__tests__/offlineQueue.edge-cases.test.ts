@@ -772,7 +772,7 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
           timestamp: Date.now(),
           retryCount: 0,
           status: 'pending',
-          // No user_id - will be cleared
+          // No user_id - KEPT: unsent work, see below.
         },
       ];
 
@@ -780,9 +780,12 @@ describe('Offline Queue - Edge Cases & Error Handling', () => {
 
       await offlineQueue.clearOrphanedItems();
 
+      // Only the item explicitly marked `orphaned` is removed. A pending item
+      // with no user_id is not a leftover — a forced logout wipes the storage
+      // that `user_id` comes from, so that is exactly what a worker's own
+      // unsent ping looks like after their session is killed mid-shift.
       const savedData = JSON.parse(mockAsyncStorage.setItem.mock.calls[0][1]);
-      expect(savedData).toHaveLength(1);
-      expect(savedData[0].id).toBe('item-1');
+      expect(savedData.map((item: QueueItem) => item.id)).toEqual(['item-1', 'item-3']);
     });
 
     it('should clear only successfully synced items', async () => {

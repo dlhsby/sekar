@@ -177,6 +177,60 @@ describe('LocationTracker', () => {
     });
   });
 
+  describe('upload against a dead session', () => {
+    /**
+     * `initialize` fires an immediate first-ping upload whose promise settles
+     * after the setup returns, so the response has to be in place BEFORE
+     * initialize and the spies cleared only once it has drained - otherwise
+     * the startup call is attributed to the assertion.
+     *
+     * The capture itself then goes through `captureNow({ upload: true })`,
+     * which is awaited end to end. Driving it with timers instead leaves the
+     * GPS read in flight when the assertion runs, and "addToQueue was not
+     * called" passes for the wrong reason.
+     */
+    const startTrackingWith = async (response: Record<string, unknown>) => {
+      (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
+        success(mockLocation);
+      });
+      (locationApi.uploadLocationBatch as jest.Mock).mockResolvedValue(response);
+      locationTracker.on('error', jest.fn());
+      await locationTracker.initialize(mockShiftId);
+      await Promise.resolve();
+      await Promise.resolve();
+      (offlineQueue.addToQueue as jest.Mock).mockClear();
+      (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+    };
+
+    it('holds the buffer instead of queueing when the session is invalid', async () => {
+      // A 401 is not a transient upload failure. `apiClient` has already
+      // cleared the credentials and announced the expiry, so the sign-out is
+      // in flight; queueing here writes pings that cannot be attributed yet.
+      // They stay in the PERSISTED buffer and go up under the next session.
+      await startTrackingWith({
+        error: 'Sesi tidak valid. Silakan masuk kembali.',
+        code: 'AUTH_TOKEN_INVALID',
+      });
+
+      await locationTracker.captureNow({ upload: true });
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      expect(offlineQueue.addToQueue).not.toHaveBeenCalled();
+    });
+
+    it('still queues on an ordinary transport failure', async () => {
+      // The contrast that makes the case above meaningful: a network blip must
+      // keep behaving exactly as before, or the fix would have traded one data
+      // loss for another.
+      await startTrackingWith({ error: 'Network Error', code: 'NETWORK_ERROR' });
+
+      await locationTracker.captureNow({ upload: true });
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      expect(offlineQueue.addToQueue).toHaveBeenCalled();
+    });
+  });
+
   describe('stop', () => {
     beforeEach(async () => {
       (Geolocation.getCurrentPosition as jest.Mock).mockImplementation((success) => {
