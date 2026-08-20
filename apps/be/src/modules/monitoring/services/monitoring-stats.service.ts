@@ -325,8 +325,8 @@ export class MonitoringStatsService {
       area_type_category: area.locationType?.category || 'ACTIVE',
       district_id: area.district_id || '',
       district_name: rayonName,
-      latitude: parseFloat(area.gps_lat?.toString() || '0'),
-      longitude: parseFloat(area.gps_lng?.toString() || '0'),
+      latitude: parseFloat(area.gps_lat.toString()),
+      longitude: parseFloat(area.gps_lng.toString()),
       coverage_area: area.coverage_area ? parseFloat(area.coverage_area.toString()) : null,
       total_users_assigned: workers.length,
       users_online: workersOnline,
@@ -2057,8 +2057,8 @@ export class MonitoringStatsService {
               visibleIn(
                 bbox,
                 a.boundary_polygon,
-                parseFloat(a.gps_lat?.toString() || '0'),
-                parseFloat(a.gps_lng?.toString() || '0'),
+                parseFloat(a.gps_lat.toString()),
+                parseFloat(a.gps_lng.toString()),
               ),
             )
           : allAreas;
@@ -2119,8 +2119,8 @@ export class MonitoringStatsService {
             name: area.name,
             boundary_polygon: simplifyGeometry(area.boundary_polygon) || null,
             ...this.styleOf(area),
-            center_lat: parseFloat(area.gps_lat?.toString() || '0'),
-            center_lng: parseFloat(area.gps_lng?.toString() || '0'),
+            center_lat: parseFloat(area.gps_lat.toString()),
+            center_lng: parseFloat(area.gps_lng.toString()),
             district_id: district.id,
             district_name: district.name,
             assigned_count: assigned,
