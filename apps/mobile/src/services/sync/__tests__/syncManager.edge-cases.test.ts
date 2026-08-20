@@ -71,7 +71,7 @@ describe('Sync Manager - Edge Cases & Error Handling', () => {
 
     // Default: location tracker not tracking
     mockLocationTracker.isTracking.mockReturnValue(false);
-    mockLocationTracker.captureNow.mockReturnValue(undefined);
+    mockLocationTracker.captureNow.mockResolvedValue(undefined);
 
     // Initialize sync manager
     syncManager.initialize();

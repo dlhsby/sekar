@@ -224,7 +224,10 @@ class SyncManager extends EventEmitter {
         // Trigger immediate location capture if tracking is active
         if (locationTracker.isTracking()) {
           logger.debug('[SyncManager] Triggering immediate location capture');
-          locationTracker.captureNow();
+          // Upload it too: coming back online is exactly when the supervisor's
+          // map is most out of date, and a capture that only buffers waits for
+          // the batch to fill before anyone sees it.
+          void locationTracker.captureNow({ upload: true });
         }
       }
 
@@ -251,7 +254,7 @@ class SyncManager extends EventEmitter {
       // Trigger immediate location capture if tracking is active
       if (locationTracker.isTracking()) {
         logger.debug('[SyncManager] Triggering immediate location capture on foreground');
-        locationTracker.captureNow();
+        void locationTracker.captureNow({ upload: true });
       }
 
       this.processQueue();

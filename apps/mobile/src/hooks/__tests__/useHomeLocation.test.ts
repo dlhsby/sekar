@@ -190,7 +190,10 @@ describe('useHomeLocation', () => {
       expect(mockGeolocation).toHaveBeenCalledTimes(1);
     });
 
-    it('calls locationTracker.captureNow and forceUpload', () => {
+    it('captures AND uploads in one call, so the upload cannot race the fix', () => {
+      // Previously two calls on consecutive lines: `forceUpload()` ran while the
+      // GPS read was still in flight, found an empty buffer and returned — the
+      // card updated on screen and the server heard nothing.
       simulateSuccess();
       const { result } = renderHook(() => useHomeLocation());
 
@@ -198,8 +201,8 @@ describe('useHomeLocation', () => {
         result.current.refresh();
       });
 
-      expect(locationTracker.captureNow).toHaveBeenCalledTimes(1);
-      expect(locationTracker.forceUpload).toHaveBeenCalledTimes(1);
+      expect(locationTracker.captureNow).toHaveBeenCalledWith({ upload: true });
+      expect(locationTracker.forceUpload).not.toHaveBeenCalled();
     });
   });
 

@@ -146,6 +146,31 @@ export interface WatchOptions extends MockPolicyOption {
 }
 
 /**
+ * Resolve the provider for this read/watch.
+ *
+ * `forceLocationManager: false` routes Android through Play Services' **fused**
+ * provider, which is right in production — it is faster, cheaper and fuses
+ * sensors. It is also why a fake-GPS app on an emulator produces nothing but
+ * timeouts: a mock app writes its fix through the platform **LocationManager**,
+ * and the fused provider does not relay it. Every read then runs to its timeout
+ * (GeoError code 3), including the low-accuracy retry — the giveaway that the
+ * problem is the provider and not the accuracy.
+ *
+ * So: when the build already accepts mocked fixes, it must also be able to SEE
+ * them. That is one decision, not two, and it belongs here at the single seam
+ * rather than at each call site.
+ *
+ * This deliberately **overrides** a caller's `forceLocationManager` instead of
+ * defaulting under it: three call sites hardcode `false`, and a dev override
+ * that any call site can silently defeat is not an override. The gate is
+ * `mockLocationAllowed()` — `__DEV__ && ALLOW_MOCK_LOCATION === 'true'` — so a
+ * release bundle constant-folds this to the fused provider and the branch is
+ * not present in shipped code at all.
+ */
+const withProvider = <T extends SharedGeoOptions>(options: T): T =>
+  mockLocationAllowed() ? { ...options, forceLocationManager: true } : options;
+
+/**
  * Read the current position once.
  *
  * Rejects with `MockedLocationError` on a mocked fix unless `allowMocked` is
@@ -168,7 +193,7 @@ export const readPosition = (options: ReadOptions = {}): Promise<VerifiedPositio
         }
       },
       (error: GeoError) => reject(error),
-      { ...DEFAULT_READ_OPTIONS, ...options.geoOptions },
+      withProvider({ ...DEFAULT_READ_OPTIONS, ...options.geoOptions }),
     );
   });
 
@@ -203,7 +228,7 @@ export const watchPosition = (
       }
     },
     (error: GeoError) => handlers.onError?.(error),
-    { ...DEFAULT_WATCH_OPTIONS, ...options.geoOptions },
+    withProvider({ ...DEFAULT_WATCH_OPTIONS, ...options.geoOptions }),
   );
 
   return () => Geolocation.clearWatch(watchId);

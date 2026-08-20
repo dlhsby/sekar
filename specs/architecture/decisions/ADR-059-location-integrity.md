@@ -113,18 +113,28 @@ can write settings, which is precisely the surface that must not be able to disa
 integrity — and `mockedLocationAllowed()` refuses whenever `NODE_ENV === 'production'`, so
 both conditions must hold.
 
-The override is **narrow by construction**: only the `MOCKED` branch is skipped. Null island
-and impossible travel are geometric facts that hold whatever the provider is, and an emulator
-has no legitimate reason to produce either. `evaluateLocation` stays pure — the flag arrives
-as an argument, so the decision to relax enforcement is visible at the call site rather than
-hidden in the evaluator.
+The override skips the `MOCKED` and `IMPOSSIBLE_TRAVEL` branches (**amended 2026-08-13**;
+originally `MOCKED` alone). Impossible travel was kept on at first, reasoning that it is a
+geometric fact independent of the provider. That is true and beside the point: **a mock
+provider is one you move by typing coordinates**, so a tester who checks Jakarta and then
+Surabaya has "travelled" 700 km in a minute. The rule then blocked the punch itself —
+reported from the field as `Gagal clock out` on an emulator — which made the override that
+exists to keep an emulator usable not actually keep it usable. Anything already trusting a
+self-declared mocked fix has no stricter claim to make about the distance between two of
+them.
+
+**Null island is still rejected under the override**: (0, 0) is a broken fix rather than a
+movement, and it is never a coordinate anyone wants to test at. `evaluateLocation` stays pure
+— the flag arrives as an argument, so the decision to relax enforcement is visible at the
+call site rather than hidden in the evaluator.
 
 ## Consequences
 
 - Server-side controls carry the real weight. Every client check (mock detection, camera-
   only, the blocker) is defeatable by someone who can patch the APK; they raise cost and
   stop casual cheating. The controls that hold are the ones that do not trust the client:
-  timestamp clamping, impossible travel, and null-island rejection.
+  timestamp clamping, impossible travel, and null-island rejection — impossible travel with
+  the caveat that it is relaxed under the dev override, which cannot be on in production.
 - The client's `is_mocked` is treated as sufficient evidence to **reject**, never as
   evidence to **trust** — the geometric checks still run when a client claims it is clean.
 - `MIN_GPS_ACCURACY_METERS` (`gps.constants.ts`), which existed unenforced "for future

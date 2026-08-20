@@ -294,6 +294,33 @@ describe('LocationTracker', () => {
       expect(locationTracker.getBufferCount()).toBe(0);
     });
 
+    it('captureNow({upload}) uploads the fix it just captured, not an empty buffer', async () => {
+      // The bug this covers: callers fired captureNow() and forceUpload() on
+      // consecutive lines. The upload ran while the GPS read was still in
+      // flight, found an empty buffer, and returned — so pressing Refresh put
+      // nothing on the supervisor's map.
+      (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+
+      await locationTracker.captureNow({ upload: true });
+      await Promise.resolve();
+
+      expect(locationApi.uploadLocationBatch).toHaveBeenCalled();
+      // `convertPingsToLocations` is mocked in this suite, so assert on the
+      // shift it uploaded FOR and on the buffer draining — both are false when
+      // the upload races an empty buffer.
+      expect((locationApi.uploadLocationBatch as jest.Mock).mock.calls[0][0]).toBe(mockShiftId);
+      expect(locationTracker.getBufferCount()).toBe(0);
+    });
+
+    it('captureNow() without upload still only buffers', async () => {
+      // The background loop must keep batching; only an explicit refresh forces
+      // a send.
+      (locationApi.uploadLocationBatch as jest.Mock).mockClear();
+      await locationTracker.captureNow();
+      await Promise.resolve();
+      expect(locationApi.uploadLocationBatch).not.toHaveBeenCalled();
+    });
+
     it('should capture location at random interval between 5-10 minutes', async () => {
       const initialCalls = (Geolocation.getCurrentPosition as jest.Mock).mock.calls.length;
 

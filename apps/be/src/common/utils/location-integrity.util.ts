@@ -164,9 +164,20 @@ export function evaluateLocation(
      * `mockedLocationAllowed()` from `common/config/integrity-overrides`, which
      * refuses in production.
      *
-     * Only the MOCKED rule is skipped. Null island and impossible travel are
-     * geometric facts that hold regardless of the provider, and an emulator has
-     * no legitimate reason to produce either.
+     * Skips the MOCKED and IMPOSSIBLE_TRAVEL rules.
+     *
+     * Impossible travel was originally kept on here, reasoning that it is a
+     * geometric fact independent of the provider. That is true and beside the
+     * point: **a mock provider is one you move by typing coordinates**, so a
+     * tester who checks Jakarta and then Surabaya has "travelled" 700 km in a
+     * minute. The rule then blocks the punch itself — the failure this was
+     * reported for was `Gagal clock out` on an emulator — which makes the
+     * override that exists to keep an emulator usable not actually keep it
+     * usable. Anything already trusting a self-declared mocked fix has no
+     * stricter claim to make about the distance between two of them.
+     *
+     * NULL ISLAND is still rejected: (0, 0) is a broken fix rather than a
+     * teleport, and it is never a coordinate anyone wants to test at.
      */
     allowMocked?: boolean;
   },
@@ -213,7 +224,7 @@ export function evaluateLocation(
   if (candidate.isMocked === true && context.allowMocked !== true) {
     return reject(LocationRejection.MOCKED);
   }
-  if (speed !== null && speed > thresholds.maxSpeedKmh) {
+  if (speed !== null && speed > thresholds.maxSpeedKmh && context.allowMocked !== true) {
     return reject(LocationRejection.IMPOSSIBLE_TRAVEL);
   }
 

@@ -389,11 +389,16 @@ class LocationTracker extends EventEmitter {
    * Trigger an immediate location capture
    * Use when coming back online or app foregrounded
    */
-  public captureNow(): void {
-    if (this.tracking && this.shiftId) {
-      console.debug('[LocationTracker] Immediate capture triggered');
-      this.captureLocation();
-    }
+  public async captureNow(options: { upload?: boolean } = {}): Promise<void> {
+    if (!this.tracking || !this.shiftId) return;
+    console.debug('[LocationTracker] Immediate capture triggered');
+    // AWAITED, and the upload runs after it. Callers used to fire this and then
+    // call `forceUpload()` on the next line — which ran while the GPS read was
+    // still in flight, found an empty buffer, logged "No locations to upload"
+    // and returned. The fresh fix then sat in the buffer until the batch filled,
+    // so pressing Refresh did not put the worker on the supervisor's map.
+    await this.captureLocation({ force: options.upload === true });
+    if (options.upload) await this.forceUpload();
   }
 
   /**
@@ -450,7 +455,7 @@ class LocationTracker extends EventEmitter {
   /**
    * Capture current location with battery level
    */
-  private async captureLocation(): Promise<void> {
+  private async captureLocation(options: { force?: boolean } = {}): Promise<void> {
     if (!this.shiftId || !this.tracking) {
       console.debug('[LocationTracker] Not tracking, skipping capture');
       return;
@@ -463,7 +468,9 @@ class LocationTracker extends EventEmitter {
 
     const shiftId = this.shiftId;
 
-    readPosition({
+    // RETURNED, not fire-and-forget: `captureNow` awaits this before uploading,
+    // and an un-returned promise would resolve instantly with an empty buffer.
+    return readPosition({
       allowMocked: true,
       geoOptions: {
         ...TRACKER_GEO_OPTIONS,
@@ -483,7 +490,7 @@ class LocationTracker extends EventEmitter {
           battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
 
-        if (!this.addLocationToBuffer(location)) return;
+        if (!this.addLocationToBuffer(location, options.force)) return;
         this.emit('locationUpdate', location);
 
         // Upload first ping immediately so supervisor can see worker location right after clock-in.
@@ -495,14 +502,17 @@ class LocationTracker extends EventEmitter {
           this.uploadLocations();
         }
       })
-      .catch((error) => {
+      .catch(async (error) => {
         const errorMsg = this.handleLocationError(error);
         console.error('[LocationTracker] Location capture error:', errorMsg);
         this.emit('error', errorMsg);
 
         // Retry with lower accuracy on timeout
         if (error?.code === 3) { // TIMEOUT
-          this.retryWithLowerAccuracy();
+          // The retry inherits `force`: a user-pressed refresh that fell back to
+          // the slower read still has to produce a ping, or the fallback path
+          // would quietly be the one that does nothing.
+          await this.retryWithLowerAccuracy(options.force === true);
         }
       });
   }
@@ -510,7 +520,7 @@ class LocationTracker extends EventEmitter {
   /**
    * Retry location capture with lower accuracy
    */
-  private async retryWithLowerAccuracy(): Promise<void> {
+  private async retryWithLowerAccuracy(force = false): Promise<void> {
     if (!this.shiftId || !this.tracking) {
       return;
     }
@@ -522,7 +532,7 @@ class LocationTracker extends EventEmitter {
 
     const shiftId = this.shiftId;
 
-    readPosition({ allowMocked: true, geoOptions: TRACKER_RETRY_GEO_OPTIONS })
+    return readPosition({ allowMocked: true, geoOptions: TRACKER_RETRY_GEO_OPTIONS })
       .then((position) => {
         const location = buildPing(position, shiftId, batteryLevel);
 
@@ -533,7 +543,7 @@ class LocationTracker extends EventEmitter {
           mocked: location.mocked,
           battery: batteryLevel !== undefined ? `${batteryLevel}%` : 'N/A',
         });
-        if (!this.addLocationToBuffer(location)) return;
+        if (!this.addLocationToBuffer(location, force)) return;
         this.emit('locationUpdate', location);
       })
       .catch((error) => {
@@ -555,12 +565,19 @@ class LocationTracker extends EventEmitter {
    */
   private lastAcceptedPing: ThinningReference | null = null;
 
-  /** @returns false when the ping was thinned as a redundant "still here" report. */
-  private addLocationToBuffer(location: LocationPing): boolean {
+  /**
+   * @param force keep the ping even if the thinning would drop it. Set for an
+   *   EXPLICIT user refresh: thinning exists to save data on a loop the worker
+   *   did not ask for, and silently discarding the one ping they pressed a
+   *   button for is how "Refresh does nothing" happens for a stationary worker.
+   * @returns false when the ping was thinned as a redundant "still here" report.
+   */
+  private addLocationToBuffer(location: LocationPing, force = false): boolean {
     // Skip a redundant "still here" fix before it is ever buffered or uploaded,
     // saving the worker's mobile data. A mocked fix is NEVER thinned: that ping
     // is the evidence of spoofing and the server needs the row.
     if (
+      !force &&
       !location.mocked &&
       shouldSkipStationaryPing(
         {

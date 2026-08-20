@@ -59,9 +59,9 @@ describe('evaluateLocation', () => {
       expect(verdict.rejection).toBeNull();
     });
 
-    // The override relaxes the mock-provider rule ONLY. An emulator has no
-    // legitimate reason to produce null island or to teleport, so those stay
-    // enforced — otherwise the escape hatch would disable integrity wholesale.
+    // The override relaxes the mock-provider AND teleport rules. Null island
+    // stays rejected: (0, 0) is a broken fix rather than a movement, and it is
+    // never a coordinate anyone wants to test at.
     it('still rejects null island when mocked fixes are allowed', () => {
       const verdict = evaluateLocation(
         { lat: 0, lng: 0, isMocked: true },
@@ -71,12 +71,29 @@ describe('evaluateLocation', () => {
       expect(verdict.rejection).toBe(LocationRejection.MISSING_COORDINATES);
     });
 
-    it('still rejects impossible travel when mocked fixes are allowed', () => {
+    it('allows a teleport when mocked fixes are allowed — a mock provider IS one', () => {
+      // A mock provider is moved by typing coordinates, so a tester who checks
+      // Jakarta and then Surabaya has "travelled" 700 km in a minute. Enforcing
+      // this rule blocked the punch itself (`Gagal clock out` on an emulator),
+      // which made the override that exists to keep an emulator usable not
+      // actually keep it usable.
       const verdict = evaluateLocation(
         { lat: -6.2905, lng: 112.7398, isMocked: true },
         {
           now: NOW,
           allowMocked: true,
+          previous: { ...SURABAYA, at: new Date(NOW.getTime() - 60 * 1000) },
+        },
+      );
+
+      expect(verdict.accepted).toBe(true);
+    });
+
+    it('STILL rejects a teleport when the override is off — production is unchanged', () => {
+      const verdict = evaluateLocation(
+        { lat: -6.2905, lng: 112.7398, isMocked: false },
+        {
+          now: NOW,
           previous: { ...SURABAYA, at: new Date(NOW.getTime() - 60 * 1000) },
         },
       );

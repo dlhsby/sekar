@@ -135,9 +135,12 @@ export function useHomeLocation() {
 
   const refresh = useCallback(() => {
     fetchLocation();
-    // Trigger location tracker capture + upload for backend sync
-    locationTracker.captureNow();
-    locationTracker.forceUpload();
+    // Capture AND upload, in that order. These used to be two calls: the upload
+    // ran while the GPS read was still in flight, found an empty buffer and
+    // returned, so pressing Refresh updated the card on screen but sent nothing
+    // to the server. `upload: true` also keeps the ping past the stationary
+    // thinning — a worker who has not moved still pressed the button.
+    void locationTracker.captureNow({ upload: true });
   }, [fetchLocation]);
 
   // Auto-fetch on mount when shift is active

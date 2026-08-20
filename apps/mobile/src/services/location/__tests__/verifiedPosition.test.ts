@@ -181,3 +181,49 @@ describe('watchPosition', () => {
     expect(mockedGeolocation.clearWatch).toHaveBeenCalledWith(7);
   });
 });
+
+describe('provider selection (fake-GPS on an emulator)', () => {
+  const optionsOf = (fn: { mock: { calls: any[][] } }) => fn.mock.calls[0][2];
+
+  it('uses the FUSED provider by default — the production path', () => {
+    mockedGeolocation.getCurrentPosition.mockImplementation(() => {});
+    void readPosition();
+    expect(optionsOf(mockedGeolocation.getCurrentPosition).forceLocationManager).toBe(false);
+  });
+
+  it('switches to LocationManager when mocked fixes are allowed', () => {
+    // A fake-GPS app writes through the platform LocationManager, and the fused
+    // provider does not relay it — so every read ran to its timeout, including
+    // the low-accuracy retry. A build that ACCEPTS mocked fixes has to be able
+    // to see them.
+    mockedAllowed.mockReturnValue(true);
+    mockedGeolocation.getCurrentPosition.mockImplementation(() => {});
+    void readPosition();
+    expect(optionsOf(mockedGeolocation.getCurrentPosition).forceLocationManager).toBe(true);
+  });
+
+  it('OVERRIDES a call site that hardcodes the fused provider', () => {
+    // Three call sites pass `forceLocationManager: false` explicitly. An
+    // override any of them can silently defeat is not an override.
+    mockedAllowed.mockReturnValue(true);
+    mockedGeolocation.getCurrentPosition.mockImplementation(() => {});
+    void readPosition({ geoOptions: { forceLocationManager: false } });
+    expect(optionsOf(mockedGeolocation.getCurrentPosition).forceLocationManager).toBe(true);
+  });
+
+  it('applies the same rule to the watcher', () => {
+    mockedAllowed.mockReturnValue(true);
+    mockedGeolocation.watchPosition.mockImplementation(() => 1);
+    watchPosition({ onPosition: jest.fn() });
+    expect(optionsOf(mockedGeolocation.watchPosition).forceLocationManager).toBe(true);
+  });
+
+  it('leaves every other option untouched', () => {
+    mockedAllowed.mockReturnValue(true);
+    mockedGeolocation.getCurrentPosition.mockImplementation(() => {});
+    void readPosition({ geoOptions: { timeout: 4321, maximumAge: 0 } });
+    const opts = optionsOf(mockedGeolocation.getCurrentPosition);
+    expect(opts.timeout).toBe(4321);
+    expect(opts.enableHighAccuracy).toBe(true);
+  });
+});
