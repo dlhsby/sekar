@@ -1,4 +1,15 @@
 import '@testing-library/jest-dom';
+import { configure } from '@testing-library/react';
+
+// `waitFor` (and every other async util) carries its OWN 1000 ms budget, which
+// is NOT `testTimeout` — a suite can sit at testTimeout: 30000 and still fail in
+// one second. With 167 suites running cores-1 wide, a react-query hook that
+// settles instantly on an idle machine routinely misses that 1 s under CPU
+// contention, which showed up as a DIFFERENT one or two suites failing per run
+// while every one of them passed in isolation. Raising only the async-util
+// budget keeps the real per-test ceiling where it was: a genuinely hung
+// assertion still fails, just not because a neighbouring worker was busy.
+configure({ asyncUtilTimeout: 5000 });
 // Initialize i18next (id default) so components using t() render real copy in tests
 // instead of raw keys. Mirrors the app runtime; no provider needed (global instance).
 import '@/lib/i18n/config';

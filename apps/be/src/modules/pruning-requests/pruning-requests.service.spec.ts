@@ -26,6 +26,38 @@ function futureDateString(daysFromNow: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Two dates inside the SAME ISO week, both comfortably in the future.
+ *
+ * These used to be the literals 2026-08-12 / 2026-08-14, which made the test a
+ * time bomb: `reschedule` refuses a past `expectedDate`, so on the day those
+ * literals went stale the suite began failing with `expectedDate must be today
+ * or in the future` — a calendar failure wearing the costume of a capacity bug.
+ * Anchoring to the Monday of a future week preserves the only property the test
+ * is about (old and new fall in one ISO week) without pinning it to a date.
+ *
+ * All arithmetic is UTC: the value is serialized with `toISOString()`, and a
+ * local `getDay()` would land on the neighbouring day either side of midnight
+ * in a +07 zone, which is exactly how a "same week" fixture silently becomes a
+ * cross-week one.
+ */
+function futureIsoWeekPair(): { oldDate: Date; newDate: Date } {
+  const base = new Date();
+  base.setUTCDate(base.getUTCDate() + 14);
+  // Snap back to that week's Monday (getUTCDay: 0 = Sunday).
+  const monday = new Date(base);
+  monday.setUTCDate(base.getUTCDate() - ((base.getUTCDay() + 6) % 7));
+  const dayOfWeek = (offset: number): Date => {
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + offset);
+    // Midday, not midnight, so neither direction of timezone offset can move
+    // the date across a day boundary.
+    d.setUTCHours(12, 0, 0, 0);
+    return d;
+  };
+  return { oldDate: dayOfWeek(1), newDate: dayOfWeek(3) }; // Tue and Thu
+}
+
 describe('PruningRequestsService', () => {
   let module: TestingModule;
   let service: PruningRequestsService;
@@ -1214,9 +1246,8 @@ describe('PruningRequestsService', () => {
       });
 
       it('skips capacity rebook when staying within the same ISO week', async () => {
-        // Old date and new date one day apart inside the same ISO week.
-        const oldDate = new Date('2026-08-12'); // Wed, ISO 2026-W33
-        const newDate = new Date('2026-08-14'); // Fri, same week
+        // Old and new date two days apart inside the same (future) ISO week.
+        const { oldDate, newDate } = futureIsoWeekPair();
         pruningRequestRepository.findOne.mockResolvedValue({
           ...baseAssigned(),
           scheduledDate: oldDate,
