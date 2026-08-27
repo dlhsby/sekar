@@ -785,6 +785,45 @@ This mirrors the Windows network to WSL2, making `localhost` work without port f
 
 ## Troubleshooting
 
+### `npm audit` reports 4 high advisories in apps/mobile
+
+**Symptom:** `npm audit` in `apps/mobile` reports 4 high-severity advisories —
+`image-size`, `metro`, `metro-config`, `metro-transform-worker`.
+
+**This is expected, and the underlying defect is already fixed locally.** Do not
+spend time re-investigating it; the situation is:
+
+- All four are the *same* advisory pair reported through the dependency chain
+  `metro → image-size` ([GHSA-w3rx-r6r6-pgpr](https://github.com/advisories/GHSA-w3rx-r6r6-pgpr),
+  [GHSA-5p2g-fcmc-qvqq](https://github.com/advisories/GHSA-5p2g-fcmc-qvqq)) — infinite loops in the
+  ICNS and HEIF/JXL parsers.
+- **There is no upstream fix to move to.** `image-size@2.0.2` is the latest published
+  version and is itself inside the vulnerable range (`<=2.0.2`), and every Metro from
+  0.85 to 0.87 still depends on `image-size@^1.0.2`. Upgrading cannot clear it.
+- **The real bug is patched here** via `patch-package`
+  (`apps/mobile/patches/image-size+1.2.1.patch`, reapplied by the `postinstall` script on
+  every `npm install` / `npm ci`). The HEIF/JXL half was already fixed upstream in 1.2.1;
+  the ICNS loop was not, and the patch adds the missing guard.
+- **`npm audit` will keep reporting all four anyway.** It matches package *name and
+  version* against registry metadata and never reads file contents, so a patched
+  1.2.1 is indistinguishable from an unpatched one to the auditor.
+- **Exposure is build-time only.** `image-size` runs inside Metro, reading image assets
+  from this repository — it is never present in a shipped APK, and triggering it would
+  require committing a malformed `.icns` into our own source tree.
+
+**What clears the report:** a published `image-size` above 2.0.2, or a Metro release that
+drops the dependency. Re-check on any React Native / Metro upgrade with:
+
+```bash
+cd apps/mobile
+npm view image-size dist-tags.latest        # >2.0.2 means a real fix exists
+npm view metro@<new-version> dependencies.image-size
+```
+
+When that lands, take the upgrade and delete `patches/image-size+1.2.1.patch`. If the patch
+ever fails to apply after a dependency bump, that is the signal the file changed upstream —
+re-check the advisory rather than force-regenerating the patch.
+
 ### Docker & Infrastructure
 
 #### Port Already in Use
