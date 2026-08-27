@@ -25,7 +25,7 @@ describe('API Client', () => {
 
   beforeEach(() => {
     mock = new MockAdapter(apiClient);
-    axiosMock = new MockAdapter(axios); // Mock raw axios for refresh calls
+    axiosMock = new MockAdapter(axios, { onNoMatch: 'throwException' }); // Mock raw axios for refresh calls
     jest.clearAllMocks();
 
     // Restore Alert mock after clearAllMocks (which clears it)
@@ -258,7 +258,7 @@ describe('API Client', () => {
       mock.reset();
       axiosMock.reset();
       mock = new MockAdapter(apiClient);
-      axiosMock = new MockAdapter(axios);
+      axiosMock = new MockAdapter(axios, { onNoMatch: 'throwException' });
     });
 
     afterEach(() => {
@@ -473,6 +473,33 @@ describe('API Client', () => {
         expect(mockSecureStorage.clearAll).not.toHaveBeenCalled();
         const apiError = error as ApiError;
         // Reported as what it is, so the caller queues the work offline.
+        expect(apiError.code).toBe('NETWORK_ERROR');
+      }
+    }, 15000);
+
+    it('KEEPS the session when the refresh endpoint answers 502', async () => {
+      // A rolling deploy behind nginx/ALB does not connection-refuse — it
+      // answers 502/503. That IS a response, so a naive "did the server
+      // answer?" test reads it as a refusal and signs the worker out mid-shift.
+      // Only the server saying the TOKEN is bad may end a session; "I am
+      // broken right now" must not.
+      mockSecureStorage.getRefreshToken.mockResolvedValue('refresh-token');
+
+      mock.onGet('/protected').reply(401, {
+        statusCode: 401,
+        code: 'AUTH_TOKEN_EXPIRED',
+        message: 'Token expired',
+      });
+
+      axiosMock.onPost(new RegExp('/auth/refresh$')).reply(502, '<html>Bad Gateway</html>');
+
+      try {
+        await apiClient.get('/protected');
+        fail('Should have thrown an error');
+      } catch (error) {
+        await new Promise(resolve => setTimeout(resolve, 50));
+        expect(mockSecureStorage.clearAll).not.toHaveBeenCalled();
+        const apiError = error as ApiError;
         expect(apiError.code).toBe('NETWORK_ERROR');
       }
     }, 15000);

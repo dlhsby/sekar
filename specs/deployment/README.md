@@ -269,7 +269,7 @@ Set **every** `<...>` placeholder. Minimum to change:
 | Variable | What to set |
 |----------|-------------|
 | `DATABASE_PASSWORD` | A strong DB password |
-| `JWT_SECRET`, `JWT_REFRESH_SECRET` | Two **different** strong secrets — `openssl rand -base64 32` each |
+| `JWT_SECRET`, `JWT_REFRESH_SECRET` | Two **different** strong secrets — `openssl rand -base64 32` each. **Set once, then never rotate as part of a routine deploy** — see the note below |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | MinIO root credentials (any strong values for the in-stack MinIO) |
 | `AWS_S3_BUCKET` | Media bucket name (e.g. `sekar-media`) |
 | `CORS_ORIGIN` | `https://sekar.example.com` |
@@ -277,6 +277,19 @@ Set **every** `<...>` placeholder. Minimum to change:
 | `NEXT_PUBLIC_WS_URL` | `wss://sekar.example.com` |
 | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Your Google Maps API key (maps fail to render without it) |
 | `FCM_ENABLED` | `false` until Firebase is set up (§B / [`credentials-setup.md`](credentials-setup.md)) |
+
+> **`JWT_SECRET` is a deploy invariant.** Every issued access and refresh token is signed with it, so
+> changing it invalidates all of them at once: every satgas in the field is signed out mid-shift,
+> simultaneously, with no warning. The mobile app now handles that gracefully — a rejected refresh
+> ends the session cleanly and the offline queue survives it (ADR-059 / `services/auth/sessionEvents`) —
+> but graceful is not the same as harmless, and a fleet-wide forced re-login is not something to
+> discover after a release. Treat rotation as a planned, announced event, never a side effect of
+> regenerating an env file.
+>
+> The same reasoning applies to the **database identity**: tokens carry a user id, so pointing an
+> environment at a different or renumbered database has exactly the same effect as changing the
+> secret. Ordinary schema migrations are fine — user rows keep their ids — but a restore, a clone
+> swap, or the staging cutover should assume every session ends.
 
 ### E.4 TLS certificates
 

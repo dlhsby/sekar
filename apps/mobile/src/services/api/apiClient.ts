@@ -115,13 +115,25 @@ async function refreshAccessToken(): Promise<RefreshOutcome> {
     return { status: 'rejected' };
   } catch (error) {
     const axiosError = error as AxiosError;
-    // A RESPONSE means the server answered and said no. No response at all
-    // (timeout, DNS, aeroplane mode) means we simply could not ask.
-    if (!axiosError.response) {
-      console.warn('[ApiClient] Token refresh unreachable, keeping session:', axiosError.message);
+    const status = axiosError.response?.status;
+
+    // Only the server saying THIS TOKEN IS BAD may end a session. Everything
+    // else — no response at all (timeout, DNS, aeroplane mode) and any answer
+    // that is about the server rather than the credential — is a reason to try
+    // again later, not to sign a worker out mid-shift.
+    //
+    // The 5xx half matters most on deploy: behind nginx or an ALB a rolling
+    // restart does not connection-refuse, it answers 502/503. Treating "the
+    // server answered" as "the server refused me" would log out every worker
+    // whose token happened to expire during the deploy window.
+    if (status !== 401 && status !== 403) {
+      console.warn(
+        `[ApiClient] Token refresh unavailable (${status ?? 'no response'}), keeping session`,
+      );
       return { status: 'unavailable' };
     }
-    console.error('[ApiClient] Token refresh rejected:', axiosError.response.status);
+
+    console.error('[ApiClient] Refresh token rejected:', status);
     return { status: 'rejected' };
   }
 }
