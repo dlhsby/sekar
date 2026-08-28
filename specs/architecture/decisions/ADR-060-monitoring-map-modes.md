@@ -260,10 +260,41 @@ full-height ⓘ button on the node's row in the sidebar.
   not free, and a materially larger geography would need a second look.
 - Ranking the *culled* set means panning re-ranks. Intended (the budget is a property of the screen),
   but it does mean a marker can change form as the camera moves.
-- Drilling into a rayon leaves the camera near zoom 12, below the kawasan threshold, so the drill alone
-  reveals nothing new in viewport mode. Pre-existing tier behaviour, now more visible; worth revisiting
-  with the client.
+- ~~Drilling into a rayon leaves the camera below the kawasan threshold, so the drill alone reveals
+  nothing new.~~ **Fixed below** — the client hit this immediately on "Rayon Taman Aktif".
 - Mobile does not have this yet, widening the platform gap ADR-060 already noted.
+
+### Tier admission is scope-aware, not zoom-only
+
+The client drilled into **Rayon Taman Aktif** and got an empty map behind a "Perbesar untuk melihat
+lokasi & petugas" hint. That rayon spans the whole city, so the fit leaves the camera at city zoom —
+under the lokasi threshold — while the rayon holds only 42 lokasi and 3 petugas. Her words: "the scope
+is a whole town, not too crowded, we can display it immediately".
+
+Zoom was always a **proxy for density**, and drilling in is where the proxy breaks: camera altitude
+stops tracking how much there is to draw. Two things follow.
+
+**Drilling in is the request to see inside.** `tiersFor({ zoom, scope })` admits the entire subtree at
+any zoom once `scope` is district / region / location. The zoom gate survives at city scope only, where
+"every tier" means all 1089 nodes in Surabaya — real DOM even as dots, and the one place the gate still
+earns its keep.
+
+**Density is no longer this function's job.** Progressive reveal already caps full pins and draws the
+remainder as dots, which is a strictly better answer than hiding a tier outright. Per rayon:
+
+| rayon | lokasi | drawn on drill |
+|---|---|---|
+| Taman Aktif | 42 | 42 pins, no dots |
+| Barat 2 | 76 | 60 pins, 16 dots |
+| Pusat | 179 | 60 pins, 119 dots |
+
+Measured live on Taman Aktif: **19 full pins + 19 dots**, named, with no gesture between the drill and
+the result. Three call sites move together — the marker tiers, the `needsAreaGeometry` fetch (admitting
+lokasi pins without their polygons would draw pins over an empty outline) and `nextTierAt`, so the hint
+cannot promise a tier that is already on screen.
+
+Note this relaxes the earlier "tiers are a hard floor" decision, with the client's agreement: the floor
+now applies at city scope only.
 
 ## Verification
 

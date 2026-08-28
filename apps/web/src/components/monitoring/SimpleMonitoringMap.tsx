@@ -18,7 +18,7 @@ import { POLYGON_STYLES } from '@/lib/constants/monitoring';
 import { geometryToPaths } from '@/lib/maps/geometry';
 import type { BoundariesResponse } from '@/lib/api/monitoring-types';
 import { type MonitoringMode, DEFAULT_MODE, isZoomLike } from '@/lib/monitoring/mapMode';
-import { tiersAtZoom, type TierVisibility } from '@/lib/monitoring/zoomTiers';
+import { tiersFor, type TierVisibility } from '@/lib/monitoring/zoomTiers';
 import { useProgressiveReveal } from '@/lib/monitoring/useProgressiveReveal';
 import { useAffinity } from '@/lib/monitoring/affinity';
 import {
@@ -345,8 +345,11 @@ function MonitoringMapInner({
   // Tiers now arrive as there is room for them (see `zoomTiers`). Zoom mode is
   // untouched — drawing everything at every zoom is the trade chosen there.
   const tiers = useMemo(
-    () => (mode === 'viewport' ? tiersAtZoom(zoom) : ALL_TIERS),
-    [mode, zoom]
+    // Scope, not just zoom: drilling into a rayon reveals its subtree at any
+    // zoom (see `tiersFor`). A rayon that spans the whole city otherwise leaves
+    // the camera at city zoom and shows nothing at all.
+    () => (mode === 'viewport' ? tiersFor({ zoom, scope }) : ALL_TIERS),
+    [mode, zoom, scope]
   );
 
   const renderWorkers = showsWorkerPins(layers.personnel) && tiers.workers;

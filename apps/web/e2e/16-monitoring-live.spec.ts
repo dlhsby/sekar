@@ -236,6 +236,36 @@ test.describe('Monitoring — live backend', () => {
     expect(pins).toBeLessThanOrEqual(70);
   });
 
+  test('drilling into a city-wide rayon reveals it WITHOUT zooming', async ({ page }) => {
+    // Reported defect: "Rayon Taman Aktif" spans the whole city, so drilling
+    // into it leaves the camera at city zoom — under the lokasi threshold — and
+    // the map showed nothing at all behind a "zoom in" hint, despite having only
+    // 42 lokasi and 3 petugas to draw.
+    //
+    // Drilling in IS the request to see inside, so the subtree now draws at any
+    // zoom; progressive reveal is what keeps it readable. No gesture between the
+    // drill and the assertion, deliberately — the zoom is the thing on trial.
+    await loginAndOpenMonitoring(page);
+    await openSettings(page);
+    await page.getByLabel(/mode monitoring/i).selectOption('viewport');
+    await page.getByRole('button', { name: /pengaturan/i }).click();
+    await page.waitForTimeout(3500);
+
+    await page.locator('gmp-advanced-marker[title="Rayon Taman Aktif"]').first().click();
+    await page.waitForTimeout(6000);
+
+    const pins = await page.locator('gmp-advanced-marker svg').count();
+    const dots = await page.locator('.marker-dot').count();
+    console.log(`[reveal] Taman Aktif on drill: pins=${pins} dots=${dots}`);
+
+    // Its lokasi are on the map, named, with no zooming at all.
+    expect(pins).toBeGreaterThan(5);
+    // And the hint no longer promises a TIER that is already drawn. Matched
+    // narrowly: the reveal hint ("...atau perbesar untuk melihat detailnya")
+    // shares a prefix with the tier hints and is the correct message here.
+    await expect(page.getByText(/perbesar untuk melihat (kawasan|lokasi)/i)).toHaveCount(0);
+  });
+
   test('viewport mode tells the operator what the dots are', async ({ page }) => {
     // A field of unexplained dots reads as broken data. The hint is what makes
     // it read as "more detail is waiting".

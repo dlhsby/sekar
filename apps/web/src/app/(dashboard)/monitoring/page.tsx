@@ -280,7 +280,9 @@ export default function MonitoringPage() {
   const boundaryLevel: 'district' | 'area' =
     // Viewport mode climbs the tiers with the camera: rayon outlines near the
     // city, full geometry once kawasan are on screen.
-    isViewport && !needsAreaGeometry(mapZoom)
+    // Scope-aware, matching the marker tiers exactly: admitting lokasi pins
+    // without fetching their polygons would draw pins over an empty outline.
+    isViewport && !needsAreaGeometry(mapZoom, scope)
       ? 'district'
       : isZoom || scope !== 'city'
         ? 'area'
@@ -1414,8 +1416,8 @@ export default function MonitoringPage() {
         {isViewport && (
           <div className="flex justify-center">
             <span className="pointer-events-none rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs backdrop-blur-sm">
-              {nextTierAt(mapZoom)
-                ? t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)
+              {nextTierAt(mapZoom, scope)
+                ? t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom, scope)}`)
                 : t('monitoring:mode.revealHint')}
             </span>
           </div>

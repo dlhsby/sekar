@@ -21,6 +21,14 @@
  * Applies to **viewport mode only**. Zoom mode deliberately draws everything at
  * every zoom: that is the trade the client chose there, and quietly hiding tiers
  * in it would answer a question she did not ask.
+ *
+ * **The gate applies at city scope only** — see {@link tiersFor}. Zoom is a
+ * proxy for density, and a poor one once you have drilled in: "Rayon Taman
+ * Aktif" spans the whole city, so drilling into it leaves the camera at city
+ * zoom and this rule hid all 42 of its lokasi behind a "zoom in" hint, on a map
+ * with room to spare. Density is also no longer this function's problem —
+ * progressive reveal caps the full pins and draws the remainder as dots, which
+ * beats hiding a tier outright.
  */
 
 export interface TierVisibility {
@@ -58,13 +66,51 @@ export function tiersAtZoom(zoom: number | undefined): TierVisibility {
  * Below the kawasan threshold the map draws rayon outlines only, so asking for
  * full geometry would download shapes nothing renders.
  */
-export function needsAreaGeometry(zoom: number | undefined): boolean {
-  return tiersAtZoom(zoom).region;
+export function needsAreaGeometry(zoom: number | undefined, scope?: TierScope): boolean {
+  return tiersFor({ zoom, scope }).region;
 }
 
-/** The next tier to appear, for the "zoom in to see more" hint. Null when at full depth. */
-export function nextTierAt(zoom: number | undefined): 'region' | 'location' | null {
-  const t = tiersAtZoom(zoom);
+/**
+ * Drill scope, as far as tier admission is concerned. Only the distinction
+ * between "looking at the whole city" and "looking inside something" matters.
+ */
+export type TierScope = 'surabaya' | 'city' | 'district' | 'region' | 'location';
+
+/** Has the operator asked to look inside a particular place? */
+const drilledIn = (scope: TierScope | undefined): boolean =>
+  scope === 'district' || scope === 'region' || scope === 'location';
+
+/**
+ * The tier set for a zoom AND a drill scope.
+ *
+ * Drilling in IS the request to see what is inside, so it reveals the whole
+ * subtree at any zoom. The zoom gate survives only at city scope, where "every
+ * tier at once" means all 1089 nodes in Surabaya — real DOM even as dots, and
+ * the one place the gate still earns its keep.
+ */
+export function tiersFor({
+  zoom,
+  scope,
+}: {
+  zoom: number | undefined;
+  scope: TierScope | undefined;
+}): TierVisibility {
+  if (drilledIn(scope)) {
+    return { district: true, region: true, location: true, workers: true };
+  }
+  return tiersAtZoom(zoom);
+}
+
+/**
+ * The next tier to appear, for the "zoom in to see more" hint. Null when at full
+ * depth — which drilling in reaches immediately, so the hint stops promising a
+ * tier that is already on screen.
+ */
+export function nextTierAt(
+  zoom: number | undefined,
+  scope?: TierScope
+): 'region' | 'location' | null {
+  const t = tiersFor({ zoom, scope });
   if (!t.region) return 'region';
   if (!t.location) return 'location';
   return null;
