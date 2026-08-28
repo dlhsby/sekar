@@ -238,6 +238,20 @@ which is the worst case by construction:
 Ranking is free; the residual cost is the dot elements, which viewport culling cuts further in practice
 (this table deliberately does not cull, so the numbers are the ceiling and not the typical case).
 
+**Two client corrections, same review round.**
+
+The mode hint was absolutely positioned at `top-3` — the same offset as the overlay stack — so it drew
+straight through the breadcrumb/status bar. It is now a **row inside that stack**, which cannot overlap
+by construction and survives another row being added above it.
+
+The pin's ⓘ detail badge is **removed**, not moved. It sat at `top:-4px; right:-6px`, which is exactly
+where `pinSvg` draws the active-count badge (`cx=39 cy=10`), so a button was covering the only live
+number the marker carries. That corner belongs to the count, and the count is **display only** — no
+handler, no hit area. The badge was not relocated because a ~16 px tap target is a poor one at any zoom
+and mobile has no equivalent, so keeping it meant a gesture that worked badly on one platform and not
+at all on the other. The pin has one meaning again — tap = drill — and area detail opens from the
+full-height ⓘ button on the node's row in the sidebar.
+
 **Bad / accepted**
 
 - `DEFAULT_CELL_PX = 88` and `DEFAULT_CAP = 60` are judgement calls, not derivations. They are named

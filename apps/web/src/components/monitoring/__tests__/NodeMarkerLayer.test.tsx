@@ -269,3 +269,24 @@ describe('progressive reveal (viewport mode)', () => {
     expect(down.zIndex!).toBeLessThan(up.zIndex!);
   });
 });
+
+describe('the pin carries one action and one number', () => {
+  it('draws the active count and no action button on top of it', () => {
+    // Regression guard. A ⓘ detail button used to be appended at `top:-4px;
+    // right:-6px` — the same corner the SVG draws the count badge in — so the
+    // staffing number was sitting under a button. That corner is the count's:
+    // it is the only live number the marker carries, and it is display only.
+    render(<NodeMarkerLayer nodes={[makeNode({ active: 7 })]} onDrill={jest.fn()} />);
+    const content = markers[0].content;
+
+    expect(content.textContent).toContain('7');
+    expect(content.querySelector('button')).toBeNull();
+  });
+
+  it('drills from the pin body, with nothing else competing for the tap', () => {
+    const onDrill = jest.fn();
+    render(<NodeMarkerLayer nodes={[makeNode({ id: 'n9' })]} onDrill={onDrill} />);
+    markers[0].onClick?.();
+    expect(onDrill).toHaveBeenCalledTimes(1);
+  });
+});

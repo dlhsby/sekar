@@ -1225,7 +1225,6 @@ export default function MonitoringPage() {
         onDrillNode={onDrillMarker}
         currentNode={currentNode}
         onNodeDetail={onNodeDetail}
-        onNodeMarkerDetail={(n) => setDetailNodeId(n.id)}
         openNodeId={detailNodeId}
         areaId={scope === 'location' ? view.id ?? null : null}
         regionId={scope === 'region' ? view.id ?? null : null}
@@ -1401,6 +1400,26 @@ export default function MonitoringPage() {
             <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
           </button>
         </div>
+
+        {/* Row 3 — viewport mode's running commentary. It lives IN the stack
+            rather than floating at `top-3` of its own: absolutely positioning a
+            second thing at the same offset put it straight through the
+            breadcrumb bar. As a row it cannot overlap anything, and it stays
+            correct if another row is ever added above it.
+
+            Two messages, one slot. Below full depth it names the tier still to
+            come, so a missing kawasan layer reads as "not yet" and not as broken
+            data. At full depth it explains the dots, which otherwise read as
+            decoration rather than as markers waiting to be opened. */}
+        {isViewport && (
+          <div className="flex justify-center">
+            <span className="pointer-events-none rounded-nb-base border-2 border-nb-black bg-nb-white/95 px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs backdrop-blur-sm">
+              {nextTierAt(mapZoom)
+                ? t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)
+                : t('monitoring:mode.revealHint')}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Filter panel */}
@@ -1448,17 +1467,6 @@ export default function MonitoringPage() {
       {/* Viewport mode reveals tiers with the camera, so it has to SAY so —
           otherwise a missing kawasan layer reads as broken data rather than as
           "not yet". Disappears once the map is at full depth. */}
-      {/* Once at full depth the tier hint is replaced by the reveal hint: the map
-          is now showing every eligible tier, but only the most salient markers
-          in full (see `useProgressiveReveal`). Without this line the dot field
-          reads as decoration rather than as markers waiting to be opened. */}
-      {isViewport && (
-        <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-nb-base border-2 border-nb-black bg-nb-white px-3 py-1.5 text-xs font-bold text-nb-black shadow-nb-xs">
-          {nextTierAt(mapZoom)
-            ? t(`monitoring:mode.zoomInFor.${nextTierAt(mapZoom)}`)
-            : t('monitoring:mode.revealHint')}
-        </div>
-      )}
 
       {/* Worker/area/node sheet */}
       {listOpen ? (

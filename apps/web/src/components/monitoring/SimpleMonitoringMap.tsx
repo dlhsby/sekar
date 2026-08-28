@@ -90,8 +90,6 @@ export interface SimpleMonitoringMapProps {
   /** The current node's own pin (district/location) — opens detail on click, no drill. */
   currentNode?: CurrentNodeMarker | null;
   onNodeDetail?: (node: CurrentNodeMarker) => void;
-  /** Opens a CHILD node's detail from its ⓘ badge (the pin body still drills). */
-  onNodeMarkerDetail?: (node: NodeMarker) => void;
   /** Node whose detail card is open — never culled, so the card and its pin agree. */
   openNodeId?: string | null;
   /** Selected location id — at location scope only its boundary is drawn (on demand). */
@@ -285,7 +283,6 @@ function MonitoringMapInner({
   onDrillNode,
   currentNode,
   onNodeDetail,
-  onNodeMarkerDetail,
   openNodeId,
   areaId,
   regionId,
@@ -646,13 +643,6 @@ function MonitoringMapInner({
     },
     [visit, onDrillNode]
   );
-  const detailNode = useCallback(
-    (node: NodeMarker) => {
-      visit(node.id);
-      onNodeMarkerDetail?.(node);
-    },
-    [visit, onNodeMarkerDetail]
-  );
   const selectWorker = useCallback(
     (userId: string) => {
       visit(userId);
@@ -804,7 +794,6 @@ function MonitoringMapInner({
         <NodeMarkerLayer
           nodes={drawnNodeMarkers}
           onDrill={drillNode}
-          onDetail={detailNode}
           zoom={zoom}
           activeGeoId={activeGeoId}
           showLabels={nodeLabels}

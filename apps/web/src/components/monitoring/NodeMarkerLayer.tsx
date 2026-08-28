@@ -12,7 +12,7 @@
  * a WebSocket snapshot patch that only moves a node repositions the marker in place
  * instead of rebuilding it (reposition-on-patch; profiled 47× cheaper).
  */
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { AdvancedPinMarker } from './AdvancedPinMarker';
 import {
   NODE_LABEL_PLACEMENT,
@@ -52,12 +52,20 @@ export interface NodeMarkerLayerProps {
   nodes: NodeMarker[];
   onDrill?: (node: NodeMarker) => void;
   /**
-   * Opens the node's detail card. Rendered as a small ⓘ badge on the pin so the
-   * body of the pin keeps its original meaning — tap = drill. Mobile splits the
-   * same two actions across a bubble and a marker; on web one pin carries both,
-   * which avoids drawing two pins per area in zoom mode.
+   * NOTE: there is deliberately no detail affordance ON the pin.
+   *
+   * A ⓘ badge used to sit on the pin's top-right — the same corner the SVG
+   * draws the active-count badge in, so the two overlapped and the staffing
+   * number was covered by a button. That corner belongs to the count: it is the
+   * only live number the marker carries.
+   *
+   * Rather than move the badge, it was removed. A ~16 px tap target is a poor
+   * one at any zoom, and mobile has no equivalent, so keeping it meant a gesture
+   * that worked badly on web and not at all on the other platform. The pin now
+   * has exactly one meaning again — tap = drill — and area detail opens from the
+   * ⓘ button on the node's row in the sidebar, which is full height and
+   * unambiguous.
    */
-  onDetail?: (node: NodeMarker) => void;
   /** Accepted for API compatibility; labels now show at every zoom. */
   zoom?: number;
   /** Geo filter selection (district/kawasan/lokasi id). When set, node bubbles that
@@ -81,18 +89,10 @@ export interface NodeMarkerLayerProps {
 export function NodeMarkerLayer({
   nodes,
   onDrill,
-  onDetail,
   activeGeoId,
   showLabels,
   promoted,
 }: NodeMarkerLayerProps) {
-  // `build()` is memoized by signature, so a handler captured inside it would go
-  // stale the moment the callback identity changed. The ref is read at CLICK
-  // time, which keeps the memo intact and the handler current.
-  const onDetailRef = useRef(onDetail);
-  useEffect(() => {
-    onDetailRef.current = onDetail;
-  }, [onDetail]);
   const placed = useMemo(
     () => nodes.filter((n) => Number.isFinite(n.lat) && Number.isFinite(n.lng)),
     [nodes]
@@ -130,7 +130,7 @@ export function NodeMarkerLayer({
           // element for a change that cannot alter a pixel.
           `${node.variant}|${node.marker_icon ?? ''}` +
           `|${node.active}|${node.scheduled}|${node.clocked_in}|${node.name}|${dimmed ? 1 : 0}` +
-          `|${onDetail ? 1 : 0}|${withLabel ? 1 : 0}|${demoted ? 'dot' : 'pin'}`;
+          `|${withLabel ? 1 : 0}|${demoted ? 'dot' : 'pin'}`;
         return (
           <AdvancedPinMarker
             key={`node-${node.id}`}
@@ -169,20 +169,6 @@ export function NodeMarkerLayer({
                   : undefined
               );
               el.style.opacity = dimmed ? '0.3' : '1';
-              if (onDetailRef.current) {
-                const info = document.createElement('button');
-                info.type = 'button';
-                info.className = 'node-info-badge';
-                info.textContent = 'i';
-                info.setAttribute('aria-label', node.name);
-                info.addEventListener('click', (ev) => {
-                  // Without this the marker's own handler fires too and the map
-                  // drills at the same moment the card opens.
-                  ev.stopPropagation();
-                  onDetailRef.current?.(node);
-                });
-                el.appendChild(info);
-              }
               return el;
             }}
             onClick={() => onDrill?.(node)}
